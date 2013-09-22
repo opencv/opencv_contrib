@@ -47,6 +47,7 @@
 #include "feature.hpp"
 #include "onlineMIL.hpp"
 #include "onlineBoosting.hpp"
+#include "opencv2/optim.hpp"
 #include <iostream>
 
 /*
@@ -796,6 +797,25 @@ class CV_EXPORTS_W TrackerSamplerCS : public TrackerSamplerAlgorithm
 
 };
 
+class CV_EXPORTS_W TrackerSamplerPF : public TrackerSamplerAlgorithm{
+public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    int iterationNum;
+    int particlesNum;
+    double alpha;
+    Mat_<double> std; 
+  };
+  TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters = TrackerSamplerPF::Params());
+protected:
+  bool samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample );
+private:
+  Params params;
+  Ptr<optim::Solver> _solver;
+  Ptr<optim::Solver::Function> _function;
+};
+
 /************************************ Specific TrackerFeature Classes ************************************/
 
 /**
@@ -1015,7 +1035,6 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
   Params params;
   AlgorithmInfo* info() const;
 };
-
 } /* namespace cv */
 
 #endif
