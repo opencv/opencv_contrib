@@ -13,15 +13,17 @@ static bool selectObject = false;
 static bool startSelection = false;
 
 static const char* keys =
-{ "{@tracker_algorithm | | tracker algorithm }"
-    "{@video_name        | | video name        }" };
+{ "{@tracker_algorithm | | Tracker algorithm }"
+    "{@video_name      | | video name        }"
+    "{@start_frame     |1| Start frame       }" };
 
 static void help()
 {
   cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
        "-- pause video [p] and draw a bounding box around the target to start the tracker\n"
+       "Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
        "Call:\n"
-       "./tracker <tracker_algorithm> <video_name>\n"
+       "./tracker <tracker_algorithm> <video_name> <start_frame>\n"
        << endl;
 
   cout << "\n\nHot keys: \n"
@@ -69,6 +71,7 @@ int main( int argc, char** argv )
 
   String tracker_algorithm = parser.get<String>( 0 );
   String video_name = parser.get<String>( 1 );
+  int start_frame = parser.get<int>( 2 );
 
   if( tracker_algorithm.empty() || video_name.empty() )
   {
@@ -79,6 +82,7 @@ int main( int argc, char** argv )
   //open the capture
   VideoCapture cap;
   cap.open( video_name );
+  cap.set( CAP_PROP_POS_FRAMES, start_frame );
 
   if( !cap.isOpened() )
   {
@@ -108,11 +112,19 @@ int main( int argc, char** argv )
   imshow( "Tracking API", image );
 
   bool initialized = false;
+  int frameCounter = 0;
+
   for ( ;; )
   {
     if( !paused )
     {
       cap >> frame;
+
+      if( frame.empty() )
+      {
+        break;
+      }
+
       frame.copyTo( image );
 
       if( !initialized && selectObject )
@@ -134,6 +146,7 @@ int main( int argc, char** argv )
         }
       }
       imshow( "Tracking API", image );
+      frameCounter++;
     }
 
     char c = (char) waitKey( 2 );
