@@ -462,21 +462,22 @@ int getPathOfFeaturePyramid(IplImage * image,
 
 #ifdef HAVE_TBB
 
-struct PathOfFeaturePyramid {
+class PathOfFeaturePyramid : public ParallelLoopBody{
+public:
     IplImage * image;
-    
     float step;
     int startIndex;
     int sideLength;
     CvLSVMFeaturePyramidCaskade **maps;
 
-    void operator()( const tbb::blocked_range<int>& range ) const {
+    void operator() (const Range& range) const
+    {
         CvLSVMFeatureMapCaskade *map;
         IplImage *scaleTmp;
         float scale;
         int   err;
         
-        for( int i=range.begin(); i!=range.end(); ++i )
+        for( int i=range.start; i!=range.end; ++i )
         {
           scale = 1.0f / powf(step, (float)i);
           scaleTmp = resize_opencv (image, scale);
@@ -489,6 +490,7 @@ struct PathOfFeaturePyramid {
     }
 };
 
+
 int getPathOfFeaturePyramid_TBB(IplImage * image, 
                             float step, int numStep, int startIndex,
                             int sideLength, CvLSVMFeaturePyramidCaskade **maps)
@@ -500,7 +502,7 @@ int getPathOfFeaturePyramid_TBB(IplImage * image,
     str.maps = maps;
     str.image = image;
     
-    tbb::parallel_for( tbb::blocked_range<int>( 0, numStep ), str );
+    cv::parallel_for_(Range( 0, numStep ), str );
     
     return LATENT_SVM_OK;
 }

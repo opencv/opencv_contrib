@@ -769,7 +769,7 @@ int showBoxes(IplImage *img,
 
 #ifdef HAVE_TBB
 
-struct PathOfModel {
+class PathOfModel :public ParallelLoopBody{
     int *componentIndex;
     const CvLSVMFeaturePyramidCaskade *H;
     const CvLSVMFeaturePyramidCaskade *H_PCA;
@@ -816,9 +816,10 @@ public:
     {}
 
     
-    void operator()( const tbb::blocked_range<int>& range ) const {
+    void operator() (const Range& range) const
+    {
         
-        for( int i=range.begin(); i!=range.end(); ++i )
+      for( int i=range.start; i!=range.end; ++i )
         {
           searchObjectThreshold(H, H_PCA, &(filters[componentIndex[i]]), kPartFilters[i],
             b[i], maxXBorder, maxYBorder, scoreThreshold, 
@@ -910,7 +911,7 @@ int searchObjectThresholdSomeComponents(const CvLSVMFeaturePyramidCaskade *H,
       levelsArr,
       scoreThreshold,
       oppPoints);
-    tbb::parallel_for( tbb::blocked_range<int>( 0, kComponents ), POM);
+    cv::parallel_for_( Range( 0, kComponents ), POM);
 #else
     for (i = 0; i < kComponents; i++)
     {
