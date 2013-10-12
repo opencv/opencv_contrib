@@ -10,8 +10,7 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2010-2013, University of Nizhny Novgorod, all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -174,7 +173,9 @@ CVAPI(void) cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detec
 // storage				- memory storage to store the resultant sequence
 //							of the object candidate rectangles
 // overlap_threshold	- threshold for the non-maximum suppression algorithm
-                           = 0.5f [here will be the reference to original paper]
+                           = 0.5f [P. Felzenszwalb, R. Girshick, D. McAllester Cascade
+//						   Object Detection with Deformable Part Models 
+//            IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2010]
 // OUTPUT
 // sequence of detected objects (bounding boxes and confidence levels stored in CvObjectDetection structures)
 */
