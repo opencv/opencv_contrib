@@ -124,6 +124,7 @@ void TrackerMIL::compute_integral( const Mat & img, Mat & ii_img )
 
 bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
 {
+  srand (1);
   Mat intImage;
   compute_integral( image, intImage );
   TrackerSamplerCSC::Params CSCparameters;

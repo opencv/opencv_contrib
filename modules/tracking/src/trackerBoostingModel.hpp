@@ -99,7 +99,6 @@ class TrackerBoostingModel : public TrackerModel
  private:
 
   std::vector<Mat> currentSample;
-  std::vector<std::pair<float, float> > meanSigmaPair;
 
   int mode;
 };

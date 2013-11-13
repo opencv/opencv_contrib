@@ -56,7 +56,7 @@ TrackerBoosting::Params::Params()
 {
   numClassifiers = 100;
   samplerOverlap = 0.99f;
-  samplerSearchFactor = 2;
+  samplerSearchFactor = 1.8;
   iterationInit = 50;
   featureSetNumFeatures = ( numClassifiers * 10 ) + iterationInit;
 }
@@ -108,6 +108,7 @@ void TrackerBoosting::write( cv::FileStorage& fs ) const
 
 bool TrackerBoosting::initImpl( const Mat& image, const Rect& boundingBox )
 {
+  srand (1);
   //sampling
   Mat_<int> intImage;
   Mat_<double> intSqImage;
