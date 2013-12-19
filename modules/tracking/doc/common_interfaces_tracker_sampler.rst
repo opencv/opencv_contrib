@@ -87,6 +87,8 @@ The modes available now:
 
 * ``"CS"`` -- Current State
 
+* ``"PF"`` -- Particle Filtering
+
 Example ``TrackerSamplerAlgorithm::addTrackerSamplerAlgorithm`` : ::
 
     //sample usage:
@@ -164,7 +166,7 @@ Get the name of the specific TrackerSamplerAlgorithm
 Specialized TrackerSamplerAlgorithm
 ===================================
 
-In [AAM]_ table I are described the most known sampling strategies. At moment :ocv:class:`TrackerSamplerCSC` and :ocv:class:`TrackerSamplerCS` are implemented.
+In [AAM]_ table I there are described the most known sampling strategies. At moment :ocv:class:`TrackerSamplerCSC` and :ocv:class:`TrackerSamplerCS` are implemented. Beside these, there is :ocv:class:`TrackerSamplerPF`, sampler based on particle filtering.
 
 TrackerSamplerCSC : TrackerSamplerAlgorithm
 -------------------------------------------
@@ -291,3 +293,55 @@ The modes are:
 * ``"MODE_POSITIVE = 1"`` -- for the positive sampling
 * ``"MODE_NEGATIVE = 2"`` -- for the negative sampling
 * ``"MODE_CLASSIFY = 3"`` -- for the sampling in classification step
+
+TrackerSamplerPF : TrackerSamplerAlgorithm
+-------------------------------------------
+
+This sampler is based on particle filtering. In principle, it can be thought of as performing some sort of optimization (and indeed, this
+tracker uses opencv's ``optim`` module), where tracker seeks to find the rectangle in given frame, which is the most *"similar"* to the initial
+rectangle (the one, given through the constructor). 
+
+The optimization performed is stochastic and somehow resembles genetic algorithms, where on each new ``image`` received (submitted via ``TrackerSamplerPF::sampling()``) we start with the region bounded by ``boundingBox``, then generate several "perturbed" boxes, take the ones most similar to the original. This selection round is repeated several times. At the end, we hope that only the most promising box remaining, and these are combined to produce the subrectangle of ``image``, which is put as a sole element in array ``sample``.
+
+It should be noted, that the definition of "similarity" between two rectangles is based on comparing their histograms. As experiments show, tracker is *not* very succesfull if target is assumed to strongly change its dimensions.
+
+.. ocv:class:: TrackerSamplerPF
+
+TrackerSamplerPF class::
+
+   class CV_EXPORTS_W TrackerSamplerPF : public TrackerSamplerAlgorithm{
+   public:
+     TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters = TrackerSamplerPF::Params());
+     void sampling( const Mat& image, Rect boundingBox, std::vector<Mat>& sample ); //inherited from TrackerSamplerAlgorithmTrackerSamplerAlgorithm
+   };
+
+
+TrackerSamplerPF::Params
+-------------------------
+
+.. ocv:struct:: TrackerSamplerPF::Params
+
+This structure contains all the parameters that can be varied during the course of sampling algorithm. Below is the structure exposed,
+together with its members briefly explained with reference to the above discussion on algorithm's working.
+
+::
+
+   struct CV_EXPORTS Params
+   {
+    Params();
+    int iterationNum; //number of selection rounds
+    int particlesNum; //number of "perturbed" boxes on each round
+    double alpha; //with each new round we exponentially decrease the amount of "perturbing" we allow (like in simulated annealing)
+                  //and this very alpha controls how fast annealing happens, ie. how fast perturbing decreases
+    Mat_<double> std; //initial values for perturbing (1-by-4 array, as each rectangle is given by 4 values -- coordinates of opposite vertices,
+                      //hence we have 4 values to perturb)
+   };
+ 
+TrackerSamplerPF::TrackerSamplerPF
+------------------------------------
+
+Constructor
+
+.. ocv:function:: TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters = TrackerSamplerPF::Params())
+
+    :param chosenRect: Initial rectangle, that is supposed to contain target we'd like to track.
