@@ -33,11 +33,12 @@
  *
  */
 
-#include <opencv2/rgbd/rgbd.hpp>
+#include <opencv2/rgbd.hpp>
 
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/contrib/contrib.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
+#include <opencv2/highgui.hpp>
+#include <opencv2/contrib.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include <dirent.h>
 #include <iostream>
@@ -144,8 +145,8 @@ int main(int argc, char** argv)
         cameraMatrix.at<float>(1,2) = cy;
     }
 
-    Ptr<OdometryFrame> frame_prev = new OdometryFrame(),
-                           frame_curr = new OdometryFrame();
+    Ptr<OdometryFrame> frame_prev = Ptr<OdometryFrame>(new OdometryFrame()),
+                           frame_curr = Ptr<OdometryFrame>(new OdometryFrame());
     Ptr<Odometry> odometry = Algorithm::create<Odometry>("RGBD." + string(argv[3]) + "Odometry");
     if(odometry.empty())
     {
@@ -206,7 +207,7 @@ int main(int argc, char** argv)
 
         {
             Mat gray;
-            cvtColor(image, gray, CV_BGR2GRAY);
+            cvtColor(image, gray, COLOR_BGR2GRAY);
             frame_curr->image = gray;
             frame_curr->depth = depth;
             
