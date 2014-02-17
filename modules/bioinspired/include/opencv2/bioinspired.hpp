@@ -46,5 +46,5 @@
 #include "opencv2/core.hpp"
 #include "opencv2/bioinspired/retina.hpp"
 #include "opencv2/bioinspired/retinafasttonemapping.hpp"
-
+#include "opencv2/bioinspired/transientareassegmentationmodule.hpp"
 #endif
