@@ -38,14 +38,17 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
-#include <opencv2/highgui/highgui.hpp> // OpenCV window I/O
-#include <opencv2/imgproc/imgproc.hpp> // OpenCV image transformations
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/nonfree/nonfree.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui.hpp> // OpenCV window I/O
+#include <opencv2/imgproc.hpp> // OpenCV image transformations
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/highgui/highgui_c.h>
+
+#ifdef COMPARE_FEATURES
+#include <opencv2/nonfree.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/calib3d/calib3d_c.h>
+#endif
 
 #include "opencv2/reg/mapaffine.hpp"
 #include "opencv2/reg/mapshift.hpp"
@@ -64,8 +67,7 @@ using namespace cv;
 using namespace cv::reg;
 using namespace std;
 
-
-void showDifference(const Mat& image1, const Mat& image2, const char* title)
+static void showDifference(const Mat& image1, const Mat& image2, const char* title)
 {
     Mat img1, img2;
     image1.convertTo(img1, CV_32FC3);
@@ -86,7 +88,7 @@ void showDifference(const Mat& image1, const Mat& image2, const char* title)
     imshow(title, imgSh);
 }
 
-void testShift(const Mat& img1)
+static void testShift(const Mat& img1)
 {
     Mat img2;
 
@@ -118,7 +120,7 @@ void testShift(const Mat& img1)
     cvDestroyWindow(DIFF_REGPIX_IM);
 }
 
-void testEuclidean(const Mat& img1)
+static void testEuclidean(const Mat& img1)
 {
     Mat img2;
 
@@ -156,7 +158,7 @@ void testEuclidean(const Mat& img1)
     cvDestroyWindow(DIFF_REGPIX_IM);
 }
 
-void testSimilarity(const Mat& img1)
+static void testSimilarity(const Mat& img1)
 {
     Mat img2;
 
@@ -195,7 +197,7 @@ void testSimilarity(const Mat& img1)
     cvDestroyWindow(DIFF_REGPIX_IM);
 }
 
-void testAffine(const Mat& img1)
+static void testAffine(const Mat& img1)
 {
     Mat img2;
 
@@ -230,7 +232,7 @@ void testAffine(const Mat& img1)
     cvDestroyWindow(DIFF_REGPIX_IM);
 }
 
-void testProjective(const Mat& img1)
+static void testProjective(const Mat& img1)
 {
     Mat img2;
 
@@ -263,11 +265,12 @@ void testProjective(const Mat& img1)
     cvDestroyWindow(DIFF_REGPIX_IM);
 }
 
+#ifdef COMPARE_FEATURES
 //
 // Following an example from
 // http:// ramsrigoutham.com/2012/11/22/panorama-image-stitching-in-opencv/
 //
-void calcHomographyFeature(const Mat& image1, const Mat& image2)
+static void calcHomographyFeature(const Mat& image1, const Mat& image2)
 {
     static const char* difffeat = "Difference feature registered";
 
@@ -349,7 +352,7 @@ void calcHomographyFeature(const Mat& image1, const Mat& image2)
     showDifference(imf1, resf, difffeat);
 }
 
-void calcHomographyPixel(const Mat& img1, const Mat& img2)
+static void calcHomographyPixel(const Mat& img1, const Mat& img2)
 {
     static const char* diffpixel = "Difference pixel registered";
 
@@ -370,7 +373,7 @@ void calcHomographyPixel(const Mat& img1, const Mat& img2)
     showDifference(img1, dest, diffpixel);
 }
 
-void comparePixelVsFeature(const Mat& img1_8b, const Mat& img2_8b)
+static void comparePixelVsFeature(const Mat& img1_8b, const Mat& img2_8b)
 {
     static const char* difforig = "Difference non-registered";
 
@@ -389,7 +392,7 @@ void comparePixelVsFeature(const Mat& img1_8b, const Mat& img2_8b)
 
     waitKey(0);
 }
-
+#endif
 
 int main(void)
 {
@@ -408,6 +411,7 @@ int main(void)
     testAffine(img1);
     testProjective(img1);
 
+#ifdef COMPARE_FEATURES
     Mat imgcmp1 = imread("LR_05.png", CV_LOAD_IMAGE_UNCHANGED);
     if(!imgcmp1.data) {
         cout <<  "Could not open or find file" << endl;
@@ -420,6 +424,7 @@ int main(void)
         return -1;
     }
     comparePixelVsFeature(imgcmp1, imgcmp2);
+#endif
 
     return 0;
 }
