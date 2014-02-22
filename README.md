@@ -29,3 +29,19 @@ use CMake's `BUILD_opencv_*` options. Like in this example:
 ```
 $ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_opencv_legacy=OFF <opencv_source_directory>
 ```
+
+If you prefer using the gui version of cmake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
+
+1. start cmake-gui
+
+2. select the opencv source code folder and the folder where binaries will be built (the 2 upper forms of the interface)
+
+3. press the `configure` button. you will see all the opencv build parameters in the central interface
+
+4. browse the parameters and look for the form called `OPENCV_EXTRA_MODULES_PATH` (use the search form to focus rapidly on it)
+
+5. complete this `OPENCV_EXTRA_MODULES_PATH` by the proper pathname to the `<opencv_contrib>/modules` value using its browse button.
+
+6. press the `configure` button followed by the `generate` button (the first time, you will be asked which makefile style to use)
+
+7. build the `opencv` core with the method you chose (make and make install if you chose Unix makfile at step 6) 
