@@ -8,9 +8,9 @@
  *        Version:  1.0
  *        Created:  09/24/13 20:12:17
  *       Revision:  none
- *       Compiler:  gcc
+ *       Compiler:  g++
  *
- *         Author:  YOUR NAME (), 
+ *         Author:  Arjun Comar 
  *   Organization:  
  *
  * =====================================================================================

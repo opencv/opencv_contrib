@@ -140,7 +140,7 @@ add_custom_command(
     OUTPUT ${haskell_generated_sources}
     COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/src/genhsc.py" "${CMAKE_CURRENT_BINARY_DIR}/OpenCV" ${opencv_hdrs}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/genhsc.py
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/hdr_parser.py
+    DEPENDS ${OPENCV_MODULE_opencv_python_LOCATION}/src2/hdr_parser.py
     DEPENDS ${opencv_hdrs}
 )
 
