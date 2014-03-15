@@ -54,15 +54,6 @@ if(HAVE_opencv_nonfree)
     )
 endif()
 
-set(c_generated_sources
-    "${CMAKE_CURRENT_BINARY_DIR}/include/opencv2/c/opencv_generated.hpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/src/opencv_generated.cpp"
-)
-
-set(c_generated_object
-    "opencv_generated.o"
-)
-
 set(c_wrapper_header
     "${CMAKE_CURRENT_BINARY_DIR}/include/opencv2/c/opencv_generated.hpp"
 )
@@ -71,19 +62,9 @@ set(c_wrapper_source
     "${CMAKE_CURRENT_BINARY_DIR}/src/opencv_generated.cpp"
 )
 
-set(headers
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/c/mat.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/c/point.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/c/rect.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/c/size.hpp"
-)
+file(GLOB headers "include/opencv2/*.hpp" "include/opencv2/${name}/*.hpp" "include/opencv2/${name}/*.h" "include/opencv2/*.h")
 
-set(sources
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/mat.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/rect.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/size.cpp"
-)
+file(GLOB_RECURSE sources "src/*.cpp")
 
 ocv_set_module_sources(HEADERS ${headers} ${c_wrapper_header} SOURCES ${sources} ${c_wrapper_source})
 
@@ -91,7 +72,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/opencv2/c/)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/opencv2/c/ )
 add_custom_command(
-    OUTPUT ${c_generated_sources}
+    OUTPUT ${c_wrapper_source} ${c_wrapper_header}
     COMMAND ${CMAKE_COMMAND} -E copy ${OPENCV_MODULE_opencv_python_LOCATION}/src2/hdr_parser.py ${CMAKE_CURRENT_BINARY_DIR}/src/
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/genc.py" "${CMAKE_CURRENT_BINARY_DIR}/src/"
     COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/src/genc.py" ${CMAKE_CURRENT_BINARY_DIR} ${opencv_hdrs}
