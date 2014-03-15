@@ -135,10 +135,13 @@ foreach(file_i ${haskell_build_files})
     endif()
 endforeach()
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 # generate ffi wrappers
 add_custom_command(
     OUTPUT ${haskell_generated_sources}
-    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/src/genhsc.py" "${CMAKE_CURRENT_BINARY_DIR}/OpenCV" ${opencv_hdrs}
+    COMMAND ${CMAKE_COMMAND} -E copy "${OPENCV_MODULE_opencv_python_LOCATION}/src2/hdr_parser.py" "${CMAKE_CURRENT_BINARY_DIR}/src/"
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/src/genhsc.py" "${CMAKE_CURRENT_BINARY_DIR}/src/"
+    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/src/genhsc.py" "${CMAKE_CURRENT_BINARY_DIR}/OpenCV" ${opencv_hdrs}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/genhsc.py
     DEPENDS ${OPENCV_MODULE_opencv_python_LOCATION}/src2/hdr_parser.py
     DEPENDS ${opencv_hdrs}
