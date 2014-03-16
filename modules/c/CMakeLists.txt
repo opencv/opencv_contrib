@@ -1,7 +1,10 @@
 set(the_description "C Wrappers")
 
+set(module_dependencies opencv_core opencv_contrib opencv_flann opencv_ml opencv_imgproc opencv_calib3d opencv_features2d opencv_video opencv_objdetect opencv_highgui opencv_photo opencv_legacy opencv_stitching opencv_superres opencv_ts opencv_nonfree)
 
-ocv_add_module(c BINDINGS opencv_core opencv_contrib opencv_flann opencv_ml opencv_imgproc opencv_calib3d opencv_features2d opencv_video opencv_objdetect opencv_highgui opencv_photo opencv_legacy opencv_stitching opencv_superres opencv_ts OPTIONAL opencv_nonfree)
+ocv_add_module(c ${module_dependencies})
+
+set(OPENCV_MODULE_TYPE STATIC)
 
 set(opencv_hdrs
     "${OPENCV_MODULE_opencv_core_LOCATION}/include/opencv2/core.hpp"
@@ -90,8 +93,12 @@ add_custom_command(
 ocv_module_include_directories("${CMAKE_CURRENT_BINARY_DIR}/include" 
                                "${CMAKE_SOURCE_DIR}/include"
                                ${opencv_hdr_dirs})
-
 ocv_create_module()
+target_link_libraries(${the_module} ${module_dependencies})
+
+add_library("${the_module}Dyn" SHARED ${OPENCV_MODULE_${the_module}_HEADERS} ${OPENCV_MODULE_${the_module}_SOURCES} "${OPENCV_CONFIG_FILE_INCLUDE_DIR}/cvconfig.h" "${OPENCV_CONFIG_FILE_INCLUDE_DIR}/opencv2/opencv_modules.hpp")
+set_target_properties("${the_module}Dyn" PROPERTIES OUTPUT_NAME ${the_module})
+add_dependencies(${the_module} ${the_module}Dyn)
 
 if(ENABLE_SOLUTION_FOLDERS)
   set_target_properties(${the_module} PROPERTIES FOLDER "bindings")
@@ -100,3 +107,4 @@ endif()
 install(FILES ${c_wrapper_header} DESTINATION include/opencv2/c/)
 install(FILES ${headers} DESTINATION include/opencv2/c/)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/opencv.h DESTINATION include/opencv2/)
+install(TARGETS ${the_module}Dyn LIBRARY DESTINATION lib)
