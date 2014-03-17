@@ -12,39 +12,41 @@ import Foreign
 #num CV_32SC1
 #num CV_16SC1
 #num CV_8SC1
+#num CV_8UC1
 #num CV_64FC3
 #num CV_32FC3
 #num CV_32SC3
 #num CV_16SC3
 #num CV_8SC3
+#num CV_8UC3
 
 #opaque_t MatExpr
 
-#ccall cv_create_Mat            , IO (Ptr <Mat>)
-#ccall cv_create_Mat_typed      , CInt -> CInt -> CInt -> IO (Ptr <Mat>)
-#ccall cv_create_Mat_with_data  , CInt -> CInt -> CInt -> Ptr a -> IO (Ptr <Mat>)
-#ccall cv_Mat_getRow            , Ptr <Mat> -> CInt -> IO (Ptr <Mat>)
-#ccall cv_Mat_getCol            , Ptr <Mat> -> CInt -> IO (Ptr <Mat>)
-#ccall cv_Mat_getRowRange       , Ptr <Mat> -> CInt -> CInt -> IO (Ptr <Mat>)
-#ccall cv_Mat_getColRange       , Ptr <Mat> -> CInt -> CInt -> IO (Ptr <Mat>)
-#ccall cv_Mat_elemSize          , Ptr <Mat> -> IO CSize
-#ccall cv_Mat_elemSize1         , Ptr <Mat> -> IO CSize
-#ccall cv_Mat_type              , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_depth             , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_total             , Ptr <Mat> -> IO CSize
-#ccall cv_Mat_isContinuous      , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_channels          , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_rows              , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_cols              , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_empty             , Ptr <Mat> -> IO CInt
-#ccall cv_Mat_size              , Ptr <Mat> -> IO (Ptr <Size>)
-#ccall cv_Mat_step1             , Ptr <Mat> -> IO CSize
-#ccall cv_Mat_ptr               , Ptr <Mat> -> IO (Ptr CUChar)
-#ccall cv_Mat_ptr_index         , Ptr <Mat> -> CInt -> IO (Ptr CUChar)
+#ccall cv_create_Mat            , Ptr <Mat>
+#ccall cv_create_Mat_typed      , CInt -> CInt -> CInt -> Ptr <Mat>
+#ccall cv_create_Mat_with_data  , CInt -> CInt -> CInt -> Ptr a -> Ptr <Mat>
+#ccall cv_Mat_clone             , Ptr <Mat> -> IO (Ptr <Mat>)
+#ccall cv_Mat_getRow            , Ptr <Mat> -> CInt -> Ptr <Mat>
+#ccall cv_Mat_getCol            , Ptr <Mat> -> CInt -> Ptr <Mat>
+#ccall cv_Mat_getRowRange       , Ptr <Mat> -> CInt -> CInt -> Ptr <Mat>
+#ccall cv_Mat_getColRange       , Ptr <Mat> -> CInt -> CInt -> Ptr <Mat>
+#ccall cv_Mat_elemSize          , Ptr <Mat> -> CSize
+#ccall cv_Mat_elemSize1         , Ptr <Mat> -> CSize
+#ccall cv_Mat_type              , Ptr <Mat> -> CInt
+#ccall cv_Mat_depth             , Ptr <Mat> -> CInt
+#ccall cv_Mat_total             , Ptr <Mat> -> CSize
+#ccall cv_Mat_isContinuous      , Ptr <Mat> -> CInt
+#ccall cv_Mat_channels          , Ptr <Mat> -> CInt
+#ccall cv_Mat_rows              , Ptr <Mat> -> CInt
+#ccall cv_Mat_cols              , Ptr <Mat> -> CInt
+#ccall cv_Mat_empty             , Ptr <Mat> -> CInt
+#ccall cv_Mat_size              , Ptr <Mat> -> Ptr <Size>
+#ccall cv_Mat_step1             , Ptr <Mat> -> CSize
+#ccall cv_Mat_ptr               , Ptr <Mat> -> Ptr CUChar
+#ccall cv_Mat_ptr_index         , Ptr <Mat> -> CInt -> Ptr CUChar
 
 #ccall cv_Mat_assign            , Ptr <Mat> -> Ptr <Mat> -> IO (Ptr <Mat>) 
 #ccall cv_Mat_assignVal         , Ptr <Mat> -> Ptr <Scalar> -> IO (Ptr <Mat>) 
-#ccall cv_Mat_clone             , Ptr <Mat> -> IO (Ptr <Mat>)
 #ccall cv_Mat_copyTo            , Ptr <Mat> -> Ptr <Mat> -> IO ()
 #ccall cv_Mat_copyTo_masked     , Ptr <Mat> -> Ptr <Mat> -> Ptr <Mat> -> IO ()
 #ccall cv_Mat_assignTo          , Ptr <Mat> -> Ptr <Mat> -> IO ()
@@ -55,12 +57,12 @@ import Foreign
 #ccall cv_Mat_reshape           , Ptr <Mat> -> CInt -> IO (Ptr <Mat>)
 #ccall cv_Mat_reshape_rows      , Ptr <Mat> -> CInt -> CInt -> IO (Ptr <Mat>)
 
-#ccall cv_Mat_diag              , Ptr <Mat> -> IO (Ptr <Mat>)
-#ccall cv_Mat_diag_d            , Ptr <Mat> -> CInt -> IO (Ptr <Mat>)
-#ccall cv_create_diagMat        , Ptr <Mat> -> IO (Ptr <Mat>)
-#ccall cv_create_identity       , CInt -> CInt -> CInt -> IO (Ptr <Mat>)
-#ccall cv_create_ones           , CInt -> CInt -> CInt -> IO (Ptr <Mat>)
-#ccall cv_create_zeros          , CInt -> CInt -> CInt -> IO (Ptr <Mat>)
+#ccall cv_Mat_diag              , Ptr <Mat> -> Ptr <Mat>
+#ccall cv_Mat_diag_d            , Ptr <Mat> -> CInt -> Ptr <Mat>
+#ccall cv_create_diagMat        , Ptr <Mat> -> Ptr <Mat>
+#ccall cv_create_identity       , CInt -> CInt -> CInt -> Ptr <Mat>
+#ccall cv_create_ones           , CInt -> CInt -> CInt -> Ptr <Mat>
+#ccall cv_create_zeros          , CInt -> CInt -> CInt -> Ptr <Mat>
 
 #ccall promote                  , Ptr <Mat> -> Ptr <MatExpr>
 #ccall force                    , Ptr <MatExpr> -> IO (Ptr <Mat>)
