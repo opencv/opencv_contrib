@@ -20,6 +20,7 @@
 extern "C" {
 Mat* cv_create_Mat();
 Mat* cv_create_Mat_typed(int rows, int cols, int type);
+Mat* cv_create_Mat_with_data(int rows, int cols, int type, void* data);
 Mat* cv_Mat_assign(Mat* self, Mat* m);
 Mat* cv_Mat_assignVal(Mat* self, Scalar* s);
 Mat* cv_Mat_getRow(Mat* self, int y);

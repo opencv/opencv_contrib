@@ -26,6 +26,10 @@ Mat* cv_create_Mat_typed(int rows, int cols, int type) {
     return new Mat(rows, cols, type);
 }
 
+Mat* cv_create_Mat_with_data(int rows, int cols, int type, void* data) {
+    return new Mat(rows, cols, type, data);
+}
+
 Mat* cv_Mat_assign(Mat* self, Mat* m) {
     *self = *m;
     return self;
