@@ -16,6 +16,20 @@ source-repository head
 
 library
     extra-libraries:        opencv_c
+                          , opencv_core
+                          , opencv_flann
+                          , opencv_imgproc
+                          , opencv_video
+                          , opencv_photo
+                          , opencv_highgui
+                          , opencv_ml
+                          , opencv_features2d
+                          , opencv_calib3d
+                          , opencv_objdetect
+                          , opencv_contrib
+                          , opencv_stitching
+                          , opencv_superres
+                          , opencv_ts
     if os(linux)
         cc-options:         -fpermissive -std=c++11
     else
