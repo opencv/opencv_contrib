@@ -5,8 +5,8 @@ compiler:
 before_script:
   - cd ../
   - git clone https://github.com/Itseez/opencv.git
-  - mkdir ../opencv-build
-  - cd ../opencv-build
+  - mkdir ../build-opencv
+  - cd ../build-opencv
   - cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
 script:
   - make -j5
