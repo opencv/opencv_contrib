@@ -103,7 +103,7 @@ namespace cv{
                 _particles.row(i).copyTo(new_particles.row(num_particles));
             }
         }
-        Mat_<double> maxrow=_particles.row(std::max_element(_logweight.begin(),_logweight.end())-_logweight.begin());
+        Mat_<double> maxrow;//=_particles.row(std::max_element(_logweight.begin(),_logweight.end())-_logweight.begin());
         for(;num_particles<new_particles.rows;num_particles++){
                 maxrow.copyTo(new_particles.row(num_particles));
         }
@@ -208,7 +208,7 @@ namespace cv{
     }
     void PFSolver::normalize(Mat_<double>& row){
         double logsum=0.0;
-        double max=*(std::max_element(row.begin(),row.end()));
+        double max;//=*(std::max_element(row.begin(),row.end()));
         row-=max;
         for(int i=0;i<row.cols;i++){
             logsum+=exp(row(0,i));
