@@ -77,6 +77,8 @@
 #include "precomp.hpp"
 #include "basicretinafilter.hpp"
 
+#include <sstream>
+
 #define _SEGMENTATIONDEBUG //define SEGMENTATIONDEBUG to access more data/methods
 
 namespace cv
