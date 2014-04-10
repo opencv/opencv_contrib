@@ -100,7 +100,6 @@ bool Tracker::update( const Mat& image, Rect2d& boundingBox )
 
 Ptr<Tracker> Tracker::create( const String& trackerType )
 {
-
   return Algorithm::create<Tracker>( "TRACKER." + trackerType );
 }
 

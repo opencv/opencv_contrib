@@ -1035,6 +1035,48 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
   Params params;
   AlgorithmInfo* info() const;
 };
+
+/**
+ \brief Median Flow tracker implementation.
+Implementation of a paper "Forward-Backward Error: Automatic Detection of Tracking Failures" by Z. Kalal, K. Mikolajczyk 
+and Jiri Matas.
+ */
+class CV_EXPORTS_W TrackerMedianFlow : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    /**
+     * \brief Read parameters from file
+     */
+    void read( const FileNode& /*fn*/ );
+
+    /**
+     * \brief Write parameters in a file
+     */
+    void write( FileStorage& /*fs*/ ) const;
+  };
+
+  /**
+   * \brief TrackerBoosting Constructor
+   * \param parameters        TrackerBoosting parameters
+   */
+  TrackerMedianFlow( const TrackerMedianFlow::Params &parameters = TrackerMedianFlow::Params() );
+
+  virtual ~TrackerMedianFlow();
+
+  void read( const FileNode& fn );
+  void write( FileStorage& fs ) const;
+
+ protected:
+
+  bool initImpl( const Mat& image, const Rect& boundingBox );
+  bool updateImpl( const Mat& image, Rect& boundingBox );
+
+  Params params;
+  AlgorithmInfo* info() const;
+};
 } /* namespace cv */
 
 #endif
