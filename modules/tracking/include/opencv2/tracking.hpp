@@ -39,8 +39,8 @@
  //
  //M*/
 
-#ifndef __OPENCV_TRACKING_HPP__
-#define __OPENCV_TRACKING_HPP__
+#ifndef __OPENCV_TRACKING_LENLEN_HPP__
+#define __OPENCV_TRACKING_LENLEN_HPP__
 
 #include "opencv2/tracking/tracker.hpp"
 
@@ -49,4 +49,4 @@ namespace cv
 CV_EXPORTS bool initModule_tracking(void);
 }
 
-#endif //__OPENCV_TRACKING_HPP__
+#endif //__OPENCV_TRACKING_LENLEN

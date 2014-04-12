@@ -40,6 +40,13 @@
  //M*/
 
 #include "precomp.hpp"
+#include "opencv2/video/tracking.hpp"
+#include <algorithm>
+
+//these should become parameters
+#define POINTNUM 20
+
+#define HYPO(a,b) (t1=(a),t2=(b),sqrt(t1*t1+t2*t2))
 
 namespace cv
 {
@@ -78,14 +85,22 @@ class TrackerMedianFlowModel : public TrackerModel
   void modelEstimationImpl( const std::vector<Mat>& responses ){}
   void modelUpdateImpl(){}
 };
-Rect medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox);
+
+class MedianFlowCore{
+ public:
+     static Rect medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,TrackerMedianFlow::Params params);
+ private:
+     static Rect vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect& oldRect);
+     //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median
+     static float getMedian(std::vector<float> values,int size);
+     static float dist(Point2f p1,Point2f p2);
+};
 
 /*
  * Parameters
  */
 TrackerMedianFlow::Params::Params()
 {
-    printf("tesi me %d %s\n",__LINE__,__FILE__);
 }
 
 void TrackerMedianFlow::Params::read( const cv::FileNode& /*fn*/ )
@@ -136,21 +151,85 @@ bool TrackerMedianFlow::updateImpl( const Mat& image, Rect& boundingBox )
 {
     Mat oldImage=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getImage();
     Rect oldBox=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
-    boundingBox=medianFlowImpl(oldImage,image,oldBox);
+    boundingBox=MedianFlowCore::medianFlowImpl(oldImage,image,oldBox,params);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
     return true;
 }
 
-Rect medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox){
-    return oldBox;
-    //make grid TODO: make rectangle colored with same num of rects in every dim
-    //compute opt flow for every point in grid
+Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,TrackerMedianFlow::Params params){
+    //make grid 20x20
+    std::vector<Point2f> pointsToTrackOld,pointsToTrackNew;
+    for(int i=0;i<POINTNUM;i++){
+        for(int j=0;j<POINTNUM;j++){
+                pointsToTrackOld.push_back(Point2f(oldBox.x+(1.0*oldBox.width/POINTNUM)*i,oldBox.y+(1.0*oldBox.height/POINTNUM)*j));
+        }
+    }
+    std::vector<uchar> status;
+    Mat errors;
+    calcOpticalFlowPyrLK(oldImage,newImage,pointsToTrackOld,pointsToTrackNew,status,errors);
+    for(int i=0;i<pointsToTrackOld.size();i++){
+        if(status[i]==0){
+            pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
+            pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
+            status.erase(status.begin()+i);
+            i--;
+        }
+    }
+    for(int i=0;i<pointsToTrackNew.size();i++){
+        printf("(%f,%f)vs(%f,%f)\n",pointsToTrackOld[i].x,pointsToTrackOld[i].y,pointsToTrackNew[i].x,pointsToTrackNew[i].y);
+    }
     //for every point:
     //      compute FB error
     //      compute NCC
     // filter
     // vote
+    CV_Assert(pointsToTrackOld.size()>0);
+    return vote(pointsToTrackOld,pointsToTrackNew,oldBox);
 }
+Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect& oldRect){
+    float t1,t2;
+    Rect newRect;
+    Point newCenter(oldRect.x+oldRect.width/2,oldRect.y+oldRect.height/2);
+    int n=oldPoints.size();
+    std::vector<float> buf(n*(n-1));
 
+    for(int i=0;i<n;i++){  buf[i]=newPoints[i].x-oldPoints[i].x;  }
+    newCenter.x+=getMedian(buf,n);
+    printf("shift_x=%f\n",getMedian(buf,n));
+    for(int i=0;i<n;i++){  buf[i]=newPoints[i].y-oldPoints[i].y;  }
+    newCenter.y+=getMedian(buf,n);
+    printf("shift_y=%f\n",getMedian(buf,n));
+
+    if(oldPoints.size()==1){
+        newRect.x=newCenter.x-oldRect.width/2;
+        newRect.y=newCenter.y-oldRect.height/2;
+        newRect.width=oldRect.width;
+        newRect.height=oldRect.height;
+        return newRect;
+    }
+
+    float nd,od;
+    for(int i=0,ctr=0;i<n;i++){
+        for(int j=i+1;j<n;j++){
+            nd=HYPO(newPoints[i].x-newPoints[j].x,newPoints[i].y-newPoints[j].y);
+            od=HYPO(oldPoints[i].x-oldPoints[j].x,oldPoints[i].y-oldPoints[j].y);
+            buf[ctr]=nd/od;
+            ctr++;
+        }
+    }
+
+    float scale=getMedian(buf,n*(n-1));
+    printf("scale=%f\n",scale);
+    newRect.x=newCenter.x-scale*oldRect.width/2;
+    newRect.y=newCenter.y-scale*oldRect.height/2;
+    newRect.width=scale*oldRect.width;
+    newRect.height=scale*oldRect.height;
+    printf("\n");
+    return newRect;
+}
+float MedianFlowCore::getMedian(std::vector<float> values,int size){
+    std::sort(values.begin(),values.begin()+size);
+    return values[size/2];
+}
 } /* namespace cv */
