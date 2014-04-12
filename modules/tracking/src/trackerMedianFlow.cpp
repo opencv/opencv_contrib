@@ -51,8 +51,11 @@ namespace cv
 class TrackerMedianFlowModel : public TrackerModel
 {
  public:
-  TrackerMedianFlowModel( const Mat& /*image*/, const Rect& boundingBox ){bBox=boundingBox;}
-  Rect getBoundingBox(){return bBox;}
+  TrackerMedianFlowModel(){}
+  Rect getBoundingBox(){return boundingBox_;}
+  void setBoudingBox(Rect boundingBox){boundingBox_=boundingBox;}
+  Mat getImage(){return image_;}
+  void setImage(Mat image){image_=image;}
   bool setTrackerStateEstimator( Ptr<TrackerStateEstimator> /*trackerStateEstimator*/ ){return false;}
   void modelEstimation( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdate(){}
@@ -65,7 +68,8 @@ class TrackerMedianFlowModel : public TrackerModel
  private:
   void clearCurrentConfidenceMap(){}
  protected:
-  Rect bBox;
+  Rect boundingBox_;
+  Mat image_;
   std::vector<ConfidenceMap> confidenceMaps;
   Ptr<TrackerStateEstimator> stateEstimator;
   ConfidenceMap currentConfidenceMap;
@@ -74,6 +78,7 @@ class TrackerMedianFlowModel : public TrackerModel
   void modelEstimationImpl( const std::vector<Mat>& responses ){}
   void modelUpdateImpl(){}
 };
+Rect medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox);
 
 /*
  * Parameters
@@ -121,18 +126,31 @@ void TrackerMedianFlow::write( cv::FileStorage& fs ) const
 
 bool TrackerMedianFlow::initImpl( const Mat& image, const Rect& boundingBox )
 {
-    Mat im=image;
-    //TODO
-    model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel(image,boundingBox));
+    model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel());
+    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
+    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
     return true;
 }
 
 bool TrackerMedianFlow::updateImpl( const Mat& image, Rect& boundingBox )
 {
-    Mat im=image;
-    //TODO
-    boundingBox=((TrackerMedianFlowModel*)(static_cast<TrackerModel*>(model)))->getBoundingBox();
+    Mat oldImage=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getImage();
+    Rect oldBox=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
+    boundingBox=medianFlowImpl(oldImage,image,oldBox);
+    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
+    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
     return true;
+}
+
+Rect medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox){
+    return oldBox;
+    //make grid TODO: make rectangle colored with same num of rects in every dim
+    //compute opt flow for every point in grid
+    //for every point:
+    //      compute FB error
+    //      compute NCC
+    // filter
+    // vote
 }
 
 } /* namespace cv */
