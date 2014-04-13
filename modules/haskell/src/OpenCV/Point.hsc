@@ -11,10 +11,10 @@ import OpenCV.Types
 #opaque_t Point3f
 #opaque_t Point3d
 
-#ccall cv_create_Point , CInt -> CInt -> IO (Ptr <Point>)
-#ccall cv_Point_getX   , Ptr <Point> -> IO CInt
-#ccall cv_Point_getY   , Ptr <Point> -> IO CInt
-#ccall cv_Point_dot    , Ptr <Point> -> Ptr <Point> -> IO CInt
+#ccall cv_create_Point2i , CInt -> CInt -> IO (Ptr <Point>)
+#ccall cv_Point2i_getX   , Ptr <Point> -> IO CInt
+#ccall cv_Point2i_getY   , Ptr <Point> -> IO CInt
+#ccall cv_Point2i_dot    , Ptr <Point> -> Ptr <Point> -> IO CInt
 
 #ccall cv_create_Point2f , CFloat -> CFloat -> IO (Ptr <Point2f>)
 #ccall cv_Point2f_getX   , Ptr <Point2f> -> IO CFloat
