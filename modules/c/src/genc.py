@@ -22,6 +22,8 @@ exceptions = {"distance_t": "flann_distance_t",
 simple_types = ["int", "int64", "bool", "float", "double",
                 "char*", "char", "size_t", "c_string", "void"]
 
+excluded_functions = []
+
 
 class TypeInfo(object):
     _types = list(map(lambda t: re.compile(r"" + t + r"_(\w+)"), _types))
@@ -261,6 +263,9 @@ class CWrapperGenerator(object):
 
         cname = name
         name = re.sub(r"^cv\.", "", name)
+        if name in excluded_functions:
+            return
+
         isconstructor = cname == bareclassname
         ismethod = not isconstructor and bareclassname != ""
 
