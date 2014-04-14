@@ -15,7 +15,8 @@ static bool startSelection = false;
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
     "{@video_name      | | video name        }"
-    "{@start_frame     |1| Start frame       }" };
+    "{@start_frame     |1| Start frame       }" 
+    "{@bounding_frame  |0,0,0,0| Initial bounding frame}"};
 
 static void help()
 {
@@ -23,7 +24,7 @@ static void help()
        "-- pause video [p] and draw a bounding box around the target to start the tracker\n"
        "Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
        "Call:\n"
-       "./tracker <tracker_algorithm> <video_name> <start_frame>\n"
+       "./tracker <tracker_algorithm> <video_name> <start_frame> [<bounding_frame>]\n"
        << endl;
 
   cout << "\n\nHot keys: \n"
@@ -79,6 +80,33 @@ int main( int argc, char** argv )
     return -1;
   }
 
+  int coords[4]={0,0,0,0};
+  bool initFrameWasGivenInCommandLine=false;
+  do{
+      String initBoundingBox=parser.get<String>(3);
+      for(size_t pos=0,ctr=0;ctr<4;ctr++){
+        size_t npos=initBoundingBox.find_first_of(',',pos);
+        if(npos==string::npos && ctr<3){
+           printf("bounding box should be given in format \"x1,y1,x2,y2\",where x's and y's are integer cordinates of opposed corners of bdd box\n");
+           printf("got: %s\n",initBoundingBox.substr(pos,string::npos).c_str());
+           printf("manual selection of bounding box will be employed\n");
+           break;
+        }
+        int num=atoi(initBoundingBox.substr(pos,(ctr==3)?(string::npos):(npos-pos)).c_str());
+        if(num<=0){
+           printf("bounding box should be given in format \"x1,y1,x2,y2\",where x's and y's are integer cordinates of opposed corners of bdd box\n");
+           printf("got: %s\n",initBoundingBox.substr(pos,npos-pos).c_str());
+           printf("manual selection of bounding box will be employed\n");
+           break;
+        }
+        coords[ctr]=num;
+        pos=npos+1;
+      }
+      if(coords[0]>0 && coords[1]>0 && coords[2]>0 && coords[3]>0){
+          initFrameWasGivenInCommandLine=true;
+      }
+  }while(0);
+
   //open the capture
   VideoCapture cap;
   cap.open( video_name );
@@ -109,6 +137,16 @@ int main( int argc, char** argv )
   //get the first frame
   cap >> frame;
   frame.copyTo( image );
+  if(initFrameWasGivenInCommandLine){
+      selectObject=true;
+      paused=false;
+      boundingBox.x = coords[0];
+      boundingBox.y = coords[1];
+      boundingBox.width = std::abs( coords[2] - coords[0] );
+      boundingBox.height = std::abs( coords[3]-coords[1]);
+      printf("bounding box with vertices (%d,%d) and (%d,%d) was given in command line\n",coords[0],coords[1],coords[2],coords[3]);
+      rectangle( image, boundingBox, Scalar( 255, 0, 0 ), 2, 1 );
+  }
   imshow( "Tracking API", image );
 
   bool initialized = false;
