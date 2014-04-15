@@ -22,7 +22,7 @@ exceptions = {"distance_t": "flann_distance_t",
 simple_types = ["int", "int64", "bool", "float", "double",
                 "char*", "char", "size_t", "c_string", "void"]
 
-excluded_functions = []
+excluded_functions = ["cv_randu2","cv_goodFeaturesToTrack2","cv_create_Mat_as_vectort","cv_RotatedRect_size","cv_RotatedRect_center","cv_create_RotatedRect","cv_inRangeS","cv_createTrackbar","cv_setMouseCallback"]
 
 
 class TypeInfo(object):
