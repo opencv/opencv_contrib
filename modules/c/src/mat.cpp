@@ -18,6 +18,7 @@
 #include <opencv2/c/mat.hpp>
 
 extern "C" {
+
 Mat* cv_create_Mat() {
     return new Mat();
 }
@@ -29,6 +30,11 @@ Mat* cv_create_Mat_typed(int rows, int cols, int type) {
 Mat* cv_create_Mat_with_data(int rows, int cols, int type, void* data) {
     return new Mat(rows, cols, type, data);
 }
+
+Mat* cv_create_Mat_with_value(int rows, int cols, int type, Scalar* s) {
+    return new Mat(rows, cols, type, *s);
+}
+
 
 Mat* cv_Mat_assign(Mat* self, Mat* m) {
     *self = *m;
@@ -86,6 +92,10 @@ void cv_Mat_assignTo(Mat* self, Mat* m) {
 
 void cv_Mat_assignTo_t(Mat*self, Mat* m, int t) {
     self->assignTo(*m, t);
+}
+
+void cv_Mat_convertTo(Mat* self,Mat* m, int rtype, double alpha, double beta) {
+    self->convertTo(*m, rtype, alpha, beta);
 }
 
 Mat* cv_Mat_setTo(Mat* self, Scalar* value) {
@@ -150,6 +160,10 @@ int cv_Mat_empty(Mat* self) {
 
 Size* cv_Mat_size(Mat* self) {
     return new Size(self->size());
+}
+
+size_t cv_Mat_get_Step(Mat* self) {
+    return self->step;
 }
 
 size_t cv_Mat_step1(Mat* self) {
