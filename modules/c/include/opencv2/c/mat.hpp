@@ -70,5 +70,8 @@ double cv_Mat_dot(Mat* self, Mat* m);
 Mat* cv_Mat_cross(Mat* self, Mat* m);
 void cv_Mat_locateROI(Mat* self, Size* s, Point* p);
 Mat* cv_Mat_adjustROI(Mat* self, int dtop, int dbottom, int dleft, int dright);
+void cv_delete_Mat(Mat* self);
+void cv_destruct_Mat(Mat* self);
+void cv_delete_MatExpr(MatExpr* self);
+void cv_destruct_MatExpr(MatExpr* self);
 }
-
