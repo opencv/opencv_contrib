@@ -160,7 +160,6 @@ foreach(hdr ${opencv_hdr_dirs})
     list(APPEND includes "--extra-include-dirs=${hdr} ")
 endforeach()
 
-install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR} ${CABAL_EXECUTABLE} install \"--global\" \"--only-dependencies\")")
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR} ${CABAL_EXECUTABLE} install \"--global\" \"--with-gcc=${CMAKE_CXX_COMPILER}\" \"--extra-include-dirs=${CMAKE_BINARY_DIR}/include\" ${includes} \"--extra-lib-dirs=${CMAKE_BINARY_DIR}/lib\" \"--gcc-options=${CMAKE_C_FLAGS}${CMAKE_CXX_FLAGS}\")")
 endif()
 endif()
