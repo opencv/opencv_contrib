@@ -236,4 +236,20 @@ Mat* cv_Mat_adjustROI(Mat* self, int dtop, int dbottom, int dleft, int dright) {
     return new Mat(self->adjustROI(dtop, dbottom, dleft, dright));
 }
 
+void cv_delete_Mat(Mat* self) {
+     delete self;
+}
+
+void cv_destruct_Mat(Mat* self) {
+     self->~Mat();
+}
+
+void cv_delete_MatExpr(MatExpr* self) {
+     delete self;
+}
+
+void cv_destruct_MatExpr(MatExpr* self) {
+     self->~MatExpr();
+}
+
 }
