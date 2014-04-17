@@ -15,7 +15,7 @@ static bool startSelection = false;
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
     "{@video_name      | | video name        }"
-    "{@start_frame     |1| Start frame       }" 
+    "{@start_frame     |0| Start frame       }" 
     "{@bounding_frame  |0,0,0,0| Initial bounding frame}"};
 
 static void help()
@@ -81,7 +81,7 @@ int main( int argc, char** argv )
   }
 
   int coords[4]={0,0,0,0};
-  bool initFrameWasGivenInCommandLine=false;
+  bool initBoxWasGivenInCommandLine=false;
   do{
       String initBoundingBox=parser.get<String>(3);
       for(size_t pos=0,ctr=0;ctr<4;ctr++){
@@ -103,7 +103,7 @@ int main( int argc, char** argv )
         pos=npos+1;
       }
       if(coords[0]>0 && coords[1]>0 && coords[2]>0 && coords[3]>0){
-          initFrameWasGivenInCommandLine=true;
+          initBoxWasGivenInCommandLine=true;
       }
   }while(0);
 
@@ -137,7 +137,7 @@ int main( int argc, char** argv )
   //get the first frame
   cap >> frame;
   frame.copyTo( image );
-  if(initFrameWasGivenInCommandLine){
+  if(initBoxWasGivenInCommandLine){
       selectObject=true;
       paused=false;
       boundingBox.x = coords[0];
@@ -156,14 +156,13 @@ int main( int argc, char** argv )
   {
     if( !paused )
     {
-      cap >> frame;
-
-      if( frame.empty() )
-      {
-        break;
+      if(initialized){
+          cap >> frame;
+          if(frame.empty()){
+            break;
+          }
+          frame.copyTo( image );
       }
-
-      frame.copyTo( image );
 
       if( !initialized && selectObject )
       {
