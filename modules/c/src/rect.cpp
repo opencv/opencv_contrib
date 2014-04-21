@@ -17,6 +17,18 @@ Point* cv_Rect_tl(Rect* self) {
 Point* cv_Rect_br(Rect* self) {
     return new Point(self->br());
 }
+int cv_Rect_getX(Rect* self) {
+    return self->x;
+}
+int cv_Rect_getY(Rect* self) {
+    return self->y;
+}
+int cv_Rect_getWidth(Rect* self) {
+    return self->width;
+}
+int cv_Rect_getHeight(Rect* self) {
+    return self->height;
+}
 Size* size(Rect* self) {
     return new Size(self->size());
 }
