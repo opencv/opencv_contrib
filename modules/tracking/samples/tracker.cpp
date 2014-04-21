@@ -2,6 +2,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 using namespace cv;
@@ -18,6 +19,19 @@ static const char* keys =
     "{@start_frame     |0| Start frame       }" 
     "{@bounding_frame  |0,0,0,0| Initial bounding frame}"};
 
+static void listTrackers(){
+  vector<String> algorithms;
+  Algorithm::getList(algorithms);
+  cout << "\nAvailable tracker algorithms:\n";
+  for (size_t i=0; i < algorithms.size(); i++){
+      const char* algoname=algorithms[i].c_str();
+      char *pos=NULL;
+      if((pos=strstr((char*)algoname,"TRACKER."))!=NULL){
+          printf("%s\n",pos+8);
+      }
+  }
+}
+
 static void help()
 {
   cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
@@ -30,6 +44,7 @@ static void help()
   cout << "\n\nHot keys: \n"
        "\tq - quit the program\n"
        "\tp - pause video\n";
+  listTrackers();
 }
 
 static void onMouse( int event, int x, int y, int, void* )
