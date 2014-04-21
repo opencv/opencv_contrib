@@ -11,6 +11,9 @@ Rect* cv_Rect_assignTo(Rect* self, Rect* r) {
     *self = *r;
     return self;
 }
+Rect* cv_Rect_clone(Rect* self) {
+    return new Rect(self->x, self->y, self->width, self->height);
+}
 Point* cv_Rect_tl(Rect* self) {
     return new Point(self->tl());
 }
