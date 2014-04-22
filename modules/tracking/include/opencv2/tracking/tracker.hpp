@@ -1047,6 +1047,7 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
   struct CV_EXPORTS Params
   {
     Params();
+    int pointsInGrid;
     /**
      * \brief Read parameters from file
      */
