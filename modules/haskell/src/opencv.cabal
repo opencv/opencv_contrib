@@ -41,6 +41,7 @@ library
                           , OpenCV.Funcs
                           , OpenCV.Mat
                           , OpenCV.Point
+                          , OpenCV.Rect
     build-depends:          base >=4.6 && <5
                           , bindings-DSL >= 1.0.20 && < 1.1
                           , Cabal >=1.10

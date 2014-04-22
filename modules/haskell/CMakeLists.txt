@@ -111,6 +111,7 @@ set(haskell_generated_sources
 set(haskell_sources
     "${CMAKE_CURRENT_BINARY_DIR}/OpenCV/Mat.hsc"
     "${CMAKE_CURRENT_BINARY_DIR}/OpenCV/Point.hsc"
+    "${CMAKE_CURRENT_BINARY_DIR}/OpenCV/Rect.hsc"
 )
 
 set(haskell_build_files
