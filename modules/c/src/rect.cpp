@@ -32,7 +32,7 @@ int cv_Rect_getWidth(Rect* self) {
 int cv_Rect_getHeight(Rect* self) {
     return self->height;
 }
-Size* size(Rect* self) {
+Size* cv_Rect_size(Rect* self) {
     return new Size(self->size());
 }
 int cv_Rect_contains(Rect* self, Point* pt) {

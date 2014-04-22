@@ -13,7 +13,7 @@ int cv_Rect_getX(Rect* self);
 int cv_Rect_getY(Rect* self);
 int cv_Rect_getWidth(Rect* self);
 int cv_Rect_getHeight(Rect* self);
-Size* size(Rect* self);
+Size* cv_Rect_size(Rect* self);
 int cv_Rect_contains(Rect* self, Point* pt);
 }
 #endif
