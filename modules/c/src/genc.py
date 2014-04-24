@@ -22,7 +22,15 @@ exceptions = {"distance_t": "flann_distance_t",
 simple_types = ["int", "int64", "bool", "float", "double",
                 "char*", "char", "size_t", "c_string", "void"]
 
-excluded_functions = ["cv_randu2","cv_goodFeaturesToTrack2","cv_create_Mat_as_vectort","cv_RotatedRect_size","cv_RotatedRect_center","cv_create_RotatedRect","cv_inRangeS","cv_createTrackbar","cv_setMouseCallback"]
+excluded_functions = ["cv_randu2",
+                      "cv_goodFeaturesToTrack2",
+                      "cv_create_Mat_as_vectort",
+                      "cv_RotatedRect_size",
+                      "cv_RotatedRect_center",
+                      "cv_create_RotatedRect",
+                      "cv_inRangeS",
+                      "cv_createTrackbar",
+                      "cv_setMouseCallback"]
 
 
 class TypeInfo(object):
@@ -332,6 +340,7 @@ class CWrapperGenerator(object):
         self.header.write("#define __OPENCV_GENERATED_HPP\n")
         self.header.write("#include <opencv2/opencv.hpp>\n")
         self.header.write("#include <opencv2/nonfree.hpp>\n")
+        self.header.write("#include <opencv2/c/disablesmartptr.hpp>\n")
         self.header.write("#include <vector>\n")
         self.header.write("using namespace cv;\n")
         self.header.write("using namespace std;\n")
