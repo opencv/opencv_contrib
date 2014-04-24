@@ -53,6 +53,10 @@ namespace cv
 /*
  *  TrackerMedianFlow
  */
+/*
+ * TODO:
+ * real videos
+ */
 
 class TrackerMedianFlowModel : public TrackerModel
 {
@@ -137,26 +141,6 @@ void TrackerMedianFlow::write( cv::FileStorage& fs ) const
 }
 
 bool TrackerMedianFlow::initImpl( const Mat& image, const Rect& boundingBox ){
-    /*for(int s=140, i=s;i<s+60;i++){for(int sj=280, j=sj;j<sj+10;j++){
-        printf("(%d,%d) pixel (%d,%d,%d)\n",i,j,image.at<Vec3b>(j,i).val[0],image.at<Vec3b>(j,i).val[1],image.at<Vec3b>(j,i).val[2]);
-    }}*/
-    /*int i=165,j=284;
-    printf("\n");
-    printf("(%d,%d) pixel (%d,%d,%d)\n",i,j,image.at<Vec3b>(j,i).val[0],image.at<Vec3b>(j,i).val[1],image.at<Vec3b>(j,i).val[2]);*/
-
-    /*Mat oldImage_gray;
-    cvtColor( image, oldImage_gray, CV_BGR2GRAY );
-    std::vector<Point2f> features;
-    TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
-    Size subPixWinSize(10,10);
-    goodFeaturesToTrack(oldImage_gray, features, 500, 0.01, 10, Mat(), 3, 0, 0.04);
-    cornerSubPix(oldImage_gray,features, subPixWinSize, Size(-1,-1), termcrit);
-    for(int i=0;i<features.size();i++){
-        printf("fea #%d -- (%d,%d)\n",i,(int)features[i].x,(int)features[i].y);
-    }
-    printf("%dx%d\n",oldImage_gray.cols,oldImage_gray.rows);
-    exit(0);*/
-
     model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel());
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
@@ -204,7 +188,7 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
     cvtColor( oldImage, oldImage_gray, CV_BGR2GRAY );
     cvtColor( newImage, newImage_gray, CV_BGR2GRAY );
 
-    if(false){
+    if(true){
         for(int i=0;i<params.pointsInGrid;i++){
             for(int j=0;j<params.pointsInGrid;j++){
                     pointsToTrackOld.push_back(Point2f(oldBox.x+(1.0*oldBox.width/params.pointsInGrid)*i,
@@ -307,8 +291,8 @@ Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vecto
     std::vector<float> buf(n*(n-1));
 
     if(oldPoints.size()==1){
-        newRect.x=newCenter.x-oldRect.width/2;
-        newRect.y=newCenter.y-oldRect.height/2;
+        newRect.x=oldRect.x+newPoints[0].x-oldPoints[0].x;
+        newRect.y=oldRect.y+newPoints[0].y-oldPoints[0].y;
         newRect.width=oldRect.width;
         newRect.height=oldRect.height;
         return newRect;
@@ -325,6 +309,10 @@ Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vecto
     for(int i=0;i<n;i++){  buf[i]=newPoints[i].x-oldPoints[i].x;  }
     newCenter.x+=getMedian(buf,n);
     printf("shift_x=%f\n",getMedian(buf,n));
+    if(false && getMedian(buf,n)<15){
+        printf("STOP!");
+        exit(0);
+    }
     for(int i=0;i<n;i++){  buf[i]=newPoints[i].y-oldPoints[i].y;  }
     newCenter.y+=getMedian(buf,n);
     printf("shift_y=%f\n",getMedian(buf,n));
