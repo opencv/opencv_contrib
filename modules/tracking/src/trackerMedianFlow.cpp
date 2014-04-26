@@ -43,6 +43,9 @@
 #include "opencv2/video/tracking.hpp"
 #include <algorithm>
 #include <limits.h>
+//debug headers start
+#include "opencv2/highgui.hpp"
+//debug headers end
 
 #define HYPO(a,b) (t1=(a),t2=(b),sqrt(t1*t1+t2*t2))
 #define SAME(a,b) (norm((a)-(b))==0)
@@ -56,6 +59,10 @@ namespace cv
 /*
  * TODO:
  * real videos
+ *
+ * final version:
+ *      remove opencv_highgui from CMakeLists.txt
+ *      remove all debug headers in this file (see above)
  */
 
 class TrackerMedianFlowModel : public TrackerModel
@@ -97,6 +104,7 @@ class MedianFlowCore{
      static float dist(Point2f p1,Point2f p2);
      static std::string type2str(int type);
      static void computeStatistics(std::vector<float>& data,int size=-1);
+     static void displayPoint(Mat& image, Point2f pt,String title);
 };
 
 /*
@@ -188,7 +196,7 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
     cvtColor( oldImage, oldImage_gray, CV_BGR2GRAY );
     cvtColor( newImage, newImage_gray, CV_BGR2GRAY );
 
-    if(true){
+    if(false){
         for(int i=0;i<params.pointsInGrid;i++){
             for(int j=0;j<params.pointsInGrid;j++){
                     pointsToTrackOld.push_back(Point2f(oldBox.x+(1.0*oldBox.width/params.pointsInGrid)*i,
@@ -254,30 +262,13 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
                 i--;
             }
         }
-        //      compute FB error
-        std::vector<float> FBerror(pointsToTrackOld.size());
-        std::vector<Point2f> pointsToTrackReprojection;
-        calcOpticalFlowPyrLK(newImage_gray,oldImage_gray,pointsToTrackNew,pointsToTrackReprojection,status,errors);
-        for(int i=0;i<pointsToTrackOld.size();i++){
-            if(status[i]==0){
-                FBerror[i]=FLT_MAX;
-            }else{
-                FBerror[i]=HYPO(pointsToTrackOld[i].x-pointsToTrackReprojection[i].x,pointsToTrackOld[i].y-pointsToTrackReprojection[i].y);
-            }
-        }
-        float FBerrorMedian=getMedian(FBerror);
-
-        // filter
-        for(int i=0;i<pointsToTrackOld.size();i++){
-            if(FBerror[i]>FBerrorMedian){
-                pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
-                pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
-                status.erase(status.begin()+i);
-                FBerror.erase(FBerror.begin()+i);
-                i--;
-            }
-        }
     }
+
+    //FIXME: debug block
+    displayPoint(oldImage_gray,pointsToTrackOld[0],"make me sway");
+    displayPoint(newImage_gray,pointsToTrackNew[0],"sway me more");
+    waitKey(0);
+    exit(0);
 
     // vote
     CV_Assert(pointsToTrackOld.size()>0);
@@ -370,5 +361,23 @@ void MedianFlowCore::computeStatistics(std::vector<float>& data,int size){
     for(int i=0;i<binnum;i++){
         printf("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]);
     }
+}
+void MedianFlowCore::displayPoint(Mat& image, Point2f pt,String title){
+    printf("point to draw: (%f,%f)\n",pt.x,pt.y);
+    const int dim=10;
+    CV_Assert(dim%2==0);
+    Point cutPoint(pt.x-dim/2,pt.y-dim/2);
+    Rect cutFrame;
+    cutFrame.x=cutPoint.x; cutFrame.y=cutPoint.y;
+    pt.x-=cutPoint.x; pt.y-=cutPoint.y;
+    cutFrame.width=cutFrame.height=dim;
+
+    Mat res;
+    const int scale=30;
+    resize(image(cutFrame),res,Size(dim*scale,dim*scale));
+    pt.x*=scale; pt.y*=scale;
+    circle(res,pt,3,150,-1);
+    
+    imshow(title,res);
 }
 } /* namespace cv */
