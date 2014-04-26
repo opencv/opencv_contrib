@@ -47,7 +47,6 @@
 #include "opencv2/highgui.hpp"
 //debug headers end
 
-#define HYPO(a,b) (t1=(a),t2=(b),sqrt(t1*t1+t2*t2))
 #define SAME(a,b) (norm((a)-(b))==0)
 
 namespace cv
@@ -105,6 +104,7 @@ class MedianFlowCore{
      static std::string type2str(int type);
      static void computeStatistics(std::vector<float>& data,int size=-1);
      static void displayPoint(Mat& image, Point2f pt,String title);
+     inline static float l2distance(Point2f p1,Point2f p2);
 };
 
 /*
@@ -225,7 +225,7 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
             if(status[i]==0){
                 FBerror[i]=FLT_MAX;
             }else{
-                FBerror[i]=HYPO(pointsToTrackOld[i].x-pointsToTrackReprojection[i].x,pointsToTrackOld[i].y-pointsToTrackReprojection[i].y);
+                FBerror[i]=l2distance(pointsToTrackOld[i],pointsToTrackReprojection[i]);
             }
         }
         float FBerrorMedian=getMedian(FBerror);
@@ -248,31 +248,43 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
         TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
         Size subPixWinSize(10,10);
         goodFeaturesToTrack(oldImage_gray, pointsToTrackOld, 500, 0.01, 10, Mat(), 3, 0, 0.04);
-        cornerSubPix(oldImage_gray,pointsToTrackOld, subPixWinSize, Size(-1,-1), termcrit);
-        std::vector<uchar> status(pointsToTrackOld.size());
-        std::vector<float> errors(pointsToTrackOld.size());
+        cornerSubPix(oldImage_gray,pointsToTrackOld, Size(10,10), Size(-1,-1), termcrit);
         printf("\t%d feature points\n",pointsToTrackOld.size());
-        calcOpticalFlowPyrLK(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors);
         for(int i=0;i<pointsToTrackOld.size();i++){
-            if(status[i]==0 || pointsToTrackOld[i].x<oldBox.x || pointsToTrackOld[i].x>(oldBox.x+oldBox.width)||
+            if(pointsToTrackOld[i].x<oldBox.x || pointsToTrackOld[i].x>(oldBox.x+oldBox.width)||
                     pointsToTrackOld[i].y<oldBox.y || pointsToTrackOld[i].y>(oldBox.y+oldBox.height)){
                 pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
-                pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
-                status.erase(status.begin()+i);
                 i--;
             }
         }
+        std::vector<uchar> status(pointsToTrackOld.size());
+        std::vector<float> errors(pointsToTrackOld.size());
+        printf("\t%d after filtering \n",pointsToTrackOld.size());
+        calcOpticalFlowPyrLK(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(11,11),
+                                 3);
     }
 
     //FIXME: debug block
-    displayPoint(oldImage_gray,pointsToTrackOld[0],"make me sway");
-    displayPoint(newImage_gray,pointsToTrackNew[0],"sway me more");
-    waitKey(0);
-    exit(0);
+    if(!true){
+        displayPoint(oldImage_gray,pointsToTrackOld[pointsToTrackNew.size()-1],"make me sway");
+        displayPoint(newImage_gray,pointsToTrackNew[pointsToTrackNew.size()-1],"sway me more");
+        waitKey(0);
+        //exit(0);
+    }
 
     // vote
     CV_Assert(pointsToTrackOld.size()>0);
-    return vote(pointsToTrackOld,pointsToTrackNew,oldBox);
+    Rect newBddBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox);
+
+    if(!true){
+        Mat imago;
+        newImage_gray.copyTo(imago);
+        rectangle( imago, newBddBox, 150, 2, 1 );
+        imshow("make me sway",imago);
+        waitKey(0);
+    }
+
+    return newBddBox;
 }
 Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect& oldRect){
     float t1,t2;
@@ -319,14 +331,16 @@ Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vecto
     float nd,od;
     for(int i=0,ctr=0;i<n;i++){
         for(int j=i+1;j<n;j++){
-            nd=HYPO(newPoints[i].x-newPoints[j].x,newPoints[i].y-newPoints[j].y);
-            od=HYPO(oldPoints[i].x-oldPoints[j].x,oldPoints[i].y-oldPoints[j].y);
+            nd=l2distance(newPoints[i],newPoints[j]);
+            od=l2distance(oldPoints[i],oldPoints[j]);
             buf[ctr]=nd/od;
             ctr++;
         }
     }
 
     float scale=getMedian(buf,n*(n-1));
+    //FIXME
+    scale=1.0;
     printf("scale=%f\n",scale);
     printf("oldRect.width=%d\n oldRect.height=%d\n newCenter.x=%d\n newCenter.y=%d\n", oldRect.width,oldRect.height,newCenter.x,newCenter.y);
     newRect.x=newCenter.x-scale*oldRect.width/2;
@@ -363,6 +377,7 @@ void MedianFlowCore::computeStatistics(std::vector<float>& data,int size){
     }
 }
 void MedianFlowCore::displayPoint(Mat& image, Point2f pt,String title){
+    static int i=0;
     printf("point to draw: (%f,%f)\n",pt.x,pt.y);
     const int dim=10;
     CV_Assert(dim%2==0);
@@ -376,8 +391,12 @@ void MedianFlowCore::displayPoint(Mat& image, Point2f pt,String title){
     const int scale=30;
     resize(image(cutFrame),res,Size(dim*scale,dim*scale));
     pt.x*=scale; pt.y*=scale;
-    circle(res,pt,3,150,-1);
+    circle(res,pt,3,std::max(0,200-(i++)),-1);
     
     imshow(title,res);
+}
+float MedianFlowCore::l2distance(Point2f p1,Point2f p2){
+    float dx=p1.x-p2.x, dy=p1.y-p2.y;
+    return sqrt(dx*dx+dy*dy);
 }
 } /* namespace cv */
