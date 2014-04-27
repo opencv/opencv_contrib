@@ -189,14 +189,15 @@ std::string MedianFlowCore::type2str(int type) {
 }
 Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,TrackerMedianFlow::Params params){
     float t1,t2;
-    //make grid 20x20
     std::vector<Point2f> pointsToTrackOld,pointsToTrackNew;
 
     Mat oldImage_gray,newImage_gray;
-    cvtColor( oldImage, oldImage_gray, CV_BGR2GRAY );
-    cvtColor( newImage, newImage_gray, CV_BGR2GRAY );
+    cvtColor( oldImage, oldImage_gray, COLOR_BGR2GRAY );
+    cvtColor( newImage, newImage_gray, COLOR_BGR2GRAY );
 
-    if(false){
+    TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
+
+    if(true){
         for(int i=0;i<params.pointsInGrid;i++){
             for(int j=0;j<params.pointsInGrid;j++){
                     pointsToTrackOld.push_back(Point2f(oldBox.x+(1.0*oldBox.width/params.pointsInGrid)*i,
@@ -206,7 +207,7 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
 
         std::vector<uchar> status(pointsToTrackOld.size());
         std::vector<float> errors(pointsToTrackOld.size());
-        calcOpticalFlowPyrLK(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors);
+        calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(3,3),3,termcrit,0,0.001);
         for(int i=0;i<pointsToTrackOld.size();i++){
             if(status[i]==0){
                 pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
@@ -245,11 +246,11 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
         }
         printf("\t%d after LK backward\n",pointsToTrackOld.size());
     }else{
-        TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
-        Size subPixWinSize(10,10);
+        Size subPixWinSize(10,10),winSize(31,31);
         goodFeaturesToTrack(oldImage_gray, pointsToTrackOld, 500, 0.01, 10, Mat(), 3, 0, 0.04);
-        cornerSubPix(oldImage_gray,pointsToTrackOld, Size(10,10), Size(-1,-1), termcrit);
+        cornerSubPix(oldImage_gray, pointsToTrackOld, subPixWinSize, Size(-1,-1), termcrit);
         printf("\t%d feature points\n",pointsToTrackOld.size());
+
         for(int i=0;i<pointsToTrackOld.size();i++){
             if(pointsToTrackOld[i].x<oldBox.x || pointsToTrackOld[i].x>(oldBox.x+oldBox.width)||
                     pointsToTrackOld[i].y<oldBox.y || pointsToTrackOld[i].y>(oldBox.y+oldBox.height)){
@@ -257,11 +258,19 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
                 i--;
             }
         }
+        printf("\t%d after filtering \n",pointsToTrackOld.size());
+        if(pointsToTrackOld.size()<4){
+            //exit(0);
+        }
+
         std::vector<uchar> status(pointsToTrackOld.size());
         std::vector<float> errors(pointsToTrackOld.size());
-        printf("\t%d after filtering \n",pointsToTrackOld.size());
-        calcOpticalFlowPyrLK(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(11,11),
-                                 3);
+        calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(3,3),3,termcrit,0,0.001);
+            for(int i=0;i<pointsToTrackOld.size();i++){
+                printf("(%f,%f) --> (%f,%f)\n",
+                    pointsToTrackOld[i].x,pointsToTrackOld[i].y,pointsToTrackNew[i].x,pointsToTrackNew[i].y);
+            }
+            printf("\n");
     }
 
     //FIXME: debug block
@@ -287,11 +296,26 @@ Rect MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect oldBox,Tracke
     return newBddBox;
 }
 Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect& oldRect){
-    float t1,t2;
     Rect newRect;
     Point newCenter(oldRect.x+oldRect.width/2,oldRect.y+oldRect.height/2);
     int n=oldPoints.size();
     std::vector<float> buf(n*(n-1));
+
+        printf("line %d with %d\n",__LINE__,n);fflush(stdout);
+    if(!true){//FIXME: debug block
+        printf("line %d with %d\n",__LINE__,n);fflush(stdout);
+        for(int i=0;i<n;i++){
+            buf[i]=newPoints[i].x;
+        }
+        newRect.x=*std::min_element(buf.begin(),buf.begin()+n);
+        newRect.width=(*std::max_element(buf.begin(),buf.begin()+n))-newRect.x;
+        for(int i=0;i<n;i++){
+            buf[i]=newPoints[i].y;
+        }
+        newRect.y=*std::min_element(buf.begin(),buf.begin()+n);
+        newRect.height=(*std::max_element(buf.begin(),buf.begin()+n))-newRect.y;
+        return newRect;
+    }
 
     if(oldPoints.size()==1){
         newRect.x=oldRect.x+newPoints[0].x-oldPoints[0].x;
@@ -339,8 +363,6 @@ Rect MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vecto
     }
 
     float scale=getMedian(buf,n*(n-1));
-    //FIXME
-    scale=1.0;
     printf("scale=%f\n",scale);
     printf("oldRect.width=%d\n oldRect.height=%d\n newCenter.x=%d\n newCenter.y=%d\n", oldRect.width,oldRect.height,newCenter.x,newCenter.y);
     newRect.x=newCenter.x-scale*oldRect.width/2;

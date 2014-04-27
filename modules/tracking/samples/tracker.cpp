@@ -99,8 +99,8 @@ int main( int argc, char** argv )
   bool initBoxWasGivenInCommandLine=false;
   do{
       String initBoundingBox=parser.get<String>(3);
-      for(size_t pos=0,ctr=0;ctr<4;ctr++){
-        size_t npos=initBoundingBox.find_first_of(',',pos);
+      for(size_t npos=0,pos=0,ctr=0;ctr<4;ctr++){
+        npos=initBoundingBox.find_first_of(',',pos);
         if(npos==string::npos && ctr<3){
            printf("bounding box should be given in format \"x1,y1,x2,y2\",where x's and y's are integer cordinates of opposed corners of bdd box\n");
            printf("got: %s\n",initBoundingBox.substr(pos,string::npos).c_str());
