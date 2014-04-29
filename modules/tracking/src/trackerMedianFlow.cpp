@@ -41,6 +41,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/video/tracking.hpp"
+#include "opencv2/imgproc.hpp"
 #include <algorithm>
 #include <limits.h>
 //debug headers start
@@ -79,6 +80,8 @@ class MedianFlowCore{
      void computeStatistics(std::vector<float>& data,int size=-1);
      void displayPoint(Mat& image, Point2f pt,String title);
      void check_FB(const Mat& oldImage,const Mat& newImage,
+             const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
+     void check_NCC(const Mat& oldImage,const Mat& newImage,
              const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
      inline double l2distance(Point2f p1,Point2f p2);
 
@@ -220,8 +223,7 @@ Rect2d MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox){
 
     std::vector<bool> filter_status;
     check_FB(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
-
-    //      compute NCC -- TODO
+    check_NCC(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
 
     // filter
     for(int i=0;i<pointsToTrackOld.size();i++){
@@ -240,8 +242,9 @@ Rect2d MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox){
 
     return newBddBox;
 }
+
 Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect){
-    static int iteration=0;
+    static int iteration=0;//FIXME -- we don't want this static var in final release
     Rect2d newRect;
     Point2d newCenter(oldRect.x+oldRect.width/2.0,oldRect.y+oldRect.height/2.0);
     int n=oldPoints.size();
@@ -255,8 +258,8 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
         return newRect;
     }
 
-    for(int i=0;i<n;i++){  buf[i]=newPoints[i].x-oldPoints[i].x;  }
     double xshift=0,yshift=0;
+    for(int i=0;i<n;i++){  buf[i]=newPoints[i].x-oldPoints[i].x;  }
     xshift=getMedian(buf,n);
     newCenter.x+=xshift;
     for(int i=0;i<n;i++){  buf[i]=newPoints[i].y-oldPoints[i].y;  }
@@ -282,9 +285,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     }
 
     double scale=getMedian(buf);
-    printf("scale=%f\n",scale);
-    printf("%d: %f %f %f %f\n",iteration++,newCenter.x-scale*oldRect.width/2.0,newCenter.y-scale*oldRect.height/2.0,
-        newCenter.x-scale*oldRect.width/2.0+scale*oldRect.width,newCenter.y-scale*oldRect.height/2.0+scale*oldRect.height);
+    printf("iter %d %f %f %f\n",iteration,xshift,yshift,scale);
     newRect.x=newCenter.x-scale*oldRect.width/2.0;
     newRect.y=newCenter.y-scale*oldRect.height/2.0;
     newRect.width=scale*oldRect.width;
@@ -292,9 +293,13 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     if(newRect.x<=0){
         exit(0);
     }
+    printf("rect old [%f %f %f %f]\n",oldRect.x,oldRect.y,oldRect.width,oldRect.height);
+    printf("rect [%f %f %f %f]\n",newRect.x,newRect.y,newRect.width,newRect.height);
 
+    iteration++;
     return newRect;
 }
+
 template<typename T>
 T MedianFlowCore::getMedian(std::vector<T>& values,int size){
     if(size==-1){
@@ -368,5 +373,24 @@ void MedianFlowCore::check_FB(const Mat& oldImage,const Mat& newImage,
     for(int i=0;i<oldPoints.size();i++){
         status[i]=(FBerror[i]<FBerrorMedian);
     }
+}
+void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
+        const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
+
+    std::vector<float> NCC(oldPoints.size(),0.0);
+    Size patch(30,30);
+    Mat p1,p2;
+    Mat_<float> res(1,1);
+
+	for (int i = 0; i < oldPoints.size(); i++) {
+		getRectSubPix( oldImage, patch, oldPoints[i],p1);
+		getRectSubPix( newImage, patch, newPoints[i],p2);
+		matchTemplate( p1,p2, res, CV_TM_CCOEFF );
+		NCC[i] = res.at<float>(0,0);
+	}
+	float median = getMedian(NCC);
+	for(int i = 0; i < oldPoints.size(); i++) {
+        status[i] = status[i] && (NCC[i]>median);
+	}
 }
 } /* namespace cv */
