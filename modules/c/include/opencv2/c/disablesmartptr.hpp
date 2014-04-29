@@ -21,11 +21,5 @@
 
 #include <opencv2/opencv.hpp>
 
-template<T> inline void Ptr<T>::delete_obj() {
-    /*
-     * This function is left intentionally blank. Doing so disables the automatic memory
-     * management feature of the Ptr class. Do not include this function if you expect it
-     * to work. This is useful for binding to languages that expect memory management to
-     * be done by a garbage collector.
-     */
-}
+using namespace cv;
+
