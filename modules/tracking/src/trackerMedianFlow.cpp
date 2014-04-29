@@ -44,9 +44,6 @@
 #include "opencv2/imgproc.hpp"
 #include <algorithm>
 #include <limits.h>
-//debug headers start
-#include "opencv2/highgui.hpp"
-//debug headers end
 
 #define SAME(a,b) (norm((a)-(b))==0)
 
@@ -58,11 +55,19 @@ namespace cv
  */
 /*
  * TODO:
- * real videos
+ * asessment framework
+ * real videos from Zdenek Kalal (from his paper about Median Flow)
+ * (if bad, try floating-point output)
  *
- * final version:
- *      remove opencv_highgui from CMakeLists.txt
- *      remove all debug headers in this file (see above)
+ * add "non-detected" answer in algo
+ * asessment framework
+ * more videos from Zdenek Kalal (from his paper about TLD)
+ *
+ * FIXME:
+ * when patch is cut from image to compute NCC, there can be problem with size
+ * optimize (allocation<-->reallocation)
+ * optimize (remove vector.erase() calls)
+ * bring "out" all the parameters to TrackerMedianFlow::Param
  */
 
 class MedianFlowCore{
