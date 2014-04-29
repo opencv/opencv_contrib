@@ -248,7 +248,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     Rect2d newRect;
     Point2d newCenter(oldRect.x+oldRect.width/2.0,oldRect.y+oldRect.height/2.0);
     int n=oldPoints.size();
-    std::vector<double> buf(n*n,0.0);
+    std::vector<double> buf(std::max(n*(n-1)/2,3),0.0);
 
     if(oldPoints.size()==1){
         newRect.x=oldRect.x+newPoints[0].x-oldPoints[0].x;
@@ -276,7 +276,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
 
     float nd,od;
     for(int i=0,ctr=0;i<n;i++){
-        for(int j=0;j<n;j++){
+        for(int j=0;j<i;j++){
             nd=l2distance(newPoints[i],newPoints[j]);
             od=l2distance(oldPoints[i],oldPoints[j]);
             buf[ctr]=(od==0)?0:(nd/od);
@@ -284,7 +284,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
         }
     }
 
-    double scale=getMedian(buf);
+    double scale=getMedian(buf,n*(n-1)/2);
     printf("iter %d %f %f %f\n",iteration,xshift,yshift,scale);
     newRect.x=newCenter.x-scale*oldRect.width/2.0;
     newRect.y=newCenter.y-scale*oldRect.height/2.0;
