@@ -45,8 +45,6 @@
 #include <algorithm>
 #include <limits.h>
 
-#define SAME(a,b) (norm((a)-(b))==0)
-
 namespace cv
 {
 
@@ -83,7 +81,6 @@ class MedianFlowCore{
      float dist(Point2f p1,Point2f p2);
      std::string type2str(int type);
      void computeStatistics(std::vector<float>& data,int size=-1);
-     void displayPoint(Mat& image, Point2f pt,String title);
      void check_FB(const Mat& oldImage,const Mat& newImage,
              const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
      void check_NCC(const Mat& oldImage,const Mat& newImage,
@@ -332,25 +329,6 @@ void MedianFlowCore::computeStatistics(std::vector<float>& data,int size){
     for(int i=0;i<binnum;i++){
         printf("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]);
     }
-}
-void MedianFlowCore::displayPoint(Mat& image, Point2f pt,String title){
-    static int i=0;
-    printf("point to draw: (%f,%f)\n",pt.x,pt.y);
-    const int dim=10;
-    CV_Assert(dim%2==0);
-    Point cutPoint(pt.x-dim/2,pt.y-dim/2);
-    Rect cutFrame;
-    cutFrame.x=cutPoint.x; cutFrame.y=cutPoint.y;
-    pt.x-=cutPoint.x; pt.y-=cutPoint.y;
-    cutFrame.width=cutFrame.height=dim;
-
-    Mat res;
-    const int scale=30;
-    resize(image(cutFrame),res,Size(dim*scale,dim*scale));
-    pt.x*=scale; pt.y*=scale;
-    circle(res,pt,3,std::max(0,200-(i++)),-1);
-    
-    imshow(title,res);
 }
 double MedianFlowCore::l2distance(Point2f p1,Point2f p2){
     double dx=p1.x-p2.x, dy=p1.y-p2.y;
