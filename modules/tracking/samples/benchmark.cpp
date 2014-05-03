@@ -10,8 +10,6 @@ using namespace std;
 using namespace cv;
 
 /*
- * TODO:
- * TODO: several videos (<-- cmdline args format)
  * TODO: test 2 trackers: MIL and MADIANFLOW
  do normalization ala Kalal's assessment protocol for TLD
  *
@@ -23,12 +21,6 @@ static Rect boundingBox;
 static bool paused;
 static bool selectObject = false;
 static bool startSelection = false;
-
-static const char* keys =
-{ "{@tracker_algorithm | | Tracker algorithm }"
-    "{@video_name      | | video name        }"
-    "{@start_frame     |0| Start frame       }" 
-    "{@bounding_frame  |0,0,0,0| Initial bounding frame}"};
 
 static void listTrackers(){
   vector<String> algorithms;
@@ -133,7 +125,12 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
         }
     }
 }
-static void assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
+typedef struct{
+    char* videoName;
+    vector<int> correctFrames;
+    int len;
+}assessmentRes;
+static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
 
   char buf[200];
   int start_frame=0;
@@ -159,8 +156,8 @@ static void assessment(char* video,char* gt_str, char* algorithms[],char* initBo
 
   std::vector<Rect2i> initBoxes(algnum);
   for(int i=0;i<algnum;i++){
-      printf("%s %s\n",algorithms[i],initBoxes_str[algnum*i]);
-      if(lineToRect(initBoxes_str[i],boundingBox)<0){
+      printf("%s %s\n",algorithms[i],initBoxes_str[CMDLINEMAX*i]);
+      if(lineToRect(initBoxes_str[CMDLINEMAX*i],boundingBox)<0){
           printf("please, specify bounding box for video %s, algorithm %s\n",video,algorithms[i]);
           printf("FYI, initial bounding box in ground truth is %s\n",buf);
           if(gt!=NULL){
@@ -223,6 +220,7 @@ static void assessment(char* video,char* gt_str, char* algorithms[],char* initBo
   imshow( "Tracking API", image );
 
   int frameCounter = 0;
+  std::vector<int> correctFrames(trackers.size(),0);
 
   for ( ;; ){
     if( !paused ){
@@ -244,12 +242,22 @@ static void assessment(char* video,char* gt_str, char* algorithms[],char* initBo
       }
       rectangle( image, boundingBox,palette[0], 2, 1 );
       
+      frameCounter++;
+      bool allTrackersOut=true;
       for(int i=0;i<trackers.size();i++){
-          if( trackers[i]->update( frame, initBoxes[i] ) ){
+          if( correctFrames[i]!=0){
+              continue;
+          }
+          if(trackers[i]->update( frame, initBoxes[i] ) && (overlap(initBoxes[i],boundingBox)>=0.5) ){
+            allTrackersOut=false;
             rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+          }else{
+              correctFrames[i]=frameCounter;
           }
       }
-      frameCounter++;
+      if(allTrackersOut){
+          break;
+      }
       imshow( "Tracking API", image );
 
       char c = (char) waitKey( 2 );
@@ -263,7 +271,11 @@ static void assessment(char* video,char* gt_str, char* algorithms[],char* initBo
       fclose(gt);
   }
   destroyWindow( "Tracking API");
-  //TODO: print statistics
+  assessmentRes res;
+  res.videoName=video;
+  res.correctFrames=correctFrames;
+  res.len=linecount;
+  return res;
 }
 
 int main( int argc, char** argv ){
@@ -276,16 +288,27 @@ int main( int argc, char** argv ){
   for(int i=0;i<vcount;i++){
       printf("%s %s\n",videos[i],gts[i]);
   }
-  printf("algorithms and boxes\n");
+  printf("algorithms and boxes (%d)\n",acount);
   for(int i=0;i<acount;i++){
       printf("%s ",algorithms[i]);
       for(int j=0;j<vcount;j++){
-        printf("%s \n",initBoxes[i][j]);
+        printf("%s ",initBoxes[i][j]);
       }
+      printf("\n");
   }
 
+  std::vector<assessmentRes> results;
   for(int i=0;i<vcount;i++){
-      assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount);
+      results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
+  }
+  printf("\n\n");
+  for(int i=0;i<vcount;i++){
+      printf("%20s",results[i].videoName);
+      printf("%5d",results[i].len);
+      for(int j=0;j<results[i].correctFrames.size();j++){
+          printf("%5d",results[i].correctFrames[j]);
+      }
+      printf("\n");
   }
   return 0;
 }
