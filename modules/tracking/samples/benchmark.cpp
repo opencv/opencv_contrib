@@ -15,7 +15,7 @@ using namespace cv;
  * TODO: test 2 trackers: MIL and MADIANFLOW
  do normalization ala Kalal's assessment protocol for TLD
  *
- * FIXME: normal exit, multiple rectangles, TODOs and FIXMEs
+ * FIXME: normal exit
  */
 
 static Mat image;
@@ -23,7 +23,6 @@ static Rect boundingBox;
 static bool paused;
 static bool selectObject = false;
 static bool startSelection = false;
-FILE* gt=NULL;
 
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
@@ -43,16 +42,11 @@ static void listTrackers(){
       }
   }
 }
-static inline void myexit(int code){
-    printf("terminating...\n");
-    if(gt!=NULL){
-        fclose(gt);
-    }
-    exit(code);
-}
-static Rect2d lineToRect(char* line){
-  Rect2d res;
+static int lineToRect(char* line,Rect2d& res){
   char * ptr;
+  if(line==NULL || line[0]=='\0'){
+      return -1;
+  }
   ptr = strtok (line,", ");
   double nums[4]={0};
   for(int i=0; i<4 && ptr != NULL;i++){
@@ -63,14 +57,14 @@ static Rect2d lineToRect(char* line){
     }
   }
   if(nums[sizeof(nums)/sizeof(nums[0])-1]<=0){
-      printf("we had problems with decoding line %s\n",line);
-      myexit(EXIT_FAILURE);
+      printf("lineToRect had problems with decoding line %s\n",line);
+      return -1;
   }
   res.x=cv::min(nums[0],nums[2]);
   res.y=cv::min(nums[1],nums[3]);
   res.width=cv::abs(nums[0]-nums[2]);
   res.height=cv::abs(nums[1]-nums[3]);
-  return res;
+  return 0;
 }
 static inline double overlap(Rect2d r1,Rect2d r2){
     double a1=r1.area(), a2=r2.area(), a0=(r1&r2).area();
@@ -124,7 +118,7 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
                 break;
             }
         }
-        if(isVideo){//TODO: multiple recs
+        if(isVideo){
             videos[*vc]=argv[i];
             i++;
             gts[*vc]=(i<argc)?argv[i]:NULL;
@@ -139,96 +133,137 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
         }
     }
 }
-static void assessment(char* video,char* gt, char* algorithms[],char* initBoxes[],int algnum){
-  printf("gonna do assessment with %s %s\n");
-  printf("algos to assess\n");
-  for(int i=0;i<algnum;i++){
-      printf("%s %s\n",algorithms[i],initBoxes[algnum*i]);
+static void assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
+
+  char buf[200];
+  int start_frame=0;
+  int linecount=0;
+  vector<Scalar> palette;
+  palette.push_back(Scalar(255,0,0));//BGR
+  palette.push_back(Scalar(0,0,255));
+  palette.push_back(Scalar(0,255,255));
+  Rect2d boundingBox;
+
+  FILE* gt=fopen(gt_str,"r");
+  if(gt==NULL){
+      printf("cannot open the ground truth file %s\n",gt_str);
+      exit(EXIT_FAILURE);
   }
-  /*VideoCapture cap;
-  cap.open( video_name );
+  for(linecount=0;fgets(buf,sizeof(buf),gt)!=NULL;linecount++);
+  if(linecount==0){
+      printf("ground truth file %s has no lines\n",gt_str);
+      exit(EXIT_FAILURE);
+  }
+  fseek(gt,0,SEEK_SET);
+  fgets(buf,sizeof(buf),gt);
+
+  std::vector<Rect2i> initBoxes(algnum);
+  for(int i=0;i<algnum;i++){
+      printf("%s %s\n",algorithms[i],initBoxes_str[algnum*i]);
+      if(lineToRect(initBoxes_str[i],boundingBox)<0){
+          printf("please, specify bounding box for video %s, algorithm %s\n",video,algorithms[i]);
+          printf("FYI, initial bounding box in ground truth is %s\n",buf);
+          if(gt!=NULL){
+              fclose(gt);
+          }
+          exit(EXIT_FAILURE);
+      }else{
+          initBoxes[i].x=boundingBox.x;
+          initBoxes[i].y=boundingBox.y;
+          initBoxes[i].width=boundingBox.width;
+          initBoxes[i].height=boundingBox.height;
+      }
+  }
+
+  VideoCapture cap;
+  cap.open( String(video) );
   cap.set( CAP_PROP_POS_FRAMES, start_frame );
 
-  if( !cap.isOpened() )
-  {
+  if( !cap.isOpened() ){
+    printf("cannot open video %s\n",video);
     help();
-    cout << "***Could not initialize capturing...***\n";
-    cout << "Current parameter's value: \n";
-    parser.printMessage();
-    return -1;
   }
 
   Mat frame;
-  paused = true;
   namedWindow( "Tracking API", 1 );
 
   //instantiates the specific Tracker
-  Ptr<Tracker> tracker = Tracker::create( tracker_algorithm );
-  if( tracker == NULL )
-  {
-    cout << "***Error in the instantiation of the tracker...***\n";
-    return -1;
+  std::vector<Ptr<Tracker> >trackers(algnum);
+  for(int i=0;i<algnum;i++){
+      trackers[i] = Tracker::create( algorithms[i] );
+      if( trackers[i] == NULL ){
+        printf("error in the instantiation of the tracker %s\n",algorithms[i]);
+        if(gt!=NULL){
+            fclose(gt);
+        }
+        exit(EXIT_FAILURE);
+      }
   }
 
   //get the first frame
   cap >> frame;
   frame.copyTo( image );
-  if(initBoxWasGivenInCommandLine){
-      selectObject=true;
-      paused=false;
-      boundingBox.x = coords[0];
-      boundingBox.y = coords[1];
-      boundingBox.width = std::abs( coords[2] - coords[0] );
-      boundingBox.height = std::abs( coords[3]-coords[1]);
-      printf("bounding box with vertices (%d,%d) and (%d,%d) was given in command line\n",coords[0],coords[1],coords[2],coords[3]);
-      rectangle( image, boundingBox, Scalar( 255, 0, 0 ), 2, 1 );
+  if(lineToRect(buf,boundingBox)<0){
+      if(gt!=NULL){
+          fclose(gt);
+      }
+      exit(EXIT_FAILURE);
+  }
+  rectangle( image, boundingBox,palette[0], 2, 1 );
+  for(int i=0;i<trackers.size();i++){
+      rectangle(image,initBoxes[i],palette[i+1], 2, 1 );
+      if( !trackers[i]->init( frame, initBoxes[i] ) ){
+        printf("could not initialize tracker %s with box %s at video %s\n",algorithms[i],initBoxes_str[i],video);
+        if(gt!=NULL){
+            fclose(gt);
+        }
+        exit(EXIT_FAILURE);
+      }
   }
   imshow( "Tracking API", image );
 
-  bool initialized = false;
   int frameCounter = 0;
 
-  for ( ;; )
-  {
-    if( !paused )
-    {
-      if(initialized){
-          cap >> frame;
-          if(frame.empty()){
-            break;
+  for ( ;; ){
+    if( !paused ){
+      cap >> frame;
+      if(frame.empty()){
+        break;
+      }
+      frame.copyTo( image );
+
+      if(fgets(buf,sizeof(buf),gt)==NULL){
+          printf("ground truth is over\n");
+          break;
+      }
+      if(lineToRect(buf,boundingBox)<0){
+          if(gt!=NULL){
+              fclose(gt);
           }
-          frame.copyTo( image );
+          exit(EXIT_FAILURE);
       }
-
-      if( !initialized && selectObject )
-      {
-        //initializes the tracker
-        if( !tracker->init( frame, boundingBox ) )
-        {
-          cout << "***Could not initialize tracker...***\n";
-          return -1;
-        }
-        initialized = true;
+      rectangle( image, boundingBox,palette[0], 2, 1 );
+      
+      for(int i=0;i<trackers.size();i++){
+          if( trackers[i]->update( frame, initBoxes[i] ) ){
+            rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+          }
       }
-      else if( initialized )
-      {
-        //updates the tracker
-        if( tracker->update( frame, boundingBox ) )
-        {
-          rectangle( image, boundingBox, Scalar( 255, 0, 0 ), 2, 1 );
-        }
-      }
-      imshow( "Tracking API", image );
       frameCounter++;
-    }
+      imshow( "Tracking API", image );
 
-    char c = (char) waitKey( 2 );
-    if( c == 'q' )
-      break;
-    if( c == 'p' )
-      paused = !paused;
-
-  }*/
+      char c = (char) waitKey( 2 );
+      if( c == 'q' )
+        break;
+      if( c == 'p' )
+        paused = !paused;
+      }
+  }
+  if(gt!=NULL){
+      fclose(gt);
+  }
+  destroyWindow( "Tracking API");
+  //TODO: print statistics
 }
 
 int main( int argc, char** argv ){
@@ -249,10 +284,8 @@ int main( int argc, char** argv ){
       }
   }
 
-  String tracker_algorithm;
-  String video_name;
-
-  Ptr<Tracker> tracker = Tracker::create( tracker_algorithm );
-
+  for(int i=0;i<vcount;i++){
+      assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount);
+  }
   return 0;
 }
