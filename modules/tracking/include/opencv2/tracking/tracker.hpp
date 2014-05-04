@@ -482,7 +482,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
    * \param boundingBox    The bounding box.
    * \return true the tracker is initialized, false otherwise
    */
-  bool init( const Mat& image, const Rect& boundingBox );
+  bool init( const Mat& image, const Rect2d& boundingBox );
 
   /**
    * \brief Update the tracker at the next frames.
@@ -490,7 +490,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
    * \param boundingBox    The bounding box.
    * \return true the tracker is updated, false otherwise
    */
-  bool update( const Mat& image, Rect& boundingBox );
+  bool update( const Mat& image, Rect2d& boundingBox );
 
   /**
    * \brief Create tracker by tracker type MIL - BOOSTING.
@@ -499,8 +499,8 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
 
  protected:
 
-  virtual bool initImpl( const Mat& image, const Rect& boundingBox ) = 0;
-  virtual bool updateImpl( const Mat& image, Rect& boundingBox ) = 0;
+  virtual bool initImpl( const Mat& image, const Rect2d& boundingBox ) = 0;
+  virtual bool updateImpl( const Mat& image, Rect2d& boundingBox ) = 0;
 
   bool isInit;
 
@@ -981,8 +981,8 @@ class CV_EXPORTS_W TrackerMIL : public Tracker
 
  protected:
 
-  bool initImpl( const Mat& image, const Rect& boundingBox );
-  bool updateImpl( const Mat& image, Rect& boundingBox );
+  bool initImpl( const Mat& image, const Rect2d& boundingBox );
+  bool updateImpl( const Mat& image, Rect2d& boundingBox );
   void compute_integral( const Mat & img, Mat & ii_img );
 
   Params params;
@@ -1029,8 +1029,8 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
 
  protected:
 
-  bool initImpl( const Mat& image, const Rect& boundingBox );
-  bool updateImpl( const Mat& image, Rect& boundingBox );
+  bool initImpl( const Mat& image, const Rect2d& boundingBox );
+  bool updateImpl( const Mat& image, Rect2d& boundingBox );
 
   Params params;
   AlgorithmInfo* info() const;

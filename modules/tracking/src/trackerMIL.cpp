@@ -122,7 +122,7 @@ void TrackerMIL::compute_integral( const Mat & img, Mat & ii_img )
   ii_img = ii_imgs[0];
 }
 
-bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
+bool TrackerMIL::initImpl( const Mat& image, const Rect2d& boundingBox )
 {
   srand (1);
   Mat intImage;
@@ -184,7 +184,7 @@ bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
   return true;
 }
 
-bool TrackerMIL::updateImpl( const Mat& image, Rect& boundingBox )
+bool TrackerMIL::updateImpl( const Mat& image, Rect2d& boundingBox )
 {
   Mat intImage;
   compute_integral( image, intImage );

@@ -52,7 +52,7 @@ Tracker::~Tracker()
 {
 }
 
-bool Tracker::init( const Mat& image, const Rect& boundingBox )
+bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
 {
 
   if( isInit )
@@ -84,7 +84,7 @@ bool Tracker::init( const Mat& image, const Rect& boundingBox )
   return initTracker;
 }
 
-bool Tracker::update( const Mat& image, Rect& boundingBox )
+bool Tracker::update( const Mat& image, Rect2d& boundingBox )
 {
 
   if( !isInit )
