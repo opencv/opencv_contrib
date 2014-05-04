@@ -83,7 +83,7 @@ The modes available now:
 
 * ``"HAAR"`` -- Haar Feature-based
 
-The modes available soon:
+The modes that will be available soon:
 
 * ``"HOG"`` -- Histogram of Oriented Gradients features
 
@@ -170,7 +170,7 @@ The modes available now:
 
 * ``"HAAR"`` -- Haar Feature-based
 
-The modes available soon:
+The modes that will be available soon:
 
 * ``"HOG"`` -- Histogram of Oriented Gradients features
 
