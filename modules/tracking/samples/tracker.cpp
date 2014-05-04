@@ -10,8 +10,6 @@ using namespace cv;
 static Mat image;
 static Rect2d boundingBox;
 static bool paused;
-static bool selectObject = false;
-static bool startSelection = false;
 
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
@@ -47,42 +45,7 @@ static void help()
   listTrackers();
 }
 
-static void onMouse( int event, int x, int y, int, void* )
-{
-  if( !selectObject )
-  {
-    switch ( event )
-    {
-      case EVENT_LBUTTONDOWN:
-        //set origin of the bounding box
-        startSelection = true;
-        boundingBox.x = x;
-        boundingBox.y = y;
-        break;
-      case EVENT_LBUTTONUP:
-        //sei with and height of the bounding box
-        boundingBox.width = std::abs( x - boundingBox.x );
-        boundingBox.height = std::abs( y - boundingBox.y );
-        paused = false;
-        selectObject = true;
-        break;
-      case EVENT_MOUSEMOVE:
-
-        if( startSelection && !selectObject )
-        {
-          //draw the bounding box
-          Mat currentFrame;
-          image.copyTo( currentFrame );
-          rectangle( currentFrame, Point( boundingBox.x, boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
-          imshow( "Tracking API", currentFrame );
-        }
-        break;
-    }
-  }
-}
-
-int main( int argc, char** argv )
-{
+int main( int argc, char** argv ){
   CommandLineParser parser( argc, argv, keys );
 
   String tracker_algorithm = parser.get<String>( 0 );

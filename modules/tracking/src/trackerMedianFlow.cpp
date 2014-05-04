@@ -53,8 +53,6 @@ namespace cv
  */
 /*
  * TODO:
- * asessment framework
- * real videos from Zdenek Kalal (from his paper about Median Flow)
  * (if bad, try floating-point output)
  *
  * add "non-detected" answer in algo
@@ -292,9 +290,9 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     newRect.y=newCenter.y-scale*oldRect.height/2.0;
     newRect.width=scale*oldRect.width;
     newRect.height=scale*oldRect.height;
-    if(newRect.x<=0){
+    /*if(newRect.x<=0){
         exit(0);
-    }
+    }*/
     printf("rect old [%f %f %f %f]\n",oldRect.x,oldRect.y,oldRect.width,oldRect.height);
     printf("rect [%f %f %f %f]\n",newRect.x,newRect.y,newRect.width,newRect.height);
 

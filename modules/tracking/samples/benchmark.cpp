@@ -35,22 +35,18 @@ static void listTrackers(){
   }
 }
 static int lineToRect(char* line,Rect2d& res){
-  char * ptr;
+  char * ptr=line,*pos=ptr;
   if(line==NULL || line[0]=='\0'){
       return -1;
   }
-  ptr = strtok (line,", ");
+
   double nums[4]={0};
-  for(int i=0; i<4 && ptr != NULL;i++){
-    nums[i]=atof(ptr);
-    ptr = strtok (NULL,", ");
-    if(nums[i]<=0){
-        break;
-    }
-  }
-  if(nums[sizeof(nums)/sizeof(nums[0])-1]<=0){
+  for(int i=0; i<4 && (ptr=strpbrk(ptr,"0123456789-"))!= NULL;i++,ptr=pos){
+    nums[i]=strtod(ptr,&pos);
+    if(pos==ptr){
       printf("lineToRect had problems with decoding line %s\n",line);
       return -1;
+    }
   }
   res.x=cv::min(nums[0],nums[2]);
   res.y=cv::min(nums[1],nums[3]);
