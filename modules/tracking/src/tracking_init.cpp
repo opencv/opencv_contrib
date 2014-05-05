@@ -51,12 +51,15 @@ CV_INIT_ALGORITHM(TrackerBoosting, "TRACKER.BOOSTING",);
 
 CV_INIT_ALGORITHM(TrackerMedianFlow, "TRACKER.MEDIANFLOW",);
 
+CV_INIT_ALGORITHM(TrackerTLD, "TRACKER.TLD",);
+
 bool initModule_tracking(void)
 {
   bool all = true;
   all &= !TrackerMIL_info_auto.name().empty();
   all &= !TrackerBoosting_info_auto.name().empty();
   all &= !TrackerMedianFlow_info_auto.name().empty();
+  all &= !TrackerTLD_info_auto.name().empty();
 
   return all;
 }

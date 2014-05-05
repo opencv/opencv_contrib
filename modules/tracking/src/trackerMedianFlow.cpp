@@ -55,15 +55,14 @@ namespace cv
  * TODO:
  * (if bad, try floating-point output)
  *
- * add "non-detected" answer in algo
+ *              add "non-detected" answer in algo
  * asessment framework
- * more videos from Zdenek Kalal (from his paper about TLD)
  *
  * FIXME:
  * when patch is cut from image to compute NCC, there can be problem with size
  * optimize (allocation<-->reallocation)
  * optimize (remove vector.erase() calls)
- * bring "out" all the parameters to TrackerMedianFlow::Param
+ *       bring "out" all the parameters to TrackerMedianFlow::Param
  */
 
 class MedianFlowCore{

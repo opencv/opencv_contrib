@@ -1048,34 +1048,42 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
   {
     Params();
     int pointsInGrid;
-    /**
-     * \brief Read parameters from file
-     */
     void read( const FileNode& /*fn*/ );
-
-    /**
-     * \brief Write parameters in a file
-     */
     void write( FileStorage& /*fs*/ ) const;
   };
 
-  /**
-   * \brief TrackerBoosting Constructor
-   * \param parameters        TrackerBoosting parameters
-   */
   TrackerMedianFlow( const TrackerMedianFlow::Params &parameters = TrackerMedianFlow::Params() );
-
   virtual ~TrackerMedianFlow();
-
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
  protected:
-
   bool initImpl( const Mat& image, const Rect& boundingBox );
   bool updateImpl( const Mat& image, Rect& boundingBox );
-
   Params params;
+  AlgorithmInfo* info() const;
+};
+
+class CV_EXPORTS_W TrackerTLD : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
+
+  TrackerTLD( const TrackerTLD::Params &parameters = TrackerTLD::Params() );
+  virtual ~TrackerTLD();
+  void read( const FileNode& fn );
+  void write( FileStorage& fs ) const;
+
+ protected:
+  bool initImpl( const Mat& image, const Rect& boundingBox );
+  bool updateImpl( const Mat& image, Rect& boundingBox );
+  Params params;
+  void* detector;
   AlgorithmInfo* info() const;
 };
 } /* namespace cv */
