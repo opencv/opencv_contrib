@@ -54,7 +54,6 @@ namespace cv
 /*
  * TODO:
  * (if bad, try floating-point output)
- *
  *              add "non-detected" answer in algo
  * asessment framework
  *
@@ -67,7 +66,7 @@ namespace cv
 
 class MedianFlowCore{
  public:
-     MedianFlowCore(TrackerMedianFlow::Params params):termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.3){this->params=params;}
+     MedianFlowCore(TrackerMedianFlow::Params paramsIn):termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.3){params=paramsIn;}
      Rect2d medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox);
  private:
      Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect);
@@ -96,25 +95,11 @@ class TrackerMedianFlowModel : public TrackerModel{
   void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
   Mat getImage(){return image_;}
   void setImage(const Mat& image){image.copyTo(image_);}
-  void modelUpdate(){}
-  bool runStateEstimator(){return false;}
-  void setLastTargetState( const Ptr<TrackerTargetState>& /*lastTargetState*/ ){}
-  Ptr<TrackerTargetState> getLastTargetState() const{return trajectory.back();}
-  const std::vector<ConfidenceMap>& getConfidenceMaps() const{return confidenceMaps;}
-  const ConfidenceMap& getLastConfidenceMap() const{return currentConfidenceMap;}
-  Ptr<TrackerStateEstimator> getTrackerStateEstimator() const{return stateEstimator;}
- private:
-  void clearCurrentConfidenceMap(){}
  protected:
   MedianFlowCore medianFlow;
   Rect2d boundingBox_;
   Mat image_;
-  std::vector<ConfidenceMap> confidenceMaps;
-  Ptr<TrackerStateEstimator> stateEstimator;
-  ConfidenceMap currentConfidenceMap;
-  Trajectory trajectory;
-  int maxCMLength;
-  void modelEstimationImpl( const std::vector<Mat>& responses ){}
+  void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
 };
 

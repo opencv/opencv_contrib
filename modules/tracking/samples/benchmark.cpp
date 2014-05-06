@@ -17,10 +17,7 @@ using namespace cv;
  */
 
 static Mat image;
-static Rect boundingBox;
 static bool paused;
-static bool selectObject = false;
-static bool startSelection = false;
 
 static void listTrackers(){
   vector<String> algorithms;

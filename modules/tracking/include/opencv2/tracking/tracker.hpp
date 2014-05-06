@@ -1083,7 +1083,6 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
   bool initImpl( const Mat& image, const Rect& boundingBox );
   bool updateImpl( const Mat& image, Rect& boundingBox );
   Params params;
-  void* detector;
   AlgorithmInfo* info() const;
 };
 } /* namespace cv */
