@@ -52,12 +52,12 @@ using namespace cv;
  *   do not erase rectangles and generate offline? (maybe permute to put at beginning)
 */
 /*ask Kalal: 
- *  sampling: how many base classifiers?
- *  scanGrid low overlap
- *  rotated rect in initial model
- *  initial model: why 20
  *  init_model:negative_patches  -- all?
  *  posterior: 0/0
+ *  sampling: how many base classifiers?
+ *  initial model: why 20
+ *  scanGrid low overlap
+ *  rotated rect in initial model
  */
 
 namespace cv
@@ -69,6 +69,7 @@ public:
     void patchVariance(const Mat& img,std::vector<Rect2d>& res,double originalVariance);
     static double variance(const Mat& img);
     static inline double overlap(const Rect2d& r1,const Rect2d& r2);
+    static void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 protected:
     //double NCC(const Mat& img,const RotatedRect& r1,const RotatedRect& r2);// TODO -- 3
     void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
@@ -85,6 +86,8 @@ class TrackerTLDModel : public TrackerModel{
   void modelUpdateImpl(){}
   Rect2d boundingBox_;
   double originalVariance_;
+  std::vector<Mat_<double> > positiveExamples,negativeExamples;
+  RNG rng;
 };
 
 /*
@@ -125,7 +128,6 @@ void TrackerTLD::write( cv::FileStorage& fs ) const
 }
 
 bool TrackerTLD::initImpl(const Mat& image, const Rect& boundingBox ){
-    //TODO: generate initial model -- 1
     Mat image_gray;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox));
@@ -158,7 +160,56 @@ bool TrackerTLD::updateImpl( const Mat& image, Rect& boundingBox ){
 TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox){
     boundingBox_=boundingBox;
     originalVariance_=TLDDetector::variance(image(boundingBox));
+    //TODO: model
+    std::vector<RotatedRect> positiveRects;
+    std::vector<Rect2d> scanGrid,closest(10);
+    TLDDetector detector;
+    detector.generateScanGrid(image.cols,image.rows,boundingBox,scanGrid);
+    detector.getClosestN(scanGrid,boundingBox,10,closest);
+    for(int i=0;i<10;i++){
+        printf("overlap: %f\n",TLDDetector::overlap(closest[i],boundingBox));
+    }
+    exit(0);
+    //shift_x +-1% 
+    //shift_y +-1% 
+    //scale change +-1%
+    //in-plane rotation +-10deg
+
+    //) and add them with Gaussian noise sigma=5
 }
+void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
+    if(n>=scanGrid.size()){
+        res.assign(scanGrid.begin(),scanGrid.end());
+        return;
+    }
+    std::vector<double> overlaps(n,0.0);
+    res.assign(scanGrid.begin(),scanGrid.begin()+n);
+    for(int i=0;i<n;i++){
+        overlaps[i]=overlap(res[i],bBox);
+    }
+    int i, j;
+    double otmp;
+    Rect2d rtmp;
+    for (i = 1; i < n; i++){
+        j = i;
+        while (j > 0 && overlaps[j - 1] > overlaps[j]) {
+            otmp = overlaps[j];overlaps[j] = overlaps[j - 1];overlaps[j - 1] = otmp;
+            rtmp = res[j];res[j] = res[j - 1];res[j - 1] = rtmp;
+            j--;
+        }
+    }
+
+    double o=0.0;
+    for(int i=n;i<scanGrid.size();i++){
+        if((o=overlap(scanGrid[i],bBox))<=overlaps[0]){
+            continue;
+        }
+        int j=0;
+        for(j=0;j<n && overlaps[j]<o;j++);
+
+    }
+}
+
 double TLDDetector::variance(const Mat& img){
     double p=0,p2=0;
     for(int i=0;i<img.rows;i++){
@@ -171,6 +222,7 @@ double TLDDetector::variance(const Mat& img){
     p2/=(img.cols*img.rows);
     return p2-p*p;
 }
+
 void TLDDetector::generateScanGrid(int cols,int rows, Rect2d initBox,std::vector<Rect2d>& res){
     res.clear();
     //scales step: 1.2; hor step: 10% of width; verstep: 10% of height; minsize: 20pix

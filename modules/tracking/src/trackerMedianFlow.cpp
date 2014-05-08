@@ -53,9 +53,11 @@ namespace cv
  */
 /*
  * TODO:
+ * take all parameters out
  * (if bad, try floating-point output)
  *              add "non-detected" answer in algo
- * asessment framework
+ *              asessment framework
+ *
  *
  * FIXME:
  * when patch is cut from image to compute NCC, there can be problem with size
