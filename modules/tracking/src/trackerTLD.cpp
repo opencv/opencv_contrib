@@ -72,7 +72,6 @@ public:
     static void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 protected:
     //double NCC(const Mat& img,const RotatedRect& r1,const RotatedRect& r2);// TODO -- 3
-    void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
 };
 
 class TrackerTLDModel : public TrackerModel{
@@ -82,6 +81,7 @@ class TrackerTLDModel : public TrackerModel{
   void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
   double getOriginalVariance(){return originalVariance_;}
  protected:
+  void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
   Rect2d boundingBox_;
@@ -160,23 +160,33 @@ bool TrackerTLD::updateImpl( const Mat& image, Rect& boundingBox ){
 TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox){
     boundingBox_=boundingBox;
     originalVariance_=TLDDetector::variance(image(boundingBox));
-    //TODO: model
-    std::vector<RotatedRect> positiveRects;
     std::vector<Rect2d> scanGrid,closest(10);
     TLDDetector detector;
     detector.generateScanGrid(image.cols,image.rows,boundingBox,scanGrid);
     detector.getClosestN(scanGrid,boundingBox,10,closest);
-    for(int i=0;i<10;i++){
-        printf("overlap: %f\n",TLDDetector::overlap(closest[i],boundingBox));
-    }
+    positiveExamples.reserve(200);
     exit(0);
-    //shift_x +-1% 
-    //shift_y +-1% 
-    //scale change +-1%
-    //in-plane rotation +-10deg
-
-    //) and add them with Gaussian noise sigma=5
+    Point2f center;
+    Size2f size;
+    for(int i=0;i<closest.size();i++){
+        for(int j=0;j<20;j++){
+            Mat_<double> standardPatch(15,15);
+            center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
+            center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
+            size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
+            size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
+            resample(image,RotatedRect(center,size,rng.uniform((double)-10.0,(double)10.0)),standardPatch);
+            for(int y=0;y<standardPatch.rows;y++){
+                for(int x=0;x<standardPatch.cols;x++){
+                    standardPatch(x,y)+=rng.gaussian(5.0);
+                }
+            }
+            positiveExamples.push_back(standardPatch);
+        }
+    }
+    //std::vector<Mat_<double> > positiveExamples,negativeExamples; -- 0 < overlap < 0.2
 }
+
 void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
     if(n>=scanGrid.size()){
         res.assign(scanGrid.begin(),scanGrid.end());
@@ -206,7 +216,9 @@ void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,st
         }
         int j=0;
         for(j=0;j<n && overlaps[j]<o;j++);
-
+        j--;
+        for(int k=0;k<j;overlaps[k]=overlaps[k+1],res[k]=res[k+1],k++);
+        overlaps[j]=o;res[j]=scanGrid[i];
     }
 }
 
@@ -259,7 +271,26 @@ double TLDDetector::overlap(const Rect2d& r1,const Rect2d& r2){
     return a0/(a1+a2-a0);
 }
 
-void TLDDetector::resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){//TODO -- 2 and measure performance
+void TrackerTLDModel::resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){
+    Point2f vertices[4];
+    r2.points(vertices);
+    float dx1=vertices[1].x-vertices[0].x,
+          dy1=vertices[1].y-vertices[0].y,
+          dx2=vertices[3].x-vertices[0].x,
+          dy2=vertices[3].y-vertices[0].y;
+    for(int i=0;i<samples.rows;i++){
+        for(int j=0;j<samples.cols;j++){
+            float x=vertices[0].x+dx1*j/samples.cols+dx2*i/samples.rows,
+                  y=vertices[0].y+dy1*j/samples.cols+dy2*i/samples.rows;
+            int ix=cvFloor(x),iy=cvFloor(y);
+            float tx=x-ix,ty=y-iy;
+            float a = img.at<uchar>(iy,ix) * (1.0 - tx) + img.at<uchar>(iy,ix+1)* tx;
+            float b = img.at<uchar>(iy+1,ix)* (1.0 - tx) + img.at<uchar>(iy+1,ix+1) * tx;
+            samples(i,j)=a * (1.0 - ty) + b * ty;
+        }
+    }
+    //generate grid
+    //interpolation
 }
 
 } /* namespace cv */
