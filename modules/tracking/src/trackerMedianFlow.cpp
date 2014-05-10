@@ -53,7 +53,7 @@ namespace cv
  */
 /*
  * TODO:
- * take all parameters out
+ * take all parameters out -- TODO
  * (if bad, try floating-point output)
  *              add "non-detected" answer in algo
  *              asessment framework

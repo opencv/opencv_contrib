@@ -44,6 +44,7 @@
 #include "opencv2/imgproc.hpp"
 #include <algorithm>
 #include <limits.h>
+#include "TLD.hpp"
 
 using namespace cv;
 
@@ -62,6 +63,7 @@ using namespace cv;
 
 namespace cv
 {
+
 
 class TLDDetector{
 public:
@@ -82,6 +84,7 @@ class TrackerTLDModel : public TrackerModel{
   double getOriginalVariance(){return originalVariance_;}
  protected:
   void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
+  void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples);
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
   Rect2d boundingBox_;
@@ -131,6 +134,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect& boundingBox ){
     Mat image_gray;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox));
+    exit(0);
     return true;
 }
 
@@ -161,11 +165,20 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     boundingBox_=boundingBox;
     originalVariance_=TLDDetector::variance(image(boundingBox));
     std::vector<Rect2d> scanGrid,closest(10);
+
     TLDDetector detector;
     detector.generateScanGrid(image.cols,image.rows,boundingBox,scanGrid);
     detector.getClosestN(scanGrid,boundingBox,10,closest);
+
+    Mat image_blurred;
+    Mat_<double> blurredPatch(15,15);
+    GaussianBlur(image,image_blurred,Size(3,3),0.0);
+    std::vector<TLDEnsembleClassifier> classifiers;
+    for(int i=0;i<20;i++){
+        classifiers.push_back(TLDEnsembleClassifier(i+1));
+    }
+
     positiveExamples.reserve(200);
-    exit(0);
     Point2f center;
     Size2f size;
     for(int i=0;i<closest.size();i++){
@@ -175,16 +188,32 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
             center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
             size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
             size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
-            resample(image,RotatedRect(center,size,rng.uniform((double)-10.0,(double)10.0)),standardPatch);
+            float angle=rng.uniform((double)-10.0,(double)10.0);
+
+
+            resample(image,RotatedRect(center,size,angle),standardPatch);
             for(int y=0;y<standardPatch.rows;y++){
                 for(int x=0;x<standardPatch.cols;x++){
                     standardPatch(x,y)+=rng.gaussian(5.0);
                 }
             }
             positiveExamples.push_back(standardPatch);
+
+            resample(image_blurred,RotatedRect(center,size,angle),blurredPatch);
+            for(int k=0;k<classifiers.size();k++){
+                classifier[k].integrate(blurredPatch,true);
+            }
         }
     }
-    //std::vector<Mat_<double> > positiveExamples,negativeExamples; -- 0 < overlap < 0.2
+
+    for(int i=0;i<scanGrid.size();i++){
+        if(overlap(boundingBox,scanGrid[i])<0.2){
+            resample(image_blurred,scanGrid[i],blurredPatch);
+            for(int k=0;k<classifiers.size();k++){
+                classifier[k].integrate(blurredPatch,false);
+            }
+        }
+    }
 }
 
 void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
@@ -284,13 +313,15 @@ void TrackerTLDModel::resample(const Mat& img,const RotatedRect& r2,Mat_<double>
                   y=vertices[0].y+dy1*j/samples.cols+dy2*i/samples.rows;
             int ix=cvFloor(x),iy=cvFloor(y);
             float tx=x-ix,ty=y-iy;
-            float a = img.at<uchar>(iy,ix) * (1.0 - tx) + img.at<uchar>(iy,ix+1)* tx;
-            float b = img.at<uchar>(iy+1,ix)* (1.0 - tx) + img.at<uchar>(iy+1,ix+1) * tx;
+            float a = img.at<uchar>(std::max(iy,0),std::max(ix,0)) * (1.0 - tx) + img.at<uchar>(std::max(iy,0),std::max(ix+1,0))* tx;
+            float b = img.at<uchar>(std::max(iy+1,0),std::max(ix,0))* (1.0 - tx) + img.at<uchar>(std::max(iy+1,0),std::max(ix+1,0)) * tx;
             samples(i,j)=a * (1.0 - ty) + b * ty;
         }
     }
-    //generate grid
-    //interpolation
+}
+void TrackerTLDModel::resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples){
+    Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
+    return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
 }
 
 } /* namespace cv */
