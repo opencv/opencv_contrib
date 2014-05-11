@@ -53,7 +53,9 @@ namespace cv
  */
 /*
  * TODO:
- * take all parameters out -- TODO
+ * take all parameters out 
+ * employ NCC
+ * bring more work to constructor -- TODO
  * (if bad, try floating-point output)
  *              add "non-detected" answer in algo
  *              asessment framework

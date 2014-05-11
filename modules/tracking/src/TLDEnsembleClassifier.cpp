@@ -3694,7 +3694,7 @@ void TLDEnsembleClassifier::integrate(const Mat_<double>& patch,bool isPositive)
         neg[position]++;
     }
 }
-unsigned short int TLDEnsembleClassifier::code(const Mat_<double>& patch){
+unsigned short int TLDEnsembleClassifier::code(const Mat_<double>& patch)const{
     unsigned short int position=0;
     char codeS[20];
     for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++,position<<1){
@@ -3709,7 +3709,7 @@ unsigned short int TLDEnsembleClassifier::code(const Mat_<double>& patch){
     //printf("integrate with code %s\n",codeS);
     return position;
 }
-double TLDEnsembleClassifier::posteriorProbability(const Mat_<double>& patch){
+double TLDEnsembleClassifier::posteriorProbability(const Mat_<double>& patch)const{
     unsigned short int position=code(patch);
     double posNum=(double)pos[position], negNum=(double)neg[position];
     if(posNum==0.0 && negNum==0.0){

@@ -46,6 +46,8 @@
 #include <limits.h>
 #include "TLD.hpp"
 
+#define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
+
 using namespace cv;
 
 /*
@@ -53,6 +55,8 @@ using namespace cv;
  *   do not erase rectangles and generate offline? (maybe permute to put at beginning)
 */
 /*ask Kalal: 
+ * ./bin/example_tracking_tracker TLD ../TrackerChallenge/test.avi 0 5,110,25,130 > out.txt
+ *
  *  init_model:negative_patches  -- all?
  *  posterior: 0/0
  *  sampling: how many base classifiers?
@@ -65,15 +69,21 @@ namespace cv
 {
 
 
+static inline double overlap(const Rect2d& r1,const Rect2d& r2);
+static void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
+static void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples);
+static void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
+static double variance(const Mat& img);
+double NCC(Mat_<double> patch1,Mat_<double> patch2);
+
 class TLDDetector{
 public:
-    void generateScanGrid(int cols,int rows, Rect2d initBox,std::vector<Rect2d>& res);
-    void patchVariance(const Mat& img,std::vector<Rect2d>& res,double originalVariance);
-    static double variance(const Mat& img);
-    static inline double overlap(const Rect2d& r1,const Rect2d& r2);
-    static void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
+    TLDDetector(const Mat& img,const TrackerTLD::Params& params):img_(img){}
+    void generateScanGrid(Rect2d initBox,std::vector<Rect2d>& res);
+    void patchVariance(std::vector<Rect2d>& res,double originalVariance);
+    void ensembleClassifier(const Mat& blurredImg,std::vector<TLDEnsembleClassifier>& classifiers,std::vector<Rect2d>& res);
 protected:
-    //double NCC(const Mat& img,const RotatedRect& r1,const RotatedRect& r2);// TODO -- 3
+    const Mat img_;
 };
 
 class TrackerTLDModel : public TrackerModel{
@@ -82,16 +92,31 @@ class TrackerTLDModel : public TrackerModel{
   Rect2d getBoundingBox(){return boundingBox_;}
   void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
   double getOriginalVariance(){return originalVariance_;}
+  std::vector<TLDEnsembleClassifier>* getClassifiers(){return &classifiers;}
+  double Sr(const Mat_<double> patch);
  protected:
-  void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
-  void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples);
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
   Rect2d boundingBox_;
   double originalVariance_;
   std::vector<Mat_<double> > positiveExamples,negativeExamples;
   RNG rng;
+  std::vector<TLDEnsembleClassifier> classifiers;
 };
+
+//debug functions and variables
+Rect2d etalon(14.0,110.0,20.0,20.0);
+static void myassert(const Mat& img){
+    int count=0;
+    for(int i=0;i<img.rows;i++){
+        for(int j=0;j<img.cols;j++){
+            if(img.at<uchar>(i,j)==0){
+                count++;
+            }
+        }
+    }
+    printf("black: %d out of %d (%f)\n",count,img.rows*img.cols,1.0*count/img.rows/img.cols);
+}
 
 /*
  * Parameters
@@ -133,18 +158,21 @@ void TrackerTLD::write( cv::FileStorage& fs ) const
 bool TrackerTLD::initImpl(const Mat& image, const Rect& boundingBox ){
     Mat image_gray;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    myassert(image(boundingBox));
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox));
-    exit(0);
     return true;
 }
 
-bool TrackerTLD::updateImpl( const Mat& image, Rect& boundingBox ){
+bool TrackerTLD::updateImpl(const Mat& image, Rect& boundingBox){
     Mat image_gray;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    Mat image_blurred;
+    GaussianBlur(image,image_blurred,Size(3,3),0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
-    TLDDetector detector;
+    TLDDetector detector(image,params);
     std::vector<Rect2d> scanGrid;
-    detector.generateScanGrid(image.cols,image.rows,tldModel->getBoundingBox(),scanGrid);
+
+    detector.generateScanGrid(tldModel->getBoundingBox(),scanGrid);
     printf("%d frames after generateScanGrid() for %dx%d\n",scanGrid.size(),image.rows,image.cols);
 
     //best overlap around 92%
@@ -155,25 +183,65 @@ bool TrackerTLD::updateImpl( const Mat& image, Rect& boundingBox ){
     }
     printf("best overlap: %f\n",m);*/
 
-    detector.patchVariance(image_gray,scanGrid,tldModel->getOriginalVariance());
+    double o=0.0;
+    int omax=0;
+    myassert(image(etalon));
+    myassert(image_blurred(etalon));
+
+    detector.patchVariance(scanGrid,tldModel->getOriginalVariance());
     printf("%d frames after patchVariance()\n",scanGrid.size());
+    o=0.0;omax=0;
+    for(int i=0;i<scanGrid.size();i++){
+        if(o<overlap(etalon,scanGrid[i])){
+            o=overlap(etalon,scanGrid[i]);
+            omax=i;
+        }
+    }
+    printf("max overlap %f at %d\n",o,omax);
+
+    detector.ensembleClassifier(image_blurred,*(tldModel->getClassifiers()),scanGrid);
+    printf("%d frames after ensembleClassifier()\n",scanGrid.size());
+    o=0.0;omax=0;
+    for(int i=0;i<scanGrid.size();i++){
+        if(o<overlap(etalon,scanGrid[i])){
+            o=overlap(etalon,scanGrid[i]);
+            omax=i;
+        }
+    }
+    printf("max overlap %f at %d\n",o,omax);
+
+    Mat_<double> standardPatch(15,15);
+    float maxSr=0.0;
+    Rect2d maxSrRect;
+    for(int i=0;i<scanGrid.size();i++){
+        resample(image,scanGrid[i],standardPatch);
+        double sr=tldModel->Sr(standardPatch);
+        printf("%d: %f %f\n",i,sr,overlap(scanGrid[i],etalon));
+        if(sr>maxSr){
+            maxSr=sr;
+            maxSrRect=scanGrid[i];
+        }
+    }
+    printf("result overlap %f\n",overlap(maxSrRect,etalon));
+
+    exit(0);
+
     printf("\n");
     return true;
 }
 
 TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox){
     boundingBox_=boundingBox;
-    originalVariance_=TLDDetector::variance(image(boundingBox));
+    originalVariance_=variance(image(boundingBox));
     std::vector<Rect2d> scanGrid,closest(10);
 
-    TLDDetector detector;
-    detector.generateScanGrid(image.cols,image.rows,boundingBox,scanGrid);
-    detector.getClosestN(scanGrid,boundingBox,10,closest);
+    TLDDetector detector(image,params);
+    detector.generateScanGrid(boundingBox,scanGrid);
+    getClosestN(scanGrid,boundingBox,10,closest);
 
     Mat image_blurred;
     Mat_<double> blurredPatch(15,15);
     GaussianBlur(image,image_blurred,Size(3,3),0.0);
-    std::vector<TLDEnsembleClassifier> classifiers;
     for(int i=0;i<20;i++){
         classifiers.push_back(TLDEnsembleClassifier(i+1));
     }
@@ -201,22 +269,36 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
 
             resample(image_blurred,RotatedRect(center,size,angle),blurredPatch);
             for(int k=0;k<classifiers.size();k++){
-                classifier[k].integrate(blurredPatch,true);
+                classifiers[k].integrate(blurredPatch,true);
             }
         }
     }
 
-    for(int i=0;i<scanGrid.size();i++){
-        if(overlap(boundingBox,scanGrid[i])<0.2){
+    negativeExamples.clear();
+    const int negMax=200;
+    negativeExamples.reserve(negMax);
+    std::vector<int> indices;
+    indices.reserve(negMax);
+    while(negativeExamples.size()<negMax){
+        int i=rng.uniform((int)0,(int)scanGrid.size());
+        if(std::find(indices.begin(),indices.end(),i)==indices.end() && overlap(boundingBox,scanGrid[i])<0.2){
+            Mat_<double> standardPatch(15,15);
+            resample(image,scanGrid[i],standardPatch);
+            negativeExamples.push_back(standardPatch);
+
             resample(image_blurred,scanGrid[i],blurredPatch);
             for(int k=0;k<classifiers.size();k++){
-                classifier[k].integrate(blurredPatch,false);
+                classifiers[k].integrate(blurredPatch,false);
             }
         }
     }
+    for(int i=rng.uniform((int)0,(int)negativeExamples.size());negativeExamples.size()>400;i=rng.uniform((int)0,(int)negativeExamples.size())){
+        negativeExamples.erase(negativeExamples.begin()+i);
+    }
+    printf("positive patches: %d\nnegative patches: %d\n",positiveExamples.size(),negativeExamples.size());
 }
 
-void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
+void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
     if(n>=scanGrid.size()){
         res.assign(scanGrid.begin(),scanGrid.end());
         return;
@@ -226,11 +308,10 @@ void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,st
     for(int i=0;i<n;i++){
         overlaps[i]=overlap(res[i],bBox);
     }
-    int i, j;
     double otmp;
     Rect2d rtmp;
-    for (i = 1; i < n; i++){
-        j = i;
+    for (int i = 1; i < n; i++){
+        int j = i;
         while (j > 0 && overlaps[j - 1] > overlaps[j]) {
             otmp = overlaps[j];overlaps[j] = overlaps[j - 1];overlaps[j - 1] = otmp;
             rtmp = res[j];res[j] = res[j - 1];res[j - 1] = rtmp;
@@ -251,7 +332,7 @@ void TLDDetector::getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,st
     }
 }
 
-double TLDDetector::variance(const Mat& img){
+double variance(const Mat& img){
     double p=0,p2=0;
     for(int i=0;i<img.rows;i++){
         for(int j=0;j<img.cols;j++){
@@ -264,12 +345,13 @@ double TLDDetector::variance(const Mat& img){
     return p2-p*p;
 }
 
-void TLDDetector::generateScanGrid(int cols,int rows, Rect2d initBox,std::vector<Rect2d>& res){
+void TLDDetector::generateScanGrid(Rect2d initBox,std::vector<Rect2d>& res){
+    int cols=img_.cols, rows=img_.rows;
     res.clear();
     //scales step: 1.2; hor step: 10% of width; verstep: 10% of height; minsize: 20pix
-    for(double h=initBox.height, w=initBox.width;h<=cols && w<=rows;){
-        for(double x=0;(x+w)<=cols;x+=(0.1*w)){
-            for(double y=0;(y+h)<=rows;y+=(0.1*h)){
+    for(double h=initBox.height, w=initBox.width;h<cols && w<rows;){
+        for(double x=0;(x+w)<cols;x+=(0.1*w)){
+            for(double y=0;(y+h)<rows;y+=(0.1*h)){
                 res.push_back(Rect2d(x,y,w,h));
             }
         }
@@ -286,21 +368,58 @@ void TLDDetector::generateScanGrid(int cols,int rows, Rect2d initBox,std::vector
     }
 }
 
-void TLDDetector::patchVariance(const Mat& img,std::vector<Rect2d>& res,double originalVariance){
+void TLDDetector::patchVariance(std::vector<Rect2d>& res,double originalVariance){
     for(int i=0;i<res.size();i++){
-        if(variance(img(res[i]))<0.5*originalVariance){
+        if(variance(img_(res[i]))<0.5*originalVariance){
+            res.erase(res.begin()+i);
+            i--;
+        }
+    }
+}
+void TLDDetector::ensembleClassifier(const Mat& blurredImg,std::vector<TLDEnsembleClassifier>& classifiers,std::vector<Rect2d>& res){
+    Mat_<double> standardPatch(15,15);
+    for(int i=0;i<res.size();i++){
+        double p=0.0;
+        resample(blurredImg,res[i],standardPatch);
+        for(int j=0;j<classifiers.size();j++){
+            p+=classifiers[j].posteriorProbability(standardPatch);
+        }
+        p/=classifiers.size();
+
+        if(p<=0.5){
             res.erase(res.begin()+i);
             i--;
         }
     }
 }
 
-double TLDDetector::overlap(const Rect2d& r1,const Rect2d& r2){
+double TrackerTLDModel::Sr(const Mat_<double> patch){
+    double splus=0.0;
+    for(int i=0;i<positiveExamples.size();i++){
+        splus=MAX(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
+    }
+    double sminus=0.0;
+    for(int i=0;i<negativeExamples.size();i++){
+        sminus=MAX(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
+    }
+    if(splus+sminus==0.0){
+        return 0.0;
+    }
+    return splus/(sminus+splus);
+}
+
+double NCC(Mat_<double> patch1,Mat_<double> patch2){
+    CV_Assert(patch1.rows=patch2.rows);
+    CV_Assert(patch1.cols=patch2.cols);
+    return patch1.dot(patch2)/norm(patch1)/norm(patch2);
+}
+
+double overlap(const Rect2d& r1,const Rect2d& r2){
     double a1=r1.area(), a2=r2.area(), a0=(r1&r2).area();
     return a0/(a1+a2-a0);
 }
 
-void TrackerTLDModel::resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){
+void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){
     Point2f vertices[4];
     r2.points(vertices);
     float dx1=vertices[1].x-vertices[0].x,
@@ -313,13 +432,15 @@ void TrackerTLDModel::resample(const Mat& img,const RotatedRect& r2,Mat_<double>
                   y=vertices[0].y+dy1*j/samples.cols+dy2*i/samples.rows;
             int ix=cvFloor(x),iy=cvFloor(y);
             float tx=x-ix,ty=y-iy;
-            float a = img.at<uchar>(std::max(iy,0),std::max(ix,0)) * (1.0 - tx) + img.at<uchar>(std::max(iy,0),std::max(ix+1,0))* tx;
-            float b = img.at<uchar>(std::max(iy+1,0),std::max(ix,0))* (1.0 - tx) + img.at<uchar>(std::max(iy+1,0),std::max(ix+1,0)) * tx;
+            float a=img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
+                img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
+            float b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
+                img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
             samples(i,j)=a * (1.0 - ty) + b * ty;
         }
     }
 }
-void TrackerTLDModel::resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples){
+void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples){
     Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
     return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
 }

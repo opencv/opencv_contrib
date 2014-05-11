@@ -50,15 +50,14 @@ using namespace cv;
 namespace cv
 {
 
-
 class TLDEnsembleClassifier{
 public:
     TLDEnsembleClassifier(int ordinal);
     void integrate(const Mat_<double>& patch,bool isPositive);
-    double posteriorProbability(const Mat_<double>& patch);
+    double posteriorProbability(const Mat_<double>& patch)const;
     static int getMaxOrdinal(){return (15*15*14)/(sizeof(x1)/sizeof(x1[0]));}
 private:
-    unsigned short int code(const Mat_<double>& patch);
+    unsigned short int code(const Mat_<double>& patch)const;
     uchar x1[13],x2[13],y1[13],y2[13];
     unsigned int pos[8192],neg[8192];//8192=2^13
 };
