@@ -117,6 +117,37 @@ static void myassert(const Mat& img){
     }
     printf("black: %d out of %d (%f)\n",count,img.rows*img.cols,1.0*count/img.rows/img.cols);
 }
+void printPatch(const Mat_<double>& standardPatch){
+    for(int i=0;i<standardPatch.rows;i++){
+        for(int j=0;j<standardPatch.cols;j++){
+            printf("%5.2f, ",standardPatch(i,j));
+        }
+        printf("\n");
+    }
+}
+std::string type2str(const Mat& mat) {
+  int type=mat.type();
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
 
 /*
  * Parameters
@@ -167,13 +198,13 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect& boundingBox){
     Mat image_gray;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     Mat image_blurred;
-    GaussianBlur(image,image_blurred,Size(3,3),0.0);
+    GaussianBlur(image_gray,image_blurred,Size(3,3),0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
-    TLDDetector detector(image,params);
+    TLDDetector detector(image_gray,params);
     std::vector<Rect2d> scanGrid;
 
     detector.generateScanGrid(tldModel->getBoundingBox(),scanGrid);
-    printf("%d frames after generateScanGrid() for %dx%d\n",scanGrid.size(),image.rows,image.cols);
+    printf("%d frames after generateScanGrid() for %dx%d\n",scanGrid.size(),image_gray.rows,image_gray.cols);
 
     //best overlap around 92%
     /*double m=0;
@@ -185,48 +216,29 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect& boundingBox){
 
     double o=0.0;
     int omax=0;
-    myassert(image(etalon));
+    myassert(image_gray(etalon));
     myassert(image_blurred(etalon));
 
     detector.patchVariance(scanGrid,tldModel->getOriginalVariance());
     printf("%d frames after patchVariance()\n",scanGrid.size());
-    o=0.0;omax=0;
-    for(int i=0;i<scanGrid.size();i++){
-        if(o<overlap(etalon,scanGrid[i])){
-            o=overlap(etalon,scanGrid[i]);
-            omax=i;
-        }
-    }
-    printf("max overlap %f at %d\n",o,omax);
 
     detector.ensembleClassifier(image_blurred,*(tldModel->getClassifiers()),scanGrid);
     printf("%d frames after ensembleClassifier()\n",scanGrid.size());
-    o=0.0;omax=0;
-    for(int i=0;i<scanGrid.size();i++){
-        if(o<overlap(etalon,scanGrid[i])){
-            o=overlap(etalon,scanGrid[i]);
-            omax=i;
-        }
-    }
-    printf("max overlap %f at %d\n",o,omax);
 
     Mat_<double> standardPatch(15,15);
     float maxSr=0.0;
-    Rect2d maxSrRect;
+    int maxIndex=0;
+    double tmpSr=0.0;
     for(int i=0;i<scanGrid.size();i++){
-        resample(image,scanGrid[i],standardPatch);
-        double sr=tldModel->Sr(standardPatch);
-        printf("%d: %f %f\n",i,sr,overlap(scanGrid[i],etalon));
-        if(sr>maxSr){
-            maxSr=sr;
-            maxSrRect=scanGrid[i];
+        resample(image_gray,scanGrid[i],standardPatch);
+        double tmpSr=tldModel->Sr(standardPatch);
+        if(tmpSr>maxSr){
+            maxSr=tmpSr;
+            maxIndex=i;
         }
     }
-    printf("result overlap %f\n",overlap(maxSrRect,etalon));
 
-    exit(0);
-
-    printf("\n");
+    boundingBox=Rect(scanGrid[maxIndex].x,scanGrid[maxIndex].y,scanGrid[maxIndex].width,scanGrid[maxIndex].height);
     return true;
 }
 
@@ -242,7 +254,7 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     Mat image_blurred;
     Mat_<double> blurredPatch(15,15);
     GaussianBlur(image,image_blurred,Size(3,3),0.0);
-    for(int i=0;i<20;i++){
+    for(int i=0;i<200;i++){
         classifiers.push_back(TLDEnsembleClassifier(i+1));
     }
 
@@ -257,7 +269,6 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
             size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
             size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
             float angle=rng.uniform((double)-10.0,(double)10.0);
-
 
             resample(image,RotatedRect(center,size,angle),standardPatch);
             for(int y=0;y<standardPatch.rows;y++){
@@ -436,7 +447,7 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){
                 img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
             float b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
                 img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
-            samples(i,j)=a * (1.0 - ty) + b * ty;
+            samples(i,j)=(double)a * (1.0 - ty) + b * ty;
         }
     }
 }
