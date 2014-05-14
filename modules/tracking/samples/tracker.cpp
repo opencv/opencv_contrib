@@ -7,7 +7,7 @@ using namespace std;
 using namespace cv;
 
 static Mat image;
-static Rect boundingBox;
+static Rect2d boundingBox;
 static bool paused;
 static bool selectObject = false;
 static bool startSelection = false;

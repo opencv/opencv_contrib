@@ -161,7 +161,8 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
   int endFrame = 0;
   getSegment( segmentId, numSegments, bbCounter, startFrame, endFrame );
 
-  Rect currentBB = gtBBs[startFrame - gtStartFrame];
+  Rect currentBBi = gtBBs[startFrame - gtStartFrame];
+  Rect2d currentBB(currentBBi);
 
   TEST_CYCLE_N(1)
   {
@@ -231,7 +232,8 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
   int endFrame = 0;
   getSegment( segmentId, numSegments, bbCounter, startFrame, endFrame );
 
-  Rect currentBB = gtBBs[startFrame - gtStartFrame];
+  Rect currentBBi = gtBBs[startFrame - gtStartFrame];
+  Rect2d currentBB(currentBBi);
 
   TEST_CYCLE_N(1)
   {

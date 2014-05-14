@@ -106,7 +106,7 @@ void TrackerBoosting::write( cv::FileStorage& fs ) const
   params.write( fs );
 }
 
-bool TrackerBoosting::initImpl( const Mat& image, const Rect& boundingBox )
+bool TrackerBoosting::initImpl( const Mat& image, const Rect2d& boundingBox )
 {
   srand (1);
   //sampling
@@ -190,7 +190,7 @@ bool TrackerBoosting::initImpl( const Mat& image, const Rect& boundingBox )
   return true;
 }
 
-bool TrackerBoosting::updateImpl( const Mat& image, Rect& boundingBox )
+bool TrackerBoosting::updateImpl( const Mat& image, Rect2d& boundingBox )
 {
   Mat_<int> intImage;
   Mat_<double> intSqImage;

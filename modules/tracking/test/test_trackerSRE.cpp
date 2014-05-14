@@ -180,7 +180,8 @@ void TrackerSRETest::distanceTest()
   Mat frame;
   bool initialized = false;
 
-  Rect currentBB = bbs.at( 0 );
+  Rect currentBBi = bbs.at( 0 );
+  Rect2d currentBB(currentBBi);
   float sumDistance = 0;
   int frameCounter = 0;
   int frameCounterSucc = 0;
@@ -235,7 +236,8 @@ void TrackerSRETest::overlapTest()
 {
   Mat frame;
   bool initialized = false;
-  Rect currentBB = bbs.at( 0 );
+  Rect currentBBi = bbs.at( 0 );
+  Rect2d currentBB(currentBBi);
   float sumOverlap = 0;
   string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 

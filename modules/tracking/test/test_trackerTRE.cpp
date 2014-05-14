@@ -190,7 +190,8 @@ void TrackerTRETest::distanceTest()
 
   int fc = ( startFrame - gtStartFrame );
 
-  Rect currentBB = bbs.at( fc );
+  Rect currentBBi = bbs.at( fc );
+  Rect2d currentBB(currentBBi);
   float sumDistance = 0;
   string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 
@@ -250,7 +251,8 @@ void TrackerTRETest::overlapTest()
   bool initialized = false;
 
   int fc = ( startFrame - gtStartFrame );
-  Rect currentBB = bbs.at( fc );
+  Rect currentBBi = bbs.at( fc );
+  Rect2d currentBB(currentBBi);
   float sumOverlap = 0;
   string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 

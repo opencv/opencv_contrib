@@ -15,9 +15,9 @@ Base abstract class for the long-term tracker::
    {
      virtual ~Tracker();
 
-     bool init( const Mat& image, const Rect& boundingBox );
+     bool init( const Mat& image, const Rect2d& boundingBox );
 
-     bool update( const Mat& image, Rect& boundingBox );
+     bool update( const Mat& image, Rect2d& boundingBox );
 
      static Ptr<Tracker> create( const String& trackerType );
 
@@ -28,11 +28,13 @@ Tracker::init
 
 Initialize the tracker with a know bounding box that surrounding the target
 
-.. ocv:function:: bool Tracker::init( const Mat& image, const Rect& boundingBox )
+.. ocv:function:: bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
 
     :param image: The initial frame
 
     :param boundingBox: The initial boundig box
+
+    :return: True if initialization went succesfully, false otherwise
 
 
 Tracker::update
@@ -40,11 +42,13 @@ Tracker::update
 
 Update the tracker, find the new most likely bounding box for the target
 
-.. ocv:function:: bool Tracker::update( const Mat& image, Rect& boundingBox )
+.. ocv:function:: bool Tracker::update( const Mat& image, Rect2d& boundingBox )
 
     :param image: The current frame
 
-    :param boundingBox: The boundig box that represent the new target location
+    :param boundingBox: The boundig box that represent the new target location, if true was returned, not modified otherwise
+
+    :return: True means that target was located and false means that tracker cannot locate target in current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed missing from the frame (say, out of sight)
 
 
 Tracker::create
@@ -83,8 +87,8 @@ Example of creating specialized Tracker ``TrackerMIL`` : ::
      ...
 
     protected:
-     bool initImpl( const Mat& image, const Rect& boundingBox );
-     bool updateImpl( const Mat& image, Rect& boundingBox );
+     bool initImpl( const Mat& image, const Rect2d& boundingBox );
+     bool updateImpl( const Mat& image, Rect2d& boundingBox );
      ...
    };
 
@@ -192,7 +196,7 @@ Example of creating specialized TrackerModel ``TrackerMILModel`` : ::
 
 And add it in your Tracker : ::
 
-   bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
+   bool TrackerMIL::initImpl( const Mat& image, const Rect2d& boundingBox )
    {
      ...
      //model is the general TrackerModel field od the general Tracker
