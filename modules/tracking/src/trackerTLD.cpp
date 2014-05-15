@@ -52,6 +52,7 @@ using namespace cv;
 
 /*
  * FIXME(optimize):
+ *   measure time for each operation
  *   do not erase rectangles and generate offline? (maybe permute to put at beginning)
 */
 /*ask Kalal: 
