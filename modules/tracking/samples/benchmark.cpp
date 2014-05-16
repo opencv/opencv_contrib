@@ -147,7 +147,7 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   fseek(gt,0,SEEK_SET);
   fgets(buf,sizeof(buf),gt);
 
-  std::vector<Rect2i> initBoxes(algnum);
+  std::vector<Rect2d> initBoxes(algnum);
   for(int i=0;i<algnum;i++){
       printf("%s %s\n",algorithms[i],initBoxes_str[CMDLINEMAX*i]);
       if(lineToRect(initBoxes_str[CMDLINEMAX*i],boundingBox)<0){

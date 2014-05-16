@@ -54,9 +54,7 @@ namespace cv
 /*
  * TODO:
  * take all parameters out 
- * employ NCC
  * bring more work to constructor -- TODO
- * (if bad, try floating-point output)
  *              add "non-detected" answer in algo
  *              asessment framework
  *
@@ -148,14 +146,14 @@ void TrackerMedianFlow::write( cv::FileStorage& fs ) const
   params.write( fs );
 }
 
-bool TrackerMedianFlow::initImpl( const Mat& image, const Rect& boundingBox ){
+bool TrackerMedianFlow::initImpl( const Mat& image, const Rect2d& boundingBox ){
     model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel(params));
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
     return true;
 }
 
-bool TrackerMedianFlow::updateImpl( const Mat& image, Rect& boundingBox ){
+bool TrackerMedianFlow::updateImpl( const Mat& image, Rect2d& boundingBox ){
     Mat oldImage=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getImage();
 
     Rect2d oldBox=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
@@ -354,7 +352,7 @@ void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
 	for (int i = 0; i < oldPoints.size(); i++) {
 		getRectSubPix( oldImage, patch, oldPoints[i],p1);
 		getRectSubPix( newImage, patch, newPoints[i],p2);
-		matchTemplate( p1,p2, res, CV_TM_CCOEFF );
+		matchTemplate( p1,p2, res, CV_TM_CCOEFF_NORMED );
 		NCC[i] = res.at<float>(0,0);
 	}
 	float median = getMedian(NCC);
