@@ -60,6 +60,16 @@ void myassert(const Mat& img);
 void printPatch(const Mat_<double>& standardPatch);
 std::string type2str(const Mat& mat);
 
+//aux functions and variables
+#define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
+inline double overlap(const Rect2d& r1,const Rect2d& r2);
+void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
+void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples);
+void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
+double variance(const Mat& img);
+double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,const Mat& image,Rect2d box);
+double NCC(Mat_<double> patch1,Mat_<double> patch2);
+
 class TLDEnsembleClassifier{
 public:
     TLDEnsembleClassifier(int ordinal);
@@ -71,4 +81,14 @@ private:
     uchar x1[13],x2[13],y1[13],y2[13];
     unsigned int pos[8192],neg[8192];//8192=2^13
 };
+
+class TrackerProxy : public TrackerTLD::Private{
+public:
+    virtual bool init( const Mat& image, const Rect2d& boundingBox )=0;
+    virtual Rect2d update( const Mat& image,bool hasFailed_out)=0;
+    virtual void setConfident()=0;
+    virtual bool isConfident()=0;
+    virtual ~TrackerProxy(){}
+};
+
 }

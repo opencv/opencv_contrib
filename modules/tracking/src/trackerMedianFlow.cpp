@@ -53,9 +53,8 @@ namespace cv
  */
 /*
  * TODO:
+ * add "non-detected" answer in algo
  * take all parameters out 
- * bring more work to constructor -- TODO
- *              add "non-detected" answer in algo
  *              asessment framework
  *
  *
@@ -120,18 +119,6 @@ void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
   fs << "pointsInGrid" << pointsInGrid;
 }
 
-/*
- * Constructor
- */
-TrackerMedianFlow::TrackerMedianFlow( const TrackerMedianFlow::Params &parameters) :
-    params( parameters )
-{
-  isInit = false;
-}
-
-/*
- * Destructor
- */
 TrackerMedianFlow::~TrackerMedianFlow()
 {
 }
@@ -144,6 +131,11 @@ void TrackerMedianFlow::read( const cv::FileNode& fn )
 void TrackerMedianFlow::write( cv::FileStorage& fs ) const
 {
   params.write( fs );
+}
+
+TrackerMedianFlow::TrackerMedianFlow( const TrackerMedianFlow::Params &parameters) :
+    params( parameters ){
+  isInit = false;
 }
 
 bool TrackerMedianFlow::initImpl( const Mat& image, const Rect2d& boundingBox ){
