@@ -70,7 +70,7 @@ namespace cv
 
 //debug functions and variables
 Rect2d etalon(14.0,110.0,20.0,20.0);
-void myassert(const Mat& img){
+ void myassert(const Mat& img){
     int count=0;
     for(int i=0;i<img.rows;i++){
         for(int j=0;j<img.cols;j++){
