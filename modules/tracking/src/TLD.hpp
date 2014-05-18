@@ -84,11 +84,18 @@ private:
 
 class TrackerProxy : public TrackerTLD::Private{
 public:
-    virtual bool init( const Mat& image, const Rect2d& boundingBox )=0;
-    virtual Rect2d update( const Mat& image,bool hasFailed_out)=0;
-    virtual void setConfident()=0;
-    virtual bool isConfident()=0;
+    virtual bool init( const Mat& image, const Rect2d& boundingBox)=0;
+    virtual bool update(const Mat& image, Rect2d& boundingBox)=0;
     virtual ~TrackerProxy(){}
+};
+
+class WrapperBool : public TrackerTLD::Private{
+public:
+    WrapperBool(bool data):data_(data){}
+    void set(bool data){data_=data;}
+    bool get(){return data_;}
+protected:
+    bool data_;
 };
 
 }

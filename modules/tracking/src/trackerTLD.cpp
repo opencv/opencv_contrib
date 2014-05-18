@@ -49,6 +49,7 @@
 
 #define HOW_MANY_CLASSIFIERS 20
 #define THETA_NN 0.5
+#define CORE_THRESHOLD 0.5
 
 using namespace cv;
 
@@ -80,8 +81,8 @@ public:
     ~TLDDetector(){}
     std::vector<Rect2d>& generateScanGrid(){return scanGrid;}
     void setModel(Ptr<TrackerModel> model_in){model=model_in;}
-    Rect2d detect(const Mat& img,const Mat& imgBlurred,bool& hasFailed_out);
-    bool getNextRect(Rect2d& rect,bool& isObjectFlag,bool reset=false);
+    bool detect(const Mat& img,const Mat& imgBlurred,Rect2d& res);
+    bool getNextRect(Rect2d& rect_out,bool& isObject_out,bool& shouldBeIntegrated_out,bool reset=false);
 protected:
     int patchVariance(const Mat& img,double originalVariance,int size);
     int ensembleClassifier(const Mat& blurredImg,std::vector<TLDEnsembleClassifier>& classifiers,int size);
@@ -89,40 +90,34 @@ protected:
     TrackerTLD::Params params_;
     Ptr<TrackerModel> model;
     int scanGridPos;
-    std::vector<bool> isObject;
+    std::vector<bool> isObject,shouldBeIntegrated;
 };
 
-void Pexpert(Rect2d trackerBox,TrackerTLDModel* model,Mat* img,Mat* imgBlurred);
+class Pexpert{
+    bool operator()(Rect2d box);
+    int additionalExamples();
+};
+
+class Nexpert{
+    bool operator()(Rect2d box);
+    int additionalExamples();
+};
 
 void Nexpert(Rect2d trackerBox,TrackerTLDModel* model,Mat* img,Mat* imgBlurred,Rect2d box);
 
 template <class T,class Tparams>
 class TrackerProxyImpl : public TrackerProxy{
 public:
-    TrackerProxyImpl(Tparams params=Tparams()):params_(params),isConfident_(false){}
+    TrackerProxyImpl(Tparams params=Tparams()):tracker(params){}
     bool init( const Mat& image, const Rect2d& boundingBox ){
-        isConfident_=false;
-        trackerPtr=Ptr<T>(new T(params_));
-        trackerPtr->init(image,boundingBox);
-        boundingBox_=boundingBox_;
-        return true;
+        return tracker.init(image,boundingBox);
     }
-    Rect2d update( const Mat& image,bool hasFailed_out){
-        if(false){
-            hasFailed_out=!trackerPtr->update(image,boundingBox_);
-            isConfident_=isConfident_ && hasFailed_out;
-            return boundingBox_;
-        }else{
-            hasFailed_out=true;
-            return Rect2d(0,0,0,0);
-        }
+    bool update( const Mat& image,Rect2d& boundingBox){
+        return false;//FIXME
+        return tracker.update(image,boundingBox);
     }
-    void setConfident(){isConfident_=true;}
-    bool isConfident(){return isConfident_;}
 private:
-    Ptr<T> trackerPtr;
-    bool isConfident_;
-    Tparams params_;
+    T tracker;
     Rect2d boundingBox_;
 };
 
@@ -180,6 +175,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     TLDDetector* detector=new TLDDetector(params,image.rows,image.cols,boundingBox);
     privateInfo.push_back(Ptr<TLDDetector>(detector));
+    privateInfo.push_back(Ptr<WrapperBool>(new WrapperBool(false)));
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox,detector));
     detector->setModel(model);
     ((TrackerProxy*)static_cast<Private*>(privateInfo[0]))->init(image,boundingBox);
@@ -192,8 +188,10 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     Mat image_blurred;
     GaussianBlur(image_gray,image_blurred,Size(3,3),0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
+    WrapperBool* confidentPtr=((WrapperBool*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
     TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
     TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
+    Mat_<double> standardPatch(15,15);
 
     //best overlap around 92%
     /*double m=0;
@@ -203,27 +201,36 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
     printf("best overlap: %f\n",m);*/
 
-    bool detectorFailed=true,trackerFailed=true,needToRestartTracker=false;
-    Rect2d detectorAnswer=detector->detect(image_gray,image_blurred,detectorFailed),
-           trackerAnswer=trackerProxy->update(image,trackerFailed);
-
-    //TODO: decide best box and whether we'll need to restart the tracker
-    if(detectorFailed && trackerFailed){
+    Rect2d tmpCandid=boundingBox;
+    std::vector<Rect2d> candidates;
+    std::vector<double> candidatesRes;
+    for(int i=0;i<2;i++){
+        tmpCandid=boundingBox;
+        if(((i==0)&&trackerProxy->update(image,tmpCandid))||((i==1)&&(detector->detect(image_gray,image_blurred,tmpCandid)))){
+            candidates.push_back(tmpCandid);
+            resample(image_gray,tmpCandid,standardPatch);
+            candidatesRes.push_back(tldModel->Sc(standardPatch));
+        }
+    }
+    printf("candidates.size()=%d\n",candidates.size());
+    std::vector<double>::iterator it;
+    if((it=std::max_element(candidatesRes.begin(),candidatesRes.end()))==candidatesRes.end()){
+        confidentPtr->set(false);
         return false;
-    }
-    if(trackerFailed){
-        boundingBox=detectorAnswer;
-    }
-
-    if(trackerProxy->isConfident()){
-        //TODO: increase tracker's confidence
-        //TODO: P expert
-        //TODO: N expert
+    }else{
+        boundingBox=candidates[it-candidatesRes.begin()];
     }
 
-    if(needToRestartTracker){
-        trackerProxy->init(image,boundingBox);
+    //FIXME: recovery from occlusion
+    if(*it > CORE_THRESHOLD){
+        confidentPtr->set(true);
     }
+
+    if(confidentPtr->get()){
+        //TODO: P-N relabeling, use getNextRect(,,reset)
+        //integrate relabeled data into model (model->integrate() method)
+    }
+
     return true;
 }
 
@@ -315,7 +322,7 @@ TLDDetector::TLDDetector(const TrackerTLD::Params& params,int rows,int cols,Rect
     printf("%d rects in scanGrid\n",scanGrid.size());
 }
 
-Rect2d TLDDetector::detect(const Mat& img,const Mat& imgBlurred,bool& hasFailed_out){
+bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res){
     int remains=0;
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
 
@@ -327,42 +334,45 @@ Rect2d TLDDetector::detect(const Mat& img,const Mat& imgBlurred,bool& hasFailed_
 
     Mat_<double> standardPatch(15,15);
     float maxSc=0.0;
-    Rect2d maxScRect,tmpScRect;
-    double tmpSc=0.0;
+    Rect2d maxScRect;
+    double tmp=0.0;
     int iSc=-1;
     isObject.resize(remains);
+    shouldBeIntegrated.resize(remains);
     for(int i=0;i<remains;i++){
-        tmpScRect=scanGrid[i];
-        resample(img,tmpScRect,standardPatch);
-        isObject[i]=((tldModel->Sr(standardPatch))>THETA_NN);
+        resample(img,scanGrid[i],standardPatch);
+        tmp=tldModel->Sr(standardPatch);
+        isObject[i]=(tmp>THETA_NN);
+        shouldBeIntegrated[i]=(abs(tmp-THETA_NN)<0.1);
         if(!isObject[i]){
             continue;
         }
-        tmpSc=tldModel->Sc(standardPatch);
-        if(tmpSc>maxSc){
+        tmp=tldModel->Sc(standardPatch);
+        if(tmp>maxSc){
             iSc=i;
-            maxSc=tmpSc;
-            maxScRect=tmpScRect;
+            maxSc=tmp;
+            maxScRect=scanGrid[i];
         }
     }
     if(iSc==-1){
-        hasFailed_out=true;
+        return false;
     }
     printf("iSc=%d\n",iSc);
 
-    hasFailed_out=false;
-    return maxScRect;
+    res=maxScRect;
+    return true;
 }
 
-bool TLDDetector::getNextRect(Rect2d& rect,bool& isObjectFlag,bool reset){
+bool TLDDetector::getNextRect(Rect2d& rect_out,bool& isObject_out,bool& shouldBeIntegrated_out,bool reset){
     if(reset){
         scanGridPos=0;
     }
     if(scanGridPos>=isObject.size()){
         return false;
     }
-    rect=scanGrid[scanGridPos];
-    isObjectFlag=isObject[scanGridPos];
+    rect_out=scanGrid[scanGridPos];
+    isObject_out=isObject[scanGridPos];
+    shouldBeIntegrated_out=shouldBeIntegrated[scanGridPos];
     scanGridPos++;
     return true;
 }
