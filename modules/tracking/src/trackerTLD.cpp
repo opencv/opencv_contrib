@@ -55,8 +55,11 @@ using namespace cv;
 
 /*
  * FIXME(optimize):
- *
- *   skeleton!!!
+ * recovery from occlusion
+ * TODO
+ *   finish learning
+ *   TLD no found
+ *   test!!!
 */
 /*ask Kalal: 
  * ./bin/example_tracking_tracker TLD ../TrackerChallenge/test.avi 0 5,110,25,130 > out.txt
@@ -79,7 +82,7 @@ class TLDDetector : public TrackerTLD::Private{
 public:
     TLDDetector(const TrackerTLD::Params& params,int rows,int cols,Rect2d initBox);
     ~TLDDetector(){}
-    std::vector<Rect2d>& generateScanGrid(){return scanGrid;}
+    const std::vector<Rect2d>& generateScanGrid()const{return scanGrid;}
     void setModel(Ptr<TrackerModel> model_in){model=model_in;}
     bool detect(const Mat& img,const Mat& imgBlurred,Rect2d& res);
     bool getNextRect(Rect2d& rect_out,bool& isObject_out,bool& shouldBeIntegrated_out,bool reset=false);
@@ -94,16 +97,30 @@ protected:
 };
 
 class Pexpert{
-    bool operator()(Rect2d box);
-    int additionalExamples();
+public:
+    Pexpert(const Mat& img,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params):img_(img),resultBox_(resultBox),
+        detector_(detector),params_(params){}
+    bool operator()(Rect2d box){return false;}
+    int additionalExamples(std::vector<Mat_<double> >& examples);
+protected:
+    Mat img_;
+    const TLDDetector* detector_;
+    Rect2d resultBox_;
+    TrackerTLD::Params params_;
 };
 
 class Nexpert{
+public:
+    Nexpert(const Mat& img,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params):img_(img),resultBox_(resultBox),
+        detector_(detector),params_(params){}
     bool operator()(Rect2d box);
-    int additionalExamples();
+    int additionalExamples(std::vector<Mat_<double> >& examples){return 0;}
+protected:
+    Mat img_;
+    const TLDDetector* detector_;
+    Rect2d resultBox_;
+    TrackerTLD::Params params_;
 };
-
-void Nexpert(Rect2d trackerBox,TrackerTLDModel* model,Mat* img,Mat* imgBlurred,Rect2d box);
 
 template <class T,class Tparams>
 class TrackerProxyImpl : public TrackerProxy{
@@ -130,6 +147,8 @@ class TrackerTLDModel : public TrackerModel{
   std::vector<TLDEnsembleClassifier>* getClassifiers(){return &classifiers;}
   double Sr(const Mat_<double> patch);
   double Sc(const Mat_<double> patch);
+  void integrate(Mat& img,Mat& imgBlurred,Rect2d box,bool isPositive);
+  void integrate(Mat_<double> e,bool isPositive);
  protected:
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
@@ -221,14 +240,37 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         boundingBox=candidates[it-candidatesRes.begin()];
     }
 
-    //FIXME: recovery from occlusion
     if(*it > CORE_THRESHOLD){
         confidentPtr->set(true);
     }
 
     if(confidentPtr->get()){
-        //TODO: P-N relabeling, use getNextRect(,,reset)
-        //integrate relabeled data into model (model->integrate() method)
+        Pexpert pExpert(image_gray,boundingBox,detector,params);
+        Nexpert nExpert(image_gray,boundingBox,detector,params);
+        bool isObject,shouldBeIntegrated,expertResult;
+        std::vector<Mat_<double> > examples;
+        examples.reserve(100);
+        Rect2d rect;
+        detector->getNextRect(rect,isObject,shouldBeIntegrated,true);
+        do{
+            if(isObject){
+                expertResult=nExpert(rect);
+            }else{
+                expertResult=pExpert(rect);
+            }
+            if(shouldBeIntegrated || (expertResult!=isObject)){
+                tldModel->integrate(image_gray,image_gray,rect,expertResult);
+            }
+        }while(detector->getNextRect(rect,isObject,shouldBeIntegrated));
+        pExpert.additionalExamples(examples);
+        for(int i=0;i<examples.size();i++){
+            tldModel->integrate(image_gray,image_blurred,examples[i],true);
+        }
+        examples.clear();
+        nExpert.additionalExamples(examples);
+        for(int i=0;i<examples.size();i++){
+            tldModel->integrate(image_gray,image_blurred,examples[i],false);
+        }
     }
 
     return true;
@@ -477,12 +519,36 @@ double TrackerTLDModel::Sc(const Mat_<double> patch){
     return splus/(sminus+splus);
 }
 
-void Pexpert(Rect2d trackerBox,TrackerTLDModel* model,Mat* img,Mat* imgBlurred){
-    //TODO
+void TrackerTLDModel::integrate(Mat& img,Mat& imgBlurred,Rect2d box,bool isPositive){
+    Mat_<double> standardPatch(15,15),blurredPatch(15,15);
+    resample(img,box,standardPatch);
+    if(isPositive){
+        positiveExamples.push_back(standardPatch);
+    }else{
+        negativeExamples.push_back(standardPatch);
+    }
+
+    resample(imgBlurred,box,blurredPatch);
+    for(int i=0;i<classifiers.size();i++){
+        classifiers[i].integrate(blurredPatch,isPositive);
+    }
 }
 
-void Nexpert(Rect2d trackerBox,TrackerTLDModel* model,Mat* img,Mat* imgBlurred,Rect2d box){
+int Pexpert::additionalExamples(std::vector<Mat_<double> >& examples){
+    examples.clear();
     //TODO
+    return 0;
+    //Mat img_;
+    //const TLDDetector* detector_;
+    //Rect2d resultBox_;
+    //TrackerTLD::Params params_;
+}
+
+bool Nexpert::operator()(Rect2d box){
+    if(overlap(resultBox_,box)<0.2){
+        return false;
+    }
+    return true;
 }
 
 } /* namespace cv */
