@@ -47,27 +47,6 @@ namespace cv
 namespace adas
 {
 
-class ACFFeature
-{
-public:
-    /* Initialize feature with zero row and col */
-    ACFFeature();
-
-    /* Initialize feature with given row and col */
-    ACFFeature(int row, int col);
-
-private:
-    /* Feature row */
-    int row_;
-    /* Feature col */
-    int col_;
-};
-
-/* Save ACFFeature to FileStorage */
-FileStorage& operator<< (FileStorage& out, const ACFFeature& feature);
-/* Load ACFFeature from FileStorage */
-FileStorage& operator>> (FileStorage& in, ACFFeature& feature);
-
 /* Compute channel pyramid for acf features
 
     image — image, for which pyramid should be computed
@@ -85,7 +64,7 @@ class ACFFeatureEvaluator
 {
 public:
     /* Construct evaluator, set features to evaluate */
-    ACFFeatureEvaluator(const std::vector<ACFFeature>& features);
+    ACFFeatureEvaluator(const std::vector<Point>& features);
 
     /* Set channels for feature evaluation */
     void setChannels(const std::vector<Mat_<int>>& channels);
@@ -105,7 +84,7 @@ public:
 
 private:
     /* Features to evaluate */
-    std::vector<ACFFeature> features_;
+    std::vector<Point> features_;
     /* Channels for feature evaluation */
     std::vector<Mat_<int>> channels
     /* Channels window position */
@@ -123,7 +102,7 @@ private:
 
 Returns vector of distinct acf features
 */
-std::vector<ACFFeature>
+std::vector<Point>
 generateFeatures(Size window_size, size_t count = UINT_MAX, int seed = 0);
 
 } /* namespace adas */
