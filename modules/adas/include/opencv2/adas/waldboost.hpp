@@ -42,6 +42,11 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_ADAS_WALDBOOST_HPP__
 #define __OPENCV_ADAS_WALDBOOST_HPP__
 
+namespace cv
+{
+namespace adas
+{
+
 class Stump
 {
 public:
@@ -54,7 +59,7 @@ public:
 
     Returns chosen feature index. Feature enumeration starts from 0
     */
-    int train(const cv::Mat_<int>& data, const cv::Mat_<int>& labels);
+    int train(const Mat_<int>& data, const Mat_<int>& labels);
 
     /* Predict object class given
 
@@ -76,9 +81,9 @@ private:
 };
 
 /* Save Stump to FileStorage */
-cv::FileStorage& operator<< (cv::FileStorage& out, const Stump& classifier);
+FileStorage& operator<< (FileStorage& out, const Stump& classifier);
 /* Load Stump from FileStorage */
-cv::FileStorage& operator>> (cv::FileStorage& in, Stump& classifier);
+FileStorage& operator>> (FileStorage& in, Stump& classifier);
 
 class WaldBoost
 {
@@ -96,8 +101,8 @@ public:
     Returns feature indices chosen for cascade.
     Feature enumeration starts from 0
     */
-    std::vector<int> train(const cv::Mat_<int>& data,
-                           const cv::Mat_<int>& labels);
+    std::vector<int> train(const Mat_<int>& data,
+                           const Mat_<int>& labels);
 
     /* Predict object class given object that can compute object features
 
@@ -120,8 +125,11 @@ private:
 };
 
 /* Save WaldBoost to FileStorage */
-cv::FileStorage& operator<< (cv::FileStorage& out, const WaldBoost& classifier);
+FileStorage& operator<< (FileStorage& out, const WaldBoost& classifier);
 /* Load WaldBoost from FileStorage */
-cv::FileStorage& operator>> (cv::FileStorage& in, WaldBoost& classifier);
+FileStorage& operator>> (FileStorage& in, WaldBoost& classifier);
+
+} /* namespace adas */
+} /* namespace cv */
 
 #endif /* __OPENCV_ADAS_WALDBOOST_HPP__ */

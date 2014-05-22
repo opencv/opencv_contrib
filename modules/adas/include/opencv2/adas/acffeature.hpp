@@ -42,6 +42,11 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_ADAS_ACFFEATURE_HPP__
 #define __OPENCV_ADAS_ACFFEATURE_HPP__
 
+namespace cv
+{
+namespace adas
+{
+
 class ACFFeature
 {
 public:
@@ -59,9 +64,9 @@ private:
 };
 
 /* Save ACFFeature to FileStorage */
-cv::FileStorage& operator<< (cv::FileStorage& out, const ACFFeature& feature);
+FileStorage& operator<< (FileStorage& out, const ACFFeature& feature);
 /* Load ACFFeature from FileStorage */
-cv::FileStorage& operator>> (cv::FileStorage& in, ACFFeature& feature);
+FileStorage& operator>> (FileStorage& in, ACFFeature& feature);
 
 /* Compute channel pyramid for acf features
 
@@ -73,8 +78,8 @@ Returns computed channels in vectors N x CH,
 N — number of scales (outer vector),
 CH — number of channels (inner vectors)
 */
-std::vector<std::vector<cv::Mat_<int>>>
-computeChannels(const cv::Mat& image, const ScaleParams& params);
+std::vector<std::vector<Mat_<int>>>
+computeChannels(const Mat& image, const ScaleParams& params);
 
 class ACFFeatureEvaluator
 {
@@ -83,7 +88,7 @@ public:
     ACFFeatureEvaluator(const std::vector<ACFFeature>& features);
 
     /* Set channels for feature evaluation */
-    void setChannels(const std::vector<cv::Mat_<int>>& channels);
+    void setChannels(const std::vector<Mat_<int>>& channels);
 
     /* Set window position */
     void setPosition(Size position);
@@ -96,13 +101,13 @@ public:
 
     Returns matrix-column of features
     */
-    cv::Mat_<int> evaluateAll() const;
+    Mat_<int> evaluateAll() const;
 
 private:
     /* Features to evaluate */
     std::vector<ACFFeature> features_;
     /* Channels for feature evaluation */
-    std::vector<cv::Mat_<int>> channels
+    std::vector<Mat_<int>> channels
     /* Channels window position */
     Size position_;
 };
@@ -120,5 +125,8 @@ Returns vector of distinct acf features
 */
 std::vector<ACFFeature>
 generateFeatures(Size window_size, size_t count = UINT_MAX, int seed = 0);
+
+} /* namespace adas */
+} /* namespace cv */
 
 #endif /* __OPENCV_ADAS_ACFFEATURE_HPP__ */
