@@ -39,6 +39,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
+#ifndef __OPENCV_ADAS_ICFDETECTOR_HPP__
+#define __OPENCV_ADAS_ICFDETECTOR_HPP__
+
 class ICFDetector
 {
 public:
@@ -90,3 +93,5 @@ public:
     /* Save detector in file, return true on success, false otherwise */
     bool save(const std::string& filename);
 };
+
+#endif /* __OPENCV_ADAS_ICFDETECTOR_HPP__ */

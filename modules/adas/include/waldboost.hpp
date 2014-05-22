@@ -39,6 +39,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
+#ifndef __OPENCV_ADAS_WALDBOOST_HPP__
+#define __OPENCV_ADAS_WALDBOOST_HPP__
+
 class Stump
 {
 public:
@@ -120,3 +123,5 @@ private:
 cv::FileStorage& operator<< (cv::FileStorage& out, const WaldBoost& classifier);
 /* Load WaldBoost from FileStorage */
 cv::FileStorage& operator>> (cv::FileStorage& in, WaldBoost& classifier);
+
+#endif /* __OPENCV_ADAS_WALDBOOST_HPP__ */

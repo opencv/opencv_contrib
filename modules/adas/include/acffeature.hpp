@@ -39,6 +39,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
+#ifndef __OPENCV_ADAS_ACFFEATURE_HPP__
+#define __OPENCV_ADAS_ACFFEATURE_HPP__
+
 class ACFFeature
 {
 public:
@@ -117,3 +120,5 @@ Returns vector of distinct acf features
 */
 std::vector<ACFFeature>
 generateFeatures(Size window_size, size_t count = UINT_MAX, int seed = 0);
+
+#endif /* __OPENCV_ADAS_ACFFEATURE_HPP__ */
