@@ -59,7 +59,7 @@ public:
 
     Returns chosen feature index. Feature enumeration starts from 0
     */
-    int train(const Mat_<int>& data, const Mat_<int>& labels);
+    int train(const Mat& data, const Mat& labels);
 
     /* Predict object class given
 
@@ -101,8 +101,8 @@ public:
     Returns feature indices chosen for cascade.
     Feature enumeration starts from 0
     */
-    std::vector<int> train(const Mat_<int>& data,
-                           const Mat_<int>& labels);
+    std::vector<int> train(const Mat& data,
+                           const Mat& labels);
 
     /* Predict object class given object that can compute object features
 
@@ -111,7 +111,7 @@ public:
     Returns confidence_value — measure of confidense that object
     is from class +1
     */
-    float predict(const ACFFeatureEvaluator& feature_evaluator);
+    float predict(const Ptr<ACFFeatureEvaluator>& feature_evaluator);
 
 private:
     /* Parameters for cascade training */

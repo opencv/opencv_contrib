@@ -78,7 +78,7 @@ public:
             One value per bbox — confidence of detector that corresponding
             bbox contatins object
     */
-    void detect(const Mat& image,
+    void detect(InputArray image,
                 std::vector<Rect>& bboxes,
                 std::vector<float>& confidence_values) const;
 
