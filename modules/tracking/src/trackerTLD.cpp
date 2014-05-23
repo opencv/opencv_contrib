@@ -103,6 +103,7 @@ public:
     bool operator()(Rect2d box){return false;}
     int additionalExamples(std::vector<Mat_<double> >& examples);
 protected:
+    RNG rng;
     Mat img_;
     const TLDDetector* detector_;
     Rect2d resultBox_;
@@ -125,16 +126,18 @@ protected:
 template <class T,class Tparams>
 class TrackerProxyImpl : public TrackerProxy{
 public:
-    TrackerProxyImpl(Tparams params=Tparams()):tracker(params){}
+    TrackerProxyImpl(Tparams params=Tparams()):params_(params){}
     bool init( const Mat& image, const Rect2d& boundingBox ){
-        return tracker.init(image,boundingBox);
+        trackerPtr=Ptr<T>(new T(params_));
+        return trackerPtr->init(image,boundingBox);
     }
     bool update( const Mat& image,Rect2d& boundingBox){
         return false;//FIXME
-        return tracker.update(image,boundingBox);
+        return trackerPtr->update(image,boundingBox);
     }
 private:
-    T tracker;
+    Ptr<T> trackerPtr;
+    Tparams params_;
     Rect2d boundingBox_;
 };
 
@@ -195,6 +198,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     TLDDetector* detector=new TLDDetector(params,image.rows,image.cols,boundingBox);
     privateInfo.push_back(Ptr<TLDDetector>(detector));
     privateInfo.push_back(Ptr<WrapperBool>(new WrapperBool(false)));
+    privateInfo.push_back(Ptr<WrapperBool>(new WrapperBool(false)));
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox,detector));
     detector->setModel(model);
     ((TrackerProxy*)static_cast<Private*>(privateInfo[0]))->init(image,boundingBox);
@@ -207,9 +211,10 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     Mat image_blurred;
     GaussianBlur(image_gray,image_blurred,Size(3,3),0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
-    WrapperBool* confidentPtr=((WrapperBool*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
-    TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
     TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
+    TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
+    WrapperBool* confidentPtr=((WrapperBool*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
+    WrapperBool* failedLastTimePtr=((WrapperBool*)static_cast<TrackerTLD::Private*>(privateInfo[3]));
     Mat_<double> standardPatch(15,15);
 
     //best overlap around 92%
@@ -223,21 +228,31 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     Rect2d tmpCandid=boundingBox;
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
+    bool trackerNeedsReInit=false;
     for(int i=0;i<2;i++){
-        tmpCandid=boundingBox;
-        if(((i==0)&&trackerProxy->update(image,tmpCandid))||((i==1)&&(detector->detect(image_gray,image_blurred,tmpCandid)))){
+        if(((i==0)&&!(failedLastTimePtr->get())&&trackerProxy->update(image,tmpCandid)) || 
+                ((i==1)&&(detector->detect(image_gray,image_blurred,tmpCandid)))){
             candidates.push_back(tmpCandid);
             resample(image_gray,tmpCandid,standardPatch);
             candidatesRes.push_back(tldModel->Sc(standardPatch));
+        }else{
+            if(i==0){
+                trackerNeedsReInit=true;
+            }
         }
     }
     printf("candidates.size()=%d\n",candidates.size());
     std::vector<double>::iterator it;
     if((it=std::max_element(candidatesRes.begin(),candidatesRes.end()))==candidatesRes.end()){
         confidentPtr->set(false);
+        failedLastTimePtr->set(true);
         return false;
     }else{
         boundingBox=candidates[it-candidatesRes.begin()];
+        failedLastTimePtr->set(false);
+        if(trackerNeedsReInit || it!=candidatesRes.begin()){
+            trackerProxy->init(image,boundingBox);
+        }
     }
 
     if(*it > CORE_THRESHOLD){
@@ -264,12 +279,12 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         }while(detector->getNextRect(rect,isObject,shouldBeIntegrated));
         pExpert.additionalExamples(examples);
         for(int i=0;i<examples.size();i++){
-            tldModel->integrate(image_gray,image_blurred,examples[i],true);
+            tldModel->integrate(examples[i],true);
         }
         examples.clear();
         nExpert.additionalExamples(examples);
         for(int i=0;i<examples.size();i++){
-            tldModel->integrate(image_gray,image_blurred,examples[i],false);
+            tldModel->integrate(examples[i],false);
         }
     }
 
@@ -533,10 +548,44 @@ void TrackerTLDModel::integrate(Mat& img,Mat& imgBlurred,Rect2d box,bool isPosit
         classifiers[i].integrate(blurredPatch,isPositive);
     }
 }
+void TrackerTLDModel::integrate(Mat_<double> e,bool isPositive){
+    if(isPositive){
+        positiveExamples.push_back(e);
+    }else{
+        negativeExamples.push_back(e);
+    }
+    for(int i=0;i<classifiers.size();i++){
+        classifiers[i].integrate(e,isPositive);
+    }
+}
 
 int Pexpert::additionalExamples(std::vector<Mat_<double> >& examples){
     examples.clear();
-    //TODO
+    examples.reserve(100);
+    std::vector<Rect2d> closest,scanGrid=detector_->generateScanGrid();
+    closest.reserve(10);
+    getClosestN(scanGrid,resultBox_,10,closest);
+
+    Point2f center;
+    Size2f size;
+    for(int i=0;i<closest.size();i++){
+        for(int j=0;j<10;j++){
+            Mat_<double> standardPatch(15,15);
+            center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
+            center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
+            size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
+            size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
+            float angle=rng.uniform((double)-5.0,(double)5.0);
+
+            resample(img_,RotatedRect(center,size,angle),standardPatch);
+            for(int y=0;y<standardPatch.rows;y++){
+                for(int x=0;x<standardPatch.cols;x++){
+                    standardPatch(x,y)+=rng.gaussian(5.0);
+                }
+            }
+            examples.push_back(standardPatch);
+        }
+    }
     return 0;
     //Mat img_;
     //const TLDDetector* detector_;

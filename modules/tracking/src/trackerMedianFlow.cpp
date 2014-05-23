@@ -53,7 +53,7 @@ namespace cv
  */
 /*
  * TODO:
- * add "non-detected" answer in algo
+ * add "non-detected" answer in algo --> test it with 2 rects --> frame-by-frame debug in TLD --> test it!!
  * take all parameters out 
  *              asessment framework
  *
@@ -68,9 +68,9 @@ namespace cv
 class MedianFlowCore{
  public:
      MedianFlowCore(TrackerMedianFlow::Params paramsIn):termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.3){params=paramsIn;}
-     Rect2d medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox);
+     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
  private:
-     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect);
+     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
      //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median; besides
           //it makes copy all the time
      template<typename T>
@@ -149,10 +149,12 @@ bool TrackerMedianFlow::updateImpl( const Mat& image, Rect2d& boundingBox ){
     Mat oldImage=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getImage();
 
     Rect2d oldBox=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
-    boundingBox=(((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getMedianFlowCore())->
-        medianFlowImpl(oldImage,image,oldBox);
+    if(!(((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getMedianFlowCore())->
+        medianFlowImpl(oldImage,image,oldBox)){
+        return false;
+    }
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
-    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
+    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(oldBox);
     return true;
 }
 
@@ -178,7 +180,7 @@ std::string MedianFlowCore::type2str(int type) {
 
   return r;
 }
-Rect2d MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox){
+bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     std::vector<Point2f> pointsToTrackOld,pointsToTrackNew;
 
     Mat oldImage_gray,newImage_gray;
@@ -199,6 +201,13 @@ Rect2d MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox){
     calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(3,3),5,termcrit,0);
     printf("\t%d after LK forward\n",pointsToTrackOld.size());
 
+    std::vector<Point2f> di;
+    for(int i=0;i<pointsToTrackOld.size();i++){
+        if(status[i]==1){
+            di.push_back(pointsToTrackNew[i]-pointsToTrackOld[i]);
+        }
+    }
+
     std::vector<bool> filter_status;
     check_FB(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
     check_NCC(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
@@ -214,14 +223,25 @@ Rect2d MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d oldBox){
     }
     printf("\t%d after LK backward\n",pointsToTrackOld.size());
 
-    // vote
     CV_Assert(pointsToTrackOld.size()>0);
-    Rect2d newBddBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox);
+    Point2f mDisplacement;
+    oldBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox,mDisplacement);
 
-    return newBddBox;
+    std::vector<double> displacements;
+    for(int i=0;i<di.size();i++){
+        di[i]-=mDisplacement;
+        displacements.push_back(sqrt(di[i].ddot(di[i])));
+    }
+    if(getMedian(displacements,displacements.size())>10){
+        return false;
+    }
+
+
+    //return newBddBox;
+    return true;
 }
 
-Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect){
+Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD){
     static int iteration=0;//FIXME -- we don't want this static var in final release
     Rect2d newRect;
     Point2d newCenter(oldRect.x+oldRect.width/2.0,oldRect.y+oldRect.height/2.0);
@@ -243,6 +263,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     for(int i=0;i<n;i++){  buf[i]=newPoints[i].y-oldPoints[i].y;  }
     yshift=getMedian(buf,n);
     newCenter.y+=yshift;
+    mD=Point2f(xshift,yshift);
 
     if(oldPoints.size()==1){
         newRect.x=newCenter.x-oldRect.width/2.0;
