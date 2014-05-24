@@ -42,8 +42,44 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_ADAS_ADAS_HPP__
 #define __OPENCV_ADAS_ADAS_HPP__
 
-#include "adas/acffeature.hpp"
-#include "adas/waldboost.hpp"
-#include "adas/icfdetector.hpp"
+namespace cv
+{
+namespace adas
+{
+
+class CV_EXPORTS ICFDetector
+{
+public:
+    /* Initialize detector */
+    ICFDetector();
+
+    /* Load detector from file, return true on success, false otherwise */
+    bool load(const std::string& filename);
+
+    /* Run detector on single image
+
+        image — image for detection
+
+        bboxes — output array of object bounding boxes in format
+                 Rect(row_from, col_from, n_rows, n_cols)
+
+        confidence_values — output array of confidence values from 0 to 1.
+            One value per bbox — confidence of detector that corresponding
+            bbox contatins object
+
+        minObjSize — min possible object size on image in pixels (rows x cols)
+
+        maxObjSize — max possible object size on image in pixels (rows x cols)
+
+    */
+    void detect(InputArray image,
+                std::vector<Rect>& bboxes,
+                std::vector<float>& confidence_values,
+                Size minObjSize,
+                Size maxObjSize) const;
+};
+
+} /* namespace adas */
+} /* namespace cv */
 
 #endif /* __OPENCV_ADAS_ADAS_HPP__ */
