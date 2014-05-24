@@ -55,6 +55,9 @@ namespace cv
     clock_t start;float milisec=0.0;\
     start=clock();{a} milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
     printf("%-90s took %f milis\n",#a,milisec); }
+#define START_TICK(name) { clock_t start;float milisec=0.0; start=clock();
+#define END_TICK(name) milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
+    printf("%s took %f milis\n",name,milisec); }
 extern Rect2d etalon;
 void myassert(const Mat& img);
 void printPatch(const Mat_<double>& standardPatch);

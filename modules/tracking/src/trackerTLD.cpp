@@ -259,7 +259,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         confidentPtr->set(true);
     }
 
-    if(confidentPtr->get()){
+    if(false && confidentPtr->get()){
         Pexpert pExpert(image_gray,boundingBox,detector,params);
         Nexpert nExpert(image_gray,boundingBox,detector,params);
         bool isObject,shouldBeIntegrated,expertResult;
@@ -383,10 +383,14 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res){
     int remains=0;
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
 
-    MEASURE_TIME(remains=patchVariance(img,tldModel->getOriginalVariance(),scanGrid.size());)
+    START_TICK("patch variance")
+    remains=patchVariance(img,tldModel->getOriginalVariance(),scanGrid.size());
+    END_TICK("patch variance")
     printf("remains %d rects\n",remains);
 
-    MEASURE_TIME(remains=ensembleClassifier(imgBlurred,*(tldModel->getClassifiers()),remains);)
+    START_TICK("ensembleClassifier")
+    remains=ensembleClassifier(imgBlurred,*(tldModel->getClassifiers()),remains);
+    END_TICK("ensembleClassifier")
     printf("remains %d rects\n",remains);
 
     Mat_<double> standardPatch(15,15);
@@ -394,6 +398,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res){
     Rect2d maxScRect;
     double tmp=0.0;
     int iSc=-1;
+    START_TICK("NCC")
     isObject.resize(remains);
     shouldBeIntegrated.resize(remains);
     for(int i=0;i<remains;i++){
@@ -411,6 +416,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res){
             maxScRect=scanGrid[i];
         }
     }
+    END_TICK("NCC")
     if(iSc==-1){
         return false;
     }
@@ -599,5 +605,24 @@ bool Nexpert::operator()(Rect2d box){
     }
     return true;
 }
+/*void fast_ensemble(){
+   const uchar* ptr0 = blurred_img.at<uchar>(y,x);
+   // grab the grid points
+   for(int i = 0; i < 80; i++) buf[i] = ptr0[ofs[i]];
+   // compute binary words, look at histograms.
+   double sum = 0;
+   const uchar* pairs = pairs_tab;
+   const int* P = hist;
+   const int word_size = 13;
+   for(base_idx = 0; base_idx < base_n; base_idx++, pairs += word_size*2, P += (1<<word_size)*2 ){
+          int word = (buf[pairs[0]] < buf[pairs[1]]) +
+                           (buf[pairs[2]] < buf[pairs[3]])*2 +
+                           ...
+                           (buf[pairs[24]] < buf[pairs[25]])*4096;
+         int p = P[word*2], n = P[word*2+1];
+         sum += p + n > 0 ? (double)p/(p + n) : 0.;
+   }
+   sum /= base_n;
+}*/
 
 } /* namespace cv */
