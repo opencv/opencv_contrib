@@ -46,10 +46,12 @@
 #include <algorithm>
 #include <limits.h>
 #include "TLD.hpp"
+#include "opencv2/highgui.hpp"
 
-#define HOW_MANY_CLASSIFIERS 20
+#define HOW_MANY_CLASSIFIERS 242
 #define THETA_NN 0.5
 #define CORE_THRESHOLD 0.5
+#define NEG_EXAMPLES_IN_INIT_MODEL 300
 
 using namespace cv;
 
@@ -333,11 +335,10 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     }
 
     negativeExamples.clear();
-    const int negMax=200;
-    negativeExamples.reserve(negMax);
+    negativeExamples.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
     std::vector<int> indices;
-    indices.reserve(negMax);
-    while(negativeExamples.size()<negMax){
+    indices.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
+    while(negativeExamples.size()<NEG_EXAMPLES_IN_INIT_MODEL){
         int i=rng.uniform((int)0,(int)scanGrid.size());
         if(std::find(indices.begin(),indices.end(),i)==indices.end() && overlap(boundingBox,scanGrid[i])<0.2){
             Mat_<double> standardPatch(15,15);
@@ -392,6 +393,15 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res){
     remains=ensembleClassifier(imgBlurred,*(tldModel->getClassifiers()),remains);
     END_TICK("ensembleClassifier")
     printf("remains %d rects\n",remains);
+
+    /*Mat myimg;
+    img.copyTo(myimg);
+    for(int i=0;i<remains;i++){
+        rectangle(myimg,scanGrid[i], Scalar( 255, 0, 0 ), 1, 1 );
+    }
+    imshow("img",myimg);
+    waitKey(0);
+    exit(0);*/
 
     Mat_<double> standardPatch(15,15);
     float maxSc=0.0;
@@ -593,10 +603,6 @@ int Pexpert::additionalExamples(std::vector<Mat_<double> >& examples){
         }
     }
     return 0;
-    //Mat img_;
-    //const TLDDetector* detector_;
-    //Rect2d resultBox_;
-    //TrackerTLD::Params params_;
 }
 
 bool Nexpert::operator()(Rect2d box){
