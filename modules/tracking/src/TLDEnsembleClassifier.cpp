@@ -3698,7 +3698,7 @@ unsigned short int TLDEnsembleClassifier::code(const Mat_<double>& patch)const{
     unsigned short int position=0;
     char codeS[20];
     for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++,position<<1){
-        if(((uchar)patch(x1[i],y1[i]))==((uchar)patch(x2[i],y2[i]))){
+        if(((uchar)patch(x1[i],y1[i]))<((uchar)patch(x2[i],y2[i]))){
             position++;
             codeS[i]='o';
         }else{

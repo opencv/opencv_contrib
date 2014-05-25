@@ -361,8 +361,8 @@ TLDDetector::TLDDetector(const TrackerTLD::Params& params,int rows,int cols,Rect
     scanGrid.clear();
     //scales step: 1.2; hor step: 10% of width; verstep: 10% of height; minsize: 20pix
     for(double h=initBox.height, w=initBox.width;h<cols && w<rows;){
-        for(double x=0;(x+w)<cols;x+=(0.1*w)){
-            for(double y=0;(y+h)<rows;y+=(0.1*h)){
+        for(double x=0;(x+w)<=(cols-1.0);x+=(0.1*w)){
+            for(double y=0;(y+h)<=(rows-1.0);y+=(0.1*h)){
                 scanGrid.push_back(Rect2d(x,y,w,h));
             }
         }
