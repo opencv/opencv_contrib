@@ -41,11 +41,20 @@ the use of this software, even if advised of the possibility of such damage.
 #define LINEDESCRIPTOR_HH_
 
 
-#include "EDLineDetector.hh"
-#include "LineStructure.hh"
+//#include "EDLineDetector.hh"
+//#include "LineStructure.hh"
 
+//#include "/include/opencv2/line_descriptor/EDLineDetector.hpp"
+//#include "opencv2/line_descriptor/LineStructure.hpp"
 
+//#include "opencv2/EDLineDetector.hpp"
+//#include "opencv2/LineStructure.hpp"
+
+#include "precomp.hpp"
+
+#include <vector>
 #include <map>
+
 struct OctaveLine{
   unsigned int octaveCount;//the octave which this line is detected
   unsigned int lineIDInOctave;//the line ID in that octave image
@@ -65,16 +74,15 @@ public:
 		NearestNeighbor=0, //the nearest neighbor is taken as matching
 		NNDR=1//nearest/next ratio
 	};
+
   /*This function is used to detect lines from multi-scale images.*/
-	int OctaveKeyLines(cv::Mat & image, ScaleLines &keyLines);
-  int GetLineDescriptor(cv::Mat & image,
-  		ScaleLines &keyLines);
-  int GetLineDescriptor(cv::Mat & image,
-  		ScaleLines &keyLines, bool lsd);
+  int OctaveKeyLines(cv::Mat & image, ScaleLines &keyLines);
+  int GetLineDescriptor(cv::Mat & image, ScaleLines &keyLines);
+  int GetLineDescriptor(std::vector<cv::Mat> &scale_images, ScaleLines &keyLines);
 
   void findNearestParallelLines(ScaleLines & keyLines);
 
-  void GetLineBinaryDescriptor(std::vector<cv::Mat> & oct_binaryDescMat, ScaleLines & keyLines);
+  void GetLineBinaryDescriptor(std::vector<cv::Mat> & oct_binaryDescMat, ScaleLines &keyLines);
   int MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &keyLinesRight,
   		std::vector<short> &matchLeft, std::vector<short> &matchRight,
   		int criteria=NNDR);
@@ -120,7 +128,7 @@ private:
 	 *from the EDLineDetector class without extra computation cost. Another reason is that, if we use
 	 *a single EDLineDetector to detect lines in different octave of images, then we need to allocate and release
 	 *memory for gradient images (dxImg, dyImg, gImg) repeatedly for their varying size*/
-	std::vector<EDLineDetector*> edLineVec_;
+    std::vector<EDLineDetector*> edLineVec_;
 
 	
 };

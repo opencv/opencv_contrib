@@ -44,11 +44,16 @@ the use of this software, even if advised of the possibility of such damage.
 #include <iostream>
 #include <list>
 #include <opencv2/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/features2d.hpp>
+//#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
+//#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/core/utility.hpp>
+
 #include <array>
+#include <sstream>
 
 
 struct Pixel{
@@ -94,6 +99,7 @@ inline void writeMat(cv::Mat m, std::string name, int n)
     ss >> s;
     std::string fileNameConf = name + s;
     cv::FileStorage fsConf(fileNameConf, cv::FileStorage::WRITE);
+    cv::FileStorage fsConf();
     fsConf << "m" << m;
 
     fsConf.release();

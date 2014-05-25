@@ -38,7 +38,10 @@ the use of this software, even if advised of the possibility of such damage.
 */
 
 
-#include "../include/EDLineDetector.hh"
+//#include "/include/opencv2/line_descriptor/EDLineDetector.hpp"
+//#include "opencv2/EDLineDetector.hpp"
+
+#include "precomp.hpp"
 
 #define Horizontal  255//if |dx|<|dy|;
 #define Vertical    0//if |dy|<=|dx|;
