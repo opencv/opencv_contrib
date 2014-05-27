@@ -39,15 +39,47 @@
  //
  //M*/
 
-#ifndef __OPENCV_SALIENCY_HPP__
-#define __OPENCV_SALIENCY_HPP__
-
-#include "opencv2/saliency/saliencyBaseClasses.hpp"
-#include "opencv2/saliency/saliencySpecializedClasses.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
-CV_EXPORTS bool initModule_saliency(void);
+
+/**
+ * PBAS Motion Saliency
+ */
+
+/**
+ * Parameters
+ */
+MotionSaliencyPBAS::Params::Params()
+{
+
 }
 
-#endif //__OPENCV_SALIENCY_HPP__
+MotionSaliencyPBAS::MotionSaliencyPBAS()
+{
+
+}
+
+MotionSaliencyPBAS::~MotionSaliencyPBAS()
+{
+
+}
+
+void MotionSaliencyPBAS::read( const cv::FileNode& fn )
+{
+  params.read( fn );
+}
+
+void MotionSaliencyPBAS::write( cv::FileStorage& fs ) const
+{
+  params.write( fs );
+}
+
+bool MotionSaliencyPBAS::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
+{
+
+  return true;
+}
+
+}/* namespace cv */

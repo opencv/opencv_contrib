@@ -39,15 +39,54 @@
  //
  //M*/
 
-#ifndef __OPENCV_SALIENCY_HPP__
-#define __OPENCV_SALIENCY_HPP__
-
-#include "opencv2/saliency/saliencyBaseClasses.hpp"
-#include "opencv2/saliency/saliencySpecializedClasses.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
-CV_EXPORTS bool initModule_saliency(void);
+
+/**
+ * BING Objectness
+ */
+
+/**
+ * Parameters
+ */
+ObjectnessBING::Params::Params()
+{
+
 }
 
-#endif //__OPENCV_SALIENCY_HPP__
+/*ObjectnessBING::ObjectnessBING( const ObjectnessBING &parameters ) :
+    params( parameters )
+{
+  className = "PBAS";
+} */
+
+ObjectnessBING::ObjectnessBING()
+{
+
+}
+
+
+ObjectnessBING::~ObjectnessBING()
+{
+
+}
+
+void ObjectnessBING::read( const cv::FileNode& fn )
+{
+  params.read( fn );
+}
+
+void ObjectnessBING::write( cv::FileStorage& fs ) const
+{
+  params.write( fs );
+}
+
+bool ObjectnessBING::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
+{
+
+  return true;
+}
+
+}/* namespace cv */

@@ -39,15 +39,11 @@
  //
  //M*/
 
-#ifndef __OPENCV_SALIENCY_HPP__
-#define __OPENCV_SALIENCY_HPP__
+#ifndef __OPENCV_PRECOMP_H__
+#define __OPENCV_PRECOMP_H__
 
-#include "opencv2/saliency/saliencyBaseClasses.hpp"
-#include "opencv2/saliency/saliencySpecializedClasses.hpp"
+#include "opencv2/saliency.hpp"
+#include "opencv2/core/utility.hpp"
+#include "opencv2/core/private.hpp"
 
-namespace cv
-{
-CV_EXPORTS bool initModule_saliency(void);
-}
-
-#endif //__OPENCV_SALIENCY_HPP__
+#endif

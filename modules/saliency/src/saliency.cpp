@@ -39,15 +39,50 @@
  //
  //M*/
 
-#ifndef __OPENCV_SALIENCY_HPP__
-#define __OPENCV_SALIENCY_HPP__
-
-#include "opencv2/saliency/saliencyBaseClasses.hpp"
-#include "opencv2/saliency/saliencySpecializedClasses.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
-CV_EXPORTS bool initModule_saliency(void);
+Saliency::~Saliency()
+{
+
 }
 
-#endif //__OPENCV_SALIENCY_HPP__
+Ptr<Saliency> Saliency::create( const String& saliencyType )
+{
+
+  if( saliencyType.find( "STATIC_SALIENCY.SPECTRAL_RESIDUAL" ) == 0 )
+  {
+    return Ptr < Saliency > ( new StaticSaliencySpectralResidual() );
+  }
+  else if( saliencyType.find( "STATIC_SALIENCY.ITTI_CIO" ) == 0 )
+  {
+    //return Ptr < Saliency > ( new SaliencyIttiCIO() );
+  }
+  else if( saliencyType.find( "MOTION_SALIENCY.PBAS" ) == 0 )
+  {
+    return Ptr < Saliency > ( new MotionSaliencyPBAS() );
+  }
+  else if( saliencyType.find( "OBJECTNESS.BING" ) == 0 )
+  {
+    return Ptr < Saliency > ( new ObjectnessBING() );
+  }
+
+  CV_Error( -1, "Saliency algorithm type " + saliencyType + " not supported" );
+  return Ptr<Saliency>();
+}
+
+bool Saliency::computeSaliency( const Mat& image, Mat& saliencyMap )
+{
+  if( image.empty() )
+    return false;
+
+  return computeSaliencyImpl( image, saliencyMap );
+}
+
+String Saliency::getClassName() const
+{
+  return className;
+}
+
+} /* namespace cv */
