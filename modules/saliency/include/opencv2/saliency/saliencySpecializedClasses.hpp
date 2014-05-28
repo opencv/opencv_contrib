@@ -65,6 +65,7 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   struct CV_EXPORTS Params
   {
     Params();
+    Size resizedImageSize;
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
   };
@@ -75,7 +76,7 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeKmeans( Mat& saliencyMap, Mat& outputMat );
+
   bool computeSaliencyImpl( const Mat& src, Mat& dst );
   AlgorithmInfo* info() const;
 

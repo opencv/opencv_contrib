@@ -54,7 +54,7 @@ namespace cv
 
 StaticSaliencySpectralResidual::Params::Params()
 {
-
+  resizedImageSize=Size(64,64);
 }
 
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters ) :
@@ -78,69 +78,30 @@ void StaticSaliencySpectralResidual::write( cv::FileStorage& fs ) const
   params.write( fs );
 }
 
-bool StaticSaliencySpectralResidual::computeKmeans( Mat& saliencyMap, Mat& outputMat )
-{
-
-  Mat labels = Mat::zeros( saliencyMap.rows * saliencyMap.cols, 1, 1 );
-  Mat samples = Mat_<float>( saliencyMap.rows * saliencyMap.cols, 1 );
-  Mat centers;
-  TermCriteria terminationCriteria;
-  terminationCriteria.epsilon = 0.2;
-  terminationCriteria.maxCount = 1000;
-  terminationCriteria.type = TermCriteria::COUNT + TermCriteria::EPS;
-
-  int elemCounter = 0;
-  for ( int i = 0; i < saliencyMap.rows; i++ )
-  {
-    for ( int j = 0; j < saliencyMap.cols; j++ )
-    {
-      samples.at<float>( elemCounter, 0 ) = saliencyMap.at<float>( i, j );
-      elemCounter++;
-    }
-  }
-
-  kmeans( samples, 5, labels, terminationCriteria, 5, KMEANS_RANDOM_CENTERS, centers );
-
-  outputMat = Mat_<float>( saliencyMap.size() );
-  int intCounter = 0;
-  for ( int x = 0; x < saliencyMap.rows; x++ )
-  {
-    for ( int y = 0; y < saliencyMap.cols; y++ )
-    {
-      outputMat.at<float>( x, y ) = centers.at<float>( labels.at<int>( intCounter, 0 ), 0 );
-      intCounter++;
-    }
-
-  }
-
-  return true;
-
-}
 
 bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
 {
 
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;
-  Size imageSize( 64, 64 );
-  Mat realImage( imageSize, CV_64F );
-  Mat imaginaryImage( imageSize, CV_64F );
+  Mat realImage( params.resizedImageSize, CV_64F );
+  Mat imaginaryImage( params.resizedImageSize, CV_64F );
   imaginaryImage.setTo( 0 );
-  Mat combinedImage( imageSize, CV_64FC2 );
+  Mat combinedImage( params.resizedImageSize, CV_64FC2 );
   Mat imageDFT;
   Mat logAmplitude;
-  Mat angle( imageSize, CV_64F );
-  Mat magnitude( imageSize, CV_64F );
+  Mat angle( params.resizedImageSize, CV_64F );
+  Mat magnitude( params.resizedImageSize, CV_64F );
   Mat logAmplitude_blur, imageGR;
 
   if( image.channels() == 3 )
   {
     cvtColor( image, imageGR, COLOR_BGR2GRAY );
-    resize( imageGR, grayDown, imageSize, 0, 0, INTER_LINEAR );
+    resize( imageGR, grayDown, params.resizedImageSize, 0, 0, INTER_LINEAR );
   }
   else
   {
-    resize( image, grayDown, imageSize, 0, 0, INTER_LINEAR );
+    resize( image, grayDown, params.resizedImageSize, 0, 0, INTER_LINEAR );
   }
 
   grayDown.convertTo( realImage, CV_64F );
@@ -176,17 +137,15 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat&
 
   resize( magnitude, saliencyMap, image.size(), 0, 0, INTER_LINEAR );
 
-  // CLUSTERING BY K-MEANS
-  Mat outputMat;
-  computeKmeans( saliencyMap, outputMat );
-
+#ifdef SALIENCY_DEBUG
+  // visualize saliency map before and after K-means
   imshow( "Saliency Map", saliencyMap );
-  imshow( "K-mean", outputMat );
+#endif
 
-// FINE CLUSTERING
-  outputMat = outputMat * 255;
+//TODO try the results and then delete
+  /*outputMat = outputMat * 255;
   outputMat.convertTo( outputMat, CV_8U );
-  saliencyMap = outputMat;
+  saliencyMap = outputMat; */
 
   return true;
 

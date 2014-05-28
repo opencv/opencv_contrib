@@ -95,7 +95,9 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
     Params();
   };
 
- //protected:
+  bool computeBinaryMap( const Mat& saliencyMap, Mat& outputMat );
+
+  //protected:
   //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
@@ -111,7 +113,7 @@ class CV_EXPORTS_W MotionSaliency : public virtual Saliency
     Params();
   };
 
- //protected:
+  //protected:
   //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
@@ -128,7 +130,7 @@ class CV_EXPORTS_W Objectness : public virtual Saliency
   };
 
 // protected:
- // virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  // virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
   Params params;
