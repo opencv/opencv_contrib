@@ -94,11 +94,10 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
   {
     Params();
   };
+  bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
 
-  bool computeBinaryMap( const Mat& saliencyMap, Mat& outputMat );
-
-  //protected:
-  //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+ protected:
+  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
   Params params;
@@ -108,32 +107,32 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
 class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-  };
+//  struct CV_EXPORTS Params
+//  {
+//    Params();
+//  };
 
-  //protected:
-  //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+ protected:
+  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
-  Params params;
+  //Params params;
 };
 
 /************************************ Objectness Base Class ************************************/
 class CV_EXPORTS_W Objectness : public virtual Saliency
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-  };
+//  struct CV_EXPORTS Params
+//  {
+//    Params();
+//  };
 
-// protected:
-  // virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+ protected:
+  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
 
  private:
-  Params params;
+  //Params params;
 };
 
 } /* namespace cv */

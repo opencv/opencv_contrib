@@ -92,6 +92,11 @@ bool StaticSaliency::computeBinaryMap( const Mat& saliencyMap, Mat& BinaryMap )
 
   }
 
+  //Convert
+  outputMat = outputMat * 255;
+  outputMat.convertTo( outputMat, CV_8U );
+    //saliencyMap = outputMat;
+
   // adaptative thresholding using Otsu's method, to make saliency map binary
   threshold( outputMat, BinaryMap, 0, 255, THRESH_BINARY | THRESH_OTSU );
 

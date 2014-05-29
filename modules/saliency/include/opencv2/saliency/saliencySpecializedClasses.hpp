@@ -45,7 +45,7 @@
 #include "saliencyBaseClasses.hpp"
 
 //TODO delete
-#define SALIENCY_DEBUG true
+//#define SALIENCY_DEBUG true
 #ifdef SALIENCY_DEBUG
 #include <opencv2/highgui.hpp>
 #endif
@@ -76,9 +76,8 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   void write( FileStorage& fs ) const;
 
  protected:
-
   bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const;
+  AlgorithmInfo* info() const { return 0; }
 
  private:
   Params params;
@@ -100,8 +99,8 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
   };
-  //MotionSaliencyPBAS(const MotionSaliencyPBAS::Params &parameters = MotionSaliencyPBAS::Params());
-  MotionSaliencyPBAS();
+  MotionSaliencyPBAS( const MotionSaliencyPBAS::Params &parameters = MotionSaliencyPBAS::Params() );
+  //MotionSaliencyPBAS();
   ~MotionSaliencyPBAS();
 
   void read( const FileNode& fn );
@@ -109,7 +108,7 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 
  protected:
   bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const;
+  AlgorithmInfo* info() const { return 0; }
 
  private:
   Params params;
@@ -130,8 +129,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
   };
-  //ObjectnessBING(const ObjectnessBING::Params &parameters = ObjectnessBING::Params());
-  ObjectnessBING();
+  ObjectnessBING( const ObjectnessBING::Params &parameters = ObjectnessBING::Params() );
+  //ObjectnessBING();
   ~ObjectnessBING();
 
   void read( const FileNode& fn );
@@ -139,7 +138,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
  protected:
   bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const;
+  AlgorithmInfo* info() const { return 0; }
 
  private:
   Params params;

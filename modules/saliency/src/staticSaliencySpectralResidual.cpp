@@ -57,6 +57,17 @@ StaticSaliencySpectralResidual::Params::Params()
   resizedImageSize=Size(64,64);
 }
 
+void StaticSaliencySpectralResidual::Params::read( const cv::FileNode& fn )
+{
+  //resizedImageSize=Size(fn["resizedImageSize"]);
+
+}
+
+void StaticSaliencySpectralResidual::Params::write( cv::FileStorage& fs ) const
+{
+  //fs << "resizedImageSize" << resizedImageSize;
+}
+
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters ) :
     params( parameters )
 {
@@ -77,7 +88,6 @@ void StaticSaliencySpectralResidual::write( cv::FileStorage& fs ) const
 {
   params.write( fs );
 }
-
 
 bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
 {
@@ -142,10 +152,6 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat&
   imshow( "Saliency Map", saliencyMap );
 #endif
 
-//TODO try the results and then delete
-  /*outputMat = outputMat * 255;
-  outputMat.convertTo( outputMat, CV_8U );
-  saliencyMap = outputMat; */
 
   return true;
 

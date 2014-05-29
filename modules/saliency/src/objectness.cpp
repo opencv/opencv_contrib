@@ -45,53 +45,17 @@ namespace cv
 {
 
 /**
- * BING Objectness
+ * Objectness
  */
 
 /**
  * Parameters
  */
-ObjectnessBING::Params::Params()
-{
 
-}
+//Objectness::Params::Params()
+//{
+//
+//}
 
-void ObjectnessBING::Params::read( const cv::FileNode& fn )
-{
-  //resizedImageSize=Size(fn["resizedImageSize"]);
-
-}
-
-void ObjectnessBING::Params::write( cv::FileStorage& fs ) const
-{
-  //fs << "resizedImageSize" << resizedImageSize;
-}
-
-ObjectnessBING::ObjectnessBING( const ObjectnessBING::Params &parameters ) :
-    params( parameters )
-{
-  className = "BING";
-}
-
-ObjectnessBING::~ObjectnessBING()
-{
-
-}
-
-void ObjectnessBING::read( const cv::FileNode& fn )
-{
-  params.read( fn );
-}
-
-void ObjectnessBING::write( cv::FileStorage& fs ) const
-{
-  params.write( fs );
-}
-
-bool ObjectnessBING::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
-{
-
-  return true;
-}
 
 }/* namespace cv */

@@ -56,9 +56,21 @@ MotionSaliencyPBAS::Params::Params()
 
 }
 
-MotionSaliencyPBAS::MotionSaliencyPBAS()
+void MotionSaliencyPBAS::Params::read( const cv::FileNode& fn )
 {
+  //resizedImageSize=Size(fn["resizedImageSize"]);
 
+}
+
+void MotionSaliencyPBAS::Params::write( cv::FileStorage& fs ) const
+{
+  //fs << "resizedImageSize" << resizedImageSize;
+}
+
+MotionSaliencyPBAS::MotionSaliencyPBAS(const MotionSaliencyPBAS::Params &parameters ) :
+        params( parameters )
+{
+  className = "PBAS";
 }
 
 MotionSaliencyPBAS::~MotionSaliencyPBAS()
