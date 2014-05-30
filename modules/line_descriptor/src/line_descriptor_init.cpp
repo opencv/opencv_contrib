@@ -40,20 +40,20 @@
  //M*/
 
 #include "precomp.hpp"
-#include "opencv2/line_detector.hpp"
+//#include "opencv2/line_descriptor.hpp"
+
+
+//class BinaryDescriptor;
 
 namespace cv
 {
 
-CV_INIT_ALGORITHM(EDLineDetector, "EDLINEDETECTOR",);
+CV_INIT_ALGORITHM(BinaryDescriptor, "BINARY.DESCRIPTOR",);
 
-CV_INIT_ALGORITHM(LineDescriptor, "LINEDESCRIPTOR",);
-
-bool initModule_tracking(void)
+bool initModule_line_descriptor(void)
 {
   bool all = true;
-  all &= !EDLineDetector_info_auto.name().empty();
-  all &= !LineDescriptor_info_auto.name().empty();
+  all &= !BinaryDescriptor_info_auto.name().empty();
 
   return all;
 }

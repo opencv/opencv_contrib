@@ -39,20 +39,16 @@
  //
  //M*/
 
-#ifndef __OPENCV_PRECOMP_H__
-#define __OPENCV_PRECOMP_H__
+#ifndef __OPENCV_LINE_DESCRIPTOR_HPP__
+#define __OPENCV_LINE_DESCRIPTOR_HPP__
 
-#include <algorithm>
+#include "opencv2/line_descriptor/descriptor.hpp"
+#include "opencv2/core.hpp"
 
-#include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
+namespace cv
+{
+CV_EXPORTS bool initModule_line_descriptor(void);
 
-#include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/highgui.hpp>
+}
 
-#include "opencv2/line_descriptor.hpp"
-
-
-
-#endif
+#endif 
