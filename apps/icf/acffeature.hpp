@@ -53,9 +53,7 @@ namespace adas
 
     params — pyramid computing parameters
 
-Returns computed channels in vectors N x CH,
-N — number of scales (outer vector),
-CH — number of channels (inner vectors)
+Returns vector of computed channels
 */
 std::vector<Mat>
 computeChannels(const Mat& image);
