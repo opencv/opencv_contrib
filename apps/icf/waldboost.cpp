@@ -22,10 +22,6 @@ static void cumsum(const Mat_<float>& src, Mat_<float> dst)
     }
 }
 
-#include <iostream>
-using std::cout;
-using std::endl;
-
 int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
 {
     CV_Assert(labels.rows == 1 && labels.cols == data.cols);
@@ -94,15 +90,6 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
             neg_total_weight += weights.at<float>(0, col);
     }
 
-    cout << pos_total_weight << endl;
-    cout << neg_total_weight << endl;
-
-    cout << pos_weights << endl;
-    cout << neg_weights << endl;
-
-    cout << pos_cum_weights << endl;
-    cout << neg_cum_weights << endl;
-
     /* Compute minimal error */
     float min_err = FLT_MAX;
     int min_row = -1;
@@ -117,8 +104,6 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
             err = pos_cum_weights.at<float>(row, col) +
                   (neg_total_weight - neg_cum_weights.at<float>(row, col));
 
-            cout << "row " << row << "err " << err << endl;
-
             if( err < min_err )
             {
                 min_err = err;
@@ -131,8 +116,6 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
             err = (pos_total_weight - pos_cum_weights.at<float>(row, col)) +
                   neg_cum_weights.at<float>(row, col);
 
-            cout << "row " << row << "err " << err << endl;
-
             if( err < min_err )
             {
                 min_err = err;
@@ -143,11 +126,9 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
         }
     }
 
-    cout << "min_err: " << min_err << endl;
     /* Compute threshold, store found values in fields */
     threshold_ = ( sorted_data.at<int>(min_row, min_col) +
                    sorted_data.at<int>(min_row, min_col + 1) ) / 2;
-    cout << "threshold: " << threshold_ << endl;
     polarity_ = min_polarity;
 
     return min_row;
