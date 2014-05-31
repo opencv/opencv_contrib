@@ -60,29 +60,31 @@ namespace cv
     printf("%s took %f milis\n",name,milisec); }
 extern Rect2d etalon;
 void myassert(const Mat& img);
-void printPatch(const Mat_<double>& standardPatch);
+void printPatch(const Mat_<uchar>& standardPatch);
 std::string type2str(const Mat& mat);
 
 //aux functions and variables
 #define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
 inline double overlap(const Rect2d& r1,const Rect2d& r2);
-void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples);
-void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples);
-void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
+void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
+void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
 double variance(const Mat& img);
-double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,const Mat& image,Rect2d box);
-double NCC(Mat_<double> patch1,Mat_<double> patch2);
+double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect box);
+double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2);
+void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 
 class TLDEnsembleClassifier{
 public:
-    TLDEnsembleClassifier(int ordinal);
-    void integrate(const Mat_<double>& patch,bool isPositive);
-    double posteriorProbability(const Mat_<double>& patch)const;
-    static int getMaxOrdinal(){return (15*15*14)/(sizeof(x1)/sizeof(x1[0]));}
+    TLDEnsembleClassifier(int ordinal,Size size);
+    void integrate(Mat_<uchar> patch,bool isPositive);
+    double posteriorProbability(uchar* data,int rowstep)const;
+    static int getMaxOrdinal();
 private:
-    unsigned short int code(const Mat_<double>& patch)const;
-    uchar x1[13],x2[13],y1[13],y2[13];
+    inline void stepPrefSuff(int len,int* step,int* pref);
+    void preinit(int ordinal);
+    unsigned short int code(uchar* data,int rowstep)const;
     unsigned int pos[8192],neg[8192];//8192=2^13
+    uchar x1[13],y1[13],x2[13],y2[13];
 };
 
 class TrackerProxy : public TrackerTLD::Private{
@@ -90,15 +92,6 @@ public:
     virtual bool init( const Mat& image, const Rect2d& boundingBox)=0;
     virtual bool update(const Mat& image, Rect2d& boundingBox)=0;
     virtual ~TrackerProxy(){}
-};
-
-class WrapperBool : public TrackerTLD::Private{
-public:
-    WrapperBool(bool data):data_(data){}
-    void set(bool data){data_=data;}
-    bool get(){return data_;}
-protected:
-    bool data_;
 };
 
 }

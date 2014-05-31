@@ -66,7 +66,7 @@ Rect2d etalon(14.0,110.0,20.0,20.0);
     printf("black: %d out of %d (%f)\n",count,img.rows*img.cols,1.0*count/img.rows/img.cols);
 }
 
-void printPatch(const Mat_<double>& standardPatch){
+void printPatch(const Mat_<uchar>& standardPatch){
     for(int i=0;i<standardPatch.rows;i++){
         for(int j=0;j<standardPatch.cols;j++){
             printf("%5.2f, ",standardPatch(i,j));
@@ -146,8 +146,8 @@ double variance(const Mat& img){
     p2/=(img.cols*img.rows);
     return p2-p*p;
 }
-double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,const Mat& image,Rect2d box){
-    int x=cvRound(box.x),y=cvRound(box.y),width=cvRound(box.width),height=cvRound(box.height);
+double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect box){
+    int x=(box.x),y=(box.y),width=(box.width),height=(box.height);
     double p=0,p2=0;
     unsigned int A,B,C,D;
 
@@ -166,7 +166,7 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,const M
     return p2-p*p;
 }
 
-double NCC(Mat_<double> patch1,Mat_<double> patch2){
+double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     CV_Assert(patch1.rows=patch2.rows);
     CV_Assert(patch1.cols=patch2.cols);
     return patch1.dot(patch2)/norm(patch1)/norm(patch2);
@@ -177,29 +177,93 @@ inline double overlap(const Rect2d& r1,const Rect2d& r2){
     return a0/(a1+a2-a0);
 }
 
-void resample(const Mat& img,const RotatedRect& r2,Mat_<double>& samples){
+void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
     Point2f vertices[4];
     r2.points(vertices);
-    float dx1=vertices[1].x-vertices[0].x,
-          dy1=vertices[1].y-vertices[0].y,
-          dx2=vertices[3].x-vertices[0].x,
-          dy2=vertices[3].y-vertices[0].y;
+
+    int ref=0;
+    float minx=vertices[0].x,miny=vertices[0].y;
+    for(int i=1;i<4;i++){
+        if(vertices[i].x<minx || (vertices[i].x==minx && vertices[i].y<miny)){
+            minx=vertices[i].x;
+            miny=vertices[i].y;
+            ref=i;
+        }
+    }
+
+    float dx1=vertices[(ref+1)%4].x-vertices[ref].x,
+          dy1=vertices[(ref+1)%4].y-vertices[ref].y,
+          dx2=vertices[(ref+3)%4].x-vertices[ref].x,
+          dy2=vertices[(ref+3)%4].y-vertices[ref].y;
     for(int i=0;i<samples.rows;i++){
         for(int j=0;j<samples.cols;j++){
-            float x=vertices[0].x+dx1*j/samples.cols+dx2*i/samples.rows,
-                  y=vertices[0].y+dy1*j/samples.cols+dy2*i/samples.rows;
+            float x=vertices[ref].x+dx1*j/samples.cols+dx2*i/samples.rows,
+                  y=vertices[ref].y+dy1*j/samples.cols+dy2*i/samples.rows;
             int ix=cvFloor(x),iy=cvFloor(y);
             float tx=x-ix,ty=y-iy;
             float a=img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
                 img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
             float b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
                 img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
-            samples(i,j)=(double)a * (1.0 - ty) + b * ty;
+            samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
         }
     }
 }
-void resample(const Mat& img,const Rect2d& r2,Mat_<double>& samples){
+void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){//FIXME: faster
     Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
     return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
 }
+
+//other stuff
+TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
+    preinit(ordinal);
+    int step,pref;
+    stepPrefSuff(size.width,&step,&pref);
+    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+        x1[i]=pref+x1[i]*step;
+        x2[i]=pref+x2[i]*step;
+    }
+    stepPrefSuff(size.height,&step,&pref);
+    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+        y1[i]=pref+y1[i]*step;
+        y2[i]=pref+y2[i]*step;
+    }
+}
+void TLDEnsembleClassifier::stepPrefSuff(int len,int* step,int* pref){
+    *step=len/(9-1);
+    *pref=(len-(*step)*(9-1))/2;
+}
+void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
+    unsigned short int position=code(patch.data,patch.step[0]);
+    if(isPositive){
+        pos[position]++;
+    }else{
+        neg[position]++;
+    }
+}
+double TLDEnsembleClassifier::posteriorProbability(uchar* data,int rowstep)const{
+    unsigned short int position=code(data,rowstep);
+    double posNum=(double)pos[position], negNum=(double)neg[position];
+    if(posNum==0.0 && negNum==0.0){
+        return 0.0;
+    }else{
+        return posNum/(posNum+negNum);
+    }
+}
+unsigned short int TLDEnsembleClassifier::code(uchar* data,int rowstep)const{
+    unsigned short int position=0;
+    char codeS[20];
+    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++,position<<1){
+        if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
+            position++;
+            codeS[i]='o';
+        }else{
+            codeS[i]='x';
+        }
+    }
+    codeS[13]='\0';
+    //printf("integrate with code %s\n",codeS);
+    return position;
+}
+
 }
