@@ -56,11 +56,13 @@ class Stump
 public:
 
     /* Initialize zero stump */
-    Stump(): threshold_(0), polarity_(1) {};
+    Stump(): threshold_(0), polarity_(1), pos_value_(1), neg_value_(-1) {}
 
-    /* Initialize stump with given threshold and polarity */
-    Stump(int threshold, int polarity): threshold_(threshold),
-        polarity_(polarity) {};
+    /* Initialize stump with given threshold, polarity
+        and classification values */
+    Stump(int threshold, int polarity, float pos_value, float neg_value):
+        threshold_(threshold), polarity_(polarity),
+        pos_value_(pos_value), neg_value_(neg_value) {}
 
     /* Train stump for given data
 
@@ -77,21 +79,20 @@ public:
 
     /* Predict object class given
 
-        value — feature value. Feature must be the same as chose during training
-        stump
+        value — feature value. Feature must be the same as was chosen
+        during training stump
 
-    Returns object class from {-1, +1}
+    Returns real value, sign(value) means class
     */
-    int predict(int value);
+    float predict(int value);
 
 private:
     /* Stump decision threshold */
     int threshold_;
     /* Stump polarity, can be from {-1, +1} */
     int polarity_;
-    /* Stump decision rule:
-        h(value) = polarity * sign(value - threshold)
-    */
+    /* Classification values for positive and negative classes  */
+    float pos_value_, neg_value_;
 };
 
 struct WaldBoostParams

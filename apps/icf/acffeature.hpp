@@ -65,7 +65,7 @@ public:
     ACFFeatureEvaluator(const std::vector<Point>& features);
 
     /* Set channels for feature evaluation */
-    void setChannels(const std::vector<Mat> >& channels);
+    void setChannels(const std::vector<Mat>& channels);
 
     /* Set window position */
     void setPosition(Size position);
