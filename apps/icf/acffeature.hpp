@@ -42,6 +42,9 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_ADAS_ACFFEATURE_HPP__
 #define __OPENCV_ADAS_ACFFEATURE_HPP__
 
+#include <opencv2/core.hpp>
+#include <vector>
+
 namespace cv
 {
 namespace adas
@@ -49,14 +52,12 @@ namespace adas
 
 /* Compute channel pyramid for acf features
 
-    image — image, for which pyramid should be computed
+    image — image, for which channels should be computed
 
-    params — pyramid computing parameters
+    channels — output array for computed channels
 
-Returns vector of computed channels
 */
-std::vector<Mat>
-computeChannels(const Mat& image);
+void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels);
 
 class ACFFeatureEvaluator
 {
@@ -65,7 +66,7 @@ public:
     ACFFeatureEvaluator(const std::vector<Point>& features);
 
     /* Set channels for feature evaluation */
-    void setChannels(const std::vector<Mat>& channels);
+    void setChannels(cv::InputArrayOfArrays channels);
 
     /* Set window position */
     void setPosition(Size position);
@@ -78,13 +79,13 @@ public:
 
     Returns matrix-column of features
     */
-    Mat evaluateAll() const;
+    void evaluateAll(cv::OutputArray) const;
 
 private:
     /* Features to evaluate */
     std::vector<Point> features_;
     /* Channels for feature evaluation */
-    std::vector<Mat> channels;
+    std::vector<cv::Mat> channels;
     /* Channels window position */
     Size position_;
 };
