@@ -98,6 +98,7 @@ private:
 struct WaldBoostParams
 {
     int weak_count;
+    float alpha;
 };
 
 class WaldBoost
@@ -133,8 +134,6 @@ private:
     WaldBoostParams params_;
     /* Stumps in cascade */
     std::vector<Stump> stumps_;
-    /* Weight for stumps in cascade linear combination */
-    std::vector<float> stump_weights_;
     /* Rejection thresholds for linear combination at every stump evaluation */
     std::vector<float> thresholds_;
 };
