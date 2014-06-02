@@ -150,9 +150,10 @@ bool TrackerMedianFlow::updateImpl( const Mat& image, Rect2d& boundingBox ){
 
     Rect2d oldBox=((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
     if(!(((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->getMedianFlowCore())->
-        medianFlowImpl(oldImage,image,oldBox)){
+      medianFlowImpl(oldImage,image,oldBox)){
         return false;
     }
+    boundingBox=oldBox;
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(oldBox);
     return true;
@@ -223,7 +224,9 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     }
     printf("\t%d after LK backward\n",pointsToTrackOld.size());
 
-    CV_Assert(pointsToTrackOld.size()>0);
+    if(pointsToTrackOld.size()==0){
+        return false;
+    }
     Point2f mDisplacement;
     oldBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox,mDisplacement);
 
@@ -235,7 +238,6 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     if(getMedian(displacements,displacements.size())>10){
         return false;
     }
-
 
     //return newBddBox;
     return true;
