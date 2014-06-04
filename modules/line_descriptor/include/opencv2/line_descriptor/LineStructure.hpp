@@ -42,6 +42,14 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <vector>
 
+/* struct to represent lines extracted from an octave */
+struct OctaveLine{
+  unsigned int octaveCount;//the octave which this line is detected
+  unsigned int lineIDInOctave;//the line ID in that octave image
+  unsigned int lineIDInScaleLineVec;//the line ID in Scale line vector
+  float lineLength; //the length of line in original image scale
+};
+
 // A 2D line (normal equation parameters).
 struct SingleLine
 {

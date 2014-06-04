@@ -38,9 +38,10 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+#define _USE_MATH_DEFINES
 
 #include "precomp.hpp"
-//#include "opencv2/line_descriptor/descriptor.hpp"
+#include <math.h>
 
 using namespace cv;
 
@@ -53,7 +54,7 @@ BinaryDescriptor::Params::Params()
     numOfOctave_ = 5;
     numOfBand_ = 9;
     widthOfBand_ = 7;
-    reductionRatio = 2;
+    reductionRatio = sqrt(2); // or 2?
 
 }
 
@@ -131,8 +132,73 @@ void BinaryDescriptor::write( cv::FileStorage& fs ) const
     params.write(fs);
 }
 
+/* get coefficients of line passing by two points in line_extremes */
+void BinaryDescriptor::getLineParameters(cv::Vec4i &line_extremes, cv::Vec3i &lineParams)
+{
+    int x1 = line_extremes[0];
+    int x2 = line_extremes[2];
+    int y1 = line_extremes[1];
+    int y2 = line_extremes[3];
+
+    /* line is parallel to Y axis */
+    if(x1 == x2)
+    {
+        lineParams[0] = 1;
+        lineParams[1] = 0;
+        lineParams[2] = -x1 /* or -x2 */;
+    }
+
+    /* line is parallel to X axis */
+    else if(y1 == y2)
+    {
+        lineParams[0] = 0;
+        lineParams[1] = 1;
+        lineParams[2] = -y1 /* or -y2 */;
+    }
+
+    /* line is not parallel to any axis */
+    else
+    {
+        lineParams[0] = y1-y2;
+        lineParams[1] = x2-x1;
+        lineParams[2] = -y1*(x2-x1) + x1*(y2-y1);
+    }
+}
+ /* compute the angle between line and X axis */
+float BinaryDescriptor::getLineDirection(cv::Vec3i &lineParams)
+{
+    /* line is parallel to X axis */
+    if(lineParams[0] == 0)
+        return 0;
+
+    /* line is parallel to Y axis */
+    else if(lineParams[1] == 0)
+        return M_PI/2;
+
+    /* line is not parallel to any axis */
+    else
+    {
+        /* compute angular coefficient */
+        float m = -lineParams[0]/lineParams[1];
+
+        if(m>0)
+            return atan(m);
+
+        else
+            return M_PI - atan(m);
+    }
+}
+
 /* extract lines from an image and compute their descriptors */
-void BinaryDescriptor::getLineBinaryDescriptor(cv::Mat & oct_binaryDescMat, ScaleLines &keyLines)
+void BinaryDescriptor::getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat)
+{
+    /*  start function that actually implements descriptors' computation */
+    getLineBinaryDescriptorsImpl(oct_binaryDescMat);
+
+}
+
+/* compute descriptors */
+void BinaryDescriptor::getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat)
 {
     /* prepare a matrix to store Gaussian pyramid of input matrix */
     std::vector<cv::Mat> matVec(params.numOfOctave_);
@@ -176,62 +242,11 @@ void BinaryDescriptor::getLineBinaryDescriptor(cv::Mat & oct_binaryDescMat, Scal
         dyImg_vector.push_back(currentDy);
     }
 
-    /* compute descriptors */
-    getLineBinaryDescriptorImpl(matVec, keyLines);
+    /* prepare a structure for hosting and organizing extracted lines */
+    ScaleLines keyLines;
 
-}
-
-/* compute descriptors */
-void BinaryDescriptor::getLineBinaryDescriptorImpl(std::vector<cv::Mat> & oct_binaryDescMat, ScaleLines &keyLines)
-{
-    for(size_t scaleCounter = 0; scaleCounter<oct_binaryDescMat.size(); scaleCounter++)
-    {
-        /* get current scaled image */
-        cv::Mat currentScaledImage = oct_binaryDescMat[scaleCounter];
-
-        /* create an LSD detector and store a pointer to it */
-        cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
-
-        /* prepare a vectore to host extracted segments */
-        std::vector<cv::Vec4i> lines_std;
-
-        /* use detector to extract segments */
-        ls->detect(currentScaledImage, lines_std);
-
-        /* store information for every extracted segment */
-        for (size_t  lineCounter = 0; lineCounter<lines_std.size(); lineCounter++)
-        {
-             /* get current segment and store its extremes */
-             const cv::Vec4i v = lines_std[lineCounter];
-             cv::Point b(v[0], v[1]);
-             cv::Point e(v[2], v[3]);
-
-            /* create an object to store line information */
-            OctaveSingleLine osl;
-            osl.startPointX = b.x;
-            osl.startPointY = b.y;
-            osl.endPointX = e.x;
-            osl.endPointY = e.y;
-            osl.sPointInOctaveX = b.x;
-            osl.sPointInOctaveY = b.y;
-            osl.ePointInOctaveX = e.x;
-            osl.ePointInOctaveY = e.y;
-            osl.direction = 0;
-            osl.salience = 0;
-            osl.lineLength = 0;
-            osl.numOfPixels = std::sqrt((b.x-e.x)*(b.x-e.x) + (b.y-e.y)*(b.y-e.y));
-            osl.octaveCount = scaleCounter;
-
-            /* create a new LineVec and add new line to it */
-            LinesVec lineScaleLs;
-            lineScaleLs.push_back(osl);
-
-            /* add current LineVec to other ones in the output list */
-            keyLines.push_back(lineScaleLs);
-
-       }
-
-    }
+    /* extract and arrange lines */
+    OctaveKeyLines(matVec, keyLines);
 
     /* compute LBD descriptors */
     ComputeLBD_(keyLines);
@@ -261,6 +276,323 @@ unsigned char BinaryDescriptor::binaryTest(float* f1, float* f2)
      }
 
      return result;
+
+}
+
+/* gather lines in groups. Each group contains the same line, detected in different octaves */
+int BinaryDescriptor::OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleLines &keyLines)
+{
+
+    /* final number of extracted lines */
+    unsigned int numOfFinalLine = 0;
+
+    for(size_t scaleCounter = 0; scaleCounter<octaveImages.size(); scaleCounter++)
+    {
+        /* get current scaled image */
+        cv::Mat currentScaledImage = octaveImages[scaleCounter];
+
+        /* create an LSD detector and store a pointer to it */
+        cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
+
+        /* prepare a vectore to host extracted segments */
+        std::vector<cv::Vec4i> lines_std;
+
+        /* use detector to extract segments */
+        ls->detect(currentScaledImage, lines_std);
+
+        /* store lines extracted from current image */
+        extractedLines.push_back(lines_std);
+
+        /* update lines counter */
+        numOfFinalLine += lines_std.size();
+
+    }
+
+    /* prepare a vector to store octave information associated to extracted lines */
+    std::vector<OctaveLine> octaveLines(numOfFinalLine);
+
+    /* set lines' counter to 0 for reuse */
+    numOfFinalLine = 0;
+
+    /* counter to give a unique ID to lines in LineVecs */
+    unsigned int lineIDInScaleLineVec = 0;
+
+    /* floats to compute lines' lengths */
+    float dx, dy;
+
+    /* loop over lines extracted from scale 0 (original image) */
+    for(unsigned int lineCurId=0; lineCurId<extractedLines[0].size(); lineCurId++)
+    {
+        /* set octave from which it was extracted */
+        octaveLines[numOfFinalLine].octaveCount = 0;
+        /* set ID within its octave */
+        octaveLines[numOfFinalLine].lineIDInOctave = lineCurId;
+        /* set a unique ID among all lines extracted in all octaves */
+        octaveLines[numOfFinalLine].lineIDInScaleLineVec = lineIDInScaleLineVec;
+
+        /* compute absolute value of difference between X coordinates of line's extreme points */
+        dx = (extractedLines[0][lineCurId])[0] - (extractedLines[0][lineCurId])[2];
+        /* compute absolute value of difference between Y coordinates of line's extreme points */
+        dy = (extractedLines[0][lineCurId])[1] - (extractedLines[0][lineCurId])[3];
+        /* compute line's length */
+        octaveLines[numOfFinalLine].lineLength = sqrt(dx*dx+dy*dy);
+
+        /* update counters */
+        numOfFinalLine++;
+        lineIDInScaleLineVec++;
+    }
+
+    /* create and fill an array to store scale factors */
+    float *scale = new float[params.numOfOctave_];
+    scale[0] = 1;
+    for(unsigned int octaveCount = 1; octaveCount<params.numOfOctave_; octaveCount++ )
+    {
+            scale[octaveCount] = params.reductionRatio * scale[octaveCount-1];
+    }
+
+    /* some variables' declarations */
+    float rho1, rho2, tempValue;
+    float direction, near, length;
+    unsigned int octaveID, lineIDInOctave;
+
+    /*more than one octave image, organize lines in scale space.
+    *lines corresponding to the same line in octave images should have the same index in the ScaleLineVec */
+    if(params.numOfOctave_>1)
+    {
+        /* some other variables' declarations */
+        float twoPI = 2*M_PI;
+        unsigned int closeLineID;
+        float endPointDis,minEndPointDis,minLocalDis,maxLocalDis;
+        float lp0,lp1, lp2, lp3, np0,np1, np2, np3;
+
+        /* loop over list of octaves */
+                for(unsigned int octaveCount = 1; octaveCount<params.numOfOctave_; octaveCount++)
+                {
+                    /*for each line in current octave image, find their corresponding lines
+                    in the octaveLines,
+                    give them the same value of lineIDInScaleLineVec*/
+
+                    /* loop over list of lines extracted from current octave */
+                    for(unsigned int lineCurId=0;lineCurId<extractedLines[octaveCount].size();lineCurId++)
+                    {
+                        /* get (scaled) known term from equation of current line */
+                        cv::Vec3i line_equation;
+                        getLineParameters(extractedLines[octaveCount][lineCurId], line_equation);
+                        rho1 = scale[octaveCount] *  fabs(line_equation[2]);
+
+                        /*nearThreshold depends on the distance of the image coordinate origin to current line.
+                        *so nearThreshold = rho1 * nearThresholdRatio, where nearThresholdRatio = 1-cos(10*pi/180) = 0.0152*/
+                        tempValue = rho1 * 0.0152;
+                        float nearThreshold = (tempValue>6)?(tempValue):6;
+                        nearThreshold = (nearThreshold<12)?nearThreshold:12;
+
+                        /* compute scaled lenght of current line */
+                        dx = fabs((extractedLines[octaveCount][lineCurId])[0]-(extractedLines[octaveCount][lineCurId][2]));//x1-x2
+                        dy = fabs((extractedLines[octaveCount][lineCurId])[1]-(extractedLines[octaveCount][lineCurId][3]));//y1-y2
+                        length = scale[octaveCount] * sqrt(dx*dx+dy*dy);
+
+                        minEndPointDis = 12;
+                        /* loop over the octave representations of all lines */
+                        for(unsigned int lineNextId=0; lineNextId<numOfFinalLine;lineNextId++)
+                        {
+                            /* if a line from same octave is encountered,
+                            a comparison with it shouldn't be considered */
+                            octaveID = octaveLines[lineNextId].octaveCount;
+                            if(octaveID==octaveCount)
+                                break;
+
+                            /* take ID (in octave) of line to be compared */
+                            lineIDInOctave = octaveLines[lineNextId].lineIDInOctave;
+
+                            /* compute difference between lines' direction, to check
+                            whether they are parallel */
+                            cv::Vec3i line_equation_to_compare;
+                            getLineParameters(extractedLines[octaveID][lineIDInOctave],
+                                              line_equation_to_compare);
+
+                            direction = fabs(getLineDirection(line_equation) -
+                                             getLineDirection(line_equation_to_compare));
+
+                            /* the angle between two lines are larger than 10degrees
+                            (i.e. 10*pi/180=0.1745), they are not close to parallel */
+                            if(direction>0.1745 && (twoPI - direction>0.1745))
+                                continue;
+
+                            /*now check whether current line and next line are near to each other.
+                            Get known term from equation to be compared */
+                            rho2 = scale[octaveID] * fabs(line_equation_to_compare[2]);
+
+                            /* compute difference between known terms */
+                            near = fabs(rho1 - rho2);
+
+                            /* two lines are not close in the image */
+                            if(near>nearThreshold)
+                                continue;
+
+                            /* get the extreme points of the two lines */
+                            lp0 = scale[octaveCount] * (extractedLines[octaveCount][lineCurId])[0];
+                            lp1 = scale[octaveCount] * (extractedLines[octaveCount][lineCurId])[1];
+                            lp2 = scale[octaveCount] * (extractedLines[octaveCount][lineCurId])[2];
+                            lp3 = scale[octaveCount] * (extractedLines[octaveCount][lineCurId])[3];
+                            np0 = scale[octaveID] * (extractedLines[octaveID][lineIDInOctave])[0];
+                            np1 = scale[octaveID] * (extractedLines[octaveID][lineIDInOctave])[1];
+                            np2 = scale[octaveID] * (extractedLines[octaveID][lineIDInOctave])[2];
+                            np3 = scale[octaveID] * (extractedLines[octaveID][lineIDInOctave])[3];
+
+                            /* get the distance between the two leftmost extremes of lines
+                            L1(0,1)<->L2(0,1) */
+                            dx = lp0 - np0;
+                            dy = lp1 - np1;
+                            endPointDis = sqrt(dx*dx + dy*dy);
+
+                            /* set momentaneously min and max distance between lines to
+                            the one between left extremes */
+                            minLocalDis = endPointDis;
+                            maxLocalDis = endPointDis;
+
+                            /* compute distance between right extremes
+                            L1(2,3)<->L2(2,3) */
+                            dx = lp2 - np2;
+                            dy = lp3 - np3;
+                            endPointDis = sqrt(dx*dx + dy*dy);
+
+                            /* update (if necessary) min and max distance between lines */
+                            minLocalDis = (endPointDis<minLocalDis)?endPointDis:minLocalDis;
+                            maxLocalDis = (endPointDis>maxLocalDis)?endPointDis:maxLocalDis;
+
+                            /* compute distance between left extreme of current line and
+                            right extreme of line to be compared
+                            L1(0,1)<->L2(2,3) */
+                            dx = lp0 - np2;
+                            dy = lp1 - np3;
+                            endPointDis = sqrt(dx*dx + dy*dy);
+
+                            /* update (if necessary) min and max distance between lines */
+                            minLocalDis = (endPointDis<minLocalDis)?endPointDis:minLocalDis;
+                            maxLocalDis = (endPointDis>maxLocalDis)?endPointDis:maxLocalDis;
+
+                            /* compute distance between right extreme of current line and
+                            left extreme of line to be compared
+                            L1(2,3)<->L2(0,1) */
+                            dx = lp2 - np0;
+                            dy = lp3 - np1;
+                            endPointDis = sqrt(dx*dx + dy*dy);
+
+                            /* update (if necessary) min and max distance between lines */
+                            minLocalDis = (endPointDis<minLocalDis)?endPointDis:minLocalDis;
+                            maxLocalDis = (endPointDis>maxLocalDis)?endPointDis:maxLocalDis;
+
+                            /* check whether conditions for considering line to be compared
+                            worth to be inserted in the same LineVec are satisfied */
+                            if((maxLocalDis<0.8*(length+octaveLines[lineNextId].lineLength))
+                                &&(minLocalDis<minEndPointDis))
+                            {
+                                /* keep the closest line */
+                                minEndPointDis = minLocalDis;
+                                closeLineID = lineNextId;
+                            }
+
+
+                        }
+
+                        /* add current line into octaveLines */
+                        if(minEndPointDis<12)
+                            octaveLines[numOfFinalLine].lineIDInScaleLineVec = octaveLines[closeLineID].lineIDInScaleLineVec;
+                        else{
+                            octaveLines[numOfFinalLine].lineIDInScaleLineVec = lineIDInScaleLineVec;
+                            lineIDInScaleLineVec++;
+                        }
+
+                        octaveLines[numOfFinalLine].octaveCount = octaveCount;
+                        octaveLines[numOfFinalLine].lineIDInOctave = lineCurId;
+                        octaveLines[numOfFinalLine].lineLength = length;
+                        numOfFinalLine++;
+                    }
+                }
+    }
+
+    /* Reorganize the detected lines into keyLines */
+    keyLines.clear();
+    keyLines.resize(lineIDInScaleLineVec);
+    unsigned int tempID;
+    float s1,e1,s2,e2;
+    bool shouldChange;
+    OctaveSingleLine singleLine;
+    for(unsigned int  lineID = 0;lineID < numOfFinalLine; lineID++)
+    {
+        lineIDInOctave = octaveLines[lineID].lineIDInOctave;
+        octaveID  = octaveLines[lineID].octaveCount;
+
+        cv::Vec3i tempParams;
+        getLineParameters(extractedLines[octaveID][lineIDInOctave], tempParams);
+        direction = getLineDirection(tempParams);
+        // direction = edLineVec_[octaveID]->lineDirection_[lineIDInOctave];
+        singleLine.octaveCount = octaveID;
+        singleLine.direction = direction;
+        singleLine.lineLength = octaveLines[lineID].lineLength;
+        //singleLine.salience = singleLine.lineLength/max(images_sizes[octaveID].width,
+        //                                               images_sizes[octaveID].height);
+        //singleLine.salience  = edLineVec_[octaveID]->lineSalience_[lineIDInOctave];
+        //singleLine.numOfPixels = edLineVec_[octaveID]->lines_.sId[lineIDInOctave+1]-
+                                 //edLineVec_[octaveID]->lines_.sId[lineIDInOctave];
+
+        //decide the start point and end point
+        shouldChange = false;
+        s1 = (extractedLines[octaveID][lineIDInOctave])[0];//sx
+        s2 = (extractedLines[octaveID][lineIDInOctave])[1];//sy
+        e1 = (extractedLines[octaveID][lineIDInOctave])[2];//ex
+        e2 = (extractedLines[octaveID][lineIDInOctave])[3];//ey
+        dx = e1 - s1;//ex-sx
+        dy = e2 - s2;//ey-sy
+
+        if(direction>=-0.75*M_PI&&direction<-0.25*M_PI)
+        {
+            if(dy>0)
+                shouldChange = true;
+        }
+
+        if(direction>=-0.25*M_PI&&direction<0.25*M_PI)
+            if(dx<0){shouldChange = true;}
+
+        if(direction>=0.25*M_PI&&direction<0.75*M_PI)
+            if(dy<0){shouldChange = true;}
+
+        if((direction>=0.75*M_PI&&direction<M_PI)||(direction>=-M_PI&&direction<-0.75*M_PI)){
+            if(dx>0)
+                shouldChange = true;
+        }
+
+        tempValue = scale[octaveID];
+
+        if(shouldChange){
+                singleLine.sPointInOctaveX = e1;
+                singleLine.sPointInOctaveY = e2;
+                singleLine.ePointInOctaveX = s1;
+                singleLine.ePointInOctaveY = s2;
+                singleLine.startPointX = tempValue * e1;
+                singleLine.startPointY = tempValue * e2;
+                singleLine.endPointX   = tempValue * s1;
+                singleLine.endPointY   = tempValue * s2;
+            }
+
+        else{
+                singleLine.sPointInOctaveX = s1;
+                singleLine.sPointInOctaveY = s2;
+                singleLine.ePointInOctaveX = e1;
+                singleLine.ePointInOctaveY = e2;
+                singleLine.startPointX = tempValue * s1;
+                singleLine.startPointY = tempValue * s2;
+                singleLine.endPointX   = tempValue * e1;
+                singleLine.endPointY   = tempValue * e2;
+            }
+
+        tempID = octaveLines[lineID].lineIDInScaleLineVec;
+        keyLines[tempID].push_back(singleLine);
+    }
+
+    delete [] scale;
+
+    return 1;
 
 }
 

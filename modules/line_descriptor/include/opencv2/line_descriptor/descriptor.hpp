@@ -49,6 +49,7 @@
 #include "LineStructure.hpp"
 #include "opencv2/core.hpp"
 
+
 namespace cv
 {
 
@@ -56,11 +57,10 @@ namespace cv
     {
     public:
         virtual ~LineDescriptor();
-        void getLineBinaryDescriptor(std::vector<cv::Mat> & oct_binaryDescMat);
+        void getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat);
 
     protected:
-        virtual void getLineBinaryDescriptorImpl(std::vector<cv::Mat> & oct_binaryDescMat,
-                                                 ScaleLines &keyLines);
+        virtual void getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat);
 
     };
 
@@ -102,11 +102,11 @@ namespace cv
 
         virtual void read( const cv::FileNode& fn );
         virtual void write( cv::FileStorage& fs ) const;
-        void getLineBinaryDescriptor(cv::Mat & oct_binaryDescMat, ScaleLines &keyLines);
+        void getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat);
 
 
     protected:
-        virtual void getLineBinaryDescriptorImpl(std::vector<cv::Mat> & oct_binaryDescMat, ScaleLines &keyLines);
+        virtual void getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat);
         AlgorithmInfo* info() const;
 
         Params params;
@@ -115,6 +115,9 @@ namespace cv
     private:
         unsigned char binaryTest(float* f1, float* f2);
         int ComputeLBD_(ScaleLines &keyLines);
+        int OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleLines &keyLines);
+        void getLineParameters(cv::Vec4i &line_extremes, cv::Vec3i &lineParams);
+        float getLineDirection(cv::Vec3i &lineParams);
 
         /* the local gaussian coefficient apply to the orthogonal line direction within each band */
         std::vector<float> gaussCoefL_;
@@ -127,6 +130,9 @@ namespace cv
 
         /* vectot to store sizes of octave images */
         std::vector<cv::Size> images_sizes;
+
+        /* structure to store lines extracted from each octave image */
+        std::vector<std::vector<cv::Vec4i> > extractedLines;
 
     };
 
