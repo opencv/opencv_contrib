@@ -45,15 +45,19 @@
 namespace cv
 {
 
-//CV_INIT_ALGORITHM(TrackerMIL, "TRACKER.MIL",);
+CV_INIT_ALGORITHM( StaticSaliencySpectralResidual, "SALIENCY.SPECTRAL_RESIDUAL",
+                   obj.info()->addParam(obj, "resizedImageSize", obj.resizedImageSize, false, reinterpret_cast<SizeGetter>(&StaticSaliencySpectralResidual::getWsize), reinterpret_cast<SizeSetter>(&StaticSaliencySpectralResidual::setWsize)));
 
-//CV_INIT_ALGORITHM(TrackerBoosting, "TRACKER.BOOSTING",);
+CV_INIT_ALGORITHM( MotionSaliencyPBAS, "SALIENCY.PBAS",);
 
-bool initModule_saliency(void)
+CV_INIT_ALGORITHM( ObjectnessBING, "SALIENCY.BING", );
+
+bool initModule_saliency( void )
 {
   bool all = true;
-  //all &= !TrackerMIL_info_auto.name().empty();
-  //all &= !TrackerBoosting_info_auto.name().empty();
+  all &= !StaticSaliencySpectralResidual_info_auto.name().empty();
+  all &= !MotionSaliencyPBAS_info_auto.name().empty();
+  all &= !ObjectnessBING_info_auto.name().empty();
 
   return all;
 }

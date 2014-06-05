@@ -50,7 +50,7 @@ namespace cv
 
 /**
  * Parameters
- */
+
 
 StaticSaliencySpectralResidual::Params::Params()
 {
@@ -66,12 +66,20 @@ void StaticSaliencySpectralResidual::Params::read( const cv::FileNode& fn )
 void StaticSaliencySpectralResidual::Params::write( cv::FileStorage& fs ) const
 {
   //fs << "resizedImageSize" << resizedImageSize;
+} */
+
+cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize(){
+    return resizedImageSize;
+}
+void StaticSaliencySpectralResidual::setWsize(const cv::Ptr<Size>& newSize){
+  resizedImageSize = newSize;
 }
 
-StaticSaliencySpectralResidual::StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters ) :
-    params( parameters )
+
+StaticSaliencySpectralResidual::StaticSaliencySpectralResidual()
 {
   className = "SPECTRAL_RESIDUAL";
+  resizedImageSize=Ptr<Size>(new Size(64,64));
 }
 
 StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
@@ -81,37 +89,36 @@ StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
 
 void StaticSaliencySpectralResidual::read( const cv::FileNode& fn )
 {
-  params.read( fn );
+  //params.read( fn );
 }
 
 void StaticSaliencySpectralResidual::write( cv::FileStorage& fs ) const
 {
-  params.write( fs );
+  //params.write( fs );
 }
 
-bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat& saliencyMap )
+bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray& image, OutputArray& saliencyMap )
 {
-
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;
-  Mat realImage( params.resizedImageSize, CV_64F );
-  Mat imaginaryImage( params.resizedImageSize, CV_64F );
+  Mat realImage(*resizedImageSize, CV_64F );
+  Mat imaginaryImage( *resizedImageSize, CV_64F );
   imaginaryImage.setTo( 0 );
-  Mat combinedImage( params.resizedImageSize, CV_64FC2 );
+  Mat combinedImage( *resizedImageSize, CV_64FC2 );
   Mat imageDFT;
   Mat logAmplitude;
-  Mat angle( params.resizedImageSize, CV_64F );
-  Mat magnitude( params.resizedImageSize, CV_64F );
+  Mat angle( *resizedImageSize, CV_64F );
+  Mat magnitude( *resizedImageSize, CV_64F );
   Mat logAmplitude_blur, imageGR;
 
   if( image.channels() == 3 )
   {
     cvtColor( image, imageGR, COLOR_BGR2GRAY );
-    resize( imageGR, grayDown, params.resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( imageGR, grayDown, *resizedImageSize, 0, 0, INTER_LINEAR );
   }
   else
   {
-    resize( image, grayDown, params.resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( image, grayDown, *resizedImageSize, 0, 0, INTER_LINEAR );
   }
 
   grayDown.convertTo( realImage, CV_64F );
@@ -148,8 +155,8 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const Mat& image, Mat&
   resize( magnitude, saliencyMap, image.size(), 0, 0, INTER_LINEAR );
 
 #ifdef SALIENCY_DEBUG
-  // visualize saliency map before and after K-means
-  imshow( "Saliency Map", saliencyMap );
+  // visualize saliency map
+  imshow( "Saliency Map Interna", saliencyMap );
 #endif
 
 

@@ -50,12 +50,12 @@ namespace cv
 
 /**
  * Parameters
- */
+
 
 StaticSaliency::Params::Params()
 {
 
-}
+} */
 
 bool StaticSaliency::computeBinaryMap( const Mat& saliencyMap, Mat& BinaryMap )
 {

@@ -57,30 +57,40 @@ namespace cv
 
 /**
  * \brief Saliency based on algorithms based on [1]
- * [1] Yan, Jia, Xi Chen, and QiuPing Zhu. "Robust online tracking via adaptive samples selection with saliency detection." (2013)
+ * [1]Hou, Xiaodi, and Liqing Zhang. "Saliency detection: A spectral residual approach." Computer Vision and Pattern Recognition, 2007. CVPR'07. IEEE Conference on. IEEE, 2007.
  */
 class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-    Size resizedImageSize;
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
-  };
-  StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
+  /*struct CV_EXPORTS Params
+   {
+   Params();
+   Size resizedImageSize;
+   void read( const FileNode& fn );
+   void write( FileStorage& fs ) const;
+   }; */
+
+  //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
+  StaticSaliencySpectralResidual();
   ~StaticSaliencySpectralResidual();
+
+  typedef cv::Ptr<Size> (cv::Algorithm::*SizeGetter)();
+  typedef void (cv::Algorithm::*SizeSetter)( const cv::Ptr<Size> & );
+
+  cv::Ptr<Size> getWsize();
+  void setWsize( const cv::Ptr<Size> &arrPtr );
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const { return 0; }
+  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  AlgorithmInfo* info() const;  //{ return 0; }
+  CV_PROP_RW Ptr<Size> resizedImageSize;
 
  private:
-  Params params;
+  //Params params;
+
 };
 
 /************************************ Specific Motion Saliency Specialized Classes ************************************/
@@ -93,25 +103,26 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
-  };
-  MotionSaliencyPBAS( const MotionSaliencyPBAS::Params &parameters = MotionSaliencyPBAS::Params() );
-  //MotionSaliencyPBAS();
+  /* struct CV_EXPORTS Params
+   {
+   Params();
+   void read( const FileNode& fn );
+   void write( FileStorage& fs ) const;
+   }; */
+
+  //MotionSaliencyPBAS( const MotionSaliencyPBAS::Params &parameters = MotionSaliencyPBAS::Params() );
+  MotionSaliencyPBAS();
   ~MotionSaliencyPBAS();
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const { return 0; }
+  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  AlgorithmInfo* info() const;  // { return 0; }
 
  private:
-  Params params;
+  //Params params;
 };
 
 /************************************ Specific Objectness Specialized Classes ************************************/
@@ -123,25 +134,26 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 class CV_EXPORTS_W ObjectnessBING : public Objectness
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
-  };
-  ObjectnessBING( const ObjectnessBING::Params &parameters = ObjectnessBING::Params() );
-  //ObjectnessBING();
+  /*struct CV_EXPORTS Params
+   {
+   Params();
+   void read( const FileNode& fn );
+   void write( FileStorage& fs ) const;
+   }; */
+  //ObjectnessBING( const ObjectnessBING::Params &parameters = ObjectnessBING::Params() );
+  ObjectnessBING();
   ~ObjectnessBING();
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const Mat& src, Mat& dst );
-  AlgorithmInfo* info() const { return 0; }
+  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  AlgorithmInfo* info() const;  //{ return 0; }
 
  private:
-  Params params;
+  //Params params;
+
 };
 
 } /* namespace cv */

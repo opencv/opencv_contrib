@@ -73,7 +73,8 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
-  bool computeSaliency( const Mat& image, Mat& saliencyMap );
+  //bool computeSaliency( const Mat& image, Mat& saliencyMap );
+  bool computeSaliency( const InputArray& image, OutputArray& saliencyMap );
 
   /**
    * \brief Get the name of the specific saliency type
@@ -82,7 +83,8 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
   String getClassName() const;
 
  protected:
-  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray& image, OutputArray& saliencyMap ) = 0;
   String className;
 };
 
@@ -90,49 +92,32 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
 class CV_EXPORTS_W StaticSaliency : public virtual Saliency
 {
  public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-  };
+
   bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
 
  protected:
-  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray& image, OutputArray& saliencyMap ) = 0;
 
- private:
-  Params params;
 };
 
 /************************************ Motion Saliency Base Class ************************************/
 class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
- public:
-//  struct CV_EXPORTS Params
-//  {
-//    Params();
-//  };
+
 
  protected:
-  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray& image, OutputArray& saliencyMap ) = 0;
 
- private:
-  //Params params;
+
 };
 
 /************************************ Objectness Base Class ************************************/
 class CV_EXPORTS_W Objectness : public virtual Saliency
 {
- public:
-//  struct CV_EXPORTS Params
-//  {
-//    Params();
-//  };
 
  protected:
-  virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray& image, OutputArray& saliencyMap ) = 0;
 
- private:
-  //Params params;
 };
 
 } /* namespace cv */
