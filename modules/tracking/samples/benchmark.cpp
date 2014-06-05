@@ -5,15 +5,14 @@
 #include <cstring>
 
 #define CMDLINEMAX 10
+#define OVERLAP_TOL 0.5
 
 using namespace std;
 using namespace cv;
 
 /*
- * TODO: test 2 trackers: MIL and MADIANFLOW
+ * TODO:
  do normalization ala Kalal's assessment protocol for TLD
- *
- * FIXME: normal exit
  */
 
 static Mat image;
@@ -35,6 +34,10 @@ static int lineToRect(char* line,Rect2d& res){
   char * ptr=line,*pos=ptr;
   if(line==NULL || line[0]=='\0'){
       return -1;
+  }
+  if(strcmp(line,"NaN,NaN,NaN,NaN\n")==0){
+      res.height=res.width=-1.0;
+      return 0;
   }
 
   double nums[4]={0};
@@ -121,6 +124,7 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
 typedef struct{
     char* videoName;
     vector<int> correctFrames;
+    vector<double> averageMillisPerFrame;
     int len;
 }assessmentRes;
 static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
@@ -133,6 +137,7 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   palette.push_back(Scalar(0,0,255));
   palette.push_back(Scalar(0,255,255));
   Rect2d boundingBox;
+  assessmentRes res;
 
   FILE* gt=fopen(gt_str,"r");
   if(gt==NULL){
@@ -177,7 +182,6 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   Mat frame;
   namedWindow( "Tracking API", 1 );
 
-  //instantiates the specific Tracker
   std::vector<Ptr<Tracker> >trackers(algnum);
   for(int i=0;i<algnum;i++){
       trackers[i] = Tracker::create( algorithms[i] );
@@ -190,7 +194,6 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       }
   }
 
-  //get the first frame
   cap >> frame;
   frame.copyTo( image );
   if(lineToRect(buf,boundingBox)<0){
@@ -213,7 +216,8 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   imshow( "Tracking API", image );
 
   int frameCounter = 0;
-  std::vector<int> correctFrames(trackers.size(),0);
+  res.correctFrames=std::vector<int>(trackers.size(),0);
+  res.averageMillisPerFrame=std::vector<double>(trackers.size(),0.0);
 
   for ( ;; ){
     if( !paused ){
@@ -238,14 +242,30 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       frameCounter++;
       bool allTrackersOut=true;
       for(int i=0;i<trackers.size();i++){
-          if( correctFrames[i]!=0){
+          if( res.correctFrames[i]!=0){
               continue;
           }
-          if(trackers[i]->update( frame, initBoxes[i] ) && (overlap(initBoxes[i],boundingBox)>=0.5) ){
+          bool trackerRes=true;
+          clock_t start;start=clock();
+          trackerRes=trackers[i]->update( frame, initBoxes[i] ) ;
+          start=clock()-start;
+          res.averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
+
+          if(i==1){
+              printf("TLD\n");
+              printf("boundingBox=[%f,%f,%f,%f]\n",boundingBox.x,boundingBox.y,boundingBox.width,boundingBox.height);
+              printf("initBoxes[i]=[%f,%f,%f,%f]\n",initBoxes[i].x,initBoxes[i].y,initBoxes[i].width,initBoxes[i].height);
+              printf("overlap=%f\n",overlap(initBoxes[i],boundingBox));
+              exit(0);
+          }
+
+          if(boundingBox.width<0 || (trackerRes && overlap(initBoxes[i],boundingBox)>=OVERLAP_TOL)){
             allTrackersOut=false;
-            rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+            if(trackerRes){
+                rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+            }
           }else{
-              correctFrames[i]=frameCounter;
+              res.correctFrames[i]=frameCounter;
           }
       }
       if(allTrackersOut){
@@ -263,10 +283,11 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   if(gt!=NULL){
       fclose(gt);
   }
+  for(int i=0;i<res.averageMillisPerFrame.size();i++){
+      res.averageMillisPerFrame[i]/=res.correctFrames[i];
+  }
   destroyWindow( "Tracking API");
-  assessmentRes res;
   res.videoName=video;
-  res.correctFrames=correctFrames;
   res.len=linecount;
   return res;
 }
@@ -299,7 +320,8 @@ int main( int argc, char** argv ){
       printf("%20s",results[i].videoName);
       printf("%5d",results[i].len);
       for(int j=0;j<results[i].correctFrames.size();j++){
-          printf("%5d",results[i].correctFrames[j]);
+          printf("%8d ",results[i].correctFrames[j]);
+          printf("%8.2fmilis",results[i].averageMillisPerFrame[j]);
       }
       printf("\n");
   }

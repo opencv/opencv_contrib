@@ -45,6 +45,7 @@
 #include "time.h"
 #include <algorithm>
 #include <limits.h>
+#include <opencv2/highgui.hpp>
 #include "TLD.hpp"
 
 using namespace cv;
@@ -54,7 +55,19 @@ namespace cv
 
 //debug functions and variables
 Rect2d etalon(14.0,110.0,20.0,20.0);
- void myassert(const Mat& img){
+void drawWithRects(const Mat& img,std::vector<Rect2d> blackOnes,Rect2d whiteOne){
+    Mat image;
+    img.copyTo(image);
+    if(whiteOne.width>=0){
+        rectangle( image,whiteOne, 255, 1, 1 );
+    }
+    for(int i=0;i<blackOnes.size();i++){
+        rectangle( image,blackOnes[i], 0, 1, 1 );
+    }
+    imshow("img",image);
+    waitKey();
+}
+void myassert(const Mat& img){
     int count=0;
     for(int i=0;i<img.rows;i++){
         for(int j=0;j<img.cols;j++){

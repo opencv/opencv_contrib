@@ -62,6 +62,7 @@ extern Rect2d etalon;
 void myassert(const Mat& img);
 void printPatch(const Mat_<uchar>& standardPatch);
 std::string type2str(const Mat& mat);
+void drawWithRects(const Mat& img,std::vector<Rect2d> blackOnes,Rect2d whiteOne=Rect2d(-1.0,-1.0,-1.0,-1.0));
 
 //aux functions and variables
 #define CLIP(x,a,b) MIN(MAX((x),(a)),(b))

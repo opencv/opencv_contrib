@@ -48,7 +48,8 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define HOW_MANY_CLASSIFIERS 50
+//#define HOW_MANY_CLASSIFIERS 50
+#define HOW_MANY_CLASSIFIERS 242
 #define THETA_NN 0.5
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
@@ -249,6 +250,15 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
             }
         }
     }
+
+    if(!true){
+        printf("candidatesRes.size()=%d\n",candidatesRes.size());
+        for(int i=0;i<candidatesRes.size();i++){
+            printf("\t%f\n",candidatesRes[i]);
+        }
+        exit(0);
+    }
+
     std::vector<double>::iterator it;
     if((it=std::max_element(candidatesRes.begin(),candidatesRes.end()))==candidatesRes.end()){
         data->confident=false;
@@ -272,26 +282,26 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         bool expertResult;
         std::vector<Mat_<uchar> > examplesForModel,examplesForEnsemble;
         examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
+        int negRelabeled=0,integrated=0;
         for(int i=0;i<detectorResults.size();i++){
             if(isObject[i]){
                 expertResult=nExpert(detectorResults[i]);
+                if(expertResult!=isObject[i]){negRelabeled++;}
             }else{
                 expertResult=pExpert(detectorResults[i]);
             }
             if(shouldBeIntegrated[i] || (expertResult!=isObject[i])){
                 tldModel->integrateRelabeled(image_gray,image_blurred,detectorResults[i],expertResult);
+                integrated++;
             }
         }
+        printf("%d relabeled by nExpert\n%d integrated\n",negRelabeled,integrated);
         pExpert.additionalExamples(examplesForModel,examplesForEnsemble);
-        CV_Assert(examplesForModel.size()==100);//FIXME: remove these guys
-        CV_Assert(examplesForEnsemble.size()==100);
         for(int i=0;i<examplesForModel.size();i++){
             tldModel->integrateAdditional(examplesForModel[i],examplesForEnsemble[i],true);
         }
         examplesForModel.clear();examplesForEnsemble.clear();
         nExpert.additionalExamples(examplesForModel,examplesForEnsemble);
-        CV_Assert(examplesForModel.size()==0);
-        CV_Assert(examplesForEnsemble.size()==0);
         for(int i=0;i<examplesForEnsemble.size();i++){
             tldModel->integrateAdditional(examplesForModel[i],examplesForEnsemble[i],false);
         }
@@ -445,8 +455,25 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     END_TICK("detector");
 
     if(!true){
+        std::vector<Rect2d> scanGrid;
+        generateScanGrid(img.rows,img.cols,initSize,scanGrid);
+        std::vector<double> results;
+        Mat_<uchar> standardPatch(15,15);
+        for(int i=0;i<scanGrid.size();i++){
+            resample(img,scanGrid[i],standardPatch);
+            results.push_back(tldModel->Sr(standardPatch));
+        }
+        std::vector<double>::iterator it=std::max_element(results.begin(),results.end());
         Mat image;
         img.copyTo(image);
+        rectangle( image,scanGrid[it-results.begin()], 255, 1, 1 );
+        imshow("img",image);
+        waitKey();
+    }
+    if(!true){
+        Mat image;
+        img.copyTo(image);
+        rectangle( image,res, 255, 1, 1 );
         for(int i=0;i<rect.size();i++){
           rectangle( image,rect[i], 0, 1, 1 );
         }
@@ -489,7 +516,7 @@ bool TLDDetector::ensembleClassifier(uchar* data,int rowstep){
         p+=(*classifiers)[k].posteriorProbability(data,rowstep);
     }
     p/=classifiers->size();
-    return (p>0.50);
+    return (p>0.60);
 }
 
 double TrackerTLDModel::Sr(const Mat_<uchar> patch){

@@ -224,7 +224,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     }
     printf("\t%d after LK backward\n",pointsToTrackOld.size());
 
-    if(pointsToTrackOld.size()==0){
+    if(pointsToTrackOld.size()==0 || di.size()==0){
         return false;
     }
     Point2f mDisplacement;
