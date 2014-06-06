@@ -243,9 +243,9 @@ TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
     }
 }
 void TLDEnsembleClassifier::stepPrefSuff(int len,int* step,int* pref){
-    const int ENSEMBLE_GRID=15;
-    *step=len/(ENSEMBLE_GRID-1);
-    *pref=(len-(*step)*(ENSEMBLE_GRID-1))/2;
+    int gridSize=getGridSize();
+    *step=len/(gridSize-1);
+    *pref=(len-(*step)*(gridSize-1))/2;
 }
 void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
     unsigned short int position=code(patch.data,patch.step[0]);

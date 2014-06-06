@@ -48,8 +48,6 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-//#define HOW_MANY_CLASSIFIERS 50
-#define HOW_MANY_CLASSIFIERS 242
 #define THETA_NN 0.5
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
@@ -57,7 +55,7 @@
 using namespace cv;
 
 /*
- * FIXME(optimize):
+ * FIXME(optimize): better ensemble's grid to decrease grid size
  * TODO
  *   finish learning
 */
@@ -86,6 +84,8 @@ public:
     Size getMinSize(){return minSize;}
     bool confident;
     bool failedLastTime;
+    int frameNum;
+    void printme(FILE*  port=stdout);
 private:
     Size minSize;
 };
@@ -165,6 +165,7 @@ class TrackerTLDModel : public TrackerModel{
   void integrateRelabeled(Mat& img,Mat& imgBlurred,Rect2d box,bool isPositive);
   void integrateAdditional(Mat_<uchar> eForModel,Mat_<uchar> eForEnsemble,bool isPositive);
   Size getMinSize(){return minSize_;}
+  void printme(FILE*  port=stdout);
  protected:
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
@@ -229,6 +230,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
     TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
     Data* data=((Data*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
+    data->frameNum++;
     Mat_<uchar> standardPatch(15,15);
     std::vector<Rect2d> detectorResults;
     std::vector<bool> isObject,shouldBeIntegrated;
@@ -257,6 +259,12 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
             printf("\t%f\n",candidatesRes[i]);
         }
         exit(0);
+    }
+    if(!false && data->frameNum==82){
+        tldModel->printme();
+        data->printme();
+        printf("candidatesRes.size()=%d\n",candidatesRes.size());
+        waitKey();
     }
 
     std::vector<double>::iterator it;
@@ -321,7 +329,7 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     Mat image_blurred;
     Mat_<uchar> blurredPatch(minSize);
     GaussianBlur(image,image_blurred,Size(3,3),0.0);
-    for(int i=0;i<HOW_MANY_CLASSIFIERS;i++){
+    for(int i=0,howMany=TLDEnsembleClassifier::getMaxOrdinal();i<howMany;i++){
         classifiers.push_back(TLDEnsembleClassifier(i+1,minSize));
     }
 
@@ -421,6 +429,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
 
         for(int i=0;i<cvFloor((0.0+resized_img.cols-initSize.width)/dx);i++){
             for(int j=0;j<cvFloor((0.0+resized_img.rows-initSize.height)/dy);j++){
+                if(scale==1.0)printf("<%d,%d>\n",dx*i,dy*j);
                 total++;
                 if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
                     continue;
@@ -565,7 +574,8 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,Rect2d box,boo
 }
 
 void TrackerTLDModel::integrateAdditional(Mat_<uchar> eForModel,Mat_<uchar> eForEnsemble,bool isPositive){
-    if((Sr(eForModel)>THETA_NN)!=isPositive){
+    double sr=Sr(eForModel);
+    if((abs(sr-THETA_NN)<0.1) || (sr>THETA_NN)!=isPositive){
         if(isPositive){
             positiveExamples.push_back(eForModel);
         }else{
@@ -632,7 +642,21 @@ Data::Data(Rect2d initBox){
     }
     minSize.width=initBox.width*20.0/minDim;
     minSize.height=initBox.height*20.0/minDim;
+    frameNum=0;
     printf("minSize= %dx%d\n",minSize.width,minSize.height);
+}
+
+void Data::printme(FILE*  port){
+    fprintf(port,"Data:\n");
+    fprintf(port,"\tframeNum=%d\n",frameNum);
+    fprintf(port,"\tconfident=%s\n",confident?"true":"false");
+    fprintf(port,"\tfailedLastTime=%s\n",failedLastTime?"true":"false");
+    fprintf(port,"\tminSize=%dx%d\n",minSize.width,minSize.height);
+}
+void TrackerTLDModel::printme(FILE*  port){
+    fprintf(port,"TrackerTLDModel:\n");
+    fprintf(port,"\tpositiveExamples.size()=%d\n",positiveExamples.size());
+    fprintf(port,"\tnegativeExamples.size()=%d\n",negativeExamples.size());
 }
 
 } /* namespace cv */

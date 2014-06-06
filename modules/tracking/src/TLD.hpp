@@ -81,6 +81,7 @@ public:
     double posteriorProbability(uchar* data,int rowstep)const;
     static int getMaxOrdinal();
 private:
+    static int getGridSize();
     inline void stepPrefSuff(int len,int* step,int* pref);
     void preinit(int ordinal);
     unsigned short int code(uchar* data,int rowstep)const;

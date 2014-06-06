@@ -251,7 +251,7 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           start=clock()-start;
           res.averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
 
-          if(i==1){
+          if(false && i==1){
               printf("TLD\n");
               printf("boundingBox=[%f,%f,%f,%f]\n",boundingBox.x,boundingBox.y,boundingBox.width,boundingBox.height);
               printf("initBoxes[i]=[%f,%f,%f,%f]\n",initBoxes[i].x,initBoxes[i].y,initBoxes[i].width,initBoxes[i].height);
