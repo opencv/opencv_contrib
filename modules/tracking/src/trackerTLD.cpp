@@ -48,7 +48,7 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.5
+#define THETA_NN 0.6
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 static const Size GaussBlur(1,1);
@@ -57,19 +57,10 @@ using namespace cv;
 
 /*
  * FIXME(optimize): better ensemble's grid to decrease grid size
- * TODO
- *   finish learning
+ * FIXME(issues)
+ *       THETA_NN 0.5<->0.6 dramatic change vs video 6
+ *       very bad ensemble for vid 6
 */
-/*ask Kalal: 
- * ./bin/example_tracking_tracker TLD ../TrackerChallenge/test.avi 0 5,110,25,130 > out.txt
- *
- *  init_model:negative_patches  -- all?
- *  posterior: 0/0
- *  sampling: how many base classifiers?
- *  initial model: why 20
- *  scanGrid low overlap
- *  rotated rect in initial model
- */
 
 /* design decisions:
  * blur --> resize (vs. resize-->blur) in detect(), ensembleClassifier stage
@@ -116,7 +107,8 @@ protected:
     friend class MyMouseCallbackDEBUG;
     void computeIntegralImages(const Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2);
     bool patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,double originalVariance,Point pt,Size size);
-    bool ensembleClassifier(const uchar* data,int rowstep);
+    bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>0.5;}
+    double ensembleClassifierNum(const uchar* data,int rowstep);
     TrackerTLD::Params params_;
     Ptr<TrackerModel> model;
 };
@@ -332,7 +324,6 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         }
     }
 
-    exit(0);
     return true;
 }
 
@@ -534,7 +525,7 @@ bool TLDDetector::patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& 
     return variance(intImgP,intImgP2,Rect(pt.x,pt.y,size.width,size.height)) >= 0.5*originalVariance;
 }
 
-bool TLDDetector::ensembleClassifier(const uchar* data,int rowstep){
+double TLDDetector::ensembleClassifierNum(const uchar* data,int rowstep){
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     std::vector<TLDEnsembleClassifier>* classifiers=tldModel->getClassifiers();
     double p=0;
@@ -542,8 +533,7 @@ bool TLDDetector::ensembleClassifier(const uchar* data,int rowstep){
         p+=(*classifiers)[k].posteriorProbability(data,rowstep);
     }
     p/=classifiers->size();
-    //printf("ensemble p=%f\n",p);
-    return (p>0.50);
+    return p;
 }
 
 double TrackerTLDModel::Sr(const Mat_<uchar> patch){
@@ -699,6 +689,7 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
             i=x/scale/dx, j=y/scale/dy;
 
         printf("patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
+        printf("p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])));
         printf("ensembleClassifier=%s\n",(detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0]))?"true":"false");
         fflush(stdout);
 
