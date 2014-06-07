@@ -222,30 +222,42 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
         }
     }
 }
-void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){//FIXME: faster
-    Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
-    return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
+void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
+    if(true){
+        float x,y,a,b,tx,ty;int ix,iy;
+        for(int i=0;i<samples.rows;i++){
+            y=r2.y+i*r2.height/samples.rows;
+            iy=cvFloor(y);ty=y-iy;
+            for(int j=0;j<samples.cols;j++){
+                x=r2.x+j*r2.width/samples.cols;
+                ix=cvFloor(x);tx=x-ix;
+                a=img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
+                    img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
+                b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
+                    img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
+                samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
+            }
+        }
+    }else{
+        Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
+        return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
+    }
 }
 
 //other stuff
-TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
-    preinit(ordinal);
-    int step,pref;
-    stepPrefSuff(size.width,&step,&pref);
+void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
+    int gridSize=getGridSize();
+    int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
     for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
-        x1[i]=pref+x1[i]*step;
-        x2[i]=pref+x2[i]*step;
-    }
-    stepPrefSuff(size.height,&step,&pref);
-    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
-        y1[i]=pref+y1[i]*step;
-        y2[i]=pref+y2[i]*step;
+        arr[i]=pref+arr[i]*step;
     }
 }
-void TLDEnsembleClassifier::stepPrefSuff(int len,int* step,int* pref){
-    int gridSize=getGridSize();
-    *step=len/(gridSize-1);
-    *pref=(len-(*step)*(gridSize-1))/2;
+TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
+    preinit(ordinal);
+    stepPrefSuff(x1,size.width);
+    stepPrefSuff(x2,size.width);
+    stepPrefSuff(y1,size.height);
+    stepPrefSuff(y2,size.height);
 }
 void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
     unsigned short int position=code(patch.data,patch.step[0]);
@@ -255,7 +267,7 @@ void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
         neg[position]++;
     }
 }
-double TLDEnsembleClassifier::posteriorProbability(uchar* data,int rowstep)const{
+double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep)const{
     unsigned short int position=code(data,rowstep);
     double posNum=(double)pos[position], negNum=(double)neg[position];
     if(posNum==0.0 && negNum==0.0){
@@ -264,7 +276,7 @@ double TLDEnsembleClassifier::posteriorProbability(uchar* data,int rowstep)const
         return posNum/(posNum+negNum);
     }
 }
-unsigned short int TLDEnsembleClassifier::code(uchar* data,int rowstep)const{
+unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
     unsigned short int position=0;
     char codeS[20];
     for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++,position<<1){

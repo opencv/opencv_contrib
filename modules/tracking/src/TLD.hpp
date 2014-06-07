@@ -78,13 +78,13 @@ class TLDEnsembleClassifier{
 public:
     TLDEnsembleClassifier(int ordinal,Size size);
     void integrate(Mat_<uchar> patch,bool isPositive);
-    double posteriorProbability(uchar* data,int rowstep)const;
+    double posteriorProbability(const uchar* data,int rowstep)const;
     static int getMaxOrdinal();
 private:
     static int getGridSize();
-    inline void stepPrefSuff(int len,int* step,int* pref);
+    inline void stepPrefSuff(uchar* arr,int len);
     void preinit(int ordinal);
-    unsigned short int code(uchar* data,int rowstep)const;
+    unsigned short int code(const uchar* data,int rowstep)const;
     unsigned int pos[8192],neg[8192];//8192=2^13
     uchar x1[13],y1[13],x2[13],y2[13];
 };

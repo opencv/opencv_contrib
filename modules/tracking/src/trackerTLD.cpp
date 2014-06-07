@@ -51,6 +51,7 @@
 #define THETA_NN 0.5
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
+static const Size GaussBlur(1,1);
 
 using namespace cv;
 
@@ -77,6 +78,18 @@ using namespace cv;
 
 namespace cv
 {
+class TLDDetector;
+class MyMouseCallbackDEBUG{
+public:
+    MyMouseCallbackDEBUG(const Mat& img,const Mat& imgBlurred,TLDDetector* detector):img_(img),imgBlurred_(imgBlurred),detector_(detector){}
+    static void onMouse( int event, int x, int y, int, void* obj){
+        ((MyMouseCallbackDEBUG*)obj)->onMouse(event,x,y);
+    }
+private:
+    void onMouse( int event, int x, int y);
+    const Mat& img_,imgBlurred_;
+    TLDDetector* detector_;
+};
 
 class Data : public TrackerTLD::Private{
 public:
@@ -100,9 +113,10 @@ public:
     bool detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::vector<Rect2d>& rect,std::vector<bool>& isObject,
             std::vector<bool>& shouldBeIntegrated);
 protected:
-    void computeIntegralImages(Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2);
+    friend class MyMouseCallbackDEBUG;
+    void computeIntegralImages(const Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2);
     bool patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,double originalVariance,Point pt,Size size);
-    bool ensembleClassifier(uchar* data,int rowstep);
+    bool ensembleClassifier(const uchar* data,int rowstep);
     TrackerTLD::Params params_;
     Ptr<TrackerModel> model;
 };
@@ -225,7 +239,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
 bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     Mat image_gray,image_blurred;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
-    GaussianBlur(image,image_blurred,Size(3,3),0.0);
+    GaussianBlur(image,image_blurred,GaussBlur,0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
     TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
@@ -253,20 +267,6 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         }
     }
 
-    if(!true){
-        printf("candidatesRes.size()=%d\n",candidatesRes.size());
-        for(int i=0;i<candidatesRes.size();i++){
-            printf("\t%f\n",candidatesRes[i]);
-        }
-        exit(0);
-    }
-    if(!false && data->frameNum==82){
-        tldModel->printme();
-        data->printme();
-        printf("candidatesRes.size()=%d\n",candidatesRes.size());
-        waitKey();
-    }
-
     std::vector<double>::iterator it;
     if((it=std::max_element(candidatesRes.begin(),candidatesRes.end()))==candidatesRes.end()){
         data->confident=false;
@@ -282,6 +282,23 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
 
     if(*it > CORE_THRESHOLD){
         data->confident=true;
+    }
+
+    printf("scale=%f\n",1.0*boundingBox.width/(data->getMinSize()).width);
+    if(!false){
+        printf("candidatesRes.size()=%d\n",candidatesRes.size());
+        for(int i=0;i<candidatesRes.size();i++){
+            printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
+        }
+    }
+    tldModel->printme();
+    if(!true /*&& data->frameNum==82*/){//82
+        //data->printme();
+        printf("candidatesRes.size()=%d\n",candidatesRes.size());
+        MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
+        imshow("picker",image_gray);
+        setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
+        waitKey();
     }
 
     if(data->confident){
@@ -315,6 +332,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         }
     }
 
+    exit(0);
     return true;
 }
 
@@ -328,7 +346,7 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
 
     Mat image_blurred;
     Mat_<uchar> blurredPatch(minSize);
-    GaussianBlur(image,image_blurred,Size(3,3),0.0);
+    GaussianBlur(image,image_blurred,GaussBlur,0.0);
     for(int i=0,howMany=TLDEnsembleClassifier::getMaxOrdinal();i<howMany;i++){
         classifiers.push_back(TLDEnsembleClassifier(i+1,minSize));
     }
@@ -429,7 +447,6 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
 
         for(int i=0;i<cvFloor((0.0+resized_img.cols-initSize.width)/dx);i++){
             for(int j=0;j<cvFloor((0.0+resized_img.rows-initSize.height)/dy);j++){
-                if(scale==1.0)printf("<%d,%d>\n",dx*i,dy*j);
                 total++;
                 if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
                     continue;
@@ -498,7 +515,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     return true;
 }
 
-void TLDDetector::computeIntegralImages(Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2){
+void TLDDetector::computeIntegralImages(const Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2){
     intImgP(0,0)=img.at<uchar>(0,0);
     for(int j=1;j<intImgP.cols;j++){intImgP(0,j)=intImgP(0,j-1)+img.at<uchar>(0,j);}
     for(int i=1;i<intImgP.rows;i++){intImgP(i,0)=intImgP(i-1,0)+img.at<uchar>(i,0);}
@@ -517,7 +534,7 @@ bool TLDDetector::patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& 
     return variance(intImgP,intImgP2,Rect(pt.x,pt.y,size.width,size.height)) >= 0.5*originalVariance;
 }
 
-bool TLDDetector::ensembleClassifier(uchar* data,int rowstep){
+bool TLDDetector::ensembleClassifier(const uchar* data,int rowstep){
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     std::vector<TLDEnsembleClassifier>* classifiers=tldModel->getClassifiers();
     double p=0;
@@ -525,7 +542,8 @@ bool TLDDetector::ensembleClassifier(uchar* data,int rowstep){
         p+=(*classifiers)[k].posteriorProbability(data,rowstep);
     }
     p/=classifiers->size();
-    return (p>0.60);
+    //printf("ensemble p=%f\n",p);
+    return (p>0.50);
 }
 
 double TrackerTLDModel::Sr(const Mat_<uchar> patch){
@@ -575,7 +593,7 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,Rect2d box,boo
 
 void TrackerTLDModel::integrateAdditional(Mat_<uchar> eForModel,Mat_<uchar> eForEnsemble,bool isPositive){
     double sr=Sr(eForModel);
-    if((abs(sr-THETA_NN)<0.1) || (sr>THETA_NN)!=isPositive){
+    if((sr>THETA_NN)!=isPositive){
         if(isPositive){
             positiveExamples.push_back(eForModel);
         }else{
@@ -658,5 +676,81 @@ void TrackerTLDModel::printme(FILE*  port){
     fprintf(port,"\tpositiveExamples.size()=%d\n",positiveExamples.size());
     fprintf(port,"\tnegativeExamples.size()=%d\n",negativeExamples.size());
 }
+void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
+    if(event== EVENT_LBUTTONDOWN){
+        Mat imgCanvas;
+        img_.copyTo(imgCanvas);
+        TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(detector_->model));
+        Size initSize=tldModel->getMinSize();
+        Mat_<uchar> standardPatch(15,15);
+        double originalVariance=tldModel->getOriginalVariance();;
+        double tmp;
+
+        Mat resized_img,blurred_img;
+        double scale=1.2*1.2*1.2*1.2;
+        Size2d size(img_.cols/scale,img_.rows/scale);
+        resize(img_,resized_img,size);
+        resize(imgBlurred_,blurred_img,size);
+
+        Mat_<unsigned int> intImgP(resized_img.rows,resized_img.cols),intImgP2(resized_img.rows,resized_img.cols);
+        detector_->computeIntegralImages(resized_img,intImgP,intImgP2);
+
+        int dx=initSize.width/10, dy=initSize.height/10,
+            i=x/scale/dx, j=y/scale/dy;
+
+        printf("patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
+        printf("ensembleClassifier=%s\n",(detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0]))?"true":"false");
+        fflush(stdout);
+
+        resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
+        tmp=tldModel->Sr(standardPatch);
+        printf("isObject=%s\n",(tmp>THETA_NN)?"true":"false");
+        printf("shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
+        printf("Sc=%f\n",tldModel->Sc(standardPatch));
+
+        rectangle(imgCanvas,Rect2d(Point2d(scale*dx*i,scale*dy*j),Size2d(initSize.width*scale,initSize.height*scale)), 0, 2, 1 );
+        imshow("picker",imgCanvas);
+        waitKey();
+    }
+}
+/*{
+        Mat_<unsigned int> intImgP(resized_img.rows,resized_img.cols),intImgP2(resized_img.rows,resized_img.cols);
+        computeIntegralImages(resized_img,intImgP,intImgP2);
+
+        for(int i=0;i<cvFloor((0.0+resized_img.cols-initSize.width)/dx);i++){
+            for(int j=0;j<cvFloor((0.0+resized_img.rows-initSize.height)/dy);j++){
+                if(scale==1.0)printf("<%d,%d>\n",dx*i,dy*j);
+                total++;
+                if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
+                    continue;
+                }
+                if(!ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])){
+                    continue;
+                }
+                pass++;
+
+                rect.push_back(Rect2d(dx*i*scale,dy*j*scale,initSize.width*scale,initSize.height*scale));
+                resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
+                tmp=tldModel->Sr(standardPatch);
+                isObject.push_back(tmp>THETA_NN);
+                shouldBeIntegrated.push_back(abs(tmp-THETA_NN)<0.1);
+                if(!isObject[isObject.size()-1]){
+                    continue;
+                }
+                tmp=tldModel->Sc(standardPatch);
+                if(tmp>maxSc){
+                    maxSc=tmp;
+                    maxScRect=rect[rect.size()-1];
+                }
+            }
+        }
+
+        size.width/=1.2;
+        size.height/=1.2;
+        scale*=1.2;
+        resize(img,resized_img,size);
+        resize(imgBlurred,blurred_img,size);
+    }while(size.width>=initSize.width && size.height>=initSize.height);*/
+
 
 } /* namespace cv */
