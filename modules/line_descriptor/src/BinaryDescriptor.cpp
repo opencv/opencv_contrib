@@ -132,7 +132,31 @@ void BinaryDescriptor::write( cv::FileStorage& fs ) const
     params.write(fs);
 }
 
-/* get coefficients of line passing by two points in line_extremes */
+/* return norm mode */
+int BinaryDescriptor::defaultNorm() const
+{
+  return NORM_HAMMING;
+}
+
+/* return data type */
+int BinaryDescriptor::descriptorType() const
+{
+  return CV_8U;
+}
+
+/*return descriptor size */
+int BinaryDescriptor::descriptorSize() const
+{
+  return 1;
+}
+
+/* check whether Gaussian pyramids were created */
+bool BinaryDescriptor::empty() const
+{
+    return true;
+}
+
+/* get coefficients of line passing by two points in (line_extremes) */
 void BinaryDescriptor::getLineParameters(cv::Vec4i &line_extremes, cv::Vec3i &lineParams)
 {
     int x1 = line_extremes[0];
@@ -185,73 +209,162 @@ float BinaryDescriptor::getLineDirection(cv::Vec3i &lineParams)
             return atan(m);
 
         else
-            return M_PI - atan(m);
+            return -atan(m);
     }
 }
 
-/* extract lines from an image and compute their descriptors */
-void BinaryDescriptor::getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat)
+/* requires line detection (only one image) */
+void BinaryDescriptor::detect( const Mat& image,
+                             CV_OUT std::vector<KeyPoint>& keypoints,
+                             const Mat& mask)
 {
-    /*  start function that actually implements descriptors' computation */
-    getLineBinaryDescriptorsImpl(oct_binaryDescMat);
+    /* invoke KeyLines detection */
+    detectImpl(image, keypoints, mask);
 
 }
 
-/* compute descriptors */
-void BinaryDescriptor::getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat)
+/* requires line detection (more than one image) */
+void BinaryDescriptor::detect( const std::vector<Mat>& images,
+             std::vector<std::vector<KeyPoint> >& keypoints,
+             const std::vector<Mat>& masks ) const
 {
-    /* prepare a matrix to store Gaussian pyramid of input matrix */
-    std::vector<cv::Mat> matVec(params.numOfOctave_);
+    /* detect lines from each image */
+    for(size_t counter = 0; counter<images.size(); counter++)
+    {
+        detectImpl(images[counter],keypoints[counter], masks[counter]);
+    }
+}
 
-    /* reinitialize structures for hosting images' derivatives and sizes
+void BinaryDescriptor::detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints,
+                                   const Mat& mask) const
+{
+    /* reinitialize structures for hosting images, images' derivatives and sizes
     (they may have been used in the past) */
-    dxImg_vector.clear();
-    dyImg_vector.clear();
-    images_sizes.clear();
-
-    dxImg_vector.resize(params.numOfOctave_);
-    dyImg_vector.resize(params.numOfOctave_);
-    images_sizes.resize(params.numOfOctave_);
+    BinaryDescriptor *bn = const_cast<BinaryDescriptor*>(this);
+    bn->dxImg_vector.clear();
+    bn->dyImg_vector.clear();
+    bn->images_sizes.clear();
+    bn->octaveImages.clear();
 
     /* insert input image into pyramid */
-    cv::Mat currentMat = oct_binaryDescMat.clone();
-    matVec.push_back(currentMat);
-    images_sizes.push_back(currentMat.size());
-
-    /* compute and store derivatives of input image */
-    cv:Mat currentDx, currentDy;
-    cv::Sobel( currentMat, currentDx, CV_16SC1, 1, 0, 3);
-    cv::Sobel( currentMat, currentDy, CV_16SC1, 0, 1, 3);
-
-    dxImg_vector.push_back(currentDx);
-    dyImg_vector.push_back(currentDy);
+    cv::Mat currentMat = image.clone();
+    bn->octaveImages.push_back(currentMat);
+    bn->images_sizes.push_back(currentMat.size());
 
     /* fill Gaussian pyramid */
-    for(int i = 1; i<params.numOfOctave_; i++)
+    for(int pyrCounter = 0; pyrCounter<params.numOfOctave_; pyrCounter++)
     {
         /* compute and store next image in pyramid and its size */
-        pyrDown( currentMat, currentMat, Size( currentMat.cols/params.reductionRatio, currentMat.rows/params.reductionRatio ));
-        matVec.push_back(currentMat);
-        images_sizes.push_back(currentMat.size());
-
-        /* compute and store derivatives of new image */
-        cv::Sobel( currentMat, currentDx, CV_16SC1, 1, 0, 3);
-        cv::Sobel( currentMat, currentDy, CV_16SC1, 0, 1, 3);
-
-        dxImg_vector.push_back(currentDx);
-        dyImg_vector.push_back(currentDy);
+        pyrDown( currentMat, currentMat,
+                 Size( currentMat.cols/params.reductionRatio,
+                       currentMat.rows/params.reductionRatio ));
+        bn->octaveImages.push_back(currentMat);
+        bn->images_sizes.push_back(currentMat.size());
     }
 
-    /* prepare a structure for hosting and organizing extracted lines */
-    ScaleLines keyLines;
+    /* detect and arrange lines across octaves */
+    ScaleLines sl;
+    bn->OctaveKeyLines(sl);
 
-    /* extract and arrange lines */
-    OctaveKeyLines(matVec, keyLines);
+    /* fill KeyLines vector */
+    for(int i = 0; i<(int)sl.size(); i++)
+    {
+        for(size_t j = 0; j<sl[i].size(); j++)
+        {
+            /* get current line */
+            OctaveSingleLine osl = sl[i][j];
 
-    /* compute LBD descriptors */
-    ComputeLBD_(keyLines);
+            /* create a KeyLine object */
+            KeyLine kl;
 
+            /* fill KeyLine's fields */
+            kl.startPointX = osl.startPointX;
+            kl.startPointY = osl.startPointY;
+            kl.endPointX = osl.endPointX;
+            kl.endPointY = osl.endPointY;
+            kl.sPointInOctaveX = osl.sPointInOctaveX;
+            kl.sPointInOctaveY = osl.sPointInOctaveY;
+            kl.ePointInOctaveX = osl.ePointInOctaveX;
+            kl.ePointInOctaveY = osl.ePointInOctaveY;
+            kl.lineLength = osl.lineLength;
+
+            kl.angle = osl.direction;
+            kl.class_id = i;
+            kl.octave = osl.octaveCount;
+            kl.size = (osl.endPointX - osl.startPointX)*(osl.endPointY - osl.startPointY);
+            kl.response = osl.lineLength/max(images_sizes[osl.octaveCount].width,
+                                             images_sizes[osl.octaveCount].height);
+            kl.pt = Point((osl.endPointX + osl.startPointX)/2, (osl.endPointY + osl.startPointY)/2);
+
+            /* store KeyLine */
+            keypoints.push_back(kl);
+        }
+    }
 }
+
+///* extract lines from an image and compute their descriptors */
+//inline void getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat)
+//{
+//    /*  start function that actually implements descriptors' computation */
+//    getLineBinaryDescriptorsImpl(oct_binaryDescMat);
+
+//}
+
+///* compute descriptors */
+//inline void getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat)
+//{
+//    /* prepare a matrix to store Gaussian pyramid of input matrix */
+//    std::vector<cv::Mat> matVec(params.numOfOctave_);
+
+//    /* reinitialize structures for hosting images' derivatives and sizes
+//    (they may have been used in the past) */
+//    dxImg_vector.clear();
+//    dyImg_vector.clear();
+//    images_sizes.clear();
+
+//    dxImg_vector.resize(params.numOfOctave_);
+//    dyImg_vector.resize(params.numOfOctave_);
+//    images_sizes.resize(params.numOfOctave_);
+
+//    /* insert input image into pyramid */
+//    cv::Mat currentMat = oct_binaryDescMat.clone();
+//    matVec.push_back(currentMat);
+//    images_sizes.push_back(currentMat.size());
+
+//    /* compute and store derivatives of input image */
+//    cv:Mat currentDx, currentDy;
+//    cv::Sobel( currentMat, currentDx, CV_16SC1, 1, 0, 3);
+//    cv::Sobel( currentMat, currentDy, CV_16SC1, 0, 1, 3);
+
+//    dxImg_vector.push_back(currentDx);
+//    dyImg_vector.push_back(currentDy);
+
+//    /* fill Gaussian pyramid */
+//    for(int i = 1; i<params.numOfOctave_; i++)
+//    {
+//        /* compute and store next image in pyramid and its size */
+//        pyrDown( currentMat, currentMat, Size( currentMat.cols/params.reductionRatio, currentMat.rows/params.reductionRatio ));
+//        matVec.push_back(currentMat);
+//        images_sizes.push_back(currentMat.size());
+
+//        /* compute and store derivatives of new image */
+//        cv::Sobel( currentMat, currentDx, CV_16SC1, 1, 0, 3);
+//        cv::Sobel( currentMat, currentDy, CV_16SC1, 0, 1, 3);
+
+//        dxImg_vector.push_back(currentDx);
+//        dyImg_vector.push_back(currentDy);
+//    }
+
+//    /* prepare a structure for hosting and organizing extracted lines */
+//    ScaleLines keyLines;
+
+//    /* extract and arrange lines */
+//    OctaveKeyLines(matVec, keyLines);
+
+//    /* compute LBD descriptors */
+//    ComputeLBD_(keyLines);
+
+//}
 
 /* power function with error management */
 static inline int get2Pow(int i) {
@@ -280,7 +393,7 @@ unsigned char BinaryDescriptor::binaryTest(float* f1, float* f2)
 }
 
 /* gather lines in groups. Each group contains the same line, detected in different octaves */
-int BinaryDescriptor::OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleLines &keyLines)
+int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
 {
 
     /* final number of extracted lines */
@@ -345,7 +458,7 @@ int BinaryDescriptor::OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleL
     /* create and fill an array to store scale factors */
     float *scale = new float[params.numOfOctave_];
     scale[0] = 1;
-    for(unsigned int octaveCount = 1; octaveCount<params.numOfOctave_; octaveCount++ )
+    for(unsigned int octaveCount = 1; octaveCount<(unsigned int)params.numOfOctave_; octaveCount++ )
     {
             scale[octaveCount] = params.reductionRatio * scale[octaveCount-1];
     }
@@ -366,7 +479,7 @@ int BinaryDescriptor::OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleL
         float lp0,lp1, lp2, lp3, np0,np1, np2, np3;
 
         /* loop over list of octaves */
-                for(unsigned int octaveCount = 1; octaveCount<params.numOfOctave_; octaveCount++)
+                for(unsigned int octaveCount = 1; octaveCount<(unsigned int)params.numOfOctave_; octaveCount++)
                 {
                     /*for each line in current octave image, find their corresponding lines
                     in the octaveLines,
@@ -483,7 +596,7 @@ int BinaryDescriptor::OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleL
                             maxLocalDis = (endPointDis>maxLocalDis)?endPointDis:maxLocalDis;
 
                             /* check whether conditions for considering line to be compared
-                            worth to be inserted in the same LineVec are satisfied */
+                            wremoveInvalidPointsorth to be inserted in the same LineVec are satisfied */
                             if((maxLocalDis<0.8*(length+octaveLines[lineNextId].lineLength))
                                 &&(minLocalDis<minEndPointDis))
                             {

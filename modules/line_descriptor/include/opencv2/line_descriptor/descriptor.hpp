@@ -53,18 +53,32 @@
 namespace cv
 {
 
-    class CV_EXPORTS_W LineDescriptor : public virtual Algorithm
+    class CV_EXPORTS_W KeyLine: public KeyPoint
     {
     public:
-        virtual ~LineDescriptor();
-        void getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat);
+        /* lines's extremes in original image */
+        float startPointX;
+        float startPointY;
+        float endPointX;
+        float endPointY;
 
-    protected:
-        virtual void getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat);
+        /* line's extremes in image it was extracted from */
+        float sPointInOctaveX;
+        float sPointInOctaveY;
+        float ePointInOctaveX;
+        float ePointInOctaveY;
+
+        /* the length of line */
+        float lineLength;
+
+        /* number of pixels covered by the line */
+        unsigned int numOfPixels;
+
+
 
     };
 
-    class CV_EXPORTS_W BinaryDescriptor : public LineDescriptor
+    class CV_EXPORTS_W BinaryDescriptor : public DescriptorExtractor
     {
 
     public:
@@ -92,7 +106,10 @@ namespace cv
             /* image's reduction ratio in construction of Gaussian pyramids */
             CV_PROP_RW int reductionRatio;
 
+            /* read parameters from a FileNode object and store them (struct function) */
             void read( const FileNode& fn );
+
+            /* store parameters to a FileStorage object (struct function) */
             void write( FileStorage& fs ) const;
 
         };
@@ -100,29 +117,63 @@ namespace cv
         CV_WRAP BinaryDescriptor(const BinaryDescriptor::Params &parameters =
                 BinaryDescriptor::Params());
 
+        /* read parameters from a FileNode object and store them (class function ) */
         virtual void read( const cv::FileNode& fn );
+
+        /* store parameters to a FileStorage object (class function) */
         virtual void write( cv::FileStorage& fs ) const;
-        void getLineBinaryDescriptors(cv::Mat &oct_binaryDescMat);
+
+        /* requires line detection (only one image) */
+        CV_WRAP void detect( const Mat& image,
+                             CV_OUT std::vector<KeyPoint>& keypoints,
+                             const Mat& mask=Mat() );
+
+        /* requires line detection (more than one image) */
+        void detect( const std::vector<Mat>& images,
+                     std::vector<std::vector<KeyPoint> >& keypoints,
+                     const std::vector<Mat>& masks=std::vector<Mat>() ) const;
+
+        /*return descriptor size */
+        int descriptorSize() const = 0;
+
+        /* return data type */
+        int descriptorType() const = 0;
+
+        /* return norm mode */
+        int defaultNorm() const = 0;
+
+        /* check whether Gaussian pyramids were created */
+        bool empty() const;
 
 
     protected:
-        virtual void getLineBinaryDescriptorsImpl(cv::Mat &oct_binaryDescMat);
+        virtual void detectImpl( const Mat& image,
+                                 std::vector<KeyPoint>& keypoints,
+                                 const Mat& mask=Mat() ) const = 0;
+
         AlgorithmInfo* info() const;
 
-        Params params;
-
-
     private:
+        /* conversion of an LBD descriptor to the decimal equivalent of its binary representation */
         unsigned char binaryTest(float* f1, float* f2);
+
+        /* compute LBD descriptors */
         int ComputeLBD_(ScaleLines &keyLines);
-        int OctaveKeyLines(std::vector<cv::Mat> & octaveImages, ScaleLines &keyLines);
+
+        /* gather lines in groups.
+        Each group contains the same line, detected in different octaves */
+        int OctaveKeyLines(ScaleLines &keyLines);
+
+        /* get coefficients of line passing by two points (in line_extremes) */
         void getLineParameters(cv::Vec4i &line_extremes, cv::Vec3i &lineParams);
+
+        /* compute the angle between line and X axis */
         float getLineDirection(cv::Vec3i &lineParams);
 
-        /* the local gaussian coefficient apply to the orthogonal line direction within each band */
+        /* the local gaussian coefficient applied to the orthogonal line direction within each band */
         std::vector<float> gaussCoefL_;
 
-        /* the global gaussian coefficient apply to each Row within line support region */
+        /* the global gaussian coefficient applied to each Row within line support region */
         std::vector<float> gaussCoefG_;
 
         /* vector to store horizontal and vertical derivatives of octave images */
@@ -133,6 +184,12 @@ namespace cv
 
         /* structure to store lines extracted from each octave image */
         std::vector<std::vector<cv::Vec4i> > extractedLines;
+
+        /* descriptor parameters */
+        Params params;
+
+        /* vector to store the Gaussian pyramid od an input image */
+        std::vector<cv::Mat> octaveImages;
 
     };
 
