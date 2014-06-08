@@ -78,7 +78,7 @@ namespace cv
 
     };
 
-    class CV_EXPORTS_W BinaryDescriptor : public DescriptorExtractor
+    class CV_EXPORTS_W BinaryDescriptor : public FeatureDetector
     {
 
     public:
@@ -134,13 +134,13 @@ namespace cv
                      const std::vector<Mat>& masks=std::vector<Mat>() ) const;
 
         /*return descriptor size */
-        int descriptorSize() const = 0;
+        int descriptorSize() const;
 
         /* return data type */
-        int descriptorType() const = 0;
+        int descriptorType() const;
 
         /* return norm mode */
-        int defaultNorm() const = 0;
+        int defaultNorm() const;
 
         /* check whether Gaussian pyramids were created */
         bool empty() const;
