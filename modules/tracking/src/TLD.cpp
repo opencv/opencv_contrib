@@ -247,9 +247,32 @@ void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
 //other stuff
 void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
     int gridSize=getGridSize();
-    int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
-    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
-        arr[i]=pref+arr[i]*step;
+    if(false){
+        int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
+        for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+            arr[i]=pref+arr[i]*step;
+        }
+    }else{
+        int total=len-gridSize;
+        int quo=total/(gridSize-1),rem=total%(gridSize-1);
+        int smallStep=quo,bigStep=quo+1;
+        int bigOnes=rem,smallOnes=gridSize-bigOnes-1;
+        int bigOnes_front=bigOnes/2,bigOnes_back=bigOnes-bigOnes_front;
+        for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+            if(arr[i]<bigOnes_back){
+                arr[i]=arr[i]*bigStep+arr[i];
+                continue;
+            }
+            if(arr[i]<(bigOnes_front+smallOnes)){
+                arr[i]=bigOnes_front*bigStep+(arr[i]-bigOnes_front)*smallStep+arr[i];
+                continue;
+            }
+            if(arr[i]<(bigOnes_front+smallOnes+bigOnes_back)){
+                arr[i]=bigOnes_front*bigStep+smallOnes*smallStep+(arr[i]-(bigOnes_front+smallOnes))*bigStep+arr[i];
+                continue;
+            }
+            arr[i]=len-1;
+        }
     }
 }
 TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){

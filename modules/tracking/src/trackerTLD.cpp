@@ -169,7 +169,7 @@ class TrackerTLDModel : public TrackerModel{
   double Sr(const Mat_<uchar> patch);
   double Sc(const Mat_<uchar> patch);
   void integrateRelabeled(Mat& img,Mat& imgBlurred,Rect2d box,bool isPositive);
-  void integrateAdditional(Mat_<uchar> eForModel,Mat_<uchar> eForEnsemble,bool isPositive);
+  void integrateAdditional(Mat_<uchar>& eForModel,Mat_<uchar>& eForEnsemble,bool isPositive);
   Size getMinSize(){return minSize_;}
   void printme(FILE*  port=stdout);
  protected:
@@ -277,14 +277,13 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
 
     printf("scale=%f\n",1.0*boundingBox.width/(data->getMinSize()).width);
-    if(!false){
-        printf("candidatesRes.size()=%d\n",candidatesRes.size());
-        for(int i=0;i<candidatesRes.size();i++){
-            printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
-        }
+    for(int i=0;i<candidatesRes.size();i++){
+        printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
     }
+    data->printme();
     tldModel->printme();
-    if(!true /*&& data->frameNum==82*/){//82
+    if(!false && data->frameNum==82){//82
+        while(true);
         //data->printme();
         printf("candidatesRes.size()=%d\n",candidatesRes.size());
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
@@ -581,9 +580,9 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,Rect2d box,boo
     }
 }
 
-void TrackerTLDModel::integrateAdditional(Mat_<uchar> eForModel,Mat_<uchar> eForEnsemble,bool isPositive){
+void TrackerTLDModel::integrateAdditional(Mat_<uchar>& eForModel,Mat_<uchar>& eForEnsemble,bool isPositive){
     double sr=Sr(eForModel);
-    if((sr>THETA_NN)!=isPositive){
+    if((sr>0.5)!=isPositive){//FIXME
         if(isPositive){
             positiveExamples.push_back(eForModel);
         }else{
@@ -606,7 +605,6 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     examplesForModel.clear();examplesForEnsemble.clear();
     examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
     std::vector<Rect2d> closest,scanGrid;
-    Mat_<uchar> standardPatch(15,15),blurredPatch(initSize_);
     closest.reserve(10);
     TLDDetector::generateScanGrid(img_.rows,img_.cols,initSize_,scanGrid);
     getClosestN(scanGrid,resultBox_,10,closest);
@@ -615,6 +613,7 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     Size2f size;
     for(int i=0;i<closest.size();i++){
         for(int j=0;j<10;j++){
+            Mat_<uchar> standardPatch(15,15),blurredPatch(initSize_);
             center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
             center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
             size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
@@ -677,7 +676,8 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         double tmp;
 
         Mat resized_img,blurred_img;
-        double scale=1.2*1.2*1.2*1.2;
+        double scale=1.2;
+        //double scale=1.2*1.2*1.2*1.2;
         Size2d size(img_.cols/scale,img_.rows/scale);
         resize(img_,resized_img,size);
         resize(imgBlurred_,blurred_img,size);
