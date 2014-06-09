@@ -133,6 +133,14 @@ namespace cv
                      std::vector<std::vector<KeyPoint> >& keypoints,
                      const std::vector<Mat>& masks=std::vector<Mat>() ) const;
 
+        CV_WRAP void compute( const Mat& image,
+                              CV_OUT CV_IN_OUT std::vector<KeyPoint>& keypoints,
+                              CV_OUT Mat& descriptors ) const;
+
+        void compute( const std::vector<Mat>& images,
+                      std::vector<std::vector<KeyPoint> >& keypoints,
+                      std::vector<Mat>& descriptors ) const;
+
         /*return descriptor size */
         int descriptorSize() const;
 
@@ -145,11 +153,21 @@ namespace cv
         /* check whether Gaussian pyramids were created */
         bool empty() const;
 
+        CV_WRAP_AS(detectAndCompute) virtual void operator()( InputArray image,
+                                                              InputArray mask,
+                                             CV_OUT std::vector<KeyPoint>& keypoints,
+                                             OutputArray descriptors,
+                                             bool useProvidedKeypoints=false ) const = 0;
+
 
     protected:
         virtual void detectImpl( const Mat& image,
                                  std::vector<KeyPoint>& keypoints,
                                  const Mat& mask=Mat() ) const = 0;
+
+        virtual void computeImpl( const Mat& image,
+                                  std::vector<KeyPoint>& keypoints,
+                                  Mat& descriptors ) const = 0;
 
         AlgorithmInfo* info() const;
 
@@ -158,7 +176,10 @@ namespace cv
         unsigned char binaryTest(float* f1, float* f2);
 
         /* compute LBD descriptors */
-        int ComputeLBD_(ScaleLines &keyLines);
+        int computeLBD_(ScaleLines &keyLines);
+
+        /* compute Gaussian pyramid of input image */
+        void computeGaussianPyramid(const Mat& image);
 
         /* gather lines in groups.
         Each group contains the same line, detected in different octaves */

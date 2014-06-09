@@ -43,16 +43,17 @@
 #define __OPENCV_PRECOMP_H__
 
 #include <algorithm>
-
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
-
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 
 #include "opencv2/line_descriptor.hpp"
 
-
+#include <math.h>
+#include <iostream>
+#include <map>
+#include <utility>
 
 #endif
