@@ -19,6 +19,14 @@
 
 extern "C" {
 
+CvANN_MLP_TrainParams* cv_create_CvANN_MLP_TrainParams() {
+    return new CvANN_MLP_TrainParams();
+}
+
+CvANN_MLP_TrainParams* cv_create_CvANN_MLP_TrainParams4(TermCriteria* term_crit, int train_method, double param1, double param2) {
+    return new CvANN_MLP_TrainParams(*term_crit, train_method, param1, param2);
+}
+
 void cv_randu2(Mat* dst, Scalar* low, Scalar* high) {
 	cv::randu(*dst, *low, *high);
 }
