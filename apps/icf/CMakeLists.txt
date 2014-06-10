@@ -1,7 +1,7 @@
 set(name icf)
 set(the_target opencv_${name})
 
-set(OPENCV_${the_target}_DEPS opencv_core opencv_imgproc)
+set(OPENCV_${the_target}_DEPS opencv_core opencv_imgproc opencv_highgui)
 ocv_check_dependencies(${OPENCV_${the_target}_DEPS})
 
 if(NOT OCV_DEPENDENCIES_FOUND)
