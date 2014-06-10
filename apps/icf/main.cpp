@@ -7,11 +7,21 @@ using std::string;
 #include <vector>
 using std::vector;
 
+#include <fstream>
+using std::ifstream;
+using std::getline;
+
+#include <sstream>
+using std::stringstream;
+
 #include <opencv2/core.hpp>
 using cv::Rect;
 
 #include "icfdetector.hpp"
 #include "waldboost.hpp"
+
+using cv::adas::ICFDetectorParams;
+using cv::adas::ICFDetector;
 
 static bool read_pos_int(const char *str, int *n)
 {
@@ -45,15 +55,33 @@ static bool read_overlap(const char *str, double *overlap)
     return true;
 }
 
-static vector< vector<Rect> > read_labelling(const string& filename)
+static bool read_labelling(const string& path,
+    vector<string>& filenames, vector< vector<Rect> >& labelling)
 {
-    return vector< vector<Rect> >();
+    string labelling_path = path + "/gt.txt";
+    string filename, line;
+    int x1, y1, x2, y2;
+    char delim;
+    ifstream ifs(labelling_path.c_str());
+    if( !ifs.good() )
+        return false;
+
+    while( getline(ifs, line) )
+    {
+        stringstream stream(line);
+        stream >> filename;
+        filenames.push_back(path + "/" + filename);
+        vector<Rect> filename_labelling;
+        while( stream >> x1 >> y1 >> x2 >> y2 >> delim )
+        {
+            filename_labelling.push_back(Rect(x1, y1, x2, y2));
+        }
+        labelling.push_back(filename_labelling);
+        filename_labelling.clear();
+    }
+    return true;
 }
 
-static vector<string> get_filenames(const string &labelling_path)
-{
-    return vector<string>();
-}
 
 int main(int argc, char *argv[])
 {
@@ -61,8 +89,8 @@ int main(int argc, char *argv[])
     {
         printf("Usage: %s OPTIONS, where OPTIONS are:\n"
                "\n"
-               "--labelling <path> - path to labelling\n"
-               "    (data should be in the same directory)\n"
+               "--path <path> - path to dir with data and labelling\n"
+               "    (labelling should have name gt.txt)\n"
                "\n"
                "--feature_count <count> - number of features to generate\n"
                "\n"
@@ -78,14 +106,14 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    string labelling_path, model_path;
+    string path, model_path;
     ICFDetectorParams params;
     for( int i = 1; i < argc; ++i )
     {
-        if( !strcmp("--labelling", argv[i]) )
+        if( !strcmp("--path", argv[i]) )
         {
             i += 1;
-            labelling_path = argv[i];
+            path = argv[i];
         }
         else if( !strcmp("--feature_count", argv[i]) )
         {
@@ -144,8 +172,10 @@ int main(int argc, char *argv[])
     try
     {
         ICFDetector detector;
-        vector< vector<Rect> > labelling = read_labelling(labelling_path);
-        vector<string> filenames = get_filenames(labelling_path);
+        vector<string> filenames;
+        vector< vector<Rect> > labelling;
+        read_labelling(path, filenames, labelling);
+
         detector.train(filenames, labelling, params);
     }
     catch( const char *err )
