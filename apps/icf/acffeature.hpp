@@ -57,16 +57,16 @@ namespace adas
     channels — output array for computed channels
 
 */
-void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels);
+void computeChannels(InputArray image, OutputArrayOfArrays channels);
 
 class ACFFeatureEvaluator
 {
 public:
     /* Construct evaluator, set features to evaluate */
-    ACFFeatureEvaluator(const std::vector<Point>& features);
+    ACFFeatureEvaluator(const std::vector<Point3i>& features);
 
     /* Set channels for feature evaluation */
-    void setChannels(cv::InputArrayOfArrays channels);
+    void setChannels(InputArrayOfArrays channels);
 
     /* Set window position */
     void setPosition(Size position);
@@ -79,13 +79,13 @@ public:
 
     Returns matrix-column of features
     */
-    void evaluateAll(cv::OutputArray) const;
+    void evaluateAll(OutputArray feature_values) const;
 
 private:
     /* Features to evaluate */
-    std::vector<Point> features_;
+    std::vector<Point3i> features_;
     /* Channels for feature evaluation */
-    std::vector<cv::Mat> channels;
+    std::vector<Mat> channels_;
     /* Channels window position */
     Size position_;
 };
@@ -97,12 +97,10 @@ private:
     count — number of features to generate.
     Max number of features is min(count, # possible distinct features)
 
-    seed — random number generator initializer
-
 Returns vector of distinct acf features
 */
-std::vector<Point>
-generateFeatures(Size window_size, size_t count = UINT_MAX, int seed = 0);
+std::vector<Point3i>
+generateFeatures(Size window_size, int count = INT_MAX);
 
 } /* namespace adas */
 } /* namespace cv */
