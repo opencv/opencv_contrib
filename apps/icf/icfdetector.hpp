@@ -47,6 +47,11 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/core.hpp>
 
+namespace cv
+{
+namespace adas
+{
+
 struct ICFDetectorParams
 {
     int feature_count;
@@ -75,4 +80,6 @@ public:
     bool save(const std::string& filename);
 };
 
+} /* namespace adas */
+} /* namespace cv */
 #endif /* __OPENCV_ADAS_ICFDETECTOR_HPP__ */
