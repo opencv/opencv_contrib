@@ -15,7 +15,7 @@ static void help()
 {
   cout << "\nThis example shows the functionality of \"Saliency \""
        "Call:\n"
-       "./example_saliency_computeSaliency <saliencyAlgorithmType.[saliencyAlgorithmTypeSubType]> <video_name> <start_frame> \n"
+       "./example_saliency_computeSaliency <SALIENCY.[saliencyAlgorithmSubType]> <video_name> <start_frame> \n"
        << endl;
 }
 

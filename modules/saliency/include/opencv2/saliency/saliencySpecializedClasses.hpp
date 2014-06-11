@@ -43,6 +43,12 @@
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP_
 
 #include "saliencyBaseClasses.hpp"
+#include "kyheader.h"
+#include "ValStructVec.h"
+#include "FilterTIG.h"
+#include <cstdio>
+#include <string>
+#include <iostream>
 
 //TODO delete
 //#define SALIENCY_DEBUG true
@@ -134,25 +140,72 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 class CV_EXPORTS_W ObjectnessBING : public Objectness
 {
  public:
-  /*struct CV_EXPORTS Params
-   {
-   Params();
-   void read( const FileNode& fn );
-   void write( FileStorage& fs ) const;
-   }; */
-  //ObjectnessBING( const ObjectnessBING::Params &parameters = ObjectnessBING::Params() );
+
   ObjectnessBING();
   ~ObjectnessBING();
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
+  // Load trained model.
+     int loadTrainedModel(std::string modelName = ""); // Return -1, 0, or 1 if partial, none, or all loaded
+
+     // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
+     // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
+     // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
+     void getObjBndBoxes(CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120);
+     void getObjBndBoxesForImage(Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize);
+
+     void setColorSpace(int clr = MAXBGR);
+
+     // Read matrix from binary file
+     static bool matRead( const std::string& filename, Mat& M);
+
+     enum {MAXBGR, HSV, G};
+
+     inline static float LoG(float x, float y, float delta) {float d = -(x*x+y*y)/(2*delta*delta);  return -1.0f/((float)(CV_PI)*pow(delta, 4)) * (1+d)*exp(d);} // Laplacian of Gaussian
+
+
  protected:
   bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
   AlgorithmInfo* info() const;  //{ return 0; }
 
- private:
-  //Params params;
+ private: // Parameters
+     const double _base, _logBase; // base for window size quantization
+     const int _W; // As described in the paper: #Size, Size(_W, _H) of feature window.
+     const int _NSS; // Size for non-maximal suppress
+     const int _maxT, _minT, _numT; // The minimal and maximal dimensions of the template
+
+     int _Clr; //
+     static const char* _clrName[3];
+
+     //DataSetVOC &_voc; // The dataset for training, testing
+     std:: string _modelName, _trainDirSI, _bbResDir;
+
+     vecI _svmSzIdxs; // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
+     Mat _svmFilter; // Filters learned at stage I, each is a _H by _W CV_32F matrix
+     FilterTIG _tigF; // TIG filter
+     Mat _svmReW1f; // Re-weight parameters learned at stage II.
+
+ private: // Help functions
+
+     bool filtersLoaded() {int n = _svmSzIdxs.size(); return n > 0 && _svmReW1f.size() == Size(2, n) && _svmFilter.size() == Size(_W, _W);}
+     void predictBBoxSI(CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true);
+     void predictBBoxSII(ValStructVec<float, Vec4i> &valBoxes, const vecI &sz);
+
+     // Calculate the image gradient: center option as in VLFeat
+     void gradientMag(CMat &imgBGR3u, Mat &mag1u);
+
+     static void gradientRGB(CMat &bgr3u, Mat &mag1u);
+     static void gradientGray(CMat &bgr3u, Mat &mag1u);
+     static void gradientHSV(CMat &bgr3u, Mat &mag1u);
+     static void gradientXY(CMat &x1i, CMat &y1i, Mat &mag1u);
+
+     static inline int bgrMaxDist(const Vec3b &u, const Vec3b &v) {int b = abs(u[0]-v[0]), g = abs(u[1]-v[1]), r = abs(u[2]-v[2]); b = max(b,g);  return max(b,r);}
+     static inline int vecDist3b(const Vec3b &u, const Vec3b &v) {return abs(u[0]-v[0]) + abs(u[1]-v[1]) + abs(u[2]-v[2]);}
+
+     //Non-maximal suppress
+     static void nonMaxSup(CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true);
 
 };
 
