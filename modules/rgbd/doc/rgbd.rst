@@ -6,7 +6,3 @@ rgbd. RGB-Depth Processing
 
 .. toctree::
     :maxdepth: 2
-
-    depth_image
-    geometry
-    odometry
