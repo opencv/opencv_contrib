@@ -50,7 +50,10 @@ CV_INIT_ALGORITHM( StaticSaliencySpectralResidual, "SALIENCY.SPECTRAL_RESIDUAL",
 
 CV_INIT_ALGORITHM( MotionSaliencyPBAS, "SALIENCY.PBAS",);
 
-CV_INIT_ALGORITHM( ObjectnessBING, "SALIENCY.BING", );
+CV_INIT_ALGORITHM( ObjectnessBING, "SALIENCY.BING",
+                   obj.info()->addParam(obj, "_base", obj._base);
+                   obj.info()->addParam(obj, "_NSS", obj._NSS);
+                   obj.info()->addParam(obj, "_W", obj._W));
 
 bool initModule_saliency( void )
 {

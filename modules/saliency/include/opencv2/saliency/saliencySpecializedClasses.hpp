@@ -90,7 +90,7 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  bool computeSaliencyImpl( const InputArray src, OutputArray dst );
   AlgorithmInfo* info() const;  //{ return 0; }
   CV_PROP_RW Ptr<Size> resizedImageSize;
 
@@ -124,7 +124,7 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  bool computeSaliencyImpl( const InputArray src, OutputArray dst );
   AlgorithmInfo* info() const;  // { return 0; }
 
  private:
@@ -154,7 +154,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
      // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
      void getObjBndBoxes(CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120);
-     void getObjBndBoxesForImage(Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize);
+     void getObjBndBoxesForSingleImage(Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize);
+     vector<float> getobjectnessValues();
 
      void setColorSpace(int clr = MAXBGR);
 
@@ -167,18 +168,19 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
 
  protected:
-  bool computeSaliencyImpl( const InputArray& src, OutputArray& dst );
+  bool computeSaliencyImpl( const InputArray src, OutputArray dst );
   AlgorithmInfo* info() const;  //{ return 0; }
 
  private: // Parameters
-     const double _base, _logBase; // base for window size quantization
-     const int _W; // As described in the paper: #Size, Size(_W, _H) of feature window.
-     const int _NSS; // Size for non-maximal suppress
-     const int _maxT, _minT, _numT; // The minimal and maximal dimensions of the template
+     double _base, _logBase; // base for window size quantization
+     int _W; // As described in the paper: #Size, Size(_W, _H) of feature window.
+     int _NSS; // Size for non-maximal suppress
+     int _maxT, _minT, _numT; // The minimal and maximal dimensions of the template
 
      int _Clr; //
      static const char* _clrName[3];
 
+     //TODO Probably remove this parameters
      //DataSetVOC &_voc; // The dataset for training, testing
      std:: string _modelName, _trainDirSI, _bbResDir;
 
@@ -186,6 +188,11 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      Mat _svmFilter; // Filters learned at stage I, each is a _H by _W CV_32F matrix
      FilterTIG _tigF; // TIG filter
      Mat _svmReW1f; // Re-weight parameters learned at stage II.
+
+     // List of the rectangles' objectness value, in the same order as
+     // vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
+     vector<float> objectnessValues;
+     //vector<Vec4i> objectnessBoundingBox;
 
  private: // Help functions
 

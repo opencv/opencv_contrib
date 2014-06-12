@@ -87,7 +87,7 @@ void MotionSaliencyPBAS::write( cv::FileStorage& fs ) const
   //params.write( fs );
 }
 
-bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray& src, OutputArray& dst  )
+bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray src, OutputArray dst  )
 {
 
   return true;
