@@ -55,11 +55,23 @@ namespace cv
 
 //debug functions and variables
 Rect2d etalon(14.0,110.0,20.0,20.0);
-void drawWithRects(const Mat& img,std::vector<Rect2d> blackOnes,Rect2d whiteOne){
+void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne){
     Mat image;
     img.copyTo(image);
     if(whiteOne.width>=0){
         rectangle( image,whiteOne, 255, 1, 1 );
+    }
+    for(int i=0;i<blackOnes.size();i++){
+        rectangle( image,blackOnes[i], 0, 1, 1 );
+    }
+    imshow("img",image);
+    waitKey();
+}
+void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes){
+    Mat image;
+    img.copyTo(image);
+    for(int i=0;i<whiteOnes.size();i++){
+        rectangle( image,whiteOnes[i], 255, 1, 1 );
     }
     for(int i=0;i<blackOnes.size();i++){
         rectangle( image,blackOnes[i], 0, 1, 1 );
@@ -113,6 +125,15 @@ std::string type2str(const Mat& mat){
 }
 
 //generic functions
+double scaleAndBlur(const Mat& originalImg,int scale,Mat& scaledImg,Mat& blurredImg,Size GaussBlurKernelSize){
+    double dScale=1.0;
+    for(int i=0;i<scale;i++,dScale*=1.2);
+    Size2d size=originalImg.size();
+    size.height/=dScale;size.width/=dScale;
+    resize(originalImg,scaledImg,size);
+    GaussianBlur(scaledImg,blurredImg,GaussBlurKernelSize,0.0);
+    return dScale;
+}
 void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
     if(n>=scanGrid.size()){
         res.assign(scanGrid.begin(),scanGrid.end());
