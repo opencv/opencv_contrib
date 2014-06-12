@@ -55,5 +55,7 @@
 #include <iostream>
 #include <map>
 #include <utility>
+#include <string>
+#include <typeinfo>
 
 #endif

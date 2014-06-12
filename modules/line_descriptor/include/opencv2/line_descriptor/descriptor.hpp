@@ -74,11 +74,9 @@ namespace cv
         /* number of pixels covered by the line */
         unsigned int numOfPixels;
 
-
-
     };
 
-    class CV_EXPORTS_W BinaryDescriptor : public FeatureDetector
+    class CV_EXPORTS_W BinaryDescriptor : public Feature2D
     {
 
     public:
@@ -114,8 +112,13 @@ namespace cv
 
         };
 
+        /* constructor */
         CV_WRAP BinaryDescriptor(const BinaryDescriptor::Params &parameters =
                 BinaryDescriptor::Params());
+
+        /* constructors with smart pointers */
+        CV_EXPORTS Ptr<BinaryDescriptor> createBinaryDescriptor();
+        CV_EXPORTS Ptr<BinaryDescriptor> createBinaryDescriptor(Params parameters);
 
         /* read parameters from a FileNode object and store them (class function ) */
         virtual void read( const cv::FileNode& fn );
@@ -133,10 +136,12 @@ namespace cv
                      std::vector<std::vector<KeyPoint> >& keypoints,
                      const std::vector<Mat>& masks=std::vector<Mat>() ) const;
 
+        /* requires descriptors computation (only one image) */
         CV_WRAP void compute( const Mat& image,
                               CV_OUT CV_IN_OUT std::vector<KeyPoint>& keypoints,
                               CV_OUT Mat& descriptors ) const;
 
+        /* requires descriptors computation (more than one image) */
         void compute( const std::vector<Mat>& images,
                       std::vector<std::vector<KeyPoint> >& keypoints,
                       std::vector<Mat>& descriptors ) const;
@@ -155,28 +160,28 @@ namespace cv
 
         CV_WRAP_AS(detectAndCompute) virtual void operator()( InputArray image,
                                                               InputArray mask,
-                                             CV_OUT std::vector<KeyPoint>& keypoints,
-                                             OutputArray descriptors,
-                                             bool useProvidedKeypoints=false ) const = 0;
+                                                              CV_OUT std::vector<KeyPoint>& keypoints,
+                                                              OutputArray descriptors,
+                                                              bool useProvidedKeypoints=false ) const;
 
 
     protected:
         virtual void detectImpl( const Mat& image,
                                  std::vector<KeyPoint>& keypoints,
-                                 const Mat& mask=Mat() ) const = 0;
+                                 const Mat& mask=Mat() ) const;
 
         virtual void computeImpl( const Mat& image,
                                   std::vector<KeyPoint>& keypoints,
-                                  Mat& descriptors ) const = 0;
+                                  Mat& descriptors ) const;
 
         AlgorithmInfo* info() const;
 
     private:
-        /* conversion of an LBD descriptor to the decimal equivalent of its binary representation */
-        unsigned char binaryTest(float* f1, float* f2);
+        /* conversion of an LBD descriptor to its binary representation */
+        unsigned char binaryConversion(float* f1, float* f2);
 
         /* compute LBD descriptors */
-        int computeLBD_(ScaleLines &keyLines);
+        int computeLBD(ScaleLines &keyLines);
 
         /* compute Gaussian pyramid of input image */
         void computeGaussianPyramid(const Mat& image);

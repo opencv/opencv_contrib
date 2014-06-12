@@ -38,11 +38,19 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+
 #define _USE_MATH_DEFINES
 
 #include "precomp.hpp"
 
 using namespace cv;
+
+/* combinations of internal indeces for binary descriptor extractor */
+static const int combinations [32][2] = {{0,1},{0,2},{0,3},{0,4},{0,5},{0,6},{1,2},{1,3},
+                                         {1,4},{1,5},{1,6},{2,3},{2,4},{2,5},{2,6},{2,7},
+                                         {2,8},{3,4},{3,5},{3,6},{3,7},{3,8},{4,5},{4,6},
+                                         {4,7},{4,8},{5,6},{5,7},{5,8},{6,7},{6,8},{7,8}};
+
 
 /* return default parameters */
 BinaryDescriptor::Params::Params()
@@ -79,6 +87,16 @@ void BinaryDescriptor::Params::write(cv::FileStorage& fs) const
     fs << "numOfBand_" <<  numOfBand_;
     fs << "widthOfBand_" << widthOfBand_;
     fs << "reductionRatio" << reductionRatio;
+}
+
+Ptr<BinaryDescriptor> BinaryDescriptor::createBinaryDescriptor()
+{
+    return Ptr<BinaryDescriptor>(new BinaryDescriptor());
+}
+
+Ptr<BinaryDescriptor> BinaryDescriptor::createBinaryDescriptor(Params parameters)
+{
+    return Ptr<BinaryDescriptor>(new BinaryDescriptor(parameters));
 }
 
 /* construct a BinaryDescrptor object and compute external private parameters */
@@ -119,6 +137,36 @@ BinaryDescriptor::BinaryDescriptor(const BinaryDescriptor::Params &parameters) :
     }
 }
 
+/* definition of operator () inherited from Feature2D class */
+void BinaryDescriptor::operator()( InputArray image,
+                                   InputArray mask,
+                                   CV_OUT std::vector<KeyPoint>& keypoints,
+                                   OutputArray descriptors,
+                                   bool useProvidedKeypoints) const
+{
+
+    /* create some matrix objects */
+    cv::Mat imageMat, maskMat, descrMat;
+
+    /* store reference to input matrices */
+    imageMat = image.getMat();
+    maskMat = mask.getMat();
+
+    /* initialize output matrix */
+    descriptors.create(Size(32, keypoints.size()), CV_8UC1);
+
+    /* store reference to output matrix */
+    descrMat = descriptors.getMat();
+
+    /* require KeyLines detection if demanded */
+    if(!useProvidedKeypoints)
+        detectImpl(imageMat, keypoints, maskMat);
+
+    /* compute descriptors */
+    computeImpl(imageMat, keypoints, descrMat);
+}
+
+
 /* read parameters from a FileNode object and store them (class function ) */
 void BinaryDescriptor::read( const cv::FileNode& fn )
 {
@@ -146,13 +194,13 @@ int BinaryDescriptor::descriptorType() const
 /*return descriptor size */
 int BinaryDescriptor::descriptorSize() const
 {
-  return 1;
+  return 32*8;
 }
 
 /* check whether Gaussian pyramids were created */
 bool BinaryDescriptor::empty() const
 {
-    return false;
+    return octaveImages.empty();
 }
 
 /* power function with error management */
@@ -167,8 +215,8 @@ static inline int get2Pow(int i) {
     }
 }
 
-/* conversion of an LBD descriptor to the decimal equivalent of its binary representation */
-unsigned char BinaryDescriptor::binaryTest(float* f1, float* f2)
+/* conversion of an LBD descriptor to its binary representation */
+unsigned char BinaryDescriptor::binaryConversion(float* f1, float* f2)
 {
     uchar result = 0;
      for(int i = 0; i<8; i++)
@@ -182,7 +230,7 @@ unsigned char BinaryDescriptor::binaryTest(float* f1, float* f2)
 }
 
 /* get coefficients of line passing by two points in (line_extremes) */
-void BinaryDescriptor::getLineParameters(cv::Vec4i &line_extremes, cv::Vec3i &lineParams)
+void BinaryDescriptor::getLineParameters(cv::Vec4i& line_extremes, cv::Vec3i& lineParams)
 {
     int x1 = line_extremes[0];
     int x2 = line_extremes[2];
@@ -287,11 +335,17 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images,
 void BinaryDescriptor::detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints,
                                    const Mat& mask) const
 {
-    /* reinitialize structures for hosting images, images' derivatives and sizes
-    (they may have been used in the past) */
+
+    /*check whether image depth is different from 0 */
+    if(image.depth() != 0)
+    {
+      std::cout << "Warning, depth image!= 0" << std::endl;
+      CV_Assert(false);
+    }
+
+    /* create a pointer to self */
     BinaryDescriptor *bn = const_cast<BinaryDescriptor*>(this);
-    bn->dxImg_vector.clear();
-    bn->dyImg_vector.clear();
+
 
     /* compute Gaussian pyramid */
     bn->computeGaussianPyramid(image);
@@ -336,12 +390,49 @@ void BinaryDescriptor::detectImpl( const Mat& image, std::vector<KeyPoint>& keyp
             keypoints.push_back(kl);
         }
     }
+
+    /* delete undesired KeyLines, according to input mask */
+    for(size_t keyCounter = 0; keyCounter<keypoints.size(); keyCounter++)
+    {
+        KeyLine *kl = static_cast<KeyLine*>(&keypoints[keyCounter]);
+        if(mask.at<int>(kl->startPointX, kl->startPointY) == 0 &&
+           mask.at<int>(kl->endPointX, kl->endPointY) == 0)
+            keypoints.erase(keypoints.begin() + keyCounter);
+    }
 }
 
+
+/* requires descriptors computation (only one image) */
+void BinaryDescriptor::compute( const Mat& image,
+                                CV_OUT CV_IN_OUT std::vector<KeyPoint>& keypoints,
+                                CV_OUT Mat& descriptors ) const
+{
+    computeImpl(image, keypoints, descriptors);
+}
+
+/* requires descriptors computation (more than one image) */
+void BinaryDescriptor::compute( const std::vector<Mat>& images,
+                                std::vector<std::vector<KeyPoint> >& keypoints,
+                                std::vector<Mat>& descriptors ) const
+{
+    for(size_t i = 0; i<images.size(); i++)
+        computeImpl(images[i], keypoints[i], descriptors[i]);
+}
+
+/* implementation of descriptors computation */
 void BinaryDescriptor::computeImpl( const Mat& image,
                                     std::vector<KeyPoint>& keypoints,
                                     Mat& descriptors ) const
 {
+
+    /*check whether image depth is different from 0 */
+    if(image.depth() != 0)
+    {
+      std::cout << "Warning, depth image!= 0" << std::endl;
+      CV_Assert(false);
+    }
+
+
     /* keypoints list can't be empty */
     if(keypoints.size() == 0)
     {
@@ -349,7 +440,7 @@ void BinaryDescriptor::computeImpl( const Mat& image,
         return;
     }
 
-    /* get number of lines */
+    /* get maximum class_id */
     int numLines = 0;
     for(size_t l = 0; l<keypoints.size(); l++)
     {
@@ -361,19 +452,29 @@ void BinaryDescriptor::computeImpl( const Mat& image,
     OctaveSingleLine fictiousOSL;
     fictiousOSL.octaveCount = -1;
     LinesVec lv(params.numOfOctave_, fictiousOSL);
-    ScaleLines sl(numLines, lv);
+    ScaleLines sl(numLines+1, lv);
 
     /* create a map to record association between KeyLines and their position
       in ScaleLines vector */
     std::map<std::pair<int, int>, int> correspondences;
 
-    /*fill ScaleLines object */
+    /* fill ScaleLines object */
     for(size_t slCounter = 0; slCounter<keypoints.size(); slCounter++)
     {
+        std::string classType = typeid(keypoints[slCounter]).name();
+        if(classType.compare("KeyLine") != 0)
+        {
+            std::cout << "Error: one or more element in KeyPoint input vector " <<
+                         "don't belong to KeyLine class" << std::endl;
+            return;
+        }
+
+        /* get a pointer to a KeyLine object and create a new line */
         KeyPoint *kp = &(keypoints[slCounter]);
         KeyLine *kl = static_cast<KeyLine*>(kp);
         OctaveSingleLine osl;
 
+        /* insert data in newly created line */
         osl.startPointX = (*kl).startPointX;
         osl.startPointY = (*kl).startPointY;
         osl.endPointX = (*kl).endPointX;
@@ -388,12 +489,14 @@ void BinaryDescriptor::computeImpl( const Mat& image,
         osl.direction = (*kl).angle;
         osl.octaveCount = (*kl).octave;
 
+        /* store new line */
         sl[(*kl).class_id][(*kl).octave] = osl;
 
         /* update map */
         int id = (*kl).class_id;
         int oct = (*kl).octave;
-        correspondences.insert(std::pair<std::pair<int,int>, int>(std::pair<int,int>(id, oct), slCounter));
+        correspondences.insert(std::pair<std::pair<int,int>, int>(std::pair<int,int>(id, oct),
+                                                                  slCounter));
     }
 
     /* delete useless OctaveSingleLines */
@@ -401,7 +504,7 @@ void BinaryDescriptor::computeImpl( const Mat& image,
     {
         for(size_t j = 0; j<sl[i].size(); j++)
         {
-            if((sl[i][j]).octaveCount == -1)
+            if((int)(sl[i][j]).octaveCount == -1)
                 (sl[i]).erase((sl[i]).begin() + j);
         }
     }
@@ -426,9 +529,38 @@ void BinaryDescriptor::computeImpl( const Mat& image,
     }
 
     /* compute LBD descriptors */
-    bn->computeLBD_(sl);
-}
+    bn->computeLBD(sl);
 
+    /* resize output matrix */
+    descriptors = cv::Mat(keypoints.size(), 32, CV_8UC1);
+
+    /* fill output matrix with descriptors */
+    for(size_t k = 0; k<sl.size(); k++)
+    {
+        for(size_t lineC = 0; lineC<sl[k].size(); lineC++){
+            /* get original index of keypoint */
+            int lineOctave = (sl[k][lineC]).octaveCount;
+            int originalIndex = correspondences.find(std::pair<int,int>(k, lineOctave))->second;
+
+            /* get a pointer to correspondent row in output matrix */
+            uchar* pointerToRow = descriptors.ptr(originalIndex);
+
+            /* get LBD data */
+            float* desVec = sl[k][lineC].descriptor.data();
+
+            /* fill current row with binary descriptor */
+            for(int comb = 0; comb<32; comb++)
+            {
+                *pointerToRow = bn->binaryConversion(&desVec[8*combinations[comb][0]],
+                                               &desVec[8*combinations[comb][1]]);
+
+                pointerToRow++;
+            }
+        }
+    }
+
+
+}
 
 
 /* gather lines in groups. Each group contains the same line, detected in different octaves */
@@ -678,15 +810,9 @@ int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
         cv::Vec3i tempParams;
         getLineParameters(extractedLines[octaveID][lineIDInOctave], tempParams);
         direction = getLineDirection(tempParams);
-        // direction = edLineVec_[octaveID]->lineDirection_[lineIDInOctave];
         singleLine.octaveCount = octaveID;
         singleLine.direction = direction;
         singleLine.lineLength = octaveLines[lineID].lineLength;
-        //singleLine.salience = singleLine.lineLength/max(images_sizes[octaveID].width,
-        //                                               images_sizes[octaveID].height);
-        //singleLine.salience  = edLineVec_[octaveID]->lineSalience_[lineIDInOctave];
-        //singleLine.numOfPixels = edLineVec_[octaveID]->lines_.sId[lineIDInOctave+1]-
-                                 //edLineVec_[octaveID]->lines_.sId[lineIDInOctave];
 
         //decide the start point and end point
         shouldChange = false;
@@ -739,7 +865,20 @@ int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
             }
 
         tempID = octaveLines[lineID].lineIDInScaleLineVec;
+
+        /* compute number of pixels covered by line */
+        LineIterator li(octaveImages[octaveID],
+                        Point(singleLine.startPointX, singleLine.startPointY),
+                        Point(singleLine.endPointX, singleLine.endPointY));
+
+        singleLine.numOfPixels = li.count;
+
+        /* store line */
         keyLines[tempID].push_back(singleLine);
+
+
+
+
     }
 
     delete [] scale;
@@ -749,14 +888,14 @@ int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
 }
 
 /* compute LBD descriptors */
-int BinaryDescriptor::computeLBD_(ScaleLines &keyLines)
+int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
 {
     //the default length of the band is the line length.
     short numOfFinalLine = keyLines.size();
     float *dL = new float[2];//line direction cos(dir), sin(dir)
     float *dO = new float[2];//the clockwise orthogonal vector of line direction.
     short heightOfLSP = params.widthOfBand_*params.numOfBand_;//the height of line support region;
-    short descriptorSize = params.numOfBand_ * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
+    short descriptor_size = params.numOfBand_ * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
     float pgdLRowSum;//the summation of {g_dL |g_dL>0 } for each row of the region;
     float ngdLRowSum;//the summation of {g_dL |g_dL<0 } for each row of the region;
     float pgdL2RowSum;//the summation of {g_dL^2 |g_dL>0 } for each row of the region;
@@ -949,7 +1088,7 @@ int BinaryDescriptor::computeLBD_(ScaleLines &keyLines)
             return 0; */
 
             /* construct line descriptor */
-            pSingleLine->descriptor.resize(descriptorSize);
+            pSingleLine->descriptor.resize(descriptor_size);
             desVec = pSingleLine->descriptor.data();
 
             short desID;
@@ -1016,7 +1155,7 @@ int BinaryDescriptor::computeLBD_(ScaleLines &keyLines)
              * vector no larger than this threshold. In Z.Wang's work, a value of 0.4 is found
              * empirically to be a proper threshold.*/
             desVec = pSingleLine->descriptor.data();
-            for(short i=0; i<descriptorSize; i++ ){
+            for(short i=0; i<descriptor_size; i++ ){
                 if(desVec[i]>0.4){
                     desVec[i]=0.4;
                 }
@@ -1024,12 +1163,12 @@ int BinaryDescriptor::computeLBD_(ScaleLines &keyLines)
 
             //re-normalize desVec;
             temp = 0;
-            for(short i=0; i<descriptorSize; i++){
+            for(short i=0; i<descriptor_size; i++){
                 temp += desVec[i] * desVec[i];
             }
 
             temp = 1/sqrt(temp);
-            for(short i=0; i<descriptorSize; i++){
+            for(short i=0; i<descriptor_size; i++){
                 desVec[i] =  desVec[i] * temp;
             }
         }/* end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize;
