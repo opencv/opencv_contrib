@@ -56,11 +56,11 @@ ObjectnessBING::ObjectnessBING()
   _base = 2;  // base for window size quantization
   _W = 8;  // feature window size (W, W)
   _NSS = 2;  //non-maximal suppress size NSS
-  _logBase=log( _base );
-  _minT=cvCeil( log( 10. ) / _logBase );
-  _maxT=cvCeil( log( 500. ) / _logBase );
-  _numT= _maxT - _minT + 1 ;
-  _Clr= MAXBGR ;
+  _logBase = log( _base );
+  _minT = cvCeil( log( 10. ) / _logBase );
+  _maxT = cvCeil( log( 500. ) / _logBase );
+  _numT = _maxT - _minT + 1;
+  _Clr = MAXBGR;
 
   setColorSpace( _Clr );
 
@@ -75,7 +75,8 @@ ObjectnessBING::~ObjectnessBING()
 void ObjectnessBING::setColorSpace( int clr )
 {
   _Clr = clr;
-  _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel" + string(format("ObjNessB%gW%d%s", _base, _W, _clrName[_Clr]).c_str());
+  _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel"
+      + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
   //  _trainDirSI = _voc.localDir + string(format("TrainS1B%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
   //  _bbResDir = _voc.resDir + string(format("BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
 }
@@ -368,6 +369,8 @@ void ObjectnessBING::gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u )
 
 void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &finalBoxes, int numDetPerSize )
 {
+  ValStructVec<float, Vec4i> boxes;
+  finalBoxes.reserve( 10000 );
 
   int scales[3] =
   { 1, 3, 5 };
@@ -378,7 +381,8 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
     CmTimer tm( "Predict" );
     tm.Start();
 
-    getObjBndBoxes( img, finalBoxes, numDetPerSize );
+    getObjBndBoxes( img, boxes, numDetPerSize );
+    finalBoxes.append( boxes, scales[clr] );
 
     tm.Stop();
     printf( "Average time for predicting an image (%s) is %gs\n", _clrName[_Clr], tm.TimeInSeconds() );
@@ -407,12 +411,13 @@ std::string inline removeExtension( std::string const& filename )
 // Read matrix from binary file
 bool ObjectnessBING::matRead( const string& filename, Mat& _M )
 {
+  String filenamePlusExt(filename.c_str());
+  filenamePlusExt+=".yml.gz";
+  FileStorage fs2( filenamePlusExt, FileStorage::READ );
 
-  FileStorage fs2( filename + ".yml.gz", FileStorage::READ );
-  String fileNameString( filename.c_str() );
-
+  //String fileNameString( filename.c_str() );
   Mat M;
-  fs2[removeExtension( basename( fileNameString ) )] >> M;
+  fs2[String(removeExtension( basename( filename ) ).c_str())] >> M;
 
   /*FILE* f = fopen(_S(filename), "rb");
    if (f == NULL)
@@ -449,19 +454,33 @@ void ObjectnessBING::write( cv::FileStorage& fs ) const
 
 bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray objBoundingBox )
 {
-  ValStructVec<float, Vec4i> &finalBoxes;
+  ValStructVec<float, Vec4i> finalBoxes;
   getObjBndBoxesForSingleImage( image.getMat(), finalBoxes, 250 );
 
   // List of rectangles returned by objectess function in ascending order.
   // At the top there are the rectangles with lower values of ​​objectness, ie more
   // likely to have objects in them.
-  objBoundingBox = finalBoxes.getSortedStructVal();
+  //vector<Vec4i> >
+
+  //objBoundingBox = finalBoxes.getSortedStructVal();
+ /* vector<Vec4i> tmp=finalBoxes.getSortedStructVal();
+  objBoundingBox.create(tmp.size(), 1, CV_8U);
+  Mat obj= objBoundingBox.getMat();
+  obj=tmp;*/
+
+  Mat obj = objBoundingBox.getMat();
+  obj = Mat(finalBoxes.getSortedStructVal());
+
+/*  Mat obj2 = objBoundingBox.getMatRef();
+  obj2 = Mat(finalBoxes.getSortedStructVal());*/
+
+
 
   // List of the rectangles' objectness value
-  unsigned long int valIdxesSize = finalBoxes.valIdxes.size();
+  unsigned long int valIdxesSize = finalBoxes.getvalIdxes().size();
   objectnessValues.resize( valIdxesSize );
   for ( uint i = 0; i < valIdxesSize; i++ )
-    objectnessValues[i] = finalBoxes.valIdxes[i].first;
+    objectnessValues[i] = finalBoxes.getvalIdxes()[i].first;
 
   return true;
 }

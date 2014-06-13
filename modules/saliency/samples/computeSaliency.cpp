@@ -58,7 +58,9 @@ int main( int argc, char** argv )
     return -1;
   }
 
-  Mat image, saliencyMap, binaryMap;
+  Mat binaryMap;
+  Mat image;
+  //OutputArray saliencyMap( image );
 
   cap >> frame;
   if( frame.empty() )
@@ -68,15 +70,31 @@ int main( int argc, char** argv )
 
   frame.copyTo( image );
 
-  if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+  if( saliency_algorithm.find( "SPECTRAL_RESIDUAL" ) == 0 )
   {
-    StaticSaliencySpectralResidual spec;
-    spec.computeBinaryMap( saliencyMap, binaryMap );
-    //saliencyAlgorithm->computeBinaryMap( saliencyMap, binaryMap );
-    imshow( "Saliency Map", saliencyMap );
-    imshow( "Original Image", image );
-    imshow( "Binary Map", binaryMap );
-    waitKey( 0 );
+    Mat saliencyMap;
+    if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+    {
+      StaticSaliencySpectralResidual spec;
+      //Mat salMat=saliencyMap.getMat();
+      spec.computeBinaryMap( saliencyMap, binaryMap );
+      //saliencyAlgorithm->computeBinaryMap( saliencyMap, binaryMap );
+      imshow( "Saliency Map", saliencyMap );
+      imshow( "Original Image", image );
+      imshow( "Binary Map", binaryMap );
+      waitKey( 0 );
+    }
+
+  }
+  else if( saliency_algorithm.find( "BING" ) == 0 )
+  {
+    vector<Vec4i> saliencyMap;
+    if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+    {
+
+      std::cout << "-----------------OBJECTNESS-----------" << std::endl;
+      std::cout << "OBJ BB VECTOR SIZE" << saliencyMap.size() << std::endl;
+    }
 
   }
 
