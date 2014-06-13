@@ -48,21 +48,23 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.52
+#define THETA_NN 0.55
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
+#define MAX_EXAMPLES_IN_MODEL 500
 static const Size GaussBlurKernelSize(3,3);
 
 using namespace cv;
 
 /*
  * FIXME(optimize):
+ *      NCC in TrackerMedianFlow
+ *      no median
  * FIXME(issues)
- *       THETA_NN 0.5<->0.6 dramatic change vs video 6
- *       very bad ensemble for vid 5
- * TODO: separate integration methods, fix ensemble not only when Pexperts are up, FIXME to array; WHY DOES NOT DETECT?,
+ *      THETA_NN 0.5<->0.6 dramatic change vs video 6
+ * TODO:
+ *      quantitative assessment framework
  *      if box size is less than 20
- *      forget
 */
 
 /* design decisions:
@@ -177,12 +179,15 @@ class TrackerTLDModel : public TrackerModel{
   Size getMinSize(){return minSize_;}
   void printme(FILE*  port=stdout);
  protected:
+  void pushIntoModel(const Mat_<uchar>& example,bool positive);
   void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
   void modelUpdateImpl(){}
   Rect2d boundingBox_;
   double originalVariance_;
   Size minSize_;
   std::vector<Mat_<uchar> > positiveExamples,negativeExamples;
+  std::vector<unsigned int> timeStampsPositive,timeStampsNegative;
+  unsigned int timeStampPositiveNext,timeStampNegativeNext;
   RNG rng;
   std::vector<TLDEnsembleClassifier> classifiers;
 };
@@ -274,6 +279,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
 
     std::vector<double>::iterator it=std::max_element(candidatesRes.begin(),candidatesRes.end());
+    if(candidatesRes.size()==2 &&  it==(candidatesRes.begin()+1))
+        fprintf(stderr,"detector WON\n");
 
     fprintf(stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(1.2));
     for(int i=0;i<candidatesRes.size();i++){
@@ -281,9 +288,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
     data->printme();
     tldModel->printme(stderr);
-    if(!false && data->frameNum==82){
+    if(!true && data->frameNum==82){
         printf("here I am\n");
-        while(true);
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
         imshow("picker",image_gray);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
@@ -307,7 +313,6 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
 
     if(data->confident){
-        fprintf(stdout,"pos=%d, neg=%d\n",std::count(isObject.begin(),isObject.end(),true),std::count(isObject.begin(),isObject.end(),false));
         Pexpert pExpert(image_gray,image_blurred,boundingBox,detector,params,data->getMinSize());
         Nexpert nExpert(image_gray,boundingBox,detector,params);
         bool expertResult;
@@ -339,7 +344,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     return true;
 }
 
-TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox,Size minSize):minSize_(minSize){
+TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox,Size minSize):minSize_(minSize),
+timeStampPositiveNext(0),timeStampNegativeNext(0){
     boundingBox_=boundingBox;
     originalVariance_=variance(image(boundingBox));
     std::vector<Rect2d> closest(10),scanGrid;
@@ -361,23 +367,27 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     for(int i=0;i<closest.size();i++){
         for(int j=0;j<20;j++){
             Mat_<uchar> standardPatch(15,15);
-            center.x=closest[i].x+closest[i].width/2;//+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
-            center.y=closest[i].y+closest[i].height/2;//+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
-            size.width=closest[i].width;//*rng.uniform((double)0.99,(double)1.01);
-            size.height=closest[i].height;//*rng.uniform((double)0.99,(double)1.01);
-            float angle=0.0;//FIXME: float angle=rng.uniform((double)-10.0,(double)10.0);
+            if(true){
+                center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
+                center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
+                size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
+                size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
+                float angle=rng.uniform((double)-10.0,(double)10.0);
 
-            resample(scaledImg,Rect2d(Point2d(center.x-size.width/2,center.y-size.height/2),size),
-                    standardPatch);//FIXME: resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
-            
-            for(int y=0;y<standardPatch.rows;y++){
-                for(int x=0;x<standardPatch.cols;x++){
-                    //standardPatch(x,y)+=rng.gaussian(5.0);
+                resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
+                
+                for(int y=0;y<standardPatch.rows;y++){
+                    for(int x=0;x<standardPatch.cols;x++){
+                        standardPatch(x,y)+=rng.gaussian(5.0);
+                    }
                 }
-            }
-            positiveExamples.push_back(standardPatch);
 
-            resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
+                resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
+            }else{
+                resample(scaledImg,closest[i],standardPatch);
+            }
+            pushIntoModel(standardPatch,true);
+            resample(blurredImg,closest[i],blurredPatch);
             for(int k=0;k<classifiers.size();k++){
                 classifiers[k].integrate(blurredPatch,true);
             }
@@ -394,7 +404,7 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
         if(std::find(indices.begin(),indices.end(),i)==indices.end() && overlap(boundingBox,scanGrid[i])<0.2){
             Mat_<uchar> standardPatch(15,15);
             resample(image,scanGrid[i],standardPatch);
-            negativeExamples.push_back(standardPatch);
+            pushIntoModel(standardPatch,false);
 
             resample(image_blurred,scanGrid[i],blurredPatch);
             for(int k=0;k<classifiers.size();k++){
@@ -449,6 +459,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     Size2d size=img.size();
     double scale=1.0;
     int total=0,pass=0;
+    int npos=0,nneg=0;
     double tmp=0,maxSc=-5.0;
     Rect2d maxScRect;
     START_TICK("detector");
@@ -473,7 +484,10 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
                 isObject.push_back(tmp>THETA_NN);
                 shouldBeIntegrated.push_back(abs(tmp-THETA_NN)<0.1);
                 if(!isObject[isObject.size()-1]){
+                    nneg++;
                     continue;
+                }else{
+                    npos++;
                 }
                 tmp=tldModel->Sc(standardPatch);
                 if(tmp>maxSc){
@@ -491,7 +505,8 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     }while(size.width>=initSize.width && size.height>=initSize.height);
     END_TICK("detector");
 
-    if(!true){
+    fprintf(stderr,"after NCC: nneg=%d npos=%d\n",nneg,npos);
+    if(!false){
         std::vector<Rect2d> poss,negs;
         for(int i=0;i<rect.size();i++){
             if(isObject[i])
@@ -584,8 +599,11 @@ double TrackerTLDModel::Sr(const Mat_<uchar> patch){
 
 double TrackerTLDModel::Sc(const Mat_<uchar> patch){
     double splus=0.0;
-    for(int i=0;i<((positiveExamples.size()+1)/2);i++){
-        splus=MAX(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
+    int med=getMedian(timeStampsPositive);
+    for(int i=0;i<positiveExamples.size();i++){
+        if(timeStampsPositive[i]<=med){
+            splus=MAX(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
+        }
     }
     double sminus=0.0;
     for(int i=0;i<negativeExamples.size();i++){
@@ -606,10 +624,10 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vec
             resample(img,box[k],standardPatch);
             if(isPositive[k]){
                 positiveIntoModel++;
-                positiveExamples.push_back(standardPatch);
+                pushIntoModel(standardPatch,true);
             }else{
                 negativeIntoModel++;
-                negativeExamples.push_back(standardPatch);
+                pushIntoModel(standardPatch,false);
             }
         }
 
@@ -643,10 +661,10 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         if((sr>THETA_NN)!=isPositive){
             if(isPositive){
                 positiveIntoModel++;
-                positiveExamples.push_back(eForModel[k]);
+                pushIntoModel(eForModel[k],true);
             }else{
                 negativeIntoModel++;
-                negativeExamples.push_back(eForModel[k]);
+                pushIntoModel(eForModel[k],false);
             }
         }
         double p=0;
@@ -782,6 +800,29 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         imshow("picker",imgCanvas);
         waitKey();
     }
+}
+void TrackerTLDModel::pushIntoModel(const Mat_<uchar>& example,bool positive){
+    std::vector<Mat_<uchar> >* proxyV;
+    unsigned int* proxyN;
+    std::vector<unsigned int>* proxyT;
+    if(positive){
+        proxyV=&positiveExamples;
+        proxyN=&timeStampPositiveNext;
+        proxyT=&timeStampsPositive;
+    }else{
+        proxyV=&negativeExamples;
+        proxyN=&timeStampNegativeNext;
+        proxyT=&timeStampsNegative;
+    }
+    if(proxyV->size()<MAX_EXAMPLES_IN_MODEL){
+        proxyV->push_back(example);
+        proxyT->push_back(*proxyN);
+    }else{
+        int index=rng.uniform((int)0,(int)proxyV->size());
+        (*proxyV)[index]=example;
+        (*proxyT)[index]=(*proxyN);
+    }
+    (*proxyN)++;
 }
 
 } /* namespace cv */

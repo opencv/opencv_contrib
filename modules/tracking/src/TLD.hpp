@@ -75,6 +75,7 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2);
 void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 double scaleAndBlur(const Mat& originalImg,int scale,Mat& scaledImg,Mat& blurredImg,Size GaussBlurKernelSize);
+unsigned int getMedian(const std::vector<unsigned int>& values, int size=-1);
 
 class TLDEnsembleClassifier{
 public:

@@ -201,12 +201,26 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     CV_Assert(patch1.rows=patch2.rows);
     CV_Assert(patch1.cols=patch2.cols);
-    /*printf("%f %f %f\n",(double)patch1.dot(patch2),norm(patch1),norm(patch2));
-    double ncc=patch1.dot(patch2)/norm(patch1)/norm(patch2);*/
+    //double ncc=patch1.dot(patch2)/norm(patch1)/norm(patch2);
+    //double t1,t2;
 
-    Mat_<float> res(1,1);
-	matchTemplate( patch1,patch2, res, CV_TM_CCOEFF_NORMED );
-    /*printf("ncc2=%f\n",(float)res(0,0));*/
+    //t1=getTickCount();
+    int N=patch1.rows*patch1.cols;
+    double s1=sum(patch1)(0),s2=sum(patch2)(0);
+    double n1=norm(patch1),n2=norm(patch2);
+    double prod=patch1.dot(patch2);
+    return (prod-s1*s2/N)/sqrt(n1*n1-s1*s1/N)/sqrt(n2*n2-s2*s2/N);
+    //t1=(getTickCount()-t1)/getTickFrequency();
+
+    /*t2=getTickCount();
+    float res;
+    Mat_<float> Mres(1,1,&res);
+	matchTemplate( patch1,patch2,Mres, CV_TM_CCOEFF_NORMED );
+    t2=(getTickCount()-t2)/getTickFrequency();
+
+    fprintf(stderr,"***************\n");
+    fprintf(stderr,"%f vs %f\n",ncc,res);
+    fprintf(stderr,"%f vs %f\n",t1,t2);*/
 
     /*Mat_<uchar> p1(80,80),p2(80,80);
     printf("NCC\n");
@@ -216,8 +230,18 @@ double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     imshow("patch2",p2);
     printf("NCC=%f\n",ncc);
     waitKey();*/
-
-    return res(0,0);
+}
+unsigned int getMedian(const std::vector<unsigned int>& values, int size){
+    if(size==-1){
+        size=values.size();
+    }
+    std::vector<int> copy(values.begin(),values.begin()+size);
+    std::sort(copy.begin(),copy.end());
+    if(size%2==0){
+        return (copy[size/2-1]+copy[size/2])/2.0;
+    }else{
+        return copy[(size-1)/2];
+    }
 }
 
 inline double overlap(const Rect2d& r1,const Rect2d& r2){
