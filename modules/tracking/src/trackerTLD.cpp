@@ -48,7 +48,7 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.6
+#define THETA_NN 0.52
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 static const Size GaussBlurKernelSize(3,3);
@@ -230,7 +230,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     privateInfo.push_back(Ptr<TLDDetector>(detector));
     privateInfo.push_back(Ptr<Data>(data));
 
-    if(!false){
+    if(!true){
         printf("here I am\n");
         Mat image_blurred;
         GaussianBlur(image_gray,image_blurred,GaussBlurKernelSize,0.0);
@@ -280,9 +280,10 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
     }
     data->printme();
-    tldModel->printme();
+    tldModel->printme(stderr);
     if(!false && data->frameNum==82){
         printf("here I am\n");
+        while(true);
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
         imshow("picker",image_gray);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
@@ -313,12 +314,6 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         std::vector<Mat_<uchar> > examplesForModel,examplesForEnsemble;
         examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
         int negRelabeled=0;
-        if(!true){
-            std::vector<Rect2d> positiveOnes;
-            for(int i=0;i<detectorResults.size();i++)
-                if(isObject[i])positiveOnes.push_back(detectorResults[i]);
-            drawWithRects(image_gray,positiveOnes);
-        }
         for(int i=0;i<detectorResults.size();i++){
             if(isObject[i]){
                 expertResult=nExpert(detectorResults[i]);
@@ -366,16 +361,18 @@ TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, con
     for(int i=0;i<closest.size();i++){
         for(int j=0;j<20;j++){
             Mat_<uchar> standardPatch(15,15);
-            center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
-            center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
-            size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
-            size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
-            float angle=rng.uniform((double)-10.0,(double)10.0);
+            center.x=closest[i].x+closest[i].width/2;//+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
+            center.y=closest[i].y+closest[i].height/2;//+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
+            size.width=closest[i].width;//*rng.uniform((double)0.99,(double)1.01);
+            size.height=closest[i].height;//*rng.uniform((double)0.99,(double)1.01);
+            float angle=0.0;//FIXME: float angle=rng.uniform((double)-10.0,(double)10.0);
 
-            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
+            resample(scaledImg,Rect2d(Point2d(center.x-size.width/2,center.y-size.height/2),size),
+                    standardPatch);//FIXME: resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
+            
             for(int y=0;y<standardPatch.rows;y++){
                 for(int x=0;x<standardPatch.cols;x++){
-                    standardPatch(x,y)+=rng.gaussian(5.0);
+                    //standardPatch(x,y)+=rng.gaussian(5.0);
                 }
             }
             positiveExamples.push_back(standardPatch);
@@ -502,6 +499,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
             else
                 negs.push_back(rect[i]);
         }
+        fprintf(stderr,"%d pos and %d neg\n",poss.size(),negs.size());
         drawWithRects(img,negs,poss);
     }
     if(!true){

@@ -65,7 +65,6 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
         rectangle( image,blackOnes[i], 0, 1, 1 );
     }
     imshow("img",image);
-    waitKey();
 }
 void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes){
     Mat image;
@@ -77,7 +76,6 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rec
         rectangle( image,blackOnes[i], 0, 1, 1 );
     }
     imshow("img",image);
-    waitKey();
 }
 void myassert(const Mat& img){
     int count=0;
@@ -203,7 +201,23 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     CV_Assert(patch1.rows=patch2.rows);
     CV_Assert(patch1.cols=patch2.cols);
-    return patch1.dot(patch2)/norm(patch1)/norm(patch2);
+    /*printf("%f %f %f\n",(double)patch1.dot(patch2),norm(patch1),norm(patch2));
+    double ncc=patch1.dot(patch2)/norm(patch1)/norm(patch2);*/
+
+    Mat_<float> res(1,1);
+	matchTemplate( patch1,patch2, res, CV_TM_CCOEFF_NORMED );
+    /*printf("ncc2=%f\n",(float)res(0,0));*/
+
+    /*Mat_<uchar> p1(80,80),p2(80,80);
+    printf("NCC\n");
+    resample(patch1,Rect2d(Point2d(0,0),patch1.size()),p1);
+    resample(patch2,Rect2d(Point2d(0,0),patch2.size()),p2);
+    imshow("patch1",p1);
+    imshow("patch2",p2);
+    printf("NCC=%f\n",ncc);
+    waitKey();*/
+
+    return res(0,0);
 }
 
 inline double overlap(const Rect2d& r1,const Rect2d& r2){
