@@ -58,13 +58,13 @@ using namespace cv;
 
 /*
  * FIXME(optimize):
- *      NCC in TrackerMedianFlow
+ *      **NCC in TrackerMedianFlow**: check TrackerMedianFlow and TrackerTLD
  *      no median
  * FIXME(issues)
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6
  * TODO:
- *      quantitative assessment framework
- *      if box size is less than 20
+ *      **quantitative assessment framework**
+ *      ** **if box size is less than 20** **
 */
 
 /* design decisions:

@@ -2,6 +2,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <time.h>
 #include <cstring>
 
 #define CMDLINEMAX 10
@@ -11,12 +12,17 @@ using namespace std;
 using namespace cv;
 
 /*
- * TODO:
- do normalization ala Kalal's assessment protocol for TLD
+ * TODO:  
+ *          have FUN! with 5 frames and vs MEDIANFLOW
+ *          PRF
+ *          have FUN!
+ *
+            do normalization ala Kalal's assessment protocol for TLD
  */
 
 static Mat image;
 static bool paused;
+vector<Scalar> palette;
 
 static void listTrackers(){
   vector<String> algorithms;
@@ -55,6 +61,7 @@ static int lineToRect(char* line,Rect2d& res){
   return 0;
 }
 static inline double overlap(Rect2d r1,Rect2d r2){
+    if(r1.width<0 || r2.width<0 || r1.height<0 || r1.width<0)return -1.0;
     double a1=r1.area(), a2=r2.area(), a0=(r1&r2).area();
     return a0/(a1+a2-a0);
 }
@@ -121,23 +128,81 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
         }
     }
 }
-typedef struct{
-    char* videoName;
-    vector<int> correctFrames;
-    vector<double> averageMillisPerFrame;
-    int len;
-}assessmentRes;
-static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
+void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results){
+    vector<int> grid(1+algNum,0);
+    char spaces[100];memset(spaces,' ',100);
+    for(int i=0;i<videoNum;i++){
+        grid[0]=std::max(grid[0],(int)strlen(videos[i]));
+    }
+    for(int i=0;i<algNum;i++){
+        grid[i+1]=strlen(algorithms[i]);
+        for(int j=0;j<videoNum;j++)
+            grid[i+1]=std::max(grid[i+1],(int)strlen(results[j][i]));
+    }
+    printf("%.*s ",grid[0],spaces);
+    for(int i=0;i<algNum;i++)
+        printf("%s%.*s ",algorithms[i],grid[i+1]-strlen(algorithms[i]),spaces);
+    printf("\n");
+    for(int i=0;i<videoNum;i++){
+        printf("%s%.*s ",videos[i],grid[0]-strlen(videos[i]),spaces);
+        for(int j=0;j<algNum;j++)
+            printf("%s%.*s ",results[i][j],grid[i+1]-strlen(results[i][j]),spaces);
+        printf("\n");
+    }
+    printf("*************************************************************\n");
+}
 
+struct AssessmentRes{
+    class Assessment{
+    public:
+        virtual int printf(char* buf)=0;
+        virtual void printName(){};
+        virtual void assess(const Rect2d& ethalon,const Rect2d& res)=0;
+        virtual ~Assessment(){}
+    };
+    AssessmentRes(int algnum);
+    char* videoName;
+    vector<vector<Ptr<Assessment> > >results;
+    int len;
+};
+class CorrectFrames : public AssessmentRes::Assessment{
+public:
+    CorrectFrames(double tol):tol_(tol),correctFrames_(1){}
+    int printf(char* buf){return sprintf(buf,"%d",correctFrames_);}
+    void printName(){printf("Num of correct frames\n");}
+    void assess(const Rect2d& ethalon,const Rect2d& res){if(overlap(ethalon,res)>=tol_)correctFrames_++;}
+private:
+    double tol_;
+    int correctFrames_;
+};
+class AvgTime : public AssessmentRes::Assessment{
+public:
+    AvgTime(double res):res_(res){}
+    int printf(char* buf){return sprintf(buf,"%gs",res_);}
+    void printName(){printf("Average frame tracking time\n");}
+    void assess(const Rect2d& ethalon,const Rect2d& res){};
+private:
+    double res_;
+};
+class PRF : public AssessmentRes::Assessment{
+public:
+    PRF(){srand(time(NULL));}
+    int printf(char* buf){int res=1+(rand()%6);memset(buf,'*',res);buf[res]='\0';return res;}
+    void assess(const Rect2d& ethalon,const Rect2d& res){}
+private:
+};
+AssessmentRes::AssessmentRes(int algnum):len(0),results(algnum){
+    for(int i=0;i<results.size();i++){
+        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
+    }
+}
+
+static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
   char buf[200];
   int start_frame=0;
   int linecount=0;
-  vector<Scalar> palette;
-  palette.push_back(Scalar(255,0,0));//BGR
-  palette.push_back(Scalar(0,0,255));
-  palette.push_back(Scalar(0,255,255));
   Rect2d boundingBox;
-  assessmentRes res;
+  vector<double> averageMillisPerFrame(algnum,0.0);
 
   FILE* gt=fopen(gt_str,"r");
   if(gt==NULL){
@@ -216,8 +281,7 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   imshow( "Tracking API", image );
 
   int frameCounter = 0;
-  res.correctFrames=std::vector<int>(trackers.size(),0);
-  res.averageMillisPerFrame=std::vector<double>(trackers.size(),0.0);
+  AssessmentRes res(trackers.size());
 
   for ( ;; ){
     if( !paused ){
@@ -240,18 +304,19 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       rectangle( image, boundingBox,palette[0], 2, 1 );
       
       frameCounter++;
-      bool allTrackersOut=true;
       for(int i=0;i<trackers.size();i++){
-          if( res.correctFrames[i]!=0){
-              continue;
-          }
           bool trackerRes=true;
           clock_t start;start=clock();
           trackerRes=trackers[i]->update( frame, initBoxes[i] ) ;
           start=clock()-start;
-          res.averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
+          averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
+          if(trackerRes==false){
+              initBoxes[i].height=initBoxes[i].width=-1.0;
+          }else{
+              rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+          }
 
-          if(false && i==1){
+          if(!true && i==1){
               printf("TLD\n");
               printf("boundingBox=[%f,%f,%f,%f]\n",boundingBox.x,boundingBox.y,boundingBox.width,boundingBox.height);
               printf("initBoxes[i]=[%f,%f,%f,%f]\n",initBoxes[i].x,initBoxes[i].y,initBoxes[i].width,initBoxes[i].height);
@@ -259,17 +324,8 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
               exit(0);
           }
 
-          if(boundingBox.width<0 || (trackerRes && overlap(initBoxes[i],boundingBox)>=OVERLAP_TOL)){
-            allTrackersOut=false;
-            if(trackerRes){
-                rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
-            }
-          }else{
-              res.correctFrames[i]=frameCounter;
-          }
-      }
-      if(allTrackersOut){
-          break;
+          for(int j=0;j<res.results[i].size();j++)
+              res.results[i][j]->assess(initBoxes[0],initBoxes[i]);
       }
       imshow( "Tracking API", image );
 
@@ -283,17 +339,19 @@ static assessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   if(gt!=NULL){
       fclose(gt);
   }
-  for(int i=0;i<res.averageMillisPerFrame.size();i++){
-      res.averageMillisPerFrame[i]/=res.correctFrames[i];
-  }
   destroyWindow( "Tracking API");
-  res.videoName=video;
+
   res.len=linecount;
+  res.videoName=video;
+  for(int i=0;i<res.results.size();i++)
+      res.results[i].push_back(Ptr<AssessmentRes::Assessment>(new AvgTime(averageMillisPerFrame[i]/res.len)));
   return res;
 }
 
 int main( int argc, char** argv ){
-
+  palette.push_back(Scalar(255,0,0));//BGR
+  palette.push_back(Scalar(0,0,255));
+  palette.push_back(Scalar(0,255,255));
   int vcount=0,acount=0;
   char* videos[CMDLINEMAX],*gts[CMDLINEMAX],*algorithms[CMDLINEMAX],*initBoxes[CMDLINEMAX][CMDLINEMAX];
   parseCommandLineArgs(argc,argv,videos,gts,&vcount,algorithms,initBoxes,&acount);
@@ -311,12 +369,34 @@ int main( int argc, char** argv ){
       printf("\n");
   }
 
-  std::vector<assessmentRes> results;
+  std::vector<AssessmentRes> results;
   for(int i=0;i<vcount;i++){
       results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
   }
   printf("\n\n");
+
+  char buf[CMDLINEMAX*CMDLINEMAX*40];
+  vector<vector<char*> > resultStrings(vcount);
   for(int i=0;i<vcount;i++){
+      for(int j=0;j<acount;j++){
+          resultStrings[i].push_back(buf+i*CMDLINEMAX*40 + j*40);
+      }
+  }
+  for(int tableCount=0;tableCount<results[0].results[0].size();tableCount++){
+      for(int videoCount=0;videoCount<results.size();videoCount++)
+          for(int algoCount=0;algoCount<results[0].results.size();algoCount++)
+              (results[videoCount].results[algoCount][tableCount])->printf(resultStrings[videoCount][algoCount]);
+      print_table(videos,vcount,algorithms,acount,resultStrings);
+  }
+  return 0;
+
+  /*for(int i=0;i<results.size();i++){
+      for(int j=0;j<results[i].size();j++){
+          stub.printf(results[i][j]);
+      }
+  }*/
+
+  /*for(int i=0;i<vcount;i++){
       printf("%20s",results[i].videoName);
       printf("%5d",results[i].len);
       for(int j=0;j<results[i].correctFrames.size();j++){
@@ -324,6 +404,5 @@ int main( int argc, char** argv ){
           printf("%8.2fmilis",results[i].averageMillisPerFrame[j]);
       }
       printf("\n");
-  }
-  return 0;
+  }*/
 }

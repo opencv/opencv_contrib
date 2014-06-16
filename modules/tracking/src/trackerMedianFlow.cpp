@@ -362,13 +362,19 @@ void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
     std::vector<float> NCC(oldPoints.size(),0.0);
     Size patch(30,30);
     Mat p1,p2;
-    Mat_<float> res(1,1);
 
 	for (int i = 0; i < oldPoints.size(); i++) {
 		getRectSubPix( oldImage, patch, oldPoints[i],p1);
 		getRectSubPix( newImage, patch, newPoints[i],p2);
-		matchTemplate( p1,p2, res, CV_TM_CCOEFF_NORMED );
-		NCC[i] = res.at<float>(0,0);
+
+        const int N=900;
+        double s1=sum(p1)(0),s2=sum(p2)(0);
+        double n1=norm(p1),n2=norm(p2);
+        double prod=p1.dot(p2);
+        double sq1=sqrt(n1*n1-s1*s1/N),sq2=sqrt(n2*n2-s2*s2/N);
+        double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
+
+		NCC[i] = ares;
 	}
 	float median = getMedian(NCC);
 	for(int i = 0; i < oldPoints.size(); i++) {

@@ -201,26 +201,14 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     CV_Assert(patch1.rows=patch2.rows);
     CV_Assert(patch1.cols=patch2.cols);
-    //double ncc=patch1.dot(patch2)/norm(patch1)/norm(patch2);
-    //double t1,t2;
 
-    //t1=getTickCount();
     int N=patch1.rows*patch1.cols;
     double s1=sum(patch1)(0),s2=sum(patch2)(0);
     double n1=norm(patch1),n2=norm(patch2);
     double prod=patch1.dot(patch2);
-    return (prod-s1*s2/N)/sqrt(n1*n1-s1*s1/N)/sqrt(n2*n2-s2*s2/N);
-    //t1=(getTickCount()-t1)/getTickFrequency();
-
-    /*t2=getTickCount();
-    float res;
-    Mat_<float> Mres(1,1,&res);
-	matchTemplate( patch1,patch2,Mres, CV_TM_CCOEFF_NORMED );
-    t2=(getTickCount()-t2)/getTickFrequency();
-
-    fprintf(stderr,"***************\n");
-    fprintf(stderr,"%f vs %f\n",ncc,res);
-    fprintf(stderr,"%f vs %f\n",t1,t2);*/
+    double sq1=sqrt(n1*n1-s1*s1/N),sq2=sqrt(n2*n2-s2*s2/N);
+    double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
+    return ares;
 
     /*Mat_<uchar> p1(80,80),p2(80,80);
     printf("NCC\n");

@@ -198,7 +198,6 @@ int main( int argc, char** argv ){
       }
       imshow( "Tracking API", image );
       frameCounter++;
-      if(!true && frameCounter>5)return 0;//FIXME
     }
 
     char c = (char) waitKey( 2 );
