@@ -58,7 +58,7 @@ static void onMouse( int event, int x, int y, int, void* )
           //draw the bounding box
           Mat currentFrame;
           image.copyTo( currentFrame );
-          rectangle( currentFrame, Point( boundingBox.x, boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
+          rectangle( currentFrame, Point( (int)boundingBox.x, (int)boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
           imshow( "Tracking API", currentFrame );
         }
         break;
@@ -82,18 +82,23 @@ int main( int argc, char** argv )
 
   int coords[4]={0,0,0,0};
   bool initFrameWasGivenInCommandLine=false;
-  do{
+  
+  do
+  {
       String initBoundingBox=parser.get<String>(3);
-      for(size_t pos=0,ctr=0;ctr<4;ctr++){
+      for(size_t pos=0,ctr=0;ctr<4;ctr++)
+	  {
         size_t npos=initBoundingBox.find_first_of(',',pos);
-        if(npos==string::npos && ctr<3){
+        if(npos==string::npos && ctr<3)
+		{
            printf("bounding box should be given in format \"x1,y1,x2,y2\",where x's and y's are integer cordinates of opposed corners of bdd box\n");
            printf("got: %s\n",initBoundingBox.substr(pos,string::npos).c_str());
            printf("manual selection of bounding box will be employed\n");
            break;
         }
         int num=atoi(initBoundingBox.substr(pos,(ctr==3)?(string::npos):(npos-pos)).c_str());
-        if(num<=0){
+        if(num<=0)
+		{
            printf("bounding box should be given in format \"x1,y1,x2,y2\",where x's and y's are integer cordinates of opposed corners of bdd box\n");
            printf("got: %s\n",initBoundingBox.substr(pos,npos-pos).c_str());
            printf("manual selection of bounding box will be employed\n");
@@ -102,10 +107,9 @@ int main( int argc, char** argv )
         coords[ctr]=num;
         pos=npos+1;
       }
-      if(coords[0]>0 && coords[1]>0 && coords[2]>0 && coords[3]>0){
+      if(coords[0]>0 && coords[1]>0 && coords[2]>0 && coords[3]>0)
           initFrameWasGivenInCommandLine=true;
-      }
-  }while(0);
+  } while((void)0, 0);
 
   //open the capture
   VideoCapture cap;

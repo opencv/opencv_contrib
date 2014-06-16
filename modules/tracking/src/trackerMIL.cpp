@@ -158,7 +158,7 @@ bool TrackerMIL::initImpl( const Mat& image, const Rect2d& boundingBox )
   //compute HAAR features
   TrackerFeatureHAAR::Params HAARparameters;
   HAARparameters.numFeatures = params.featureSetNumFeatures;
-  HAARparameters.rectSize = Size( boundingBox.width, boundingBox.height );
+  HAARparameters.rectSize = Size( (int)boundingBox.width, (int)boundingBox.height );
   HAARparameters.isIntegral = true;
   Ptr<TrackerFeature> trackerFeature = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARparameters ) );
   featureSet->addTrackerFeature( trackerFeature );
@@ -191,7 +191,7 @@ bool TrackerMIL::updateImpl( const Mat& image, Rect2d& boundingBox )
 
   //get the last location [AAM] X(k-1)
   Ptr<TrackerTargetState> lastLocation = model->getLastTargetState();
-  Rect lastBoundingBox( lastLocation->getTargetPosition().x, lastLocation->getTargetPosition().y, lastLocation->getTargetWidth(),
+  Rect lastBoundingBox( (int)lastLocation->getTargetPosition().x, (int)lastLocation->getTargetPosition().y, lastLocation->getTargetWidth(),
                         lastLocation->getTargetHeight() );
 
   //sampling new frame based on last location
@@ -229,7 +229,7 @@ bool TrackerMIL::updateImpl( const Mat& image, Rect2d& boundingBox )
   }
 
   Ptr<TrackerTargetState> currentState = model->getLastTargetState();
-  boundingBox = Rect( currentState->getTargetPosition().x, currentState->getTargetPosition().y, currentState->getTargetWidth(),
+  boundingBox = Rect( (int)currentState->getTargetPosition().x, (int)currentState->getTargetPosition().y, currentState->getTargetWidth(),
                       currentState->getTargetHeight() );
 
   /*//TODO debug

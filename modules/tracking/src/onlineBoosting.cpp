@@ -287,7 +287,7 @@ void BaseClassifier::trainClassifier( const Mat& image, int target, float import
   double A = 1;
   int K = 0;
   int K_max = 10;
-  while ( 1 )
+  for ( ; ; )
   {
     double U_k = (double) rand() / RAND_MAX;
     A *= U_k;
@@ -572,7 +572,7 @@ void Detector::prepareDetectionsMemory( int numDetections )
 
 void Detector::classifySmooth( const std::vector<Mat>& images, float minMargin )
 {
-  int numPatches = images.size();
+  int numPatches = static_cast<int>(images.size());
 
   prepareConfidencesMemory( numPatches );
 

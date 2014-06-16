@@ -84,7 +84,7 @@ namespace cv
       obj.info()->addParam(obj, "transformType", obj.transformType);
       obj.info()->addParam(obj, "maxTranslation", obj.maxTranslation);
       obj.info()->addParam(obj, "maxRotation", obj.maxRotation);
-      obj.info()->addParam(obj, "normalsComputer", obj.normalsComputer, true);)
+      obj.info()->addParam<cv::RgbdNormals>(obj, "normalsComputer", obj.normalsComputer, true, NULL, NULL);)
 
   CV_INIT_ALGORITHM(RgbdICPOdometry, "RGBD.RgbdICPOdometry",
       obj.info()->addParam(obj, "cameraMatrix", obj.cameraMatrix);
@@ -97,7 +97,7 @@ namespace cv
       obj.info()->addParam(obj, "transformType", obj.transformType);
       obj.info()->addParam(obj, "maxTranslation", obj.maxTranslation);
       obj.info()->addParam(obj, "maxRotation", obj.maxRotation);
-      obj.info()->addParam(obj, "normalsComputer", obj.normalsComputer, true);)
+      obj.info()->addParam<cv::RgbdNormals>(obj, "normalsComputer", obj.normalsComputer, true, NULL, NULL);)
 
   bool
   initModule_rgbd(void);

@@ -137,12 +137,12 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(TransientAreasSegmentationModule::SegmentationParameters newParameters)=0;
+    virtual void setup(SegmentationParameters newParameters)=0;
 
     /**
      * @return the current parameters setup
      */
-    virtual struct TransientAreasSegmentationModule::TransientAreasSegmentationModule::SegmentationParameters getParameters()=0;
+    virtual SegmentationParameters getParameters()=0;
 
     /**
      * parameters setup display method

@@ -106,7 +106,7 @@ namespace cv{
         //Mat_<double> maxrow=_particles.row(std::max_element(_logweight.begin(),_logweight.end())-_logweight.begin());
         double max_element;
         minMaxLoc(_logweight, 0, &max_element);
-        Mat_<double> maxrow=_particles.row(max_element);
+        Mat_<double> maxrow=_particles.row((int)max_element);
         for(;num_particles<new_particles.rows;num_particles++){
                 maxrow.copyTo(new_particles.row(num_particles));
         }

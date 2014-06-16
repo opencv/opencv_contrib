@@ -72,14 +72,14 @@ convertDepthToFloat(const cv::Mat& depth, const cv::Mat& mask, float scale, cv::
     for (int u = 0; u < depth_size.width; u++, ++r)
       if (*r)
       {
-        u_mat(n_points, 0) = u;
-        v_mat(n_points, 0) = v;
+        u_mat((int)n_points, 0) = (float)u;
+        v_mat((int)n_points, 0) = (float)v;
         T depth_i = depth.at<T>(v, u);
 
         if (cvIsNaN(depth_i) || (depth_i == std::numeric_limits<T>::min()) || (depth_i == std::numeric_limits<T>::max()))
-          z_mat(n_points, 0) = std::numeric_limits<float>::quiet_NaN();
+          z_mat((int)n_points, 0) = std::numeric_limits<float>::quiet_NaN();
         else
-          z_mat(n_points, 0) = depth_i * scale;
+          z_mat((int)n_points, 0) = depth_i * scale;
 
         ++n_points;
       }
@@ -104,7 +104,7 @@ convertDepthToFloat(const cv::Mat& depth, float scale, const cv::Mat &uv_mat, cv
   for (cv::Mat_<cv::Vec2f>::const_iterator uv_iter = uv_mat.begin<cv::Vec2f>(), uv_end = uv_mat.end<cv::Vec2f>();
       uv_iter != uv_end; ++uv_iter, ++z_mat_iter)
   {
-    T depth_i = depth.at < T > ((*uv_iter)[1], (*uv_iter)[0]);
+    T depth_i = depth.at < T > ((int)(*uv_iter)[1], (int)(*uv_iter)[0]);
 
     if (cvIsNaN(depth_i) || (depth_i == std::numeric_limits < T > ::min())
         || (depth_i == std::numeric_limits < T > ::max()))

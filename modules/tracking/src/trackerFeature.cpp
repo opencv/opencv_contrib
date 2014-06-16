@@ -203,10 +203,10 @@ bool TrackerFeatureHAAR::extractSelected( const std::vector<int> selFeatures, co
   }
 
   int numFeatures = featureEvaluator->getNumFeatures();
-  int numSelFeatures = selFeatures.size();
+  int numSelFeatures = (int)selFeatures.size();
 
   //response = Mat_<float>( Size( images.size(), numFeatures ) );
-  response.create( Size( images.size(), numFeatures ), CV_32F );
+  response.create( Size( (int)images.size(), numFeatures ), CV_32F );
   response.setTo( 0 );
 
   //double t = getTickCount();
@@ -222,7 +222,7 @@ bool TrackerFeatureHAAR::extractSelected( const std::vector<int> selFeatures, co
       CvHaarEvaluator::FeatureHaar& feature = featureEvaluator->getFeatures( selFeatures[j] );
       feature.eval( images[i], Rect( 0, 0, c, r ), &res );
       //( Mat_<float>( response ) )( j, i ) = res;
-      response.at<float>( selFeatures[j], i ) = res;
+      response.at<float>( selFeatures[j], (int)i ) = res;
     }
   }
   //t = ( (double) getTickCount() - t ) / getTickFrequency();
@@ -273,11 +273,11 @@ bool TrackerFeatureHAAR::computeImpl( const std::vector<Mat>& images, Mat& respo
 
   int numFeatures = featureEvaluator->getNumFeatures();
 
-  response = Mat_<float>( Size( images.size(), numFeatures ) );
+  response = Mat_<float>( Size( (int)images.size(), numFeatures ) );
 
   std::vector<CvHaarEvaluator::FeatureHaar> f = featureEvaluator->getFeatures();
   //for each sample compute #n_feature -> put each feature (n Rect) in response
-  parallel_for_( Range( 0, images.size() ), Parallel_compute( featureEvaluator, images, response ) );
+  parallel_for_( Range( 0, (int)images.size() ), Parallel_compute( featureEvaluator, images, response ) );
 
   /*for ( size_t i = 0; i < images.size(); i++ )
   {

@@ -192,7 +192,7 @@ bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
         return false;
     }
     
-    CV_DbgAssert(gray.type() == CV_8UC1);
+    CV_DbgAssert(image.type() == CV_8UC1);
     CV_DbgAssert(depth.type() == CV_16UC1);
     {
         Mat depth_flt;

@@ -40,7 +40,6 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <dirent.h>
 #include <iostream>
 #include <fstream>
 
@@ -187,7 +186,7 @@ int main(int argc, char** argv)
             // scale depth
             Mat depth_flt;
             depth.convertTo(depth_flt, CV_32FC1, 1.f/5000.f);
-#if not BILATERAL_FILTER
+#if !BILATERAL_FILTER
             depth_flt.setTo(std::numeric_limits<float>::quiet_NaN(), depth == 0);
             depth = depth_flt;
 #else

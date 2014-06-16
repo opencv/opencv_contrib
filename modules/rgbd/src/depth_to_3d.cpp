@@ -104,9 +104,9 @@ namespace
     size_t n_points;
 
     if (depth.depth() == CV_16U)
-      n_points = convertDepthToFloat<uint16_t>(depth, mask, 1.0 / 1000.0f, u_mat, v_mat, z_mat);
+      n_points = convertDepthToFloat<ushort>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else if (depth.depth() == CV_16S)
-      n_points = convertDepthToFloat<int16_t>(depth, mask, 1.0 / 1000.0f, u_mat, v_mat, z_mat);
+      n_points = convertDepthToFloat<short>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else
     {
       CV_Assert(depth.type() == CV_32F);
@@ -199,9 +199,9 @@ namespace cv
     cv::Mat_<float> z_mat;
 
     if (depth.depth() == CV_16U)
-      convertDepthToFloat<uint16_t>(depth, 1.0 / 1000.0f, points_float, z_mat);
+      convertDepthToFloat<ushort>(depth, 1.0f / 1000.0f, points_float, z_mat);
     else if (depth.depth() == CV_16U)
-      convertDepthToFloat<int16_t>(depth, 1.0 / 1000.0f, points_float, z_mat);
+      convertDepthToFloat<short>(depth, 1.0f / 1000.0f, points_float, z_mat);
     else
     {
       CV_Assert(depth.type() == CV_32F);
