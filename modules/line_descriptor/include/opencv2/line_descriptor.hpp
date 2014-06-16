@@ -43,7 +43,7 @@
 #define __OPENCV_LINE_DESCRIPTOR_HPP__
 
 #include "opencv2/line_descriptor/descriptor.hpp"
-#include "opencv2/core.hpp"
+//#include "opencv2/core.hpp"
 
 namespace cv
 {

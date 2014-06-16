@@ -48,6 +48,8 @@
 
 #include "LineStructure.hpp"
 #include "opencv2/core.hpp"
+#include <opencv2/features2d.hpp>
+
 
 
 namespace cv
@@ -76,7 +78,7 @@ namespace cv
 
     };
 
-    class CV_EXPORTS_W BinaryDescriptor : public Feature2D
+    class CV_EXPORTS_W BinaryDescriptor: public Feature2D
     {
 
     public:
@@ -117,8 +119,9 @@ namespace cv
                 BinaryDescriptor::Params());
 
         /* constructors with smart pointers */
-        CV_EXPORTS Ptr<BinaryDescriptor> createBinaryDescriptor();
-        CV_EXPORTS Ptr<BinaryDescriptor> createBinaryDescriptor(Params parameters);
+        static Ptr<BinaryDescriptor> createBinaryDescriptor();
+        static Ptr<BinaryDescriptor> createBinaryDescriptor(Params parameters);
+        ~BinaryDescriptor();
 
         /* read parameters from a FileNode object and store them (class function ) */
         virtual void read( const cv::FileNode& fn );
@@ -129,6 +132,10 @@ namespace cv
         /* requires line detection (only one image) */
         CV_WRAP void detect( const Mat& image,
                              CV_OUT std::vector<KeyPoint>& keypoints,
+                             const Mat& mask=Mat() );
+
+        CV_WRAP void detectKL( const Mat& image,
+                             CV_OUT std::vector<KeyLine>& keypoints,
                              const Mat& mask=Mat() );
 
         /* requires line detection (more than one image) */
@@ -158,6 +165,7 @@ namespace cv
         /* check whether Gaussian pyramids were created */
         bool empty() const;
 
+        /* definition of operator (), as required by Feature2D */
         CV_WRAP_AS(detectAndCompute) virtual void operator()( InputArray image,
                                                               InputArray mask,
                                                               CV_OUT std::vector<KeyPoint>& keypoints,
@@ -166,14 +174,22 @@ namespace cv
 
 
     protected:
+        /* implementation of line detection */
         virtual void detectImpl( const Mat& image,
                                  std::vector<KeyPoint>& keypoints,
                                  const Mat& mask=Mat() ) const;
 
+        virtual void detectImplKL( const Mat& image,
+                                 std::vector<KeyLine>& keypoints,
+                                 const Mat& mask=Mat() ) const;
+
+
+        /* implementation of descriptors' computation */
         virtual void computeImpl( const Mat& image,
                                   std::vector<KeyPoint>& keypoints,
                                   Mat& descriptors ) const;
 
+        /* function inherited by Algorithm */
         AlgorithmInfo* info() const;
 
     private:

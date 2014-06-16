@@ -40,10 +40,6 @@
  //M*/
 
 #include "precomp.hpp"
-//#include "opencv2/line_descriptor.hpp"
-
-
-//class BinaryDescriptor;
 
 namespace cv
 {

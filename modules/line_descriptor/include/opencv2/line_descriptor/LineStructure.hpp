@@ -88,15 +88,15 @@ struct OctaveSingleLine
 {
 	/*endPoints, the coordinate origin is the top-left corner of the original image.
 	 *startPointX = sPointInOctaveX * (factor)^octaveCount;	*/
-	float startPointX;
-	float startPointY;
-	float endPointX;
-	float endPointY;
+    float startPointX;
+    float startPointY;
+    float endPointX;
+    float endPointY;
 	//endPoints, the coordinate origin is the top-left corner of the octave image.
-	float sPointInOctaveX;
-	float sPointInOctaveY;
-	float ePointInOctaveX;
-	float ePointInOctaveY;
+    float sPointInOctaveX;
+    float sPointInOctaveY;
+    float ePointInOctaveX;
+    float ePointInOctaveY;
 	//direction of a line, the angle between positive line direction (dark side is in the left) and positive X axis.
 	float direction;
 	//the summation of gradient magnitudes of pixels on lines
