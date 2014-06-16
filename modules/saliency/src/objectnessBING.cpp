@@ -75,10 +75,10 @@ ObjectnessBING::~ObjectnessBING()
 void ObjectnessBING::setColorSpace( int clr )
 {
   _Clr = clr;
-  _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel"
+  _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/"
       + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
   //  _trainDirSI = _voc.localDir + string(format("TrainS1B%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
-  //  _bbResDir = _voc.resDir + string(format("BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
+  _bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string(format("BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
 }
 
 int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
@@ -387,6 +387,18 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
     tm.Stop();
     printf( "Average time for predicting an image (%s) is %gs\n", _clrName[_Clr], tm.TimeInSeconds() );
   }
+
+  /*CmFile::MkDir(_bbResDir);
+  CStr fName = _bbResDir + "bb";
+  //vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
+  FILE *f = fopen( _S( fName + ".txt" ), "w" );
+  fprintf( f, "%d\n", finalBoxes.size() );
+  for ( size_t k = 0; k < finalBoxes.size(); k++ ){
+    //fprintf(f, "%g, %s\n", finalBoxes(k), _S(strVec4i(finalBoxes[k])));
+    //fprintf(f, "%g, %s\n", finalBoxes(k), finalBoxes(k)[0],finalBoxes(k)[1],finalBoxes(k)[2],finalBoxes(k)[3]);
+  }
+
+    fclose( f ); */
 }
 
 struct MatchPathSeparator
@@ -411,15 +423,15 @@ std::string inline removeExtension( std::string const& filename )
 // Read matrix from binary file
 bool ObjectnessBING::matRead( const string& filename, Mat& _M )
 {
-  String filenamePlusExt(filename.c_str());
-  filenamePlusExt+=".yml.gz";
+  String filenamePlusExt( filename.c_str() );
+  filenamePlusExt += ".yml.gz";
   FileStorage fs2( filenamePlusExt, FileStorage::READ );
 
   //String fileNameString( filename.c_str() );
   Mat M;
-  fs2[String(removeExtension( basename( filename ) ).c_str())] >> M;
+  fs2[String( removeExtension( basename( filename ) ).c_str() )] >> M;
 
-  /*FILE* f = fopen(_S(filename), "rb");
+  /* FILE* f = fopen(_S(filename), "rb");
    if (f == NULL)
    return false;
    char buf[8];
@@ -460,21 +472,15 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   // List of rectangles returned by objectess function in ascending order.
   // At the top there are the rectangles with lower values of ​​objectness, ie more
   // likely to have objects in them.
-  //vector<Vec4i> >
+  //vector<Vec4i>
 
-  //objBoundingBox = finalBoxes.getSortedStructVal();
- /* vector<Vec4i> tmp=finalBoxes.getSortedStructVal();
-  objBoundingBox.create(tmp.size(), 1, CV_8U);
-  Mat obj= objBoundingBox.getMat();
-  obj=tmp;*/
+  vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
 
+  objBoundingBox.create( 1, sortedBB.size(), CV_MAKETYPE( CV_32S, CV_MAT_CN(objBoundingBox.type()) ) );
   Mat obj = objBoundingBox.getMat();
-  obj = Mat(finalBoxes.getSortedStructVal());
 
-/*  Mat obj2 = objBoundingBox.getMatRef();
-  obj2 = Mat(finalBoxes.getSortedStructVal());*/
-
-
+  for ( uint i = 0; i < sortedBB.size(); i++ )
+    obj.at<Vec4i>( i ) = sortedBB[i];
 
   // List of the rectangles' objectness value
   unsigned long int valIdxesSize = finalBoxes.getvalIdxes().size();

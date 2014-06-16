@@ -210,6 +210,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
      static inline int bgrMaxDist(const Vec3b &u, const Vec3b &v) {int b = abs(u[0]-v[0]), g = abs(u[1]-v[1]), r = abs(u[2]-v[2]); b = max(b,g);  return max(b,r);}
      static inline int vecDist3b(const Vec3b &u, const Vec3b &v) {return abs(u[0]-v[0]) + abs(u[1]-v[1]) + abs(u[2]-v[2]);}
+     //inline string strVec4i(const Vec4i &vv) const {return std::format("%d, %d, %d, %d", vv[0], vv[1], vv[2], vv[3]);}
 
      //Non-maximal suppress
      static void nonMaxSup(CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true);

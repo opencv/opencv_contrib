@@ -94,6 +94,9 @@ int main( int argc, char** argv )
 
       std::cout << "-----------------OBJECTNESS-----------" << std::endl;
       std::cout << "OBJ BB VECTOR SIZE" << saliencyMap.size() << std::endl;
+      std::cout << " " << saliencyMap[0] << std::endl;
+      std::cout << " " << saliencyMap[1] << std::endl;
+      std::cout << " " << saliencyMap[2] << std::endl;
     }
 
   }
