@@ -77,17 +77,17 @@ MotionSaliencyPBAS::~MotionSaliencyPBAS()
 
 }
 
-void MotionSaliencyPBAS::read( const cv::FileNode& fn )
+void MotionSaliencyPBAS::read( const cv::FileNode& /*fn*/ )
 {
   //params.read( fn );
 }
 
-void MotionSaliencyPBAS::write( cv::FileStorage& fs ) const
+void MotionSaliencyPBAS::write( cv::FileStorage& /*fs*/ ) const
 {
   //params.write( fs );
 }
 
-bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray src, OutputArray dst  )
+bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray /*src*/, OutputArray /*dst*/  )
 {
 
   return true;

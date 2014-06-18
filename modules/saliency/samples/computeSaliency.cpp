@@ -9,13 +9,14 @@ using namespace cv;
 static const char* keys =
 { "{@saliency_algorithm | | Saliency algorithm <saliencyAlgorithmType.[saliencyAlgorithmTypeSubType]> }"
     "{@video_name      | | video name            }"
-    "{@start_frame     |1| Start frame           }" };
+    "{@start_frame     |1| Start frame           }"
+    "{@training_path   |1| Path of the folder containing the trained files}" };
 
 static void help()
 {
   cout << "\nThis example shows the functionality of \"Saliency \""
        "Call:\n"
-       "./example_saliency_computeSaliency <SALIENCY.[saliencyAlgorithmSubType]> <video_name> <start_frame> \n"
+       "./example_saliency_computeSaliency <saliencyAlgorithmSubType> <video_name> <start_frame> \n"
        << endl;
 }
 
@@ -26,6 +27,7 @@ int main( int argc, char** argv )
   String saliency_algorithm = parser.get<String>( 0 );
   String video_name = parser.get<String>( 1 );
   int start_frame = parser.get<int>( 2 );
+  String training_path = parser.get<String>( 3 );
 
   if( saliency_algorithm.empty() || video_name.empty() )
   {
@@ -61,6 +63,7 @@ int main( int argc, char** argv )
   Mat binaryMap;
   Mat image;
   //OutputArray saliencyMap( image );
+  Mat image2=imread("/home/puja/src/BING_beta2_linux/VOC2007/oneVideoJpeg4Test/0011.jpg");
 
   cap >> frame;
   if( frame.empty() )
@@ -70,16 +73,14 @@ int main( int argc, char** argv )
 
   frame.copyTo( image );
 
-
   if( saliency_algorithm.find( "SPECTRAL_RESIDUAL" ) == 0 )
   {
     Mat saliencyMap;
     if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
     {
       StaticSaliencySpectralResidual spec;
-      //Mat salMat=saliencyMap.getMat();
       spec.computeBinaryMap( saliencyMap, binaryMap );
-      //saliencyAlgorithm->computeBinaryMap( saliencyMap, binaryMap );
+
       imshow( "Saliency Map", saliencyMap );
       imshow( "Original Image", image );
       imshow( "Binary Map", binaryMap );
@@ -89,26 +90,28 @@ int main( int argc, char** argv )
   }
   else if( saliency_algorithm.find( "BING" ) == 0 )
   {
-    vector<Vec4i> saliencyMap;
-    //Ptr<ObjectnessBING> bing = Saliency::create( "BING" );
-    //bing=static_cast<ObjectnessBING>(saliencyAlgorithm);
-
-    saliencyAlgorithm.staticCast<ObjectnessBING>()->set_modelName("home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
-    saliencyAlgorithm.staticCast<ObjectnessBING>()->set_bbResDir("/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
-
-    //ObjectnessBING bing(saliencyAlgorithm);
-
-    //bing->set_modelName("home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
-    //bing->set_bbResDir("/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
-
-    if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+    if( training_path.empty() )
     {
 
-      std::cout << "-----------------OBJECTNESS-----------" << std::endl;
-      std::cout << "OBJECTNESS BOUNDING BOX VECTOR SIZE" << saliencyMap.size() << std::endl;
-      std::cout << " " << saliencyMap[0] << std::endl;
-      std::cout << " " << saliencyMap[1] << std::endl;
-      std::cout << " " << saliencyMap[2] << std::endl;
+      cout << "Path of trained files missing! " << endl;
+      return -1;
+    }
+
+    else
+    {
+
+      vector<Vec4i> saliencyMap;
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setModelName( training_path );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir(training_path + "/Results" );
+
+      if( saliencyAlgorithm->computeSaliency( image2, saliencyMap ) )
+      {
+        std::cout << "-----------------OBJECTNESS-----------" << std::endl;
+        std::cout << "OBJECTNESS BOUNDING BOX VECTOR SIZE" << saliencyMap.size() << std::endl;
+        std::cout << " " << saliencyMap[0] << std::endl;
+        std::cout << " " << saliencyMap[1] << std::endl;
+        std::cout << " " << saliencyMap[2] << std::endl;
+      }
     }
 
   }

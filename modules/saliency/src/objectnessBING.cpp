@@ -75,21 +75,21 @@ ObjectnessBING::~ObjectnessBING()
 void ObjectnessBING::setColorSpace( int clr )
 {
   _Clr = clr;
-  _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/"
-      + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
-  _bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+  //_modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/"
+  //    + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+  //_bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::set_modelName( string name )
+void ObjectnessBING::setModelName( string modelName )
 {
 
-  _modelName = name + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+  _modelName = modelName + string( format( "/ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::set_bbResDir( string dir )
+void ObjectnessBING::setBBResDir( string dir )
 {
 
-  _modelName = dir + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+  _bbResDir = dir + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
 int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
@@ -98,6 +98,8 @@ int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 
     modelName = _modelName;
   CStr s1 = modelName + ".wS1", s2 = modelName + ".wS2", sI = modelName + ".idx";
   Mat filters1f, reW1f, idx1i, show3u;
+
+  cout<<"***TEST*****"<<s1<<endl;
   if( !matRead( s1, filters1f ) || !matRead( sI, idx1i ) )
   {
     printf( "Can't load model: %s or %s\n", _S( s1 ), _S( sI ) );

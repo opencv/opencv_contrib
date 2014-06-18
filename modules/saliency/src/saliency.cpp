@@ -74,7 +74,7 @@ Ptr<Saliency> Saliency::create( const String& saliencyType )
   //return Ptr<Saliency>();
 }
 
-bool Saliency::computeSaliency( const InputArray& image, OutputArray& saliencyMap )
+bool Saliency::computeSaliency( const InputArray image, OutputArray saliencyMap )
 {
   if( image.empty() )
     return false;

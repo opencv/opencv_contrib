@@ -53,14 +53,14 @@ struct ValStructVec
 
   void sort( bool descendOrder = true );
   const vector<ST> &getSortedStructVal();
-  vector<pair<VT, int>> getvalIdxes();
+  vector<pair<VT, int> > getvalIdxes();
   void append( const ValStructVec<VT, ST> &newVals, int startV = 0 );
 
   vector<ST> structVals;  // struct values
 
  private:
   int sz;  // size of the value struct vector
-  vector<pair<VT, int>> valIdxes;  // Indexes after sort
+  vector<pair<VT, int> > valIdxes;  // Indexes after sort
   bool smaller()
   {
     return true;
@@ -81,9 +81,9 @@ template<typename VT, typename ST>
 void ValStructVec<VT, ST>::sort( bool descendOrder /* = true */)
 {
   if( descendOrder )
-    std::sort( valIdxes.begin(), valIdxes.end(), std::greater<pair<VT, int>>() );
+    std::sort( valIdxes.begin(), valIdxes.end(), std::greater<pair<VT, int> >() );
   else
-    std::sort( valIdxes.begin(), valIdxes.end(), std::less<pair<VT, int>>() );
+    std::sort( valIdxes.begin(), valIdxes.end(), std::less<pair<VT, int> >() );
 }
 
 template<typename VT, typename ST>
@@ -96,7 +96,7 @@ const vector<ST>& ValStructVec<VT, ST>::getSortedStructVal()
 }
 
 template<typename VT, typename ST>
-vector<pair<VT, int>> ValStructVec<VT, ST>::getvalIdxes()
+vector<pair<VT, int> > ValStructVec<VT, ST>::getvalIdxes()
 {
   return valIdxes;
 }

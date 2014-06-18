@@ -158,8 +158,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      vector<float> getobjectnessValues();
 
      void setColorSpace(int clr = MAXBGR);
-     void set_modelName(string name);
-     void set_bbResDir(string dir);
+     void setModelName(string modelName);
+     void setBBResDir(string dir);
 
      // Read matrix from binary file
      static bool matRead( const std::string& filename, Mat& M);

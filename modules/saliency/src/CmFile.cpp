@@ -105,7 +105,7 @@ bool CmFile::MkDir(CStr &_path)
 }
 void CmFile::loadStrList(CStr &fName, vecS & strs, bool flag)
 {
-    ifstream fIn(fName);
+    ifstream fIn(fName.c_str());
     string line;
     //vecS strs;
     while(getline(fIn, line)){

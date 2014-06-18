@@ -11,11 +11,8 @@
 #include <cmath>
 #include <time.h>
 #include <fstream>
-#include <random>
-//#include <atlstr.h>
-//#include <atltypes.h>
 #include <omp.h>
-#include <strstream>
+
 
 
 // TODO: reference additional headers your program requires here
@@ -77,13 +74,13 @@ static inline int findFromList(const T &word, const vector<T> &strList) {
 	//cout << "Size w " << word.size() << " Size L "<< strList[i].size() << endl;
     }
     
-    auto it = std::find(strList.begin(),strList.end(), word);
+    vector<String>::iterator it = std::find(strList.begin(),strList.end(), word);
     if (it == strList.end())
     {
         return -1;
     } else
     {
-        auto index = std::distance(strList.begin(), it);
+      vector<String>::iterator index = std::distance(strList.begin(), it);
 	//cout << "index" <<" "<< index << endl;
         return index;
     }
