@@ -70,6 +70,7 @@ int main( int argc, char** argv )
 
   frame.copyTo( image );
 
+
   if( saliency_algorithm.find( "SPECTRAL_RESIDUAL" ) == 0 )
   {
     Mat saliencyMap;
@@ -89,11 +90,22 @@ int main( int argc, char** argv )
   else if( saliency_algorithm.find( "BING" ) == 0 )
   {
     vector<Vec4i> saliencyMap;
+    //Ptr<ObjectnessBING> bing = Saliency::create( "BING" );
+    //bing=static_cast<ObjectnessBING>(saliencyAlgorithm);
+
+    saliencyAlgorithm.staticCast<ObjectnessBING>()->set_modelName("home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
+    saliencyAlgorithm.staticCast<ObjectnessBING>()->set_bbResDir("/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
+
+    //ObjectnessBING bing(saliencyAlgorithm);
+
+    //bing->set_modelName("home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
+    //bing->set_bbResDir("/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/");
+
     if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
     {
 
       std::cout << "-----------------OBJECTNESS-----------" << std::endl;
-      std::cout << "OBJ BB VECTOR SIZE" << saliencyMap.size() << std::endl;
+      std::cout << "OBJECTNESS BOUNDING BOX VECTOR SIZE" << saliencyMap.size() << std::endl;
       std::cout << " " << saliencyMap[0] << std::endl;
       std::cout << " " << saliencyMap[1] << std::endl;
       std::cout << " " << saliencyMap[2] << std::endl;

@@ -72,8 +72,8 @@ struct ValStructVec
 template<typename VT, typename ST>
 void ValStructVec<VT, ST>::append( const ValStructVec<VT, ST> &newVals, int startV )
 {
-  int sz = newVals.size();
-  for ( int i = 0; i < sz; i++ )
+  int newValsSize = newVals.size();
+  for ( int i = 0; i < newValsSize; i++ )
     pushBack( (float) ( ( i + 300 ) * startV )/*newVals(i)*/, newVals[i] );
 }
 

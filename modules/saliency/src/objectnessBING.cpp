@@ -77,8 +77,19 @@ void ObjectnessBING::setColorSpace( int clr )
   _Clr = clr;
   _modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/"
       + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
-  //  _trainDirSI = _voc.localDir + string(format("TrainS1B%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
-  _bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string(format("BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr]).c_str());
+  _bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+}
+
+void ObjectnessBING::set_modelName( string name )
+{
+
+  _modelName = name + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+}
+
+void ObjectnessBING::set_bbResDir( string dir )
+{
+
+  _modelName = dir + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
 int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
@@ -388,17 +399,23 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
     printf( "Average time for predicting an image (%s) is %gs\n", _clrName[_Clr], tm.TimeInSeconds() );
   }
 
-  /*CmFile::MkDir(_bbResDir);
-  CStr fName = _bbResDir + "bb";
-  //vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
-  FILE *f = fopen( _S( fName + ".txt" ), "w" );
-  fprintf( f, "%d\n", finalBoxes.size() );
-  for ( size_t k = 0; k < finalBoxes.size(); k++ ){
-    //fprintf(f, "%g, %s\n", finalBoxes(k), _S(strVec4i(finalBoxes[k])));
-    //fprintf(f, "%g, %s\n", finalBoxes(k), finalBoxes(k)[0],finalBoxes(k)[1],finalBoxes(k)[2],finalBoxes(k)[3]);
-  }
+  //Write on file the total number and the list of rectangles returned by objectess, one for each row.
 
-    fclose( f ); */
+  CmFile::MkDir( _bbResDir );
+  CStr fName = _bbResDir + "bb";
+  vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
+  std::ofstream ofs;
+  ofs.open( _S( fName + ".txt" ), std::ofstream::out );
+  stringstream dim;
+  dim << sortedBB.size();
+  ofs << dim.str() << "\n";
+  for ( size_t k = 0; k < sortedBB.size(); k++ )
+  {
+    stringstream str;
+    str << sortedBB[k][0] << " " << sortedBB[k][1] << " " << sortedBB[k][2] << " " << sortedBB[k][3] << "\n";
+    ofs << str.str();
+  }
+  ofs.close();
 }
 
 struct MatchPathSeparator
@@ -454,12 +471,12 @@ vector<float> ObjectnessBING::getobjectnessValues()
   return objectnessValues;
 }
 
-void ObjectnessBING::read( const cv::FileNode& fn )
+void ObjectnessBING::read()
 {
 
 }
 
-void ObjectnessBING::write( cv::FileStorage& fs ) const
+void ObjectnessBING::write() const
 {
 
 }
@@ -472,15 +489,15 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   // List of rectangles returned by objectess function in ascending order.
   // At the top there are the rectangles with lower values of ​​objectness, ie more
   // likely to have objects in them.
-  //vector<Vec4i>
-
   vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
 
-  objBoundingBox.create( 1, sortedBB.size(), CV_MAKETYPE( CV_32S, CV_MAT_CN(objBoundingBox.type()) ) );
-  Mat obj = objBoundingBox.getMat();
+  //objBoundingBox.create( 1, sortedBB.size(), CV_MAKETYPE( CV_32S, CV_MAT_CN(objBoundingBox.type()) ) );
+  //Mat obj = objBoundingBox.getMat();
 
-  for ( uint i = 0; i < sortedBB.size(); i++ )
-    obj.at<Vec4i>( i ) = sortedBB[i];
+  //for ( uint i = 0; i < sortedBB.size(); i++ )
+  //  obj.at<Vec4i>( i ) = sortedBB[i];
+
+  Mat( sortedBB ).copyTo( objBoundingBox );
 
   // List of the rectangles' objectness value
   unsigned long int valIdxesSize = finalBoxes.getvalIdxes().size();

@@ -144,8 +144,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   ObjectnessBING();
   ~ObjectnessBING();
 
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
+  void read();
+  void write() const;
 
   // Load trained model.
      int loadTrainedModel(std::string modelName = ""); // Return -1, 0, or 1 if partial, none, or all loaded
@@ -158,6 +158,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      vector<float> getobjectnessValues();
 
      void setColorSpace(int clr = MAXBGR);
+     void set_modelName(string name);
+     void set_bbResDir(string dir);
 
      // Read matrix from binary file
      static bool matRead( const std::string& filename, Mat& M);
@@ -182,7 +184,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
      //TODO Probably remove this parameters
      //DataSetVOC &_voc; // The dataset for training, testing
-     std:: string _modelName, _trainDirSI, _bbResDir;
+     std:: string _modelName, _bbResDir;
 
      vecI _svmSzIdxs; // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
      Mat _svmFilter; // Filters learned at stage I, each is a _H by _W CV_32F matrix
