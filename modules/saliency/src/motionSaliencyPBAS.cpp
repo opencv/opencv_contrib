@@ -48,25 +48,6 @@ namespace cv
  * PBAS Motion Saliency
  */
 
-/**
- * Parameters
-
-MotionSaliencyPBAS::Params::Params()
-{
-
-}
-
-void MotionSaliencyPBAS::Params::read( const cv::FileNode& fn )
-{
-  //resizedImageSize=Size(fn["resizedImageSize"]);
-
-}
-
-void MotionSaliencyPBAS::Params::write( cv::FileStorage& fs ) const
-{
-  //fs << "resizedImageSize" << resizedImageSize;
-} */
-
 MotionSaliencyPBAS::MotionSaliencyPBAS()
 {
   className = "PBAS";
@@ -77,17 +58,17 @@ MotionSaliencyPBAS::~MotionSaliencyPBAS()
 
 }
 
-void MotionSaliencyPBAS::read( const cv::FileNode& /*fn*/ )
+void MotionSaliencyPBAS::read( const cv::FileNode& /*fn*/)
 {
   //params.read( fn );
 }
 
-void MotionSaliencyPBAS::write( cv::FileStorage& /*fs*/ ) const
+void MotionSaliencyPBAS::write( cv::FileStorage& /*fs*/) const
 {
   //params.write( fs );
 }
 
-bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray /*src*/, OutputArray /*dst*/  )
+bool MotionSaliencyPBAS::computeSaliencyImpl( const InputArray /*src*/, OutputArray /*dst*/)
 {
 
   return true;

@@ -48,38 +48,19 @@ namespace cv
  * SaliencySpectralResidual
  */
 
-/**
- * Parameters
-
-
-StaticSaliencySpectralResidual::Params::Params()
+cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize()
 {
-  resizedImageSize=Size(64,64);
+  return resizedImageSize;
 }
-
-void StaticSaliencySpectralResidual::Params::read( const cv::FileNode& fn )
+void StaticSaliencySpectralResidual::setWsize( const cv::Ptr<Size>& newSize )
 {
-  //resizedImageSize=Size(fn["resizedImageSize"]);
-
-}
-
-void StaticSaliencySpectralResidual::Params::write( cv::FileStorage& fs ) const
-{
-  //fs << "resizedImageSize" << resizedImageSize;
-} */
-
-cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize(){
-    return resizedImageSize;
-}
-void StaticSaliencySpectralResidual::setWsize(const cv::Ptr<Size>& newSize){
   resizedImageSize = newSize;
 }
-
 
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual()
 {
   className = "SPECTRAL_RESIDUAL";
-  resizedImageSize=Ptr<Size>(new Size(64,64));
+  resizedImageSize = Ptr<Size>( new Size( 64, 64 ) );
 }
 
 StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
@@ -87,12 +68,12 @@ StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
 
 }
 
-void StaticSaliencySpectralResidual::read( const cv::FileNode& fn )
+void StaticSaliencySpectralResidual::read( const cv::FileNode& /*fn*/ )
 {
   //params.read( fn );
 }
 
-void StaticSaliencySpectralResidual::write( cv::FileStorage& fs ) const
+void StaticSaliencySpectralResidual::write( cv::FileStorage& /*fs*/ ) const
 {
   //params.write( fs );
 }
@@ -101,7 +82,7 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image
 {
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;
-  Mat realImage(*resizedImageSize, CV_64F );
+  Mat realImage( *resizedImageSize, CV_64F );
   Mat imaginaryImage( *resizedImageSize, CV_64F );
   imaginaryImage.setTo( 0 );
   Mat combinedImage( *resizedImageSize, CV_64FC2 );
@@ -158,7 +139,6 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image
   // visualize saliency map
   imshow( "Saliency Map Interna", saliencyMap );
 #endif
-
 
   return true;
 

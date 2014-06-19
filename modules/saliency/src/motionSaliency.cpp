@@ -48,14 +48,5 @@ namespace cv
  * Motion Saliency
  */
 
-/**
- * Parameters
- */
-
-//MotionSaliency::Params::Params()
-//{
-//
-//}
-
 
 }/* namespace cv */

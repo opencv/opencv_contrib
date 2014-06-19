@@ -45,15 +45,18 @@
 namespace cv
 {
 
-CV_INIT_ALGORITHM( StaticSaliencySpectralResidual, "SALIENCY.SPECTRAL_RESIDUAL",
-                   obj.info()->addParam(obj, "resizedImageSize", obj.resizedImageSize, false, reinterpret_cast<SizeGetter>(&StaticSaliencySpectralResidual::getWsize), reinterpret_cast<SizeSetter>(&StaticSaliencySpectralResidual::setWsize)));
+CV_INIT_ALGORITHM(
+    StaticSaliencySpectralResidual,
+    "SALIENCY.SPECTRAL_RESIDUAL",
+    obj.info()->addParam( obj, "resizedImageSize", obj.resizedImageSize, false,
+                          reinterpret_cast<SizeGetter>( &StaticSaliencySpectralResidual::getWsize ),
+                          reinterpret_cast<SizeSetter>( &StaticSaliencySpectralResidual::setWsize ) ) );
 
-CV_INIT_ALGORITHM( MotionSaliencyPBAS, "SALIENCY.PBAS",);
+CV_INIT_ALGORITHM( MotionSaliencyPBAS, "SALIENCY.PBAS", );
 
-CV_INIT_ALGORITHM( ObjectnessBING, "SALIENCY.BING",
-                   obj.info()->addParam(obj, "_base", obj._base);
-                   obj.info()->addParam(obj, "_NSS", obj._NSS);
-                   obj.info()->addParam(obj, "_W", obj._W));
+CV_INIT_ALGORITHM(
+    ObjectnessBING, "SALIENCY.BING",
+    obj.info()->addParam(obj, "_base", obj._base); obj.info()->addParam(obj, "_NSS", obj._NSS); obj.info()->addParam(obj, "_W", obj._W) );
 
 bool initModule_saliency( void )
 {

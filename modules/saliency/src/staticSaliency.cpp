@@ -48,14 +48,6 @@ namespace cv
  * StaticSaliency
  */
 
-/**
- * Parameters
-
-
-StaticSaliency::Params::Params()
-{
-
-} */
 
 bool StaticSaliency::computeBinaryMap( const Mat& saliencyMap, Mat& BinaryMap )
 {

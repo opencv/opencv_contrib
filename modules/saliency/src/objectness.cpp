@@ -48,14 +48,5 @@ namespace cv
  * Objectness
  */
 
-/**
- * Parameters
- */
-
-//Objectness::Params::Params()
-//{
-//
-//}
-
 
 }/* namespace cv */

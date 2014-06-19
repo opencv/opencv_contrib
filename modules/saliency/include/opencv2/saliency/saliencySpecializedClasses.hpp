@@ -50,12 +50,6 @@
 #include <string>
 #include <iostream>
 
-//TODO delete
-//#define SALIENCY_DEBUG true
-#ifdef SALIENCY_DEBUG
-#include <opencv2/highgui.hpp>
-#endif
-
 namespace cv
 {
 
@@ -68,13 +62,6 @@ namespace cv
 class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 {
  public:
-  /*struct CV_EXPORTS Params
-   {
-   Params();
-   Size resizedImageSize;
-   void read( const FileNode& fn );
-   void write( FileStorage& fs ) const;
-   }; */
 
   //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
   StaticSaliencySpectralResidual();
@@ -91,11 +78,8 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
-  AlgorithmInfo* info() const;
-  CV_PROP_RW Ptr<Size> resizedImageSize;
-
- private:
-  //Params params;
+  AlgorithmInfo* info() const;CV_PROP_RW
+  Ptr<Size> resizedImageSize;
 
 };
 
@@ -109,12 +93,6 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 {
  public:
-  /* struct CV_EXPORTS Params
-   {
-   Params();
-   void read( const FileNode& fn );
-   void write( FileStorage& fs ) const;
-   }; */
 
   //MotionSaliencyPBAS( const MotionSaliencyPBAS::Params &parameters = MotionSaliencyPBAS::Params() );
   MotionSaliencyPBAS();
@@ -127,8 +105,6 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
   AlgorithmInfo* info() const;
 
- private:
-  //Params params;
 };
 
 /************************************ Specific Objectness Specialized Classes ************************************/
@@ -148,72 +124,94 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   void write() const;
 
   // Load trained model.
-     int loadTrainedModel(std::string modelName = ""); // Return -1, 0, or 1 if partial, none, or all loaded
+  int loadTrainedModel( std::string modelName = "" );  // Return -1, 0, or 1 if partial, none, or all loaded
 
-     // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
-     // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
-     // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
-     void getObjBndBoxes(CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120);
-     void getObjBndBoxesForSingleImage(Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize);
-     vector<float> getobjectnessValues();
+  // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
+  // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
+  // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
+  void getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
+  void getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize );
+  vector<float> getobjectnessValues();
 
-     void setColorSpace(int clr = MAXBGR);
-     void setTrainingPath(string trainingPath);
-     void setBBResDir(string resultsDir);
+  void setColorSpace( int clr = MAXBGR );
+  void setTrainingPath( string trainingPath );
+  void setBBResDir( string resultsDir );
 
-     // Read matrix from binary file
-     static bool matRead( const std::string& filename, Mat& M);
+  // Read matrix from binary file
+  static bool matRead( const std::string& filename, Mat& M );
 
-     enum {MAXBGR, HSV, G};
+  enum
+  {
+    MAXBGR,
+    HSV,
+    G
+  };
 
-     inline static float LoG(float x, float y, float delta) {float d = -(x*x+y*y)/(2*delta*delta);  return -1.0f/((float)(CV_PI)*pow(delta, 4)) * (1+d)*exp(d);} // Laplacian of Gaussian
-
+  inline static float LoG( float x, float y, float delta )
+  {
+    float d = - ( x * x + y * y ) / ( 2 * delta * delta );
+    return -1.0f / ( (float) ( CV_PI ) * pow( delta, 4 ) ) * ( 1 + d ) * exp( d );
+  }  // Laplacian of Gaussian
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
   AlgorithmInfo* info() const;
 
- private: // Parameters
-     double _base, _logBase; // base for window size quantization
-     int _W; // As described in the paper: #Size, Size(_W, _H) of feature window.
-     int _NSS; // Size for non-maximal suppress
-     int _maxT, _minT, _numT; // The minimal and maximal dimensions of the template
+ private:
+  // Parameters
+  double _base, _logBase;  // base for window size quantization
+  int _W;  // As described in the paper: #Size, Size(_W, _H) of feature window.
+  int _NSS;  // Size for non-maximal suppress
+  int _maxT, _minT, _numT;  // The minimal and maximal dimensions of the template
 
-     int _Clr; //
-     static const char* _clrName[3];
+  int _Clr;  //
+  static const char* _clrName[3];
 
-     // Names and paths to read model and to store results
-     std:: string _modelName, _bbResDir, _trainingPath, _resultsDir;
+  // Names and paths to read model and to store results
+  std::string _modelName, _bbResDir, _trainingPath, _resultsDir;
 
-     vecI _svmSzIdxs; // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
-     Mat _svmFilter; // Filters learned at stage I, each is a _H by _W CV_32F matrix
-     FilterTIG _tigF; // TIG filter
-     Mat _svmReW1f; // Re-weight parameters learned at stage II.
+  vecI _svmSzIdxs;  // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
+  Mat _svmFilter;  // Filters learned at stage I, each is a _H by _W CV_32F matrix
+  FilterTIG _tigF;  // TIG filter
+  Mat _svmReW1f;  // Re-weight parameters learned at stage II.
 
-     // List of the rectangles' objectness value, in the same order as
-     // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
-     vector<float> objectnessValues;
-     //vector<Vec4i> objectnessBoundingBox;
+  // List of the rectangles' objectness value, in the same order as
+  // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
+  vector<float> objectnessValues;
+  //vector<Vec4i> objectnessBoundingBox;
 
- private: // Help functions
+ private:
+  // Help functions
 
-     bool filtersLoaded() {int n = _svmSzIdxs.size(); return n > 0 && _svmReW1f.size() == Size(2, n) && _svmFilter.size() == Size(_W, _W);}
-     void predictBBoxSI(CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true);
-     void predictBBoxSII(ValStructVec<float, Vec4i> &valBoxes, const vecI &sz);
+  bool filtersLoaded()
+  {
+    int n = _svmSzIdxs.size();
+    return n > 0 && _svmReW1f.size() == Size( 2, n ) && _svmFilter.size() == Size( _W, _W );
+  }
+  void predictBBoxSI( CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true );
+  void predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const vecI &sz );
 
-     // Calculate the image gradient: center option as in VLFeat
-     void gradientMag(CMat &imgBGR3u, Mat &mag1u);
+  // Calculate the image gradient: center option as in VLFeat
+  void gradientMag( CMat &imgBGR3u, Mat &mag1u );
 
-     static void gradientRGB(CMat &bgr3u, Mat &mag1u);
-     static void gradientGray(CMat &bgr3u, Mat &mag1u);
-     static void gradientHSV(CMat &bgr3u, Mat &mag1u);
-     static void gradientXY(CMat &x1i, CMat &y1i, Mat &mag1u);
+  static void gradientRGB( CMat &bgr3u, Mat &mag1u );
+  static void gradientGray( CMat &bgr3u, Mat &mag1u );
+  static void gradientHSV( CMat &bgr3u, Mat &mag1u );
+  static void gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u );
 
-     static inline int bgrMaxDist(const Vec3b &u, const Vec3b &v) {int b = abs(u[0]-v[0]), g = abs(u[1]-v[1]), r = abs(u[2]-v[2]); b = max(b,g);  return max(b,r);}
-     static inline int vecDist3b(const Vec3b &u, const Vec3b &v) {return abs(u[0]-v[0]) + abs(u[1]-v[1]) + abs(u[2]-v[2]);}
+  static inline int bgrMaxDist( const Vec3b &u, const Vec3b &v )
+  {
+    int b = abs( u[0] - v[0] ), g = abs( u[1] - v[1] ), r = abs( u[2] - v[2] );
+    b = max( b, g );
+    return max( b, r );
+  }
+  static inline int vecDist3b( const Vec3b &u, const Vec3b &v )
+  {
+    return abs( u[0] - v[0] ) + abs( u[1] - v[1] ) + abs( u[2] - v[2] );
+  }
 
-     //Non-maximal suppress
-     static void nonMaxSup(CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true);
+  //Non-maximal suppress
+  static void nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true );
 
 };
 
