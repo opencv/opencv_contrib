@@ -91,7 +91,7 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
-  AlgorithmInfo* info() const;  //{ return 0; }
+  AlgorithmInfo* info() const;
   CV_PROP_RW Ptr<Size> resizedImageSize;
 
  private:
@@ -125,7 +125,7 @@ class CV_EXPORTS_W MotionSaliencyPBAS : public MotionSaliency
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
-  AlgorithmInfo* info() const;  // { return 0; }
+  AlgorithmInfo* info() const;
 
  private:
   //Params params;
@@ -158,8 +158,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      vector<float> getobjectnessValues();
 
      void setColorSpace(int clr = MAXBGR);
-     void setModelName(string modelName);
-     void setBBResDir(string dir);
+     void setTrainingPath(string trainingPath);
+     void setBBResDir(string resultsDir);
 
      // Read matrix from binary file
      static bool matRead( const std::string& filename, Mat& M);
@@ -171,7 +171,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
-  AlgorithmInfo* info() const;  //{ return 0; }
+  AlgorithmInfo* info() const;
 
  private: // Parameters
      double _base, _logBase; // base for window size quantization
@@ -182,9 +182,8 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      int _Clr; //
      static const char* _clrName[3];
 
-     //TODO Probably remove this parameters
-     //DataSetVOC &_voc; // The dataset for training, testing
-     std:: string _modelName, _bbResDir;
+     // Names and paths to read model and to store results
+     std:: string _modelName, _bbResDir, _trainingPath, _resultsDir;
 
      vecI _svmSzIdxs; // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
      Mat _svmFilter; // Filters learned at stage I, each is a _H by _W CV_32F matrix
@@ -192,7 +191,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
      Mat _svmReW1f; // Re-weight parameters learned at stage II.
 
      // List of the rectangles' objectness value, in the same order as
-     // vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
+     // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
      vector<float> objectnessValues;
      //vector<Vec4i> objectnessBoundingBox;
 
@@ -212,7 +211,6 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
      static inline int bgrMaxDist(const Vec3b &u, const Vec3b &v) {int b = abs(u[0]-v[0]), g = abs(u[1]-v[1]), r = abs(u[2]-v[2]); b = max(b,g);  return max(b,r);}
      static inline int vecDist3b(const Vec3b &u, const Vec3b &v) {return abs(u[0]-v[0]) + abs(u[1]-v[1]) + abs(u[2]-v[2]);}
-     //inline string strVec4i(const Vec4i &vv) const {return std::format("%d, %d, %d, %d", vv[0], vv[1], vv[2], vv[3]);}
 
      //Non-maximal suppress
      static void nonMaxSup(CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true);

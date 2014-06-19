@@ -51,27 +51,8 @@ Saliency::~Saliency()
 Ptr<Saliency> Saliency::create( const String& saliencyType )
 {
 
-  /*if( saliencyType.find( "STATIC_SALIENCY.SPECTRAL_RESIDUAL" ) == 0 )
-  {
-    return Ptr < Saliency > ( new StaticSaliencySpectralResidual() );
-  }
-  else if( saliencyType.find( "STATIC_SALIENCY.ITTI_CIO" ) == 0 )
-  {
-    //return Ptr < Saliency > ( new SaliencyIttiCIO() );
-  }
-  else if( saliencyType.find( "MOTION_SALIENCY.PBAS" ) == 0 )
-  {
-    return Ptr < Saliency > ( new MotionSaliencyPBAS() );
-  }
-  else if( saliencyType.find( "OBJECTNESS.BING" ) == 0 )
-  {
-    return Ptr < Saliency > ( new ObjectnessBING() );
-  } */
-
   return Algorithm::create<Saliency>( "SALIENCY." + saliencyType );
 
-  //CV_Error( -1, "Saliency algorithm type " + saliencyType + " not supported" );
-  //return Ptr<Saliency>();
 }
 
 bool Saliency::computeSaliency( const InputArray image, OutputArray saliencyMap )

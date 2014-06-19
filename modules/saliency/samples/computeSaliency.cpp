@@ -62,7 +62,7 @@ int main( int argc, char** argv )
 
   Mat binaryMap;
   Mat image;
-  //OutputArray saliencyMap( image );
+
   Mat image2=imread("/home/puja/src/BING_beta2_linux/VOC2007/oneVideoJpeg4Test/0011.jpg");
 
   cap >> frame;
@@ -101,7 +101,7 @@ int main( int argc, char** argv )
     {
 
       vector<Vec4i> saliencyMap;
-      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setModelName( training_path );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setTrainingPath( training_path );
       saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir(training_path + "/Results" );
 
       if( saliencyAlgorithm->computeSaliency( image2, saliencyMap ) )

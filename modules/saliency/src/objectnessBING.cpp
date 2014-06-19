@@ -75,21 +75,18 @@ ObjectnessBING::~ObjectnessBING()
 void ObjectnessBING::setColorSpace( int clr )
 {
   _Clr = clr;
-  //_modelName = "/home/puja/src/opencv_contrib/modules/saliency/src/ObjectnessTrainedModel/"
-  //    + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
-  //_bbResDir = "/home/puja/src/opencv_contrib/modules/saliency/src/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+  _modelName = _trainingPath + "/" + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+  _bbResDir = _resultsDir + "/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::setModelName( string modelName )
+void ObjectnessBING::setTrainingPath( string trainingPath )
 {
-
-  _modelName = modelName + string( format( "/ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+  _trainingPath = trainingPath;
 }
 
-void ObjectnessBING::setBBResDir( string dir )
+void ObjectnessBING::setBBResDir( string resultsDir )
 {
-
-  _bbResDir = dir + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+  _resultsDir = resultsDir;
 }
 
 int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
@@ -99,7 +96,6 @@ int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 
   CStr s1 = modelName + ".wS1", s2 = modelName + ".wS2", sI = modelName + ".idx";
   Mat filters1f, reW1f, idx1i, show3u;
 
-  cout<<"***TEST*****"<<s1<<endl;
   if( !matRead( s1, filters1f ) || !matRead( sI, idx1i ) )
   {
     printf( "Can't load model: %s or %s\n", _S( s1 ), _S( sI ) );
@@ -144,7 +140,6 @@ void ObjectnessBING::predictBBoxSI( CMat &img3u, ValStructVec<float, Vec4i> &val
     resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ) );
     gradientMag( im3u, mag1u );
 
-    //imwrite(_voc.localDir + format("%d.png", r), mag1u);
     //Mat mag1f;
     //mag1u.convertTo(mag1f, CV_32F);
     //matchTemplate(mag1f, _svmFilter, matchCost1f, CV_TM_CCORR);
@@ -445,8 +440,6 @@ bool ObjectnessBING::matRead( const string& filename, Mat& _M )
   String filenamePlusExt( filename.c_str() );
   filenamePlusExt += ".yml.gz";
   FileStorage fs2( filenamePlusExt, FileStorage::READ );
-
-  //String fileNameString( filename.c_str() );
   Mat M;
   fs2[String( removeExtension( basename( filename ) ).c_str() )] >> M;
 
@@ -492,13 +485,6 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   // At the top there are the rectangles with lower values of ​​objectness, ie more
   // likely to have objects in them.
   vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
-
-  //objBoundingBox.create( 1, sortedBB.size(), CV_MAKETYPE( CV_32S, CV_MAT_CN(objBoundingBox.type()) ) );
-  //Mat obj = objBoundingBox.getMat();
-
-  //for ( uint i = 0; i < sortedBB.size(); i++ )
-  //  obj.at<Vec4i>( i ) = sortedBB[i];
-
   Mat( sortedBB ).copyTo( objBoundingBox );
 
   // List of the rectangles' objectness value
