@@ -58,7 +58,6 @@ using namespace cv;
 
 /*
  * FIXME(optimize):
- *      **NCC in TrackerMedianFlow**: check TrackerMedianFlow and TrackerTLD
  *      no median
  * FIXME(issues)
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6

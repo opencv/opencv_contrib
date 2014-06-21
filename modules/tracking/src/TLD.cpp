@@ -261,10 +261,10 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
                   y=vertices[ref].y+dy1*j/samples.cols+dy2*i/samples.rows;
             int ix=cvFloor(x),iy=cvFloor(y);
             float tx=x-ix,ty=y-iy;
-            float a=img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
-                img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
-            float b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
-                img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
+            float a=img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
+                img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
+            float b=img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
+                img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
             samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
         }
     }

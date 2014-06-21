@@ -4,14 +4,16 @@
 #include <iostream>
 #include <time.h>
 #include <cstring>
+#include <climits>
 
 #define CMDLINEMAX 10
-#define OVERLAP_TOL 0.5
+#define ASSESS_TILL INT_MAX
 
 using namespace std;
 using namespace cv;
 
-/*
+/* FIXME:
+ *          strange symbols --> PRF gives 1 for MedianFlow --> FIXME 0.0<>0.5 -->  logs and videos (1,5,6) --> report --> payo --> fek
  * TODO:  
  *          have FUN! with 5 frames and vs MEDIANFLOW
  *          PRF
@@ -141,12 +143,12 @@ void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const
     }
     printf("%.*s ",grid[0],spaces);
     for(int i=0;i<algNum;i++)
-        printf("%s%.*s ",algorithms[i],grid[i+1]-strlen(algorithms[i]),spaces);
+        printf("%s%.*s",algorithms[i],grid[i+1]+1-strlen(algorithms[i]),spaces);
     printf("\n");
     for(int i=0;i<videoNum;i++){
-        printf("%s%.*s ",videos[i],grid[0]-strlen(videos[i]),spaces);
+        printf("%s%.*s",videos[i],grid[0]+1-strlen(videos[i]),spaces);
         for(int j=0;j<algNum;j++)
-            printf("%s%.*s ",results[i][j],grid[i+1]-strlen(results[i][j]),spaces);
+            printf("%s%.*s",results[i][j],grid[j+1]+1-strlen(results[i][j]),spaces);
         printf("\n");
     }
     printf("*************************************************************\n");
@@ -156,7 +158,7 @@ struct AssessmentRes{
     class Assessment{
     public:
         virtual int printf(char* buf)=0;
-        virtual void printName(){};
+        virtual void printName()=0;
         virtual void assess(const Rect2d& ethalon,const Rect2d& res)=0;
         virtual ~Assessment(){}
     };
@@ -170,7 +172,7 @@ public:
     CorrectFrames(double tol):tol_(tol),correctFrames_(1){}
     int printf(char* buf){return sprintf(buf,"%d",correctFrames_);}
     void printName(){printf("Num of correct frames\n");}
-    void assess(const Rect2d& ethalon,const Rect2d& res){if(overlap(ethalon,res)>=tol_)correctFrames_++;}
+    void assess(const Rect2d& ethalon,const Rect2d& res){if(overlap(ethalon,res)>tol_)correctFrames_++;}
 private:
     double tol_;
     int correctFrames_;
@@ -186,14 +188,26 @@ private:
 };
 class PRF : public AssessmentRes::Assessment{
 public:
-    PRF(){srand(time(NULL));}
-    int printf(char* buf){int res=1+(rand()%6);memset(buf,'*',res);buf[res]='\0';return res;}
-    void assess(const Rect2d& ethalon,const Rect2d& res){}
+    PRF():occurences_(0),responses_(0),true_responses_(0){};
+    void printName(){printf("PRF\n");}
+    int printf(char* buf){return sprintf(buf,"%g/%g/%g",(1.0*true_responses_)/responses_,(1.0*true_responses_)/occurences_,
+            (2.0*true_responses_)/(responses_+occurences_));}
+    void assess(const Rect2d& ethalon,const Rect2d& res){
+        if(res.height>=0)responses_++;
+        if(ethalon.height>=0)occurences_++;
+        if(ethalon.height>=0 && res.height>=0)true_responses_++;
+    }
 private:
+    int occurences_,responses_,true_responses_;
 };
 AssessmentRes::AssessmentRes(int algnum):len(0),results(algnum){
     for(int i=0;i<results.size();i++){
-        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
+        if(!false){
+            results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.0)));
+        }else{
+            results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
+        }
+        results[i].push_back(Ptr<Assessment>(new PRF()));
     }
 }
 
@@ -304,10 +318,12 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       rectangle( image, boundingBox,palette[0], 2, 1 );
       
       frameCounter++;
+      //std::vector<bool> ress;
       for(int i=0;i<trackers.size();i++){
           bool trackerRes=true;
           clock_t start;start=clock();
-          trackerRes=trackers[i]->update( frame, initBoxes[i] ) ;
+          trackerRes=trackers[i]->update( frame, initBoxes[i] );
+          //ress.push_back(trackerRes);
           start=clock()-start;
           averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
           if(trackerRes==false){
@@ -325,9 +341,14 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           }
 
           for(int j=0;j<res.results[i].size();j++)
-              res.results[i][j]->assess(initBoxes[0],initBoxes[i]);
+              res.results[i][j]->assess(boundingBox,initBoxes[i]);
       }
+      //printf("ress: ");for(int i=0;i<ress.size();i++)printf("%s ",ress[i]?"true":"false");printf("\n");
       imshow( "Tracking API", image );
+
+      if(frameCounter>=ASSESS_TILL){
+          break;
+      }
 
       char c = (char) waitKey( 2 );
       if( c == 'q' )
@@ -384,25 +405,10 @@ int main( int argc, char** argv ){
   }
   for(int tableCount=0;tableCount<results[0].results[0].size();tableCount++){
       for(int videoCount=0;videoCount<results.size();videoCount++)
-          for(int algoCount=0;algoCount<results[0].results.size();algoCount++)
+          for(int algoCount=0;algoCount<results[0].results.size();algoCount++){
               (results[videoCount].results[algoCount][tableCount])->printf(resultStrings[videoCount][algoCount]);
+          }
       print_table(videos,vcount,algorithms,acount,resultStrings);
   }
   return 0;
-
-  /*for(int i=0;i<results.size();i++){
-      for(int j=0;j<results[i].size();j++){
-          stub.printf(results[i][j]);
-      }
-  }*/
-
-  /*for(int i=0;i<vcount;i++){
-      printf("%20s",results[i].videoName);
-      printf("%5d",results[i].len);
-      for(int j=0;j<results[i].correctFrames.size();j++){
-          printf("%8d ",results[i].correctFrames[j]);
-          printf("%8.2fmilis",results[i].averageMillisPerFrame[j]);
-      }
-      printf("\n");
-  }*/
 }
