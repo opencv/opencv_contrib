@@ -180,7 +180,7 @@ private:
 class AvgTime : public AssessmentRes::Assessment{
 public:
     AvgTime(double res):res_(res){}
-    int printf(char* buf){return sprintf(buf,"%gs",res_);}
+    int printf(char* buf){return sprintf(buf,"%gms",res_);}
     void printName(){printf("Average frame tracking time\n");}
     void assess(const Rect2d& ethalon,const Rect2d& res){};
 private:
@@ -318,12 +318,10 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       rectangle( image, boundingBox,palette[0], 2, 1 );
       
       frameCounter++;
-      //std::vector<bool> ress;
       for(int i=0;i<trackers.size();i++){
           bool trackerRes=true;
           clock_t start;start=clock();
           trackerRes=trackers[i]->update( frame, initBoxes[i] );
-          //ress.push_back(trackerRes);
           start=clock()-start;
           averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
           if(trackerRes==false){
@@ -343,7 +341,6 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           for(int j=0;j<res.results[i].size();j++)
               res.results[i][j]->assess(boundingBox,initBoxes[i]);
       }
-      //printf("ress: ");for(int i=0;i<ress.size();i++)printf("%s ",ress[i]?"true":"false");printf("\n");
       imshow( "Tracking API", image );
 
       if(frameCounter>=ASSESS_TILL){
