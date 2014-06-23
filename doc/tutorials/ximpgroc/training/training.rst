@@ -42,7 +42,7 @@ Training pipeline
 
 5. Rename models/forest/modelFinal.mat to models/forest/modelFinal.mat.backup
 
-6. Open edgesChns.m and comment lines 26--41. Add after commented lines the following::
+6. Open edgesChns.m and comment lines 26--41. Add after commented lines the following: ::
 
     shrink=opts.shrink;
     chns = single(getFeatures( im2double(I) ));

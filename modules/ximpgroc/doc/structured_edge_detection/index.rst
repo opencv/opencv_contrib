@@ -3,7 +3,8 @@ Structured forests for fast edge detection
 
 .. highlight:: cpp
 
-...
+This module contains implementations of modern structured edge detection algorithms,
+i.e. algorithms which somehow takes into account pixel affinities in natural images.
 
 StructuredEdgeDetection
 -----------------------
@@ -40,12 +41,12 @@ StructuredEdgeDetection::detectEdges
 ++++++++++++++++++++++++++++++++++++
 .. ocv:function:: void detectEdges(const Mat src, Mat dst)
 
-The function detects edges in src and draw them to dst. The algorithm underlies this function
-is much more robust to texture presence, than common approaches, e.g. Sobel
+    The function detects edges in src and draw them to dst. The algorithm underlies this function
+    is much more robust to texture presence, than common approaches, e.g. Sobel
 
-    :param src : source image (RGB, float, in [0;1]) to detect edges
-    :param dst : destination image (grayscale, float, in [0;1])
-                 where edges are drawn
+    :param src: source image (RGB, float, in [0;1]) to detect edges
+    :param dst: destination image (grayscale, float, in [0;1])
+                where edges are drawn
 
 .. seealso::
 
@@ -56,13 +57,10 @@ createStructuredEdgeDetection
 +++++++++++++++++++++++++++++
 .. ocv:function:: Ptr<cv::StructuredEdgeDetection> createStructuredEdgeDetection(String model)
 
-The only available constructor
+    The only available constructor
 
     :param model: model file name
 
-
-Literature
-----------
 
 .. [Dollar2013] Dollár P., Zitnick C. L., "Structured forests for fast edge detection",
                 IEEE International Conference on Computer Vision (ICCV), 2013,
