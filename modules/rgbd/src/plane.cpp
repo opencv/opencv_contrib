@@ -523,6 +523,8 @@ private:
   unsigned char plane_index_;
   /** THe block size as defined in the main algorithm */
   int block_size_;
+  
+  const InlierFinder & operator = (const InlierFinder &);
 }
 ;
 
@@ -563,7 +565,7 @@ namespace cv
     size_t index_plane = 0;
 
     std::vector<cv::Vec4f> plane_coefficients;
-    float mse_min = threshold_ * threshold_;
+    float mse_min = (float)(threshold_ * threshold_);
 
     while (!plane_queue.empty())
     {
@@ -572,16 +574,17 @@ namespace cv
       if (front_tile.mse_ > mse_min)
         break;
 
-      InlierFinder inlier_finder(threshold_, points3d, normals, index_plane, block_size_);
+      InlierFinder inlier_finder((float)threshold_, points3d, normals, (unsigned char)index_plane, block_size_);
 
       // Construct the plane for the first tile
       int x = front_tile.x_, y = front_tile.y_;
       const cv::Vec3f & n = plane_grid.n_(y, x);
       cv::Ptr<PlaneBase> plane;
       if ((sensor_error_a_ == 0) && (sensor_error_b_ == 0) && (sensor_error_c_ == 0))
-        plane = cv::Ptr<PlaneBase>(new Plane(plane_grid.m_(y, x), n, index_plane));
+        plane = cv::Ptr<PlaneBase>(new Plane(plane_grid.m_(y, x), n, (int)index_plane));
       else
-        plane = cv::Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, index_plane, sensor_error_a_, sensor_error_b_, sensor_error_c_));
+        plane = cv::Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, (int)index_plane,
+			(float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
 
       cv::Mat_<unsigned char> plane_mask = cv::Mat_<unsigned char>::zeros(points3d.rows / block_size_,
                                                                           points3d.cols / block_size_);
@@ -631,7 +634,7 @@ namespace cv
     // Fill the plane coefficients
     if (plane_coefficients.empty())
       return;
-    plane_coefficients_out.create(plane_coefficients.size(), 1, CV_32FC4);
+    plane_coefficients_out.create((int)plane_coefficients.size(), 1, CV_32FC4);
     cv::Mat plane_coefficients_mat = plane_coefficients_out.getMat();
     float* data = plane_coefficients_mat.ptr<float>(0);
     for(size_t i=0; i<plane_coefficients.size(); ++i)

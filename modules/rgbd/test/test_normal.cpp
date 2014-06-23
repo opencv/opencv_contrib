@@ -65,7 +65,7 @@ rayPlaneIntersection(const cv::Vec3d& uv1, double centroid_dot_normal, const cv:
     std::cout << "warning, LdotNormal nearly 0! " << LdotNormal << std::endl;
     std::cout << "contents of L, Normal: " << cv::Mat(L) << ", " << cv::Mat(normal) << std::endl;
   }
-  cv::Vec3f xyz(d * L(0), d * L(1), d * L(2));
+  cv::Vec3f xyz((float)(d * L(0)), (float)(d * L(1)), (float)(d * L(2)));
   return xyz;
 }
 
@@ -99,7 +99,7 @@ struct Plane
     n[1] = rng.uniform(-0.5, 0.5);
     n[2] = -0.3; //rng.uniform(-1.f, 0.5f);
     n = n / cv::norm(n);
-    set_d(rng.uniform(-2.0, 0.6));
+    set_d((float)rng.uniform(-2.0, 0.6));
   }
 
   void
@@ -146,11 +146,11 @@ gen_points_3d(std::vector<Plane>& planes_out, cv::Mat_<unsigned char> &plane_mas
   {
     for (int u = 0; u < W; u++)
     {
-      unsigned int plane_index = (u / float(W)) * planes.size();
+      unsigned int plane_index = (unsigned int)((u / float(W)) * planes.size());
       Plane plane = planes[plane_index];
-      outp(v, u) = plane.intersection(u, v, Kinv);
+      outp(v, u) = plane.intersection((float)u, (float)v, Kinv);
       outn(v, u) = plane.n;
-      plane_mask(v, u) = plane_index;
+      plane_mask(v, u) = (uchar)plane_index;
     }
   }
   planes_out = planes;
@@ -210,6 +210,9 @@ protected:
             errors[1][0] = 0.02;
             errors[1][1] = 0.04;
             break;
+		  default:
+			method = (cv::RgbdNormals::RGBD_NORMALS_METHOD)-1;
+			CV_Error(0, "");
         }
 
         for (unsigned char j = 0; j < 2; ++j)

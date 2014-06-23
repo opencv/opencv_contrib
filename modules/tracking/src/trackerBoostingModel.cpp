@@ -55,7 +55,7 @@ TrackerBoostingModel::TrackerBoostingModel( const Rect& boundingBox )
 
   Ptr<TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState> initState =
       Ptr<TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState>(
-          new TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState( Point2f( boundingBox.x, boundingBox.y ), boundingBox.width,
+          new TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState( Point2f( (float)boundingBox.x, (float)boundingBox.y ), boundingBox.width,
                                                                                boundingBox.height, true, Mat() ) );
   trajectory.push_back( initState );
   maxCMLength = 10;
@@ -98,7 +98,7 @@ void TrackerBoostingModel::responseToConfidenceMap( const std::vector<Mat>& resp
     Size currentSize;
     Point currentOfs;
     currentSample.at( i ).locateROI( currentSize, currentOfs );
-    bool foreground;
+    bool foreground = false;
     if( mode == MODE_POSITIVE || mode == MODE_CLASSIFY )
     {
       foreground = true;
@@ -107,7 +107,7 @@ void TrackerBoostingModel::responseToConfidenceMap( const std::vector<Mat>& resp
     {
       foreground = false;
     }
-    const Mat resp = responses[0].col( i );
+    const Mat resp = responses[0].col( (int)i );
 
     //create the state
     Ptr<TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState> currentState = Ptr<
@@ -115,7 +115,7 @@ void TrackerBoostingModel::responseToConfidenceMap( const std::vector<Mat>& resp
         new TrackerStateEstimatorAdaBoosting::TrackerAdaBoostingTargetState( currentOfs, currentSample.at( i ).cols, currentSample.at( i ).rows,
                                                                              foreground, resp ) );
 
-    confidenceMap.push_back( std::make_pair( currentState, 0 ) );
+    confidenceMap.push_back( std::make_pair( currentState, 0.0f ) );
 
   }
 }
