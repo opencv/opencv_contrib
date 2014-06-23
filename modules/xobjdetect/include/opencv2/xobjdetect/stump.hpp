@@ -8,7 +8,7 @@ namespace cv
 namespace adas
 {
 
-class Stump
+class CV_EXPORTS Stump
 {
 public:
 

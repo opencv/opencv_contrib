@@ -39,47 +39,70 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
-#ifndef __OPENCV_ADAS_ICFDETECTOR_HPP__
-#define __OPENCV_ADAS_ICFDETECTOR_HPP__
-
-#include <string>
-#include <vector>
+#ifndef __OPENCV_ADAS_ACFFEATURE_HPP__
+#define __OPENCV_ADAS_ACFFEATURE_HPP__
 
 #include <opencv2/core.hpp>
+#include <vector>
 
 namespace cv
 {
 namespace adas
 {
 
-struct ICFDetectorParams
-{
-    int feature_count;
-    int weak_count;
-    int model_n_rows;
-    int model_n_cols;
-    double overlap;
-};
+/* Compute channel pyramid for acf features
 
-class ICFDetector
+    image — image, for which channels should be computed
+
+    channels — output array for computed channels
+
+*/
+void computeChannels(InputArray image, OutputArrayOfArrays channels);
+
+class CV_EXPORTS ACFFeatureEvaluator
 {
 public:
-    /* Train detector
+    /* Construct evaluator, set features to evaluate */
+    ACFFeatureEvaluator(const std::vector<Point3i>& features);
 
-        image_filenames — filenames of images for training
+    /* Set channels for feature evaluation */
+    void setChannels(InputArrayOfArrays channels);
 
-        labelling — vector of object bounding boxes per every image
+    /* Set window position */
+    void setPosition(Size position);
 
-        params — parameters for detector training
+    /* Evaluate feature with given index for current channels
+        and window position */
+    int evaluate(size_t feature_ind) const;
+
+    /* Evaluate all features for current channels and window position
+
+    Returns matrix-column of features
     */
-    void train(const std::vector<std::string>& image_filenames,
-               const std::vector<std::vector<cv::Rect> >& labelling,
-               ICFDetectorParams params = ICFDetectorParams());
+    void evaluateAll(OutputArray feature_values) const;
 
-    /* Save detector in file, return true on success, false otherwise */
-    bool save(const std::string& filename);
+private:
+    /* Features to evaluate */
+    std::vector<Point3i> features_;
+    /* Channels for feature evaluation */
+    std::vector<Mat> channels_;
+    /* Channels window position */
+    Size position_;
 };
+
+/* Generate acf features
+
+    window_size — size of window in which features should be evaluated
+
+    count — number of features to generate.
+    Max number of features is min(count, # possible distinct features)
+
+Returns vector of distinct acf features
+*/
+std::vector<Point3i>
+generateFeatures(Size window_size, int count = INT_MAX);
 
 } /* namespace adas */
 } /* namespace cv */
-#endif /* __OPENCV_ADAS_ICFDETECTOR_HPP__ */
+
+#endif /* __OPENCV_ADAS_ACFFEATURE_HPP__ */

@@ -3,7 +3,7 @@
 #include <algorithm>
 using std::swap;
 
-#include "waldboost.hpp"
+#include <opencv2/xobjdetect/waldboost.hpp>
 
 using std::vector;
 

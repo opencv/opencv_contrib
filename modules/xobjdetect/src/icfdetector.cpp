@@ -1,5 +1,5 @@
-#include "icfdetector.hpp"
-#include "waldboost.hpp"
+#include <opencv2/xobjdetect/icfdetector.hpp>
+#include <opencv2/xobjdetect/waldboost.hpp>
 
 #include <iostream>
 
@@ -38,10 +38,10 @@ void ICFDetector::train(const vector<string>& image_filenames,
 
     vector<Mat> samples; /* positive samples + negative samples */
     Mat sample, resized_sample;
-    int pos_count = 0;
+    size_t pos_count = 0;
     for( size_t i = 0; i < image_filenames.size(); ++i, ++pos_count )
     {
-        Mat img = imread(image_filenames[i]);
+        Mat img = imread(String(image_filenames[i].c_str()));
         for( size_t j = 0; j < labelling[i].size(); ++j )
         {
             Rect r = labelling[i][j];
@@ -59,10 +59,10 @@ void ICFDetector::train(const vector<string>& image_filenames,
 
     int neg_count = 0;
     RNG rng;
-    for( size_t i = 0; i < image_filenames.size(); ++i, ++neg_count )
+    for( size_t i = 0; i < image_filenames.size(); ++i )
     {
-        Mat img = imread(image_filenames[i]);
-        for( size_t j = 0; j < pos_count / image_filenames.size() + 1; ++j )
+        Mat img = imread(String(image_filenames[i].c_str()));
+        for( size_t j = 0; j < pos_count / image_filenames.size() + 1; )
         {
             Rect r;
             r.x = rng.uniform(0, img.cols);
@@ -73,9 +73,10 @@ void ICFDetector::train(const vector<string>& image_filenames,
             if( !overlap(r, labelling[i]) )
             {
                 sample = img.colRange(r.x, r.width).rowRange(r.y, r.height);
-                resize(sample, resized_sample);
+                //resize(sample, resized_sample);
                 samples.push_back(resized_sample);
                 ++neg_count;
+                ++j;
             }
         }
     }

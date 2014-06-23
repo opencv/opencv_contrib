@@ -44,21 +44,21 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/core.hpp>
 
-#include "acffeature.hpp"
-#include "stump.hpp"
+#include <opencv2/xobjdetect/acffeature.hpp>
+#include <opencv2/xobjdetect/stump.hpp>
 
 namespace cv
 {
 namespace adas
 {
 
-struct WaldBoostParams
+struct CV_EXPORTS WaldBoostParams
 {
     int weak_count;
     float alpha;
 };
 
-class WaldBoost
+class CV_EXPORTS WaldBoost
 {
 public:
     /* Initialize WaldBoost cascade with default of specified parameters */

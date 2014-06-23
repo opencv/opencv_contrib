@@ -1,7 +1,8 @@
-set(name icf)
+set(name fcw-train)
 set(the_target opencv_${name})
 
-set(OPENCV_${the_target}_DEPS opencv_core opencv_imgproc opencv_highgui)
+set(OPENCV_${the_target}_DEPS opencv_xobjdetect)
+
 ocv_check_dependencies(${OPENCV_${the_target}_DEPS})
 
 if(NOT OCV_DEPENDENCIES_FOUND)
@@ -24,7 +25,7 @@ set_target_properties(${the_target} PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
                       RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
                       INSTALL_NAME_DIR lib
-                      OUTPUT_NAME "opencv_trainicfcascade")
+                      OUTPUT_NAME ${the_target})
 
 if(ENABLE_SOLUTION_FOLDERS)
   set_target_properties(${the_target} PROPERTIES FOLDER "applications")

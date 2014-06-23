@@ -17,11 +17,14 @@ using std::stringstream;
 #include <opencv2/core.hpp>
 using cv::Rect;
 
-#include "icfdetector.hpp"
-#include "waldboost.hpp"
+#include <opencv2/xobjdetect/icfdetector.hpp>
+#include <opencv2/xobjdetect/waldboost.hpp>
 
 using cv::adas::ICFDetectorParams;
 using cv::adas::ICFDetector;
+using cv::adas::WaldBoost;
+using cv::adas::WaldBoostParams;
+using cv::Mat;
 
 static bool read_pos_int(const char *str, int *n)
 {
@@ -171,6 +174,9 @@ int main(int argc, char *argv[])
 
     try
     {
+        WaldBoostParams p;
+        WaldBoost b(p);
+        b.train(Mat(), Mat());
         ICFDetector detector;
         vector<string> filenames;
         vector< vector<Rect> > labelling;
