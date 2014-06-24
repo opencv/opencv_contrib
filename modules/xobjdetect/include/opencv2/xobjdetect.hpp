@@ -108,6 +108,9 @@ struct CV_EXPORTS WaldBoostParams
 {
     int weak_count;
     float alpha;
+
+    WaldBoostParams(): weak_count(100), alpha(0.01)
+    {}
 };
 
 
@@ -199,6 +202,10 @@ struct CV_EXPORTS ICFDetectorParams
     int model_n_rows;
     int model_n_cols;
     double overlap;
+
+    ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
+        model_n_rows(40), model_n_cols(40), overlap(0.0)
+    {}
 };
 
 class CV_EXPORTS ICFDetector
