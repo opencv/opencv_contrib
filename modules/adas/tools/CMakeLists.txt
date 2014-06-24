@@ -1,4 +1,4 @@
-set(name fcw-train)
+set(name fcw_train)
 set(the_target opencv_${name})
 
 set(OPENCV_${the_target}_DEPS opencv_xobjdetect)
