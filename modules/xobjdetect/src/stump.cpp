@@ -196,7 +196,7 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
     return min_row;
 }
 
-float Stump::predict(int value)
+float Stump::predict(int value) const
 {
     return polarity_ * (value - threshold_) > 0 ? pos_value_ : neg_value_;
 }

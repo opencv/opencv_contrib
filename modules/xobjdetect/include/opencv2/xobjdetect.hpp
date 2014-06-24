@@ -147,7 +147,7 @@ public:
 
     Returns real value, sign(value) means class
     */
-    float predict(int value);
+    float predict(int value) const;
 
 private:
     /* Stump decision threshold */
