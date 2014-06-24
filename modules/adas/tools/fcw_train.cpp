@@ -17,8 +17,7 @@ using std::stringstream;
 #include <opencv2/core.hpp>
 using cv::Rect;
 
-#include <opencv2/xobjdetect/icfdetector.hpp>
-#include <opencv2/xobjdetect/waldboost.hpp>
+#include <opencv2/xobjdetect.hpp>
 
 using cv::adas::ICFDetectorParams;
 using cv::adas::ICFDetector;

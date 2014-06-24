@@ -1,4 +1,4 @@
-#include <opencv2/xobjdetect/stump.hpp>
+#include <opencv2/xobjdetect.hpp>
 
 namespace cv
 {

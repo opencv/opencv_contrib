@@ -1,4 +1,4 @@
-#include <opencv2/xobjdetect/acffeature.hpp>
+#include <opencv2/xobjdetect.hpp>
 
 using std::vector;
 

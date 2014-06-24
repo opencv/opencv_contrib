@@ -1,5 +1,4 @@
-#include <opencv2/xobjdetect/icfdetector.hpp>
-#include <opencv2/xobjdetect/waldboost.hpp>
+#include <opencv2/xobjdetect.hpp>
 
 #include <iostream>
 
