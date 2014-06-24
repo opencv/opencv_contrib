@@ -19,10 +19,10 @@ using cv::Rect;
 
 #include <opencv2/xobjdetect.hpp>
 
-using cv::adas::ICFDetectorParams;
-using cv::adas::ICFDetector;
-using cv::adas::WaldBoost;
-using cv::adas::WaldBoostParams;
+using cv::xobjdetect::ICFDetectorParams;
+using cv::xobjdetect::ICFDetector;
+using cv::xobjdetect::WaldBoost;
+using cv::xobjdetect::WaldBoostParams;
 using cv::Mat;
 
 static bool read_pos_int(const char *str, int *n)

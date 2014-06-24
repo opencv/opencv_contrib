@@ -61,7 +61,7 @@ using std::max;
 
 namespace cv
 {
-namespace adas
+namespace xobjdetect
 {
 
 static bool overlap(const Rect& r, const vector<Rect>& gt)
@@ -158,5 +158,5 @@ bool ICFDetector::save(const string& filename)
     return true;
 }
 
-} /* namespace adas */
+} /* namespace xobjdetect */
 } /* namespace cv */

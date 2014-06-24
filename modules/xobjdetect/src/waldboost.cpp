@@ -52,7 +52,7 @@ using std::vector;
 
 namespace cv
 {
-namespace adas
+namespace xobjdetect
 {
 
 WaldBoost::WaldBoost(const WaldBoostParams& params): params_(params)
@@ -161,5 +161,5 @@ float WaldBoost::predict(const Ptr<ACFFeatureEvaluator>& feature_evaluator)
     return trace;
 }
 
-} /* namespace adas */
+} /* namespace xobjdetect */
 } /* namespace cv */

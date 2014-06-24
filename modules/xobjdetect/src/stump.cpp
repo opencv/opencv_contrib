@@ -45,7 +45,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace cv
 {
-namespace adas
+namespace xobjdetect
 {
 
 /* Cumulative sum by rows */
@@ -201,5 +201,5 @@ float Stump::predict(int value) const
     return polarity_ * (value - threshold_) > 0 ? pos_value_ : neg_value_;
 }
 
-} /* namespace adas */
+} /* namespace xobjdetect */
 } /* namespace cv */

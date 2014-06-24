@@ -53,7 +53,7 @@ using std::min;
 
 namespace cv
 {
-namespace adas
+namespace xobjdetect
 {
 
 ACFFeatureEvaluator::ACFFeatureEvaluator(const vector<Point3i>& features):
@@ -176,5 +176,5 @@ void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
     channels_.setTo(channels);
 }
 
-} /* namespace adas */
+} /* namespace xobjdetect */
 } /* namespace cv */

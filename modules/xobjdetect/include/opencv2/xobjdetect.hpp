@@ -48,7 +48,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace cv
 {
-namespace adas
+namespace xobjdetect
 {
 
 /* Compute channel pyramid for acf features
@@ -227,7 +227,7 @@ public:
     bool save(const std::string& filename);
 };
 
-} /* namespace adas */
+} /* namespace xobjdetect */
 } /* namespace cv */
 
 
