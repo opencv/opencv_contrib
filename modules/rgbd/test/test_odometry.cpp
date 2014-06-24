@@ -206,7 +206,7 @@ bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
 
 void CV_OdometryTest::generateRandomTransformation(Mat& rvec, Mat& tvec)
 {
-    const float maxRotation = 3.f / 180.f * CV_PI; //rad
+    const float maxRotation = (float)(3.f / 180.f * CV_PI); //rad
     const float maxTranslation = 0.02f; //m
 
     RNG& rng = theRNG();

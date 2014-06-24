@@ -307,7 +307,14 @@ namespace
           (*normal)[2] = *row_r;
         }
         else
-          signNormal((*M_inv) * (*B_vec), *normal);
+        {
+            Mat33T Mr = *M_inv;
+            Vec3T Br = *B_vec;
+            Vec3T MBr(Mr(0, 0) * Br[0] + Mr(0, 1)*Br[1] + Mr(0, 2)*Br[2],
+                      Mr(1, 0) * Br[0] + Mr(1, 1)*Br[1] + Mr(1, 2)*Br[2],
+                      Mr(2, 0) * Br[0] + Mr(2, 1)*Br[1] + Mr(2, 2)*Br[2]);
+           signNormal(MBr, *normal);
+        }
     }
 
   private:

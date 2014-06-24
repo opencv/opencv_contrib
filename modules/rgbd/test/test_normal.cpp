@@ -189,26 +189,26 @@ protected:
           case 0:
             method = cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS;
             std::cout << std::endl << "*** FALS" << std::endl;
-            errors[0][0] = 0.006;
-            errors[0][1] = 0.03;
-            errors[1][0] = 0.00008;
-            errors[1][1] = 0.02;
+            errors[0][0] = 0.006f;
+            errors[0][1] = 0.03f;
+            errors[1][0] = 0.00008f;
+            errors[1][1] = 0.02f;
             break;
           case 1:
             method = cv::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD;
             std::cout << std::endl << "*** LINEMOD" << std::endl;
-            errors[0][0] = 0.04;
-            errors[0][1] = 0.07;
-            errors[1][0] = 0.05;
-            errors[1][1] = 0.08;
+            errors[0][0] = 0.04f;
+            errors[0][1] = 0.07f;
+            errors[1][0] = 0.05f;
+            errors[1][1] = 0.08f;
             break;
           case 2:
             method = cv::RgbdNormals::RGBD_NORMALS_METHOD_SRI;
             std::cout << std::endl << "*** SRI" << std::endl;
-            errors[0][0] = 0.02;
-            errors[0][1] = 0.04;
-            errors[1][0] = 0.02;
-            errors[1][1] = 0.04;
+            errors[0][0] = 0.02f;
+            errors[0][1] = 0.04f;
+            errors[1][0] = 0.02f;
+            errors[1][1] = 0.04f;
             break;
 		  default:
 			method = (cv::RgbdNormals::RGBD_NORMALS_METHOD)-1;
@@ -369,15 +369,15 @@ protected:
       }
 
       // Compare each found plane to each ground truth plane
-      size_t n_planes = plane_coefficients.size();
-      size_t n_gt_planes = gt_planes.size();
+      int n_planes = (int)plane_coefficients.size();
+      int n_gt_planes = (int)gt_planes.size();
       cv::Mat_<int> matching(n_gt_planes, n_planes);
-      for (size_t j = 0; j < n_gt_planes; ++j)
+      for (int j = 0; j < n_gt_planes; ++j)
       {
         cv::Mat gt_mask = gt_plane_mask == j;
         int n_gt = cv::countNonZero(gt_mask);
         int n_max = 0, i_max = 0;
-        for (size_t i = 0; i < n_planes; ++i)
+        for (int i = 0; i < n_planes; ++i)
         {
           cv::Mat dst;
           cv::bitwise_and(gt_mask, plane_mask == i, dst);
