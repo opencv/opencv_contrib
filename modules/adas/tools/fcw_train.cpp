@@ -61,14 +61,14 @@ static bool read_overlap(const char *str, double *overlap)
     return true;
 }
 
-static bool read_labelling(const string& path,
-    vector<string>& filenames, vector< vector<Rect> >& labelling)
+static bool read_labels(const string& path,
+    vector<string>& filenames, vector< vector<Rect> >& labels)
 {
-    string labelling_path = path + "/gt.txt";
+    string labels_path = path + "/gt.txt";
     string filename, line;
     int x1, y1, x2, y2;
     char delim;
-    ifstream ifs(labelling_path.c_str());
+    ifstream ifs(labels_path.c_str());
     if( !ifs.good() )
         return false;
 
@@ -77,13 +77,13 @@ static bool read_labelling(const string& path,
         stringstream stream(line);
         stream >> filename;
         filenames.push_back(path + "/" + filename);
-        vector<Rect> filename_labelling;
+        vector<Rect> filename_labels;
         while( stream >> x1 >> y1 >> x2 >> y2 >> delim )
         {
-            filename_labelling.push_back(Rect(x1, y1, x2, y2));
+            filename_labels.push_back(Rect(x1, y1, x2, y2));
         }
-        labelling.push_back(filename_labelling);
-        filename_labelling.clear();
+        labels.push_back(filename_labels);
+        filename_labels.clear();
     }
     return true;
 }
@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
     {
         printf("Usage: %s OPTIONS, where OPTIONS are:\n"
                "\n"
-               "--path <path> - path to dir with data and labelling\n"
-               "    (labelling should have name gt.txt)\n"
+               "--path <path> - path to dir with data and labels\n"
+               "    (labels should have name gt.txt)\n"
                "\n"
                "--feature_count <count> - number of features to generate\n"
                "\n"
@@ -182,10 +182,10 @@ int main(int argc, char *argv[])
         b.train(Mat(), Mat());
         ICFDetector detector;
         vector<string> filenames;
-        vector< vector<Rect> > labelling;
-        read_labelling(path, filenames, labelling);
+        vector< vector<Rect> > labels;
+        read_labels(path, filenames, labels);
 
-        detector.train(filenames, labelling, params);
+        detector.train(filenames, labels, params);
     }
     catch( const char *err )
     {
