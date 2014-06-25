@@ -41,15 +41,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-#include <opencv2/xobjdetect.hpp>
-
 using std::vector;
 
-#include <algorithm>
 using std::min;
-
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
 
 namespace cv
 {

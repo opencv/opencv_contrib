@@ -41,12 +41,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-#include <cmath>
 
-#include <algorithm>
 using std::swap;
-
-#include <opencv2/xobjdetect.hpp>
 
 using std::vector;
 

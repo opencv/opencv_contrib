@@ -41,23 +41,11 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-#include <opencv2/xobjdetect.hpp>
-
-#include <iostream>
-
-#include <sstream>
-using std::ostringstream;
-
 using std::vector;
 using std::string;
 
-#include <algorithm>
 using std::min;
 using std::max;
-
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 namespace cv
 {
