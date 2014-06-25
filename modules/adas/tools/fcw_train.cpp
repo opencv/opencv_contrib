@@ -14,6 +14,10 @@ using std::getline;
 #include <sstream>
 using std::stringstream;
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <opencv2/core.hpp>
 using cv::Rect;
 
@@ -185,10 +189,10 @@ int main(int argc, char *argv[])
     }
     catch( const char *err )
     {
-        fprintf(stderr, "%s", err);
+        cerr << err << endl;
     }
     catch( ... )
     {
-        fprintf(stderr, "Unknown error\n");
+        cerr << "Unknown error\n" << endl;
     }
 }
