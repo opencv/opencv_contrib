@@ -68,7 +68,7 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rec
 
 //aux functions and variables
 #define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
-inline double overlap(const Rect2d& r1,const Rect2d& r2);
+double overlap(const Rect2d& r1,const Rect2d& r2);
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
 double variance(const Mat& img);

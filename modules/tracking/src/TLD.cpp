@@ -232,7 +232,7 @@ unsigned int getMedian(const std::vector<unsigned int>& values, int size){
     }
 }
 
-inline double overlap(const Rect2d& r1,const Rect2d& r2){
+double overlap(const Rect2d& r1,const Rect2d& r2){
     double a1=r1.area(), a2=r2.area(), a0=(r1&r2).area();
     return a0/(a1+a2-a0);
 }
