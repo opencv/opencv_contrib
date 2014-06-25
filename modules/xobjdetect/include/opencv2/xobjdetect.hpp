@@ -162,7 +162,7 @@ class CV_EXPORTS WaldBoost
 {
 public:
     /* Initialize WaldBoost cascade with default of specified parameters */
-    WaldBoost(const WaldBoostParams& params);
+    WaldBoost(const WaldBoostParams& params = WaldBoostParams());
 
     /* Train WaldBoost cascade for given data
 

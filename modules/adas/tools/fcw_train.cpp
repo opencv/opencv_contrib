@@ -177,9 +177,6 @@ int main(int argc, char *argv[])
 
     try
     {
-        WaldBoostParams p;
-        WaldBoost b(p);
-        b.train(Mat(), Mat());
         ICFDetector detector;
         vector<string> filenames;
         vector< vector<Rect> > labels;
