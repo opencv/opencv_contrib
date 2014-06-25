@@ -12,13 +12,7 @@
 using namespace std;
 using namespace cv;
 
-/* FIXME:
- *          strange symbols --> PRF gives 1 for MedianFlow --> FIXME 0.0<>0.5 -->  logs and videos (1,5,6) --> report --> payo --> fek
- * TODO:  
- *          have FUN! with 5 frames and vs MEDIANFLOW
- *          PRF
- *          have FUN!
- *
+/* TODO:  
             do normalization ala Kalal's assessment protocol for TLD
  */
 

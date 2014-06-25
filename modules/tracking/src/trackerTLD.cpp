@@ -62,8 +62,9 @@ using namespace cv;
  * FIXME(issues)
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6
  * TODO:
- *      **quantitative assessment framework**
+ *      schoolPC: codec, libopencv-dev
  *      ** **if box size is less than 20** **
+ *      perfect PN
 */
 
 /* design decisions:
@@ -278,15 +279,13 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
 
     std::vector<double>::iterator it=std::max_element(candidatesRes.begin(),candidatesRes.end());
-    if(candidatesRes.size()==2 &&  it==(candidatesRes.begin()+1))
-        fprintf(stderr,"detector WON\n");
 
     fprintf(stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(1.2));
     for(int i=0;i<candidatesRes.size();i++){
         printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
     }
     data->printme();
-    tldModel->printme(stderr);
+    tldModel->printme(stdout);
     if(!true && data->frameNum==82){
         printf("here I am\n");
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
@@ -305,6 +304,15 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         if(trackerNeedsReInit || it!=candidatesRes.begin()){
             trackerProxy->init(image,boundingBox);
         }
+    }
+
+    if(it!=candidatesRes.end()){
+        resample(image_gray,candidates[it-candidatesRes.begin()],standardPatch);
+        fprintf(stderr,"%d %f %f\n",data->frameNum,tldModel->Sc(standardPatch),tldModel->Sr(standardPatch));
+        if(candidatesRes.size()==2 &&  it==(candidatesRes.begin()+1))
+            fprintf(stderr,"detector WON\n");
+    }else{
+        fprintf(stderr,"%d x x\n",data->frameNum);
     }
 
     if(*it > CORE_THRESHOLD){
@@ -504,7 +512,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     }while(size.width>=initSize.width && size.height>=initSize.height);
     END_TICK("detector");
 
-    fprintf(stderr,"after NCC: nneg=%d npos=%d\n",nneg,npos);
+    fprintf(stdout,"after NCC: nneg=%d npos=%d\n",nneg,npos);
     if(!false){
         std::vector<Rect2d> poss,negs;
         for(int i=0;i<rect.size();i++){
@@ -513,7 +521,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
             else
                 negs.push_back(rect[i]);
         }
-        fprintf(stderr,"%d pos and %d neg\n",poss.size(),negs.size());
+        fprintf(stdout,"%d pos and %d neg\n",poss.size(),negs.size());
         drawWithRects(img,negs,poss);
     }
     if(!true){
@@ -543,7 +551,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         waitKey();
     }
 
-    fprintf(stderr,"%d after ensemble\n",pass);
+    fprintf(stdout,"%d after ensemble\n",pass);
     if(maxSc<0){
         return false;
     }
@@ -643,14 +651,14 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vec
         }
     }
     if(negativeIntoModel>0)
-        fprintf(stderr,"negativeIntoModel=%d ",negativeIntoModel);
+        fprintf(stdout,"negativeIntoModel=%d ",negativeIntoModel);
     if(positiveIntoModel>0)
-        fprintf(stderr,"positiveIntoModel=%d ",positiveIntoModel);
+        fprintf(stdout,"positiveIntoModel=%d ",positiveIntoModel);
     if(negativeIntoEnsemble>0)
-        fprintf(stderr,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
+        fprintf(stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
     if(positiveIntoEnsemble>0)
-        fprintf(stderr,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
-    fprintf(stderr,"\n");
+        fprintf(stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
+    fprintf(stdout,"\n");
 }
 
 void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel,const std::vector<Mat_<uchar> >& eForEnsemble,bool isPositive){
@@ -683,14 +691,14 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         }
     }
     if(negativeIntoModel>0)
-        fprintf(stderr,"negativeIntoModel=%d ",negativeIntoModel);
+        fprintf(stdout,"negativeIntoModel=%d ",negativeIntoModel);
     if(positiveIntoModel>0)
-        fprintf(stderr,"positiveIntoModel=%d ",positiveIntoModel);
+        fprintf(stdout,"positiveIntoModel=%d ",positiveIntoModel);
     if(negativeIntoEnsemble>0)
-        fprintf(stderr,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
+        fprintf(stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
     if(positiveIntoEnsemble>0)
-        fprintf(stderr,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
-    fprintf(stderr,"\n");
+        fprintf(stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
+    fprintf(stdout,"\n");
 }
 
 int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
@@ -783,17 +791,17 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         int dx=initSize.width/10, dy=initSize.height/10,
             i=x/scale/dx, j=y/scale/dy;
 
-        fprintf(stderr,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
-        fprintf(stderr,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])));
-        fprintf(stderr,"ensembleClassifier=%s\n",
+        fprintf(stdout,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
+        fprintf(stdout,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])));
+        fprintf(stdout,"ensembleClassifier=%s\n",
                 (detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0]))?"true":"false");
 
         resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
         tmp=tldModel->Sr(standardPatch);
-        fprintf(stderr,"Sr=%f\n",tmp);
-        fprintf(stderr,"isObject=%s\n",(tmp>THETA_NN)?"true":"false");
-        fprintf(stderr,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
-        fprintf(stderr,"Sc=%f\n",tldModel->Sc(standardPatch));
+        fprintf(stdout,"Sr=%f\n",tmp);
+        fprintf(stdout,"isObject=%s\n",(tmp>THETA_NN)?"true":"false");
+        fprintf(stdout,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
+        fprintf(stdout,"Sc=%f\n",tldModel->Sc(standardPatch));
 
         rectangle(imgCanvas,Rect2d(Point2d(scale*dx*i,scale*dy*j),Size2d(initSize.width*scale,initSize.height*scale)), 0, 2, 1 );
         imshow("picker",imgCanvas);
