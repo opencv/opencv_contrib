@@ -1,5 +1,6 @@
 #include <opencv2/line_descriptor.hpp>
 
+
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include <opencv2/imgproc.hpp>
@@ -16,13 +17,25 @@ static const char* keys =
     "{@image_path | | Image path }"
 };
 
-
 static void help()
 {
   cout << "\nThis example shows the functionalities of lines extraction " <<
-          "furnished by BinaryDescriptor class\n" <<
+          "and descriptors computation furnished by BinaryDescriptor class\n" <<
           "Please, run this sample using a command in the form\n" <<
-          "./example_line_descriptor_lines_extraction <path_to_input_image>" << endl;
+          "./example_line_descriptor_compute_descriptors <path_to_input_image>" << endl;
+}
+
+inline void writeMat(cv::Mat m, std::string name, int n)
+{
+    std::stringstream ss;
+    std::string s;
+    ss << n;
+    ss >> s;
+    std::string fileNameConf = name + s;
+    cv::FileStorage fsConf(fileNameConf, cv::FileStorage::WRITE);
+    fsConf << "m" << m;
+
+    fsConf.release();
 }
 
 int main( int argc, char** argv )
@@ -44,44 +57,29 @@ int main( int argc, char** argv )
         std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
     }
 
-    /* create a ramdom binary mask */
+    /* create a random binary mask */
 //    cv::Mat mask(imageMat.size(), CV_8UC1);
 //    cv::randu(mask, Scalar::all(0), Scalar::all(1));
     cv::Mat mask = Mat::ones(imageMat.size(), CV_8UC1);
 
-    /* create a pointer to a BinaryDescriptor object with deafult parameters */
+    /* create a pointer to a BinaryDescriptor object with default parameters */
     Ptr<BinaryDescriptor> bd = BinaryDescriptor::createBinaryDescriptor();
 
-    /* create a structure to store extracted lines */
-    vector<KeyLine> lines;
+    /* compute lines */
+    std::vector<KeyLine> keylines;
+    bd->detect(imageMat, keylines, mask);
 
-    /* extract lines */
-    bd->detect(imageMat, lines, mask);
-
-    /* draw lines extracted from octave 0 */
-    cv::Mat output = imageMat.clone();
-    cvtColor(output, output, COLOR_GRAY2BGR);
-    for(size_t i = 0; i<lines.size(); i++)
+    std::vector<KeyLine> octave0;
+    for(size_t i = 0; i<keylines.size(); i++)
     {
-        KeyLine kl = lines[i];
-        if(kl.octave == 0)
-        {
-            /* get a random color */
-            int R = (rand() % (int)(255 + 1));
-            int G = (rand() % (int)(255 + 1));
-            int B = (rand() % (int)(255 + 1));
-
-            /* get extremes of line */
-            Point pt1 = Point(kl.startPointX, kl.startPointY);
-            Point pt2 = Point(kl.endPointX, kl.endPointY);
-
-            /* draw line */
-            line(output, pt1, pt2, Scalar(B,G,R), 5);
-        }
-
+        if(keylines[i].octave == 0)
+            octave0.push_back(keylines[i]);
     }
 
-    /* show lines on image */
-    imshow("Lines", output);
-    waitKey();
+    /* compute descriptors */
+    cv::Mat descriptors;
+
+    bd->compute(imageMat, octave0, descriptors);
+    writeMat(descriptors, "old_code", 0);
+
 }

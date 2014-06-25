@@ -55,9 +55,29 @@
 namespace cv
 {
 
-    class CV_EXPORTS_W KeyLine: public KeyPoint
+    class CV_EXPORTS_W KeyLine
     {
     public:
+        /* orientation of the line */
+        float angle;
+
+        /* object ID, that can be used to cluster keylines by the line they represent */
+        int class_id;
+
+        /* octave (pyramid layer), from which the keyline has been extracted */
+        int octave;
+
+        /* coordinates of the middlepoint */
+        Point pt;
+
+        /* the response, by which the strongest keylines have been selected.
+          It's represented by the ratio between line's length and maximum between
+          image's width and height */
+        float response;
+
+        /* minimum area containing line */
+        float size;
+
         /* lines's extremes in original image */
         float startPointX;
         float startPointY;
@@ -76,9 +96,11 @@ namespace cv
         /* number of pixels covered by the line */
         unsigned int numOfPixels;
 
+        /* constructor */
+        KeyLine(){}
     };
 
-    class CV_EXPORTS_W BinaryDescriptor: public Feature2D
+    class CV_EXPORTS_W BinaryDescriptor: public Algorithm
     {
 
     public:
@@ -90,9 +112,6 @@ namespace cv
 
             /* the NNDR threshold for line descriptor distance, default is 0.6 */
             CV_PROP_RW float NNDRThreshold;
-
-            /* the size of Gaussian kernel: ksize X ksize, default value is 5 */
-            CV_PROP_RW  int ksize_;
 
             /* the number of image octaves (default = 5) */
             CV_PROP_RW int  numOfOctave_;
@@ -121,6 +140,8 @@ namespace cv
         /* constructors with smart pointers */
         static Ptr<BinaryDescriptor> createBinaryDescriptor();
         static Ptr<BinaryDescriptor> createBinaryDescriptor(Params parameters);
+
+        /* destructor */
         ~BinaryDescriptor();
 
         /* read parameters from a FileNode object and store them (class function ) */
@@ -131,26 +152,22 @@ namespace cv
 
         /* requires line detection (only one image) */
         CV_WRAP void detect( const Mat& image,
-                             CV_OUT std::vector<KeyPoint>& keypoints,
-                             const Mat& mask=Mat() );
-
-        CV_WRAP void detectKL( const Mat& image,
                              CV_OUT std::vector<KeyLine>& keypoints,
                              const Mat& mask=Mat() );
 
         /* requires line detection (more than one image) */
         void detect( const std::vector<Mat>& images,
-                     std::vector<std::vector<KeyPoint> >& keypoints,
+                     std::vector<std::vector<KeyLine> >& keypoints,
                      const std::vector<Mat>& masks=std::vector<Mat>() ) const;
 
         /* requires descriptors computation (only one image) */
-        CV_WRAP void compute( const Mat& image,
-                              CV_OUT CV_IN_OUT std::vector<KeyPoint>& keypoints,
+         CV_WRAP void compute( const Mat& image,
+                              CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines,
                               CV_OUT Mat& descriptors ) const;
 
         /* requires descriptors computation (more than one image) */
         void compute( const std::vector<Mat>& images,
-                      std::vector<std::vector<KeyPoint> >& keypoints,
+                      std::vector<std::vector<KeyLine> >& keylines,
                       std::vector<Mat>& descriptors ) const;
 
         /*return descriptor size */
@@ -168,7 +185,7 @@ namespace cv
         /* definition of operator (), as required by Feature2D */
         CV_WRAP_AS(detectAndCompute) virtual void operator()( InputArray image,
                                                               InputArray mask,
-                                                              CV_OUT std::vector<KeyPoint>& keypoints,
+                                                              CV_OUT std::vector<KeyLine>& keylines,
                                                               OutputArray descriptors,
                                                               bool useProvidedKeypoints=false ) const;
 
@@ -176,17 +193,13 @@ namespace cv
     protected:
         /* implementation of line detection */
         virtual void detectImpl( const Mat& image,
-                                 std::vector<KeyPoint>& keypoints,
-                                 const Mat& mask=Mat() ) const;
-
-        virtual void detectImplKL( const Mat& image,
-                                 std::vector<KeyLine>& keypoints,
+                                 std::vector<KeyLine>& keylines,
                                  const Mat& mask=Mat() ) const;
 
 
         /* implementation of descriptors' computation */
         virtual void computeImpl( const Mat& image,
-                                  std::vector<KeyPoint>& keypoints,
+                                  std::vector<KeyLine>& keylines,
                                   Mat& descriptors ) const;
 
         /* function inherited by Algorithm */

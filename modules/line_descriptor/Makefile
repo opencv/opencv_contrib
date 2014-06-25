@@ -140,6 +140,20 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
+modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/rule:
+	cd /home/ubisum/src/opencv && $(MAKE) -f CMakeFiles/Makefile2 modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/rule
+.PHONY : modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/rule
+
+# Convenience name for target.
+example_line_descriptor_compute_descriptors: modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/rule
+.PHONY : example_line_descriptor_compute_descriptors
+
+# fast build rule for target.
+example_line_descriptor_compute_descriptors/fast:
+	cd /home/ubisum/src/opencv && $(MAKE) -f modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/build.make modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/build
+.PHONY : example_line_descriptor_compute_descriptors/fast
+
+# Convenience name for target.
 modules/line_descriptor/CMakeFiles/example_line_descriptor_lines_extraction.dir/rule:
 	cd /home/ubisum/src/opencv && $(MAKE) -f CMakeFiles/Makefile2 modules/line_descriptor/CMakeFiles/example_line_descriptor_lines_extraction.dir/rule
 .PHONY : modules/line_descriptor/CMakeFiles/example_line_descriptor_lines_extraction.dir/rule
@@ -218,6 +232,30 @@ opencv_line_descriptor_pch_dephelp.s: opencv_line_descriptor_pch_dephelp.cxx.s
 opencv_line_descriptor_pch_dephelp.cxx.s:
 	cd /home/ubisum/src/opencv && $(MAKE) -f modules/line_descriptor/CMakeFiles/opencv_line_descriptor_pch_dephelp.dir/build.make modules/line_descriptor/CMakeFiles/opencv_line_descriptor_pch_dephelp.dir/opencv_line_descriptor_pch_dephelp.cxx.s
 .PHONY : opencv_line_descriptor_pch_dephelp.cxx.s
+
+samples/compute_descriptors.o: samples/compute_descriptors.cpp.o
+.PHONY : samples/compute_descriptors.o
+
+# target to build an object file
+samples/compute_descriptors.cpp.o:
+	cd /home/ubisum/src/opencv && $(MAKE) -f modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/build.make modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/samples/compute_descriptors.cpp.o
+.PHONY : samples/compute_descriptors.cpp.o
+
+samples/compute_descriptors.i: samples/compute_descriptors.cpp.i
+.PHONY : samples/compute_descriptors.i
+
+# target to preprocess a source file
+samples/compute_descriptors.cpp.i:
+	cd /home/ubisum/src/opencv && $(MAKE) -f modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/build.make modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/samples/compute_descriptors.cpp.i
+.PHONY : samples/compute_descriptors.cpp.i
+
+samples/compute_descriptors.s: samples/compute_descriptors.cpp.s
+.PHONY : samples/compute_descriptors.s
+
+# target to generate assembly for a file
+samples/compute_descriptors.cpp.s:
+	cd /home/ubisum/src/opencv && $(MAKE) -f modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/build.make modules/line_descriptor/CMakeFiles/example_line_descriptor_compute_descriptors.dir/samples/compute_descriptors.cpp.s
+.PHONY : samples/compute_descriptors.cpp.s
 
 samples/lines_extraction.o: samples/lines_extraction.cpp.o
 .PHONY : samples/lines_extraction.o
@@ -322,6 +360,7 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... example_line_descriptor_compute_descriptors"
 	@echo "... example_line_descriptor_lines_extraction"
 	@echo "... install"
 	@echo "... install/local"
@@ -334,6 +373,9 @@ help:
 	@echo "... opencv_line_descriptor_pch_dephelp.o"
 	@echo "... opencv_line_descriptor_pch_dephelp.i"
 	@echo "... opencv_line_descriptor_pch_dephelp.s"
+	@echo "... samples/compute_descriptors.o"
+	@echo "... samples/compute_descriptors.i"
+	@echo "... samples/compute_descriptors.s"
 	@echo "... samples/lines_extraction.o"
 	@echo "... samples/lines_extraction.i"
 	@echo "... samples/lines_extraction.s"

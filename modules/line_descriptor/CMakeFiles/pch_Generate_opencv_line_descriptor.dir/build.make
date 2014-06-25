@@ -45,15 +45,15 @@ CMAKE_BINARY_DIR = /home/ubisum/src/opencv
 # Include the progress variables for this target.
 include modules/line_descriptor/CMakeFiles/pch_Generate_opencv_line_descriptor.dir/progress.make
 
-modules/line_descriptor/CMakeFiles/pch_Generate_opencv_line_descriptor: modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch
+modules/line_descriptor/CMakeFiles/pch_Generate_opencv_line_descriptor: modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch
 
-modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch: modules/line_descriptor/src/precomp.hpp
-modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch: modules/line_descriptor/precomp.hpp
-modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch: lib/libopencv_line_descriptor_pch_dephelp.a
+modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch: modules/line_descriptor/src/precomp.hpp
+modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch: modules/line_descriptor/precomp.hpp
+modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch: lib/libopencv_line_descriptor_pch_dephelp.a
 	$(CMAKE_COMMAND) -E cmake_progress_report /home/ubisum/src/opencv/CMakeFiles $(CMAKE_PROGRESS_1)
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold "Generating precomp.hpp.gch/opencv_line_descriptor_Release.gch"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold "Generating precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch"
 	cd /home/ubisum/src/opencv/modules/line_descriptor && /usr/bin/cmake -E make_directory /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp.gch
-	cd /home/ubisum/src/opencv/modules/line_descriptor && /usr/bin/c++ -O3 -DNDEBUG -DNDEBUG -fPIC -DOPENCV_NOSTL -I"/home/ubisum/src/opencv/modules/optim/include" -I"/home/ubisum/src/opencv/modules/features2d/include" -I"/home/ubisum/src/opencv/modules/highgui/include" -I"/home/ubisum/src/opencv/modules/imgproc/include" -I"/home/ubisum/src/opencv/modules/flann/include" -I"/home/ubisum/src/opencv/modules/core/include" -I"/home/ubisum/src/opencv/modules/line_descriptor" -I"/home/ubisum/src/opencv/modules/line_descriptor/src" -I"/home/ubisum/src/opencv/modules/line_descriptor/include" -isystem"/home/ubisum/src/opencv" -isystem"/usr/local/include/eigen3" -D__OPENCV_BUILD=1 -fsigned-char -W -Wall -Werror=return-type -Werror=non-virtual-dtor -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -msse -msse2 -msse3 -msse4.1 -msse4.2 -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden -DCVAPI_EXPORTS -x c++-header -o /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp
+	cd /home/ubisum/src/opencv/modules/line_descriptor && /usr/bin/c++ -O2 -g -fPIC -DOPENCV_NOSTL -I"/home/ubisum/src/opencv/modules/optim/include" -I"/home/ubisum/src/opencv/modules/features2d/include" -I"/home/ubisum/src/opencv/modules/highgui/include" -I"/home/ubisum/src/opencv/modules/imgproc/include" -I"/home/ubisum/src/opencv/modules/flann/include" -I"/home/ubisum/src/opencv/modules/core/include" -I"/home/ubisum/src/opencv/modules/line_descriptor" -I"/home/ubisum/src/opencv/modules/line_descriptor/src" -I"/home/ubisum/src/opencv/modules/line_descriptor/include" -isystem"/home/ubisum/src/opencv" -isystem"/usr/local/include/eigen3" -D__OPENCV_BUILD=1 -fsigned-char -W -Wall -Werror=return-type -Werror=non-virtual-dtor -Werror=address -Werror=sequence-point -Wformat -Werror=format-security -Wmissing-declarations -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -fdiagnostics-show-option -Wno-long-long -pthread -fomit-frame-pointer -msse -msse2 -mssse3 -msse4.1 -msse4.2 -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden -DCVAPI_EXPORTS -x c++-header -o /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp
 
 modules/line_descriptor/precomp.hpp: modules/line_descriptor/src/precomp.hpp
 	$(CMAKE_COMMAND) -E cmake_progress_report /home/ubisum/src/opencv/CMakeFiles $(CMAKE_PROGRESS_2)
@@ -61,7 +61,7 @@ modules/line_descriptor/precomp.hpp: modules/line_descriptor/src/precomp.hpp
 	cd /home/ubisum/src/opencv/modules/line_descriptor && /usr/bin/cmake -E copy /home/ubisum/src/opencv/modules/line_descriptor/src/precomp.hpp /home/ubisum/src/opencv/modules/line_descriptor/precomp.hpp
 
 pch_Generate_opencv_line_descriptor: modules/line_descriptor/CMakeFiles/pch_Generate_opencv_line_descriptor
-pch_Generate_opencv_line_descriptor: modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_Release.gch
+pch_Generate_opencv_line_descriptor: modules/line_descriptor/precomp.hpp.gch/opencv_line_descriptor_RelWithDebInfo.gch
 pch_Generate_opencv_line_descriptor: modules/line_descriptor/precomp.hpp
 pch_Generate_opencv_line_descriptor: modules/line_descriptor/CMakeFiles/pch_Generate_opencv_line_descriptor.dir/build.make
 .PHONY : pch_Generate_opencv_line_descriptor
