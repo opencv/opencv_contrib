@@ -200,10 +200,10 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     std::vector<uchar> status(pointsToTrackOld.size());
     std::vector<float> errors(pointsToTrackOld.size());
     calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(3,3),5,termcrit,0);
-    printf("\t%d after LK forward\n",pointsToTrackOld.size());
+    printf("\t%d after LK forward\n",(int)pointsToTrackOld.size());
 
     std::vector<Point2f> di;
-    for(int i=0;i<pointsToTrackOld.size();i++){
+    for(int i=0;i<(int)pointsToTrackOld.size();i++){
         if(status[i]==1){
             di.push_back(pointsToTrackNew[i]-pointsToTrackOld[i]);
         }
@@ -214,7 +214,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     check_NCC(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
 
     // filter
-    for(int i=0;i<pointsToTrackOld.size();i++){
+    for(int i=0;i<(int)pointsToTrackOld.size();i++){
         if(!filter_status[i]){
             pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
             pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
@@ -222,7 +222,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
             i--;
         }
     }
-    printf("\t%d after LK backward\n",pointsToTrackOld.size());
+    printf("\t%d after LK backward\n",(int)pointsToTrackOld.size());
 
     if(pointsToTrackOld.size()==0 || di.size()==0){
         return false;
@@ -231,7 +231,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     oldBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox,mDisplacement);
 
     std::vector<double> displacements;
-    for(int i=0;i<di.size();i++){
+    for(int i=0;i<(int)di.size();i++){
         di[i]-=mDisplacement;
         displacements.push_back(sqrt(di[i].ddot(di[i])));
     }
@@ -346,13 +346,13 @@ void MedianFlowCore::check_FB(const Mat& oldImage,const Mat& newImage,
     std::vector<Point2f> pointsToTrackReprojection;
     calcOpticalFlowPyrLK(newImage, oldImage,newPoints,pointsToTrackReprojection,LKstatus,errors,Size(3,3),5,termcrit,0);
 
-    for(int i=0;i<oldPoints.size();i++){
+    for(int i=0;i<(int)oldPoints.size();i++){
         FBerror[i]=l2distance(oldPoints[i],pointsToTrackReprojection[i]);
     }
     double FBerrorMedian=getMedian(FBerror);
     printf("point median=%f\n",FBerrorMedian);
     printf("FBerrorMedian=%f\n",FBerrorMedian);
-    for(int i=0;i<oldPoints.size();i++){
+    for(int i=0;i<(int)oldPoints.size();i++){
         status[i]=(FBerror[i]<FBerrorMedian);
     }
 }
@@ -363,7 +363,7 @@ void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
     Size patch(30,30);
     Mat p1,p2;
 
-	for (int i = 0; i < oldPoints.size(); i++) {
+	for (int i = 0; i < (int)oldPoints.size(); i++) {
 		getRectSubPix( oldImage, patch, oldPoints[i],p1);
 		getRectSubPix( newImage, patch, newPoints[i],p2);
 
@@ -377,7 +377,7 @@ void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
 		NCC[i] = ares;
 	}
 	float median = getMedian(NCC);
-	for(int i = 0; i < oldPoints.size(); i++) {
+	for(int i = 0; i < (int)oldPoints.size(); i++) {
         status[i] = status[i] && (NCC[i]>median);
 	}
 }

@@ -61,7 +61,7 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
     if(whiteOne.width>=0){
         rectangle( image,whiteOne, 255, 1, 1 );
     }
-    for(int i=0;i<blackOnes.size();i++){
+    for(int i=0;i<(int)blackOnes.size();i++){
         rectangle( image,blackOnes[i], 0, 1, 1 );
     }
     imshow("img",image);
@@ -69,10 +69,10 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
 void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes){
     Mat image;
     img.copyTo(image);
-    for(int i=0;i<whiteOnes.size();i++){
+    for(int i=0;i<(int)whiteOnes.size();i++){
         rectangle( image,whiteOnes[i], 255, 1, 1 );
     }
-    for(int i=0;i<blackOnes.size();i++){
+    for(int i=0;i<(int)blackOnes.size();i++){
         rectangle( image,blackOnes[i], 0, 1, 1 );
     }
     imshow("img",image);
@@ -92,7 +92,7 @@ void myassert(const Mat& img){
 void printPatch(const Mat_<uchar>& standardPatch){
     for(int i=0;i<standardPatch.rows;i++){
         for(int j=0;j<standardPatch.cols;j++){
-            printf("%5.2f, ",standardPatch(i,j));
+            printf("%5.2f, ",(double)standardPatch(i,j));
         }
         printf("\n");
     }
@@ -133,7 +133,7 @@ double scaleAndBlur(const Mat& originalImg,int scale,Mat& scaledImg,Mat& blurred
     return dScale;
 }
 void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res){
-    if(n>=scanGrid.size()){
+    if(n>=(int)scanGrid.size()){
         res.assign(scanGrid.begin(),scanGrid.end());
         return;
     }
@@ -154,7 +154,7 @@ void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rec
     }
 
     double o=0.0;
-    for(int i=n;i<scanGrid.size();i++){
+    for(int i=n;i<(int)scanGrid.size();i++){
         if((o=overlap(scanGrid[i],bBox))<=overlaps[0]){
             continue;
         }
@@ -296,7 +296,7 @@ void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
     int gridSize=getGridSize();
     if(false){
         int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
-        for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+        for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
             arr[i]=pref+arr[i]*step;
         }
     }else{
@@ -305,7 +305,7 @@ void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
         int smallStep=quo,bigStep=quo+1;
         int bigOnes=rem,smallOnes=gridSize-bigOnes-1;
         int bigOnes_front=bigOnes/2,bigOnes_back=bigOnes-bigOnes_front;
-        for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++){
+        for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
             if(arr[i]<bigOnes_back){
                 arr[i]=arr[i]*bigStep+arr[i];
                 continue;
@@ -349,16 +349,17 @@ double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep
 unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
     unsigned short int position=0;
     char codeS[20];
-    for(int i=0;i<(sizeof(x1)/sizeof(x1[0]));i++,position<<1){
+    for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
         if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
             position++;
             codeS[i]='o';
         }else{
             codeS[i]='x';
         }
+        position=position<<1;
     }
     codeS[13]='\0';
-    //printf("integrate with code %s\n",codeS);
+    if(!true)printf("integrate with code %s\n",codeS);
     return position;
 }
 
