@@ -183,15 +183,15 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
     double p=0,p2=0;
     unsigned int A,B,C,D;
 
-    A=((y>0&&x>0)?intImgP(y-1,x-1):0.0);
-    B=((y>0)?intImgP(y-1,x+width-1):0.0);
-    C=((x>0)?intImgP(y+height-1,x-1):0.0);
+    A=((y>0&&x>0)?intImgP(y-1,x-1):0);
+    B=((y>0)?intImgP(y-1,x+width-1):0);
+    C=((x>0)?intImgP(y+height-1,x-1):0);
     D=intImgP(y+height-1,x+width-1);
     p=(0.0+A+D-B-C)/(width*height);
 
-    A=((y>0&&x>0)?intImgP2(y-1,x-1):0.0);
-    B=((y>0)?intImgP2(y-1,x+width-1):0.0);
-    C=((x>0)?intImgP2(y+height-1,x-1):0.0);
+    A=((y>0&&x>0)?intImgP2(y-1,x-1):0);
+    B=((y>0)?intImgP2(y-1,x+width-1):0);
+    C=((x>0)?intImgP2(y+height-1,x-1):0);
     D=intImgP2(y+height-1,x+width-1);
     p2=(0.0+(D-B)-(C-A))/(width*height);
 
@@ -226,7 +226,7 @@ unsigned int getMedian(const std::vector<unsigned int>& values, int size){
     std::vector<int> copy(values.begin(),values.begin()+size);
     std::sort(copy.begin(),copy.end());
     if(size%2==0){
-        return (copy[size/2-1]+copy[size/2])/2.0;
+        return (copy[size/2-1]+copy[size/2])/2;
     }else{
         return copy[(size-1)/2];
     }
@@ -242,7 +242,7 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
     r2.points(vertices);
 
     int ref=0;
-    float minx=vertices[0].x,miny=vertices[0].y;
+    double minx=vertices[0].x,miny=vertices[0].y;
     for(int i=1;i<4;i++){
         if(vertices[i].x<minx || (vertices[i].x==minx && vertices[i].y<miny)){
             minx=vertices[i].x;
@@ -251,19 +251,19 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
         }
     }
 
-    float dx1=vertices[(ref+1)%4].x-vertices[ref].x,
+    double dx1=vertices[(ref+1)%4].x-vertices[ref].x,
           dy1=vertices[(ref+1)%4].y-vertices[ref].y,
           dx2=vertices[(ref+3)%4].x-vertices[ref].x,
           dy2=vertices[(ref+3)%4].y-vertices[ref].y;
     for(int i=0;i<samples.rows;i++){
         for(int j=0;j<samples.cols;j++){
-            float x=vertices[ref].x+dx1*j/samples.cols+dx2*i/samples.rows,
+            double x=vertices[ref].x+dx1*j/samples.cols+dx2*i/samples.rows,
                   y=vertices[ref].y+dy1*j/samples.cols+dy2*i/samples.rows;
             int ix=cvFloor(x),iy=cvFloor(y);
-            float tx=x-ix,ty=y-iy;
-            float a=img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
+            double tx=x-ix,ty=y-iy;
+            double a=img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
                 img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
-            float b=img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
+            double b=img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
                 img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
             samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
         }
@@ -271,7 +271,7 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
 }
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
     if(true){
-        float x,y,a,b,tx,ty;int ix,iy;
+        double x,y,a,b,tx,ty;int ix,iy;
         for(int i=0;i<samples.rows;i++){
             y=r2.y+i*r2.height/samples.rows;
             iy=cvFloor(y);ty=y-iy;
@@ -286,8 +286,8 @@ void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
             }
         }
     }else{
-        Point2f center(r2.x+r2.width/2,r2.y+r2.height/2);
-        return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0),samples);
+        Point2f center((float)(r2.x+r2.width/2),(float)(r2.y+r2.height/2));
+        return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0f),samples);
     }
 }
 
