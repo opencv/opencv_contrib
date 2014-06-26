@@ -63,7 +63,7 @@ using namespace cv;
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6
  * TODO:
  *      schoolPC: codec, libopencv-dev
- *      ** **if box size is less than 20** **
+ *      fix warnings local --> pushbot || --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
  *      perfect PN
 */
 
@@ -91,11 +91,13 @@ class Data : public TrackerTLD::Private{
 public:
     Data(Rect2d initBox);
     Size getMinSize(){return minSize;}
+    double getScale(){return scale;}
     bool confident;
     bool failedLastTime;
     int frameNum;
     void printme(FILE*  port=stdout);
 private:
+    double scale;
     Size minSize;
 };
 
@@ -224,11 +226,22 @@ void TrackerTLD::write( cv::FileStorage& fs ) const
 
 bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     Mat image_gray;
+    ((TrackerProxy*)static_cast<Private*>(privateInfo[0]))->init(image,boundingBox);
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     Data* data=new Data(boundingBox);
-    model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,boundingBox,data->getMinSize()));
+    double scale=data->getScale();
+    Rect2d myBoundingBox=boundingBox;
+    if(scale>1.0){
+        Mat image_proxy;
+        resize(image_gray,image_proxy,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)));
+        image_proxy.copyTo(image_gray);
+        myBoundingBox.x*=scale;
+        myBoundingBox.y*=scale;
+        myBoundingBox.width*=scale;
+        myBoundingBox.height*=scale;
+    }
+    model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,myBoundingBox,data->getMinSize()));
     TLDDetector* detector=new TLDDetector(params,model);
-    ((TrackerProxy*)static_cast<Private*>(privateInfo[0]))->init(image,boundingBox);
     data->confident=false;
     data->failedLastTime=false;
 
@@ -248,13 +261,19 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
 }
 
 bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
-    Mat image_gray,image_blurred;
+    Mat image_gray,image_blurred,imageForDetector;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
-    GaussianBlur(image_gray,image_blurred,GaussBlurKernelSize,0.0);
+    Data* data=((Data*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
+    double scale=data->getScale();
+    if(scale>1.0){
+        resize(image_gray,imageForDetector,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)));
+    }else{
+        imageForDetector=image_gray;
+    }
+    GaussianBlur(imageForDetector,image_blurred,GaussBlurKernelSize,0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
     TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
-    Data* data=((Data*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
     data->frameNum++;
     Mat_<uchar> standardPatch(15,15);
     std::vector<Rect2d> detectorResults;
@@ -267,9 +286,13 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     bool trackerNeedsReInit=false;
     for(int i=0;i<2;i++){
         if(((i==0)&&!(data->failedLastTime)&&trackerProxy->update(image,tmpCandid)) || 
-                ((i==1)&&(detector->detect(image_gray,image_blurred,tmpCandid,detectorResults,isObject,shouldBeIntegrated)))){
+                ((i==1)&&(detector->detect(imageForDetector,image_blurred,tmpCandid,detectorResults,isObject,shouldBeIntegrated)))){
             candidates.push_back(tmpCandid);
-            resample(image_gray,tmpCandid,standardPatch);
+            if(i==0){
+                resample(image_gray,tmpCandid,standardPatch);
+            }else{
+                resample(imageForDetector,tmpCandid,standardPatch);
+            }
             candidatesRes.push_back(tldModel->Sc(standardPatch));
         }else{
             if(i==0){
@@ -288,8 +311,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     tldModel->printme(stdout);
     if(!true && data->frameNum==82){
         printf("here I am\n");
-        MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
-        imshow("picker",image_gray);
+        MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(imageForDetector,image_blurred,detector);
+        imshow("picker",imageForDetector);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
         waitKey();
     }
@@ -306,8 +329,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         }
     }
 
-    if(it!=candidatesRes.end()){
-        resample(image_gray,candidates[it-candidatesRes.begin()],standardPatch);
+    if(!false && it!=candidatesRes.end()){
+        resample(imageForDetector,candidates[it-candidatesRes.begin()],standardPatch);
         fprintf(stderr,"%d %f %f\n",data->frameNum,tldModel->Sc(standardPatch),tldModel->Sr(standardPatch));
         if(candidatesRes.size()==2 &&  it==(candidatesRes.begin()+1))
             fprintf(stderr,"detector WON\n");
@@ -320,8 +343,8 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
 
     if(data->confident){
-        Pexpert pExpert(image_gray,image_blurred,boundingBox,detector,params,data->getMinSize());
-        Nexpert nExpert(image_gray,boundingBox,detector,params);
+        Pexpert pExpert(imageForDetector,image_blurred,boundingBox,detector,params,data->getMinSize());
+        Nexpert nExpert(imageForDetector,boundingBox,detector,params);
         bool expertResult;
         std::vector<Mat_<uchar> > examplesForModel,examplesForEnsemble;
         examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
@@ -337,7 +360,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
             shouldBeIntegrated[i]=shouldBeIntegrated[i] || (isObject[i]!=expertResult);
             isObject[i]=expertResult;
         }
-        tldModel->integrateRelabeled(image_gray,image_blurred,detectorResults,isObject,shouldBeIntegrated);
+        tldModel->integrateRelabeled(imageForDetector,image_blurred,detectorResults,isObject,shouldBeIntegrated);
         printf("%d relabeled by nExpert\n",negRelabeled);
         pExpert.additionalExamples(examplesForModel,examplesForEnsemble);
         tldModel->integrateAdditional(examplesForModel,examplesForEnsemble,true);
@@ -345,7 +368,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         nExpert.additionalExamples(examplesForModel,examplesForEnsemble);
         tldModel->integrateAdditional(examplesForModel,examplesForEnsemble,false);
     }else{
-        tldModel->integrateRelabeled(image_gray,image_blurred,detectorResults,isObject,shouldBeIntegrated);
+        tldModel->integrateRelabeled(imageForDetector,image_blurred,detectorResults,isObject,shouldBeIntegrated);
     }
 
     return true;
@@ -745,11 +768,12 @@ bool Nexpert::operator()(Rect2d box){
 }
 
 Data::Data(Rect2d initBox){
-    double minDim=0;
-    if((minDim=MIN(initBox.width,initBox.height))<20){
+    double minDim=MIN(initBox.width,initBox.height);
+    scale = 20.0/minDim;
+    /*if(minDim<20){
         printf("initial box has size %dx%d, while both dimensions should be no less than %d\n",(int)initBox.width,(int)initBox.height,20);
         exit(EXIT_FAILURE);
-    }
+    }*/
     minSize.width=initBox.width*20.0/minDim;
     minSize.height=initBox.height*20.0/minDim;
     frameNum=0;
