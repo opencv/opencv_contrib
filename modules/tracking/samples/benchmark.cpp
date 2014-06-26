@@ -165,19 +165,20 @@ struct AssessmentRes{
 };
 class CorrectFrames : public AssessmentRes::Assessment{
 public:
-    CorrectFrames(double tol):tol_(tol),correctFrames_(1){}
-    int printf(char* buf){return sprintf(buf,"%d",correctFrames_);}
-    void printName(){printf("Num of correct frames\n");}
-    void assess(const Rect2d& ethalon,const Rect2d& res){if(overlap(ethalon,res)>tol_)correctFrames_++;}
+    CorrectFrames(double tol):tol_(tol),len_(1),correctFrames_(1){}
+    int printf(char* buf){return sprintf(buf,"%d/%d",correctFrames_,len_);}
+    void printName(){printf((char*)"Num of correct frames\n");}
+    void assess(const Rect2d& ethalon,const Rect2d& res){len_++;if(overlap(ethalon,res)>tol_)correctFrames_++;}
 private:
     double tol_;
+    int len_;
     int correctFrames_;
 };
 class AvgTime : public AssessmentRes::Assessment{
 public:
     AvgTime(double res):res_(res){}
     int printf(char* buf){return sprintf(buf,"%gms",res_);}
-    void printName(){printf("Average frame tracking time\n");}
+    void printName(){printf((char*)"Average frame tracking time\n");}
     void assess(const Rect2d& /*ethalon*/,const Rect2d&/* res*/){};
 private:
     double res_;
@@ -185,7 +186,7 @@ private:
 class PRF : public AssessmentRes::Assessment{
 public:
     PRF():occurences_(0),responses_(0),true_responses_(0){};
-    void printName(){printf("PRF\n");}
+    void printName(){printf((char*)"PRF\n");}
     int printf(char* buf){return sprintf(buf,"%g/%g/%g",(1.0*true_responses_)/responses_,(1.0*true_responses_)/occurences_,
             (2.0*true_responses_)/(responses_+occurences_));}
     void assess(const Rect2d& ethalon,const Rect2d& res){
@@ -225,7 +226,10 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       exit(EXIT_FAILURE);
   }
   fseek(gt,0,SEEK_SET);
-  fgets(buf,sizeof(buf),gt);
+  if(fgets(buf,sizeof(buf),gt)==NULL){
+      printf("ground truth file %s has no lines\n",gt_str);
+      exit(EXIT_FAILURE);
+  }
 
   std::vector<Rect2d> initBoxes(algnum);
   for(int i=0;i<algnum;i++){
