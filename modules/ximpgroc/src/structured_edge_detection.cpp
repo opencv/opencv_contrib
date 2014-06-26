@@ -88,7 +88,7 @@ static cv::Mat imsmooth(const cv::Mat &src, const int rad)
         return src;
     else
     {
-        const float p = 12/rad/(rad + 2) - 2;
+        const float p = 12.0f/rad/(rad + 2) - 2;
         cv::Mat dst;
 
         if (rad <= 1)
@@ -98,7 +98,7 @@ static cv::Mat imsmooth(const cv::Mat &src, const int rad)
         }
         else
         {
-            float nrml = CV_SQR(rad + 1);
+            float nrml = CV_SQR(rad + 1.0f);
 
             std::vector <float> kernelXY(2*rad + 1);
             for (int i = 0; i <= rad; ++i)
@@ -164,7 +164,7 @@ static cv::Mat rgb2luv(const cv::Mat &src)
             const float xyz[] = {mX[0]*rgb[0] + mX[1]*rgb[1] + mX[2]*rgb[2],
                                  mY[0]*rgb[0] + mY[1]*rgb[1] + mY[2]*rgb[2],
                                  mZ[0]*rgb[0] + mZ[1]*rgb[1] + mZ[2]*rgb[2]};
-            const float nz = 1.0f/(xyz[0] + 15*xyz[1] + 3*xyz[2] + 1e-35);
+            const float nz = 1.0f / float(xyz[0] + 15*xyz[1] + 3*xyz[2] + 1e-35);
 
             const float l = pDst[j] = lTable[cvFloor(1024*xyz[1])];
 
@@ -217,7 +217,7 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
         for (int j = 0; j < src.cols*nchannels; j += nchannels)
         {
-            float fMagn = -1e-5, fdx, fdy;
+            float fMagn = float(-1e-5), fdx, fdy;
             for (int k = 0; k < nchannels; ++k)
             {
                 float cMagn = CV_SQR( pDx[j + k] ) + CV_SQR( pDy[j + k] );
@@ -534,7 +534,7 @@ protected:
         // half of cell
         std::vector <int> gridPositions;
         for(int i = 0; i < gridSize; i++)
-            gridPositions.push_back( (i+1)*(pSize/shrink + 2*hc - 1)/(gridSize + 1.0) - hc + 0.5 );
+            gridPositions.push_back( int( (i+1)*(pSize/shrink + 2*hc - 1)/(gridSize + 1.0) - hc + 0.5f ) );
 
         for (int i = 0, n = 0; i < CV_SQR(gridSize)*nchannels; ++i)
             for (int j = (i%CV_SQR(gridSize)) + 1; j < CV_SQR(gridSize); ++j, ++n)
@@ -623,7 +623,7 @@ protected:
                 }
         }
 
-        cv::reduce( dstM.reshape(1, dstM.total() ), dstM, 2, CV_REDUCE_SUM);
+        cv::reduce( dstM.reshape(1, int( dstM.total() ) ), dstM, 2, CV_REDUCE_SUM);
         imsmooth( dstM.reshape(1, dst.rows), 1 ).copyTo(dst);
     }
 

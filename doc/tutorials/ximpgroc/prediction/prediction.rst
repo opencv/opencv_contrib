@@ -111,11 +111,10 @@ Explanation
         return -1;
     }
 
-2. **Convert source image to [0;1] range and RGB colospace**
+2. **Convert source image to [0;1] range**
 
   .. code-block:: cpp
 
-    cv::cvtColor(image, image, CV_BGR2RGB);
     image.convertTo(image, cv::DataType<float>::type, 1/255.0);
 
 3. **Run main algorithm**

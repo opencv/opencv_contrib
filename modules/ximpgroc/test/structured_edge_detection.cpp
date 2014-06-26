@@ -5,9 +5,9 @@ namespace cvtest
 
 TEST(ximpgroc_StructuredEdgeDetection, regression)
 {
-    cv::String dir = "C:/Users/Yury/Projects/opencv/sources/opencv_contrib/modules/ximpgroc/testdata/";//cvtest::TS::ptr()->get_data_path();
+    cv::String dir = cvtest::TS::ptr()->get_data_path();
     int nTests = 12;
-    float threshold = 0.01;
+    float threshold = 0.01f;
 
     cv::String modelName = dir + "model.yml.gz";
     cv::Ptr<cv::StructuredEdgeDetection> pDollar =
@@ -22,7 +22,6 @@ TEST(ximpgroc_StructuredEdgeDetection, regression)
         cv::Mat previousResult = cv::imread( previousResultName, 0 );
         previousResult.convertTo( previousResult, cv::DataType<float>::type, 1/255.0 );
 
-        cv::cvtColor( src, src, CV_BGR2RGB );
         src.convertTo( src, cv::DataType<float>::type, 1/255.0 );
 
         cv::Mat currentResult( src.size(), src.type() );
@@ -30,7 +29,7 @@ TEST(ximpgroc_StructuredEdgeDetection, regression)
 
         cv::Mat sqrError = ( currentResult - previousResult )
             .mul( currentResult - previousResult );
-        cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( sqrError.total() );
+        cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( double( sqrError.total() ) );
 
         EXPECT_LE( mse[0], threshold );
     }
