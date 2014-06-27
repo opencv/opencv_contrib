@@ -772,8 +772,8 @@ Data::Data(Rect2d initBox){
         printf("initial box has size %dx%d, while both dimensions should be no less than %d\n",(int)initBox.width,(int)initBox.height,20);
         exit(EXIT_FAILURE);
     }*/
-    minSize.width=initBox.width*20.0/minDim;
-    minSize.height=initBox.height*20.0/minDim;
+    minSize.width=(int)(initBox.width*20.0/minDim);
+    minSize.height=(int)(initBox.height*20.0/minDim);
     frameNum=0;
     printf("minSize= %dx%d\n",minSize.width,minSize.height);
 }
@@ -811,19 +811,19 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         detector_->computeIntegralImages(resized_img,intImgP,intImgP2);
 
         int dx=initSize.width/10, dy=initSize.height/10,
-            i=x/scale/dx, j=y/scale/dy;
+            i=(int)(x/scale/dx), j=(int)(y/scale/dy);
 
-        fprintf(stdout,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
-        fprintf(stdout,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])));
-        fprintf(stdout,"ensembleClassifier=%s\n",
-                (detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0]))?"true":"false");
+        fprintf(stderr,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
+        fprintf(stderr,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0])));
+        fprintf(stderr,"ensembleClassifier=%s\n",
+                (detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0]))?"true":"false");
 
         resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
         tmp=tldModel->Sr(standardPatch);
-        fprintf(stdout,"Sr=%f\n",tmp);
-        fprintf(stdout,"isObject=%s\n",(tmp>THETA_NN)?"true":"false");
-        fprintf(stdout,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
-        fprintf(stdout,"Sc=%f\n",tldModel->Sc(standardPatch));
+        fprintf(stderr,"Sr=%f\n",tmp);
+        fprintf(stderr,"isObject=%s\n",(tmp>THETA_NN)?"true":"false");
+        fprintf(stderr,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
+        fprintf(stderr,"Sc=%f\n",tldModel->Sc(standardPatch));
 
         rectangle(imgCanvas,Rect2d(Point2d(scale*dx*i,scale*dy*j),Size2d(initSize.width*scale,initSize.height*scale)), 0, 2, 1 );
         imshow("picker",imgCanvas);

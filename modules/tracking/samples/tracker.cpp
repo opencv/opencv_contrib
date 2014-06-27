@@ -58,7 +58,7 @@ static void onMouse( int event, int x, int y, int, void* )
           //draw the bounding box
           Mat currentFrame;
           image.copyTo( currentFrame );
-          rectangle( currentFrame, Point( boundingBox.x, boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
+          rectangle( currentFrame, Point((int) boundingBox.x, (int)boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
           imshow( "Tracking API", currentFrame );
         }
         break;
@@ -96,7 +96,7 @@ int main( int argc, char** argv ){
 
   int coords[4]={0,0,0,0};
   bool initBoxWasGivenInCommandLine=false;
-  do{
+  {
       String initBoundingBox=parser.get<String>(3);
       for(size_t npos=0,pos=0,ctr=0;ctr<4;ctr++){
         npos=initBoundingBox.find_first_of(',',pos);
@@ -119,7 +119,7 @@ int main( int argc, char** argv ){
       if(coords[0]>0 && coords[1]>0 && coords[2]>0 && coords[3]>0){
           initBoxWasGivenInCommandLine=true;
       }
-  }while(0);
+  }
 
   //open the capture
   VideoCapture cap;

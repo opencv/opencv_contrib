@@ -199,8 +199,8 @@ double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect bo
 }
 
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
-    CV_Assert(patch1.rows=patch2.rows);
-    CV_Assert(patch1.cols=patch2.cols);
+    CV_Assert(patch1.rows==patch2.rows);
+    CV_Assert(patch1.cols==patch2.cols);
 
     int N=patch1.rows*patch1.cols;
     double s1=sum(patch1)(0),s2=sum(patch2)(0);

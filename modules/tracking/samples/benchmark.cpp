@@ -133,7 +133,7 @@ void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const
         grid[0]=std::max(grid[0],(int)strlen(videos[i]));
     }
     for(int i=0;i<algNum;i++){
-        grid[i+1]=strlen(algorithms[i]);
+        grid[i+1]=(int)strlen(algorithms[i]);
         for(int j=0;j<videoNum;j++)
             grid[i+1]=std::max(grid[i+1],(int)strlen(results[j][i]));
     }
@@ -199,11 +199,11 @@ private:
 };
 AssessmentRes::AssessmentRes(int algnum):len(0),results(algnum){
     for(int i=0;i<(int)results.size();i++){
-        if(!false){
+#if !0
             results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.0)));
-        }else{
+#else
             results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
-        }
+#endif
         results[i].push_back(Ptr<Assessment>(new PRF()));
     }
 }
@@ -295,7 +295,7 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   imshow( "Tracking API", image );
 
   int frameCounter = 0;
-  AssessmentRes res(trackers.size());
+  AssessmentRes res((int)trackers.size());
 
   for ( ;; ){
     if( !paused ){
@@ -330,13 +330,15 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
               rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
           }
 
-          if(!true && i==1){
+#if !1
+          if(i==1){
               printf("TLD\n");
               printf("boundingBox=[%f,%f,%f,%f]\n",boundingBox.x,boundingBox.y,boundingBox.width,boundingBox.height);
               printf("initBoxes[i]=[%f,%f,%f,%f]\n",initBoxes[i].x,initBoxes[i].y,initBoxes[i].width,initBoxes[i].height);
               printf("overlap=%f\n",overlap(initBoxes[i],boundingBox));
               exit(0);
           }
+#endif
 
           for(int j=0;j<(int)res.results[i].size();j++)
               res.results[i][j]->assess(boundingBox,initBoxes[i]);
