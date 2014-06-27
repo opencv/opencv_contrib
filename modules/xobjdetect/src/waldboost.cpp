@@ -69,8 +69,8 @@ vector<int> WaldBoost::train(const Mat& data, const Mat& labels)
     }
 
     Mat_<float> weights(labels.rows, labels.cols);
-    float pos_weight = 1. / (2 * pos_count);
-    float neg_weight = 1. / (2 * neg_count);
+    float pos_weight = 1.0f / (2 * pos_count);
+    float neg_weight = 1.0f / (2 * neg_count);
     for( int col = 0; col < weights.cols; ++col )
     {
         if( labels.at<int>(0, col) == +1 )
@@ -101,7 +101,7 @@ vector<int> WaldBoost::train(const Mat& data, const Mat& labels)
         }
 
         // Normalize weights
-        float z = sum(weights)[0];
+        float z = (float)sum(weights)[0];
         for( int col = 0; col < weights.cols; ++col)
         {
             weights.at<float>(0, col) /= z;

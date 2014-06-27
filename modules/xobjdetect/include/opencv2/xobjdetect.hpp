@@ -109,7 +109,7 @@ struct CV_EXPORTS WaldBoostParams
     int weak_count;
     float alpha;
 
-    WaldBoostParams(): weak_count(100), alpha(0.01)
+    WaldBoostParams(): weak_count(100), alpha(0.01f)
     {}
 };
 

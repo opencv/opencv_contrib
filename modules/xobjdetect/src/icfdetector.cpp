@@ -68,7 +68,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
 
     vector<Mat> samples; /* positive samples + negative samples */
     Mat sample, resized_sample;
-    size_t pos_count = 0;
+    int pos_count = 0;
     for( size_t i = 0; i < image_filenames.size(); ++i, ++pos_count )
     {
         Mat img = imread(String(image_filenames[i].c_str()));
@@ -92,7 +92,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
     for( size_t i = 0; i < image_filenames.size(); ++i )
     {
         Mat img = imread(String(image_filenames[i].c_str()));
-        for( size_t j = 0; j < pos_count / image_filenames.size() + 1; )
+        for( int j = 0; j < pos_count / image_filenames.size() + 1; )
         {
             Rect r;
             r.x = rng.uniform(0, img.cols);
@@ -112,19 +112,19 @@ void ICFDetector::train(const vector<string>& image_filenames,
     }
 
     Mat_<int> labels(1, pos_count + neg_count);
-    for( size_t i = 0; i < pos_count; ++i)
+    for( int i = 0; i < pos_count; ++i)
         labels(0, i) = 1;
-    for( size_t i = pos_count; i < pos_count + neg_count; ++i )
+    for( int i = pos_count; i < pos_count + neg_count; ++i )
         labels(0, i) = -1;
 
     vector<Point3i> features = generateFeatures(model_size);
     ACFFeatureEvaluator feature_evaluator(features);
 
-    Mat_<int> data(features.size(), samples.size());
+    Mat_<int> data((int)features.size(), (int)samples.size());
     Mat_<int> feature_col;
 
     vector<Mat> channels;
-    for( size_t i = 0; i < samples.size(); ++i )
+    for( int i = 0; i < (int)samples.size(); ++i )
     {
         computeChannels(samples[i], channels);
         feature_evaluator.setChannels(channels);
@@ -135,7 +135,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
 
     WaldBoostParams wparams;
     wparams.weak_count = params.weak_count;
-    wparams.alpha = 0.001;
+    wparams.alpha = 0.001f;
 
     WaldBoost waldboost(wparams);
     waldboost.train(data, labels);

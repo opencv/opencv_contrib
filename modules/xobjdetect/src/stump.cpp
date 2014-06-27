@@ -81,7 +81,7 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
             sorted_labels.at<int>(row, col) =
                 labels.at<int>(0, indices.at<int>(row, col));
             sorted_weights.at<float>(row, col) =
-                weights.at<float>(0, indices.at<float>(row, col));
+                weights.at<float>(0, indices.at<int>(row, col));
         }
     }
 
@@ -124,7 +124,7 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
     float neg_total_weight = neg_cum_weights.at<float>(0, weights.cols - 1);
 
 
-    float eps = 1. / 4 * labels.cols;
+    float eps = 1.0f / 4 * labels.cols;
 
     /* Compute minimal error */
     float min_err = FLT_MAX;
@@ -147,8 +147,8 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
             float neg_right = neg_cum_weights.at<float>(row, col);
             float neg_wrong = neg_total_weight - neg_right;
 
-            h_pos = .5 * log((pos_right + eps) / (pos_wrong + eps));
-            h_neg = .5 * log((neg_wrong + eps) / (neg_right + eps));
+            h_pos = (float)(.5 * log((pos_right + eps) / (pos_wrong + eps)));
+            h_neg = (float)(.5 * log((neg_wrong + eps) / (neg_right + eps)));
 
             err = sqrt(pos_right * neg_wrong) + sqrt(pos_wrong * neg_right);
 

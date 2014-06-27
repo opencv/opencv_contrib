@@ -83,7 +83,7 @@ void ACFFeatureEvaluator::setChannels(cv::InputArrayOfArrays channels)
                 int sum = 0;
                 for( int cell_row = row; cell_row < row + 4; ++cell_row )
                     for( int cell_col = col; cell_col < col + 4; ++cell_col )
-                        sum += channel.at<float>(cell_row, cell_col);
+                        sum += (int)channel.at<float>(cell_row, cell_col);
 
                 acf_channel(row / 4, col / 4) = sum;
             }
@@ -99,8 +99,8 @@ void ACFFeatureEvaluator::setPosition(Size position)
 
 void ACFFeatureEvaluator::evaluateAll(OutputArray feature_values) const
 {
-    Mat_<int> feature_vals(1, features_.size());
-    for( size_t i = 0; i < features_.size(); ++i )
+    Mat_<int> feature_vals(1, (int)features_.size());
+    for( int i = 0; i < (int)features_.size(); ++i )
     {
         feature_vals(0, i) = evaluate(i);
     }
@@ -146,13 +146,13 @@ void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
     magnitude(row_der, col_der, grad);
 
     Mat_<Vec6f> hist(grad.rows, grad.cols);
-    const float to_deg = 180 / 3.1415926;
+    const float to_deg = 180 / 3.1415926f;
     for (int row = 0; row < grad.rows; ++row) {
         for (int col = 0; col < grad.cols; ++col) {
             float angle = atan2(row_der(row, col), col_der(row, col)) * to_deg;
             if (angle < 0)
                 angle += 180;
-            int ind = angle / 30;
+            int ind = (int)(angle / 30);
             hist(row, col)[ind] = grad(row, col);
         }
     }
