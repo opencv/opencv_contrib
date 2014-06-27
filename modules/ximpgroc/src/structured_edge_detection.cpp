@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <cmath>
 
 #include "opencv2/ximpgroc/structured_edge_detection.hpp"
 
@@ -217,7 +218,7 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
         for (int j = 0; j < src.cols*nchannels; j += nchannels)
         {
-            float fMagn = float(-1e-5), fdx, fdy;
+            float fMagn = float(-1e-5), fdx = 0, fdy = 0;
             for (int k = 0; k < nchannels; ++k)
             {
                 float cMagn = CV_SQR( pDx[j + k] ) + CV_SQR( pDy[j + k] );
@@ -229,7 +230,7 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
                 }
             }
 
-            pMagnitude[j/nchannels] = std::sqrtf(fMagn);
+            pMagnitude[j/nchannels] = sqrtf(fMagn);
 
             float angle = cv::fastAtan2(fdy, fdx) / 180.0f - 1.0f * (fdy < 0);
             if (std::fabs(fdx) + std::fabs(fdy) < 1e-5)
