@@ -63,7 +63,8 @@ using namespace cv;
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6
  * TODO:
  *      schoolPC: codec, libopencv-dev
- *      fix pushbot -> compare_branches ||video(vadim random, better?) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
+ *      fix pushbot ->pick commits -> compare_branches->all in 1
+ *      ||video(vadim random, better?) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
  *      perfect PN
 */
 
@@ -404,7 +405,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
             size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
             size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
-            float angle=rng.uniform(-10.0,10.0);
+            float angle=(float)rng.uniform(-10.0,10.0);
 
             resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             
@@ -742,7 +743,7 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
             size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
             size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
-            float angle=rng.uniform(-5.0,5.0);
+            float angle=(float)rng.uniform(-5.0,5.0);
 
             resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
