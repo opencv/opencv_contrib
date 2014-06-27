@@ -141,7 +141,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
     waldboost.train(data, labels);
 }
 
-bool ICFDetector::save(const string& filename)
+bool ICFDetector::save(const string&)
 {
     return true;
 }
