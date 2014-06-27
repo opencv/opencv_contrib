@@ -92,7 +92,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
     for( size_t i = 0; i < image_filenames.size(); ++i )
     {
         Mat img = imread(String(image_filenames[i].c_str()));
-        for( int j = 0; j < pos_count / image_filenames.size() + 1; )
+        for( int j = 0; j < (int)(pos_count / image_filenames.size() + 1); )
         {
             Rect r;
             r.x = rng.uniform(0, img.cols);
