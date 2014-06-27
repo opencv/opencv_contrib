@@ -163,7 +163,7 @@ std::string MedianFlowCore::type2str(int type) {
   std::string r;
 
   uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = 1 + (type >> CV_CN_SHIFT);
+  uchar chans = (uchar)(1 + (type >> CV_CN_SHIFT));
 
   switch ( depth ) {
     case CV_8U:  r = "8U"; break;
@@ -192,8 +192,8 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     for(int i=0;i<params.pointsInGrid;i++){
         for(int j=0;j<params.pointsInGrid;j++){
                 pointsToTrackOld.push_back(
-                        Point2f(oldBox.x+((1.0*oldBox.width)/params.pointsInGrid)*j+.5*oldBox.width/params.pointsInGrid,
-                        oldBox.y+((1.0*oldBox.height)/params.pointsInGrid)*i+.5*oldBox.height/params.pointsInGrid));
+                        Point2f((float)(oldBox.x+((1.0*oldBox.width)/params.pointsInGrid)*j+.5*oldBox.width/params.pointsInGrid),
+                        (float)(oldBox.y+((1.0*oldBox.height)/params.pointsInGrid)*i+.5*oldBox.height/params.pointsInGrid)));
         }
     }
 
@@ -235,7 +235,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
         di[i]-=mDisplacement;
         displacements.push_back(sqrt(di[i].ddot(di[i])));
     }
-    if(getMedian(displacements,displacements.size())>10){
+    if(getMedian(displacements,(int)displacements.size())>10){
         return false;
     }
 
@@ -247,7 +247,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     static int iteration=0;//FIXME -- we don't want this static var in final release
     Rect2d newRect;
     Point2d newCenter(oldRect.x+oldRect.width/2.0,oldRect.y+oldRect.height/2.0);
-    int n=oldPoints.size();
+    int n=(int)oldPoints.size();
     std::vector<double> buf(std::max(n*(n-1)/2,3),0.0);
 
     if(oldPoints.size()==1){
@@ -265,7 +265,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     for(int i=0;i<n;i++){  buf[i]=newPoints[i].y-oldPoints[i].y;  }
     yshift=getMedian(buf,n);
     newCenter.y+=yshift;
-    mD=Point2f(xshift,yshift);
+    mD=Point2f((float)xshift,(float)yshift);
 
     if(oldPoints.size()==1){
         newRect.x=newCenter.x-oldRect.width/2.0;
@@ -275,12 +275,12 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
         return newRect;
     }
 
-    float nd,od;
+    double nd,od;
     for(int i=0,ctr=0;i<n;i++){
         for(int j=0;j<i;j++){
             nd=l2distance(newPoints[i],newPoints[j]);
             od=l2distance(oldPoints[i],oldPoints[j]);
-            buf[ctr]=(od==0)?0:(nd/od);
+            buf[ctr]=(od==0.0)?0.0:(nd/od);
             ctr++;
         }
     }
@@ -304,12 +304,12 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
 template<typename T>
 T MedianFlowCore::getMedian(std::vector<T>& values,int size){
     if(size==-1){
-        size=values.size();
+        size=(int)values.size();
     }
     std::vector<T> copy(values.begin(),values.begin()+size);
     std::sort(copy.begin(),copy.end());
     if(size%2==0){
-        return (copy[size/2-1]+copy[size/2])/2.0;
+        return (copy[size/2-1]+copy[size/2])/((T)2.0);
     }else{
         return copy[(size-1)/2];
     }
@@ -318,7 +318,7 @@ T MedianFlowCore::getMedian(std::vector<T>& values,int size){
 void MedianFlowCore::computeStatistics(std::vector<float>& data,int size){
     int binnum=10;
     if(size==-1){
-        size=data.size();
+        size=(int)data.size();
     }
     float mini=*std::min_element(data.begin(),data.begin()+size),maxi=*std::max_element(data.begin(),data.begin()+size);
     std::vector<int> bins(binnum,(int)0);
@@ -374,7 +374,7 @@ void MedianFlowCore::check_NCC(const Mat& oldImage,const Mat& newImage,
         double sq1=sqrt(n1*n1-s1*s1/N),sq2=sqrt(n2*n2-s2*s2/N);
         double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
 
-		NCC[i] = ares;
+		NCC[i] = (float)ares;
 	}
 	float median = getMedian(NCC);
 	for(int i = 0; i < (int)oldPoints.size(); i++) {

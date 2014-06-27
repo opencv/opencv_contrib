@@ -63,7 +63,7 @@ using namespace cv;
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6
  * TODO:
  *      schoolPC: codec, libopencv-dev
- *      fix warnings local --> pushbot || --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
+ *      fix pushbot -> compare_branches ||video(vadim random, better?) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
  *      perfect PN
 */
 
@@ -77,13 +77,13 @@ namespace cv
 class TLDDetector;
 class MyMouseCallbackDEBUG{
 public:
-    MyMouseCallbackDEBUG(const Mat& img,const Mat& imgBlurred,TLDDetector* detector):img_(img),imgBlurred_(imgBlurred),detector_(detector){}
+    MyMouseCallbackDEBUG( Mat& img, Mat& imgBlurred,TLDDetector* detector):img_(img),imgBlurred_(imgBlurred),detector_(detector){}
     static void onMouse( int event, int x, int y, int, void* obj){
         ((MyMouseCallbackDEBUG*)obj)->onMouse(event,x,y);
     }
 private:
     void onMouse( int event, int x, int y);
-    const Mat& img_,imgBlurred_;
+    Mat& img_,imgBlurred_;
     TLDDetector* detector_;
 };
 
@@ -251,7 +251,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     privateInfo.push_back(Ptr<TLDDetector>(detector));
     privateInfo.push_back(Ptr<Data>(data));
 
-    if(!true){
+#if !1
         printf("here I am\n");
         Mat image_blurred;
         GaussianBlur(image_gray,image_blurred,GaussBlurKernelSize,0.0);
@@ -259,7 +259,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
         imshow("picker",image_gray);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
         waitKey();
-    }
+#endif
     return true;
 }
 

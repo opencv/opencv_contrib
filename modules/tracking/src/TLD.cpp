@@ -103,7 +103,7 @@ std::string type2str(const Mat& mat){
   std::string r;
 
   uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = 1 + (type >> CV_CN_SHIFT);
+  uchar chans =(uchar)( 1 + (type >> CV_CN_SHIFT));
 
   switch ( depth ) {
     case CV_8U:  r = "8U"; break;
@@ -221,7 +221,7 @@ double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
 }
 unsigned int getMedian(const std::vector<unsigned int>& values, int size){
     if(size==-1){
-        size=values.size();
+        size=(int)values.size();
     }
     std::vector<int> copy(values.begin(),values.begin()+size);
     std::sort(copy.begin(),copy.end());
@@ -270,7 +270,7 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
     }
 }
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
-    if(true){
+#if 1
         double x,y,a,b,tx,ty;int ix,iy;
         for(int i=0;i<samples.rows;i++){
             y=r2.y+i*r2.height/samples.rows;
@@ -285,21 +285,21 @@ void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
                 samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
             }
         }
-    }else{
+#else
         Point2f center((float)(r2.x+r2.width/2),(float)(r2.y+r2.height/2));
-        return resample(img,RotatedRect(center,Size2f(r2.width,r2.height),0.0f),samples);
-    }
+        return resample(img,RotatedRect(center,Size2f((float)r2.width,(float)r2.height),0.0f),samples);
+#endif
 }
 
 //other stuff
 void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
     int gridSize=getGridSize();
-    if(false){
+#if 0
         int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
         for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
             arr[i]=pref+arr[i]*step;
         }
-    }else{
+#else
         int total=len-gridSize;
         int quo=total/(gridSize-1),rem=total%(gridSize-1);
         int smallStep=quo,bigStep=quo+1;
@@ -307,20 +307,20 @@ void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
         int bigOnes_front=bigOnes/2,bigOnes_back=bigOnes-bigOnes_front;
         for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
             if(arr[i]<bigOnes_back){
-                arr[i]=arr[i]*bigStep+arr[i];
+                arr[i]=(uchar)(arr[i]*bigStep+arr[i]);
                 continue;
             }
             if(arr[i]<(bigOnes_front+smallOnes)){
-                arr[i]=bigOnes_front*bigStep+(arr[i]-bigOnes_front)*smallStep+arr[i];
+                arr[i]=(uchar)(bigOnes_front*bigStep+(arr[i]-bigOnes_front)*smallStep+arr[i]);
                 continue;
             }
             if(arr[i]<(bigOnes_front+smallOnes+bigOnes_back)){
-                arr[i]=bigOnes_front*bigStep+smallOnes*smallStep+(arr[i]-(bigOnes_front+smallOnes))*bigStep+arr[i];
+                arr[i]=(uchar)(bigOnes_front*bigStep+smallOnes*smallStep+(arr[i]-(bigOnes_front+smallOnes))*bigStep+arr[i]);
                 continue;
             }
-            arr[i]=len-1;
+            arr[i]=(uchar)(len-1);
         }
-    }
+#endif
 }
 TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
     preinit(ordinal);
@@ -330,7 +330,7 @@ TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
     stepPrefSuff(y2,size.height);
 }
 void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
-    unsigned short int position=code(patch.data,patch.step[0]);
+    unsigned short int position=code(patch.data,(int)patch.step[0]);
     if(isPositive){
         pos[position]++;
     }else{
@@ -348,18 +348,18 @@ double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep
 }
 unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
     unsigned short int position=0;
-    char codeS[20];
+    //char codeS[20];
     for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
         if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
             position++;
-            codeS[i]='o';
+            //codeS[i]='o';
         }else{
-            codeS[i]='x';
+            //codeS[i]='x';
         }
         position=position<<1;
     }
-    codeS[13]='\0';
-    if(!true)printf("integrate with code %s\n",codeS);
+    //codeS[13]='\0';
+    //printf("integrate with code %s\n",codeS);
     return position;
 }
 
