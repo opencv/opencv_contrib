@@ -81,6 +81,7 @@ public:
     static void onMouse( int event, int x, int y, int, void* obj){
         ((MyMouseCallbackDEBUG*)obj)->onMouse(event,x,y);
     }
+    MyMouseCallbackDEBUG& operator= (const MyMouseCallbackDEBUG& /*other*/){return *this;}
 private:
     void onMouse( int event, int x, int y);
     Mat& img_,imgBlurred_;
@@ -309,13 +310,15 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
     data->printme();
     tldModel->printme(stdout);
-    if(!true && data->frameNum==82){
+#if !1
+    if(data->frameNum==82){
         printf("here I am\n");
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(imageForDetector,image_blurred,detector);
         imshow("picker",imageForDetector);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
         waitKey();
     }
+#endif
 
     if(it==candidatesRes.end()){
         data->confident=false;
@@ -397,25 +400,21 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<20;j++){
             Mat_<uchar> standardPatch(15,15);
-            if(true){
-                center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
-                center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
-                size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
-                size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
-                float angle=rng.uniform((double)-10.0,(double)10.0);
+            center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
+            center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
+            size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
+            size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
+            float angle=rng.uniform(-10.0,10.0);
 
-                resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
-                
-                for(int y=0;y<standardPatch.rows;y++){
-                    for(int x=0;x<standardPatch.cols;x++){
-                        standardPatch(x,y)+=rng.gaussian(5.0);
-                    }
+            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
+            
+            for(int y=0;y<standardPatch.rows;y++){
+                for(int x=0;x<standardPatch.cols;x++){
+                    standardPatch(x,y)+=(uchar)rng.gaussian(5.0);
                 }
-
-                resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
-            }else{
-                resample(scaledImg,closest[i],standardPatch);
             }
+
+            resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
             pushIntoModel(standardPatch,true);
             resample(blurredImg,closest[i],blurredPatch);
             for(int k=0;k<(int)classifiers.size();k++){
@@ -502,7 +501,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
                 if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
                     continue;
                 }
-                if(!ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),blurred_img.step[0])){
+                if(!ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0])){
                     continue;
                 }
                 pass++;
@@ -530,12 +529,12 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         size.height/=1.2;
         scale*=1.2;
         resize(img,resized_img,size);
-        GaussianBlur(resized_img,blurred_img,GaussBlurKernelSize,0.0);
+        GaussianBlur(resized_img,blurred_img,GaussBlurKernelSize,0.0f);
     }while(size.width>=initSize.width && size.height>=initSize.height);
     END_TICK("detector");
 
     fprintf(stdout,"after NCC: nneg=%d npos=%d\n",nneg,npos);
-    if(!false){
+#if !0
         std::vector<Rect2d> poss,negs;
         for(int i=0;i<(int)rect.size();i++){
             if(isObject[i])
@@ -545,8 +544,8 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         }
         fprintf(stdout,"%d pos and %d neg\n",(int)poss.size(),(int)negs.size());
         drawWithRects(img,negs,poss);
-    }
-    if(!true){
+#endif
+#if !1
         std::vector<Rect2d> scanGrid;
         generateScanGrid(img.rows,img.cols,initSize,scanGrid);
         std::vector<double> results;
@@ -561,8 +560,8 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         rectangle( image,scanGrid[it-results.begin()], 255, 1, 1 );
         imshow("img",image);
         waitKey();
-    }
-    if(!true){
+#endif
+#if !1
         Mat image;
         img.copyTo(image);
         rectangle( image,res, 255, 1, 1 );
@@ -571,7 +570,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         }
         imshow("img",image);
         waitKey();
-    }
+#endif
 
     fprintf(stdout,"%d after ensemble\n",pass);
     if(maxSc<0){
@@ -698,7 +697,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         }
         double p=0;
         for(int i=0;i<(int)classifiers.size();i++){
-            p+=classifiers[i].posteriorProbability(eForEnsemble[k].data,eForEnsemble[k].step[0]);
+            p+=classifiers[i].posteriorProbability(eForEnsemble[k].data,(int)eForEnsemble[k].step[0]);
         }
         p/=classifiers.size();
         if((p>0.5)!=isPositive){
@@ -739,17 +738,17 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<10;j++){
             Mat_<uchar> standardPatch(15,15),blurredPatch(initSize_);
-            center.x=closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01));
-            center.y=closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01));
-            size.width=closest[i].width*rng.uniform((double)0.99,(double)1.01);
-            size.height=closest[i].height*rng.uniform((double)0.99,(double)1.01);
-            float angle=rng.uniform((double)-5.0,(double)5.0);
+            center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
+            center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
+            size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
+            size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
+            float angle=rng.uniform(-5.0,5.0);
 
             resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
             for(int y=0;y<standardPatch.rows;y++){
                 for(int x=0;x<standardPatch.cols;x++){
-                    standardPatch(x,y)+=rng.gaussian(5.0);
+                    standardPatch(x,y)+=(uchar)rng.gaussian(5.0);
                 }
             }
             examplesForModel.push_back(standardPatch);
