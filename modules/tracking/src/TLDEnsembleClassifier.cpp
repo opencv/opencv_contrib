@@ -48,7 +48,7 @@
 
 using namespace cv;
 
-namespace cv
+namespace cv {namespace tld
 {
 int TLDEnsembleClassifier::getGridSize(){
     return 15;
@@ -3690,4 +3690,4 @@ void TLDEnsembleClassifier::preinit(int ordinal){
             x1[12]=3; x2[12]=3; y1[12]=10; y2[12]=0;
         break;
     }
-}}
+}}}

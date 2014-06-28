@@ -45,9 +45,7 @@
 #include <algorithm>
 #include <limits.h>
 
-using namespace cv;
-
-namespace cv
+namespace cv {namespace tld
 {
 
 //debug functions and variables
@@ -67,7 +65,8 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
 void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes);
 
 //aux functions and variables
-#define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
+//#define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
+template<typename T> inline T CLIP(T x,T a,T b){return MIN(MAX(x,a),b);}
 double overlap(const Rect2d& r1,const Rect2d& r2);
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
@@ -100,4 +99,4 @@ public:
     virtual ~TrackerProxy(){}
 };
 
-}
+}}

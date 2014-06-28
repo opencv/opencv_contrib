@@ -50,7 +50,7 @@
 
 using namespace cv;
 
-namespace cv
+namespace cv {namespace tld
 {
 
 //debug functions and variables
@@ -363,4 +363,4 @@ unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)con
     return position;
 }
 
-}
+}}

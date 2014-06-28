@@ -52,9 +52,10 @@
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
-static const Size GaussBlurKernelSize(3,3);
+static const cv::Size GaussBlurKernelSize(3,3);
 
 using namespace cv;
+using namespace tld;
 
 /*
  * FIXME(optimize):
@@ -66,6 +67,22 @@ using namespace cv;
  *      fix pushbot ->pick commits -> compare_branches->all in 1
  *      ||video(vadim random, better?) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
  *      perfect PN
+ *
+ *      vadim:
+ *
+ *      dprintf
+ *      variance outside
+ *      NCC sqrt(-)
+ *      standard patch out (403)
+ *      pos by 2 in code()
+ *
+ *      resize
+ *      warpAffine
+ *      cv::integral
+ *
+ *      13 as enum
+ *
+ *      blurred in TrackerTLDModel()
 */
 
 /* design decisions:
@@ -496,8 +513,8 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         Mat_<unsigned int> intImgP(resized_img.rows,resized_img.cols),intImgP2(resized_img.rows,resized_img.cols);
         computeIntegralImages(resized_img,intImgP,intImgP2);
 
-        for(int i=0;i<cvFloor((0.0+resized_img.cols-initSize.width)/dx);i++){
-            for(int j=0;j<cvFloor((0.0+resized_img.rows-initSize.height)/dy);j++){
+        for(int i=0,imax=cvFloor((0.0+resized_img.cols-initSize.width)/dx);i<imax;i++){
+            for(int j=0,jmax=cvFloor((0.0+resized_img.rows-initSize.height)/dy);j<jmax;j++){
                 total++;
                 if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
                     continue;
@@ -769,10 +786,6 @@ bool Nexpert::operator()(Rect2d box){
 Data::Data(Rect2d initBox){
     double minDim=MIN(initBox.width,initBox.height);
     scale = 20.0/minDim;
-    /*if(minDim<20){
-        printf("initial box has size %dx%d, while both dimensions should be no less than %d\n",(int)initBox.width,(int)initBox.height,20);
-        exit(EXIT_FAILURE);
-    }*/
     minSize.width=(int)(initBox.width*20.0/minDim);
     minSize.height=(int)(initBox.height*20.0/minDim);
     frameNum=0;
