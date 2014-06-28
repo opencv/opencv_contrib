@@ -40,6 +40,7 @@
  //M*/
 
 #define _USE_MATH_DEFINES
+#define NUM_OF_BANDS 9
 
 #include "precomp.hpp"
 
@@ -54,22 +55,46 @@ static const int combinations [32][2] = {{0,1},{0,2},{0,3},{0,4},{0,5},{0,6},{1,
 /* return default parameters */
 BinaryDescriptor::Params::Params()
 {
-    LowestThreshold = 0.35;
-    NNDRThreshold = 0.6;
     numOfOctave_ = 1;
-    numOfBand_ = 9;
     widthOfBand_ = 7;
     reductionRatio = 2;
+}
 
+/* setters and getters */
+int BinaryDescriptor::getNumOfOctaves()
+{
+    return params.numOfOctave_;
+}
+
+void BinaryDescriptor::setNumOfOctaves(int octaves)
+{
+    params.numOfOctave_ = octaves;
+}
+
+int BinaryDescriptor::getWidthOfBand()
+{
+    return params.widthOfBand_;
+}
+
+void BinaryDescriptor::setWidthOfBand(int width)
+{
+    params.widthOfBand_ = width;
+}
+
+int BinaryDescriptor::getReductionRatio()
+{
+    return params.reductionRatio;
+}
+
+void BinaryDescriptor::setReductionRatio(int rRatio)
+{
+    params.reductionRatio = rRatio;
 }
 
 /* read parameters from a FileNode object and store them (struct function) */
 void BinaryDescriptor::Params::read(const cv::FileNode& fn )
 {
-    LowestThreshold = fn["LowestThreshold"];
-    NNDRThreshold = fn["NNDRThreshold"];
     numOfOctave_ = fn["numOfOctave_"];
-    numOfBand_ = fn["numOfBand_"];
     widthOfBand_ = fn["widthOfBand_"];
     reductionRatio = fn["reductionRatio"];
 }
@@ -77,10 +102,8 @@ void BinaryDescriptor::Params::read(const cv::FileNode& fn )
 /* store parameters to a FileStorage object (struct function) */
 void BinaryDescriptor::Params::write(cv::FileStorage& fs) const
 {
-    fs << "LowestThreshold" << LowestThreshold;
-    fs << "NNDRThreshold" << NNDRThreshold;
     fs << "numOfOctave_" << numOfOctave_;
-    fs << "numOfBand_" <<  numOfBand_;
+    fs << "numOfBand_" <<  NUM_OF_BANDS;
     fs << "widthOfBand_" << widthOfBand_;
     fs << "reductionRatio" << reductionRatio;
 }
@@ -118,15 +141,15 @@ BinaryDescriptor::BinaryDescriptor(const BinaryDescriptor::Params &parameters) :
     }
 
     /* prepare a vector for global weights F_g*/
-    gaussCoefG_.resize(params.numOfBand_*params.widthOfBand_);
+    gaussCoefG_.resize(NUM_OF_BANDS*params.widthOfBand_);
 
     /* compute center of LSR */
-    u = (params.numOfBand_*params.widthOfBand_-1)/2;
+    u = (NUM_OF_BANDS*params.widthOfBand_-1)/2;
 
     /* compute exponential part of F_g */
     sigma = u;
     invsigma2 = -1/(2*sigma*sigma);
-    for(int i=0; i<params.numOfBand_*params.widthOfBand_; i++)
+    for(int i=0; i<NUM_OF_BANDS*params.widthOfBand_; i++)
     {
         dis = i-u;
         gaussCoefG_[i] = exp(dis*dis*invsigma2);
@@ -886,8 +909,8 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
     short numOfFinalLine = keyLines.size();
     float *dL = new float[2];//line direction cos(dir), sin(dir)
     float *dO = new float[2];//the clockwise orthogonal vector of line direction.
-    short heightOfLSP = params.widthOfBand_*params.numOfBand_;//the height of line support region;
-    short descriptor_size = params.numOfBand_ * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
+    short heightOfLSP = params.widthOfBand_*NUM_OF_BANDS;//the height of line support region;
+    short descriptor_size = NUM_OF_BANDS * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
     float pgdLRowSum;//the summation of {g_dL |g_dL>0 } for each row of the region;
     float ngdLRowSum;//the summation of {g_dL |g_dL<0 } for each row of the region;
     float pgdL2RowSum;//the summation of {g_dL^2 |g_dL>0 } for each row of the region;
@@ -897,16 +920,16 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
     float pgdO2RowSum;//the summation of {g_dO^2 |g_dO>0 } for each row of the region;
     float ngdO2RowSum;//the summation of {g_dO^2 |g_dO<0 } for each row of the region;
 
-    float *pgdLBandSum  = new float[params.numOfBand_];//the summation of {g_dL |g_dL>0 } for each band of the region;
-    float *ngdLBandSum  = new float[params.numOfBand_];//the summation of {g_dL |g_dL<0 } for each band of the region;
-    float *pgdL2BandSum = new float[params.numOfBand_];//the summation of {g_dL^2 |g_dL>0 } for each band of the region;
-    float *ngdL2BandSum = new float[params.numOfBand_];//the summation of {g_dL^2 |g_dL<0 } for each band of the region;
-    float *pgdOBandSum  = new float[params.numOfBand_];//the summation of {g_dO |g_dO>0 } for each band of the region;
-    float *ngdOBandSum  = new float[params.numOfBand_];//the summation of {g_dO |g_dO<0 } for each band of the region;
-    float *pgdO2BandSum = new float[params.numOfBand_];//the summation of {g_dO^2 |g_dO>0 } for each band of the region;
-    float *ngdO2BandSum = new float[params.numOfBand_];//the summation of {g_dO^2 |g_dO<0 } for each band of the region;
+    float *pgdLBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dL |g_dL>0 } for each band of the region;
+    float *ngdLBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dL |g_dL<0 } for each band of the region;
+    float *pgdL2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dL^2 |g_dL>0 } for each band of the region;
+    float *ngdL2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dL^2 |g_dL<0 } for each band of the region;
+    float *pgdOBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dO |g_dO>0 } for each band of the region;
+    float *ngdOBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dO |g_dO<0 } for each band of the region;
+    float *pgdO2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dO^2 |g_dO>0 } for each band of the region;
+    float *ngdO2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dO^2 |g_dO<0 } for each band of the region;
 
-    short numOfBitsBand = params.numOfBand_*sizeof(float);
+    short numOfBitsBand = NUM_OF_BANDS*sizeof(float);
     short lengthOfLSP; //the length of line support region, varies with lines
     short halfHeight = (heightOfLSP-1)/2;
     short halfWidth;
@@ -1075,7 +1098,7 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
                 }
 
                 bandID = bandID+2;
-                if(bandID<params.numOfBand_){/*the band below the current band */
+                if(bandID<NUM_OF_BANDS){/*the band below the current band */
                     coefInGaussion = gaussCoefL_[hID%params.widthOfBand_];
                     pgdLBandSum[bandID] +=  coefInGaussion * pgdLRowSum;
                     ngdLBandSum[bandID] +=  coefInGaussion * ngdLRowSum;
@@ -1101,8 +1124,8 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
             float invN2 = 1.0/(params.widthOfBand_ * 2.0);
             float invN3 = 1.0/(params.widthOfBand_ * 3.0);
             float invN, temp;
-            for(bandID = 0; bandID<params.numOfBand_; bandID++){
-                if(bandID==0||bandID==params.numOfBand_-1){	invN = invN2;
+            for(bandID = 0; bandID<NUM_OF_BANDS; bandID++){
+                if(bandID==0||bandID==NUM_OF_BANDS-1){	invN = invN2;
                 }else{ invN = invN3;}
                 desID = bandID * 8;
                 temp = pgdLBandSum[bandID] * invN;
@@ -1127,7 +1150,7 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
             desVec = pSingleLine->descriptor.data();
 
             int base = 0;
-            for(short i=0; i<params.numOfBand_*8; ++base, i=base*8){
+            for(short i=0; i<NUM_OF_BANDS*8; ++base, i=base*8){
                 tempM += *(desVec+i) * *(desVec+i);//desVec[8*i+0] * desVec[8*i+0];
                 tempM += *(desVec+i+1) * *(desVec+i+1);//desVec[8*i+1] * desVec[8*i+1];
                 tempM += *(desVec+i+2) * *(desVec+i+2);//desVec[8*i+2] * desVec[8*i+2];
@@ -1142,7 +1165,7 @@ int BinaryDescriptor::computeLBD(ScaleLines &keyLines)
             tempS = 1/sqrt(tempS);
             desVec = pSingleLine->descriptor.data();
             base = 0;
-            for(short i=0; i<params.numOfBand_*8; ++base, i=base*8){
+            for(short i=0; i<NUM_OF_BANDS*8; ++base, i=base*8){
                 *(desVec+i) = *(desVec+i) * tempM;//desVec[8*i] =  desVec[8*i] * tempM;
                 *(desVec+1+i) = *(desVec+1+i) * tempM;//desVec[8*i+1] =  desVec[8*i+1] * tempM;
                 *(desVec+2+i) = *(desVec+2+i) * tempM;//desVec[8*i+2] =  desVec[8*i+2] * tempM;

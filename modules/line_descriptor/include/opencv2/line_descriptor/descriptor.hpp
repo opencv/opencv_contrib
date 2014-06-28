@@ -47,9 +47,13 @@
 #define __OPENCV_DESCRIPTOR_HPP__
 
 #include "LineStructure.hpp"
-#include "opencv2/core.hpp"
-#include <opencv2/features2d.hpp>
-
+#include "array32.hpp"
+#include "bitarray.hpp"
+#include "bitops.hpp"
+#include "bucket_group.hpp"
+#include "mihasher.hpp"
+#include "sparse_hashtable.hpp"
+#include "types.hpp"
 
 
 namespace cv
@@ -107,17 +111,8 @@ namespace cv
         struct CV_EXPORTS_W_SIMPLE Params{
             CV_WRAP Params();
 
-            /* global threshold for line descriptor distance, default is 0.35 */
-            CV_PROP_RW  float LowestThreshold;
-
-            /* the NNDR threshold for line descriptor distance, default is 0.6 */
-            CV_PROP_RW float NNDRThreshold;
-
             /* the number of image octaves (default = 5) */
             CV_PROP_RW int  numOfOctave_;
-
-            /* the number of bands used to compute line descriptor (default: 9) */
-            CV_PROP_RW int  numOfBand_;
 
             /* the width of band; (default: 7) */
             CV_PROP_RW int  widthOfBand_;
@@ -143,6 +138,14 @@ namespace cv
 
         /* destructor */
         ~BinaryDescriptor();
+
+        /* setters and getters */
+        int getNumOfOctaves();
+        void setNumOfOctaves(int octaves);
+        int getWidthOfBand();
+        void setWidthOfBand(int width);
+        int getReductionRatio();
+        void setReductionRatio(int rRatio);
 
         /* read parameters from a FileNode object and store them (class function ) */
         virtual void read( const cv::FileNode& fn );
@@ -246,6 +249,76 @@ namespace cv
         /* vector to store the Gaussian pyramid od an input image */
         std::vector<cv::Mat> octaveImages;
 
+    };
+
+    class CV_EXPORTS_W BinaryDescriptorMatcher: public Algorithm
+    {
+
+    public:
+        /* for every input descriptor,
+           find the best matching one (for a pair of images) */
+        void match( const Mat& queryDescriptors,
+                    const Mat& trainDescriptors,
+                    std::vector<DMatch>& matches,
+                    const Mat& mask=Mat() ) const;
+
+        /* for every input descriptor,
+           find the best matching one (from one image to a set) */
+        void match( const Mat& queryDescriptors,
+                    std::vector<DMatch>& matches,
+                    const std::vector<Mat>& masks=std::vector<Mat>() );
+
+        /* for every input descriptor,
+           find the best k matching descriptors (for a pair of images) */
+        void knnMatch( const Mat& queryDescriptors,
+                       const Mat& trainDescriptors,
+                       std::vector<std::vector<DMatch> >& matches,
+                       int k,
+                       const Mat& mask=Mat(),
+                       bool compactResult=false ) const;
+
+        /* for every input descriptor,
+           find the best k matching descriptors (from one image to a set) */
+        void knnMatch( const Mat& queryDescriptors,
+                       std::vector<std::vector<DMatch> >& matches,
+                       int k,
+                       const std::vector<Mat>& masks=std::vector<Mat>(),
+                       bool compactResult=false );
+
+        /* for every input desciptor, find all the ones falling in a
+           certaing atching radius (for a pair of images) */
+        void radiusMatch( const Mat& queryDescriptors,
+                          const Mat& trainDescriptors,
+                          std::vector<std::vector<DMatch> >& matches,
+                          float maxDistance,
+                          const Mat& mask=Mat(),
+                          bool compactResult=false ) const;
+
+        /* for every input desciptor, find all the ones falling in a
+           certaing atching radius (from one image to a set) */
+        void radiusMatch( const Mat& queryDescriptors,
+                          std::vector<std::vector<DMatch> >& matches,
+                          float maxDistance,
+                          const std::vector<Mat>& masks=std::vector<Mat>(),
+                          bool compactResult=false );
+
+        /* constructor with smart pointer */
+        static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
+
+
+        /* write/read data to/from file */
+        virtual void read( const FileNode& );
+        virtual void write( FileStorage& ) const;
+
+        /* constructor */
+        BinaryDescriptorMatcher(){};
+
+        /* desctructor */
+        ~BinaryDescriptorMatcher(){};
+
+    private:
+        /* vector to store new desciptors */
+        std::vector<Mat> descriptorsVector;
     };
 
 }

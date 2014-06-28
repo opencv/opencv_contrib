@@ -10,7 +10,6 @@
 #include <iostream>
 
 using namespace cv;
-using namespace std;
 
 static const char* keys =
 {
@@ -19,10 +18,11 @@ static const char* keys =
 
 static void help()
 {
-  cout << "\nThis example shows the functionalities of lines extraction " <<
+  std::cout << "\nThis example shows the functionalities of lines extraction " <<
           "and descriptors computation furnished by BinaryDescriptor class\n" <<
           "Please, run this sample using a command in the form\n" <<
-          "./example_line_descriptor_compute_descriptors <path_to_input_image>" << endl;
+          "./example_line_descriptor_compute_descriptors <path_to_input_image>"
+          << std::endl;
 }
 
 inline void writeMat(cv::Mat m, std::string name, int n)

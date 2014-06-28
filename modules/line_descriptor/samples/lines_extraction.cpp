@@ -57,6 +57,7 @@ int main( int argc, char** argv )
 
     /* extract lines */
     bd->detect(imageMat, lines, mask);
+    std::cout << lines.size() << std::endl;
 
     /* draw lines extracted from octave 0 */
     cv::Mat output = imageMat.clone();

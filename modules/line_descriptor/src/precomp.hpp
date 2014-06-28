@@ -48,14 +48,18 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
+#include "opencv2/core.hpp"
 
-#include "opencv2/line_descriptor.hpp"
-
-#include <math.h>
 #include <iostream>
 #include <map>
-#include <utility>
-#include <string>
-#include <typeinfo>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <algorithm>
+#include <bitset>
+
+
+
+#include "opencv2/line_descriptor.hpp"
 
 #endif
