@@ -79,10 +79,10 @@ namespace cv
                 {
                     std::vector <int> hist(nElements, 0);
 
-                    Mat_<T>::iterator beginIt = src[i].begin();
-                    Mat_<T>::iterator endIt = src[i].end();
+                    typename Mat_<T>::iterator beginIt = src[i].begin();
+                    typename Mat_<T>::iterator endIt = src[i].end();
 
-                    for (Mat_<T>::iterator it = beginIt; it != endIt; ++it)
+                    for (typename Mat_<T>::iterator it = beginIt; it != endIt; ++it)
                      // histogram filling
                     {
                         int pos = 0;
