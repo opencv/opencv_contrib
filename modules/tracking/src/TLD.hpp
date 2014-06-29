@@ -49,14 +49,22 @@ namespace cv {namespace tld
 {
 
 //debug functions and variables
+#define ALEX_DEBUG
+#ifdef ALEX_DEBUG
+#define dfprintf(x) fprintf x
+#define dprintf(x) printf x
+#else
+#define dfprintf(x)
+#define dprintf(x)
+#endif
 #define MEASURE_TIME(a) {\
     clock_t start;float milisec=0.0;\
     start=clock();{a} milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
-    printf("%-90s took %f milis\n",#a,milisec); }
-#define HERE fprintf(stderr,"%d\n",__LINE__);fflush(stderr);
+    dprintf(("%-90s took %f milis\n",#a,milisec)); }
+#define HERE dprintf(("%d\n",__LINE__));fflush(stderr);
 #define START_TICK(name) { clock_t start;double milisec=0.0; start=clock();
 #define END_TICK(name) milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
-    printf("%s took %f milis\n",name,milisec); }
+    dprintf(("%s took %f milis\n",name,milisec)); }
 extern Rect2d etalon;
 void myassert(const Mat& img);
 void printPatch(const Mat_<uchar>& standardPatch);

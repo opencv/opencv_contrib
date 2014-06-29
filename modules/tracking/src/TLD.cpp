@@ -86,15 +86,15 @@ void myassert(const Mat& img){
             }
         }
     }
-    printf("black: %d out of %d (%f)\n",count,img.rows*img.cols,1.0*count/img.rows/img.cols);
+    dprintf(("black: %d out of %d (%f)\n",count,img.rows*img.cols,1.0*count/img.rows/img.cols));
 }
 
 void printPatch(const Mat_<uchar>& standardPatch){
     for(int i=0;i<standardPatch.rows;i++){
         for(int j=0;j<standardPatch.cols;j++){
-            printf("%5.2f, ",(double)standardPatch(i,j));
+            dprintf(("%5.2f, ",(double)standardPatch(i,j)));
         }
-        printf("\n");
+        dprintf(("\n"));
     }
 }
 
@@ -180,6 +180,8 @@ double variance(const Mat& img){
 }
 double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect box){
     int x=(box.x),y=(box.y),width=(box.width),height=(box.height);
+    CV_Assert(0<=x && (x+width)<=intImgP.cols && (x+width)<=intImgP2.cols);
+    CV_Assert(0<=y && (y+height)<=intImgP.rows && (y+height)<=intImgP2.rows);
     double p=0,p2=0;
     unsigned int A,B,C,D;
 
@@ -206,17 +208,17 @@ double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     double s1=sum(patch1)(0),s2=sum(patch2)(0);
     double n1=norm(patch1),n2=norm(patch2);
     double prod=patch1.dot(patch2);
-    double sq1=sqrt(n1*n1-s1*s1/N),sq2=sqrt(n2*n2-s2*s2/N);
+    double sq1=sqrt(MAX(0.0,n1*n1-s1*s1/N)),sq2=sqrt(MAX(0.0,n2*n2-s2*s2/N));
     double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
     return ares;
 
     /*Mat_<uchar> p1(80,80),p2(80,80);
-    printf("NCC\n");
+    dprintf(("NCC\n"));
     resample(patch1,Rect2d(Point2d(0,0),patch1.size()),p1);
     resample(patch2,Rect2d(Point2d(0,0),patch2.size()),p2);
     imshow("patch1",p1);
     imshow("patch2",p2);
-    printf("NCC=%f\n",ncc);
+    dprintf(("NCC=%f\n",ncc));
     waitKey();*/
 }
 unsigned int getMedian(const std::vector<unsigned int>& values, int size){
@@ -359,7 +361,7 @@ unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)con
         position=position<<1;
     }
     //codeS[13]='\0';
-    //printf("integrate with code %s\n",codeS);
+    //dprintf(("integrate with code %s\n",codeS));
     return position;
 }
 

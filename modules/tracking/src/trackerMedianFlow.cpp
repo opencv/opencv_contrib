@@ -48,6 +48,15 @@
 namespace cv
 {
 
+#undef ALEX_DEBUG
+#ifdef ALEX_DEBUG
+#define dfprintf(x) fprintf x
+#define dprintf(x) printf x
+#else
+#define dfprintf(x)
+#define dprintf(x)
+#endif
+
 /*
  *  TrackerMedianFlow
  */
@@ -200,7 +209,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     std::vector<uchar> status(pointsToTrackOld.size());
     std::vector<float> errors(pointsToTrackOld.size());
     calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,Size(3,3),5,termcrit,0);
-    printf("\t%d after LK forward\n",(int)pointsToTrackOld.size());
+    dprintf(("\t%d after LK forward\n",(int)pointsToTrackOld.size()));
 
     std::vector<Point2f> di;
     for(int i=0;i<(int)pointsToTrackOld.size();i++){
@@ -222,7 +231,7 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
             i--;
         }
     }
-    printf("\t%d after LK backward\n",(int)pointsToTrackOld.size());
+    dprintf(("\t%d after LK backward\n",(int)pointsToTrackOld.size()));
 
     if(pointsToTrackOld.size()==0 || di.size()==0){
         return false;
@@ -239,7 +248,6 @@ bool MedianFlowCore::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
         return false;
     }
 
-    //return newBddBox;
     return true;
 }
 
@@ -286,7 +294,7 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     }
 
     double scale=getMedian(buf,n*(n-1)/2);
-    printf("iter %d %f %f %f\n",iteration,xshift,yshift,scale);
+    dprintf(("iter %d %f %f %f\n",iteration,xshift,yshift,scale));
     newRect.x=newCenter.x-scale*oldRect.width/2.0;
     newRect.y=newCenter.y-scale*oldRect.height/2.0;
     newRect.width=scale*oldRect.width;
@@ -294,8 +302,8 @@ Rect2d MedianFlowCore::vote(const std::vector<Point2f>& oldPoints,const std::vec
     /*if(newRect.x<=0){
         exit(0);
     }*/
-    printf("rect old [%f %f %f %f]\n",oldRect.x,oldRect.y,oldRect.width,oldRect.height);
-    printf("rect [%f %f %f %f]\n",newRect.x,newRect.y,newRect.width,newRect.height);
+    dprintf(("rect old [%f %f %f %f]\n",oldRect.x,oldRect.y,oldRect.width,oldRect.height));
+    dprintf(("rect [%f %f %f %f]\n",newRect.x,newRect.y,newRect.width,newRect.height));
 
     iteration++;
     return newRect;
@@ -326,7 +334,7 @@ void MedianFlowCore::computeStatistics(std::vector<float>& data,int size){
         bins[std::min((int)(binnum*(data[i]-mini)/(maxi-mini)),binnum-1)]++;
     }
     for(int i=0;i<binnum;i++){
-        printf("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]);
+        dprintf(("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]));
     }
 }
 double MedianFlowCore::l2distance(Point2f p1,Point2f p2){
@@ -350,8 +358,8 @@ void MedianFlowCore::check_FB(const Mat& oldImage,const Mat& newImage,
         FBerror[i]=l2distance(oldPoints[i],pointsToTrackReprojection[i]);
     }
     double FBerrorMedian=getMedian(FBerror);
-    printf("point median=%f\n",FBerrorMedian);
-    printf("FBerrorMedian=%f\n",FBerrorMedian);
+    dprintf(("point median=%f\n",FBerrorMedian));
+    dprintf(("FBerrorMedian=%f\n",FBerrorMedian));
     for(int i=0;i<(int)oldPoints.size();i++){
         status[i]=(FBerror[i]<FBerrorMedian);
     }

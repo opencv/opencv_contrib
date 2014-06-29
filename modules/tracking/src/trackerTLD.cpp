@@ -70,9 +70,7 @@ using namespace tld;
  *
  *      vadim:
  *
- *      dprintf
  *      variance outside
- *      NCC sqrt(-)
  *      standard patch out (403)
  *      pos by 2 in code()
  *
@@ -268,7 +266,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     privateInfo.push_back(Ptr<Data>(data));
 
 #if !1
-        printf("here I am\n");
+        dprintf(("here I am\n"));
         Mat image_blurred;
         GaussianBlur(image_gray,image_blurred,GaussBlurKernelSize,0.0);
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
@@ -322,15 +320,15 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
 
     std::vector<double>::iterator it=std::max_element(candidatesRes.begin(),candidatesRes.end());
 
-    fprintf(stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(1.2));
+    dfprintf((stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(1.2)));
     for(int i=0;i<(int)candidatesRes.size();i++){
-        printf("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]);
+        dprintf(("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]));
     }
     data->printme();
     tldModel->printme(stdout);
 #if !1
     if(data->frameNum==82){
-        printf("here I am\n");
+        dprintf(("here I am\n"));
         MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(imageForDetector,image_blurred,detector);
         imshow("picker",imageForDetector);
         setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
@@ -352,11 +350,11 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
 
     if(!false && it!=candidatesRes.end()){
         resample(imageForDetector,candidates[it-candidatesRes.begin()],standardPatch);
-        fprintf(stderr,"%d %f %f\n",data->frameNum,tldModel->Sc(standardPatch),tldModel->Sr(standardPatch));
+        dfprintf((stderr,"%d %f %f\n",data->frameNum,tldModel->Sc(standardPatch),tldModel->Sr(standardPatch)));
         if(candidatesRes.size()==2 &&  it==(candidatesRes.begin()+1))
-            fprintf(stderr,"detector WON\n");
+            dfprintf((stderr,"detector WON\n"));
     }else{
-        fprintf(stderr,"%d x x\n",data->frameNum);
+        dfprintf((stderr,"%d x x\n",data->frameNum));
     }
 
     if(*it > CORE_THRESHOLD){
@@ -382,7 +380,7 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
             isObject[i]=expertResult;
         }
         tldModel->integrateRelabeled(imageForDetector,image_blurred,detectorResults,isObject,shouldBeIntegrated);
-        printf("%d relabeled by nExpert\n",negRelabeled);
+        dprintf(("%d relabeled by nExpert\n",negRelabeled));
         pExpert.additionalExamples(examplesForModel,examplesForEnsemble);
         tldModel->integrateAdditional(examplesForModel,examplesForEnsemble,true);
         examplesForModel.clear();examplesForEnsemble.clear();
@@ -459,7 +457,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
             }
         }
     }
-    printf("positive patches: %d\nnegative patches: %d\n",(int)positiveExamples.size(),(int)negativeExamples.size());
+    dprintf(("positive patches: %d\nnegative patches: %d\n",(int)positiveExamples.size(),(int)negativeExamples.size()));
 }
 
 void TLDDetector::generateScanGrid(int rows,int cols,Size initBox,std::vector<Rect2d>& res,bool withScaling){
@@ -485,7 +483,7 @@ void TLDDetector::generateScanGrid(int rows,int cols,Size initBox,std::vector<Re
             break;
         }
     }
-    printf("%d rects in res\n",(int)res.size());
+    dprintf(("%d rects in res\n",(int)res.size()));
 }
 
 bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::vector<Rect2d>& rect,std::vector<bool>& isObject,
@@ -551,7 +549,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     }while(size.width>=initSize.width && size.height>=initSize.height);
     END_TICK("detector");
 
-    fprintf(stdout,"after NCC: nneg=%d npos=%d\n",nneg,npos);
+    dfprintf((stdout,"after NCC: nneg=%d npos=%d\n",nneg,npos));
 #if !0
         std::vector<Rect2d> poss,negs;
         for(int i=0;i<(int)rect.size();i++){
@@ -560,7 +558,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
             else
                 negs.push_back(rect[i]);
         }
-        fprintf(stdout,"%d pos and %d neg\n",(int)poss.size(),(int)negs.size());
+        dfprintf((stdout,"%d pos and %d neg\n",(int)poss.size(),(int)negs.size()));
         drawWithRects(img,negs,poss);
 #endif
 #if !1
@@ -590,7 +588,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         waitKey();
 #endif
 
-    fprintf(stdout,"%d after ensemble\n",pass);
+    dfprintf((stdout,"%d after ensemble\n",pass));
     if(maxSc<0){
         return false;
     }
@@ -690,14 +688,14 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vec
         }
     }
     if(negativeIntoModel>0)
-        fprintf(stdout,"negativeIntoModel=%d ",negativeIntoModel);
+        dfprintf((stdout,"negativeIntoModel=%d ",negativeIntoModel));
     if(positiveIntoModel>0)
-        fprintf(stdout,"positiveIntoModel=%d ",positiveIntoModel);
+        dfprintf((stdout,"positiveIntoModel=%d ",positiveIntoModel));
     if(negativeIntoEnsemble>0)
-        fprintf(stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
+        dfprintf((stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble));
     if(positiveIntoEnsemble>0)
-        fprintf(stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
-    fprintf(stdout,"\n");
+        dfprintf((stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble));
+    dfprintf((stdout,"\n"));
 }
 
 void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel,const std::vector<Mat_<uchar> >& eForEnsemble,bool isPositive){
@@ -730,14 +728,14 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         }
     }
     if(negativeIntoModel>0)
-        fprintf(stdout,"negativeIntoModel=%d ",negativeIntoModel);
+        dfprintf((stdout,"negativeIntoModel=%d ",negativeIntoModel));
     if(positiveIntoModel>0)
-        fprintf(stdout,"positiveIntoModel=%d ",positiveIntoModel);
+        dfprintf((stdout,"positiveIntoModel=%d ",positiveIntoModel));
     if(negativeIntoEnsemble>0)
-        fprintf(stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble);
+        dfprintf((stdout,"negativeIntoEnsemble=%d ",negativeIntoEnsemble));
     if(positiveIntoEnsemble>0)
-        fprintf(stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble);
-    fprintf(stdout,"\n");
+        dfprintf((stdout,"positiveIntoEnsemble=%d ",positiveIntoEnsemble));
+    dfprintf((stdout,"\n"));
 }
 
 int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
@@ -789,20 +787,20 @@ Data::Data(Rect2d initBox){
     minSize.width=(int)(initBox.width*20.0/minDim);
     minSize.height=(int)(initBox.height*20.0/minDim);
     frameNum=0;
-    printf("minSize= %dx%d\n",minSize.width,minSize.height);
+    dprintf(("minSize= %dx%d\n",minSize.width,minSize.height));
 }
 
 void Data::printme(FILE*  port){
-    fprintf(port,"Data:\n");
-    fprintf(port,"\tframeNum=%d\n",frameNum);
-    fprintf(port,"\tconfident=%s\n",confident?"true":"false");
-    fprintf(port,"\tfailedLastTime=%s\n",failedLastTime?"true":"false");
-    fprintf(port,"\tminSize=%dx%d\n",minSize.width,minSize.height);
+    dfprintf((port,"Data:\n"));
+    dfprintf((port,"\tframeNum=%d\n",frameNum));
+    dfprintf((port,"\tconfident=%s\n",confident?"true":"false"));
+    dfprintf((port,"\tfailedLastTime=%s\n",failedLastTime?"true":"false"));
+    dfprintf((port,"\tminSize=%dx%d\n",minSize.width,minSize.height));
 }
 void TrackerTLDModel::printme(FILE*  port){
-    fprintf(port,"TrackerTLDModel:\n");
-    fprintf(port,"\tpositiveExamples.size()=%d\n",(int)positiveExamples.size());
-    fprintf(port,"\tnegativeExamples.size()=%d\n",(int)negativeExamples.size());
+    dfprintf((port,"TrackerTLDModel:\n"));
+    dfprintf((port,"\tpositiveExamples.size()=%d\n",(int)positiveExamples.size()));
+    dfprintf((port,"\tnegativeExamples.size()=%d\n",(int)negativeExamples.size()));
 }
 void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
     if(event== EVENT_LBUTTONDOWN){
@@ -827,17 +825,17 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         int dx=initSize.width/10, dy=initSize.height/10,
             i=(int)(x/scale/dx), j=(int)(y/scale/dy);
 
-        fprintf(stderr,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false");
-        fprintf(stderr,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0])));
+        dfprintf((stderr,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false"));
+        dfprintf((stderr,"p=%f\n",(detector_->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0]))));
         fprintf(stderr,"ensembleClassifier=%s\n",
                 (detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0]))?"true":"false");
 
         resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
         tmp=tldModel->Sr(standardPatch);
-        fprintf(stderr,"Sr=%f\n",tmp);
-        fprintf(stderr,"isObject=%s\n",(tmp>THETA_NN)?"true":"false");
-        fprintf(stderr,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false");
-        fprintf(stderr,"Sc=%f\n",tldModel->Sc(standardPatch));
+        dfprintf((stderr,"Sr=%f\n",tmp));
+        dfprintf((stderr,"isObject=%s\n",(tmp>THETA_NN)?"true":"false"));
+        dfprintf((stderr,"shouldBeIntegrated=%s\n",(abs(tmp-THETA_NN)<0.1)?"true":"false"));
+        dfprintf((stderr,"Sc=%f\n",tldModel->Sc(standardPatch)));
 
         rectangle(imgCanvas,Rect2d(Point2d(scale*dx*i,scale*dy*j),Size2d(initSize.width*scale,initSize.height*scale)), 0, 2, 1 );
         imshow("picker",imgCanvas);
