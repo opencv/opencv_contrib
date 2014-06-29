@@ -118,6 +118,7 @@ Ptr<BinaryDescriptor> BinaryDescriptor::createBinaryDescriptor(Params parameters
     return Ptr<BinaryDescriptor>(new BinaryDescriptor(parameters));
 }
 
+
 /* construct a BinaryDescrptor object and compute external private parameters */
 BinaryDescriptor::BinaryDescriptor(const BinaryDescriptor::Params &parameters) : params(parameters)
 {
@@ -156,12 +157,12 @@ BinaryDescriptor::BinaryDescriptor(const BinaryDescriptor::Params &parameters) :
     }
 }
 
-/* definition of operator () inherited from Feature2D class */
+/* definition of operator () */
 void BinaryDescriptor::operator()( InputArray image,
                                    InputArray mask,
                                    CV_OUT std::vector<KeyLine>& keylines,
                                    OutputArray descriptors,
-                                   bool useProvidedKeypoints) const
+                                   bool useProvidedKeyLines) const
 {
 
     /* create some matrix objects */
@@ -178,7 +179,7 @@ void BinaryDescriptor::operator()( InputArray image,
     descrMat = descriptors.getMat();
 
     /* require drawing KeyLines detection if demanded */
-    if(!useProvidedKeypoints)
+    if(!useProvidedKeyLines)
         detectImpl(imageMat, keylines, maskMat);
 
     /* compute descriptors */

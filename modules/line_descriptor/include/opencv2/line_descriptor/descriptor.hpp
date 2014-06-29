@@ -160,7 +160,7 @@ namespace cv
 
         /* requires line detection (more than one image) */
         void detect( const std::vector<Mat>& images,
-                     std::vector<std::vector<KeyLine> >& keypoints,
+                     std::vector<std::vector<KeyLine> >& keylines,
                      const std::vector<Mat>& masks=std::vector<Mat>() ) const;
 
         /* requires descriptors computation (only one image) */
@@ -185,12 +185,12 @@ namespace cv
         /* check whether Gaussian pyramids were created */
         bool empty() const;
 
-        /* definition of operator (), as required by Feature2D */
+        /* definition of operator () */
         CV_WRAP_AS(detectAndCompute) virtual void operator()( InputArray image,
                                                               InputArray mask,
                                                               CV_OUT std::vector<KeyLine>& keylines,
                                                               OutputArray descriptors,
-                                                              bool useProvidedKeypoints=false ) const;
+                                                              bool useProvidedKeyLines=false ) const;
 
 
     protected:

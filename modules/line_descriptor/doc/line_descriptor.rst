@@ -83,7 +83,7 @@ Lines extraction methodology
 ----------------------------
 
 The lines extraction methodology described in the following is mainly based on [LBD]_.
-The extraction starts with a Gaussian pyramid generated from an original image, downsampled and blurred N-1 times, to obtain N layers (one for each octave), with layer 0 corresponding to input image. Then, from each layer (octave) in the pyramid, lines are extracted using LSD algorithm. 
+The extraction starts with a Gaussian pyramid generated from an original image, downsampled N-1 times, blurred N times, to obtain N layers (one for each octave), with layer 0 corresponding to input image. Then, from each layer (octave) in the pyramid, lines are extracted using LSD algorithm. 
 
 Differently from EDLine lines extractor used in original article, LSD furnishes information only about lines extremes; thus, additional information regarding slope and equation of line are computed via analytic methods. The number of pixels is obtained using `LineIterator <http://docs.opencv.org/modules/core/doc/drawing_functions.html#lineiterator>`_. Later on, all extracted lines are arranged in buckets: two lines fall in the same bucket if they represent the same line in different octave  (they have the same direction and belong to same region of original image). The set of buckets becomes the input for descriptors computation.
 
@@ -124,6 +124,14 @@ Each :math:`BD_j` can be obtained using the standard deviation vector :math:`S_j
 .. math::
 	LBD = (M_1^T, S_1^T, M_2^T, S_2^T, \ldots, M_m^T, S_m^T)^T \in \mathbb{R}^{8m}
 
+
+Once the LBD has been obtained, it must be converted into a binary form. For such purpose, we consider 32 possible pairs of BD inside it; each couple of BD is compared bit by bit and comparison generates an 8 bit string. Concatenating 32 comparison strings, we get the 256-bit final binary representation of a single LBD.
+
+
+Related Pages
+-------------
+
+* `BinaryDescriptor Class <BinaryDescriptor.html>`_
 
 References
 ----------
