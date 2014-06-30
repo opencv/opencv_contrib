@@ -73,12 +73,13 @@ using namespace tld;
  *
  *      private members
  *
- *      warpAffine -- ?
  *      cv::integral
  *
  *      13 as enum
  *
  *      blurred in TrackerTLDModel()
+ *
+ *      warpAffine -- ?
 */
 
 /* design decisions:
