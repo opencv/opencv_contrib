@@ -48,7 +48,7 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.55
+#define THETA_NN 0.5
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
@@ -60,22 +60,20 @@ using namespace tld;
 /*
  * FIXME(optimize):
  *      no median
+ *      direct formula in resamples
  * FIXME(issues)
- *      THETA_NN 0.5<->0.6 dramatic change vs video 6
+ *      THETA_NN 0.5<->0.6 dramatic change vs video 6 !!
  * TODO:
  *      schoolPC: codec, libopencv-dev
  *      fix pushbot ->pick commits -> compare_branches->all in 1
- *      ||video(vadim random, better?) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
+ *      ||video(0.5<->0.6) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
  *      perfect PN
  *
  *      vadim:
  *
- *      variance outside
- *      standard patch out (403)
- *      pos by 2 in code()
+ *      private members
  *
- *      resize
- *      warpAffine
+ *      warpAffine -- ?
  *      cv::integral
  *
  *      13 as enum

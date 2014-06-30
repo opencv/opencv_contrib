@@ -45,8 +45,11 @@
 #include "time.h"
 #include <algorithm>
 #include <limits.h>
+#include <math.h>
 #include <opencv2/highgui.hpp>
 #include "TLD.hpp"
+
+#define PI 3.14159265
 
 using namespace cv;
 
@@ -211,15 +214,6 @@ double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     double sq1=sqrt(MAX(0.0,n1*n1-s1*s1/N)),sq2=sqrt(MAX(0.0,n2*n2-s2*s2/N));
     double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
     return ares;
-
-    /*Mat_<uchar> p1(80,80),p2(80,80);
-    dprintf(("NCC\n"));
-    resample(patch1,Rect2d(Point2d(0,0),patch1.size()),p1);
-    resample(patch2,Rect2d(Point2d(0,0),patch2.size()),p2);
-    imshow("patch1",p1);
-    imshow("patch2",p2);
-    dprintf(("NCC=%f\n",ncc));
-    waitKey();*/
 }
 unsigned int getMedian(const std::vector<unsigned int>& values, int size){
     if(size==-1){
@@ -240,57 +234,26 @@ double overlap(const Rect2d& r1,const Rect2d& r2){
 }
 
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
-    Point2f vertices[4];
-    r2.points(vertices);
-
-    int ref=0;
-    double minx=vertices[0].x,miny=vertices[0].y;
-    for(int i=1;i<4;i++){
-        if(vertices[i].x<minx || (vertices[i].x==minx && vertices[i].y<miny)){
-            minx=vertices[i].x;
-            miny=vertices[i].y;
-            ref=i;
-        }
-    }
-
-    double dx1=vertices[(ref+1)%4].x-vertices[ref].x,
-          dy1=vertices[(ref+1)%4].y-vertices[ref].y,
-          dx2=vertices[(ref+3)%4].x-vertices[ref].x,
-          dy2=vertices[(ref+3)%4].y-vertices[ref].y;
-    for(int i=0;i<samples.rows;i++){
-        for(int j=0;j<samples.cols;j++){
-            double x=vertices[ref].x+dx1*j/samples.cols+dx2*i/samples.rows,
-                  y=vertices[ref].y+dy1*j/samples.cols+dy2*i/samples.rows;
-            int ix=cvFloor(x),iy=cvFloor(y);
-            double tx=x-ix,ty=y-iy;
-            double a=img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
-                img.at<uchar>(CLIP(iy,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
-            double b=img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix,0,img.cols-1))*(1.0-tx)+
-                img.at<uchar>(CLIP(iy+1,0,img.rows-1),CLIP(ix+1,0,img.cols-1))* tx;
-            samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
-        }
-    }
+    Mat_<float> M(2,3),R(2,2),Si(2,2),s(2,1),o(2,1);
+    R(0,0)=(float)cos(r2.angle*PI/180);R(0,1)=(float)(-sin(r2.angle*PI/180));
+    R(1,0)=(float)sin(r2.angle*PI/180);R(1,1)=(float)cos(r2.angle*PI/180);
+    Si(0,0)=(float)(samples.cols/r2.size.width); Si(0,1)=0.0f;
+    Si(1,0)=0.0f; Si(1,1)=(float)(samples.rows/r2.size.height);
+    s(0,0)=(float)samples.cols; s(1,0)=(float)samples.rows;
+    o(0,0)=r2.center.x;o(1,0)=r2.center.y;
+    Mat_<float> A(2,2),b(2,1);
+    A=Si*R;
+    b=s/2.0-Si*R*o;
+    A.copyTo(M.colRange(Range(0,2)));
+    b.copyTo(M.colRange(Range(2,3)));
+    warpAffine(img,samples,M,samples.size());
 }
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
-#if 1
-        double x,y,a,b,tx,ty;int ix,iy;
-        for(int i=0;i<samples.rows;i++){
-            y=r2.y+i*r2.height/samples.rows;
-            iy=cvFloor(y);ty=y-iy;
-            for(int j=0;j<samples.cols;j++){
-                x=r2.x+j*r2.width/samples.cols;
-                ix=cvFloor(x);tx=x-ix;
-                a=img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
-                    img.at<uchar>(CLIP(iy,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
-                b=img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix,0,img.rows-1))*(1.0-tx)+
-                    img.at<uchar>(CLIP(iy+1,0,img.cols-1),CLIP(ix+1,0,img.rows-1))* tx;
-                samples(i,j)=(uchar)(a * (1.0 - ty) + b * ty);
-            }
-        }
-#else
-        Point2f center((float)(r2.x+r2.width/2),(float)(r2.y+r2.height/2));
-        return resample(img,RotatedRect(center,Size2f((float)r2.width,(float)r2.height),0.0f),samples);
-#endif
+    Mat_<float> M(2,3);
+    M(0,0)=(float)(samples.cols/r2.width); M(0,1)=0.0f; M(0,2)=(float)(-r2.x*samples.cols/r2.width);
+    M(1,0)=0.0f; M(1,1)=(float)(samples.rows/r2.height); M(1,2)=(float)(-r2.y*samples.rows/r2.height);
+    warpAffine(img,samples,M,samples.size());
+
 }
 
 //other stuff
@@ -352,13 +315,13 @@ unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)con
     unsigned short int position=0;
     //char codeS[20];
     for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
+        position=position<<1;
         if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
             position++;
             //codeS[i]='o';
         }else{
             //codeS[i]='x';
         }
-        position=position<<1;
     }
     //codeS[13]='\0';
     //dprintf(("integrate with code %s\n",codeS));
