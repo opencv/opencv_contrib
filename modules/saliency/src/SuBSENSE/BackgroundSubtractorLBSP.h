@@ -13,7 +13,7 @@
 
 	This algorithm is currently NOT thread-safe.
  */
-class BackgroundSubtractorLBSP : public cv::BackgroundSubtractor {
+class BackgroundSubtractorLBSP  /* : public cv::BackgroundSubtractor */ {
 public:
 	//! full constructor
 	BackgroundSubtractorLBSP(float fRelLBSPThreshold, size_t nDescDistThreshold, size_t nLBSPThresholdOffset=0);
