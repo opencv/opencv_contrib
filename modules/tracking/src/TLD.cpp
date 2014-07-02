@@ -181,23 +181,23 @@ double variance(const Mat& img){
     p2/=(img.cols*img.rows);
     return p2-p*p;
 }
-double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect box){
+double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box){
     int x=(box.x),y=(box.y),width=(box.width),height=(box.height);
-    CV_Assert(0<=x && (x+width)<=intImgP.cols && (x+width)<=intImgP2.cols);
-    CV_Assert(0<=y && (y+height)<=intImgP.rows && (y+height)<=intImgP2.rows);
+    CV_Assert(0<=x && (x+width)<intImgP.cols && (x+width)<intImgP2.cols);
+    CV_Assert(0<=y && (y+height)<intImgP.rows && (y+height)<intImgP2.rows);
     double p=0,p2=0;
-    unsigned int A,B,C,D;
+    double A,B,C,D;
 
-    A=((y>0&&x>0)?intImgP(y-1,x-1):0);
-    B=((y>0)?intImgP(y-1,x+width-1):0);
-    C=((x>0)?intImgP(y+height-1,x-1):0);
-    D=intImgP(y+height-1,x+width-1);
+    A=intImgP(y,x);
+    B=intImgP(y,x+width);
+    C=intImgP(y+height,x);
+    D=intImgP(y+height,x+width);
     p=(0.0+A+D-B-C)/(width*height);
 
-    A=((y>0&&x>0)?intImgP2(y-1,x-1):0);
-    B=((y>0)?intImgP2(y-1,x+width-1):0);
-    C=((x>0)?intImgP2(y+height-1,x-1):0);
-    D=intImgP2(y+height-1,x+width-1);
+    A=intImgP2(y,x);
+    B=intImgP2(y,x+width);
+    C=intImgP2(y+height,x);
+    D=intImgP2(y+height,x+width);
     p2=(0.0+(D-B)-(C-A))/(width*height);
 
     return p2-p*p;
@@ -253,11 +253,10 @@ void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
     M(0,0)=(float)(samples.cols/r2.width); M(0,1)=0.0f; M(0,2)=(float)(-r2.x*samples.cols/r2.width);
     M(1,0)=0.0f; M(1,1)=(float)(samples.rows/r2.height); M(1,2)=(float)(-r2.y*samples.rows/r2.height);
     warpAffine(img,samples,M,samples.size());
-
 }
 
 //other stuff
-void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
+void TLDEnsembleClassifier::stepPrefSuff(std::vector<uchar>& arr,int len){
     int gridSize=getGridSize();
 #if 0
         int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
@@ -270,7 +269,7 @@ void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
         int smallStep=quo,bigStep=quo+1;
         int bigOnes=rem,smallOnes=gridSize-bigOnes-1;
         int bigOnes_front=bigOnes/2,bigOnes_back=bigOnes-bigOnes_front;
-        for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
+        for(int i=0;i<(int)arr.size();i++){
             if(arr[i]<bigOnes_back){
                 arr[i]=(uchar)(arr[i]*bigStep+arr[i]);
                 continue;
@@ -287,12 +286,23 @@ void TLDEnsembleClassifier::stepPrefSuff(uchar* arr,int len){
         }
 #endif
 }
-TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size){
+TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size,int measurePerClassifier){
+    x1=std::vector<uchar>(measurePerClassifier,0);
+    x2=std::vector<uchar>(measurePerClassifier,0);
+    y1=std::vector<uchar>(measurePerClassifier,0);
+    y2=std::vector<uchar>(measurePerClassifier,0);
+
     preinit(ordinal);
+
     stepPrefSuff(x1,size.width);
     stepPrefSuff(x2,size.width);
     stepPrefSuff(y1,size.height);
     stepPrefSuff(y2,size.height);
+
+    int posSize=1;
+    for(int i=0;i<measurePerClassifier;i++)posSize*=2;
+    pos=std::vector<unsigned int>(posSize,0);
+    neg=std::vector<unsigned int>(posSize,0);
 }
 void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
     unsigned short int position=code(patch.data,(int)patch.step[0]);
@@ -313,18 +323,13 @@ double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep
 }
 unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
     unsigned short int position=0;
-    //char codeS[20];
-    for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
+    for(int i=0;i<(int)x1.size();i++){
         position=position<<1;
         if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
             position++;
-            //codeS[i]='o';
         }else{
-            //codeS[i]='x';
         }
     }
-    //codeS[13]='\0';
-    //dprintf(("integrate with code %s\n",codeS));
     return position;
 }
 

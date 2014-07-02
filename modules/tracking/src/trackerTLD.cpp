@@ -52,6 +52,7 @@
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
+#define MEASURES_PER_CLASSIFIER 13
 static const cv::Size GaussBlurKernelSize(3,3);
 
 using namespace cv;
@@ -65,19 +66,14 @@ using namespace tld;
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6 !!
  * TODO:
  *      schoolPC: codec, libopencv-dev
- *      fix pushbot ->pick commits -> compare_branches->all in 1
- *      ||video(0.5<->0.6) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area)
+ *      fix pushbot ->pick commits -> compare_branches->all in 1->resubmit
+ *      ||video(0.5<->0.6) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area for resize)
  *      perfect PN
  *
  *      vadim:
  *
- *      private members
- *
- *      cv::integral
- *
- *      13 as enum
- *
  *      blurred in TrackerTLDModel()
+ *      private members
  *
  *      warpAffine -- ?
 */
@@ -129,8 +125,8 @@ public:
 protected:
     friend class MyMouseCallbackDEBUG;
     Ptr<TrackerModel> model;
-    void computeIntegralImages(const Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2);
-    bool patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,double originalVariance,Point pt,Size size);
+    inline void computeIntegralImages(const Mat& img,Mat_<double>& intImgP,Mat_<double>& intImgP2){integral(img,intImgP,intImgP2,CV_64F);}
+    inline bool patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size);
     bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>0.5;}
     double ensembleClassifierNum(const uchar* data,int rowstep);
     TrackerTLD::Params params_;
@@ -406,7 +402,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
 
     Mat_<uchar> blurredPatch(minSize);
     for(int i=0,howMany=TLDEnsembleClassifier::getMaxOrdinal();i<howMany;i++){
-        classifiers.push_back(TLDEnsembleClassifier(i+1,minSize));
+        classifiers.push_back(TLDEnsembleClassifier(i+1,minSize,MEASURES_PER_CLASSIFIER));
     }
 
     positiveExamples.reserve(200);
@@ -507,7 +503,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     Rect2d maxScRect;
     START_TICK("detector");
     do{
-        Mat_<unsigned int> intImgP(resized_img.rows,resized_img.cols),intImgP2(resized_img.rows,resized_img.cols);
+        Mat_<double> intImgP,intImgP2;
         computeIntegralImages(resized_img,intImgP,intImgP2);
 
         for(int i=0,imax=cvFloor((0.0+resized_img.cols-initSize.width)/dx);i<imax;i++){
@@ -595,22 +591,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     return true;
 }
 
-void TLDDetector::computeIntegralImages(const Mat& img,Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2){
-    intImgP(0,0)=img.at<uchar>(0,0);
-    for(int j=1;j<intImgP.cols;j++){intImgP(0,j)=intImgP(0,j-1)+img.at<uchar>(0,j);}
-    for(int i=1;i<intImgP.rows;i++){intImgP(i,0)=intImgP(i-1,0)+img.at<uchar>(i,0);}
-    for(int i=1;i<intImgP.rows;i++){for(int j=1;j<intImgP.cols;j++){
-            intImgP(i,j)=intImgP(i,j-1)-intImgP(i-1,j-1)+intImgP(i-1,j)+img.at<uchar>(i,j);}}
-
-    unsigned int p;
-    p=img.at<uchar>(0,0);intImgP2(0,0)=p*p;
-    for(int j=1;j<intImgP2.cols;j++){p=img.at<uchar>(0,j);intImgP2(0,j)=intImgP2(0,j-1)+p*p;}
-    for(int i=1;i<intImgP2.rows;i++){p=img.at<uchar>(i,0);intImgP2(i,0)=intImgP2(i-1,0)+p*p;}
-    for(int i=1;i<intImgP2.rows;i++){for(int j=1;j<intImgP2.cols;j++){p=img.at<uchar>(i,j);
-            intImgP2(i,j)=intImgP2(i,j-1)-intImgP2(i-1,j-1)+intImgP2(i-1,j)+p*p;}}
-}
-
-bool TLDDetector::patchVariance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,double originalVariance,Point pt,Size size){
+bool TLDDetector::patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size){
     return variance(intImgP,intImgP2,Rect(pt.x,pt.y,size.width,size.height)) >= 0.5*originalVariance;
 }
 
@@ -818,7 +799,7 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         resize(img_,resized_img,size);
         resize(imgBlurred_,blurred_img,size);
 
-        Mat_<unsigned int> intImgP(resized_img.rows,resized_img.cols),intImgP2(resized_img.rows,resized_img.cols);
+        Mat_<double> intImgP,intImgP2;
         detector_->computeIntegralImages(resized_img,intImgP,intImgP2);
 
         int dx=initSize.width/10, dy=initSize.height/10,

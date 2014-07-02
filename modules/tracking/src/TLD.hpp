@@ -79,7 +79,7 @@ double overlap(const Rect2d& r1,const Rect2d& r2);
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
 double variance(const Mat& img);
-double variance(Mat_<unsigned int>& intImgP,Mat_<unsigned int>& intImgP2,Rect box);
+double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box);
 double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2);
 void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 double scaleAndBlur(const Mat& originalImg,int scale,Mat& scaledImg,Mat& blurredImg,Size GaussBlurKernelSize);
@@ -87,17 +87,17 @@ unsigned int getMedian(const std::vector<unsigned int>& values, int size=-1);
 
 class TLDEnsembleClassifier{
 public:
-    TLDEnsembleClassifier(int ordinal,Size size);
+    TLDEnsembleClassifier(int ordinal,Size size,int measurePerClassifier);
     void integrate(Mat_<uchar> patch,bool isPositive);
     double posteriorProbability(const uchar* data,int rowstep)const;
     static int getMaxOrdinal();
 private:
     static int getGridSize();
-    inline void stepPrefSuff(uchar* arr,int len);
+    inline void stepPrefSuff(std::vector<uchar>& arr,int len);
     void preinit(int ordinal);
     unsigned short int code(const uchar* data,int rowstep)const;
-    unsigned int pos[8192],neg[8192];//8192=2^13
-    uchar x1[13],y1[13],x2[13],y2[13];
+    std::vector<unsigned int> pos,neg;
+    std::vector<uchar> x1,y1,x2,y2;
 };
 
 class TrackerProxy : public TrackerTLD::Private{
