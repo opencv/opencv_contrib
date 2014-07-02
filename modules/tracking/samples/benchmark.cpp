@@ -8,6 +8,7 @@
 
 #define CMDLINEMAX 10
 #define ASSESS_TILL INT_MAX
+#define LINEMAX 40
 
 using namespace std;
 using namespace cv;
@@ -20,7 +21,7 @@ static Mat image;
 static bool paused;
 vector<Scalar> palette;
 
-void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results);
+void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName);
 
 static void listTrackers(){
   vector<String> algorithms;
@@ -126,7 +127,8 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
         }
     }
 }
-void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results){
+void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName){
+    printf("\n%s",tableName);
     vector<int> grid(1+algNum,0);
     char spaces[100];memset(spaces,' ',100);
     for(int i=0;i<videoNum;i++){
@@ -154,7 +156,7 @@ struct AssessmentRes{
     class Assessment{
     public:
         virtual int printf(char* buf)=0;
-        virtual void printName()=0;
+        virtual int printName(char* buf)=0;
         virtual void assess(const Rect2d& ethalon,const Rect2d& res)=0;
         virtual ~Assessment(){}
     };
@@ -167,7 +169,7 @@ class CorrectFrames : public AssessmentRes::Assessment{
 public:
     CorrectFrames(double tol):tol_(tol),len_(1),correctFrames_(1){}
     int printf(char* buf){return sprintf(buf,"%d/%d",correctFrames_,len_);}
-    void printName(){printf((char*)"Num of correct frames\n");}
+    int printName(char* buf){return sprintf(buf,(char*)"Num of correct frames (overlap>%g)\n",tol_);}
     void assess(const Rect2d& ethalon,const Rect2d& res){len_++;if(overlap(ethalon,res)>tol_)correctFrames_++;}
 private:
     double tol_;
@@ -178,7 +180,7 @@ class AvgTime : public AssessmentRes::Assessment{
 public:
     AvgTime(double res):res_(res){}
     int printf(char* buf){return sprintf(buf,"%gms",res_);}
-    void printName(){printf((char*)"Average frame tracking time\n");}
+    int printName(char* buf){return sprintf(buf,(char*)"Average frame tracking time\n");}
     void assess(const Rect2d& /*ethalon*/,const Rect2d&/* res*/){};
 private:
     double res_;
@@ -186,7 +188,7 @@ private:
 class PRF : public AssessmentRes::Assessment{
 public:
     PRF():occurences_(0),responses_(0),true_responses_(0){};
-    void printName(){printf((char*)"PRF\n");}
+    int printName(char* buf){return sprintf(buf,(char*)"PRF\n");}
     int printf(char* buf){return sprintf(buf,"%g/%g/%g",(1.0*true_responses_)/responses_,(1.0*true_responses_)/occurences_,
             (2.0*true_responses_)/(responses_+occurences_));}
     void assess(const Rect2d& ethalon,const Rect2d& res){
@@ -199,11 +201,8 @@ private:
 };
 AssessmentRes::AssessmentRes(int algnum):len(0),results(algnum){
     for(int i=0;i<(int)results.size();i++){
-#if !0
-            results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.0)));
-#else
-            results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
-#endif
+        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.0)));
+        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
         results[i].push_back(Ptr<Assessment>(new PRF()));
     }
 }
@@ -329,17 +328,6 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           }else{
               rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
           }
-
-#if !1
-          if(i==1){
-              printf("TLD\n");
-              printf("boundingBox=[%f,%f,%f,%f]\n",boundingBox.x,boundingBox.y,boundingBox.width,boundingBox.height);
-              printf("initBoxes[i]=[%f,%f,%f,%f]\n",initBoxes[i].x,initBoxes[i].y,initBoxes[i].width,initBoxes[i].height);
-              printf("overlap=%f\n",overlap(initBoxes[i],boundingBox));
-              exit(0);
-          }
-#endif
-
           for(int j=0;j<(int)res.results[i].size();j++)
               res.results[i][j]->assess(boundingBox,initBoxes[i]);
       }
@@ -393,21 +381,27 @@ int main( int argc, char** argv ){
   for(int i=0;i<vcount;i++){
       results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
   }
+  CV_Assert(results[0].results[0].size()<CMDLINEMAX);
   printf("\n\n");
 
-  char buf[CMDLINEMAX*CMDLINEMAX*40];
+  char buf[CMDLINEMAX*CMDLINEMAX*LINEMAX], buf2[CMDLINEMAX*40];
   vector<vector<char*> > resultStrings(vcount);
+  vector<char*> nameStrings;
   for(int i=0;i<vcount;i++){
       for(int j=0;j<acount;j++){
-          resultStrings[i].push_back(buf+i*CMDLINEMAX*40 + j*40);
+          resultStrings[i].push_back(buf+i*CMDLINEMAX*LINEMAX + j*40);
       }
   }
+  for(int i=0;i<(int)results[0].results[0].size();i++){
+      nameStrings.push_back(buf2+LINEMAX*i);
+  }
   for(int tableCount=0;tableCount<(int)results[0].results[0].size();tableCount++){
+      CV_Assert(results[0].results[0][tableCount]->printName(nameStrings[tableCount])<LINEMAX);
       for(int videoCount=0;videoCount<(int)results.size();videoCount++)
           for(int algoCount=0;algoCount<(int)results[0].results.size();algoCount++){
               (results[videoCount].results[algoCount][tableCount])->printf(resultStrings[videoCount][algoCount]);
           }
-      print_table(videos,vcount,algorithms,acount,resultStrings);
+      print_table(videos,vcount,algorithms,acount,resultStrings,nameStrings[tableCount]);
   }
   return 0;
 }
