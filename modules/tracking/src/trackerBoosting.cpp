@@ -45,6 +45,21 @@
 namespace cv
 {
 
+class TrackerBoostingImpl : public TrackerBoosting
+{
+ public:
+  TrackerBoostingImpl( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() );
+  void read( const FileNode& fn );
+  void write( FileStorage& fs ) const;
+
+ protected:
+
+  bool initImpl( const Mat& image, const Rect2d& boundingBox );
+  bool updateImpl( const Mat& image, Rect2d& boundingBox );
+
+  TrackerBoosting::Params params;
+};
+
 /*
  *  TrackerBoosting
  */
@@ -82,31 +97,26 @@ void TrackerBoosting::Params::write( cv::FileStorage& fs ) const
 /*
  * Constructor
  */
-TrackerBoosting::TrackerBoosting( const TrackerBoosting::Params &parameters ) :
+Ptr<TrackerBoosting> TrackerBoosting::createTracker(const TrackerBoosting::Params &parameters){
+    return Ptr<TrackerBoostingImpl>(new TrackerBoostingImpl(parameters));
+}
+TrackerBoostingImpl::TrackerBoostingImpl( const TrackerBoostingImpl::Params &parameters ) :
     params( parameters )
 {
   isInit = false;
 }
 
-/*
- * Destructor
- */
-TrackerBoosting::~TrackerBoosting()
-{
-
-}
-
-void TrackerBoosting::read( const cv::FileNode& fn )
+void TrackerBoostingImpl::read( const cv::FileNode& fn )
 {
   params.read( fn );
 }
 
-void TrackerBoosting::write( cv::FileStorage& fs ) const
+void TrackerBoostingImpl::write( cv::FileStorage& fs ) const
 {
   params.write( fs );
 }
 
-bool TrackerBoosting::initImpl( const Mat& image, const Rect2d& boundingBox )
+bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox )
 {
   srand (1);
   //sampling
@@ -190,7 +200,7 @@ bool TrackerBoosting::initImpl( const Mat& image, const Rect2d& boundingBox )
   return true;
 }
 
-bool TrackerBoosting::updateImpl( const Mat& image, Rect2d& boundingBox )
+bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
 {
   Mat_<int> intImage;
   Mat_<double> intSqImage;

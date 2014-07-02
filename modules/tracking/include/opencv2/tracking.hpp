@@ -42,11 +42,13 @@
 #ifndef __OPENCV_TRACKING_HPP__
 #define __OPENCV_TRACKING_HPP__
 
-#include "opencv2/tracking/tracker.hpp"
+#include "opencv2/core/cvdef.h"
 
 namespace cv
 {
 CV_EXPORTS bool initModule_tracking(void);
 }
+
+#include "opencv2/tracking/tracker.hpp"
 
 #endif //__OPENCV_TRACKING_HPP__
