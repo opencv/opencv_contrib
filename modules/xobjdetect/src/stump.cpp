@@ -124,7 +124,7 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
     float neg_total_weight = neg_cum_weights.at<float>(0, weights.cols - 1);
 
 
-    float eps = 1.0f / 4 * labels.cols;
+    float eps = 1.0f / (4 * labels.cols);
 
     /* Compute minimal error */
     float min_err = FLT_MAX;
