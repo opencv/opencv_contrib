@@ -1,4 +1,4 @@
-#include "opencv2/colorbalance.hpp"
+#include "opencv2/xphoto.hpp"
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -10,6 +10,8 @@ const char* keys =
 {
     "{i || input image name}"
     "{o || output image name}"
+    "{sigma || expected noise standard deviation}"
+    "{psize |16| expected noise standard deviation}"
 };
 
 int main( int argc, const char** argv )
@@ -20,9 +22,9 @@ int main( int argc, const char** argv )
 
     if ( printHelp )
     {
-        printf("\nThis sample demonstrates simple color balance algorithm\n"
+        printf("\nThis sample demonstrates dct-based image denoising\n"
             "Call:\n"
-            "    simple_color_blance -i=in_image_name [-o=out_image_name]\n\n");
+            "    dct_image_denoising -i=<string> -sigma=<double> -psize=<int> [-o=<string>]\n\n");
         return 0;
     }
 
@@ -43,13 +45,21 @@ int main( int argc, const char** argv )
         return -1;
     }
 
+	double sigma = parser.get<double>("sigma");
+	if (sigma == 0.0)
+		sigma = 15.0;
+
+    int psize = parser.get<int>("psize");
+    if (psize == 0)
+        psize = 16;
+
     cv::Mat res(src.size(), src.type());
-    cv::balanceWhite(src, res, cv::WHITE_BALANCE_SIMPLE);
+    cv::dctDenoising(src, res, sigma, psize);
 
     if ( outFilename == "" )
     {
-        cv::namedWindow("after white balance", 1);
-        cv::imshow("after white balance", res);
+        cv::namedWindow("denoising result", 1);
+        cv::imshow("denoising result", res);
 
         cv::waitKey(0);
     }

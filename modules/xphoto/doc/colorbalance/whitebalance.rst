@@ -27,5 +27,5 @@ due to specific illumination or camera settings).
 
 .. seealso::
 
-    :ocv:class:`cvtColor`,
-    :ocv:class:`equalizeHist`
+    :ocv:function:`cvtColor`,
+    :ocv:function:`equalizeHist`

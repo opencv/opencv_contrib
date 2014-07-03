@@ -43,6 +43,7 @@
 #ifndef __OPENCV_EDGEDETECTION_HPP__
 #define __OPENCV_EDGEDETECTION_HPP__
 
-#include "opencv2/core.hpp"
-#include "opencv2/colorbalance/simple_color_balance.hpp"
+#include "opencv2/xphoto.hpp"
+#include "opencv2/xphoto/simple_color_balance.hpp"
+#include "opencv2/xphoto/dct_image_denoising.hpp"
 #endif

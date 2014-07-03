@@ -1,3 +1,3 @@
 #include "test_precomp.hpp"
 
-CV_TEST_MAIN("colorbalance")
+CV_TEST_MAIN("xphoto")
