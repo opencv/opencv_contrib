@@ -118,7 +118,7 @@ void ICFDetector::train(const vector<string>& image_filenames,
         labels(0, i) = -1;
 
     vector<Point3i> features = generateFeatures(model_size);
-    ACFFeatureEvaluator feature_evaluator(features);
+    Ptr<ACFFeatureEvaluator> feature_evaluator = createACFFeatureEvaluator(features);
 
     Mat_<int> data((int)features.size(), (int)samples.size());
     Mat_<int> feature_col;
@@ -127,8 +127,8 @@ void ICFDetector::train(const vector<string>& image_filenames,
     for( int i = 0; i < (int)samples.size(); ++i )
     {
         computeChannels(samples[i], channels);
-        feature_evaluator.setChannels(channels);
-        feature_evaluator.evaluateAll(feature_col);
+        feature_evaluator->setChannels(channels);
+        feature_evaluator->evaluateAll(feature_col);
         for( int j = 0; j < feature_col.rows; ++j )
             data(i, j) = feature_col(0, j);
     }

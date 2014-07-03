@@ -45,33 +45,44 @@ using std::vector;
 
 using std::min;
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 namespace cv
 {
 namespace xobjdetect
 {
 
-ACFFeatureEvaluator::ACFFeatureEvaluator(const vector<Point3i>& features):
-    features_(features), channels_(), position_()
+class ACFFeatureEvaluatorImpl : public ACFFeatureEvaluator
 {
-}
-int ACFFeatureEvaluator::evaluate(size_t feature_ind) const
-{
-    /* Assume there are 10 channels */
-    CV_Assert(channels_.size() == 10);
-    CV_Assert(feature_ind < features_.size());
+public:
+    ACFFeatureEvaluatorImpl(const vector<Point3i>& features):
+        features_(features), channels_(), position_()
+    {
+        CV_Assert(features.size() > 0);
+    }
 
-    Point3i feature = features_.at(feature_ind);
-    int x = feature.x;
-    int y = feature.y;
-    int n = feature.z;
-    return channels_[n].at<int>(y, x);
-}
+    virtual void setChannels(InputArrayOfArrays channels);
+    virtual void setPosition(Size position);
+    virtual int evaluate(size_t feature_ind) const;
+    virtual void evaluateAll(OutputArray feature_values) const;
 
-void ACFFeatureEvaluator::setChannels(cv::InputArrayOfArrays channels)
+private:
+    /* Features to evaluate */
+    std::vector<Point3i> features_;
+    /* Channels for feature evaluation */
+    std::vector<Mat> channels_;
+    /* Channels window position */
+    Size position_;
+};
+
+void ACFFeatureEvaluatorImpl::setChannels(cv::InputArrayOfArrays channels)
 {
     channels_.clear();
     vector<Mat> ch;
     channels.getMatVector(ch);
+    CV_Assert(ch.size() == 10);
     for( size_t i = 0; i < ch.size(); ++i )
     {
         const Mat &channel = ch[i];
@@ -92,12 +103,24 @@ void ACFFeatureEvaluator::setChannels(cv::InputArrayOfArrays channels)
     }
 }
 
-void ACFFeatureEvaluator::setPosition(Size position)
+void ACFFeatureEvaluatorImpl::setPosition(Size position)
 {
     position_ = position;
 }
 
-void ACFFeatureEvaluator::evaluateAll(OutputArray feature_values) const
+int ACFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
+{
+    CV_Assert(channels_.size() == 10);
+    CV_Assert(feature_ind < features_.size());
+
+    Point3i feature = features_.at(feature_ind);
+    int x = feature.x;
+    int y = feature.y;
+    int n = feature.z;
+    return channels_[n].at<int>(y, x);
+}
+
+void ACFFeatureEvaluatorImpl::evaluateAll(OutputArray feature_values) const
 {
     Mat_<int> feature_vals(1, (int)features_.size());
     for( int i = 0; i < (int)features_.size(); ++i )
@@ -105,6 +128,12 @@ void ACFFeatureEvaluator::evaluateAll(OutputArray feature_values) const
         feature_vals(0, i) = evaluate(i);
     }
     feature_values.setTo(feature_vals);
+}
+
+Ptr<ACFFeatureEvaluator>
+createACFFeatureEvaluator(const vector<Point3i>& features)
+{
+    return Ptr<ACFFeatureEvaluator>(new ACFFeatureEvaluatorImpl(features));
 }
 
 vector<Point3i> generateFeatures(Size window_size, int count)

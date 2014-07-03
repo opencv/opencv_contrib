@@ -60,36 +60,30 @@ namespace xobjdetect
 */
 void computeChannels(InputArray image, OutputArrayOfArrays channels);
 
-class CV_EXPORTS ACFFeatureEvaluator
+class CV_EXPORTS ACFFeatureEvaluator : public Algorithm
 {
 public:
-    /* Construct evaluator, set features to evaluate */
-    ACFFeatureEvaluator(const std::vector<Point3i>& features);
-
     /* Set channels for feature evaluation */
-    void setChannels(InputArrayOfArrays channels);
+    virtual void setChannels(InputArrayOfArrays channels) = 0;
 
     /* Set window position */
-    void setPosition(Size position);
+    virtual void setPosition(Size position) = 0;
 
     /* Evaluate feature with given index for current channels
         and window position */
-    int evaluate(size_t feature_ind) const;
+    virtual int evaluate(size_t feature_ind) const = 0;
 
     /* Evaluate all features for current channels and window position
 
     Returns matrix-column of features
     */
-    void evaluateAll(OutputArray feature_values) const;
+    virtual void evaluateAll(OutputArray feature_values) const = 0;
 
-private:
-    /* Features to evaluate */
-    std::vector<Point3i> features_;
-    /* Channels for feature evaluation */
-    std::vector<Mat> channels_;
-    /* Channels window position */
-    Size position_;
 };
+
+/* Construct evaluator, set features to evaluate */
+CV_EXPORTS Ptr<ACFFeatureEvaluator>
+createACFFeatureEvaluator(const std::vector<Point3i>& features);
 
 /* Generate acf features
 
@@ -158,7 +152,7 @@ private:
     float pos_value_, neg_value_;
 };
 
-class CV_EXPORTS WaldBoost
+class CV_EXPORTS WaldBoost : public Algorithm
 {
 public:
     /* Initialize WaldBoost cascade with default of specified parameters */
