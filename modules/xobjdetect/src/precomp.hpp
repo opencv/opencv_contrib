@@ -43,6 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_XOBJDETECT_PRECOMP_HPP__
 
 #include <opencv2/xobjdetect.hpp>
+#include <opencv2/xobjdetect/private.hpp>
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/types_c.h>

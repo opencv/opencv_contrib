@@ -108,56 +108,10 @@ struct CV_EXPORTS WaldBoostParams
 };
 
 
-class CV_EXPORTS Stump
-{
-public:
-
-    /* Initialize zero stump */
-    Stump(): threshold_(0), polarity_(1), pos_value_(1), neg_value_(-1) {}
-
-    /* Initialize stump with given threshold, polarity
-        and classification values */
-    Stump(int threshold, int polarity, float pos_value, float neg_value):
-        threshold_(threshold), polarity_(polarity),
-        pos_value_(pos_value), neg_value_(neg_value) {}
-
-    /* Train stump for given data
-
-        data — matrix of feature values, size M x N, one feature per row
-
-        labels — matrix of sample class labels, size 1 x N. Labels can be from
-            {-1, +1}
-
-        weights — matrix of sample weights, size 1 x N
-
-    Returns chosen feature index. Feature enumeration starts from 0
-    */
-    int train(const Mat& data, const Mat& labels, const Mat& weights);
-
-    /* Predict object class given
-
-        value — feature value. Feature must be the same as was chosen
-        during training stump
-
-    Returns real value, sign(value) means class
-    */
-    float predict(int value) const;
-
-private:
-    /* Stump decision threshold */
-    int threshold_;
-    /* Stump polarity, can be from {-1, +1} */
-    int polarity_;
-    /* Classification values for positive and negative classes  */
-    float pos_value_, neg_value_;
-};
 
 class CV_EXPORTS WaldBoost : public Algorithm
 {
 public:
-    /* Initialize WaldBoost cascade with default of specified parameters */
-    WaldBoost(const WaldBoostParams& params = WaldBoostParams());
-
     /* Train WaldBoost cascade for given data
 
         data — matrix of feature values, size M x N, one feature per row
@@ -168,8 +122,8 @@ public:
     Returns feature indices chosen for cascade.
     Feature enumeration starts from 0
     */
-    std::vector<int> train(const Mat& data,
-                           const Mat& labels);
+    virtual std::vector<int> train(const Mat& data,
+                                   const Mat& labels) = 0;
 
     /* Predict object class given object that can compute object features
 
@@ -178,16 +132,13 @@ public:
     Returns confidence_value — measure of confidense that object
     is from class +1
     */
-    float predict(const Ptr<ACFFeatureEvaluator>& feature_evaluator);
+    virtual float predict(
+        const Ptr<ACFFeatureEvaluator>& feature_evaluator) const = 0;
 
-private:
-    /* Parameters for cascade training */
-    WaldBoostParams params_;
-    /* Stumps in cascade */
-    std::vector<Stump> stumps_;
-    /* Rejection thresholds for linear combination at every stump evaluation */
-    std::vector<float> thresholds_;
 };
+
+CV_EXPORTS Ptr<WaldBoost>
+createWaldBoost(const WaldBoostParams& params = WaldBoostParams());
 
 struct CV_EXPORTS ICFDetectorParams
 {

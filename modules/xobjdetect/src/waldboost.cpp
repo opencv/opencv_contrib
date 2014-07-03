@@ -41,7 +41,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-
 using std::swap;
 
 using std::vector;
@@ -51,11 +50,30 @@ namespace cv
 namespace xobjdetect
 {
 
-WaldBoost::WaldBoost(const WaldBoostParams& params): params_(params)
+class WaldBoostImpl : public WaldBoost
 {
-}
+public:
+    /* Initialize WaldBoost cascade with default of specified parameters */
+    WaldBoostImpl(const WaldBoostParams& params):
+        params_(params)
+    {}
 
-vector<int> WaldBoost::train(const Mat& data, const Mat& labels)
+    virtual std::vector<int> train(const Mat& data,
+                                   const Mat& labels);
+
+    virtual float predict(
+        const Ptr<ACFFeatureEvaluator>& feature_evaluator) const;
+
+private:
+    /* Parameters for cascade training */
+    WaldBoostParams params_;
+    /* Stumps in cascade */
+    std::vector<Stump> stumps_;
+    /* Rejection thresholds for linear combination at every stump evaluation */
+    std::vector<float> thresholds_;
+};
+
+vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
 {
     CV_Assert(labels.rows == 1 && labels.cols == data.cols);
 
@@ -144,7 +162,8 @@ vector<int> WaldBoost::train(const Mat& data, const Mat& labels)
     return feature_indices;
 }
 
-float WaldBoost::predict(const Ptr<ACFFeatureEvaluator>& feature_evaluator)
+float WaldBoostImpl::predict(
+    const Ptr<ACFFeatureEvaluator>& feature_evaluator) const
 {
     float trace = 0;
     for( size_t i = 0; i < stumps_.size(); ++i )
@@ -156,6 +175,13 @@ float WaldBoost::predict(const Ptr<ACFFeatureEvaluator>& feature_evaluator)
     }
     return trace;
 }
+
+Ptr<WaldBoost>
+createWaldBoost(const WaldBoostParams& params)
+{
+    return Ptr<WaldBoost>(new WaldBoostImpl(params));
+}
+
 
 } /* namespace xobjdetect */
 } /* namespace cv */

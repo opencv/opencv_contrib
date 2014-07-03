@@ -137,8 +137,8 @@ void ICFDetector::train(const vector<string>& image_filenames,
     wparams.weak_count = params.weak_count;
     wparams.alpha = 0.001f;
 
-    WaldBoost waldboost(wparams);
-    waldboost.train(data, labels);
+    Ptr<WaldBoost> waldboost = createWaldBoost(wparams);
+    waldboost->train(data, labels);
 }
 
 bool ICFDetector::save(const string&)
