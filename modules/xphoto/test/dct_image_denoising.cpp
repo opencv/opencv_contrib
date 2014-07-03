@@ -2,7 +2,7 @@
 
 namespace cvtest
 {
-    TEST(xphoto_simplecolorbalance, regression)
+    TEST(xphoto_dctimagedenoising, regression)
     {
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "dct_image_denoising/";
         int nTests = 12;
