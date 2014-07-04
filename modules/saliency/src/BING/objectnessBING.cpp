@@ -177,9 +177,9 @@ void ObjectnessBING::predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const
     valBoxes( i ) = valBoxes( i ) * svmIIw[0] + svmIIw[1];
   }
   //valBoxes.sort();
-  // Ascending order. At the top there are the values with lower
-  // values of ​​objectness, ie more likely to have objects in the their corresponding rectangles.
-  valBoxes.sort( false );
+  // Descending order. At the top there are the values with higher
+  // values, ie more likely to have objects in the their corresponding rectangles.
+  valBoxes.sort( true );
 }
 
 // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
@@ -481,8 +481,8 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   ValStructVec<float, Vec4i> finalBoxes;
   getObjBndBoxesForSingleImage( image.getMat(), finalBoxes, 250 );
 
-  // List of rectangles returned by objectess function in ascending order.
-  // At the top there are the rectangles with lower values of ​​objectness, ie more
+  // List of rectangles returned by objectess function in descending order.
+  // At the top there are the rectangles with higher values, ie more
   // likely to have objects in them.
   vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
   Mat( sortedBB ).copyTo( objBoundingBox );

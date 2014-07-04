@@ -25,9 +25,9 @@ void BackgroundSubtractorLBSP::initialize(const cv::Mat& oInitImg) {
 	this->initialize(oInitImg,std::vector<cv::KeyPoint>());
 }
 
-cv::AlgorithmInfo* BackgroundSubtractorLBSP::info() const {
-	return nullptr;
-}
+//cv::AlgorithmInfo* BackgroundSubtractorLBSP::info() const {
+//	//return nullptr;
+//}
 
 void BackgroundSubtractorLBSP::getBackgroundDescriptorsImage(cv::OutputArray backgroundDescImage) const {
 	CV_Assert(LBSP::DESC_SIZE==2);
