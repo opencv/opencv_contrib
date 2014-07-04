@@ -21,7 +21,7 @@ namespace cvtest
 
             cv::Mat currentResult, fastNlMeansResult;
             cv::dctDenoising(src, currentResult, sigma, psize);
-            cv::fastNlMeansDenoising(src, fastNlMeansResult);
+            //cv::fastNlMeansDenoising(src, fastNlMeansResult);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );
