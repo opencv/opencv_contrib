@@ -14,13 +14,14 @@ namespace cvtest
         for (int i = 0; i < nTests; ++i)
         {
             cv::String srcName = dir + cv::format( "sources/%02d.png", i + 1);
-            cv::Mat src = cv::imread( srcName );
+            cv::Mat src = cv::imread( srcName, 1 );
 
             cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
 
-            cv::Mat currentResult;
+            cv::Mat currentResult, fastNlMeansResult;
             cv::dctDenoising(src, currentResult, sigma, psize);
+            cv::fastNlMeansDenoising(src, fastNlMeansResult);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );

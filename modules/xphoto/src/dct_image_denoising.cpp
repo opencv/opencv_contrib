@@ -61,6 +61,8 @@ namespace cv
         Mat_<float> res( src.size(), 0.0f ),
                     num( src.size(), 0.0f );
 
+        double threshold = 2.0*log(psize)*sigma;
+
         for (int i = 0; i <= src.rows - psize; ++i)
             for (int j = 0; j <= src.cols - psize; ++j)
             {
@@ -69,7 +71,7 @@ namespace cv
                 dct(patch, patch);
                 float * ptr = (float *) patch.data;
                 for (int k = 0; k < psize*psize; ++k)
-                    if (fabs(ptr[k]) < 3.0f*sigma)
+                    if (fabs(ptr[k]) < threshold)
                         ptr[k] = 0.0f;
                 idct(patch, patch);
 
