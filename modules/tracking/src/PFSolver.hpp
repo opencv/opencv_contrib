@@ -136,7 +136,7 @@ namespace cv{
         }
 
         _logweight.create(1,_particles.rows);
-        _logweight.setTo(-log(_particles.rows));
+        _logweight.setTo(-log((double)_particles.rows));
         return 0.0;
     }
 
