@@ -343,32 +343,32 @@ void TrackerSRETest::checkDataTest()
           break;
         case 5:
           //corner shift top-left
-          bb.x = (int)round( bb.x -  0.1 * bb.width );
-          bb.y = (int)round( bb.y - 0.1 * bb.height );
+          bb.x = (int)cvRound( bb.x -  0.1 * bb.width );
+          bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 6:
           //corner shift top-right
-          xLimit = (int)round( xLimit + 0.1 * bb.width );
+          xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
 
-          bb.y = (int)round( bb.y - 0.1 * bb.height );
+          bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 7:
           //corner shift bottom-left
-          bb.x = (int)round( bb.x - 0.1 * bb.width );
-          yLimit = (int)round( yLimit + 0.1 * bb.height );
+          bb.x = (int)cvRound( bb.x - 0.1 * bb.width );
+          yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 8:
           //corner shift bottom-right
-          xLimit = (int)round( xLimit + 0.1 * bb.width );
-          yLimit = (int)round( yLimit + 0.1 * bb.height );
+          xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
+          yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
