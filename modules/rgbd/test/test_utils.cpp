@@ -42,7 +42,7 @@ protected:
       float avg_diff = 0;
       for (int y = 0; y < rows; ++y)
         for (int x = 0; x < cols; ++x)
-          avg_diff += cv::norm(image_points.at<cv::Vec2f>(y,x) - cv::Vec2f(x,y));
+          avg_diff += (float)cv::norm(image_points.at<cv::Vec2f>(y,x) - cv::Vec2f((float)x,(float)y));
 
       // Verify the function works
       ASSERT_LE(avg_diff/rows/cols, 1e-4) << "Average error for ground truth is: " << (avg_diff / rows / cols);

@@ -686,7 +686,7 @@ void CvHaarEvaluator::FeatureHaar::generateRandomFeature( Size patchSize )
       valid = true;
     }
     else
-    CV_Assert( false );
+    CV_Error(CV_StsAssert, "");
   }
 
   m_initSize = patchSize;
@@ -742,14 +742,14 @@ float CvHaarEvaluator::FeatureHaar::getSum( const Mat& image, Rect imageROI ) co
   int depth = image.depth();
 
   if( depth == CV_8U || depth == CV_32S )
-    value = image.at<int>( OriginY + Height, OriginX + Width ) + image.at<int>( OriginY, OriginX ) - image.at<int>( OriginY, OriginX + Width )
-        - image.at<int>( OriginY + Height, OriginX );
+    value = static_cast<float>(image.at<int>( OriginY + Height, OriginX + Width ) + image.at<int>( OriginY, OriginX ) - image.at<int>( OriginY, OriginX + Width )
+        - image.at<int>( OriginY + Height, OriginX ));
   else if( depth == CV_64F )
-    value = image.at<double>( OriginY + Height, OriginX + Width ) + image.at<double>( OriginY, OriginX )
-        - image.at<double>( OriginY, OriginX + Width ) - image.at<double>( OriginY + Height, OriginX );
+    value = static_cast<float>(image.at<double>( OriginY + Height, OriginX + Width ) + image.at<double>( OriginY, OriginX )
+        - image.at<double>( OriginY, OriginX + Width ) - image.at<double>( OriginY + Height, OriginX ));
   else if( depth == CV_32F )
-    value = image.at<float>( OriginY + Height, OriginX + Width ) + image.at<float>( OriginY, OriginX ) - image.at<float>( OriginY, OriginX + Width )
-        - image.at<float>( OriginY + Height, OriginX );
+    value = static_cast<float>(image.at<float>( OriginY + Height, OriginX + Width ) + image.at<float>( OriginY, OriginX ) - image.at<float>( OriginY, OriginX + Width )
+        - image.at<float>( OriginY + Height, OriginX ));
 
   return value;
 }

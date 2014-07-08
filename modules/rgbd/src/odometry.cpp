@@ -147,7 +147,7 @@ void preparePyramidImage(const Mat& image, std::vector<Mat>& pyramidImage, size_
             CV_Assert(pyramidImage[i].type() == image.type());
     }
     else
-        buildPyramid(image, pyramidImage, levelCount - 1);
+        buildPyramid(image, pyramidImage, (int)levelCount - 1);
 }
 
 static
@@ -163,7 +163,7 @@ void preparePyramidDepth(const Mat& depth, std::vector<Mat>& pyramidDepth, size_
             CV_Assert(pyramidDepth[i].type() == depth.type());
     }
     else
-        buildPyramid(depth, pyramidDepth, levelCount - 1);
+        buildPyramid(depth, pyramidDepth, (int)levelCount - 1);
 }
 
 static
@@ -192,7 +192,7 @@ void preparePyramidMask(const Mat& mask, const std::vector<Mat>& pyramidDepth, f
         else
             validMask = mask.clone();
 
-        buildPyramid(validMask, pyramidMask, pyramidDepth.size() - 1);
+        buildPyramid(validMask, pyramidMask, (int)pyramidDepth.size() - 1);
 
         for(size_t i = 0; i < pyramidMask.size(); i++)
         {
@@ -238,7 +238,7 @@ void preparePyramidCloud(const std::vector<Mat>& pyramidDepth, const Mat& camera
     else
     {
         std::vector<Mat> pyramidCameraMatrix;
-        buildPyramidCameraMatrix(cameraMatrix, pyramidDepth.size(), pyramidCameraMatrix);
+        buildPyramidCameraMatrix(cameraMatrix, (int)pyramidDepth.size(), pyramidCameraMatrix);
 
         pyramidCloud.resize(pyramidDepth.size());
         for(size_t i = 0; i < pyramidDepth.size(); i++)
@@ -319,7 +319,7 @@ void preparePyramidTexturedMask(const std::vector<Mat>& pyramid_dI_dx, const std
     }
     else
     {
-        const float sobelScale2_inv = 1.f / (sobelScale * sobelScale);
+        const float sobelScale2_inv = 1.f / (float)(sobelScale * sobelScale);
         pyramidTexturedMask.resize(pyramid_dI_dx.size());
         for(size_t i = 0; i < pyramidTexturedMask.size(); i++)
         {
@@ -343,7 +343,7 @@ void preparePyramidTexturedMask(const std::vector<Mat>& pyramid_dI_dx, const std
             }
             pyramidTexturedMask[i] = texturedMask & pyramidMask[i];
 
-            randomSubsetOfMask(pyramidTexturedMask[i], maxPointsPart);
+            randomSubsetOfMask(pyramidTexturedMask[i], (float)maxPointsPart);
         }
     }
 }
@@ -364,7 +364,7 @@ void preparePyramidNormals(const Mat& normals, const std::vector<Mat>& pyramidDe
     }
     else
     {
-        buildPyramid(normals, pyramidNormals, pyramidDepth.size() - 1);
+        buildPyramid(normals, pyramidNormals, (int)pyramidDepth.size() - 1);
         // renormalize normals
         for(size_t i = 1; i < pyramidNormals.size(); i++)
         {
@@ -419,7 +419,7 @@ void preparePyramidNormalsMask(const std::vector<Mat>& pyramidNormals, const std
                     }
                 }
             }
-            randomSubsetOfMask(normalsMask, maxPointsPart);
+            randomSubsetOfMask(normalsMask, (float)maxPointsPart);
         }
     }
 }
@@ -488,16 +488,16 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
         const double * KRK_inv_ptr = KRK_inv.ptr<const double>();
         for(int u1 = 0; u1 < depth1.cols; u1++)
         {
-            KRK_inv0_u1[u1] = KRK_inv_ptr[0] * u1;
-            KRK_inv3_u1[u1] = KRK_inv_ptr[3] * u1;
-            KRK_inv6_u1[u1] = KRK_inv_ptr[6] * u1;
+            KRK_inv0_u1[u1] = (float)(KRK_inv_ptr[0] * u1);
+            KRK_inv3_u1[u1] = (float)(KRK_inv_ptr[3] * u1);
+            KRK_inv6_u1[u1] = (float)(KRK_inv_ptr[6] * u1);
         }
         
         for(int v1 = 0; v1 < depth1.rows; v1++)
         {
-            KRK_inv1_v1_plus_KRK_inv2[v1] = KRK_inv_ptr[1] * v1 + KRK_inv_ptr[2];
-            KRK_inv4_v1_plus_KRK_inv5[v1] = KRK_inv_ptr[4] * v1 + KRK_inv_ptr[5];
-            KRK_inv7_v1_plus_KRK_inv8[v1] = KRK_inv_ptr[7] * v1 + KRK_inv_ptr[8];
+            KRK_inv1_v1_plus_KRK_inv2[v1] = (float)(KRK_inv_ptr[1] * v1 + KRK_inv_ptr[2]);
+            KRK_inv4_v1_plus_KRK_inv5[v1] = (float)(KRK_inv_ptr[4] * v1 + KRK_inv_ptr[5]);
+            KRK_inv7_v1_plus_KRK_inv8[v1] = (float)(KRK_inv_ptr[7] * v1 + KRK_inv_ptr[8]);
         }
     }
 
@@ -542,7 +542,7 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
                             else
                                 correspCount++;
 
-                            c = Vec2s(u1,v1);
+                            c = Vec2s((short)u1, (short)v1);
                         }
                     }
                 }
@@ -686,9 +686,9 @@ void calcRgbdLsmMatrices(const Mat& image0, const Mat& cloud0, const Mat& Rt,
 
          const Point3f& p0 = cloud0.at<Point3f>(v0,u0);
          Point3f tp0;
-         tp0.x = p0.x * Rt_ptr[0] + p0.y * Rt_ptr[1] + p0.z * Rt_ptr[2] + Rt_ptr[3];
-         tp0.y = p0.x * Rt_ptr[4] + p0.y * Rt_ptr[5] + p0.z * Rt_ptr[6] + Rt_ptr[7];
-         tp0.z = p0.x * Rt_ptr[8] + p0.y * Rt_ptr[9] + p0.z * Rt_ptr[10] + Rt_ptr[11];
+         tp0.x = (float)(p0.x * Rt_ptr[0] + p0.y * Rt_ptr[1] + p0.z * Rt_ptr[2] + Rt_ptr[3]);
+         tp0.y = (float)(p0.x * Rt_ptr[4] + p0.y * Rt_ptr[5] + p0.z * Rt_ptr[6] + Rt_ptr[7]);
+         tp0.z = (float)(p0.x * Rt_ptr[8] + p0.y * Rt_ptr[9] + p0.z * Rt_ptr[10] + Rt_ptr[11]);
 
          func(A_ptr,
               w_sobelScale * dI_dx1.at<short int>(v1,u1),
@@ -742,9 +742,9 @@ void calcICPLsmMatrices(const Mat& cloud0, const Mat& Rt,
 
         const Point3f& p0 = cloud0.at<Point3f>(v0,u0);
         Point3f tp0;
-        tp0.x = p0.x * Rt_ptr[0] + p0.y * Rt_ptr[1] + p0.z * Rt_ptr[2] + Rt_ptr[3];
-        tp0.y = p0.x * Rt_ptr[4] + p0.y * Rt_ptr[5] + p0.z * Rt_ptr[6] + Rt_ptr[7];
-        tp0.z = p0.x * Rt_ptr[8] + p0.y * Rt_ptr[9] + p0.z * Rt_ptr[10] + Rt_ptr[11];
+        tp0.x = (float)(p0.x * Rt_ptr[0] + p0.y * Rt_ptr[1] + p0.z * Rt_ptr[2] + Rt_ptr[3]);
+        tp0.y = (float)(p0.x * Rt_ptr[4] + p0.y * Rt_ptr[5] + p0.z * Rt_ptr[6] + Rt_ptr[7]);
+        tp0.z = (float)(p0.x * Rt_ptr[8] + p0.y * Rt_ptr[9] + p0.z * Rt_ptr[10] + Rt_ptr[11]);
 
         Vec3f n1 = normals1.at<Vec3f>(v1, u1);
         Point3f v = cloud1.at<Point3f>(v1,u1) - tp0;
@@ -846,13 +846,13 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
     const int minCorrespsCount = minOverdetermScale * transformDim;
 
     std::vector<Mat> pyramidCameraMatrix;
-    buildPyramidCameraMatrix(cameraMatrix, iterCounts.size(), pyramidCameraMatrix);
+    buildPyramidCameraMatrix(cameraMatrix, (int)iterCounts.size(), pyramidCameraMatrix);
 
     Mat resultRt = initRt.empty() ? Mat::eye(4,4,CV_64FC1) : initRt.clone();
     Mat currRt, ksi;
 
     bool isOk = false;
-    for(int level = iterCounts.size() - 1; level >= 0; level--)
+    for(int level = (int)iterCounts.size() - 1; level >= 0; level--)
     {
         const Mat& levelCameraMatrix = pyramidCameraMatrix[level];
         const Mat& levelCameraMatrix_inv = levelCameraMatrix.inv(DECOMP_SVD);
@@ -1150,7 +1150,7 @@ Size RgbdOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) c
 
     preparePyramidDepth(frame->depth, frame->pyramidDepth, iterCounts.total());
 
-    preparePyramidMask(frame->mask, frame->pyramidDepth, minDepth, maxDepth,
+    preparePyramidMask(frame->mask, frame->pyramidDepth, (float)minDepth, (float)maxDepth,
                        frame->pyramidNormals, frame->pyramidMask);
 
     if(cacheType & OdometryFrame::CACHE_SRC)
@@ -1176,7 +1176,7 @@ void RgbdOdometry::checkParams() const
 
 bool RgbdOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
 {
-    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, maxDepthDiff, iterCounts, maxTranslation, maxRotation, RGBD_ODOMETRY, transformType);
+    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts, maxTranslation, maxRotation, RGBD_ODOMETRY, transformType);
 }
 
 //
@@ -1250,13 +1250,13 @@ Size ICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) co
 
         preparePyramidNormals(frame->normals, frame->pyramidDepth, frame->pyramidNormals);
 
-        preparePyramidMask(frame->mask, frame->pyramidDepth, minDepth, maxDepth,
+        preparePyramidMask(frame->mask, frame->pyramidDepth, (float)minDepth, (float)maxDepth,
                            frame->pyramidNormals, frame->pyramidMask);
 
         preparePyramidNormalsMask(frame->pyramidNormals, frame->pyramidMask, maxPointsPart, frame->pyramidNormalsMask);
     }
     else
-        preparePyramidMask(frame->mask, frame->pyramidDepth, minDepth, maxDepth,
+        preparePyramidMask(frame->mask, frame->pyramidDepth, (float)minDepth, (float)maxDepth,
                            frame->pyramidNormals, frame->pyramidMask);
 
     return frame->depth.size();
@@ -1270,7 +1270,7 @@ void ICPOdometry::checkParams() const
 
 bool ICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
 {
-    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, maxDepthDiff, iterCounts, maxTranslation, maxRotation, ICP_ODOMETRY, transformType);
+    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts, maxTranslation, maxRotation, ICP_ODOMETRY, transformType);
 }
 
 //
@@ -1359,7 +1359,7 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
 
         preparePyramidNormals(frame->normals, frame->pyramidDepth, frame->pyramidNormals);
 
-        preparePyramidMask(frame->mask, frame->pyramidDepth, minDepth, maxDepth,
+        preparePyramidMask(frame->mask, frame->pyramidDepth, (float)minDepth, (float)maxDepth,
                            frame->pyramidNormals, frame->pyramidMask);
 
         preparePyramidSobel(frame->pyramidImage, 1, 0, frame->pyramid_dI_dx);
@@ -1371,7 +1371,7 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
         preparePyramidNormalsMask(frame->pyramidNormals, frame->pyramidMask, maxPointsPart, frame->pyramidNormalsMask);
     }
     else
-        preparePyramidMask(frame->mask, frame->pyramidDepth, minDepth, maxDepth,
+        preparePyramidMask(frame->mask, frame->pyramidDepth, (float)minDepth, (float)maxDepth,
                            frame->pyramidNormals, frame->pyramidMask);
 
     return frame->image.size();
@@ -1386,7 +1386,7 @@ void RgbdICPOdometry::checkParams() const
 
 bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
 {
-    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, maxDepthDiff, iterCounts,  maxTranslation, maxRotation, MERGED_ODOMETRY, transformType);
+    return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts,  maxTranslation, maxRotation, MERGED_ODOMETRY, transformType);
 }
 
 //

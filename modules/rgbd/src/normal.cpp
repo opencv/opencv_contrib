@@ -111,10 +111,10 @@ namespace
         // In the paper, z goes away from the camera, y goes down, x goes right
         // OpenCV has the same conventions
         // Theta goes from z to x (and actually goes from -pi/2 to pi/2, phi goes from z to y
-        float theta = std::atan2(row_points->val[0], row_points->val[2]);
+        float theta = (float)std::atan2(row_points->val[0], row_points->val[2]);
         *row_cos_theta = std::cos(theta);
         *row_sin_theta = std::sin(theta);
-        float phi = std::asin(row_points->val[1] / (*row_r));
+        float phi = (float)std::asin(row_points->val[1] / (*row_r));
         *row_cos_phi = std::cos(phi);
         *row_sin_phi = std::sin(phi);
       }
@@ -195,7 +195,7 @@ namespace
       if ((K_ori.cols != K_ori_.cols) || (K_ori.rows != K_ori_.rows) || (K_ori.type() != K_ori_.type()))
         return false;
       bool K_test = !(cv::countNonZero(K_ori != K_ori_));
-      return (rows == rows_) && (cols = cols_) && (window_size == window_size_) && (depth == depth_) && (K_test)
+      return (rows == rows_) && (cols == cols_) && (window_size == window_size_) && (depth == depth_) && (K_test)
              && (method == method_);
     }
   protected:
@@ -307,7 +307,14 @@ namespace
           (*normal)[2] = *row_r;
         }
         else
-          signNormal((*M_inv) * (*B_vec), *normal);
+        {
+            Mat33T Mr = *M_inv;
+            Vec3T Br = *B_vec;
+            Vec3T MBr(Mr(0, 0) * Br[0] + Mr(0, 1)*Br[1] + Mr(0, 2)*Br[2],
+                      Mr(1, 0) * Br[0] + Mr(1, 1)*Br[1] + Mr(1, 2)*Br[2],
+                      Mr(2, 0) * Br[0] + Mr(2, 1)*Br[1] + Mr(2, 2)*Br[2]);
+           signNormal(MBr, *normal);
+        }
     }
 
   private:
@@ -330,9 +337,9 @@ template<typename T, typename U>
 void
 multiply_by_K_inv(const cv::Matx<T, 3, 3> & K_inv, U a, U b, U c, cv::Vec<T, 3> &res)
 {
-  res[0] = K_inv(0, 0) * a + K_inv(0, 1) * b + K_inv(0, 2) * c;
-  res[1] = K_inv(1, 1) * b + K_inv(1, 2) * c;
-  res[2] = c;
+  res[0] = (T)(K_inv(0, 0) * a + K_inv(0, 1) * b + K_inv(0, 2) * c);
+  res[1] = (T)(K_inv(1, 1) * b + K_inv(1, 2) * c);
+  res[2] = (T)c;
 }
 
 namespace
@@ -424,7 +431,7 @@ namespace
       // Define K_inv by hand, just for higher accuracy
       Mat33T K_inv = cv::Matx<T, 3, 3>::eye(), K;
       K_.copyTo(K);
-      K_inv(0, 0) = 1.0 / K(0, 0);
+      K_inv(0, 0) = 1.0f / K(0, 0);
       K_inv(0, 1) = -K(0, 1) / (K(0, 0) * K(1, 1));
       K_inv(0, 2) = (K(0, 1) * K(1, 2) - K(0, 2) * K(1, 1)) / (K(0, 0) * K(1, 1));
       K_inv(1, 1) = 1 / K(1, 1);
@@ -527,8 +534,8 @@ namespace
       getDerivKernels(kx_dy_, ky_dy_, 0, 1, window_size_, true, depth_);
 
       // Get the mapping function for SRI
-      float min_theta = std::asin(sin_theta(0, 0)), max_theta = std::asin(sin_theta(0, cols_ - 1));
-      float min_phi = std::asin(sin_phi(0, cols_/2-1)), max_phi = std::asin(sin_phi(rows_ - 1, cols_/2-1));
+      float min_theta = (float)std::asin(sin_theta(0, 0)), max_theta = (float)std::asin(sin_theta(0, cols_ - 1));
+      float min_phi = (float)std::asin(sin_phi(0, cols_/2-1)), max_phi = (float)	std::asin(sin_phi(rows_ - 1, cols_/2-1));
 
       std::vector<cv::Point3f> points3d(cols_ * rows_);
       R_hat_.create(rows_, cols_);
@@ -566,11 +573,11 @@ namespace
 
       //map for converting from Spherical coordinate space to Euclidean space
       euclideanMap_.create(rows_,cols_);
-      float invFx = 1.0f/K_.at<T>(0,0), cx = K_.at<T>(0,2);
+      float invFx = (float)(1.0f/K_.at<T>(0,0)), cx = (float)K_.at<T>(0,2);
       double invFy = 1.0f/K_.at<T>(1,1), cy = K_.at<T>(1,2);
       for (int i = 0; i < rows_; i++)
       {
-          float y = (i - cy)*invFy;
+          float y = (float)((i - cy)*invFy);
           for (int j = 0; j < cols_; j++)
           {
               float x = (j - cx)*invFx;

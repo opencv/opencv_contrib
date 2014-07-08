@@ -125,7 +125,7 @@ static void testEuclidean(const Mat& img1)
     Mat img2;
 
     // Warp original image
-    double theta = 3*M_PI/180;
+    double theta = 3*CV_PI/180;
     double cosT = cos(theta);
     double sinT = sin(theta);
     Matx<double, 2, 2> linTr(cosT, -sinT, sinT, cosT);
@@ -163,7 +163,7 @@ static void testSimilarity(const Mat& img1)
     Mat img2;
 
     // Warp original image
-    double theta = 3*M_PI/180;
+    double theta = 3*CV_PI/180;
     double scale = 0.95;
     double a = scale*cos(theta);
     double b = scale*sin(theta);

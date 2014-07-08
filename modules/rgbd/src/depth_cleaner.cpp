@@ -114,7 +114,7 @@ namespace
         {
           const cv::Mat_<unsigned short> &depth(depth_in);
           cv::Mat depth_out_tmp;
-          computeImpl<unsigned short, float>(depth, depth_out_tmp, 0.001);
+          computeImpl<unsigned short, float>(depth, depth_out_tmp, 0.001f);
           depth_out_tmp.convertTo(depth_out, CV_16U);
           break;
         }
@@ -142,16 +142,16 @@ namespace
     void
     computeImpl(const cv::Mat_<DepthDepth> &depth_in, cv::Mat & depth_out, ContainerDepth scale) const
     {
-      const ContainerDepth theta_mean = 30. * CV_PI / 180;
+      const ContainerDepth theta_mean = (float)(30. * CV_PI / 180);
       int rows = depth_in.rows;
       int cols = depth_in.cols;
 
       // Precompute some data
-      const ContainerDepth sigma_L = 0.8 + 0.035 * theta_mean / (CV_PI / 2 - theta_mean);
+      const ContainerDepth sigma_L = (float)(0.8 + 0.035 * theta_mean / (CV_PI / 2 - theta_mean));
       cv::Mat_<ContainerDepth> sigma_z(rows, cols);
       for (int y = 0; y < rows; ++y)
         for (int x = 0; x < cols; ++x)
-          sigma_z(y, x) = 0.0012 + 0.0019 * (depth_in(y, x) * scale - 0.4) * (depth_in(y, x) * scale - 0.4);
+          sigma_z(y, x) = (float)(0.0012 + 0.0019 * (depth_in(y, x) * scale - 0.4) * (depth_in(y, x) * scale - 0.4));
 
       ContainerDepth difference_threshold = 10;
       cv::Mat_<ContainerDepth> Dw_sum = cv::Mat_<ContainerDepth>::zeros(rows, cols), w_sum =
@@ -170,9 +170,9 @@ namespace
                   ContainerDepth(j) * ContainerDepth(j) + ContainerDepth(i) * ContainerDepth(i));
               ContainerDepth delta_z;
               if (depth_in(y, x) > depth_in(y + j, x + i))
-                delta_z = depth_in(y, x) - depth_in(y + j, x + i);
+                delta_z = (float)(depth_in(y, x) - depth_in(y + j, x + i));
               else
-                delta_z = depth_in(y + j, x + i) - depth_in(y, x);
+                delta_z = (float)(depth_in(y + j, x + i) - depth_in(y, x));
               if (delta_z < difference_threshold)
               {
                 delta_z *= scale;
