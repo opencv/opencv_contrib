@@ -53,6 +53,8 @@
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
+#define BLUR_AS_VADIM
+#undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3,3);
 
 using namespace cv;
@@ -73,7 +75,7 @@ using namespace tld;
  *      vadim:
  *
  *      blurred in TrackerTLDModel()
- *      private members
+ *      private members: pull_approval --> update master --> merge --> redo --> report
  *
  *      warpAffine -- ?
 */
@@ -382,7 +384,9 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
         nExpert.additionalExamples(examplesForModel,examplesForEnsemble);
         tldModel->integrateAdditional(examplesForModel,examplesForEnsemble,false);
     }else{
+#ifdef CLOSED_LOOP
         tldModel->integrateRelabeled(imageForDetector,image_blurred,detectorResults,isObject,shouldBeIntegrated);
+#endif
     }
 
     return true;
@@ -425,9 +429,12 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
                 }
             }
 
+#ifdef BLUR_AS_VADIM
+            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
+#else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
+#endif
             pushIntoModel(standardPatch,true);
-            resample(blurredImg,closest[i],blurredPatch);
             for(int k=0;k<(int)classifiers.size();k++){
                 classifiers[k].integrate(blurredPatch,true);
             }
@@ -655,7 +662,11 @@ void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vec
             }
         }
 
+#ifdef CLOSED_LOOP
         if(alsoIntoModel[k] || (isPositive[k]==false)){
+#else
+        if(alsoIntoModel[k]){
+#endif
             resample(imgBlurred,box[k],blurredPatch);
             if(isPositive[k]){
                 positiveIntoEnsemble++;
@@ -740,8 +751,12 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
             size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
             float angle=(float)rng.uniform(-5.0,5.0);
 
-            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
+#ifdef BLUR_AS_VADIM
+            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
+#else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
+#endif
+            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             for(int y=0;y<standardPatch.rows;y++){
                 for(int x=0;x<standardPatch.cols;x++){
                     standardPatch(x,y)+=(uchar)rng.gaussian(5.0);

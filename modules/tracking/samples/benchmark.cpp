@@ -7,7 +7,7 @@
 #include <climits>
 
 #define CMDLINEMAX 10
-#define ASSESS_TILL INT_MAX
+#define ASSESS_TILL 100
 #define LINEMAX 40
 
 using namespace std;
@@ -333,7 +333,7 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
       }
       imshow( "Tracking API", image );
 
-      if(frameCounter>=ASSESS_TILL){
+      if((frameCounter+1)>=ASSESS_TILL){
           break;
       }
 
