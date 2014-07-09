@@ -1022,16 +1022,7 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
     void write( FileStorage& /*fs*/ ) const;
   };
 
-  TrackerMedianFlow( const TrackerMedianFlow::Params &parameters = TrackerMedianFlow::Params() );
-  virtual ~TrackerMedianFlow();
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
-
- protected:
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
-  Params params;
-  AlgorithmInfo* info() const;
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
 };
 
 class CV_EXPORTS_W TrackerTLD : public Tracker
@@ -1044,18 +1035,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
     void write( FileStorage& /*fs*/ ) const;
   };
 
-  TrackerTLD( const TrackerTLD::Params &parameters = TrackerTLD::Params() );
-  virtual ~TrackerTLD();
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
-  class Private{public: virtual ~Private(){}};
-
- protected:
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
-  Params params;
-  std::vector<Ptr<Private> > privateInfo;
-  AlgorithmInfo* info() const;
+  BOILERPLATE_CODE("TLD",TrackerTLD);
 };
 } /* namespace cv */
 

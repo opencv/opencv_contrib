@@ -112,6 +112,8 @@ Ptr<Tracker> Tracker::create( const String& trackerType )
 {
   BOILERPLATE_CODE("MIL",TrackerMIL);
   BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
+  BOILERPLATE_CODE("TLD",TrackerTLD);
   return Ptr<Tracker>();
 }
 

@@ -87,6 +87,7 @@ using namespace tld;
 
 namespace cv
 {
+
 class TLDDetector;
 class MyMouseCallbackDEBUG{
 public:
@@ -127,7 +128,6 @@ public:
 protected:
     friend class MyMouseCallbackDEBUG;
     Ptr<TrackerModel> model;
-    inline void computeIntegralImages(const Mat& img,Mat_<double>& intImgP,Mat_<double>& intImgP2){integral(img,intImgP,intImgP2,CV_64F);}
     inline bool patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size);
     bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>0.5;}
     double ensembleClassifierNum(const uchar* data,int rowstep);
@@ -209,6 +209,25 @@ class TrackerTLDModel : public TrackerModel{
   std::vector<TLDEnsembleClassifier> classifiers;
 };
 
+class TrackerTLDImpl : public TrackerTLD
+{
+ public:
+  TrackerTLDImpl( const TrackerTLD::Params &parameters = TrackerTLD::Params() );
+  void read( const FileNode& fn );
+  void write( FileStorage& fs ) const;
+
+ protected:
+
+  bool initImpl( const Mat& image, const Rect2d& boundingBox );
+  bool updateImpl( const Mat& image, Rect2d& boundingBox );
+
+  TrackerTLD::Params params;
+  Ptr<Data> data;
+  Ptr<TrackerProxy> tracker;
+  Ptr<TLDDetector> detector;
+};
+
+
 TrackerTLD::Params::Params(){
 }
 
@@ -218,11 +237,15 @@ void TrackerTLD::Params::read( const cv::FileNode& /*fn*/ ){
 void TrackerTLD::Params::write( cv::FileStorage& /*fs*/ ) const{
 }
 
-TrackerTLD::TrackerTLD( const TrackerTLD::Params &parameters) :
+Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters){
+    return Ptr<TrackerTLDImpl>(new TrackerTLDImpl(parameters));
+}
+
+TrackerTLDImpl::TrackerTLDImpl( const TrackerTLD::Params &parameters) :
     params( parameters ){
   isInit = false;
-  privateInfo.push_back(Ptr<TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params> >(
-              new TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params>()));
+  tracker=Ptr<TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params> >(
+              new TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params>());
 }
 
 TrackerTLD::~TrackerTLD(){
@@ -240,9 +263,9 @@ void TrackerTLD::write( cv::FileStorage& fs ) const
 
 bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     Mat image_gray;
-    ((TrackerProxy*)static_cast<Private*>(privateInfo[0]))->init(image,boundingBox);
+    tracker->init(image,boundingBox);
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
-    Data* data=new Data(boundingBox);
+    data=new Data(boundingBox);
     double scale=data->getScale();
     Rect2d myBoundingBox=boundingBox;
     if(scale>1.0){
@@ -255,12 +278,9 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
         myBoundingBox.height*=scale;
     }
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,myBoundingBox,data->getMinSize()));
-    TLDDetector* detector=new TLDDetector(params,model);
+    detector=new TLDDetector(params,model);
     data->confident=false;
     data->failedLastTime=false;
-
-    privateInfo.push_back(Ptr<TLDDetector>(detector));
-    privateInfo.push_back(Ptr<Data>(data));
 
 #if !1
         dprintf(("here I am\n"));

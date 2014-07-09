@@ -100,7 +100,7 @@ private:
     std::vector<uchar> x1,y1,x2,y2;
 };
 
-class TrackerProxy : public TrackerTLD::Private{
+class TrackerProxy{
 public:
     virtual bool init( const Mat& image, const Rect2d& boundingBox)=0;
     virtual bool update(const Mat& image, Rect2d& boundingBox)=0;
