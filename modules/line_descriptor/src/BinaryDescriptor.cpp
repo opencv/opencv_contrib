@@ -306,6 +306,7 @@ void BinaryDescriptor::computeGaussianPyramid(const Mat& image)
     /* clear class fields */
     images_sizes.clear();
     octaveImages.clear();
+    extractedLines.clear();
 
     /* insert input image into pyramid */
     cv::Mat currentMat = image.clone();
@@ -330,7 +331,18 @@ void BinaryDescriptor::detect( const Mat& image,
                              CV_OUT std::vector<KeyLine>& keylines,
                              const Mat& mask )
 {
-    detectImpl(image, keylines, mask);
+    if(mask.data!=NULL && (mask.size() != image.size() || mask.type()!=CV_8UC1))
+    {
+
+        std::cout << "Mask error while detecting lines: "
+                << "please check its dimensions and that data type is CV_8UC1"
+                << std::endl;
+
+        CV_Assert(false);
+    }
+
+    else
+        detectImpl(image, keylines, mask);
 }
 
 
@@ -342,15 +354,29 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images,
     /* detect lines from each image */
     for(size_t counter = 0; counter<images.size(); counter++)
     {
+        if(masks[counter].data!=NULL &&
+          (masks[counter].size() != images[counter].size() ||
+          masks[counter].type()!=CV_8UC1))
+        {
+
+            std::cout << "Masks error while detecting lines: "
+                    << "please check their dimensions and that data types are CV_8UC1"
+                    << std::endl;
+
+            CV_Assert(false);
+        }
+
         detectImpl(images[counter],keylines[counter], masks[counter]);
     }
 }
 
-void BinaryDescriptor::detectImpl( const Mat& image,
+void BinaryDescriptor::detectImpl( const Mat& imageSrc,
                                  std::vector<KeyLine>& keylines,
                                  const Mat& mask ) const
 {
 
+    cv::Mat image;
+    cvtColor(imageSrc, image, COLOR_BGR2GRAY);
     /*check whether image depth is different from 0 */
     if(image.depth() != 0)
     {
@@ -408,13 +434,16 @@ void BinaryDescriptor::detectImpl( const Mat& image,
 
 
     /* delete undesired KeyLines, according to input mask */
-    for(size_t keyCounter = 0; keyCounter<keylines.size(); keyCounter++)
-    {
-        KeyLine kl = keylines[keyCounter];
-         if(mask.at<uchar>(kl.startPointX, kl.startPointY) == 0 &&
-           mask.at<uchar>(kl.endPointX, kl.endPointY) == 0)
-            keylines.erase(keylines.begin() + keyCounter);
+    if(!mask.empty()){
+        for(size_t keyCounter = 0; keyCounter<keylines.size(); keyCounter++)
+        {
+            KeyLine kl = keylines[keyCounter];
+             if(mask.at<uchar>(kl.startPointY, kl.startPointX) == 0 &&
+               mask.at<uchar>(kl.endPointY, kl.endPointX) == 0)
+                keylines.erase(keylines.begin() + keyCounter);
+        }
     }
+
 }
 
 
@@ -438,10 +467,14 @@ void BinaryDescriptor::compute( const std::vector<Mat>& images,
 }
 
 /* implementation of descriptors computation */
-void BinaryDescriptor::computeImpl( const Mat& image,
+void BinaryDescriptor::computeImpl( const Mat& imageSrc,
                                       std::vector<KeyLine>& keylines,
                                       Mat& descriptors ) const
 {
+    /* convert input image to gray scale */
+    cv::Mat image;
+    cvtColor(imageSrc, image, COLOR_BGR2GRAY);
+
     /*check whether image's depth is different from 0 */
     if(image.depth() != 0)
     {
@@ -521,8 +554,8 @@ void BinaryDescriptor::computeImpl( const Mat& image,
     /* compute Gaussian pyramid, if image is new or pyramid was not
     computed before */
     BinaryDescriptor *bn = const_cast<BinaryDescriptor*>(this);
-    if(octaveImages.size() == 0 || cv::countNonZero(image != octaveImages[0]) != 0)
-        bn->computeGaussianPyramid(image);
+    /* all structures cleared in computeGaussianPyramid */
+    bn->computeGaussianPyramid(image);
 
     /* compute Sobel's derivatives */
     bn->dxImg_vector.clear();
@@ -588,7 +621,7 @@ int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
         cv::Mat currentScaledImage = octaveImages[scaleCounter];
 
         /* create an LSD detector and store a pointer to it */
-        cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
+        cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector(cv::LSD_REFINE_ADV);
 
         /* prepare a vector to host extracted segments */
         std::vector<cv::Vec4i> lines_std;
@@ -601,6 +634,7 @@ int BinaryDescriptor::OctaveKeyLines(ScaleLines &keyLines)
 
         /* update lines counter */
         numOfFinalLine += lines_std.size();
+
 
     }
 

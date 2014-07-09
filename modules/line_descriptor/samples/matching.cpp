@@ -26,19 +26,6 @@ static void help()
 
 }
 
-inline void writeMat(cv::Mat m, std::string name, int n)
-{
-    std::stringstream ss;
-    std::string s;
-    ss << n;
-    ss >> s;
-    std::string fileNameConf = name + s;
-    cv::FileStorage fsConf(fileNameConf, cv::FileStorage::WRITE);
-    fsConf << "m" << m;
-
-    fsConf.release();
-}
-
 int main( int argc, char** argv )
 {
     /* get parameters from comand line */
@@ -54,8 +41,10 @@ int main( int argc, char** argv )
 
 
     /* load image */
-    cv::Mat imageMat1 = imread(image_path1, 0);
-    cv::Mat imageMat2 = imread(image_path2, 0);
+    cv::Mat imageMat1 = imread(image_path1, 1);
+    cv::Mat imageMat2 = imread(image_path2, 1);
+
+    waitKey();
     if(imageMat1.data == NULL || imageMat2.data == NULL)
     {
         std::cout << "Error, images could not be loaded. Please, check their path"
@@ -74,9 +63,6 @@ int main( int argc, char** argv )
     bd->detect(imageMat1, keylines1, mask1);
     bd->detect(imageMat2, keylines2, mask2);
 
-    std::cout << "lines " << keylines1.size() << " " << keylines2.size()
-              << std::endl;
-
     /* compute descriptors */
     cv::Mat descr1, descr2;
     bd->compute(imageMat1, keylines1, descr1);
@@ -88,58 +74,17 @@ int main( int argc, char** argv )
     /* require match */
     std::vector<DMatch> matches;
     bdm->match(descr1, descr2, matches);
-    for(int x = 0; x<matches.size(); x++)
-        std::cout << matches[x].queryIdx << " " << matches[x].trainIdx << std::endl;
 
-    /* result checkout */
-    cv::Mat result(descr1.size(), CV_8UC1);
-    std::cout << "size " << descr1.rows << " " << descr1.cols
-              << " " << descr2.rows << " " << descr2.cols << std::endl;
-//    for(size_t i = 0; i<matches.size(); i++){
-//        uchar* pointer = result.ptr(i);
-//        uchar* trainPointer = descr2.ptr(matches[i].trainIdx);
-//        *pointer = *trainPointer;
-//        pointer++;
-//    }
+    /* plot matches */
+    cv::Mat outImg;
+    std::vector<char> mask (matches.size(), 1);
+    drawLineMatches(imageMat1, keylines1, imageMat2, keylines2, matches,
+                outImg, Scalar::all(-1), Scalar::all(-1), mask,
+                DrawLinesMatchesFlags::DEFAULT);
 
-
-    /* write matrices */
-    writeMat(descr1, "descr1", 0);
-    writeMat(result, "result", 0);
+    std::cout << "num dmatch " << matches.size() << std::endl;
+    imshow("Matches", outImg);
+    waitKey();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

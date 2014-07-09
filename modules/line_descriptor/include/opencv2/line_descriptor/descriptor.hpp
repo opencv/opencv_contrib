@@ -55,7 +55,6 @@
 #include "sparse_hashtable.hpp"
 #include "types.hpp"
 
-
 namespace cv
 {
 
@@ -195,17 +194,17 @@ namespace cv
 
     protected:
         /* implementation of line detection */
-        virtual void detectImpl( const Mat& image,
+        virtual void detectImpl( const Mat& imageSrc,
                                  std::vector<KeyLine>& keylines,
                                  const Mat& mask=Mat() ) const;
 
 
         /* implementation of descriptors' computation */
-        virtual void computeImpl( const Mat& image,
+        virtual void computeImpl( const Mat& imageSrc,
                                   std::vector<KeyLine>& keylines,
                                   Mat& descriptors ) const;
 
-        /* function inherited by Algorithm */
+        /* function inherited from Algorithm */
         AlgorithmInfo* info() const;
 
     private:
@@ -302,25 +301,99 @@ namespace cv
                           const std::vector<Mat>& masks=std::vector<Mat>(),
                           bool compactResult=false );
 
+        /* store new descriptors to be inserted in dataset */
+        void add( const std::vector<Mat>& descriptors );
+
+        /* store new descriptors into dataset */
+        void train();
+
         /* constructor with smart pointer */
         static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
-
-        /* write/read data to/from file */
-        virtual void read( const FileNode& );
-        virtual void write( FileStorage& ) const;
+        /* clear dataset and internal data */
+        void clear();
 
         /* constructor */
-        BinaryDescriptorMatcher(){};
+        BinaryDescriptorMatcher();
 
         /* desctructor */
-        ~BinaryDescriptorMatcher(){};
+        ~BinaryDescriptorMatcher(){}
+
+    protected:
+        /* function inherited from Algorithm */
+        AlgorithmInfo* info() const;
 
     private:
-        /* vector to store new desciptors */
-        std::vector<Mat> descriptorsVector;
+        /* retrieve Hamming distances */
+        void checkKDistances(UINT32 * numres,
+                             int k,
+                             std::vector<int>& k_distances,
+                             int row,
+                             int string_length) const;
+
+        /* matrix to store new descriptors */
+        Mat descriptorsMat;
+
+        /* map storing where each bunch of descriptors benins in DS */
+        std::map<int, int> indexesMap;
+
+        /* internal MiHaser representing dataset */
+        Mihasher* dataset;
+
+        /* index from which next added descriptors' bunch must begin */
+        int nextAddedIndex;
+
+        /* number of images whose descriptors are stored in DS */
+        int numImages;
+
+        /* number of descriptors in dataset */
+        int descrInDS;
+
     };
 
+
+/* --------------------------------------------------------------------------------------------
+                                UTILITY FUNCTIONS
+   -------------------------------------------------------------------------------------------- */
+
+/* struct for drawing options */
+struct CV_EXPORTS DrawLinesMatchesFlags
+{
+    enum
+    {
+        DEFAULT = 0, // Output image matrix will be created (Mat::create),
+                     // i.e. existing memory of output image may be reused.
+                     // Two source images, matches, and single keylines
+                     // will be drawn.
+        DRAW_OVER_OUTIMG = 1, // Output image matrix will not be
+                       // created (using Mat::create). Matches will be drawn
+                       // on existing content of output image.
+        NOT_DRAW_SINGLE_LINES = 2 // Single keylines will not be drawn.
+    };
+};
+
+/* draw matches between two images */
+CV_EXPORTS_W void drawLineMatches( const Mat& img1,
+                                   const std::vector<KeyLine>& keylines1,
+                                   const Mat& img2,
+                                   const std::vector<KeyLine>& keylines2,
+                                   const std::vector<DMatch>& matches1to2,
+                                   Mat& outImg,
+                                   const Scalar& matchColor=Scalar::all(-1),
+                                   const Scalar& singleLineColor=Scalar::all(-1),
+                                   const std::vector<char>& matchesMask=std::vector<char>(),
+                                   int flags=DrawLinesMatchesFlags::DEFAULT );
+
+/* draw extracted lines on original image */
+CV_EXPORTS_W void drawKeylines( const Mat& image,
+                                const std::vector<KeyLine>& keylines,
+                                Mat& outImage,
+                                const Scalar& color=Scalar::all(-1),
+                                int flags=DrawLinesMatchesFlags::DEFAULT );
+
 }
+
+
+
 
 #endif
