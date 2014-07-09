@@ -1,0 +1,6 @@
+Saliency categories
+============================
+
+.. highlight:: cpp
+
+

@@ -46,23 +46,9 @@
 #include "BING/kyheader.h"
 #include "BING/ValStructVec.h"
 #include "BING/FilterTIG.h"
-#include "SuBSENSE/BackgroundSubtractorLBSP.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
-
-//! defines the default value for BackgroundSubtractorLBSP::m_fRelLBSPThreshold
-#define BGSSUBSENSE_DEFAULT_LBSP_REL_SIMILARITY_THRESHOLD (0.333f)
-//! defines the default value for BackgroundSubtractorLBSP::m_nDescDistThreshold
-#define BGSSUBSENSE_DEFAULT_DESC_DIST_THRESHOLD (3)
-//! defines the default value for BackgroundSubtractorSuBSENSE::m_nMinColorDistThreshold
-#define BGSSUBSENSE_DEFAULT_COLOR_DIST_THRESHOLD (30)
-//! defines the default value for BackgroundSubtractorSuBSENSE::m_nBGSamples
-#define BGSSUBSENSE_DEFAULT_NB_BG_SAMPLES (50)
-//! defines the default value for BackgroundSubtractorSuBSENSE::m_nRequiredBGSamples
-#define BGSSUBSENSE_DEFAULT_REQUIRED_NB_BG_SAMPLES (2)
-//! defines the default value for BackgroundSubtractorSuBSENSE::m_nSamplesForMovingAvgs
-#define BGSSUBSENSE_DEFAULT_N_SAMPLES_FOR_MV_AVGS (25)
 
 namespace cv
 {
@@ -99,10 +85,6 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 
 /************************************ Specific Motion Saliency Specialized Classes ************************************/
 
-
-
-
-
 /************************************ Specific Objectness Specialized Classes ************************************/
 
 /**
@@ -119,35 +101,10 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   void read();
   void write() const;
 
-  // Load trained model.
-  int loadTrainedModel( std::string modelName = "" );  // Return -1, 0, or 1 if partial, none, or all loaded
-
-  // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
-  // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
-  // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
-  void getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
-  void getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize );
   vector<float> getobjectnessValues();
-
-  void setColorSpace( int clr = MAXBGR );
   void setTrainingPath( string trainingPath );
   void setBBResDir( string resultsDir );
 
-  // Read matrix from binary file
-  static bool matRead( const std::string& filename, Mat& M );
-
-  enum
-  {
-    MAXBGR,
-    HSV,
-    G
-  };
-
-  inline static float LoG( float x, float y, float delta )
-  {
-    float d = - ( x * x + y * y ) / ( 2 * delta * delta );
-    return -1.0f / ( (float) ( CV_PI ) * pow( delta, 4 ) ) * ( 1 + d ) * exp( d );
-  }  // Laplacian of Gaussian
 
  protected:
   bool computeSaliencyImpl( const InputArray src, OutputArray dst );
@@ -155,6 +112,14 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
  private:
   // Parameters
+
+  enum
+   {
+     MAXBGR,
+     HSV,
+     G
+   };
+
   double _base, _logBase;  // base for window size quantization
   int _W;  // As described in the paper: #Size, Size(_W, _H) of feature window.
   int _NSS;  // Size for non-maximal suppress
@@ -177,7 +142,27 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   //vector<Vec4i> objectnessBoundingBox;
 
  private:
-  // Help functions
+  // functions
+
+  inline static float LoG( float x, float y, float delta )
+  {
+    float d = - ( x * x + y * y ) / ( 2 * delta * delta );
+    return -1.0f / ( (float) ( CV_PI ) * pow( delta, 4 ) ) * ( 1 + d ) * exp( d );
+  }  // Laplacian of Gaussian
+
+  // Read matrix from binary file
+  static bool matRead( const std::string& filename, Mat& M );
+
+  void setColorSpace( int clr = MAXBGR );
+
+  // Load trained model.
+  int loadTrainedModel( std::string modelName = "" );  // Return -1, 0, or 1 if partial, none, or all loaded
+
+  // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
+  // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
+  // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
+  void getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
+  void getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize );
 
   bool filtersLoaded()
   {
