@@ -52,7 +52,7 @@ CV_INIT_ALGORITHM(
                           reinterpret_cast<SizeGetter>( &StaticSaliencySpectralResidual::getWsize ),
                           reinterpret_cast<SizeSetter>( &StaticSaliencySpectralResidual::setWsize ) ) );
 
-CV_INIT_ALGORITHM( MotionSaliencySuBSENSE, "SALIENCY.SuBSENSE", );
+//CV_INIT_ALGORITHM( MotionSaliencySuBSENSE, "SALIENCY.SuBSENSE", );
 
 CV_INIT_ALGORITHM(
     ObjectnessBING, "SALIENCY.BING",
@@ -62,7 +62,7 @@ bool initModule_saliency( void )
 {
   bool all = true;
   all &= !StaticSaliencySpectralResidual_info_auto.name().empty();
-  all &= !MotionSaliencySuBSENSE_info_auto.name().empty();
+  //all &= !MotionSaliencySuBSENSE_info_auto.name().empty();
   all &= !ObjectnessBING_info_auto.name().empty();
 
   return all;
