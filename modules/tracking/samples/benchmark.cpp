@@ -84,7 +84,7 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
             continue;
         }
         bool isVideo=false;
-        for(int j=0,len=strlen(argv[i]);j<len;j++){
+        for(int j=0,len=(int)strlen(argv[i]);j<len;j++){
             if(!('A'<=argv[i][j] && argv[i][j]<='Z') && argv[i][j]!='.'){
                 isVideo=true;
                 break;

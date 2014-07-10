@@ -53,7 +53,7 @@
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
-#define BLUR_AS_VADIM
+#undef BLUR_AS_VADIM
 #undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3,3);
 
@@ -66,6 +66,8 @@ using namespace tld;
  *      direct formula in resamples
  * FIXME(issues)
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6 !!
+ * FIXME(features)
+ *      benchmark: save photos --> two streams of photos --> better video
  * TODO:
  *      schoolPC: codec, libopencv-dev
  *      fix pushbot ->pick commits -> compare_branches->all in 1->resubmit
@@ -75,7 +77,6 @@ using namespace tld;
  *      vadim:
  *
  *      blurred in TrackerTLDModel()
- *      private members: pull_approval --> update master --> merge --> redo --> report
  *
  *      warpAffine -- ?
 */
