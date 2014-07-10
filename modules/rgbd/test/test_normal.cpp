@@ -210,9 +210,9 @@ protected:
             errors[1][0] = 0.02f;
             errors[1][1] = 0.04f;
             break;
-		  default:
-			method = (cv::RgbdNormals::RGBD_NORMALS_METHOD)-1;
-			CV_Error(0, "");
+          default:
+            method = (cv::RgbdNormals::RGBD_NORMALS_METHOD)-1;
+            CV_Error(0, "");
         }
 
         for (unsigned char j = 0; j < 2; ++j)
