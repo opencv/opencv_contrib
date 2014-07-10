@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "opencv2/bioinspired.hpp"
+#include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 
 static void help(std::string errorMessage)
