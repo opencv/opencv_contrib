@@ -77,8 +77,12 @@ namespace cv
 class TrackerMedianFlowImpl : public TrackerMedianFlow{
  public:
      TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn):termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.3){params=paramsIn;isInit=false;}
-     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
+     void read( const FileNode& fn );
+     void write( FileStorage& fs ) const;
  private:
+     bool initImpl( const Mat& image, const Rect2d& boundingBox );
+     bool updateImpl( const Mat& image, Rect2d& boundingBox );
+     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
      Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
      //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median; besides
           //it makes copy all the time

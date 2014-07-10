@@ -102,7 +102,7 @@ private:
     TLDDetector* detector_;
 };
 
-class Data : public TrackerTLD::Private{
+class Data {
 public:
     Data(Rect2d initBox);
     Size getMinSize(){return minSize;}
@@ -118,7 +118,7 @@ private:
 
 class TrackerTLDModel;
 
-class TLDDetector : public TrackerTLD::Private{
+class TLDDetector {
 public:
     TLDDetector(const TrackerTLD::Params& params,Ptr<TrackerModel>model_in):model(model_in),params_(params){}
     ~TLDDetector(){}
@@ -128,6 +128,7 @@ public:
 protected:
     friend class MyMouseCallbackDEBUG;
     Ptr<TrackerModel> model;
+    void computeIntegralImages(const Mat& img,Mat_<double>& intImgP,Mat_<double>& intImgP2){integral(img,intImgP,intImgP2,CV_64F);}
     inline bool patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size);
     bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>0.5;}
     double ensembleClassifierNum(const uchar* data,int rowstep);
@@ -168,7 +169,7 @@ class TrackerProxyImpl : public TrackerProxy{
 public:
     TrackerProxyImpl(Tparams params=Tparams()):params_(params){}
     bool init( const Mat& image, const Rect2d& boundingBox ){
-        trackerPtr=Ptr<T>(new T(params_));
+        trackerPtr=T::createTracker();
         return trackerPtr->init(image,boundingBox);
     }
     bool update( const Mat& image,Rect2d& boundingBox){
@@ -223,7 +224,7 @@ class TrackerTLDImpl : public TrackerTLD
 
   TrackerTLD::Params params;
   Ptr<Data> data;
-  Ptr<TrackerProxy> tracker;
+  Ptr<TrackerProxy> trackerProxy;
   Ptr<TLDDetector> detector;
 };
 
@@ -244,28 +245,25 @@ Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters){
 TrackerTLDImpl::TrackerTLDImpl( const TrackerTLD::Params &parameters) :
     params( parameters ){
   isInit = false;
-  tracker=Ptr<TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params> >(
+  trackerProxy=Ptr<TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params> >(
               new TrackerProxyImpl<TrackerMedianFlow,TrackerMedianFlow::Params>());
 }
 
-TrackerTLD::~TrackerTLD(){
-}
-
-void TrackerTLD::read( const cv::FileNode& fn )
+void TrackerTLDImpl::read( const cv::FileNode& fn )
 {
   params.read( fn );
 }
 
-void TrackerTLD::write( cv::FileStorage& fs ) const
+void TrackerTLDImpl::write( cv::FileStorage& fs ) const
 {
   params.write( fs );
 }
 
-bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
+bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox ){
     Mat image_gray;
-    tracker->init(image,boundingBox);
+    trackerProxy->init(image,boundingBox);
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
-    data=new Data(boundingBox);
+    data=Ptr<Data>(new Data(boundingBox));
     double scale=data->getScale();
     Rect2d myBoundingBox=boundingBox;
     if(scale>1.0){
@@ -278,7 +276,7 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
         myBoundingBox.height*=scale;
     }
     model=Ptr<TrackerTLDModel>(new TrackerTLDModel(params,image_gray,myBoundingBox,data->getMinSize()));
-    detector=new TLDDetector(params,model);
+    detector=Ptr<TLDDetector>(new TLDDetector(params,model));
     data->confident=false;
     data->failedLastTime=false;
 
@@ -294,10 +292,9 @@ bool TrackerTLD::initImpl(const Mat& image, const Rect2d& boundingBox ){
     return true;
 }
 
-bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
+bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     Mat image_gray,image_blurred,imageForDetector;
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
-    Data* data=((Data*)static_cast<TrackerTLD::Private*>(privateInfo[2]));
     double scale=data->getScale();
     if(scale>1.0){
         resize(image_gray,imageForDetector,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)));
@@ -306,8 +303,6 @@ bool TrackerTLD::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
     GaussianBlur(imageForDetector,image_blurred,GaussBlurKernelSize,0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
-    TrackerProxy* trackerProxy=(TrackerProxy*)static_cast<Private*>(privateInfo[0]);
-    TLDDetector* detector=((TLDDetector*)static_cast<TrackerTLD::Private*>(privateInfo[1]));
     data->frameNum++;
     Mat_<uchar> standardPatch(15,15);
     std::vector<Rect2d> detectorResults;

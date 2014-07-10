@@ -23,18 +23,6 @@ vector<Scalar> palette;
 
 void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName);
 
-static void listTrackers(){
-  vector<String> algorithms;
-  Algorithm::getList(algorithms);
-  cout << "\nAvailable tracker algorithms:\n";
-  for (size_t i=0; i < algorithms.size(); i++){
-      const char* algoname=algorithms[i].c_str();
-      char *pos=NULL;
-      if((pos=strstr((char*)algoname,"TRACKER."))!=NULL){
-          printf("%s\n",pos+8);
-      }
-  }
-}
 static int lineToRect(char* line,Rect2d& res){
   char * ptr=line,*pos=ptr;
   if(line==NULL || line[0]=='\0'){
@@ -75,20 +63,10 @@ static void help(){
   cout << "\n\nHot keys: \n"
        "\tq - quit the program\n"
        "\tp - pause video\n";
-  listTrackers();
   exit(EXIT_SUCCESS);
 }
 static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[],
         int* vc,char* algorithms[],char* initBoxes[][CMDLINEMAX],int* ac){
-
-    vector<String> trackers;
-    Algorithm::getList(trackers);
-    for(int i=0;i<(int)trackers.size();i++){
-        if(strstr(trackers[i].c_str(),"TRACKER.")!=trackers[i].c_str()){
-            trackers.erase(trackers.begin()+i);
-            i--;
-        }
-    }
 
     *ac=*vc=0;
     for(int i=1;i<argc;i++){
@@ -105,13 +83,14 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
             }
             continue;
         }
-        bool isVideo=true;
-        for(int j=0;j<(int)trackers.size();j++){
-            if(strcmp(argv[i],trackers[j].c_str()+8)==0){
-                isVideo=false;
+        bool isVideo=false;
+        for(int j=0,len=strlen(argv[i]);j<len;j++){
+            if(!('A'<=argv[i][j] && argv[i][j]<='Z') && argv[i][j]!='.'){
+                isVideo=true;
                 break;
             }
         }
+
         if(isVideo){
             videos[*vc]=argv[i];
             i++;
