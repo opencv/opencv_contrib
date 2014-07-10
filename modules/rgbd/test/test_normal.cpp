@@ -35,11 +35,38 @@
 
 #include <stdexcept>
 
-#include <opencv2/contrib.hpp>
 #include <opencv2/rgbd.hpp>
 
 #include "test_precomp.hpp"
 
+class TickMeter {
+    int64 counter;
+    int64 sumTime;
+    int64 startTime;
+
+public:
+    TickMeter() { reset(); }
+    int64 getTimeTicks() const { return sumTime; }
+    double getTimeSec()   const { return (double)getTimeTicks() / cv::getTickFrequency(); }
+    double getTimeMilli() const { return getTimeSec()*1e3; }
+    double getTimeMicro() const { return getTimeMilli()*1e3; }
+    int64 getCounter() const { return counter; }
+    void  reset() { startTime = 0; sumTime = 0; counter = 0; }
+
+    void start(){ startTime = cv::getTickCount(); }
+    void stop()
+    {
+        int64 time = cv::getTickCount();
+        if (startTime == 0)
+            return;
+
+        ++counter;
+
+        sumTime += (time - startTime);
+        startTime = 0;
+    }
+
+};
 cv::Point3f
 rayPlaneIntersection(cv::Point2f uv, const cv::Mat& centroid, const cv::Mat& normal, const cv::Mat_<float>& Kinv);
 
@@ -264,7 +291,7 @@ protected:
   float
   testit(const cv::Mat & points3d, const cv::Mat & in_ground_normals, const cv::RgbdNormals & normals_computer)
   {
-    cv::TickMeter tm;
+    TickMeter tm;
     tm.start();
     cv::Mat in_normals;
     if (normals_computer.method() == cv::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
@@ -343,7 +370,7 @@ protected:
   {
     for (char i_test = 0; i_test < 2; ++i_test)
     {
-      cv::TickMeter tm1, tm2;
+      TickMeter tm1, tm2;
       cv::Mat plane_mask;
       std::vector<cv::Vec4f> plane_coefficients;
 
