@@ -8,7 +8,7 @@ Base classes which give a general interface for each specialized type of salienc
 StaticSaliency
 --------------
 
-.. ocv:class:: TrackerSampler
+.. ocv:class:: StaticSaliency
 
 StaticSaliency class::
 

@@ -5,5 +5,5 @@ Motion Saliency Algorithms
 
 Algorithms belonging to this category, are particularly focused to detect salient objects over time (hence also over frame), then there is a temporal component sealing cosider that allows to detect "moving" objects as salient, meaning therefore also the more general sense of detection the changes in the scene.
 
-The implementation of one or more methods related to this category will be made soon.
+
 
