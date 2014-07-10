@@ -49,10 +49,6 @@
 #include <opencv2/highgui.hpp>
 #include "TLD.hpp"
 
-#define PI 3.14159265
-
-using namespace cv;
-
 namespace cv {namespace tld
 {
 
@@ -235,8 +231,8 @@ double overlap(const Rect2d& r1,const Rect2d& r2){
 
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples){
     Mat_<float> M(2,3),R(2,2),Si(2,2),s(2,1),o(2,1);
-    R(0,0)=(float)cos(r2.angle*PI/180);R(0,1)=(float)(-sin(r2.angle*PI/180));
-    R(1,0)=(float)sin(r2.angle*PI/180);R(1,1)=(float)cos(r2.angle*PI/180);
+    R(0,0)=(float)cos(r2.angle*CV_PI/180);R(0,1)=(float)(-sin(r2.angle*CV_PI/180));
+    R(1,0)=(float)sin(r2.angle*CV_PI/180);R(1,1)=(float)cos(r2.angle*CV_PI/180);
     Si(0,0)=(float)(samples.cols/r2.size.width); Si(0,1)=0.0f;
     Si(1,0)=0.0f; Si(1,1)=(float)(samples.rows/r2.size.height);
     s(0,0)=(float)samples.cols; s(1,0)=(float)samples.rows;
