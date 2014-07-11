@@ -1,3 +1,45 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+ //
+ //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+ //
+ //  By downloading, copying, installing or using the software you agree to this license.
+ //  If you do not agree to this license, do not download, install,
+ //  copy or use the software.
+ //
+ //
+ //                           License Agreement
+ //                For Open Source Computer Vision Library
+ //
+ // Copyright (C) 2014, Mohammad Norouzi, Ali Punjani, David J. Fleet,
+ // all rights reserved.
+ // Third party copyrights are property of their respective owners.
+ //
+ // Redistribution and use in source and binary forms, with or without modification,
+ // are permitted provided that the following conditions are met:
+ //
+ //   * Redistribution's of source code must retain the above copyright notice,
+ //     this list of conditions and the following disclaimer.
+ //
+ //   * Redistribution's in binary form must reproduce the above copyright notice,
+ //     this list of conditions and the following disclaimer in the documentation
+ //     and/or other materials provided with the distribution.
+ //
+ //   * The name of the copyright holders may not be used to endorse or promote products
+ //     derived from this software without specific prior written permission.
+ //
+ // This software is provided by the copyright holders and contributors "as is" and
+ // any express or implied warranties, including, but not limited to, the implied
+ // warranties of merchantability and fitness for a particular purpose are disclaimed.
+ // In no event shall the Intel Corporation or contributors be liable for any direct,
+ // indirect, incidental, special, exemplary, or consequential damages
+ // (including, but not limited to, procurement of substitute goods or services;
+ // loss of use, data, or profits; or business interruption) however caused
+ // and on any theory of liability, whether in contract, strict liability,
+ // or tort (including negligence or otherwise) arising in any way out of
+ // the use of this software, even if advised of the possibility of such damage.
+ //
+ //M*/
+
 #include "precomp.hpp"
 
 
@@ -22,7 +64,7 @@ void Mihasher::batchquery(UINT32 * results, UINT32 *numres, const cv::Mat & quer
     /* loop over number of descriptors */
     for (size_t i=0; i<numq; i++) {
         /* for every descriptor, query database */
-        query(presults, pnumres, pq, chunks, res, i);
+        query(presults, pnumres, pq, chunks, res);
 
         /* move pointer to write next K indeces */
         presults += K;
@@ -41,7 +83,7 @@ void Mihasher::batchquery(UINT32 * results, UINT32 *numres, const cv::Mat & quer
 
 /* execute a single query */
 void Mihasher::query(UINT32*  results, UINT32* numres,
-                     UINT8 * Query, UINT64 *chunks, UINT32 *res, int query_i)
+                     UINT8 * Query, UINT64 *chunks, UINT32 *res)
 { 
     /* if K == 0 that means we want everything to be processed.
        So maxres = N in that case. Otherwise K limits the results processed */
@@ -151,9 +193,9 @@ void Mihasher::query(UINT32*  results, UINT32* numres,
     }
         
     n = 0;
-    for (s = 0; s <= D && n < K; s++ )
+    for (s = 0; s <= D && (int)n < K; s++ )
     {
-        for (int c = 0; c < numres[s] && n < K; c++)
+        for (int c = 0; c < (int)numres[s] && (int)n < K; c++)
             results[n++] = res[s*K + c];
     }
 

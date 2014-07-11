@@ -10,6 +10,7 @@
 
 Copyright (C) 2011-2012, Lilian Zhang, all rights reserved.
 Copyright (C) 2013, Manuele Tamburrano, Stefano Fabri, all rights reserved.
+Copyright (C) 2014, Biagio Montesano, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -37,8 +38,8 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#ifndef LINESTRUCTURE_HH_
-#define LINESTRUCTURE_HH_
+#ifndef __OPENCV_LINE_STRUCTURE_HH_
+#define __OPENCV_LINE_STRUCTURE_HH_
 
 #include <vector>
 
@@ -114,6 +115,8 @@ struct OctaveSingleLine
 // Specifies a vector of lines.
 typedef std::vector<OctaveSingleLine> LinesVec;
 
-typedef std::vector<LinesVec> ScaleLines;//each element in ScaleLines is a vector of lines which corresponds the same line detected in different octave images.
+// each element in ScaleLines is a vector of lines
+// which corresponds the same line detected in different octave images.
+typedef std::vector<LinesVec> ScaleLines;
 
-#endif /* LINESTRUCTURE_HH_ */
+#endif
