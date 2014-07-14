@@ -1005,6 +1005,38 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
 
   BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
 };
+
+/**
+ \brief Median Flow tracker implementation.
+Implementation of a paper "Forward-Backward Error: Automatic Detection of Tracking Failures" by Z. Kalal, K. Mikolajczyk 
+and Jiri Matas.
+ */
+class CV_EXPORTS_W TrackerMedianFlow : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    int pointsInGrid;
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
+
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
+};
+
+class CV_EXPORTS_W TrackerTLD : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
+
+  BOILERPLATE_CODE("TLD",TrackerTLD);
+};
 } /* namespace cv */
 
 #endif
