@@ -131,7 +131,9 @@ Once the LBD has been obtained, it must be converted into a binary form. For suc
 Related Pages
 -------------
 
-* `BinaryDescriptor Class <BinaryDescriptor.html>`_
+* `BinaryDescriptor Class <binary_descriptor.html>`_
+* `Matching with binary descriptors <matching.html>`_
+* `Drawing Function of Keylines and Matches <drawing_functions.html>`_
 
 References
 ----------

@@ -352,6 +352,35 @@ void BinaryDescriptor::computeGaussianPyramid( const Mat& image )
   }
 }
 
+/* check lines' extremes */
+inline void checkLineExtremes( cv::Vec4i& extremes, cv::Size imageSize )
+{
+
+  if( extremes[0] < 0 )
+    extremes[0] = 0;
+
+  if( extremes[0] >= imageSize.width )
+    extremes[0] = imageSize.width - 1;
+
+  if( extremes[2] < 0 )
+    extremes[2] = 0;
+
+  if( extremes[2] >= imageSize.width )
+    extremes[2] = imageSize.width - 1;
+
+  if( extremes[1] < 0 )
+    extremes[1] = 0;
+
+  if( extremes[1] >= imageSize.height )
+    extremes[1] = imageSize.height - 1;
+
+  if( extremes[3] < 0 )
+    extremes[3] = 0;
+
+  if( extremes[3] >= imageSize.height )
+    extremes[3] = imageSize.height - 1;
+}
+
 /* requires line detection (only one image) */
 void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask )
 {
@@ -389,7 +418,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 {
 
   cv::Mat image;
-  if(imageSrc.channels() != 1)
+  if( imageSrc.channels() != 1 )
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
   else
     image = imageSrc.clone();
@@ -422,11 +451,15 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
       /* create a KeyLine object */
       KeyLine kl;
 
+      /* check data validity */
+      cv::Vec4i extremes( osl.startPointX, osl.startPointY, osl.endPointX, osl.endPointY );
+      checkLineExtremes( extremes, image.size() );
+
       /* fill KeyLine's fields */
-      kl.startPointX = osl.startPointX;
-      kl.startPointY = osl.startPointY;
-      kl.endPointX = osl.endPointX;
-      kl.endPointY = osl.endPointY;
+      kl.startPointX = extremes[0];
+      kl.startPointY = extremes[1];
+      kl.endPointX = extremes[2];
+      kl.endPointY = extremes[3];
       kl.sPointInOctaveX = osl.sPointInOctaveX;
       kl.sPointInOctaveY = osl.sPointInOctaveY;
       kl.ePointInOctaveX = osl.ePointInOctaveX;
@@ -448,6 +481,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   }
 
   /* delete undesired KeyLines, according to input mask */
+  std::cout << "Mask size " << mask.rows << " " << mask.cols << std::endl;
   if( !mask.empty() )
   {
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
@@ -478,7 +512,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 {
   /* convert input image to gray scale */
   cv::Mat image;
-  if(imageSrc.channels() != 1)
+  if( imageSrc.channels() != 1 )
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
   else
     image = imageSrc.clone();
@@ -861,7 +895,7 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
     singleLine.octaveCount = octaveID;
     singleLine.lineLength = octaveLines[lineID].lineLength;
 
-    // decide the start point and end point
+// decide the start point and end point
     shouldChange = false;
 
     s1 = ( extractedLines[octaveID][lineIDInOctave] )[0];  //sx

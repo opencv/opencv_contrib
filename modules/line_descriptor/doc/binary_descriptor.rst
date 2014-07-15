@@ -17,7 +17,7 @@ List of BinaryDescriptor parameters::
     struct CV_EXPORTS_W_SIMPLE Params{
             CV_WRAP Params();
 
-            /* the number of image octaves (default = 5) */
+            /* the number of image octaves (default = 1) */
             CV_PROP_RW int  numOfOctave_;
 
             /* the width of band; (default = 7) */
@@ -215,3 +215,11 @@ Requires descriptors computation (for one or more images)
 	:param mask: mask to select for which lines, among the ones provided in input, descriptors must be computed
 
 	:param masks: set of masks to select for which lines, among the ones provided in input, descriptors must be computed
+
+
+Related pages
+-------------
+
+* `Binary descriptors for lines extracted from an image <line_descriptor.html>`_
+* `Matching with binary descriptors <matching.html>`_
+* `Drawing Function of Keylines and Matches <drawing_functions.html>`_

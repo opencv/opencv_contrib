@@ -41,7 +41,6 @@
 
 #include <opencv2/line_descriptor.hpp>
 
-
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include <opencv2/imgproc.hpp>
@@ -53,72 +52,55 @@
 using namespace cv;
 
 static const char* keys =
-{
-    "{@image_path | | Image path }"
-};
+{ "{@image_path | | Image path }" };
 
 static void help()
 {
-  std::cout << "\nThis example shows the functionalities of lines extraction " <<
-          "and descriptors computation furnished by BinaryDescriptor class\n" <<
-          "Please, run this sample using a command in the form\n" <<
-          "./example_line_descriptor_compute_descriptors <path_to_input_image>"
-          << std::endl;
-}
-
-inline void writeMat(cv::Mat m, std::string name, int n)
-{
-    std::stringstream ss;
-    std::string s;
-    ss << n;
-    ss >> s;
-    std::string fileNameConf = name + s;
-    cv::FileStorage fsConf(fileNameConf, cv::FileStorage::WRITE);
-    fsConf << "m" << m;
-
-    fsConf.release();
+  std::cout << "\nThis example shows the functionalities of lines extraction " << "and descriptors computation furnished by BinaryDescriptor class\n"
+            << "Please, run this sample using a command in the form\n" << "./example_line_descriptor_compute_descriptors <path_to_input_image>"
+            << std::endl;
 }
 
 int main( int argc, char** argv )
 {
-    /* get parameters from comand line */
-    CommandLineParser parser( argc, argv, keys );
-    String image_path = parser.get<String>( 0 );
+  /* get parameters from command line */
+  CommandLineParser parser( argc, argv, keys );
+  String image_path = parser.get<String>( 0 );
 
-    if(image_path.empty())
-    {
-        help();
-        return -1;
-    }
+  if( image_path.empty() )
+  {
+    help();
+    return -1;
+  }
 
-    /* load image */
-    cv::Mat imageMat = imread(image_path, 1);
-    if(imageMat.data == NULL)
-    {
-        std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
-    }
+  /* load image */
+  cv::Mat imageMat = imread( image_path, 1 );
+  if( imageMat.data == NULL )
+  {
+    std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
+  }
 
-    /* create a random binary mask */
-    cv::Mat mask = Mat::ones(imageMat.size(), CV_8UC1);
+  /* create a binary mask */
+  cv::Mat mask = Mat::ones( imageMat.size(), CV_8UC1 );
 
-    /* create a pointer to a BinaryDescriptor object with default parameters */
-    Ptr<BinaryDescriptor> bd = BinaryDescriptor::createBinaryDescriptor();
+  /* create a pointer to a BinaryDescriptor object with default parameters */
+  Ptr<BinaryDescriptor> bd = BinaryDescriptor::createBinaryDescriptor();
 
-    /* compute lines */
-    std::vector<KeyLine> keylines;
-    bd->detect(imageMat, keylines, mask);
+  /* compute lines */
+  std::vector<KeyLine> keylines;
+  bd->detect( imageMat, keylines, mask );
 
-    std::vector<KeyLine> octave0;
-    for(size_t i = 0; i<keylines.size(); i++)
-    {
-        if(keylines[i].octave == 0)
-            octave0.push_back(keylines[i]);
-    }
+  /* select only lines from first octave */
+  std::vector<KeyLine> octave0;
+  for ( size_t i = 0; i < keylines.size(); i++ )
+  {
+    if( keylines[i].octave == 0 )
+      octave0.push_back( keylines[i] );
+  }
 
-    /* compute descriptors */
-    cv::Mat descriptors;
+  /* compute descriptors */
+  cv::Mat descriptors;
 
-    bd->compute(imageMat, octave0, descriptors);
-    writeMat(descriptors, "old_code", 0);
+  bd->compute( imageMat, octave0, descriptors );
 
 }

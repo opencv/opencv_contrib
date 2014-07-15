@@ -47,24 +47,25 @@
 #include "array32.hpp"
 #include "bitarray.hpp"
 
-class BucketGroup {
+class BucketGroup
+{
 
  public:
-    /* constructor */
-    BucketGroup();
+  /* constructor */
+  BucketGroup();
 
-    /* destructor */
-    ~BucketGroup();
+  /* destructor */
+  ~BucketGroup();
 
-    /* insert data into the bucket */
-    void insert(int subindex, UINT32 data);
+  /* insert data into the bucket */
+  void insert( int subindex, UINT32 data );
 
-    /* perform a query to the bucket */
-    UINT32* query(int subindex, int *size);
+  /* perform a query to the bucket */
+  UINT32* query( int subindex, int *size );
 
-    /* data fields */
-    UINT32 empty;
-    Array32 *group;
+  /* data fields */
+  UINT32 empty;
+  Array32 *group;
 
 };
 

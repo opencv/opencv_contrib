@@ -51,34 +51,34 @@ class SparseHashtable
 
  private:
 
-    /* Maximum bits per key before folding the table */
-    static const int MAX_B;
+  /* Maximum bits per key before folding the table */
+  static const int MAX_B;
 
-    /* Bins (each bin is an Array object for duplicates of the same key) */
-    BucketGroup *table;
+  /* Bins (each bin is an Array object for duplicates of the same key) */
+  BucketGroup *table;
 
  public:
 
-    /* constructor */
-    SparseHashtable();
+  /* constructor */
+  SparseHashtable();
 
-    /* destructor */
-    ~SparseHashtable();
+  /* destructor */
+  ~SparseHashtable();
 
-    /* initializer */
-    int init(int _b);
-	
-    /* insert data */
-    void insert(UINT64 index, UINT32 data);
+  /* initializer */
+  int init( int _b );
 
-    /* query data */
-    UINT32* query(UINT64 index, int* size);
+  /* insert data */
+  void insert( UINT64 index, UINT32 data );
 
-    /* Bits per index */
-    int b;
+  /* query data */
+  UINT32* query( UINT64 index, int* size );
 
-    /*  Number of bins */
-    UINT64 size;
+  /* Bits per index */
+  int b;
+
+  /*  Number of bins */
+  UINT64 size;
 
 };
 

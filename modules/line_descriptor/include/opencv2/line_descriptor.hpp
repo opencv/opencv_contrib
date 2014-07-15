@@ -47,7 +47,7 @@
 
 namespace cv
 {
-CV_EXPORTS bool initModule_line_descriptor(void);
+CV_EXPORTS bool initModule_line_descriptor( void );
 
 }
 

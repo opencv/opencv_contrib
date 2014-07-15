@@ -1,9 +1,0 @@
-cmake_minimum_required(VERSION 2.8)
-project(line_descriptor)
-find_package(OpenCV REQUIRED)
-
-set(SOURCES lines_extraction.cpp compute_descriptors.cpp ../src/BinaryDescriptor.cpp)
-
-include_directories(${OpenCV_INCLUDE_DIRS})
-add_executable(lines_extraction compute_descriptors ${SOURCES} ${HEADERS})
-target_link_libraries(lines_extraction compute_descriptors ${OpenCV_LIBS})
