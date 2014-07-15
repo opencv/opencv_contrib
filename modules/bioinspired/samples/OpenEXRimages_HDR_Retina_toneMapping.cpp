@@ -12,6 +12,7 @@
 
 #include "opencv2/bioinspired.hpp" // retina based algorithms
 #include "opencv2/imgproc.hpp" // cvCvtcolor function
+#include "opencv2/imgcodecs.hpp" // imread
 #include "opencv2/highgui.hpp" // display
 
 static void help(std::string errorMessage)

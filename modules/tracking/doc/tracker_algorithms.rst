@@ -20,19 +20,18 @@ The classifier uses the surrounding background as negative examples in update st
 
 Implementation of TrackerBoosting from :ocv:class:`Tracker`::
 
-   class CV_EXPORTS_W TrackerBoosting : public Tracker
-   {
-    public:
+    class CV_EXPORTS_W TrackerBoosting : public Tracker
+    {
+     public:
+      void read( const FileNode& fn );
+      void write( FileStorage& fs ) const;
+      static Ptr<trackerBoosting> createTracker(const trackerBoosting::Params &parameters=trackerBoosting::Params());
+      virtual ~trackerBoosting(){};
 
-     TrackerBoosting( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() );
-
-     virtual ~TrackerBoosting();
-
-     void read( const FileNode& fn );
-     void write( FileStorage& fs ) const;
-
-
-   };
+     protected:
+      bool initImpl( const Mat& image, const Rect2d& boundingBox );
+      bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    };
 
 TrackerBoosting::Params
 -----------------------------------------------------------------------
@@ -54,12 +53,12 @@ List of BOOSTING parameters::
     void write( FileStorage& fs ) const;
    };
 
-TrackerBoosting::TrackerBoosting
+TrackerBoosting::createTracker
 -----------------------------------------------------------------------
 
 Constructor
 
-.. ocv:function:: bool TrackerBoosting::TrackerBoosting( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() )
+.. ocv:function:: Ptr<trackerBoosting> TrackerBoosting::createTracker(const trackerBoosting::Params &parameters=trackerBoosting::Params())
 
     :param parameters: BOOSTING parameters :ocv:struct:`TrackerBoosting::Params`
 
@@ -74,18 +73,18 @@ Original code can be found here http://vision.ucsd.edu/~bbabenko/project_miltrac
 
 Implementation of TrackerMIL from :ocv:class:`Tracker`::
 
-   class CV_EXPORTS_W TrackerMIL : public Tracker
-   {
-    public:
+    class CV_EXPORTS_W TrackerMIL : public Tracker
+    {
+     public:
+      void read( const FileNode& fn );
+      void write( FileStorage& fs ) const;
+      static Ptr<trackerMIL> createTracker(const trackerMIL::Params &parameters=trackerMIL::Params());
+      virtual ~trackerMIL(){};
 
-     TrackerMIL( const TrackerMIL::Params &parameters = TrackerMIL::Params() );
-
-     virtual ~TrackerMIL();
-
-     void read( const FileNode& fn );
-     void write( FileStorage& fs ) const;
-
-   };
+     protected:
+      bool initImpl( const Mat& image, const Rect2d& boundingBox );
+      bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    };
 
 TrackerMIL::Params
 ------------------
@@ -111,11 +110,11 @@ List of MIL parameters::
     void write( FileStorage& fs ) const;
    };
 
-TrackerMIL::TrackerMIL
-----------------------
+TrackerMIL::createTracker
+-------------------------------
 
 Constructor
 
-.. ocv:function:: bool TrackerMIL::TrackerMIL( const TrackerMIL::Params &parameters = TrackerMIL::Params() )
+.. ocv:function:: Ptr<trackerMIL> TrackerMIL::createTracker(const trackerMIL::Params &parameters=trackerMIL::Params())
 
     :param parameters: MIL parameters :ocv:struct:`TrackerMIL::Params`

@@ -50,6 +50,10 @@
 #include "opencv2/optim.hpp"
 #include <iostream>
 
+#define BOILERPLATE_CODE(name,classname) \
+    static Ptr<classname> createTracker(const classname::Params &parameters=classname::Params());\
+    virtual ~classname(){};
+
 /*
  * Partially based on:
  * ====================================================================================================================
@@ -497,6 +501,9 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
    */
   static Ptr<Tracker> create( const String& trackerType );
 
+  virtual void read( const FileNode& fn )=0;
+  virtual void write( FileStorage& fs ) const=0;
+
  protected:
 
   virtual bool initImpl( const Mat& image, const Rect2d& boundingBox ) = 0;
@@ -507,7 +514,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   Ptr<TrackerFeatureSet> featureSet;
   Ptr<TrackerSampler> sampler;
   Ptr<TrackerModel> model;
-
+  virtual AlgorithmInfo* info() const;
 };
 
 /************************************ Specific TrackerStateEstimator Classes ************************************/
@@ -961,33 +968,13 @@ class CV_EXPORTS_W TrackerMIL : public Tracker
     float samplerTrackInRadius;  // radius for gathering positive instances during tracking
     int samplerTrackMaxPosNum;	// # positive samples to use during tracking
     int samplerTrackMaxNegNum;	// # negative samples to use during tracking
-
     int featureSetNumFeatures;  // #features
 
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
   };
 
-  /**
-   * \brief TrackerMIL Constructor
-   * \param parameters        TrackerMIL parameters
-   */
-  TrackerMIL( const TrackerMIL::Params &parameters = TrackerMIL::Params() );
-
-  virtual ~TrackerMIL();
-
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
-
- protected:
-
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
-  void compute_integral( const Mat & img, Mat & ii_img );
-
-  Params params;
-  AlgorithmInfo* info() const;
-
+  BOILERPLATE_CODE("MIL",TrackerMIL);
 };
 
 /**
@@ -1016,24 +1003,39 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
     void write( FileStorage& fs ) const;
   };
 
-  /**
-   * \brief TrackerBoosting Constructor
-   * \param parameters        TrackerBoosting parameters
-   */
-  TrackerBoosting( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() );
+  BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
+};
 
-  virtual ~TrackerBoosting();
+/**
+ \brief Median Flow tracker implementation.
+Implementation of a paper "Forward-Backward Error: Automatic Detection of Tracking Failures" by Z. Kalal, K. Mikolajczyk 
+and Jiri Matas.
+ */
+class CV_EXPORTS_W TrackerMedianFlow : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    int pointsInGrid;
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
 
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
+};
 
- protected:
+class CV_EXPORTS_W TrackerTLD : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
 
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
-
-  Params params;
-  AlgorithmInfo* info() const;
+  BOILERPLATE_CODE("TLD",TrackerTLD);
 };
 } /* namespace cv */
 
