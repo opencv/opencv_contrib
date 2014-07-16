@@ -12,6 +12,7 @@
 #include "opencv2/ts.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/tracking.hpp>
+#include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 
 #ifdef GTEST_CREATE_SHARED_LIBRARY
