@@ -31,15 +31,9 @@ To see how API works, try tracker demo: https://github.com/fpuja/opencv_contrib/
 
 .. note:: This Tracking API has been designed with PlantUML. If you modify this API please change UML files under modules/tracking/misc/
 
-The following reference was used in the API
-
-.. [SR] Hou, Xiaodi, and Liqing Zhang. "Saliency detection: A spectral residual approach." Computer Vision and Pattern Recognition, 2007. CVPR'07. IEEE Conference on. IEEE, 2007.
-
-.. [BING] Cheng, Ming-Ming, et al. "BING: Binarized normed gradients for objectness estimation at 300fps." IEEE CVPR. 2014.
-
 
 Saliency classes:
-----------------
+-----------------
 
 .. toctree::
     :maxdepth: 2

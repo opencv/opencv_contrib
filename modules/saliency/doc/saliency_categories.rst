@@ -23,7 +23,7 @@ StaticSaliency class::
    };
 
 StaticSaliency::computeBinaryMap
--------------------------------
+--------------------------------
 
 This function perform a binary map of given saliency map. This is obtained in this way:
 
@@ -32,10 +32,10 @@ by clustering is performed, using *K-means algorithm*. Then, to gain a binary re
 So, *Otsu’s algorithm* is used, which assumes that the image to be thresholded contains two classes of pixels or bi-modal histograms (e.g. foreground and back-ground pixels); later on, the algorithm calculates the optimal threshold separating those two classes, so that their
 intra-class variance is minimal.
 
-.. ocv:function::  bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
+.. ocv:function:: bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap )
 
    :param saliencyMap: the saliency map obtained through one of the specialized algorithms
-   :param binaryMap  : the binary map
+   :param binaryMap: the binary map
 
 
 MotionSaliency
@@ -55,7 +55,7 @@ MotionSaliency class::
 
 
 Objectness
---------------
+----------
 
 .. ocv:class:: Objectness
 

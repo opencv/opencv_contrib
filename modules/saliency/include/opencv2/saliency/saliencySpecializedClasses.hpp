@@ -71,13 +71,13 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
 
   Ptr<Size> getWsize();
-  void setWsize( const Ptr<Size> &arrPtr );
+  void setWsize( const Ptr<Size> &newSize );
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
  protected:
-  bool computeSaliencyImpl( const InputArray src, OutputArray dst );
+  bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;CV_PROP_RW
   Ptr<Size> resizedImageSize;
 
@@ -105,20 +105,19 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   void setTrainingPath( string trainingPath );
   void setBBResDir( string resultsDir );
 
-
  protected:
-  bool computeSaliencyImpl( const InputArray src, OutputArray dst );
+  bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
   AlgorithmInfo* info() const;
 
  private:
   // Parameters
 
   enum
-   {
-     MAXBGR,
-     HSV,
-     G
-   };
+  {
+    MAXBGR,
+    HSV,
+    G
+  };
 
   double _base, _logBase;  // base for window size quantization
   int _W;  // As described in the paper: #Size, Size(_W, _H) of feature window.

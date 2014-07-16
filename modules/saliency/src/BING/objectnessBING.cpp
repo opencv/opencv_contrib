@@ -476,7 +476,7 @@ void ObjectnessBING::write() const
 
 }
 
-bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray objBoundingBox )
+bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox )
 {
   ValStructVec<float, Vec4i> finalBoxes;
   getObjBndBoxesForSingleImage( image.getMat(), finalBoxes, 250 );
@@ -485,7 +485,7 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   // At the top there are the rectangles with higher values, ie more
   // likely to have objects in them.
   vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
-  Mat( sortedBB ).copyTo( objBoundingBox );
+  Mat( sortedBB ).copyTo( objectnessBoundingBox );
 
   // List of the rectangles' objectness value
   unsigned long int valIdxesSize = finalBoxes.getvalIdxes().size();
