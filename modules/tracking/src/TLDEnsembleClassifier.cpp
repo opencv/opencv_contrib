@@ -48,7 +48,7 @@
 
 using namespace cv;
 
-namespace cv {namespace tld
+namespace cv{namespace tld
 {
 int TLDEnsembleClassifier::getGridSize(){
     return 15;

@@ -7,7 +7,7 @@
 #include <cstring>
 #include <climits>
 
-#define CMDLINEMAX 10
+#define CMDLINEMAX 30
 #define ASSESS_TILL 100
 #define LINEMAX 40
 
@@ -20,7 +20,8 @@ using namespace cv;
 
 static Mat image;
 static bool paused;
-vector<Scalar> palette;
+static bool saveImageKey;
+static vector<Scalar> palette;
 
 void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName);
 
@@ -67,20 +68,15 @@ static void help(){
   exit(EXIT_SUCCESS);
 }
 static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[],
-        int* vc,char* algorithms[],char* initBoxes[][CMDLINEMAX],int* ac){
+        int* vc,char* algorithms[],char* initBoxes[][CMDLINEMAX],int* ac,char keys[CMDLINEMAX][LINEMAX]){
 
     *ac=*vc=0;
     for(int i=1;i<argc;i++){
         if(argv[i][0]=='-'){
-            char *key=(argv[i]+1),*argument=NULL;
-            if(std::strcmp("h",key)==0||std::strcmp("help",key)==0){
-                help();
-            }
-            if((argument=strchr(argv[i],'='))==NULL){
-                i++;
-                argument=argv[i];
-            }else{
-                argument++;
+            for(int j=0;j<CMDLINEMAX;j++){
+                if(!strcmp(argv[i],keys[j])){
+                    keys[j][0]='\0';
+                }
             }
             continue;
         }
@@ -193,6 +189,8 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
   int linecount=0;
   Rect2d boundingBox;
   vector<double> averageMillisPerFrame(algnum,0.0);
+  static int videoNum=0;
+  videoNum++;
 
   FILE* gt=fopen(gt_str,"r");
   if(gt==NULL){
@@ -312,6 +310,11 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
               res.results[i][j]->assess(boundingBox,initBoxes[i]);
       }
       imshow( "Tracking API", image );
+      if(saveImageKey){
+          char inbuf[LINEMAX];
+          sprintf(inbuf,"image%d_%d.jpg",videoNum,frameCounter);
+          imwrite(inbuf,image);
+      }
 
       if((frameCounter+1)>=ASSESS_TILL){
           break;
@@ -342,7 +345,11 @@ int main( int argc, char** argv ){
   palette.push_back(Scalar(0,255,255));
   int vcount=0,acount=0;
   char* videos[CMDLINEMAX],*gts[CMDLINEMAX],*algorithms[CMDLINEMAX],*initBoxes[CMDLINEMAX][CMDLINEMAX];
-  parseCommandLineArgs(argc,argv,videos,gts,&vcount,algorithms,initBoxes,&acount);
+  char keys[CMDLINEMAX][LINEMAX];
+  strcpy(keys[0],"-s");
+  parseCommandLineArgs(argc,argv,videos,gts,&vcount,algorithms,initBoxes,&acount,keys);
+  saveImageKey=(keys[0][0]=='\0');
+
   CV_Assert(acount<CMDLINEMAX && vcount<CMDLINEMAX);
   printf("videos and gts\n");
   for(int i=0;i<vcount;i++){

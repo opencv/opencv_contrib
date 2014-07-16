@@ -53,7 +53,7 @@
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
-#undef BLUR_AS_VADIM
+#define BLUR_AS_VADIM
 #undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3,3);
 
@@ -66,12 +66,12 @@ using namespace tld;
  *      direct formula in resamples
  * FIXME(issues)
  *      THETA_NN 0.5<->0.6 dramatic change vs video 6 !!
- * FIXME(features)
- *      benchmark: save photos --> two streams of photos --> better video
+ * TODO(features)
+ *      benchmark: two streams of photos --> better video
+ *      (try inter_area for resize)
  * TODO:
- *      schoolPC: codec, libopencv-dev
  *      fix pushbot ->pick commits -> compare_branches->all in 1->resubmit
- *      ||video(0.5<->0.6) --> debug if box size is less than 20 --> (remove ensemble self-loop) --> (try inter_area for resize)
+ *      ||video(0.5<->0.6) --> debug if box size is less than 20
  *      perfect PN
  *
  *      vadim:
@@ -446,7 +446,9 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
             }
 
 #ifdef BLUR_AS_VADIM
-            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            resize(standardPatch,blurredPatch,minSize);
+            GaussianBlur(blurredPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            CV_Assert(blurredPatch.cols==minSize.width && blurredPatch.rows==minSize.height);
 #else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
 #endif
@@ -767,17 +769,19 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
             size.height=(float)(closest[i].height*rng.uniform((double)0.99,(double)1.01));
             float angle=(float)rng.uniform(-5.0,5.0);
 
-#ifdef BLUR_AS_VADIM
-            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
-#else
-            resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
-#endif
-            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             for(int y=0;y<standardPatch.rows;y++){
                 for(int x=0;x<standardPatch.cols;x++){
                     standardPatch(x,y)+=(uchar)rng.gaussian(5.0);
                 }
             }
+#ifdef BLUR_AS_VADIM
+            resize(standardPatch,blurredPatch,initSize_);
+            GaussianBlur(blurredPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            CV_Assert(blurredPatch.cols==initSize_.width && blurredPatch.rows==initSize_.height);
+#else
+            resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
+#endif
+            resample(scaledImg,RotatedRect(center,size,angle),standardPatch);
             examplesForModel.push_back(standardPatch);
             examplesForEnsemble.push_back(blurredPatch);
         }
