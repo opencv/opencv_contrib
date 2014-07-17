@@ -42,8 +42,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <opencv2/imgcodecs.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "opencv2/reg/mapaffine.hpp"
 #include "opencv2/reg/mapshift.hpp"

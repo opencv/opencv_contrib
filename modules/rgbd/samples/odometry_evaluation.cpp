@@ -36,7 +36,6 @@
 #include <opencv2/rgbd.hpp>
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/contrib.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -154,7 +153,6 @@ int main(int argc, char** argv)
     }
     odometry->set("cameraMatrix", cameraMatrix);
 
-    TickMeter gtm;
     int count = 0;
     for(int i = 0; !file.eof(); i++)
     {
@@ -166,9 +164,6 @@ int main(int argc, char** argv)
         Mat image, depth;
         // Read one pair (rgb and depth)
         // example: 1305031453.359684 rgb/1305031453.359684.png 1305031453.374112 depth/1305031453.374112.png
-#if BILATERAL_FILTER
-        TickMeter tm_bilateral_filter;
-#endif
         {
             string rgbFilename = str.substr(timestampLength + 1, rgbPathLehgth );
             string timestap = str.substr(0, timestampLength);
@@ -190,7 +185,6 @@ int main(int argc, char** argv)
             depth_flt.setTo(std::numeric_limits<float>::quiet_NaN(), depth == 0);
             depth = depth_flt;
 #else
-            tm_bilateral_filter.start();
             depth = Mat(depth_flt.size(), CV_32FC1, Scalar(0));
             const double depth_sigma = 0.03;
             const double space_sigma = 4.5;  // in pixels
@@ -198,8 +192,6 @@ int main(int argc, char** argv)
             depth_flt.setTo(-5*depth_sigma, invalidDepthMask);
             bilateralFilter(depth_flt, depth, -1, depth_sigma, space_sigma);
             depth.setTo(std::numeric_limits<float>::quiet_NaN(), invalidDepthMask);
-            tm_bilateral_filter.stop();
-            cout << "Time filter " << tm_bilateral_filter.getTimeSec() << endl;
 #endif
             timestamps.push_back( timestap );
         }
@@ -213,17 +205,8 @@ int main(int argc, char** argv)
             Mat Rt;
             if(!Rts.empty())
             {
-                TickMeter tm;
-                tm.start();
-                gtm.start();
                 bool res = odometry->compute(frame_curr, frame_prev, Rt);
-                gtm.stop();
-                tm.stop();
                 count++;
-                cout << "Time " << tm.getTimeSec() << endl;
-#if BILATERAL_FILTER
-                cout << "Time ratio " << tm_bilateral_filter.getTimeSec() / tm.getTimeSec() << endl;
-#endif
                 if(!res)
                     Rt = Mat::eye(4,4,CV_64FC1);
             }
@@ -243,7 +226,6 @@ int main(int argc, char** argv)
         }
     }
 
-    std::cout << "Average time " << gtm.getTimeSec()/count << std::endl;
     writeResults(argv[2], timestamps, Rts);
 
     return 0;
