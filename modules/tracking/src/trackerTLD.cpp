@@ -48,11 +48,12 @@
 #include "TLD.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.5
+#define THETA_NN 0.50
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
+#define DOWNSCALE_MODE INTER_LINEAR
 #define BLUR_AS_VADIM
 #undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3,3);
@@ -269,7 +270,7 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox ){
     Rect2d myBoundingBox=boundingBox;
     if(scale>1.0){
         Mat image_proxy;
-        resize(image_gray,image_proxy,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)));
+        resize(image_gray,image_proxy,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)),0,0,DOWNSCALE_MODE);
         image_proxy.copyTo(image_gray);
         myBoundingBox.x*=scale;
         myBoundingBox.y*=scale;
@@ -298,7 +299,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     double scale=data->getScale();
     if(scale>1.0){
-        resize(image_gray,imageForDetector,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)));
+        resize(image_gray,imageForDetector,Size(cvRound(image.cols*scale),cvRound(image.rows*scale)),0,0,DOWNSCALE_MODE);
     }else{
         imageForDetector=image_gray;
     }
@@ -446,8 +447,8 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
             }
 
 #ifdef BLUR_AS_VADIM
-            resize(standardPatch,blurredPatch,minSize);
-            GaussianBlur(blurredPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            resize(blurredPatch,blurredPatch,minSize);
             CV_Assert(blurredPatch.cols==minSize.width && blurredPatch.rows==minSize.height);
 #else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
@@ -564,7 +565,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         size.width/=1.2;
         size.height/=1.2;
         scale*=1.2;
-        resize(img,resized_img,size);
+        resize(img,resized_img,size,0,0,DOWNSCALE_MODE);
         GaussianBlur(resized_img,blurred_img,GaussBlurKernelSize,0.0f);
     }while(size.width>=initSize.width && size.height>=initSize.height);
     END_TICK("detector");
@@ -775,8 +776,8 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
                 }
             }
 #ifdef BLUR_AS_VADIM
-            resize(standardPatch,blurredPatch,initSize_);
-            GaussianBlur(blurredPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
+            resize(blurredPatch,blurredPatch,initSize_);
             CV_Assert(blurredPatch.cols==initSize_.width && blurredPatch.rows==initSize_.height);
 #else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
