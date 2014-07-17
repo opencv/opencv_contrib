@@ -40,37 +40,75 @@
  //M*/
 
 #include "precomp.hpp"
-#include "opencv2/saliency.hpp"
 
 namespace cv
 {
 
-CV_INIT_ALGORITHM(
-    StaticSaliencySpectralResidual,
-    "SALIENCY.SPECTRAL_RESIDUAL",
-    obj.info()->addParam( obj, "resizedImageSize", obj.resizedImageSize, false,
-                          reinterpret_cast<SizeGetter>( &StaticSaliencySpectralResidual::getWsize ),
-                          reinterpret_cast<SizeSetter>( &StaticSaliencySpectralResidual::setWsize ) ) );
-
-CV_INIT_ALGORITHM(
-    MotionSaliencyBinWangApr2014,
-    "SALIENCY.BinWangApr2014",
-    obj.info()->addParam( obj, "imgSize", obj.imgSize, false,
-                          reinterpret_cast<SizeGetter>( &MotionSaliencyBinWangApr2014::getWsize ),
-                          reinterpret_cast<SizeSetter>( &MotionSaliencyBinWangApr2014::setWsize ) ) );
-
-CV_INIT_ALGORITHM(
-    ObjectnessBING, "SALIENCY.BING",
-    obj.info()->addParam(obj, "_base", obj._base); obj.info()->addParam(obj, "_NSS", obj._NSS); obj.info()->addParam(obj, "_W", obj._W) );
-
-bool initModule_saliency( void )
+cv::Ptr<Size> MotionSaliencyBinWangApr2014::getWsize()
 {
-  bool all = true;
-  all &= !StaticSaliencySpectralResidual_info_auto.name().empty();
-  all &= !MotionSaliencyBinWangApr2014_info_auto.name().empty();
-  all &= !ObjectnessBING_info_auto.name().empty();
-
-  return all;
+  return imgSize;
+}
+void MotionSaliencyBinWangApr2014::setWsize( const cv::Ptr<Size>& newSize )
+{
+  imgSize = newSize;
 }
 
+MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
+{
+
+  epslonPixelsValue = Mat::zeros( imgSize->height, imgSize->width, CV_8U );
+  potentialBackground = Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 );
+  backgroundModel=std::vector<Mat>( 4, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
+
+  K = 3;  // Number of background model template
+  alpha = 0.01;  // Learning rate
+  L0 = 6000;  // Upper-bound values for C0 (efficacy of the first template (matrices) of backgroundModel
+  L1 = 4000;  // Upper-bound values for C1 (efficacy of the second template (matrices) of backgroundModel
+  thetaL = 2500;  // T0, T1 swap threshold
+  thetaA = 200;
+  gamma = 3;
+
+  className = "BinWangApr2014";
 }
+
+MotionSaliencyBinWangApr2014::~MotionSaliencyBinWangApr2014()
+{
+
+}
+
+// classification (and adaptation) functions
+bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat image, Mat highResBFMask )
+{
+
+  return true;
+}
+bool MotionSaliencyBinWangApr2014::lowResolutionDetection( Mat image, Mat lowResBFMask )
+{
+
+  return true;
+}
+bool MotionSaliencyBinWangApr2014::templateUpdate( Mat highResBFMask )
+{
+
+  return true;
+}
+
+// Background model maintenance functions
+bool MotionSaliencyBinWangApr2014::templateOrdering()
+{
+
+  return true;
+}
+bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
+{
+
+  return true;
+}
+
+bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
+{
+
+  return true;
+}
+
+}  // namespace cv

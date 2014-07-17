@@ -99,6 +99,12 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   MotionSaliencyBinWangApr2014();
   ~MotionSaliencyBinWangApr2014();
 
+  typedef Ptr<Size> (Algorithm::*SizeGetter)();
+  typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
+
+  Ptr<Size> getWsize();
+  void setWsize( const Ptr<Size> &newSize );
+
  protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;
@@ -112,13 +118,11 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 
   // Background model maintenance functions
   bool templateOrdering();
-  bool templateReplacement(Mat finalBFMask);
+  bool templateReplacement( Mat finalBFMask );
 
   // Decision threshold adaptation and Activity control function
-  bool activityControl(vector<Mat> noisePixelMask);
-  bool decisionThresholdAdaptation();
-
-
+  //bool activityControl(vector<Mat> noisePixelMask);
+  //bool decisionThresholdAdaptation();
 
   // changing structure
   vector<Mat> backgroundModel;  // The vector represents the background template T0---TK of reference paper.
@@ -129,14 +133,16 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   Mat epslonPixelsValue;  // epslon threshold
   //Mat activityPixelsValue; // Activity level of each pixel
   //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
-                                // detection process,however, after the low resolution detection, it has become a
-                                // background pixel. In a noise-pixel mask, the identified noise-pixels are set to 1 while other pixels are 0;
+  // detection process,however, after the low resolution detection, it has become a
+  // background pixel. In a noise-pixel mask, the identified noise-pixels are set to 1 while other pixels are 0;
 
   //fixed parameter
+  Ptr<Size> imgSize;  // Size of input image
   int K;  // Number of background model template
-  float alpha; // Learning rate
+  float alpha;  // Learning rate
   int L0, L1;  // Upper-bound values for C0 and C1 (efficacy of the first two template (matrices) of backgroundModel
   int thetaL;  // T0, T1 swap threshold
+  int thetaA;  // Potential background value threshold
   int gamma;  // Parameter that controls the time that the newly updated long-term background value will remain in the
               // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
               //restrain the generation of ghosts.
