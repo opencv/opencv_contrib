@@ -105,6 +105,8 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   Ptr<Size> getWsize();
   void setWsize( const Ptr<Size> &newSize );
 
+  bool init();
+
  protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;
