@@ -189,7 +189,7 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
 
 /* definition of operator () */
 void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std::vector<KeyLine>& keylines, OutputArray descriptors,
-                                   bool useProvidedKeyLines ) const
+                                   bool useProvidedKeyLines, bool returnFloatDescr ) const
 {
 
   /* create some matrix objects */
@@ -210,7 +210,7 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
     detectImpl( imageMat, keylines, maskMat );
 
   /* compute descriptors */
-  computeImpl( imageMat, keylines, descrMat );
+  computeImpl( imageMat, keylines, descrMat, returnFloatDescr );
 }
 
 BinaryDescriptor::~BinaryDescriptor()
@@ -481,7 +481,6 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   }
 
   /* delete undesired KeyLines, according to input mask */
-  std::cout << "Mask size " << mask.rows << " " << mask.cols << std::endl;
   if( !mask.empty() )
   {
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
@@ -495,20 +494,22 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 }
 
 /* requires descriptors computation (only one image) */
-void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors ) const
+void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors,
+                                bool returnFloatDescr ) const
 {
-  computeImpl( image, keylines, descriptors );
+  computeImpl( image, keylines, descriptors, returnFloatDescr );
 }
 
 /* requires descriptors computation (more than one image) */
-void BinaryDescriptor::compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors ) const
+void BinaryDescriptor::compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors,
+                                bool returnFloatDescr ) const
 {
   for ( size_t i = 0; i < images.size(); i++ )
-    computeImpl( images[i], keylines[i], descriptors[i] );
+    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr );
 }
 
 /* implementation of descriptors computation */
-void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors ) const
+void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const
 {
   /* convert input image to gray scale */
   cv::Mat image;
@@ -616,9 +617,6 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   /* compute LBD descriptors */
   bn->computeLBD( sl );
 
-  /* resize output matrix */
-  descriptors = cv::Mat( keylines.size(), 32, CV_8UC1 );
-
   /* fill output matrix with descriptors */
   for ( size_t k = 0; k < sl.size(); k++ )
   {
@@ -628,18 +626,42 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
       int lineOctave = ( sl[k][lineC] ).octaveCount;
       int originalIndex = correspondences.find( std::pair<int, int>( k, lineOctave ) )->second;
 
-      /* get a pointer to correspondent row in output matrix */
-      uchar* pointerToRow = descriptors.ptr( originalIndex );
-
-      /* get LBD data */
-      float* desVec = sl[k][lineC].descriptor.data();
-
-      /* fill current row with binary descriptor */
-      for ( int comb = 0; comb < 32; comb++ )
+      if( !returnFloatDescr )
       {
-        *pointerToRow = bn->binaryConversion( &desVec[8 * combinations[comb][0]], &desVec[8 * combinations[comb][1]] );
+        /* resize output matrix */
+        descriptors = cv::Mat( keylines.size(), 32, CV_8UC1 );
 
-        pointerToRow++;
+        /* get a pointer to correspondent row in output matrix */
+        uchar* pointerToRow = descriptors.ptr( originalIndex );
+
+        /* get LBD data */
+        float* desVec = sl[k][lineC].descriptor.data();
+
+        /* fill current row with binary descriptor */
+        for ( int comb = 0; comb < 32; comb++ )
+        {
+          *pointerToRow = bn->binaryConversion( &desVec[8 * combinations[comb][0]], &desVec[8 * combinations[comb][1]] );
+
+          pointerToRow++;
+        }
+      }
+
+      else
+      {
+        /* resize output matrix */
+        descriptors = cv::Mat( keylines.size(), NUM_OF_BANDS * 8, CV_32FC1 );
+
+        /* get a pointer to correspondent row in output matrix */
+        uchar* pointerToRow = descriptors.ptr( originalIndex );
+
+        /* get LBD data */
+        std::vector<float> desVec = sl[k][lineC].descriptor;
+
+        for ( size_t count = 0; count < desVec.size(); count++ )
+        {
+          *pointerToRow = desVec[count];
+          pointerToRow++;
+        }
       }
 
     }
@@ -653,6 +675,7 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
 
   /* final number of extracted lines */
   unsigned int numOfFinalLine = 0;
+  std::vector<float> prec, w_idth, nfa;
 
   for ( size_t scaleCounter = 0; scaleCounter < octaveImages.size(); scaleCounter++ )
   {
@@ -660,13 +683,13 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
     cv::Mat currentScaledImage = octaveImages[scaleCounter];
 
     /* create an LSD detector and store a pointer to it */
-    cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector( cv::LSD_REFINE_ADV );
+    cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector( cv::LSD_REFINE_ADV, 0.8, 0.6, 2.0, 22.5 );
 
     /* prepare a vector to host extracted segments */
     std::vector<cv::Vec4i> lines_std;
 
     /* use detector to extract segments */
-    ls->detect( currentScaledImage, lines_std );
+    ls->detect( currentScaledImage, lines_std, w_idth, prec/*, nfa*/ );
 
     /* store lines extracted from current image */
     extractedLines.push_back( lines_std );
@@ -674,6 +697,17 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
     /* update lines counter */
     numOfFinalLine += lines_std.size();
 
+  }
+
+  Mat appoggio = octaveImages[0].clone();
+  cvtColor(appoggio, appoggio, COLOR_GRAY2BGR);
+  for(size_t t = 0; t<extractedLines[0].size(); t++)
+  {
+    Vec4i v = extractedLines[0][t];
+    line(appoggio, Point(v[0], v[1]), Point(v[2], v[3]), Scalar(255, 0, 0), 3);
+    std::cout<< std::endl << prec[t] << " " << w_idth[t] /*<< " " << nfa[t]*/ << std::endl;
+    imshow("M", appoggio);
+    //waitKey();
   }
 
   /* prepare a vector to store octave information associated to extracted lines */

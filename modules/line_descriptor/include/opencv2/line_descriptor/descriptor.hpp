@@ -165,10 +165,10 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   /* requires descriptors computation (only one image) */
   CV_WRAP
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors ) const;
+  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr=false ) const;
 
   /* requires descriptors computation (more than one image) */
-  void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors ) const;
+  void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr=false ) const;
 
   /*return descriptor size */
   int descriptorSize() const;
@@ -185,14 +185,14 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   /* definition of operator () */
   CV_WRAP_AS(detectAndCompute)
   virtual void operator()( InputArray image, InputArray mask, CV_OUT std::vector<KeyLine>& keylines, OutputArray descriptors,
-                           bool useProvidedKeyLines = false ) const;
+                           bool useProvidedKeyLines = false, bool returnFloatDescr=false ) const;
 
  protected:
   /* implementation of line detection */
   virtual void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask = Mat() ) const;
 
   /* implementation of descriptors' computation */
-  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors ) const;
+  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const;
 
   /* function inherited from Algorithm */
   AlgorithmInfo* info() const;

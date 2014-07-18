@@ -99,7 +99,7 @@ int main( int argc, char** argv )
   for ( size_t i = 0; i < lines.size(); i++ )
   {
     KeyLine kl = lines[i];
-    if( kl.octave == 0 )
+    if( kl.octave == 0 /*&& kl.response >0.08*/)
     {
       /* get a random color */
       int R = ( rand() % (int) ( 255 + 1 ) );
