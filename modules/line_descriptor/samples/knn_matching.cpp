@@ -189,15 +189,5 @@ int main( int argc, char** argv )
   /* require knn match */
   bdm->knnMatch( descr1, descr2, matches, 6 );
 
-  /* visualize matches and Hamming distances */
-  for ( size_t v = 0; v < matches.size(); v++ )
-  {
-    for ( size_t m = 0; m < matches[v].size(); m++ )
-    {
-      DMatch dm = matches[v][m];
-      std::cout << dm.queryIdx << " " << dm.trainIdx << " " << dm.distance << std::endl;
-    }
-  }
-
 }
 

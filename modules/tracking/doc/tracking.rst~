@@ -76,8 +76,8 @@ The following reference was used in the API
 Tracker classes:
 ----------------
 
-.. toctree::
-	:maxdepth: 2
+		.. toctree::
+			:maxdepth: 2
 
     tracker_algorithms
     common_interfaces_tracker

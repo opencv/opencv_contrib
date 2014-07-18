@@ -127,15 +127,20 @@ Each :math:`BD_j` can be obtained using the standard deviation vector :math:`S_j
 
 Once the LBD has been obtained, it must be converted into a binary form. For such purpose, we consider 32 possible pairs of BD inside it; each couple of BD is compared bit by bit and comparison generates an 8 bit string. Concatenating 32 comparison strings, we get the 256-bit final binary representation of a single LBD.
 
-
-Related Pages
--------------
-
-* `BinaryDescriptor Class <binary_descriptor.html>`_
-* `Matching with binary descriptors <matching.html>`_
-* `Drawing Function of Keylines and Matches <drawing_functions.html>`_
-
 References
 ----------
 
 .. [LBD] Zhang, Lilian, and Reinhard Koch. *An efficient and robust line segment matching approach based on LBD descriptor and pairwise geometric consistency*, Journal of Visual Communication and Image Representation 24.7 (2013): 794-805.
+
+
+Summary
+-------
+		
+.. toctree::
+	:maxdepth: 2
+
+	binary_descriptor
+	matching
+	drawing_functions
+	tutorial
+

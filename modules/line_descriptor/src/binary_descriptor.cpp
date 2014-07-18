@@ -699,17 +699,6 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
 
   }
 
-  Mat appoggio = octaveImages[0].clone();
-  cvtColor(appoggio, appoggio, COLOR_GRAY2BGR);
-  for(size_t t = 0; t<extractedLines[0].size(); t++)
-  {
-    Vec4i v = extractedLines[0][t];
-    line(appoggio, Point(v[0], v[1]), Point(v[2], v[3]), Scalar(255, 0, 0), 3);
-    std::cout<< std::endl << prec[t] << " " << w_idth[t] /*<< " " << nfa[t]*/ << std::endl;
-    imshow("M", appoggio);
-    //waitKey();
-  }
-
   /* prepare a vector to store octave information associated to extracted lines */
   std::vector<OctaveLine> octaveLines( numOfFinalLine );
 
