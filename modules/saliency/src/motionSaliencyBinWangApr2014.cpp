@@ -100,12 +100,12 @@ MotionSaliencyBinWangApr2014::~MotionSaliencyBinWangApr2014()
 bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat image, Mat highResBFMask )
 {
   Mat currentTemplateMat;
-  float currentB;
-  float currentC;
+  float* currentB;
+  float* currentC;
   Vec2f elem;
   float currentPixelValue;
   float currentEpslonValue;
-  //bool backgFlag=false;
+  bool backgFlag = false;
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
   highResBFMask.setTo( 1 );
@@ -125,32 +125,32 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat image, Mat highR
         currentTemplateMat = backgroundModel[z];  // Current Background Model matrix
         // TODO replace "at" with more efficient matrix access
         elem = currentTemplateMat.at<Vec2f>( i, j );
-        currentB = elem[0];
-        currentC = elem[1];
+        currentB = &elem[0];
+        currentC = &elem[1];
 
         if( currentC > 0 )  //The current template is active
         {
           // If there is a match with a current background template
-          if( abs( currentPixelValue - currentB ) < currentEpslonValue )
+          if( abs( currentPixelValue - * ( currentB ) ) < currentEpslonValue && !backgFlag )
           {
             // The correspondence pixel in the  BF mask is set as background ( 0 value)
             // TODO replace "at" with more efficient matrix access
             highResBFMask.at<int>( i, j ) = 0;
-            // backgFlag=true;
-            break;
+            *currentC += 1;  // increment the efficacy of this template
+            *currentB = (( 1 - alpha ) *  *currentB) + ( alpha * currentPixelValue );  // Update the template value
+            backgFlag = true;
+            //break;
           }
+          else
+          {
+            currentC -= 1;  // decrement the efficacy of this template
+          }
+
         }
       }  // end "for" cicle of template vector
-
-      // if the pixel has not matched with none of the active background models, is set as the foreground
-      // in the high resolution mask
-      //if(!backgFlag)
-      // highResBFMask.at<int>( i, j ) = 1;
     }
-  } // end "for" cicle of all image's pixels
+  }  // end "for" cicle of all image's pixels
 
-  //////// THERE WE CALL THE templateUpdate FUNCTION (to be implemented) ////////
-  templateUpdate(highResBFMask);
 
   return true;
 }
@@ -159,11 +159,11 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( Mat image, Mat lowRes
 
   return true;
 }
-bool MotionSaliencyBinWangApr2014::templateUpdate( Mat highResBFMask )
+/*bool MotionSaliencyBinWangApr2014::templateUpdate( Mat highResBFMask )
 {
 
   return true;
-}
+}*/
 
 // Background model maintenance functions
 bool MotionSaliencyBinWangApr2014::templateOrdering()
