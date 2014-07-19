@@ -449,7 +449,6 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
 #ifdef BLUR_AS_VADIM
             GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
             resize(blurredPatch,blurredPatch,minSize);
-            CV_Assert(blurredPatch.cols==minSize.width && blurredPatch.rows==minSize.height);
 #else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
 #endif
@@ -778,7 +777,6 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
 #ifdef BLUR_AS_VADIM
             GaussianBlur(standardPatch,blurredPatch,GaussBlurKernelSize,0.0);
             resize(blurredPatch,blurredPatch,initSize_);
-            CV_Assert(blurredPatch.cols==initSize_.width && blurredPatch.rows==initSize_.height);
 #else
             resample(blurredImg,RotatedRect(center,size,angle),blurredPatch);
 #endif
