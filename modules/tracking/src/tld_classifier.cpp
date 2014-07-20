@@ -44,7 +44,7 @@
 #include "opencv2/imgproc.hpp"
 #include <algorithm>
 #include <limits.h>
-#include "TLD.hpp"
+#include "tld_utils.hpp"
 
 using namespace cv;
 
