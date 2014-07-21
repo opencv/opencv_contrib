@@ -114,7 +114,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
  private:
 
   // classification (and adaptation) functions
-  bool fullResolutionDetection( Mat image, Mat highResBFMask );
+  bool fullResolutionDetection( Mat& image, Mat& highResBFMask );
   bool lowResolutionDetection( Mat image, Mat lowResBFMask );
   //bool templateUpdate( Mat highResBFMask );
 

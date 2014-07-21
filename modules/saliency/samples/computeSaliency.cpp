@@ -141,7 +141,7 @@ int main( int argc, char** argv )
 
       vector<Vec4i> saliencyMap;
       saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setTrainingPath( training_path );
-      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir(training_path + "/Results" );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( training_path + "/Results" );
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
@@ -153,6 +153,14 @@ int main( int argc, char** argv )
       }
     }
 
+  }
+  else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
+  {
+    Mat saliencyMap;
+    if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+    {
+      std::cout<<"OKKKK"<<std::endl;
+    }
   }
 
   return 0;

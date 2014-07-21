@@ -97,47 +97,45 @@ MotionSaliencyBinWangApr2014::~MotionSaliencyBinWangApr2014()
 }
 
 // classification (and adaptation) functions
-bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat image, Mat highResBFMask )
+bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat& image, Mat& highResBFMask )
 {
-  Mat currentTemplateMat;
   float* currentB;
   float* currentC;
-  Vec2f elem;
   float currentPixelValue;
   float currentEpslonValue;
   bool backgFlag = false;
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
+  highResBFMask.create(image.rows, image.cols, CV_8UC1);
   highResBFMask.setTo( 1 );
 
   // Scan all pixels of image
-  for ( size_t i = 0; i < image.size().width; i++ )
+  for ( size_t i = 0; i < image.rows; i++ )
   {
-    for ( size_t j = 0; j < image.size().height; j++ )
+    for ( size_t j = 0; j < image.cols; j++ )
     {
+      backgFlag = false;
       // TODO replace "at" with more efficient matrix access
-      currentPixelValue = image.at<float>( i, j );
+      currentPixelValue = image.at<uchar>( i, j );
       currentEpslonValue = epslonPixelsValue.at<float>( i, j );
 
       // scan background model vector
       for ( size_t z = 0; z < backgroundModel.size(); z++ )
       {
-        currentTemplateMat = backgroundModel[z];  // Current Background Model matrix
         // TODO replace "at" with more efficient matrix access
-        elem = currentTemplateMat.at<Vec2f>( i, j );
-        currentB = &elem[0];
-        currentC = &elem[1];
+        currentB = &backgroundModel[z].at<Vec2f>( i, j )[0];
+        currentC = &backgroundModel[z].at<Vec2f>( i, j )[1];
 
-        if( currentC > 0 )  //The current template is active
+        if( *currentC > 0 )  //The current template is active
         {
           // If there is a match with a current background template
-          if( abs( currentPixelValue - * ( currentB ) ) < currentEpslonValue && !backgFlag )
+          if( abs( currentPixelValue - *(currentB) ) < currentEpslonValue && !backgFlag )
           {
             // The correspondence pixel in the  BF mask is set as background ( 0 value)
             // TODO replace "at" with more efficient matrix access
-            highResBFMask.at<int>( i, j ) = 0;
+            highResBFMask.at<uchar>( i, j ) = 0;
             *currentC += 1;  // increment the efficacy of this template
-            *currentB = (( 1 - alpha ) *  *currentB) + ( alpha * currentPixelValue );  // Update the template value
+            *currentB = ( ( 1 - alpha ) * *(currentB) ) + ( alpha * currentPixelValue );  // Update the template value
             backgFlag = true;
             //break;
           }
@@ -148,9 +146,9 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( Mat image, Mat highR
 
         }
       }  // end "for" cicle of template vector
+
     }
   }  // end "for" cicle of all image's pixels
-
 
   return true;
 }
@@ -160,10 +158,10 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( Mat image, Mat lowRes
   return true;
 }
 /*bool MotionSaliencyBinWangApr2014::templateUpdate( Mat highResBFMask )
-{
+ {
 
-  return true;
-}*/
+ return true;
+ }*/
 
 // Background model maintenance functions
 bool MotionSaliencyBinWangApr2014::templateOrdering()
@@ -179,6 +177,50 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
 
 bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
 {
+
+  Mat Test( 36, 36, CV_32F );
+  Mat Results;
+
+  std::ofstream ofs;
+  ofs.open( "TEST.txt", std::ofstream::out );
+
+  for ( int i = 0; i < Test.size().height; i++ )
+  {
+    for ( int j = 0; j < Test.size().width; j++ )
+    {
+      Test.at<float>( i, j ) = i + j;
+      stringstream str;
+      str << i + j << " ";
+      ofs << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs << str2.str();
+  }
+  ofs.close();
+
+  //blur( Test, Results, Size( 4, 4 ) );
+  medianBlur( Test, Results, 3 );
+  //pyrDown(Results,Results, Size(Test.size().height/9, Test.size().width/9));
+
+  std::ofstream ofs2;
+  ofs2.open( "RESULTS.txt", std::ofstream::out );
+
+  for ( int i = 0; i < Results.size().height; i++ )
+  {
+    for ( int j = 0; j < Results.size().width; j++ )
+    {
+      stringstream str;
+      str << Results.at<float>( i, j ) << " ";
+      ofs2 << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs2 << str2.str();
+  }
+  ofs2.close();
+
+  std::cout<<"TEST SIZE: "<<Test.size().height<<" "<<Test.size().width<<"    RESULTS SIZE: "<<Results.size().height<<" "<<Results.size().width<<std::endl ;
 
   return true;
 }
