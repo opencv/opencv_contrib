@@ -50,6 +50,7 @@
 #include "mihasher.hpp"
 #include "sparse_hashtable.hpp"
 #include "types.hpp"
+#include "ed_line_detector.hpp"
 
 namespace cv
 {
@@ -262,13 +263,13 @@ class CV_EXPORTS_W BinaryDescriptorMatcher : public Algorithm
   void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
                  bool compactResult = false );
 
-  /* for every input desciptor, find all the ones falling in a
-   certaing atching radius (for a pair of images) */
+  /* for every input descriptor, find all the ones falling in a
+   certain matching radius (for a pair of images) */
   void radiusMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
                     const Mat& mask = Mat(), bool compactResult = false ) const;
 
-  /* for every input desciptor, find all the ones falling in a
-   certaing atching radius (from one image to a set) */
+  /* for every input descriptor, find all the ones falling in a
+   certain matching radius (from one image to a set) */
   void radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
                         std::vector<Mat>(),
                     bool compactResult = false );
@@ -288,7 +289,7 @@ class CV_EXPORTS_W BinaryDescriptorMatcher : public Algorithm
   /* constructor */
   BinaryDescriptorMatcher();
 
-  /* desctructor */
+  /* destructor */
   ~BinaryDescriptorMatcher()
   {
   }
