@@ -49,6 +49,7 @@
 #include "opencv2/highgui.hpp"
 
 #define THETA_NN 0.50
+#define STANDARD_PATCH_SIZE 15
 #define CORE_THRESHOLD 0.5
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
@@ -282,15 +283,6 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox ){
     data->confident=false;
     data->failedLastTime=false;
 
-#if !1
-        dprintf(("here I am\n"));
-        Mat image_blurred;
-        GaussianBlur(image_gray,image_blurred,GaussBlurKernelSize,0.0);
-        MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(image_gray,image_blurred,detector);
-        imshow("picker",image_gray);
-        setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
-        waitKey();
-#endif
     return true;
 }
 
@@ -306,7 +298,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     GaussianBlur(imageForDetector,image_blurred,GaussBlurKernelSize,0.0);
     TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     data->frameNum++;
-    Mat_<uchar> standardPatch(15,15);
+    Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
     std::vector<Rect2d> detectorResults;
     std::vector<bool> isObject,shouldBeIntegrated;
     //best overlap around 92%
@@ -340,15 +332,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     }
     data->printme();
     tldModel->printme(stdout);
-#if !1
-    if(data->frameNum==82){
-        dprintf(("here I am\n"));
-        MyMouseCallbackDEBUG* callback=new MyMouseCallbackDEBUG(imageForDetector,image_blurred,detector);
-        imshow("picker",imageForDetector);
-        setMouseCallback( "picker", MyMouseCallbackDEBUG::onMouse, (void*)callback);
-        waitKey();
-    }
-#endif
 
     if(it==candidatesRes.end()){
         data->confident=false;
@@ -431,7 +414,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     Size2f size;
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<20;j++){
-            Mat_<uchar> standardPatch(15,15);
+            Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
             center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
             size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
@@ -467,7 +450,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     while(negativeExamples.size()<NEG_EXAMPLES_IN_INIT_MODEL){
         int i=rng.uniform((int)0,(int)scanGrid.size());
         if(std::find(indices.begin(),indices.end(),i)==indices.end() && overlap(boundingBox,scanGrid[i])<0.2){
-            Mat_<uchar> standardPatch(15,15);
+            Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
             resample(image,scanGrid[i],standardPatch);
             pushIntoModel(standardPatch,false);
 
@@ -515,7 +498,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     shouldBeIntegrated.clear();
 
     Mat resized_img,blurred_img;
-    Mat_<uchar> standardPatch(15,15);
+    Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
     img.copyTo(resized_img);
     imgBlurred.copyTo(blurred_img);
     double originalVariance=tldModel->getOriginalVariance();;
@@ -581,32 +564,6 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         dfprintf((stdout,"%d pos and %d neg\n",(int)poss.size(),(int)negs.size()));
         drawWithRects(img,negs,poss);
 #endif
-#if !1
-        std::vector<Rect2d> scanGrid;
-        generateScanGrid(img.rows,img.cols,initSize,scanGrid);
-        std::vector<double> results;
-        Mat_<uchar> standardPatch_inner(15,15);
-        for(int i=0;i<(int)scanGrid.size();i++){
-            resample(img,scanGrid[i],standardPatch_inner);
-            results.push_back(tldModel->Sr(standardPatch_inner));
-        }
-        std::vector<double>::iterator it=std::max_element(results.begin(),results.end());
-        Mat image;
-        img.copyTo(image);
-        rectangle( image,scanGrid[it-results.begin()], 255, 1, 1 );
-        imshow("img",image);
-        waitKey();
-#endif
-#if !1
-        Mat image;
-        img.copyTo(image);
-        rectangle( image,res, 255, 1, 1 );
-        for(int i=0;i<(int)rect.size();i++){
-          rectangle( image,rect[i], 0, 1, 1 );
-        }
-        imshow("img",image);
-        waitKey();
-#endif
 
     dfprintf((stdout,"%d after ensemble\n",pass));
     if(maxSc<0){
@@ -666,7 +623,7 @@ double TrackerTLDModel::Sc(const Mat_<uchar> patch){
 
 void TrackerTLDModel::integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vector<Rect2d>& box,const std::vector<bool>& isPositive,
           const std::vector<bool>& alsoIntoModel){
-    Mat_<uchar> standardPatch(15,15),blurredPatch(minSize_);
+    Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE),blurredPatch(minSize_);
     int positiveIntoModel=0,negativeIntoModel=0,positiveIntoEnsemble=0,negativeIntoEnsemble=0;
     for(int k=0;k<(int)box.size();k++){
         if(alsoIntoModel[k]){
@@ -762,7 +719,7 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     Size2f size;
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<10;j++){
-            Mat_<uchar> standardPatch(15,15),blurredPatch(initSize_);
+            Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE),blurredPatch(initSize_);
             center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
             size.width=(float)(closest[i].width*rng.uniform((double)0.99,(double)1.01));
@@ -822,7 +779,7 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         img_.copyTo(imgCanvas);
         TrackerTLDModel* tldModel=((TrackerTLDModel*)static_cast<TrackerModel*>(detector_->model));
         Size initSize=tldModel->getMinSize();
-        Mat_<uchar> standardPatch(15,15);
+        Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
         double originalVariance=tldModel->getOriginalVariance();;
         double tmp;
 
