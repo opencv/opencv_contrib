@@ -139,6 +139,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   // background pixel. In a noise-pixel mask, the identified noise-pixels are set to 1 while other pixels are 0;
 
   //fixed parameter
+  int N_DS; // Number of template to be downsampled and used in lowResolutionDetection function
   Ptr<Size> imgSize;  // Size of input image
   int K;  // Number of background model template
   int N;  // NxN is the size of the block for downsampling in the lowlowResolutionDetection

@@ -55,7 +55,7 @@ void MotionSaliencyBinWangApr2014::setWsize( const cv::Ptr<Size>& newSize )
 
 MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
 {
-
+  N_DS = 2;  // Number of template to be downsampled and used in lowResolutionDetection function
   K = 3;  // Number of background model template
   N = 4;   // NxN is the size of the block for downsampling in the lowlowResolutionDetection
   alpha = 0.01;  // Learning rate
@@ -121,7 +121,7 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
       currentEpslonValue = epslonPixelsValue.at<float>( i, j );
 
       // scan background model vector
-      for ( size_t z = 0; z <backgroundModel.size(); z++ )
+      for ( size_t z = 0; z < backgroundModel.size(); z++ )
       {
         // TODO replace "at" with more efficient matrix access
         currentB = &backgroundModel[z].at<Vec2f>( i, j )[0];
@@ -136,7 +136,7 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
             // TODO replace "at" with more efficient matrix access
             highResBFMask.at<uchar>( i, j ) = 0;
 
-            if((*currentC< L0 && z==0) || (*currentC< L1 && z==1) || (z>1))
+            if( ( *currentC < L0 && z == 0 ) || ( *currentC < L1 && z == 1 ) || ( z > 1 ) )
               *currentC += 1;  // increment the efficacy of this template
 
             *currentB = ( ( 1 - alpha ) * * ( currentB ) ) + ( alpha * currentPixelValue );  // Update the template value
@@ -162,10 +162,8 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
 {
   float currentPixelValue;
   float currentEpslonValue;
-
-  //Size resizedDimension = image.size() / ( N * N );
-  Mat resizedImageResults( image.size().height / ( N * N ), image.size().width / ( N * N ), CV_8UC1 );
-  Mat resizedBackGroundModelResults( image.size().height / ( N * N ), image.size().width / ( N * N ), CV_32FC2 );
+  float currentB;
+  float currentC;
 
   // Create a mask to select ROI in the original Image and Backgound model and at the same time compute the mean
   Mat ROIMask( image.rows, image.cols, CV_8UC1 );
@@ -181,34 +179,38 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   lowResBFMask.setTo( 1 );
 
   // Scan all the ROI of original matrices that correspond to the pixels of new resized matrices
-  for ( int i = 0; i < resizedImageResults.rows; i++ )
+  for ( int i = 0; i < image.rows/( N * N ); i++ )
   {
-    for ( int j = 0; j < resizedImageResults.cols; j++ )
+    for ( int j = 0; j < image.cols/( N * N ); j++ )
     {
-      // Reser ROI mask
+      // Reset and update ROI mask
       ROIMask.setTo( 0 );
-      // Compute the mean of image's block based on ROI
       rectangle( ROIMask, roi, Scalar( 255 ), FILLED );
-      imageROImean = mean( image, ROIMask );
 
-      // Compute the mean of epslonMatrix's block based on ROI
-
-      // Insert the just calculated mean value in the correct pixel of the resized image
-      resizedImageResults.at<uchar>( i, j ) = imageROImean.val[0];
-
+      // Compute the mean of image's block and epslonMatrix's block based on ROI
       // TODO replace "at" with more efficient matrix access
-      currentPixelValue = imageROImean.val[0];
-      currentEpslonValue = mean(epslonPixelsValue, ROIMask).val[0];
+      currentPixelValue = mean( image, ROIMask ).val[0];
+      currentEpslonValue = mean( epslonPixelsValue, ROIMask ).val[0];
 
       // scan background model vector
-      for ( size_t z = 0; z < 2 /* first two template*/; z++ )
+      for ( size_t z = 0; z < N_DS; z++ )
       {
+
         // Select the current template 2 channel matrix, select ROI and compute the mean for each channel separately
-        currentModel = backgroundModel[z];
-        backGModelROImean = mean( currentModel, ROIMask );
-        // Insert the just calculated mean values in the correct pixels of the resized background template
-        resizedBackGroundModelResults.at<Vec2f>( i, j )[0] = backGModelROImean.val[0];
-        resizedBackGroundModelResults.at<Vec2f>( i, j )[1] = backGModelROImean.val[1];
+        currentB = mean( backgroundModel[z], ROIMask ).val[0];
+        currentC = mean( backgroundModel[z], ROIMask ).val[1];
+
+        if( currentC > 0 )  //The current template is active
+        {
+          // If there is a match with a current background template
+          if( abs( currentPixelValue - ( currentB ) ) < currentEpslonValue )
+          {
+            // The correspondence pixel in the  BF mask is set as background ( 0 value)
+            // TODO replace "at" with more efficient matrix access
+            lowResBFMask.at<uchar>( i, j ) = 0;
+            break;
+          }
+        }
       }
       // Shift the ROI from left to right follow the block dimension
       roi = roi + Point( 0, N );
@@ -217,11 +219,13 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
     roi = roi + Point( N, - ( image.cols - N ) );
   }
 
-//resize( image, resizedImage, resizedDimension, 0, 0, INTER_LINEAR );
-//resize( image, resizedBackGroundModel, resizedDimension, 0, 0, INTER_LINEAR );
+  // UPSAMPLE the lowResBFMask to the original image dimension, so that it's then possible to compare the results
+  // of lowlResolutionDetection with the fullResolutionDetection
+  resize( lowResBFMask, lowResBFMask, image.size(), 0, 0, INTER_LINEAR );
 
   return true;
 }
+
 /*bool MotionSaliencyBinWangApr2014::templateUpdate( Mat highResBFMask )
  {
 
