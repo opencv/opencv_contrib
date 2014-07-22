@@ -114,8 +114,8 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
  private:
 
   // classification (and adaptation) functions
-  bool fullResolutionDetection( Mat& image, Mat& highResBFMask );
-  bool lowResolutionDetection( Mat image, Mat lowResBFMask );
+  bool fullResolutionDetection( const Mat& image, Mat& highResBFMask );
+  bool lowResolutionDetection( const Mat& image, Mat& lowResBFMask );
   //bool templateUpdate( Mat highResBFMask );
 
   // Background model maintenance functions
@@ -141,6 +141,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   //fixed parameter
   Ptr<Size> imgSize;  // Size of input image
   int K;  // Number of background model template
+  int N;  // NxN is the size of the block for downsampling in the lowlowResolutionDetection
   float alpha;  // Learning rate
   int L0, L1;  // Upper-bound values for C0 and C1 (efficacy of the first two template (matrices) of backgroundModel
   int thetaL;  // T0, T1 swap threshold
