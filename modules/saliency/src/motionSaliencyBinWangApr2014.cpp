@@ -40,6 +40,8 @@
  //M*/
 
 #include "precomp.hpp"
+//TODO delete highgui include
+#include <opencv2/highgui.hpp>
 
 namespace cv
 {
@@ -74,11 +76,13 @@ bool MotionSaliencyBinWangApr2014::init()
   epslonPixelsValue = Mat( imgSize->height, imgSize->width, CV_32F );
   potentialBackground = Mat( imgSize->height, imgSize->width, CV_32FC2 );
   backgroundModel = std::vector<Mat>( K + 1, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
+  //TODO set to nan
+  potentialBackground.setTo( 0 );
 
-  potentialBackground.setTo( NAN );
-
-  for ( size_t i = 0; i < backgroundModel.size(); i++ )
-    backgroundModel[i].setTo( NAN );
+  //TODO set to nan
+  for ( size_t i = 0; i < backgroundModel.size(); i++ ){
+    backgroundModel[i].setTo( 0 );
+  }
 
   epslonPixelsValue.setTo( 48.5 );  // Median of range [18, 80] advised in reference paper.
                                     // Since data is even, the median is estimated using two values ​​that occupy
@@ -157,7 +161,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
   return true;
 }
 
-//typedef Rect_<uint> Rect;
 bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat& lowResBFMask )
 {
   float currentPixelValue;
@@ -175,13 +178,16 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   Mat currentModel;
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
-  lowResBFMask.create( image.size().height / ( N * N ), image.size().width / ( N * N ), CV_8UC1 );
+  //lowResBFMask.create( image.size().height / ( N * N ), image.size().width / ( N * N ), CV_8UC1 );
+  //lowResBFMask.setTo( 1 );
+
+  lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
   lowResBFMask.setTo( 1 );
 
   // Scan all the ROI of original matrices that correspond to the pixels of new resized matrices
-  for ( int i = 0; i < image.rows/( N * N ); i++ )
+  for ( int i = 0; i < image.rows / N; i++ )
   {
-    for ( int j = 0; j < image.cols/( N * N ); j++ )
+    for ( int j = 0; j < image.cols / N; j++ )
     {
       // Reset and update ROI mask
       ROIMask.setTo( 0 );
@@ -207,21 +213,23 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
           {
             // The correspondence pixel in the  BF mask is set as background ( 0 value)
             // TODO replace "at" with more efficient matrix access
-            lowResBFMask.at<uchar>( i, j ) = 0;
+            //lowResBFMask.at<uchar>( i, j ) = 0;
+            lowResBFMask.setTo( 0, ROIMask );
             break;
           }
         }
       }
       // Shift the ROI from left to right follow the block dimension
-      roi = roi + Point( 0, N );
+      roi = roi + Point( N, 0 );
     }
     //Shift the ROI from up to down follow the block dimension, also bringing it back to beginning of row
-    roi = roi + Point( N, - ( image.cols - N ) );
+    roi.x = 0;
+    roi.y += N;
   }
 
   // UPSAMPLE the lowResBFMask to the original image dimension, so that it's then possible to compare the results
   // of lowlResolutionDetection with the fullResolutionDetection
-  resize( lowResBFMask, lowResBFMask, image.size(), 0, 0, INTER_LINEAR );
+  //resize( lowResBFMask, lowResBFMask, image.size(), 0, 0, INTER_LINEAR );
 
   return true;
 }
@@ -246,20 +254,25 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
 
 bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
 {
+  Mat highResBFMask;
+  Mat lowResBFMask;
+  Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
+  t.setTo( 50 );
+  backgroundModel.at( 0 ) = t;
 
-  Mat Test( 36, 36, CV_32F );
-  Mat Results;
+  fullResolutionDetection( image.getMat(), highResBFMask );
+  lowResolutionDetection( image.getMat(), lowResBFMask );
 
   std::ofstream ofs;
-  ofs.open( "TEST.txt", std::ofstream::out );
+  ofs.open( "highResBFMask.txt", std::ofstream::out );
 
-  for ( int i = 0; i < Test.size().height; i++ )
+  for ( int i = 0; i < highResBFMask.rows; i++ )
   {
-    for ( int j = 0; j < Test.size().width; j++ )
+    for ( int j = 0; j < highResBFMask.cols; j++ )
     {
-      Test.at<float>( i, j ) = i + j;
+      //highResBFMask.at<int>( i, j ) = i + j;
       stringstream str;
-      str << i + j << " ";
+      str << (int) highResBFMask.at<uchar>( i, j ) << " ";
       ofs << str.str();
     }
     stringstream str2;
@@ -268,19 +281,15 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   }
   ofs.close();
 
-//blur( Test, Results, Size( 4, 4 ) );
-  medianBlur( Test, Results, 3 );
-//pyrDown(Results,Results, Size(Test.size().height/9, Test.size().width/9));
-
   std::ofstream ofs2;
-  ofs2.open( "RESULTS.txt", std::ofstream::out );
+  ofs2.open( "lowResBFMask.txt", std::ofstream::out );
 
-  for ( int i = 0; i < Results.size().height; i++ )
+  for ( int i = 0; i < lowResBFMask.rows; i++ )
   {
-    for ( int j = 0; j < Results.size().width; j++ )
+    for ( int j = 0; j < lowResBFMask.cols; j++ )
     {
       stringstream str;
-      str << Results.at<float>( i, j ) << " ";
+      str << (int) lowResBFMask.at<uchar>( i, j ) << " ";
       ofs2 << str.str();
     }
     stringstream str2;
@@ -289,8 +298,50 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   }
   ofs2.close();
 
-  std::cout << "TEST SIZE: " << Test.size().height << " " << Test.size().width << "    RESULTS SIZE: " << Results.size().height << " "
-            << Results.size().width << std::endl;
+  /*Mat Test( 16, 16, CV_32F );
+   Mat Results;
+
+   std::ofstream ofs;
+   ofs.open( "TEST.txt", std::ofstream::out );
+
+   for ( int i = 0; i < Test.size().height; i++ )
+   {
+   for ( int j = 0; j < Test.size().width; j++ )
+   {
+   Test.at<float>( i, j ) = i + j;
+   stringstream str;
+   str << i + j << " ";
+   ofs << str.str();
+   }
+   stringstream str2;
+   str2 << "\n";
+   ofs << str2.str();
+   }
+   ofs.close();
+
+   //blur( Test, Results, Size( 4, 4 ) );
+   medianBlur( Test, Results, 3 );
+   //pyrDown(Results,Results, Size(Test.size().height/9, Test.size().width/9));
+
+   std::ofstream ofs2;
+   ofs2.open( "RESULTS.txt", std::ofstream::out );
+
+   for ( int i = 0; i < Results.size().height; i++ )
+   {
+   for ( int j = 0; j < Results.size().width; j++ )
+   {
+   stringstream str;
+   str << Results.at<float>( i, j ) << " ";
+   ofs2 << str.str();
+   }
+   stringstream str2;
+   str2 << "\n";
+   ofs2 << str2.str();
+   }
+   ofs2.close();
+
+   std::cout << "TEST SIZE: " << Test.size().height << " " << Test.size().width << "    RESULTS SIZE: " << Results.size().height << " "
+   << Results.size().width << std::endl; */
 
   return true;
 }
