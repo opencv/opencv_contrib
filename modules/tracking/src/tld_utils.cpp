@@ -47,7 +47,7 @@
 #include <limits.h>
 #include <math.h>
 #include <opencv2/highgui.hpp>
-#include "tld_utils.hpp"
+#include "tld_tracker.hpp"
 
 namespace cv {namespace tld
 {

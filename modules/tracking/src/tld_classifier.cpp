@@ -44,7 +44,7 @@
 #include "opencv2/imgproc.hpp"
 #include <algorithm>
 #include <limits.h>
-#include "tld_utils.hpp"
+#include "tld_tracker.hpp"
 
 using namespace cv;
 

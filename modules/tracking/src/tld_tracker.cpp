@@ -45,7 +45,7 @@
 #include "time.h"
 #include <algorithm>
 #include <limits.h>
-#include "tld_utils.hpp"
+#include "tld_tracker.hpp"
 #include "opencv2/highgui.hpp"
 
 #define THETA_NN 0.50
