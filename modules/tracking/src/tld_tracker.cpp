@@ -54,6 +54,7 @@
 #define NEG_EXAMPLES_IN_INIT_MODEL 300
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
+#define SCALE_STEP 1.2
 #define DOWNSCALE_MODE INTER_LINEAR
 #define BLUR_AS_VADIM
 #undef CLOSED_LOOP
@@ -326,7 +327,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
 
     std::vector<double>::iterator it=std::max_element(candidatesRes.begin(),candidatesRes.end());
 
-    dfprintf((stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(1.2)));
+    dfprintf((stdout,"scale=%f\n",log(1.0*boundingBox.width/(data->getMinSize()).width)/log(SCALE_STEP)));
     for(int i=0;i<(int)candidatesRes.size();i++){
         dprintf(("\tcandidatesRes[%d]=%f\n",i,candidatesRes[i]));
     }
@@ -399,7 +400,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     std::vector<Rect2d> closest(10),scanGrid;
     Mat scaledImg,blurredImg,image_blurred;
 
-    double scale=scaleAndBlur(image,cvRound(log(1.0*boundingBox.width/(minSize.width))/log(1.2)),scaledImg,blurredImg,GaussBlurKernelSize);
+    double scale=scaleAndBlur(image,cvRound(log(1.0*boundingBox.width/(minSize.width))/log(SCALE_STEP)),scaledImg,blurredImg,GaussBlurKernelSize);
     GaussianBlur(image,image_blurred,GaussBlurKernelSize,0.0);
     TLDDetector::generateScanGrid(image.rows,image.cols,minSize,scanGrid);
     getClosestN(scanGrid,Rect2d(boundingBox.x/scale,boundingBox.y/scale,boundingBox.width/scale,boundingBox.height/scale),10,closest);
@@ -465,7 +466,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
 
 void TLDDetector::generateScanGrid(int rows,int cols,Size initBox,std::vector<Rect2d>& res,bool withScaling){
     res.clear();
-    //scales step: 1.2; hor step: 10% of width; verstep: 10% of height; minsize: 20pix
+    //scales step: SCALE_STEP; hor step: 10% of width; verstep: 10% of height; minsize: 20pix
     for(double h=initBox.height, w=initBox.width;h<cols && w<rows;){
         for(double x=0;(x+w)<=(cols-1.0);x+=(0.1*w)){
             for(double y=0;(y+h)<=(rows-1.0);y+=(0.1*h)){
@@ -474,13 +475,13 @@ void TLDDetector::generateScanGrid(int rows,int cols,Size initBox,std::vector<Re
         }
         if(withScaling){
             if(h<=initBox.height){
-                h/=1.2; w/=1.2;
+                h/=SCALE_STEP; w/=SCALE_STEP;
                 if(h<20 || w<20){
-                    h=initBox.height*1.2; w=initBox.width*1.2;
+                    h=initBox.height*SCALE_STEP; w=initBox.width*SCALE_STEP;
                     CV_Assert(h>initBox.height || w>initBox.width);
                 }
             }else{
-                h*=1.2; w*=1.2;
+                h*=SCALE_STEP; w*=SCALE_STEP;
             }
         }else{
             break;
@@ -544,9 +545,9 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
             }
         }
 
-        size.width/=1.2;
-        size.height/=1.2;
-        scale*=1.2;
+        size.width/=SCALE_STEP;
+        size.height/=SCALE_STEP;
+        scale*=SCALE_STEP;
         resize(img,resized_img,size,0,0,DOWNSCALE_MODE);
         GaussianBlur(resized_img,blurred_img,GaussBlurKernelSize,0.0f);
     }while(size.width>=initSize.width && size.height>=initSize.height);
@@ -711,7 +712,7 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     std::vector<Rect2d> closest(10),scanGrid;
     Mat scaledImg,blurredImg;
 
-    double scale=scaleAndBlur(img_,cvRound(log(1.0*resultBox_.width/(initSize_.width))/log(1.2)),scaledImg,blurredImg,GaussBlurKernelSize);
+    double scale=scaleAndBlur(img_,cvRound(log(1.0*resultBox_.width/(initSize_.width))/log(SCALE_STEP)),scaledImg,blurredImg,GaussBlurKernelSize);
     TLDDetector::generateScanGrid(img_.rows,img_.cols,initSize_,scanGrid);
     getClosestN(scanGrid,Rect2d(resultBox_.x/scale,resultBox_.y/scale,resultBox_.width/scale,resultBox_.height/scale),10,closest);
 
@@ -784,8 +785,8 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
         double tmp;
 
         Mat resized_img,blurred_img;
-        double scale=1.2;
-        //double scale=1.2*1.2*1.2*1.2;
+        double scale=SCALE_STEP;
+        //double scale=SCALE_STEP*SCALE_STEP*SCALE_STEP*SCALE_STEP;
         Size2d size(img_.cols/scale,img_.rows/scale);
         resize(img_,resized_img,size);
         resize(imgBlurred_,blurred_img,size);
