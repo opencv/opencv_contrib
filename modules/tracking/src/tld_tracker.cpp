@@ -191,8 +191,8 @@ class TrackerTLDModel : public TrackerModel{
   void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
   double getOriginalVariance(){return originalVariance_;}
   std::vector<TLDEnsembleClassifier>* getClassifiers(){return &classifiers;}
-  double Sr(const Mat_<uchar> patch);
-  double Sc(const Mat_<uchar> patch);
+  double Sr(const Mat_<uchar>& patch);
+  double Sc(const Mat_<uchar>& patch);
   void integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vector<Rect2d>& box,const std::vector<bool>& isPositive,
           const std::vector<bool>& alsoIntoModel);
   void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel,const std::vector<Mat_<uchar> >& eForEnsemble,bool isPositive);
@@ -588,14 +588,14 @@ double TLDDetector::ensembleClassifierNum(const uchar* data,int rowstep){
     return p;
 }
 
-double TrackerTLDModel::Sr(const Mat_<uchar> patch){
+double TrackerTLDModel::Sr(const Mat_<uchar>& patch){
     double splus=0.0;
     for(int i=0;i<(int)positiveExamples.size();i++){
-        splus=MAX(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
+        splus=std::max(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
     }
     double sminus=0.0;
     for(int i=0;i<(int)negativeExamples.size();i++){
-        sminus=MAX(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
+        sminus=std::max(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
     }
     if(splus+sminus==0.0){
         return 0.0;
@@ -603,17 +603,17 @@ double TrackerTLDModel::Sr(const Mat_<uchar> patch){
     return splus/(sminus+splus);
 }
 
-double TrackerTLDModel::Sc(const Mat_<uchar> patch){
+double TrackerTLDModel::Sc(const Mat_<uchar>& patch){
     double splus=0.0;
     int med=getMedian(timeStampsPositive);
     for(int i=0;i<(int)positiveExamples.size();i++){
         if((int)timeStampsPositive[i]<=med){
-            splus=MAX(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
+            splus=std::max(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
         }
     }
     double sminus=0.0;
     for(int i=0;i<(int)negativeExamples.size();i++){
-        sminus=MAX(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
+        sminus=std::max(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
     }
     if(splus+sminus==0.0){
         return 0.0;
@@ -753,7 +753,7 @@ bool Nexpert::operator()(Rect2d box){
 }
 
 Data::Data(Rect2d initBox){
-    double minDim=MIN(initBox.width,initBox.height);
+    double minDim=std::min(initBox.width,initBox.height);
     scale = 20.0/minDim;
     minSize.width=(int)(initBox.width*20.0/minDim);
     minSize.height=(int)(initBox.height*20.0/minDim);

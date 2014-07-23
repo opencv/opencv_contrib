@@ -73,14 +73,23 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
 void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes);
 
 //aux functions and variables
-//#define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
-template<typename T> inline T CLIP(T x,T a,T b){return MIN(MAX(x,a),b);}
+//#define CLIP(x,a,b) std::min(std::max((x),(a)),(b))
+template<typename T> inline T CLIP(T x,T a,T b){return std::min(std::max(x,a),b);}
+/** Computes overlap between the two given rectangles. Overlap is computed as ratio of rectangles' intersection to that
+ * of their union.*/
 double overlap(const Rect2d& r1,const Rect2d& r2);
+/** Resamples the area surrounded by r2 in img so it matches the size of samples, where it is written.*/
 void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
+/** Specialization of resample() for rectangles without retation for better performance and simplicity.*/
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
+/** Computes the variance of single given image.*/
 double variance(const Mat& img);
+/** Computes the variance of subimage given by box, with the help of two integral 
+ * images intImgP and intImgP2 (sum of squares), which should be also provided.*/
 double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box);
-double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2);
+/** Computes normalized corellation coefficient between the two patches (they should be
+ * of the same size).*/
+double NCC(const Mat_<uchar>& patch1,const Mat_<uchar>& patch2);
 void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rect2d>& res);
 double scaleAndBlur(const Mat& originalImg,int scale,Mat& scaledImg,Mat& blurredImg,Size GaussBlurKernelSize);
 unsigned int getMedian(const std::vector<unsigned int>& values, int size=-1);
@@ -88,7 +97,7 @@ unsigned int getMedian(const std::vector<unsigned int>& values, int size=-1);
 class TLDEnsembleClassifier{
 public:
     TLDEnsembleClassifier(int ordinal,Size size,int measurePerClassifier);
-    void integrate(Mat_<uchar> patch,bool isPositive);
+    void integrate(const Mat_<uchar>& patch,bool isPositive);
     double posteriorProbability(const uchar* data,int rowstep)const;
     static int getMaxOrdinal();
 private:

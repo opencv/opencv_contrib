@@ -199,7 +199,7 @@ double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box){
     return p2-p*p;
 }
 
-double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
+double NCC(const Mat_<uchar>& patch1,const Mat_<uchar>& patch2){
     CV_Assert(patch1.rows==patch2.rows);
     CV_Assert(patch1.cols==patch2.cols);
 
@@ -207,7 +207,7 @@ double NCC(Mat_<uchar> patch1,Mat_<uchar> patch2){
     double s1=sum(patch1)(0),s2=sum(patch2)(0);
     double n1=norm(patch1),n2=norm(patch2);
     double prod=patch1.dot(patch2);
-    double sq1=sqrt(MAX(0.0,n1*n1-s1*s1/N)),sq2=sqrt(MAX(0.0,n2*n2-s2*s2/N));
+    double sq1=sqrt(std::max(0.0,n1*n1-s1*s1/N)),sq2=sqrt(std::max(0.0,n2*n2-s2*s2/N));
     double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
     return ares;
 }
@@ -300,7 +300,7 @@ TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size,int measurePe
     pos=std::vector<unsigned int>(posSize,0);
     neg=std::vector<unsigned int>(posSize,0);
 }
-void TLDEnsembleClassifier::integrate(Mat_<uchar> patch,bool isPositive){
+void TLDEnsembleClassifier::integrate(const Mat_<uchar>& patch,bool isPositive){
     unsigned short int position=code(patch.data,(int)patch.step[0]);
     if(isPositive){
         pos[position]++;
