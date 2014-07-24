@@ -45,6 +45,11 @@ using std::swap;
 
 using std::vector;
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
+
 namespace cv
 {
 namespace xobjdetect
@@ -64,6 +69,10 @@ public:
     virtual float predict(
         const Ptr<ACFFeatureEvaluator>& feature_evaluator) const;
 
+    virtual void write(FileStorage& fs) const;
+
+    virtual void read(const FileNode& node);
+
 private:
     /* Parameters for cascade training */
     WaldBoostParams params_;
@@ -73,18 +82,96 @@ private:
     std::vector<float> thresholds_;
 };
 
-vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
+static int count(const Mat_<int> &m, int elem)
 {
-    CV_Assert(labels.rows == 1 && labels.cols == data.cols);
+    int res = 0;
+    for( int row = 0; row < m.rows; ++row )
+        for( int col = 0; col < m.cols; ++col )
+            if( m(row, col) == elem)
+                res += 1;
+    return res;
+}
 
-    int pos_count = 0, neg_count = 0;
-    for( int col = 0; col < labels.cols; ++col )
+void write(FileStorage& fs, String&, const WaldBoost& waldboost)
+{
+    waldboost.write(fs);
+}
+
+void read(const FileNode& node, WaldBoost& w,
+    const WaldBoost& default_value)
+{
+    if( node.empty() )
+        w = default_value;
+    else
+        w.read(node);
+}
+
+void WaldBoostImpl::read(const FileNode& node)
+{
+    FileNode params = node["waldboost_params"];
+    params_.weak_count = (int)(params["weak_count"]);
+    params_.alpha = (float)(params["alpha"]);
+
+    FileNode stumps = node["waldboost_stumps"];
+    stumps_.clear();
+    for( FileNodeIterator n = stumps.begin(); n != stumps.end(); ++n )
     {
-        if( labels.at<int>(0, col) == +1 )
-            pos_count += 1;
-        else
-            neg_count += 1;
+        Stump s;
+        *n >> s;
+        stumps_.push_back(s);
     }
+
+    FileNode thresholds = node["waldboost_thresholds"];
+    thresholds_.clear();
+    for( FileNodeIterator n = thresholds.begin(); n != thresholds.end(); ++n )
+    {
+        float t;
+        *n >> t;
+        thresholds_.push_back(t);
+    }
+}
+
+void WaldBoostImpl::write(FileStorage& fs) const
+{
+    fs << "{";
+    fs << "waldboost_params" << "{"
+        << "weak_count" << params_.weak_count
+        << "alpha" << params_.alpha
+        << "}";
+
+    fs << "waldboost_stumps" << "[";
+    for( size_t i = 0; i < stumps_.size(); ++i )
+        fs << stumps_[i];
+    fs << "]";
+
+    fs << "waldboost_thresholds" << "[";
+    for( size_t i = 0; i < thresholds_.size(); ++i )
+        fs << thresholds_[i];
+    fs << "]";
+    fs << "}";
+
+}
+
+vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
+{
+    CV_Assert(labels_.rows == 1 && labels_.cols == data_.cols);
+    CV_Assert(data_.rows >= params_.weak_count);
+
+    Mat labels, data;
+    data_.copyTo(data);
+    labels_.copyTo(labels);
+
+    bool null_data = true;
+    for( int row = 0; row < data.rows; ++row )
+    {
+        for( int col = 0; col < data.cols; ++col )
+            if( data.at<int>(row, col) )
+                null_data = false;
+    }
+    CV_Assert(!null_data);
+
+    int pos_count = count(labels, +1);
+    int neg_count = count(labels, -1);
 
     Mat_<float> weights(labels.rows, labels.cols);
     float pos_weight = 1.0f / (2 * pos_count);
@@ -97,6 +184,9 @@ vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
             weights.at<float>(0, col) = neg_weight;
     }
 
+    vector<int> feature_indices_pool;
+    for( int ind = 0; ind < data.rows; ++ind )
+        feature_indices_pool.push_back(ind);
 
     vector<int> feature_indices;
     Mat_<float> trace = Mat_<float>::zeros(labels.rows, labels.cols);
@@ -104,10 +194,14 @@ vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
     thresholds_.clear();
     for( int i = 0; i < params_.weak_count; ++i)
     {
+        cout << "stage " << i << endl;
         Stump s;
         int feature_ind = s.train(data, labels, weights);
+        cout << "feature_ind " << feature_ind << endl;
         stumps_.push_back(s);
-        feature_indices.push_back(feature_ind);
+        int ind = feature_indices_pool[feature_ind];
+        feature_indices_pool.erase(feature_indices_pool.begin() + feature_ind);
+        feature_indices.push_back(ind);
 
         // Recompute weights
         for( int col = 0; col < weights.cols; ++col )
@@ -118,6 +212,14 @@ vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
             weights.at<float>(0, col) *= exp(-label * h);
         }
 
+        // Erase row for feature in data
+        Mat fixed_data;
+        fixed_data.push_back(data.rowRange(0, feature_ind));
+        fixed_data.push_back(data.rowRange(feature_ind + 1, data.rows));
+
+        data = fixed_data;
+
+
         // Normalize weights
         float z = (float)sum(weights)[0];
         for( int col = 0; col < weights.cols; ++col)
@@ -125,12 +227,12 @@ vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
             weights.at<float>(0, col) /= z;
         }
 
-
         // Sort trace
         Mat indices;
         sortIdx(trace, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
         Mat new_weights = Mat_<float>::zeros(weights.rows, weights.cols);
         Mat new_labels = Mat_<int>::zeros(labels.rows, labels.cols);
+        Mat new_data = Mat_<int>::zeros(data.rows, data.cols);
         Mat new_trace;
         for( int col = 0; col < new_weights.cols; ++col )
         {
@@ -138,26 +240,60 @@ vector<int> WaldBoostImpl::train(const Mat& data, const Mat& labels)
                 weights.at<float>(0, indices.at<int>(0, col));
             new_labels.at<int>(0, col) =
                 labels.at<int>(0, indices.at<int>(0, col));
+            for( int row = 0; row < new_data.rows; ++row )
+            {
+                new_data.at<int>(row, col) =
+                    data.at<int>(row, indices.at<int>(0, col));
+            }
         }
         sort(trace, new_trace, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
 
 
         // Compute threshold for trace
+        /*
         int col = 0;
         for( int pos_i = 0;
-             pos_i < pos_count * params_.alpha && col < weights.cols;
+             pos_i < pos_count * params_.alpha && col < new_labels.cols;
              ++col )
         {
-            if( labels.at<int>(0, col) == +1 )
+            if( new_labels.at<int>(0, col) == +1 )
                 ++pos_i;
         }
+        */
 
-        thresholds_.push_back(new_trace.at<float>(0, col));
+        int cur_pos = 0, cur_neg = 0;
+        int max_col = 0;
+        for( int col = 0; col < new_labels.cols - 1; ++col ) {
+            if (new_labels.at<int>(0, col) == +1 )
+                ++cur_pos;
+            else
+                ++cur_neg;
+
+            float p_neg = cur_neg / (float)neg_count;
+            float p_pos = cur_pos / (float)pos_count;
+            if( params_.alpha * p_neg > p_pos )
+                max_col = col;
+        }
+
+        thresholds_.push_back(new_trace.at<float>(0, max_col));
+        cout << "threshold " << *(thresholds_.end() - 1) << endl;
+
+        cout << "col " << max_col << " size " << data.cols << endl;
 
         // Drop samples below threshold
-        new_trace.colRange(col, new_trace.cols).copyTo(trace);
-        new_weights.colRange(col, new_weights.cols).copyTo(weights);
-        new_labels.colRange(col, new_labels.cols).copyTo(labels);
+        new_data.colRange(max_col, new_data.cols).copyTo(data);
+        new_trace.colRange(max_col, new_trace.cols).copyTo(trace);
+        new_weights.colRange(max_col, new_weights.cols).copyTo(weights);
+        new_labels.colRange(max_col, new_labels.cols).copyTo(labels);
+
+        pos_count = count(labels, +1);
+        neg_count = count(labels, -1);
+        cout << "pos_count " << pos_count << "; neg_count " << neg_count << endl;
+
+        if( data.cols < 2 || neg_count == 0)
+        {
+            break;
+        }
     }
     return feature_indices;
 }
@@ -166,6 +302,7 @@ float WaldBoostImpl::predict(
     const Ptr<ACFFeatureEvaluator>& feature_evaluator) const
 {
     float trace = 0;
+    CV_Assert(stumps_.size() == thresholds_.size());
     for( size_t i = 0; i < stumps_.size(); ++i )
     {
         int value = feature_evaluator->evaluate(i);

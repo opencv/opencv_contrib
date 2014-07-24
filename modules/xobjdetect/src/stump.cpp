@@ -65,6 +65,7 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
 {
     CV_Assert(labels.rows == 1 && labels.cols == data.cols);
     CV_Assert(weights.rows == 1 && weights.cols == data.cols);
+    CV_Assert(data.cols > 1);
     /* Assert that data and labels have int type */
     /* Assert that weights have float type */
 
@@ -197,6 +198,20 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
 float Stump::predict(int value) const
 {
     return polarity_ * (value - threshold_) > 0 ? pos_value_ : neg_value_;
+}
+
+
+void read(const FileNode& node, Stump& s, const Stump& default_value)
+{
+    if( node.empty() )
+        s = default_value;
+    else
+        s.read(node);
+}
+
+void write(FileStorage& fs, String&, const Stump& s)
+{
+    s.write(fs);
 }
 
 } /* namespace xobjdetect */

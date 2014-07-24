@@ -64,6 +64,7 @@ public:
     }
 
     virtual void setChannels(InputArrayOfArrays channels);
+    virtual void assertChannels();
     virtual void setPosition(Size position);
     virtual int evaluate(size_t feature_ind) const;
     virtual void evaluateAll(OutputArray feature_values) const;
@@ -77,16 +78,56 @@ private:
     Size position_;
 };
 
+
+static bool isNull(const Mat_<int> &m)
+{
+    bool null_data = true;
+    for( int row = 0; row < m.rows; ++row )
+    {
+        for( int col = 0; col < m.cols; ++col )
+            if( m.at<int>(row, col) )
+                null_data = false;
+    }
+    return null_data;
+}
+
+void ACFFeatureEvaluatorImpl::assertChannels()
+{
+    bool null_data = true;
+    for( size_t i = 0; i < channels_.size(); ++i )
+        null_data &= isNull(channels_[i]);
+    CV_Assert(!null_data);
+}
+
 void ACFFeatureEvaluatorImpl::setChannels(cv::InputArrayOfArrays channels)
 {
     channels_.clear();
     vector<Mat> ch;
     channels.getMatVector(ch);
     CV_Assert(ch.size() == 10);
+
+    /*int min_val = 100500, max_val = -1;
     for( size_t i = 0; i < ch.size(); ++i )
     {
         const Mat &channel = ch[i];
-        Mat_<int> acf_channel(channel.rows / 4, channel.cols / 4);
+        for( int row = 0; row < channel.rows; ++row )
+            for( int col = 0; col < channel.cols; ++col )
+            {
+                int val = (int)channel.at<float>(row, col);
+                if( val < min_val )
+                    min_val = val;
+                else if( val > max_val )
+                    max_val = val;
+            }
+    }
+
+    cout << "SET " << min_val << " " << max_val << endl;
+    */
+
+    for( size_t i = 0; i < ch.size(); ++i )
+    {
+        const Mat &channel = ch[i];
+        Mat_<int> acf_channel = Mat_<int>::zeros(channel.rows / 4, channel.cols / 4);
         for( int row = 0; row < channel.rows; row += 4 )
         {
             for( int col = 0; col < channel.cols; col += 4 )
@@ -94,18 +135,23 @@ void ACFFeatureEvaluatorImpl::setChannels(cv::InputArrayOfArrays channels)
                 int sum = 0;
                 for( int cell_row = row; cell_row < row + 4; ++cell_row )
                     for( int cell_col = col; cell_col < col + 4; ++cell_col )
+                    {
+                        //cout << channel.rows << " " << channel.cols << endl;
+                        //cout << cell_row << " " << cell_col << endl;
                         sum += (int)channel.at<float>(cell_row, cell_col);
+                    }
 
                 acf_channel(row / 4, col / 4) = sum;
             }
         }
-        channels_.push_back(acf_channel);
+
+        channels_.push_back(acf_channel.clone());
     }
 }
 
 void ACFFeatureEvaluatorImpl::setPosition(Size position)
 {
-    position_ = position;
+    position_ = Size(position.width / 4, position.height / 4);
 }
 
 int ACFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
@@ -117,7 +163,7 @@ int ACFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
     int x = feature.x;
     int y = feature.y;
     int n = feature.z;
-    return channels_[n].at<int>(y, x);
+    return channels_[n].at<int>(y + position_.width, x + position_.height);
 }
 
 void ACFFeatureEvaluatorImpl::evaluateAll(OutputArray feature_values) const
@@ -127,7 +173,7 @@ void ACFFeatureEvaluatorImpl::evaluateAll(OutputArray feature_values) const
     {
         feature_vals(0, i) = evaluate(i);
     }
-    feature_values.setTo(feature_vals);
+    feature_values.assign(feature_vals);
 }
 
 Ptr<ACFFeatureEvaluator>
@@ -159,14 +205,15 @@ vector<Point3i> generateFeatures(Size window_size, int count)
     return features;
 }
 
-void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
+void computeChannels(InputArray image, vector<Mat>& channels)
 {
     Mat src(image.getMat().rows, image.getMat().cols, CV_32FC3);
     image.getMat().convertTo(src, CV_32FC3, 1./255);
 
     Mat_<float> grad;
-    Mat gray;
+    Mat luv, gray;
     cvtColor(src, gray, CV_RGB2GRAY);
+    cvtColor(src, luv, CV_RGB2Luv);
 
     Mat_<float> row_der, col_der;
     Sobel(gray, row_der, CV_32F, 0, 1);
@@ -174,7 +221,7 @@ void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
 
     magnitude(row_der, col_der, grad);
 
-    Mat_<Vec6f> hist(grad.rows, grad.cols);
+    Mat_<Vec6f> hist = Mat_<Vec6f>::zeros(grad.rows, grad.cols);
     const float to_deg = 180 / 3.1415926f;
     for (int row = 0; row < grad.rows; ++row) {
         for (int col = 0; col < grad.cols; ++col) {
@@ -182,12 +229,22 @@ void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
             if (angle < 0)
                 angle += 180;
             int ind = (int)(angle / 30);
-            hist(row, col)[ind] = grad(row, col);
+
+            // If angle == 180, prevent index overflow
+            if (ind == 6)
+                ind = 5;
+
+            hist(row, col)[ind] = grad(row, col) * 255;
         }
     }
 
-    vector<Mat> channels;
-    channels.push_back(gray);
+    channels.clear();
+
+    Mat luv_channels[3];
+    split(luv, luv_channels);
+    for( int i = 0; i < 3; ++i )
+        channels.push_back(luv_channels[i]);
+
     channels.push_back(grad);
 
     vector<Mat> hist_channels;
@@ -195,8 +252,6 @@ void computeChannels(cv::InputArray image, cv::OutputArrayOfArrays channels_)
 
     for( size_t i = 0; i < hist_channels.size(); ++i )
         channels.push_back(hist_channels[i]);
-
-    channels_.setTo(channels);
 }
 
 } /* namespace xobjdetect */

@@ -58,7 +58,7 @@ namespace xobjdetect
     channels — output array for computed channels
 
 */
-void computeChannels(InputArray image, OutputArrayOfArrays channels);
+void computeChannels(InputArray image, std::vector<Mat>& channels);
 
 class CV_EXPORTS ACFFeatureEvaluator : public Algorithm
 {
@@ -68,6 +68,8 @@ public:
 
     /* Set window position */
     virtual void setPosition(Size position) = 0;
+
+    virtual void assertChannels() = 0;
 
     /* Evaluate feature with given index for current channels
         and window position */
@@ -103,7 +105,7 @@ struct CV_EXPORTS WaldBoostParams
     int weak_count;
     float alpha;
 
-    WaldBoostParams(): weak_count(100), alpha(0.01f)
+    WaldBoostParams(): weak_count(100), alpha(0.02f)
     {}
 };
 
@@ -122,8 +124,8 @@ public:
     Returns feature indices chosen for cascade.
     Feature enumeration starts from 0
     */
-    virtual std::vector<int> train(const Mat& data,
-                                   const Mat& labels) = 0;
+    virtual std::vector<int> train(const Mat& /*data*/,
+                                   const Mat& /*labels*/) {return std::vector<int>();}
 
     /* Predict object class given object that can compute object features
 
@@ -133,9 +135,20 @@ public:
     is from class +1
     */
     virtual float predict(
-        const Ptr<ACFFeatureEvaluator>& feature_evaluator) const = 0;
+        const Ptr<ACFFeatureEvaluator>& /*feature_evaluator*/) const
+    {return 0.0f;}
 
+    /* Write WaldBoost to FileStorage */
+    virtual void write(FileStorage& /*fs*/) const {}
+
+    /* Read WaldBoost */
+    virtual void read(const FileNode& /*node*/) {}
 };
+
+void write(FileStorage& fs, String&, const WaldBoost& waldboost);
+
+void read(const FileNode& node, WaldBoost& w,
+    const WaldBoost& default_value = WaldBoost());
 
 CV_EXPORTS Ptr<WaldBoost>
 createWaldBoost(const WaldBoostParams& params = WaldBoostParams());
@@ -146,31 +159,62 @@ struct CV_EXPORTS ICFDetectorParams
     int weak_count;
     int model_n_rows;
     int model_n_cols;
-    double overlap;
 
     ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
-        model_n_rows(40), model_n_cols(40), overlap(0.0)
+        model_n_rows(40), model_n_cols(40)
     {}
 };
 
 class CV_EXPORTS ICFDetector
 {
 public:
+
+    ICFDetector(): waldboost_(), features_() {}
+
     /* Train detector
 
-        image_filenames — filenames of images for training
+        pos_path — path to folder with images of objects
 
-        labelling — vector of object bounding boxes per every image
+        bg_path — path to folder with background images
 
         params — parameters for detector training
     */
-    void train(const std::vector<std::string>& image_filenames,
-               const std::vector<std::vector<cv::Rect> >& labelling,
+    void train(const String& pos_path,
+               const String& bg_path,
                ICFDetectorParams params = ICFDetectorParams());
 
-    /* Save detector in file, return true on success, false otherwise */
-    bool save(const std::string& filename);
+    /* Detect object on image
+
+        image — image for detection
+
+        object — output array of bounding boxes
+
+        scaleFactor — scale between layers in detection pyramid
+
+        minSize — min size of objects in pixels
+
+        maxSize — max size of objects in pixels
+    */
+    void detect(const Mat& image, std::vector<Rect>& objects,
+        double scaleFactor, Size minSize, Size maxSize, float threshold);
+
+    /* Write detector to FileStorage */
+    void write(FileStorage &fs) const;
+
+    /* Read detector */
+    void read(const FileNode &node);
+
+private:
+    Ptr<WaldBoost> waldboost_;
+    std::vector<Point3i> features_;
+    int model_n_rows_;
+    int model_n_cols_;
 };
+
+CV_EXPORTS void write(FileStorage& fs, String&, const ICFDetector& detector);
+
+CV_EXPORTS void read(const FileNode& node, ICFDetector& d,
+    const ICFDetector& default_value = ICFDetector());
 
 } /* namespace xobjdetect */
 } /* namespace cv */

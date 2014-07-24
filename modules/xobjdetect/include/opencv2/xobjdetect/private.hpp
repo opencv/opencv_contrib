@@ -47,6 +47,26 @@ public:
     */
     float predict(int value) const;
 
+    /* Write stump in FileStorage */
+    void write(FileStorage& fs) const
+    {
+        fs << "{"
+            << "threshold" << threshold_
+            << "polarity" << polarity_
+            << "pos_value" << pos_value_
+            << "neg_value" << neg_value_
+            << "}";
+    }
+
+    /* Read stump */
+    void read(const FileNode& node)
+    {
+        threshold_ = (int)node["threshold"];
+        polarity_ = (int)node["polarity"];
+        pos_value_ = (float)node["pos_value"];
+        neg_value_ = (float)node["neg_value"];
+    }
+
 private:
     /* Stump decision threshold */
     int threshold_;
@@ -55,6 +75,10 @@ private:
     /* Classification values for positive and negative classes  */
     float pos_value_, neg_value_;
 };
+
+void read(const FileNode& node, Stump& s, const Stump& default_value=Stump());
+
+void write(FileStorage& fs, String&, const Stump& s);
 
 } /* namespace xobjdetect */
 } /* namespace cv */

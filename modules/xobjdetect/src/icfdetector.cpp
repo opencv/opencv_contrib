@@ -39,6 +39,17 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
+#include <sstream>
+using std::ostringstream;
+
+#include <iomanip>
+using std::setfill;
+using std::setw;
+
+#include <iostream>
+using std::cout;
+using std::endl;
+
 #include "precomp.hpp"
 
 using std::vector;
@@ -52,64 +63,54 @@ namespace cv
 namespace xobjdetect
 {
 
-static bool overlap(const Rect& r, const vector<Rect>& gt)
-{
-    for( size_t i = 0; i < gt.size(); ++i )
-        if( (r & gt[i]).area() )
-            return true;
-    return false;
-}
-
-void ICFDetector::train(const vector<string>& image_filenames,
-                        const vector< vector<Rect> >& labelling,
+void ICFDetector::train(const String& pos_path,
+                        const String& bg_path,
                         ICFDetectorParams params)
 {
+    vector<String> pos_filenames;
+    glob(pos_path + "/*.png", pos_filenames);
+
+    vector<String> bg_filenames;
+    glob(bg_path + "/*.png", bg_filenames);
+
+    model_n_rows_ = params.model_n_rows;
+    model_n_cols_ = params.model_n_cols;
+
     Size model_size(params.model_n_cols, params.model_n_rows);
 
     vector<Mat> samples; /* positive samples + negative samples */
     Mat sample, resized_sample;
     int pos_count = 0;
-    for( size_t i = 0; i < image_filenames.size(); ++i, ++pos_count )
+
+    for( size_t i = 0; i < pos_filenames.size(); ++i, ++pos_count )
     {
-        Mat img = imread(String(image_filenames[i].c_str()));
-        for( size_t j = 0; j < labelling[i].size(); ++j )
-        {
-            Rect r = labelling[i][j];
-            if( r.x > img.cols || r.y > img.rows )
-                continue;
-
-            sample = img.colRange(max(r.x, 0), min(r.width, img.cols))
-                        .rowRange(max(r.y, 0), min(r.height, img.rows));
-
-            resize(sample, resized_sample, model_size);
-
-            samples.push_back(resized_sample);
-        }
+        cout << setw(6) << (i + 1) << "/" << pos_filenames.size() << "\r";
+        Mat img = imread(pos_filenames[i]);
+        resize(img, resized_sample, model_size);
+        samples.push_back(resized_sample.clone());
     }
+    cout << "\n";
 
     int neg_count = 0;
     RNG rng;
-    for( size_t i = 0; i < image_filenames.size(); ++i )
+    for( size_t i = 0; i < bg_filenames.size(); ++i )
     {
-        Mat img = imread(String(image_filenames[i].c_str()));
-        for( int j = 0; j < (int)(pos_count / image_filenames.size() + 1); )
+        cout << setw(6) << (i + 1) << "/" << bg_filenames.size() << "\r";
+        Mat img = imread(bg_filenames[i]);
+        for( int j = 0; j < 50;
+             ++j, ++neg_count)
         {
             Rect r;
-            r.x = rng.uniform(0, img.cols);
-            r.width = rng.uniform(r.x + 1, img.cols);
+            r.x = rng.uniform(0, img.cols); r.width = rng.uniform(r.x + 1, img.cols);
             r.y = rng.uniform(0, img.rows);
             r.height = rng.uniform(r.y + 1, img.rows);
 
-            if( !overlap(r, labelling[i]) )
-            {
-                sample = img.colRange(r.x, r.width).rowRange(r.y, r.height);
-                //resize(sample, resized_sample);
-                samples.push_back(resized_sample);
-                ++neg_count;
-                ++j;
-            }
+            sample = img.colRange(r.x, r.width).rowRange(r.y, r.height);
+            resize(sample, resized_sample, model_size);
+            samples.push_back(resized_sample.clone());
         }
     }
+    cout << "\n";
 
     Mat_<int> labels(1, pos_count + neg_count);
     for( int i = 0; i < pos_count; ++i)
@@ -120,30 +121,131 @@ void ICFDetector::train(const vector<string>& image_filenames,
     vector<Point3i> features = generateFeatures(model_size);
     Ptr<ACFFeatureEvaluator> feature_evaluator = createACFFeatureEvaluator(features);
 
-    Mat_<int> data((int)features.size(), (int)samples.size());
-    Mat_<int> feature_col;
+    Mat_<int> data = Mat_<int>::zeros((int)features.size(), (int)samples.size());
+    Mat_<int> feature_col(1, (int)samples.size());
 
     vector<Mat> channels;
     for( int i = 0; i < (int)samples.size(); ++i )
     {
+        cout << setw(6) << i << "/" << samples.size() << "\r";
         computeChannels(samples[i], channels);
         feature_evaluator->setChannels(channels);
+        //feature_evaluator->assertChannels();
         feature_evaluator->evaluateAll(feature_col);
-        for( int j = 0; j < feature_col.rows; ++j )
-            data(i, j) = feature_col(0, j);
+
+        CV_Assert(feature_col.cols == (int)features.size());
+
+        for( int j = 0; j < feature_col.cols; ++j )
+            data(j, i) = feature_col(0, j);
     }
+    cout << "\n";
+    samples.clear();
 
     WaldBoostParams wparams;
     wparams.weak_count = params.weak_count;
-    wparams.alpha = 0.001f;
+    wparams.alpha = 0.02f;
 
-    Ptr<WaldBoost> waldboost = createWaldBoost(wparams);
-    waldboost->train(data, labels);
+    waldboost_ = createWaldBoost(wparams);
+    vector<int> indices = waldboost_->train(data, labels);
+    cout << "indices: ";
+    for( size_t i = 0; i < indices.size(); ++i )
+        cout << indices[i] << " ";
+    cout << endl;
+
+    features_.clear();
+    for( size_t i = 0; i < indices.size(); ++i )
+        features_.push_back(features[indices[i]]);
 }
 
-bool ICFDetector::save(const string&)
+void ICFDetector::write(FileStorage& fs) const
 {
-    return true;
+    fs << "{";
+    fs << "model_n_rows" << model_n_rows_;
+    fs << "model_n_cols" << model_n_cols_;
+    fs << "waldboost" << *waldboost_;
+    fs << "features" << "[";
+    for( size_t i = 0; i < features_.size(); ++i )
+    {
+        fs << features_[i];
+    }
+    fs << "]";
+    fs << "}";
+}
+
+void ICFDetector::read(const FileNode& node)
+{
+    waldboost_ = Ptr<WaldBoost>(createWaldBoost(WaldBoostParams()));
+    node["model_n_rows"] >> model_n_rows_;
+    node["model_n_cols"] >> model_n_cols_;
+    node["waldboost"] >> *waldboost_;
+    FileNode features = node["features"];
+    features_.clear();
+    Point3i p;
+    for( FileNodeIterator n = features.begin(); n != features.end(); ++n )
+    {
+        (*n) >> p;
+        features_.push_back(p);
+    }
+}
+
+void ICFDetector::detect(const Mat& img, vector<Rect>& objects,
+    double scaleFactor, Size minSize, Size maxSize, float threshold)
+{
+    float scale_from = min(model_n_cols_ / (float)maxSize.width,
+                           model_n_rows_ / (float)maxSize.height);
+    float scale_to = max(model_n_cols_ / (float)minSize.width,
+                         model_n_rows_ / (float)minSize.height);
+    objects.clear();
+    Ptr<ACFFeatureEvaluator> evaluator = createACFFeatureEvaluator(features_);
+    Mat rescaled_image;
+    int step = 8;
+    vector<Mat> channels;
+    for( float scale = scale_from; scale < scale_to + 0.001; scale *= scaleFactor )
+    {
+        cout << "scale " << scale << endl;
+        int new_width = img.cols * scale;
+        new_width -= new_width % 4;
+        int new_height = img.rows * scale;
+        new_height -= new_height % 4;
+
+        resize(img, rescaled_image, Size(new_width, new_height));
+        computeChannels(rescaled_image, channels);
+        evaluator->setChannels(channels);
+        for( int row = 0; row <= rescaled_image.rows - model_n_rows_; row += step)
+        {
+            for( int col = 0; col <= rescaled_image.cols - model_n_cols_;
+                col += step )
+            {
+                evaluator->setPosition(Size(row, col));
+                float value = waldboost_->predict(evaluator);
+                if( value > threshold )
+                {
+                    int x = (int)(col / scale);
+                    int y = (int)(row / scale);
+                    int width = (int)(model_n_cols_ / scale);
+                    int height = (int)(model_n_rows_ / scale);
+                    cout << value << " " << x << " " << y << " " << width << " "
+                         << height << endl;
+                    objects.push_back(Rect(x, y, width, height));
+                }
+            }
+        }
+
+    }
+}
+
+void write(FileStorage& fs, String&, const ICFDetector& detector)
+{
+    detector.write(fs);
+}
+
+void read(const FileNode& node, ICFDetector& d,
+    const ICFDetector& default_value)
+{
+    if( node.empty() )
+        d = default_value;
+    else
+        d.read(node);
 }
 
 } /* namespace xobjdetect */
