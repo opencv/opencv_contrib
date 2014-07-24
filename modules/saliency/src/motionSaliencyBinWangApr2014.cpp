@@ -80,7 +80,8 @@ bool MotionSaliencyBinWangApr2014::init()
   potentialBackground.setTo( 0 );
 
   //TODO set to nan
-  for ( size_t i = 0; i < backgroundModel.size(); i++ ){
+  for ( size_t i = 0; i < backgroundModel.size(); i++ )
+  {
     backgroundModel[i].setTo( 0 );
   }
 
@@ -240,9 +241,54 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
  return true;
  }*/
 
+bool inline pairCompare( pair<float, float> t, pair<float, float> t_plusOne )
+{
+
+  return ( t.second > t_plusOne.second );
+
+}
+
 // Background model maintenance functions
 bool MotionSaliencyBinWangApr2014::templateOrdering()
 {
+  vector<pair<float, float> > pixelTemplates( backgroundModel.size() );
+
+  // Scan all pixels of image
+  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  {
+    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    {
+      // scan background model vector from T2 to Tk
+      for ( size_t z = 2; z < backgroundModel.size(); z++ )
+      {
+        // Fill vector of pairs
+        pixelTemplates[z - 2].first = backgroundModel[z].at<Vec2f>( i, j )[0];  // Current B (background value)
+        pixelTemplates[z - 2].second = backgroundModel[z].at<Vec2f>( i, j )[1];  // Current C (efficacy value)
+      }
+
+      //SORT template from T2 to Tk
+      std::sort( pixelTemplates.begin(), pixelTemplates.end(), pairCompare );
+
+      //REFILL CURRENT MODEL ( T2...Tk)
+      for ( size_t zz = 2; zz < backgroundModel.size(); zz++ )
+      {
+        backgroundModel[zz].at<Vec2f>( i, j )[0] = pixelTemplates[zz - 2].first;  // Replace previous B with new ordered B value
+        backgroundModel[zz].at<Vec2f>( i, j )[1] = pixelTemplates[zz - 2].second;  // Replace previous C with new ordered C value
+      }
+
+      // SORT Template T0 and T1
+      if( backgroundModel[1].at<Vec2f>( i, j )[1] > thetaL && backgroundModel[0].at<Vec2f>( i, j )[1] < thetaL )
+      {
+
+        // swap B value of T0 with B value of T1 (for current model)
+        backgroundModel[0].at<Vec2f>( i, j )[0] = backgroundModel[1].at<Vec2f>( i, j )[0];
+
+        // set new C0 value for current model)
+        backgroundModel[0].at<Vec2f>( i, j )[1] = gamma * thetaL;
+      }
+
+    }
+  }
 
   return true;
 }
@@ -256,12 +302,29 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
 {
   Mat highResBFMask;
   Mat lowResBFMask;
+  Mat not_lowResBFMask;
+  Mat finalBFMask;
+  Mat noisePixelsMask;
   Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
   t.setTo( 50 );
   backgroundModel.at( 0 ) = t;
 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
+
+// Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
+// foreground in both masks (full and low)
+  bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
+
+//imshow("finalBFMask",finalBFMask*255);
+
+// Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
+  bitwise_not( lowResBFMask, not_lowResBFMask );
+  bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
+//imshow("noisePixelsMask",noisePixelsMask*255);
+//waitKey(0);
+
+  templateOrdering();
 
   std::ofstream ofs;
   ofs.open( "highResBFMask.txt", std::ofstream::out );
@@ -297,51 +360,6 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
     ofs2 << str2.str();
   }
   ofs2.close();
-
-  /*Mat Test( 16, 16, CV_32F );
-   Mat Results;
-
-   std::ofstream ofs;
-   ofs.open( "TEST.txt", std::ofstream::out );
-
-   for ( int i = 0; i < Test.size().height; i++ )
-   {
-   for ( int j = 0; j < Test.size().width; j++ )
-   {
-   Test.at<float>( i, j ) = i + j;
-   stringstream str;
-   str << i + j << " ";
-   ofs << str.str();
-   }
-   stringstream str2;
-   str2 << "\n";
-   ofs << str2.str();
-   }
-   ofs.close();
-
-   //blur( Test, Results, Size( 4, 4 ) );
-   medianBlur( Test, Results, 3 );
-   //pyrDown(Results,Results, Size(Test.size().height/9, Test.size().width/9));
-
-   std::ofstream ofs2;
-   ofs2.open( "RESULTS.txt", std::ofstream::out );
-
-   for ( int i = 0; i < Results.size().height; i++ )
-   {
-   for ( int j = 0; j < Results.size().width; j++ )
-   {
-   stringstream str;
-   str << Results.at<float>( i, j ) << " ";
-   ofs2 << str.str();
-   }
-   stringstream str2;
-   str2 << "\n";
-   ofs2 << str2.str();
-   }
-   ofs2.close();
-
-   std::cout << "TEST SIZE: " << Test.size().height << " " << Test.size().width << "    RESULTS SIZE: " << Results.size().height << " "
-   << Results.size().width << std::endl; */
 
   return true;
 }
