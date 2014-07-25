@@ -11,7 +11,7 @@
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,11 +40,36 @@
 //
 //M*/
 
-#ifndef __OPENCV_EDGEDETECTION_HPP__
-#define __OPENCV_EDGEDETECTION_HPP__
+#ifndef __OPENCV_INPAINTING_HPP__
+#define __OPENCV_INPAINTING_HPP__
 
-#include "opencv2/xphoto.hpp"
-#include "opencv2/xphoto/inpainting.hpp"
-#include "opencv2/xphoto/simple_color_balance.hpp"
-#include "opencv2/xphoto/dct_image_denoising.hpp"
-#endif
+/*
+* inpainting.hpp
+*
+*  Created on: Jul 22, 2014
+*      Author: Yury Gitman
+*/
+
+#include <opencv2/core.hpp>
+
+/*! \namespace cv
+Namespace where all the C++ OpenCV functionality resides
+*/
+namespace cv
+{
+    //! various inpainting algorithms
+    enum
+    {
+        INPAINT_SHIFTMAP = 0
+    };
+
+    /*! The function reconstructs the selected image area from known area.
+    *  \param src : source image.
+    *  \param mask : inpainting mask, 8-bit 1-channel image. Zero pixels indicate the area that needs to be inpainted.
+    *  \param dst : destination image.
+    *  \param algorithmType : inpainting method.
+    */
+    CV_EXPORTS_W void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType);
+}
+
+#endif // __OPENCV_INPAINTING_HPP__

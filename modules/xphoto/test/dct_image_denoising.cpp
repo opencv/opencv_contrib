@@ -20,11 +20,6 @@ namespace cvtest
             cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
 
-            cv::Mat sqrError = ( src - previousResult ).mul( src - previousResult );
-            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( sqrError.total()*sqrError.channels() );
-            double psnr = 10*log10(3*255*255/(mse[0] + mse[1] + mse[2]));
-
-
             cv::Mat currentResult, fastNlMeansResult;
 
             cv::dctDenoising(src, currentResult, sigma[i], psize[i]);
