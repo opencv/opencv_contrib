@@ -52,7 +52,7 @@
 #include <cmath>
 #include <time.h>
 #include <fstream>
-#include <omp.h>
+//#include <omp.h>
 
 // TODO: reference additional headers your program requires here
 //#include "LibLinear/linear.h"
@@ -66,9 +66,9 @@
 #define cvLIB(name) "opencv_" name CV_VERSION_ID
 #endif
 
-#pragma comment( lib, cvLIB("core"))
-#pragma comment( lib, cvLIB("imgproc"))
-#pragma comment( lib, cvLIB("highgui"))
+//#pragma comment( lib, cvLIB("core"))
+//#pragma comment( lib, cvLIB("imgproc"))
+//#pragma comment( lib, cvLIB("highgui"))
 using namespace cv;
 using namespace std;
 #ifdef WIN32

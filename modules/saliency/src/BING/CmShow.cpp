@@ -96,7 +96,7 @@ Mat CmShow::HistBins(CMat& color3f, CMat& val, CStr& title, bool descendShow, CM
     return showImg3b;
 }
 
-void CmShow::showTinyMat(CStr &title, CMat &m)
+/* void CmShow::showTinyMat(CStr &title, CMat &m)
 {
     int scale = 50, sz = m.rows * m.cols;
     while (sz > 200){
@@ -122,4 +122,4 @@ void CmShow::SaveShow(CMat& img, CStr& title)
         imwrite(String(title.c_str()), img*scale);
     else if (title.size())
         imshow(String(title.c_str()), img);
-}
+} */
