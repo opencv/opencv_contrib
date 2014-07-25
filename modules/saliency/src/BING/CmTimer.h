@@ -63,6 +63,8 @@ public:
 private:
     CStr title;
 
+    CmTimer& operator=(const CmTimer&);
+
     bool is_started;
     clock_t start_clock;
     clock_t cumulative_clock;

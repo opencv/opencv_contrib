@@ -40,7 +40,7 @@
  //M*/
 
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
-#define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP_
+#define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
 #include "saliencyBaseClasses.hpp"
 #include "BING/kyheader.h"
