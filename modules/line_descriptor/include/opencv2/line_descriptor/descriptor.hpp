@@ -123,12 +123,24 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
     CV_PROP_RW
     int reductionRatio;
 
+    CV_PROP_RW
+    int ksize_;
+
     /* read parameters from a FileNode object and store them (struct function) */
     void read( const FileNode& fn );
 
     /* store parameters to a FileStorage object (struct function) */
     void write( FileStorage& fs ) const;
 
+  };
+
+  struct CV_EXPORTS LineDetectionMode
+  {
+    enum
+    {
+      LSD_DETECTOR = 0,  // detect lines using LSD
+      EDL_DETECTOR = 1  // detect lines using EDLines
+    };
   };
 
   /* constructor */
@@ -158,18 +170,21 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   /* requires line detection (only one image) */
   CV_WRAP
-  void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
+  void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat(), int flags = LineDetectionMode::LSD_DETECTOR );
 
   /* requires line detection (more than one image) */
-  void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks =
-                   std::vector<Mat>() ) const;
+  void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks = std::vector<Mat>(),
+               int flags = LineDetectionMode::LSD_DETECTOR ) const;
 
   /* requires descriptors computation (only one image) */
   CV_WRAP
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr=false ) const;
+  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false, int flags =
+                    LineDetectionMode::LSD_DETECTOR ) const;
 
   /* requires descriptors computation (more than one image) */
-  void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr=false ) const;
+  void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
+                    false,
+                int flags = LineDetectionMode::LSD_DETECTOR ) const;
 
   /*return descriptor size */
   int descriptorSize() const;
@@ -186,14 +201,14 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   /* definition of operator () */
   CV_WRAP_AS(detectAndCompute)
   virtual void operator()( InputArray image, InputArray mask, CV_OUT std::vector<KeyLine>& keylines, OutputArray descriptors,
-                           bool useProvidedKeyLines = false, bool returnFloatDescr=false ) const;
+                           bool useProvidedKeyLines = false, bool returnFloatDescr = false, int flags = LineDetectionMode::LSD_DETECTOR ) const;
 
  protected:
   /* implementation of line detection */
-  virtual void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask = Mat() ) const;
+  virtual void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int flags, const Mat& mask = Mat() ) const;
 
   /* implementation of descriptors' computation */
-  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const;
+  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr, int flags ) const;
 
   /* function inherited from Algorithm */
   AlgorithmInfo* info() const;
@@ -203,7 +218,10 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   unsigned char binaryConversion( float* f1, float* f2 );
 
   /* compute LBD descriptors */
-  int computeLBD( ScaleLines &keyLines );
+  int computeLBD( ScaleLines &keyLines, int flags );
+
+  /* compute LBD descriptors using EDLine extractor */
+  int computeLBD_EDL( ScaleLines &keyLines );
 
   /* compute Gaussian pyramid of input image */
   void computeGaussianPyramid( const Mat& image );
@@ -211,6 +229,10 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   /* gather lines in groups.
    Each group contains the same line, detected in different octaves */
   int OctaveKeyLines( ScaleLines &keyLines );
+
+  /* gather lines in groups using EDLine extractor.
+   Each group contains the same line, detected in different octaves */
+  int OctaveKeyLines_EDL( cv::Mat& image, ScaleLines &keyLines );
 
   /* get coefficients of line passing by two points (in line_extremes) */
   void getLineParameters( cv::Vec4i &line_extremes, cv::Vec3i &lineParams );
@@ -238,6 +260,12 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   /* vector to store the Gaussian pyramid od an input image */
   std::vector<cv::Mat> octaveImages;
+
+  /*For each octave of image, we define an EDLineDetector, because we can get gradient images (dxImg, dyImg, gImg)
+   *from the EDLineDetector class without extra computation cost. Another reason is that, if we use
+   *a single EDLineDetector to detect lines in different octave of images, then we need to allocate and release
+   *memory for gradient images (dxImg, dyImg, gImg) repeatedly for their varying size*/
+  std::vector<EDLineDetector*> edLineVec_;
 
 };
 

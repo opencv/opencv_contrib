@@ -90,10 +90,11 @@ int main( int argc, char** argv )
   vector<KeyLine> lines;
 
   /* extract lines */
-  bd->detect( imageMat, lines, mask );
+  cv::Mat output = imageMat.clone();
+  bd->detect( imageMat, lines, mask, 1 );
 
   /* draw lines extracted from octave 0 */
-  cv::Mat output = imageMat.clone();
+
   if( output.channels() == 1 )
     cvtColor( output, output, COLOR_GRAY2BGR );
   for ( size_t i = 0; i < lines.size(); i++ )

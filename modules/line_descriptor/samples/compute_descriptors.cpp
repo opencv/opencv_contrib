@@ -61,6 +61,20 @@ static void help()
             << std::endl;
 }
 
+inline void writeMat(cv::Mat m, std::string name, int n)
+{
+    std::stringstream ss;
+    std::string s;
+    ss << n;
+    ss >> s;
+    std::string fileNameConf = name + s;
+    cv::FileStorage fsConf(fileNameConf, cv::FileStorage::WRITE);
+    fsConf << "m" << m;
+
+    fsConf.release();
+}
+
+
 int main( int argc, char** argv )
 {
   /* get parameters from command line */
@@ -88,7 +102,7 @@ int main( int argc, char** argv )
 
   /* compute lines */
   std::vector<KeyLine> keylines;
-  bd->detect( imageMat, keylines, mask );
+  bd->detect( imageMat, keylines, mask, 1 );
 
   /* select only lines from first octave */
   std::vector<KeyLine> octave0;
@@ -101,6 +115,7 @@ int main( int argc, char** argv )
   /* compute descriptors */
   cv::Mat descriptors;
 
-  bd->compute( imageMat, octave0, descriptors );
+  bd->compute( imageMat, octave0, descriptors, false, 1 );
+  writeMat(descriptors, "bd_descriptors", 0);
 
 }

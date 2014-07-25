@@ -88,6 +88,7 @@ BinaryDescriptor::Params::Params()
   numOfOctave_ = 1;
   widthOfBand_ = 7;
   reductionRatio = 2;
+  ksize_ = 5;
 }
 
 /* setters and getters */
@@ -153,6 +154,12 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
     params( parameters )
 {
 
+  /* reserve enough space for EDLine objects */
+  edLineVec_.resize( params.numOfOctave_ );
+  images_sizes.resize( params.numOfOctave_ );
+  for ( unsigned int i = 0; i < params.numOfOctave_; i++ )
+    edLineVec_[i] = new EDLineDetector;
+
   /* prepare a vector to host local weights F_l*/
   gaussCoefL_.resize( params.widthOfBand_ * 3 );
 
@@ -189,7 +196,7 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
 
 /* definition of operator () */
 void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std::vector<KeyLine>& keylines, OutputArray descriptors,
-                                   bool useProvidedKeyLines, bool returnFloatDescr ) const
+                                   bool useProvidedKeyLines, bool returnFloatDescr, int flags ) const
 {
 
   /* create some matrix objects */
@@ -207,10 +214,10 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
 
   /* require drawing KeyLines detection if demanded */
   if( !useProvidedKeyLines )
-    detectImpl( imageMat, keylines, maskMat );
+    detectImpl( imageMat, keylines, flags, maskMat );
 
   /* compute descriptors */
-  computeImpl( imageMat, keylines, descrMat, returnFloatDescr );
+  computeImpl( imageMat, keylines, descrMat, returnFloatDescr, flags );
 }
 
 BinaryDescriptor::~BinaryDescriptor()
@@ -382,7 +389,7 @@ inline void checkLineExtremes( cv::Vec4i& extremes, cv::Size imageSize )
 }
 
 /* requires line detection (only one image) */
-void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask )
+void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask, int flags )
 {
   if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
   {
@@ -393,11 +400,12 @@ void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& ke
   }
 
   else
-    detectImpl( image, keylines, mask );
+    detectImpl( image, keylines, flags, mask );
 }
 
 /* requires line detection (more than one image) */
-void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks ) const
+void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks,
+                               int flags ) const
 {
   /* detect lines from each image */
   for ( size_t counter = 0; counter < images.size(); counter++ )
@@ -410,11 +418,11 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
       CV_Assert( false );
     }
 
-    detectImpl( images[counter], keylines[counter], masks[counter] );
+    detectImpl( images[counter], keylines[counter], flags, masks[counter] );
   }
 }
 
-void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask ) const
+void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int flags, const Mat& mask ) const
 {
 
   cv::Mat image;
@@ -434,11 +442,32 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   BinaryDescriptor *bn = const_cast<BinaryDescriptor*>( this );
 
   /* compute Gaussian pyramid */
-  bn->computeGaussianPyramid( image );
+  if( flags == 0 )
+    bn->computeGaussianPyramid( image );
 
   /* detect and arrange lines across octaves */
   ScaleLines sl;
-  bn->OctaveKeyLines( sl );
+  Mat m = image.clone();
+  cvtColor( m, m, COLOR_GRAY2BGR );
+  if( flags == 0 )
+    bn->OctaveKeyLines( sl );
+
+  else
+    bn->OctaveKeyLines_EDL( image, sl );
+
+  Mat temp = image.clone();
+  cvtColor( temp, temp, COLOR_GRAY2BGR );
+  for ( size_t i = 0; i < sl.size(); i++ )
+  {
+    for ( size_t j = 0; j < sl[i].size(); j++ )
+    {
+      OctaveSingleLine tempOSL = sl[i][j];
+      line( m, Point( tempOSL.startPointX, tempOSL.startPointY ), Point( tempOSL.endPointX, tempOSL.endPointY ), Scalar( 255, 0, 0 ), 5 );
+    }
+  }
+
+  imshow( "Immagine", m );
+  waitKey();
 
   /* fill KeyLines vector */
   for ( int i = 0; i < (int) sl.size(); i++ )
@@ -452,14 +481,13 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
       KeyLine kl;
 
       /* check data validity */
-      cv::Vec4i extremes( osl.startPointX, osl.startPointY, osl.endPointX, osl.endPointY );
-      checkLineExtremes( extremes, image.size() );
-
+//      cv::Vec4i extremes( osl.startPointX, osl.startPointY, osl.endPointX, osl.endPointY );
+//      checkLineExtremes( extremes, imageSrc.size() );
       /* fill KeyLine's fields */
-      kl.startPointX = extremes[0];
-      kl.startPointY = extremes[1];
-      kl.endPointX = extremes[2];
-      kl.endPointY = extremes[3];
+      kl.startPointX = osl.startPointX;  //extremes[0];
+      kl.startPointY = osl.startPointY;  //extremes[1];
+      kl.endPointX = osl.endPointX;  //extremes[2];
+      kl.endPointY = osl.endPointY;  //extremes[3];
       kl.sPointInOctaveX = osl.sPointInOctaveX;
       kl.sPointInOctaveY = osl.sPointInOctaveY;
       kl.ePointInOctaveX = osl.ePointInOctaveX;
@@ -494,22 +522,22 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 }
 
 /* requires descriptors computation (only one image) */
-void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors,
-                                bool returnFloatDescr ) const
+void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr,
+                                int flags ) const
 {
-  computeImpl( image, keylines, descriptors, returnFloatDescr );
+  computeImpl( image, keylines, descriptors, returnFloatDescr, flags );
 }
 
 /* requires descriptors computation (more than one image) */
 void BinaryDescriptor::compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors,
-                                bool returnFloatDescr ) const
+                                bool returnFloatDescr, int flags ) const
 {
   for ( size_t i = 0; i < images.size(); i++ )
-    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr );
+    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr, flags );
 }
 
 /* implementation of descriptors computation */
-void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const
+void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr, int flags ) const
 {
   /* convert input image to gray scale */
   cv::Mat image;
@@ -615,7 +643,18 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   }
 
   /* compute LBD descriptors */
-  bn->computeLBD( sl );
+  if(flags == 0)
+    bn->computeLBD( sl, flags );
+
+  else
+  bn->computeLBD_EDL(sl);
+
+  /* resize output matrix */
+  if( !returnFloatDescr )
+    descriptors = cv::Mat( keylines.size(), 32, CV_8UC1 );
+
+  else
+    descriptors = cv::Mat( keylines.size(), NUM_OF_BANDS * 8, CV_32FC1 );
 
   /* fill output matrix with descriptors */
   for ( size_t k = 0; k < sl.size(); k++ )
@@ -628,8 +667,6 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
       if( !returnFloatDescr )
       {
-        /* resize output matrix */
-        descriptors = cv::Mat( keylines.size(), 32, CV_8UC1 );
 
         /* get a pointer to correspondent row in output matrix */
         uchar* pointerToRow = descriptors.ptr( originalIndex );
@@ -648,8 +685,6 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
       else
       {
-        /* resize output matrix */
-        descriptors = cv::Mat( keylines.size(), NUM_OF_BANDS * 8, CV_32FC1 );
 
         /* get a pointer to correspondent row in output matrix */
         uchar* pointerToRow = descriptors.ptr( originalIndex );
@@ -689,7 +724,7 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
     std::vector<cv::Vec4i> lines_std;
 
     /* use detector to extract segments */
-    ls->detect( currentScaledImage, lines_std, w_idth, prec/*, nfa*/ );
+    ls->detect( currentScaledImage, lines_std, w_idth, prec/*, nfa*/);
 
     /* store lines extracted from current image */
     extractedLines.push_back( lines_std );
@@ -999,8 +1034,350 @@ int BinaryDescriptor::OctaveKeyLines( ScaleLines &keyLines )
 
 }
 
+int BinaryDescriptor::OctaveKeyLines_EDL( cv::Mat& image, ScaleLines &keyLines )
+{
+
+  /* final number of extracted lines */
+  unsigned int numOfFinalLine = 0;
+
+  /* sigma values and reduction factor used in Gaussian pyramids */
+  float preSigma2 = 0;  //orignal image is not blurred, has zero sigma;
+  float curSigma2 = 1.0;  //[sqrt(2)]^0=1;
+  float factor = sqrt( 2 );  //the down sample factor between connective two octave images
+
+  /* loop over number of octaves */
+  for ( int octaveCount = 0; octaveCount < params.numOfOctave_; octaveCount++ )
+  {
+
+    /* matrix storing results from blurring processes */
+    cv::Mat blur;
+
+    /* apply Gaussian blur */
+    float increaseSigma = sqrt( curSigma2 - preSigma2 );
+    cv::GaussianBlur( image, blur, cv::Size( params.ksize_, params.ksize_ ), increaseSigma );
+    images_sizes[octaveCount] = blur.size();
+    /* for current octave, extract lines */
+    if( ( edLineVec_[octaveCount]->EDline( blur, true ) ) != true )
+    {
+      return -1;
+    }
+
+    /* update number of total extracted lines */
+    numOfFinalLine += edLineVec_[octaveCount]->lines_.numOfLines;
+
+    /* resize image for next level of pyramid */
+    cv::resize( blur, image, cv::Size(), ( 1.f / factor ), ( 1.f / factor ) );
+
+    /* update sigma values */
+    preSigma2 = curSigma2;
+    curSigma2 = curSigma2 * 2;
+
+  } /* end of loop over number of octaves */
+
+  /*lines which correspond to the same line in the octave images will be stored
+   in the same element of ScaleLines.*/
+
+  /* prepare a vector to store octave information associated to extracted lines */
+  std::vector<OctaveLine> octaveLines( numOfFinalLine );
+
+  /* set lines' counter to 0 for reuse */
+  numOfFinalLine = 0;
+
+  /* counter to give a unique ID to lines in LineVecs */
+  unsigned int lineIDInScaleLineVec = 0;
+
+  /* floats to compute lines' lengths */
+  float dx, dy;
+
+  /* loop over lines extracted from scale 0 (original image) */
+  for ( unsigned int lineCurId = 0; lineCurId < edLineVec_[0]->lines_.numOfLines; lineCurId++ )
+  {
+    /* FOR CURRENT LINE: */
+
+    /* set octave from which it was extracted */
+    octaveLines[numOfFinalLine].octaveCount = 0;
+    /* set ID within its octave */
+    octaveLines[numOfFinalLine].lineIDInOctave = lineCurId;
+    /* set a unique ID among all lines extracted in all octaves */
+    octaveLines[numOfFinalLine].lineIDInScaleLineVec = lineIDInScaleLineVec;
+
+    /* compute absolute value of difference between X coordinates of line's extreme points */
+    dx = fabs( edLineVec_[0]->lineEndpoints_[lineCurId][0] - edLineVec_[0]->lineEndpoints_[lineCurId][2] );
+    /* compute absolute value of difference between Y coordinates of line's extreme points */
+    dy = fabs( edLineVec_[0]->lineEndpoints_[lineCurId][1] - edLineVec_[0]->lineEndpoints_[lineCurId][3] );
+    /* compute line's length */
+    octaveLines[numOfFinalLine].lineLength = sqrt( dx * dx + dy * dy );
+
+    /* update counters */
+    numOfFinalLine++;
+    lineIDInScaleLineVec++;
+  }
+
+  /* create and fill an array to store scale factors */
+  float *scale = new float[params.numOfOctave_];
+  scale[0] = 1;
+  for ( int octaveCount = 1; octaveCount < params.numOfOctave_; octaveCount++ )
+  {
+    scale[octaveCount] = factor * scale[octaveCount - 1];
+  }
+
+  /* some variables' declarations */
+  float rho1, rho2, tempValue;
+  float direction, near, length;
+  unsigned int octaveID, lineIDInOctave;
+
+  /*more than one octave image, organize lines in scale space.
+   *lines corresponding to the same line in octave images should have the same index in the ScaleLineVec */
+  if( params.numOfOctave_ > 1 )
+  {
+    /* some other variables' declarations */
+    float twoPI = 2 * M_PI;
+    unsigned int closeLineID;
+    float endPointDis, minEndPointDis, minLocalDis, maxLocalDis;
+    float lp0, lp1, lp2, lp3, np0, np1, np2, np3;
+
+    /* loop over list of octaves */
+    for ( int octaveCount = 1; octaveCount < params.numOfOctave_; octaveCount++ )
+    {
+      /*for each line in current octave image, find their corresponding lines in the octaveLines,
+       *give them the same value of lineIDInScaleLineVec*/
+
+      /* loop over list of lines extracted from current octave */
+      for ( unsigned int lineCurId = 0; lineCurId < edLineVec_[octaveCount]->lines_.numOfLines; lineCurId++ )
+      {
+        /* get (scaled) known term from equation of current line */
+        rho1 = scale[octaveCount] * fabs( edLineVec_[octaveCount]->lineEquations_[lineCurId][2] );
+
+        /*nearThreshold depends on the distance of the image coordinate origin to current line.
+         *so nearThreshold = rho1 * nearThresholdRatio, where nearThresholdRatio = 1-cos(10*pi/180) = 0.0152*/
+        tempValue = rho1 * 0.0152;
+        float nearThreshold = ( tempValue > 6 ) ? ( tempValue ) : 6;
+        nearThreshold = ( nearThreshold < 12 ) ? nearThreshold : 12;
+
+        /* compute scaled lenght of current line */
+        dx = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][0] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][2] );  //x1-x2
+        dy = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][1] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][3] );  //y1-y2
+        length = scale[octaveCount] * sqrt( dx * dx + dy * dy );
+
+        minEndPointDis = 12;
+        /* loop over the octave representations of all lines */
+        for ( unsigned int lineNextId = 0; lineNextId < numOfFinalLine; lineNextId++ )
+        {
+          /* if a line from same octave is encountered,
+           a comparison with it shouldn't be considered */
+          octaveID = octaveLines[lineNextId].octaveCount;
+          if( (int) octaveID == octaveCount )
+          {  //lines in the same layer of octave image should not be compared.
+            break;
+          }
+
+          /* take ID in octave of line to be compared */
+          lineIDInOctave = octaveLines[lineNextId].lineIDInOctave;
+
+          /*first check whether current line and next line are parallel.
+           *If line1:a1*x+b1*y+c1=0 and line2:a2*x+b2*y+c2=0 are parallel, then
+           *-a1/b1=-a2/b2, i.e., a1b2=b1a2.
+           *we define parallel=fabs(a1b2-b1a2)
+           *note that, in EDLine class, we have normalized the line equations
+           *to make a1^2+ b1^2 = a2^2+ b2^2 = 1*/
+          direction = fabs( edLineVec_[octaveCount]->lineDirection_[lineCurId] - edLineVec_[octaveID]->lineDirection_[lineIDInOctave] );
+
+          /* the angle between two lines are larger than 10degrees
+           (i.e. 10*pi/180=0.1745), they are not close to parallel */
+          if( direction > 0.1745 && ( twoPI - direction > 0.1745 ) )
+          {
+            continue;
+          }
+          /*now check whether current line and next line are near to each other.
+           *If line1:a1*x+b1*y+c1=0 and line2:a2*x+b2*y+c2=0 are near in image, then
+           *rho1 = |a1*0+b1*0+c1|/sqrt(a1^2+b1^2) and rho2 = |a2*0+b2*0+c2|/sqrt(a2^2+b2^2) should close.
+           *In our case, rho1 = |c1| and rho2 = |c2|, because sqrt(a1^2+b1^2) = sqrt(a2^2+b2^2) = 1;
+           *note that, lines are in different octave images, so we define near =  fabs(scale*rho1 - rho2) or
+           *where scale is the scale factor between to octave images*/
+
+          /* get known term from equation to be compared */
+          rho2 = scale[octaveID] * fabs( edLineVec_[octaveID]->lineEquations_[lineIDInOctave][2] );
+          /* compute difference between known ters */
+          near = fabs( rho1 - rho2 );
+
+          /* two lines are not close in the image */
+          if( near > nearThreshold )
+          {
+            continue;
+          }
+
+          /*now check the end points distance between two lines, the scale of  distance is in the original image size.
+           * find the minimal and maximal end points distance*/
+
+          /* get the extreme points of the two lines */
+          lp0 = scale[octaveCount] * edLineVec_[octaveCount]->lineEndpoints_[lineCurId][0];
+          lp1 = scale[octaveCount] * edLineVec_[octaveCount]->lineEndpoints_[lineCurId][1];
+          lp2 = scale[octaveCount] * edLineVec_[octaveCount]->lineEndpoints_[lineCurId][2];
+          lp3 = scale[octaveCount] * edLineVec_[octaveCount]->lineEndpoints_[lineCurId][3];
+          np0 = scale[octaveID] * edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][0];
+          np1 = scale[octaveID] * edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][1];
+          np2 = scale[octaveID] * edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][2];
+          np3 = scale[octaveID] * edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][3];
+
+          /* get the distance between the two leftmost extremes of lines
+           L1(0,1)<->L2(0,1) */
+          dx = lp0 - np0;
+          dy = lp1 - np1;
+          endPointDis = sqrt( dx * dx + dy * dy );
+
+          /* set momentaneously min and max distance between lines to
+           the one between left extremes */
+          minLocalDis = endPointDis;
+          maxLocalDis = endPointDis;
+
+          /* compute distance between right extremes
+           L1(2,3)<->L2(2,3) */
+          dx = lp2 - np2;
+          dy = lp3 - np3;
+          endPointDis = sqrt( dx * dx + dy * dy );
+
+          /* update (if necessary) min and max distance between lines */
+          minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
+          maxLocalDis = ( endPointDis > maxLocalDis ) ? endPointDis : maxLocalDis;
+
+          /* compute distance between left extreme of current line and
+           right extreme of line to be compared
+           L1(0,1)<->L2(2,3) */
+          dx = lp0 - np2;
+          dy = lp1 - np3;
+          endPointDis = sqrt( dx * dx + dy * dy );
+
+          /* update (if necessary) min and max distance between lines */
+          minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
+          maxLocalDis = ( endPointDis > maxLocalDis ) ? endPointDis : maxLocalDis;
+
+          /* compute distance between right extreme of current line and
+           left extreme of line to be compared
+           L1(2,3)<->L2(0,1) */
+          dx = lp2 - np0;
+          dy = lp3 - np1;
+          endPointDis = sqrt( dx * dx + dy * dy );
+
+          /* update (if necessary) min and max distance between lines */
+          minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
+          maxLocalDis = ( endPointDis > maxLocalDis ) ? endPointDis : maxLocalDis;
+
+          /* check whether conditions for considering line to be compared
+           worth to be inserted in the same LineVec are satisfied */
+          if( ( maxLocalDis < 0.8 * ( length + octaveLines[lineNextId].lineLength ) ) && ( minLocalDis < minEndPointDis ) )
+          {  //keep the closest line
+            minEndPointDis = minLocalDis;
+            closeLineID = lineNextId;
+          }
+        }
+
+        /* add current line into octaveLines */
+        if( minEndPointDis < 12 )
+        {
+          octaveLines[numOfFinalLine].lineIDInScaleLineVec = octaveLines[closeLineID].lineIDInScaleLineVec;
+        }
+        else
+        {
+          octaveLines[numOfFinalLine].lineIDInScaleLineVec = lineIDInScaleLineVec;
+          lineIDInScaleLineVec++;
+        }
+        octaveLines[numOfFinalLine].octaveCount = octaveCount;
+        octaveLines[numOfFinalLine].lineIDInOctave = lineCurId;
+        octaveLines[numOfFinalLine].lineLength = length;
+        numOfFinalLine++;
+      }
+    }  //end for(unsigned int octaveCount = 1; octaveCount<numOfOctave_; octaveCount++)
+  }  //end if(numOfOctave_>1)
+
+  ////////////////////////////////////
+  //Reorganize the detected lines into keyLines
+  keyLines.clear();
+  keyLines.resize( lineIDInScaleLineVec );
+  unsigned int tempID;
+  float s1, e1, s2, e2;
+  bool shouldChange;
+  OctaveSingleLine singleLine;
+  for ( unsigned int lineID = 0; lineID < numOfFinalLine; lineID++ )
+  {
+    lineIDInOctave = octaveLines[lineID].lineIDInOctave;
+    octaveID = octaveLines[lineID].octaveCount;
+    direction = edLineVec_[octaveID]->lineDirection_[lineIDInOctave];
+    singleLine.octaveCount = octaveID;
+    singleLine.direction = direction;
+    singleLine.lineLength = octaveLines[lineID].lineLength;
+    singleLine.salience = edLineVec_[octaveID]->lineSalience_[lineIDInOctave];
+    singleLine.numOfPixels = edLineVec_[octaveID]->lines_.sId[lineIDInOctave + 1] - edLineVec_[octaveID]->lines_.sId[lineIDInOctave];
+    //decide the start point and end point
+    shouldChange = false;
+    s1 = edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][0];  //sx
+    s2 = edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][1];  //sy
+    e1 = edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][2];  //ex
+    e2 = edLineVec_[octaveID]->lineEndpoints_[lineIDInOctave][3];  //ey
+    dx = e1 - s1;  //ex-sx
+    dy = e2 - s2;  //ey-sy
+    if( direction >= -0.75 * M_PI && direction < -0.25 * M_PI )
+    {
+      if( dy > 0 )
+      {
+        shouldChange = true;
+      }
+    }
+    if( direction >= -0.25 * M_PI && direction < 0.25 * M_PI )
+    {
+      if( dx < 0 )
+      {
+        shouldChange = true;
+      }
+    }
+    if( direction >= 0.25 * M_PI && direction < 0.75 * M_PI )
+    {
+      if( dy < 0 )
+      {
+        shouldChange = true;
+      }
+    }
+    if( ( direction >= 0.75 * M_PI && direction < M_PI ) || ( direction >= -M_PI && direction < -0.75 * M_PI ) )
+    {
+      if( dx > 0 )
+      {
+        shouldChange = true;
+      }
+    }
+    tempValue = scale[octaveID];
+    if( shouldChange )
+    {
+      singleLine.sPointInOctaveX = e1;
+      singleLine.sPointInOctaveY = e2;
+      singleLine.ePointInOctaveX = s1;
+      singleLine.ePointInOctaveY = s2;
+      singleLine.startPointX = tempValue * e1;
+      singleLine.startPointY = tempValue * e2;
+      singleLine.endPointX = tempValue * s1;
+      singleLine.endPointY = tempValue * s2;
+    }
+    else
+    {
+      singleLine.sPointInOctaveX = s1;
+      singleLine.sPointInOctaveY = s2;
+      singleLine.ePointInOctaveX = e1;
+      singleLine.ePointInOctaveY = e2;
+      singleLine.startPointX = tempValue * s1;
+      singleLine.startPointY = tempValue * s2;
+      singleLine.endPointX = tempValue * e1;
+      singleLine.endPointY = tempValue * e2;
+    }
+    tempID = octaveLines[lineID].lineIDInScaleLineVec;
+    keyLines[tempID].push_back( singleLine );
+  }
+
+  ////////////////////////////////////
+
+  delete[] scale;
+  return 1;
+}
+
 /* compute LBD descriptors */
-int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
+int BinaryDescriptor::computeLBD( ScaleLines &keyLines, int flags )
 {
   //the default length of the band is the line length.
   short numOfFinalLine = keyLines.size();
@@ -1056,11 +1433,18 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
       pSingleLine = & ( keyLines[lineIDInScaleVec][lineIDInSameLine] );
       octaveCount = pSingleLine->octaveCount;
 
-      /* retrieve associated dxImg and dyImg
-       pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
-       pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>(); */
-      pdxImg = dxImg_vector[octaveCount].ptr<short>();
-      pdyImg = dyImg_vector[octaveCount].ptr<short>();
+      /* retrieve associated dxImg and dyImg*/
+      if( flags == 1 )
+      {
+        pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
+        pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>();
+      }
+
+      else
+      {
+        pdxImg = dxImg_vector[octaveCount].ptr<short>();
+        pdyImg = dyImg_vector[octaveCount].ptr<short>();
+      }
 
       /* get image size to work on from real one
        realWidth = edLineVec_[octaveCount]->imageWidth;
@@ -1331,3 +1715,313 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
   return 1;
 }
 
+int BinaryDescriptor::computeLBD_EDL( ScaleLines &keyLines )
+{
+  //the default length of the band is the line length.
+  short numOfFinalLine = keyLines.size();
+  float *dL = new float[2];//line direction cos(dir), sin(dir)
+  float *dO = new float[2];//the clockwise orthogonal vector of line direction.
+  short heightOfLSP = params.widthOfBand_*NUM_OF_BANDS;//the height of line support region;
+  short descriptorSize = NUM_OF_BANDS * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
+  float pgdLRowSum;//the summation of {g_dL |g_dL>0 } for each row of the region;
+  float ngdLRowSum;//the summation of {g_dL |g_dL<0 } for each row of the region;
+  float pgdL2RowSum;//the summation of {g_dL^2 |g_dL>0 } for each row of the region;
+  float ngdL2RowSum;//the summation of {g_dL^2 |g_dL<0 } for each row of the region;
+  float pgdORowSum;//the summation of {g_dO |g_dO>0 } for each row of the region;
+  float ngdORowSum;//the summation of {g_dO |g_dO<0 } for each row of the region;
+  float pgdO2RowSum;//the summation of {g_dO^2 |g_dO>0 } for each row of the region;
+  float ngdO2RowSum;//the summation of {g_dO^2 |g_dO<0 } for each row of the region;
+
+  float *pgdLBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dL |g_dL>0 } for each band of the region;
+  float *ngdLBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dL |g_dL<0 } for each band of the region;
+  float *pgdL2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dL^2 |g_dL>0 } for each band of the region;
+  float *ngdL2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dL^2 |g_dL<0 } for each band of the region;
+  float *pgdOBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dO |g_dO>0 } for each band of the region;
+  float *ngdOBandSum  = new float[NUM_OF_BANDS];//the summation of {g_dO |g_dO<0 } for each band of the region;
+  float *pgdO2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dO^2 |g_dO>0 } for each band of the region;
+  float *ngdO2BandSum = new float[NUM_OF_BANDS];//the summation of {g_dO^2 |g_dO<0 } for each band of the region;
+
+  short numOfBitsBand = NUM_OF_BANDS*sizeof(float);
+  short lengthOfLSP; //the length of line support region, varies with lines
+  short halfHeight = (heightOfLSP-1)/2;
+  short halfWidth;
+  short bandID;
+  float coefInGaussion;
+  float lineMiddlePointX, lineMiddlePointY;
+  float sCorX, sCorY,sCorX0, sCorY0;
+  short tempCor, xCor, yCor;//pixel coordinates in image plane
+  short dx, dy;
+  float gDL;//store the gradient projection of pixels in support region along dL vector
+  float gDO;//store the gradient projection of pixels in support region along dO vector
+  short imageWidth, imageHeight, realWidth;
+  short *pdxImg, *pdyImg;
+  float *desVec;
+
+  short sameLineSize;
+  short octaveCount;
+  OctaveSingleLine *pSingleLine;
+    /* loop over list of LineVec */
+  for(short lineIDInScaleVec = 0; lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++){
+    sameLineSize = keyLines[lineIDInScaleVec].size();
+        /* loop over current LineVec's lines */
+    for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize; lineIDInSameLine++){
+            /* get a line in current LineVec and its original ID in its octave */
+      pSingleLine = &(keyLines[lineIDInScaleVec][lineIDInSameLine]);
+      octaveCount = pSingleLine->octaveCount;
+
+            /* retrieve associated dxImg and dyImg */
+      pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
+      pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>();
+
+
+            /* get image size to work on from real one */
+      realWidth = edLineVec_[octaveCount]->imageWidth;
+      imageWidth  = realWidth -1;
+      imageHeight = edLineVec_[octaveCount]->imageHeight-1;
+
+
+            /* initialize memory areas */
+      memset(pgdLBandSum,  0, numOfBitsBand);
+      memset(ngdLBandSum, 0, numOfBitsBand);
+      memset(pgdL2BandSum,  0, numOfBitsBand);
+      memset(ngdL2BandSum, 0, numOfBitsBand);
+      memset(pgdOBandSum,  0, numOfBitsBand);
+      memset(ngdOBandSum, 0, numOfBitsBand);
+      memset(pgdO2BandSum,  0, numOfBitsBand);
+      memset(ngdO2BandSum, 0, numOfBitsBand);
+
+            /* get length of line and its half */
+      lengthOfLSP = keyLines[lineIDInScaleVec][lineIDInSameLine].numOfPixels;
+      halfWidth   = (lengthOfLSP-1)/2;
+
+            /* get middlepoint of line */
+      lineMiddlePointX = 0.5 * (pSingleLine->sPointInOctaveX +  pSingleLine->ePointInOctaveX);
+      lineMiddlePointY = 0.5 * (pSingleLine->sPointInOctaveY +  pSingleLine->ePointInOctaveY);
+
+            /*1.rotate the local coordinate system to the line direction (direction is the angle
+                between positive line direction and positive X axis)
+       *2.compute the gradient projection of pixels in line support region*/
+
+            /* get the vector representing original image reference system after rotation to aligh with
+               line's direction */
+      dL[0] = cos(pSingleLine->direction);
+      dL[1] = sin(pSingleLine->direction);
+
+            /* set the clockwise orthogonal vector of line direction */
+      dO[0] = -dL[1];
+      dO[1] = dL[0];
+
+            /* get rotated reference frame */
+      sCorX0= -dL[0]*halfWidth + dL[1]*halfHeight + lineMiddlePointX;//hID =0; wID = 0;
+      sCorY0= -dL[1]*halfWidth - dL[0]*halfHeight + lineMiddlePointY;
+
+
+            /* BIAS::Matrix<float> gDLMat(heightOfLSP,lengthOfLSP) */
+      for(short hID = 0; hID <heightOfLSP; hID++){
+                /*initialization */
+        sCorX = sCorX0;
+        sCorY = sCorY0;
+
+        pgdLRowSum = 0;
+        ngdLRowSum = 0;
+        pgdORowSum = 0;
+        ngdORowSum = 0;
+
+        for(short wID = 0; wID <lengthOfLSP; wID++){
+          tempCor = round(sCorX);
+          xCor = (tempCor<0)?0:(tempCor>imageWidth)?imageWidth:tempCor;
+          tempCor = round(sCorY);
+          yCor = (tempCor<0)?0:(tempCor>imageHeight)?imageHeight:tempCor;
+
+          /* To achieve rotation invariance, each simple gradient is rotated aligned with
+           * the line direction and clockwise orthogonal direction.*/
+          dx = pdxImg[yCor*realWidth+xCor];
+          dy = pdyImg[yCor*realWidth+xCor];
+          gDL = dx * dL[0] + dy * dL[1];
+          gDO = dx * dO[0] + dy * dO[1];
+          if(gDL>0){
+            pgdLRowSum  += gDL;
+          }else{
+            ngdLRowSum  -= gDL;
+          }
+          if(gDO>0){
+            pgdORowSum  += gDO;
+          }else{
+            ngdORowSum  -= gDO;
+          }
+          sCorX +=dL[0];
+          sCorY +=dL[1];
+                    /* gDLMat[hID][wID] = gDL; */
+        }
+        sCorX0 -=dL[1];
+        sCorY0 +=dL[0];
+        coefInGaussion = gaussCoefG_[hID];
+        pgdLRowSum = coefInGaussion * pgdLRowSum;
+        ngdLRowSum = coefInGaussion * ngdLRowSum;
+        pgdL2RowSum = pgdLRowSum * pgdLRowSum;
+        ngdL2RowSum = ngdLRowSum * ngdLRowSum;
+        pgdORowSum = coefInGaussion * pgdORowSum;
+        ngdORowSum = coefInGaussion * ngdORowSum;
+        pgdO2RowSum = pgdORowSum * pgdORowSum;
+        ngdO2RowSum = ngdORowSum * ngdORowSum;
+
+                /* compute {g_dL |g_dL>0 }, {g_dL |g_dL<0 },
+                {g_dO |g_dO>0 }, {g_dO |g_dO<0 } of each band in the line support region
+                first, current row belong to current band */
+        bandID = hID/params.widthOfBand_;
+        coefInGaussion = gaussCoefL_[hID%params.widthOfBand_+params.widthOfBand_];
+        pgdLBandSum[bandID] +=  coefInGaussion * pgdLRowSum;
+        ngdLBandSum[bandID] +=  coefInGaussion * ngdLRowSum;
+        pgdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdL2RowSum;
+        ngdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdL2RowSum;
+        pgdOBandSum[bandID] +=  coefInGaussion * pgdORowSum;
+        ngdOBandSum[bandID] +=  coefInGaussion * ngdORowSum;
+        pgdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdO2RowSum;
+        ngdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdO2RowSum;
+
+        /* In order to reduce boundary effect along the line gradient direction,
+         * a row's gradient will contribute not only to its current band, but also
+         * to its nearest upper and down band with gaussCoefL_.*/
+        bandID--;
+                if(bandID>=0){/* the band above the current band */
+          coefInGaussion = gaussCoefL_[hID%params.widthOfBand_ + 2*params.widthOfBand_];
+          pgdLBandSum[bandID] +=  coefInGaussion * pgdLRowSum;
+          ngdLBandSum[bandID] +=  coefInGaussion * ngdLRowSum;
+          pgdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdL2RowSum;
+          ngdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdL2RowSum;
+          pgdOBandSum[bandID] +=  coefInGaussion * pgdORowSum;
+          ngdOBandSum[bandID] +=  coefInGaussion * ngdORowSum;
+          pgdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdO2RowSum;
+          ngdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdO2RowSum;
+        }
+        bandID = bandID+2;
+                if(bandID<NUM_OF_BANDS){/*the band below the current band */
+          coefInGaussion = gaussCoefL_[hID%params.widthOfBand_];
+          pgdLBandSum[bandID] +=  coefInGaussion * pgdLRowSum;
+          ngdLBandSum[bandID] +=  coefInGaussion * ngdLRowSum;
+          pgdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdL2RowSum;
+          ngdL2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdL2RowSum;
+          pgdOBandSum[bandID] +=  coefInGaussion * pgdORowSum;
+          ngdOBandSum[bandID] +=  coefInGaussion * ngdORowSum;
+          pgdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * pgdO2RowSum;
+          ngdO2BandSum[bandID] +=  coefInGaussion * coefInGaussion * ngdO2RowSum;
+        }
+      }
+            /* gDLMat.Save("gDLMat.txt");
+            return 0; */
+
+            /* construct line descriptor */
+      pSingleLine->descriptor.resize(descriptorSize);
+      desVec = pSingleLine->descriptor.data();
+
+      short desID;
+
+      /*Note that the first and last bands only have (lengthOfLSP * widthOfBand_ * 2.0) pixels
+       * which are counted. */
+      float invN2 = 1.0/(params.widthOfBand_ * 2.0);
+      float invN3 = 1.0/(params.widthOfBand_ * 3.0);
+      float invN, temp;
+      for(bandID = 0; bandID<NUM_OF_BANDS; bandID++){
+        if(bandID==0||bandID==NUM_OF_BANDS-1){  invN = invN2;
+        }else{ invN = invN3;}
+        desID = bandID * 8;
+        temp = pgdLBandSum[bandID] * invN;
+                desVec[desID]   = temp;/* mean value of pgdL; */
+        desVec[desID+4] = sqrt(pgdL2BandSum[bandID] * invN - temp*temp);//std value of pgdL;
+        temp = ngdLBandSum[bandID] * invN;
+        desVec[desID+1] = temp;//mean value of ngdL;
+        desVec[desID+5] = sqrt(ngdL2BandSum[bandID] * invN - temp*temp);//std value of ngdL;
+
+        temp = pgdOBandSum[bandID] * invN;
+        desVec[desID+2] = temp;//mean value of pgdO;
+        desVec[desID+6] = sqrt(pgdO2BandSum[bandID] * invN - temp*temp);//std value of pgdO;
+        temp = ngdOBandSum[bandID] * invN;
+        desVec[desID+3] = temp;//mean value of ngdO;
+        desVec[desID+7] = sqrt(ngdO2BandSum[bandID] * invN - temp*temp);//std value of ngdO;
+      }
+
+            // normalize;
+      float tempM, tempS;
+      tempM = 0;
+      tempS = 0;
+      desVec = pSingleLine->descriptor.data();
+
+      int base = 0;
+      for(short i=0; i<NUM_OF_BANDS*8; ++base, i=base*8){
+        tempM += *(desVec+i) * *(desVec+i);//desVec[8*i+0] * desVec[8*i+0];
+        tempM += *(desVec+i+1) * *(desVec+i+1);//desVec[8*i+1] * desVec[8*i+1];
+        tempM += *(desVec+i+2) * *(desVec+i+2);//desVec[8*i+2] * desVec[8*i+2];
+        tempM += *(desVec+i+3) * *(desVec+i+3);//desVec[8*i+3] * desVec[8*i+3];
+        tempS += *(desVec+i+4) * *(desVec+i+4);//desVec[8*i+4] * desVec[8*i+4];
+        tempS += *(desVec+i+5) * *(desVec+i+5);//desVec[8*i+5] * desVec[8*i+5];
+        tempS += *(desVec+i+6) * *(desVec+i+6);//desVec[8*i+6] * desVec[8*i+6];
+        tempS += *(desVec+i+7) * *(desVec+i+7);//desVec[8*i+7] * desVec[8*i+7];
+      }
+
+      tempM = 1/sqrt(tempM);
+      tempS = 1/sqrt(tempS);
+      desVec = pSingleLine->descriptor.data();
+      base = 0;
+      for(short i=0; i<NUM_OF_BANDS*8; ++base, i=base*8){
+        *(desVec+i) = *(desVec+i) * tempM;//desVec[8*i] =  desVec[8*i] * tempM;
+        *(desVec+1+i) = *(desVec+1+i) * tempM;//desVec[8*i+1] =  desVec[8*i+1] * tempM;
+        *(desVec+2+i) = *(desVec+2+i) * tempM;//desVec[8*i+2] =  desVec[8*i+2] * tempM;
+        *(desVec+3+i) = *(desVec+3+i) * tempM;//desVec[8*i+3] =  desVec[8*i+3] * tempM;
+        *(desVec+4+i) = *(desVec+4+i) * tempS;//desVec[8*i+4] =  desVec[8*i+4] * tempS;
+        *(desVec+5+i) = *(desVec+5+i) * tempS;//desVec[8*i+5] =  desVec[8*i+5] * tempS;
+        *(desVec+6+i) = *(desVec+6+i) * tempS;//desVec[8*i+6] =  desVec[8*i+6] * tempS;
+        *(desVec+7+i) = *(desVec+7+i) * tempS;//desVec[8*i+7] =  desVec[8*i+7] * tempS;
+      }
+
+            /* In order to reduce the influence of non-linear illumination,
+             * a threshold is used to limit the value of element in the unit feature
+             * vector no larger than this threshold. In Z.Wang's work, a value of 0.4 is found
+             * empirically to be a proper threshold.*/
+      desVec = pSingleLine->descriptor.data();
+      for(short i=0; i<descriptorSize; i++ ){
+        if(desVec[i]>0.4){
+          desVec[i]=0.4;
+        }
+      }
+
+      //re-normalize desVec;
+      temp = 0;
+      for(short i=0; i<descriptorSize; i++){
+        temp += desVec[i] * desVec[i];
+      }
+
+      temp = 1/sqrt(temp);
+      for(short i=0; i<descriptorSize; i++){
+        desVec[i] =  desVec[i] * temp;
+      }
+        }/* end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize;
+            lineIDInSameLine++) */
+
+    cv::Mat appoggio = cv::Mat(1, 32, CV_32FC1);
+        float* pointerToRow = appoggio.ptr<float>(0);
+        for(int g = 0; g<32; g++)
+        {
+            /* get LBD data */
+            float* desVec = keyLines[lineIDInScaleVec][0].descriptor.data();
+            *pointerToRow = desVec[g];
+            pointerToRow++;
+
+        }
+
+    }/* end for(short lineIDInScaleVec = 0;
+        lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++) */
+
+  delete [] dL;
+  delete [] dO;
+  delete [] pgdLBandSum;
+  delete [] ngdLBandSum;
+  delete [] pgdL2BandSum;
+  delete [] ngdL2BandSum;
+  delete [] pgdOBandSum;
+  delete [] ngdOBandSum;
+  delete [] pgdO2BandSum;
+  delete [] ngdO2BandSum;
+
+  return 1;
+
+}
