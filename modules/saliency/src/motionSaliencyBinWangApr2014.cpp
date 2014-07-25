@@ -252,28 +252,29 @@ bool inline pairCompare( pair<float, float> t, pair<float, float> t_plusOne )
 bool MotionSaliencyBinWangApr2014::templateOrdering()
 {
   vector<pair<float, float> > pixelTemplates( backgroundModel.size() );
+  float temp;
 
   // Scan all pixels of image
   for ( int i = 0; i < backgroundModel[0].rows; i++ )
   {
     for ( int j = 0; j < backgroundModel[0].cols; j++ )
     {
-      // scan background model vector from T2 to Tk
-      for ( size_t z = 2; z < backgroundModel.size(); z++ )
+      // scan background model vector from T1 to Tk
+      for ( size_t z = 1; z < backgroundModel.size(); z++ )
       {
         // Fill vector of pairs
-        pixelTemplates[z - 2].first = backgroundModel[z].at<Vec2f>( i, j )[0];  // Current B (background value)
-        pixelTemplates[z - 2].second = backgroundModel[z].at<Vec2f>( i, j )[1];  // Current C (efficacy value)
+        pixelTemplates[z - 1].first = backgroundModel[z].at<Vec2f>( i, j )[0];  // Current B (background value)
+        pixelTemplates[z - 1].second = backgroundModel[z].at<Vec2f>( i, j )[1];  // Current C (efficacy value)
       }
 
-      //SORT template from T2 to Tk
+      //SORT template from T1 to Tk
       std::sort( pixelTemplates.begin(), pixelTemplates.end(), pairCompare );
 
-      //REFILL CURRENT MODEL ( T2...Tk)
-      for ( size_t zz = 2; zz < backgroundModel.size(); zz++ )
+      //REFILL CURRENT MODEL ( T1...Tk)
+      for ( size_t zz = 1; zz < backgroundModel.size(); zz++ )
       {
-        backgroundModel[zz].at<Vec2f>( i, j )[0] = pixelTemplates[zz - 2].first;  // Replace previous B with new ordered B value
-        backgroundModel[zz].at<Vec2f>( i, j )[1] = pixelTemplates[zz - 2].second;  // Replace previous C with new ordered C value
+        backgroundModel[zz].at<Vec2f>( i, j )[0] = pixelTemplates[zz - 1].first;  // Replace previous B with new ordered B value
+        backgroundModel[zz].at<Vec2f>( i, j )[1] = pixelTemplates[zz - 1].second;  // Replace previous C with new ordered C value
       }
 
       // SORT Template T0 and T1
@@ -281,10 +282,15 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
       {
 
         // swap B value of T0 with B value of T1 (for current model)
+        temp = backgroundModel[0].at<Vec2f>( i, j )[0];
         backgroundModel[0].at<Vec2f>( i, j )[0] = backgroundModel[1].at<Vec2f>( i, j )[0];
+        backgroundModel[1].at<Vec2f>( i, j )[0] = temp;
 
         // set new C0 value for current model)
+        temp = backgroundModel[0].at<Vec2f>( i, j )[1];
         backgroundModel[0].at<Vec2f>( i, j )[1] = gamma * thetaL;
+        backgroundModel[1].at<Vec2f>( i, j )[1] = temp;
+
       }
 
     }
@@ -300,66 +306,29 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
 
 bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
 {
-  Mat highResBFMask;
-  Mat lowResBFMask;
-  Mat not_lowResBFMask;
-  Mat finalBFMask;
-  Mat noisePixelsMask;
-  Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
-  t.setTo( 50 );
-  backgroundModel.at( 0 ) = t;
 
-  fullResolutionDetection( image.getMat(), highResBFMask );
-  lowResolutionDetection( image.getMat(), lowResBFMask );
+   Mat highResBFMask;
+   Mat lowResBFMask;
+   Mat not_lowResBFMask;
+   Mat finalBFMask;
+   Mat noisePixelsMask;
+   /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
+   t.setTo( 50 );
+   backgroundModel.at( 0 ) = t; */
 
-// Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
-// foreground in both masks (full and low)
-  bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
+   fullResolutionDetection( image.getMat(), highResBFMask );
+   lowResolutionDetection( image.getMat(), lowResBFMask );
 
-//imshow("finalBFMask",finalBFMask*255);
+   // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
+   // foreground in both masks (full and low)
+   bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
 
-// Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
-  bitwise_not( lowResBFMask, not_lowResBFMask );
-  bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
-//imshow("noisePixelsMask",noisePixelsMask*255);
-//waitKey(0);
+   // Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
+   bitwise_not( lowResBFMask, not_lowResBFMask );
+   bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
 
-  templateOrdering();
 
-  std::ofstream ofs;
-  ofs.open( "highResBFMask.txt", std::ofstream::out );
-
-  for ( int i = 0; i < highResBFMask.rows; i++ )
-  {
-    for ( int j = 0; j < highResBFMask.cols; j++ )
-    {
-      //highResBFMask.at<int>( i, j ) = i + j;
-      stringstream str;
-      str << (int) highResBFMask.at<uchar>( i, j ) << " ";
-      ofs << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs << str2.str();
-  }
-  ofs.close();
-
-  std::ofstream ofs2;
-  ofs2.open( "lowResBFMask.txt", std::ofstream::out );
-
-  for ( int i = 0; i < lowResBFMask.rows; i++ )
-  {
-    for ( int j = 0; j < lowResBFMask.cols; j++ )
-    {
-      stringstream str;
-      str << (int) lowResBFMask.at<uchar>( i, j ) << " ";
-      ofs2 << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs2 << str2.str();
-  }
-  ofs2.close();
+   templateOrdering();
 
   return true;
 }

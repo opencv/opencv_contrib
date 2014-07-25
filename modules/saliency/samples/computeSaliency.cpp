@@ -156,12 +156,12 @@ int main( int argc, char** argv )
   }
   else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
   {
-    Ptr<Size> size= Ptr<Size>( new Size( 64, 64 ) ) ;
+    Ptr<Size> size= Ptr<Size>( new Size( 32, 32 ) ) ;
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize(size);
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
     // Create an fake image test
-    Mat test( 64, 64, CV_8U );
+    Mat test( 32, 32, CV_8U );
     RNG rand;
     for(int i=0; i<test.rows; i++)
       for(int j=0; j<test.cols; j++)
