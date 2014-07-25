@@ -129,7 +129,7 @@ static inline int findFromList( const T &word, const vector<T> &strList )
   {
     vector<String>::iterator index = std::distance( strList.begin(), it );
     //cout << "index" <<" "<< index << endl;
-    return index;
+    return int(index);
   }
 }
 /*template<typename T>
