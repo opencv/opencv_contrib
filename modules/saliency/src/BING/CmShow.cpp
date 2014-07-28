@@ -46,7 +46,9 @@
 
 
 
-typedef pair<int, int> CostiIdx;
+typedef std::pair<int, int> CostiIdx;
+using namespace cv;
+
 Mat CmShow::HistBins(CMat& color3f, CMat& val, CStr& title, bool descendShow, CMat &with)
 {
     // Prepare data
@@ -69,10 +71,10 @@ Mat CmShow::HistBins(CMat& color3f, CMat& val, CStr& title, bool descendShow, CM
     int* binH = (int*)(binVal1i.data);
     Vec3b* binColor = (Vec3b*)(binColor3b.data);
     int* binW = (int*)(width1i.data);
-    vector<CostiIdx> costIdx(n);
+    std::vector<CostiIdx> costIdx(n);
     if (descendShow){
         for (int i = 0; i < n; i++)
-            costIdx[i] = make_pair(binH[i], i);
+            costIdx[i] = std::make_pair(binH[i], i);
         sort(costIdx.begin(), costIdx.end(), std::greater<CostiIdx>());
     }
 

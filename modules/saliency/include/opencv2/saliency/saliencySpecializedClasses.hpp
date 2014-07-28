@@ -101,9 +101,9 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
   void read();
   void write() const;
 
-  vector<float> getobjectnessValues();
-  void setTrainingPath( string trainingPath );
-  void setBBResDir( string resultsDir );
+  std::vector<float> getobjectnessValues();
+  void setTrainingPath( std::string trainingPath );
+  void setBBResDir( std::string resultsDir );
 
  protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
@@ -137,7 +137,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
   // List of the rectangles' objectness value, in the same order as
   // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
-  vector<float> objectnessValues;
+  std::vector<float> objectnessValues;
   //vector<Vec4i> objectnessBoundingBox;
 
  private:

@@ -47,12 +47,12 @@ public:
     void update(CMat &w);
 
     // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
-    Mat matchTemplate(const Mat &mag1u);
+    cv::Mat matchTemplate(const cv::Mat &mag1u);
 
     inline float dot(const INT64 tig1, const INT64 tig2, const INT64 tig4, const INT64 tig8);
 
 public:
-    void reconstruct(Mat &w); // For illustration purpose
+    void reconstruct(cv::Mat &w); // For illustration purpose
 
 private:
     static const int NUM_COMP = 2; // Number of components

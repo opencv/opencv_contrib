@@ -69,8 +69,7 @@
 //#pragma comment( lib, cvLIB("core"))
 //#pragma comment( lib, cvLIB("imgproc"))
 //#pragma comment( lib, cvLIB("highgui"))
-using namespace cv;
-using namespace std;
+
 #ifdef WIN32
 /* windows stuff */
 #else
@@ -84,9 +83,9 @@ typedef unsigned char byte;
 
 typedef std::vector<int> vecI;
 typedef const std::string CStr;
-typedef const Mat CMat;
+typedef const cv::Mat CMat;
 typedef std::vector<std::string> vecS;
-typedef std::vector<Mat> vecM;
+typedef std::vector<cv::Mat> vecM;
 typedef std::vector<float> vecF;
 typedef std::vector<double> vecD;
 
@@ -106,11 +105,10 @@ enum
     cv::error(cv::Exception(CV_StsAssert, msg, __FUNCTION__, __FILE__, __LINE__) ); }\
 }
 
-using namespace std;
 
 // Return -1 if not in the list
 template<typename T>
-static inline int findFromList( const T &word, const vector<T> &strList )
+static inline int findFromList( const T &word, const std::vector<T> &strList )
 {
   //TODO delete test code
   //cout << "\n\n" << "word" <<" "<< word << endl;
@@ -120,7 +118,7 @@ static inline int findFromList( const T &word, const vector<T> &strList )
     //cout << "Size w " << word.size() << " Size L "<< strList[i].size() << endl;
   }
 
-  vector<String>::iterator it = std::find( strList.begin(), strList.end(), word );
+  std::vector<cv::String>::iterator it = std::find( strList.begin(), strList.end(), word );
   if( it == strList.end() )
   {
     return -1;
@@ -149,21 +147,21 @@ template<typename T> inline T sqr( T x )
 {
   return x * x;
 }  // out of range risk for T = byte, ...
-template<class T, int D> inline T vecSqrDist( const Vec<T, D> &v1, const Vec<T, D> &v2 )
+template<class T, int D> inline T vecSqrDist( const cv::Vec<T, D> &v1, const cv::Vec<T, D> &v2 )
 {
   T s = 0;
   for ( int i = 0; i < D; i++ )
     s += sqr( v1[i] - v2[i] );
   return s;
 }  // out of range risk for T = byte, ...
-template<class T, int D> inline T vecDist( const Vec<T, D> &v1, const Vec<T, D> &v2 )
+template<class T, int D> inline T vecDist( const cv::Vec<T, D> &v1, const cv::Vec<T, D> &v2 )
 {
   return sqrt( vecSqrDist( v1, v2 ) );
 }  // out of range risk for T = byte, ...
 
-inline Rect Vec4i2Rect( Vec4i &v )
+inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 {
-  return Rect( Point( v[0] - 1, v[1] - 1 ), Point( v[2], v[3] ) );
+  return cv::Rect( cv::Point( v[0] - 1, v[1] - 1 ), cv::Point( v[2], v[3] ) );
 }
 
 #ifdef __WIN32

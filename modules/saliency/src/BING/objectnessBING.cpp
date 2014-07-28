@@ -75,21 +75,21 @@ ObjectnessBING::~ObjectnessBING()
 void ObjectnessBING::setColorSpace( int clr )
 {
   _Clr = clr;
-  _modelName = _trainingPath + "/" + string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
-  _bbResDir = _resultsDir + "/" + string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
+  _modelName = _trainingPath + "/" + std::string( format( "ObjNessB%gW%d%s", _base, _W, _clrName[_Clr] ).c_str() );
+  _bbResDir = _resultsDir + "/" + std::string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::setTrainingPath( string trainingPath )
+void ObjectnessBING::setTrainingPath( std::string trainingPath )
 {
   _trainingPath = trainingPath;
 }
 
-void ObjectnessBING::setBBResDir( string resultsDir )
+void ObjectnessBING::setBBResDir( std::string resultsDir )
 {
   _resultsDir = resultsDir;
 }
 
-int ObjectnessBING::loadTrainedModel( string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
+int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
 {
   if( modelName.size() == 0 )
     modelName = _modelName;
@@ -400,15 +400,15 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
 
   CmFile::MkDir( _bbResDir );
   CStr fName = _bbResDir + "bb";
-  vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
+  std::vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
   std::ofstream ofs;
   ofs.open( _S( fName + ".txt" ), std::ofstream::out );
-  stringstream dim;
+  std::stringstream dim;
   dim << sortedBB.size();
   ofs << dim.str() << "\n";
   for ( size_t k = 0; k < sortedBB.size(); k++ )
   {
-    stringstream str;
+    std::stringstream str;
     str << sortedBB[k][0] << " " << sortedBB[k][1] << " " << sortedBB[k][2] << " " << sortedBB[k][3] << "\n";
     ofs << str.str();
   }
@@ -435,7 +435,7 @@ std::string inline removeExtension( std::string const& filename )
 }
 
 // Read matrix from binary file
-bool ObjectnessBING::matRead( const string& filename, Mat& _M )
+bool ObjectnessBING::matRead( const std::string& filename, Mat& _M )
 {
   String filenamePlusExt( filename.c_str() );
   filenamePlusExt += ".yml.gz";
@@ -461,7 +461,7 @@ bool ObjectnessBING::matRead( const string& filename, Mat& _M )
   M.copyTo( _M );
   return true;
 }
-vector<float> ObjectnessBING::getobjectnessValues()
+std::vector<float> ObjectnessBING::getobjectnessValues()
 {
   return objectnessValues;
 }
@@ -484,7 +484,7 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   // List of rectangles returned by objectess function in descending order.
   // At the top there are the rectangles with higher values, ie more
   // likely to have objects in them.
-  vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
+  std::vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
   Mat( sortedBB ).copyTo( objectnessBoundingBox );
 
   // List of the rectangles' objectness value

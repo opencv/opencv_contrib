@@ -70,7 +70,7 @@ struct ValStructVec
   }
   inline void pushBack( const VT& val, const ST& structVal )
   {
-    valIdxes.push_back( make_pair( val, sz ) );
+    valIdxes.push_back( std::make_pair( val, sz ) );
     structVals.push_back( structVal );
     sz++;
   }
@@ -93,21 +93,21 @@ struct ValStructVec
   }  // Should be called after sort
 
   void sort( bool descendOrder = true );
-  const vector<ST> &getSortedStructVal();
-  vector<pair<VT, int> > getvalIdxes();
+  const std::vector<ST> &getSortedStructVal();
+  std::vector<std::pair<VT, int> > getvalIdxes();
   void append( const ValStructVec<VT, ST> &newVals, int startV = 0 );
 
-  vector<ST> structVals;  // struct values
+  std::vector<ST> structVals;  // struct values
 
  private:
   int sz;  // size of the value struct vector
-  vector<pair<VT, int> > valIdxes;  // Indexes after sort
+  std::vector<std::pair<VT, int> > valIdxes;  // Indexes after sort
   bool smaller()
   {
     return true;
   }
   ;
-  vector<ST> sortedStructVals;
+  std::vector<ST> sortedStructVals;
 };
 
 template<typename VT, typename ST>
@@ -122,13 +122,13 @@ template<typename VT, typename ST>
 void ValStructVec<VT, ST>::sort( bool descendOrder /* = true */)
 {
   if( descendOrder )
-    std::sort( valIdxes.begin(), valIdxes.end(), std::greater<pair<VT, int> >() );
+    std::sort( valIdxes.begin(), valIdxes.end(), std::greater<std::pair<VT, int> >() );
   else
-    std::sort( valIdxes.begin(), valIdxes.end(), std::less<pair<VT, int> >() );
+    std::sort( valIdxes.begin(), valIdxes.end(), std::less<std::pair<VT, int> >() );
 }
 
 template<typename VT, typename ST>
-const vector<ST>& ValStructVec<VT, ST>::getSortedStructVal()
+const std::vector<ST>& ValStructVec<VT, ST>::getSortedStructVal()
 {
   sortedStructVals.resize( sz );
   for ( int i = 0; i < sz; i++ )
@@ -137,7 +137,7 @@ const vector<ST>& ValStructVec<VT, ST>::getSortedStructVal()
 }
 
 template<typename VT, typename ST>
-vector<pair<VT, int> > ValStructVec<VT, ST>::getvalIdxes()
+std::vector<std::pair<VT, int> > ValStructVec<VT, ST>::getvalIdxes()
 {
   return valIdxes;
 }
