@@ -42,7 +42,6 @@
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
-#include "saliencyBaseClasses.hpp"
 #include "kyheader.h"
 #include "ValStructVec.h"
 #include "FilterTIG.h"

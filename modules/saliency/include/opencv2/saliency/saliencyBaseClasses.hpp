@@ -89,7 +89,7 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
 };
 
 /************************************ Static Saliency Base Class ************************************/
-class CV_EXPORTS_W StaticSaliency : public virtual Saliency
+class CV_EXPORTS_W StaticSaliency : public Saliency
 {
  public:
 
@@ -101,7 +101,7 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
 };
 
 /************************************ Motion Saliency Base Class ************************************/
-class CV_EXPORTS_W MotionSaliency : public virtual Saliency
+class CV_EXPORTS_W MotionSaliency : public Saliency
 {
 
 
@@ -112,7 +112,7 @@ class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 };
 
 /************************************ Objectness Base Class ************************************/
-class CV_EXPORTS_W Objectness : public virtual Saliency
+class CV_EXPORTS_W Objectness : public Saliency
 {
 
  protected:

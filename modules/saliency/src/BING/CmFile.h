@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "opencv2/saliency/kyheader.h"
 #endif
 
 struct CmFile
