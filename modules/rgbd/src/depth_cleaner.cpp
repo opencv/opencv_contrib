@@ -33,19 +33,18 @@
  *
  */
 
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/rgbd.hpp>
-#include <iostream>
+#include "precomp.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace
+namespace cv
+{
+namespace rgbd
 {
   class DepthCleanerImpl
   {
   public:
-    DepthCleanerImpl(int window_size, int depth, cv::DepthCleaner::DEPTH_CLEANER_METHOD method)
+    DepthCleanerImpl(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           depth_(depth),
           window_size_(window_size),
@@ -69,14 +68,11 @@ namespace
   protected:
     int depth_;
     int window_size_;
-    cv::DepthCleaner::DEPTH_CLEANER_METHOD method_;
+    DepthCleaner::DEPTH_CLEANER_METHOD method_;
   };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace
-{
   /** Given a depth image, compute the normals as detailed in the LINEMOD paper
    * ``Gradient Response Maps for Real-Time Detection of Texture-Less Objects``
    * by S. Hinterstoisser, C. Cagniart, S. Ilic, P. Sturm, N. Navab, P. Fua, and V. Lepetit
@@ -85,10 +81,10 @@ namespace
   class NIL: public DepthCleanerImpl
   {
   public:
-    typedef cv::Vec<T, 3> Vec3T;
-    typedef cv::Matx<T, 3, 3> Mat33T;
+    typedef Vec<T, 3> Vec3T;
+    typedef Matx<T, 3, 3> Mat33T;
 
-    NIL(int window_size, int depth, cv::DepthCleaner::DEPTH_CLEANER_METHOD method)
+    NIL(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           DepthCleanerImpl(window_size, depth, method)
     {
@@ -106,27 +102,27 @@ namespace
      * @return
      */
     void
-    compute(const cv::Mat& depth_in, cv::Mat& depth_out) const
+    compute(const Mat& depth_in, Mat& depth_out) const
     {
       switch (depth_in.depth())
       {
         case CV_16U:
         {
-          const cv::Mat_<unsigned short> &depth(depth_in);
-          cv::Mat depth_out_tmp;
+          const Mat_<unsigned short> &depth(depth_in);
+          Mat depth_out_tmp;
           computeImpl<unsigned short, float>(depth, depth_out_tmp, 0.001f);
           depth_out_tmp.convertTo(depth_out, CV_16U);
           break;
         }
         case CV_32F:
         {
-          const cv::Mat_<float> &depth(depth_in);
+          const Mat_<float> &depth(depth_in);
           computeImpl<float, float>(depth, depth_out, 1);
           break;
         }
         case CV_64F:
         {
-          const cv::Mat_<double> &depth(depth_in);
+          const Mat_<double> &depth(depth_in);
           computeImpl<double, double>(depth, depth_out, 1);
           break;
         }
@@ -140,7 +136,7 @@ namespace
      */
     template<typename DepthDepth, typename ContainerDepth>
     void
-    computeImpl(const cv::Mat_<DepthDepth> &depth_in, cv::Mat & depth_out, ContainerDepth scale) const
+    computeImpl(const Mat_<DepthDepth> &depth_in, Mat & depth_out, ContainerDepth scale) const
     {
       const ContainerDepth theta_mean = (float)(30. * CV_PI / 180);
       int rows = depth_in.rows;
@@ -148,14 +144,14 @@ namespace
 
       // Precompute some data
       const ContainerDepth sigma_L = (float)(0.8 + 0.035 * theta_mean / (CV_PI / 2 - theta_mean));
-      cv::Mat_<ContainerDepth> sigma_z(rows, cols);
+      Mat_<ContainerDepth> sigma_z(rows, cols);
       for (int y = 0; y < rows; ++y)
         for (int x = 0; x < cols; ++x)
           sigma_z(y, x) = (float)(0.0012 + 0.0019 * (depth_in(y, x) * scale - 0.4) * (depth_in(y, x) * scale - 0.4));
 
       ContainerDepth difference_threshold = 10;
-      cv::Mat_<ContainerDepth> Dw_sum = cv::Mat_<ContainerDepth>::zeros(rows, cols), w_sum =
-          cv::Mat_<ContainerDepth>::zeros(rows, cols);
+      Mat_<ContainerDepth> Dw_sum = Mat_<ContainerDepth>::zeros(rows, cols), w_sum =
+          Mat_<ContainerDepth>::zeros(rows, cols);
       for (int y = 0; y < rows - 1; ++y)
       {
         // Every pixel has had the contribution of previous pixels (in a row-major way)
@@ -192,15 +188,12 @@ namespace
             }
         }
       }
-      cv::Mat(Dw_sum / w_sum).copyTo(depth_out);
+      Mat(Dw_sum / w_sum).copyTo(depth_out);
     }
   };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace cv
-{
   /** Default constructor of the Algorithm class that computes normals
    */
   DepthCleaner::DepthCleaner(int depth, int window_size, int method_in)
@@ -292,12 +285,12 @@ namespace cv
   void
   DepthCleaner::operator()(InputArray depth_in_array, OutputArray depth_out_array) const
   {
-    cv::Mat depth_in = depth_in_array.getMat();
+    Mat depth_in = depth_in_array.getMat();
     CV_Assert(depth_in.dims == 2);
     CV_Assert(depth_in.channels() == 1);
 
     depth_out_array.create(depth_in.size(), depth_);
-    cv::Mat depth_out = depth_out_array.getMat();
+    Mat depth_out = depth_out_array.getMat();
 
     // Initialize the pimpl
     initialize();
@@ -323,4 +316,5 @@ namespace cv
       }
     }
   }
+}
 }

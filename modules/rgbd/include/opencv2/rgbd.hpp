@@ -38,12 +38,13 @@
 
 #ifdef __cplusplus
 
-#include <limits>
-
 #include <opencv2/core.hpp>
+#include <limits>
 
 namespace cv
 {
+namespace rgbd
+{    
   /** Checks if the value is a valid depth. For CV_16U or CV_16S, the convention is to be invalid if it is
    * a limit. For a float/double, we just check if it is a NaN
    * @param depth the depth to check for validity
@@ -427,7 +428,7 @@ namespace cv
 
     /** Method to compute a transformation from the source frame to the destination one.
      * Some odometry algorithms do not used some data of frames (eg. ICP does not use images).
-     * In such case corresponding arguments can be set as empty cv::Mat.
+     * In such case corresponding arguments can be set as empty Mat.
      * The method returns true if all internal computions were possible (e.g. there were enough correspondences, 
      * system of equations has a solution, etc) and resulting transformation satisfies some test if it's provided
      * by the Odometry inheritor implementation (e.g. thresholds for maximum translation and rotation).
@@ -507,7 +508,7 @@ namespace cv
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt,
                 const Mat& initRt) const;
 
-    // Some params have commented desired type. It's due to cv::AlgorithmInfo::addParams does not support it now.
+    // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/
     double minDepth, maxDepth, maxDepthDiff;
     /*vector<int>*/
@@ -556,7 +557,7 @@ namespace cv
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt,
                 const Mat& initRt) const;
 
-    // Some params have commented desired type. It's due to cv::AlgorithmInfo::addParams does not support it now.
+    // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/
     double minDepth, maxDepth, maxDepthDiff;
     /*float*/
@@ -569,7 +570,7 @@ namespace cv
 
     double maxTranslation, maxRotation;
 
-    mutable cv::Ptr<cv::RgbdNormals> normalsComputer;
+    mutable Ptr<RgbdNormals> normalsComputer;
   };
 
   /** Odometry that merges RgbdOdometry and ICPOdometry by minimize sum of their energy functions.
@@ -610,7 +611,7 @@ namespace cv
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt,
                 const Mat& initRt) const;
 
-    // Some params have commented desired type. It's due to cv::AlgorithmInfo::addParams does not support it now.
+    // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/
     double minDepth, maxDepth, maxDepthDiff;
     /*float*/
@@ -625,7 +626,7 @@ namespace cv
 
     double maxTranslation, maxRotation;
 
-    mutable cv::Ptr<cv::RgbdNormals> normalsComputer;
+    mutable Ptr<RgbdNormals> normalsComputer;
   };
 
   /** Warp the image: compute 3d points from the depth, transform them using given transformation, 
@@ -649,10 +650,12 @@ namespace cv
 // TODO Depth interpolation
 // Curvature
 // Get rescaleDepth return dubles if asked for
+} /* namespace rgbd */
 } /* namespace cv */
 
-#endif /* __cplusplus */
+#include "opencv2/rgbd/linemod.hpp"
 
+#endif /* __cplusplus */
 #endif
 
 /* End of file. */

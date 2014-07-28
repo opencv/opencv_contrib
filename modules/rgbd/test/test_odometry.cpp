@@ -33,13 +33,16 @@
  *
  */
 
+#include "test_precomp.hpp"
+
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "test_precomp.hpp"
-
-using namespace cv;
+namespace cv
+{
+namespace rgbd
+{
 
 #define SHOW_DEBUG_LOG     0
 #define SHOW_DEBUG_IMAGES  0
@@ -152,7 +155,7 @@ void dilateFrame(Mat& image, Mat& depth)
 class CV_OdometryTest : public cvtest::BaseTest
 {
 public:
-    CV_OdometryTest(const Ptr<Odometry>& _odometry, 
+    CV_OdometryTest(const Ptr<Odometry>& _odometry,
                     double _maxError1, 
                     double _maxError5) :
         odometry(_odometry), 
@@ -330,21 +333,23 @@ void CV_OdometryTest::run(int)
 /****************************************************************************************\
 *                                Tests registrations                                     *
 \****************************************************************************************/
+}
+}
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    CV_OdometryTest test(Algorithm::create<Odometry>("RGBD.RgbdOdometry"), 0.99, 0.94);
+    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.RgbdOdometry"), 0.99, 0.94);
     test.safe_run();
 }
 
 TEST(RGBD_Odometry_ICP, algorithmic)
 {
-    CV_OdometryTest test(Algorithm::create<Odometry>("RGBD.ICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
 TEST(RGBD_Odometry_RgbdICP, algorithmic)
 {
-    CV_OdometryTest test(Algorithm::create<Odometry>("RGBD.RgbdICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }

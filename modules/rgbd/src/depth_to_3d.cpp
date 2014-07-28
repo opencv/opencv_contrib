@@ -34,12 +34,13 @@
  */
 
 #include <opencv2/rgbd.hpp>
-#include <limits>
 
 #include "depth_to_3d.h"
 #include "utils.h"
 
-namespace
+namespace cv
+{
+namespace rgbd
 {
   /**
    * @param K
@@ -168,12 +169,8 @@ namespace
       }
     }
   }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace cv
-{
 
   /**
    * @param K
@@ -262,4 +259,5 @@ namespace cv
         depthTo3dNoMask<float>(depth, K_new, points3d);
     }
   }
+}
 }

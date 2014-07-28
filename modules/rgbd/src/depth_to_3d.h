@@ -39,7 +39,12 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <limits>
+#include <limits.h>
+
+namespace cv
+{
+namespace rgbd
+{
 
 /**
  * @param depth the depth image, containing depth with the value T
@@ -112,6 +117,9 @@ convertDepthToFloat(const cv::Mat& depth, float scale, const cv::Mat &uv_mat, cv
     else
       *z_mat_iter = depth_i * scale;
   }
+}
+
+}
 }
 
 #endif /* __cplusplus */
