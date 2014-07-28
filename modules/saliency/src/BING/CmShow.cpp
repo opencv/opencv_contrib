@@ -39,7 +39,6 @@
  //
  //M*/
 
-#include "kyheader.h"
 #include "CmShow.h"
 #include "opencv2/core.hpp"
 #include <opencv2/highgui.hpp>

@@ -43,9 +43,9 @@
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
 #include "saliencyBaseClasses.hpp"
-#include "BING/kyheader.h"
-#include "BING/ValStructVec.h"
-#include "BING/FilterTIG.h"
+#include "kyheader.h"
+#include "ValStructVec.h"
+#include "FilterTIG.h"
 #include <cstdio>
 #include <string>
 #include <iostream>

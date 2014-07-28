@@ -168,8 +168,8 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 #define INT64 long long
 #else
 #define INT64 long
-//typedef unsigned long UINT64;
-#define UINT64 unsigned long
+typedef unsigned long UINT64;
+//#define UINT64 unsigned long
 #endif
 
 /*
@@ -275,6 +275,5 @@ inline int popcnt_byte( register uint32_t u )
 }
 
 /////
-#include "CmTimer.h"
-#include "CmFile.h"
+
 #endif // KYHEADER_H

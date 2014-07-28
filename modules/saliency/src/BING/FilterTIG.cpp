@@ -39,8 +39,6 @@
  //
  //M*/
 
-#include "kyheader.h"
-#include "FilterTIG.h"
 #include "CmShow.h"
 
 using namespace cv;

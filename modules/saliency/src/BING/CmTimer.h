@@ -43,7 +43,6 @@
 #ifndef CMTIMER_H
 #define CMTIMER_H
 
-#include "kyheader.h"
 
 class CmTimer
 {

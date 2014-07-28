@@ -41,6 +41,9 @@
 
 #include "precomp.hpp"
 
+#include "CmTimer.h"
+#include "CmFile.h"
+
 namespace cv
 {
 

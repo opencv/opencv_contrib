@@ -39,7 +39,6 @@
  //
  //M*/
 
-#include "kyheader.h"
 #include "CmFile.h"
 
 // Get image names from a wildcard. Eg: GetNames("D:\\*.jpg", imgNames);
