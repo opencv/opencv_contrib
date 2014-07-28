@@ -78,10 +78,21 @@ using namespace tld;
  *      perfect PN
  *
  *      vadim:
+ *      ?3. comment each function/method
+ *      5. empty lines to separate logical...
+ *      6. comment logical sections
+ *      ?10. all in one class
+ *      11. group decls logically, order of statements
+    *      12. not v=vector(n), but assign(n,0)
+    *      -->14. TLDEnsembleClassifier
+ *      16. loops limits
+ *      17. inner scope loops
+    *      18. classify in TLDEnsembleClassifier
+    *      19. var checker
+    *      20. NCC using plain loops
+    *      21. precompute offset
+    *      22. vec of structs (detect and beyond)
  *
- *      blurred in TrackerTLDModel()
- *
- *      warpAffine -- ?
 */
 
 /* design decisions:
