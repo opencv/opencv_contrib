@@ -40,6 +40,7 @@
  //M*/
 
 #pragma once
+#include "opencv2/saliency/kyheader.h"
 class CmShow
 {
 public:

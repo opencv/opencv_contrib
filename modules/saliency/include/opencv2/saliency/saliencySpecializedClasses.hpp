@@ -164,7 +164,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
   bool filtersLoaded()
   {
-    int n = _svmSzIdxs.size();
+    int n = (int)_svmSzIdxs.size();
     return n > 0 && _svmReW1f.size() == Size( 2, n ) && _svmFilter.size() == Size( _W, _W );
   }
   void predictBBoxSI( CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true );
