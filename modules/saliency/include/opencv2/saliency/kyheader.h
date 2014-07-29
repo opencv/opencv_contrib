@@ -194,7 +194,7 @@ inline int popcnt64( register uint64_t u )
   u = ( u & 0x00ff00ff00ff00ff ) + ( ( u >> 8 ) & 0x00ff00ff00ff00ff );
   u = ( u & 0x0000ffff0000ffff ) + ( ( u >> 16 ) & 0x0000ffff0000ffff );
   u = ( u & 0x00000000ffffffff ) + ( ( u >> 32 ) & 0x00000000ffffffff );
-  return u;
+  return (int)u;
 }
 
 inline int popcnt( register uint32_t u )
@@ -204,7 +204,7 @@ inline int popcnt( register uint32_t u )
   u = ( u & 0x0f0f0f0f ) + ( ( u >> 4 ) & 0x0f0f0f0f );
   u = ( u & 0x00ff00ff ) + ( ( u >> 8 ) & 0x00ff00ff );
   u = ( u & 0x0000ffff ) + ( ( u >> 16 ) & 0x0000ffff );
-  return u;
+  return (int)u;
 }
 
 inline int popcnt64_nibble( register uint64_t u )
@@ -218,7 +218,7 @@ inline int popcnt64_nibble( register uint64_t u )
     c += Table[u & 0xf];
     u >>= 4;
   }
-  return c;
+  return (int)c;
 }
 
 inline int popcnt_nibble( register uint32_t u )
@@ -232,7 +232,7 @@ inline int popcnt_nibble( register uint32_t u )
     c += Table[u & 0xf];
     u >>= 4;
   }
-  return c;
+  return (int)c;
 }
 
 inline int popcnt64_byte( register uint64_t u )
@@ -252,7 +252,7 @@ inline int popcnt64_byte( register uint64_t u )
     c += Table[u & 0xff];
     u >>= 8;
   }
-  return c;
+  return (int)c;
 }
 
 inline int popcnt_byte( register uint32_t u )
@@ -272,7 +272,7 @@ inline int popcnt_byte( register uint32_t u )
     c += Table[u & 0xff];
     u >>= 8;
   }
-  return c;
+  return (int)c;
 }
 
 /////
