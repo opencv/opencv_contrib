@@ -36,7 +36,6 @@
 #include <opencv2/rgbd.hpp>
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/contrib.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -45,6 +44,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace cv::rgbd;
 
 #define BILATERAL_FILTER 0// if 1 then bilateral filter will be used for the depth
 
