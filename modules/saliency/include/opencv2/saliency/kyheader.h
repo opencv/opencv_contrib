@@ -52,6 +52,7 @@
 #include <cmath>
 #include <time.h>
 #include <fstream>
+#include <stdint.h>
 //#include <omp.h>
 
 // TODO: reference additional headers your program requires here

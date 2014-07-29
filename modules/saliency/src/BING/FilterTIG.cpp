@@ -40,6 +40,7 @@
  //M*/
 
 #include "CmShow.h"
+#include "opencv2/saliency/FilterTIG.h"
 
 using namespace cv;
 
