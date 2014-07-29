@@ -46,7 +46,6 @@
 #define popcntll __builtin_popcountll
 #define popcnt __builtin_popcount
 
-#include "precomp.hpp"
 
 /* LUT */
 const int lookup[] =

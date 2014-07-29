@@ -63,6 +63,8 @@ static void help()
 
 }
 
+uchar invertSingleBits( uchar dividend_char, int numBits );
+
 /* invert numBits bits in input char */
 uchar invertSingleBits( uchar dividend_char, int numBits )
 {

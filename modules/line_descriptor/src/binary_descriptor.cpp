@@ -158,7 +158,7 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
   edLineVec_.resize( params.numOfOctave_ );
   images_sizes.resize( params.numOfOctave_ );
 
-  for ( unsigned int i = 0; i < params.numOfOctave_; i++ )
+  for ( int i = 0; i < params.numOfOctave_; i++ )
     edLineVec_[i] = new EDLineDetector;
 
   /* prepare a vector to host local weights F_l*/
@@ -888,7 +888,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
   float *dL = new float[2];  //line direction cos(dir), sin(dir)
   float *dO = new float[2];  //the clockwise orthogonal vector of line direction.
   short heightOfLSP = params.widthOfBand_ * NUM_OF_BANDS;  //the height of line support region;
-  short descriptorSize = NUM_OF_BANDS * 8;  //each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
+  short descriptor_size = NUM_OF_BANDS * 8;  //each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
   float pgdLRowSum;  //the summation of {g_dL |g_dL>0 } for each row of the region;
   float ngdLRowSum;  //the summation of {g_dL |g_dL<0 } for each row of the region;
   float pgdL2RowSum;  //the summation of {g_dL^2 |g_dL>0 } for each row of the region;
@@ -1086,7 +1086,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
        return 0; */
 
       /* construct line descriptor */
-      pSingleLine->descriptor.resize( descriptorSize );
+      pSingleLine->descriptor.resize( descriptor_size );
       desVec = pSingleLine->descriptor.data();
 
       short desID;
@@ -1162,7 +1162,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
        * vector no larger than this threshold. In Z.Wang's work, a value of 0.4 is found
        * empirically to be a proper threshold.*/
       desVec = pSingleLine->descriptor.data();
-      for ( short i = 0; i < descriptorSize; i++ )
+      for ( short i = 0; i < descriptor_size; i++ )
       {
         if( desVec[i] > 0.4 )
         {
@@ -1172,13 +1172,13 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
 
       //re-normalize desVec;
       temp = 0;
-      for ( short i = 0; i < descriptorSize; i++ )
+      for ( short i = 0; i < descriptor_size; i++ )
       {
         temp += desVec[i] * desVec[i];
       }
 
       temp = 1 / sqrt( temp );
-      for ( short i = 0; i < descriptorSize; i++ )
+      for ( short i = 0; i < descriptor_size; i++ )
       {
         desVec[i] = desVec[i] * temp;
       }
@@ -1190,8 +1190,8 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
     for ( int g = 0; g < 32; g++ )
     {
       /* get LBD data */
-      float* desVec = keyLines[lineIDInScaleVec][0].descriptor.data();
-      *pointerToRow = desVec[g];
+      float* des_Vec = keyLines[lineIDInScaleVec][0].descriptor.data();
+      *pointerToRow = des_Vec[g];
       pointerToRow++;
 
     }

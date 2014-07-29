@@ -51,6 +51,7 @@
 #include "sparse_hashtable.hpp"
 #include "types.hpp"
 #include "ed_line_detector.hpp"
+#include <map>
 
 namespace cv
 {
