@@ -1,3 +1,5 @@
+.. _binary_descriptor:
+
 BinaryDescriptor Class
 ======================
 
@@ -114,7 +116,7 @@ BinaryDescriptor::operator()
 
 Define operator '()' to perform detection of KeyLines and computation of descriptors in a row.
 
-.. ocv:function:: void BinaryDescriptor::operator()( InputArray image, InputArray mask, vector<KeyLine>& keylines, OutputArray descriptors, bool useProvidedKeyLines=false ) const
+.. ocv:function:: void BinaryDescriptor::operator()( InputArray image, InputArray mask, vector<KeyLine>& keylines, OutputArray descriptors, bool useProvidedKeyLines=false, bool returnFloatDescr ) const
 
 	:param image: input image
 
@@ -125,6 +127,8 @@ Define operator '()' to perform detection of KeyLines and computation of descrip
 	:param descriptors: matrix that will store final descriptors
 
 	:param useProvidedKeyLines: flag (when set to true, detection phase will be skipped and only computation of descriptors will be executed, using lines provided in *keylines*)
+
+	:param returnFloatDescr: flag (when set to true, original non-binary descriptors are returned)
 
 
 BinaryDescriptor::read
@@ -171,14 +175,6 @@ Return descriptor size
 .. ocv:function:: int BinaryDescriptor::descriptorSize() const
 
 
-BinaryDescriptor::empty
------------------------
-
-Check whether Gaussian pyramids were created
-
-.. ocv:function:: bool BinaryDescriptor::empty() const
-
-
 BinaryDescriptor::detect
 ------------------------
 
@@ -203,8 +199,8 @@ BinaryDescriptor::compute
 
 Requires descriptors computation (for one or more images)
 
-.. ocv:function:: void compute( const Mat& image, vector<KeyLine>& keylines, Mat& descriptors ) const
-.. ocv:function:: void compute( const vector<Mat>& images, vector<vector<KeyLine> >& keylines, vector<Mat>& descriptors ) const
+.. ocv:function:: void compute( const Mat& image, vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const
+.. ocv:function:: void compute( const vector<Mat>& images, vector<vector<KeyLine> >& keylines, vector<Mat>& descriptors, bool returnFloatDescr ) const
 
 	:param image: input image
 
@@ -216,10 +212,12 @@ Requires descriptors computation (for one or more images)
 
 	:param masks: set of masks to select for which lines, among the ones provided in input, descriptors must be computed
 
+	:param returnFloatDescr: flag (when set to true, original non-binary descriptors are returned)
+
 
 Related pages
 -------------
 
-* `Binary descriptors for lines extracted from an image <line_descriptor.html>`_
-* `Matching with binary descriptors <matching.html>`_
-* `Drawing Function of Keylines and Matches <drawing_functions.html>`_
+* :ref:`line_descriptor`
+* :ref:`matching`
+* :ref:`drawing`

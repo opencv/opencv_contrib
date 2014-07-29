@@ -1,5 +1,7 @@
-Drawing Function of Keylines and Matches
-========================================
+.. _drawing:
+
+Drawing Functions for Keylines and Matches
+==========================================
 
 .. highlight:: cpp
 
@@ -63,6 +65,6 @@ Draws keylines.
 Related pages
 -------------
 
-* `Binary descriptors for lines extracted from an image <line_descriptor.html>`_
-* `BinaryDescriptor Class <binary_descriptor.html>`_
-* `Matching with binary descriptors <matching.html>`_
+* :ref:`line_descriptor`
+* :ref:`binary_descriptor`
+* :ref:`matching`

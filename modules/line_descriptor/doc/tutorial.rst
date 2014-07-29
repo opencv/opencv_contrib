@@ -3,9 +3,9 @@ Line Features Tutorial
 
 In this tutorial it will be shown how to:
 
-* use the `BinaryDescriptor <binary_descriptor.html>`_ interface to extract lines and store them in *KeyLine* objects
+* use the *BinaryDescriptor* interface to extract lines and store them in *KeyLine* objects
 * use the same interface to compute descriptors for every extracted line
-* use the `BynaryDescriptorMatcher <matching.html#binarydescriptormatcher-class>`_ to determine matches among descriptors obtained from different images
+* use the *BynaryDescriptorMatcher* to determine matches among descriptors obtained from different images
 
 
 Lines extraction and descriptors computation
@@ -101,12 +101,32 @@ In the following snippet of code, it is shown how to detect lines from an image.
 
 This is the result obtained for famous cameraman image:
 
-.. image:: pics/cameraman_lines2.png
+.. image:: pics/lines_cameraman_edl.png
     :width: 512px
     :align: center
     :height: 512px
     :alt: alternate text
 
+Another way to extract lines is using *LSDDetector* class; such class uses the LSD extractor to compute lines. To obtain this result, it is sufficient to use the snippet code seen above, just modifying it by the rows
+
+.. code-block:: cpp
+
+	/* create a pointer to an LSDDetector object */
+	Ptr<LSDDetector> lsd = LSDDetector::createLSDDetector();
+
+	/* compute lines */
+	std::vector<KeyLine> keylines;
+	lsd->detect( imageMat, keylines, mask );
+
+..
+
+Here's the result returned by LSD detector again on cameraman picture:
+
+.. image:: pics/cameraman_lines2.png
+    :width: 512px
+    :align: center
+    :height: 512px
+    :alt: alternate text
 
 Once keylines have been detected, it is possible to compute their descriptors as shown in the following:
 
@@ -299,9 +319,9 @@ Here's an example om matching among descriptors extratced from original camerama
 Querying internal database
 --------------------------
 
-The `BynaryDescriptorMatcher <matching.html#binarydescriptormatcher-class>`_ class, owns an internal database that can be populated with descriptors extracted from different images and queried using one of the modalities described in previous section. 
+The *BynaryDescriptorMatcher* class, owns an internal database that can be populated with descriptors extracted from different images and queried using one of the modalities described in previous section. 
 Population of internal dataset can be done using the *add* function; such function doesn't directly add new data to database, but it just stores it them locally. The real update happens when function *train* is invoked or when any querying function is executed, since each of them invokes *train* before querying. 
-When queried, internal database not only returns required descriptors, but, for every returned match, it is able to say which image matched descriptor was extracted from.
+When queried, internal database not only returns required descriptors, but, for every returned match, it is able to tell which image matched descriptor was extracted from.
 An example of internal dataset usage is described in the following code; after adding locally new descriptors, a radius search is invoked. This provokes local data to be transferred to dataset, which, in turn, is then queried.
 
 .. code-block:: cpp

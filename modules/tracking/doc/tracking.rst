@@ -77,7 +77,7 @@ Tracker classes:
 ----------------
 
 .. toctree::
-	:maxdepth: 2
+    :maxdepth: 2
 
     tracker_algorithms
     common_interfaces_tracker

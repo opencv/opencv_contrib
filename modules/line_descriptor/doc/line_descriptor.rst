@@ -1,3 +1,5 @@
+.. _line_descriptor:
+
 Binary descriptors for lines extracted from an image
 ====================================================
 
@@ -79,19 +81,10 @@ Apart from fields inspired to KeyPoint class, KeyLines stores information about 
     };
 
 
-Lines extraction methodology
-----------------------------
-
-The lines extraction methodology described in the following is mainly based on [LBD]_.
-The extraction starts with a Gaussian pyramid generated from an original image, downsampled N-1 times, blurred N times, to obtain N layers (one for each octave), with layer 0 corresponding to input image. Then, from each layer (octave) in the pyramid, lines are extracted using LSD algorithm. 
-
-Differently from EDLine lines extractor used in original article, LSD furnishes information only about lines extremes; thus, additional information regarding slope and equation of line are computed via analytic methods. The number of pixels is obtained using `LineIterator <http://docs.opencv.org/modules/core/doc/drawing_functions.html#lineiterator>`_. Later on, all extracted lines are arranged in buckets: two lines fall in the same bucket if they represent the same line in different octave  (they have the same direction and belong to same region of original image). The set of buckets becomes the input for descriptors computation.
-
-
 Computation of binary descriptors
 ---------------------------------
 
-To obtatin a binary descriptor representing a certain line detected from a certain octave of an image, we first compute a non-binary descriptor as described in [LBD]_. Given a line, we consider a rectangular region centered at it and called *line support region (LSR)*. Such region is divided into a set of bands :math:`\{B_1, B_2, ..., B_m\}`, whose length equals the one of line.
+To obtatin a binary descriptor representing a certain line detected from a certain octave of an image, we first compute a non-binary descriptor as described in [LBD]_. Such algorithm works on lines extracted using EDLine detector, as explained in [EDL]_. Given a line, we consider a rectangular region centered at it and called *line support region (LSR)*. Such region is divided into a set of bands :math:`\{B_1, B_2, ..., B_m\}`, whose length equals the one of line.
 
 If we indicate with :math:`\bf{d}_L` the direction of line, the orthogonal and clockwise direction to line :math:`\bf{d}_{\perp}` can be determined; these two directions, are used to construct a reference frame centered in the middle point of line. The gradients of pixels :math:`\bf{g'}` inside LSR can be projected to the newly determined frame, obtaining their local equivalent :math:`\bf{g'} = (\bf{g}^T \cdot \bf{d}_{\perp}, \bf{g}^T \cdot \bf{d}_L)^T \triangleq (\bf{g'}_{d_{\perp}}, \bf{g'}_{d_L})^T`.
 
@@ -140,6 +133,7 @@ Summary
 	:maxdepth: 2
 
 	binary_descriptor
+	LSDDetector
 	matching
 	drawing_functions
 	tutorial

@@ -1,3 +1,5 @@
+.. _matching:
+
 Matching with binary descriptors
 ================================
 
@@ -130,9 +132,9 @@ For every input query descriptor, retrieve, from a dataset provided from user or
 Related pages
 -------------
 
-* `Binary descriptors for lines extracted from an image <line_descriptor.html>`_
-* `BinaryDescriptor Class <binary_descriptor.html>`_
-* `Drawing Function of Keylines and Matches <drawing_functions.html>`_
+* :ref:`line_descriptor`
+* :ref:`binary_descriptor`
+* :ref:`drawing`
 
 
 References
