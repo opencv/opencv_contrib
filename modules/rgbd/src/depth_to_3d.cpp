@@ -48,7 +48,7 @@ namespace rgbd
    * @param mask the mask of the points to consider (can be empty)
    * @param points3d the resulting 3d points, a 3-channel matrix
    */
-  void
+  static void
   depthTo3d_from_uvz(const cv::Mat& in_K, const cv::Mat& u_mat, const cv::Mat& v_mat, const cv::Mat& z_mat,
                      cv::Mat& points3d)
   {
@@ -90,7 +90,7 @@ namespace rgbd
    * @param mask the mask of the points to consider (can be empty)
    * @param points3d the resulting 3d points
    */
-  void
+  static void
   depthTo3dMask(const cv::Mat& depth, const cv::Mat& K, const cv::Mat& mask, cv::Mat& points3d)
   {
     // Create 3D points in one go.
