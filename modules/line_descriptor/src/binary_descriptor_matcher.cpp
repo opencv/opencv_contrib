@@ -159,7 +159,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
       CV_Assert( false );
     }
 
-    /* create a DMatch object if required by mask of if there is
+    /* create a DMatch object if required by mask or if there is
      no mask at all */
     else if( masks.empty() || masks[itup->second].at<uchar>( counter ) != 0 )
     {
@@ -212,7 +212,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   /* compose matches */
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
-    /* create a DMatch object if required by mask of if there is
+    /* create a DMatch object if required by mask or if there is
      no mask at all */
     if( mask.empty() || ( !mask.empty() && mask.at<uchar>( counter ) != 0 ) )
     {

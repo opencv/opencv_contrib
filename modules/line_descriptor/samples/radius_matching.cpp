@@ -128,13 +128,4 @@ int main( int argc, char** argv )
   std::vector<std::vector<DMatch> > matches;
   bdm->radiusMatch( queries, matches, 30 );
 
-  /* print matches */
-  for ( size_t q = 0; q < matches.size(); q++ )
-  {
-    for ( size_t m = 0; m < matches[q].size(); m++ )
-    {
-      DMatch dm = matches[q][m];
-      std::cout << "Descriptor: " << q << " Image: " << dm.imgIdx << " Distance: " << dm.distance << std::endl;
-    }
-  }
 }

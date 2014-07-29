@@ -58,8 +58,6 @@
 #include <algorithm>
 #include <bitset>
 
-
-
 #include "opencv2/line_descriptor.hpp"
 
 #endif

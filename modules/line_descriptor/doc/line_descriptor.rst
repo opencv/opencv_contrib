@@ -125,6 +125,8 @@ References
 
 .. [LBD] Zhang, Lilian, and Reinhard Koch. *An efficient and robust line segment matching approach based on LBD descriptor and pairwise geometric consistency*, Journal of Visual Communication and Image Representation 24.7 (2013): 794-805.
 
+.. [EDL] Von Gioi, R. Grompone, et al. *LSD: A fast line segment detector with a false detection control*, IEEE Transactions on Pattern Analysis and Machine Intelligence 32.4 (2010): 722-732.
+
 
 Summary
 -------

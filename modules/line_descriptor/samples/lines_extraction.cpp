@@ -80,7 +80,7 @@ int main( int argc, char** argv )
     std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
   }
 
-  /* create a ramdom binary mask */
+  /* create a random binary mask */
   cv::Mat mask = Mat::ones( imageMat.size(), CV_8UC1 );
 
   /* create a pointer to a BinaryDescriptor object with deafult parameters */
@@ -91,16 +91,15 @@ int main( int argc, char** argv )
 
   /* extract lines */
   cv::Mat output = imageMat.clone();
-  bd->detect( imageMat, lines, mask, 1 );
+  bd->detect( imageMat, lines, mask );
 
   /* draw lines extracted from octave 0 */
-
   if( output.channels() == 1 )
     cvtColor( output, output, COLOR_GRAY2BGR );
   for ( size_t i = 0; i < lines.size(); i++ )
   {
     KeyLine kl = lines[i];
-    if( kl.octave == 0 /*&& kl.response >0.08*/)
+    if( kl.octave == 0)
     {
       /* get a random color */
       int R = ( rand() % (int) ( 255 + 1 ) );
@@ -112,7 +111,7 @@ int main( int argc, char** argv )
       Point pt2 = Point( kl.endPointX, kl.endPointY );
 
       /* draw line */
-      line( output, pt1, pt2, Scalar( B, G, R ), 5 );
+      line( output, pt1, pt2, Scalar( B, G, R ), 3 );
     }
 
   }
