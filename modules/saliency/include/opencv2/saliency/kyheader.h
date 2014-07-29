@@ -173,13 +173,13 @@ typedef unsigned long UINT64;
 //#define UINT64 unsigned long
 #endif
 
-/*
- #if (_MSC_VER >= 1500)
+
+ #if defined(_MSC_VER)
  # include <intrin.h>
  # define POPCNT(x) __popcnt(x)
  # define POPCNT64(x) __popcnt64(x)
  #endif
- */
+
 
 #if defined(__GNUC__)
 # define POPCNT(x) __builtin_popcount(x)
