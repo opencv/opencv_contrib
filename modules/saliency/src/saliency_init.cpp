@@ -58,11 +58,11 @@ CV_INIT_ALGORITHM(
     ObjectnessBING, "SALIENCY.BING",
     obj.info()->addParam(obj, "_base", obj._base); obj.info()->addParam(obj, "_NSS", obj._NSS); obj.info()->addParam(obj, "_W", obj._W) );
 
+
 bool initModule_saliency( void )
 {
   bool all = true;
   all &= !StaticSaliencySpectralResidual_info_auto.name().empty();
-  //all &= !MotionSaliencySuBSENSE_info_auto.name().empty();
   all &= !ObjectnessBING_info_auto.name().empty();
 
   return all;

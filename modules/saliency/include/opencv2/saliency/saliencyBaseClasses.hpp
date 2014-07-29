@@ -94,30 +94,26 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
  public:
 
   bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
-  AlgorithmInfo* info() const = 0;
  protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
 
 };
 
 /************************************ Motion Saliency Base Class ************************************/
 class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
- public:
-  AlgorithmInfo* info() const = 0;
- protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap ) = 0;
 
+ protected:
+  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
 
 };
 
 /************************************ Objectness Base Class ************************************/
 class CV_EXPORTS_W Objectness : public virtual Saliency
 {
- public:
-  AlgorithmInfo* info() const = 0;
+
  protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
 
 };
 

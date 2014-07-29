@@ -48,5 +48,4 @@ namespace cv
  * Motion Saliency
  */
 
-
 }/* namespace cv */

@@ -48,5 +48,4 @@ namespace cv
  * Objectness
  */
 
-
 }/* namespace cv */
