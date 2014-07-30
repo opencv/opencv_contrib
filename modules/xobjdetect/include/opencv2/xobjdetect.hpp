@@ -175,5 +175,4 @@ public:
 } /* namespace xobjdetect */
 } /* namespace cv */
 
-
 #endif /* __OPENCV_XOBJDETECT_XOBJDETECT_HPP__ */

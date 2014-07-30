@@ -33,26 +33,68 @@
  *
  */
 
-#include <stdexcept>
-
-#include <opencv2/contrib.hpp>
+#include "test_precomp.hpp"
 #include <opencv2/rgbd.hpp>
 
-#include "test_precomp.hpp"
-
-cv::Point3f
-rayPlaneIntersection(cv::Point2f uv, const cv::Mat& centroid, const cv::Mat& normal, const cv::Mat_<float>& Kinv);
-
-cv::Vec3f
-rayPlaneIntersection(const cv::Vec3d& uv1, double centroid_dot_normal, const cv::Vec3d& normal,
-                     const cv::Matx33d& Kinv);
-cv::Vec3f
-rayPlaneIntersection(const cv::Vec3d& uv1, double centroid_dot_normal, const cv::Vec3d& normal, const cv::Matx33d& Kinv)
+namespace cv
+{
+namespace rgbd
 {
 
-  cv::Matx31d L = Kinv * uv1; //a ray passing through camera optical center
+class CV_EXPORTS TickMeter
+{
+public:
+    TickMeter();
+    void start();
+    void stop();
+
+    int64 getTimeTicks() const;
+    double getTimeMicro() const;
+    double getTimeMilli() const;
+    double getTimeSec()   const;
+    int64 getCounter() const;
+
+    void reset();
+private:
+    int64 counter;
+    int64 sumTime;
+    int64 startTime;
+};
+
+TickMeter::TickMeter() { reset(); }
+int64 TickMeter::getTimeTicks() const { return sumTime; }
+double TickMeter::getTimeSec()   const { return (double)getTimeTicks()/getTickFrequency(); }
+double TickMeter::getTimeMilli() const { return getTimeSec()*1e3; }
+double TickMeter::getTimeMicro() const { return getTimeMilli()*1e3; }
+int64 TickMeter::getCounter() const { return counter; }
+void  TickMeter::reset() {startTime = 0; sumTime = 0; counter = 0; }
+
+void TickMeter::start(){ startTime = getTickCount(); }
+void TickMeter::stop()
+{
+    int64 time = getTickCount();
+    if ( startTime == 0 )
+        return;
+
+    ++counter;
+    
+    sumTime += ( time - startTime );
+    startTime = 0;
+}
+
+Point3f
+rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv);
+
+Vec3f
+rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal,
+                     const Matx33d& Kinv);
+Vec3f
+rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal, const Matx33d& Kinv)
+{
+
+  Matx31d L = Kinv * uv1; //a ray passing through camera optical center
   //and uv.
-  L = L * (1.0 / cv::norm(L));
+  L = L * (1.0 / norm(L));
   double LdotNormal = L.dot(normal);
   double d;
   if (std::fabs(LdotNormal) > 1e-9)
@@ -63,18 +105,18 @@ rayPlaneIntersection(const cv::Vec3d& uv1, double centroid_dot_normal, const cv:
   {
     d = 1.0;
     std::cout << "warning, LdotNormal nearly 0! " << LdotNormal << std::endl;
-    std::cout << "contents of L, Normal: " << cv::Mat(L) << ", " << cv::Mat(normal) << std::endl;
+    std::cout << "contents of L, Normal: " << Mat(L) << ", " << Mat(normal) << std::endl;
   }
-  cv::Vec3f xyz((float)(d * L(0)), (float)(d * L(1)), (float)(d * L(2)));
+  Vec3f xyz((float)(d * L(0)), (float)(d * L(1)), (float)(d * L(2)));
   return xyz;
 }
 
-cv::Point3f
-rayPlaneIntersection(cv::Point2f uv, const cv::Mat& centroid, const cv::Mat& normal, const cv::Mat_<float>& Kinv)
+Point3f
+rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv)
 {
-  cv::Matx33d dKinv(Kinv);
-  cv::Vec3d dNormal(normal);
-  return rayPlaneIntersection(cv::Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
+  Matx33d dKinv(Kinv);
+  Vec3d dNormal(normal);
+  return rayPlaneIntersection(Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
 }
 
 const int W = 640;
@@ -84,43 +126,43 @@ float focal_length = 525;
 float cx = W / 2.f + 0.5f;
 float cy = H / 2.f + 0.5f;
 
-cv::Mat K = (cv::Mat_<double>(3, 3) << focal_length, 0, cx, 0, focal_length, cy, 0, 0, 1);
-cv::Mat Kinv = K.inv();
+Mat K = (Mat_<double>(3, 3) << focal_length, 0, cx, 0, focal_length, cy, 0, 0, 1);
+Mat Kinv = K.inv();
 
-static cv::RNG rng;
+static RNG rng;
 struct Plane
 {
 
-  cv::Vec3d n, p;
+  Vec3d n, p;
   double p_dot_n;
   Plane()
   {
     n[0] = rng.uniform(-0.5, 0.5);
     n[1] = rng.uniform(-0.5, 0.5);
     n[2] = -0.3; //rng.uniform(-1.f, 0.5f);
-    n = n / cv::norm(n);
+    n = n / norm(n);
     set_d((float)rng.uniform(-2.0, 0.6));
   }
 
   void
   set_d(float d)
   {
-    p = cv::Vec3d(0, 0, d / n[2]);
+    p = Vec3d(0, 0, d / n[2]);
     p_dot_n = p.dot(n);
   }
 
-  cv::Vec3f
-  intersection(float u, float v, const cv::Matx33f& Kinv_in) const
+  Vec3f
+  intersection(float u, float v, const Matx33f& Kinv_in) const
   {
-    return rayPlaneIntersection(cv::Vec3d(u, v, 1), p_dot_n, n, Kinv_in);
+    return rayPlaneIntersection(Vec3d(u, v, 1), p_dot_n, n, Kinv_in);
   }
 };
 
 void
-gen_points_3d(std::vector<Plane>& planes_out, cv::Mat_<unsigned char> &plane_mask, cv::Mat& points3d, cv::Mat& normals,
+gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
               int n_planes);
 void
-gen_points_3d(std::vector<Plane>& planes_out, cv::Mat_<unsigned char> &plane_mask, cv::Mat& points3d, cv::Mat& normals,
+gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
               int n_planes)
 {
   std::vector<Plane> planes;
@@ -133,8 +175,8 @@ gen_points_3d(std::vector<Plane>& planes_out, cv::Mat_<unsigned char> &plane_mas
       planes.push_back(px);
     }
   }
-  cv::Mat_ < cv::Vec3f > outp(H, W);
-  cv::Mat_ < cv::Vec3f > outn(H, W);
+  Mat_ < Vec3f > outp(H, W);
+  Mat_ < Vec3f > outn(H, W);
   plane_mask.create(H, W);
 
   // n  ( r - r_0) = 0
@@ -175,10 +217,10 @@ protected:
   {
     try
     {
-      cv::Mat_<unsigned char> plane_mask;
+      Mat_<unsigned char> plane_mask;
       for (unsigned char i = 0; i < 3; ++i)
       {
-        cv::RgbdNormals::RGBD_NORMALS_METHOD method;
+        RgbdNormals::RGBD_NORMALS_METHOD method;
         // inner vector: whether it's 1 plane or 3 planes
         // outer vector: float or double
         std::vector<std::vector<float> > errors(2);
@@ -187,7 +229,7 @@ protected:
         switch (i)
         {
           case 0:
-            method = cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS;
+            method = RgbdNormals::RGBD_NORMALS_METHOD_FALS;
             std::cout << std::endl << "*** FALS" << std::endl;
             errors[0][0] = 0.006f;
             errors[0][1] = 0.03f;
@@ -195,7 +237,7 @@ protected:
             errors[1][1] = 0.02f;
             break;
           case 1:
-            method = cv::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD;
+            method = RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD;
             std::cout << std::endl << "*** LINEMOD" << std::endl;
             errors[0][0] = 0.04f;
             errors[0][1] = 0.07f;
@@ -203,7 +245,7 @@ protected:
             errors[1][1] = 0.08f;
             break;
           case 2:
-            method = cv::RgbdNormals::RGBD_NORMALS_METHOD_SRI;
+            method = RgbdNormals::RGBD_NORMALS_METHOD_SRI;
             std::cout << std::endl << "*** SRI" << std::endl;
             errors[0][0] = 0.02f;
             errors[0][1] = 0.04f;
@@ -211,7 +253,7 @@ protected:
             errors[1][1] = 0.04f;
             break;
 		  default:
-			method = (cv::RgbdNormals::RGBD_NORMALS_METHOD)-1;
+			method = (RgbdNormals::RGBD_NORMALS_METHOD)-1;
 			CV_Error(0, "");
         }
 
@@ -223,11 +265,11 @@ protected:
           else
             std::cout << "* double" << std::endl;
 
-          cv::RgbdNormals normals_computer(H, W, depth, K, 5, method);
+          RgbdNormals normals_computer(H, W, depth, K, 5, method);
           normals_computer.initialize();
 
           std::vector<Plane> plane_params;
-          cv::Mat points3d, ground_normals;
+          Mat points3d, ground_normals;
           // 1 plane, continuous scene, very low error..
           std::cout << "1 plane" << std::endl;
           float err_mean = 0;
@@ -262,22 +304,22 @@ protected:
   }
 
   float
-  testit(const cv::Mat & points3d, const cv::Mat & in_ground_normals, const cv::RgbdNormals & normals_computer)
+  testit(const Mat & points3d, const Mat & in_ground_normals, const RgbdNormals & normals_computer)
   {
-    cv::TickMeter tm;
+    TickMeter tm;
     tm.start();
-    cv::Mat in_normals;
-    if (normals_computer.method() == cv::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
+    Mat in_normals;
+    if (normals_computer.method() == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
     {
-      std::vector<cv::Mat> channels;
-      cv::split(points3d, channels);
+      std::vector<Mat> channels;
+      split(points3d, channels);
       normals_computer(channels[2], in_normals);
     }
     else
       normals_computer(points3d, in_normals);
     tm.stop();
 
-    cv::Mat_<cv::Vec3f> normals, ground_normals;
+    Mat_<Vec3f> normals, ground_normals;
     in_normals.convertTo(normals, CV_32FC3);
     in_ground_normals.convertTo(ground_normals, CV_32FC3);
 
@@ -285,9 +327,9 @@ protected:
     for (int y = 0; y < normals.rows; ++y)
       for (int x = 0; x < normals.cols; ++x)
       {
-        cv::Vec3f vec1 = normals(y, x), vec2 = ground_normals(y, x);
-        vec1 = vec1 / cv::norm(vec1);
-        vec2 = vec2 / cv::norm(vec2);
+        Vec3f vec1 = normals(y, x), vec2 = ground_normals(y, x);
+        vec1 = vec1 / norm(vec1);
+        vec2 = vec2 / norm(vec2);
 
         float dot = vec1.dot(vec2);
         // Just for rounding errors
@@ -318,11 +360,11 @@ protected:
   {
     try
     {
-      cv::RgbdPlane plane_computer;
+      RgbdPlane plane_computer;
 
       std::vector<Plane> planes;
-      cv::Mat points3d, ground_normals;
-      cv::Mat_<unsigned char> plane_mask;
+      Mat points3d, ground_normals;
+      Mat_<unsigned char> plane_mask;
       gen_points_3d(planes, plane_mask, points3d, ground_normals, 1);
       testit(planes, plane_mask, points3d, plane_computer); // 1 plane, continuous scene, very low error..
       for (int ii = 0; ii < 10; ii++)
@@ -338,22 +380,22 @@ protected:
   }
 
   void
-  testit(const std::vector<Plane> & gt_planes, const cv::Mat & gt_plane_mask, const cv::Mat & points3d,
-         cv::RgbdPlane & plane_computer)
+  testit(const std::vector<Plane> & gt_planes, const Mat & gt_plane_mask, const Mat & points3d,
+         RgbdPlane & plane_computer)
   {
     for (char i_test = 0; i_test < 2; ++i_test)
     {
-      cv::TickMeter tm1, tm2;
-      cv::Mat plane_mask;
-      std::vector<cv::Vec4f> plane_coefficients;
+      TickMeter tm1, tm2;
+      Mat plane_mask;
+      std::vector<Vec4f> plane_coefficients;
 
       if (i_test == 0)
       {
         tm1.start();
         // First, get the normals
         int depth = CV_32F;
-        cv::RgbdNormals normals_computer(H, W, depth, K, 5, cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
-        cv::Mat normals;
+        RgbdNormals normals_computer(H, W, depth, K, 5, RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+        Mat normals;
         normals_computer(points3d, normals);
         tm1.stop();
 
@@ -371,17 +413,17 @@ protected:
       // Compare each found plane to each ground truth plane
       int n_planes = (int)plane_coefficients.size();
       int n_gt_planes = (int)gt_planes.size();
-      cv::Mat_<int> matching(n_gt_planes, n_planes);
+      Mat_<int> matching(n_gt_planes, n_planes);
       for (int j = 0; j < n_gt_planes; ++j)
       {
-        cv::Mat gt_mask = gt_plane_mask == j;
-        int n_gt = cv::countNonZero(gt_mask);
+        Mat gt_mask = gt_plane_mask == j;
+        int n_gt = countNonZero(gt_mask);
         int n_max = 0, i_max = 0;
         for (int i = 0; i < n_planes; ++i)
         {
-          cv::Mat dst;
-          cv::bitwise_and(gt_mask, plane_mask == i, dst);
-          matching(j, i) = cv::countNonZero(dst);
+          Mat dst;
+          bitwise_and(gt_mask, plane_mask == i, dst);
+          matching(j, i) = countNonZero(dst);
           if (matching(j, i) > n_max)
           {
             n_max = matching(j, i);
@@ -391,7 +433,7 @@ protected:
         // Get the best match
         ASSERT_LE(float(n_max - n_gt) / n_gt, 0.001);
         // Compare the normals
-        cv::Vec3d normal(plane_coefficients[i_max][0], plane_coefficients[i_max][1], plane_coefficients[i_max][2]);
+        Vec3d normal(plane_coefficients[i_max][0], plane_coefficients[i_max][1], plane_coefficients[i_max][2]);
         ASSERT_GE(std::abs(gt_planes[j].n.dot(normal)), 0.95);
       }
 
@@ -403,16 +445,19 @@ protected:
   }
 };
 
+}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TEST(Rgbd_Normals, compute)
 {
-  CV_RgbdNormalsTest test;
+  cv::rgbd::CV_RgbdNormalsTest test;
   test.safe_run();
 }
 
 TEST(Rgbd_Plane, compute)
 {
-  CV_RgbdPlaneTest test;
+  cv::rgbd::CV_RgbdPlaneTest test;
   test.safe_run();
 }
