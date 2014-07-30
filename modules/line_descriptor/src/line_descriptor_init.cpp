@@ -48,7 +48,7 @@ CV_INIT_ALGORITHM( BinaryDescriptor, "BINARY.DESCRIPTOR", );
 CV_INIT_ALGORITHM( BinaryDescriptorMatcher, "BINARY.DESCRIPTOR.MATCHER", );
 CV_INIT_ALGORITHM( LSDDetector, "LSDDETECTOR", );
 
-bool initModule_line_descriptor( void )
+bool cv::initModule_line_descriptor( void )
 {
   bool all = true;
   all &= !BinaryDescriptor_info_auto.name().empty();
