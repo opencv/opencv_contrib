@@ -95,7 +95,7 @@ class CV_EXPORTS_W KeyLine
   CV_PROP_RW float lineLength;
 
   /* number of pixels covered by the line */
-  CV_PROP_RW unsigned int numOfPixels;
+  CV_PROP_RW int numOfPixels;
 
   /* constructor */
   CV_WRAP KeyLine()
