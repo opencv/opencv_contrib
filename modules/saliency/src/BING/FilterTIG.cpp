@@ -61,7 +61,7 @@ void FilterTIG::update( CMat &w1f )
     _coeffs1[i] = avg, _coeffs2[i] = avg * 2, _coeffs4[i] = avg * 4, _coeffs8[i] = avg * 8;
     for ( int j = 0; j < D; j++ )
       residuals[j] -= avg * b[j];
-    UINT64 tig = 0;
+    UINT64_ tig = 0;
     for ( int j = 0; j < D; j++ )
       tig = ( tig << 1 ) | ( b[j] > 0 ? 1 : 0 );
     _bTIGs[i] = tig;
@@ -74,7 +74,7 @@ void FilterTIG::reconstruct( Mat &w1f )
   float *weight = (float*) w1f.data;
   for ( int i = 0; i < NUM_COMP; i++ )
   {
-    UINT64 tig = _bTIGs[i];
+    UINT64_ tig = _bTIGs[i];
     for ( int j = 0; j < D; j++ )
       weight[j] += _coeffs1[i] * ( ( ( tig >> ( 63 - j ) ) & 1 ) ? 1 : -1 );
   }

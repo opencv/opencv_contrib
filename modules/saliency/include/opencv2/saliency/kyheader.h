@@ -169,7 +169,7 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 #define INT64 long long
 #else
 #define INT64 long
-typedef unsigned long UINT64;
+typedef unsigned long UINT64_;
 //#define UINT64 unsigned long
 #endif
 
