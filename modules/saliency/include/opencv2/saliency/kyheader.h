@@ -79,7 +79,7 @@ typedef unsigned short WORD;
 typedef unsigned int UNINT32;
 typedef bool BOOL;
 typedef void *HANDLE;
-typedef unsigned char byte;
+typedef unsigned char byte_;
 #endif
 
 typedef std::vector<int> vecI;
