@@ -59,11 +59,16 @@ int main(int argc, const char * argv[])
 
     // Detect character groups
     cout << "Grouping extracted ERs ... ";
-    vector<Rect> groups;
-    erGrouping(channels, regions, "trained_classifier_erGrouping.xml", 0.5, groups);
+    cout << "image size "<< src.cols << "x" << src.rows << endl;
+    vector< vector<Vec2i> > region_groups;
+    vector<Rect> groups_boxes;
+    erGrouping(src, channels, regions, region_groups, groups_boxes, ERGROUPING_ORIENTATION_HORIZ);
+    //erGrouping(src, channels, regions, region_groups, groups_boxes, ERGROUPING_ORIENTATION_ANY, "./trained_classifier_erGrouping.xml", 0.5);
 
     // draw groups
-    groups_draw(src, groups);
+    cout << "image size "<< src.cols << "x" << src.rows << endl;
+    groups_draw(src, groups_boxes);
+    cout << "image size "<< src.cols << "x" << src.rows << endl;
     imshow("grouping",src);
 
     cout << "Done!" << endl << endl;
@@ -75,9 +80,9 @@ int main(int argc, const char * argv[])
     er_filter1.release();
     er_filter2.release();
     regions.clear();
-    if (!groups.empty())
+    if (!groups_boxes.empty())
     {
-        groups.clear();
+        groups_boxes.clear();
     }
 }
 
