@@ -44,7 +44,10 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
+//using namespace cv;
+namespace cv
+{
+
 
 /* combinations of internal indeces for binary descriptor extractor */
 static const int combinations[32][2] =
@@ -1212,4 +1215,5 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
 
   return 1;
 
+}
 }
