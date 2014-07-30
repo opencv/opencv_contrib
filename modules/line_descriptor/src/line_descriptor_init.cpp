@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+using namespace cv;
+//namespace cv
+//{
 
 CV_INIT_ALGORITHM( BinaryDescriptor, "BINARY.DESCRIPTOR", );
 CV_INIT_ALGORITHM( BinaryDescriptorMatcher, "BINARY.DESCRIPTOR.MATCHER", );
@@ -58,4 +59,4 @@ bool cv::initModule_line_descriptor( void )
   return all;
 }
 
-}
+//}
