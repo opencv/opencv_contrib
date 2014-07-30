@@ -52,7 +52,7 @@
 namespace cv
 {
 namespace text
-{    
+{
 
 /*!
     Extremal Region Stat structure
@@ -266,11 +266,11 @@ enum { ERGROUPING_ORIENTATION_HORIZ = 0,
     \param  minProbability The minimum probability for accepting a group
     \param  groups         The output of the algorithm are stored in this parameter as list of rectangles.
 */
-CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels, 
-                                           std::vector<std::vector<ERStat> > &regions, 
-                                           std::vector<std::vector<Vec2i> > &groups, 
-                                           std::vector<Rect> &groups_rects, 
-                                           int method = ERGROUPING_ORIENTATION_HORIZ, 
+CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
+                                           std::vector<std::vector<ERStat> > &regions,
+                                           std::vector<std::vector<Vec2i> > &groups,
+                                           std::vector<Rect> &groups_rects,
+                                           int method = ERGROUPING_ORIENTATION_HORIZ,
                                            const std::string& filename = std::string(),
                                            float minProbablity = 0.5);
 
