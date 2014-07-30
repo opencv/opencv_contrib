@@ -49,7 +49,7 @@
 namespace cv
 {
 namespace text
-{    
+{
 
 using namespace std;
 
@@ -3106,17 +3106,22 @@ void erGrouping(InputArrayOfArrays _src, vector<vector<ERStat> > &regions, const
                 data_arrays.at(i).push_back((float)horiz_edges/(horiz_edges+non_horiz_edges));
 
             // remove groups where objects are not equidistant enough
-            Scalar dist_mean, dist_std;
-            meanStdDev(Mat(edge_distances),dist_mean, dist_std);
-            if (dist_std[0] == 0)
+            if (horiz_edges == 0) {
                 data_arrays.at(i).push_back(0.f);
-            else
-                data_arrays.at(i).push_back((float)(dist_std[0]/dist_mean[0]));
+                data_arrays.at(i).push_back(0.f);
+            } else {
+                Scalar dist_mean, dist_std;
+                meanStdDev(Mat(edge_distances),dist_mean, dist_std);
+                if (dist_std[0] == 0)
+                    data_arrays.at(i).push_back(0.f);
+                else
+                    data_arrays.at(i).push_back((float)(dist_std[0]/dist_mean[0]));
 
-            if (dist_mean[0] == 0)
-                data_arrays.at(i).push_back(0.f);
-            else
-                data_arrays.at(i).push_back((float)dist_mean[0]/data_arrays.at(i).at(3));
+                if (dist_mean[0] == 0)
+                    data_arrays.at(i).push_back(0.f);
+                else
+                    data_arrays.at(i).push_back((float)dist_mean[0]/data_arrays.at(i).at(3));
+            }
 
             //meanStdDev( holes, mean, std);
             //float holes_mean = (float)mean[0];
@@ -3181,4 +3186,3 @@ void erGrouping(InputArrayOfArrays _src, vector<vector<ERStat> > &regions, const
 
 }
 }
-
