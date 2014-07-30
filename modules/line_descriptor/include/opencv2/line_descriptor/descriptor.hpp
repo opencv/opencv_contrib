@@ -56,49 +56,62 @@
 namespace cv
 {
 
+CV_EXPORTS bool initModule_line_descriptor();
+
 class CV_EXPORTS_W KeyLine
 {
  public:
   /* orientation of the line */
-  CV_PROP_RW float angle;
+  CV_PROP_RW
+  float angle;
 
   /* object ID, that can be used to cluster keylines by the line they represent */
-  CV_PROP_RW int class_id;
+  CV_PROP_RW
+  int class_id;
 
   /* octave (pyramid layer), from which the keyline has been extracted */
-  CV_PROP_RW int octave;
+  CV_PROP_RW
+  int octave;
 
   /* coordinates of the middlepoint */
-  CV_PROP_RW Point pt;
+  CV_PROP_RW
+  Point pt;
 
   /* the response, by which the strongest keylines have been selected.
    It's represented by the ratio between line's length and maximum between
    image's width and height */
-  CV_PROP_RW float response;
+  CV_PROP_RW
+  float response;
 
   /* minimum area containing line */
-  CV_PROP_RW float size;
+  CV_PROP_RW
+  float size;
 
   /* lines's extremes in original image */
-  CV_PROP_RW float startPointX;
-  CV_PROP_RW float startPointY;
-  CV_PROP_RW float endPointX;
-  CV_PROP_RW float endPointY;
+  CV_PROP_RW
+  float startPointX;CV_PROP_RW
+  float startPointY;CV_PROP_RW
+  float endPointX;CV_PROP_RW
+  float endPointY;
 
   /* line's extremes in image it was extracted from */
-  CV_PROP_RW float sPointInOctaveX;
-  CV_PROP_RW float sPointInOctaveY;
-  CV_PROP_RW float ePointInOctaveX;
-  CV_PROP_RW float ePointInOctaveY;
+  CV_PROP_RW
+  float sPointInOctaveX;CV_PROP_RW
+  float sPointInOctaveY;CV_PROP_RW
+  float ePointInOctaveX;CV_PROP_RW
+  float ePointInOctaveY;
 
   /* the length of line */
-  CV_PROP_RW float lineLength;
+  CV_PROP_RW
+  float lineLength;
 
   /* number of pixels covered by the line */
-  CV_PROP_RW int numOfPixels;
+  CV_PROP_RW
+  int numOfPixels;
 
   /* constructor */
-  CV_WRAP KeyLine()
+  CV_WRAP
+  KeyLine()
   {
   }
 };
@@ -128,10 +141,12 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
     int ksize_;
 
     /* read parameters from a FileNode object and store them (struct function) */
-    CV_WRAP void read( const FileNode& fn );
+    CV_WRAP
+    void read( const FileNode& fn );
 
     /* store parameters to a FileStorage object (struct function) */
-    CV_WRAP void write( FileStorage& fs ) const;
+    CV_WRAP
+    void write( FileStorage& fs ) const;
 
   };
 
@@ -140,32 +155,37 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   BinaryDescriptor( const BinaryDescriptor::Params &parameters = BinaryDescriptor::Params() );
 
   /* constructors with smart pointers */
-  CV_WRAP static Ptr<BinaryDescriptor> createBinaryDescriptor();
-  CV_WRAP static Ptr<BinaryDescriptor> createBinaryDescriptor( Params parameters );
+  CV_WRAP
+  static Ptr<BinaryDescriptor> createBinaryDescriptor();CV_WRAP
+  static Ptr<BinaryDescriptor> createBinaryDescriptor( Params parameters );
 
   /* destructor */
   ~BinaryDescriptor();
 
   /* setters and getters */
-  CV_WRAP int getNumOfOctaves();
-  CV_WRAP void setNumOfOctaves( int octaves );
-  CV_WRAP int getWidthOfBand();
-  CV_WRAP void setWidthOfBand( int width );
-  CV_WRAP int getReductionRatio();
-  CV_WRAP void setReductionRatio( int rRatio );
+  CV_WRAP
+  int getNumOfOctaves();CV_WRAP
+  void setNumOfOctaves( int octaves );CV_WRAP
+  int getWidthOfBand();CV_WRAP
+  void setWidthOfBand( int width );CV_WRAP
+  int getReductionRatio();CV_WRAP
+  void setReductionRatio( int rRatio );
 
   /* reads parameters from a FileNode object and store them (class function ) */
-  CV_WRAP virtual void read( const cv::FileNode& fn );
+  CV_WRAP
+  virtual void read( const cv::FileNode& fn );
 
   /* stores parameters to a FileStorage object (class function) */
-  CV_WRAP virtual void write( cv::FileStorage& fs ) const;
+  CV_WRAP
+  virtual void write( cv::FileStorage& fs ) const;
 
   /* requires line detection (only one image) */
   CV_WRAP
   void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
 
   /* requires line detection (more than one image) */
-  CV_WRAP void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks =
+  CV_WRAP
+  void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks =
                    std::vector<Mat>() ) const;
 
   /* requires descriptors computation (only one image) */
@@ -173,17 +193,21 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
 
   /* requires descriptors computation (more than one image) */
-  CV_WRAP void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
+  CV_WRAP
+  void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
                     false ) const;
 
   /* returns descriptor size */
-  CV_WRAP int descriptorSize() const;
+  CV_WRAP
+  int descriptorSize() const;
 
   /* returns data type */
-  CV_WRAP int descriptorType() const;
+  CV_WRAP
+  int descriptorType() const;
 
   /* returns norm mode */
-  CV_WRAP int defaultNorm() const;
+  CV_WRAP
+  int defaultNorm() const;
 
   /* definition of operator () */
   CV_WRAP_AS(detectAndCompute)
@@ -236,20 +260,23 @@ class CV_EXPORTS_W LSDDetector : public Algorithm
  public:
 
   /* constructor */
-  CV_WRAP LSDDetector()
+  CV_WRAP
+  LSDDetector()
   {
   }
   ;
 
   /* constructor with smart pointer */
-  CV_WRAP static Ptr<LSDDetector> createLSDDetector();
+  CV_WRAP
+  static Ptr<LSDDetector> createLSDDetector();
 
   /* requires line detection (only one image) */
   CV_WRAP
   void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
 
   /* requires line detection (more than one image) */
-  CV_WRAP void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
+  CV_WRAP
+  void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
                const std::vector<Mat>& masks = std::vector<Mat>() ) const;
 
  private:
@@ -273,47 +300,58 @@ class CV_EXPORTS_W BinaryDescriptorMatcher : public Algorithm
  public:
   /* for every input descriptor,
    find the best matching one (for a pair of images) */
-  CV_WRAP void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
+  CV_WRAP
+  void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
 
   /* for every input descriptor,
    find the best matching one (from one image to a set) */
-  CV_WRAP void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
+  CV_WRAP
+  void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
 
   /* for every input descriptor,
    find the best k matching descriptors (for a pair of images) */
-  CV_WRAP void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
+  CV_WRAP
+  void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
                  bool compactResult = false ) const;
 
   /* for every input descriptor,
    find the best k matching descriptors (from one image to a set) */
-  CV_WRAP void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
+  CV_WRAP
+  void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
                  bool compactResult = false );
 
   /* for every input descriptor, find all the ones falling in a
    certain matching radius (for a pair of images) */
-  CV_WRAP void radiusMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
+  CV_WRAP
+  void radiusMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
                     const Mat& mask = Mat(), bool compactResult = false ) const;
 
   /* for every input descriptor, find all the ones falling in a
    certain matching radius (from one image to a set) */
-  CV_WRAP void radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
+  CV_WRAP
+  void radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
                         std::vector<Mat>(),
                     bool compactResult = false );
 
   /* store new descriptors to be inserted in dataset */
-  CV_WRAP void add( const std::vector<Mat>& descriptors );
+  CV_WRAP
+  void add( const std::vector<Mat>& descriptors );
 
   /* store new descriptors into dataset */
-  CV_WRAP void train();
+  CV_WRAP
+  void train();
 
   /* constructor with smart pointer */
-  CV_WRAP static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
+  CV_WRAP
+  static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
   /* clear dataset and internal data */
-  CV_WRAP void clear();
+  CV_WRAP
+  void clear();
 
   /* constructor */
-  CV_WRAP BinaryDescriptorMatcher();
+  CV_WRAP
+  BinaryDescriptorMatcher();
 
   /* destructor */
   ~BinaryDescriptorMatcher()
