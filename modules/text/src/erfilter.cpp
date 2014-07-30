@@ -1160,6 +1160,26 @@ Ptr<ERFilter::Callback> loadClassifierNM2(const string& filename)
     return makePtr<ERClassifierNM2>(filename);
 }
 
+// dummy classifier
+class ERDummyClassifier : public ERFilter::Callback
+{
+public:
+    //Constructor
+    ERDummyClassifier() {}
+    // Destructor
+    ~ERDummyClassifier() {}
+
+    // The classifier must return probability measure for the region.
+    double eval(const ERStat& s) {if (s.area ==0) return (double)0.0; return (double)1.0;}
+};
+
+/* Create a dummy classifier that accepts all regions */
+Ptr<ERFilter::Callback> loadDummyClassifier();
+Ptr<ERFilter::Callback> loadDummyClassifier()
+
+{
+    return makePtr<ERDummyClassifier>();
+}
 
 /* ------------------------------------------------------------------------------------*/
 /* -------------------------------- Compute Channels NM -------------------------------*/
@@ -3858,7 +3878,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
         {
 
             //Feedback loop of detected lines to region extraction ... tries to recover missmatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
-            Ptr<ERFilter> er_filter = createERFilterNM1(loadClassifierNM1("trained_classifierNM1.xml"),1,0.005f,0.3f,0.f,true,0.1f);
+            Ptr<ERFilter> er_filter = createERFilterNM1(loadDummyClassifier(),1,0.005f,0.3f,0.f,false);
             for (int i=0; i<(int)valid_sequences.size(); i++)
             {
                 vector<Point> bbox_points;
