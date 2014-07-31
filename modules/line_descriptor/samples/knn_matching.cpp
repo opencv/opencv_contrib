@@ -108,7 +108,7 @@ uchar invertSingleBits( uchar dividend_char, int numBits )
   }
 
   /* reconvert to decimal */
-  uchar result;
+  uchar result = 0;
   for ( int i = (int) bin_vector.size() - 1; i >= 0; i-- )
     result += bin_vector[i] * pow( 2, i );
 

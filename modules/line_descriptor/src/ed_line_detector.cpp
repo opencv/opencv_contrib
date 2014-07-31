@@ -48,9 +48,6 @@
 #define TryTime     6
 #define SkipEdgePoint 2
 
-//#define DEBUGEdgeDrawing
-//#define DEBUGEDLine
-
 using namespace std;
 EDLineDetector::EDLineDetector()
 {
@@ -126,22 +123,11 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   imageHeight = image.rows;
   unsigned int pixelNum = imageWidth * imageHeight;
 
-#ifdef DEBUGEdgeDrawing
-  cv::imshow("prima blur", image);
-  cv::waitKey();
-#endif
   if( !smoothed )
   {  //input image hasn't been smoothed.
-    std::cout << "Dentro smoothed " << std::endl;
     cv::Mat InImage = image.clone();
     cv::GaussianBlur( InImage, image, cv::Size( ksize_, ksize_ ), sigma_ );
   }
-
-#ifdef DEBUGEdgeDrawing
-  cv::imshow("dopo blur", image);
-  cv::waitKey();
-#endif
-
 
   unsigned int edgePixelArraySize = pixelNum / 5;
   unsigned int maxNumOfEdge = edgePixelArraySize / 20;
@@ -176,12 +162,6 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   }
   cv::Sobel( image, dxImg_, CV_16SC1, 1, 0, 3 );
   cv::Sobel( image, dyImg_, CV_16SC1, 0, 1, 3 );
-
-#ifdef DEBUGEdgeDrawing
-  cv::imshow("dxImg_", dxImg_);
-  cv::imshow("dyImg_", dyImg_);
-  cv::waitKey();
-#endif
 
   //compute gradient and direction images
   cv::Mat dxABS_m = cv::abs( dxImg_ );
@@ -235,9 +215,7 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
     cout << "anchor size is larger than its maximal size. anchorsSize=" << anchorsSize << ", maximal size = " << edgePixelArraySize << endl;
     return -1;
   }
-#ifdef DEBUGEdgeDrawing
-  cout<<"Anchor point detection, anchors.size="<<anchorsSize<<endl;
-#endif
+
   //link the anchors by smart routing
   edgeImage_.setTo( 0 );
   unsigned char *pEdgeImg = edgeImage_.data;
@@ -251,7 +229,8 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   unsigned int offsetPS = 0;
 
   unsigned int x, y;
-  unsigned int lastX, lastY;
+  unsigned int lastX = 0;
+  unsigned int lastY = 0;
   unsigned char lastDirection;				//up = 1, right = 2, down = 3, left = 4;
   unsigned char shouldGoDirection;				//up = 1, right = 2, down = 3, left = 4;
   int edgeLenFirst, edgeLenSecond;
@@ -956,11 +935,6 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
     return -1;
   }
 
-#ifdef DEBUGEDLine
-  cv::imshow("EdgeDrawing", image);
-  cv::waitKey();
-
-#endif
   //detect lines
   unsigned int linePixelID = edges.sId[edges.numOfEdges];
   lines.xCors.resize( linePixelID );
@@ -1187,37 +1161,7 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
 
   pLineSID[numOfLines] = offsetInLineArray;
   lines.numOfLines = numOfLines;
-#ifdef DEBUGEDLine
-//	/*Show the extracted lines in color. Each line is in different color.*/
-//	IplImage* cvColorImg = cvCreateImage(cvSize(imageWidth,imageHeight),IPL_DEPTH_8U, 3);
-//	cvSet(cvColorImg, cvScalar(0,0,0));
-//	CvScalar s;
-//	srand((unsigned)time(0));
-//	int lowest=100, highest=255;
-//	int range=(highest-lowest)+1;
-//	//	CvPoint point;
-//	//	CvFont  font;
-//	//	cvInitFont(&font,CV_FONT_HERSHEY_SIMPLEX ,1.0,1.0,0,1);
-//	int r, g, b; //the color of lines
-//	for(unsigned int i=0; i<lines.numOfLines; i++){
-//		r = lowest+int(rand()%range);
-//		g = lowest+int(rand()%range);
-//		b = lowest+int(rand()%range);
-//		s.val[0] = b; s.val[1] = g;  s.val[2] = r;
-//		for(offsetInLineArray = pLineSID[i]; offsetInLineArray<pLineSID[i+1]; offsetInLineArray++){
-//			cvSet2D(cvColorImg,pLineYCors[offsetInLineArray],pLineXCors[offsetInLineArray],s);
-//		}
-//		//		iter = lines[i].begin();
-//		//		point = cvPoint(iter->x,iter->y);
-//		//		char buf[10];
-//		//		sprintf( buf,   "%d ",  i);
-//		//		cvPutText(cvColorImg,buf,point,&font,CV_RGB(r,g,b));
-//	}
-//	cvNamedWindow("LineColorImage", CV_WINDOW_AUTOSIZE);
-//	cvShowImage("LineColorImage", cvColorImg);
-//	cvWaitKey(0);
-//	cvReleaseImage(&cvColorImg);
-#endif
+
   return 1;
 }
 

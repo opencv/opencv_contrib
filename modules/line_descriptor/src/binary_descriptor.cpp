@@ -642,7 +642,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   {
     /* some other variables' declarations */
     float twoPI = 2 * M_PI;
-    unsigned int closeLineID;
+    unsigned int closeLineID = 0;
     float endPointDis, minEndPointDis, minLocalDis, maxLocalDis;
     float lp0, lp1, lp2, lp3, np0, np1, np2, np3;
 
