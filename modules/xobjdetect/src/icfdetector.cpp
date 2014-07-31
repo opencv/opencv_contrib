@@ -71,7 +71,7 @@ void ICFDetector::train(const String& pos_path,
     glob(pos_path + "/*.png", pos_filenames);
 
     vector<String> bg_filenames;
-    glob(bg_path + "/*.png", bg_filenames);
+    glob(bg_path + "/*.jpg", bg_filenames);
 
     model_n_rows_ = params.model_n_rows;
     model_n_cols_ = params.model_n_cols;
