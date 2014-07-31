@@ -40,5 +40,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_TEXT_HPP__
 
 #include "opencv2/text/erfilter.hpp"
+#include "opencv2/text/ocr.hpp"
 
 #endif
