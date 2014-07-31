@@ -2786,14 +2786,14 @@ bool guo_hall_thinning(const Mat1b & img, Mat& skeleton)
           if (*skeleton_ptr++ == 255)
           {
             bool p2, p3, p4, p5, p6, p7, p8, p9;
-            p2 = (bool)(skeleton.data[(row-1) * skeleton.cols + col]);
-            p3 = (bool)(skeleton.data[(row-1) * skeleton.cols + col+1]);
-            p4 = (bool)(skeleton.data[row     * skeleton.cols + col+1]);
-            p5 = (bool)(skeleton.data[(row+1) * skeleton.cols + col+1]);
-            p6 = (bool)(skeleton.data[(row+1) * skeleton.cols + col]);
-            p7 = (bool)(skeleton.data[(row+1) * skeleton.cols + col-1]);
-            p8 = (bool)(skeleton.data[row     * skeleton.cols + col-1]);
-            p9 = (bool)(skeleton.data[(row-1) * skeleton.cols + col-1]);
+            p2 = (skeleton.data[(row-1) * skeleton.cols + col]) > 0;
+            p3 = (skeleton.data[(row-1) * skeleton.cols + col+1]) > 0;
+            p4 = (skeleton.data[row     * skeleton.cols + col+1]) > 0;
+            p5 = (skeleton.data[(row+1) * skeleton.cols + col+1]) > 0;
+            p6 = (skeleton.data[(row+1) * skeleton.cols + col]) > 0;
+            p7 = (skeleton.data[(row+1) * skeleton.cols + col-1]) > 0;
+            p8 = (skeleton.data[row     * skeleton.cols + col-1]) > 0;
+            p9 = (skeleton.data[(row-1) * skeleton.cols + col-1]) > 0;
 
             int C  = (!p2 & (p3 | p4)) + (!p4 & (p5 | p6)) +
                     (!p6 & (p7 | p8)) + (!p8 & (p9 | p2));
@@ -2816,7 +2816,7 @@ bool guo_hall_thinning(const Mat1b & img, Mat& skeleton)
       for (unsigned int pt_idx = 0; pt_idx < rows_to_set_size; ++pt_idx)
       {
         if (!changed)
-          changed = (bool)(skeleton.data[rows_to_set[pt_idx] * skeleton.cols + cols_to_set[pt_idx]]);
+          changed = (skeleton.data[rows_to_set[pt_idx] * skeleton.cols + cols_to_set[pt_idx]]) > 0;
 
         int key = rows_to_set[pt_idx] * skeleton.cols + cols_to_set[pt_idx];
         skeleton.data[key] = 0;
@@ -3938,21 +3938,21 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
                         regions[c].push_back(aux_regions[r]);
                         for (size_t j=0; j<valid_sequences[i].triplets.size(); j++)
                         {
-                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].a, Vec2i(c,(int)regions[c].size()-1)))
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].a, Vec2i((int)c,(int)(regions[c].size())-1)))
                             {
                                 if (regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x > aux_regions[r].rect.x)
                                     right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].a[0],valid_sequences[i].triplets[j].a[1]));
                                 else
                                     left_couples.push_back(Vec3i(aux_regions[r].rect.x - regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x, valid_sequences[i].triplets[j].a[0],valid_sequences[i].triplets[j].a[1]));
                             }
-                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].b, Vec2i(c,(int)regions[c].size()-1)))
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].b, Vec2i((int)c,(int)(regions[c].size())-1)))
                             {
                                 if (regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x > aux_regions[r].rect.x)
                                     right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].b[0],valid_sequences[i].triplets[j].b[1]));
                                 else
                                     left_couples.push_back(Vec3i(aux_regions[r].rect.x - regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x, valid_sequences[i].triplets[j].b[0],valid_sequences[i].triplets[j].b[1]));
                             }
-                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].c, Vec2i(c,(int)regions[c].size()-1)))
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].c, Vec2i((int)c,(int)(regions[c].size())-1)))
                             {
                                 if (regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.x > aux_regions[r].rect.x)
                                     right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].c[0],valid_sequences[i].triplets[j].c[1]));
@@ -3967,8 +3967,8 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
                         {
                             sort(left_couples.begin(), left_couples.end(), sort_couples);
                             sort(right_couples.begin(), right_couples.end(), sort_couples);
-                            region_pair pair1(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i(c,(int)regions[c].size()-1));
-                            region_pair pair2(Vec2i(c,(int)regions[c].size()-1), Vec2i(right_couples[0][1],right_couples[0][2]));
+                            region_pair pair1(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i((int)c,(int)(regions[c].size())-1));
+                            region_pair pair2(Vec2i((int)c,(int)(regions[c].size())-1), Vec2i(right_couples[0][1],right_couples[0][2]));
                             region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
                             if (isValidTriplet(regions, pair1, pair2, triplet))
                             {
@@ -3978,7 +3978,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
                         else if (right_couples.size() >= 2)
                         {
                             sort(right_couples.begin(), right_couples.end(), sort_couples);
-                            region_pair pair1(Vec2i(c,(int)regions[c].size()-1), Vec2i(right_couples[0][1],right_couples[0][2]));
+                            region_pair pair1(Vec2i((int)c,(int)(regions[c].size())-1), Vec2i(right_couples[0][1],right_couples[0][2]));
                             region_pair pair2(Vec2i(right_couples[0][1],right_couples[0][2]), Vec2i(right_couples[1][1],right_couples[1][2]));
                             region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
                             if (isValidTriplet(regions, pair1, pair2, triplet))
@@ -3990,7 +3990,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
                         {
                             sort(left_couples.begin(), left_couples.end(), sort_couples);
                             region_pair pair1(Vec2i(left_couples[1][1],left_couples[1][2]), Vec2i(left_couples[0][1],left_couples[0][2]));
-                            region_pair pair2(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i(c,(int)regions[c].size()-1));
+                            region_pair pair2(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i((int)c,(int)(regions[c].size())-1));
                             region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
                             if (isValidTriplet(regions, pair1, pair2, triplet))
                             {
