@@ -97,11 +97,11 @@ void ICFDetector::train(const String& pos_path,
     {
         cout << setw(6) << (i + 1) << "/" << bg_filenames.size() << "\r";
         Mat img = imread(bg_filenames[i]);
-        for( int j = 0; j < 50;
-             ++j, ++neg_count)
+        for( int j = 0; j < params.bg_per_image; ++j, ++neg_count)
         {
             Rect r;
-            r.x = rng.uniform(0, img.cols); r.width = rng.uniform(r.x + 1, img.cols);
+            r.x = rng.uniform(0, img.cols);
+            r.width = rng.uniform(r.x + 1, img.cols);
             r.y = rng.uniform(0, img.rows);
             r.height = rng.uniform(r.y + 1, img.rows);
 

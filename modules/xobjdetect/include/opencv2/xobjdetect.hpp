@@ -159,9 +159,10 @@ struct CV_EXPORTS ICFDetectorParams
     int weak_count;
     int model_n_rows;
     int model_n_cols;
+    int bg_per_image;
 
     ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
-        model_n_rows(40), model_n_cols(40)
+        model_n_rows(56), model_n_cols(56), bg_per_image(5)
     {}
 };
 

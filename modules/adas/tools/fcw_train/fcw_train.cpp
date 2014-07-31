@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
         "{help           |           | print this message}"
         "{pos_path       |       pos | path to training object samples}"
         "{bg_path        |        bg | path to background images}"
+        "{bg_per_image   |         5 | number of windows to sample per bg image}"
         "{feature_count  |     10000 | number of features to generate}"
         "{weak_count     |       100 | number of weak classifiers in cascade}"
         "{model_size     |     40x40 | model size in pixels}"
@@ -71,12 +72,10 @@ int main(int argc, char *argv[])
     string bg_path = parser.get<string>("bg_path");
     string model_filename = parser.get<string>("model_filename");
 
-    cerr << pos_path << endl;
-    cerr << bg_path << endl;
-
     ICFDetectorParams params;
     params.feature_count = parser.get<size_t>("feature_count");
     params.weak_count = parser.get<size_t>("weak_count");
+    params.bg_per_image = parser.get<size_t>("bg_per_image");
 
     string model_size = parser.get<string>("model_size");
     if( !read_model_size(model_size.c_str(), &params.model_n_rows,
