@@ -37,7 +37,7 @@ OCRTesseract::OCRTesseract
 --------------------------
 Constructor.
 
-.. ocv:function:: void OCRTesseract::OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO);
+.. ocv:function:: void OCRTesseract::OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO)
 
     :param datapath: the name of the parent directory of tessdata ended with "/", or NULL to use the system's default directory.
     :param language: an ISO 639-3 code or NULL will default to "eng".
@@ -49,7 +49,7 @@ OCRTesseract::run
 -----------------
 Recognize text using the tesseract-ocr API. Takes image on input and returns recognized text in the output_text parameter. Optionally provides also the Rects for individual text elements found (e.g. words), and the list of those text elements with their confidence values.
 
-.. ocv:function:: void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL, vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL, int component_level=0);
+.. ocv:function:: void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL, vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL, int component_level=0)
 
     :param image: Input image ``CV_8UC1`` or ``CV_8UC3``
     :param output_text: Output text of the tesseract-ocr.
