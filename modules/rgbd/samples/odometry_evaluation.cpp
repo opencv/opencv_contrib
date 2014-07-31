@@ -36,17 +36,44 @@
 #include <opencv2/rgbd.hpp>
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/contrib.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/utility.hpp>
 
 #include <iostream>
 #include <fstream>
 
 using namespace std;
 using namespace cv;
+using namespace cv::rgbd;
 
 #define BILATERAL_FILTER 0// if 1 then bilateral filter will be used for the depth
+
+class MyTickMeter
+{
+public:
+    MyTickMeter() { reset(); }
+    void start() { startTime = getTickCount(); }
+    void stop()
+    {
+        int64 time = getTickCount();
+        if ( startTime == 0 )
+            return;
+        ++counter;
+        sumTime += ( time - startTime );
+        startTime = 0;
+    }
+
+    int64 getTimeTicks() const { return sumTime; }
+    double getTimeSec()   const { return (double)getTimeTicks()/getTickFrequency(); }
+    int64 getCounter() const { return counter; }
+
+    void reset() { startTime = sumTime = 0; counter = 0; }
+private:
+    int64 counter;
+    int64 sumTime;
+    int64 startTime;
+};
 
 static
 void writeResults( const string& filename, const vector<string>& timestamps, const vector<Mat>& Rt )
@@ -154,7 +181,7 @@ int main(int argc, char** argv)
     }
     odometry->set("cameraMatrix", cameraMatrix);
 
-    TickMeter gtm;
+    MyTickMeter gtm;
     int count = 0;
     for(int i = 0; !file.eof(); i++)
     {
@@ -167,7 +194,7 @@ int main(int argc, char** argv)
         // Read one pair (rgb and depth)
         // example: 1305031453.359684 rgb/1305031453.359684.png 1305031453.374112 depth/1305031453.374112.png
 #if BILATERAL_FILTER
-        TickMeter tm_bilateral_filter;
+        MyTickMeter tm_bilateral_filter;
 #endif
         {
             string rgbFilename = str.substr(timestampLength + 1, rgbPathLehgth );
@@ -213,7 +240,7 @@ int main(int argc, char** argv)
             Mat Rt;
             if(!Rts.empty())
             {
-                TickMeter tm;
+                MyTickMeter tm;
                 tm.start();
                 gtm.start();
                 bool res = odometry->compute(frame_curr, frame_prev, Rt);

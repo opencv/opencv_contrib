@@ -33,16 +33,7 @@
  *
  */
 
-#include <opencv2/core.hpp>
-#include <opencv2/core/types_c.h>
-#include <opencv2/core/utility.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/rgbd.hpp>
-
-#include <iostream>
-#include <limits>
+#include "precomp.hpp"
 
 #if defined(HAVE_EIGEN) && EIGEN_WORLD_VERSION == 3
 #define HAVE_EIGEN3_HERE
@@ -51,7 +42,10 @@
 #include <Eigen/Dense>
 #endif
 
-using namespace cv;
+namespace cv
+{
+namespace rgbd
+{
 
 enum
 {
@@ -97,20 +91,20 @@ static inline
 void checkImage(const Mat& image)
 {
     if(image.empty())
-        CV_Error(CV_StsBadSize, "Image is empty.");
+        CV_Error(Error::StsBadSize, "Image is empty.");
     if(image.type() != CV_8UC1)
-        CV_Error(CV_StsBadSize, "Image type has to be CV_8UC1.");
+        CV_Error(Error::StsBadSize, "Image type has to be CV_8UC1.");
 }
 
 static inline
 void checkDepth(const Mat& depth, const Size& imageSize)
 {
     if(depth.empty())
-        CV_Error(CV_StsBadSize, "Depth is empty.");
+        CV_Error(Error::StsBadSize, "Depth is empty.");
     if(depth.size() != imageSize)
-        CV_Error(CV_StsBadSize, "Depth has to have the size equal to the image size.");
+        CV_Error(Error::StsBadSize, "Depth has to have the size equal to the image size.");
     if(depth.type() != CV_32FC1)
-        CV_Error(CV_StsBadSize, "Depth type has to be CV_32FC1.");
+        CV_Error(Error::StsBadSize, "Depth type has to be CV_32FC1.");
 }
 
 static inline
@@ -119,9 +113,9 @@ void checkMask(const Mat& mask, const Size& imageSize)
     if(!mask.empty())
     {
         if(mask.size() != imageSize)
-            CV_Error(CV_StsBadSize, "Mask has to have the size equal to the image size.");
+            CV_Error(Error::StsBadSize, "Mask has to have the size equal to the image size.");
         if(mask.type() != CV_8UC1)
-            CV_Error(CV_StsBadSize, "Mask type has to be CV_8UC1.");
+            CV_Error(Error::StsBadSize, "Mask type has to be CV_8UC1.");
     }
 }
 
@@ -129,9 +123,9 @@ static inline
 void checkNormals(const Mat& normals, const Size& depthSize)
 {
     if(normals.size() != depthSize)
-        CV_Error(CV_StsBadSize, "Normals has to have the size equal to the depth size.");
+        CV_Error(Error::StsBadSize, "Normals has to have the size equal to the depth size.");
     if(normals.type() != CV_32FC3)
-        CV_Error(CV_StsBadSize, "Normals type has to be CV_32FC3.");
+        CV_Error(Error::StsBadSize, "Normals type has to be CV_32FC3.");
 }
 
 static
@@ -140,7 +134,7 @@ void preparePyramidImage(const Mat& image, std::vector<Mat>& pyramidImage, size_
     if(!pyramidImage.empty())
     {
         if(pyramidImage.size() < levelCount)
-            CV_Error(CV_StsBadSize, "Levels count of pyramidImage has to be equal or less than size of iterCounts.");
+            CV_Error(Error::StsBadSize, "Levels count of pyramidImage has to be equal or less than size of iterCounts.");
 
         CV_Assert(pyramidImage[0].size() == image.size());
         for(size_t i = 0; i < pyramidImage.size(); i++)
@@ -156,7 +150,7 @@ void preparePyramidDepth(const Mat& depth, std::vector<Mat>& pyramidDepth, size_
     if(!pyramidDepth.empty())
     {
         if(pyramidDepth.size() < levelCount)
-            CV_Error(CV_StsBadSize, "Levels count of pyramidDepth has to be equal or less than size of iterCounts.");
+            CV_Error(Error::StsBadSize, "Levels count of pyramidDepth has to be equal or less than size of iterCounts.");
 
         CV_Assert(pyramidDepth[0].size() == depth.size());
         for(size_t i = 0; i < pyramidDepth.size(); i++)
@@ -176,7 +170,7 @@ void preparePyramidMask(const Mat& mask, const std::vector<Mat>& pyramidDepth, f
     if(!pyramidMask.empty())
     {
         if(pyramidMask.size() != pyramidDepth.size())
-            CV_Error(CV_StsBadSize, "Levels count of pyramidMask has to be equal to size of pyramidDepth.");
+            CV_Error(Error::StsBadSize, "Levels count of pyramidMask has to be equal to size of pyramidDepth.");
 
         for(size_t i = 0; i < pyramidMask.size(); i++)
         {
@@ -227,7 +221,7 @@ void preparePyramidCloud(const std::vector<Mat>& pyramidDepth, const Mat& camera
     if(!pyramidCloud.empty())
     {
         if(pyramidCloud.size() != pyramidDepth.size())
-            CV_Error(CV_StsBadSize, "Incorrect size of pyramidCloud.");
+            CV_Error(Error::StsBadSize, "Incorrect size of pyramidCloud.");
 
         for(size_t i = 0; i < pyramidDepth.size(); i++)
         {
@@ -256,7 +250,7 @@ void preparePyramidSobel(const std::vector<Mat>& pyramidImage, int dx, int dy, s
     if(!pyramidSobel.empty())
     {
         if(pyramidSobel.size() != pyramidImage.size())
-            CV_Error(CV_StsBadSize, "Incorrect size of pyramidSobel.");
+            CV_Error(Error::StsBadSize, "Incorrect size of pyramidSobel.");
 
         for(size_t i = 0; i < pyramidSobel.size(); i++)
         {
@@ -309,7 +303,7 @@ void preparePyramidTexturedMask(const std::vector<Mat>& pyramid_dI_dx, const std
     if(!pyramidTexturedMask.empty())
     {
         if(pyramidTexturedMask.size() != pyramid_dI_dx.size())
-            CV_Error(CV_StsBadSize, "Incorrect size of pyramidTexturedMask.");
+            CV_Error(Error::StsBadSize, "Incorrect size of pyramidTexturedMask.");
 
         for(size_t i = 0; i < pyramidTexturedMask.size(); i++)
         {
@@ -354,7 +348,7 @@ void preparePyramidNormals(const Mat& normals, const std::vector<Mat>& pyramidDe
     if(!pyramidNormals.empty())
     {
         if(pyramidNormals.size() != pyramidDepth.size())
-            CV_Error(CV_StsBadSize, "Incorrect size of pyramidNormals.");
+            CV_Error(Error::StsBadSize, "Incorrect size of pyramidNormals.");
 
         for(size_t i = 0; i < pyramidNormals.size(); i++)
         {
@@ -389,7 +383,7 @@ void preparePyramidNormalsMask(const std::vector<Mat>& pyramidNormals, const std
     if(!pyramidNormalsMask.empty())
     {
         if(pyramidNormalsMask.size() != pyramidMask.size())
-            CV_Error(CV_StsBadSize, "Incorrect size of pyramidNormalsMask.");
+            CV_Error(Error::StsBadSize, "Incorrect size of pyramidNormalsMask.");
 
         for(size_t i = 0; i < pyramidNormalsMask.size(); i++)
         {
@@ -786,12 +780,12 @@ void calcICPLsmMatrices(const Mat& cloud0, const Mat& Rt,
 static
 bool solveSystem(const Mat& AtA, const Mat& AtB, double detThreshold, Mat& x)
 {
-    double det = cv::determinant(AtA);
+    double det = determinant(AtA);
 
     if(fabs (det) < detThreshold || cvIsNaN(det) || cvIsInf(det))
         return false;
 
-    cv::solve(AtA, AtB, x, DECOMP_CHOLESKY);
+    solve(AtA, AtB, x, DECOMP_CHOLESKY);
 
     return true;
 }
@@ -813,7 +807,7 @@ static
 bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
                          const Ptr<OdometryFrame>& srcFrame,
                          const Ptr<OdometryFrame>& dstFrame,
-                         const cv::Mat& cameraMatrix,
+                         const Mat& cameraMatrix,
                          float maxDepthDiff, const std::vector<int>& iterCounts,
                          double maxTranslation, double maxRotation,
                          int method, int transfromType)
@@ -839,7 +833,7 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
         icpEquationFuncPtr = calcICPEquationCoeffsTranslation;
         break;
     default:
-        CV_Error(CV_StsBadArg, "Incorrect transformation type");
+        CV_Error(Error::StsBadArg, "Incorrect transformation type");
     }
 
     const int minOverdetermScale = 20;
@@ -945,7 +939,7 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
 
 template<class ImageElemType>
 static void
-warpFrameImpl(const cv::Mat& image, const Mat& depth, const Mat& mask,
+warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
               const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
               Mat& warpedImage, Mat* warpedDepth, Mat* warpedMask)
 {
@@ -995,9 +989,6 @@ warpFrameImpl(const cv::Mat& image, const Mat& depth, const Mat& mask,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-
-namespace cv
-{
 
 RgbdFrame::RgbdFrame() : ID(-1)
 {}
@@ -1065,7 +1056,7 @@ bool Odometry::compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFram
     Size dstSize = prepareFrameCache(dstFrame, OdometryFrame::CACHE_DST);
 
     if(srcSize != dstSize)
-        CV_Error(CV_StsBadSize, "srcFrame and dstFrame have to have the same size (resolution).");
+        CV_Error(Error::StsBadSize, "srcFrame and dstFrame have to have the same size (resolution).");
 
     return computeImpl(srcFrame, dstFrame, Rt, initRt);
 }
@@ -1073,7 +1064,7 @@ bool Odometry::compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFram
 Size Odometry::prepareFrameCache(Ptr<OdometryFrame> &frame, int /*cacheType*/) const
 {
     if(frame == 0)
-        CV_Error(CV_StsBadArg, "Null frame pointer.\n");
+        CV_Error(Error::StsBadArg, "Null frame pointer.\n");
 
     return Size();
 }
@@ -1122,7 +1113,7 @@ Size RgbdOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) c
         if(!frame->pyramidImage.empty())
             frame->image = frame->pyramidImage[0];
         else
-            CV_Error(CV_StsBadSize, "Image or pyramidImage have to be set.");
+            CV_Error(Error::StsBadSize, "Image or pyramidImage have to be set.");
     }
     checkImage(frame->image);
 
@@ -1134,11 +1125,11 @@ Size RgbdOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) c
         {
             Mat cloud = frame->pyramidCloud[0];
             std::vector<Mat> xyz;
-            cv::split(cloud, xyz);
+            split(cloud, xyz);
             frame->depth = xyz[2];
         }
         else
-            CV_Error(CV_StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
+            CV_Error(Error::StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
     }
     checkDepth(frame->depth, frame->image.size());
 
@@ -1213,11 +1204,11 @@ Size ICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) co
         {
             Mat cloud = frame->pyramidCloud[0];
             std::vector<Mat> xyz;
-            cv::split(cloud, xyz);
+            split(cloud, xyz);
             frame->depth = xyz[2];
         }
         else
-            CV_Error(CV_StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
+            CV_Error(Error::StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
     }
     checkDepth(frame->depth, frame->depth.size());
 
@@ -1240,8 +1231,8 @@ Size ICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) co
                 if(normalsComputer.empty() ||
                    normalsComputer->get<int>("rows") != frame->depth.rows ||
                    normalsComputer->get<int>("cols") != frame->depth.cols ||
-                   cv::norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
-                   normalsComputer = cv::Ptr<cv::RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
+                   norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
+                   normalsComputer = Ptr<RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
 
                 (*normalsComputer)(frame->pyramidCloud[0], frame->normals);
             }
@@ -1308,7 +1299,7 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
         if(!frame->pyramidImage.empty())
             frame->image = frame->pyramidImage[0];
         else
-            CV_Error(CV_StsBadSize, "Image or pyramidImage have to be set.");
+            CV_Error(Error::StsBadSize, "Image or pyramidImage have to be set.");
     }
     checkImage(frame->image);
 
@@ -1320,11 +1311,11 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
         {
             Mat cloud = frame->pyramidCloud[0];
             std::vector<Mat> xyz;
-            cv::split(cloud, xyz);
+            split(cloud, xyz);
             frame->depth = xyz[2];
         }
         else
-            CV_Error(CV_StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
+            CV_Error(Error::StsBadSize, "Depth or pyramidDepth or pyramidCloud have to be set.");
     }
     checkDepth(frame->depth, frame->image.size());
 
@@ -1349,8 +1340,8 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
                 if(normalsComputer.empty() ||
                    normalsComputer->get<int>("rows") != frame->depth.rows ||
                    normalsComputer->get<int>("cols") != frame->depth.cols ||
-                   cv::norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
-                   normalsComputer = cv::Ptr<cv::RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
+                   norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
+                   normalsComputer = Ptr<RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
 
                 (*normalsComputer)(frame->pyramidCloud[0], frame->normals);
             }
@@ -1401,6 +1392,7 @@ warpFrame(const Mat& image, const Mat& depth, const Mat& mask,
     else if(image.type() == CV_8UC3)
         warpFrameImpl<Point3_<uchar> >(image, depth, mask, Rt, cameraMatrix, distCoeff, warpedImage, warpedDepth, warpedMask);
     else
-        CV_Error(CV_StsBadArg, "Image has to be type of CV_8UC1 or CV_8UC3");
+        CV_Error(Error::StsBadArg, "Image has to be type of CV_8UC1 or CV_8UC3");
+}
 }
 } // namespace cv
