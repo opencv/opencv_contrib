@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
     image.copyTo(out_img);
     image.copyTo(out_img_detection);
     float scale_img  = 600.f/image.rows;
-    float scale_font = (float)(2-scale_img)/1.4;
+    float scale_font = (float)(2-scale_img)/1.4f;
     vector<string> words_detection;
 
     t_r = (double)getTickCount();
