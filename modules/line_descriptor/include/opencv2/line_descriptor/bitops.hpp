@@ -43,7 +43,7 @@
 #ifndef __OPENCV_BITOPTS_HPP
 #define __OPENCV_BITOPTS_HPP
 
-#ifdef __MSC_VER
+#ifdef _WIN32
 # include <intrin.h>
 # define popcnt __popcnt
 # define popcntll __popcount64
