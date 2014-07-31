@@ -55,6 +55,9 @@
 #define MAX_EXAMPLES_IN_MODEL 500
 #define MEASURES_PER_CLASSIFIER 13
 #define SCALE_STEP 1.2
+#define ENSEMBLE_THRESHOLD 0.5
+#define VARIANCE_THRESHOLD 0.5
+#define GRIDSIZE 15
 #define DOWNSCALE_MODE INTER_LINEAR
 #define BLUR_AS_VADIM
 #undef CLOSED_LOOP
@@ -84,10 +87,8 @@ using namespace tld;
  *      ?10. all in one class
  *      11. group decls logically, order of statements
     *      12. not v=vector(n), but assign(n,0)
-    *      -->14. TLDEnsembleClassifier
  *      16. loops limits
  *      17. inner scope loops
-    *      18. classify in TLDEnsembleClassifier
     *      19. var checker
     *      20. NCC using plain loops
     *      21. precompute offset
@@ -145,7 +146,7 @@ protected:
     Ptr<TrackerModel> model;
     void computeIntegralImages(const Mat& img,Mat_<double>& intImgP,Mat_<double>& intImgP2){integral(img,intImgP,intImgP2,CV_64F);}
     inline bool patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size);
-    bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>0.5;}
+    bool ensembleClassifier(const uchar* data,int rowstep){return ensembleClassifierNum(data,rowstep)>ENSEMBLE_THRESHOLD;}
     double ensembleClassifierNum(const uchar* data,int rowstep);
     TrackerTLD::Params params_;
 };
@@ -417,9 +418,7 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     getClosestN(scanGrid,Rect2d(boundingBox.x/scale,boundingBox.y/scale,boundingBox.width/scale,boundingBox.height/scale),10,closest);
 
     Mat_<uchar> blurredPatch(minSize);
-    for(int i=0,howMany=TLDEnsembleClassifier::getMaxOrdinal();i<howMany;i++){
-        classifiers.push_back(TLDEnsembleClassifier(i+1,minSize,MEASURES_PER_CLASSIFIER));
-    }
+    TLDEnsembleClassifier::makeClassifiers(minSize,MEASURES_PER_CLASSIFIER,GRIDSIZE,classifiers);
 
     positiveExamples.reserve(200);
     Point2f center;
@@ -586,7 +585,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
 }
 
 bool TLDDetector::patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size){
-    return variance(intImgP,intImgP2,Rect(pt.x,pt.y,size.width,size.height)) >= 0.5*originalVariance;
+    return variance(intImgP,intImgP2,Rect(pt.x,pt.y,size.width,size.height)) >= VARIANCE_THRESHOLD*originalVariance;
 }
 
 double TLDDetector::ensembleClassifierNum(const uchar* data,int rowstep){
@@ -694,7 +693,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
             p+=classifiers[i].posteriorProbability(eForEnsemble[k].data,(int)eForEnsemble[k].step[0]);
         }
         p/=classifiers.size();
-        if((p>0.5)!=isPositive){
+        if((p>ENSEMBLE_THRESHOLD)!=isPositive){
             if(isPositive){
                 positiveIntoEnsemble++;
             }else{

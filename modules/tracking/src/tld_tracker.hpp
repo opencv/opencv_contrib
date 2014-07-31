@@ -61,7 +61,7 @@ namespace cv {namespace tld
     clock_t start;float milisec=0.0;\
     start=clock();{a} milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
     dprintf(("%-90s took %f milis\n",#a,milisec)); }
-#define HERE dprintf(("%d\n",__LINE__));fflush(stderr);
+#define HERE dprintf(("line %d\n",__LINE__));fflush(stderr);
 #define START_TICK(name) { clock_t start;double milisec=0.0; start=clock();
 #define END_TICK(name) milisec=1000.0*(clock()-start)/CLOCKS_PER_SEC;\
     dprintf(("%s took %f milis\n",name,milisec)); }
@@ -96,17 +96,15 @@ unsigned int getMedian(const std::vector<unsigned int>& values, int size=-1);
 
 class TLDEnsembleClassifier{
 public:
-    TLDEnsembleClassifier(int ordinal,Size size,int measurePerClassifier);
+    static int makeClassifiers(Size size,int measurePerClassifier,int gridSize,std::vector<TLDEnsembleClassifier>& classifiers);
     void integrate(const Mat_<uchar>& patch,bool isPositive);
     double posteriorProbability(const uchar* data,int rowstep)const;
-    static int getMaxOrdinal();
 private:
-    static int getGridSize();
-    inline void stepPrefSuff(std::vector<uchar>& arr,int len);
-    void preinit(int ordinal);
+    TLDEnsembleClassifier(std::vector<Vec4b> meas,int beg,int end);
+    static void stepPrefSuff(std::vector<Vec4b>& arr,int pos,int len,int gridSize);
     unsigned short int code(const uchar* data,int rowstep)const;
     std::vector<unsigned int> pos,neg;
-    std::vector<uchar> x1,y1,x2,y2;
+    std::vector<Vec4b> measurements;
 };
 
 class TrackerProxy{

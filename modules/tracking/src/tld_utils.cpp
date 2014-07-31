@@ -252,8 +252,7 @@ void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples){
 }
 
 //other stuff
-void TLDEnsembleClassifier::stepPrefSuff(std::vector<uchar>& arr,int len){
-    int gridSize=getGridSize();
+void TLDEnsembleClassifier::stepPrefSuff(std::vector<Vec4b>& arr,int pos,int len,int gridSize){
 #if 0
         int step=len/(gridSize-1), pref=(len-step*(gridSize-1))/2;
         for(int i=0;i<(int)(sizeof(x1)/sizeof(x1[0]));i++){
@@ -266,39 +265,29 @@ void TLDEnsembleClassifier::stepPrefSuff(std::vector<uchar>& arr,int len){
         int bigOnes=rem,smallOnes=gridSize-bigOnes-1;
         int bigOnes_front=bigOnes/2,bigOnes_back=bigOnes-bigOnes_front;
         for(int i=0;i<(int)arr.size();i++){
-            if(arr[i]<bigOnes_back){
-                arr[i]=(uchar)(arr[i]*bigStep+arr[i]);
+            if(arr[i].val[pos]<bigOnes_back){
+                arr[i].val[pos]=(uchar)(arr[i].val[pos]*bigStep+arr[i].val[pos]);
                 continue;
             }
-            if(arr[i]<(bigOnes_front+smallOnes)){
-                arr[i]=(uchar)(bigOnes_front*bigStep+(arr[i]-bigOnes_front)*smallStep+arr[i]);
+            if(arr[i].val[pos]<(bigOnes_front+smallOnes)){
+                arr[i].val[pos]=(uchar)(bigOnes_front*bigStep+(arr[i].val[pos]-bigOnes_front)*smallStep+arr[i].val[pos]);
                 continue;
             }
-            if(arr[i]<(bigOnes_front+smallOnes+bigOnes_back)){
-                arr[i]=(uchar)(bigOnes_front*bigStep+smallOnes*smallStep+(arr[i]-(bigOnes_front+smallOnes))*bigStep+arr[i]);
+            if(arr[i].val[pos]<(bigOnes_front+smallOnes+bigOnes_back)){
+                arr[i].val[pos]=
+                    (uchar)(bigOnes_front*bigStep+smallOnes*smallStep+(arr[i].val[pos]-(bigOnes_front+smallOnes))*bigStep+arr[i].val[pos]);
                 continue;
             }
-            arr[i]=(uchar)(len-1);
+            arr[i].val[pos]=(uchar)(len-1);
         }
 #endif
 }
-TLDEnsembleClassifier::TLDEnsembleClassifier(int ordinal,Size size,int measurePerClassifier){
-    x1=std::vector<uchar>(measurePerClassifier,0);
-    x2=std::vector<uchar>(measurePerClassifier,0);
-    y1=std::vector<uchar>(measurePerClassifier,0);
-    y2=std::vector<uchar>(measurePerClassifier,0);
-
-    preinit(ordinal);
-
-    stepPrefSuff(x1,size.width);
-    stepPrefSuff(x2,size.width);
-    stepPrefSuff(y1,size.height);
-    stepPrefSuff(y2,size.height);
-
+TLDEnsembleClassifier::TLDEnsembleClassifier(std::vector<Vec4b> meas,int beg,int end){
     int posSize=1;
-    for(int i=0;i<measurePerClassifier;i++)posSize*=2;
+    for(int i=0,mpc=end-beg;i<mpc;i++)posSize*=2;
     pos=std::vector<unsigned int>(posSize,0);
     neg=std::vector<unsigned int>(posSize,0);
+    measurements.assign(meas.begin()+beg,meas.begin()+end);
 }
 void TLDEnsembleClassifier::integrate(const Mat_<uchar>& patch,bool isPositive){
     unsigned short int position=code(patch.data,(int)patch.step[0]);
@@ -318,15 +307,45 @@ double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep
     }
 }
 unsigned short int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
-    unsigned short int position=0;
-    for(int i=0;i<(int)x1.size();i++){
+    unsigned short int position=0;//TODO: this --> encapsule
+    for(int i=0;i<(int)measurements.size();i++){
         position=position<<1;
-        if(*(data+rowstep*y1[i]+x1[i])<*(data+rowstep*y2[i]+x2[i])){
+        if(*(data+rowstep*measurements[i].val[0]+measurements[i].val[1])<*(data+rowstep*measurements[i].val[2]+measurements[i].val[3])){
             position++;
         }else{
         }
     }
     return position;
+}
+int TLDEnsembleClassifier::makeClassifiers(Size size,int measurePerClassifier,int gridSize,
+        std::vector<TLDEnsembleClassifier>& classifiers){
+
+    std::vector<Vec4b> measurements;
+
+    for(int i=0;i<gridSize;i++){
+        for(int j=0;j<gridSize;j++){
+            for(int k=0;k<j;k++){
+                Vec4b m;
+                m.val[0]=m.val[2]=i;
+                m.val[1]=j;m.val[3]=k;
+                measurements.push_back(m);
+                m.val[1]=m.val[3]=i;
+                m.val[0]=j;m.val[2]=k;
+                measurements.push_back(m);
+            }
+        }
+    }
+    random_shuffle(measurements.begin(),measurements.end());
+
+    stepPrefSuff(measurements,0,size.width,gridSize);
+    stepPrefSuff(measurements,1,size.width,gridSize);
+    stepPrefSuff(measurements,2,size.height,gridSize);
+    stepPrefSuff(measurements,3,size.height,gridSize);
+
+    for(int i=0,howMany=measurements.size()/measurePerClassifier;i<howMany;i++){
+        classifiers.push_back(TLDEnsembleClassifier(measurements,i*measurePerClassifier,(i+1)*measurePerClassifier));
+    }
+    return (int)classifiers.size();
 }
 
 }}
