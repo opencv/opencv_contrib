@@ -105,7 +105,7 @@ void BinaryDescriptorMatcher::checkKDistances( UINT32 * numres, int k, std::vect
   {
     if( ( * ( numres_tmp + j ) ) > 0 )
     {
-      for ( int i = 0; i < ( * ( numres_tmp + j ) ) && k_to_found > 0; i++ )
+      for ( int i = 0; i < (int)( * ( numres_tmp + j ) ) && k_to_found > 0; i++ )
       {
         k_distances.push_back( j );
         k_to_found--;

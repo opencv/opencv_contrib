@@ -58,7 +58,7 @@ namespace cv
 
 CV_EXPORTS bool initModule_line_descriptor();
 
-class CV_EXPORTS_W KeyLine
+struct CV_EXPORTS_W_SIMPLE KeyLine
 {
  public:
   /* orientation of the line */
