@@ -58,9 +58,9 @@ namespace xobjdetect
     channels — output array for computed channels
 
 */
-void computeChannels(InputArray image, std::vector<Mat>& channels);
+CV_EXPORTS void computeChannels(InputArray image, std::vector<Mat>& channels);
 
-class CV_EXPORTS ACFFeatureEvaluator : public Algorithm
+class CV_EXPORTS FeatureEvaluator : public Algorithm
 {
 public:
     /* Set channels for feature evaluation */
@@ -68,8 +68,6 @@ public:
 
     /* Set window position */
     virtual void setPosition(Size position) = 0;
-
-    virtual void assertChannels() = 0;
 
     /* Evaluate feature with given index for current channels
         and window position */
@@ -81,23 +79,28 @@ public:
     */
     virtual void evaluateAll(OutputArray feature_values) const = 0;
 
+    virtual void assertChannels() = 0;
 };
 
-/* Construct evaluator, set features to evaluate */
-CV_EXPORTS Ptr<ACFFeatureEvaluator>
-createACFFeatureEvaluator(const std::vector<Point3i>& features);
+/* Construct feature evaluator, set features to evaluate
+   type can "icf" or "acf" */
+CV_EXPORTS Ptr<FeatureEvaluator>
+createFeatureEvaluator(const std::vector<std::vector<int> >& features,
+                       const std::string& type);
 
 /* Generate acf features
 
     window_size — size of window in which features should be evaluated
 
+    type — type of features, can be "icf" or "acf"
     count — number of features to generate.
     Max number of features is min(count, # possible distinct features)
 
 Returns vector of distinct acf features
 */
-std::vector<Point3i>
-generateFeatures(Size window_size, int count = INT_MAX);
+std::vector<std::vector<int> >
+generateFeatures(Size window_size, const std::string& type,
+                 int count = INT_MAX, int channel_count = 10);
 
 
 struct CV_EXPORTS WaldBoostParams
@@ -135,7 +138,7 @@ public:
     is from class +1
     */
     virtual float predict(
-        const Ptr<ACFFeatureEvaluator>& /*feature_evaluator*/) const
+        const Ptr<FeatureEvaluator>& /*feature_evaluator*/) const
     {return 0.0f;}
 
     /* Write WaldBoost to FileStorage */
@@ -207,7 +210,7 @@ public:
 
 private:
     Ptr<WaldBoost> waldboost_;
-    std::vector<Point3i> features_;
+    std::vector<std::vector<int> > features_;
     int model_n_rows_;
     int model_n_cols_;
 };

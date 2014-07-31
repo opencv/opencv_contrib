@@ -118,8 +118,9 @@ void ICFDetector::train(const String& pos_path,
     for( int i = pos_count; i < pos_count + neg_count; ++i )
         labels(0, i) = -1;
 
-    vector<Point3i> features = generateFeatures(model_size);
-    Ptr<ACFFeatureEvaluator> feature_evaluator = createACFFeatureEvaluator(features);
+    vector<vector<int> > features = generateFeatures(model_size, "icf",
+        params.feature_count);
+    Ptr<FeatureEvaluator> evaluator = createFeatureEvaluator(features, "icf");
 
     Mat_<int> data = Mat_<int>::zeros((int)features.size(), (int)samples.size());
     Mat_<int> feature_col(1, (int)samples.size());
@@ -129,9 +130,9 @@ void ICFDetector::train(const String& pos_path,
     {
         cout << setw(6) << i << "/" << samples.size() << "\r";
         computeChannels(samples[i], channels);
-        feature_evaluator->setChannels(channels);
-        //feature_evaluator->assertChannels();
-        feature_evaluator->evaluateAll(feature_col);
+        evaluator->setChannels(channels);
+        //evaluator->assertChannels();
+        evaluator->evaluateAll(feature_col);
 
         CV_Assert(feature_col.cols == (int)features.size());
 
@@ -180,7 +181,7 @@ void ICFDetector::read(const FileNode& node)
     node["waldboost"] >> *waldboost_;
     FileNode features = node["features"];
     features_.clear();
-    Point3i p;
+    vector<int> p;
     for( FileNodeIterator n = features.begin(); n != features.end(); ++n )
     {
         (*n) >> p;
@@ -196,7 +197,7 @@ void ICFDetector::detect(const Mat& img, vector<Rect>& objects,
     float scale_to = max(model_n_cols_ / (float)minSize.width,
                          model_n_rows_ / (float)minSize.height);
     objects.clear();
-    Ptr<ACFFeatureEvaluator> evaluator = createACFFeatureEvaluator(features_);
+    Ptr<FeatureEvaluator> evaluator = createFeatureEvaluator(features_, "icf");
     Mat rescaled_image;
     int step = 8;
     vector<Mat> channels;

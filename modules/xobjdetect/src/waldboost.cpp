@@ -67,7 +67,7 @@ public:
                                    const Mat& labels);
 
     virtual float predict(
-        const Ptr<ACFFeatureEvaluator>& feature_evaluator) const;
+        const Ptr<FeatureEvaluator>& feature_evaluator) const;
 
     virtual void write(FileStorage& fs) const;
 
@@ -299,7 +299,7 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
 }
 
 float WaldBoostImpl::predict(
-    const Ptr<ACFFeatureEvaluator>& feature_evaluator) const
+    const Ptr<FeatureEvaluator>& feature_evaluator) const
 {
     float trace = 0;
     CV_Assert(stumps_.size() == thresholds_.size());
