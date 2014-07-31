@@ -177,27 +177,6 @@ double variance(const Mat& img){
     p2/=(img.cols*img.rows);
     return p2-p*p;
 }
-double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box){
-    int x=(box.x),y=(box.y),width=(box.width),height=(box.height);
-    CV_Assert(0<=x && (x+width)<intImgP.cols && (x+width)<intImgP2.cols);
-    CV_Assert(0<=y && (y+height)<intImgP.rows && (y+height)<intImgP2.rows);
-    double p=0,p2=0;
-    double A,B,C,D;
-
-    A=intImgP(y,x);
-    B=intImgP(y,x+width);
-    C=intImgP(y+height,x);
-    D=intImgP(y+height,x+width);
-    p=(0.0+A+D-B-C)/(width*height);
-
-    A=intImgP2(y,x);
-    B=intImgP2(y,x+width);
-    C=intImgP2(y+height,x);
-    D=intImgP2(y+height,x+width);
-    p2=(0.0+(D-B)-(C-A))/(width*height);
-
-    return p2-p*p;
-}
 
 double NCC(const Mat_<uchar>& patch1,const Mat_<uchar>& patch2){
     CV_Assert(patch1.rows==patch2.rows);

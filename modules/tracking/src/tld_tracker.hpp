@@ -84,9 +84,6 @@ void resample(const Mat& img,const RotatedRect& r2,Mat_<uchar>& samples);
 void resample(const Mat& img,const Rect2d& r2,Mat_<uchar>& samples);
 /** Computes the variance of single given image.*/
 double variance(const Mat& img);
-/** Computes the variance of subimage given by box, with the help of two integral 
- * images intImgP and intImgP2 (sum of squares), which should be also provided.*/
-double variance(Mat_<double>& intImgP,Mat_<double>& intImgP2,Rect box);
 /** Computes normalized corellation coefficient between the two patches (they should be
  * of the same size).*/
 double NCC(const Mat_<uchar>& patch1,const Mat_<uchar>& patch2);
