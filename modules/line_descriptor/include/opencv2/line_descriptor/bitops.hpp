@@ -43,9 +43,15 @@
 #ifndef __OPENCV_BITOPTS_HPP
 #define __OPENCV_BITOPTS_HPP
 
-#define popcntll __builtin_popcountll
-#define popcnt __builtin_popcount
+#ifdef __MSC_VER
+# include <intrin.h>
+# define popcnt __popcnt
+# define popcntll __popcount64
+#else
+# define popcntll __builtin_popcountll
+# define popcnt __builtin_popcount
 
+#endif
 
 /* LUT */
 const int lookup[] =
