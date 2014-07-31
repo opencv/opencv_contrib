@@ -60,9 +60,9 @@ int main(int argc, char* argv[])
     channels.push_back(grey);
     channels.push_back(255-grey);
 
-    double t_d = getTickCount();
+    double t_d = (double)getTickCount();
     // Create ERFilter objects with the 1st and 2nd stage default classifiers
-    Ptr<ERFilter> er_filter1 = createERFilterNM1(loadClassifierNM1("trained_classifierNM1.xml"),8,0.00015,0.13,0.2,true,0.1);
+    Ptr<ERFilter> er_filter1 = createERFilterNM1(loadClassifierNM1("trained_classifierNM1.xml"),8,0.00015f,0.13f,0.2f,true,0.1f);
     Ptr<ERFilter> er_filter2 = createERFilterNM2(loadClassifierNM2("trained_classifierNM2.xml"),0.5);
 
     vector<vector<ERStat> > regions(channels.size());
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         tmp_group.clear();
     }
 
-    double t_g = getTickCount();
+    double t_g = (double)getTickCount();
     // Detect character groups
     vector< vector<Vec2i> > nm_region_groups;
     vector<Rect> nm_boxes;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 
     /*Text Recognition (OCR)*/
 
-    double t_r = getTickCount();
+    double t_r = (double)getTickCount();
     OCRTesseract* ocr = new OCRTesseract();
     cout << "TIME_OCR_INITIALIZATION = " << ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
     string output;
@@ -111,11 +111,11 @@ int main(int argc, char* argv[])
     Mat out_img_segmentation = Mat::zeros(image.rows+2, image.cols+2, CV_8UC1);
     image.copyTo(out_img);
     image.copyTo(out_img_detection);
-    float scale_img  = 600./image.rows;
-    float scale_font = (2-scale_img)/1.4;
+    float scale_img  = 600.f/image.rows;
+    float scale_font = (float)(2-scale_img)/1.4;
     vector<string> words_detection;
 
-    t_r = getTickCount();
+    t_r = (double)getTickCount();
 
     for (int i=0; i<(int)nm_boxes.size(); i++)
     {
@@ -153,9 +153,9 @@ int main(int argc, char* argv[])
                 continue;
             words_detection.push_back(words[j]);
             rectangle(out_img, boxes[j].tl(), boxes[j].br(), Scalar(255,0,255),3);
-            Size word_size = getTextSize(words[j], FONT_HERSHEY_SIMPLEX, scale_font, 3*scale_font, NULL);
+            Size word_size = getTextSize(words[j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
             rectangle(out_img, boxes[j].tl()-Point(3,word_size.height+3), boxes[j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-            putText(out_img, words[j], boxes[j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),3*scale_font);
+            putText(out_img, words[j], boxes[j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
             out_img_segmentation = out_img_segmentation | group_segmentation;
         }
 
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
             {
                 words_gt.push_back(string(argv[i]));
                 //cout << " GT word " << words_gt[words_gt.size()-1] << endl;
-                num_gt_characters += words_gt[words_gt.size()-1].size();
+                num_gt_characters += (int)(words_gt[words_gt.size()-1].size());
             }
         }
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
                 assignment_mat.push_back(assignment_row);
                 for (int j=0; j<(int)words_detection.size(); j++)
                 {
-                    assignment_mat[i][j] = edit_distance(words_gt[i],words_detection[j]);
+                    assignment_mat[i][j] = (int)(edit_distance(words_gt[i],words_detection[j]));
                     max_dist = max(max_dist,assignment_mat[i][j]);
                 }
             }
@@ -213,8 +213,8 @@ int main(int argc, char* argv[])
             {
                 for (int i=0; i<(int)assignment_mat.size(); i++)
                 {
-                    int min_dist_idx =  distance(assignment_mat[i].begin(),
-                                                 min_element(assignment_mat[i].begin(),assignment_mat[i].end()));
+                    int min_dist_idx =  (int)distance(assignment_mat[i].begin(),
+                                        min_element(assignment_mat[i].begin(),assignment_mat[i].end()));
                     if (assignment_mat[i][min_dist_idx] == search_dist)
                     {
                         //cout << " GT word \"" << words_gt[i] << "\" best match \"" << words_detection[min_dist_idx] << "\" with dist " << assignment_mat[i][min_dist_idx] << endl;
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
             {
                 //cout << " GT word \"" << words_gt[j] << "\" no match found" << endl;
                 fn++;
-                total_edit_distance += words_gt[j].size();
+                total_edit_distance += (int)words_gt[j].size();
             }
             for (int j=0; j<(int)words_detection.size(); j++)
             {
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
                 {
                     //cout << " Detection word \"" << words_detection[j] << "\" no match found" << endl;
                     fp++;
-                    total_edit_distance += words_detection[j].size();
+                    total_edit_distance += (int)words_detection[j].size();
                 }
             }
 
