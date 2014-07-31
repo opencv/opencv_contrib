@@ -46,7 +46,7 @@
 #ifdef _WIN32
 # include <intrin.h>
 # define popcnt __popcnt
-# define popcntll __popcount64
+# define popcntll __popcnt64
 #else
 # define popcntll __builtin_popcountll
 # define popcnt __builtin_popcount
