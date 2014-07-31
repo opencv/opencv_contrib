@@ -58,7 +58,7 @@ namespace cv
 
 CV_EXPORTS bool initModule_line_descriptor();
 
-struct CV_EXPORTS_W_SIMPLE KeyLine
+struct CV_EXPORTS KeyLine
 {
  public:
   /* orientation of the line */
@@ -120,7 +120,7 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 {
 
  public:
-  struct CV_EXPORTS_W_SIMPLE Params
+  struct CV_EXPORTS Params
   {
     CV_WRAP
     Params();
