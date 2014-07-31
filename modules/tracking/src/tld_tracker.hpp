@@ -99,8 +99,8 @@ public:
 private:
     TLDEnsembleClassifier(std::vector<Vec4b> meas,int beg,int end);
     static void stepPrefSuff(std::vector<Vec4b>& arr,int pos,int len,int gridSize);
-    unsigned short int code(const uchar* data,int rowstep)const;
-    std::vector<unsigned int> pos,neg;
+    int code(const uchar* data,int rowstep)const;
+    std::vector<Point2i> posAndNeg;
     std::vector<Vec4b> measurements;
 };
 
