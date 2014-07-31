@@ -41,8 +41,8 @@
 //
 //M*/
 
-#ifndef __OPENCV_OBJDETECT_ERFILTER_HPP__
-#define __OPENCV_OBJDETECT_ERFILTER_HPP__
+#ifndef __OPENCV_TEXT_ERFILTER_HPP__
+#define __OPENCV_TEXT_ERFILTER_HPP__
 
 #include "opencv2/core.hpp"
 #include <vector>
@@ -52,7 +52,7 @@
 namespace cv
 {
 namespace text
-{    
+{
 
 /*!
     Extremal Region Stat structure
@@ -217,8 +217,8 @@ CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM2(const std::string& filename
 
 
 // computeNMChannels operation modes
-enum { ERFILTER_NM_RGBLGrad = 0,
-       ERFILTER_NM_IHSGrad  = 1
+enum { ERFILTER_NM_RGBLGrad,
+       ERFILTER_NM_IHSGrad
      };
 
 /*!
@@ -238,6 +238,12 @@ enum { ERFILTER_NM_RGBLGrad = 0,
 */
 CV_EXPORTS void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels, int _mode = ERFILTER_NM_RGBLGrad);
 
+
+
+// erGrouping operation modes
+enum { ERGROUPING_ORIENTATION_HORIZ,
+       ERGROUPING_ORIENTATION_ANY
+};
 
 /*!
     Find groups of Extremal Regions that are organized as text blocks. This function implements
@@ -260,10 +266,14 @@ CV_EXPORTS void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels
     \param  minProbability The minimum probability for accepting a group
     \param  groups         The output of the algorithm are stored in this parameter as list of rectangles.
 */
-CV_EXPORTS void erGrouping(InputArrayOfArrays src, std::vector<std::vector<ERStat> > &regions,
-                                                   const std::string& filename, float minProbablity,
-                                                   std::vector<Rect > &groups);
+CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
+                                           std::vector<std::vector<ERStat> > &regions,
+                                           std::vector<std::vector<Vec2i> > &groups,
+                                           std::vector<Rect> &groups_rects,
+                                           int method = ERGROUPING_ORIENTATION_HORIZ,
+                                           const std::string& filename = std::string(),
+                                           float minProbablity = 0.5);
 
 }
 }
-#endif // _OPENCV_ERFILTER_HPP_
+#endif // _OPENCV_TEXT_ERFILTER_HPP_

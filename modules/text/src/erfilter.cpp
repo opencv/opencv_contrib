@@ -46,10 +46,19 @@
 #include <fstream>
 #include <queue>
 
+#if defined _MSC_VER && _MSC_VER == 1500
+    typedef int int_fast32_t;
+#else
+    #ifndef INT32_MAX
+    #define __STDC_LIMIT_MACROS
+    #include <stdint.h>
+    #endif
+#endif
+
 namespace cv
 {
 namespace text
-{    
+{
 
 using namespace std;
 
@@ -85,7 +94,7 @@ ERStat::ERStat(int init_level, int init_pixel, int init_x, int init_y) : pixel(i
     central_moments[0] = 0.0;
     central_moments[1] = 0.0;
     central_moments[2] = 0.0;
-    crossings = new std::deque<int>();
+    crossings = new deque<int>();
     crossings->push_back(0);
 }
 
@@ -108,7 +117,7 @@ public:
 
     // the key method. Takes image on input, vector of ERStat is output for the first stage,
     // input/output - for the second one.
-    void run( InputArray image, std::vector<ERStat>& regions );
+    void run( InputArray image, vector<ERStat>& regions );
 
 protected:
     int thresholdDelta;
@@ -135,7 +144,7 @@ public:
 
 private:
     // pointer to the input/output regions vector
-    std::vector<ERStat> *regions;
+    vector<ERStat> *regions;
     // image mask used for feature calculations
     Mat region_mask;
 
@@ -161,7 +170,7 @@ class CV_EXPORTS ERClassifierNM1 : public ERFilter::Callback
 {
 public:
     //Constructor
-    ERClassifierNM1(const std::string& filename);
+    ERClassifierNM1(const string& filename);
     // Destructor
     ~ERClassifierNM1() {}
 
@@ -177,7 +186,7 @@ class CV_EXPORTS ERClassifierNM2 : public ERFilter::Callback
 {
 public:
     //constructor
-    ERClassifierNM2(const std::string& filename);
+    ERClassifierNM2(const string& filename);
     // Destructor
     ~ERClassifierNM2() {}
 
@@ -207,7 +216,7 @@ ERFilterNM::ERFilterNM()
 
 // the key method. Takes image on input, vector of ERStat is output for the first stage,
 // input/output for the second one.
-void ERFilterNM::run( InputArray image, std::vector<ERStat>& _regions )
+void ERFilterNM::run( InputArray image, vector<ERStat>& _regions )
 {
 
     // assert correct image type
@@ -645,7 +654,7 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     m_crossings.push_back(child->crossings->at((int)(child->rect.height)/6));
     m_crossings.push_back(child->crossings->at((int)3*(child->rect.height)/6));
     m_crossings.push_back(child->crossings->at((int)5*(child->rect.height)/6));
-    std::sort(m_crossings.begin(), m_crossings.end());
+    sort(m_crossings.begin(), m_crossings.end());
     child->med_crossings = (float)m_crossings.at(1);
 
     // free unnecessary mem
@@ -823,7 +832,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
         if (angle > 2.*CV_PI)
             angle = angle - 2.*CV_PI;
         else if (angle < 0)
-            angle = 2.*CV_PI + std::abs(angle);
+            angle = 2.*CV_PI + abs(angle);
 
         if (p>0)
         {
@@ -1003,7 +1012,7 @@ int ERFilterNM::getNumRejected()
 
 
 // load default 1st stage classifier if found
-ERClassifierNM1::ERClassifierNM1(const std::string& filename)
+ERClassifierNM1::ERClassifierNM1(const string& filename)
 {
 
     if (ifstream(filename.c_str()))
@@ -1030,7 +1039,7 @@ double ERClassifierNM1::eval(const ERStat& stat)
 
 
 // load default 2nd stage classifier if found
-ERClassifierNM2::ERClassifierNM2(const std::string& filename)
+ERClassifierNM2::ERClassifierNM2(const string& filename)
 {
     if (ifstream(filename.c_str()))
         boost.load( filename.c_str(), "boost" );
@@ -1135,7 +1144,7 @@ Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb, float minProb
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM1.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM1(const std::string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM1(const string& filename)
 
 {
     return makePtr<ERClassifierNM1>(filename);
@@ -1146,11 +1155,31 @@ Ptr<ERFilter::Callback> loadClassifierNM1(const std::string& filename)
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM2.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM2(const std::string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM2(const string& filename)
 {
     return makePtr<ERClassifierNM2>(filename);
 }
 
+// dummy classifier
+class ERDummyClassifier : public ERFilter::Callback
+{
+public:
+    //Constructor
+    ERDummyClassifier() {}
+    // Destructor
+    ~ERDummyClassifier() {}
+
+    // The classifier must return probability measure for the region.
+    double eval(const ERStat& s) {if (s.area ==0) return (double)0.0; return (double)1.0;}
+};
+
+/* Create a dummy classifier that accepts all regions */
+Ptr<ERFilter::Callback> loadDummyClassifier();
+Ptr<ERFilter::Callback> loadDummyClassifier()
+
+{
+    return makePtr<ERDummyClassifier>();
+}
 
 /* ------------------------------------------------------------------------------------*/
 /* -------------------------------- Compute Channels NM -------------------------------*/
@@ -1465,7 +1494,7 @@ long double Minibox::volume ()
 }
 
 
-#define MAX_NUM_FEATURES 9
+#define MAX_GROUP_ELEMENTS 50
 
 
 /*  Hierarchical Clustering classes and functions */
@@ -1486,7 +1515,7 @@ enum method_codes
 
 // A node in the hierarchical clustering algorithm
 struct node {
-    int node1, node2;
+    int_fast32_t node1, node2;
     double dist;
 
     inline friend bool operator< (const node a, const node b)
@@ -1534,15 +1563,15 @@ public:
 class cluster_result {
 private:
     auto_array_ptr<node> Z;
-    int pos;
+    int_fast32_t pos;
 
 public:
-    cluster_result(const int size): Z(size)
+    cluster_result(const int_fast32_t size): Z(size)
     {
         pos = 0;
     }
 
-    void append(const int node1, const int node2, const double dist)
+    void append(const int_fast32_t node1, const int_fast32_t node2, const double dist)
     {
         Z[pos].node1 = node1;
         Z[pos].node2 = node2;
@@ -1550,11 +1579,11 @@ public:
         pos++;
     }
 
-    node * operator[] (const int idx) const { return Z + idx; }
+    node * operator[] (const int_fast32_t idx) const { return Z + idx; }
 
     void sqrt() const
     {
-        for (int i=0; i<pos; i++)
+        for (int_fast32_t i=0; i<pos; i++)
             Z[i].dist = ::sqrt(Z[i].dist);
     }
 
@@ -1567,16 +1596,16 @@ public:
 // Class for a doubly linked list
 class doubly_linked_list {
 public:
-    int start;
-    auto_array_ptr<int> succ;
+    int_fast32_t start;
+    auto_array_ptr<int_fast32_t> succ;
 
 private:
-    auto_array_ptr<int> pred;
+    auto_array_ptr<int_fast32_t> pred;
 
 public:
-    doubly_linked_list(const int size): succ(size+1), pred(size+1)
+    doubly_linked_list(const int_fast32_t size): succ(size+1), pred(size+1)
     {
-        for (int i=0; i<size; i++)
+        for (int_fast32_t i=0; i<size; i++)
         {
             pred[i+1] = i;
             succ[i] = i+1;
@@ -1584,7 +1613,7 @@ public:
         start = 0;
     }
 
-    void remove(const int idx)
+    void remove(const int_fast32_t idx)
     {
         // Remove an index from the list.
         if (idx==start)
@@ -1597,7 +1626,7 @@ public:
         succ[idx] = 0; // Mark as inactive
     }
 
-    bool is_inactive(int idx) const
+    bool is_inactive(int_fast32_t idx) const
     {
         return (succ[idx]==0);
     }
@@ -1606,7 +1635,7 @@ public:
 // Indexing functions
 // D is the upper triangular part of a symmetric (NxN)-matrix
 // We require r_ < c_ !
-#define D_(r_,c_) ( D[(static_cast<std::ptrdiff_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
+#define D_(r_,c_) ( D[(static_cast<ptrdiff_t>(2*N-3-(r_))*(r_)>>1)+(c_)-1] )
 // Z is an ((N-1)x4)-array
 #define Z_(_r, _c) (Z[(_r)*4 + (_c)])
 
@@ -1620,21 +1649,21 @@ public:
 */
 class union_find {
 private:
-    auto_array_ptr<int> parent;
-    int nextparent;
+    auto_array_ptr<int_fast32_t> parent;
+    int_fast32_t nextparent;
 
 public:
-    void init(const int size)
+    void init(const int_fast32_t size)
     {
         parent.init(2*size-1, 0);
         nextparent = size;
     }
 
-    int Find (int idx) const
+    int_fast32_t Find (int_fast32_t idx) const
     {
         if (parent[idx] !=0 ) // a -> b
         {
-            int p = idx;
+            int_fast32_t p = idx;
             idx = parent[idx];
             if (parent[idx] !=0 ) // a -> b -> c
             {
@@ -1644,7 +1673,7 @@ public:
                 } while (parent[idx] != 0);
                 do
                 {
-                    int tmp = parent[p];
+                    int_fast32_t tmp = parent[p];
                     parent[p] = idx;
                     p = tmp;
                 } while (parent[p] != idx);
@@ -1653,7 +1682,7 @@ public:
         return idx;
     }
 
-    void Union (const int node1, const int node2)
+    void Union (const int_fast32_t node1, const int_fast32_t node2)
     {
         parent[node1] = parent[node2] = nextparent++;
     }
@@ -1679,21 +1708,21 @@ inline static void f_average( double * const b, const double a, const double s, 
      Z2: output data structure
 */
 template <const unsigned char method, typename t_members>
-static void NN_chain_core(const int N, double * const D, t_members * const members, cluster_result & Z2)
+static void NN_chain_core(const int_fast32_t N, double * const D, t_members * const members, cluster_result & Z2)
 {
-    int i;
+    int_fast32_t i;
 
-    auto_array_ptr<int> NN_chain(N);
-    int NN_chain_tip = 0;
+    auto_array_ptr<int_fast32_t> NN_chain(N);
+    int_fast32_t NN_chain_tip = 0;
 
-    int idx1, idx2;
+    int_fast32_t idx1, idx2;
 
     double size1, size2;
     doubly_linked_list active_nodes(N);
 
     double min;
 
-    for (int j=0; j<N-1; j++)
+    for (int_fast32_t j=0; j<N-1; j++)
     {
         if (NN_chain_tip <= 3)
         {
@@ -1748,7 +1777,7 @@ static void NN_chain_core(const int N, double * const D, t_members * const membe
 
         if (idx1>idx2)
         {
-            int tmp = idx1;
+            int_fast32_t tmp = idx1;
             idx1 = idx2;
             idx2 = tmp;
         }
@@ -1807,7 +1836,7 @@ static void NN_chain_core(const int N, double * const D, t_members * const membe
 */
 
 template <typename t_dissimilarity>
-static void MST_linkage_core_vector(const int N,
+static void MST_linkage_core_vector(const int_fast32_t N,
                                     t_dissimilarity & dist,
                                     cluster_result & Z2) {
 /*
@@ -1817,12 +1846,12 @@ static void MST_linkage_core_vector(const int N,
      dist: function pointer to the metric
      Z2: output data structure
 */
-    int i;
-    int idx2;
+    int_fast32_t i;
+    int_fast32_t idx2;
     doubly_linked_list active_nodes(N);
     auto_array_ptr<double> d(N);
 
-    int prev_node;
+    int_fast32_t prev_node;
     double min;
 
     // first iteration
@@ -1846,7 +1875,7 @@ static void MST_linkage_core_vector(const int N,
 
     Z2.append(0, idx2, min);
 
-    for (int j=1; j<N-1; j++)
+    for (int_fast32_t j=1; j<N-1; j++)
     {
         prev_node = idx2;
         active_nodes.remove(prev_node);
@@ -1878,7 +1907,7 @@ static void MST_linkage_core_vector(const int N,
 class linkage_output {
 private:
     double * Z;
-    int pos;
+    int_fast32_t pos;
 
 public:
     linkage_output(double * const _Z)
@@ -1887,7 +1916,7 @@ public:
          pos = 0;
     }
 
-    void append(const int node1, const int node2, const double dist, const double size)
+    void append(const int_fast32_t node1, const int_fast32_t node2, const double dist, const double size)
     {
          if (node1<node2)
          {
@@ -1914,18 +1943,18 @@ public:
 // one of the clusters.
 #define size_(r_) ( ((r_<N) ? 1 : Z_(r_-N,3)) )
 
-static void generate_dendrogram(double * const Z, cluster_result & Z2, const int N)
+static void generate_dendrogram(double * const Z, cluster_result & Z2, const int_fast32_t N)
 {
     // The array "nodes" is a union-find data structure for the cluster
     // identites (only needed for unsorted cluster_result input).
     union_find nodes;
-    std::stable_sort(Z2[0], Z2[N-1]);
+    stable_sort(Z2[0], Z2[N-1]);
     nodes.init(N);
 
     linkage_output output(Z);
-    int node1, node2;
+    int_fast32_t node1, node2;
 
-    for (int i=0; i<N-1; i++) {
+    for (int_fast32_t i=0; i<N-1; i++) {
          // Get two data points whose clusters are merged in step i.
          // Find the cluster identifiers for these points.
          node1 = nodes.Find(Z2[i]->node1);
@@ -1957,13 +1986,13 @@ class dissimilarity {
 private:
     double * Xa;
     auto_array_ptr<double> Xnew;
-    std::ptrdiff_t dim; // size_t saves many statis_cast<> in products
-    int N;
-    int * members;
+    ptrdiff_t dim; // size_t saves many statis_cast<> in products
+    int_fast32_t N;
+    int_fast32_t * members;
     void (cluster_result::*postprocessfn) (const double) const;
     double postprocessarg;
 
-    double (dissimilarity::*distfn) (const int, const int) const;
+    double (dissimilarity::*distfn) (const int_fast32_t, const int_fast32_t) const;
 
     auto_array_ptr<double> precomputed;
 
@@ -1972,7 +2001,7 @@ private:
 
 public:
     dissimilarity (double * const _Xa, int _Num, int _dim,
-                   int * const _members,
+                   int_fast32_t * const _members,
                    const unsigned char method,
                    const unsigned char metric,
                    bool temp_point_array)
@@ -2013,22 +2042,22 @@ public:
         free(V);
     }
 
-    inline double operator () (const int i, const int j) const
+    inline double operator () (const int_fast32_t i, const int_fast32_t j) const
     {
         return (this->*distfn)(i,j);
     }
 
-    inline double X (const int i, const int j) const
+    inline double X (const int_fast32_t i, const int_fast32_t j) const
     {
         return Xa[i*dim+j];
     }
 
-    inline bool Xb (const int i, const int j) const
+    inline bool Xb (const int_fast32_t i, const int_fast32_t j) const
     {
         return  reinterpret_cast<bool *>(Xa)[i*dim+j];
     }
 
-    inline double * Xptr(const int i, const int j) const
+    inline double * Xptr(const int_fast32_t i, const int_fast32_t j) const
     {
         return Xa+i*dim+j;
     }
@@ -2041,12 +2070,12 @@ public:
         }
     }
 
-    double sqeuclidean(const int i, const int j) const
+    double sqeuclidean(const int_fast32_t i, const int_fast32_t j) const
     {
         double sum = 0;
         double const * Pi = Xa+i*dim;
         double const * Pj = Xa+j*dim;
-        for (int k=0; k<dim; k++)
+        for (int_fast32_t k=0; k<dim; k++)
         {
             double diff = Pi[k] - Pj[k];
             sum += diff*diff;
@@ -2067,10 +2096,10 @@ private:
         distfn = &dissimilarity::cityblock;
     }
 
-    double seuclidean(const int i, const int j) const
+    double seuclidean(const int_fast32_t i, const int_fast32_t j) const
     {
         double sum = 0;
-        for (int k=0; k<dim; k++)
+        for (int_fast32_t k=0; k<dim; k++)
         {
             double diff = X(i,k)-X(j,k);
             sum += diff*diff/V_data[k];
@@ -2078,49 +2107,16 @@ private:
         return sum;
     }
 
-    double cityblock(const int i, const int j) const
+    double cityblock(const int_fast32_t i, const int_fast32_t j) const
     {
         double sum = 0;
-        for (int k=0; k<dim; k++)
+        for (int_fast32_t k=0; k<dim; k++)
         {
             sum += fabs(X(i,k)-X(j,k));
         }
         return sum;
     }
 };
-
-/*Clustering for the "stored matrix approach": the input is the array of pairwise dissimilarities*/
-static int linkage(double *D, int N, double * Z)
-{
-    CV_Assert(N >=1);
-    CV_Assert(N <= MAX_INDEX/4);
-
-    try
-    {
-
-        cluster_result Z2(N-1);
-        auto_array_ptr<int> members;
-        // The distance update formula needs the number of data points in a cluster.
-        members.init(N, 1);
-        NN_chain_core<METHOD_METR_AVERAGE, int>(N, D, members, Z2);
-        generate_dendrogram(Z, Z2, N);
-
-    } // try
-    catch (const std::bad_alloc&)
-    {
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
-    }
-    catch(const std::exception&)
-    {
-        CV_Error(CV_StsError, "Uncaught exception in erGrouping!");
-    }
-    catch(...)
-    {
-        CV_Error(CV_StsError, "C++ exception (unknown reason) in erGrouping!");
-    }
-    return 0;
-
-}
 
 /*Clustering for the "stored data approach": the input are points in a vector space.*/
 static int linkage_vector(double *X, int N, int dim, double * Z, unsigned char method, unsigned char metric)
@@ -2133,17 +2129,17 @@ static int linkage_vector(double *X, int N, int dim, double * Z, unsigned char m
     try
     {
         cluster_result Z2(N-1);
-        auto_array_ptr<int> members;
+        auto_array_ptr<int_fast32_t> members;
         dissimilarity dist(X, N, dim, members, method, metric, false);
         MST_linkage_core_vector(N, dist, Z2);
         dist.postprocess(Z2);
         generate_dendrogram(Z, Z2, N);
     } // try
-    catch (const std::bad_alloc&)
+    catch (const bad_alloc&)
     {
         CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
     }
-    catch(const std::exception&)
+    catch(const exception&)
     {
         CV_Error(CV_StsError, "Uncaught exception in erGrouping!");
     }
@@ -2154,6 +2150,25 @@ static int linkage_vector(double *X, int N, int dim, double * Z, unsigned char m
     return 0;
 }
 
+// ERFeatures structure stores additional features for a given ERStat instance
+struct ERFeatures
+{
+    int area;
+    Point center;
+    Rect  rect;
+    float intensity_mean;  ///< mean intensity of the whole region
+    float intensity_std;  ///< intensity standard deviation of the whole region
+    float boundary_intensity_mean;  ///< mean intensity of the boundary of the region
+    float boundary_intensity_std;  ///< intensity standard deviation of the boundary of the region
+    double stroke_mean;  ///< mean stroke width approximation of the whole region
+    double stroke_std;  ///< stroke standard deviation of the whole region
+    double gradient_mean;  ///< mean gradient magnitude of the whole region
+    double gradient_std;  ///< gradient magnitude standard deviation of the whole region
+    double axial_ratio;
+    double convex_hull_ratio;
+    int convexities;
+    double hu_moments[7];
+};
 
 /*  Maximal Meaningful Clusters Detection */
 
@@ -2171,6 +2186,7 @@ struct HCluster{
     int min_nfa_in_branch;  // min nfa detected within the chilhood
     int node1;
     int node2;
+    double probability;      //the probability of this group of being a text group
 };
 
 class MaxMeaningfulClustering
@@ -2180,24 +2196,45 @@ public:
     unsigned char metric_;
 
     /// Constructor.
-    MaxMeaningfulClustering(unsigned char method, unsigned char metric){ method_=method; metric_=metric; }
+    MaxMeaningfulClustering(unsigned char _method, unsigned char _metric, vector<ERFeatures> &_regions,
+                            Size _imsize, const string &filename, double _minProbability);
 
     void operator()(double *data, unsigned int num, int dim, unsigned char method,
                     unsigned char metric, vector< vector<int> > *meaningful_clusters);
-    void operator()(double *data, unsigned int num, unsigned char method,
-                    vector< vector<int> > *meaningful_clusters);
+
+    MaxMeaningfulClustering & operator=(const MaxMeaningfulClustering &a);
 
 private:
+    double minProbability;
+    CvBoost group_boost;
+    vector<ERFeatures> &regions;
+    Size imsize;
+
     /// Helper functions
     void build_merge_info(double *dendogram, double *data, int num, int dim, bool use_full_merge_rule,
                           vector<HCluster> *merge_info, vector< vector<int> > *meaningful_clusters);
-    void build_merge_info(double *dendogram, int num, vector<HCluster> *merge_info,
-                          vector< vector<int> > *meaningful_clusters);
 
-    /// Number of False Alarms
+    /// Calculate the Number of False Alarms
     int nfa(float sigma, int k, int N);
 
+    /// Calculate the probability of a group being a text group
+    double probability(vector<int> &elements);
+
 };
+
+MaxMeaningfulClustering::MaxMeaningfulClustering(unsigned char _method, unsigned char _metric, vector<ERFeatures> &_regions,
+                                                 Size _imsize, const string &filename, double _minProbability):
+                                                 method_(_method), metric_(_metric), regions(_regions), imsize(_imsize)
+{
+
+    minProbability = _minProbability;
+
+    if (ifstream(filename.c_str()))
+        group_boost.load( filename.c_str(), "boost" );
+    else
+        CV_Error(CV_StsBadArg, "erGrouping: Default classifier file not found!");
+}
+
 
 void MaxMeaningfulClustering::operator()(double *data, unsigned int num, int dim, unsigned char method,
                                          unsigned char metric, vector< vector<int> > *meaningful_clusters)
@@ -2211,25 +2248,6 @@ void MaxMeaningfulClustering::operator()(double *data, unsigned int num, int dim
 
     vector<HCluster> merge_info;
     build_merge_info(Z, data, (int)num, dim, false, &merge_info, meaningful_clusters);
-
-    free(Z);
-    merge_info.clear();
-}
-
-void MaxMeaningfulClustering::operator()(double *data, unsigned int num, unsigned char method,
-                                         vector< vector<int> > *meaningful_clusters)
-{
-
-    CV_Assert(method == METHOD_METR_AVERAGE);
-
-    double *Z = (double*)malloc(((num-1)*4) * sizeof(double)); // we need 4 floats foreach sample merge.
-    if (Z == NULL)
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
-
-    linkage(data, (int)num, Z);
-
-    vector<HCluster> merge_info;
-    build_merge_info(Z, (int)num, &merge_info, meaningful_clusters);
 
     free(Z);
     merge_info.clear();
@@ -2325,6 +2343,8 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
 
         merge_info->at(i).nfa = nfa((float)merge_info->at(i).volume,
                                     merge_info->at(i).num_elem, N);
+
+        merge_info->at(i).probability = probability(merge_info->at(i).elements);
         int node1 = merge_info->at(i).node1;
         int node2 = merge_info->at(i).node2;
 
@@ -2338,13 +2358,14 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
             if ((node1>=N)&&(node2>=N))
             {
                 // both nodes are "sets" : we must evaluate the merging condition
-                if ( ( (use_full_merge_rule) &&
-                       ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + merge_info->at(node2-N).nfa) &&
-                       (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
+                if ( ( ( (use_full_merge_rule) &&
+                         ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + merge_info->at(node2-N).nfa) &&
+                         (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
                                                     merge_info->at(node2-N).min_nfa_in_branch))) ) ||
-                     ( (!use_full_merge_rule) &&
-                       ((merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
+                       ( (!use_full_merge_rule) &&
+                         ((merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
                                                      merge_info->at(node2-N).min_nfa_in_branch))) ) )
+                     && (merge_info->at(i).probability > minProbability) )
                 {
                     merge_info->at(i).max_meaningful = true;
                     merge_info->at(i).max_in_branch.push_back(i);
@@ -2356,11 +2377,11 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                 } else {
                     merge_info->at(i).max_meaningful = false;
                     merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                    merge_info->at(node1-N).max_in_branch.begin(),
-                    merge_info->at(node1-N).max_in_branch.end());
+                                                           merge_info->at(node1-N).max_in_branch.begin(),
+                                                           merge_info->at(node1-N).max_in_branch.end());
                     merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                    merge_info->at(node2-N).max_in_branch.begin(),
-                    merge_info->at(node2-N).max_in_branch.end());
+                                                           merge_info->at(node2-N).max_in_branch.begin(),
+                                                           merge_info->at(node2-N).max_in_branch.end());
 
                     if (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
                                                     merge_info->at(node2-N).min_nfa_in_branch))
@@ -2376,7 +2397,8 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                 if (node1>=N)
                 {
                     if ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + 1) &&
-                        (merge_info->at(i).nfa<merge_info->at(node1-N).min_nfa_in_branch))
+                        (merge_info->at(i).nfa<merge_info->at(node1-N).min_nfa_in_branch) &&
+                        (merge_info->at(i).probability > minProbability))
                     {
                         merge_info->at(i).max_meaningful = true;
                         merge_info->at(i).max_in_branch.push_back(i);
@@ -2393,7 +2415,8 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                     }
                 } else {
                     if ((merge_info->at(i).nfa < merge_info->at(node2-N).nfa + 1) &&
-                        (merge_info->at(i).nfa<merge_info->at(node2-N).min_nfa_in_branch))
+                        (merge_info->at(i).nfa<merge_info->at(node2-N).min_nfa_in_branch) &&
+                        (merge_info->at(i).probability > minProbability))
                     {
                         merge_info->at(i).max_meaningful = true;
                         merge_info->at(i).max_in_branch.push_back(i);
@@ -2426,170 +2449,6 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
 
 }
 
-void MaxMeaningfulClustering::build_merge_info(double *Z, int N, vector<HCluster> *merge_info,
-                                               vector< vector<int> > *meaningful_clusters)
-{
-
-    // walk the whole dendogram
-    for (int i=0; i<(N-1)*4; i=i+4)
-    {
-        HCluster cluster;
-        cluster.num_elem = (int)Z[i+3]; //number of elements
-
-        int node1  = (int)Z[i];
-        int node2  = (int)Z[i+1];
-        float dist = (float)Z[i+2];
-        if (dist != dist) //this is to avoid NaN values
-            dist=0;
-
-        if (node1<N)
-        {
-            cluster.elements.push_back((int)node1);
-        }
-        else
-        {
-            for (int ii=0; ii<(int)merge_info->at(node1-N).elements.size(); ii++)
-            {
-                cluster.elements.push_back(merge_info->at(node1-N).elements[ii]);
-            }
-        }
-        if (node2<N)
-        {
-            cluster.elements.push_back((int)node2);
-        }
-        else
-        {
-            for (int ii=0; ii<(int)merge_info->at(node2-N).elements.size(); ii++)
-            {
-                cluster.elements.push_back(merge_info->at(node2-N).elements[ii]);
-            }
-        }
-
-        cluster.dist   = dist;
-        if (cluster.dist >= 1)
-            cluster.dist = 0.999999f;
-        if (cluster.dist == 0)
-            cluster.dist = 1.e-25f;
-
-        cluster.dist_ext   = 1;
-
-        if (node1>=N)
-        {
-            merge_info->at(node1-N).dist_ext = cluster.dist;
-        }
-        if (node2>=N)
-        {
-            merge_info->at(node2-N).dist_ext = cluster.dist;
-        }
-
-        cluster.node1 = node1;
-        cluster.node2 = node2;
-
-        merge_info->push_back(cluster);
-    }
-
-    for (int i=0; i<(int)merge_info->size(); i++)
-    {
-
-        merge_info->at(i).nfa = nfa(merge_info->at(i).dist,
-                                    merge_info->at(i).num_elem, N);
-        int node1 = merge_info->at(i).node1;
-        int node2 = merge_info->at(i).node2;
-
-        if ((node1<N)&&(node2<N))
-        {
-            // both nodes are individual samples (nfa=1) so this cluster is max.
-            merge_info->at(i).max_meaningful = true;
-            merge_info->at(i).max_in_branch.push_back(i);
-            merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
-        } else {
-            if ((node1>=N)&&(node2>=N))
-            {
-                // both nodes are "sets" so we must evaluate the merging condition
-                if ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + merge_info->at(node2-N).nfa) &&
-                    (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
-                                                 merge_info->at(node2-N).min_nfa_in_branch)))
-                {
-                    merge_info->at(i).max_meaningful = true;
-                    merge_info->at(i).max_in_branch.push_back(i);
-                    merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
-                    for (int k =0; k<(int)merge_info->at(node1-N).max_in_branch.size(); k++)
-                        merge_info->at(merge_info->at(node1-N).max_in_branch.at(k)).max_meaningful = false;
-                    for (int k =0; k<(int)merge_info->at(node2-N).max_in_branch.size(); k++)
-                        merge_info->at(merge_info->at(node2-N).max_in_branch.at(k)).max_meaningful = false;
-                } else {
-                    merge_info->at(i).max_meaningful = false;
-                    merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                    merge_info->at(node1-N).max_in_branch.begin(),
-                    merge_info->at(node1-N).max_in_branch.end());
-                    merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                    merge_info->at(node2-N).max_in_branch.begin(),
-                    merge_info->at(node2-N).max_in_branch.end());
-                    if (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
-                                                    merge_info->at(node2-N).min_nfa_in_branch))
-                        merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
-                    else
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(node1-N).min_nfa_in_branch,
-                                                                  merge_info->at(node2-N).min_nfa_in_branch);
-                }
-
-            } else {
-
-                // one node is a "set" and the other is an indivisual sample: check merging condition
-                if (node1>=N)
-                {
-                    if ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + 1) &&
-                        (merge_info->at(i).nfa<merge_info->at(node1-N).min_nfa_in_branch))
-                    {
-                        merge_info->at(i).max_meaningful = true;
-                        merge_info->at(i).max_in_branch.push_back(i);
-                        merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
-
-                        for (int k =0; k<(int)merge_info->at(node1-N).max_in_branch.size(); k++)
-                            merge_info->at(merge_info->at(node1-N).max_in_branch.at(k)).max_meaningful = false;
-
-                    } else {
-                        merge_info->at(i).max_meaningful = false;
-                        merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                        merge_info->at(node1-N).max_in_branch.begin(),
-                        merge_info->at(node1-N).max_in_branch.end());
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(i).nfa,
-                                                                  merge_info->at(node1-N).min_nfa_in_branch);
-                    }
-                } else {
-                    if ((merge_info->at(i).nfa < merge_info->at(node2-N).nfa + 1) &&
-                        (merge_info->at(i).nfa<merge_info->at(node2-N).min_nfa_in_branch))
-                    {
-                        merge_info->at(i).max_meaningful = true;
-                        merge_info->at(i).max_in_branch.push_back(i);
-                        merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
-                        for (int k =0; k<(int)merge_info->at(node2-N).max_in_branch.size(); k++)
-                            merge_info->at(merge_info->at(node2-N).max_in_branch.at(k)).max_meaningful = false;
-                    } else {
-                        merge_info->at(i).max_meaningful = false;
-                        merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
-                        merge_info->at(node2-N).max_in_branch.begin(),
-                        merge_info->at(node2-N).max_in_branch.end());
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(i).nfa,
-                        merge_info->at(node2-N).min_nfa_in_branch);
-                    }
-                }
-            }
-        }
-    }
-
-    for (int i=0; i<(int)merge_info->size(); i++)
-    {
-        if (merge_info->at(i).max_meaningful)
-        {
-            vector<int> cluster;
-            for (int k=0; k<(int)merge_info->at(i).elements.size();k++)
-                cluster.push_back(merge_info->at(i).elements.at(k));
-            meaningful_clusters->push_back(cluster);
-        }
-    }
-
-}
 
 int MaxMeaningfulClustering::nfa(float sigma, int k, int N)
 {
@@ -2597,50 +2456,402 @@ int MaxMeaningfulClustering::nfa(float sigma, int k, int N)
     return -1*(int)NFA( N, k, (double) sigma, 0);
 }
 
-void accumulate_evidence(vector<vector<int> > *meaningful_clusters, int grow, Mat *co_occurrence);
 
-void accumulate_evidence(vector<vector<int> > *meaningful_clusters, int grow, Mat *co_occurrence)
+// utility functions for MST
+static bool edge_comp (Vec4f i,Vec4f j)
 {
-    for (int k=0; k<(int)meaningful_clusters->size(); k++)
-        for (int i=0; i<(int)meaningful_clusters->at(k).size(); i++)
-            for (int j=i; j<(int)meaningful_clusters->at(k).size(); j++)
-                if (meaningful_clusters->at(k).at(i) != meaningful_clusters->at(k).at(j))
-                {
-                    co_occurrence->at<double>(meaningful_clusters->at(k).at(i), meaningful_clusters->at(k).at(j)) += grow;
-                    co_occurrence->at<double>(meaningful_clusters->at(k).at(j), meaningful_clusters->at(k).at(i)) += grow;
-                }
+    Point a = Point(cvRound(i[0]), cvRound(i[1]));
+    Point b = Point(cvRound(i[2]), cvRound(i[3]));
+    double edist_i = norm(a-b);
+    a = Point(cvRound(j[0]), cvRound(j[1]));
+    b = Point(cvRound(j[2]), cvRound(j[3]));
+    double edist_j = norm(a-b);
+    return (edist_i>edist_j);
 }
 
-// ERFeatures structure stores additional features for a given ERStat instance
-struct ERFeatures
+static int find_vertex(vector<vector<Point> > &forest, Point &p)
 {
-    int area;
-    Point center;
-    Rect  rect;
-    float intensity_mean;  ///< mean intensity of the whole region
-    float intensity_std;  ///< intensity standard deviation of the whole region
-    float boundary_intensity_mean;  ///< mean intensity of the boundary of the region
-    float boundary_intensity_std;  ///< intensity standard deviation of the boundary of the region
-    double stroke_mean;  ///< mean stroke width approximation of the whole region
-    double stroke_std;  ///< stroke standard deviation of the whole region
-    double gradient_mean;  ///< mean gradient magnitude of the whole region
-    double gradient_std;  ///< gradient magnitude standard deviation of the whole region
-};
+  for (int i=0; i<(int)forest.size(); i++)
+  {
+    for (int j=0; j<(int)forest[i].size(); j++)
+    {
+        if (forest[i][j] == p)
+            return i;
+    }
+  }
+  return -1;
+}
 
-float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERFeatures> &features);
-void  ergrouping(InputOutputArray src, vector<ERStat> &regions);
+static int getAngleABC( Point a, Point b, Point c )
+{
+    Point ab = Point( b.x - a.x, b.y - a.y );
+    Point cb = Point( b.x - c.x, b.y - c.y );
 
-float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERFeatures> &features)
+    // dot product
+    float dot = (float)(ab.x * cb.x + ab.y * cb.y);
+
+    // length square of both vectors
+    float abSqr = (float)(ab.x * ab.x + ab.y * ab.y);
+    float cbSqr = (float)(cb.x * cb.x + cb.y * cb.y);
+
+    // square of cosine of the needed angle
+    float cosSqr = dot * dot / abSqr / cbSqr;
+
+    // this is a known trigonometric equality:
+    // cos(alpha * 2) = [ cos(alpha) ]^2 * 2 - 1
+    float cos2 = 2 * cosSqr - 1;
+
+    // Here's the only invocation of the heavy function.
+    // It's a good idea to check explicitly if cos2 is within [-1 .. 1] range
+
+    const float pi = 3.141592f;
+
+    float alpha2 =
+        (cos2 <= -1) ? pi :
+        (cos2 >= 1) ? 0 :
+        acosf(cos2);
+
+    float rslt = alpha2 / 2;
+
+    float rs = (float)(rslt * 180. / pi);
+
+
+    // Now revolve the ambiguities.
+    // 1. If dot product of two vectors is negative - the angle is definitely
+    // above 90 degrees. Still we have no information regarding the sign of the angle.
+
+    // NOTE: This ambiguity is the consequence of our method: calculating the cosine
+    // of the double angle. This allows us to get rid of calling sqrt.
+
+    if (dot < 0)
+        rs = 180 - rs;
+
+    // 2. Determine the sign. For this we'll use the Determinant of two vectors.
+    float det = (float)(ab.x * cb.y - ab.y * cb.y);
+    if (det < 0)
+        rs = -rs;
+
+    return abs((int) floor(rs + 0.5));
+}
+
+double MaxMeaningfulClustering::probability(vector<int> &cluster)
+{
+
+    if (cluster.size()>MAX_GROUP_ELEMENTS)
+        return 0.;
+
+    vector<float> sample;
+    sample.push_back(0);
+    sample.push_back((float)cluster.size());
+
+    Mat diameters      ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat strokes        ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat gradients      ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat fg_intensities ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat bg_intensities ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat axial_ratios   ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat chull_ratios   ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat convexities    ( (int)cluster.size(), 1, CV_32F, 1 );
+    Subdiv2D subdiv(Rect(0,0,imsize.width,imsize.height));
+    vector< vector<Point> > forest(cluster.size());
+    float maxAvgOverlap = 0;
+
+    for (int i=(int)cluster.size()-1; i>=0; i--)
+    {
+
+        diameters.at<float>(i,0)      = (float)max(regions.at(cluster.at(i)).rect.width,regions.at(cluster.at(i)).rect.height);
+        strokes.at<float>(i,0)        = (float)regions.at(cluster.at(i)).stroke_mean;
+        gradients.at<float>(i,0)      = (float)regions.at(cluster.at(i)).gradient_mean;
+        fg_intensities.at<float>(i,0) = (float)regions.at(cluster.at(i)).intensity_mean;
+        bg_intensities.at<float>(i,0) = (float)regions.at(cluster.at(i)).boundary_intensity_mean;
+        axial_ratios.at<float>(i,0)   = (float)regions.at(cluster.at(i)).axial_ratio;
+        chull_ratios.at<float>(i,0)   = (float)regions.at(cluster.at(i)).convex_hull_ratio;
+        convexities.at<float>(i,0)    = (float)regions.at(cluster.at(i)).convexities;
+
+        Point2f fp((float)regions.at(cluster.at(i)).rect.x+(regions.at(cluster.at(i)).rect.width/2),
+                   (float)regions.at(cluster.at(i)).rect.y+(regions.at(cluster.at(i)).rect.height/2));
+        subdiv.insert(fp);
+        forest[i].push_back(Point((int)fp.x,(int)fp.y));
+        float avgOverlap = 0;
+        for (int j=0; j<(int)cluster.size(); j++)
+        {
+            if (j!=i)
+            {
+                Rect intersection = regions.at(cluster.at(i)).rect & regions.at(cluster.at(j)).rect;
+                int area_intersection = intersection.width * intersection.height;
+                int area_i = regions.at(cluster.at(i)).rect.width * regions.at(cluster.at(i)).rect.height;
+                int area_j = regions.at(cluster.at(j)).rect.width * regions.at(cluster.at(j)).rect.height;
+                if (area_intersection > 0)
+                {
+                    float overlap = (float)area_intersection / min(area_i, area_j);
+                    avgOverlap += overlap;
+                }
+            }
+        }
+        avgOverlap = avgOverlap / (cluster.size()-1);
+        if (avgOverlap > maxAvgOverlap)
+            maxAvgOverlap = avgOverlap;
+    }
+
+    Scalar mean,std;
+    meanStdDev( diameters, mean, std );
+    sample.push_back((float)(std[0]/mean[0])); float diameter_mean = (float)mean[0];
+    meanStdDev( strokes, mean, std );
+    sample.push_back((float)(std[0]/mean[0]));
+    meanStdDev( gradients, mean, std );
+    sample.push_back((float)std[0]);
+    meanStdDev( fg_intensities, mean, std );
+    sample.push_back((float)std[0]);
+    meanStdDev( bg_intensities, mean, std );
+    sample.push_back((float)std[0]);
+
+    /* begin Kruskal algorithm to find the MST */
+    vector<Vec4f> edgeList;
+    subdiv.getEdgeList(edgeList);
+    sort (edgeList.begin(), edgeList.end(), edge_comp);
+
+    vector<Vec4f> mst_edges;
+    vector<float> edge_distances;
+
+    for( int k = (int)edgeList.size()-1; k>=0; k-- )
+    {
+        Vec4f e = edgeList[k];
+        Point pt0 = Point(cvRound(e[0]), cvRound(e[1]));
+        Point pt1 = Point(cvRound(e[2]), cvRound(e[3]));
+        int tree_pt0  = find_vertex(forest, pt0);
+        int tree_pt1  = find_vertex(forest, pt1);
+        if (((pt0.x>0)&&(pt0.x<imsize.width)&&(pt0.y>0)&&(pt0.y<imsize.height) &&
+             (pt1.x>0)&&(pt1.x<imsize.width)&&(pt1.y>0)&&(pt1.y<imsize.height)) &&
+                (tree_pt0 != tree_pt1))
+        {
+            mst_edges.push_back(e);
+            forest[tree_pt0].insert(forest[tree_pt0].begin(),forest[tree_pt1].begin(),forest[tree_pt1].end());
+            forest.erase(forest.begin()+tree_pt1);
+            edge_distances.push_back((float)norm(pt0-pt1));
+        }
+        if (mst_edges.size() == cluster.size()-1)
+            break;
+    }
+
+    //cout << "mst has " << mst_edges.size() << " edges " << endl;
+
+    /* End Kruskal algorithm */
+
+    vector<float> angles;
+    for (size_t k=0; k<mst_edges.size(); k++)
+    {
+        Vec4f q = mst_edges[k];
+        Point q_pt0 = Point(cvRound(q[0]), cvRound(q[1]));
+        Point q_pt1 = Point(cvRound(q[2]), cvRound(q[3]));
+        for (size_t j=k+1; j<mst_edges.size(); j++)
+        {
+            Vec4f t = mst_edges[j];
+            Point t_pt0 = Point(cvRound(t[0]), cvRound(t[1]));
+            Point t_pt1 = Point(cvRound(t[2]), cvRound(t[3]));
+            if(q_pt0 == t_pt0)
+                angles.push_back((float)getAngleABC(q_pt1, q_pt0 , t_pt1));
+            if(q_pt0 == t_pt1)
+                angles.push_back((float)getAngleABC(q_pt1, q_pt0 , t_pt0));
+            if(q_pt1 == t_pt0)
+                angles.push_back((float)getAngleABC(q_pt0, q_pt1 , t_pt1));
+            if(q_pt1 == t_pt1)
+                angles.push_back((float)getAngleABC(q_pt0, q_pt1 , t_pt0));
+        }
+    }
+    //cout << "we have " << angles.size() << " angles " << endl;
+    //for (int kk=0; kk<angles.size(); kk++)
+    //  cout << angles[kk] << " ";
+    //cout << endl;
+
+    meanStdDev( angles, mean, std );
+    sample.push_back((float)std[0]);
+    sample.push_back((float)mean[0]);
+    meanStdDev( edge_distances, mean, std );
+    sample.push_back((float)(std[0]/mean[0]));
+    sample.push_back((float)(mean[0]/diameter_mean));
+
+    meanStdDev( axial_ratios, mean, std );
+    sample.push_back((float)mean[0]);
+    sample.push_back((float)std[0]);
+
+    /// Calculate average shape self-similarity
+    double avg_shape_match = 0;
+    double eps = 1.e-5;
+    int num_matches = 0, sma, smb;
+    for (size_t i=0; i<cluster.size(); i++)
+    {
+        for (size_t j=i+1; j<cluster.size(); j++)
+        {
+            for (int h=0; h<7; h++)
+            {
+                double ama = fabs( regions[cluster[i]].hu_moments[h] );
+                double amb = fabs( regions[cluster[j]].hu_moments[h] );
+
+                if( regions[cluster[i]].hu_moments[h] > 0 )
+                    sma = 1;
+                else if( regions[cluster[i]].hu_moments[h] < 0 )
+                    sma = -1;
+                else
+                    sma = 0;
+                if( regions[cluster[j]].hu_moments[h] > 0 )
+                    smb = 1;
+                else if( regions[cluster[j]].hu_moments[h] < 0 )
+                    smb = -1;
+                else
+                    smb = 0;
+
+                if( ama > eps && amb > eps )
+                {
+                    ama = 1. / (sma * log10( ama ));
+                    amb = 1. / (smb * log10( amb ));
+                    avg_shape_match += fabs( -ama + amb );
+                }
+            }
+            num_matches++;
+        }
+    }
+
+    sample.push_back((float)(avg_shape_match/num_matches));
+
+    sample.push_back(maxAvgOverlap);
+
+    meanStdDev( chull_ratios, mean, std );
+    sample.push_back((float)mean[0]);
+    sample.push_back((float)std[0]);
+
+    meanStdDev( convexities, mean, std );
+    sample.push_back((float)mean[0]);
+    sample.push_back((float)std[0]);
+
+    float votes_group = group_boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+
+    return (double)1-(double)1/(1+exp(-2*votes_group));
+}
+
+
+/* fast thinning for stroke width calculation */
+bool guo_hall_thinning(const Mat1b & img, Mat& skeleton);
+
+bool guo_hall_thinning(const Mat1b & img, Mat& skeleton)
+{
+
+  uchar* img_ptr = img.data;
+  uchar* skel_ptr = skeleton.data;
+
+  for (int row = 0; row < img.rows; ++row)
+  {
+    for (int col = 0; col < img.cols; ++col)
+    {
+      if (*img_ptr)
+      {
+        int key = row * img.cols + col;
+        if ((col > 0 && *img_ptr != img.data[key - 1]) ||
+            (col < img.cols-1 && *img_ptr != img.data[key + 1]) ||
+            (row > 0 && *img_ptr != img.data[key - img.cols]) ||
+            (row < img.rows-1 && *img_ptr != img.data[key + img.cols]))
+        {
+          *skel_ptr = 255;
+        }
+        else
+        {
+          *skel_ptr = 128;
+        }
+      }
+      img_ptr++;
+      skel_ptr++;
+    }
+  }
+
+  int max_iters = 10000;
+  int niters = 0;
+  bool changed = false;
+
+  /// list of keys to set to 0 at the end of the iteration
+  deque<int> cols_to_set;
+  deque<int> rows_to_set;
+
+  while (changed && niters < max_iters)
+  {
+    changed = false;
+    for (unsigned short iter = 0; iter < 2; ++iter)
+    {
+      uchar *skeleton_ptr = skeleton.data;
+      rows_to_set.clear();
+      cols_to_set.clear();
+      // for each point in skeleton, check if it needs to be changed
+      for (int row = 0; row < skeleton.rows; ++row)
+      {
+        for (int col = 0; col < skeleton.cols; ++col)
+        {
+          if (*skeleton_ptr++ == 255)
+          {
+            bool p2, p3, p4, p5, p6, p7, p8, p9;
+            p2 = (skeleton.data[(row-1) * skeleton.cols + col]) > 0;
+            p3 = (skeleton.data[(row-1) * skeleton.cols + col+1]) > 0;
+            p4 = (skeleton.data[row     * skeleton.cols + col+1]) > 0;
+            p5 = (skeleton.data[(row+1) * skeleton.cols + col+1]) > 0;
+            p6 = (skeleton.data[(row+1) * skeleton.cols + col]) > 0;
+            p7 = (skeleton.data[(row+1) * skeleton.cols + col-1]) > 0;
+            p8 = (skeleton.data[row     * skeleton.cols + col-1]) > 0;
+            p9 = (skeleton.data[(row-1) * skeleton.cols + col-1]) > 0;
+
+            int C  = (!p2 & (p3 | p4)) + (!p4 & (p5 | p6)) +
+                    (!p6 & (p7 | p8)) + (!p8 & (p9 | p2));
+            int N1 = (p9 | p2) + (p3 | p4) + (p5 | p6) + (p7 | p8);
+            int N2 = (p2 | p3) + (p4 | p5) + (p6 | p7) + (p8 | p9);
+            int N  = N1 < N2 ? N1 : N2;
+            int m  = iter == 0 ? ((p6 | p7 | !p9) & p8) : ((p2 | p3 | !p5) & p4);
+
+            if ((C == 1) && (N >= 2) && (N <= 3) && (m == 0))
+            {
+              cols_to_set.push_back(col);
+              rows_to_set.push_back(row);
+            }
+          }
+        }
+      }
+
+      // set all points in rows_to_set (of skel)
+      unsigned int rows_to_set_size = (unsigned int)rows_to_set.size();
+      for (unsigned int pt_idx = 0; pt_idx < rows_to_set_size; ++pt_idx)
+      {
+        if (!changed)
+          changed = (skeleton.data[rows_to_set[pt_idx] * skeleton.cols + cols_to_set[pt_idx]]) > 0;
+
+        int key = rows_to_set[pt_idx] * skeleton.cols + cols_to_set[pt_idx];
+        skeleton.data[key] = 0;
+        if (cols_to_set[pt_idx] > 0 && skeleton.data[key - 1] == 128) // left
+            skeleton.data[key - 1] = 255;
+        if (cols_to_set[pt_idx] < skeleton.cols-1 && skeleton.data[key + 1] == 128) // right
+            skeleton.data[key + 1] = 255;
+        if (rows_to_set[pt_idx] > 0 && skeleton.data[key - skeleton.cols] == 128) // up
+            skeleton.data[key - skeleton.cols] = 255;
+        if (rows_to_set[pt_idx] < skeleton.rows-1 && skeleton.data[key + skeleton.cols] == 128) // down
+            skeleton.data[key + skeleton.cols] = 255;
+      }
+
+      if ((niters++) >= max_iters) // we have done!
+        break;
+    }
+  }
+
+  skeleton = (skeleton != 0);
+  return true;
+}
+
+
+float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<ERFeatures> &features);
+
+float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<ERFeatures> &features)
 {
     // assert correct image type
-    CV_Assert( (src.type() == CV_8UC1) || (src.type() == CV_8UC3) );
+    CV_Assert(( channel.type() == CV_8UC1 ) && ( grey.type() == CV_8UC1 ));
+    CV_Assert( channel.size() == grey.size() );
 
     CV_Assert( !regions.empty() );
     CV_Assert( features.empty() );
 
-    Mat grey = src.getMat();
-
-    Mat gradient_magnitude = Mat_<float>(grey.size());
+    Mat gradient_magnitude = Mat_<double>(grey.size());
     get_gradient_magnitude( grey, gradient_magnitude);
 
     Mat region_mask = Mat::zeros(grey.rows+2, grey.cols+2, CV_8UC1);
@@ -2667,8 +2878,8 @@ float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERF
             int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
             Rect rect;
 
-            floodFill( grey(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
-                       region, Point(stat->pixel%grey.cols - stat->rect.x, stat->pixel/grey.cols - stat->rect.y),
+            floodFill( channel(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
+                       region, Point(stat->pixel%channel.cols - stat->rect.x, stat->pixel/channel.cols - stat->rect.y),
                        Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
             rect.width += 2;
             rect.height += 2;
@@ -2680,10 +2891,18 @@ float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERF
             f.intensity_mean = (float)mean[0];
             f.intensity_std  = (float)std[0];
 
-            Mat tmp;
-            distanceTransform(rect_mask, tmp, DIST_L1,3);
+            Mat tmp,bw;
+            region_mask(Rect(stat->rect.x+1,stat->rect.y+1,stat->rect.width,stat->rect.height)).copyTo(bw);
+            distanceTransform(bw, tmp, DIST_L1,3); //L1 gives distance in round integers while L2 floats
 
-            meanStdDev(tmp,mean,std,rect_mask);
+            // Add border because if region span all the image size skeleton will crash
+            copyMakeBorder(bw, bw, 5, 5, 5, 5, BORDER_CONSTANT, Scalar(0));
+            Mat skeleton = Mat::zeros(bw.size(),CV_8UC1);
+            guo_hall_thinning(bw,skeleton);
+            Mat mask;
+            skeleton(Rect(5,5,bw.cols-10,bw.rows-10)).copyTo(mask);
+            bw(Rect(5,5,bw.cols-10,bw.rows-10)).copyTo(bw);
+            meanStdDev(tmp,mean,std,mask);
             f.stroke_mean = mean[0];
             f.stroke_std  = std[0];
 
@@ -2706,6 +2925,34 @@ float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERF
             meanStdDev( gradient_magnitude(stat->rect), mean, std, tmp);
             f.gradient_mean = mean[0];
             f.gradient_std  = std[0];
+
+            copyMakeBorder(bw, bw, 5, 5, 5, 5, BORDER_CONSTANT, Scalar(0));
+
+            vector<vector<Point> > contours0;
+            vector<Vec4i> hierarchy;
+            findContours( bw, contours0, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+            RotatedRect rrect = minAreaRect(contours0.at(0));
+
+            f.axial_ratio = max(rrect.size.width, rrect.size.height) / min(rrect.size.width, rrect.size.height);
+
+            Moments mu = moments(contours0.at(0));
+            HuMoments (mu, f.hu_moments);
+
+            vector<Point> hull;
+            convexHull(contours0[0],hull);
+            f.convex_hull_ratio = (float)contourArea(hull)/contourArea(contours0[0]);
+            vector<Vec4i> cx;
+            vector<int> hull_idx;
+            //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
+            //     if the region is very small because otherwise we'll loose all the convexities
+            approxPolyDP( Mat(contours0[0]), contours0[0], (float)min(rrect.size.width,rrect.size.height)/17, true );
+            convexHull(contours0[0],hull_idx,false,false);
+            f.convexities = 0;
+            if (hull_idx.size()>2)
+                if (contours0[0].size()>3)
+                    convexityDefects(contours0[0],hull_idx,cx);
+            f.convexities = (int)cx.size();
 
             rect_mask = Scalar(0);
 
@@ -2730,61 +2977,33 @@ float extract_features(InputOutputArray src, vector<ERStat> &regions, vector<ERF
     return max_stroke;
 }
 
-static bool edge_comp (Vec4f i,Vec4f j)
-{
-    Point a = Point(cvRound(i[0]), cvRound(i[1]));
-    Point b = Point(cvRound(i[2]), cvRound(i[3]));
-    double edist_i = cv::norm(a-b);
-    a = Point(cvRound(j[0]), cvRound(j[1]));
-    b = Point(cvRound(j[2]), cvRound(j[3]));
-    double edist_j = cv::norm(a-b);
-    return (edist_i<edist_j);
-}
-
-static bool find_vertex(vector<Point> &vertex, Point &p)
-{
-    for (int i=0; i<(int)vertex.size(); i++)
-    {
-        if (vertex.at(i) == p)
-            return true;
-    }
-    return false;
-}
-
 
 /*!
     Find groups of Extremal Regions that are organized as text blocks. This function implements
     the grouping algorithm described in:
+    Gomez L. and Karatzas D.: A Fast Hierarchical Method for Multi-script and Arbitrary Oriented
+                              Scene Text Extraction, arXiv:1407.7504 [cs.CV].
     Gomez L. and Karatzas D.: Multi-script Text Extraction from Natural Scenes, ICDAR 2013.
-    Notice that this implementation constrains the results to horizontally-aligned text and
-    latin script (since ERFilter default classifiers are trained only for latin script detection).
 
-    The algorithm combines two different clustering techniques in a single parameter-free procedure
-    to detect groups of regions organized as text. The maximally meaningful groups are fist detected
-    in several feature spaces, where each feature space is a combination of proximity information
-    (x,y coordinates) and a similarity measure (intensity, color, size, gradient magnitude, etc.),
-    thus providing a set of hypotheses of text groups. Evidence Accumulation framework is used to
-    combine all these hypotheses to get the final estimate. Each of the resulting groups are finally
-    validated by a classifier in order to assest if they form a valid horizontally-aligned text block.
-
-    \param  src            Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
+    \param  _image         Original RGB image from wich the regions were extracted.
+    \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
     \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  groups         The output of the algorithm are stored in this parameter as list of indexes to provided regions.
+    \param  text_boxes     The output of the algorithm are stored in this parameter as list of rectangles.
     \param  filename       The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)
     \param  minProbability The minimum probability for accepting a group
-    \param  groups         The output of the algorithm are stored in this parameter as list of rectangles.
 */
-void erGrouping(InputArrayOfArrays _src, vector<vector<ERStat> > &regions, const std::string& filename, float minProbability, std::vector<Rect > &text_boxes)
+static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vector<ERStat> > &regions, vector<vector<Vec2i> > &groups,  vector<Rect> &text_boxes, const string& filename, float minProbability)
 {
 
+    CV_Assert( _image.getMat().type() == CV_8UC3 );
     // TODO assert correct vector<Mat>
 
-    CvBoost group_boost;
-    if (ifstream(filename.c_str()))
-        group_boost.load( filename.c_str(), "boost" );
-    else
-        CV_Error(CV_StsBadArg, "erGrouping: Default classifier file not found!");
+    Mat image = _image.getMat();
+    Mat grey;
+    cvtColor(image, grey, COLOR_BGR2GRAY);
 
-    std::vector<Mat> src;
+    vector<Mat> src;
     _src.getMatVector(src);
 
     CV_Assert ( !src.empty() );
@@ -2797,388 +3016,1058 @@ void erGrouping(InputArrayOfArrays _src, vector<vector<ERStat> > &regions, const
 
     for (int c=0; c<(int)src.size(); c++)
     {
-        Mat img = src.at(c);
+        Mat channel = src.at(c);
 
         // assert correct image type
-        CV_Assert( img.type() == CV_8UC1 );
+        CV_Assert( channel.type() == CV_8UC1 );
 
         CV_Assert( !regions.at(c).empty() );
 
         if ( regions.at(c).size() < 3 )
-          continue;
+            continue;
 
 
-        std::vector<vector<int> > meaningful_clusters;
+        vector<vector<int> > meaningful_clusters;
         vector<ERFeatures> features;
-        float max_stroke = extract_features(img,regions.at(c),features);
+        float max_stroke = extract_features(grey, channel, regions.at(c), features);
 
-        MaxMeaningfulClustering   mm_clustering(METHOD_METR_SINGLE, METRIC_SEUCLIDEAN);
 
-        Mat co_occurrence_matrix = Mat::zeros((int)regions.at(c).size(), (int)regions.at(c).size(), CV_64F);
 
-        int num_features = MAX_NUM_FEATURES;
+        // Find the Max. Meaningful Clusters in the learned feature space
 
-        // Find the Max. Meaningful Clusters in each feature space independently
-        int dims[MAX_NUM_FEATURES] = {3,3,3,3,3,3,3,3,3};
-
-        for (int f=0; f<num_features; f++)
-        {
-            unsigned int N = (unsigned int)regions.at(c).size();
-            if (N<3) break;
-            int dim = dims[f];
-            double *data = (double*)malloc(dim*N * sizeof(double));
-            if (data == NULL)
-                CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
-            int count = 0;
-            for (int i=0; i<(int)regions.at(c).size(); i++)
-            {
-                data[count] = (double)features.at(i).center.x/img.cols;
-                data[count+1] = (double)features.at(i).center.y/img.rows;
-                switch (f)
-                {
-                    case 0:
-                        data[count+2] = (double)features.at(i).intensity_mean/255;
-                        break;
-                    case 1:
-                        data[count+2] = (double)features.at(i).boundary_intensity_mean/255;
-                        break;
-                    case 2:
-                        data[count+2] = (double)features.at(i).rect.y/img.rows;
-                        break;
-                    case 3:
-                        data[count+2] = (double)(features.at(i).rect.y+features.at(i).rect.height)/img.rows;
-                        break;
-                    case 4:
-                        data[count+2] = (double)max(features.at(i).rect.height,
-                                                    features.at(i).rect.width)/max(img.rows,img.cols);
-                        break;
-                    case 5:
-                        data[count+2] = (double)features.at(i).stroke_mean/max_stroke;
-                        break;
-                    case 6:
-                        data[count+2] = (double)features.at(i).area/(img.rows*img.cols);
-                        break;
-                    case 7:
-                        data[count+2] = (double)(features.at(i).rect.height*
-                                                 features.at(i).rect.width)/(img.rows*img.cols);
-                        break;
-                    case 8:
-                        data[count+2] = (double)features.at(i).gradient_mean/255;
-                        break;
-                }
-                count = count+dim;
-            }
-
-            mm_clustering(data, N, dim, METHOD_METR_SINGLE, METRIC_SEUCLIDEAN, &meaningful_clusters);
-
-            // Accumulate evidence in the coocurrence matrix
-            accumulate_evidence(&meaningful_clusters, 1, &co_occurrence_matrix);
-
-            free(data);
-            meaningful_clusters.clear();
-        }
-
-        double minVal;
-        double maxVal;
-        minMaxLoc(co_occurrence_matrix, &minVal, &maxVal);
-
-        maxVal = num_features - 1;
-        minVal=0;
-
-        co_occurrence_matrix = maxVal - co_occurrence_matrix;
-        co_occurrence_matrix = co_occurrence_matrix / maxVal;
-
-        // we want a sparse matrix
-        double *D = (double*)malloc((regions.at(c).size()*regions.at(c).size()) * sizeof(double));
-        if (D == NULL)
+        unsigned int N = (unsigned int)regions.at(c).size();
+        int dim = 7; //dimensionality of feature space
+        double *data = (double*)malloc(dim*N * sizeof(double));
+        if (data == NULL)
             CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
-        int pos = 0;
-        for (int i = 0; i<co_occurrence_matrix.rows; i++)
+        //Learned weights
+        float weight_param1 = 1.00f;
+        float weight_param2 = 0.65f;
+        float weight_param3 = 0.65f;
+        float weight_param4 = 0.49f;
+        float weight_param5 = 0.67f;
+        float weight_param6 = 0.91f;
+
+        int count = 0;
+        for (int i=0; i<(int)regions.at(c).size(); i++)
         {
-            for (int j = i+1; j<co_occurrence_matrix.cols; j++)
+            data[count] = (double)features.at(i).center.x/channel.cols*weight_param1;
+            data[count+1] = (double)features.at(i).center.y/channel.rows*weight_param1;
+            data[count+2] = (double)features.at(i).intensity_mean/255*weight_param2;
+            data[count+3] = (double)features.at(i).boundary_intensity_mean/255*weight_param3;
+            data[count+4] = (double)max(features.at(i).rect.height,features.at(i).rect.width)/
+                                    max(channel.rows,channel.cols)*weight_param5;
+            data[count+5] = (double)features.at(i).stroke_mean/max_stroke*weight_param6;
+            data[count+6] = (double)features.at(i).gradient_mean/255*weight_param4;
+
+            count = count+dim;
+        }
+
+        MaxMeaningfulClustering   mm_clustering(METHOD_METR_SINGLE, METRIC_SEUCLIDEAN, features, Size(channel.cols,channel.rows), filename, minProbability);
+        mm_clustering(data, N, dim, METHOD_METR_SINGLE, METRIC_SEUCLIDEAN, &meaningful_clusters);
+
+        free(data);
+
+        for (size_t k=0; k<meaningful_clusters.size(); k++)
+        {
+            if (meaningful_clusters[k].size()>2)
             {
-                D[pos] = (double)co_occurrence_matrix.at<double>(i, j);
-                pos++;
+                Rect group_rect = features[meaningful_clusters[k][0]].rect;
+                vector<Vec2i> group;
+                group.push_back(Vec2i(c,meaningful_clusters[k][0]));
+                for (size_t l=1; l<meaningful_clusters[k].size(); l++)
+                {
+                    group_rect = group_rect | features[meaningful_clusters[k][l]].rect;
+                    group.push_back(Vec2i(c,meaningful_clusters[k][l]));
+                }
+                text_boxes.push_back(group_rect);
+                groups.push_back(group);
             }
         }
 
-        // Find the Max. Meaningful Clusters in the co-occurrence matrix
-        mm_clustering(D, (unsigned int)regions.at(c).size(), METHOD_METR_AVERAGE, &meaningful_clusters);
-        free(D);
+        //getLines(img, &regions, &final_clusters, line_rects, line_regions, multi_oriented);
+
+        meaningful_clusters.clear();
+        features.clear();
+    }
+}
+
+/**************************************/
+/*Exhaustive Search grouping algorithm*/
+/**************************************/
+
+//threshold values for the Exhaustive Search algorithm (learned from training dataset)
+#define PAIR_MIN_HEIGHT_RATIO     0.4
+#define PAIR_MIN_CENTROID_ANGLE - 0.85
+#define PAIR_MAX_CENTROID_ANGLE   0.85
+#define PAIR_MIN_REGION_DIST    - 0.4
+#define PAIR_MAX_REGION_DIST      2.2
+#define PAIR_MAX_INTENSITY_DIST   111
+#define PAIR_MAX_AB_DIST          54
+
+#define TRIPLET_MAX_DIST          0.9
+#define TRIPLET_MAX_SLOPE         0.3
+
+#define SEQUENCE_MAX_TRIPLET_DIST 0.45
+#define SEQUENCE_MIN_LENGHT       4
+
+// struct line_estimates
+// Represents a line estimate (as above) for an ER's group
+// i.e.: slope and intercept of 2 top and 2 bottom lines
+struct line_estimates
+{
+    float top1_a0;
+    float top1_a1;
+    float top2_a0;
+    float top2_a1;
+    float bottom1_a0;
+    float bottom1_a1;
+    float bottom2_a0;
+    float bottom2_a1;
+    int x_min;
+    int x_max;
+    int h_max;
+    bool operator==(const line_estimates& e) const
+    {
+        return ( (top1_a0 == e.top1_a0) && (top1_a1 == e.top1_a1) && (top2_a0 == e.top2_a0) &&
+        (top2_a1 == e.top2_a1) && (bottom1_a0 == e.bottom1_a0) && (bottom1_a1 == e.bottom1_a1) &&
+        (bottom2_a0 == e.bottom2_a0) && (bottom2_a1 == e.bottom2_a1) && (x_min == e.x_min) &&
+        (x_max == e.x_max) && (h_max == e.h_max) );
+    }
+};
+
+// distanceLinesEstimates
+// Calculates the distance between two line estimates deﬁned as the largest
+// normalized vertical difference of their top/bottom lines at their boundary points
+// out float distance
+float distanceLinesEstimates(line_estimates &a, line_estimates &b);
+
+float distanceLinesEstimates(line_estimates &a, line_estimates &b)
+{
+    CV_Assert( (a.h_max != 0) && ( b.h_max != 0));
+
+    if (a == b)
+        return 0.0f;
+
+    int x_min = min(a.x_min, b.x_min);
+    int x_max = max(a.x_max, b.x_max);
+    int h_max = max(a.h_max, b.h_max);
+
+    float dist_top = FLT_MAX, dist_bottom = FLT_MAX;
+    for (int i=0; i<2; i++)
+    {
+        float top_a0, top_a1, bottom_a0, bottom_a1;
+        if (i == 0)
+        {
+            top_a0 = a.top1_a0;
+            top_a1 = a.top1_a1;
+            bottom_a0 = a.bottom1_a0;
+            bottom_a1 = a.bottom1_a1;
+        } else {
+            top_a0 = a.top2_a0;
+            top_a1 = a.top2_a1;
+            bottom_a0 = a.bottom2_a0;
+            bottom_a1 = a.bottom2_a1;
+        }
+        for (int j=0; j<2; j++)
+        {
+            float top_b0, top_b1, bottom_b0, bottom_b1;
+            if (j==0)
+            {
+                top_b0 = b.top1_a0;
+                top_b1 = b.top1_a1;
+                bottom_b0 = b.bottom1_a0;
+                bottom_b1 = b.bottom1_a1;
+            } else {
+                top_b0 = b.top2_a0;
+                top_b1 = b.top2_a1;
+                bottom_b0 = b.bottom2_a0;
+                bottom_b1 = b.bottom2_a1;
+            }
+
+            float x_min_dist = abs((top_a0+x_min*top_a1) - (top_b0+x_min*top_b1));
+            float x_max_dist = abs((top_a0+x_max*top_a1) - (top_b0+x_max*top_b1));
+            dist_top    = min(dist_top, max(x_min_dist,x_max_dist)/h_max);
+
+            x_min_dist  = abs((bottom_a0+x_min*bottom_a1) - (bottom_b0+x_min*bottom_b1));
+            x_max_dist  = abs((bottom_a0+x_max*bottom_a1) - (bottom_b0+x_max*bottom_b1));
+            dist_bottom = min(dist_bottom, max(x_min_dist,x_max_dist)/h_max);
+        }
+    }
+    return max(dist_top, dist_bottom);
+}
+
+// struct region_pair
+// Represents a pair of ER's
+struct region_pair
+{
+    Vec2i a;
+    Vec2i b;
+    region_pair (Vec2i _a, Vec2i _b) : a(_a), b(_b) {}
+    bool operator==(const region_pair& p1) const
+    {
+        return ( (p1.a == a) && (p1.b == b) );
+    }
+};
+
+// struct region_triplet
+// Represents a triplet of ER's
+struct region_triplet
+{
+    Vec2i a;
+    Vec2i b;
+    Vec2i c;
+    line_estimates estimates;
+    region_triplet (Vec2i _a, Vec2i _b, Vec2i _c) : a(_a), b(_b), c(_c) {}
+    bool operator==(const region_triplet& t1) const
+    {
+        return ( (t1.a == a) && (t1.b == b) && (t1.c == c) );
+    }
+};
+
+// struct region_sequence
+// Represents a sequence of more than three ER's
+struct region_sequence
+{
+    vector<region_triplet> triplets;
+    region_sequence (region_triplet t)
+    {
+        triplets.push_back(t);
+    }
+    region_sequence () {}
+};
+
+// Evaluates if a pair of regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidPair(Mat &grey, Mat& lab, Mat& mask, vector<Mat> &channels, vector< vector<ERStat> >& regions, Vec2i idx1, Vec2i idx2);
+
+// Evaluates if a set of 3 regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidTriplet(vector< vector<ERStat> >& regions, region_pair pair1, region_pair pair2, region_triplet &triplet);
+
+// Evaluates if a set of more than 3 regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidSequence(region_sequence &sequence1, region_sequence &sequence2);
+
+// Check if two sequences share a region in common
+bool haveCommonRegion(region_sequence &sequence1, region_sequence &sequence2);
+// Check if two triplets share a region in common
+bool haveCommonRegion(region_triplet &t1, region_triplet &t2);
+
+// Takes as input the set of ER's extracted by ERFilter
+// then finds for all valid pairs and triplets.
+// in regions the set of ER's extracted by ERFilter
+// in _src the channels from which the ER's were extracted
+// out sets of regions, each one represents a possible text line
+void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERStat> >& regions,  vector< vector<Vec2i> >& groups, vector<Rect> &boxes, bool do_feedback_loop);
+
+// Fit line from two points
+// out a0 is the intercept
+// out a1 is the slope
+void fitLine(Point p1, Point p2, float &a0, float &a1);
+
+// Fit line from three points using Ordinary Least Squares
+// out a0 is the intercept
+// out a1 is the slope
+void fitLineOLS(Point p1, Point p2, Point p3, float &a0, float &a1);
+
+// Fit line from three points using (heuristic) Least-Median of Squares
+// out a0 is the intercept
+// out a1 is the slope
+// returns the error of the single point that doesn't fit the line
+float fitLineLMS(Point p1, Point p2, Point p3, float &a0, float &a1);
+
+// Fit a line_estimate to a group of 3 regions
+// out triplet.estimates is updated with the new line estimates
+bool fitLineEstimates(vector< vector<ERStat> > &regions, region_triplet &triplet);
+
+// Fit line from two points
+// out a0 is the intercept
+// out a1 is the slope
+void fitLine(Point p1, Point p2, float &a0, float &a1)
+{
+    CV_Assert ( p1.x != p2.x );
+
+    a1 = (float)(p2.y - p1.y) / (p2.x - p1.x);
+    a0 = a1 * -1 * p1.x + p1.y;
+}
+
+// Fit line from three points using Ordinary Least Squares
+// out a0 is the intercept
+// out a1 is the slope
+void fitLineOLS(Point p1, Point p2, Point p3, float &a0, float &a1)
+{
+    float sumx  = (float)(p1.x + p2.x + p3.x);
+    float sumy  = (float)(p1.y + p2.y + p3.y);
+    float sumxy = (float)(p1.x*p1.y + p2.x*p2.y + p3.x*p3.y);
+    float sumx2 = (float)(p1.x*p1.x + p2.x*p2.x + p3.x*p3.x);
+
+    // line coefficients
+    a0=(float)(sumy*sumx2-sumx*sumxy) / (3*sumx2-sumx*sumx);
+    a1=(float)(3*sumxy-sumx*sumy) / (3*sumx2-sumx*sumx);
+}
+
+// Fit line from three points using (heutistic) Least-Median of Squares
+// out a0 is the intercept
+// out a1 is the slope
+// returns the error of the single point that doesn't fit the line
+float fitLineLMS(Point p1, Point p2, Point p3, float &a0, float &a1)
+{
+    //if this is not changed the line is not valid
+    a0 = -1;
+    a1 = 0;
+
+    //Least-Median of Squares does not make sense with only three points
+    //becuse any line passing by two of them has median_error = 0
+    //So we'll take the one with smaller slope
+    float l_a0, l_a1, best_slope=FLT_MAX, err=0;
+
+    if (p1.x != p2.x)
+    {
+        fitLine(p1,p2,l_a0,l_a1);;
+        if (abs(l_a1) < best_slope)
+        {
+            best_slope = abs(l_a1);
+            a0 = l_a0;
+            a1 = l_a1;
+            err = (p3.y - (a0+a1*p3.x));
+        }
+    }
+
+
+    if (p1.x != p3.x)
+    {
+        fitLine(p1,p3,l_a0,l_a1);
+        if (abs(l_a1) < best_slope)
+        {
+            best_slope = abs(l_a1);
+            a0 = l_a0;
+            a1 = l_a1;
+            err = (p2.y - (a0+a1*p2.x));
+        }
+    }
+
+
+    if (p2.x != p3.x)
+    {
+        fitLine(p2,p3,l_a0,l_a1);
+        if (abs(l_a1) < best_slope)
+        {
+            best_slope = abs(l_a1);
+            a0 = l_a0;
+            a1 = l_a1;
+            err = (p1.y - (a0+a1*p1.x));
+        }
+    }
+    return err;
+
+}
+
+// Fit a line_estimate to a group of 3 regions
+// out triplet.estimates is updated with the new line estimates
+bool fitLineEstimates(vector< vector<ERStat> > &regions, region_triplet &triplet)
+{
+    vector<Rect> char_boxes;
+    char_boxes.push_back(regions[triplet.a[0]][triplet.a[1]].rect);
+    char_boxes.push_back(regions[triplet.b[0]][triplet.b[1]].rect);
+    char_boxes.push_back(regions[triplet.c[0]][triplet.c[1]].rect);
+
+    triplet.estimates.x_min = min(min(char_boxes[0].tl().x,char_boxes[1].tl().x), char_boxes[2].tl().x);
+    triplet.estimates.x_max = max(max(char_boxes[0].br().x,char_boxes[1].br().x), char_boxes[2].br().x);
+    triplet.estimates.h_max = max(max(char_boxes[0].height,char_boxes[1].height), char_boxes[2].height);
+
+    // Fit one bottom line
+    float err = fitLineLMS(char_boxes[0].br(), char_boxes[1].br(), char_boxes[2].br(),
+                           triplet.estimates.bottom1_a0, triplet.estimates.bottom1_a1);
+
+    if ((triplet.estimates.bottom1_a0 == -1) && (triplet.estimates.bottom1_a1 == 0))
+        return false;
+
+    // Slope for all lines must be the same
+    triplet.estimates.bottom2_a1 = triplet.estimates.bottom1_a1;
+    triplet.estimates.top1_a1    = triplet.estimates.bottom1_a1;
+    triplet.estimates.top2_a1    = triplet.estimates.bottom1_a1;
+
+    if (abs(err) > (float)triplet.estimates.h_max/6)
+    {
+        // We need two different bottom lines
+        triplet.estimates.bottom2_a0 = triplet.estimates.bottom1_a0 + err;
+    }
+    else
+    {
+        // Second bottom line is the same
+        triplet.estimates.bottom2_a0 = triplet.estimates.bottom1_a0;
+    }
+
+    // Fit one top line within the two (Y)-closer coordinates
+    int d_12 = abs(char_boxes[0].tl().y - char_boxes[1].tl().y);
+    int d_13 = abs(char_boxes[0].tl().y - char_boxes[2].tl().y);
+    int d_23 = abs(char_boxes[1].tl().y - char_boxes[2].tl().y);
+    if ((d_12<d_13) && (d_12<d_23))
+    {
+        Point p = Point((char_boxes[0].tl().x + char_boxes[1].tl().x)/2,
+                        (char_boxes[0].tl().y + char_boxes[1].tl().y)/2);
+        triplet.estimates.top1_a0 = triplet.estimates.bottom1_a0 +
+                (p.y - (triplet.estimates.bottom1_a0+p.x*triplet.estimates.bottom1_a1));
+        p = char_boxes[2].tl();
+        err = (p.y - (triplet.estimates.top1_a0+p.x*triplet.estimates.top1_a1));
+    }
+    else if (d_13<d_23)
+    {
+        Point p = Point((char_boxes[0].tl().x + char_boxes[2].tl().x)/2,
+                        (char_boxes[0].tl().y + char_boxes[2].tl().y)/2);
+        triplet.estimates.top1_a0 = triplet.estimates.bottom1_a0 +
+                (p.y - (triplet.estimates.bottom1_a0+p.x*triplet.estimates.bottom1_a1));
+        p = char_boxes[1].tl();
+        err = (p.y - (triplet.estimates.top1_a0+p.x*triplet.estimates.top1_a1));
+    }
+    else
+    {
+        Point p = Point((char_boxes[1].tl().x + char_boxes[2].tl().x)/2,
+                        (char_boxes[1].tl().y + char_boxes[2].tl().y)/2);
+        triplet.estimates.top1_a0 = triplet.estimates.bottom1_a0 +
+                (p.y - (triplet.estimates.bottom1_a0+p.x*triplet.estimates.bottom1_a1));
+        p = char_boxes[0].tl();
+        err = (p.y - (triplet.estimates.top1_a0+p.x*triplet.estimates.top1_a1));
+    }
+
+    if (abs(err) > (float)triplet.estimates.h_max/6)
+    {
+        // We need two different top lines
+        triplet.estimates.top2_a0 = triplet.estimates.top1_a0 + err;
+    }
+    else
+    {
+        // Second top line is the same
+        triplet.estimates.top2_a0 = triplet.estimates.top1_a0;
+    }
+
+    return true;
+}
+
+
+// Evaluates if a pair of regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< vector<ERStat> >& regions, Vec2i idx1, Vec2i idx2)
+{
+    Rect minarearect  = regions[idx1[0]][idx1[1]].rect | regions[idx2[0]][idx2[1]].rect;
+
+    // Overlapping regions are not valid pair in any case
+    if ( (minarearect == regions[idx1[0]][idx1[1]].rect) ||
+         (minarearect == regions[idx2[0]][idx2[1]].rect) )
+        return false;
+
+    ERStat *i, *j;
+    if (regions[idx1[0]][idx1[1]].rect.x < regions[idx2[0]][idx2[1]].rect.x)
+    {
+        i = &regions[idx1[0]][idx1[1]];
+        j = &regions[idx2[0]][idx2[1]];
+    } else {
+        i = &regions[idx2[0]][idx2[1]];
+        j = &regions[idx1[0]][idx1[1]];
+    }
+
+    if (j->rect.x == i->rect.x)
+        return false;
+
+    float height_ratio = (float)min(i->rect.height,j->rect.height) /
+                                max(i->rect.height,j->rect.height);
+
+    Point center_i(i->rect.x+i->rect.width/2, i->rect.y+i->rect.height/2);
+    Point center_j(j->rect.x+j->rect.width/2, j->rect.y+j->rect.height/2);
+    float centroid_angle = (float)atan2(center_j.y-center_i.y, center_j.x-center_i.x);
+
+    int avg_width = (i->rect.width + j->rect.width) / 2;
+    float norm_distance = (float)(j->rect.x-(i->rect.x+i->rect.width))/avg_width;
+
+    if (( height_ratio   < PAIR_MIN_HEIGHT_RATIO) ||
+        ( centroid_angle < PAIR_MIN_CENTROID_ANGLE) ||
+        ( centroid_angle > PAIR_MAX_CENTROID_ANGLE) ||
+        ( norm_distance  < PAIR_MIN_REGION_DIST) ||
+        ( norm_distance  > PAIR_MAX_REGION_DIST))
+        return false;
+
+    if ((i->parent == NULL)||(j->parent == NULL)) // deprecate the root region
+      return false;
+
+    i = &regions[idx1[0]][idx1[1]];
+    j = &regions[idx2[0]][idx2[1]];
+
+    Mat region = mask(Rect(Point(i->rect.x,i->rect.y),
+                           Point(i->rect.br().x+2,i->rect.br().y+2)));
+    region = Scalar(0);
+
+    int newMaskVal = 255;
+    int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
+    Rect rect;
+
+    floodFill( channels[idx1[0]](Rect(Point(i->rect.x,i->rect.y),Point(i->rect.br().x,i->rect.br().y))),
+               region, Point(i->pixel%grey.cols - i->rect.x, i->pixel/grey.cols - i->rect.y),
+               Scalar(255), &rect, Scalar(i->level), Scalar(0), flags);
+    rect.width += 2;
+    rect.height += 2;
+    Mat rect_mask = mask(Rect(i->rect.x+1,i->rect.y+1,i->rect.width,i->rect.height));
+
+    Scalar mean,std;
+    meanStdDev(grey(i->rect),mean,std,rect_mask);
+    int grey_mean1 = (int)mean[0];
+    meanStdDev(lab(i->rect),mean,std,rect_mask);
+    float a_mean1 = (float)mean[1];
+    float b_mean1 = (float)mean[2];
+
+    region = mask(Rect(Point(j->rect.x,j->rect.y),
+                           Point(j->rect.br().x+2,j->rect.br().y+2)));
+    region = Scalar(0);
+
+    floodFill( channels[idx2[0]](Rect(Point(j->rect.x,j->rect.y),Point(j->rect.br().x,j->rect.br().y))),
+               region, Point(j->pixel%grey.cols - j->rect.x, j->pixel/grey.cols - j->rect.y),
+               Scalar(255), &rect, Scalar(j->level), Scalar(0), flags);
+    rect.width += 2;
+    rect.height += 2;
+    rect_mask = mask(Rect(j->rect.x+1,j->rect.y+1,j->rect.width,j->rect.height));
+
+    meanStdDev(grey(j->rect),mean,std,rect_mask);
+    int grey_mean2 = (int)mean[0];
+    meanStdDev(lab(j->rect),mean,std,rect_mask);
+    float a_mean2 = (float)mean[1];
+    float b_mean2 = (float)mean[2];
+
+    if (abs(grey_mean1-grey_mean2) > PAIR_MAX_INTENSITY_DIST)
+      return false;
+
+    if (sqrt(pow(a_mean1-a_mean2,2)+pow(b_mean1-b_mean2,2)) > PAIR_MAX_AB_DIST)
+      return false;
 
 
 
-        /* --------------------------------- Groups Validation --------------------------------*/
-        /* Examine each of the clusters in order to assest if they are valid text lines or not */
-        /* ------------------------------------------------------------------------------------*/
+    return true;
+}
 
-        vector<vector<float> > data_arrays(meaningful_clusters.size());
-        vector<Rect> groups_rects(meaningful_clusters.size());
+// Evaluates if a set of 3 regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidTriplet(vector< vector<ERStat> >& regions, region_pair pair1, region_pair pair2, region_triplet &triplet)
+{
 
-        // Collect group level features and classify the group
-        for (int i=(int)meaningful_clusters.size()-1; i>=0; i--)
+    if (pair1 == pair2)
+        return false;
+
+    // At least one region in common is needed
+    if ( (pair1.a == pair2.a)||(pair1.a == pair2.b)||(pair1.b == pair2.a)||(pair1.b == pair2.b) )
+    {
+
+        //fill the indexes in the output tripled (sorted)
+        if (pair1.a == pair2.a)
+        {
+            if ((regions[pair1.b[0]][pair1.b[1]].rect.x <= regions[pair1.a[0]][pair1.a[1]].rect.x) &&
+                    (regions[pair2.b[0]][pair2.b[1]].rect.x <= regions[pair1.a[0]][pair1.a[1]].rect.x))
+                return false;
+            if ((regions[pair1.b[0]][pair1.b[1]].rect.x >= regions[pair1.a[0]][pair1.a[1]].rect.x) &&
+                    (regions[pair2.b[0]][pair2.b[1]].rect.x >= regions[pair1.a[0]][pair1.a[1]].rect.x))
+                return false;
+
+            triplet.a = (regions[pair1.b[0]][pair1.b[1]].rect.x <
+                         regions[pair2.b[0]][pair2.b[1]].rect.x)? pair1.b : pair2.b;
+            triplet.b = pair1.a;
+            triplet.c = (regions[pair1.b[0]][pair1.b[1]].rect.x >
+                         regions[pair2.b[0]][pair2.b[1]].rect.x)? pair1.b : pair2.b;
+
+        } else if (pair1.a == pair2.b) {
+            if ((regions[pair1.b[0]][pair1.b[1]].rect.x <= regions[pair1.a[0]][pair1.a[1]].rect.x) &&
+                    (regions[pair2.a[0]][pair2.a[1]].rect.x <= regions[pair1.a[0]][pair1.a[1]].rect.x))
+                return false;
+            if ((regions[pair1.b[0]][pair1.b[1]].rect.x >= regions[pair1.a[0]][pair1.a[1]].rect.x) &&
+                    (regions[pair2.a[0]][pair2.a[1]].rect.x >= regions[pair1.a[0]][pair1.a[1]].rect.x))
+                return false;
+
+            triplet.a = (regions[pair1.b[0]][pair1.b[1]].rect.x <
+                         regions[pair2.a[0]][pair2.a[1]].rect.x)? pair1.b : pair2.a;
+            triplet.b = pair1.a;
+            triplet.c = (regions[pair1.b[0]][pair1.b[1]].rect.x >
+                         regions[pair2.a[0]][pair2.a[1]].rect.x)? pair1.b : pair2.a;
+
+        } else if (pair1.b == pair2.a) {
+            if ((regions[pair1.a[0]][pair1.a[1]].rect.x <= regions[pair1.b[0]][pair1.b[1]].rect.x) &&
+                    (regions[pair2.b[0]][pair2.b[1]].rect.x <= regions[pair1.b[0]][pair1.b[1]].rect.x))
+                return false;
+            if ((regions[pair1.a[0]][pair1.a[1]].rect.x >= regions[pair1.b[0]][pair1.b[1]].rect.x) &&
+                    (regions[pair2.b[0]][pair2.b[1]].rect.x >= regions[pair1.b[0]][pair1.b[1]].rect.x))
+                return false;
+
+            triplet.a = (regions[pair1.a[0]][pair1.a[1]].rect.x <
+                         regions[pair2.b[0]][pair2.b[1]].rect.x)? pair1.a : pair2.b;
+            triplet.b = pair1.b;
+            triplet.c = (regions[pair1.a[0]][pair1.a[1]].rect.x >
+                         regions[pair2.b[0]][pair2.b[1]].rect.x)? pair1.a : pair2.b;
+
+        } else if (pair1.b == pair2.b) {
+            if ((regions[pair1.a[0]][pair1.a[1]].rect.x <= regions[pair1.b[0]][pair1.b[1]].rect.x) &&
+                    (regions[pair2.a[0]][pair2.a[1]].rect.x <= regions[pair1.b[0]][pair1.b[1]].rect.x))
+                return false;
+            if ((regions[pair1.a[0]][pair1.a[1]].rect.x >= regions[pair1.b[0]][pair1.b[1]].rect.x) &&
+                    (regions[pair2.a[0]][pair2.a[1]].rect.x >= regions[pair1.b[0]][pair1.b[1]].rect.x))
+                return false;
+
+            triplet.a = (regions[pair1.a[0]][pair1.a[1]].rect.x <
+                         regions[pair2.a[0]][pair2.a[1]].rect.x)? pair1.a : pair2.a;
+            triplet.b = pair1.b;
+            triplet.c = (regions[pair1.a[0]][pair1.a[1]].rect.x >
+                         regions[pair2.a[0]][pair2.a[1]].rect.x)? pair1.a : pair2.a;
+
+        }
+
+
+
+        if ( (regions[triplet.a[0]][triplet.a[1]].rect.x == regions[triplet.b[0]][triplet.b[1]].rect.x) &&
+             (regions[triplet.a[0]][triplet.a[1]].rect.x == regions[triplet.c[0]][triplet.c[1]].rect.x) )
+            return false;
+
+        if ( (regions[triplet.a[0]][triplet.a[1]].rect.br().x == regions[triplet.b[0]][triplet.b[1]].rect.br().x) &&
+             (regions[triplet.a[0]][triplet.a[1]].rect.br().x == regions[triplet.c[0]][triplet.c[1]].rect.br().x) )
+            return false;
+
+
+        if (!fitLineEstimates(regions, triplet))
+            return false;
+
+        if ( (triplet.estimates.bottom1_a0 < triplet.estimates.top1_a0) ||
+             (triplet.estimates.bottom1_a0 < triplet.estimates.top2_a0) ||
+             (triplet.estimates.bottom2_a0 < triplet.estimates.top1_a0) ||
+             (triplet.estimates.bottom2_a0 < triplet.estimates.top2_a0) )
+            return false;
+
+        int central_height = (int)min(triplet.estimates.bottom1_a0, triplet.estimates.bottom2_a0) -
+                             (int)max(triplet.estimates.top1_a0,triplet.estimates.top2_a0);
+        int top_height     = (int)abs(triplet.estimates.top1_a0 - triplet.estimates.top2_a0);
+        int bottom_height  = (int)abs(triplet.estimates.bottom1_a0 - triplet.estimates.bottom2_a0);
+
+        if (central_height == 0)
+            return false;
+
+        float top_height_ratio    = (float)top_height/central_height;
+        float bottom_height_ratio = (float)bottom_height/central_height;
+
+        if ( (top_height_ratio > TRIPLET_MAX_DIST) || (bottom_height_ratio > TRIPLET_MAX_DIST) )
+            return false;
+
+        if (abs(triplet.estimates.bottom1_a1) > TRIPLET_MAX_SLOPE)
+            return false;
+
+        return true;
+    }
+
+    return false;
+}
+
+// Evaluates if a set of more than 3 regions is valid or not
+// using thresholds learned on training (defined above)
+bool isValidSequence(region_sequence &sequence1, region_sequence &sequence2)
+{
+    for (size_t i=0; i<sequence2.triplets.size(); i++)
+    {
+        for (size_t j=0; j<sequence1.triplets.size(); j++)
+        {
+            if ((distanceLinesEstimates(sequence2.triplets[i].estimates,
+                                       sequence1.triplets[j].estimates) < SEQUENCE_MAX_TRIPLET_DIST) &&
+                ((float)max((sequence2.triplets[i].estimates.x_min-sequence1.triplets[j].estimates.x_max),
+                            (sequence1.triplets[j].estimates.x_min-sequence2.triplets[i].estimates.x_max))/
+                        max(sequence2.triplets[i].estimates.h_max,sequence1.triplets[j].estimates.h_max) < 3*PAIR_MAX_REGION_DIST))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+// Check if two triplets share a region in common
+bool haveCommonRegion(region_triplet &t1, region_triplet &t2)
+{
+    if ((t1.a==t2.a) || (t1.a==t2.b) || (t1.a==t2.c) ||
+        (t1.b==t2.a) || (t1.b==t2.b) || (t1.b==t2.c) ||
+        (t1.c==t2.a) || (t1.c==t2.b) || (t1.c==t2.c))
+      return true;
+
+    return false;
+}
+
+// Check if two sequences share a region in common
+bool haveCommonRegion(region_sequence &sequence1, region_sequence &sequence2)
+{
+    for (size_t i=0; i<sequence2.triplets.size(); i++)
+    {
+        for (size_t j=0; j<sequence1.triplets.size(); j++)
+        {
+            if (haveCommonRegion(sequence2.triplets[i], sequence1.triplets[j]))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool sort_couples (Vec3i i,Vec3i j);
+bool sort_couples (Vec3i i,Vec3i j) { return (i[0]<j[0]); }
+
+/*!
+    Find groups of Extremal Regions that are organized as text lines. This function implements
+    the grouping algorithm described in:
+    Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
+    Neumann L., Matas J.: A method for text localization and detection, ACCV 2010
+
+    \param  _img           Original RGB image from wich the regions were extracted.
+    \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
+    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  out_groups     The output of the algorithm are stored in this parameter as list of indexes to provided regions.
+    \param  out_boxes      The output of the algorithm are stored in this parameter as list of rectangles.
+    \param  do_feedback    Whenever the grouping algorithm uses a feedback loop to recover missing regions in a line.
+*/
+
+void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERStat> >& regions,
+                  vector< vector<Vec2i> >& out_groups, vector<Rect>& out_boxes, bool do_feedback_loop)
+{
+
+    vector<Mat> src;
+    _src.getMatVector(src);
+
+    CV_Assert ( !src.empty() );
+    CV_Assert ( src.size() == regions.size() );
+    size_t num_channels = src.size();
+
+    Mat img = _img.getMat();
+
+    //process each channel independently
+    for(size_t c=0; c<num_channels; c++)
+    {
+        //store indices to regions in a single vector
+        vector< Vec2i > all_regions;
+        for(size_t r=0; r<regions[c].size(); r++)
+        {
+            all_regions.push_back(Vec2i((int)c,(int)r));
+        }
+
+        vector< region_pair > valid_pairs;
+        Mat mask = Mat::zeros(img.rows+2, img.cols+2, CV_8UC1);
+        Mat grey,lab;
+        cvtColor(img, lab, COLOR_RGB2Lab);
+        cvtColor(img, grey, COLOR_RGB2GRAY);
+
+        //check every possible pair of regions
+        for (size_t i=0; i<all_regions.size(); i++)
+        {
+            vector<int> i_siblings;
+            int first_i_sibling_idx = (int)valid_pairs.size();
+            for (size_t j=i+1; j<all_regions.size(); j++)
+            {
+                // check height ratio, centroid angle and region distance normalized by region width
+                // fall within a given interval
+                if (isValidPair(grey, lab, mask, src, regions, all_regions[i],all_regions[j]))
+                {
+                    bool isCycle = false;
+                    for (size_t k=0; k<i_siblings.size(); k++)
+                    {
+                      if (isValidPair(grey, lab, mask, src, regions, all_regions[j],all_regions[i_siblings[k]]))
+                      {
+                        // choose as sibling the closer and not the first that was "paired" with i
+                        Point i_center = Point( regions[all_regions[i][0]][all_regions[i][1]].rect.x +
+                                                regions[all_regions[i][0]][all_regions[i][1]].rect.width/2,
+                                                regions[all_regions[i][0]][all_regions[i][1]].rect.y +
+                                                regions[all_regions[i][0]][all_regions[i][1]].rect.height/2 );
+                        Point j_center = Point( regions[all_regions[j][0]][all_regions[j][1]].rect.x +
+                                                regions[all_regions[j][0]][all_regions[j][1]].rect.width/2,
+                                                regions[all_regions[j][0]][all_regions[j][1]].rect.y +
+                                                regions[all_regions[j][0]][all_regions[j][1]].rect.height/2 );
+                        Point k_center = Point( regions[all_regions[i_siblings[k]][0]][all_regions[i_siblings[k]][1]].rect.x +
+                                                regions[all_regions[i_siblings[k]][0]][all_regions[i_siblings[k]][1]].rect.width/2,
+                                                regions[all_regions[i_siblings[k]][0]][all_regions[i_siblings[k]][1]].rect.y +
+                                                regions[all_regions[i_siblings[k]][0]][all_regions[i_siblings[k]][1]].rect.height/2 );
+
+                        if ( norm(i_center - j_center) < norm(i_center - k_center) )
+                        {
+                          valid_pairs[first_i_sibling_idx+k] = region_pair(all_regions[i],all_regions[j]);
+                          i_siblings[k] = (int)j;
+                        }
+                        isCycle = true;
+                        break;
+                      }
+                    }
+                    if (!isCycle)
+                    {
+                      valid_pairs.push_back(region_pair(all_regions[i],all_regions[j]));
+                      i_siblings.push_back((int)j);
+                      //cout << "Valid pair (" << all_regions[i][0] << ","  << all_regions[i][1] << ") (" << all_regions[j][0] << ","  << all_regions[j][1] << ")" << endl;
+                    }
+                }
+            }
+        }
+
+        //cout << "GroupingNM : detected " << valid_pairs.size() << " valid pairs" << endl;
+
+        vector< region_triplet > valid_triplets;
+
+        //check every possible triplet of regions
+        for (size_t i=0; i<valid_pairs.size(); i++)
+        {
+            for (size_t j=i+1; j<valid_pairs.size(); j++)
+            {
+                // check colinearity rules
+                region_triplet valid_triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
+                if (isValidTriplet(regions, valid_pairs[i],valid_pairs[j], valid_triplet))
+                {
+                    valid_triplets.push_back(valid_triplet);
+                    //cout << "Valid triplet (" << valid_triplet.a[1] << "," <<  valid_triplet.b[1] << "," <<  valid_triplet.c[1] << ")" << endl;
+                }
+            }
+        }
+
+        //cout << "GroupingNM : detected " << valid_triplets.size() << " valid triplets" << endl;
+
+        vector<region_sequence> valid_sequences;
+        vector<region_sequence> pending_sequences;
+
+        for (size_t i=0; i<valid_triplets.size(); i++)
+        {
+            pending_sequences.push_back(region_sequence(valid_triplets[i]));
+        }
+
+
+        for (size_t i=0; i<pending_sequences.size(); i++)
+        {
+            bool expanded = false;
+            for (size_t j=i+1; j<pending_sequences.size(); j++)
+            {
+                if (isValidSequence(pending_sequences[i], pending_sequences[j]))
+                {
+                    expanded = true;
+                    pending_sequences[i].triplets.insert(pending_sequences[i].triplets.begin(), pending_sequences[j].triplets.begin(), pending_sequences[j].triplets.end());
+                    pending_sequences.erase(pending_sequences.begin()+j);
+                    j--;
+                }
+            }
+            if (expanded)
+            {
+                valid_sequences.push_back(pending_sequences[i]);
+            }
+        }
+
+        // remove a sequence if one its regions is already grouped within a longer seq
+        for (size_t i=0; i<valid_sequences.size(); i++)
+        {
+            for (size_t j=i+1; j<valid_sequences.size(); j++)
+            {
+              if (haveCommonRegion(valid_sequences[i],valid_sequences[j]))
+              {
+                if (valid_sequences[i].triplets.size() < valid_sequences[j].triplets.size())
+                {
+                  valid_sequences.erase(valid_sequences.begin()+i);
+                  i--;
+                  break;
+                }
+                else
+                {
+                  valid_sequences.erase(valid_sequences.begin()+j);
+                  j--;
+                }
+              }
+            }
+        }
+
+
+        //cout << "GroupingNM : detected " << valid_sequences.size() << " sequences." << endl;
+
+        if (do_feedback_loop)
         {
 
-            Rect group_rect;
-            float sumx=0, sumy=0, sumxy=0, sumx2=0;
-
-            // linear regression slope helps discriminating horizontal aligned groups
-            for (int j=0; j<(int)meaningful_clusters.at(i).size();j++)
+            //Feedback loop of detected lines to region extraction ... tries to recover missmatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
+            Ptr<ERFilter> er_filter = createERFilterNM1(loadDummyClassifier(),1,0.005f,0.3f,0.f,false);
+            for (int i=0; i<(int)valid_sequences.size(); i++)
             {
-                if (j==0)
+                vector<Point> bbox_points;
+
+                for (size_t j=0; j<valid_sequences[i].triplets.size(); j++)
                 {
-                    group_rect = regions.at(c).at(meaningful_clusters.at(i).at(j)).rect;
-                } else {
-                    group_rect = group_rect | regions.at(c).at(meaningful_clusters.at(i).at(j)).rect;
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.tl());
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.br());
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.tl());
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.br());
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.tl());
+                    bbox_points.push_back(regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.br());
                 }
 
-                sumx  += regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.x +
-                                    regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.width/2;
-                sumy  += regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.y +
-                                    regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.height/2;
-                sumxy += (regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.x +
-                                     regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.width/2)*
-                         (regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.y +
-                                     regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.height/2);
-                sumx2 += (regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.x +
-                                     regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.width/2)*
-                         (regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.x +
-                                     regions.at(c).at(meaningful_clusters.at(i).at(j)).rect.width/2);
-            }
-            // line coefficients
-            //float a0=(sumy*sumx2-sumx*sumxy)/((int)meaningful_clusters.at(i).size()*sumx2-sumx*sumx);
-            float a1=((int)meaningful_clusters.at(i).size()*sumxy-sumx*sumy) /
-               ((int)meaningful_clusters.at(i).size()*sumx2-sumx*sumx);
+                Rect rect = boundingRect(bbox_points);
+                rect.x = max(rect.x-10,0);
+                rect.y = max(rect.y-10,0);
+                rect.width = min(rect.width+20,src[c].cols-rect.x);
+                rect.height = min(rect.height+20,src[c].rows-rect.y);
 
-            if (a1 != a1)
-                data_arrays.at(i).push_back(1.f);
-            else
-                data_arrays.at(i).push_back(a1);
+                vector<ERStat> aux_regions;
+                Mat tmp;
+                src[c](rect).copyTo(tmp);
+                er_filter->run(tmp, aux_regions);
 
-            groups_rects.at(i) = group_rect;
-
-            // group probability mean
-            double group_probability_mean = 0;
-            // number of non-overlapping regions
-            vector<Rect> individual_components;
-
-            // The variance of several similarity features is also helpful
-            vector<float> strokes;
-            vector<float> grad_magnitudes;
-            vector<float> intensities;
-            vector<float> bg_intensities;
-
-            // We'll try to remove groups with repetitive patterns using averaged SAD
-            // SAD = Sum of Absolute Differences
-            Mat grey = img;
-            Mat sad = Mat::zeros(regions.at(c).at(meaningful_clusters.at(i).at(0)).rect.size() , CV_8UC1);
-            Mat region_mask = Mat::zeros(grey.rows+2, grey.cols+2, CV_8UC1);
-            float sad_value = 0;
-            Mat ratios = Mat::zeros(1, (int)meaningful_clusters.at(i).size(), CV_32FC1);
-            //Mat holes  = Mat::zeros(1, (int)meaningful_clusters.at(i).size(), CV_32FC1);
-
-            for (int j=0; j<(int)meaningful_clusters.at(i).size();j++)
-            {
-                ERStat *stat = &regions.at(c).at(meaningful_clusters.at(i).at(j));
-
-                //Fill the region
-                Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),
-                                              Point(stat->rect.br().x+2,stat->rect.br().y+2)));
-                region = Scalar(0);
-                int newMaskVal = 255;
-                int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
-                Rect rect;
-
-                floodFill( grey(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
-                           region, Point(stat->pixel%grey.cols - stat->rect.x, stat->pixel/grey.cols - stat->rect.y),
-                           Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
-
-                Mat mask = Mat::zeros(regions.at(c).at(meaningful_clusters.at(i).at(0)).rect.size() , CV_8UC1);
-                resize(region, mask, mask.size());
-                mask = mask - 254;
-                if (j!=0)
+                for(size_t r=0; r<aux_regions.size(); r++)
                 {
-                    // accumulate Sum of Absolute Differences
-                    absdiff(sad, mask, sad);
-                    Scalar s = sum(sad);
-                    sad_value += (float)s[0]/(sad.rows*sad.cols);
-                }
-                mask.copyTo(sad);
-                ratios.at<float>(0,j) = (float)min(stat->rect.width, stat->rect.height) /
-                                               max(stat->rect.width, stat->rect.height);
-                //holes.at<float>(0,j) = (float)stat->hole_area_ratio;
+                    if ((aux_regions[r].rect.y == 0)||(aux_regions[r].rect.br().y >= tmp.rows))
+                      continue;
 
-                strokes.push_back((float)features.at(meaningful_clusters.at(i).at(j)).stroke_mean);
-                grad_magnitudes.push_back((float)features.at(meaningful_clusters.at(i).at(j)).gradient_mean);
-                intensities.push_back(features.at(meaningful_clusters.at(i).at(j)).intensity_mean);
-                bg_intensities.push_back(features.at(meaningful_clusters.at(i).at(j)).boundary_intensity_mean);
-                group_probability_mean += regions.at(c).at(meaningful_clusters.at(i).at(j)).probability;
-
-                if (j==0)
-                {
-                    group_rect = features.at(meaningful_clusters.at(i).at(j)).rect;
-                    individual_components.push_back(group_rect);
-                } else {
-                    bool matched = false;
-                    for (int k=0; k<(int)individual_components.size(); k++)
+                    aux_regions[r].rect   = aux_regions[r].rect + Point(rect.x,rect.y);
+                    aux_regions[r].pixel  = ((aux_regions[r].pixel/tmp.cols)+rect.y)*src[c].cols + (aux_regions[r].pixel%tmp.cols) + rect.x;
+                    bool overlaps = false;
+                    for (size_t j=0; j<valid_sequences[i].triplets.size(); j++)
                     {
-                        Rect intersection = individual_components.at(k) &
-                                            features.at(meaningful_clusters.at(i).at(j)).rect;
+                        Rect minarearect_a  = regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect | aux_regions[r].rect;
+                        Rect minarearect_b  = regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect | aux_regions[r].rect;
+                        Rect minarearect_c  = regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect | aux_regions[r].rect;
 
-                        if ((intersection == features.at(meaningful_clusters.at(i).at(j)).rect) ||
-                            (intersection == individual_components.at(k)))
+                        // Overlapping regions are not valid pair in any case
+                        if ( (minarearect_a == aux_regions[r].rect) ||
+                             (minarearect_b == aux_regions[r].rect) ||
+                             (minarearect_c == aux_regions[r].rect) ||
+                             (minarearect_a == regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect) ||
+                             (minarearect_b == regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect) ||
+                             (minarearect_c == regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect) )
+
                         {
-                            individual_components.at(k) = individual_components.at(k) |
-                                                          features.at(meaningful_clusters.at(i).at(j)).rect;
-                            matched = true;
+                            overlaps = true;
+                            break;
                         }
                     }
-
-                    if (!matched)
-                        individual_components.push_back(features.at(meaningful_clusters.at(i).at(j)).rect);
-
-                    group_rect = group_rect | features.at(meaningful_clusters.at(i).at(j)).rect;
-                }
-            }
-            group_probability_mean = group_probability_mean / meaningful_clusters.at(i).size();
-
-            data_arrays.at(i).insert(data_arrays.at(i).begin(),(float)individual_components.size());
-
-            // variance of widths and heights help to discriminate groups with high height variability
-            vector<int> widths;
-            vector<int> heights;
-            // the MST edge orientations histogram may be dominated by the horizontal axis orientation
-            Subdiv2D subdiv(Rect(0,0,src.at(0).cols,src.at(0).rows));
-
-            for (int r=0; r < (int)individual_components.size(); r++)
-            {
-                widths.push_back(individual_components.at(r).width);
-                heights.push_back(individual_components.at(r).height);
-
-                Point2f fp( (float)individual_components.at(r).x + individual_components.at(r).width/2,
-                            (float)individual_components.at(r).y + individual_components.at(r).height/2 );
-                subdiv.insert(fp);
-            }
-
-            Scalar mean, std;
-            meanStdDev(Mat(widths), mean, std);
-            data_arrays.at(i).push_back((float)(std[0]/mean[0]));
-            data_arrays.at(i).push_back((float)mean[0]);
-            meanStdDev(Mat(heights), mean, std);
-            data_arrays.at(i).push_back((float)(std[0]/mean[0]));
-
-            vector<Vec4f> edgeList;
-            subdiv.getEdgeList(edgeList);
-            std::sort (edgeList.begin(), edgeList.end(), edge_comp);
-            vector<Point> mst_vertices;
-
-            int horiz_edges = 0, non_horiz_edges = 0;
-            vector<float> edge_distances;
-
-            for( size_t k = 0; k < edgeList.size(); k++ )
-            {
-                Vec4f e = edgeList[k];
-                Point pt0 = Point(cvRound(e[0]), cvRound(e[1]));
-                Point pt1 = Point(cvRound(e[2]), cvRound(e[3]));
-                if (((pt0.x>0)&&(pt0.x<src.at(0).cols)&&(pt0.y>0)&&(pt0.y<src.at(0).rows) &&
-                     (pt1.x>0)&&(pt1.x<src.at(0).cols)&&(pt1.y>0)&&(pt1.y<src.at(0).rows)) &&
-                    ((!find_vertex(mst_vertices,pt0)) ||
-                     (!find_vertex(mst_vertices,pt1))))
-                {
-                    double angle = atan2((double)(pt0.y-pt1.y),(double)(pt0.x-pt1.x));
-                    //if ( (abs(angle) < 0.35) || (abs(angle) > 5.93) || ((abs(angle) > 2.79)&&(abs(angle) < 3.49)) )
-                    if ( (abs(angle) < 0.25) || (abs(angle) > 6.03) || ((abs(angle) > 2.88)&&(abs(angle) < 3.4)) )
+                    if (!overlaps)
                     {
-                        horiz_edges++;
-                        edge_distances.push_back((float)norm(pt0-pt1));
+                        //now check if it has at least one valid pair
+                        vector<Vec3i> left_couples, right_couples;
+                        regions[c].push_back(aux_regions[r]);
+                        for (size_t j=0; j<valid_sequences[i].triplets.size(); j++)
+                        {
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].a, Vec2i((int)c,(int)(regions[c].size())-1)))
+                            {
+                                if (regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x > aux_regions[r].rect.x)
+                                    right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].a[0],valid_sequences[i].triplets[j].a[1]));
+                                else
+                                    left_couples.push_back(Vec3i(aux_regions[r].rect.x - regions[valid_sequences[i].triplets[j].a[0]][valid_sequences[i].triplets[j].a[1]].rect.x, valid_sequences[i].triplets[j].a[0],valid_sequences[i].triplets[j].a[1]));
+                            }
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].b, Vec2i((int)c,(int)(regions[c].size())-1)))
+                            {
+                                if (regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x > aux_regions[r].rect.x)
+                                    right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].b[0],valid_sequences[i].triplets[j].b[1]));
+                                else
+                                    left_couples.push_back(Vec3i(aux_regions[r].rect.x - regions[valid_sequences[i].triplets[j].b[0]][valid_sequences[i].triplets[j].b[1]].rect.x, valid_sequences[i].triplets[j].b[0],valid_sequences[i].triplets[j].b[1]));
+                            }
+                            if (isValidPair(grey, lab, mask, src, regions, valid_sequences[i].triplets[j].c, Vec2i((int)c,(int)(regions[c].size())-1)))
+                            {
+                                if (regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.x > aux_regions[r].rect.x)
+                                    right_couples.push_back(Vec3i(regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.x - aux_regions[r].rect.x, valid_sequences[i].triplets[j].c[0],valid_sequences[i].triplets[j].c[1]));
+                                else
+                                    left_couples.push_back(Vec3i(aux_regions[r].rect.x - regions[valid_sequences[i].triplets[j].c[0]][valid_sequences[i].triplets[j].c[1]].rect.x, valid_sequences[i].triplets[j].c[0],valid_sequences[i].triplets[j].c[1]));
+                            }
+                        }
+
+                        //make it part of a triplet and check if line estimates is consistent with the sequence
+                        vector<region_triplet> new_valid_triplets;
+                        if(!left_couples.empty() && !right_couples.empty())
+                        {
+                            sort(left_couples.begin(), left_couples.end(), sort_couples);
+                            sort(right_couples.begin(), right_couples.end(), sort_couples);
+                            region_pair pair1(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i((int)c,(int)(regions[c].size())-1));
+                            region_pair pair2(Vec2i((int)c,(int)(regions[c].size())-1), Vec2i(right_couples[0][1],right_couples[0][2]));
+                            region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
+                            if (isValidTriplet(regions, pair1, pair2, triplet))
+                            {
+                                new_valid_triplets.push_back(triplet);
+                            }
+                        }
+                        else if (right_couples.size() >= 2)
+                        {
+                            sort(right_couples.begin(), right_couples.end(), sort_couples);
+                            region_pair pair1(Vec2i((int)c,(int)(regions[c].size())-1), Vec2i(right_couples[0][1],right_couples[0][2]));
+                            region_pair pair2(Vec2i(right_couples[0][1],right_couples[0][2]), Vec2i(right_couples[1][1],right_couples[1][2]));
+                            region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
+                            if (isValidTriplet(regions, pair1, pair2, triplet))
+                            {
+                                new_valid_triplets.push_back(triplet);
+                            }
+                        }
+                        else if (left_couples.size() >=2)
+                        {
+                            sort(left_couples.begin(), left_couples.end(), sort_couples);
+                            region_pair pair1(Vec2i(left_couples[1][1],left_couples[1][2]), Vec2i(left_couples[0][1],left_couples[0][2]));
+                            region_pair pair2(Vec2i(left_couples[0][1],left_couples[0][2]),Vec2i((int)c,(int)(regions[c].size())-1));
+                            region_triplet triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
+                            if (isValidTriplet(regions, pair1, pair2, triplet))
+                            {
+                                new_valid_triplets.push_back(triplet);
+                            }
+                        }
+                        else
+                        {
+                            // no possible triplet found
+                            continue;
+                        }
+
+                        //check if line estimates is consistent with the sequence
+                        for (size_t t=0; t<new_valid_triplets.size(); t++)
+                        {
+                            region_sequence sequence(new_valid_triplets[t]);
+                            if (isValidSequence(valid_sequences[i],sequence))
+                            {
+                                valid_sequences[i].triplets.push_back(new_valid_triplets[t]);
+                            }
+
+                        }
                     }
-                    else
-                        non_horiz_edges++;
-                    mst_vertices.push_back(pt0);
-                    mst_vertices.push_back(pt1);
                 }
             }
 
-            if (horiz_edges == 0)
-                data_arrays.at(i).push_back(0.f);
-            else
-                data_arrays.at(i).push_back((float)horiz_edges/(horiz_edges+non_horiz_edges));
-
-            // remove groups where objects are not equidistant enough
-            Scalar dist_mean, dist_std;
-            meanStdDev(Mat(edge_distances),dist_mean, dist_std);
-            if (dist_std[0] == 0)
-                data_arrays.at(i).push_back(0.f);
-            else
-                data_arrays.at(i).push_back((float)(dist_std[0]/dist_mean[0]));
-
-            if (dist_mean[0] == 0)
-                data_arrays.at(i).push_back(0.f);
-            else
-                data_arrays.at(i).push_back((float)dist_mean[0]/data_arrays.at(i).at(3));
-
-            //meanStdDev( holes, mean, std);
-            //float holes_mean = (float)mean[0];
-            meanStdDev( ratios, mean, std);
-
-            data_arrays.at(i).push_back((float)sad_value / ((int)meaningful_clusters.at(i).size()-1));
-            meanStdDev( Mat(strokes), mean, std);
-            data_arrays.at(i).push_back((float)(std[0]/mean[0]));
-            meanStdDev( Mat(grad_magnitudes), mean, std);
-            data_arrays.at(i).push_back((float)(std[0]/mean[0]));
-            meanStdDev( Mat(intensities), mean, std);
-            data_arrays.at(i).push_back((float)std[0]);
-            meanStdDev( Mat(bg_intensities), mean, std);
-            data_arrays.at(i).push_back((float)std[0]);
-
-            // Validate only groups with more than 2 non-overlapping regions
-            if (data_arrays.at(i).at(0) > 2)
-            {
-                data_arrays.at(i).insert(data_arrays.at(i).begin(),0.f);
-                float votes = group_boost.predict( Mat(data_arrays.at(i)), Mat(), Range::all(), false, true );
-                // Logistic Correction returns a probability value (in the range(0,1))
-                double probability = (double)1-(double)1/(1+exp(-2*votes));
-
-                if (probability > minProbability)
-                    text_boxes.push_back(groups_rects.at(i));
-            }
         }
 
-    }
 
-    // check for colinear groups that can be merged
-    for (int i=0; i<(int)text_boxes.size(); i++)
-    {
-        int ay1 = text_boxes.at(i).y;
-        int ay2 = text_boxes.at(i).y + text_boxes.at(i).height;
-        int ax1 = text_boxes.at(i).x;
-        int ax2 = text_boxes.at(i).x + text_boxes.at(i).width;
-        for (int j=(int)text_boxes.size()-1; j>i; j--)
+        // Prepare the sequences for output
+        for (size_t i=0; i<valid_sequences.size(); i++)
         {
-            int by1 = text_boxes.at(j).y;
-            int by2 = text_boxes.at(j).y + text_boxes.at(j).height;
-            int bx1 = text_boxes.at(j).x;
-            int bx2 = text_boxes.at(j).x + text_boxes.at(j).width;
+            vector<Point> bbox_points;
+            vector<Vec2i> group_regions;
 
-            int y_intersection = min(ay2,by2) - max(ay1,by1);
-
-            if (y_intersection > 0.6*(max(text_boxes.at(i).height,text_boxes.at(j).height)))
+            for (size_t j=0; j<valid_sequences[i].triplets.size(); j++)
             {
-                int xdist = min(abs(ax2-bx1),abs(bx2-ax1));
-                Rect intersection  = text_boxes.at(i) & text_boxes.at(j);
-                if ( (xdist < 0.75*(max(text_boxes.at(i).height,text_boxes.at(j).height))) ||
-                     (intersection.width != 0))
+                size_t prev_size = group_regions.size();
+                if(find(group_regions.begin(), group_regions.end(), valid_sequences[i].triplets[j].a) == group_regions.end())
+                  group_regions.push_back(valid_sequences[i].triplets[j].a);
+                if(find(group_regions.begin(), group_regions.end(), valid_sequences[i].triplets[j].b) == group_regions.end())
+                  group_regions.push_back(valid_sequences[i].triplets[j].b);
+                if(find(group_regions.begin(), group_regions.end(), valid_sequences[i].triplets[j].c) == group_regions.end())
+                  group_regions.push_back(valid_sequences[i].triplets[j].c);
+
+                for (size_t k=prev_size; k<group_regions.size(); k++)
                 {
-                    text_boxes.at(i) = text_boxes.at(i) | text_boxes.at(j);
-                    text_boxes.erase(text_boxes.begin()+j);
+                    bbox_points.push_back(regions[group_regions[k][0]][group_regions[k][1]].rect.tl());
+                    bbox_points.push_back(regions[group_regions[k][0]][group_regions[k][1]].rect.br());
                 }
             }
 
+            out_groups.push_back(group_regions);
+            out_boxes.push_back(boundingRect(bbox_points));
+
         }
     }
+
+}
+
+void erGrouping(InputArray image, InputArrayOfArrays channels, vector<vector<ERStat> > &regions,  vector<vector<Vec2i> > &groups,  vector<Rect> &groups_rects, int method, const string& filename, float minProbability)
+{
+    CV_Assert( image.getMat().type() == CV_8UC3 );
+    CV_Assert( !channels.empty() );
+    CV_Assert( !((method == ERGROUPING_ORIENTATION_ANY) && (filename.empty())) );
+
+    switch (method)
+    {
+        case ERGROUPING_ORIENTATION_HORIZ:
+            erGroupingNM(image, channels, regions, groups, groups_rects, true);
+            break;
+        case ERGROUPING_ORIENTATION_ANY:
+            erGroupingGK(image, channels, regions, groups, groups_rects, filename, minProbability);
+            break;
+    }
+
 }
 
 }
 }
-
