@@ -41,8 +41,8 @@
 //
 //M*/
 
-#ifndef __OPENCV_OBJDETECT_ERFILTER_HPP__
-#define __OPENCV_OBJDETECT_ERFILTER_HPP__
+#ifndef __OPENCV_TEXT_ERFILTER_HPP__
+#define __OPENCV_TEXT_ERFILTER_HPP__
 
 #include "opencv2/core.hpp"
 #include <vector>
@@ -217,8 +217,8 @@ CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM2(const std::string& filename
 
 
 // computeNMChannels operation modes
-enum { ERFILTER_NM_RGBLGrad = 0,
-       ERFILTER_NM_IHSGrad  = 1
+enum { ERFILTER_NM_RGBLGrad,
+       ERFILTER_NM_IHSGrad
      };
 
 /*!
@@ -241,9 +241,9 @@ CV_EXPORTS void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels
 
 
 // erGrouping operation modes
-enum { ERGROUPING_ORIENTATION_HORIZ = 0,
-       ERGROUPING_ORIENTATION_ANY   = 1
-     };
+enum { ERGROUPING_ORIENTATION_HORIZ,
+       ERGROUPING_ORIENTATION_ANY
+};
 
 /*!
     Find groups of Extremal Regions that are organized as text blocks. This function implements
@@ -276,4 +276,4 @@ CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
 
 }
 }
-#endif // _OPENCV_ERFILTER_HPP_
+#endif // _OPENCV_TEXT_ERFILTER_HPP_
