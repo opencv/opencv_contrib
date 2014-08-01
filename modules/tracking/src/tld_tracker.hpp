@@ -70,7 +70,7 @@ void myassert(const Mat& img);
 void printPatch(const Mat_<uchar>& standardPatch);
 std::string type2str(const Mat& mat);
 void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne=Rect2d(-1.0,-1.0,-1.0,-1.0));
-void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes);
+void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes,String fileName="");
 
 //aux functions and variables
 //#define CLIP(x,a,b) std::min(std::max((x),(a)),(b))

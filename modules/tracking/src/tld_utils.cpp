@@ -65,8 +65,9 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,Rect2d whiteOne
     }
     imshow("img",image);
 }
-void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes){
+void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rect2d>& whiteOnes,String filename){
     Mat image;
+    static int frameCounter=1;
     img.copyTo(image);
     for(int i=0;i<(int)whiteOnes.size();i++){
         rectangle( image,whiteOnes[i], 255, 1, 1 );
@@ -75,6 +76,12 @@ void drawWithRects(const Mat& img,std::vector<Rect2d>& blackOnes,std::vector<Rec
         rectangle( image,blackOnes[i], 0, 1, 1 );
     }
     imshow("img",image);
+    if(filename.length()>0){
+        char inbuf[100];
+        sprintf(inbuf,"%s%d.jpg",filename.c_str(),frameCounter);
+        imwrite(inbuf,image);
+        frameCounter++;
+    }
 }
 void myassert(const Mat& img){
     int count=0;

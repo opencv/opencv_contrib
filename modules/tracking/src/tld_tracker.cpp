@@ -88,8 +88,6 @@ using namespace tld;
 *
 *      ?10. all in one class
 *
-*      -->21. precompute offset
-*
 *      16. loops limits
 *      17. inner scope loops
 */
@@ -569,7 +567,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
                 negs.push_back(patches[i].rect);
         }
         dfprintf((stdout,"%d pos and %d neg\n",(int)poss.size(),(int)negs.size()));
-        drawWithRects(img,negs,poss);
+        drawWithRects(img,negs,poss,"tech");
 #endif
 
     dfprintf((stdout,"%d after ensemble\n",pass));
