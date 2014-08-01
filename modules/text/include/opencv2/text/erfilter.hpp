@@ -274,6 +274,15 @@ CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
                                            const std::string& filename = std::string(),
                                            float minProbablity = 0.5);
 
+/*!
+ * MSERsToERStats function converts MSER contours (vector<Point>) to ERStat regions.
+ * It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors
+ * of ERStats. MSER output contains both MSER+ and MSER- regions in a single vector<Point>, the function separates
+ * them in two different vectors (this is the ERStats where extracted from two different channels).
+ * */
+CV_EXPORTS void MSERsToERStats(InputArray image, std::vector<std::vector<Point> > &contours,
+                               std::vector<std::vector<ERStat> > &regions);
+
 }
 }
 #endif // _OPENCV_TEXT_ERFILTER_HPP_
