@@ -38,9 +38,11 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
-#include "precomp.hpp"
+
 
 #define _USE_MATH_DEFINES
+#include "precomp.hpp"
+
 #define NUM_OF_BANDS 9
 
 
