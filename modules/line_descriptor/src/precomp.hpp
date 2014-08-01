@@ -42,6 +42,8 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
+#define _USE_MATH_DEFINES
+
 #include <algorithm>
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
