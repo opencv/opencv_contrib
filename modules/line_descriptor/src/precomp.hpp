@@ -54,7 +54,7 @@
 #include <map>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <bitset>
 
