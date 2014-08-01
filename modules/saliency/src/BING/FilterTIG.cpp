@@ -61,7 +61,7 @@ void FilterTIG::update( CMat &w1f )
     _coeffs1[i] = avg, _coeffs2[i] = avg * 2, _coeffs4[i] = avg * 4, _coeffs8[i] = avg * 8;
     for ( int j = 0; j < D; j++ )
       residuals[j] -= avg * b[j];
-    UINT64_ tig = 0;
+    uint64_t tig = 0;
     for ( int j = 0; j < D; j++ )
       tig = ( tig << 1 ) | ( b[j] > 0 ? 1 : 0 );
     _bTIGs[i] = tig;
@@ -74,7 +74,7 @@ void FilterTIG::reconstruct( Mat &w1f )
   float *weight = (float*) w1f.data;
   for ( int i = 0; i < NUM_COMP; i++ )
   {
-    UINT64_ tig = _bTIGs[i];
+    uint64_t tig = _bTIGs[i];
     for ( int j = 0; j < D; j++ )
       weight[j] += _coeffs1[i] * ( ( ( tig >> ( 63 - j ) ) & 1 ) ? 1 : -1 );
   }
@@ -86,30 +86,30 @@ Mat FilterTIG::matchTemplate( const Mat &mag1u )
 {
   const int H = mag1u.rows, W = mag1u.cols;
   const Size sz( W + 1, H + 1 );  // Expand original size to avoid dealing with boundary conditions
-  Mat_<INT64> Tig1 = Mat_<INT64>::zeros( sz ), Tig2 = Mat_<INT64>::zeros( sz );
-  Mat_<INT64> Tig4 = Mat_<INT64>::zeros( sz ), Tig8 = Mat_<INT64>::zeros( sz );
-  Mat_<byte_> Row1 = Mat_<byte_>::zeros( sz ), Row2 = Mat_<byte_>::zeros( sz );
-  Mat_<byte_> Row4 = Mat_<byte_>::zeros( sz ), Row8 = Mat_<byte_>::zeros( sz );
+  Mat_<int64_t> Tig1 = Mat_<int64_t>::zeros( sz ), Tig2 = Mat_<int64_t>::zeros( sz );
+  Mat_<int64_t> Tig4 = Mat_<int64_t>::zeros( sz ), Tig8 = Mat_<int64_t>::zeros( sz );
+  Mat_<byte> Row1 = Mat_<byte>::zeros( sz ), Row2 = Mat_<byte>::zeros( sz );
+  Mat_<byte> Row4 = Mat_<byte>::zeros( sz ), Row8 = Mat_<byte>::zeros( sz );
   Mat_<float> scores( sz );
   for ( int y = 1; y <= H; y++ )
   {
-    const byte_* G = mag1u.ptr<byte_>( y - 1 );
-    INT64* T1 = Tig1.ptr<INT64>( y );  // Binary TIG of current row
-    INT64* T2 = Tig2.ptr<INT64>( y );
-    INT64* T4 = Tig4.ptr<INT64>( y );
-    INT64* T8 = Tig8.ptr<INT64>( y );
-    INT64* Tu1 = Tig1.ptr<INT64>( y - 1 );  // Binary TIG of upper row
-    INT64* Tu2 = Tig2.ptr<INT64>( y - 1 );
-    INT64* Tu4 = Tig4.ptr<INT64>( y - 1 );
-    INT64* Tu8 = Tig8.ptr<INT64>( y - 1 );
-    byte_* R1 = Row1.ptr<byte_>( y );
-    byte_* R2 = Row2.ptr<byte_>( y );
-    byte_* R4 = Row4.ptr<byte_>( y );
-    byte_* R8 = Row8.ptr<byte_>( y );
+    const byte* G = mag1u.ptr<byte>( y - 1 );
+    int64_t* T1 = Tig1.ptr<int64_t>( y );  // Binary TIG of current row
+    int64_t* T2 = Tig2.ptr<int64_t>( y );
+    int64_t* T4 = Tig4.ptr<int64_t>( y );
+    int64_t* T8 = Tig8.ptr<int64_t>( y );
+    int64_t* Tu1 = Tig1.ptr<int64_t>( y - 1 );  // Binary TIG of upper row
+    int64_t* Tu2 = Tig2.ptr<int64_t>( y - 1 );
+    int64_t* Tu4 = Tig4.ptr<int64_t>( y - 1 );
+    int64_t* Tu8 = Tig8.ptr<int64_t>( y - 1 );
+    byte* R1 = Row1.ptr<byte>( y );
+    byte* R2 = Row2.ptr<byte>( y );
+    byte* R4 = Row4.ptr<byte>( y );
+    byte* R8 = Row8.ptr<byte>( y );
     float *s = scores.ptr<float>( y );
     for ( int x = 1; x <= W; x++ )
     {
-      byte_ g = G[x - 1];
+      byte g = G[x - 1];
       R1[x] = ( R1[x - 1] << 1 ) | ( ( g >> 4 ) & 1 );
       R2[x] = ( R2[x - 1] << 1 ) | ( ( g >> 5 ) & 1 );
       R4[x] = ( R4[x - 1] << 1 ) | ( ( g >> 6 ) & 1 );

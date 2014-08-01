@@ -79,7 +79,10 @@ typedef unsigned short WORD;
 typedef unsigned int UNINT32;
 typedef bool BOOL;
 typedef void *HANDLE;
-typedef unsigned char byte_;
+#endif
+
+#ifndef _MSC_VER
+typedef unsigned char byte;
 #endif
 
 typedef std::vector<int> vecI;
@@ -164,7 +167,7 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 {
   return cv::Rect( cv::Point( v[0] - 1, v[1] - 1 ), cv::Point( v[2], v[3] ) );
 }
-
+/*
 #ifdef __WIN32
 #define INT64 long long
 #else
@@ -172,7 +175,7 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 typedef unsigned long UINT64_;
 //#define UINT64 unsigned long
 #endif
-
+*/
 
  #if defined(_MSC_VER)
  # include <intrin.h>
