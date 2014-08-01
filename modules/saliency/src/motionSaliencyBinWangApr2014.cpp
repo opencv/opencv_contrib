@@ -298,8 +298,42 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 
   return true;
 }
-bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
+bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat image )
 {
+
+  /////////////////// MAINTENANCE of potentialBackground model ///////////////////
+
+  // Scan all pixels of finalBFMask
+  for ( int i = 0; i < finalBFMask.rows; i++ )
+  {
+    for ( int j = 0; j < finalBFMask.cols; j++ )
+    {
+      if( finalBFMask.at<int>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
+      {
+        /* For the pixels with CA= 0, if the current frame pixel has been classified as foreground, its value
+         * will be loaded into BA and CA will be set to 1*/
+        if( potentialBackground.at<Vec2f>( i, j )[1] == 0 )
+        {
+          potentialBackground.at<Vec2f>( i, j )[0] = image.at<int>( i, j );
+          potentialBackground.at<Vec2f>( i, j )[1] = 1;
+        }
+
+        /*the distance between this pixel value and BA is calculated, and if this distance is smaller than
+         the decision threshold epslon, then CA is increased by 1, otherwise is decreased by 1*/
+        else if( abs( image.at<int>( i, j ) - potentialBackground.at<Vec2f>( i, j )[0] ) < epslonPixelsValue.at<float>( i, j ) )
+        {
+          potentialBackground.at<Vec2f>( i, j )[1] += 1;
+        }
+        else
+        {
+          potentialBackground.at<Vec2f>( i, j )[1] -= 1;
+        }
+      }
+    } // end of second for
+  } // end of first for
+
+  /////////////////// EVALUATION of potentialBackground values ///////////////////
+
 
   return true;
 }
@@ -307,28 +341,29 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask )
 bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
 {
 
-   Mat highResBFMask;
-   Mat lowResBFMask;
-   Mat not_lowResBFMask;
-   Mat finalBFMask;
-   Mat noisePixelsMask;
-   /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
+  Mat highResBFMask;
+  Mat lowResBFMask;
+  Mat not_lowResBFMask;
+  Mat finalBFMask;
+  Mat noisePixelsMask;
+  /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
    t.setTo( 50 );
    backgroundModel.at( 0 ) = t; */
 
-   fullResolutionDetection( image.getMat(), highResBFMask );
-   lowResolutionDetection( image.getMat(), lowResBFMask );
+  fullResolutionDetection( image.getMat(), highResBFMask );
+  lowResolutionDetection( image.getMat(), lowResBFMask );
 
-   // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
-   // foreground in both masks (full and low)
-   bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
+// Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
+// foreground in both masks (full and low)
+  bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
 
-   // Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
-   bitwise_not( lowResBFMask, not_lowResBFMask );
-   bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
+// Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
+  bitwise_not( lowResBFMask, not_lowResBFMask );
+  bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
 
-
-   templateOrdering();
+  templateOrdering();
+  templateReplacement( finalBFMask, image.getMat() );
+  templateOrdering();
 
   return true;
 }
