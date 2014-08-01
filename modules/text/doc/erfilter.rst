@@ -21,15 +21,19 @@ In the second stage, the ERs that passed the first stage are classified into cha
 
 This ER filtering process is done in different single-channel projections of the input image in order to increase the character localization recall.
 
-After the ER filtering is done on each input channel, character candidates must be grouped in high-level text blocks (i.e. words, text lines, paragraphs, ...). The grouping algorithm used in this implementation has been proposed by Lluis Gomez and Dimosthenis Karatzas in [Gomez13] and basically consist in finding meaningful groups of regions using a perceptual organization based clustering analisys (see :ocv:func:`erGrouping`).
+After the ER filtering is done on each input channel, character candidates must be grouped in high-level text blocks (i.e. words, text lines, paragraphs, ...). The opencv_text module implements two different grouping algorithms: the Exhaustive Search algorithm proposed in [Neumann11] for grouping horizontally aligned text, and the method proposed by Lluis Gomez and Dimosthenis Karatzas in [Gomez13][Gomez14] for grouping arbitrary oriented text (see :ocv:func:`erGrouping`).
 
 
-To see the text detector at work, have a look at the textdetection demo: https://github.com/Itseez/opencv/blob/master/samples/cpp/textdetection.cpp
+To see the text detector at work, have a look at the textdetection demo: https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/textdetection.cpp
 
 
 .. [Neumann12] Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012. The paper is available online at http://cmp.felk.cvut.cz/~neumalu1/neumann-cvpr2012.pdf
 
+.. [Neumann11] Neumann L., Matas J.: Text Localization in Real-world Images using Efficiently Pruned Exhaustive Search, ICDAR 2011. The paper is available online at http://cmp.felk.cvut.cz/~neumalu1/icdar2011_article.pdf
+
 .. [Gomez13] Gomez L. and Karatzas D.: Multi-script Text Extraction from Natural Scenes, ICDAR 2013. The paper is available online at http://158.109.8.37/files/GoK2013.pdf
+
+.. [Gomez14] Gomez L. and Karatzas D.: A Fast Hierarchical Method for Multi-script and Arbitrary Oriented Scene Text Extraction, arXiv:1407.7504 [cs.CV]. The paper is available online at http://arxiv.org/abs/1407.7504
 
 
 ERStat
@@ -198,14 +202,24 @@ erGrouping
 ----------
 Find groups of Extremal Regions that are organized as text blocks.
 
-.. ocv:function:: void erGrouping( InputArrayOfArrays src, std::vector<std::vector<ERStat> > &regions, const std::string& filename, float minProbablity, std::vector<Rect > &groups)
+.. ocv:function:: void erGrouping(InputArray img, InputArrayOfArrays channels, std::vector<std::vector<ERStat> > &regions, std::vector<std::vector<Vec2i> > &groups, std::vector<Rect> &groups_rects, int method = ERGROUPING_ORIENTATION_HORIZ, const std::string& filename = std::string(), float minProbablity = 0.5)
 
-    :param src: Vector of sinle channel images CV_8UC1 from wich the regions were extracted
-    :param regions: Vector of ER's retreived from the ERFilter algorithm from each channel
-    :param filename: The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)
-    :param minProbability: The minimum probability for accepting a group
-    :param groups: The output of the algorithm are stored in this parameter as list of rectangles.
+    :param image: Original RGB or Greyscale image from wich the regions were extracted.
+    :param src: Vector of single channel images CV_8UC1 from wich the regions were extracted.
+    :param regions: Vector of ER's retreived from the ERFilter algorithm from each channel.
+    :param groups: The output of the algorithm is stored in this parameter as set of lists of indexes to provided regions.
+    :param groups_rects: The output of the algorithm are stored in this parameter as list of rectangles.
+    :param method: Grouping method (see the details below). Can be one of ``ERGROUPING_ORIENTATION_HORIZ``, ``ERGROUPING_ORIENTATION_ANY``.
+    :param filename: The XML or YAML file with the classifier model (e.g. samples/trained_classifier_erGrouping.xml). Only to use when grouping method is ``ERGROUPING_ORIENTATION_ANY``.
+    :param minProbability: The minimum probability for accepting a group. Only to use when grouping method is ``ERGROUPING_ORIENTATION_ANY``.
 
-This function implements the grouping algorithm described in [Gomez13]. Notice that this implementation constrains the results to horizontally-aligned text and latin script (since ERFilter classifiers are trained only for latin script detection).
 
-The algorithm combines two different clustering techniques in a single parameter-free procedure to detect groups of regions organized as text. The maximally meaningful groups are fist detected in several feature spaces, where each feature space is a combination of proximity information (x,y coordinates) and a similarity measure (intensity, color, size, gradient magnitude, etc.), thus providing a set of hypotheses of text groups. Evidence Accumulation framework is used to combine all these hypotheses to get the final estimate. Each of the resulting groups are finally validated using a classifier in order to assess if they form a valid horizontally-aligned text block.
+This function implements two different grouping algorithms:
+
+    * **ERGROUPING_ORIENTATION_HORIZ**
+      
+    Exhaustive Search algorithm proposed in [Neumann11] for grouping horizontally aligned text. The algorithm models a verification function for all the possible ER sequences. The verification fuction for ER pairs consists in a set of threshold-based pairwise rules which compare measurements of two regions (height ratio, centroid angle, and region distance). The verification function for ER triplets creates a word text line estimate using Least Median-Squares fitting for a given triplet and then verifies that the estimate is valid (based on thresholds created during training). Verification functions for sequences larger than 3 are approximated by verifying that the text line parameters of all (sub)sequences of length 3 are consistent.
+
+    * **ERGROUPING_ORIENTATION_ANY**
+      
+    Text grouping method proposed in [Gomez13][Gomez14] for grouping arbitrary oriented text. Regions are agglomerated by Single Linkage Clustering in a weighted feature space that combines proximity (x,y coordinates) and similarity measures (color, size, gradient magnitude, stroke width, etc.). SLC provides a dendrogram where each node represents a text group hypothesis. Then the algorithm finds the branches corresponding to text groups by traversing this dendrogram with a stopping rule that combines the output of a rotation invariant text group classifier and a probabilistic measure for hierarchical clustering validity assessment.
