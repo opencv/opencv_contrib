@@ -39,18 +39,13 @@
  //
  //M*/
 
-
-
 #include "precomp.hpp"
 
 #define NUM_OF_BANDS 9
 
-
-
 //using namespace cv;
 namespace cv
 {
-
 
 /* combinations of internal indeces for binary descriptor extractor */
 static const int combinations[32][2] =
@@ -265,7 +260,7 @@ int BinaryDescriptor::descriptorSize() const
 static inline int get2Pow( int i )
 {
   if( i >= 0 && i <= 7 )
-    return pow( 2, i );
+    return pow( 2, (double) i );
 
   else
   {
@@ -372,7 +367,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
       kl.octave = osl.octaveCount;
       kl.size = ( osl.endPointX - osl.startPointX ) * ( osl.endPointY - osl.startPointY );
       kl.response = osl.lineLength / max( images_sizes[osl.octaveCount].width, images_sizes[osl.octaveCount].height );
-      kl.pt = Point( ( osl.endPointX + osl.startPointX ) / 2, ( osl.endPointY + osl.startPointY ) / 2 );
+      kl.pt = Point2f( ( osl.endPointX + osl.startPointX ) / 2, ( osl.endPointY + osl.startPointY ) / 2 );
 
       /* store KeyLine */
       keylines.push_back( kl );
@@ -386,7 +381,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
     {
       KeyLine kl = keylines[keyCounter];
-      if( mask.at<uchar>( kl.startPointY, kl.startPointX ) == 0 && mask.at<uchar>( kl.endPointY, kl.endPointX ) == 0 )
+      if( mask.at<uchar>( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at<uchar>( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
     }
   }
@@ -504,9 +499,9 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     descriptors = cv::Mat( keylines.size(), NUM_OF_BANDS * 8, CV_32FC1 );
 
   /* fill output matrix with descriptors */
-  for ( int k = 0; k < (int)sl.size(); k++ )
+  for ( int k = 0; k < (int) sl.size(); k++ )
   {
-    for ( int lineC = 0; lineC < (int)sl[k].size(); lineC++ )
+    for ( int lineC = 0; lineC < (int) sl[k].size(); lineC++ )
     {
       /* get original index of keypoint */
       int lineOctave = ( sl[k][lineC] ).octaveCount;
@@ -530,14 +525,14 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
       else
       {
-        std::cout << "Descrittori float" <<std::endl;
+        std::cout << "Descrittori float" << std::endl;
         /* get a pointer to correspondent row in output matrix */
         float* pointerToRow = descriptors.ptr<float>( originalIndex );
 
         /* get LBD data */
         std::vector<float> desVec = sl[k][lineC].descriptor;
 
-        for ( int count = 0; count < (int)desVec.size(); count++ )
+        for ( int count = 0; count < (int) desVec.size(); count++ )
         {
           *pointerToRow = desVec[count];
           pointerToRow++;

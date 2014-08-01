@@ -75,7 +75,7 @@ struct CV_EXPORTS KeyLine
 
   /* coordinates of the middlepoint */
   CV_PROP_RW
-  Point pt;
+  Point2f pt;
 
   /* the response, by which the strongest keylines have been selected.
    It's represented by the ratio between line's length and maximum between
