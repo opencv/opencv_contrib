@@ -230,7 +230,7 @@ void ObjectnessBING::nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &m
   for ( int i = 0; i < valPnt.size(); i++ )
   {
     Point &pnt = valPnt[i];
-    if( isMax1u.at<byte>( pnt ) )
+    if( isMax1u.at<BYTE>( pnt ) )
     {
       matchCost.pushBack( valPnt( i ), pnt );
       for ( int dy = -NSS; dy <= NSS; dy++ )
@@ -239,7 +239,7 @@ void ObjectnessBING::nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &m
           Point neighbor = pnt + Point( dx, dy );
           if( !CHK_IND( neighbor ) )
             continue;
-          isMax1u.at<byte>( neighbor ) = false;
+          isMax1u.at<BYTE>( neighbor ) = false;
         }
     }
     if( matchCost.size() >= maxPoint )
@@ -311,24 +311,24 @@ void ObjectnessBING::gradientGray( CMat &bgr3u, Mat &mag1u )
   // Left/right most column Ix
   for ( int y = 0; y < H; y++ )
   {
-    Ix.at<int>( y, 0 ) = abs( g1u.at<byte>( y, 1 ) - g1u.at<byte>( y, 0 ) ) * 2;
-    Ix.at<int>( y, W - 1 ) = abs( g1u.at<byte>( y, W - 1 ) - g1u.at<byte>( y, W - 2 ) ) * 2;
+    Ix.at<int>( y, 0 ) = abs( g1u.at<BYTE>( y, 1 ) - g1u.at<BYTE>( y, 0 ) ) * 2;
+    Ix.at<int>( y, W - 1 ) = abs( g1u.at<BYTE>( y, W - 1 ) - g1u.at<BYTE>( y, W - 2 ) ) * 2;
   }
 
   // Top/bottom most column Iy
   for ( int x = 0; x < W; x++ )
   {
-    Iy.at<int>( 0, x ) = abs( g1u.at<byte>( 1, x ) - g1u.at<byte>( 0, x ) ) * 2;
-    Iy.at<int>( H - 1, x ) = abs( g1u.at<byte>( H - 1, x ) - g1u.at<byte>( H - 2, x ) ) * 2;
+    Iy.at<int>( 0, x ) = abs( g1u.at<BYTE>( 1, x ) - g1u.at<BYTE>( 0, x ) ) * 2;
+    Iy.at<int>( H - 1, x ) = abs( g1u.at<BYTE>( H - 1, x ) - g1u.at<BYTE>( H - 2, x ) ) * 2;
   }
 
   // Find the gradient for inner regions
   for ( int y = 0; y < H; y++ )
     for ( int x = 1; x < W - 1; x++ )
-      Ix.at<int>( y, x ) = abs( g1u.at<byte>( y, x + 1 ) - g1u.at<byte>( y, x - 1 ) );
+      Ix.at<int>( y, x ) = abs( g1u.at<BYTE>( y, x + 1 ) - g1u.at<BYTE>( y, x - 1 ) );
   for ( int y = 1; y < H - 1; y++ )
     for ( int x = 0; x < W; x++ )
-      Iy.at<int>( y, x ) = abs( g1u.at<byte>( y + 1, x ) - g1u.at<byte>( y - 1, x ) );
+      Iy.at<int>( y, x ) = abs( g1u.at<BYTE>( y + 1, x ) - g1u.at<BYTE>( y - 1, x ) );
 
   gradientXY( Ix, Iy, mag1u );
 }
@@ -372,7 +372,7 @@ void ObjectnessBING::gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u )
   for ( int r = 0; r < H; r++ )
   {
     const int *x = x1i.ptr<int>( r ), *y = y1i.ptr<int>( r );
-    byte* m = mag1u.ptr<byte>( r );
+    BYTE* m = mag1u.ptr<BYTE>( r );
     for ( int c = 0; c < W; c++ )
       m[c] = min( x[c] + y[c], 255 );   //((int)sqrt(sqr(x[c]) + sqr(y[c])), 255);
   }

@@ -82,7 +82,7 @@ typedef void *HANDLE;
 #endif
 
 #ifndef _MSC_VER
-typedef unsigned char byte;
+typedef unsigned char BYTE;
 #endif
 
 typedef std::vector<int> vecI;

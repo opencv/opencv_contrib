@@ -88,12 +88,12 @@ Mat FilterTIG::matchTemplate( const Mat &mag1u )
   const Size sz( W + 1, H + 1 );  // Expand original size to avoid dealing with boundary conditions
   Mat_<int64_t> Tig1 = Mat_<int64_t>::zeros( sz ), Tig2 = Mat_<int64_t>::zeros( sz );
   Mat_<int64_t> Tig4 = Mat_<int64_t>::zeros( sz ), Tig8 = Mat_<int64_t>::zeros( sz );
-  Mat_<byte> Row1 = Mat_<byte>::zeros( sz ), Row2 = Mat_<byte>::zeros( sz );
-  Mat_<byte> Row4 = Mat_<byte>::zeros( sz ), Row8 = Mat_<byte>::zeros( sz );
+  Mat_<BYTE> Row1 = Mat_<BYTE>::zeros( sz ), Row2 = Mat_<BYTE>::zeros( sz );
+  Mat_<BYTE> Row4 = Mat_<BYTE>::zeros( sz ), Row8 = Mat_<BYTE>::zeros( sz );
   Mat_<float> scores( sz );
   for ( int y = 1; y <= H; y++ )
   {
-    const byte* G = mag1u.ptr<byte>( y - 1 );
+    const BYTE* G = mag1u.ptr<BYTE>( y - 1 );
     int64_t* T1 = Tig1.ptr<int64_t>( y );  // Binary TIG of current row
     int64_t* T2 = Tig2.ptr<int64_t>( y );
     int64_t* T4 = Tig4.ptr<int64_t>( y );
@@ -102,14 +102,14 @@ Mat FilterTIG::matchTemplate( const Mat &mag1u )
     int64_t* Tu2 = Tig2.ptr<int64_t>( y - 1 );
     int64_t* Tu4 = Tig4.ptr<int64_t>( y - 1 );
     int64_t* Tu8 = Tig8.ptr<int64_t>( y - 1 );
-    byte* R1 = Row1.ptr<byte>( y );
-    byte* R2 = Row2.ptr<byte>( y );
-    byte* R4 = Row4.ptr<byte>( y );
-    byte* R8 = Row8.ptr<byte>( y );
+    BYTE* R1 = Row1.ptr<BYTE>( y );
+    BYTE* R2 = Row2.ptr<BYTE>( y );
+    BYTE* R4 = Row4.ptr<BYTE>( y );
+    BYTE* R8 = Row8.ptr<BYTE>( y );
     float *s = scores.ptr<float>( y );
     for ( int x = 1; x <= W; x++ )
     {
-      byte g = G[x - 1];
+      BYTE g = G[x - 1];
       R1[x] = ( R1[x - 1] << 1 ) | ( ( g >> 4 ) & 1 );
       R2[x] = ( R2[x - 1] << 1 ) | ( ( g >> 5 ) & 1 );
       R4[x] = ( R4[x - 1] << 1 ) | ( ( g >> 6 ) & 1 );
