@@ -38,16 +38,12 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+#include "precomp.hpp"
 
 #define _USE_MATH_DEFINES
-
-#ifdef _WIN32
-# include <cmath>
-#endif
-
 #define NUM_OF_BANDS 9
 
-#include "precomp.hpp"
+
 
 //using namespace cv;
 namespace cv

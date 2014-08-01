@@ -94,7 +94,7 @@ inline int match( UINT8*P, UINT8*Q, int codelb )
       break;
   }
 
-  return -1;
+
 }
 
 /* splitting function (b <= 64) */
