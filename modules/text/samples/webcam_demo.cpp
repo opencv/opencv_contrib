@@ -42,6 +42,7 @@ public:
             er_filter2[c]->run(channels[c], regions[c]);
         }
     }
+    Parallel_extractCSER & operator=(const Parallel_extractCSER &a);
 };
 
 
@@ -80,7 +81,7 @@ int main(int argc, char* argv[])
     vector< Ptr<ERFilter> > er_filters2;
     for (int i=0; i<2; i++)
     {
-        Ptr<ERFilter> er_filter1 = createERFilterNM1(loadClassifierNM1("trained_classifierNM1.xml"),8,0.00015,0.13,0.2,true,0.1);
+        Ptr<ERFilter> er_filter1 = createERFilterNM1(loadClassifierNM1("trained_classifierNM1.xml"),8,0.00015f,0.13f,0.2f,true,0.1f);
         Ptr<ERFilter> er_filter2 = createERFilterNM2(loadClassifierNM2("trained_classifierNM2.xml"),0.5);
         er_filters1.push_back(er_filter1);
         er_filters2.push_back(er_filter2);
@@ -105,12 +106,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    while (1)
+    while (cap.read(frame))
     {
-        double t_all = getTickCount();
-
-        cap.read(frame);
-
+        double t_all = (double)getTickCount();
 
         if (downsize)
             resize(frame,frame,Size(320,240));
@@ -133,7 +131,7 @@ int main(int argc, char* argv[])
         {
         case 0:
         {
-            parallel_for_(cv::Range(0,channels.size()), Parallel_extractCSER(channels,regions,er_filters1,er_filters2));
+            parallel_for_(cv::Range(0,(int)channels.size()), Parallel_extractCSER(channels,regions,er_filters1,er_filters2));
             break;
         }
         case 1:
@@ -181,8 +179,8 @@ int main(int argc, char* argv[])
 
 
         frame.copyTo(out_img);
-        float scale_img  = 600./frame.rows;
-        float scale_font = (2-scale_img)/1.4;
+        float scale_img  = (float)(600.f/frame.rows);
+        float scale_font = (float)(2-scale_img)/1.4f;
         vector<string> words_detection;
         string output;
 
@@ -203,13 +201,13 @@ int main(int argc, char* argv[])
             vector<float>  confidences;
 
 
-            float min_confidence1,min_confidence2;
+            float min_confidence1 = 0.f, min_confidence2 = 0.f;
 
             if (RECOGNITION == 0)
             {
                 ocr_tess->run(group_img, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
-                min_confidence1 = 51.;
-                min_confidence2 = 60.;
+                min_confidence1 = 51.f;
+                min_confidence2 = 60.f;
             }
 
             output.erase(remove(output.begin(), output.end(), '\n'), output.end());
@@ -230,9 +228,9 @@ int main(int argc, char* argv[])
                     continue;
                 words_detection.push_back(words[j]);
                 rectangle(out_img, boxes[j].tl(), boxes[j].br(), Scalar(255,0,255),3);
-                Size word_size = getTextSize(words[j], FONT_HERSHEY_SIMPLEX, scale_font, 3*scale_font, NULL);
+                Size word_size = getTextSize(words[j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
                 rectangle(out_img, boxes[j].tl()-Point(3,word_size.height+3), boxes[j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-                putText(out_img, words[j], boxes[j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),3*scale_font);
+                putText(out_img, words[j], boxes[j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
             }
 
         }

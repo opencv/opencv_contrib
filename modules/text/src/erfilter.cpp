@@ -4099,7 +4099,7 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
   {
 
     ERStat cser;
-    cser.area = contours[i].size();
+    cser.area = (int)contours[i].size();
     cser.rect = boundingRect(contours[i]);
 
     float avg_intensity = 0;
