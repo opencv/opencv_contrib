@@ -300,27 +300,31 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 }
 bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat image )
 {
+  int roiSize = 3;
+  int countNonZeroElements = NAN;
+  Mat replicateCurrentBAMat( roiSize, roiSize, CV_8U );
+  Mat backgroundModelROI( roiSize, roiSize, CV_32F );
+  Mat diffResult( roiSize, roiSize, CV_32F );
 
-  /////////////////// MAINTENANCE of potentialBackground model ///////////////////
-
-  // Scan all pixels of finalBFMask
+  // Scan all pixels of finalBFMask and all pixels of others models (the dimension are the same)
   for ( int i = 0; i < finalBFMask.rows; i++ )
   {
     for ( int j = 0; j < finalBFMask.cols; j++ )
     {
-      if( finalBFMask.at<int>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
+      /////////////////// MAINTENANCE of potentialBackground model ///////////////////
+      if( finalBFMask.at<uchar>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
       {
         /* For the pixels with CA= 0, if the current frame pixel has been classified as foreground, its value
          * will be loaded into BA and CA will be set to 1*/
         if( potentialBackground.at<Vec2f>( i, j )[1] == 0 )
         {
-          potentialBackground.at<Vec2f>( i, j )[0] = image.at<int>( i, j );
+          potentialBackground.at<Vec2f>( i, j )[0] = image.at<uchar>( i, j );
           potentialBackground.at<Vec2f>( i, j )[1] = 1;
         }
 
         /*the distance between this pixel value and BA is calculated, and if this distance is smaller than
          the decision threshold epslon, then CA is increased by 1, otherwise is decreased by 1*/
-        else if( abs( image.at<int>( i, j ) - potentialBackground.at<Vec2f>( i, j )[0] ) < epslonPixelsValue.at<float>( i, j ) )
+        else if( abs( image.at<uchar>( i, j ) - potentialBackground.at<Vec2f>( i, j )[0] ) < epslonPixelsValue.at<float>( i, j ) )
         {
           potentialBackground.at<Vec2f>( i, j )[1] += 1;
         }
@@ -328,12 +332,39 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat ima
         {
           potentialBackground.at<Vec2f>( i, j )[1] -= 1;
         }
+      }  /////////////////// END of potentialBackground model MAINTENANCE///////////////////
+
+      /////////////////// EVALUATION of potentialBackground values ///////////////////
+      if( potentialBackground.at<Vec2f>( i, j )[1] > thetaA )
+      {
+        // replicate currentBA value
+        replicateCurrentBAMat.setTo( potentialBackground.at<Vec2f>( i, j )[0] );
+        for ( size_t z = 1; z < backgroundModel.size(); z++ )
+        {
+          // Neighborhood of current pixel in the current background model template.
+          // The ROI is centered in the pixel coordinates
+          // TODO border check
+          backgroundModelROI = ( backgroundModel[z], Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
+
+          /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
+           * background model
+           */
+          absdiff( replicateCurrentBAMat, backgroundModelROI, diffResult );
+          threshold( diffResult, diffResult, epslonPixelsValue.at<float>( i, j ), 255, THRESH_BINARY_INV );
+          countNonZeroElements = countNonZero( diffResult );
+
+          if( countNonZeroElements > 0 )
+          {
+            /////////////////// REPLACEMENT of backgroundModel template ///////////////////
+            //replace TA with current TK
+            break;
+
+          }
+        }
       }
-    } // end of second for
-  } // end of first for
 
-  /////////////////// EVALUATION of potentialBackground values ///////////////////
-
+    }  // end of second for
+  }  // end of first for
 
   return true;
 }
