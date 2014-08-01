@@ -344,7 +344,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat ima
           // Neighborhood of current pixel in the current background model template.
           // The ROI is centered in the pixel coordinates
           // TODO border check
-          backgroundModelROI = ( backgroundModel[z], Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
+          backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
 
           /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
            * background model
