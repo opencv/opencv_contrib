@@ -71,20 +71,20 @@ inline int match( UINT8*P, UINT8*Q, int codelb )
       return popcnt( *(UINT32*) P ^ *(UINT32*) Q );
       break;
     case 8:  // 64 bit
-      return popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] );
+      return (int)popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] );
       break;
     case 16:  // 128 bit
-      return popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] );
+      return (int)(popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] ));
       break;
     case 32:  // 256 bit
-      return popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] )
-          + popcntll( ( (UINT64*) P )[2] ^ ( (UINT64*) Q )[2] ) + popcntll( ( (UINT64*) P )[3] ^ ( (UINT64*) Q )[3] );
+      return (int)(popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] )
+          + popcntll( ( (UINT64*) P )[2] ^ ( (UINT64*) Q )[2] ) + popcntll( ( (UINT64*) P )[3] ^ ( (UINT64*) Q )[3] ));
       break;
     case 64:  // 512 bit
-      return popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] )
+      return (int)(popcntll( ( (UINT64*) P )[0] ^ ( (UINT64*) Q )[0] ) + popcntll( ( (UINT64*) P )[1] ^ ( (UINT64*) Q )[1] )
           + popcntll( ( (UINT64*) P )[2] ^ ( (UINT64*) Q )[2] ) + popcntll( ( (UINT64*) P )[3] ^ ( (UINT64*) Q )[3] )
           + popcntll( ( (UINT64*) P )[4] ^ ( (UINT64*) Q )[4] ) + popcntll( ( (UINT64*) P )[5] ^ ( (UINT64*) Q )[5] )
-          + popcntll( ( (UINT64*) P )[6] ^ ( (UINT64*) Q )[6] ) + popcntll( ( (UINT64*) P )[7] ^ ( (UINT64*) Q )[7] );
+          + popcntll( ( (UINT64*) P )[6] ^ ( (UINT64*) Q )[6] ) + popcntll( ( (UINT64*) P )[7] ^ ( (UINT64*) Q )[7] ));
       break;
     default:
       int output = 0;
@@ -132,7 +132,7 @@ inline UINT64 next_set_of_n_elements( UINT64 x )
 {
   UINT64 smallest, ripple, new_smallest;
 
-  smallest = x & -x;
+  smallest = x & -(signed)x;
   ripple = x + smallest;
   new_smallest = x ^ ripple;
   new_smallest = new_smallest / smallest;

@@ -59,6 +59,7 @@
 #include <cmath>
 #include <algorithm>
 #include <bitset>
+#include <time.h>
 
 #include "opencv2/line_descriptor.hpp"
 

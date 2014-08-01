@@ -40,7 +40,7 @@
  //M*/
 
 
-#define _USE_MATH_DEFINES
+
 #include "precomp.hpp"
 
 #define NUM_OF_BANDS 9
