@@ -40,6 +40,11 @@
  //M*/
 
 #define _USE_MATH_DEFINES
+
+#ifdef _WIN32
+# include <cmath>
+#endif
+
 #define NUM_OF_BANDS 9
 
 #include "precomp.hpp"
