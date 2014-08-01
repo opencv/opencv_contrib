@@ -268,11 +268,21 @@ void TLDEnsembleClassifier::stepPrefSuff(std::vector<Vec4b>& arr,int pos,int len
         }
 #endif
 }
-TLDEnsembleClassifier::TLDEnsembleClassifier(std::vector<Vec4b> meas,int beg,int end){
-    int posSize=1;
-    for(int i=0,mpc=end-beg;i<mpc;i++)posSize*=2;
+void TLDEnsembleClassifier::prepareClassifier(int rowstep){
+    if(lastStep_!=rowstep){
+        lastStep_=rowstep;
+        for(int i=0;i<(int)offset.size();i++){
+            offset[i].x=rowstep*measurements[i].val[0]+measurements[i].val[1];
+            offset[i].y=rowstep*measurements[i].val[2]+measurements[i].val[3];
+        }
+    }
+}
+TLDEnsembleClassifier::TLDEnsembleClassifier(std::vector<Vec4b> meas,int beg,int end):lastStep_(-1){
+    int posSize=1,mpc=end-beg;
+    for(int i=0;i<mpc;i++)posSize*=2;
     posAndNeg.assign(posSize,Point2i(0,0));
     measurements.assign(meas.begin()+beg,meas.begin()+end);
+    offset.assign(mpc,Point2i(0,0));
 }
 void TLDEnsembleClassifier::integrate(const Mat_<uchar>& patch,bool isPositive){
     int position=code(patch.data,(int)patch.step[0]);
@@ -291,13 +301,31 @@ double TLDEnsembleClassifier::posteriorProbability(const uchar* data,int rowstep
         return posNum/(posNum+negNum);
     }
 }
+double TLDEnsembleClassifier::posteriorProbabilityFast(const uchar* data)const{
+    int position=codeFast(data);
+    double posNum=(double)posAndNeg[position].x, negNum=(double)posAndNeg[position].y;
+    if(posNum==0.0 && negNum==0.0){
+        return 0.0;
+    }else{
+        return posNum/(posNum+negNum);
+    }
+}
+int TLDEnsembleClassifier::codeFast(const uchar* data)const{
+    int position=0;
+    for(int i=0;i<(int)measurements.size();i++){
+        position=position<<1;
+        if(data[offset[i].x]<data[offset[i].y]){
+            position++;
+        }
+    }
+    return position;
+}
 int TLDEnsembleClassifier::code(const uchar* data,int rowstep)const{
-    unsigned short int position=0;
+    int position=0;
     for(int i=0;i<(int)measurements.size();i++){
         position=position<<1;
         if(*(data+rowstep*measurements[i].val[0]+measurements[i].val[1])<*(data+rowstep*measurements[i].val[2]+measurements[i].val[3])){
             position++;
-        }else{
         }
     }
     return position;

@@ -88,14 +88,13 @@ using namespace tld;
 *
 *      ?10. all in one class
 *
-*      21. precompute offset
+*      -->21. precompute offset
+*
 *      16. loops limits
 *      17. inner scope loops
 */
 
 /* design decisions:
- * blur --> resize (vs. resize-->blur) in detect(), ensembleClassifier stage
- * no random gauss noise, when making examples for ensembleClassifier
  */
 
 namespace cv
@@ -144,7 +143,6 @@ protected:
     Ptr<TrackerModel> model;
     void computeIntegralImages(const Mat& img,Mat_<double>& intImgP,Mat_<double>& intImgP2){integral(img,intImgP,intImgP2,CV_64F);}
     inline bool patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,double originalVariance,Point pt,Size size);
-    inline bool ensembleClassifier(const uchar* data,int rowstep);
     TrackerTLD::Params params_;
 };
 
@@ -200,13 +198,15 @@ class TrackerTLDModel : public TrackerModel{
   Rect2d getBoundingBox(){return boundingBox_;}
   void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
   double getOriginalVariance(){return originalVariance_;}
-  inline double ensembleClassifierNum(const uchar* data,int rowstep);
+  inline double ensembleClassifierNum(const uchar* data);
+  inline void prepareClassifiers(int rowstep){for(int i=0;i<(int)classifiers.size();i++)classifiers[i].prepareClassifier(rowstep);}
   double Sr(const Mat_<uchar>& patch);
   double Sc(const Mat_<uchar>& patch);
   void integrateRelabeled(Mat& img,Mat& imgBlurred,const std::vector<TLDDetector::LabeledPatch>& patches);
   void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel,const std::vector<Mat_<uchar> >& eForEnsemble,bool isPositive);
   Size getMinSize(){return minSize_;}
   void printme(FILE*  port=stdout);
+
  protected:
   Size minSize_;
   unsigned int timeStampPositiveNext,timeStampNegativeNext;
@@ -517,6 +517,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
         Mat_<double> intImgP,intImgP2;
         computeIntegralImages(resized_img,intImgP,intImgP2);
 
+        tldModel->prepareClassifiers((int)blurred_img.step[0]);
         for(int i=0,imax=cvFloor((0.0+resized_img.cols-initSize.width)/dx);i<imax;i++){
             for(int j=0,jmax=cvFloor((0.0+resized_img.rows-initSize.height)/dy);j<jmax;j++){
                 LabeledPatch labPatch;
@@ -524,7 +525,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
                 if(!patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize)){
                     continue;
                 }
-                if(!ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0])){
+                if(!(tldModel->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i))>ENSEMBLE_THRESHOLD)){
                     continue;
                 }
                 pass++;
@@ -603,10 +604,10 @@ bool TLDDetector::patchVariance(Mat_<double>& intImgP,Mat_<double>& intImgP2,dou
     return ((p2-p*p)>VARIANCE_THRESHOLD*originalVariance);
 }
 
-double TrackerTLDModel::ensembleClassifierNum(const uchar* data,int rowstep){
+double TrackerTLDModel::ensembleClassifierNum(const uchar* data){
     double p=0;
     for(int k=0;k<(int)classifiers.size();k++){
-        p+=classifiers[k].posteriorProbability(data,rowstep);
+        p+=classifiers[k].posteriorProbabilityFast(data);
     }
     p/=classifiers.size();
     return p;
@@ -820,9 +821,10 @@ void MyMouseCallbackDEBUG::onMouse( int event, int x, int y){
             i=(int)(x/scale/dx), j=(int)(y/scale/dy);
 
         dfprintf((stderr,"patchVariance=%s\n",(detector_->patchVariance(intImgP,intImgP2,originalVariance,Point(dx*i,dy*j),initSize))?"true":"false"));
-        dfprintf((stderr,"p=%f\n",(tldModel->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0]))));
+        tldModel->prepareClassifiers((int)blurred_img.step[0]);
+        dfprintf((stderr,"p=%f\n",(tldModel->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i)))));
         fprintf(stderr,"ensembleClassifier=%s\n",
-                (detector_->ensembleClassifier(&blurred_img.at<uchar>(dy*j,dx*i),(int)blurred_img.step[0]))?"true":"false");
+                (!(tldModel->ensembleClassifierNum(&blurred_img.at<uchar>(dy*j,dx*i))>ENSEMBLE_THRESHOLD))?"true":"false");
 
         resample(resized_img,Rect2d(Point(dx*i,dy*j),initSize),standardPatch);
         tmp=tldModel->Sr(standardPatch);
@@ -858,9 +860,6 @@ void TrackerTLDModel::pushIntoModel(const Mat_<uchar>& example,bool positive){
         (*proxyT)[index]=(*proxyN);
     }
     (*proxyN)++;
-}
-bool TLDDetector::ensembleClassifier(const uchar* data,int rowstep){
-    return (((TrackerTLDModel*)static_cast<TrackerModel*>(model))->ensembleClassifierNum(data,rowstep))>ENSEMBLE_THRESHOLD;
 }
 
 } /* namespace cv */
