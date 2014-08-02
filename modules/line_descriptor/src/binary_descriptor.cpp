@@ -209,7 +209,7 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
   maskMat = mask.getMat();
 
   /* initialize output matrix */
-  descriptors.create( Size( 32, keylines.size() ), CV_8UC1 );
+  descriptors.create( Size( 32, (int) keylines.size() ), CV_8UC1 );
 
   /* store reference to output matrix */
   descrMat = descriptors.getMat();
@@ -260,12 +260,11 @@ int BinaryDescriptor::descriptorSize() const
 static inline int get2Pow( int i )
 {
   if( i >= 0 && i <= 7 )
-    return pow( 2, (double) i );
+    return (int) pow( 2, (double) i );
 
   else
   {
-    CV_Assert( false );
-    return -1;
+    throw std::runtime_error( "Invalid power argument" );
   }
 }
 
@@ -276,7 +275,7 @@ unsigned char BinaryDescriptor::binaryConversion( float* f1, float* f2 )
   for ( int i = 0; i < 8; i++ )
   {
     if( f1[i] > f2[i] )
-      result += get2Pow( i );
+      result += (uchar) get2Pow( i );
   }
 
   return result;
@@ -287,12 +286,7 @@ unsigned char BinaryDescriptor::binaryConversion( float* f1, float* f2 )
 void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask )
 {
   if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
-  {
-
-    std::cout << "Mask error while detecting lines: " << "please check its dimensions and that data type is CV_8UC1" << std::endl;
-
-    CV_Assert( false );
-  }
+    throw std::runtime_error( "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
   else
     detectImpl( image, keylines, mask );
@@ -305,14 +299,10 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
     if( masks[counter].data != NULL && ( masks[counter].size() != images[counter].size() || masks[counter].type() != CV_8UC1 ) )
-    {
+      throw std::runtime_error( "Masks error while detecting lines: please check their dimensions and that data types are CV_8UC1" );
 
-      std::cout << "Masks error while detecting lines: " << "please check their dimensions and that data types are CV_8UC1" << std::endl;
-
-      CV_Assert( false );
-    }
-
-    detectImpl( images[counter], keylines[counter], masks[counter] );
+    else
+      detectImpl( images[counter], keylines[counter], masks[counter] );
   }
 }
 
@@ -327,10 +317,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 
   /*check whether image depth is different from 0 */
   if( image.depth() != 0 )
-  {
-    std::cout << "Warning, depth image!= 0" << std::endl;
-    CV_Assert( false );
-  }
+    throw std::runtime_error( "Warning, depth image!= 0" );
 
   /* create a pointer to self */
   BinaryDescriptor *bn = const_cast<BinaryDescriptor*>( this );
@@ -415,10 +402,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
   /*check whether image's depth is different from 0 */
   if( image.depth() != 0 )
-  {
-    std::cout << "Error, depth of image != 0" << std::endl;
-    CV_Assert( false );
-  }
+    throw std::runtime_error( "Error, depth of image != 0" );
 
   /* keypoints list can't be empty */
   if( keylines.size() == 0 )

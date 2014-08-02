@@ -236,10 +236,10 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   int OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines );
 
   /* the local gaussian coefficient applied to the orthogonal line direction within each band */
-  std::vector<float> gaussCoefL_;
+  std::vector<double> gaussCoefL_;
 
   /* the global gaussian coefficient applied to each row within line support region */
-  std::vector<float> gaussCoefG_;
+  std::vector<double> gaussCoefG_;
 
   /* descriptor parameters */
   Params params;

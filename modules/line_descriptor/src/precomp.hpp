@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <bitset>
 #include <time.h>
+#include <stdexcept>
 
 #include "opencv2/line_descriptor.hpp"
 
