@@ -44,10 +44,7 @@
 #include <time.h>
 
 #include "opencv2/xphoto.hpp"
-#include "../../../../opencv_main/modules/imgproc/src/gcgraph.hpp"
-
 #include "opencv2/imgproc.hpp"
-#include "opencv2/stitching.hpp"
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/core_c.h"
@@ -55,217 +52,69 @@
 #include "opencv2/core/types.hpp"
 #include "opencv2/core/types_c.h"
 
+namespace xphotoInternal
+{
+#  include "photomontage.hpp"
+#  include "annf.hpp"
+}
+
 namespace cv
 {
-    template <typename Tp1, typename Tp2> static inline Tp2 sqr(Tp1 arg) { return arg * arg; }
-
-    template <typename Tp> static inline Tp sqr(Tp arg) { return arg * arg; }
-
-    static inline float norm2(const float &a, const float &b) { return sqr(a - b); }
-
-    static inline float norm2(const Vec2f &a, const Vec2f &b) { return (a - b).dot(a - b); }
-
-    static inline float norm2(const Vec3f &a, const Vec3f &b) { return (a - b).dot(a - b); }
-
-    static inline float norm2(const Vec4f &a, const Vec4f &b) { return (a - b).dot(a - b); }
-
-    #define dist(imgs, l1, l2, idx1, idx2) ( norm2(imgs[l1](idx1), imgs[l2](idx1)) \
-                                           + norm2(imgs[l1](idx2), imgs[l2](idx2)) )
-
-    template <typename Tp>
-    static inline void setWeights(GCGraph <float> &graph,
-        const std::vector < Mat_<Tp> > &imgs, const int A, const int B,
-        const int labelA, const int labelB, const int alpha,
-        const Point &pointA, const Point &pointB)
+    template <typename Tp, unsigned int cn>
+    static void shiftMapInpaint(const Mat &src, const Mat &mask, Mat &dst)
     {
-        //************************************************************//
-        //************************************************************//
-
-        if (labelA == labelB)
-        {
-            double weightAB = dist( imgs, labelA, alpha, pointA, pointB );
-            graph.addEdges(A, B, weightAB, weightAB);
-        }
-        else
-        {
-            double weightAX = dist( imgs, labelA, alpha, pointA, pointB );
-            double weightXB = dist( imgs, alpha, labelB, pointA, pointB );
-            double weightXSink = dist( imgs, labelA, labelB, pointA, pointB );
-
-            int X = graph.addVtx();
-
-            graph.addEdges(A, X, weightAX, weightAX);
-            graph.addEdges(X, B, weightXB, weightXB);
-            graph.addTermWeights(X, 0, weightXSink);
-        }
-    }
-
-    template <typename Tp>
-    static double alphaExpansion(const std::vector < Mat_<Tp> > &imgs,
-        const std::vector < Mat_<uchar> > &masks,
-        const Mat_<int> &labeling, const int alpha, Mat_<int> &nlabeling)
-    {
-        //************************************************************//
-        //************************************************************//
-
-        const int height = imgs[0].rows;
-        const int width = imgs[0].cols;
-
-        const double infinity = 10000000000;
-
-        const int actualEdges = height*(width - 1) + width*(height - 1);
-        GCGraph <float> graph(height*width + actualEdges, 2*actualEdges);
-
-        // terminal links
-        for (int i = 0; i < height; ++i)
-        {
-            const uchar *maskAlphaRow = masks[alpha].ptr(i);
-            const int *labelRow = (const int *) labeling.ptr(i);
-
-            for (int j = 0; j < width; ++j)
-                graph.addTermWeights( graph.addVtx(),
-                                      maskAlphaRow[j] ? 0 : infinity,
-                           masks[ labelRow[j] ](i, j) ? 0 : infinity );
-        }
-
-        // neighbor links
-        for (int i = 0; i < height - 1; ++i)
-        {
-            const int *currentRow = (const int *) labeling.ptr(i);
-            const int *nextRow = (const int *) labeling.ptr(i + 1);
-
-            for (int j = 0; j < width - 1; ++j)
-            {
-                setWeights( graph, imgs, i*width + j,   i*width + (j + 1),
-                                         currentRow[j], currentRow[j + 1], alpha,
-                                         Point(i, j),     Point(i, j + 1) );
-                setWeights( graph, imgs, i*width + j,   (i + 1)*width + j,
-                                         currentRow[j],        nextRow[j], alpha,
-                                         Point(i, j),      Point(i + 1, j) );
-            }
-        }
-
-        double result = graph.maxFlow();
-
-        nlabeling.create( labeling.size() );
-        for (int i = 0; i < height; ++i)
-        {
-            const int *inRow = (const int *) labeling.ptr(i);
-            int *outRow = (int *) nlabeling.ptr(i);
-
-            for (int j = 0; j < width; ++j)
-            {
-                bool gPart = graph.inSourceSegment(i*width + j);
-                outRow[j] = gPart ? inRow[j] : alpha;
-            }
-        }
-
-        return result;
-    }
-
-    template <typename Tp>
-    static void shiftMapInpaint(const Mat_<Tp> &src, const Mat_<uchar> &mask, Mat_<Tp> &dst)
-    {
-        //************************************************************//
-        //************************************************************//
-
         const int nTransform = 60; // number of dominant transforms for stitching
         const int psize = 8; // single ANNF patch size
 
-        const int width = src.cols;
-        const int height = src.rows;
-
-        Mat_<uchar> invMask = 255 - mask;
-        dilate(invMask, invMask, Mat(), Point(-1,-1), 2);
-
-        /** Downsample **/
-        //...
-
         /** ANNF computation **/
-        int init = time(NULL);
-        srand( 1406297336 );
-        std::cout << init << std::endl;
+        srand( time(NULL) );
 
         std::vector <Matx33f> transforms; // dominant transforms
         for (int i = 0; i < nTransform; ++i)
         {
-            float dx   = rand()%width - width/2;
-            float dy = rand()%height - height/2;
+            float dx   = rand()%src.cols - src.cols/2;
+            float dy = rand()%src.rows - src.rows/2;
             transforms.push_back( Matx33f( 1, 0, dx,
                                            0, 1, dy,
                                            0, 0,  1) );
         }
 
         /** Warping **/
-        std::vector < Mat_<Tp> > imgs( nTransform + 1 );      // source image transformed with transforms[i]
-        std::vector < Mat_<uchar> > masks( nTransform + 1 );  // validity mask for current shift
+        std::vector <Mat> images( nTransform + 1 ); // source image transformed with transforms
+        std::vector <Mat> masks( nTransform + 1 );  // definition domain for current shift
 
-        src.copyTo( imgs[0] );
+        Mat_<uchar> invMask = 255 - mask;
+        dilate(invMask, invMask, Mat(), Point(-1,-1), 2);
+
+        src.convertTo( images[0], CV_32F );
         mask.copyTo( masks[0] );
 
         for (int i = 0; i < nTransform; ++i)
         {
-            Mat_<Tp> nsrc( src.size() );
-            warpPerspective( src, nsrc, transforms[i], src.size(),
-                             INTER_LINEAR, BORDER_CONSTANT, 0 );
+            warpPerspective( images[0], images[i + 1], transforms[i],
+                             images[0].size(), INTER_LINEAR );
 
-            Mat_<uchar> nmask( mask.size(), mask.type() );
-            warpPerspective( mask, nmask, transforms[i], mask.size(),
-                             INTER_NEAREST, BORDER_CONSTANT, 0 );
-            nmask &= invMask;
-
-            nsrc.copyTo( imgs[i + 1] );
-            nmask.copyTo( masks[i + 1] );
+            warpPerspective( masks[0], masks[i + 1], transforms[i],
+                             masks[0].size(), INTER_NEAREST);
+            masks[i + 1] &= invMask;
         }
 
         /** Stitching **/
-        std::vector <double> costs( nTransform + 1 );
-        std::vector < Mat_<int> > labelings( nTransform + 1 );
-
-        Mat_<int> labeling( height, width, 0 );
-        double cost = std::numeric_limits<double>::max();
-
-        for (int success = false, num = 0; ; success = false)
-        {
-            for (int i = 0; i < nTransform + 1; ++i)
-                costs[i] = alphaExpansion(imgs, masks, labeling, i, labelings[i]);
-
-            for (int i = 0; i < nTransform + 1; ++i)
-                if (costs[i] < 0.98*cost)
-                {
-                    success = true;
-                    cost = costs[num = i];
-                }
-
-            if (success == false)
-                break;
-
-            labelings[num].copyTo(labeling);
-        }
-
-        for (int k = 0; k < height*width; ++k)
-        {
-            int i = k / width;
-            int j = k % width;
-            dst(i, j) = imgs[labeling(i, j)](i, j);
-        }
-
-        /** Upsample and refinement **/
-        //...
+        Mat photomontageResult;
+        xphotoInternal::Photomontage < cv::Vec <float, cn> >( images, masks )
+            .assignResImage(photomontageResult);
+        photomontageResult.convertTo( dst, dst.type() );
     }
 
-    template <typename Tp>
-    void inpaint(const Mat_<Tp> src, const Mat_<uchar> mask, Mat_<Tp> dst, const int algorithmType)
+    template <typename Tp, unsigned int cn>
+    void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
     {
-        //************************************************************//
-        //************************************************************//
-
-        dst.create( src.size() );
+        dst.create( src.size(), src.type() );
 
         switch ( algorithmType )
         {
             case INPAINT_SHIFTMAP:
-                shiftMapInpaint(src, mask, dst);
+                shiftMapInpaint <Tp, cn>(src, mask, dst);
                 break;
             default:
                 CV_Assert( false );
@@ -281,73 +130,70 @@ namespace cv
     */
     void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
     {
-        //************************************************************//
-        //************************************************************//
-
         CV_Assert( mask.channels() == 1 && mask.depth() == CV_8U );
         CV_Assert( src.rows == mask.rows && src.cols == mask.cols );
 
         switch ( src.type() )
         {
             case CV_8UC1:
-                inpaint( Mat_<uchar>(src), Mat_<uchar>(mask), Mat_<uchar>(dst), algorithmType );
+                inpaint <uchar,  1>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC2:
-                inpaint( Mat_<Vec2b>(src), Mat_<uchar>(mask), Mat_<Vec2b>(dst), algorithmType );
+                inpaint <uchar,  2>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC3:
-                inpaint( Mat_<Vec3b>(src), Mat_<uchar>(mask), Mat_<Vec3b>(dst), algorithmType );
+                inpaint <uchar,  3>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC4:
-                inpaint( Mat_<Vec4b>(src), Mat_<uchar>(mask), Mat_<Vec4b>(dst), algorithmType );
+                inpaint <uchar,  4>( src, mask, dst, algorithmType );
                 break;
             case CV_16SC1:
-                inpaint( Mat_<short>(src), Mat_<uchar>(mask), Mat_<short>(dst), algorithmType );
+                inpaint <short,  1>( src, mask, dst, algorithmType );
                 break;
             case CV_16SC2:
-                inpaint( Mat_<Vec2s>(src), Mat_<uchar>(mask), Mat_<Vec2s>(dst), algorithmType );
+                inpaint <short,  2>( src, mask, dst, algorithmType );
                 break;
             case CV_16SC3:
-                inpaint( Mat_<Vec3s>(src), Mat_<uchar>(mask), Mat_<Vec3s>(dst), algorithmType );
+                inpaint <short,  3>( src, mask, dst, algorithmType );
                 break;
             case CV_16SC4:
-                inpaint( Mat_<Vec4s>(src), Mat_<uchar>(mask), Mat_<Vec4s>(dst), algorithmType );
+                inpaint <short,  4>( src, mask, dst, algorithmType );
                 break;
             case CV_32SC1:
-                inpaint( Mat_<int>(src), Mat_<uchar>(mask), Mat_<int>(dst), algorithmType );
+                inpaint <int,    1>( src, mask, dst, algorithmType );
                 break;
             case CV_32SC2:
-                inpaint( Mat_<Vec2i>(src), Mat_<uchar>(mask), Mat_<Vec2i>(dst), algorithmType );
+                inpaint <int,    2>( src, mask, dst, algorithmType );
                 break;
             case CV_32SC3:
-                inpaint( Mat_<Vec3i>(src), Mat_<uchar>(mask), Mat_<Vec3i>(dst), algorithmType );
+                inpaint <int,    3>( src, mask, dst, algorithmType );
                 break;
             case CV_32SC4:
-                inpaint( Mat_<Vec4i>(src), Mat_<uchar>(mask), Mat_<Vec4i>(dst), algorithmType );
+                inpaint <int,    4>( src, mask, dst, algorithmType );
                 break;
             case CV_32FC1:
-                inpaint( Mat_<float>(src), Mat_<uchar>(mask), Mat_<float>(dst), algorithmType);
+                inpaint <float,  1>( src, mask, dst, algorithmType );
                 break;
             case CV_32FC2:
-                inpaint( Mat_<Vec2f>(src), Mat_<uchar>(mask), Mat_<Vec2f>(dst), algorithmType );
+                inpaint <float,  2>( src, mask, dst, algorithmType );
                 break;
             case CV_32FC3:
-                inpaint( Mat_<Vec3f>(src), Mat_<uchar>(mask), Mat_<Vec3f>(dst), algorithmType );
+                inpaint <float,  3>( src, mask, dst, algorithmType );
                 break;
             case CV_32FC4:
-                inpaint( Mat_<Vec4f>(src), Mat_<uchar>(mask), Mat_<Vec4f>(dst), algorithmType );
+                inpaint <float,  4>( src, mask, dst, algorithmType );
                 break;
             case CV_64FC1:
-                inpaint( Mat_<double>(src), Mat_<uchar>(mask), Mat_<double>(dst), algorithmType );
+                inpaint <double, 1>( src, mask, dst, algorithmType );
                 break;
             case CV_64FC2:
-                inpaint( Mat_<Vec2d>(src), Mat_<uchar>(mask), Mat_<Vec2d>(dst), algorithmType );
+                inpaint <double, 2>( src, mask, dst, algorithmType );
                 break;
             case CV_64FC3:
-                inpaint( Mat_<Vec3d>(src), Mat_<uchar>(mask), Mat_<Vec3d>(dst), algorithmType );
+                inpaint <double, 3>( src, mask, dst, algorithmType );
                 break;
             case CV_64FC4:
-                inpaint( Mat_<Vec4d>(src), Mat_<uchar>(mask), Mat_<Vec4d>(dst), algorithmType );
+                inpaint <double, 4>( src, mask, dst, algorithmType );
                 break;
             default:
                 CV_Assert( false );
