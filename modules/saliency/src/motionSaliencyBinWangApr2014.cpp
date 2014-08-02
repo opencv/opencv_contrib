@@ -344,7 +344,45 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat ima
           // Neighborhood of current pixel in the current background model template.
           // The ROI is centered in the pixel coordinates
           // TODO border check
-          backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
+          if( ( i - floor( roiSize / 2 ) >= 0 ) && ( j - floor( roiSize / 2 ) >= 0 )
+              && ( i + floor( roiSize / 2 ) <= ( backgroundModel[z].rows - 1 ) ) && ( j + floor( roiSize / 2 ) <= ( backgroundModel[z].cols - 1 ) ) )
+          {
+
+            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
+          }
+          else if( i == 0 && j == 0 )  // upper left
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i, j, round( roiSize / 2 ), round( roiSize / 2 ) ) );
+          }
+          else if( j == 0 && ( i - floor( roiSize / 2 ) >= 0 ) )  // middle left
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j, roiSize, round( roiSize / 2 ) ) );
+          }
+          else if( i == ( backgroundModel[z].rows - 1 ) && j == 0 )  //down left
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j, round( roiSize / 2 ), round( roiSize / 2 ) ) );
+          }
+          else if( i == 0 && ( j - floor( roiSize / 2 ) >= 0 ) )  // upper - middle
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i, j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
+          }
+          else if( i == ( backgroundModel[z].rows - 1 ) && ( j - floor( roiSize / 2 ) >= 0 ) )  //down middle
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
+          }
+          else if( i == 0 && j == ( backgroundModel[z].cols - 1 ) )  // upper right
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i, j - floor( roiSize / 2 ), roiSize, round( roiSize / 2 ) ) );
+          }
+          else if( j == ( backgroundModel[z].cols - 1 ) && ( i - floor( roiSize / 2 ) >= 0 ) )  // middle - right
+          {
+            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
+          }
+          else if( i == ( backgroundModel[z].rows - 1 ) && j == ( backgroundModel[z].cols - 1 ) )  // down right
+          {
+            backgroundModelROI = backgroundModel[z](
+                Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), round( roiSize / 2 ) ) );
+          }
 
           /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
            * background model
@@ -357,11 +395,13 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat ima
           {
             /////////////////// REPLACEMENT of backgroundModel template ///////////////////
             //replace TA with current TK
+            //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[0]=potentialBackground.at<Vec2f>( i, j )[0];
+            //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[1]= potentialBackground.at<Vec2f>( i, j )[1];
+            backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
             break;
-
           }
-        }
-      }
+        }  // end for backgroundModel size
+      }  // close if of EVALUATION
 
     }  // end of second for
   }  // end of first for
