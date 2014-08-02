@@ -107,8 +107,8 @@ int main( int argc, char** argv )
       int B = ( rand() % (int) ( 255 + 1 ) );
 
       /* get extremes of line */
-      Point pt1 = Point( kl.startPointX, kl.startPointY );
-      Point pt2 = Point( kl.endPointX, kl.endPointY );
+      Point pt1 = Point2f( kl.startPointX, kl.startPointY );
+      Point pt2 = Point2f( kl.endPointX, kl.endPointY );
 
       /* draw line */
       line( output, pt1, pt2, Scalar( B, G, R ), 3 );

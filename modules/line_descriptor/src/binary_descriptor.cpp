@@ -610,7 +610,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   scale[0] = 1;
   for ( int octaveCount = 1; octaveCount < params.numOfOctave_; octaveCount++ )
   {
-    scale[octaveCount] = factor * scale[octaveCount - 1];
+    scale[octaveCount] = (float) ( factor * scale[octaveCount - 1] );
   }
 
   /* some variables' declarations */
@@ -1114,7 +1114,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
       desVec = pSingleLine->descriptor.data();
 
       int base = 0;
-      for ( short i = 0; i < (short) ( NUM_OF_BANDS * 8 ); ++base, i = base * 8 )
+      for ( short i = 0; i < (short) ( NUM_OF_BANDS * 8 ); ++base, i = (short) ( base * 8 ) )
       {
         tempM += * ( desVec + i ) * * ( desVec + i );  //desVec[8*i+0] * desVec[8*i+0];
         tempM += * ( desVec + i + 1 ) * * ( desVec + i + 1 );  //desVec[8*i+1] * desVec[8*i+1];
@@ -1130,7 +1130,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
       tempS = 1 / sqrt( tempS );
       desVec = pSingleLine->descriptor.data();
       base = 0;
-      for ( short i = 0; i < (short) ( NUM_OF_BANDS * 8 ); ++base, i = base * 8 )
+      for ( short i = 0; i < (short) ( NUM_OF_BANDS * 8 ); ++base, i = (short) ( base * 8 ) )
       {
         * ( desVec + i ) = * ( desVec + i ) * tempM;  //desVec[8*i] =  desVec[8*i] * tempM;
         * ( desVec + 1 + i ) = * ( desVec + 1 + i ) * tempM;  //desVec[8*i+1] =  desVec[8*i+1] * tempM;
@@ -1151,7 +1151,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
       {
         if( desVec[i] > 0.4 )
         {
-          desVec[i] = (float)0.4;
+          desVec[i] = (float) 0.4;
         }
       }
 

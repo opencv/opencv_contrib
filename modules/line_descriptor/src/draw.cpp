@@ -61,7 +61,7 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
   }
 
   /* initialize random seed: */
-  srand( time( NULL ) );
+  srand( (unsigned int) time( NULL ) );
 
   Scalar singleLineColorRGB;
   if( singleLineColor == Scalar::all( -1 ) )
@@ -91,13 +91,13 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
     for ( size_t i = 0; i < keylines1.size(); i++ )
     {
       KeyLine k1 = keylines1[i];
-      line( outImg, Point( k1.startPointX, k1.startPointY ), Point( k1.endPointX, k1.endPointY ), singleLineColorRGB, 2 );
+      line( outImg, Point2f( k1.startPointX, k1.startPointY ), Point2f( k1.endPointX, k1.endPointY ), singleLineColorRGB, 2 );
     }
 
     for ( size_t j = 0; j < keylines2.size(); j++ )
     {
       KeyLine k2 = keylines2[j];
-      line( outImg, Point( k2.startPointX + offset, k2.startPointY ), Point( k2.endPointX + offset, k2.endPointY ), singleLineColorRGB, 2 );
+      line( outImg, Point2f( k2.startPointX + offset, k2.startPointY ), Point2f( k2.endPointX + offset, k2.endPointY ), singleLineColorRGB, 2 );
     }
   }
 
@@ -127,13 +127,13 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
         matchColorRGB = matchColor;
 
       /* draw lines if necessary */
-      line( outImg, Point( left.startPointX, left.startPointY ), Point( left.endPointX, left.endPointY ), singleLineColorRGB, 2 );
+      line( outImg, Point2f( left.startPointX, left.startPointY ), Point2f( left.endPointX, left.endPointY ), singleLineColorRGB, 2 );
 
-      line( outImg, Point( right.startPointX + offset, right.startPointY ), Point( right.endPointX + offset, right.endPointY ), singleLineColorRGB,
+      line( outImg, Point2f( right.startPointX + offset, right.startPointY ), Point2f( right.endPointX + offset, right.endPointY ), singleLineColorRGB,
             2 );
 
       /* link correspondent lines */
-      line( outImg, Point( left.startPointX, left.startPointY ), Point( right.startPointX + offset, right.startPointY ), matchColorRGB, 1 );
+      line( outImg, Point2f( left.startPointX, left.startPointY ), Point2f( right.startPointX + offset, right.startPointY ), matchColorRGB, 1 );
     }
   }
 }
@@ -164,7 +164,7 @@ void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& 
     KeyLine k = keylines[i];
 
     /* draw line */
-    line( outImage, Point( k.startPointX, k.startPointY ), Point( k.endPointX, k.endPointY ), lineColor, 1 );
+    line( outImage, Point2f( k.startPointX, k.startPointY ), Point2f( k.endPointX, k.endPointY ), lineColor, 1 );
   }
 }
 

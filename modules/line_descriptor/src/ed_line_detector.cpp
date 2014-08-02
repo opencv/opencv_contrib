@@ -66,8 +66,8 @@ EDLineDetector::EDLineDetector( EDLineParam param )
   //set parameters for line segment detection
   ksize_ = param.ksize;
   sigma_ = param.sigma;
-  gradienThreshold_ = param.gradientThreshold;
-  anchorThreshold_ = param.anchorThreshold;
+  gradienThreshold_ = (short) param.gradientThreshold;
+  anchorThreshold_ = (unsigned char) param.anchorThreshold;
   scanIntervals_ = param.scanIntervals;
   minLineLen_ = param.minLineLen;
   lineFitErrThreshold_ = param.lineFitErrThreshold;
@@ -132,18 +132,19 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   unsigned int edgePixelArraySize = pixelNum / 5;
   unsigned int maxNumOfEdge = edgePixelArraySize / 20;
   //compute dx, dy images
-  if( gImg_.cols != (int)imageWidth || gImg_.rows != (int)imageHeight )
+  if( gImg_.cols != (int) imageWidth || gImg_.rows != (int) imageHeight )
   {
-    if(pFirstPartEdgeX_!= NULL){
-     delete [] pFirstPartEdgeX_;
-     delete [] pFirstPartEdgeY_;
-     delete [] pSecondPartEdgeX_;
-     delete [] pSecondPartEdgeY_;
-     delete [] pFirstPartEdgeS_;
-     delete [] pSecondPartEdgeS_;
-     delete [] pAnchorX_;
-     delete [] pAnchorY_;
-     }
+    if( pFirstPartEdgeX_ != NULL )
+    {
+      delete[] pFirstPartEdgeX_;
+      delete[] pFirstPartEdgeY_;
+      delete[] pSecondPartEdgeX_;
+      delete[] pSecondPartEdgeY_;
+      delete[] pFirstPartEdgeS_;
+      delete[] pSecondPartEdgeS_;
+      delete[] pAnchorX_;
+      delete[] pAnchorY_;
+    }
 
     dxImg_.create( imageHeight, imageWidth, CV_16SC1 );
     dyImg_.create( imageHeight, imageWidth, CV_16SC1 );
@@ -191,7 +192,7 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
       //gValue1 = pdirImg[indexInArray];
       if( pdirImg[indexInArray] == Horizontal )
       {  //if the direction of pixel is horizontal, then compare with up and down
-        //gValue2 = pgImg[indexInArray];
+         //gValue2 = pgImg[indexInArray];
         if( pgImg[indexInArray] >= pgImg[indexInArray - imageWidth] + anchorThreshold_
             && pgImg[indexInArray] >= pgImg[indexInArray + imageWidth] + anchorThreshold_ )
         {				// (w,h) is accepted as an anchor
@@ -285,9 +286,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the right and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray + 1];
-            gValue3 = pgImg[indexInArray + imageWidth + 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -311,9 +312,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the left and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth - 1];
-            gValue2 = pgImg[indexInArray - 1];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-left
               x = x - 1;
@@ -353,9 +354,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the down and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray + imageWidth + 1];
-            gValue2 = pgImg[indexInArray + imageWidth];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //down-right
               x = x + 1;
@@ -379,9 +380,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the up and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray - imageWidth];
-            gValue3 = pgImg[indexInArray - imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -436,9 +437,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the right and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray + 1];
-            gValue3 = pgImg[indexInArray + imageWidth + 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -462,9 +463,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the left and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth - 1];
-            gValue2 = pgImg[indexInArray - 1];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-left
               x = x - 1;
@@ -504,9 +505,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the down and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray + imageWidth + 1];
-            gValue2 = pgImg[indexInArray + imageWidth];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //down-right
               x = x + 1;
@@ -530,9 +531,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the up and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray - imageWidth];
-            gValue3 = pgImg[indexInArray - imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -586,9 +587,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the right and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray + 1];
-            gValue3 = pgImg[indexInArray + imageWidth + 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -612,9 +613,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the left and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth - 1];
-            gValue2 = pgImg[indexInArray - 1];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-left
               x = x - 1;
@@ -654,9 +655,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the down and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray + imageWidth + 1];
-            gValue2 = pgImg[indexInArray + imageWidth];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //down-right
               x = x + 1;
@@ -680,9 +681,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the up and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray - imageWidth];
-            gValue3 = pgImg[indexInArray - imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -737,9 +738,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the right and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray + 1];
-            gValue3 = pgImg[indexInArray + imageWidth + 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -763,9 +764,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the left and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth - 1];
-            gValue2 = pgImg[indexInArray - 1];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - 1];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-left
               x = x - 1;
@@ -805,9 +806,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the down and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray + imageWidth + 1];
-            gValue2 = pgImg[indexInArray + imageWidth];
-            gValue3 = pgImg[indexInArray + imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray + imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray + imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray + imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //down-right
               x = x + 1;
@@ -831,9 +832,9 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
               break;
             }
             // Look at 3 neighbors to the up and pick the one with the max. gradient value
-            gValue1 = pgImg[indexInArray - imageWidth + 1];
-            gValue2 = pgImg[indexInArray - imageWidth];
-            gValue3 = pgImg[indexInArray - imageWidth - 1];
+            gValue1 = (unsigned char) pgImg[indexInArray - imageWidth + 1];
+            gValue2 = (unsigned char) pgImg[indexInArray - imageWidth];
+            gValue3 = (unsigned char) pgImg[indexInArray - imageWidth - 1];
             if( gValue1 >= gValue2 && gValue1 >= gValue3 )
             {        //up-right
               x = x + 1;
@@ -912,7 +913,7 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
     }
     indexInArray = pSecondPartEdgeS_[edgeId];
     offsetPSecond = pSecondPartEdgeS_[edgeId + 1];
-    for ( tempID = indexInArray + 1; tempID < (int)offsetPSecond; tempID++ )
+    for ( tempID = indexInArray + 1; tempID < (int) offsetPSecond; tempID++ )
     {		//add second part edge
       pxCors[indexInCors] = pSecondPartEdgeX_[tempID];
       pyCors[indexInCors++] = pSecondPartEdgeY_[tempID];
@@ -929,7 +930,7 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
 
   //first, call EdgeDrawing function to extract edges
   EdgeChains edges;
-  if( ( EdgeDrawing( image, edges, smoothed ) ) != true )
+  if( ( EdgeDrawing( image, edges, smoothed ) ) != 1 )
   {
     cout << "Line Detection not finished" << endl;
     return -1;
@@ -1053,12 +1054,12 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
           double a5 = lineEqu[2] * lineEqu[1];
           unsigned int Px = pLineXCors[pLineSID[numOfLines]];					//first pixel
           unsigned int Py = pLineYCors[pLineSID[numOfLines]];
-          lineEndP[0] = a1 * Px - a3 * Py - a4;					//x
-          lineEndP[1] = a2 * Py - a3 * Px - a5;					//y
+          lineEndP[0] = (float) ( a1 * Px - a3 * Py - a4 );					//x
+          lineEndP[1] = (float) ( a2 * Py - a3 * Px - a5 );					//y
           Px = pLineXCors[offsetInLineArray - 1];					//last pixel
           Py = pLineYCors[offsetInLineArray - 1];
-          lineEndP[2] = a1 * Px - a3 * Py - a4;					//x
-          lineEndP[3] = a2 * Py - a3 * Px - a5;					//y
+          lineEndP[2] = (float) ( a1 * Px - a3 * Py - a4 );					//x
+          lineEndP[3] = (float) ( a2 * Py - a3 * Px - a5 );					//y
           lineEndpoints_.push_back( lineEndP );
           lineDirection_.push_back( direction );
           numOfLines++;
@@ -1140,12 +1141,12 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
           double a5 = lineEqu[2] * lineEqu[1];
           unsigned int Px = pLineXCors[pLineSID[numOfLines]];					//first pixel
           unsigned int Py = pLineYCors[pLineSID[numOfLines]];
-          lineEndP[0] = a1 * Px - a3 * Py - a4;					//x
-          lineEndP[1] = a2 * Py - a3 * Px - a5;					//y
+          lineEndP[0] = (float) ( a1 * Px - a3 * Py - a4 );					//x
+          lineEndP[1] = (float) ( a2 * Py - a3 * Px - a5 );					//y
           Px = pLineXCors[offsetInLineArray - 1];					//last pixel
           Py = pLineYCors[offsetInLineArray - 1];
-          lineEndP[2] = a1 * Px - a3 * Py - a4;					//x
-          lineEndP[3] = a2 * Py - a3 * Px - a5;					//y
+          lineEndP[2] = (float) ( a1 * Px - a3 * Py - a4 );					//x
+          lineEndP[3] = (float) ( a2 * Py - a3 * Px - a5 );					//y
           lineEndpoints_.push_back( lineEndP );
           lineDirection_.push_back( direction );
           numOfLines++;
@@ -1187,8 +1188,8 @@ double EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *
     for ( int i = 0; i < minLineLen_; i++ )
     {
       //*(pMatT+minLineLen_) = 1; //the value are not changed;
-      * ( pMatT++ ) = xCors[offsetS];
-      fitVec[0][i] = yCors[offsetS++];
+      * ( pMatT++ ) = (float) xCors[offsetS];
+      fitVec[0][i] = (float) yCors[offsetS++];
     }
     ATA = fitMatT * fitMatT.t();
     ATV = fitMatT * fitVec.t();
@@ -1221,8 +1222,8 @@ double EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *
     for ( int i = 0; i < minLineLen_; i++ )
     {
       //*(pMatT+minLineLen_) = 1;//the value are not changed;
-      * ( pMatT++ ) = yCors[offsetS];
-      fitVec[0][i] = xCors[offsetS++];
+      * ( pMatT++ ) = (float) yCors[offsetS];
+      fitVec[0][i] = (float) xCors[offsetS++];
     }
     ATA = fitMatT * ( fitMatT.t() );
     ATV = fitMatT * fitVec.t();
@@ -1279,8 +1280,8 @@ double EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *
     for ( int i = 0; i < newLength; i++ )
     {
       * ( pMatT + newLength ) = 1;
-      * ( pMatT++ ) = xCors[newOffsetS];
-      vec[0][i] = yCors[newOffsetS++];
+      * ( pMatT++ ) = (float) xCors[newOffsetS];
+      vec[0][i] = (float) yCors[newOffsetS++];
     }
     /* [a,b]^T = Inv(ATA + mat^T * mat) * (ATV + mat^T * vec) */
     tempMatLineFit = matT * matT.t();
@@ -1307,8 +1308,8 @@ double EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *
     for ( int i = 0; i < newLength; i++ )
     {
       * ( pMatT + newLength ) = 1;
-      * ( pMatT++ ) = yCors[newOffsetS];
-      vec[0][i] = xCors[newOffsetS++];
+      * ( pMatT++ ) = (float) yCors[newOffsetS];
+      vec[0][i] = (float) xCors[newOffsetS++];
     }
     /* [a,b]^T = Inv(ATA + mat^T * mat) * (ATV + mat^T * vec) */
 //		matT.MultiplyWithTransposeOf(matT, tempMatLineFit);
@@ -1358,19 +1359,19 @@ bool EDLineDetector::LineValidation_( unsigned int *xCors, unsigned int *yCors, 
     }
     if( meanGradientX > 0 && meanGradientY >= 0 )
     {					//first quadrant, and positive direction of X axis.
-      direction = atan2( -dy, dx );					//line direction is in fourth quadrant
+      direction = (float) atan2( -dy, dx );					//line direction is in fourth quadrant
     }
     if( meanGradientX <= 0 && meanGradientY > 0 )
     {					//second quadrant, and positive direction of Y axis.
-      direction = atan2( dy, dx );					//line direction is in first quadrant
+      direction = (float) atan2( dy, dx );					//line direction is in first quadrant
     }
     if( meanGradientX < 0 && meanGradientY <= 0 )
     {					//third quadrant, and negative direction of X axis.
-      direction = atan2( dy, -dx );					//line direction is in second quadrant
+      direction = (float) atan2( dy, -dx );					//line direction is in second quadrant
     }
     if( meanGradientX >= 0 && meanGradientY < 0 )
     {					//fourth quadrant, and negative direction of Y axis.
-      direction = atan2( -dy, -dx );					//line direction is in third quadrant
+      direction = (float) atan2( -dy, -dx );					//line direction is in third quadrant
     }
     /*then check whether the line is on the border of the image. We don't keep the border line.*/
     if( fabs( direction ) < 0.15 || M_PI - fabs( direction ) < 0.15 )
@@ -1411,7 +1412,7 @@ bool EDLineDetector::LineValidation_( unsigned int *xCors, unsigned int *yCors, 
 
 int EDLineDetector::EDline( cv::Mat &image, bool smoothed )
 {
-  if( ( EDline( image, lines_, smoothed ) ) != true )
+  if( ( EDline( image, lines_, smoothed ) ) != 1 )
   {
     return -1;
   }

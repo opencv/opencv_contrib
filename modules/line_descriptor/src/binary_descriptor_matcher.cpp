@@ -105,7 +105,7 @@ void BinaryDescriptorMatcher::checkKDistances( UINT32 * numres, int k, std::vect
   {
     if( ( * ( numres_tmp + j ) ) > 0 )
     {
-      for ( int i = 0; i < (int)( * ( numres_tmp + j ) ) && k_to_found > 0; i++ )
+      for ( int i = 0; i < (int) ( * ( numres_tmp + j ) ) && k_to_found > 0; i++ )
       {
         k_distances.push_back( j );
         k_to_found--;
@@ -153,10 +153,10 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
     /* data validity check */
     if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
     {
-      std::cout << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
-                << "1 column. Program will be terminated" << std::endl;
-
-      CV_Assert( false );
+      std::stringstream ss;
+      ss << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
+         << "1 column. Program will be terminated";
+      throw std::runtime_error( ss.str() );
     }
 
     /* create a DMatch object if required by mask or if there is
@@ -170,7 +170,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
       dm.queryIdx = counter;
       dm.trainIdx = results[counter] - 1;
       dm.imgIdx = itup->second;
-      dm.distance = k_distances[0];
+      dm.distance = (float) k_distances[0];
 
       matches.push_back( dm );
     }
@@ -223,7 +223,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
       dm.queryIdx = counter;
       dm.trainIdx = results[counter] - 1;
       dm.imgIdx = 0;
-      dm.distance = k_distances[0];
+      dm.distance = (float) k_distances[0];
 
       matches.push_back( dm );
     }
@@ -293,7 +293,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
         dm.queryIdx = counter;
         dm.trainIdx = results[j] - 1;
         dm.imgIdx = 0;
-        dm.distance = k_distances[j - index];
+        dm.distance = (float) k_distances[j - index];
 
         tempVec.push_back( dm );
       }
@@ -375,7 +375,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
         dm.queryIdx = counter;
         dm.trainIdx = results[j] - 1;
         dm.imgIdx = itup->second;
-        dm.distance = k_distances[j - index];
+        dm.distance = (float) k_distances[j - index];
 
         tempVector.push_back( dm );
       }
@@ -444,7 +444,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
           dm.queryIdx = i;
           dm.trainIdx = results[j] - 1;
           dm.imgIdx = 0;
-          dm.distance = k_distances[j - index];
+          dm.distance = (float) k_distances[j - index];
 
           tempVector.push_back( dm );
         }
@@ -528,7 +528,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
           dm.queryIdx = counter;
           dm.trainIdx = results[j] - 1;
           dm.imgIdx = itup->second;
-          dm.distance = k_distances[j - index];
+          dm.distance = (float)k_distances[j - index];
 
           tempVector.push_back( dm );
         }
