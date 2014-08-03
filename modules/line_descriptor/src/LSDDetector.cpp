@@ -167,15 +167,15 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       checkLineExtremes( extremes, gaussianPyrs[j].size() );
 
       /* fill KeyLine's fields */
-      kl.startPointX = extremes[0];
-      kl.startPointY = extremes[1];
-      kl.endPointX = extremes[2];
-      kl.endPointY = extremes[3];
-      kl.sPointInOctaveX = extremes[0];
-      kl.sPointInOctaveY = extremes[1];
-      kl.ePointInOctaveX = extremes[2];
-      kl.ePointInOctaveY = extremes[3];
-      kl.lineLength = sqrt( pow( extremes[0] - extremes[2], 2 ) + pow( extremes[1] - extremes[3], 2 ) );
+      kl.startPointX = (float) extremes[0];
+      kl.startPointY = (float) extremes[1];
+      kl.endPointX = (float) extremes[2];
+      kl.endPointY = (float) extremes[3];
+      kl.sPointInOctaveX = (float) extremes[0];
+      kl.sPointInOctaveY = (float) extremes[1];
+      kl.ePointInOctaveX = (float) extremes[2];
+      kl.ePointInOctaveY = (float) extremes[3];
+      kl.lineLength = (float) sqrt( pow( extremes[0] - extremes[2], 2 ) + pow( extremes[1] - extremes[3], 2 ) );
 
       /* compute number of pixels covered by line */
       LineIterator li( gaussianPyrs[j], Point( extremes[0], extremes[1] ), Point( extremes[2], extremes[3] ) );
@@ -186,7 +186,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       kl.octave = j;
       kl.size = ( kl.endPointX - kl.startPointX ) * ( kl.endPointY - kl.startPointY );
       kl.response = kl.lineLength / max( gaussianPyrs[j].cols, gaussianPyrs[j].rows );
-      kl.pt = Point( ( kl.endPointX + kl.startPointX ) / 2, ( kl.endPointY + kl.startPointY ) / 2 );
+      kl.pt = Point2f( ( kl.endPointX + kl.startPointX ) / 2, ( kl.endPointY + kl.startPointY ) / 2 );
 
       keylines.push_back( kl );
     }
@@ -198,7 +198,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
     {
       KeyLine kl = keylines[keyCounter];
-      if( mask.at<uchar>( kl.startPointY, kl.startPointX ) == 0 && mask.at<uchar>( kl.endPointY, kl.endPointX ) == 0 )
+      if( mask.at<uchar>( (int)kl.startPointY, (int)kl.startPointX ) == 0 && mask.at<uchar>( (int)kl.endPointY, (int)kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
     }
   }

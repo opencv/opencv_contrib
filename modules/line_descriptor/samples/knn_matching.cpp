@@ -111,7 +111,7 @@ uchar invertSingleBits( uchar dividend_char, int numBits )
   /* reconvert to decimal */
   uchar result = 0;
   for ( int i = (int) bin_vector.size() - 1; i >= 0; i-- )
-    result += bin_vector[i] * pow( 2, i );
+    result += (uchar) ( bin_vector[i] * pow( 2, i ) );
 
   return result;
 }
@@ -162,7 +162,7 @@ int main( int argc, char** argv )
   Mat descr2Copy = descr1.clone();
 
   /* randomly change some bits in original descriptors */
-  srand( time( NULL ) );
+  srand( (unsigned int) time( NULL ) );
 
   for ( int j = 0; j < descr1.rows; j++ )
   {

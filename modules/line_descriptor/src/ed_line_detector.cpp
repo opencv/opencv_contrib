@@ -948,14 +948,15 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
   unsigned int *pLineYCors = lines.yCors.data();
   unsigned int *pLineSID = lines.sId.data();
   logNT_ = 2.0 * ( log10( (double) imageWidth ) + log10( (double) imageHeight ) );
-  double lineFitErr;		//the line fit error;
+  double lineFitErr = 0;		//the line fit error;
   std::vector<double> lineEquation( 2, 0 );
   lineEquations_.clear();
   lineEndpoints_.clear();
   lineDirection_.clear();
   unsigned char *pdirImg = dirImg_.data;
   unsigned int numOfLines = 0;
-  unsigned int offsetInEdgeArrayS, offsetInEdgeArrayE, newOffsetS;		//start index and end index
+  unsigned int newOffsetS = 0;
+  unsigned int offsetInEdgeArrayS, offsetInEdgeArrayE;		//start index and end index
   unsigned int offsetInLineArray = 0;
   float direction;		//line direction
 
@@ -977,7 +978,7 @@ int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
         break;  //no line is detected
       //An initial line segment is detected. Try to extend this line segment
       pLineSID[numOfLines] = offsetInLineArray;
-      double coef1;			//for a line ax+by+c=0, coef1 = 1/sqrt(a^2+b^2);
+      double coef1 = 0;			//for a line ax+by+c=0, coef1 = 1/sqrt(a^2+b^2);
       double pointToLineDis;			//for a line ax+by+c=0 and a point(xi, yi), pointToLineDis = coef1*|a*xi+b*yi+c|
       bool bExtended = true;
       bool bFirstTry = true;
