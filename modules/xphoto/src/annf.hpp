@@ -86,8 +86,8 @@ static void getWHSeries(const cv::Mat &src, cv::Mat &dst, const int nProjections
 
     for (int k = 1, num = 1; k < psize && num <= nProjections; ++k)
     {
-        int dx[] = { (k % 2 == 0) ? +1 : 0, (k % 2 == 0) ? 0 : -1};
-        int dy[] = { (k % 2 == 0) ? 0 : +1, (k % 2 == 0) ? -1 : 0};
+        const int dx[] = { (k % 2 == 0) ? +1 : 0, (k % 2 == 0) ? 0 : -1};
+        const int dy[] = { (k % 2 == 0) ? 0 : +1, (k % 2 == 0) ? -1 : 0};
 
         snake_idx.push_back(snake_idx[num - 1] - dx[1]);
         snake_idy.push_back(snake_idy[num++ - 1] - dy[1]);

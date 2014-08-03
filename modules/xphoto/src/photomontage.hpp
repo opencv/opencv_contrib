@@ -48,9 +48,6 @@
 #include "gcgraph.hpp"
 
 #define GCInfinity 10*1000*1000*1000.0
-#define EFFECTIVE_HEIGHT 600
-#define EFFECTIVE_WIDTH  800
-
 
 
 template <typename Tp> class Photomontage
@@ -68,10 +65,25 @@ private:
     const int channels;
     const int lsize;
 
-    bool multiscale; // if true, Photomontage use coarse-to-fine scheme
+    cv::Mat x_i; // current best labeling
 
-    double singleExpansion(const cv::Mat &x_i, const int alpha); // single neighbor computing
-    void gradientDescent(const cv::Mat &x_0, cv::Mat x_n); // gradient descent in alpha-expansion topology
+    double singleExpansion(const int alpha); // single neighbor computing
+    void gradientDescent(); // gradient descent in alpha-expansion topology
+
+    class ParallelExpansion : public cv::ParallelLoopBody
+    {
+    public:
+        Photomontage <Tp> *main;
+
+        ParallelExpansion(Photomontage <Tp> *main) : main(main){}
+        ~ParallelExpansion(){};
+
+        void operator () (const cv::Range &range) const
+        {
+            for (int i = range.start; i <= range.end - 1; ++i)
+                main->distances[i] = main->singleExpansion(i);
+        }
+    };
 
 protected:
     virtual double dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2);
@@ -131,7 +143,7 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
 }
 
 template <typename Tp> double Photomontage <Tp>::
-singleExpansion(const cv::Mat &x_i, const int alpha)
+singleExpansion(const int alpha)
 {
     int actualEdges = (height - 1)*width + height*(width - 1);
     GCGraph <double> graph(actualEdges + height*width, 2*actualEdges);
@@ -187,15 +199,14 @@ singleExpansion(const cv::Mat &x_i, const int alpha)
 }
 
 template <typename Tp> void Photomontage <Tp>::
-gradientDescent(const cv::Mat &x_0, cv::Mat x_n)
+gradientDescent()
 {
     double optValue = std::numeric_limits<double>::max();
-    x_0.copyTo(x_n);
 
     for (int num = -1; /**/; num = -1)
     {
-        for (int i = 0; i < lsize; ++i)
-            distances[i] = singleExpansion(x_n, i);
+        parallel_for_( cv::Range(0, lsize),
+            ParallelExpansion(this) );
 
         int minIndex = min_idx(distances);
         double minValue = distances[minIndex];
@@ -205,33 +216,16 @@ gradientDescent(const cv::Mat &x_0, cv::Mat x_n)
 
         if (num == -1)
             break;
-        labelings[num].copyTo(x_n);
+        labelings[num].copyTo(x_i);
     }
 }
 
 template <typename Tp> void Photomontage <Tp>::
 assignLabeling(cv::Mat &img)
 {
-    if (multiscale == 0 || (height < EFFECTIVE_HEIGHT && width < EFFECTIVE_WIDTH))
-    {
-        img.create(height, width, CV_32SC1);
-
-        img.setTo(0);
-        gradientDescent(img, img);
-    }
-    else
-    {
-        int l = std::min( cvRound(height/600.0), cvRound(width/800.0) );
-        img.create( cv::Size(width/l, height/l), CV_32SC1 );
-
-        ...
-        img.setTo(0);
-        gradientDescent(img, img);
-
-        resize(img, img, cv::Size(height, width), 0.0, 0.0, cv::INTER_NEAREST);
-
-        ...
-    }
+    x_i.setTo(0);
+    gradientDescent();
+    x_i.copyTo(img);
 }
 
 template <typename Tp> void Photomontage <Tp>::
@@ -250,8 +244,9 @@ assignResImage(cv::Mat &img)
 template <typename Tp> Photomontage <Tp>::
 Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks, const bool multiscale)
   :
-    images(images), masks(masks), multiscale(multiscale), height(images[0].rows), width(images[0].cols), type(images[0].type()),
-    channels(images[0].channels()), lsize(images.size()), labelings(images.size()), distances(images.size())
+    images(images), masks(masks), height(images[0].rows), width(images[0].cols),
+    type(images[0].type()), x_i(height, width, CV_32SC1), channels(images[0].channels()),
+    lsize(images.size()), labelings(images.size()), distances(images.size())
 {
     CV_Assert(images[0].depth() != CV_8U && masks[0].depth() == CV_8U);
 }
