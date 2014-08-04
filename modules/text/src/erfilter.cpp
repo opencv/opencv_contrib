@@ -60,6 +60,7 @@ namespace cv
 namespace text
 {
 
+using namespace cv::ml;
 using namespace std;
 
 // Deletes a tree of ERStat regions starting at root. Used only
@@ -178,7 +179,7 @@ public:
     double eval(const ERStat& stat);
 
 private:
-    CvBoost boost;
+    Ptr<Boost> boost;
 };
 
 // default 2nd stage classifier
@@ -194,7 +195,7 @@ public:
     double eval(const ERStat& stat);
 
 private:
-    CvBoost boost;
+    Ptr<Boost> boost;
 };
 
 
@@ -1016,9 +1017,9 @@ ERClassifierNM1::ERClassifierNM1(const string& filename)
 {
 
     if (ifstream(filename.c_str()))
-        boost.load( filename.c_str(), "boost" );
+        boost = StatModel::load<Boost>( filename.c_str() );
     else
-        CV_Error(CV_StsBadArg, "Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
 
 double ERClassifierNM1::eval(const ERStat& stat)
@@ -1031,7 +1032,7 @@ double ERClassifierNM1::eval(const ERStat& stat)
 
     vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
 
-    float votes = boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1042,9 +1043,9 @@ double ERClassifierNM1::eval(const ERStat& stat)
 ERClassifierNM2::ERClassifierNM2(const string& filename)
 {
     if (ifstream(filename.c_str()))
-        boost.load( filename.c_str(), "boost" );
+        boost = StatModel::load<Boost>( filename.c_str() );
     else
-        CV_Error(CV_StsBadArg, "Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
 
 double ERClassifierNM2::eval(const ERStat& stat)
@@ -1058,7 +1059,7 @@ double ERClassifierNM2::eval(const ERStat& stat)
 
     vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
 
-    float votes = boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1397,7 +1398,7 @@ static double NFA(int n, int k, double p, double logNT)
     /* check parameters */
     if( n<0 || k<0 || k>n || p<=0.0 || p>=1.0 )
     {
-        CV_Error(CV_StsBadArg, "erGrouping wrong n, k or p values in NFA call!");
+        CV_Error(Error::StsBadArg, "erGrouping wrong n, k or p values in NFA call!");
     }
 
     /* trivial cases */
@@ -2137,15 +2138,15 @@ static int linkage_vector(double *X, int N, int dim, double * Z, unsigned char m
     } // try
     catch (const bad_alloc&)
     {
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+        CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
     }
     catch(const exception&)
     {
-        CV_Error(CV_StsError, "Uncaught exception in erGrouping!");
+        CV_Error(Error::StsError, "Uncaught exception in erGrouping!");
     }
     catch(...)
     {
-        CV_Error(CV_StsError, "C++ exception (unknown reason) in erGrouping!");
+        CV_Error(Error::StsError, "C++ exception (unknown reason) in erGrouping!");
     }
     return 0;
 }
@@ -2206,7 +2207,7 @@ public:
 
 private:
     double minProbability;
-    CvBoost group_boost;
+    Ptr<Boost> group_boost;
     vector<ERFeatures> &regions;
     Size imsize;
 
@@ -2230,9 +2231,9 @@ MaxMeaningfulClustering::MaxMeaningfulClustering(unsigned char _method, unsigned
     minProbability = _minProbability;
 
     if (ifstream(filename.c_str()))
-        group_boost.load( filename.c_str(), "boost" );
+        group_boost = StatModel::load<Boost>(filename.c_str());
     else
-        CV_Error(CV_StsBadArg, "erGrouping: Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "erGrouping: Default classifier file not found!");
 }
 
 
@@ -2242,7 +2243,7 @@ void MaxMeaningfulClustering::operator()(double *data, unsigned int num, int dim
 
     double *Z = (double*)malloc(((num-1)*4) * sizeof(double)); // we need 4 floats foreach sample merge.
     if (Z == NULL)
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+        CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
     linkage_vector(data, (int)num, dim, Z, method, metric);
 
@@ -2723,7 +2724,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     sample.push_back((float)mean[0]);
     sample.push_back((float)std[0]);
 
-    float votes_group = group_boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes_group = group_boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     return (double)1-(double)1/(1+exp(-2*votes_group));
 }
@@ -3039,7 +3040,7 @@ static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vect
         int dim = 7; //dimensionality of feature space
         double *data = (double*)malloc(dim*N * sizeof(double));
         if (data == NULL)
-            CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+            CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
         //Learned weights
         float weight_param1 = 1.00f;
