@@ -162,14 +162,16 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
 
 bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat& lowResBFMask )
 {
+  //double t = (double) getTickCount();
+
   float currentPixelValue;
   float currentEpslonValue;
   float currentB;
   float currentC;
 
-  // Create a mask to select ROI in the original Image and Backgound model and at the same time compute the mean
+  /*// Create a mask to select ROI in the original Image and Backgound model and at the same time compute the mean
   Mat ROIMask( image.rows, image.cols, CV_8UC1 );
-  ROIMask.setTo( 0 );
+  ROIMask.setTo( 0 );*/
 
   Rect roi( Point( 0, 0 ), Size( N, N ) );
   Scalar imageROImean;
@@ -182,28 +184,47 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
 
   lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
   lowResBFMask.setTo( 1 );
+  /*t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "INITIALIZATION TIME: " << t << "s" << endl << endl;*/
 
-  // Scan all the ROI of original matrices that correspond to the pixels of new resized matrices
+  // Scan all the ROI of original matrices
   for ( int i = 0; i < image.rows / N; i++ )
   {
     for ( int j = 0; j < image.cols / N; j++ )
     {
+      //double t = (double) getTickCount();
+      //double t1 = (double) getTickCount();
       // Reset and update ROI mask
-      ROIMask.setTo( 0 );
-      rectangle( ROIMask, roi, Scalar( 255 ), FILLED );
+      //ROIMask.setTo( 0 );
+      //rectangle( ROIMask, roi, Scalar( 255 ), FILLED );
 
+      //double t3 = (double) getTickCount();
       // Compute the mean of image's block and epslonMatrix's block based on ROI
       // TODO replace "at" with more efficient matrix access
-      currentPixelValue = mean( image, ROIMask ).val[0];
-      currentEpslonValue = mean( epslonPixelsValue, ROIMask ).val[0];
+      Mat roiImage = image(roi);
+      Mat roiEpslon = epslonPixelsValue(roi);
+      currentPixelValue = mean( roiImage ).val[0];
+      currentEpslonValue = mean( roiEpslon ).val[0];
 
+      //t3 = ( (double) getTickCount() - t3 ) / getTickFrequency();
+       //     cout << "MEAN time: " << t3 << "s" << endl << endl;
+
+      //t1 = ( (double) getTickCount() - t1 ) / getTickFrequency();
+      //cout << "FASE 1 time: " << t1 << "s" << endl << endl;
+
+      //double t2 = (double) getTickCount();
       // scan background model vector
       for ( int z = 0; z < N_DS; z++ )
       {
 
+        //double t = (double) getTickCount();
         // Select the current template 2 channel matrix, select ROI and compute the mean for each channel separately
-        currentB = mean( backgroundModel[z], ROIMask ).val[0];
-        currentC = mean( backgroundModel[z], ROIMask ).val[1];
+        Mat roiTemplate = backgroundModel[z](roi);
+        Scalar templateMean = mean( roiTemplate );
+        currentB = templateMean[0];
+        currentC = templateMean[1];
+        //t = ( (double) getTickCount() - t ) / getTickFrequency();
+        //cout << "currentB and currentC MEAN time" << t << "s" << endl << endl;
 
         if( currentC > 0 )  //The current template is active
         {
@@ -213,23 +234,31 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
             // The correspondence pixel in the  BF mask is set as background ( 0 value)
             // TODO replace "at" with more efficient matrix access
             //lowResBFMask.at<uchar>( i, j ) = 0;
-            lowResBFMask.setTo( 0, ROIMask );
+            //lowResBFMask.setTo( 0, ROIMask );
+            rectangle( lowResBFMask, roi, Scalar( 0 ), FILLED );
             break;
           }
         }
       }
+
+      //t2 = ( (double) getTickCount() - t2 ) / getTickFrequency();
+      //cout << "ALL TEMPLATE  time: " << t2 << " s" << endl << endl;
       // Shift the ROI from left to right follow the block dimension
       roi = roi + Point( N, 0 );
+      //t = ( (double) getTickCount() - t ) / getTickFrequency();
+      //cout << "low res PIXEL : " << t << " s" << endl << endl;
+      //exit(0);
     }
     //Shift the ROI from up to down follow the block dimension, also bringing it back to beginning of row
     roi.x = 0;
     roi.y += N;
   }
+  //t = ( (double) getTickCount() - t ) / getTickFrequency();
+  //cout << "Scan all the ROI of original matrices time: " << t << "s" << endl << endl;
 
   // UPSAMPLE the lowResBFMask to the original image dimension, so that it's then possible to compare the results
   // of lowlResolutionDetection with the fullResolutionDetection
   //resize( lowResBFMask, lowResBFMask, image.size(), 0, 0, INTER_LINEAR );
-
   return true;
 }
 
@@ -432,8 +461,13 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   Mat noisePixelsMask;
 
   fullResolutionDetection( image.getMat(), highResBFMask );
-  lowResolutionDetection( image.getMat(), lowResBFMask );
 
+  double t = (double) getTickCount();
+  lowResolutionDetection( image.getMat(), lowResBFMask );
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "lowResolutionDetection time: " << t << "s" << endl << endl;
+
+  t = (double) getTickCount();
 // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
 // foreground in both masks (full and low)
   bitwise_and( highResBFMask, lowResBFMask, saliencyMap );
@@ -441,10 +475,15 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
 // Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
   bitwise_not( lowResBFMask, not_lowResBFMask );
   bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "and not and time: " << t << "s" << endl << endl;
 
+  t = (double) getTickCount();
   templateOrdering();
   templateReplacement( saliencyMap.getMat(), image.getMat() );
   templateOrdering();
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "replacement and ordering: " << t << "s" << endl << endl;
 
   return true;
 }
