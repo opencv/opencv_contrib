@@ -160,13 +160,16 @@ void getClosestN(std::vector<Rect2d>& scanGrid,Rect2d bBox,int n,std::vector<Rec
         }
     }
 
-    double o=0.0;
     for(int i=n;i<(int)scanGrid.size();i++){
+        double o=0.0;
         if((o=overlap(scanGrid[i],bBox))<=overlaps[0]){
             continue;
         }
         int j=0;
-        for(j=0;j<n && overlaps[j]<o;j++);
+        while( j < n && overlaps[j] < o )
+        {
+            j++;
+        }
         j--;
         for(int k=0;k<j;overlaps[k]=overlaps[k+1],res[k]=res[k+1],k++);
         overlaps[j]=o;res[j]=scanGrid[i];

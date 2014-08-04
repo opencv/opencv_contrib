@@ -86,10 +86,8 @@ using namespace tld;
 *      6. comment logical sections
 *      11. group decls logically, order of statements
 *
-*      ?10. all in one class
 *
-*      16. loops limits
-*      17. inner scope loops
+*      ?10. all in one class
 */
 
 /* design decisions:
@@ -144,34 +142,6 @@ protected:
     TrackerTLD::Params params_;
 };
 
-class Pexpert{
-public:
-    Pexpert(const Mat& img,const Mat& imgBlurred,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params,Size initSize):
-        img_(img),imgBlurred_(imgBlurred),resultBox_(resultBox),detector_(detector),params_(params),initSize_(initSize){}
-    bool operator()(Rect2d /*box*/){return false;}
-    int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble);
-protected:
-    Mat img_,imgBlurred_;
-    Rect2d resultBox_;
-    const TLDDetector* detector_;
-    TrackerTLD::Params params_;
-    RNG rng;
-    Size initSize_;
-};
-
-class Nexpert{
-public:
-    Nexpert(const Mat& img,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params):img_(img),resultBox_(resultBox),
-        detector_(detector),params_(params){}
-    bool operator()(Rect2d box);
-    int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
-        examplesForModel.clear();examplesForEnsemble.clear();return 0;}
-protected:
-    Mat img_;
-    Rect2d resultBox_;
-    const TLDDetector* detector_;
-    TrackerTLD::Params params_;
-};
 
 template <class T,class Tparams>
 class TrackerProxyImpl : public TrackerProxy{
@@ -228,6 +198,30 @@ class TrackerTLDImpl : public TrackerTLD
   void write( FileStorage& fs ) const;
 
  protected:
+  class Pexpert{
+  public:
+      Pexpert(const Mat& img,const Mat& imgBlurred,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params,Size initSize):
+          img_(img),imgBlurred_(imgBlurred),resultBox_(resultBox),detector_(detector),params_(params),initSize_(initSize){}
+      bool operator()(Rect2d /*box*/){return false;}
+      int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble);
+  protected:
+      Pexpert(){}
+      Mat img_,imgBlurred_;
+      Rect2d resultBox_;
+      const TLDDetector* detector_;
+      TrackerTLD::Params params_;
+      RNG rng;
+      Size initSize_;
+  };
+
+  class Nexpert : public Pexpert{
+  public:
+      Nexpert(const Mat& img,Rect2d& resultBox,const TLDDetector* detector,TrackerTLD::Params params){
+          img_=img; resultBox_=resultBox; detector_=detector; params_=params;}
+      bool operator()(Rect2d box);
+      int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
+          examplesForModel.clear();examplesForEnsemble.clear();return 0;}
+  };
 
   bool initImpl( const Mat& image, const Rect2d& boundingBox );
   bool updateImpl( const Mat& image, Rect2d& boundingBox );
@@ -309,11 +303,11 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     std::vector<TLDDetector::LabeledPatch> detectorResults;
     //best overlap around 92%
 
-    Rect2d tmpCandid=boundingBox;
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit=false;
     for(int i=0;i<2;i++){
+        Rect2d tmpCandid=boundingBox;
         if(((i==0)&&!(data->failedLastTime)&&trackerProxy->update(image,tmpCandid)) || 
                 ((i==1)&&(detector->detect(imageForDetector,image_blurred,tmpCandid,detectorResults)))){
             candidates.push_back(tmpCandid);
@@ -367,11 +361,11 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
     if(data->confident){
         Pexpert pExpert(imageForDetector,image_blurred,boundingBox,detector,params,data->getMinSize());
         Nexpert nExpert(imageForDetector,boundingBox,detector,params);
-        bool expertResult;
         std::vector<Mat_<uchar> > examplesForModel,examplesForEnsemble;
         examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
         int negRelabeled=0;
         for(int i=0;i<(int)detectorResults.size();i++){
+            bool expertResult;
             if(detectorResults[i].isObject){
                 expertResult=nExpert(detectorResults[i].rect);
                 if(expertResult!=detectorResults[i].isObject){negRelabeled++;}
@@ -399,8 +393,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox){
 }
 
 TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params,const Mat& image, const Rect2d& boundingBox,Size minSize):minSize_(minSize),
-timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
-    boundingBox_=boundingBox;
+timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params),boundingBox_(boundingBox){
     originalVariance_=variance(image(boundingBox));
     std::vector<Rect2d> closest,scanGrid;
     Mat scaledImg,blurredImg,image_blurred;
@@ -414,10 +407,10 @@ timeStampPositiveNext(0),timeStampNegativeNext(0),params_(params){
     TLDEnsembleClassifier::makeClassifiers(minSize,MEASURES_PER_CLASSIFIER,GRIDSIZE,classifiers);
 
     positiveExamples.reserve(200);
-    Point2f center;
-    Size2f size;
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<20;j++){
+            Point2f center;
+            Size2f size;
             Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE);
             center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
@@ -471,8 +464,8 @@ void TLDDetector::generateScanGrid(int rows,int cols,Size initBox,std::vector<Re
     res.clear();
     //scales step: SCALE_STEP; hor step: 10% of width; verstep: 10% of height; minsize: 20pix
     for(double h=initBox.height, w=initBox.width;h<cols && w<rows;){
-        for(double x=0;(x+w)<=(cols-1.0);x+=(0.1*w)){
-            for(double y=0;(y+h)<=(rows-1.0);y+=(0.1*h)){
+        for(double x=0;(x+w+1.0)<=cols;x+=(0.1*w)){
+            for(double y=0;(y+h+1.0)<=rows;y+=(0.1*h)){
                 res.push_back(Rect2d(x,y,w,h));
             }
         }
@@ -510,6 +503,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     int npos=0,nneg=0;
     double tmp=0,maxSc=-5.0;
     Rect2d maxScRect;
+
     START_TICK("detector");
     do{
         Mat_<double> intImgP,intImgP2;
@@ -560,6 +554,7 @@ bool TLDDetector::detect(const Mat& img,const Mat& imgBlurred,Rect2d& res,std::v
     dfprintf((stdout,"after NCC: nneg=%d npos=%d\n",nneg,npos));
 #if !0
         std::vector<Rect2d> poss,negs;
+
         for(int i=0;i<(int)patches.size();i++){
             if(patches[i].isObject)
                 poss.push_back(patches[i].rect);
@@ -612,11 +607,10 @@ double TrackerTLDModel::ensembleClassifierNum(const uchar* data){
 }
 
 double TrackerTLDModel::Sr(const Mat_<uchar>& patch){
-    double splus=0.0;
+    double splus=0.0, sminus=0.0;
     for(int i=0;i<(int)positiveExamples.size();i++){
         splus=std::max(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
     }
-    double sminus=0.0;
     for(int i=0;i<(int)negativeExamples.size();i++){
         sminus=std::max(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
     }
@@ -627,14 +621,13 @@ double TrackerTLDModel::Sr(const Mat_<uchar>& patch){
 }
 
 double TrackerTLDModel::Sc(const Mat_<uchar>& patch){
-    double splus=0.0;
+    double splus=0.0,sminus=0.0;
     int med=getMedian(timeStampsPositive);
     for(int i=0;i<(int)positiveExamples.size();i++){
         if((int)timeStampsPositive[i]<=med){
             splus=std::max(splus,0.5*(NCC(positiveExamples[i],patch)+1.0));
         }
     }
-    double sminus=0.0;
     for(int i=0;i<(int)negativeExamples.size();i++){
         sminus=std::max(sminus,0.5*(NCC(negativeExamples[i],patch)+1.0));
     }
@@ -726,7 +719,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
     dfprintf((stdout,"\n"));
 }
 
-int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
+int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std::vector<Mat_<uchar> >& examplesForEnsemble){
     examplesForModel.clear();examplesForEnsemble.clear();
     examplesForModel.reserve(100);examplesForEnsemble.reserve(100);
 
@@ -737,10 +730,10 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     TLDDetector::generateScanGrid(img_.rows,img_.cols,initSize_,scanGrid);
     getClosestN(scanGrid,Rect2d(resultBox_.x/scale,resultBox_.y/scale,resultBox_.width/scale,resultBox_.height/scale),10,closest);
 
-    Point2f center;
-    Size2f size;
     for(int i=0;i<(int)closest.size();i++){
         for(int j=0;j<10;j++){
+            Point2f center;
+            Size2f size;
             Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE,STANDARD_PATCH_SIZE),blurredPatch(initSize_);
             center.x=(float)(closest[i].x+closest[i].width*(0.5+rng.uniform(-0.01,0.01)));
             center.y=(float)(closest[i].y+closest[i].height*(0.5+rng.uniform(-0.01,0.01)));
@@ -767,7 +760,7 @@ int Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel,std:
     return 0;
 }
 
-bool Nexpert::operator()(Rect2d box){
+bool TrackerTLDImpl::Nexpert::operator()(Rect2d box){
     if(overlap(resultBox_,box)<0.2){
         return false;
     }
