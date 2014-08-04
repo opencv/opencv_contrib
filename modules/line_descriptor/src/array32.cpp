@@ -85,7 +85,7 @@ void Array32::push( UINT32 Data )
   {
     if( arr[0] == arr[1] )
     {
-      arr[1] = std::max( ceil( arr[1] * ARRAY_RESIZE_FACTOR ), arr[1] + ARRAY_RESIZE_ADD_FACTOR );
+      arr[1] = (UINT32) std::max( ceil( arr[1] * ARRAY_RESIZE_FACTOR ), arr[1] + ARRAY_RESIZE_ADD_FACTOR );
       UINT32* new_Data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
       if( new_Data == NULL )
       {
@@ -107,7 +107,7 @@ void Array32::push( UINT32 Data )
 
   else
   {
-    arr = (UINT32*) malloc( ( 2 + ARRAY_RESIZE_ADD_FACTOR ) * sizeof(UINT32) );
+    arr = (UINT32*) malloc( (size_t) ( 2 + ARRAY_RESIZE_ADD_FACTOR ) * sizeof(UINT32) );
     arr[0] = 1;
     arr[1] = 1;
     arr[2] = Data;
@@ -121,7 +121,7 @@ void Array32::insert( UINT32 index, UINT32 Data )
   {
     if( arr[0] == arr[1] )
     {
-      arr[1] = ceil( arr[0] * 1.1 );
+      arr[1] = (UINT32) ceil( arr[0] * 1.1 );
       UINT32* new_data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
       if( new_data == NULL )
       {

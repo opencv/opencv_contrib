@@ -86,7 +86,7 @@ void Mihasher::query( UINT32* results, UINT32* numres, UINT8 * Query, UINT64 *ch
 {
   /* if K == 0 that means we want everything to be processed.
    So maxres = N in that case. Otherwise K limits the results processed */
-  UINT32 maxres = K ? K : N;
+  UINT32 maxres = K ? K : (UINT32) N;
 
   /* number of results so far obtained (up to a distance of s per chunk) */
   UINT32 n = 0;
@@ -142,7 +142,8 @@ void Mihasher::query( UINT32* results, UINT32* numres, UINT8 * Query, UINT64 *ch
        it touches another one */
 
       /* the loop for changing bitstr */
-      while ( true )
+      bool infiniteWhile = true;
+      while ( infiniteWhile )
       {
         if( bit != -1 )
         {
@@ -207,12 +208,12 @@ Mihasher::Mihasher( int _B, int _m )
   B = _B;
   B_over_8 = B / 8;
   m = _m;
-  b = ceil( (double) B / m );
+  b = (int) ceil( (double) B / m );
 
   /* assuming that B/2 is large enough radius to include
    all of the k nearest neighbors */
-  D = ceil( B / 2.0 );
-  d = ceil( (double) D / m );
+  D = (int) ceil( B / 2.0 );
+  d = (int) ceil( (double) D / m );
 
   /* mplus is the number of chunks with b bits
    (m-mplus) is the number of chunks with (b-1) bits */
@@ -221,7 +222,7 @@ Mihasher::Mihasher( int _B, int _m )
   xornum = new UINT32[d + 2];
   xornum[0] = 0;
   for ( int i = 0; i <= d; i++ )
-    xornum[i + 1] = xornum[i] + choose( b, i );
+    xornum[i + 1] = xornum[i] + (UINT32) choose( b, i );
 
   H = new SparseHashtable[m];
 
@@ -258,7 +259,7 @@ void Mihasher::populate( cv::Mat & _codes, UINT32 _N, int dim1codes )
     split( chunks, pcodes, m, mplus, b );
 
     for ( int k = 0; k < m; k++ )
-      H[k].insert( chunks[k], i );
+      H[k].insert( chunks[k], (UINT32) i );
 
     if( i % (int) ceil( N / 1000.0 ) == 0 )
       fflush( stdout );

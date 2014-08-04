@@ -143,7 +143,7 @@ inline UINT64 next_set_of_n_elements( UINT64 x )
 /* print code */
 inline void print_code( UINT64 tmp, int b )
 {
-  for ( int j = ( b - 1 ); j >= 0; j-- )
+  for ( long long int j = ( b - 1 ); j >= 0; j-- )
   {
     printf( "%llu", (long long int) tmp / ( 1 << j ) );
     tmp = tmp - ( tmp / ( 1 << j ) ) * ( 1 << j );

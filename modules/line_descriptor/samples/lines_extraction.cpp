@@ -78,6 +78,7 @@ int main( int argc, char** argv )
   if( imageMat.data == NULL )
   {
     std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
+    return -1;
   }
 
   /* create a random binary mask */
