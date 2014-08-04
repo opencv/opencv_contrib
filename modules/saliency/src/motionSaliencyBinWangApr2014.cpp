@@ -101,8 +101,9 @@ MotionSaliencyBinWangApr2014::~MotionSaliencyBinWangApr2014()
 }
 
 // classification (and adaptation) functions
-bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Mat& highResBFMask )
+bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, Mat& highResBFMask )
 {
+  Mat image=image2.clone();
   float* currentB;
   float* currentC;
   float currentPixelValue;
@@ -113,15 +114,25 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
   highResBFMask.create( image.rows, image.cols, CV_8UC1 );
   highResBFMask.setTo( 1 );
 
+  uchar* pImage;
+  float* pEpslon;
+  uchar* pMask;
+
   // Scan all pixels of image
   for ( int i = 0; i < image.rows; i++ )
   {
+    pImage= image.ptr<uchar>(i);
+    pEpslon= epslonPixelsValue.ptr<float>(i);
+    pMask= highResBFMask.ptr<uchar>(i);
     for ( int j = 0; j < image.cols; j++ )
     {
       backgFlag = false;
       // TODO replace "at" with more efficient matrix access
-      currentPixelValue = image.at<uchar>( i, j );
-      currentEpslonValue = epslonPixelsValue.at<float>( i, j );
+      //currentPixelValue = image.at<uchar>( i, j );
+      //currentEpslonValue = epslonPixelsValue.at<float>( i, j );
+      currentPixelValue = pImage[j];
+      currentEpslonValue= pEpslon[j];
+
 
       // scan background model vector
       for ( size_t z = 0; z < backgroundModel.size(); z++ )
@@ -137,8 +148,8 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image, Ma
           {
             // The correspondence pixel in the  BF mask is set as background ( 0 value)
             // TODO replace "at" with more efficient matrix access
-            highResBFMask.at<uchar>( i, j ) = 0;
-
+            //highResBFMask.at<uchar>( i, j ) = 0;
+            pMask[j]=0;
             if( ( *currentC < L0 && z == 0 ) || ( *currentC < L1 && z == 1 ) || ( z > 1 ) )
               *currentC += 1;  // increment the efficacy of this template
 
@@ -170,8 +181,8 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   float currentC;
 
   /*// Create a mask to select ROI in the original Image and Backgound model and at the same time compute the mean
-  Mat ROIMask( image.rows, image.cols, CV_8UC1 );
-  ROIMask.setTo( 0 );*/
+   Mat ROIMask( image.rows, image.cols, CV_8UC1 );
+   ROIMask.setTo( 0 );*/
 
   Rect roi( Point( 0, 0 ), Size( N, N ) );
   Scalar imageROImean;
@@ -185,7 +196,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
   lowResBFMask.setTo( 1 );
   /*t = ( (double) getTickCount() - t ) / getTickFrequency();
-  cout << "INITIALIZATION TIME: " << t << "s" << endl << endl;*/
+   cout << "INITIALIZATION TIME: " << t << "s" << endl << endl;*/
 
   // Scan all the ROI of original matrices
   for ( int i = 0; i < image.rows / N; i++ )
@@ -201,13 +212,13 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
       //double t3 = (double) getTickCount();
       // Compute the mean of image's block and epslonMatrix's block based on ROI
       // TODO replace "at" with more efficient matrix access
-      Mat roiImage = image(roi);
-      Mat roiEpslon = epslonPixelsValue(roi);
+      Mat roiImage = image( roi );
+      Mat roiEpslon = epslonPixelsValue( roi );
       currentPixelValue = mean( roiImage ).val[0];
       currentEpslonValue = mean( roiEpslon ).val[0];
 
       //t3 = ( (double) getTickCount() - t3 ) / getTickFrequency();
-       //     cout << "MEAN time: " << t3 << "s" << endl << endl;
+      //     cout << "MEAN time: " << t3 << "s" << endl << endl;
 
       //t1 = ( (double) getTickCount() - t1 ) / getTickFrequency();
       //cout << "FASE 1 time: " << t1 << "s" << endl << endl;
@@ -219,7 +230,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
 
         //double t = (double) getTickCount();
         // Select the current template 2 channel matrix, select ROI and compute the mean for each channel separately
-        Mat roiTemplate = backgroundModel[z](roi);
+        Mat roiTemplate = backgroundModel[z]( roi );
         Scalar templateMean = mean( roiTemplate );
         currentB = templateMean[0];
         currentC = templateMean[1];
@@ -459,10 +470,14 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   Mat lowResBFMask;
   Mat not_lowResBFMask;
   Mat noisePixelsMask;
-
-  fullResolutionDetection( image.getMat(), highResBFMask );
+  double tt = (double) getTickCount();
 
   double t = (double) getTickCount();
+  fullResolutionDetection( image.getMat(), highResBFMask );
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "fullResolutionDetection time: " << t << "s" << endl << endl;
+
+  t = (double) getTickCount();
   lowResolutionDetection( image.getMat(), lowResBFMask );
   t = ( (double) getTickCount() - t ) / getTickFrequency();
   cout << "lowResolutionDetection time: " << t << "s" << endl << endl;
@@ -480,10 +495,21 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
 
   t = (double) getTickCount();
   templateOrdering();
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "ordering1 : " << t << "s" << endl << endl;
+
+  t = (double) getTickCount();
   templateReplacement( saliencyMap.getMat(), image.getMat() );
+  t = ( (double) getTickCount() - t ) / getTickFrequency();
+  cout << "replacement : " << t << "s" << endl << endl;
+
+  t = (double) getTickCount();
   templateOrdering();
   t = ( (double) getTickCount() - t ) / getTickFrequency();
-  cout << "replacement and ordering: " << t << "s" << endl << endl;
+  cout << "ordering2 : " << t << "s" << endl << endl;
+
+  tt = ( (double) getTickCount() - tt ) / getTickFrequency();
+  cout << "TOTAL : " << tt << "s" << endl << endl;
 
   return true;
 }
