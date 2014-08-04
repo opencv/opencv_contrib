@@ -120,7 +120,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 
   // Background model maintenance functions
   bool templateOrdering();
-  bool templateReplacement( Mat finalBFMask, Mat image );
+  bool templateReplacement( const Mat& finalBFMask, const Mat& image );
 
   // Decision threshold adaptation and Activity control function
   //bool activityControl(vector<Mat> noisePixelMask);

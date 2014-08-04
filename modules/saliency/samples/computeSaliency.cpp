@@ -156,29 +156,33 @@ int main( int argc, char** argv )
   }
   else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
   {
-    Ptr<Size> size= Ptr<Size>( new Size( 32, 32 ) ) ;
-    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize(size);
+    // TODO INSERT CAPTURE CICLE FOR MOTION
+    //int testSize = 34;
+    //Ptr<Size> size = Ptr<Size>( new Size( testSize, testSize ) );
+    Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
+    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize( size );
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
-    // Create an fake image test
-    Mat test( 32, 32, CV_8U );
-    RNG rand;
-    for(int i=0; i<test.rows; i++)
-      for(int j=0; j<test.cols; j++)
-      {
-        if(i<12 && i>=6 && j<12 && j>=6)
-          test.at<uchar>(i,j)=255;
-        else
-          test.at<uchar>(i,j)=rand.uniform(40,60);
+    /* // Create an fake image test
+     Mat test( testSize, testSize, CV_8U );
+     RNG rand;
+     for ( int i = 0; i < test.rows; i++ )
+     {
+     for ( int j = 0; j < test.cols; j++ )
+     {
+     if( i < 6 && i >= 0 && j < 34 && j >= 28 )
+     test.at<uchar>( i, j ) = 255;
+     else
+     test.at<uchar>( i, j ) = rand.uniform( 40, 60 );
 
-      }
+     }
+     } */
     //imshow("Test", test);
     //waitKey(0);
-
     Mat saliencyMap;
-    if( saliencyAlgorithm->computeSaliency( test, saliencyMap ) )
+    if( saliencyAlgorithm->computeSaliency( image /*test*/, saliencyMap ) )
     {
-      std::cout<<"motion saliency done"<<std::endl;
+      std::cout << "motion saliency done" << std::endl;
     }
   }
 

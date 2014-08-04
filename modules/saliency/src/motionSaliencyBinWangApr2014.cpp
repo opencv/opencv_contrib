@@ -40,8 +40,6 @@
  //M*/
 
 #include "precomp.hpp"
-//TODO delete highgui include
-#include <opencv2/highgui.hpp>
 
 namespace cv
 {
@@ -200,7 +198,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
       currentEpslonValue = mean( epslonPixelsValue, ROIMask ).val[0];
 
       // scan background model vector
-      for ( size_t z = 0; z < N_DS; z++ )
+      for ( int z = 0; z < N_DS; z++ )
       {
 
         // Select the current template 2 channel matrix, select ROI and compute the mean for each channel separately
@@ -298,13 +296,14 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 
   return true;
 }
-bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat image )
+bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, const Mat& image )
 {
-  int roiSize = 3;
+  float roiSize = 3;  // FIXED ROI SIZE, not change until you first appropriately adjust the following controls in the EVALUATION section!
   int countNonZeroElements = NAN;
-  Mat replicateCurrentBAMat( roiSize, roiSize, CV_8U );
-  Mat backgroundModelROI( roiSize, roiSize, CV_32F );
-  Mat diffResult( roiSize, roiSize, CV_32F );
+  std::vector<Mat> mv;
+  Mat replicateCurrentBAMat( roiSize, roiSize, CV_32FC1 );
+  Mat backgroundModelROI( roiSize, roiSize, CV_32FC1 );
+  Mat diffResult( roiSize, roiSize, CV_32FC1 );
 
   // Scan all pixels of finalBFMask and all pixels of others models (the dimension are the same)
   for ( int i = 0; i < finalBFMask.rows; i++ )
@@ -332,76 +331,91 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( Mat finalBFMask, Mat ima
         {
           potentialBackground.at<Vec2f>( i, j )[1] -= 1;
         }
-      }  /////////////////// END of potentialBackground model MAINTENANCE///////////////////
-
-      /////////////////// EVALUATION of potentialBackground values ///////////////////
-      if( potentialBackground.at<Vec2f>( i, j )[1] > thetaA )
-      {
-        // replicate currentBA value
-        replicateCurrentBAMat.setTo( potentialBackground.at<Vec2f>( i, j )[0] );
-        for ( size_t z = 1; z < backgroundModel.size(); z++ )
+        /*}*/  /////////////////// END of potentialBackground model MAINTENANCE///////////////////
+        /////////////////// EVALUATION of potentialBackground values ///////////////////
+        if( potentialBackground.at<Vec2f>( i, j )[1] > thetaA )
         {
-          // Neighborhood of current pixel in the current background model template.
-          // The ROI is centered in the pixel coordinates
-          // TODO border check
-          if( ( i - floor( roiSize / 2 ) >= 0 ) && ( j - floor( roiSize / 2 ) >= 0 )
-              && ( i + floor( roiSize / 2 ) <= ( backgroundModel[z].rows - 1 ) ) && ( j + floor( roiSize / 2 ) <= ( backgroundModel[z].cols - 1 ) ) )
-          {
+          // replicate currentBA value
+          replicateCurrentBAMat.setTo( potentialBackground.at<Vec2f>( i, j )[0] );
 
-            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), roiSize, roiSize ) );
-          }
-          else if( i == 0 && j == 0 )  // upper left
+          for ( size_t z = 0; z < backgroundModel.size(); z++ )
           {
-            backgroundModelROI = backgroundModel[z]( Rect( i, j, round( roiSize / 2 ), round( roiSize / 2 ) ) );
-          }
-          else if( j == 0 && ( i - floor( roiSize / 2 ) >= 0 ) )  // middle left
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j, roiSize, round( roiSize / 2 ) ) );
-          }
-          else if( i == ( backgroundModel[z].rows - 1 ) && j == 0 )  //down left
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j, round( roiSize / 2 ), round( roiSize / 2 ) ) );
-          }
-          else if( i == 0 && ( j - floor( roiSize / 2 ) >= 0 ) )  // upper - middle
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i, j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
-          }
-          else if( i == ( backgroundModel[z].rows - 1 ) && ( j - floor( roiSize / 2 ) >= 0 ) )  //down middle
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
-          }
-          else if( i == 0 && j == ( backgroundModel[z].cols - 1 ) )  // upper right
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i, j - floor( roiSize / 2 ), roiSize, round( roiSize / 2 ) ) );
-          }
-          else if( j == ( backgroundModel[z].cols - 1 ) && ( i - floor( roiSize / 2 ) >= 0 ) )  // middle - right
-          {
-            backgroundModelROI = backgroundModel[z]( Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), roiSize ) );
-          }
-          else if( i == ( backgroundModel[z].rows - 1 ) && j == ( backgroundModel[z].cols - 1 ) )  // down right
-          {
-            backgroundModelROI = backgroundModel[z](
-                Rect( i - floor( roiSize / 2 ), j - floor( roiSize / 2 ), round( roiSize / 2 ), round( roiSize / 2 ) ) );
-          }
+            // Neighborhood of current pixel in the current background model template.
+            // The ROI is centered in the pixel coordinates
 
-          /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
-           * background model
-           */
-          absdiff( replicateCurrentBAMat, backgroundModelROI, diffResult );
-          threshold( diffResult, diffResult, epslonPixelsValue.at<float>( i, j ), 255, THRESH_BINARY_INV );
-          countNonZeroElements = countNonZero( diffResult );
+            /*if( ( i - floor( roiSize / 2 ) >= 0 ) && ( j - floor( roiSize / 2 ) >= 0 )
+             && ( i + floor( roiSize / 2 ) <= ( backgroundModel[z].rows - 1 ) )
+             && ( j + floor( roiSize / 2 ) <= ( backgroundModel[z].cols - 1 ) ) ) */
+            if( i > 0 && j > 0 && i < ( backgroundModel[z].rows - 1 ) && j < ( backgroundModel[z].cols - 1 ) )
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), roiSize, roiSize ) );
+            }
+            else if( i == 0 && j == 0 )  // upper left
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j, i, ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
+            }
+            else if( j == 0 && i > 0 && i < ( backgroundModel[z].rows - 1 ) )  // middle left
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j, i - floor( roiSize / 2 ), ceil( roiSize / 2 ), roiSize ) );
+            }
+            else if( i == ( backgroundModel[z].rows - 1 ) && j == 0 )  //down left
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j, i - floor( roiSize / 2 ), ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
+            }
+            else if( i == 0 && j > 0 && j < ( backgroundModel[z].cols - 1 ) )  // upper - middle
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( ( j - floor( roiSize / 2 ) ), i, roiSize, ceil( roiSize / 2 ) ) );
+            }
+            else if( i == ( backgroundModel[z].rows - 1 ) && j > 0 && j < ( backgroundModel[z].cols - 1 ) )  //down middle
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), roiSize, ceil( roiSize / 2 ) ) );
+            }
+            else if( i == 0 && j == ( backgroundModel[z].cols - 1 ) )  // upper right
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i, ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
+            }
+            else if( j == ( backgroundModel[z].cols - 1 ) && i > 0 && i < ( backgroundModel[z].rows - 1 ) )  // middle - right
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), ceil( roiSize / 2 ), roiSize ) );
+            }
+            else if( i == ( backgroundModel[z].rows - 1 ) && j == ( backgroundModel[z].cols - 1 ) )  // down right
+            {
+              split( backgroundModel[z], mv );
+              backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
+            }
 
-          if( countNonZeroElements > 0 )
-          {
-            /////////////////// REPLACEMENT of backgroundModel template ///////////////////
-            //replace TA with current TK
-            //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[0]=potentialBackground.at<Vec2f>( i, j )[0];
-            //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[1]= potentialBackground.at<Vec2f>( i, j )[1];
-            backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-            break;
-          }
-        }  // end for backgroundModel size
-      }  // close if of EVALUATION
+            /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
+             * background model
+             */
+            resize( replicateCurrentBAMat, replicateCurrentBAMat, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR );
+            resize( diffResult, diffResult, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR );
+
+            absdiff( replicateCurrentBAMat, backgroundModelROI, diffResult );
+            threshold( diffResult, diffResult, epslonPixelsValue.at<float>( i, j ), 255, THRESH_BINARY_INV );
+            countNonZeroElements = countNonZero( diffResult );
+
+            if( countNonZeroElements > 0 )
+            {
+              /////////////////// REPLACEMENT of backgroundModel template ///////////////////
+              //replace TA with current TK
+
+              //TODO CHECK BACKGROUND MODEL COUNTER ASSIGNEMENT
+              //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[0]=potentialBackground.at<Vec2f>( i, j )[0];
+              //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[1]= potentialBackground.at<Vec2f>( i, j )[1];
+              backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
+              break;
+            }
+          }  // end for backgroundModel size
+        }  // close if of EVALUATION
+      }  // end of  if( finalBFMask.at<uchar>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
 
     }  // end of second for
   }  // end of first for
@@ -415,25 +429,21 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   Mat highResBFMask;
   Mat lowResBFMask;
   Mat not_lowResBFMask;
-  Mat finalBFMask;
   Mat noisePixelsMask;
-  /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
-   t.setTo( 50 );
-   backgroundModel.at( 0 ) = t; */
 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
 
 // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
 // foreground in both masks (full and low)
-  bitwise_and( highResBFMask, lowResBFMask, finalBFMask );
+  bitwise_and( highResBFMask, lowResBFMask, saliencyMap );
 
 // Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
   bitwise_not( lowResBFMask, not_lowResBFMask );
   bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
 
   templateOrdering();
-  templateReplacement( finalBFMask, image.getMat() );
+  templateReplacement( saliencyMap.getMat(), image.getMat() );
   templateOrdering();
 
   return true;
