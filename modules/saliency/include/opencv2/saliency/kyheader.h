@@ -84,7 +84,7 @@ typedef void *HANDLE;
 #ifndef _MSC_VER
 typedef unsigned char BYTE;
 #else
-#include <windef.h>
+#include <windows.h>
 #endif
 
 typedef std::vector<int> vecI;
