@@ -40,6 +40,8 @@
  //M*/
 
 #include "precomp.hpp"
+//TODO delete highgui include
+#include <opencv2/highgui.hpp>
 
 namespace cv
 {
@@ -203,9 +205,15 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
     lowResBFMask.setTo( 1 );
 
     // Scan all the ROI of original matrices
-    for ( int i = 0; i < image.rows / N; i++ )
+    for ( int i = 0; i < ceil( (float) image.rows / N ); i++ )
     {
-      for ( int j = 0; j < image.cols / N; j++ )
+      if( ( roi.y + ( N - 1 ) ) <= ( image.rows - 1 ) )
+      {
+        // Reset original ROI dimension
+        roi = Rect( Point( roi.x, roi.y ), Size( N, N ) );
+      }
+
+      for ( int j = 0; j < ceil( (float) image.cols / N ); j++ )
       {
         // Compute the mean of image's block and epslonMatrix's block based on ROI
         Mat roiImage = image( roi );
@@ -238,17 +246,31 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
         }
         // Shift the ROI from left to right follow the block dimension
         roi = roi + Point( N, 0 );
+        if( ( roi.x + ( roi.width - 1 ) ) > ( image.cols - 1 ) && ( roi.y + ( N - 1 ) ) <= ( image.rows - 1 ) )
+        {
+          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x )+1, N ) );
+        }
+        else if( ( roi.x + ( roi.width - 1 ) ) > ( image.cols - 1 ) && ( roi.y + ( N - 1 ) ) > ( image.rows - 1 ) )
+        {
+          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x )+1, abs( ( image.rows - 1 ) - roi.y )+1 ) );
+        }
       }
       //Shift the ROI from up to down follow the block dimension, also bringing it back to beginning of row
       roi.x = 0;
       roi.y += N;
+      if( ( roi.y + ( roi.height - 1 ) ) > ( image.rows - 1 ) )
+      {
+        roi = Rect( Point( roi.x, roi.y ), Size( N, abs( ( image.rows - 1 ) - roi.y )+1 ) );
+      }
+      cout << endl << endl;
+
     }
     return true;
   }
   else
   {
     lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
-        lowResBFMask.setTo( NAN );
+    lowResBFMask.setTo( 1 );
     return false;
   }
 
@@ -267,7 +289,7 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
   vector<pair<float, float> > pixelTemplates( backgroundModel.size() );
   float temp;
 
-  // Scan all pixels of image
+// Scan all pixels of image
   for ( int i = 0; i < backgroundModel[0].rows; i++ )
   {
     for ( int j = 0; j < backgroundModel[0].cols; j++ )
@@ -316,7 +338,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   std::vector<Mat> temp;
   split( backgroundModel[0], temp );
 
-  //if at least the first template is activated / initialized for all pixels
+//if at least the first template is activated / initialized for all pixels
   if( countNonZero( temp.at( 1 ) ) != ( temp.at( 1 ).cols * temp.at( 1 ).rows ) )
   {
     thetaA = 20;
@@ -336,7 +358,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   Mat backgroundModelROI( roiSize, roiSize, CV_32FC1 );
   Mat diffResult( roiSize, roiSize, CV_32FC1 );
 
-  // Scan all pixels of finalBFMask and all pixels of others models (the dimension are the same)
+// Scan all pixels of finalBFMask and all pixels of others models (the dimension are the same)
   for ( int i = 0; i < finalBFMask.rows; i++ )
   {
     for ( int j = 0; j < finalBFMask.cols; j++ )
@@ -469,6 +491,10 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   Mat lowResBFMask;
   Mat not_lowResBFMask;
   Mat noisePixelsMask;
+
+  /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
+  t.setTo( 50 );
+  backgroundModel.at( 0 ) = t; */
 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
