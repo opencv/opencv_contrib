@@ -88,12 +88,11 @@ using namespace tld;
 *      11. group decls logically, order of statements
 *
 *      ?10. all in one class
-*      todo: initializer lists; const methods
+*      todo: 
+*           initializer lists; 
+*           const methods
 *
 *      ?( )
-*
-*      ?vadim: for{1command} can omit {};  if( a != (b + c) ) vs ( a != ( b + c ) ); if{} for{} method{} oneline:spaces, omit{}; 
-*      1-statement for/if without {}
 */
 
 /* design decisions:
@@ -178,7 +177,7 @@ public:
   void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
   double getOriginalVariance(){ return originalVariance_; }
   inline double ensembleClassifierNum(const uchar* data);
-  inline void prepareClassifiers(int rowstep){ for( int i = 0; i < (int)classifiers.size(); i++ ) classifiers[i].prepareClassifier(rowstep); }
+  inline void prepareClassifiers(int rowstep);
   double Sr(const Mat_<uchar>& patch);
   double Sc(const Mat_<uchar>& patch);
   void integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches);
@@ -326,7 +325,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     for( int i = 0; i < 2; i++ )
     {
         Rect2d tmpCandid = boundingBox;
-        if( ( (i == 0) && !(data->failedLastTime) && trackerProxy->update(image, tmpCandid) ) || 
+        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || 
                 ( (i == 1) && detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults) ) )
         {
             candidates.push_back(tmpCandid);
@@ -395,7 +394,8 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
             if( detectorResults[i].isObject )
             {
                 expertResult = nExpert(detectorResults[i].rect);
-                if( expertResult != detectorResults[i].isObject ){ negRelabeled++; }
+                if( expertResult != detectorResults[i].isObject )
+                    negRelabeled++;
             }
             else
             {
@@ -758,7 +758,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         for( int i = 0; i < (int)classifiers.size(); i++ )
             p += classifiers[i].posteriorProbability(eForEnsemble[k].data, (int)eForEnsemble[k].step[0]);
         p /= classifiers.size();
-        if( (p > ENSEMBLE_THRESHOLD) != isPositive )
+        if( ( p > ENSEMBLE_THRESHOLD ) != isPositive )
         {
             if( isPositive )
                 positiveIntoEnsemble++;
@@ -934,6 +934,11 @@ void TrackerTLDModel::pushIntoModel(const Mat_<uchar>& example, bool positive)
         (*proxyT)[index] = (*proxyN);
     }
     (*proxyN)++;
+}
+void TrackerTLDModel::prepareClassifiers(int rowstep)
+{
+  for( int i = 0; i < (int)classifiers.size(); i++ ) 
+      classifiers[i].prepareClassifier(rowstep); 
 }
 
 } /* namespace cv */
