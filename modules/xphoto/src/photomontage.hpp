@@ -90,7 +90,7 @@ protected:
     virtual void setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, const int lA, const int lB, const int lX);
 
 public:
-    Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks, bool multiscale = true);
+    Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks);
     virtual ~Photomontage(){};
 
     void assignLabeling(cv::Mat &img);
@@ -109,36 +109,36 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
     if (lA == lB)
     {
         /** Link from A to B **/
-        double weightAB = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB) );
-        graph.addEdges(pA.y*width + pA.x, pB.y*width + pB.x, weightAB, weightAB);
+        double weightAB = dist( typename images[lA].at<Tp>(pA),
+                                typename images[lA].at<Tp>(pB),
+                                typename images[lX].at<Tp>(pA),
+                                typename images[lX].at<Tp>(pB) );
+        graph.addEdges( int(pA.y*width + pA.x), int(pB.y*width + pB.x), weightAB, weightAB);
     }
     else
     {
         int X = graph.addVtx();
 
         /** Link from X to sink **/
-        double weightXS = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lB].at<Tp>(pA),
-                                images[lB].at<Tp>(pB) );
+        double weightXS = dist( typename images[lA].at<Tp>(pA),
+                                typename images[lA].at<Tp>(pB),
+                                typename images[lB].at<Tp>(pA),
+                                typename images[lB].at<Tp>(pB) );
         graph.addTermWeights(X, 0, weightXS);
 
         /** Link from A to X **/
-        double weightAX = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB) );
-        graph.addEdges(pA.y*width + pA.x, X, weightAX, weightAX);
+        double weightAX = dist( typename images[lA].at<Tp>(pA),
+                                typename images[lA].at<Tp>(pB),
+                                typename images[lX].at<Tp>(pA),
+                                typename images[lX].at<Tp>(pB) );
+        graph.addEdges( int(pA.y*width + pA.x), X, weightAX, weightAX);
 
         /** Link from X to B **/
-        double weightXB = dist( images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB),
-                                images[lB].at<Tp>(pA),
-                                images[lB].at<Tp>(pB) );
-        graph.addEdges(X, pB.y*width + pB.x, weightXB, weightXB);
+        double weightXB = dist( typename images[lX].at<Tp>(pA),
+                                typename images[lX].at<Tp>(pB),
+                                typename images[lB].at<Tp>(pA),
+                                typename images[lB].at<Tp>(pB) );
+        graph.addEdges(X, int(pB.y*width + pB.x), weightXB, weightXB);
     }
 }
 
@@ -151,8 +151,8 @@ singleExpansion(const int alpha)
     /** Terminal links **/
     for (int i = 0; i < height; ++i)
     {
-        const uchar *maskAlphaRow = masks[alpha].ptr <uchar>(i);
-        const int *labelRow = (const int *) x_i.ptr <int>(i);
+        typename const uchar *maskAlphaRow = masks[alpha].ptr <uchar>(i);
+        typename const int *labelRow = (const int *) x_i.ptr <int>(i);
 
         for (int j = 0; j < width; ++j)
             graph.addTermWeights( graph.addVtx(),
@@ -163,8 +163,8 @@ singleExpansion(const int alpha)
     /** Neighbor links **/
     for (int i = 0; i < height - 1; ++i)
     {
-        const int *currentRow = (const int *) x_i.ptr <int>(i);
-        const int *nextRow = (const int *) x_i.ptr <int>(i + 1);
+        typename const int *currentRow = (const int *) x_i.ptr <int>(i);
+        typename const int *nextRow = (const int *) x_i.ptr <int>(i + 1);
 
         for (int j = 0; j < width - 1; ++j)
         {
@@ -188,8 +188,8 @@ singleExpansion(const int alpha)
     labelings[alpha].create( height, width, CV_32SC1 );
     for (int i = 0; i < height; ++i)
     {
-        const int *inRow = (const int *) x_i.ptr <int>(i);
-        int *outRow = (int *) labelings[alpha].ptr <int>(i);
+        typename const int *inRow = (const int *) x_i.ptr <int>(i);
+        typename int *outRow = (int *) labelings[alpha].ptr <int>(i);
 
         for (int j = 0; j < width; ++j)
             outRow[j] = graph.inSourceSegment(i*width + j) ? inRow[j] : alpha;
@@ -242,11 +242,11 @@ assignResImage(cv::Mat &img)
 }
 
 template <typename Tp> Photomontage <Tp>::
-Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks, const bool multiscale)
+Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks)
   :
-    images(images), masks(masks), height(images[0].rows), width(images[0].cols),
+    images(images), masks(masks), height(int(images[0].rows)), width(int(images[0].cols)),
     type(images[0].type()), x_i(height, width, CV_32SC1), channels(images[0].channels()),
-    lsize(images.size()), labelings(images.size()), distances(images.size())
+    lsize(int(images.size())), labelings(images.size()), distances(images.size())
 {
     CV_Assert(images[0].depth() != CV_8U && masks[0].depth() == CV_8U);
 }

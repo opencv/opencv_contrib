@@ -128,21 +128,12 @@ namespace cv
     {
         CV_Assert( src.type() == CV_MAKE_TYPE(CV_32F, 3) );
 
-        float M[] = {cvInvSqrt(3),  cvInvSqrt(3),       cvInvSqrt(3),
-                     cvInvSqrt(2),  0.0f,              -cvInvSqrt(2),
-                     cvInvSqrt(6), -2.0f*cvInvSqrt(6),  cvInvSqrt(6)};
+        Mat m = Mat_<float>(3, 3) << (cvInvSqrt(3),  cvInvSqrt(3),       cvInvSqrt(3),
+                                      cvInvSqrt(2),  0.0f,              -cvInvSqrt(2),
+                                      cvInvSqrt(6), -2.0f*cvInvSqrt(6),  cvInvSqrt(6));
 
-        Mat_<Vec3f>::iterator outIt = dst.begin<Vec3f>();
+        cv::transform(src, dst, m);
 
-        for (Mat_<Vec3f>::const_iterator it = src.begin<Vec3f>(); it != src.end<Vec3f>(); ++it, ++outIt)
-        {
-            Vec3f rgb = *it;
-            *outIt = Vec3f(M[0]*rgb[0] + M[1]*rgb[1] + M[2]*rgb[2],
-                           M[3]*rgb[0] + M[4]*rgb[1] + M[5]*rgb[2],
-                           M[6]*rgb[0] + M[7]*rgb[1] + M[8]*rgb[2]);
-        }
-
-        /*************************************/
         std::vector <Mat> mv;
         split(dst, mv);
 
@@ -150,15 +141,8 @@ namespace cv
             grayDctDenoising(mv[i], mv[i], sigma, psize);
 
         merge(mv, dst);
-        /*************************************/
 
-        for (Mat_<Vec3f>::iterator it = dst.begin<Vec3f>(); it != dst.end<Vec3f>(); ++it)
-        {
-            Vec3f rgb = *it;
-            *it = Vec3f(M[0]*rgb[0] + M[3]*rgb[1] + M[6]*rgb[2],
-                        M[1]*rgb[0] + M[4]*rgb[1] + M[7]*rgb[2],
-                        M[2]*rgb[0] + M[5]*rgb[1] + M[8]*rgb[2]);
-        }
+        cv::transform( dst, dst, m.inv() );
     }
 
     /*! This function implements simple dct-based image denoising,
@@ -182,7 +166,8 @@ namespace cv
         else if ( img.type() == CV_32FC1 )
             grayDctDenoising( img, img, sigma, psize );
         else
-            CV_Assert( false );
+            CV_Error_( CV_StsNotImplemented,
+            ("Unsupported source image format (=%d)", img.type()) );
 
         img.convertTo( dst, src.type() );
     }

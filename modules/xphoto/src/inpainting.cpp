@@ -64,16 +64,16 @@ namespace cv
     static void shiftMapInpaint(const Mat &src, const Mat &mask, Mat &dst)
     {
         const int nTransform = 60; // number of dominant transforms for stitching
-        const int psize = 8; // single ANNF patch size
+        //const int psize = 8; // single ANNF patch size
 
         /** ANNF computation **/
-        srand( time(NULL) );
+        srand( unsigned int(time(NULL)) );
 
         std::vector <Matx33f> transforms; // dominant transforms
         for (int i = 0; i < nTransform; ++i)
         {
-            float dx   = rand()%src.cols - src.cols/2;
-            float dy = rand()%src.rows - src.rows/2;
+            float dx = float( rand()%src.cols - src.cols/2 );
+            float dy = float( rand()%src.rows - src.rows/2 );
             transforms.push_back( Matx33f( 1, 0, dx,
                                            0, 1, dy,
                                            0, 0,  1) );
@@ -117,7 +117,8 @@ namespace cv
                 shiftMapInpaint <Tp, cn>(src, mask, dst);
                 break;
             default:
-                CV_Assert( false );
+                CV_Error_( CV_StsNotImplemented,
+                    ("Unsupported algorithm type (=%d)", algorithmType) );
                 break;
         }
     }
@@ -196,7 +197,9 @@ namespace cv
                 inpaint <double, 4>( src, mask, dst, algorithmType );
                 break;
             default:
-                CV_Assert( false );
+                CV_Error_( CV_StsNotImplemented,
+                    ("Unsupported source image format (=%d)",
+                    src.type()) );
                 break;
         }
     }

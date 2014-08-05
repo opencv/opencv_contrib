@@ -43,10 +43,11 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 template <typename Tp> static inline int min_idx(std::vector <Tp> vec)
 {
-    return std::min_element(vec.begin(), vec.end()) - vec.begin();
+    return int( std::min_element(vec.begin(), vec.end()) - vec.begin() );
 }
 
 static inline int hamming_length(int x)
