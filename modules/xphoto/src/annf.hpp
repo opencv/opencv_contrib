@@ -40,6 +40,7 @@
 #ifndef __ANNF_HPP__
 #define __ANNF_HPP__
 
+#include <vector>
 #include "algo.hpp"
 
 static void plusToMinusUpdate(const cv::Mat &current, cv::Mat &next, const int dx, const int dy)

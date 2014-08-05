@@ -75,7 +75,7 @@ private:
     public:
         Photomontage <Tp> *main;
 
-        ParallelExpansion(Photomontage <Tp> *main) : main(main){}
+        ParallelExpansion(Photomontage <Tp> *_main) : main(_main){}
         ~ParallelExpansion(){};
 
         void operator () (const cv::Range &range) const
@@ -109,10 +109,10 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
     if (lA == lB)
     {
         /** Link from A to B **/
-        double weightAB = dist( typename images[lA].at<Tp>(pA),
-                                typename images[lA].at<Tp>(pB),
-                                typename images[lX].at<Tp>(pA),
-                                typename images[lX].at<Tp>(pB) );
+        double weightAB = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), int(pB.y*width + pB.x), weightAB, weightAB);
     }
     else
@@ -120,24 +120,24 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
         int X = graph.addVtx();
 
         /** Link from X to sink **/
-        double weightXS = dist( typename images[lA].at<Tp>(pA),
-                                typename images[lA].at<Tp>(pB),
-                                typename images[lB].at<Tp>(pA),
-                                typename images[lB].at<Tp>(pB) );
+        double weightXS = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lB].at<typename Tp>(pA),
+                                images[lB].at<typename Tp>(pB) );
         graph.addTermWeights(X, 0, weightXS);
 
         /** Link from A to X **/
-        double weightAX = dist( typename images[lA].at<Tp>(pA),
-                                typename images[lA].at<Tp>(pB),
-                                typename images[lX].at<Tp>(pA),
-                                typename images[lX].at<Tp>(pB) );
+        double weightAX = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), X, weightAX, weightAX);
 
         /** Link from X to B **/
-        double weightXB = dist( typename images[lX].at<Tp>(pA),
-                                typename images[lX].at<Tp>(pB),
-                                typename images[lB].at<Tp>(pA),
-                                typename images[lB].at<Tp>(pB) );
+        double weightXB = dist( images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB),
+                                images[lB].at<typename Tp>(pA),
+                                images[lB].at<typename Tp>(pB) );
         graph.addEdges(X, int(pB.y*width + pB.x), weightXB, weightXB);
     }
 }
@@ -242,9 +242,9 @@ assignResImage(cv::Mat &img)
 }
 
 template <typename Tp> Photomontage <Tp>::
-Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks)
+Photomontage(const std::vector <cv::Mat> &_images, const std::vector <cv::Mat> &_masks)
   :
-    images(images), masks(masks), height(int(images[0].rows)), width(int(images[0].cols)),
+    images(_images), masks(_masks), height(int(images[0].rows)), width(int(images[0].cols)),
     type(images[0].type()), x_i(height, width, CV_32SC1), channels(images[0].channels()),
     lsize(int(images.size())), labelings(images.size()), distances(images.size())
 {

@@ -5,9 +5,9 @@ Automatic white balance correction
 
 balanceWhite
 ------------
-.. ocv:function:: (const Mat &src, Mat &dst, const int algorithmType,
-    const float inputMin  = 0.0f, const float inputMax  = 255.0f,
-    const float outputMin = 0.0f, const float outputMax = 255.0f)
+.. ocv:function:: void balanceWhite(const Mat &src, Mat &dst, const int algorithmType,
+                                    const float inputMin  = 0.0f, const float inputMax  = 255.0f,
+                                    const float outputMin = 0.0f, const float outputMax = 255.0f)
 
 The function implements different algorithm of automatic white balance, i.e.
 it tries to map image's white color to perceptual white (this can be violated

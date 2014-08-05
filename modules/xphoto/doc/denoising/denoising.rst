@@ -5,7 +5,7 @@ Image denoising techniques
 
 dctDenoising
 ------------
-.. ocv:function:: (const Mat &src, Mat &dst, const float sigma)
+.. ocv:function:: void dctDenoising(const Mat &src, Mat &dst, const float sigma)
 
 The function implements simple dct-based denoising,
 link: http://www.ipol.im/pub/art/2011/ys-dct/.

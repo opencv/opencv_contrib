@@ -54,6 +54,11 @@
 
 namespace cv
 {
+    void grayDctDenoising(const Mat &, Mat &, const double, const int);
+    void rgbDctDenoising(const Mat &, Mat &, const double, const int);
+    void dctDenoising(const Mat &, Mat &, const double, const int);
+
+
     struct grayDctDenoisingInvoker : public ParallelLoopBody
     {
     public:
@@ -71,9 +76,9 @@ namespace cv
         const double thresh; // thresholding estimate
     };
 
-    grayDctDenoisingInvoker::grayDctDenoisingInvoker(const Mat &src, std::vector <Mat> &patches,
-                                                     const double sigma, const int psize)
-        : src(src), patches(patches), sigma(sigma), thresh(3*sigma), psize(psize) {}
+    grayDctDenoisingInvoker::grayDctDenoisingInvoker(const Mat &_src, std::vector <Mat> &_patches,
+                                                     const double _sigma, const int _psize)
+        : src(_src), patches(_patches), sigma(_sigma), thresh(3*_sigma), psize(_psize) {}
     grayDctDenoisingInvoker::~grayDctDenoisingInvoker(){}
 
     void grayDctDenoisingInvoker::operator() (const Range &range) const
