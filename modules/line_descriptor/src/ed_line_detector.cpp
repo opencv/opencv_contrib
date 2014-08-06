@@ -123,11 +123,11 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   imageHeight = image.rows;
   unsigned int pixelNum = imageWidth * imageHeight;
 
-  if( !smoothed )
+  /*if( !smoothed )
   {  //input image hasn't been smoothed.
     cv::Mat InImage = image.clone();
     cv::GaussianBlur( InImage, image, cv::Size( ksize_, ksize_ ), sigma_ );
-  }
+  }*/
 
   unsigned int edgePixelArraySize = pixelNum / 5;
   unsigned int maxNumOfEdge = edgePixelArraySize / 20;

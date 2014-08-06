@@ -190,12 +190,14 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   /* requires descriptors computation (only one image) */
   CV_WRAP
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
+  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false,
+                bool useDetectionData = false ) const;
 
   /* requires descriptors computation (more than one image) */
   CV_WRAP
   void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
-                    false ) const;
+                    false,
+                bool useDetectionData = false ) const;
 
   /* returns descriptor size */
   CV_WRAP
@@ -219,17 +221,24 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   virtual void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask = Mat() ) const;
 
   /* implementation of descriptors' computation */
-  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const;
+  virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr,
+                            bool useDetectionData ) const;
 
   /* function inherited from Algorithm */
   AlgorithmInfo* info() const;
 
  private:
+  /* compute Gaussian pyramids */
+  void computeGaussianPyramid( const Mat& image );
+
+  /* compute Sobel's derivatives */
+  void computeSobel( const Mat& image );
+
   /* conversion of an LBD descriptor to its binary representation */
   unsigned char binaryConversion( float* f1, float* f2 );
 
   /* compute LBD descriptors using EDLine extractor */
-  int computeLBD( ScaleLines &keyLines );
+  int computeLBD( ScaleLines &keyLines, bool useDetectionData = false );
 
   /* gathers lines in groups using EDLine extractor.
    Each group contains the same line, detected in different octaves */
@@ -251,7 +260,13 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
    *from the EDLineDetector class without extra computation cost. Another reason is that, if we use
    *a single EDLineDetector to detect lines in different octave of images, then we need to allocate and release
    *memory for gradient images (dxImg, dyImg, gImg) repeatedly for their varying size*/
-  std::vector<EDLineDetector*> edLineVec_;
+  std::vector<Ptr<EDLineDetector> > edLineVec_;
+
+  /* Sobel's derivatives */
+  std::vector<cv::Mat> dxImg_vector, dyImg_vector;
+
+  /* Gaussian pyramid */
+  std::vector<cv::Mat> octaveImages;
 
 };
 

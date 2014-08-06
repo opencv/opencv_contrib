@@ -104,17 +104,17 @@ int main( int argc, char** argv )
   bd->detect( imageMat, keylines, mask );
 
   /* select only lines from first octave */
-  std::vector<KeyLine> octave0;
+  /*std::vector<KeyLine> octave0;
   for ( size_t i = 0; i < keylines.size(); i++ )
   {
     if( keylines[i].octave == 0 )
       octave0.push_back( keylines[i] );
-  }
+  }*/
 
   /* compute descriptors */
   cv::Mat descriptors;
 
-  bd->compute( imageMat, octave0, descriptors, 1);
-  writeMat( descriptors, "bd_descriptors", 0 );
+  bd->compute( imageMat, keylines, descriptors);
+  writeMat( descriptors, "bd_descriptors", 1 );
 
 }

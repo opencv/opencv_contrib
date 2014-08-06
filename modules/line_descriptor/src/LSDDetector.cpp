@@ -156,6 +156,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
   }
 
   /* create keylines */
+  int class_counter = -1;
   for ( int j = 0; j < (int) lines_lsd.size(); j++ )
   {
     for ( int k = 0; k < (int) lines_lsd[j].size(); k++ )
@@ -182,7 +183,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       kl.numOfPixels = li.count;
 
       kl.angle = atan2( ( kl.endPointY - kl.startPointY ), ( kl.endPointX - kl.startPointX ) );
-      kl.class_id = k;
+      kl.class_id = ++class_counter;
       kl.octave = j;
       kl.size = ( kl.endPointX - kl.startPointX ) * ( kl.endPointY - kl.startPointY );
       kl.response = kl.lineLength / max( gaussianPyrs[j].cols, gaussianPyrs[j].rows );

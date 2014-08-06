@@ -154,13 +154,12 @@ Ptr<BinaryDescriptor> BinaryDescriptor::createBinaryDescriptor( Params parameter
 BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters ) :
     params( parameters )
 {
-
   /* reserve enough space for EDLine objects and images in Gaussian pyramid */
   edLineVec_.resize( params.numOfOctave_ );
   images_sizes.resize( params.numOfOctave_ );
 
   for ( int i = 0; i < params.numOfOctave_; i++ )
-    edLineVec_[i] = new EDLineDetector;
+    edLineVec_[i] = Ptr<EDLineDetector>( new EDLineDetector() );
 
   /* prepare a vector to host local weights F_l*/
   gaussCoefL_.resize( params.widthOfBand_ * 3 );
@@ -208,22 +207,40 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
   imageMat = image.getMat();
   maskMat = mask.getMat();
 
-  /* initialize output matrix */
-  descriptors.create( Size( 32, (int) keylines.size() ), CV_8UC1 );
-
-  /* store reference to output matrix */
-  descrMat = descriptors.getMat();
-
   /* require drawing KeyLines detection if demanded */
   if( !useProvidedKeyLines )
+  {
+    keylines.clear();
+    BinaryDescriptor *bn = const_cast<BinaryDescriptor*>( this );
+    bn->edLineVec_.clear();
+    bn->edLineVec_.resize( params.numOfOctave_ );
+
+    for ( int i = 0; i < params.numOfOctave_; i++ )
+      bn->edLineVec_[i] = Ptr<EDLineDetector>( new EDLineDetector() );
+
     detectImpl( imageMat, keylines, maskMat );
 
+  }
+
+  /* initialize output matrix */
+  //descriptors.create( Size( 32, (int) keylines.size() ), CV_8UC1 );
+
+  /* store reference to output matrix */
+  //descrMat = descriptors.getMat();
+
   /* compute descriptors */
-  computeImpl( imageMat, keylines, descrMat, returnFloatDescr );
+  if( !useProvidedKeyLines )
+    computeImpl( imageMat, keylines, descrMat, returnFloatDescr, true );
+
+  else
+    computeImpl( imageMat, keylines, descrMat, returnFloatDescr, false );
+
+  descrMat.copyTo(descriptors);
 }
 
 BinaryDescriptor::~BinaryDescriptor()
 {
+
 }
 
 /* read parameters from a FileNode object and store them (class function ) */
@@ -268,6 +285,57 @@ static inline int get2Pow( int i )
   }
 }
 
+/* compute Gaussian pyramids */
+void BinaryDescriptor::computeGaussianPyramid( const Mat& image )
+{
+  /* clear class fields */
+  images_sizes.clear();
+  octaveImages.clear();
+
+  /* insert input image into pyramid */
+  cv::Mat currentMat = image.clone();
+  cv::GaussianBlur( currentMat, currentMat, cv::Size( 5, 5 ), 1 );
+  octaveImages.push_back( currentMat );
+  images_sizes.push_back( currentMat.size() );
+
+  /* fill Gaussian pyramid */
+  for ( int pyrCounter = 1; pyrCounter < params.numOfOctave_; pyrCounter++ )
+  {
+    /* compute and store next image in pyramid and its size */
+    pyrDown( currentMat, currentMat, Size( currentMat.cols / params.reductionRatio, currentMat.rows / params.reductionRatio ) );
+    octaveImages.push_back( currentMat );
+    images_sizes.push_back( currentMat.size() );
+  }
+}
+
+/* compute Sobel's derivatives */
+void BinaryDescriptor::computeSobel( const cv::Mat& image )
+{
+  std::cout << "SOBEL" << std::endl;
+
+  /* compute Gaussian pyramids */
+  computeGaussianPyramid( image );
+
+  /* reinitialize class structures */
+  dxImg_vector.clear();
+  dyImg_vector.clear();
+
+  dxImg_vector.resize( params.numOfOctave_ );
+  dyImg_vector.resize( params.numOfOctave_ );
+
+  std::cout<<"octaveImages.size(): "<<octaveImages.size()<<std::endl;
+
+  /* compute derivatives */
+  for ( size_t sobelCnt = 0; sobelCnt < octaveImages.size(); sobelCnt++ )
+  {
+    dxImg_vector[sobelCnt].create( images_sizes[sobelCnt].height, images_sizes[sobelCnt].width, CV_16SC1 );
+    dyImg_vector[sobelCnt].create( images_sizes[sobelCnt].height, images_sizes[sobelCnt].width, CV_16SC1 );
+
+    cv::Sobel( octaveImages[sobelCnt], dxImg_vector[sobelCnt], CV_16SC1, 1, 0, 3 );
+    cv::Sobel( octaveImages[sobelCnt], dyImg_vector[sobelCnt], CV_16SC1, 0, 1, 3 );
+  }
+}
+
 /* utility function for conversion of an LBD descriptor to its binary representation */
 unsigned char BinaryDescriptor::binaryConversion( float* f1, float* f2 )
 {
@@ -309,11 +377,19 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
 void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask ) const
 {
 
+  std::cout<<"n channels imageSRC: "<<imageSrc.channels()<<std::endl;
   cv::Mat image;
   if( imageSrc.channels() != 1 )
+  {
+    std::cout<<"entra1"<<std::endl;
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
+  }
   else
+  {
+    std::cout<<"entra2"<<std::endl;
     image = imageSrc.clone();
+    //imageSrc.copyTo(image);
+  }
 
   /*check whether image depth is different from 0 */
   if( image.depth() != 0 )
@@ -376,22 +452,23 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 }
 
 /* requires descriptors computation (only one image) */
-void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors,
-                                bool returnFloatDescr ) const
+void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr,
+                                bool useDetectionData ) const
 {
-  computeImpl( image, keylines, descriptors, returnFloatDescr );
+  computeImpl( image, keylines, descriptors, returnFloatDescr, useDetectionData );
 }
 
 /* requires descriptors computation (more than one image) */
 void BinaryDescriptor::compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors,
-                                bool returnFloatDescr ) const
+                                bool returnFloatDescr, bool useDetectionData ) const
 {
   for ( size_t i = 0; i < images.size(); i++ )
-    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr );
+    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr, useDetectionData );
 }
 
 /* implementation of descriptors computation */
-void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr ) const
+void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr,
+                                    bool useDetectionData ) const
 {
   /* convert input image to gray scale */
   cv::Mat image;
@@ -410,6 +487,11 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     std::cout << "Error: keypoint list is empty" << std::endl;
     return;
   }
+
+  BinaryDescriptor* bd = const_cast<BinaryDescriptor*>( this );
+
+  if( !useDetectionData )
+    bd->computeSobel( image );
 
   /* get maximum class_id */
   int numLines = 0;
@@ -472,8 +554,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   }
 
   /* compute LBD descriptors */
-  BinaryDescriptor* bd = const_cast<BinaryDescriptor*>( this );
-  bd->computeLBD( sl );
+  bd->computeLBD( sl, useDetectionData );
 
   /* resize output matrix */
   if( !returnFloatDescr )
@@ -509,7 +590,6 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
       else
       {
-        std::cout << "Descrittori float" << std::endl;
         /* get a pointer to correspondent row in output matrix */
         float* pointerToRow = descriptors.ptr<float>( originalIndex );
 
@@ -866,7 +946,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   return 1;
 }
 
-int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
+int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
 {
   //the default length of the band is the line length.
   short numOfFinalLine = (short) keyLines.size();
@@ -922,14 +1002,29 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines )
       pSingleLine = & ( keyLines[lineIDInScaleVec][lineIDInSameLine] );
       octaveCount = (short) pSingleLine->octaveCount;
 
-      /* retrieve associated dxImg and dyImg */
-      pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
-      pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>();
+      if( useDetectionData )
+      {
+        /* retrieve associated dxImg and dyImg */
+        pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
+        pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>();
 
-      /* get image size to work on from real one */
-      realWidth = (short) edLineVec_[octaveCount]->imageWidth;
-      imageWidth = realWidth - 1;
-      imageHeight = (short) ( edLineVec_[octaveCount]->imageHeight - 1 );
+        /* get image size to work on from real one */
+        realWidth = (short) edLineVec_[octaveCount]->imageWidth;
+        imageWidth = realWidth - 1;
+        imageHeight = (short) ( edLineVec_[octaveCount]->imageHeight - 1 );
+      }
+
+      else
+      {
+        /* retrieve associated dxImg and dyImg */
+        pdxImg = dxImg_vector[octaveCount].ptr<short>();
+        pdyImg = dyImg_vector[octaveCount].ptr<short>();
+
+        /* get image size to work on from real one */
+        realWidth = (short) images_sizes[octaveCount].width;
+        imageWidth = realWidth - 1;
+        imageHeight = (short) ( images_sizes[octaveCount].height - 1 );
+      }
 
       /* initialize memory areas */
       memset( pgdLBandSum, 0, numOfBitsBand );

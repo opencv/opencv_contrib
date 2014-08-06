@@ -49,6 +49,12 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
                       const std::vector<char>& matchesMask, int flags )
 {
 
+  if(img1.type() != img2.type())
+  {
+    std::cout << "Input images have different types" << std::endl;
+    CV_Assert(img1.type() == img2.type());
+  }
+
   /* initialize output matrix (if necessary) */
   if( flags == DrawLinesMatchesFlags::DEFAULT )
   {
