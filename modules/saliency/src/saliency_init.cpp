@@ -48,9 +48,8 @@ namespace cv
 CV_INIT_ALGORITHM(
     StaticSaliencySpectralResidual,
     "SALIENCY.SPECTRAL_RESIDUAL",
-    obj.info()->addParam( obj, "resizedImageSize", obj.resizedImageSize, false,
-                          reinterpret_cast<SizeGetter>( &StaticSaliencySpectralResidual::getWsize ),
-                          reinterpret_cast<SizeSetter>( &StaticSaliencySpectralResidual::setWsize ) ) );
+    obj.info()->addParam( obj, "resImWidth", obj.resImWidth);
+    obj.info()->addParam( obj, "resImHeight", obj.resImHeight));
 
 //CV_INIT_ALGORITHM( MotionSaliencySuBSENSE, "SALIENCY.SuBSENSE", );
 

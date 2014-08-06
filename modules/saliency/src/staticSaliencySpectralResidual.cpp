@@ -48,19 +48,21 @@ namespace cv
  * SaliencySpectralResidual
  */
 
-cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize()
+/*cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize()
 {
   return resizedImageSize;
 }
 void StaticSaliencySpectralResidual::setWsize( const cv::Ptr<Size>& newSize )
 {
   resizedImageSize = newSize;
-}
+}*/
 
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual()
 {
   className = "SPECTRAL_RESIDUAL";
-  resizedImageSize = Ptr<Size>( new Size( 64, 64 ) );
+  resImWidth=64;
+  resImHeight=64;
+  //resizedImageSize = Ptr<Size>( new Size( 64, 64 ) );
 }
 
 StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
@@ -82,24 +84,26 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image
 {
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;
-  Mat realImage( *resizedImageSize, CV_64F );
-  Mat imaginaryImage( *resizedImageSize, CV_64F );
+  Size resizedImageSize(resImWidth, resImHeight);
+
+  Mat realImage( resizedImageSize, CV_64F );
+  Mat imaginaryImage( resizedImageSize, CV_64F );
   imaginaryImage.setTo( 0 );
-  Mat combinedImage( *resizedImageSize, CV_64FC2 );
+  Mat combinedImage( resizedImageSize, CV_64FC2 );
   Mat imageDFT;
   Mat logAmplitude;
-  Mat angle( *resizedImageSize, CV_64F );
-  Mat magnitude( *resizedImageSize, CV_64F );
+  Mat angle( resizedImageSize, CV_64F );
+  Mat magnitude( resizedImageSize, CV_64F );
   Mat logAmplitude_blur, imageGR;
 
   if( image.channels() == 3 )
   {
     cvtColor( image, imageGR, COLOR_BGR2GRAY );
-    resize( imageGR, grayDown, *resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( imageGR, grayDown, resizedImageSize, 0, 0, INTER_LINEAR );
   }
   else
   {
-    resize( image, grayDown, *resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( image, grayDown, resizedImageSize, 0, 0, INTER_LINEAR );
   }
 
   grayDown.convertTo( realImage, CV_64F );

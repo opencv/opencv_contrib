@@ -66,11 +66,11 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
   StaticSaliencySpectralResidual();
   ~StaticSaliencySpectralResidual();
 
-  typedef Ptr<Size> (Algorithm::*SizeGetter)();
-  typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
+  //typedef Ptr<Size> (Algorithm::*SizeGetter)();
+  //typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
 
-  Ptr<Size> getWsize();
-  void setWsize( const Ptr<Size> &newSize );
+  //Ptr<Size> getWsize();
+  //void setWsize( const Ptr<Size> &newSize );
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
@@ -78,7 +78,9 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
  protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;CV_PROP_RW
-  Ptr<Size> resizedImageSize;
+  int resImWidth;
+  int resImHeight;
+  //Ptr<Size> resizedImageSize;
 
 };
 
