@@ -7,7 +7,7 @@ namespace cvtest
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "dct_image_denoising/";
         int nTests = 1;
 
-        float thresholds[] = {0.1};
+        double thresholds[] = {0.1};
 
         int psize[] = {8};
         double sigma[] = {9.0};

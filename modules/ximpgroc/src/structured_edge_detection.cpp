@@ -280,8 +280,7 @@ public:
      * \param outNum : __rf.options.numberOfOutputChannels
      * \param gradNum : __rf.options.numberOfGradientOrientations
      */
-    virtual void getFeatures(const cv::Mat &src, NChannelsMat &features,
-                             const int gnrmRad, const int gsmthRad,
+    virtual void getFeatures(const cv::Mat &src, Mat &features, const int gnrmRad, const int gsmthRad,
                              const int shrink, const int outNum, const int gradNum) const
     {
         cv::Mat luvImg = rgb2luv(src);

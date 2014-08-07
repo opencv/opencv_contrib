@@ -87,10 +87,7 @@ public:
                                      const int gradNum) const = 0;
 };
 
-/*!
-* ...
-*/
-CV_EXPORTS_W Ptr<RFFeatureGetter> createRFFeatureGetter();
+CV_EXPORTS_W Ptr<RFFeatureGetter> createRFFeatureGetter(void);
 
 
 

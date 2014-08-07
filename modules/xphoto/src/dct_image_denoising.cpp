@@ -80,7 +80,7 @@ namespace cv
 
     grayDctDenoisingInvoker::grayDctDenoisingInvoker(const Mat &_src, std::vector <Mat> &_patches,
                                                      const double _sigma, const int _psize)
-        : src(_src), patches(_patches), sigma(_sigma), thresh(3*_sigma), psize(_psize) {}
+        : src(_src), patches(_patches), psize(_psize), sigma(_sigma), thresh(3*_sigma) {}
 
     void grayDctDenoisingInvoker::operator() (const Range &range) const
     {
