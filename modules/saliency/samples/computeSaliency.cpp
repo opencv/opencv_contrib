@@ -63,6 +63,24 @@ static void help()
 
 int main( int argc, char** argv )
 {
+  /*  Mat A(3,3,CV_32FC2);
+   A.setTo(Scalar(NAN,1));
+
+   Mat B(3,3,CV_32F);
+   B.setTo(1);
+
+   Mat result;
+
+   bitwise_and( A, B, result );
+
+   for(int i=0; i< A.rows; i++){
+   for( int j=0; j< A.cols; j++){
+   cout<< A.at<Vec2f>(i,j)[0]<<"-"<<A.at<Vec2f>(i,j)[1]<<" " ;
+   }
+   cout<<endl;
+   }
+   exit(0);*/
+
   CommandLineParser parser( argc, argv, keys );
 
   String saliency_algorithm = parser.get<String>( 0 );
@@ -157,32 +175,52 @@ int main( int argc, char** argv )
   else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
   {
     // TODO INSERT CAPTURE CICLE FOR MOTION
-    //int testSize = 34;
+    //int testSize = 64;
     //Ptr<Size> size = Ptr<Size>( new Size( testSize, testSize ) );
     Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize( size );
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
     /*// Create an fake image test
-    Mat test( testSize, testSize, CV_8U );
-    RNG rand;
-    for ( int i = 0; i < test.rows; i++ )
-    {
-      for ( int j = 0; j < test.cols; j++ )
-      {
-        if( i < 6 && i >= 0 && j < 6 && j >= 0 )
-          test.at < uchar > ( i, j ) = 255;
-        else
-          test.at < uchar > ( i, j ) = rand.uniform( 40, 60 );
+     Mat test( testSize, testSize, CV_8U );
+     RNG rand;
+     for ( int i = 0; i < test.rows; i++ )
+     {
+     for ( int j = 0; j < test.cols; j++ )
+     {
+     if( i < 6 && i >= 0 && j < 6 && j >= 0 )
+     test.at < uchar > ( i, j ) = 255;
+     else
+     test.at < uchar > ( i, j ) = rand.uniform( 40, 60 );
 
-      }
-    } */
-    //imshow("Test", test);
-    //waitKey(0);
-    Mat saliencyMap;
-    if( saliencyAlgorithm->computeSaliency( image /*test*/, saliencyMap ) )
+     }
+     } */
+
+    bool paused=false;
+    while ( true )
     {
-      std::cout << "motion saliency done" << std::endl;
+      if( !paused )
+      {
+
+        cap >> frame;
+        cvtColor(frame, frame, COLOR_BGR2GRAY);
+
+        Mat saliencyMap;
+        if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )
+        {
+          std::cout << "motion saliency done" << std::endl;
+        }
+
+        imshow( "image", frame );
+        imshow( "saliencyMap", saliencyMap * 255 );
+      }
+
+      char c = (char) waitKey( 2 );
+      if( c == 'q' )
+        break;
+      if( c == 'p' )
+        paused = !paused;
+
     }
   }
 

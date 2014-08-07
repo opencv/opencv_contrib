@@ -78,12 +78,12 @@ bool MotionSaliencyBinWangApr2014::init()
   potentialBackground = Mat( imgSize->height, imgSize->width, CV_32FC2 );
   backgroundModel = std::vector<Mat>( K + 1, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
   //TODO set to nan
-  potentialBackground.setTo( 0 );
+  potentialBackground.setTo( Scalar(NAN,0) );
 
   //TODO set to nan
   for ( size_t i = 0; i < backgroundModel.size(); i++ )
   {
-    backgroundModel[i].setTo( 0 );
+    backgroundModel[i].setTo( Scalar(NAN, 0) );
   }
 
   epslonPixelsValue.setTo( 48.5 );  // Median of range [18, 80] advised in reference paper.
@@ -114,19 +114,19 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
   bool backgFlag = false;
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
-  highResBFMask.create( image.rows, image.cols, CV_8UC1 );
+  highResBFMask.create( image.rows, image.cols, CV_32F );
   highResBFMask.setTo( 1 );
 
   uchar* pImage;
   float* pEpslon;
-  uchar* pMask;
+  float* pMask;
 
   // Scan all pixels of image
   for ( int i = 0; i < image.rows; i++ )
   {
     pImage = image.ptr<uchar>( i );
     pEpslon = epslonPixelsValue.ptr<float>( i );
-    pMask = highResBFMask.ptr<uchar>( i );
+    pMask = highResBFMask.ptr<float>( i );
     for ( int j = 0; j < image.cols; j++ )
     {
       backgFlag = false;
@@ -185,8 +185,9 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
 {
   std::vector<Mat> mv;
   split( backgroundModel[0], mv );
+
   //if at least the first template is activated / initialized for all pixels
-  if( countNonZero( mv.at( 1 ) ) == ( mv.at( 1 ).cols * mv.at( 1 ).rows ) )
+  if( countNonZero( mv.at( 1 ) ) > ( mv.at( 1 ).cols * mv.at( 1 ).rows ) / 2 )
   {
     float currentPixelValue;
     float currentEpslonValue;
@@ -201,7 +202,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
     Mat currentModel;
 
     // Initially, all pixels are considered as foreground and then we evaluate with the background model
-    lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
+    lowResBFMask.create( image.rows, image.cols, CV_32F );
     lowResBFMask.setTo( 1 );
 
     // Scan all the ROI of original matrices
@@ -248,11 +249,11 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
         roi = roi + Point( N, 0 );
         if( ( roi.x + ( roi.width - 1 ) ) > ( image.cols - 1 ) && ( roi.y + ( N - 1 ) ) <= ( image.rows - 1 ) )
         {
-          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x )+1, N ) );
+          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x ) + 1, N ) );
         }
         else if( ( roi.x + ( roi.width - 1 ) ) > ( image.cols - 1 ) && ( roi.y + ( N - 1 ) ) > ( image.rows - 1 ) )
         {
-          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x )+1, abs( ( image.rows - 1 ) - roi.y )+1 ) );
+          roi = Rect( Point( roi.x, roi.y ), Size( abs( ( image.cols - 1 ) - roi.x ) + 1, abs( ( image.rows - 1 ) - roi.y ) + 1 ) );
         }
       }
       //Shift the ROI from up to down follow the block dimension, also bringing it back to beginning of row
@@ -260,17 +261,16 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
       roi.y += N;
       if( ( roi.y + ( roi.height - 1 ) ) > ( image.rows - 1 ) )
       {
-        roi = Rect( Point( roi.x, roi.y ), Size( N, abs( ( image.rows - 1 ) - roi.y )+1 ) );
+        roi = Rect( Point( roi.x, roi.y ), Size( N, abs( ( image.rows - 1 ) - roi.y ) + 1 ) );
       }
-      cout << endl << endl;
 
     }
     return true;
   }
   else
   {
-    lowResBFMask.create( image.rows, image.cols, CV_8UC1 );
-    lowResBFMask.setTo( 1 );
+    lowResBFMask.create( image.rows, image.cols, CV_32F );
+    lowResBFMask.setTo( NAN );
     return false;
   }
 
@@ -339,9 +339,9 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   split( backgroundModel[0], temp );
 
 //if at least the first template is activated / initialized for all pixels
-  if( countNonZero( temp.at( 1 ) ) != ( temp.at( 1 ).cols * temp.at( 1 ).rows ) )
+  if( countNonZero( temp.at( 1 ) ) <= ( temp.at( 1 ).cols * temp.at( 1 ).rows )/2 )
   {
-    thetaA = 20;
+    thetaA = 2;
     neighborhoodCheck = false;
 
   }
@@ -364,7 +364,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
     for ( int j = 0; j < finalBFMask.cols; j++ )
     {
       /////////////////// MAINTENANCE of potentialBackground model ///////////////////
-      if( finalBFMask.at<uchar>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
+      if( finalBFMask.at<float>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
       {
         /* For the pixels with CA= 0, if the current frame pixel has been classified as foreground, its value
          * will be loaded into BA and CA will be set to 1*/
@@ -467,6 +467,9 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
                 //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[0]=potentialBackground.at<Vec2f>( i, j )[0];
                 //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[1]= potentialBackground.at<Vec2f>( i, j )[1];
                 backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
+                //potentialBackground.at<Vec2f>( i, j )[0]=-255;
+                //potentialBackground.at<Vec2f>( i, j )[1]=0;
+
                 break;
               }
             }  // end for backgroundModel size
@@ -493,8 +496,44 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   Mat noisePixelsMask;
 
   /*Mat t( image.getMat().rows, image.getMat().cols, CV_32FC2 );
-  t.setTo( 50 );
-  backgroundModel.at( 0 ) = t; */
+   t.setTo( 50 );
+   backgroundModel.at( 0 ) = t; */
+
+  std::ofstream ofs4;
+  ofs4.open( "TEMPLATE_0_B.txt", std::ofstream::out );
+
+  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  {
+    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    {
+      //highResBFMask.at<int>( i, j ) = i + j;
+      stringstream str;
+      str << backgroundModel[0].at<Vec2f>( i, j )[0] << " ";
+      ofs4 << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs4 << str2.str();
+  }
+  ofs4.close();
+
+  std::ofstream ofs5;
+  ofs5.open( "TEMPLATE_0_C.txt", std::ofstream::out );
+
+  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  {
+    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    {
+      //highResBFMask.at<int>( i, j ) = i + j;
+      stringstream str;
+      str << backgroundModel[0].at<Vec2f>( i, j )[1] << " ";
+      ofs5 << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs5 << str2.str();
+  }
+  ofs5.close();
 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
@@ -509,7 +548,62 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
 
   templateOrdering();
   templateReplacement( saliencyMap.getMat(), image.getMat() );
+  //templateReplacement( highResBFMask, image.getMat() );
   templateOrdering();
+
+  //highResBFMask.copyTo(saliencyMap);
+
+  std::ofstream ofs;
+  ofs.open( "highResBFMask.txt", std::ofstream::out );
+
+  for ( int i = 0; i < highResBFMask.rows; i++ )
+  {
+    for ( int j = 0; j < highResBFMask.cols; j++ )
+    {
+      //highResBFMask.at<int>( i, j ) = i + j;
+      stringstream str;
+      str << highResBFMask.at<float>( i, j ) << " ";
+      ofs << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs << str2.str();
+  }
+  ofs.close();
+
+  std::ofstream ofs2;
+  ofs2.open( "lowResBFMask.txt", std::ofstream::out );
+
+  for ( int i = 0; i < lowResBFMask.rows; i++ )
+  {
+    for ( int j = 0; j < lowResBFMask.cols; j++ )
+    {
+      stringstream str;
+      str << lowResBFMask.at<float>( i, j ) << " ";
+      ofs2 << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs2 << str2.str();
+  }
+  ofs2.close();
+
+  std::ofstream ofs3;
+  ofs3.open( "SALMAP.txt", std::ofstream::out );
+
+  for ( int i = 0; i < saliencyMap.getMat().rows; i++ )
+  {
+    for ( int j = 0; j < saliencyMap.getMat().cols; j++ )
+    {
+      stringstream str;
+      str << saliencyMap.getMat().at<float>( i, j ) << " ";
+      ofs3 << str.str();
+    }
+    stringstream str2;
+    str2 << "\n";
+    ofs3 << str2.str();
+  }
+  ofs3.close();
 
   return true;
 }
