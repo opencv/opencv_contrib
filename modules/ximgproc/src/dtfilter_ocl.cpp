@@ -1,6 +1,6 @@
 #include "precomp.hpp"
 #include "dtfilter_ocl.hpp"
-#include "modules/edgefilter/opencl_kernels.hpp"
+#include "modules/ximgproc/opencl_kernels.hpp"
 //#include <opencv2/highgui.hpp>
 using namespace std;
 
@@ -198,8 +198,8 @@ void DTFilterOCL::initProgram()
 {
     //CV_Assert(ocl::Device::getDefault().type() == ocl::Device::TYPE_GPU);
 
-    kerProgSrcDT = ocl::edgefilter::dtfilter_dt_oclsrc;
-    kerProgSrcFilter = ocl::edgefilter::dtfilter_flt_oclsrc;
+    kerProgSrcDT = ocl::ximgproc::dtfilter_dt_oclsrc;
+    kerProgSrcFilter = ocl::ximgproc::dtfilter_flt_oclsrc;
 }
 
 DTFilterOCL::DTFilterOCL()
