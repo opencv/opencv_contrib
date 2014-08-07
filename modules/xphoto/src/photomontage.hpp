@@ -113,10 +113,10 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
     if (lA == lB)
     {
         /** Link from A to B **/
-        double weightAB = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB) );
+        double weightAB = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), int(pB.y*width + pB.x), weightAB, weightAB);
     }
     else
@@ -124,24 +124,24 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
         int X = graph.addVtx();
 
         /** Link from X to sink **/
-        double weightXS = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lB].at<Tp>(pA),
-                                images[lB].at<Tp>(pB) );
+        double weightXS = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lB].at<typename Tp>(pA),
+                                images[lB].at<typename Tp>(pB) );
         graph.addTermWeights(X, 0, weightXS);
 
         /** Link from A to X **/
-        double weightAX = dist( images[lA].at<Tp>(pA),
-                                images[lA].at<Tp>(pB),
-                                images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB) );
+        double weightAX = dist( images[lA].at<typename Tp>(pA),
+                                images[lA].at<typename Tp>(pB),
+                                images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), X, weightAX, weightAX);
 
         /** Link from X to B **/
-        double weightXB = dist( images[lX].at<Tp>(pA),
-                                images[lX].at<Tp>(pB),
-                                images[lB].at<Tp>(pA),
-                                images[lB].at<Tp>(pB) );
+        double weightXB = dist( images[lX].at<typename Tp>(pA),
+                                images[lX].at<typename Tp>(pB),
+                                images[lB].at<typename Tp>(pA),
+                                images[lB].at<typename Tp>(pB) );
         graph.addEdges(X, int(pB.y*width + pB.x), weightXB, weightXB);
     }
 }
