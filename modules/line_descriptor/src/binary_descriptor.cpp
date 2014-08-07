@@ -224,10 +224,8 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
 
   /* initialize output matrix */
   //descriptors.create( Size( 32, (int) keylines.size() ), CV_8UC1 );
-
   /* store reference to output matrix */
   //descrMat = descriptors.getMat();
-
   /* compute descriptors */
   if( !useProvidedKeyLines )
     computeImpl( imageMat, keylines, descrMat, returnFloatDescr, true );
@@ -235,7 +233,7 @@ void BinaryDescriptor::operator()( InputArray image, InputArray mask, CV_OUT std
   else
     computeImpl( imageMat, keylines, descrMat, returnFloatDescr, false );
 
-  descrMat.copyTo(descriptors);
+  descrMat.copyTo( descriptors );
 }
 
 BinaryDescriptor::~BinaryDescriptor()
@@ -286,7 +284,7 @@ static inline int get2Pow( int i )
 }
 
 /* compute Gaussian pyramids */
-void BinaryDescriptor::computeGaussianPyramid( const Mat& image )
+void BinaryDescriptor::computeGaussianPyramid( const Mat& image, const int numOctaves )
 {
   /* clear class fields */
   images_sizes.clear();
@@ -299,7 +297,7 @@ void BinaryDescriptor::computeGaussianPyramid( const Mat& image )
   images_sizes.push_back( currentMat.size() );
 
   /* fill Gaussian pyramid */
-  for ( int pyrCounter = 1; pyrCounter < params.numOfOctave_; pyrCounter++ )
+  for ( int pyrCounter = 1; pyrCounter < numOctaves; pyrCounter++ )
   {
     /* compute and store next image in pyramid and its size */
     pyrDown( currentMat, currentMat, Size( currentMat.cols / params.reductionRatio, currentMat.rows / params.reductionRatio ) );
@@ -309,21 +307,21 @@ void BinaryDescriptor::computeGaussianPyramid( const Mat& image )
 }
 
 /* compute Sobel's derivatives */
-void BinaryDescriptor::computeSobel( const cv::Mat& image )
+void BinaryDescriptor::computeSobel( const cv::Mat& image, const int numOctaves )
 {
-  std::cout << "SOBEL" << std::endl;
 
   /* compute Gaussian pyramids */
-  computeGaussianPyramid( image );
+  computeGaussianPyramid( image, numOctaves );
 
   /* reinitialize class structures */
   dxImg_vector.clear();
   dyImg_vector.clear();
 
-  dxImg_vector.resize( params.numOfOctave_ );
-  dyImg_vector.resize( params.numOfOctave_ );
+//  dxImg_vector.resize( params.numOfOctave_ );
+//  dyImg_vector.resize( params.numOfOctave_ );
 
-  std::cout<<"octaveImages.size(): "<<octaveImages.size()<<std::endl;
+  dxImg_vector.resize( octaveImages.size() );
+  dyImg_vector.resize( octaveImages.size() );
 
   /* compute derivatives */
   for ( size_t sobelCnt = 0; sobelCnt < octaveImages.size(); sobelCnt++ )
@@ -377,19 +375,13 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
 void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask ) const
 {
 
-  std::cout<<"n channels imageSRC: "<<imageSrc.channels()<<std::endl;
   cv::Mat image;
   if( imageSrc.channels() != 1 )
   {
-    std::cout<<"entra1"<<std::endl;
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
   }
   else
-  {
-    std::cout<<"entra2"<<std::endl;
     image = imageSrc.clone();
-    //imageSrc.copyTo(image);
-  }
 
   /*check whether image depth is different from 0 */
   if( image.depth() != 0 )
@@ -490,21 +482,27 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
   BinaryDescriptor* bd = const_cast<BinaryDescriptor*>( this );
 
-  if( !useDetectionData )
-    bd->computeSobel( image );
-
-  /* get maximum class_id */
+  /* get maximum class_id and octave*/
   int numLines = 0;
+  int octaveIndex = -1;
   for ( size_t l = 0; l < keylines.size(); l++ )
   {
     if( keylines[l].class_id > numLines )
       numLines = keylines[l].class_id;
+
+    if( keylines[l].octave > octaveIndex )
+      octaveIndex = keylines[l].octave;
   }
+
+  if( !useDetectionData )
+    bd->computeSobel( image, octaveIndex + 1 );
 
   /* create a ScaleLines object */
   OctaveSingleLine fictiousOSL;
-  fictiousOSL.octaveCount = params.numOfOctave_ + 1;
-  LinesVec lv( params.numOfOctave_, fictiousOSL );
+//  fictiousOSL.octaveCount = params.numOfOctave_ + 1;
+//  LinesVec lv( params.numOfOctave_, fictiousOSL );
+  fictiousOSL.octaveCount = octaveIndex + 1;
+  LinesVec lv( octaveIndex + 1, fictiousOSL );
   ScaleLines sl( numLines + 1, lv );
 
   /* create a map to record association between KeyLines and their position
@@ -548,7 +546,8 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   {
     for ( size_t j = 0; j < sl[i].size(); j++ )
     {
-      if( (int) ( sl[i][j] ).octaveCount > params.numOfOctave_ )
+      //if( (int) ( sl[i][j] ).octaveCount > params.numOfOctave_ )
+      if( (int) ( sl[i][j] ).octaveCount > octaveIndex )
         ( sl[i] ).erase( ( sl[i] ).begin() + j );
     }
   }

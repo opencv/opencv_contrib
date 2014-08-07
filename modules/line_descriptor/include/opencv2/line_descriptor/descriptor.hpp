@@ -229,10 +229,10 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
  private:
   /* compute Gaussian pyramids */
-  void computeGaussianPyramid( const Mat& image );
+  void computeGaussianPyramid( const Mat& image, const int numOctaves );
 
   /* compute Sobel's derivatives */
-  void computeSobel( const Mat& image );
+  void computeSobel( const Mat& image, const int numOctaves );
 
   /* conversion of an LBD descriptor to its binary representation */
   unsigned char binaryConversion( float* f1, float* f2 );
