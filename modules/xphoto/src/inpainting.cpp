@@ -38,6 +38,7 @@
 //M*/
 
 #include <vector>
+#include <limits>
 #include <algorithm>
 #include <iterator>
 #include <iostream>

@@ -6,7 +6,7 @@ namespace cvtest
     {
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "simple_white_balance/";
         int nTests = 12;
-        float threshold = 0.005;
+        float threshold = 0.005f;
 
         for (int i = 0; i < nTests; ++i)
         {
@@ -21,7 +21,7 @@ namespace cvtest
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );
-            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( sqrError.total()*sqrError.channels() );
+            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( double( sqrError.total()*sqrError.channels() ) );
 
             EXPECT_LE( mse[0]+mse[1]+mse[2]+mse[3], threshold );
         }

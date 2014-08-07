@@ -134,21 +134,21 @@ namespace cv
     {
         CV_Assert( src.type() == CV_MAKE_TYPE(CV_32F, 3) );
 
-        Mat m = Mat_<float>(3, 3) << (cvInvSqrt(3),  cvInvSqrt(3),       cvInvSqrt(3),
-                                      cvInvSqrt(2),  0.0f,              -cvInvSqrt(2),
-                                      cvInvSqrt(6), -2.0f*cvInvSqrt(6),  cvInvSqrt(6));
+        cv::Matx33f mt(cvInvSqrt(3),  cvInvSqrt(3),       cvInvSqrt(3),
+                       cvInvSqrt(2),  0.0f,              -cvInvSqrt(2),
+                       cvInvSqrt(6), -2.0f*cvInvSqrt(6),  cvInvSqrt(6));
 
-        cv::transform(src, dst, m);
+        cv::transform(src, dst, mt);
 
         std::vector <Mat> mv;
         split(dst, mv);
 
-        for (int i = 0; i < mv.size(); ++i)
+        for (size_t i = 0; i < mv.size(); ++i)
             grayDctDenoising(mv[i], mv[i], sigma, psize);
 
         merge(mv, dst);
 
-        cv::transform( dst, dst, m.inv() );
+        cv::transform( dst, dst, mt.inv() );
     }
 
     /*! This function implements simple dct-based image denoising,

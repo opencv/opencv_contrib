@@ -7,7 +7,7 @@ namespace cvtest
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "dct_image_denoising/";
         int nTests = 1;
 
-        float psnrThreshold[] = {0.5};
+        float thresholds[] = {0.1};
 
         int psize[] = {8};
         double sigma[] = {9.0};
@@ -26,10 +26,9 @@ namespace cvtest
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );
-            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( sqrError.total()*sqrError.channels() );
-            double psnr = 10*log10(3*255*255/(mse[0] + mse[1] + mse[2])) - psnr;
+            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( double(sqrError.total()*sqrError.channels()) );
 
-            EXPECT_GE( psnr, psnrThreshold[i] );
+            EXPECT_LE( mse[0] + mse[1] + mse[2] + mse[3], thresholds[i] );
         }
     }
 }

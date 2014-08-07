@@ -342,10 +342,10 @@ public:
      * \param filename : name of the file where the model is stored
      */
     StructuredEdgeDetectionImpl(const cv::String &filename,
-        const RFFeatureGetter *howToGetFeatures)
+        const RFFeatureGetter *_howToGetFeatures)
         : name("StructuredEdgeDetection"),
-          howToGetFeatures( howToGetFeatures != NULL
-                          ? howToGetFeatures
+          howToGetFeatures( _howToGetFeatures != NULL
+                          ? _howToGetFeatures
                           : createRFFeatureGetter() )
     {
         cv::FileStorage modelFile(filename, FileStorage::READ);

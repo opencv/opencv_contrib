@@ -13,8 +13,8 @@ link: http://www.ipol.im/pub/art/2011/ys-dct/.
     :param src : source image
     :param dst : destination image
     :param sigma : expected noise standard deviation
-	:param psize : size of block side where dct is computed
+    :param psize : size of block side where dct is computed
 
 .. seealso::
 
-    :ocv:function:`fastNLMeansDenoising`
+    :ocv:func:`fastNLMeansDenoising`
