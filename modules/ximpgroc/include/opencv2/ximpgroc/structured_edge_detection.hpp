@@ -90,7 +90,7 @@ public:
 /*!
 * ...
 */
-CV_EXPORTS_W Ptr<RFFeatureGetter> createRFFeatureGetter(void);
+CV_EXPORTS_W Ptr<RFFeatureGetter> createRFFeatureGetter();
 
 
 

@@ -63,7 +63,7 @@ namespace cv
     {
     public:
         grayDctDenoisingInvoker(const Mat &src, std::vector <Mat> &patches, const double sigma, const int psize);
-        ~grayDctDenoisingInvoker();
+        ~grayDctDenoisingInvoker(){};
 
         void operator() (const Range &range) const;
 
@@ -74,12 +74,13 @@ namespace cv
         const int psize; // size of block to compute dct
         const double sigma; // expected noise standard deviation
         const double thresh; // thresholding estimate
+
+        void operator =(const grayDctDenoisingInvoker&) const {};
     };
 
     grayDctDenoisingInvoker::grayDctDenoisingInvoker(const Mat &_src, std::vector <Mat> &_patches,
                                                      const double _sigma, const int _psize)
         : src(_src), patches(_patches), sigma(_sigma), thresh(3*_sigma), psize(_psize) {}
-    grayDctDenoisingInvoker::~grayDctDenoisingInvoker(){}
 
     void grayDctDenoisingInvoker::operator() (const Range &range) const
     {

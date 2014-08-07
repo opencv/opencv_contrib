@@ -40,6 +40,17 @@
 #ifndef __NORM2_HPP__
 #define __NORM2_HPP__
 
+static inline int sqr(uchar x) { return x*x; }
+
+template <int cn> static inline int sqr( cv::Vec<uchar, cn> x) { return x.dot(x); }
+
+static inline int norm2(const uchar &a, const uchar &b) { return sqr(a - b); }
+
+template <int cn> static inline
+int norm2(const cv::Vec <uchar, cn> &a, const cv::Vec<uchar, cn> &b) { return sqr(a - b); }
+
+
+
 template <typename Tp> static inline Tp sqr(Tp x) { return x*x; }
 
 template <typename Tp, int cn> static inline Tp sqr( cv::Vec<Tp, cn> x) { return x.dot(x); }

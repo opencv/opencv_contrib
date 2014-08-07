@@ -40,16 +40,6 @@
 #ifndef __ALGO_HPP__
 #define __ALGO_HPP__
 
-#include <vector>
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <limits>
-
-
-namespace xphotoInternal
-{
-
 
 template <typename Tp> static int min_idx(std::vector <Tp> vec)
 {
@@ -68,5 +58,4 @@ static inline int hamming_length(int x)
 }
 
 
-}
 #endif /* __ALGO_HPP__ */

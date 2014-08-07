@@ -40,18 +40,12 @@
 #ifndef __PHOTOMONTAGE_HPP__
 #define __PHOTOMONTAGE_HPP__
 
-#include <opencv2/core.hpp>
 
 #include "norm2.hpp"
 #include "algo.hpp"
-#include "annf.hpp"
 #include "gcgraph.hpp"
 
 #define GCInfinity 10*1000*1000*1000.0
-
-
-namespace xphotoInternal
-{
 
 
 template <typename Tp> class Photomontage
@@ -89,6 +83,8 @@ private:
         }
     };
 
+    void operator =(const Photomontage <Tp>&) const {};
+
 protected:
     virtual double dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2);
     virtual void setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, const int lA, const int lB, const int lX);
@@ -101,7 +97,7 @@ public:
     void assignResImage(cv::Mat &img);
 };
 
-template <typename Tp> double Photomontage <Tp>::
+template <typename Tp> inline double Photomontage <Tp>::
 dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2)
 {
     return norm2(l1p1, l2p1) + norm2(l1p2, l2p2);
@@ -113,10 +109,10 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
     if (lA == lB)
     {
         /** Link from A to B **/
-        double weightAB = dist( images[lA].at<typename Tp>(pA),
-                                images[lA].at<typename Tp>(pB),
-                                images[lX].at<typename Tp>(pA),
-                                images[lX].at<typename Tp>(pB) );
+        double weightAB = dist( images[lA].template at<Tp>(pA),
+                                images[lA].template at<Tp>(pB),
+                                images[lX].template at<Tp>(pA),
+                                images[lX].template at<Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), int(pB.y*width + pB.x), weightAB, weightAB);
     }
     else
@@ -124,24 +120,24 @@ setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, co
         int X = graph.addVtx();
 
         /** Link from X to sink **/
-        double weightXS = dist( images[lA].at<typename Tp>(pA),
-                                images[lA].at<typename Tp>(pB),
-                                images[lB].at<typename Tp>(pA),
-                                images[lB].at<typename Tp>(pB) );
+        double weightXS = dist( images[lA].template at<Tp>(pA),
+                                images[lA].template at<Tp>(pB),
+                                images[lB].template at<Tp>(pA),
+                                images[lB].template at<Tp>(pB) );
         graph.addTermWeights(X, 0, weightXS);
 
         /** Link from A to X **/
-        double weightAX = dist( images[lA].at<typename Tp>(pA),
-                                images[lA].at<typename Tp>(pB),
-                                images[lX].at<typename Tp>(pA),
-                                images[lX].at<typename Tp>(pB) );
+        double weightAX = dist( images[lA].template at<Tp>(pA),
+                                images[lA].template at<Tp>(pB),
+                                images[lX].template at<Tp>(pA),
+                                images[lX].template at<Tp>(pB) );
         graph.addEdges( int(pA.y*width + pA.x), X, weightAX, weightAX);
 
         /** Link from X to B **/
-        double weightXB = dist( images[lX].at<typename Tp>(pA),
-                                images[lX].at<typename Tp>(pB),
-                                images[lB].at<typename Tp>(pA),
-                                images[lB].at<typename Tp>(pB) );
+        double weightXB = dist( images[lX].template at<Tp>(pA),
+                                images[lX].template at<Tp>(pB),
+                                images[lB].template at<Tp>(pA),
+                                images[lB].template at<Tp>(pB) );
         graph.addEdges(X, int(pB.y*width + pB.x), weightXB, weightXB);
     }
 }
@@ -155,20 +151,20 @@ singleExpansion(const int alpha)
     /** Terminal links **/
     for (int i = 0; i < height; ++i)
     {
-        const uchar *maskAlphaRow = masks[alpha].ptr <uchar>(i);
-        const int *labelRow = (const int *) x_i.ptr <int>(i);
+        const uchar *maskAlphaRow = masks[alpha].template ptr <uchar>(i);
+        const int *labelRow = (const int *) x_i.template ptr <int>(i);
 
         for (int j = 0; j < width; ++j)
             graph.addTermWeights( graph.addVtx(),
                                   maskAlphaRow[j] ? 0 : GCInfinity,
-             masks[ labelRow[j] ].at<uchar>(i, j) ? 0 : GCInfinity );
+             masks[ labelRow[j] ].template at<uchar>(i, j) ? 0 : GCInfinity );
     }
 
     /** Neighbor links **/
     for (int i = 0; i < height - 1; ++i)
     {
-        const int *currentRow = (const int *) x_i.ptr <int>(i);
-        const int *nextRow = (const int *) x_i.ptr <int>(i + 1);
+        const int *currentRow = (const int *) x_i.template ptr <int>(i);
+        const int *nextRow = (const int *) x_i.template ptr <int>(i + 1);
 
         for (int j = 0; j < width - 1; ++j)
         {
@@ -180,7 +176,7 @@ singleExpansion(const int alpha)
                     currentRow[width - 1], nextRow[width - 1], alpha );
     }
 
-    const int *currentRow = (const int *) x_i.ptr <int>(height - 1);
+    const int *currentRow = (const int *) x_i.template ptr <int>(height - 1);
     for (int i = 0; i < width - 1; ++i)
         setWeights( graph, cv::Point(height - 1, i), cv::Point(height - 1, i + 1),
                     currentRow[i], currentRow[i + 1], alpha );
@@ -192,8 +188,8 @@ singleExpansion(const int alpha)
     labelings[alpha].create( height, width, CV_32SC1 );
     for (int i = 0; i < height; ++i)
     {
-        const int *inRow = (const int *) x_i.ptr <int>(i);
-        int *outRow = (int *) labelings[alpha].ptr <int>(i);
+        const int *inRow = (const int *) x_i.template ptr <int>(i);
+        int *outRow = (int *) labelings[alpha].template ptr <int>(i);
 
         for (int j = 0; j < width; ++j)
             outRow[j] = graph.inSourceSegment(i*width + j) ? inRow[j] : alpha;
@@ -242,7 +238,10 @@ assignResImage(cv::Mat &img)
 
     for (int i = 0; i < height; ++i)
         for (int j = 0; j < width; ++j)
-            img.at<Tp>(i, j) = images[ optimalLabeling.at<int>(i, j) ].at<Tp>(i, j);
+        {
+            cv::Mat M = images[optimalLabeling.template at<int>(i, j)];
+            img.template at<Tp>(i, j) = M.template at<Tp>(i, j);
+        }
 }
 
 template <typename Tp> Photomontage <Tp>::
@@ -250,10 +249,7 @@ Photomontage(const std::vector <cv::Mat> &_images, const std::vector <cv::Mat> &
   :
     images(_images), masks(_masks), labelings(images.size()), distances(images.size()),
     height(int(images[0].rows)), width(int(images[0].cols)), type(images[0].type()),
-    channels(images[0].channels()), lsize(int(images.size())), x_i(height, width, CV_32SC1){
-    CV_Assert(images[0].depth() != CV_8U && masks[0].depth() == CV_8U);
-}
+    channels(images[0].channels()), lsize(int(images.size())), x_i(height, width, CV_32SC1){}
 
 
-}
 #endif /* __PHOTOMONTAGE_HPP__ */

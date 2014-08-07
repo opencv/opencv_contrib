@@ -42,10 +42,6 @@
 
 #include "algo.hpp"
 
-namespace xphotoInternal
-{
-
-
 static void plusToMinusUpdate(const cv::Mat &current, cv::Mat &next, const int dx, const int dy)
 {
     for (int i = 0; i < next.rows; ++i)
@@ -127,5 +123,4 @@ static void getWHSeries(const cv::Mat &src, cv::Mat &dst, const int nProjections
 }
 
 
-}
 #endif /* __ANNF_HPP__ */

@@ -15,12 +15,9 @@ due to specific illumination or camera settings).
 
     :param src : source image
     :param dst : destination image
-    :param algorithmType : type of the algorithm to use.
-                           Use WHITE_BALANCE_SIMPLE to perform
-                           smart histogram adjustments
-                           (ignoring 4% pixels with minimal
+    :param algorithmType : type of the algorithm to use. Use WHITE_BALANCE_SIMPLE to perform
+                           smart histogram adjustments (ignoring 4% pixels with minimal
                            and maximal values) for each channel.
-
     :param inputMin : minimum value in the input image
     :param inputMax : maximum value in the input image
     :param outputMin : minimum value in the output image

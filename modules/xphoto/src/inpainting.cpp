@@ -52,10 +52,11 @@
 #include "opencv2/core/types.hpp"
 #include "opencv2/core/types_c.h"
 
-
-#include "photomontage.hpp"
-#include "annf.hpp"
-
+namespace xphotoInternal
+{
+#  include "photomontage.hpp"
+#  include "annf.hpp"
+}
 
 namespace cv
 {
