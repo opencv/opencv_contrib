@@ -52,11 +52,10 @@
 #include "opencv2/core/types.hpp"
 #include "opencv2/core/types_c.h"
 
-namespace xphotoInternal
-{
-#  include "photomontage.hpp"
-#  include "annf.hpp"
-}
+
+#include "photomontage.hpp"
+#include "annf.hpp"
+
 
 namespace cv
 {
@@ -64,10 +63,10 @@ namespace cv
     static void shiftMapInpaint(const Mat &src, const Mat &mask, Mat &dst)
     {
         const int nTransform = 60; // number of dominant transforms for stitching
-        //const int psize = 8; // single ANNF patch size
+        const int psize = 8; // single ANNF patch size
 
         /** ANNF computation **/
-        srand( unsigned int(time(NULL)) );
+        srand( unsigned(time(NULL)) );
 
         std::vector <Matx33f> transforms; // dominant transforms
         for (int i = 0; i < nTransform; ++i)

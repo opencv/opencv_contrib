@@ -43,9 +43,15 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 
-template <typename Tp> static inline int min_idx(std::vector <Tp> vec)
+
+namespace xphotoInternal
+{
+
+
+template <typename Tp> static int min_idx(std::vector <Tp> vec)
 {
     return int( std::min_element(vec.begin(), vec.end()) - vec.begin() );
 }
@@ -61,4 +67,6 @@ static inline int hamming_length(int x)
     return res;
 }
 
+
+}
 #endif /* __ALGO_HPP__ */

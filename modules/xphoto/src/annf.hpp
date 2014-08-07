@@ -40,8 +40,11 @@
 #ifndef __ANNF_HPP__
 #define __ANNF_HPP__
 
-#include <vector>
 #include "algo.hpp"
+
+namespace xphotoInternal
+{
+
 
 static void plusToMinusUpdate(const cv::Mat &current, cv::Mat &next, const int dx, const int dy)
 {
@@ -123,4 +126,6 @@ static void getWHSeries(const cv::Mat &src, cv::Mat &dst, const int nProjections
     cv::merge(projections, dst);
 }
 
+
+}
 #endif /* __ANNF_HPP__ */

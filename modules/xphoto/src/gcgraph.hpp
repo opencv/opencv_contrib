@@ -78,8 +78,8 @@ private:
         TWeight weight;
     };
 
-    std::vector<Vtx> vtcs;
-    std::vector<Edge> edges;
+    ::std::vector<Vtx> vtcs;
+    ::std::vector<Edge> edges;
     TWeight flow;
 };
 
@@ -163,7 +163,7 @@ TWeight GCGraph<TWeight>::maxFlow()
     Vtx *vtxPtr = &vtcs[0];
     Edge *edgePtr = &edges[0];
 
-    std::vector<Vtx*> orphans;
+    ::std::vector<Vtx*> orphans;
 
     // initialize the active queue and the graph vertices
     for( int i = 0; i < (int)vtcs.size(); i++ )
