@@ -63,7 +63,7 @@ MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
   alpha = 0.01;  // Learning rate
   L0 = 6000;  // Upper-bound values for C0 (efficacy of the first template (matrices) of backgroundModel
   L1 = 4000;  // Upper-bound values for C1 (efficacy of the second template (matrices) of backgroundModel
-  thetaL = 2500;  // T0, T1 swap threshold
+  thetaL = 50;  // T0, T1 swap threshold
   thetaA = 200;
   gamma = 3;
   neighborhoodCheck = true;
@@ -76,19 +76,24 @@ bool MotionSaliencyBinWangApr2014::init()
 
   epslonPixelsValue = Mat( imgSize->height, imgSize->width, CV_32F );
   potentialBackground = Mat( imgSize->height, imgSize->width, CV_32FC2 );
-  backgroundModel = std::vector<Mat>( K + 1, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
+  //backgroundModel = std::vector<Mat>( K + 1, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
   //TODO set to nan
-  potentialBackground.setTo( Scalar(NAN,0) );
+  potentialBackground.setTo( 0 );
 
+  backgroundModel.resize(K+1);
   //TODO set to nan
-  for ( size_t i = 0; i < backgroundModel.size(); i++ )
+  for ( int i = 0; i < K + 1; i++ )
   {
-    backgroundModel[i].setTo( Scalar(NAN, 0) );
+    Mat* tmpm = new Mat;
+    tmpm->create(imgSize->height, imgSize->width, CV_32FC2);
+    tmpm->setTo(0);
+    Ptr<Mat> tmp = Ptr<Mat>( tmpm );
+    backgroundModel[i] = tmp;
   }
 
-  epslonPixelsValue.setTo( 48.5 );  // Median of range [18, 80] advised in reference paper.
-                                    // Since data is even, the median is estimated using two values ​​that occupy
-                                    // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
+  epslonPixelsValue.setTo( 70 );  // Median of range [18, 80] advised in reference paper.
+                                  // Since data is even, the median is estimated using two values ​​that occupy
+                                  // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
 
   /* epslonPixelsValue = Mat::zeros( imgSize->height, imgSize->width, CV_8U );
    potentialBackground = Mat::NAN( imgSize->height, imgSize->width, CV_32FC2 );
@@ -107,11 +112,27 @@ MotionSaliencyBinWangApr2014::~MotionSaliencyBinWangApr2014()
 bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, Mat& highResBFMask )
 {
   Mat image = image2.clone();
-  float* currentB;
-  float* currentC;
+
   float currentPixelValue;
   float currentEpslonValue;
   bool backgFlag = false;
+
+  Mat test( image.rows, image.cols, CV_8U );
+  Mat test1( image.rows, image.cols, CV_8U );
+  test.setTo( 255 );
+  for ( int i = 0; i < test.rows; i++ )
+  {
+    for ( int j = 0; j < test.cols; j++ )
+    {
+      if( backgroundModel[0]->at<Vec2f>( i, j )[1] == 0 )
+      {
+        test.at<uchar>( i, j ) = 0;
+      }
+      test1.at<uchar>( i, j ) = (int) backgroundModel[0]->at<Vec2f>( i, j )[0];
+    }
+  }
+  imshow( "test_T0c", test );
+  imshow( "test_T0b", test1 );
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
   highResBFMask.create( image.rows, image.cols, CV_32F );
@@ -121,14 +142,18 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
   float* pEpslon;
   float* pMask;
 
+  int countDec = 0;
+
   // Scan all pixels of image
   for ( int i = 0; i < image.rows; i++ )
   {
+
     pImage = image.ptr<uchar>( i );
     pEpslon = epslonPixelsValue.ptr<float>( i );
     pMask = highResBFMask.ptr<float>( i );
     for ( int j = 0; j < image.cols; j++ )
     {
+
       backgFlag = false;
       // TODO replace "at" with more efficient matrix access
       //currentPixelValue = image.at<uchar>( i, j );
@@ -136,36 +161,64 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
       currentPixelValue = pImage[j];
       currentEpslonValue = pEpslon[j];
 
-      if( backgroundModel[0].at<Vec2f>( i, j )[1] != 0 )  //if at least the first template is activated / initialized
+      if( i == 50 && j == 50 )
+        cout << "currentPixelValue :" << currentPixelValue << endl << "currentEpslonValue :" << currentEpslonValue << endl;
+
+      int counter = 0;
+      for ( size_t z = 0; z < backgroundModel.size(); z++ )
+      {
+        counter += backgroundModel.at(z)->at<Vec2f>( i, j )[1];
+      }
+
+      if( counter != 0 )  //if at least the first template is activated / initialized
       {
 
         // scan background model vector
         for ( size_t z = 0; z < backgroundModel.size(); z++ )
         {
+          float currentB;
+          float currentC;
           // TODO replace "at" with more efficient matrix access
-          currentB = &backgroundModel[z].at<Vec2f>( i, j )[0];
-          currentC = &backgroundModel[z].at<Vec2f>( i, j )[1];
+          currentB = (backgroundModel.at(z)->at<Vec2f>( i, j )[0]);
+          currentC = (backgroundModel.at(z)->at<Vec2f>( i, j )[1]);
 
-          if( *currentC > 0 )  //The current template is active
+          if( i == 50 && j == 50 )
           {
+            cout << "zeta:" << z << " currentB :" << currentB << endl << "currentC :" << currentC << endl;
+          }
+          //continue;
+
+          if( currentC > 0 )  //The current template is active
+          {
+            //cout<< "DIFFERENCE: "<<abs( currentPixelValue -  ( *currentB ) )<<endl;
             // If there is a match with a current background template
-            if( abs( currentPixelValue - * ( currentB ) ) < currentEpslonValue && !backgFlag )
+            if( abs( currentPixelValue - ( currentB ) ) < currentEpslonValue && !backgFlag )
             {
               // The correspondence pixel in the  BF mask is set as background ( 0 value)
               //highResBFMask.at<uchar>( i, j ) = 0;
               pMask[j] = 0;
-              if( ( *currentC < L0 && z == 0 ) || ( *currentC < L1 && z == 1 ) || ( z > 1 ) )
-                *currentC += 1;  // increment the efficacy of this template
+              //if( ( *currentC < L0 && z == 0 ) || ( *currentC < L1 && z == 1 ) || ( z > 1 ) )
+              (backgroundModel.at(z)->at<Vec2f>( i, j )[1]) = (backgroundModel.at(z)->at<Vec2f>( i, j )[1]) + 1;  // increment the efficacy of this template
 
-              *currentB = ( ( 1 - alpha ) * * ( currentB ) ) + ( alpha * currentPixelValue );  // Update the template value
+              (backgroundModel.at(z)->at<Vec2f>( i, j )[0]) = ( ( 1 - alpha ) * ( currentB ) ) + ( alpha * currentPixelValue );  // Update the template value
               backgFlag = true;
               //break;
             }
             else
             {
-              currentC -= 1;  // decrement the efficacy of this template
+              if( z == 0 )
+                countDec++;
+
+              (backgroundModel.at(z)->at<Vec2f>( i, j )[1]) = (backgroundModel.at(z)->at<Vec2f>( i, j )[1]) - 1;  // decrement the efficacy of this template
             }
 
+          }
+
+          if( i == 50 && j == 50 )
+          {
+            cout << "DOPO IF: " << endl;
+            cout << "zeta:" << z << " currentB_A :" << &currentB << endl << "currentC_A :" << &currentC<<endl;
+            cout << "zeta:" << z << " currentB :" <<  (backgroundModel.at(z)->at<Vec2f>( i, j )[0]) << endl << "currentC :" <<  (backgroundModel.at(z)->at<Vec2f>( i, j )[1]) << endl<<endl;
           }
         }  // end "for" cicle of template vector
 
@@ -178,13 +231,15 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
     }
   }  // end "for" cicle of all image's pixels
 
+  //cout<<" STATISTICA :"<<countDec<<"/"<< image.rows*image.cols<< " = "<<(float)countDec/(float)(image.rows*image.cols)*100<<" %"<<endl;
+
   return true;
 }
 
 bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat& lowResBFMask )
 {
   std::vector<Mat> mv;
-  split( backgroundModel[0], mv );
+  split( *backgroundModel[0], mv );
 
   //if at least the first template is activated / initialized for all pixels
   if( countNonZero( mv.at( 1 ) ) > ( mv.at( 1 ).cols * mv.at( 1 ).rows ) / 2 )
@@ -226,7 +281,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
         for ( int z = 0; z < N_DS; z++ )
         {
           // Select the current template 2 channel matrix, select ROI and compute the mean for each channel separately
-          Mat roiTemplate = backgroundModel[z]( roi );
+          Mat roiTemplate = (*(backgroundModel[z]))( roi );
           Scalar templateMean = mean( roiTemplate );
           currentB = templateMean[0];
           currentC = templateMean[1];
@@ -270,7 +325,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   else
   {
     lowResBFMask.create( image.rows, image.cols, CV_32F );
-    lowResBFMask.setTo( NAN );
+    lowResBFMask.setTo( 1 );
     return false;
   }
 
@@ -290,16 +345,16 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
   float temp;
 
 // Scan all pixels of image
-  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  for ( int i = 0; i < backgroundModel[0]->rows; i++ )
   {
-    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    for ( int j = 0; j < backgroundModel[0]->cols; j++ )
     {
       // scan background model vector from T1 to Tk
       for ( size_t z = 1; z < backgroundModel.size(); z++ )
       {
         // Fill vector of pairs
-        pixelTemplates[z - 1].first = backgroundModel[z].at<Vec2f>( i, j )[0];  // Current B (background value)
-        pixelTemplates[z - 1].second = backgroundModel[z].at<Vec2f>( i, j )[1];  // Current C (efficacy value)
+        pixelTemplates[z - 1].first = backgroundModel[z]->at<Vec2f>( i, j )[0];  // Current B (background value)
+        pixelTemplates[z - 1].second = backgroundModel[z]->at<Vec2f>( i, j )[1];  // Current C (efficacy value)
       }
 
       //SORT template from T1 to Tk
@@ -308,23 +363,23 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
       //REFILL CURRENT MODEL ( T1...Tk)
       for ( size_t zz = 1; zz < backgroundModel.size(); zz++ )
       {
-        backgroundModel[zz].at<Vec2f>( i, j )[0] = pixelTemplates[zz - 1].first;  // Replace previous B with new ordered B value
-        backgroundModel[zz].at<Vec2f>( i, j )[1] = pixelTemplates[zz - 1].second;  // Replace previous C with new ordered C value
+        backgroundModel[zz]->at<Vec2f>( i, j )[0] = pixelTemplates[zz - 1].first;  // Replace previous B with new ordered B value
+        backgroundModel[zz]->at<Vec2f>( i, j )[1] = pixelTemplates[zz - 1].second;  // Replace previous C with new ordered C value
       }
 
       // SORT Template T0 and T1
-      if( backgroundModel[1].at<Vec2f>( i, j )[1] > thetaL && backgroundModel[0].at<Vec2f>( i, j )[1] < thetaL )
+      if( backgroundModel[1]->at<Vec2f>( i, j )[1] > thetaL && backgroundModel[0]->at<Vec2f>( i, j )[1] < thetaL )
       {
 
         // swap B value of T0 with B value of T1 (for current model)
-        temp = backgroundModel[0].at<Vec2f>( i, j )[0];
-        backgroundModel[0].at<Vec2f>( i, j )[0] = backgroundModel[1].at<Vec2f>( i, j )[0];
-        backgroundModel[1].at<Vec2f>( i, j )[0] = temp;
+        temp = backgroundModel[0]->at<Vec2f>( i, j )[0];
+        backgroundModel[0]->at<Vec2f>( i, j )[0] = backgroundModel[1]->at<Vec2f>( i, j )[0];
+        backgroundModel[1]->at<Vec2f>( i, j )[0] = temp;
 
         // set new C0 value for current model)
-        temp = backgroundModel[0].at<Vec2f>( i, j )[1];
-        backgroundModel[0].at<Vec2f>( i, j )[1] = gamma * thetaL;
-        backgroundModel[1].at<Vec2f>( i, j )[1] = temp;
+        temp = backgroundModel[0]->at<Vec2f>( i, j )[1];
+        backgroundModel[0]->at<Vec2f>( i, j )[1] = gamma * thetaL;
+        backgroundModel[1]->at<Vec2f>( i, j )[1] = temp;
 
       }
 
@@ -335,11 +390,22 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 }
 bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, const Mat& image )
 {
+  Mat test( image.rows, image.cols, CV_8U );
+  for ( int i = 0; i < test.rows; i++ )
+  {
+    for ( int j = 0; j < test.cols; j++ )
+    {
+
+      test.at<uchar>( i, j ) = (int) potentialBackground.at<Vec2f>( i, j )[0];
+    }
+  }
+  imshow( "test_BA", test );
+
   std::vector<Mat> temp;
-  split( backgroundModel[0], temp );
+  split( *backgroundModel[0], temp );
 
 //if at least the first template is activated / initialized for all pixels
-  if( countNonZero( temp.at( 1 ) ) <= ( temp.at( 1 ).cols * temp.at( 1 ).rows )/2 )
+  if( countNonZero( temp.at( 1 ) ) <= ( temp.at( 1 ).cols * temp.at( 1 ).rows ) / 2 )
   {
     thetaA = 2;
     neighborhoodCheck = false;
@@ -348,11 +414,11 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   else
   {
     thetaA = 200;
-    neighborhoodCheck = true;
+    neighborhoodCheck = false;
   }
 
   float roiSize = 3;  // FIXED ROI SIZE, not change until you first appropriately adjust the following controls in the EVALUATION section!
-  int countNonZeroElements = NAN;
+  int countNonZeroElements = 0;
   std::vector<Mat> mv;
   Mat replicateCurrentBAMat( roiSize, roiSize, CV_32FC1 );
   Mat backgroundModelROI( roiSize, roiSize, CV_32FC1 );
@@ -370,13 +436,13 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
          * will be loaded into BA and CA will be set to 1*/
         if( potentialBackground.at<Vec2f>( i, j )[1] == 0 )
         {
-          potentialBackground.at<Vec2f>( i, j )[0] = image.at<uchar>( i, j );
+          potentialBackground.at<Vec2f>( i, j )[0] = (float) image.at<uchar>( i, j );
           potentialBackground.at<Vec2f>( i, j )[1] = 1;
         }
 
         /*the distance between this pixel value and BA is calculated, and if this distance is smaller than
          the decision threshold epslon, then CA is increased by 1, otherwise is decreased by 1*/
-        else if( abs( image.at<uchar>( i, j ) - potentialBackground.at<Vec2f>( i, j )[0] ) < epslonPixelsValue.at<float>( i, j ) )
+        else if( abs( (float) image.at<uchar>( i, j ) - potentialBackground.at<Vec2f>( i, j )[0] ) < epslonPixelsValue.at<float>( i, j ) )
         {
           potentialBackground.at<Vec2f>( i, j )[1] += 1;
         }
@@ -401,49 +467,49 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               /*if( ( i - floor( roiSize / 2 ) >= 0 ) && ( j - floor( roiSize / 2 ) >= 0 )
                && ( i + floor( roiSize / 2 ) <= ( backgroundModel[z].rows - 1 ) )
                && ( j + floor( roiSize / 2 ) <= ( backgroundModel[z].cols - 1 ) ) ) */
-              if( i > 0 && j > 0 && i < ( backgroundModel[z].rows - 1 ) && j < ( backgroundModel[z].cols - 1 ) )
+              if( i > 0 && j > 0 && i < ( backgroundModel[z]->rows - 1 ) && j < ( backgroundModel[z]->cols - 1 ) )
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), roiSize, roiSize ) );
               }
               else if( i == 0 && j == 0 )  // upper left
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j, i, ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
               }
-              else if( j == 0 && i > 0 && i < ( backgroundModel[z].rows - 1 ) )  // middle left
+              else if( j == 0 && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle left
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j, i - floor( roiSize / 2 ), ceil( roiSize / 2 ), roiSize ) );
               }
-              else if( i == ( backgroundModel[z].rows - 1 ) && j == 0 )  //down left
+              else if( i == ( backgroundModel[z]->rows - 1 ) && j == 0 )  //down left
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j, i - floor( roiSize / 2 ), ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
               }
-              else if( i == 0 && j > 0 && j < ( backgroundModel[z].cols - 1 ) )  // upper - middle
+              else if( i == 0 && j > 0 && j < ( backgroundModel[z]->cols - 1 ) )  // upper - middle
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( ( j - floor( roiSize / 2 ) ), i, roiSize, ceil( roiSize / 2 ) ) );
               }
-              else if( i == ( backgroundModel[z].rows - 1 ) && j > 0 && j < ( backgroundModel[z].cols - 1 ) )  //down middle
+              else if( i == ( backgroundModel[z]->rows - 1 ) && j > 0 && j < ( backgroundModel[z]->cols - 1 ) )  //down middle
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), roiSize, ceil( roiSize / 2 ) ) );
               }
-              else if( i == 0 && j == ( backgroundModel[z].cols - 1 ) )  // upper right
+              else if( i == 0 && j == ( backgroundModel[z]->cols - 1 ) )  // upper right
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i, ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
               }
-              else if( j == ( backgroundModel[z].cols - 1 ) && i > 0 && i < ( backgroundModel[z].rows - 1 ) )  // middle - right
+              else if( j == ( backgroundModel[z]->cols - 1 ) && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle - right
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )( Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), ceil( roiSize / 2 ), roiSize ) );
               }
-              else if( i == ( backgroundModel[z].rows - 1 ) && j == ( backgroundModel[z].cols - 1 ) )  // down right
+              else if( i == ( backgroundModel[z]->rows - 1 ) && j == ( backgroundModel[z]->cols - 1 ) )  // down right
               {
-                split( backgroundModel[z], mv );
+                split( *backgroundModel[z], mv );
                 backgroundModelROI = mv.at( 0 )(
                     Rect( j - floor( roiSize / 2 ), i - floor( roiSize / 2 ), ceil( roiSize / 2 ), ceil( roiSize / 2 ) ) );
               }
@@ -466,9 +532,9 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
                 //TODO CHECK BACKGROUND MODEL COUNTER ASSIGNEMENT
                 //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[0]=potentialBackground.at<Vec2f>( i, j )[0];
                 //backgroundModel[backgroundModel.size()-1].at<Vec2f>( i, j )[1]= potentialBackground.at<Vec2f>( i, j )[1];
-                backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-                //potentialBackground.at<Vec2f>( i, j )[0]=-255;
-                //potentialBackground.at<Vec2f>( i, j )[1]=0;
+                backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
+                potentialBackground.at<Vec2f>( i, j )[0] = 0;
+                potentialBackground.at<Vec2f>( i, j )[1] = 0;
 
                 break;
               }
@@ -476,7 +542,11 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
           }
           else
           {
-            backgroundModel[backgroundModel.size() - 1].at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
+            ((backgroundModel.at(backgroundModel.size() - 1))->at<Vec2f>( i, j ))[0] = potentialBackground.at<Vec2f>( i, j )[0];
+            ((backgroundModel.at(backgroundModel.size() - 1))->at<Vec2f>( i, j ))[1] = potentialBackground.at<Vec2f>( i, j )[1];
+            potentialBackground.at<Vec2f>( i, j )[0] = 0;
+            potentialBackground.at<Vec2f>( i, j )[1] = 0;
+            //((backgroundModel.at(0))->at<Vec2f>( i, j ))[1] = 3;
           }
         }  // close if of EVALUATION
       }  // end of  if( finalBFMask.at<uchar>( i, j ) == 1 )  // i.e. the corresponding frame pixel has been market as foreground
@@ -502,13 +572,13 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   std::ofstream ofs4;
   ofs4.open( "TEMPLATE_0_B.txt", std::ofstream::out );
 
-  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  for ( int i = 0; i < backgroundModel[0]->rows; i++ )
   {
-    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    for ( int j = 0; j < backgroundModel[0]->cols; j++ )
     {
       //highResBFMask.at<int>( i, j ) = i + j;
       stringstream str;
-      str << backgroundModel[0].at<Vec2f>( i, j )[0] << " ";
+      str << backgroundModel[0]->at<Vec2f>( i, j )[0] << " ";
       ofs4 << str.str();
     }
     stringstream str2;
@@ -520,13 +590,13 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   std::ofstream ofs5;
   ofs5.open( "TEMPLATE_0_C.txt", std::ofstream::out );
 
-  for ( int i = 0; i < backgroundModel[0].rows; i++ )
+  for ( int i = 0; i < backgroundModel[0]->rows; i++ )
   {
-    for ( int j = 0; j < backgroundModel[0].cols; j++ )
+    for ( int j = 0; j < backgroundModel[0]->cols; j++ )
     {
       //highResBFMask.at<int>( i, j ) = i + j;
       stringstream str;
-      str << backgroundModel[0].at<Vec2f>( i, j )[1] << " ";
+      str << backgroundModel[0]->at<Vec2f>( i, j )[1] << " ";
       ofs5 << str.str();
     }
     stringstream str2;
@@ -538,20 +608,23 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
 
+  imshow( "highResBFMask", highResBFMask * 255 );
+  imshow( "lowResBFMask", lowResBFMask * 255 );
+
 // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
 // foreground in both masks (full and low)
   bitwise_and( highResBFMask, lowResBFMask, saliencyMap );
 
 // Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
-  bitwise_not( lowResBFMask, not_lowResBFMask );
-  bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
+  //bitwise_not( lowResBFMask, not_lowResBFMask );
+  //bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
 
   templateOrdering();
   templateReplacement( saliencyMap.getMat(), image.getMat() );
   //templateReplacement( highResBFMask, image.getMat() );
   templateOrdering();
 
-  //highResBFMask.copyTo(saliencyMap);
+  //highResBFMask.copyTo( saliencyMap );
 
   std::ofstream ofs;
   ofs.open( "highResBFMask.txt", std::ofstream::out );
