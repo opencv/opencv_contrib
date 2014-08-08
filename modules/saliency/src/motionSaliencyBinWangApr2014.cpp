@@ -297,7 +297,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
 
 }
 
-bool inline pairCompare( pair<float, float> t, pair<float, float> t_plusOne )
+bool inline pairCompare( std::pair<float, float> t, std::pair<float, float> t_plusOne )
 {
 
   return ( t.second > t_plusOne.second );
@@ -307,7 +307,7 @@ bool inline pairCompare( pair<float, float> t, pair<float, float> t_plusOne )
 // Background model maintenance functions
 bool MotionSaliencyBinWangApr2014::templateOrdering()
 {
-  vector<pair<float, float> > pixelTemplates( backgroundModel.size() );
+  std::vector<std::pair<float, float> > pixelTemplates( backgroundModel.size() );
 
   Vec2f* bgModel_0P;
   Vec2f* bgModel_1P;

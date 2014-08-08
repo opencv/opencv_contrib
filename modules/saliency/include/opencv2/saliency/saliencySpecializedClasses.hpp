@@ -128,7 +128,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   //bool decisionThresholdAdaptation();
 
   // changing structure
-  vector<Ptr<Mat> > backgroundModel;  // The vector represents the background template T0---TK of reference paper.
+  std::vector<Ptr<Mat> > backgroundModel;  // The vector represents the background template T0---TK of reference paper.
                                 // Matrices are two-channel matrix. In the first layer there are the B (background value)
                                 // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
   Mat potentialBackground;  // Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
