@@ -43,6 +43,9 @@
 //TODO delete highgui include
 #include <opencv2/highgui.hpp>
 
+#define thetaA_VAL 200
+#define thetaL_VAL 250
+
 namespace cv
 {
 
@@ -63,8 +66,8 @@ MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
   alpha = 0.01;  // Learning rate
   L0 = 300;  // Upper-bound values for C0 (efficacy of the first template (matrices) of backgroundModel
   L1 = 200;  // Upper-bound values for C1 (efficacy of the second template (matrices) of backgroundModel
-  thetaL = 30;  // T0, T1 swap threshold
-  thetaA = 15;
+  thetaL = thetaL_VAL;  // T0, T1 swap threshold
+  thetaA = thetaA_VAL;
   gamma = 3;
   neighborhoodCheck = true;
 
@@ -74,7 +77,7 @@ MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
 bool MotionSaliencyBinWangApr2014::init()
 {
 
-  epslonPixelsValue = Mat( imgSize->height, imgSize->width, CV_32F, Scalar( 70 ) );
+  epslonPixelsValue = Mat( imgSize->height, imgSize->width, CV_32F, Scalar( 20 ) );
   // Median of range [18, 80] advised in reference paper.
   // Since data is even, the median is estimated using two values ​​that occupy
   // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
@@ -89,7 +92,7 @@ bool MotionSaliencyBinWangApr2014::init()
   {
     Mat* tmpm = new Mat;
     tmpm->create( imgSize->height, imgSize->width, CV_32FC2 );
-    tmpm->setTo( Scalar(NAN, 0) );
+    tmpm->setTo( Scalar( NAN, 0 ) );
     Ptr<Mat> tmp = Ptr<Mat>( tmpm );
     backgroundModel[i] = tmp;
   }
@@ -112,22 +115,16 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
   float currentEpslonValue;
   bool backgFlag = false;
 
-  Mat test( image.rows, image.cols, CV_8U );
-  Mat test1( image.rows, image.cols, CV_8U );
-  test.setTo( 255 );
-  for ( int i = 0; i < test.rows; i++ )
+  for ( int i = 0; i <= K; i++ )
   {
-    for ( int j = 0; j < test.cols; j++ )
-    {
-      if( backgroundModel[0]->at<Vec2f>( i, j )[1] == 0 )
-      {
-        test.at<uchar>( i, j ) = 0;
-      }
-      test1.at<uchar>( i, j ) = (int) backgroundModel[0]->at<Vec2f>( i, j )[0];
-    }
+    vector<Mat> spl;
+    split( * ( backgroundModel[i] ), spl );
+    stringstream windowTitle;
+    windowTitle << "TEST_t" << i << "B";
+    Mat convert;
+    spl.at( 0 ).convertTo( convert, CV_8UC1 );
+    imshow( windowTitle.str().c_str(), convert );
   }
-  imshow( "test_T0c", test );
-  imshow( "test_T0b", test1 );
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
   highResBFMask.create( image.rows, image.cols, CV_32F );
@@ -154,9 +151,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
       currentPixelValue = pImage[j];
       currentEpslonValue = pEpslon[j];
 
-      if( i == 50 && j == 50 )
-        cout << "currentPixelValue :" << currentPixelValue << endl << "currentEpslonValue :" << currentEpslonValue << endl;
-
       int counter = 0;
       for ( size_t z = 0; z < backgroundModel.size(); z++ )
       {
@@ -175,12 +169,7 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
           currentB = & ( backgroundModel.at( z )->at<Vec2f>( i, j )[0] );
           currentC = & ( backgroundModel.at( z )->at<Vec2f>( i, j )[1] );
 
-          if( i == 50 && j == 50 )
-          {
-            cout << "zeta:" << z << " currentB :" << *currentB << endl << "currentC :" << *currentC << endl;
-          }
           //continue;
-
           if( ( *currentC ) > 0 )  //The current template is active
           {
             //cout<< "DIFFERENCE: "<<abs( currentPixelValue -  ( *currentB ) )<<endl;
@@ -206,12 +195,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
 
           }
 
-          if( i == 50 && j == 50 )
-          {
-            cout << "DOPO IF: " << endl;
-            cout << "zeta:" << z << " currentB_A :" << currentB << endl << "currentC_A :" << currentC << endl;
-            cout << "zeta:" << z << " currentB :" << *currentB << endl << "currentC :" << *currentC << endl << endl;
-          }
         }  // end "for" cicle of template vector
 
       }
@@ -222,8 +205,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
 
     }
   }  // end "for" cicle of all image's pixels
-
-  //cout<<" STATISTICA :"<<countDec<<"/"<< image.rows*image.cols<< " = "<<(float)countDec/(float)(image.rows*image.cols)*100<<" %"<<endl;
 
   return true;
 }
@@ -385,7 +366,7 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 }
 bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, const Mat& image )
 {
-  Mat test( image.rows, image.cols, CV_8U );
+ /* Mat test( image.rows, image.cols, CV_8U );
   for ( int i = 0; i < test.rows; i++ )
   {
     for ( int j = 0; j < test.cols; j++ )
@@ -394,7 +375,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
       test.at<uchar>( i, j ) = (int) potentialBackground.at<Vec2f>( i, j )[0];
     }
   }
-  imshow( "test_BA", test );
+  imshow( "test_BA", test );*/
 
   std::vector<Mat> temp;
   split( *backgroundModel[0], temp );
@@ -403,12 +384,14 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   if( countNonZero( temp.at( 1 ) ) <= ( temp.at( 1 ).cols * temp.at( 1 ).rows ) / 2 )
   {
     thetaA = 15;
+    thetaL = 40;
     neighborhoodCheck = false;
 
   }
   else
   {
-    thetaA = 15;
+    thetaA = thetaA_VAL;
+    thetaL = thetaL_VAL;
     neighborhoodCheck = true;
   }
 
@@ -565,42 +548,6 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
    t.setTo( 50 );
    backgroundModel.at( 0 ) = t; */
 
-  std::ofstream ofs4;
-  ofs4.open( "TEMPLATE_0_B.txt", std::ofstream::out );
-
-  for ( int i = 0; i < backgroundModel[0]->rows; i++ )
-  {
-    for ( int j = 0; j < backgroundModel[0]->cols; j++ )
-    {
-      //highResBFMask.at<int>( i, j ) = i + j;
-      stringstream str;
-      str << backgroundModel[0]->at<Vec2f>( i, j )[0] << " ";
-      ofs4 << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs4 << str2.str();
-  }
-  ofs4.close();
-
-  std::ofstream ofs5;
-  ofs5.open( "TEMPLATE_0_C.txt", std::ofstream::out );
-
-  for ( int i = 0; i < backgroundModel[0]->rows; i++ )
-  {
-    for ( int j = 0; j < backgroundModel[0]->cols; j++ )
-    {
-      //highResBFMask.at<int>( i, j ) = i + j;
-      stringstream str;
-      str << backgroundModel[0]->at<Vec2f>( i, j )[1] << " ";
-      ofs5 << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs5 << str2.str();
-  }
-  ofs5.close();
-
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
 
@@ -620,59 +567,13 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   //templateReplacement( highResBFMask, image.getMat() );
   templateOrdering();
 
+ /* Mat kernel = getStructuringElement( MORPH_RECT, Size( 3, 3 ));
+  Mat kernel2 = getStructuringElement( MORPH_RECT, Size( 3, 3 ));
+  morphologyEx(saliencyMap.getMat(), saliencyMap.getMat(), MORPH_OPEN, kernel);
+  morphologyEx(saliencyMap.getMat(), saliencyMap.getMat(), MORPH_CLOSE, kernel2);*/
+
   //highResBFMask.copyTo( saliencyMap );
 
-  std::ofstream ofs;
-  ofs.open( "highResBFMask.txt", std::ofstream::out );
-
-  for ( int i = 0; i < highResBFMask.rows; i++ )
-  {
-    for ( int j = 0; j < highResBFMask.cols; j++ )
-    {
-      //highResBFMask.at<int>( i, j ) = i + j;
-      stringstream str;
-      str << highResBFMask.at<float>( i, j ) << " ";
-      ofs << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs << str2.str();
-  }
-  ofs.close();
-
-  std::ofstream ofs2;
-  ofs2.open( "lowResBFMask.txt", std::ofstream::out );
-
-  for ( int i = 0; i < lowResBFMask.rows; i++ )
-  {
-    for ( int j = 0; j < lowResBFMask.cols; j++ )
-    {
-      stringstream str;
-      str << lowResBFMask.at<float>( i, j ) << " ";
-      ofs2 << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs2 << str2.str();
-  }
-  ofs2.close();
-
-  std::ofstream ofs3;
-  ofs3.open( "SALMAP.txt", std::ofstream::out );
-
-  for ( int i = 0; i < saliencyMap.getMat().rows; i++ )
-  {
-    for ( int j = 0; j < saliencyMap.getMat().cols; j++ )
-    {
-      stringstream str;
-      str << saliencyMap.getMat().at<float>( i, j ) << " ";
-      ofs3 << str.str();
-    }
-    stringstream str2;
-    str2 << "\n";
-    ofs3 << str2.str();
-  }
-  ofs3.close();
 
   return true;
 }

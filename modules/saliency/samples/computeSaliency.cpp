@@ -208,7 +208,7 @@ int main( int argc, char** argv )
         Mat saliencyMap;
         if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )
         {
-          std::cout << "motion saliency done" << std::endl;
+          //std::cout << "motion saliency done" << std::endl;
         }
 
         imshow( "image", frame );
