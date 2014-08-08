@@ -57,11 +57,19 @@ CV_INIT_ALGORITHM(
     ObjectnessBING, "SALIENCY.BING",
     obj.info()->addParam(obj, "_base", obj._base); obj.info()->addParam(obj, "_NSS", obj._NSS); obj.info()->addParam(obj, "_W", obj._W) );
 
+CV_INIT_ALGORITHM(
+    MotionSaliencyBinWangApr2014,
+    "SALIENCY.BinWangApr2014",
+    obj.info()->addParam( obj, "imgSize", obj.imgSize, false,
+                          reinterpret_cast<SizeGetter>( &MotionSaliencyBinWangApr2014::getWsize ),
+                          reinterpret_cast<SizeSetter>( &MotionSaliencyBinWangApr2014::setWsize ) ) );
 
 bool initModule_saliency( void )
 {
   bool all = true;
   all &= !StaticSaliencySpectralResidual_info_auto.name().empty();
+  //all &= !MotionSaliencySuBSENSE_info_auto.name().empty();
+all &= !MotionSaliencyBinWangApr2014_info_auto.name().empty();
   all &= !ObjectnessBING_info_auto.name().empty();
 
   return all;

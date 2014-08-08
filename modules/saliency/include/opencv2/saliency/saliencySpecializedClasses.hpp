@@ -86,11 +86,86 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 
 /************************************ Specific Motion Saliency Specialized Classes ************************************/
 
+/*!
+ * A Fast Self-tuning Background Subtraction Algorithm.
+ *
+ * This background subtraction algorithm is inspired to the work of B. Wang and P. Dudek [2]
+ * [2]  B. Wang and P. Dudek "A Fast Self-tuning Background Subtraction Algorithm", in proc of IEEE Workshop on Change Detection, 2014
+ *
+ */
+
+class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
+{
+ public:
+  MotionSaliencyBinWangApr2014();
+  ~MotionSaliencyBinWangApr2014();
+
+  typedef Ptr<Size> (Algorithm::*SizeGetter)();
+  typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
+
+  Ptr<Size> getWsize();
+  void setWsize( const Ptr<Size> &newSize );
+
+  bool init();
+
+ protected:
+  bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
+  AlgorithmInfo* info() const;
+
+ private:
+
+  // classification (and adaptation) functions
+  bool fullResolutionDetection( const Mat& image, Mat& highResBFMask );
+  bool lowResolutionDetection( const Mat& image, Mat& lowResBFMask );
+  //bool templateUpdate( Mat highResBFMask );
+
+  // Background model maintenance functions
+  bool templateOrdering();
+  bool templateReplacement( const Mat& finalBFMask, const Mat& image );
+
+  // Decision threshold adaptation and Activity control function
+  //bool activityControl(vector<Mat> noisePixelMask);
+  //bool decisionThresholdAdaptation();
+
+  // changing structure
+  vector<Ptr<Mat> > backgroundModel;  // The vector represents the background template T0---TK of reference paper.
+                                // Matrices are two-channel matrix. In the first layer there are the B (background value)
+                                // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
+  Mat potentialBackground;  // Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
+                            // and in the secon level there are the Ca value, the counter for each potential value.
+  Mat epslonPixelsValue;  // epslon threshold
+  //Mat activityPixelsValue; // Activity level of each pixel
+  //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
+  // detection process,however, after the low resolution detection, it has become a
+  // background pixel. In a noise-pixel mask, the identified noise-pixels are set to 1 while other pixels are 0;
+
+  //fixed parameter
+  bool neighborhoodCheck;
+  int N_DS; // Number of template to be downsampled and used in lowResolutionDetection function
+  Ptr<Size> imgSize;  // Size of input image
+  int K;  // Number of background model template
+  int N;  // NxN is the size of the block for downsampling in the lowlowResolutionDetection
+  float alpha;  // Learning rate
+  int L0, L1;  // Upper-bound values for C0 and C1 (efficacy of the first two template (matrices) of backgroundModel
+  int thetaL;  // T0, T1 swap threshold
+  int thetaA;  // Potential background value threshold
+  int gamma;  // Parameter that controls the time that the newly updated long-term background value will remain in the
+              // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
+              //restrain the generation of ghosts.
+  //int Ainc; // Activity Incrementation;
+  //int Bmax; // Upper-bound value for pixel activity
+  //int Bth;  // Max activity threshold
+  //int Binc, Bdec; // Threshold for pixel-level decision threshold (epslon) adaptation
+  //int deltaINC, deltaDEC; // Increment-decrement value for epslon adaptation
+  //int epslonMIN, epslonMAX; // Range values for epslon threshold
+
+};
+
 /************************************ Specific Objectness Specialized Classes ************************************/
 
 /**
- * \brief Objectness algorithms based on [4]
- * [4] Cheng, Ming-Ming, et al. "BING: Binarized normed gradients for objectness estimation at 300fps." IEEE CVPR. 2014.
+ * \brief Objectness algorithms based on [3]
+ * [3] Cheng, Ming-Ming, et al. "BING: Binarized normed gradients for objectness estimation at 300fps." IEEE CVPR. 2014.
  */
 class CV_EXPORTS_W ObjectnessBING : public Objectness
 {

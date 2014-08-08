@@ -141,7 +141,7 @@ int main( int argc, char** argv )
 
       vector<Vec4i> saliencyMap;
       saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setTrainingPath( training_path );
-      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir(training_path + "/Results" );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( training_path + "/Results" );
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
@@ -153,6 +153,40 @@ int main( int argc, char** argv )
       }
     }
 
+  }
+  else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
+  {
+
+    Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
+    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize( size );
+    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
+
+    bool paused=false;
+    while ( true )
+    {
+      if( !paused )
+      {
+
+        cap >> frame;
+        cvtColor(frame, frame, COLOR_BGR2GRAY);
+
+        Mat saliencyMap;
+        if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )
+        {
+          //std::cout << "motion saliency done" << std::endl;
+        }
+
+        imshow( "image", frame );
+        imshow( "saliencyMap", saliencyMap * 255 );
+      }
+
+      char c = (char) waitKey( 2 );
+      if( c == 'q' )
+        break;
+      if( c == 'p' )
+        paused = !paused;
+
+    }
   }
 
   return 0;
