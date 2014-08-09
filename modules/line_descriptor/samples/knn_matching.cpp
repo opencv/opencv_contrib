@@ -192,5 +192,8 @@ int main( int argc, char** argv )
   /* require knn match */
   bdm->knnMatch( descr1, descr2, matches, 6 );
 
+
+
+
 }
 

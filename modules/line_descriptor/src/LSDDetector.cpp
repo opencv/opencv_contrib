@@ -56,7 +56,7 @@ void LSDDetector::computeGaussianPyramid( const Mat& image, int numOctaves, int 
 
   /* insert input image into pyramid */
   cv::Mat currentMat = image.clone();
-  cv::GaussianBlur( currentMat, currentMat, cv::Size( 5, 5 ), 1 );
+  //cv::GaussianBlur( currentMat, currentMat, cv::Size( 5, 5 ), 1 );
   gaussianPyrs.push_back( currentMat );
 
   /* fill Gaussian pyramid */

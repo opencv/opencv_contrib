@@ -106,21 +106,19 @@ class EDLineDetector
   /*extract edges from image
    *image:    In, gray image;
    *edges:    Out, store the edges, each edge is a pixel chain
-   *smoothed: In, flag to mark whether the image has already been smoothed by Gaussian filter.
    *return -1: error happen
    */
-  int EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool smoothed );
+  int EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains );
 
   /*extract lines from image
    *image:    In, gray image;
    *lines:    Out, store the extracted lines,
-   *smoothed: In, flag to mark whether the image has already been smoothed by Gaussian filter.
    *return -1: error happen
    */
-  int EDline( cv::Mat &image, LineChains &lines,  bool smoothed );
+  int EDline( cv::Mat &image, LineChains &lines );
 
   /* extract line from image, and store them */
-  int EDline( cv::Mat &image, bool smoothed );
+  int EDline( cv::Mat &image );
 
   cv::Mat dxImg_;  //store the dxImg;
 

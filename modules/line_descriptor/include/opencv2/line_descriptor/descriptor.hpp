@@ -190,14 +190,12 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   /* requires descriptors computation (only one image) */
   CV_WRAP
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false,
-                bool useDetectionData = false ) const;
+  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
 
   /* requires descriptors computation (more than one image) */
   CV_WRAP
   void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
-                    false,
-                bool useDetectionData = false ) const;
+                    false ) const;
 
   /* returns descriptor size */
   CV_WRAP

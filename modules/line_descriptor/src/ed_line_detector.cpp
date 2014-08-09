@@ -117,17 +117,11 @@ EDLineDetector::~EDLineDetector()
   }
 }
 
-int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool smoothed )
+int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains )
 {
   imageWidth = image.cols;
   imageHeight = image.rows;
   unsigned int pixelNum = imageWidth * imageHeight;
-
-  /*if( !smoothed )
-  {  //input image hasn't been smoothed.
-    cv::Mat InImage = image.clone();
-    cv::GaussianBlur( InImage, image, cv::Size( ksize_, ksize_ ), sigma_ );
-  }*/
 
   unsigned int edgePixelArraySize = pixelNum / 5;
   unsigned int maxNumOfEdge = edgePixelArraySize / 20;
@@ -925,12 +919,12 @@ int EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &edgeChains, bool sm
   return 1;
 }
 
-int EDLineDetector::EDline( cv::Mat &image, LineChains &lines, bool smoothed )
+int EDLineDetector::EDline( cv::Mat &image, LineChains &lines )
 {
 
   //first, call EdgeDrawing function to extract edges
   EdgeChains edges;
-  if( ( EdgeDrawing( image, edges, smoothed ) ) != 1 )
+  if( ( EdgeDrawing( image, edges ) ) != 1 )
   {
     cout << "Line Detection not finished" << endl;
     return -1;
@@ -1411,9 +1405,9 @@ bool EDLineDetector::LineValidation_( unsigned int *xCors, unsigned int *yCors, 
   }
 }
 
-int EDLineDetector::EDline( cv::Mat &image, bool smoothed )
+int EDLineDetector::EDline( cv::Mat &image )
 {
-  if( ( EDline( image, lines_, smoothed ) ) != 1 )
+  if( ( EDline( image, lines_/*, smoothed*/ ) ) != 1 )
   {
     return -1;
   }

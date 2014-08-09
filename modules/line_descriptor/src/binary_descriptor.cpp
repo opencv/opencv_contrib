@@ -111,6 +111,46 @@ int BinaryDescriptor::getWidthOfBand()
 void BinaryDescriptor::setWidthOfBand( int width )
 {
   params.widthOfBand_ = width;
+
+  /* reserve enough space for EDLine objects and images in Gaussian pyramid */
+  edLineVec_.resize( params.numOfOctave_ );
+  images_sizes.resize( params.numOfOctave_ );
+
+  for ( int i = 0; i < params.numOfOctave_; i++ )
+    edLineVec_[i] = Ptr<EDLineDetector>( new EDLineDetector() );
+
+  /* prepare a vector to host local weights F_l*/
+  gaussCoefL_.resize( params.widthOfBand_ * 3 );
+
+  /* compute center of central band (every computation involves 2-3 bands) */
+  double u = ( params.widthOfBand_ * 3 - 1 ) / 2;
+
+  /* compute exponential part of F_l */
+  double sigma = ( params.widthOfBand_ * 2 + 1 ) / 2;  // (widthOfBand_*2+1)/2;
+  double invsigma2 = -1 / ( 2 * sigma * sigma );
+
+  /* compute all local weights */
+  double dis;
+  for ( int i = 0; i < params.widthOfBand_ * 3; i++ )
+  {
+    dis = i - u;
+    gaussCoefL_[i] = exp( dis * dis * invsigma2 );
+  }
+
+  /* prepare a vector for global weights F_g*/
+  gaussCoefG_.resize( NUM_OF_BANDS * params.widthOfBand_ );
+
+  /* compute center of LSR */
+  u = ( NUM_OF_BANDS * params.widthOfBand_ - 1 ) / 2;
+
+  /* compute exponential part of F_g */
+  sigma = u;
+  invsigma2 = -1 / ( 2 * sigma * sigma );
+  for ( int i = 0; i < NUM_OF_BANDS * params.widthOfBand_; i++ )
+  {
+    dis = i - u;
+    gaussCoefG_[i] = exp( dis * dis * invsigma2 );
+  }
 }
 
 int BinaryDescriptor::getReductionRatio()
@@ -351,6 +391,12 @@ unsigned char BinaryDescriptor::binaryConversion( float* f1, float* f2 )
 /* requires line detection (only one image) */
 void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask )
 {
+  if( image.data == NULL )
+  {
+    std::cout << "Error: input image for detection is empty" << std::endl;
+    return;
+  }
+
   if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
     throw std::runtime_error( "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
@@ -361,6 +407,13 @@ void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& ke
 /* requires line detection (more than one image) */
 void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks ) const
 {
+
+  if( images.size() == 0 )
+  {
+    std::cout << "Error: input image for detection is empty" << std::endl;
+    return;
+  }
+
   /* detect lines from each image */
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
@@ -444,18 +497,18 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 }
 
 /* requires descriptors computation (only one image) */
-void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr,
-                                bool useDetectionData ) const
+void BinaryDescriptor::compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors,
+                                bool returnFloatDescr ) const
 {
-  computeImpl( image, keylines, descriptors, returnFloatDescr, useDetectionData );
+  computeImpl( image, keylines, descriptors, returnFloatDescr, false );
 }
 
 /* requires descriptors computation (more than one image) */
 void BinaryDescriptor::compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors,
-                                bool returnFloatDescr, bool useDetectionData ) const
+                                bool returnFloatDescr ) const
 {
   for ( size_t i = 0; i < images.size(); i++ )
-    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr, useDetectionData );
+    computeImpl( images[i], keylines[i], descriptors[i], returnFloatDescr, false );
 }
 
 /* implementation of descriptors computation */
@@ -621,7 +674,6 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   /* loop over number of octaves */
   for ( int octaveCount = 0; octaveCount < params.numOfOctave_; octaveCount++ )
   {
-
     /* matrix storing results from blurring processes */
     cv::Mat blur;
 
@@ -631,7 +683,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
     images_sizes[octaveCount] = blur.size();
 
     /* for current octave, extract lines */
-    if( ( edLineVec_[octaveCount]->EDline( blur, true ) ) != 1 )
+    if( ( edLineVec_[octaveCount]->EDline( blur ) ) != 1 )
     {
       return -1;
     }
