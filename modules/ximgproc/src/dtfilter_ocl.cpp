@@ -1,8 +1,12 @@
 #include "precomp.hpp"
 #include "dtfilter_ocl.hpp"
-#include "modules/ximgproc/opencl_kernels.hpp"
+#include "opencl_kernels.hpp"
 //#include <opencv2/highgui.hpp>
 using namespace std;
+
+#ifdef _MSC_VER
+#   pragma warning(disable: 4512)
+#endif
 
 #define MEASURE_TIME(counter, code) { counter -= getTickCount(); {code;} counter += getTickCount(); }
 #define MEASURE_KER_TIME(code) { kernelsTime -= getTickCount(); code; kernelsTime += getTickCount(); }

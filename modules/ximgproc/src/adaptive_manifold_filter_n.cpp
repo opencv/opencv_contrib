@@ -632,7 +632,7 @@ void AdaptiveManifoldFilterN::computeClusters(Mat1b& cluster, Mat1b& cluster_min
             subtract(jointCn[i], etaFull[i], eta_difCn[i]);
 
         merge(eta_difCn, difEtaSrc);
-        difEtaSrc = difEtaSrc.reshape(1, difEtaSrc.total());
+        difEtaSrc = difEtaSrc.reshape(1, (int)difEtaSrc.total());
         CV_DbgAssert(difEtaSrc.cols == jointCnNum);
     }
 

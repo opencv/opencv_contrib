@@ -148,7 +148,7 @@ private: /*Routines to parallelize boxFilter and convertTo*/
 
         Range getRange() const
         {
-            return Range(0, src.size());
+            return Range(0, (int)src.size());
         }
     };
 

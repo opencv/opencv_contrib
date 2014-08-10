@@ -236,22 +236,24 @@ References
 
 ..  [Gastal11] E. Gastal and M. Oliveira, "Domain Transform for Edge-Aware Image and Video Processing", Proceedings of SIGGRAPH, 2011, vol. 30, pp. 69:1 - 69:12.
 
-    The paper is available `online <http://www.inf.ufrgs.br/~eslgastal/DomainTransform/>`_.
+    The paper is available `online <http://www.inf.ufrgs.br/~eslgastal/DomainTransform/>`__.
 
 
 ..  [Gastal12] E. Gastal and M. Oliveira, "Adaptive manifolds for real-time high-dimensional filtering," Proceedings of SIGGRAPH, 2012, vol. 31, pp. 33:1 - 33:13.
 
-    The paper is available `online <http://inf.ufrgs.br/~eslgastal/AdaptiveManifolds/>`_.
+    The paper is available `online <http://inf.ufrgs.br/~eslgastal/AdaptiveManifolds/>`__.
 
     
 ..  [Kaiming10] Kaiming He et. al., "Guided Image Filtering," ECCV 2010, pp. 1 - 14.
 
-    The paper is available `online <http://research.microsoft.com/en-us/um/people/kahe/eccv10/>`_.
+    The paper is available `online <http://research.microsoft.com/en-us/um/people/kahe/eccv10/>`__.
+    
     
 .. [Tomasi98] Carlo Tomasi and Roberto Manduchi, “Bilateral filtering for gray and color images,” in Computer Vision, 1998. Sixth International Conference on . IEEE, 1998, pp. 839– 846.
 
-    The paper is available `online <https://www.cs.duke.edu/~tomasi/papers/tomasi/tomasiIccv98.pdf>`_.
+    The paper is available `online <https://www.cs.duke.edu/~tomasi/papers/tomasi/tomasiIccv98.pdf>`__.
+    
 
 ..  [Ziyang13] Ziyang Ma et al., "Constant Time Weighted Median Filtering for Stereo Matching and Beyond," ICCV, 2013, pp. 49 - 56.
 
-    The paper is available `online <http://www.cv-foundation.org/openaccess/content_iccv_2013/papers/Ma_Constant_Time_Weighted_2013_ICCV_paper.pdf>`_.
+    The paper is available `online <http://www.cv-foundation.org/openaccess/content_iccv_2013/papers/Ma_Constant_Time_Weighted_2013_ICCV_paper.pdf>`__.
