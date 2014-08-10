@@ -43,6 +43,10 @@
 #ifndef __OPENCV_BITARRAY_HPP
 #define __OPENCV_BITARRAY_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include "types.hpp"
 #include <stdio.h>
 #include <math.h>

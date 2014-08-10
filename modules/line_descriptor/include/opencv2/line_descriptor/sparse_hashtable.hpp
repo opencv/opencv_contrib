@@ -43,6 +43,10 @@
 #ifndef __OPENCV_SPARSE_HASHTABLE_HPP
 #define __OPENCV_SPARSE_HASHTABLE_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include "types.hpp"
 #include "bucket_group.hpp"
 

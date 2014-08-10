@@ -43,6 +43,10 @@
 #ifndef __OPENCV_ARRAY32_HPP
 #define __OPENCV_ARRAY32_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include "types.hpp"
 
 class Array32

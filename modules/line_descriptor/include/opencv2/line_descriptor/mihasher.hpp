@@ -43,6 +43,10 @@
 #ifndef __OPENCV_MIHASHER_HPP
 #define __OPENCV_MIHASHER_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include "types.hpp"
 #include "bitops.hpp"
 #include "sparse_hashtable.hpp"

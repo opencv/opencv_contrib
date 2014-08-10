@@ -43,6 +43,10 @@
 #ifndef __OPENCV_BUCKET_GROUP_HPP
 #define __OPENCV_BUCKET_GROUP_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include "types.hpp"
 #include "array32.hpp"
 #include "bitarray.hpp"

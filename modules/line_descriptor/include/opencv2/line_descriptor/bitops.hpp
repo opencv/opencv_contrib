@@ -47,6 +47,7 @@
 # include <intrin.h>
 # define popcnt __popcnt
 # define popcntll __popcnt64
+# pragma warning( disable : 4267 )
 #else
 # define popcntll __builtin_popcountll
 # define popcnt __builtin_popcount

@@ -42,6 +42,10 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #define _USE_MATH_DEFINES
 
 #include <algorithm>

@@ -41,6 +41,10 @@
 #ifndef __OPENCV_ED_LINE_DETECTOR_HH_
 #define __OPENCV_ED_LINE_DETECTOR_HH_
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 #include <vector>
 #include <iostream>
 #include <list>

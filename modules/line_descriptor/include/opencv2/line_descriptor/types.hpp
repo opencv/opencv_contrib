@@ -45,6 +45,10 @@
 #ifndef __OPENCV_TYPES_HPP
 #define __OPENCV_TYPES_HPP
 
+#ifdef _WIN32
+#pragma warning( disable : 4267 )
+#endif
+
 /* define data types */
 typedef uint64_t UINT64;
 typedef uint32_t UINT32;
