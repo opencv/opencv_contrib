@@ -126,14 +126,14 @@ void CV_BinaryDescriptorDetectorTest::createMatFromVec( const std::vector<KeyLin
     std::vector<float> klData;
     KeyLine kl = linesVec[i];
     klData.push_back( kl.angle );
-    klData.push_back( kl.class_id );
+    klData.push_back( (float) kl.class_id );
     klData.push_back( kl.ePointInOctaveX );
     klData.push_back( kl.ePointInOctaveY );
     klData.push_back( kl.endPointX );
     klData.push_back( kl.endPointY );
     klData.push_back( kl.lineLength );
-    klData.push_back( kl.numOfPixels );
-    klData.push_back( kl.octave );
+    klData.push_back( (float) kl.numOfPixels );
+    klData.push_back( (float) kl.octave );
     klData.push_back( kl.pt.x );
     klData.push_back( kl.pt.y );
     klData.push_back( kl.response );
@@ -167,14 +167,14 @@ void CV_BinaryDescriptorDetectorTest::createVecFromMat( Mat& inputMat, std::vect
     }
 
     kl.angle = tempFloat[0];
-    kl.class_id = tempFloat[1];
+    kl.class_id = (int) tempFloat[1];
     kl.ePointInOctaveX = tempFloat[2];
     kl.ePointInOctaveY = tempFloat[3];
     kl.endPointX = tempFloat[4];
     kl.endPointY = tempFloat[5];
     kl.lineLength = tempFloat[6];
-    kl.numOfPixels = tempFloat[7];
-    kl.octave = tempFloat[8];
+    kl.numOfPixels = (int) tempFloat[7];
+    kl.octave = (int) tempFloat[8];
     kl.pt.x = tempFloat[9];
     kl.pt.y = tempFloat[10];
     kl.response = tempFloat[11];
