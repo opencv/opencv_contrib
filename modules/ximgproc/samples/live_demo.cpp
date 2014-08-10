@@ -142,10 +142,10 @@ int main(int argc, char **argv)
     createTrackbar("Threads", NULL, &g_numberOfCPUs, cv::getNumberOfCPUs(), changeNumberOfCpuCallback);
 
     //Buttons to choose different modes
-    createButton("Mode Details Enhancement", changeModeCallback, filterDetailEnhancement, QT_RADIOBOX, true);
-    createButton("Mode Stylizing", changeModeCallback, filterStylize, QT_RADIOBOX, false);
-    createButton("Mode Blurring", changeModeCallback, filterBlurring, QT_RADIOBOX, false);
-    createButton("Mode DoNothing", changeModeCallback, filterDoNothing, QT_RADIOBOX, false);
+    createButton("Mode Details Enhancement", changeModeCallback, (void*)filterDetailEnhancement, QT_RADIOBOX, true);
+    createButton("Mode Stylizing",           changeModeCallback, (void*)filterStylize,           QT_RADIOBOX, false);
+    createButton("Mode Blurring",            changeModeCallback, (void*)filterBlurring,          QT_RADIOBOX, false);
+    createButton("Mode DoNothing",           changeModeCallback, (void*)filterDoNothing,         QT_RADIOBOX, false);
 
     //sliders for Details Enhancement mode
     g_filterOp = filterDetailEnhancement; //set Details Enhancement as default filter
