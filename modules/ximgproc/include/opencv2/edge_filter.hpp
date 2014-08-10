@@ -119,24 +119,6 @@ CV_EXPORTS_W void amFilter(InputArray joint, InputArray src, OutputArray dst, do
 CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-/*Interface for Weighted Median Filter*/
-class CV_EXPORTS_W WeightedMedian : public Algorithm
-{
-public:
-
-    CV_WRAP virtual void filter(InputArray src, OutputArray dst, double rangeQuantizer = 1, int dDepth = -1) = 0;
-};
-
-/*Fabric function for Weighted Median Filter*/
-CV_EXPORTS_W
-Ptr<WeightedMedian> createWeightedMedianFilter(InputArray guide, double spatialSize, double colorSize, int filterType = DTF_NC);
-
-/*One-line Weighted Median Filter call*/
-CV_EXPORTS_W void weightedMedianFilter(InputArray guide, InputArray src, OutputArray dst, double spatialSize, double colorSize, int filterType = DTF_NC, double rangeQuantizer = 1);
-
 }
 #endif
 #endif
