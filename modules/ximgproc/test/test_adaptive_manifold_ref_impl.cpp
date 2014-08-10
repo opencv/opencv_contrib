@@ -883,7 +883,7 @@ namespace
             }
             else
             {
-                for (int i = 0; i < buf_.rand_vec.total(); i++)
+                for (int i = 0; i < (int)buf_.rand_vec.total(); i++)
                     buf_.rand_vec(0, i) = (i % 2 == 0) ? 0.5f : -0.5f;
             }
 
@@ -914,10 +914,10 @@ namespace
             subtract(buf_.theta, w_ki, buf_.theta);
 
             Mat_<Point3f>& eta_minus = buf_.eta_minus[current_tree_level];
-            calcEta(src_joint_f_, buf_.theta, cluster_minus, eta_minus, sigma_s_, df, buf_);
+            calcEta(src_joint_f_, buf_.theta, cluster_minus, eta_minus, (float)sigma_s_, (float)df, buf_);
 
             Mat_<Point3f>& eta_plus = buf_.eta_plus[current_tree_level];
-            calcEta(src_joint_f_, buf_.theta, cluster_plus, eta_plus, sigma_s_, df, buf_);
+            calcEta(src_joint_f_, buf_.theta, cluster_plus, eta_plus, (float)sigma_s_, (float)df, buf_);
 
             // Algorithm 1, Step 5: recursively build more manifolds.
 

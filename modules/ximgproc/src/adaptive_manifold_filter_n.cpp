@@ -643,7 +643,7 @@ void AdaptiveManifoldFilterN::computeClusters(Mat1b& cluster, Mat1b& cluster_min
     }
     else
     {
-        for (int i = 0; i < initVec.total(); i++)
+        for (int i = 0; i < (int)initVec.total(); i++)
             initVec(0, i) = (i % 2 == 0) ? 0.5f : -0.5f;
     }
 
