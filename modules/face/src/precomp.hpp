@@ -45,20 +45,10 @@
 
 #include "opencv2/face.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 
 #include <map>
-#include <valarray>
-
-namespace cv
-{
-
-// special function to get pointer to constant valarray elements, since
-// simple &arr[0] does not compile on VS2005/VS2008.
-template<typename T> inline const T* get_data(const std::valarray<T>& arr)
-{ return &((std::valarray<T>&)arr)[0]; }
-
-}
 
 #endif

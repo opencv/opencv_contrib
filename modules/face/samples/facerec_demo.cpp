@@ -18,11 +18,14 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 #include "opencv2/face.hpp"
+#include "opencv2/core/utility.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <map>
 
 using namespace cv;
 using namespace cv::face;
@@ -30,7 +33,7 @@ using namespace std;
 
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, std::map<int, string>& labelsInfo, char separator = ';') {
     ifstream csv(filename.c_str());
-    if (!csv) CV_Error(CV_StsBadArg, "No valid input file was given, please check the given filename.");
+    if (!csv) CV_Error(Error::StsBadArg, "No valid input file was given, please check the given filename.");
     string line, path, classlabel, info;
     while (getline(csv, line)) {
         stringstream liness(line);
@@ -49,7 +52,7 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
             glob(root, files, true);
             for(vector<String>::const_iterator f = files.begin(); f != files.end(); ++f) {
                 cout << "\t" << *f << endl;
-                Mat img = imread(*f, CV_LOAD_IMAGE_GRAYSCALE);
+                Mat img = imread(*f, IMREAD_GRAYSCALE);
                 static int w=-1, h=-1;
                 static bool showSmallSizeWarning = true;
                 if(w>0 && h>0 && (w!=img.cols || h!=img.rows)) cout << "\t* Warning: images should be of the same size!" << endl;
@@ -99,7 +102,7 @@ int main(int argc, const char *argv[]) {
     // Quit if there are not enough images for this demo.
     if(images.size() <= 1) {
         string error_message = "This demo needs at least 2 images to work. Please add more images to your data set!";
-        CV_Error(CV_StsError, error_message);
+        CV_Error(Error::StsError, error_message);
     }
     // The following lines simply get the last images from
     // your dataset and remove it from the vector. This is
@@ -107,7 +110,8 @@ int main(int argc, const char *argv[]) {
     // cv::FaceRecognizer on) and the test data we test
     // the model with, do not overlap.
     Mat testSample = images[images.size() - 1];
-    int testLabel = labels[labels.size() - 1];
+    int nlabels = (int)labels.size();
+    int testLabel = labels[nlabels-1];
     images.pop_back();
     labels.pop_back();
     // The following lines create an Eigenfaces model for
@@ -125,7 +129,8 @@ int main(int argc, const char *argv[]) {
     //      cv::createEigenFaceRecognizer(10, 123.0);
     //
     Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
-    model->setLabelsInfo(labelsInfo);
+    for( int i = 0; i < nlabels; i++ )
+        model->setLabelInfo(i, labelsInfo[i]);
     model->train(images, labels);
     string saveModelPath = "face-rec-model.txt";
     cout << "Saving the trained model to " << saveModelPath << endl;
