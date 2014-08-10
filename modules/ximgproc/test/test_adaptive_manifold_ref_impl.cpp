@@ -21,7 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 #include <opencv2/core/private.hpp>
 #include <cmath>
 
