@@ -316,7 +316,7 @@ TEST_P(GuidedFilterTest, accuracy)
     string guideFileName = get<2>(params);
     string srcFileName = get<3>(params);
 
-    int seed = 100 * guideCnNum + 50 * srcCnNum + 5*guideFileName.length() + srcFileName.length();
+    int seed = 100 * guideCnNum + 50 * srcCnNum + 5*(int)guideFileName.length() + (int)srcFileName.length();
     RNG rng(seed);
 
     Mat guide = imread(getOpenCVExtraDir() + guideFileName);

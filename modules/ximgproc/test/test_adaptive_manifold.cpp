@@ -139,7 +139,7 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     Mat src = imread(getOpenCVExtraDir() + srcFileName);
     ASSERT_TRUE(!guide.empty() && !src.empty());
 
-    int seed = 10 * guideFileName.length() + srcFileName.length();
+    int seed = 10 * (int)guideFileName.length() + (int)srcFileName.length();
     RNG rnd(seed);
 
     //inconsistent downsample/upsample operations in reference implementation
