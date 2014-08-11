@@ -100,12 +100,13 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
   MotionSaliencyBinWangApr2014();
   ~MotionSaliencyBinWangApr2014();
 
-  typedef Ptr<Size> (Algorithm::*SizeGetter)();
-  typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
+  /*typedef Ptr<Size> (Algorithm::*SizeGetter)();
+   typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
 
-  Ptr<Size> getWsize();
-  void setWsize( const Ptr<Size> &newSize );
+   Ptr<Size> getWsize();
+   void setWsize( const Ptr<Size> &newSize ); */
 
+  void setImagesize( int W, int H );
   bool init();
 
  protected:
@@ -129,8 +130,8 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 
   // changing structure
   std::vector<Ptr<Mat> > backgroundModel;  // The vector represents the background template T0---TK of reference paper.
-                                // Matrices are two-channel matrix. In the first layer there are the B (background value)
-                                // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
+  // Matrices are two-channel matrix. In the first layer there are the B (background value)
+  // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
   Mat potentialBackground;  // Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
                             // and in the secon level there are the Ca value, the counter for each potential value.
   Mat epslonPixelsValue;  // epslon threshold
@@ -141,8 +142,10 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 
   //fixed parameter
   bool neighborhoodCheck;
-  int N_DS; // Number of template to be downsampled and used in lowResolutionDetection function
-  Ptr<Size> imgSize;  // Size of input image
+  int N_DS;  // Number of template to be downsampled and used in lowResolutionDetection function
+  //Ptr<Size> imgSize;
+  int imageWidth;  // Width of input image
+  int imageHeight;  //Height of input image
   int K;  // Number of background model template
   int N;  // NxN is the size of the block for downsampling in the lowlowResolutionDetection
   float alpha;  // Learning rate
@@ -241,7 +244,7 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 
   bool filtersLoaded()
   {
-    int n = (int)_svmSzIdxs.size();
+    int n = (int) _svmSzIdxs.size();
     return n > 0 && _svmReW1f.size() == Size( 2, n ) && _svmFilter.size() == Size( _W, _W );
   }
   void predictBBoxSI( CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true );

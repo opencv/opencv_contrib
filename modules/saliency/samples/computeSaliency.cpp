@@ -157,18 +157,18 @@ int main( int argc, char** argv )
   else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
   {
 
-    Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
-    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setWsize( size );
+    //Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
+    saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setImagesize( image.cols, image.rows );
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
-    bool paused=false;
+    bool paused = false;
     while ( true )
     {
       if( !paused )
       {
 
         cap >> frame;
-        cvtColor(frame, frame, COLOR_BGR2GRAY);
+        cvtColor( frame, frame, COLOR_BGR2GRAY );
 
         Mat saliencyMap;
         if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )

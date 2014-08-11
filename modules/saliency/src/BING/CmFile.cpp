@@ -41,7 +41,6 @@
 
 #include "CmFile.h"
 
-
 bool CmFile::MkDir( CStr &_path )
 {
   if( _path.size() == 0 )
@@ -58,7 +57,9 @@ bool CmFile::MkDir( CStr &_path )
       buffer[i] = '/';
     }
   }
-  return CreateDirectoryA(_S(_path), 0);
+
+  CreateDirectoryA(_S(_path), 0);
+  return true;
 #else
   for ( int i = 0; buffer[i] != 0; i++ )
   {
@@ -69,6 +70,7 @@ bool CmFile::MkDir( CStr &_path )
       buffer[i] = '/';
     }
   }
-  return mkdir( _S( _path ), 0 );
+  mkdir( _S( _path ), 0 );
+  return true;
 #endif
 }
