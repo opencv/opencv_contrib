@@ -1,8 +1,8 @@
 #include "precomp.hpp"
-#include <opencv2/core/private.hpp>
+#include "edgeaware_filters_common.hpp"
 #include <cmath>
 #include <cstring>
-#include "edgeaware_filters_common.hpp"
+#include <limits>
 
 namespace
 {

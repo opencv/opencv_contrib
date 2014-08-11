@@ -2,6 +2,7 @@
 #define __OPENCV_DTFILTER_INL_HPP__
 #include "precomp.hpp"
 #include "edgeaware_filters_common.hpp"
+#include <limits>
 
 namespace cv
 {
