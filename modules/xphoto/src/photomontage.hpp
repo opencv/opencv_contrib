@@ -42,11 +42,17 @@
 
 
 #include "norm2.hpp"
-#include "algo.hpp"
 #include "gcgraph.hpp"
 
 #define GCInfinity 10*1000*1000*1000.0
 
+template <typename Tp> static int min_idx(std::vector <Tp> vec)
+{
+    return int( std::min_element(vec.begin(), vec.end()) - vec.begin() );
+}
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 
 template <typename Tp> class Photomontage
 {

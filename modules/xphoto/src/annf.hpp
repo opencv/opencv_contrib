@@ -40,87 +40,234 @@
 #ifndef __ANNF_HPP__
 #define __ANNF_HPP__
 
-#include "algo.hpp"
+#include "norm2.hpp"
+#include "whs.hpp"
 
-static void plusToMinusUpdate(const cv::Mat &current, cv::Mat &next, const int dx, const int dy)
+/************************* KDTree class *************************/
+
+template <typename ForwardIterator> void
+generate_seq(ForwardIterator it, int first, int last)
 {
-    for (int i = 0; i < next.rows; ++i)
-        for (int j = 0; j < next.cols; ++j)
-        {
-            int y = cv::borderInterpolate(i - dy, next.rows, cv::BORDER_CONSTANT);
-            int x = cv::borderInterpolate(j - dx, next.cols, cv::BORDER_CONSTANT);
-
-            next.at<float>(i, j) = -next.at<float>(y, x)
-                + current.at<float>(i, j) - current.at<float>(y, x);
-        }
+    for (int i = first; i < last; ++i, ++it)
+        *it = i;
 }
 
-static void minusToPlusUpdate(const cv::Mat &current, cv::Mat &next, const int dx, const int dy)
+/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
+
+template <typename Tp, int cn> class KDTree
 {
-    for (int i = 0; i < next.rows; ++i)
-        for (int j = 0; j < next.cols; ++j)
-        {
-            int y = cv::borderInterpolate(i - dy, next.rows, cv::BORDER_CONSTANT);
-            int x = cv::borderInterpolate(j - dx, next.cols, cv::BORDER_CONSTANT);
-
-            next.at<float>(i, j) = next.at<float>(y, x)
-                - current.at<float>(i, j) + current.at<float>(y, x);
-        }
-}
-
-static void getWHSeries(const cv::Mat &src, cv::Mat &dst, const int nProjections, const int psize = 8)
-{
-    CV_Assert(nProjections <= psize*psize && src.type() == CV_32FC3);
-    CV_Assert( hamming_length(psize) == 1 );
-
-    std::vector <cv::Mat> projections;
-
-    cv::Mat proj;
-    cv::boxFilter(proj, proj, CV_32F, cv::Size(psize, psize),
-        cv::Point(-1,-1), false, cv::BORDER_REFLECT);
-
-    projections.push_back(proj);
-
-    std::vector <int> snake_idx(1, 0);
-    std::vector <int> snake_idy(1, 0);
-
-    for (int k = 1, num = 1; k < psize && num <= nProjections; ++k)
+private:
+    class KDTreeComparator
     {
-        const int dx[] = { (k % 2 == 0) ? +1 : 0, (k % 2 == 0) ? 0 : -1};
-        const int dy[] = { (k % 2 == 0) ? 0 : +1, (k % 2 == 0) ? -1 : 0};
+        const KDTree <Tp, cn> *main; // main class
+        int dimIdx; // dimension to compare
 
-        snake_idx.push_back(snake_idx[num - 1] - dx[1]);
-        snake_idy.push_back(snake_idy[num++ - 1] - dy[1]);
-
-        for (int i = 0; i < k && num < nProjections; ++i, ++num)
+    public:
+        bool operator () (const int &x, const int &y) const
         {
-            snake_idx.push_back(snake_idx[num - 1] + dx[0]);
-            snake_idy.push_back(snake_idy[num - 1] + dy[0]);
+            cv::Vec <Tp, cn> u = main->data[main->idx[x]];
+            cv::Vec <Tp, cn> v = main->data[main->idx[y]];
+
+            return  u[dimIdx] < v[dimIdx];
         }
 
-        for (int i = 0; i < k && num < nProjections; ++i, ++num)
+        KDTreeComparator(const KDTree <Tp, cn> *_main, int _dimIdx)
+            : main(_main), dimIdx(_dimIdx) {}
+    };
+
+    const int leafNumber;
+
+    int getMaxSpreadN(const int left, const int right) const;
+    void operator =(const KDTree <Tp, cn> &) const {};
+
+public:
+    std::vector <cv::Vec <Tp, cn> > data;
+    std::vector <int> idx;
+    std::vector <cv::Point2i> nodes;
+
+    KDTree(const cv::Mat &data, const int leafNumber = 8);
+    ~KDTree(){};
+};
+
+template <typename Tp, int cn> int KDTree <Tp, cn>::
+getMaxSpreadN(const int _left, const int _right) const
+{
+    cv::Vec<Tp, cn> maxValue = data[ idx[_left] ],
+                    minValue = data[ idx[_left] ];
+    for (int i = _left + 1; i < _right; i += cn)
+        for (int j = 0; j < cn; ++j)
         {
-            snake_idx.push_back(snake_idx[num - 1] + dx[1]);
-            snake_idy.push_back(snake_idy[num - 1] + dy[1]);
+            minValue[j] = std::min( minValue[j], data[idx[i]][j] );
+            maxValue[j] = std::max( maxValue[j], data[idx[i]][j] );
+        }
+    cv::Vec<Tp, cn> spread = maxValue - minValue;
+
+    Tp *begIt = &spread[0];
+    return int(std::max_element(begIt, begIt + cn) - begIt);
+}
+
+template <typename Tp, int cn> KDTree <Tp, cn>::
+KDTree(const cv::Mat &img, const int _leafNumber)
+    : leafNumber(_leafNumber)
+///////////////////////////////////////////////////
+{
+    for (int i = 0; i < img.rows; ++i)
+        for (int j = 0; j < img.cols; ++j)
+            data.push_back(img.template at<cv::Vec <Tp, cn> >(i, j));
+
+    generate_seq( std::back_inserter(idx), 0, int(data.size()) );
+    fill_n( std::back_inserter(nodes), int(data.size()), cv::Point2i(0, 0) );
+
+    std::stack <int> left, right;
+    left.push( 0 );
+    right.push( int(idx.size()) );
+
+    while ( !left.empty() )
+    {
+        int _left = left.top(); left.pop();
+        int _right = right.top(); right.pop();
+
+        if ( _right - _left <= leafNumber)
+        {
+            for (int i = _left; i < _right; ++i)
+            {
+                nodes[idx[i]].x = _left;
+                nodes[idx[i]].y = _right;
+            }
+
+            continue;
+        }
+
+        std::vector <int>::iterator begIt = idx.begin();
+        int nth = _left + (_right - _left)/2;
+        std::nth_element(/**/ begIt + _left,
+            begIt + nth, begIt + _right,
+            KDTreeComparator( this,
+                getMaxSpreadN(_left, _right) ) /**/);
+
+        left.push(_left); right.push(nth + 1);
+        left.push(nth + 1); right.push(_right);
+    }
+}
+
+/************************** ANNF search **************************/
+
+template <typename Tp, int cn>
+static void updateDist(const KDTree <Tp, cn> &kdTree, const cv::Point2i &I, const int height,
+                       const int width, const int &currentIdx, int &bestIdx, double &dist)
+{
+    for (int k = I.x; k < I.y; ++k)
+    {
+        int newIdx = kdTree.idx[k];
+
+        if (newIdx%width == width  - 1)
+            continue;
+
+        if (newIdx/width == height - 1)
+            continue;
+
+        int dx = currentIdx%width - newIdx%width;
+        int dy = currentIdx/width - newIdx/width;
+
+        if (abs(dx) + abs(dy) < 32)
+            continue;
+
+        double ndist = norm2(kdTree.data[newIdx],
+                        kdTree.data[currentIdx]);
+        if (ndist < dist)
+        {
+            dist = ndist;
+            bestIdx = newIdx;
         }
     }
-
-    for (int i = 1; i < nProjections; ++i)
-    {
-        int dx = (snake_idx[i] - snake_idx[i - 1]);
-        int dy = (snake_idy[i] - snake_idy[i - 1]);
-
-        dx <<= hamming_length(psize - 1) - hamming_length(snake_idx[i - 1] ^ snake_idx[i]);
-        dy <<= hamming_length(psize - 1) - hamming_length(snake_idy[i - 1] ^ snake_idy[i]);
-
-        if (i % 2 == 0)
-            plusToMinusUpdate(proj, proj, dx, dy);
-        else
-            minusToPlusUpdate(proj, proj, dx, dy);
-    }
-
-    cv::merge(projections, dst);
 }
 
+static void getANNF(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
+                    const int nTransform, const int psize)
+{
+    /** Walsh-Hadamard Transformation **/
+
+    std::vector <cv::Mat> channels;
+    cv::split(img, channels);
+
+    const int np[] = {16, 4, 4};
+    for (int i = 0; i < img.channels(); ++i)
+        getWHSeries(channels[i], channels[i], np[i], psize);
+
+    cv::Mat whs; // Walsh-Hadamard series
+    cv::merge(channels, whs);
+
+    KDTree <float, 24> kdTree(whs);
+    std::vector <int> annf( whs.total(), 0 );
+
+    /** Propagation-assisted kd-tree search **/
+
+    for (int i = 0; i < whs.rows; ++i)
+        for (int j = 0; j < whs.cols; ++j)
+        {
+            double dist = std::numeric_limits <double>::max();
+            int current = i*whs.cols + j;
+
+            cv::Point2i I = kdTree.nodes[i*whs.cols + j];
+            updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
+
+            if (i != 0)
+            {
+                int idx = annf[(i - 1)*whs.cols + j] + whs.cols;
+                cv::Point2i I = kdTree.nodes[idx];
+                updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
+            }
+
+            if (j != 0)
+            {
+                int idx = annf[i*whs.cols + (j - 1)] + 1;
+                cv::Point2i I = kdTree.nodes[idx];
+                updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
+            }
+        }
+
+    /** Local maxima extraction **/
+
+    cv::Mat_<double> annfHist(2*whs.rows, 2*whs.cols, 0.0),
+                    _annfHist(2*whs.rows, 2*whs.cols, 0.0);
+    for (size_t i = 0; i < annf.size(); ++i)
+        ++annfHist( (annf[i] - int(i))/whs.cols + whs.rows,
+                    (annf[i] - int(i))%whs.cols + whs.cols);
+
+    cv::GaussianBlur( annfHist, annfHist,
+        cv::Size(9, 9), 1.41, 0.0, cv::BORDER_CONSTANT);
+    cv::dilate(annfHist, _annfHist,
+        cv::Matx<uchar, 9, 9>::ones());
+
+    std::vector < std::pair<double, int> > amount;
+    std::vector <cv::Point2i> shiftM;
+
+    for (int i = 0, t = 0; i < annfHist.rows; ++i)
+    {
+        double  *pAnnfHist =  annfHist.template ptr<double>(i);
+        double *_pAnnfHist = _annfHist.template ptr<double>(i);
+
+        for (int j = 0; j < annfHist.cols; ++j)
+            if ( pAnnfHist[j] != 0 && pAnnfHist[j] == _pAnnfHist[j] )
+            {
+                amount.push_back( std::make_pair(pAnnfHist[j], t++) );
+                shiftM.push_back(cv::Point2i(j - whs.cols,
+                                             i - whs.rows));
+            }
+    }
+
+    std::partial_sort( amount.begin(), amount.begin() + nTransform,
+        amount.end(), std::greater< std::pair<double, int> >() );
+
+    transforms.resize(nTransform);
+    for (int i = 0; i < nTransform; ++i)
+    {
+        int idx = amount[i].second;
+        transforms[i] = cv::Matx33f(1, 0, float(shiftM[idx].x),
+                                    0, 1, float(shiftM[idx].y),
+                                    0, 0,          1          );
+    }
+}
 
 #endif /* __ANNF_HPP__ */

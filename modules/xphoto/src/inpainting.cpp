@@ -38,14 +38,18 @@
 //M*/
 
 #include <vector>
+#include <stack>
 #include <limits>
 #include <algorithm>
 #include <iterator>
 #include <iostream>
 #include <time.h>
+#include <functional>
 
 #include "opencv2/xphoto.hpp"
+
 #include "opencv2/imgproc.hpp"
+#include "opencv2/imgproc/imgproc_c.h"
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/core_c.h"
@@ -67,18 +71,17 @@ namespace cv
         const int nTransform = 60; // number of dominant transforms for stitching
         const int psize = 8; // single ANNF patch size
 
-        /** ANNF computation **/
-        srand( unsigned(time(NULL)) );
+        cv::Mat img;
 
-        std::vector <Matx33f> transforms; // dominant transforms
-        for (int i = 0; i < nTransform; ++i)
-        {
-            float dx = float( rand()%src.cols - src.cols/2 );
-            float dy = float( rand()%src.rows - src.rows/2 );
-            transforms.push_back( Matx33f( 1, 0, dx,
-                                           0, 1, dy,
-                                           0, 0,  1) );
-        }
+        cvtColor(src, img, CV_RGB2Lab);
+        img.setTo(0, 255 - mask);
+        img.convertTo( img, CV_32F );
+
+
+        /** ANNF computation **/
+        std::vector <Matx33f> transforms( nTransform );
+        xphotoInternal::getANNF(img, transforms,
+                                nTransform, psize);
 
         /** Warping **/
         std::vector <Mat> images( nTransform + 1 ); // source image transformed with transforms
@@ -87,7 +90,7 @@ namespace cv
         Mat_<uchar> invMask = 255 - mask;
         dilate(invMask, invMask, Mat(), Point(-1,-1), 2);
 
-        src.convertTo( images[0], CV_32F );
+        img.copyTo( images[0] );
         mask.copyTo( masks[0] );
 
         for (int i = 0; i < nTransform; ++i)
@@ -104,7 +107,10 @@ namespace cv
         Mat photomontageResult;
         xphotoInternal::Photomontage < cv::Vec <float, cn> >( images, masks )
             .assignResImage(photomontageResult);
-        photomontageResult.convertTo( dst, dst.type() );
+
+        /** Writing result **/
+        photomontageResult.convertTo( photomontageResult, dst.type() );
+        cvtColor(photomontageResult, dst, CV_Lab2RGB);
     }
 
     template <typename Tp, unsigned int cn>
@@ -137,66 +143,66 @@ namespace cv
 
         switch ( src.type() )
         {
-            case CV_8UC1:
-                inpaint <uchar,  1>( src, mask, dst, algorithmType );
-                break;
-            case CV_8UC2:
-                inpaint <uchar,  2>( src, mask, dst, algorithmType );
-                break;
+            //case CV_8UC1:
+            //    inpaint <uchar,  1>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_8UC2:
+            //    inpaint <uchar,  2>( src, mask, dst, algorithmType );
+            //    break;
             case CV_8UC3:
                 inpaint <uchar,  3>( src, mask, dst, algorithmType );
                 break;
-            case CV_8UC4:
-                inpaint <uchar,  4>( src, mask, dst, algorithmType );
-                break;
-            case CV_16SC1:
-                inpaint <short,  1>( src, mask, dst, algorithmType );
-                break;
-            case CV_16SC2:
-                inpaint <short,  2>( src, mask, dst, algorithmType );
-                break;
+            //case CV_8UC4:
+            //    inpaint <uchar,  4>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_16SC1:
+            //    inpaint <short,  1>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_16SC2:
+            //    inpaint <short,  2>( src, mask, dst, algorithmType );
+            //    break;
             case CV_16SC3:
                 inpaint <short,  3>( src, mask, dst, algorithmType );
                 break;
-            case CV_16SC4:
-                inpaint <short,  4>( src, mask, dst, algorithmType );
-                break;
-            case CV_32SC1:
-                inpaint <int,    1>( src, mask, dst, algorithmType );
-                break;
-            case CV_32SC2:
-                inpaint <int,    2>( src, mask, dst, algorithmType );
-                break;
+            //case CV_16SC4:
+            //    inpaint <short,  4>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_32SC1:
+            //    inpaint <int,    1>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_32SC2:
+            //    inpaint <int,    2>( src, mask, dst, algorithmType );
+            //    break;
             case CV_32SC3:
                 inpaint <int,    3>( src, mask, dst, algorithmType );
                 break;
-            case CV_32SC4:
-                inpaint <int,    4>( src, mask, dst, algorithmType );
-                break;
-            case CV_32FC1:
-                inpaint <float,  1>( src, mask, dst, algorithmType );
-                break;
-            case CV_32FC2:
-                inpaint <float,  2>( src, mask, dst, algorithmType );
-                break;
+            //case CV_32SC4:
+            //    inpaint <int,    4>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_32FC1:
+            //    inpaint <float,  1>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_32FC2:
+            //    inpaint <float,  2>( src, mask, dst, algorithmType );
+            //    break;
             case CV_32FC3:
                 inpaint <float,  3>( src, mask, dst, algorithmType );
                 break;
-            case CV_32FC4:
-                inpaint <float,  4>( src, mask, dst, algorithmType );
-                break;
-            case CV_64FC1:
-                inpaint <double, 1>( src, mask, dst, algorithmType );
-                break;
-            case CV_64FC2:
-                inpaint <double, 2>( src, mask, dst, algorithmType );
-                break;
+            //case CV_32FC4:
+            //    inpaint <float,  4>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_64FC1:
+            //    inpaint <double, 1>( src, mask, dst, algorithmType );
+            //    break;
+            //case CV_64FC2:
+            //    inpaint <double, 2>( src, mask, dst, algorithmType );
+            //    break;
             case CV_64FC3:
                 inpaint <double, 3>( src, mask, dst, algorithmType );
                 break;
-            case CV_64FC4:
-                inpaint <double, 4>( src, mask, dst, algorithmType );
-                break;
+            //case CV_64FC4:
+            //    inpaint <double, 4>( src, mask, dst, algorithmType );
+            //    break;
             default:
                 CV_Error_( CV_StsNotImplemented,
                     ("Unsupported source image format (=%d)",
