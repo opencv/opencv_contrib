@@ -48,18 +48,18 @@
 #include "tld_tracker.hpp"
 #include "opencv2/highgui.hpp"
 
-#define THETA_NN 0.50
 const int STANDARD_PATCH_SIZE = 15;
-#define CORE_THRESHOLD 0.5
 const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
 const int MAX_EXAMPLES_IN_MODEL = 500;
 const int MEASURES_PER_CLASSIFIER = 13;
-#define SCALE_STEP 1.2
-#define ENSEMBLE_THRESHOLD 0.5
-#define VARIANCE_THRESHOLD 0.5
-#define NEXPERT_THRESHOLD 0.2
 const int GRIDSIZE = 15;
 const int DOWNSCALE_MODE = cv::INTER_LINEAR;
+const double THETA_NN = 0.50;
+const double CORE_THRESHOLD = 0.5;
+const double SCALE_STEP = 1.2;
+const double ENSEMBLE_THRESHOLD = 0.5;
+const double VARIANCE_THRESHOLD = 0.5;
+const double NEXPERT_THRESHOLD = 0.2;
 #define BLUR_AS_VADIM
 #undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3, 3);
