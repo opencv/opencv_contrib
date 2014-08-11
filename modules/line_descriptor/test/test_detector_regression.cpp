@@ -257,8 +257,6 @@ void CV_BinaryDescriptorDetectorTest::regressionTest()
   std::string imgFilename = std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/" + IMAGE_FILENAME;
   std::string resFilename = std::string( ts->get_data_path() ) + DETECTOR_DIR + "/" + fs_name + ".yaml";
 
-  std::cout << "PATH " << std::string( ts->get_data_path() ) << std::endl;
-
   // Read the test image.
   Mat image = imread( imgFilename );
   if( image.empty() )
