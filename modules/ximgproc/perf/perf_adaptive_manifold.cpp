@@ -1,13 +1,15 @@
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace perf;
-using namespace testing;
-
 namespace cvtest
 {
+
+using std::tr1::tuple;
+using std::tr1::get;
+using namespace perf;
+using namespace testing;
+using namespace cv;
+using namespace cv::ximgproc;
+
 
 typedef tuple<bool, Size, int, int, MatType> AMPerfTestParam;
 typedef TestBaseWithParam<AMPerfTestParam> AdaptiveManifoldPerfTest;

@@ -21,7 +21,8 @@ static volatile bool CPU_SUPPORT_SSE2 = cv::checkHardwareSupport(CV_CPU_SSE2);
 
 namespace cv
 {
-
+namespace ximgproc
+{
 
 Ptr<DTFilter> createDTFilterRF(InputArray adistHor, InputArray adistVert, double sigmaSpatial, double sigmaColor, int numIters)
 {
@@ -94,7 +95,7 @@ void checkSameSizeAndDepth(InputArrayOfArrays src, Size &sz, int &depth)
     }
 }
 
-namespace eaf
+namespace intrinsics
 {
 
 inline float getFloatSignBit()
@@ -508,5 +509,7 @@ void rf_vert_row_pass(register float *curRow, register float *prevRow, float alp
         curRow[j] += alphaVal*(prevRow[j] - curRow[j]);
 }
 
-} //end of cv::eaf
+} //end of cv::ximgproc::intrinsics
+
+} //end of cv::ximgproc 
 } //end of cv 

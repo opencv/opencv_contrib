@@ -2,8 +2,9 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/edge_filter.hpp>
+#include <opencv2/ximgproc.hpp>
 using namespace cv;
+using namespace cv::ximgproc;
 
 #include <iostream>
 using namespace std;
@@ -11,6 +12,12 @@ using namespace std;
 typedef void(*FilteringOperation)(const Mat& src, Mat& dst);
 //current mode (filtering operation example)
 FilteringOperation g_filterOp = NULL;
+
+//list of filtering operations
+void filterDoNothing(const Mat& frame, Mat& dst);
+void filterBlurring(const Mat& frame, Mat& dst);
+void filterStylize(const Mat& frame, Mat& dst);
+void filterDetailEnhancement(const Mat& frame8u, Mat& dst);
 
 //common sliders for every mode
 int g_sigmaColor = 25;
@@ -24,6 +31,12 @@ int g_contrastBase = 100;
 int g_detailsLevel = 100;
 
 int g_numberOfCPUs = cv::getNumberOfCPUs();
+
+//We will use two callbacks to change parameters
+void changeModeCallback(int state, void *filter);
+void changeNumberOfCpuCallback(int count, void*);
+
+void splitScreen(const Mat& rawFrame, Mat& outputFrame, Mat& srcFrame, Mat& processedFrame);
 
 //trivial filter
 void filterDoNothing(const Mat& frame, Mat& dst)
@@ -100,6 +113,20 @@ void filterDetailEnhancement(const Mat& frame8u, Mat& dst)
     frame.convertTo(dst, CV_8U, 255);
 }
 
+void changeModeCallback(int state, void *filter)
+{
+    if (state == 1)
+        g_filterOp = (FilteringOperation) filter;
+}
+
+void changeNumberOfCpuCallback(int count, void*)
+{
+    count = std::max(1, count);
+    cv::setNumThreads(count);
+    g_numberOfCPUs = count;
+}
+
+//divide screen on two parts: srcFrame and processed Frame
 void splitScreen(const Mat& rawFrame, Mat& outputFrame, Mat& srcFrame, Mat& processedFrame)
 {
     int h = rawFrame.rows;
@@ -107,25 +134,12 @@ void splitScreen(const Mat& rawFrame, Mat& outputFrame, Mat& srcFrame, Mat& proc
     int cn = rawFrame.channels();
 
     outputFrame.create(h, 2 * w, CV_MAKE_TYPE(CV_8U, cn));
-    srcFrame        = outputFrame(Range::all(), Range(0, w));
-    processedFrame  = outputFrame(Range::all(), Range(w, 2*w));
+    srcFrame = outputFrame(Range::all(), Range(0, w));
+    processedFrame = outputFrame(Range::all(), Range(w, 2 * w));
     rawFrame.convertTo(srcFrame, srcFrame.type());
 }
 
-void changeModeCallback(int state, void *filter)
-{
-    if (state == 1)
-        g_filterOp = (FilteringOperation) filter;
-}
-
-void changeNumberOfCpuCallback(int count, void *data)
-{
-    count = std::max(1, count);
-    cv::setNumThreads(count);
-    g_numberOfCPUs = count;
-}
-
-int main(int argc, char **argv)
+int main()
 {
     VideoCapture cap(0);
     if (!cap.isOpened())

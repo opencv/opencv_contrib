@@ -1,13 +1,14 @@
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace perf;
-using namespace testing;
-
 namespace cvtest
 {
+
+using std::tr1::tuple;
+using std::tr1::get;
+using namespace perf;
+using namespace testing;
+using namespace cv;
+using namespace cv::ximgproc;
 
 typedef tuple<double, Size, MatType, int, int> JBFTestParam;
 typedef TestBaseWithParam<JBFTestParam> JointBilateralFilterTest;
@@ -35,8 +36,8 @@ PERF_TEST_P(JointBilateralFilterTest, perf,
     cv::setNumThreads(cv::getNumberOfCPUs());
     declare.in(joint, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
 
-    RNG rnd(sigmaS + sz.height + depth + jCn + srcCn);
-    double sigmaC = rnd.uniform(0.0, 255.0);
+    RNG rnd(cvRound(10*sigmaS) + sz.height + depth + jCn + srcCn);
+    double sigmaC = rnd.uniform(1.0, 255.0);
 
     TEST_CYCLE_N(1)
     {

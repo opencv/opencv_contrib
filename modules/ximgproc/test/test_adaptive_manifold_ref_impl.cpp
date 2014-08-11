@@ -25,11 +25,13 @@
 #include <opencv2/core/private.hpp>
 #include <cmath>
 
-using std::numeric_limits;
-using namespace cv;
-
 namespace
 {
+
+    using std::numeric_limits;
+    using namespace cv;
+    using namespace cv::ximgproc;
+
     struct Buf
     {
         Mat_<Point3f> eta_1;
@@ -929,6 +931,8 @@ namespace
 
 namespace cvtest
 {
+
+using namespace cv::ximgproc;
 
 Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers)
 {

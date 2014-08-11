@@ -9,6 +9,8 @@ using namespace std;
 
 namespace cv
 {
+namespace ximgproc
+{
 
 typedef Vec<float, 1> Vec1f;
 typedef Vec<uchar, 1> Vec1b;
@@ -16,6 +18,10 @@ typedef Vec<uchar, 1> Vec1b;
 #ifndef SQR
 #define SQR(a) ((a)*(a))
 #endif
+
+void jointBilateralFilter_32f(Mat& joint, Mat& src, Mat& dst, int radius, double sigmaColor, double sigmaSpace, int borderType);
+
+void jointBilateralFilter_8u(Mat& joint, Mat& src, Mat& dst, int radius, double sigmaColor, double sigmaSpace, int borderType);
 
 template<typename JointVec, typename SrcVec>
 class JointBilateralFilter_32f : public ParallelLoopBody
@@ -49,9 +55,9 @@ public:
                 JointVec *jointCenterPixPtr = joint.ptr<JointVec>(i) + j;
                 SrcVec *srcCenterPixPtr = src.ptr<SrcVec>(i) + j;
 
-                register JointVec jointPix0 = *jointCenterPixPtr;
-                register SrcVec srcSum = SrcVec::all(0.0f);
-                register float wSum = 0.0f;
+                JointVec jointPix0 = *jointCenterPixPtr;
+                SrcVec srcSum = SrcVec::all(0.0f);
+                float wSum = 0.0f;
 
                 for (int k = 0; k < maxk; k++)
                 {
@@ -198,9 +204,9 @@ public:
                 JointVec *jointCenterPixPtr = joint.ptr<JointVec>(i) + j;
                 SrcVec *srcCenterPixPtr = src.ptr<SrcVec>(i) + j;
 
-                register JointVeci jointPix0 = JointVeci(*jointCenterPixPtr);
-                register SrcVecf srcSum = SrcVecf::all(0.0f);
-                register float wSum = 0.0f;
+                JointVeci jointPix0 = JointVeci(*jointCenterPixPtr);
+                SrcVecf srcSum = SrcVecf::all(0.0f);
+                float wSum = 0.0f;
 
                 for (int k = 0; k < maxk; k++)
                 {
@@ -313,9 +319,8 @@ void jointBilateralFilter(InputArray joint_, InputArray src_, OutputArray dst_, 
         return;
     }
 
-    CV_Assert(src.size() == joint.size() && src.depth() == joint.depth());
-    CV_Assert(src.type() == CV_32FC1 || src.type() == CV_32FC3 || src.type() == CV_8UC1 || src.type() == CV_8UC3);
-    CV_Assert(joint.type() == CV_32FC1 || joint.type() == CV_32FC3 || joint.type() == CV_8UC1 || joint.type() == CV_8UC3);
+    CV_Assert(src.size() == joint.size());
+    CV_Assert(src.depth() == joint.depth() && (src.depth() == CV_8U || src.depth() == CV_32F) );
 
     if (sigmaColor <= 0)
         sigmaColor = 1;
@@ -337,15 +342,25 @@ void jointBilateralFilter(InputArray joint_, InputArray src_, OutputArray dst_, 
     if (dst.data == src.data)
         src = src.clone();
 
-    if (joint.depth() == CV_8U)
+    int jointCnNum = joint.channels();
+    int srcCnNum = src.channels();
+
+    if ( (srcCnNum == 1 || srcCnNum == 3) && (jointCnNum == 1 || jointCnNum == 3) )
     {
-        jointBilateralFilter_8u(joint, src, dst, radius, sigmaColor, sigmaSpace, borderType);
+        if (joint.depth() == CV_8U)
+        {
+            jointBilateralFilter_8u(joint, src, dst, radius, sigmaColor, sigmaSpace, borderType);
+        }
+        else
+        {
+            jointBilateralFilter_32f(joint, src, dst, radius, sigmaColor, sigmaSpace, borderType);
+        }
     }
     else
     {
-        jointBilateralFilter_32f(joint, src, dst, radius, sigmaColor, sigmaSpace, borderType);   
+        CV_Error(Error::BadNumChannels, "Unsupported number of channels");
     }
-    
 }
 
+}
 }

@@ -1,10 +1,6 @@
 #include "precomp.hpp"
-#include <vector>
-#include <iostream>
-using std::vector;
-
 #include "edgeaware_filters_common.hpp"
-using namespace cv::eaf;
+#include <vector>
 
 #ifdef _MSC_VER
 #   pragma warning(disable: 4512)
@@ -12,6 +8,11 @@ using namespace cv::eaf;
 
 namespace cv
 {
+namespace ximgproc
+{
+
+using std::vector;
+using namespace cv::ximgproc::intrinsics;
 
 template <typename T>
 struct SymArray2D
@@ -750,4 +751,5 @@ void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius,
     gf->filter(src, dst, dDepth);
 }
 
+}
 }

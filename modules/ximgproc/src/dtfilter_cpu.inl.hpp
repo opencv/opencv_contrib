@@ -1,15 +1,17 @@
 #ifndef __OPENCV_DTFILTER_INL_HPP__
 #define __OPENCV_DTFILTER_INL_HPP__
 #include "precomp.hpp"
-#include <iostream>
 #include "edgeaware_filters_common.hpp"
-using namespace cv::eaf;
-
-#define NC_USE_INTEGRAL_SRC
-//#undef NC_USE_INTEGRAL_SRC
 
 namespace cv
 {
+namespace ximgproc
+{
+
+using namespace cv::ximgproc::intrinsics;
+
+#define NC_USE_INTEGRAL_SRC
+//#undef NC_USE_INTEGRAL_SRC
 
 template<typename GuideVec>
 DTFilterCPU DTFilterCPU::create_(const Mat& guide, double sigmaSpatial, double sigmaColor, int mode, int numIters)
@@ -28,60 +30,55 @@ DTFilterCPU* DTFilterCPU::create_p_(const Mat& guide, double sigmaSpatial, doubl
 }
 
 template<typename GuideVec>
-void DTFilterCPU::init_(Mat& guide, double sigmaSpatial, double sigmaColor, int mode, int numIters)
+void DTFilterCPU::init_(Mat& guide, double sigmaSpatial_, double sigmaColor_, int mode_, int numIters_)
 {
     CV_Assert(guide.type() == cv::DataType<GuideVec>::type);
 
     this->release();
 
-    this->h = guide.rows;
-    this->w = guide.cols;
+    h = guide.rows;
+    w = guide.cols;
 
-    this->sigmaSpatial = std::max(1.0f, (float)sigmaSpatial);
-    this->sigmaColor   = std::max(0.01f, (float)sigmaColor);
+    sigmaSpatial = std::max(1.0f, (float)sigmaSpatial_);
+    sigmaColor   = std::max(0.01f, (float)sigmaColor_);
 
-    this->mode = mode;
-    this->numIters = std::max(1, numIters);
+    mode = mode_;
+    numIters = std::max(1, numIters_);
 
-    switch (this->mode)
+    if (mode == DTF_NC)
     {
-    case DTF_NC:
         {
-            {
-                ComputeIDTHor_ParBody<GuideVec> horBody(*this, guide, idistHor);
-                parallel_for_(horBody.getRange(), horBody);
-            }
-            {
-                Mat guideT = guide.t();
-                ComputeIDTHor_ParBody<GuideVec> horBody(*this, guideT, idistVert);
-                parallel_for_(horBody.getRange(), horBody);
-            }
-        }
-        break;
-    case DTF_IC:
-        {
-            {
-                ComputeDTandIDTHor_ParBody<GuideVec> horBody(*this, guide, distHor, idistHor);
-                parallel_for_(horBody.getRange(), horBody);
-            }
-            {
-                Mat guideT = guide.t();
-                ComputeDTandIDTHor_ParBody<GuideVec> horBody(*this, guideT, distVert, idistVert);
-                parallel_for_(horBody.getRange(), horBody);
-            }
-        }
-        break;
-    case DTF_RF:
-        {
-            ComputeA0DTHor_ParBody<GuideVec> horBody(*this, guide);
-            ComputeA0DTVert_ParBody<GuideVec> vertBody(*this, guide);
+            ComputeIDTHor_ParBody<GuideVec> horBody(*this, guide, idistHor);
             parallel_for_(horBody.getRange(), horBody);
-            parallel_for_(vertBody.getRange(), vertBody);
         }
-        break;
-    default:
+        {
+            Mat guideT = guide.t();
+            ComputeIDTHor_ParBody<GuideVec> horBody(*this, guideT, idistVert);
+            parallel_for_(horBody.getRange(), horBody);
+        }
+    }
+    else if (mode == DTF_IC)
+    {
+        {
+            ComputeDTandIDTHor_ParBody<GuideVec> horBody(*this, guide, distHor, idistHor);
+            parallel_for_(horBody.getRange(), horBody);
+        }
+        {
+            Mat guideT = guide.t();
+            ComputeDTandIDTHor_ParBody<GuideVec> horBody(*this, guideT, distVert, idistVert);
+            parallel_for_(horBody.getRange(), horBody);
+        }
+    }
+    else if (mode == DTF_RF)
+    {
+        ComputeA0DTHor_ParBody<GuideVec> horBody(*this, guide);
+        ComputeA0DTVert_ParBody<GuideVec> vertBody(*this, guide);
+        parallel_for_(horBody.getRange(), horBody);
+        parallel_for_(vertBody.getRange(), vertBody);
+    }
+    else
+    {
         CV_Error(Error::StsBadFlag, "Incorrect DT filter mode");
-        break;
     }
 }
 
@@ -586,5 +583,5 @@ void domainTransformFilter( const Mat& guide,
 }
 
 }
-
+}
 #endif

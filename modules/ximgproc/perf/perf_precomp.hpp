@@ -5,6 +5,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <opencv2/edge_filter.hpp>
+#include <opencv2/ximgproc.hpp>
 
 #endif

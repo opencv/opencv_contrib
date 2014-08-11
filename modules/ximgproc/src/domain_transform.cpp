@@ -3,6 +3,8 @@
 
 namespace cv
 {
+namespace ximgproc
+{
 
 CV_EXPORTS_W
 Ptr<DTFilter> createDTFilter(InputArray guide, double sigmaSpatial, double sigmaColor, int mode, int numIters)
@@ -18,4 +20,5 @@ void dtFilter(InputArray guide, InputArray src, OutputArray dst, double sigmaSpa
     dtf->filter(src, dst);
 }
 
+}
 }

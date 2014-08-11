@@ -1,13 +1,15 @@
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace perf;
-using namespace testing;
-
 namespace cvtest
 {
+
+using std::tr1::tuple;
+using std::tr1::get;
+using namespace perf;
+using namespace testing;
+using namespace cv;
+using namespace cv::ximgproc;
+
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC2, CV_8UC3, CV_32FC1, CV_32FC2, CV_32FC3);
 CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3);
 typedef tuple<GuideTypes, SrcTypes, Size> GFParams;

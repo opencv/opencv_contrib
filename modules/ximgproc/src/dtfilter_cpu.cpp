@@ -3,6 +3,8 @@
 
 namespace cv
 {
+namespace ximgproc
+{
 
 typedef Vec<uchar, 1> Vec1b;
 typedef Vec<float, 1> Vec1f;
@@ -37,7 +39,7 @@ Ptr<DTFilterCPU> DTFilterCPU::createRF(InputArray adistHor, InputArray adistVert
     return dtf;
 }
 
-void DTFilterCPU::init(InputArray guide_, double sigmaSpatial, double sigmaColor, int mode, int numIters)
+void DTFilterCPU::init(InputArray guide_, double sigmaSpatial_, double sigmaColor_, int mode_, int numIters_)
 {
     Mat guide = guide_.getMat();
 
@@ -47,7 +49,7 @@ void DTFilterCPU::init(InputArray guide_, double sigmaSpatial, double sigmaColor
     CV_Assert(cn <= 4);
     CV_Assert((depth == CV_8U || depth == CV_32F) && !guide.empty());
 
-    #define CREATE_DTF(Vect) init_<Vect>(guide, sigmaSpatial, sigmaColor, mode, numIters);
+    #define CREATE_DTF(Vect) init_<Vect>(guide, sigmaSpatial_, sigmaColor_, mode_, numIters_);
 
     if (cn == 1)
     {
@@ -171,4 +173,5 @@ Range DTFilterCPU::getWorkRangeByThread(int items, const Range& rangeThread, int
     return getWorkRangeByThread(Range(0, items), rangeThread, declaredNumThreads);
 }
 
+}
 }

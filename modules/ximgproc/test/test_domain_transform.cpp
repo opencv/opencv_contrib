@@ -1,13 +1,14 @@
 #include "test_precomp.hpp"
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace testing;
-using namespace perf;
-
 namespace cvtest
 {
+
+using namespace std;
+using namespace std::tr1;
+using namespace testing;
+using namespace perf;
+using namespace cv;
+using namespace cv::ximgproc;
 
 static string getOpenCVExtraDir()
 {

@@ -1,13 +1,14 @@
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace perf;
-using namespace testing;
-
 namespace cvtest
 {
+
+using std::tr1::tuple;
+using std::tr1::get;
+using namespace perf;
+using namespace testing;
+using namespace cv;
+using namespace cv::ximgproc;
 
 CV_ENUM(GuideMatType, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3) //reduced set
 CV_ENUM(SourceMatType, CV_8UC1, CV_8UC2, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC2, CV_32FC3, CV_32FC4) //full supported set

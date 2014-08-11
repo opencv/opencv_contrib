@@ -4,6 +4,8 @@
 
 namespace cv
 {
+namespace ximgproc
+{
 
 Ptr<DTFilter> createDTFilterRF(InputArray adistHor, InputArray adistVert, double sigmaSpatial, double sigmaColor, int numIters);
 
@@ -11,7 +13,7 @@ int getTotalNumberOfChannels(InputArrayOfArrays src);
 
 void checkSameSizeAndDepth(InputArrayOfArrays src, Size &sz, int &depth);
 
-namespace eaf
+namespace intrinsics
 {  
     void add_(register float *dst, register float *src1, int w);
 
@@ -50,6 +52,8 @@ namespace eaf
     void min_(register float *dst, register float *src1, register float *src2, int w);
 
     void rf_vert_row_pass(register float *curRow, register float *prevRow, float alphaVal, int w);
+}
+
 }
 }
 

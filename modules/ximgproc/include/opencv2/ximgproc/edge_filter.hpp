@@ -41,6 +41,8 @@
 
 namespace cv
 {
+namespace ximgproc
+{
 
 enum EdgeAwareFiltersList
 {
@@ -119,6 +121,7 @@ CV_EXPORTS_W void amFilter(InputArray joint, InputArray src, OutputArray dst, do
 CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
+}
 }
 #endif
 #endif

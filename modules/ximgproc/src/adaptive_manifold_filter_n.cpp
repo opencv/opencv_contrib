@@ -2,21 +2,20 @@
 #include <opencv2/core/private.hpp>
 #include <cmath>
 #include <cstring>
-
-#include <opencv2/edge_filter.hpp>
 #include "edgeaware_filters_common.hpp"
-using namespace cv::eaf;
+
+namespace
+{
 
 using std::numeric_limits;
 using std::vector;
 using namespace cv;
+using namespace cv::ximgproc;
+using namespace cv::ximgproc::intrinsics;
 
 #ifndef SQR
 #define SQR(x) ((x)*(x))
 #endif
-
-namespace
-{
 
 void computeEigenVector(const Mat1f& X, const Mat1b& mask, Mat1f& dst, int num_pca_iterations, const Mat1f& rand_vec);
 
@@ -725,9 +724,9 @@ void computeEigenVector(const Mat1f& X, const Mat1b& mask, Mat1f& dst, int num_p
         }
 
         dst.setTo(0.0);
-        for (int i = 0; i < X.rows; ++i)
+        for (int k = 0; k < X.rows; ++k)
         {
-            const float* t_row = t[i];
+            const float* t_row = t[k];
 
             for (int c = 0; c < X.cols; ++c)
             {
@@ -741,12 +740,19 @@ void computeEigenVector(const Mat1f& X, const Mat1b& mask, Mat1f& dst, int num_p
 }
 }
 
-Ptr<AdaptiveManifoldFilter> cv::AdaptiveManifoldFilter::create()
+
+namespace cv
+{
+namespace ximgproc
+{
+
+Ptr<AdaptiveManifoldFilter> AdaptiveManifoldFilter::create()
 {
     return Ptr<AdaptiveManifoldFilter>(new AdaptiveManifoldFilterN());
 }
 
-CV_EXPORTS_W Ptr<AdaptiveManifoldFilter> cv::createAMFilter(double sigma_s, double sigma_r, bool adjust_outliers)
+CV_EXPORTS_W
+Ptr<AdaptiveManifoldFilter> createAMFilter(double sigma_s, double sigma_r, bool adjust_outliers)
 {
     Ptr<AdaptiveManifoldFilter> amf(new AdaptiveManifoldFilterN());
     
@@ -757,8 +763,12 @@ CV_EXPORTS_W Ptr<AdaptiveManifoldFilter> cv::createAMFilter(double sigma_s, doub
     return amf;
 }
 
-CV_EXPORTS_W void cv::amFilter(InputArray joint, InputArray src, OutputArray dst, double sigma_s, double sigma_r, bool adjust_outliers)
+CV_EXPORTS_W
+void amFilter(InputArray joint, InputArray src, OutputArray dst, double sigma_s, double sigma_r, bool adjust_outliers)
 {
     Ptr<AdaptiveManifoldFilter> amf = createAMFilter(sigma_s, sigma_r, adjust_outliers);
     amf->filter(src, dst, joint);
+}
+
+}
 }

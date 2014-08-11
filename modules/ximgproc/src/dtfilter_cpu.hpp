@@ -12,6 +12,8 @@
 
 namespace cv
 {
+namespace ximgproc
+{
 
 class DTFilterCPU : public DTFilter
 {
@@ -238,7 +240,7 @@ void domainTransformFilter( const Mat_<GuideVec>& guide,
                             const Mat_<SrcVec>& source,
                             Mat& dst,
                             double sigmaSpatial, double sigmaColor,
-                            int mode = cv::DTF_NC, int numPasses = 3
+                            int mode = DTF_NC, int numPasses = 3
                           );
 
 template<typename GuideVec, typename SrcVec>
@@ -246,8 +248,9 @@ void domainTransformFilter( const Mat& guide,
                             const Mat& source,
                             Mat& dst,
                             double sigmaSpatial, double sigmaColor,
-                            int mode = cv::DTF_NC, int numPasses = 3
+                            int mode = DTF_NC, int numPasses = 3
                           );
+}
 }
 
 #include "dtfilter_cpu.inl.hpp"
