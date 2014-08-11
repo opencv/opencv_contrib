@@ -130,3 +130,9 @@ TEST(Features2d_Detector_Keypoints_SIFT, validation)
     CV_FeatureDetectorKeypointsTest test(FeatureDetector::create("SIFT"));
     test.safe_run();
 }
+
+TEST(Features2d_Detector_Keypoints_Star, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(Algorithm::create<FeatureDetector>("Feature2D.STAR"));
+    test.safe_run();
+}

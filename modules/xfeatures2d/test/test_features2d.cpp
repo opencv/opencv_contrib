@@ -987,6 +987,12 @@ TEST( Features2d_Detector_SURF, regression )
     test.safe_run();
 }
 
+TEST( Features2d_Detector_STAR, regression )
+{
+    CV_FeatureDetectorTest test( "detector-star", FeatureDetector::create("STAR") );
+    test.safe_run();
+}
+
 /*
  * Descriptors
  */
@@ -1004,19 +1010,21 @@ TEST( Features2d_DescriptorExtractor_SURF, regression )
     test.safe_run();
 }
 
-TEST( Features2d_DescriptorExtractor_OpponentSIFT, regression )
+TEST( Features2d_DescriptorExtractor_FREAK, regression )
 {
-    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-opponent-sift", 0.18f,
-                                                 DescriptorExtractor::create("OpponentSIFT") );
+    // TODO adjust the parameters below
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-freak",  (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                             DescriptorExtractor::create("FREAK") );
     test.safe_run();
 }
 
-TEST( Features2d_DescriptorExtractor_OpponentSURF, regression )
+TEST( Features2d_DescriptorExtractor_BRIEF, regression )
 {
-    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-opponent-surf",  0.3f,
-                                                 DescriptorExtractor::create("OpponentSURF") );
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-brief",  1,
+                                             DescriptorExtractor::create("BRIEF") );
     test.safe_run();
 }
+
 
 /*#if CV_SSE2
 TEST( Features2d_DescriptorExtractor_Calonder_uchar, regression )
