@@ -7,9 +7,9 @@
 #include <cstring>
 #include <climits>
 
-#define CMDLINEMAX 30
-#define ASSESS_TILL 100
-#define LINEMAX 40
+const int CMDLINEMAX = 30;
+const int ASSESS_TILL = 100;
+const int LINEMAX = 40;
 
 using namespace std;
 using namespace cv;
@@ -368,7 +368,7 @@ int main( int argc, char** argv ){
   for(int i=0;i<vcount;i++){
       results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
   }
-  CV_Assert(results[0].results[0].size()<CMDLINEMAX);
+  CV_Assert( (int)results[0].results[0].size() < CMDLINEMAX );
   printf("\n\n");
 
   char buf[CMDLINEMAX*CMDLINEMAX*LINEMAX], buf2[CMDLINEMAX*40];

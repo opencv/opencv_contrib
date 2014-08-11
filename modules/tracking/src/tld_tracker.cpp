@@ -49,17 +49,17 @@
 #include "opencv2/highgui.hpp"
 
 #define THETA_NN 0.50
-#define STANDARD_PATCH_SIZE 15
+const int STANDARD_PATCH_SIZE = 15;
 #define CORE_THRESHOLD 0.5
-#define NEG_EXAMPLES_IN_INIT_MODEL 300
-#define MAX_EXAMPLES_IN_MODEL 500
-#define MEASURES_PER_CLASSIFIER 13
+const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
+const int MAX_EXAMPLES_IN_MODEL = 500;
+const int MEASURES_PER_CLASSIFIER = 13;
 #define SCALE_STEP 1.2
 #define ENSEMBLE_THRESHOLD 0.5
 #define VARIANCE_THRESHOLD 0.5
 #define NEXPERT_THRESHOLD 0.2
-#define GRIDSIZE 15
-#define DOWNSCALE_MODE INTER_LINEAR
+const int GRIDSIZE = 15;
+const int DOWNSCALE_MODE = cv::INTER_LINEAR;
 #define BLUR_AS_VADIM
 #undef CLOSED_LOOP
 static const cv::Size GaussBlurKernelSize(3, 3);
@@ -477,7 +477,7 @@ timeStampPositiveNext(0), timeStampNegativeNext(0), params_(params), boundingBox
     negativeExamples.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
     std::vector<int> indices;
     indices.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
-    while( negativeExamples.size() < NEG_EXAMPLES_IN_INIT_MODEL )
+    while( (int)negativeExamples.size() < NEG_EXAMPLES_IN_INIT_MODEL )
     {
         int i = rng.uniform((int)0, (int)scanGrid.size());
         if( std::find(indices.begin(), indices.end(), i) == indices.end() && overlap(boundingBox, scanGrid[i]) < NEXPERT_THRESHOLD )
@@ -919,7 +919,7 @@ void TrackerTLDModel::pushIntoModel(const Mat_<uchar>& example, bool positive)
         proxyN = &timeStampNegativeNext;
         proxyT = &timeStampsNegative;
     }
-    if( proxyV->size() < MAX_EXAMPLES_IN_MODEL )
+    if( (int)proxyV->size() < MAX_EXAMPLES_IN_MODEL )
     {
         proxyV->push_back(example);
         proxyT->push_back(*proxyN);
