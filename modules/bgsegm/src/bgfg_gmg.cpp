@@ -225,7 +225,7 @@ void BackgroundSubtractorGMGImpl::initialize(Size frameSize, double minVal, doub
     nfeatures_.setTo(Scalar::all(0));
 }
 
-float findFeature(unsigned int color, const unsigned int* colors, const float* weights, int nfeatures)
+static float findFeature(unsigned int color, const unsigned int* colors, const float* weights, int nfeatures)
 {
     for (int i = 0; i < nfeatures; ++i)
     {
@@ -237,7 +237,7 @@ float findFeature(unsigned int color, const unsigned int* colors, const float* w
     return 0.0f;
 }
 
-void normalizeHistogram(float* weights, int nfeatures)
+static void normalizeHistogram(float* weights, int nfeatures)
 {
     float total = 0.0f;
     for (int i = 0; i < nfeatures; ++i)
@@ -250,7 +250,7 @@ void normalizeHistogram(float* weights, int nfeatures)
     }
 }
 
-bool insertFeature(unsigned int color, float weight, unsigned int* colors, float* weights, int& nfeatures, int maxFeatures)
+static bool insertFeature(unsigned int color, float weight, unsigned int* colors, float* weights, int& nfeatures, int maxFeatures)
 {
     int idx = -1;
     for (int i = 0; i < nfeatures; ++i)
