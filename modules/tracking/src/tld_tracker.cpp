@@ -48,25 +48,6 @@
 #include "tld_tracker.hpp"
 #include "opencv2/highgui.hpp"
 
-const int STANDARD_PATCH_SIZE = 15;
-const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
-const int MAX_EXAMPLES_IN_MODEL = 500;
-const int MEASURES_PER_CLASSIFIER = 13;
-const int GRIDSIZE = 15;
-const int DOWNSCALE_MODE = cv::INTER_LINEAR;
-const double THETA_NN = 0.50;
-const double CORE_THRESHOLD = 0.5;
-const double SCALE_STEP = 1.2;
-const double ENSEMBLE_THRESHOLD = 0.5;
-const double VARIANCE_THRESHOLD = 0.5;
-const double NEXPERT_THRESHOLD = 0.2;
-#define BLUR_AS_VADIM
-#undef CLOSED_LOOP
-static const cv::Size GaussBlurKernelSize(3, 3);
-
-using namespace cv;
-using namespace tld;
-
 /*
  * FIXME(optimize):
  *      no median
@@ -97,6 +78,25 @@ using namespace tld;
 
 namespace cv
 {
+
+namespace tld
+{
+
+const int STANDARD_PATCH_SIZE = 15;
+const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
+const int MAX_EXAMPLES_IN_MODEL = 500;
+const int MEASURES_PER_CLASSIFIER = 13;
+const int GRIDSIZE = 15;
+const int DOWNSCALE_MODE = cv::INTER_LINEAR;
+const double THETA_NN = 0.50;
+const double CORE_THRESHOLD = 0.5;
+const double SCALE_STEP = 1.2;
+const double ENSEMBLE_THRESHOLD = 0.5;
+const double VARIANCE_THRESHOLD = 0.5;
+const double NEXPERT_THRESHOLD = 0.2;
+#define BLUR_AS_VADIM
+#undef CLOSED_LOOP
+static const cv::Size GaussBlurKernelSize(3, 3);
 
 class TLDDetector;
 class MyMouseCallbackDEBUG
@@ -245,6 +245,8 @@ protected:
   Ptr<TLDDetector> detector;
 };
 
+}
+
 TrackerTLD::Params::Params(){}
 
 void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
@@ -253,8 +255,11 @@ void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
 {
-    return Ptr<TrackerTLDImpl>(new TrackerTLDImpl(parameters));
+    return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
 }
+
+namespace tld
+{
 
 TrackerTLDImpl::TrackerTLDImpl(const TrackerTLD::Params &parameters) :
     params( parameters )
@@ -937,5 +942,7 @@ void TrackerTLDModel::prepareClassifiers(int rowstep)
   for( int i = 0; i < (int)classifiers.size(); i++ ) 
       classifiers[i].prepareClassifier(rowstep); 
 }
+
+} /* namespace tld */
 
 } /* namespace cv */
