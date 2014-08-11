@@ -60,6 +60,7 @@ namespace cv
 namespace text
 {
 
+using namespace cv::ml;
 using namespace std;
 
 // Deletes a tree of ERStat regions starting at root. Used only
@@ -178,7 +179,7 @@ public:
     double eval(const ERStat& stat);
 
 private:
-    CvBoost boost;
+    Ptr<Boost> boost;
 };
 
 // default 2nd stage classifier
@@ -194,7 +195,7 @@ public:
     double eval(const ERStat& stat);
 
 private:
-    CvBoost boost;
+    Ptr<Boost> boost;
 };
 
 
@@ -1016,9 +1017,9 @@ ERClassifierNM1::ERClassifierNM1(const string& filename)
 {
 
     if (ifstream(filename.c_str()))
-        boost.load( filename.c_str(), "boost" );
+        boost = StatModel::load<Boost>( filename.c_str() );
     else
-        CV_Error(CV_StsBadArg, "Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
 
 double ERClassifierNM1::eval(const ERStat& stat)
@@ -1031,7 +1032,7 @@ double ERClassifierNM1::eval(const ERStat& stat)
 
     vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
 
-    float votes = boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1042,9 +1043,9 @@ double ERClassifierNM1::eval(const ERStat& stat)
 ERClassifierNM2::ERClassifierNM2(const string& filename)
 {
     if (ifstream(filename.c_str()))
-        boost.load( filename.c_str(), "boost" );
+        boost = StatModel::load<Boost>( filename.c_str() );
     else
-        CV_Error(CV_StsBadArg, "Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
 
 double ERClassifierNM2::eval(const ERStat& stat)
@@ -1058,7 +1059,7 @@ double ERClassifierNM2::eval(const ERStat& stat)
 
     vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
 
-    float votes = boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1397,7 +1398,7 @@ static double NFA(int n, int k, double p, double logNT)
     /* check parameters */
     if( n<0 || k<0 || k>n || p<=0.0 || p>=1.0 )
     {
-        CV_Error(CV_StsBadArg, "erGrouping wrong n, k or p values in NFA call!");
+        CV_Error(Error::StsBadArg, "erGrouping wrong n, k or p values in NFA call!");
     }
 
     /* trivial cases */
@@ -2137,15 +2138,15 @@ static int linkage_vector(double *X, int N, int dim, double * Z, unsigned char m
     } // try
     catch (const bad_alloc&)
     {
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+        CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
     }
     catch(const exception&)
     {
-        CV_Error(CV_StsError, "Uncaught exception in erGrouping!");
+        CV_Error(Error::StsError, "Uncaught exception in erGrouping!");
     }
     catch(...)
     {
-        CV_Error(CV_StsError, "C++ exception (unknown reason) in erGrouping!");
+        CV_Error(Error::StsError, "C++ exception (unknown reason) in erGrouping!");
     }
     return 0;
 }
@@ -2206,7 +2207,7 @@ public:
 
 private:
     double minProbability;
-    CvBoost group_boost;
+    Ptr<Boost> group_boost;
     vector<ERFeatures> &regions;
     Size imsize;
 
@@ -2230,9 +2231,9 @@ MaxMeaningfulClustering::MaxMeaningfulClustering(unsigned char _method, unsigned
     minProbability = _minProbability;
 
     if (ifstream(filename.c_str()))
-        group_boost.load( filename.c_str(), "boost" );
+        group_boost = StatModel::load<Boost>(filename.c_str());
     else
-        CV_Error(CV_StsBadArg, "erGrouping: Default classifier file not found!");
+        CV_Error(Error::StsBadArg, "erGrouping: Default classifier file not found!");
 }
 
 
@@ -2242,7 +2243,7 @@ void MaxMeaningfulClustering::operator()(double *data, unsigned int num, int dim
 
     double *Z = (double*)malloc(((num-1)*4) * sizeof(double)); // we need 4 floats foreach sample merge.
     if (Z == NULL)
-        CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+        CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
     linkage_vector(data, (int)num, dim, Z, method, metric);
 
@@ -2723,7 +2724,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     sample.push_back((float)mean[0]);
     sample.push_back((float)std[0]);
 
-    float votes_group = group_boost.predict( Mat(sample), Mat(), Range::all(), false, true );
+    float votes_group = group_boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
 
     return (double)1-(double)1/(1+exp(-2*votes_group));
 }
@@ -3039,7 +3040,7 @@ static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vect
         int dim = 7; //dimensionality of feature space
         double *data = (double*)malloc(dim*N * sizeof(double));
         if (data == NULL)
-            CV_Error(CV_StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
+            CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
         //Learned weights
         float weight_param1 = 1.00f;
@@ -4067,6 +4068,79 @@ void erGrouping(InputArray image, InputArrayOfArrays channels, vector<vector<ERS
             break;
     }
 
+}
+
+/*!
+ * MSERsToERStats function converts MSER contours (vector<Point>) to ERStat regions.
+ * It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors
+ * of ERStats. MSER output contains both MSER+ and MSER- regions in a single vector<Point>, the function separates
+ * them in two different vectors (this is the ERStats where extracted from two different channels).
+ * */
+void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<vector<ERStat> > &mser_regions)
+{
+
+  CV_Assert(!contours.empty());
+  Mat grey = image.getMat();
+  // assert correct image type
+  CV_Assert( grey.type() == CV_8UC1 );
+  if (!mser_regions.empty())
+    mser_regions.clear();
+
+  //MSER output contains both MSER+ and MSER- regions in a single vector but we want them separated
+  mser_regions.resize(2);
+
+  //Append "fake" root region to simulate a tree structure (needed for grouping)
+  ERStat fake_root;
+  mser_regions[0].push_back(fake_root);
+  mser_regions[1].push_back(fake_root);
+
+  Mat mask = Mat::zeros(grey.rows, grey.cols, CV_8UC1);
+  Mat mtmp = Mat::zeros(grey.rows, grey.cols, CV_8UC1);
+  for (int i=0; i<(int)contours.size(); i++)
+  {
+
+    ERStat cser;
+    cser.area = (int)contours[i].size();
+    cser.rect = boundingRect(contours[i]);
+
+    float avg_intensity = 0;
+    const vector<Point>& r = contours[i];
+    for ( int j = 0; j < (int)r.size(); j++ )
+    {
+      Point pt = r[j];
+      mask.at<unsigned char>(pt) = 255;
+      avg_intensity += (float)grey.at<unsigned char>(pt)/(int)r.size();
+    }
+
+    double min, max;
+    Point min_loc, max_loc;
+    minMaxLoc(grey(cser.rect), &min, &max, &min_loc, &max_loc, mask(cser.rect));
+
+    Mat element = getStructuringElement( MORPH_RECT, Size(5,5), Point(2,2) );
+    dilate( mask(cser.rect), mtmp(cser.rect), element );
+    absdiff( mtmp(cser.rect), mask(cser.rect), mtmp(cser.rect) );
+
+    Scalar mean,std;
+    meanStdDev(grey(cser.rect), mean, std, mtmp(cser.rect) );
+
+    if (avg_intensity < mean[0])
+    {
+      cser.level  = (int)max;
+      cser.pixel  = (max_loc.y+cser.rect.y)*grey.cols+max_loc.x+cser.rect.x;
+      cser.parent = &(mser_regions[0][0]);
+      mser_regions[0].push_back(cser);
+    }
+    else
+    {
+      cser.level  = 255-(int)min;
+      cser.pixel  = (min_loc.y+cser.rect.y)*grey.cols+min_loc.x+cser.rect.x;
+      cser.parent = &(mser_regions[1][0]);
+      mser_regions[1].push_back(cser);
+    }
+
+    mask(cser.rect) = 0;
+    mtmp(cser.rect) = 0;
+  }
 }
 
 }

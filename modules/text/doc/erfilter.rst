@@ -81,6 +81,20 @@ An ER is a 4-connected set of pixels with all its grey-level values smaller than
         ERStat* prev;
     };
 
+MSERsToERStats
+--------------
+Converts MSER contours (vector<Point>) to ERStat regions.
+
+.. ocv:function:: void MSERsToERStats(InputArray image, vector< vector<Point> > &contours, vector< vector<ERStat> > &regions)
+
+    :param image: Source image ``CV_8UC1`` from which the MSERs where extracted.
+    :param contours: Intput vector with all the contours (vector<Point>).
+    :param regions: Output where the ERStat regions are stored.
+
+It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors of ERStats. This is because MSER() output contains both MSER+ and MSER- regions in a single vector<Point>, the function separates them in two different vectors (this is as if the ERStats where extracted from two different channels).
+
+An example of MSERsToERStats in use can be found in the text detection webcam_demo: https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp
+
 computeNMChannels
 -----------------
 Compute the different channels to be processed independently in the N&M algorithm [Neumann12].
