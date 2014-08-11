@@ -208,8 +208,9 @@ protected:
   class Pexpert
   {
   public:
-      Pexpert(const Mat& img, const Mat& imgBlurred, Rect2d& resultBox, const TLDDetector* detector, TrackerTLD::Params params, Size initSize):
-          img_(img), imgBlurred_(imgBlurred), resultBox_(resultBox), detector_(detector), params_(params), initSize_(initSize){}
+      Pexpert(const Mat& img_in, const Mat& imgBlurred_in, Rect2d& resultBox_in, 
+              const TLDDetector* detector_in, TrackerTLD::Params params_in, Size initSize_in):
+            img_(img_in), imgBlurred_(imgBlurred_in), resultBox_(resultBox_in), detector_(detector_in), params_(params_in), initSize_(initSize_in){}
       bool operator()(Rect2d /*box*/){ return false; }
       int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble);
   protected:
@@ -225,9 +226,9 @@ protected:
   class Nexpert : public Pexpert
   {
   public:
-      Nexpert(const Mat& img, Rect2d& resultBox, const TLDDetector* detector, TrackerTLD::Params params)
+      Nexpert(const Mat& img_in, Rect2d& resultBox_in, const TLDDetector* detector_in, TrackerTLD::Params params_in)
       {
-          img_ = img; resultBox_ = resultBox; detector_ = detector; params_ = params; 
+          img_ = img_in; resultBox_ = resultBox_in; detector_ = detector_in; params_ = params_in;
       }
       bool operator()(Rect2d box);
       int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble)
