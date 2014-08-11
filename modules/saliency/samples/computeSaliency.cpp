@@ -162,7 +162,7 @@ int main( int argc, char** argv )
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
     bool paused = false;
-    while ( true )
+    for ( ;; )
     {
       if( !paused )
       {
