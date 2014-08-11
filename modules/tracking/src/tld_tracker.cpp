@@ -90,9 +90,6 @@ using namespace tld;
 *      ?10. all in one class
 *      todo: 
 *           initializer lists; 
-*           const methods
-*
-*      ?( )
 */
 
 /* design decisions:
@@ -710,7 +707,7 @@ void TrackerTLDModel::integrateRelabeled(Mat& img, Mat& imgBlurred, const std::v
         }
 
 #ifdef CLOSED_LOOP
-        if( patches[k].shouldBeIntegrated || ( patches[k].isPositive == false ) )
+        if( patches[k].shouldBeIntegrated || !patches[k].isPositive )
 #else
         if( patches[k].shouldBeIntegrated )
 #endif
