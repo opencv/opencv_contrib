@@ -70,7 +70,7 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
 
 class GuidedFilterRefImpl : public GuidedFilter
 {
-    int rad, height, width, chNum;
+    int height, width, rad, chNum;
     Mat det;
     Mat *channels, *exps, **vars, **A;
     double eps;
@@ -104,7 +104,7 @@ void GuidedFilterRefImpl::meanFilter(const Mat &src, Mat & dst)
 }
 
 GuidedFilterRefImpl::GuidedFilterRefImpl(InputArray _guide, int _rad, double _eps) :
-  height(_guide.rows()), width(_guide.cols()), chNum(_guide.channels()), rad(_rad), eps(_eps)
+  height(_guide.rows()), width(_guide.cols()), rad(_rad), chNum(_guide.channels()), eps(_eps)
 {
     Mat guide = _guide.getMat();
     CV_Assert(chNum > 0 && chNum <= 3);

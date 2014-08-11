@@ -55,6 +55,8 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+void jointBilateralFilterNaive(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
+
 typedef Vec<float, 1> Vec1f;
 typedef Vec<uchar, 1> Vec1b;
 
@@ -130,7 +132,7 @@ void jointBilateralFilterNaive_(InputArray joint_, InputArray src_, OutputArray 
     }
 }
 
-void jointBilateralFilterNaive(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT)
+void jointBilateralFilterNaive(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType)
 {
     CV_Assert(src.size() == joint.size() && src.depth() == joint.depth());
     CV_Assert(src.type() == CV_32FC1 || src.type() == CV_32FC3 || src.type() == CV_8UC1 || src.type() == CV_8UC3);

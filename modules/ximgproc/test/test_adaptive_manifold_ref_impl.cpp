@@ -756,9 +756,9 @@ namespace
             }
 
             dst.setTo(0.0);
-            for (int i = 0; i < X.rows; ++i)
+            for (int k = 0; k < X.rows; ++k)
             {
-                const float* t_row = buf.t[i];
+                const float* t_row = buf.t[k];
 
                 for (int c = 0; c < X.cols; ++c)
                 {

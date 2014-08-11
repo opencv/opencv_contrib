@@ -214,7 +214,7 @@ private: /*Parallel body classes*/
         vector<Mat> &srcCn;
 
         MulChannelsGuideAndSrc_ParBody(GuidedFilterImpl& gf_, vector<Mat>& srcCn_, vector<vector<Mat> >& cov_)
-            : gf(gf_), srcCn(srcCn_), cov(cov_) {}
+            : gf(gf_), cov(cov_), srcCn(srcCn_) {}
 
         void operator () (const Range& range) const;
     };
@@ -226,7 +226,7 @@ private: /*Parallel body classes*/
         vector<Mat> &srcCnMean;
 
         ComputeCovFromSrcChannelsMul_ParBody(GuidedFilterImpl& gf_, vector<Mat>& srcCnMean_, vector<vector<Mat> >& cov_)
-            : gf(gf_), srcCnMean(srcCnMean_), cov(cov_) {}
+            : gf(gf_), cov(cov_), srcCnMean(srcCnMean_) {}
 
         void operator () (const Range& range) const;
     };
