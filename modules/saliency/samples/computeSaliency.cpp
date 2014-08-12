@@ -145,11 +145,11 @@ int main( int argc, char** argv )
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
-        std::cout << "-----------------OBJECTNESS-----------" << std::endl;
+        /*std::cout << "-----------------OBJECTNESS-----------" << std::endl;
         std::cout << "OBJECTNESS BOUNDING BOX VECTOR SIZE" << saliencyMap.size() << std::endl;
         std::cout << " " << saliencyMap[0] << std::endl;
         std::cout << " " << saliencyMap[1] << std::endl;
-        std::cout << " " << saliencyMap[2] << std::endl;
+        std::cout << " " << saliencyMap[2] << std::endl; */
       }
     }
 
