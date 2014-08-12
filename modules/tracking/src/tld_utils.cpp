@@ -380,11 +380,11 @@ int TLDEnsembleClassifier::makeClassifiers(Size size, int measurePerClassifier, 
             for( int k = 0; k < j; k++ )
             {
                 Vec4b m;
-                m.val[0] = m.val[2] = i;
-                m.val[1] = j; m.val[3] = k;
+                m.val[0] = m.val[2] = (uchar)i;
+                m.val[1] = j; m.val[3] = (uchar)k;
                 measurements.push_back(m);
-                m.val[1] = m.val[3] = i;
-                m.val[0] = j; m.val[2] = k;
+                m.val[1] = m.val[3] = (uchar)i;
+                m.val[0] = j; m.val[2] = (uchar)k;
                 measurements.push_back(m);
             }
         }
@@ -396,7 +396,7 @@ int TLDEnsembleClassifier::makeClassifiers(Size size, int measurePerClassifier, 
     stepPrefSuff(measurements, 2, size.height, gridSize);
     stepPrefSuff(measurements, 3, size.height, gridSize);
 
-    for( int i = 0, howMany = measurements.size() / measurePerClassifier; i < howMany; i++ )
+    for( int i = 0, howMany = (int)measurements.size() / measurePerClassifier; i < howMany; i++ )
         classifiers.push_back(TLDEnsembleClassifier(measurements, i * measurePerClassifier, (i + 1) * measurePerClassifier));
     return (int)classifiers.size();
 }
