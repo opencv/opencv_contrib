@@ -11,7 +11,7 @@ Saliency : Algorithm
 
 Base abstract class for Saliency algorithms::
 
-   class CV_EXPORTS_W Saliency : public virtual Algorithm
+   class CV_EXPORTS Saliency : public virtual Algorithm
    {
      public:
  

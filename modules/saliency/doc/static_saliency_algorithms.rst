@@ -19,7 +19,7 @@ Starting from the principle of natural image statistics, this method simulate th
 
 Implementation of SpectralResidual from :ocv:class:`StaticSaliency`::
 
-   class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
+   class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
    {
     public:
 

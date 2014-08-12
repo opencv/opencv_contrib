@@ -58,7 +58,7 @@ namespace cv
  * \brief Saliency based on algorithms described in [1]
  * [1]Hou, Xiaodi, and Liqing Zhang. "Saliency detection: A spectral residual approach." Computer Vision and Pattern Recognition, 2007. CVPR'07. IEEE Conference on. IEEE, 2007.
  */
-class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
+class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
 {
  public:
 
@@ -94,7 +94,7 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
  *
  */
 
-class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
+class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
  public:
   MotionSaliencyBinWangApr2014();
@@ -170,7 +170,7 @@ class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
  * \brief Objectness algorithms based on [3]
  * [3] Cheng, Ming-Ming, et al. "BING: Binarized normed gradients for objectness estimation at 300fps." IEEE CVPR. 2014.
  */
-class CV_EXPORTS_W ObjectnessBING : public Objectness
+class CV_EXPORTS ObjectnessBING : public Objectness
 {
  public:
 

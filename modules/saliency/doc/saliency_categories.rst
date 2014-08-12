@@ -12,7 +12,7 @@ StaticSaliency
 
 StaticSaliency class::
 
-   class CV_EXPORTS_W StaticSaliency : public virtual Saliency
+   class CV_EXPORTS StaticSaliency : public virtual Saliency
    {
     public:
 
@@ -45,7 +45,7 @@ MotionSaliency
 
 MotionSaliency class::
 
-   class CV_EXPORTS_W MotionSaliency : public virtual Saliency
+   class CV_EXPORTS MotionSaliency : public virtual Saliency
    {
 
 
@@ -61,7 +61,7 @@ Objectness
 
 Objectness class::
 
-   class CV_EXPORTS_W Objectness : public virtual Saliency
+   class CV_EXPORTS Objectness : public virtual Saliency
    {
 
     protected:

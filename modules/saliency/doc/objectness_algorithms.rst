@@ -15,7 +15,7 @@ ObjectnessBING
 
 Implementation of BING from :ocv:class:`Objectness`::
 
-   class CV_EXPORTS_W ObjectnessBING : public Objectness
+   class CV_EXPORTS ObjectnessBING : public Objectness
    {
     public:
 
