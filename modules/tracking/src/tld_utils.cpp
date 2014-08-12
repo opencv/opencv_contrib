@@ -381,10 +381,10 @@ int TLDEnsembleClassifier::makeClassifiers(Size size, int measurePerClassifier, 
             {
                 Vec4b m;
                 m.val[0] = m.val[2] = (uchar)i;
-                m.val[1] = j; m.val[3] = (uchar)k;
+                m.val[1] = (uchar)j; m.val[3] = (uchar)k;
                 measurements.push_back(m);
                 m.val[1] = m.val[3] = (uchar)i;
-                m.val[0] = j; m.val[2] = (uchar)k;
+                m.val[0] = (uchar)j; m.val[2] = (uchar)k;
                 measurements.push_back(m);
             }
         }
