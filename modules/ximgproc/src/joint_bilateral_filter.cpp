@@ -275,7 +275,7 @@ void jointBilateralFilter_8u(Mat& joint, Mat& src, Mat& dst, int radius, double 
     double gaussColorCoeff = -0.5 / (sigmaColor*sigmaColor);
     double gaussSpaceCoeff = -0.5 / (sigmaSpace*sigmaSpace);
 
-    vector<float> expLUTv(jCn*0xFF);
+    vector<float> expLUTv(jCn*256);
     float *expLUT = &expLUTv[0];
 
     for (int i = 0; i < (int)expLUTv.size(); i++)
