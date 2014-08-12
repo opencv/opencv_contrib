@@ -146,7 +146,7 @@ int main( int argc, char** argv )
 
   imshow( "Matches", outImg );
   waitKey();
-
+  imwrite("/home/ubisum/Desktop/images/matches.jpg", outImg);
   /* create an LSD detector */
   Ptr<LSDDetector> lsd = LSDDetector::createLSDDetector();
 
