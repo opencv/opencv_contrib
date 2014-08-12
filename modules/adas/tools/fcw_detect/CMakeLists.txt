@@ -1,7 +1,8 @@
 set(name fcw_detect)
 set(the_target opencv_${name})
 
-set(OPENCV_${the_target}_DEPS opencv_xobjdetect)
+set(OPENCV_${the_target}_DEPS opencv_core opencv_imgcodecs opencv_videoio
+    opencv_highgui opencv_xobjdetect)
 
 ocv_check_dependencies(${OPENCV_${the_target}_DEPS})
 
