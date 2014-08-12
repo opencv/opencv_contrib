@@ -1017,7 +1017,8 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
   struct CV_EXPORTS Params
   {
     Params();
-    int pointsInGrid;
+    int pointsInGrid; //square root of number of keypoints used; increase it to trade
+                      //accurateness for speed; default value is sensible and recommended
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
   };
