@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
     ICFDetector detector;
     FileStorage fs(model_filename, FileStorage::READ);
-    fs["icfdetector"] >> detector;
+    detector.read(fs["icfdetector"]);
     fs.release();
     vector<Rect> objects;
     Mat img = imread(image_path);

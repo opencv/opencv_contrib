@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     ICFDetector detector;
     detector.train(pos_path, bg_path, params);
     FileStorage fs(model_filename, FileStorage::WRITE);
-    fs << "icfdetector" << detector;
+    fs << "icfdetector";
+    detector.write(fs);
     fs.release();
 }

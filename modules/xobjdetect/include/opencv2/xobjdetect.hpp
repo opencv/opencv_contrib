@@ -128,7 +128,7 @@ public:
     Feature enumeration starts from 0
     */
     virtual std::vector<int> train(const Mat& /*data*/,
-                                   const Mat& /*labels*/) {return std::vector<int>();}
+                                   const Mat& /*labels*/) = 0;
 
     /* Predict object class given object that can compute object features
 
@@ -138,20 +138,14 @@ public:
     is from class +1
     */
     virtual float predict(
-        const Ptr<FeatureEvaluator>& /*feature_evaluator*/) const
-    {return 0.0f;}
+        const Ptr<FeatureEvaluator>& /*feature_evaluator*/) const = 0;
 
     /* Write WaldBoost to FileStorage */
-    virtual void write(FileStorage& /*fs*/) const {}
+    virtual void write(FileStorage& /*fs*/) const = 0;
 
     /* Read WaldBoost */
-    virtual void read(const FileNode& /*node*/) {}
+    virtual void read(const FileNode& /*node*/) = 0;
 };
-
-void write(FileStorage& fs, String&, const WaldBoost& waldboost);
-
-void read(const FileNode& node, WaldBoost& w,
-    const WaldBoost& default_value = WaldBoost());
 
 CV_EXPORTS Ptr<WaldBoost>
 createWaldBoost(const WaldBoostParams& params = WaldBoostParams());

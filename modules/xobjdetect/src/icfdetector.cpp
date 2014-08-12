@@ -163,7 +163,8 @@ void ICFDetector::write(FileStorage& fs) const
     fs << "{";
     fs << "model_n_rows" << model_n_rows_;
     fs << "model_n_cols" << model_n_cols_;
-    fs << "waldboost" << *waldboost_;
+    fs << "waldboost";
+    waldboost_->write(fs);
     fs << "features" << "[";
     for( size_t i = 0; i < features_.size(); ++i )
     {
@@ -178,7 +179,7 @@ void ICFDetector::read(const FileNode& node)
     waldboost_ = Ptr<WaldBoost>(createWaldBoost(WaldBoostParams()));
     node["model_n_rows"] >> model_n_rows_;
     node["model_n_cols"] >> model_n_cols_;
-    node["waldboost"] >> *waldboost_;
+    waldboost_->read(node["waldboost"]);
     FileNode features = node["features"];
     features_.clear();
     vector<int> p;
