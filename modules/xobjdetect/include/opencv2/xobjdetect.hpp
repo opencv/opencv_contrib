@@ -194,7 +194,7 @@ public:
         maxSize — max size of objects in pixels
     */
     void detect(const Mat& image, std::vector<Rect>& objects,
-        double scaleFactor, Size minSize, Size maxSize, float threshold);
+        float scaleFactor, Size minSize, Size maxSize, float threshold);
 
     /* Write detector to FileStorage */
     void write(FileStorage &fs) const;

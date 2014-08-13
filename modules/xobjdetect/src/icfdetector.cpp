@@ -191,7 +191,7 @@ void ICFDetector::read(const FileNode& node)
 }
 
 void ICFDetector::detect(const Mat& img, vector<Rect>& objects,
-    double scaleFactor, Size minSize, Size maxSize, float threshold)
+    float scaleFactor, Size minSize, Size maxSize, float threshold)
 {
     float scale_from = min(model_n_cols_ / (float)maxSize.width,
                            model_n_rows_ / (float)maxSize.height);
@@ -205,9 +205,9 @@ void ICFDetector::detect(const Mat& img, vector<Rect>& objects,
     for( float scale = scale_from; scale < scale_to + 0.001; scale *= scaleFactor )
     {
         cout << "scale " << scale << endl;
-        int new_width = img.cols * scale;
+        int new_width = int(img.cols * scale);
         new_width -= new_width % 4;
-        int new_height = img.rows * scale;
+        int new_height = int(img.rows * scale);
         new_height -= new_height % 4;
 
         resize(img, rescaled_image, Size(new_width, new_height));

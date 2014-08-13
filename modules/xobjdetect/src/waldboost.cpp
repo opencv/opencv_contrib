@@ -92,20 +92,6 @@ static int count(const Mat_<int> &m, int elem)
     return res;
 }
 
-void write(FileStorage& fs, String&, const WaldBoost& waldboost)
-{
-    waldboost.write(fs);
-}
-
-void read(const FileNode& node, WaldBoost& w,
-    const WaldBoost& default_value)
-{
-    if( node.empty() )
-        w = default_value;
-    else
-        w.read(node);
-}
-
 void WaldBoostImpl::read(const FileNode& node)
 {
     FileNode params = node["waldboost_params"];

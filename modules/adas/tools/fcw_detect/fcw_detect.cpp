@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     fs.release();
     vector<Rect> objects;
     Mat img = imread(image_path);
-    detector.detect(img, objects, 1.1, Size(40, 40),
+    detector.detect(img, objects, 1.1f, Size(40, 40),
         Size(300, 300), threshold);
     imwrite(out_image_path, visualize(img, objects));
 }

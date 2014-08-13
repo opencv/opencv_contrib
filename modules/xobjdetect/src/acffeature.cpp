@@ -222,7 +222,7 @@ Ptr<FeatureEvaluator> createFeatureEvaluator(
     else if( type == "icf" )
         evaluator = new ICFFeatureEvaluatorImpl(features);
     else
-        CV_Assert(false);
+        CV_Error(CV_StsBadArg, "type value is either acf or icf");
 
     return Ptr<FeatureEvaluator>(evaluator);
 }
@@ -264,7 +264,7 @@ vector<vector<int> > generateFeatures(Size window_size, const std::string& type,
         }
     }
     else
-        CV_Assert(false);
+        CV_Error(CV_StsBadArg, "type value is either acf or icf");
 
     return features;
 }
