@@ -93,7 +93,8 @@ private:
 
 protected:
     virtual double dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2);
-    virtual void setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, const int lA, const int lB, const int lX);
+    virtual void setWeights(GCGraph <double> &graph, const cv::Point &pA,
+        const cv::Point &pB, const int lA, const int lB, const int lX);
 
 public:
     Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks);

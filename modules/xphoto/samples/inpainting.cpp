@@ -46,6 +46,8 @@ int main( int argc, const char** argv )
         return -1;
     }
 
+    cv::cvtColor(src, src, CV_RGB2Lab);
+
     cv::Mat mask = cv::imread(maskFilename, 0);
     if ( mask.empty() )
     {
@@ -54,13 +56,13 @@ int main( int argc, const char** argv )
     }
 
     cv::Mat res(src.size(), src.type());
-
     cv::inpaint( src, mask, res, cv::INPAINT_SHIFTMAP );
+    cv::cvtColor(res, res, CV_Lab2RGB);
 
     if ( outFilename == "" )
     {
-        cv::namedWindow("denoising result", 1);
-        cv::imshow("denoising result", res);
+        cv::namedWindow("inpainting result", 1);
+        cv::imshow("inpainting result", res);
 
         cv::waitKey(0);
     }

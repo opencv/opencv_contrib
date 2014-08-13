@@ -40,16 +40,7 @@
 #ifndef __NORM2_HPP__
 #define __NORM2_HPP__
 
-static inline int sqr(uchar x) { return x*x; }
-
-template <int cn> static inline int sqr( cv::Vec<uchar, cn> x) { return x.dot(x); }
-
-static inline int norm2(const uchar &a, const uchar &b) { return sqr(a - b); }
-
-template <int cn> static inline
-int norm2(const cv::Vec <uchar, cn> &a, const cv::Vec<uchar, cn> &b) { return sqr(a - b); }
-
-
+/************************ General template *************************/
 
 template <typename Tp> static inline Tp sqr(Tp x) { return x*x; }
 
@@ -59,5 +50,42 @@ template <typename Tp> static inline Tp norm2(const Tp &a, const Tp &b) { return
 
 template <typename Tp, int cn> static inline
 Tp norm2(const cv::Vec <Tp, cn> &a, const cv::Vec<Tp, cn> &b) { return sqr(a - b); }
+
+
+
+/******************* uchar, char, ushort, uint *********************/
+
+static inline int norm2(const uchar &a, const uchar &b) { return sqr(int(a) - int(b)); }
+
+template <int cn> static inline
+    int norm2(const cv::Vec <uchar, cn> &a, const cv::Vec<uchar, cn> &b)
+{
+    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
+}
+
+static inline int norm2(const char &a, const char &b) { return sqr(int(a) - int(b)); }
+
+template <int cn> static inline
+    int norm2(const cv::Vec <char, cn> &a, const cv::Vec<char, cn> &b)
+{
+    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
+}
+
+static inline short norm2(const ushort &a, const ushort &b) { return sqr <short>(short(a) - short(b)); }
+
+template <int cn> static inline
+    short norm2(const cv::Vec <ushort, cn> &a, const cv::Vec<ushort, cn> &b)
+{
+    return sqr( cv::Vec<short, cn>(a) - cv::Vec<short, cn>(b) );
+}
+
+static inline int norm2(const uint &a, const uint &b) { return sqr(int(a) - int(b)); }
+
+template <int cn> static inline
+    int norm2(const cv::Vec <uint, cn> &a, const cv::Vec<uint, cn> &b)
+{
+    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
+}
+
 
 #endif /* __NORM2_HPP__ */

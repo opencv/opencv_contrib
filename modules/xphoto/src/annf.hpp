@@ -76,15 +76,18 @@ private:
             : main(_main), dimIdx(_dimIdx) {}
     };
 
+    const int height, width;
     const int leafNumber;
+
+    std::vector <cv::Vec <Tp, cn> > data;
+    std::vector <int> idx;
+    std::vector <cv::Point2i> nodes;
 
     int getMaxSpreadN(const int left, const int right) const;
     void operator =(const KDTree <Tp, cn> &) const {};
 
 public:
-    std::vector <cv::Vec <Tp, cn> > data;
-    std::vector <int> idx;
-    std::vector <cv::Point2i> nodes;
+    void updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist);
 
     KDTree(const cv::Mat &data, const int leafNumber = 8);
     ~KDTree(){};
@@ -109,15 +112,16 @@ getMaxSpreadN(const int _left, const int _right) const
 
 template <typename Tp, int cn> KDTree <Tp, cn>::
 KDTree(const cv::Mat &img, const int _leafNumber)
-    : leafNumber(_leafNumber)
+    : height(img.rows), width(img.cols),
+      leafNumber(_leafNumber)
 ///////////////////////////////////////////////////
 {
-    for (int i = 0; i < img.rows; ++i)
-        for (int j = 0; j < img.cols; ++j)
-            data.push_back(img.template at<cv::Vec <Tp, cn> >(i, j));
-
+    std::copy( (cv::Vec <Tp, cn> *) img.data,
+        (cv::Vec <Tp, cn> *) img.data + img.total(),
+        std::back_inserter(data) );
     generate_seq( std::back_inserter(idx), 0, int(data.size()) );
-    fill_n( std::back_inserter(nodes), int(data.size()), cv::Point2i(0, 0) );
+    std::fill_n( std::back_inserter(nodes),
+        int(data.size()), cv::Point2i(0, 0) );
 
     std::stack <int> left, right;
     left.push( 0 );
@@ -125,75 +129,72 @@ KDTree(const cv::Mat &img, const int _leafNumber)
 
     while ( !left.empty() )
     {
-        int _left = left.top(); left.pop();
+        int  _left = left.top();   left.pop();
         int _right = right.top(); right.pop();
 
         if ( _right - _left <= leafNumber)
         {
             for (int i = _left; i < _right; ++i)
-            {
-                nodes[idx[i]].x = _left;
-                nodes[idx[i]].y = _right;
-            }
-
+                nodes[idx[i]] = cv::Point2i(_left, _right);
             continue;
         }
 
-        std::vector <int>::iterator begIt = idx.begin();
         int nth = _left + (_right - _left)/2;
-        std::nth_element(/**/ begIt + _left,
-            begIt + nth, begIt + _right,
-            KDTreeComparator( this,
-                getMaxSpreadN(_left, _right) ) /**/);
+        int dimIdx = getMaxSpreadN(_left, _right);
+        KDTreeComparator comp( this, dimIdx );
 
-        left.push(_left); right.push(nth + 1);
-        left.push(nth + 1); right.push(_right);
+        std::nth_element(/**/
+            idx.begin() +  _left,
+            idx.begin() +    nth,
+            idx.begin() + _right, comp
+                         /**/);
+
+          left.push(_left); right.push(nth + 1);
+        left.push(nth + 1);  right.push(_right);
+    }
+}
+
+template <typename Tp, int cn> void KDTree <Tp, cn>::
+updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
+{
+    for (int k = nodes[leaf].x; k < nodes[leaf].y; ++k)
+    {
+        int y = idx0/width, ny = idx[k]/width;
+        int x = idx0%width, nx = idx[k]%width;
+
+        if (abs(ny - y) + abs(nx - x) < 32)
+            continue;
+        if (nx == width - 1 || ny == height - 1)
+            continue;
+
+        double ndist = norm2(data[idx0], data[idx[k]]);
+
+        if (ndist < dist)
+        {
+            dist = ndist;
+            bestIdx = idx[k];
+        }
     }
 }
 
 /************************** ANNF search **************************/
 
-template <typename Tp, int cn>
-static void updateDist(const KDTree <Tp, cn> &kdTree, const cv::Point2i &I, const int height,
-                       const int width, const int &currentIdx, int &bestIdx, double &dist)
-{
-    for (int k = I.x; k < I.y; ++k)
-    {
-        int newIdx = kdTree.idx[k];
-
-        if (newIdx%width == width  - 1)
-            continue;
-
-        if (newIdx/width == height - 1)
-            continue;
-
-        int dx = currentIdx%width - newIdx%width;
-        int dy = currentIdx/width - newIdx/width;
-
-        if (abs(dx) + abs(dy) < 32)
-            continue;
-
-        double ndist = norm2(kdTree.data[newIdx],
-                        kdTree.data[currentIdx]);
-        if (ndist < dist)
-        {
-            dist = ndist;
-            bestIdx = newIdx;
-        }
-    }
-}
-
-static void getANNF(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
-                    const int nTransform, const int psize)
+static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
+                               const int nTransform, const int psize)
 {
     /** Walsh-Hadamard Transformation **/
 
     std::vector <cv::Mat> channels;
     cv::split(img, channels);
 
-    const int np[] = {16, 4, 4};
+    int cncase = std::max(img.channels() - 2, 0);
+    const int np[] = {cncase == 0 ? 12 : (cncase == 1 ? 16 : 10),
+                      cncase == 0 ? 12 : (cncase == 1 ? 04 : 02),
+                      cncase == 0 ? 00 : (cncase == 1 ? 04 : 02),
+                      cncase == 0 ? 00 : (cncase == 1 ? 00 : 10)};
+
     for (int i = 0; i < img.channels(); ++i)
-        getWHSeries(channels[i], channels[i], np[i], psize);
+        rgb2whs(channels[i], channels[i], np[i], psize);
 
     cv::Mat whs; // Walsh-Hadamard series
     cv::merge(channels, whs);
@@ -209,22 +210,16 @@ static void getANNF(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
             double dist = std::numeric_limits <double>::max();
             int current = i*whs.cols + j;
 
-            cv::Point2i I = kdTree.nodes[i*whs.cols + j];
-            updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
-
-            if (i != 0)
-            {
-                int idx = annf[(i - 1)*whs.cols + j] + whs.cols;
-                cv::Point2i I = kdTree.nodes[idx];
-                updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
-            }
-
-            if (j != 0)
-            {
-                int idx = annf[i*whs.cols + (j - 1)] + 1;
-                cv::Point2i I = kdTree.nodes[idx];
-                updateDist(kdTree, I, whs.rows, whs.cols, current, annf[i*whs.cols + j], dist);
-            }
+            int dy[] = {0, 1, 0}, dx[] = {0, 0, 1};
+            for (int k = 0; k < sizeof(dy)/sizeof(int); ++k)
+                if (i - dy[k] >= 0 && j - dx[k] >= 0)
+                {
+                    int neighbor = (i - dy[k])*whs.cols + (j - dx[k]);
+                    int leafIdx = k == 0 ? neighbor :
+                        annf[neighbor] + dy[k]*whs.cols + dx[k];
+                    kdTree.updateDist(leafIdx, current,
+                               annf[i*whs.cols + j], dist);
+                }
         }
 
     /** Local maxima extraction **/
@@ -233,12 +228,12 @@ static void getANNF(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
                     _annfHist(2*whs.rows, 2*whs.cols, 0.0);
     for (size_t i = 0; i < annf.size(); ++i)
         ++annfHist( (annf[i] - int(i))/whs.cols + whs.rows,
-                    (annf[i] - int(i))%whs.cols + whs.cols);
+                    (annf[i] - int(i))%whs.cols + whs.cols );
 
     cv::GaussianBlur( annfHist, annfHist,
         cv::Size(9, 9), 1.41, 0.0, cv::BORDER_CONSTANT);
-    cv::dilate(annfHist, _annfHist,
-        cv::Matx<uchar, 9, 9>::ones());
+    cv::dilate( annfHist, _annfHist,
+        cv::Matx<uchar, 9, 9>::ones() );
 
     std::vector < std::pair<double, int> > amount;
     std::vector <cv::Point2i> shiftM;

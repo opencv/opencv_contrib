@@ -62,6 +62,6 @@ createStructuredEdgeDetection
     :param model: model file name
 
 
-.. [Dollar2013] Dollár P., Zitnick C. L., "Structured forests for fast edge detection",
+.. [Dollar2013] P. Dollár, C. L. Zitnick, "Structured forests for fast edge detection",
                 IEEE International Conference on Computer Vision (ICCV), 2013,
                 pp. 1841-1848. `DOI <http://dx.doi.org/10.1109/ICCV.2013.231>`_
