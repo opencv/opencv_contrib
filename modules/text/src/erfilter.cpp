@@ -60,6 +60,7 @@ namespace cv
 namespace text
 {
 
+using namespace cv::ml;
 using namespace std;
 using namespace cv::ml;
 
