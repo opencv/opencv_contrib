@@ -73,15 +73,33 @@ int main(int argc, char *argv[])
     string model_filename = parser.get<string>("model_filename");
 
     ICFDetectorParams params;
-    params.feature_count = int(parser.get<size_t>("feature_count"));
-    params.weak_count = int(parser.get<size_t>("weak_count"));
-    params.bg_per_image = int(parser.get<size_t>("bg_per_image"));
+    params.feature_count = parser.get<int>("feature_count");
+    params.weak_count = parser.get<int>("weak_count");
+    params.bg_per_image = parser.get<int>("bg_per_image");
 
     string model_size = parser.get<string>("model_size");
     if( !read_model_size(model_size.c_str(), &params.model_n_rows,
         &params.model_n_cols) )
     {
         cerr << "Error reading model size from `" << model_size << "`" << endl;
+        return 1;
+    }
+
+    if( params.feature_count <= 0 )
+    {
+        cerr << "feature_count must be positive number" << endl;
+        return 1;
+    }
+
+    if( params.weak_count <= 0 )
+    {
+        cerr << "weak_count must be positive number" << endl;
+        return 1;
+    }
+
+    if( params.bg_per_image <= 0 )
+    {
+        cerr << "bg_per_image must be positive number" << endl;
         return 1;
     }
 
