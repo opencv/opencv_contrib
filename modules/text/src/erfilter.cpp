@@ -62,6 +62,7 @@ namespace text
 
 using namespace cv::ml;
 using namespace std;
+using namespace cv::ml;
 
 // Deletes a tree of ERStat regions starting at root. Used only
 // internally to this implementation.
@@ -1017,7 +1018,14 @@ ERClassifierNM1::ERClassifierNM1(const string& filename)
 {
 
     if (ifstream(filename.c_str()))
+    {
         boost = StatModel::load<Boost>( filename.c_str() );
+        if( boost.empty() )
+        {
+            cout << "Could not read the classifier " << filename.c_str() << endl;
+            CV_Error(Error::StsBadArg, "Could not read the default classifier!");
+        }
+    }
     else
         CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
@@ -1025,14 +1033,12 @@ ERClassifierNM1::ERClassifierNM1(const string& filename)
 double ERClassifierNM1::eval(const ERStat& stat)
 {
     //Classify
-    float arr[] = {0,(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
+    Mat sample = (Mat_<float>(1,4) <<  (float)(stat.rect.width)/(stat.rect.height), // aspect ratio
                      sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
-                     stat.med_crossings};
+                     stat.med_crossings);
 
-    vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
-
-    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
+    float votes = boost->predict( sample, noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1043,7 +1049,14 @@ double ERClassifierNM1::eval(const ERStat& stat)
 ERClassifierNM2::ERClassifierNM2(const string& filename)
 {
     if (ifstream(filename.c_str()))
+    {
         boost = StatModel::load<Boost>( filename.c_str() );
+        if( boost.empty() )
+        {
+            cout << "Could not read the classifier " << filename.c_str() << endl;
+            CV_Error(Error::StsBadArg, "Could not read the default classifier!");
+        }
+    }
     else
         CV_Error(Error::StsBadArg, "Default classifier file not found!");
 }
@@ -1051,15 +1064,13 @@ ERClassifierNM2::ERClassifierNM2(const string& filename)
 double ERClassifierNM2::eval(const ERStat& stat)
 {
     //Classify
-    float arr[] = {0,(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
+    Mat sample = (Mat_<float>(1,7) << (float)(stat.rect.width)/(stat.rect.height), // aspect ratio
                      sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
                      stat.med_crossings, stat.hole_area_ratio,
-                     stat.convex_hull_ratio, stat.num_inflexion_points};
+                     stat.convex_hull_ratio, stat.num_inflexion_points);
 
-    vector<float> sample (arr, arr + sizeof(arr) / sizeof(arr[0]) );
-
-    float votes = boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
+    float votes = boost->predict( sample, noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -2231,7 +2242,14 @@ MaxMeaningfulClustering::MaxMeaningfulClustering(unsigned char _method, unsigned
     minProbability = _minProbability;
 
     if (ifstream(filename.c_str()))
-        group_boost = StatModel::load<Boost>(filename.c_str());
+    {
+        group_boost = StatModel::load<Boost>( filename.c_str() );
+        if( group_boost.empty() )
+        {
+            cout << "Could not read the classifier " << filename.c_str() << endl;
+            CV_Error(Error::StsBadArg, "Could not read the default classifier!");
+        }
+    }
     else
         CV_Error(Error::StsBadArg, "erGrouping: Default classifier file not found!");
 }
@@ -2542,7 +2560,6 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
         return 0.;
 
     vector<float> sample;
-    sample.push_back(0);
     sample.push_back((float)cluster.size());
 
     Mat diameters      ( (int)cluster.size(), 1, CV_32F, 1 );
@@ -2724,7 +2741,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     sample.push_back((float)mean[0]);
     sample.push_back((float)std[0]);
 
-    float votes_group = group_boost->predict( Mat(sample), noArray(), StatModel::RAW_OUTPUT );
+    float votes_group = group_boost->predict( Mat(sample), noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
 
     return (double)1-(double)1/(1+exp(-2*votes_group));
 }
@@ -3022,7 +3039,7 @@ static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vect
         // assert correct image type
         CV_Assert( channel.type() == CV_8UC1 );
 
-        CV_Assert( !regions.at(c).empty() );
+        //CV_Assert( !regions.at(c).empty() );
 
         if ( regions.at(c).size() < 3 )
             continue;
