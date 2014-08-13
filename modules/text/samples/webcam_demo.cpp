@@ -54,12 +54,12 @@ private:
     vector< vector<Rect> > &boxes;
     vector< vector<string> > &words;
     vector< vector<float> > &confidences;
-    vector< OCRTesseract* > &ocrs;
+    vector< Ptr<OCRTesseract> > &ocrs;
 
 public:
     Parallel_OCR(vector<Mat> &_detections, vector<string> &_outputs, vector< vector<Rect> > &_boxes,
                  vector< vector<string> > &_words, vector< vector<float> > &_confidences, 
-                 vector< OCRTesseract* > &_ocrs)
+                 vector< Ptr<OCRTesseract> > &_ocrs)
         : detections(_detections), outputs(_outputs), boxes(_boxes), words(_words), 
           confidences(_confidences), ocrs(_ocrs)
     {}
@@ -120,11 +120,10 @@ int main(int argc, char* argv[])
 
     //Initialize OCR engine (we initialize 10 instances in order to work several recognitions in parallel)
     int num_ocrs = 10;
-    vector<OCRTesseract*> ocrs;
+    vector< Ptr<OCRTesseract> > ocrs;
     for (int o=0; o<num_ocrs; o++)
     {
-      OCRTesseract* ocr = new OCRTesseract();
-      ocrs.push_back(ocr);
+      ocrs.push_back(OCRTesseract::create());
     }
 
     //cout << "TIME_OCR_INITIALIZATION_ALT = "<< ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;

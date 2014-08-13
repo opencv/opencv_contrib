@@ -44,24 +44,15 @@
 #ifndef __OPENCV_TEXT_OCR_HPP__
 #define __OPENCV_TEXT_OCR_HPP__
 
-#include "text_config.hpp"
-
-#ifdef HAVE_TESSERACT
-#include <tesseract/baseapi.h>
-#include <tesseract/resultiterator.h>
-#endif
-
-#include "opencv2/core.hpp"
 #include <vector>
 #include <string>
-
+using namespace std;
 
 namespace cv
 {
 namespace text
 {
 
-using namespace std;
 
 enum
 {
@@ -69,40 +60,35 @@ enum
     OCR_LEVEL_TEXTLINE
 };
 
-#ifdef HAVE_TESSERACT
-class CV_EXPORTS OCRTesseract
-{
-private:
-    tesseract::TessBaseAPI tess;
-
-public:
-    //Default constructor
-    OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL,
-                 tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO);
-
-    ~OCRTesseract();
-
-    void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0);
-};
-#else
-//stub
-class CV_EXPORTS OCRTesseract
+//base class BaseOCR declares a common API that would be used in a typical text recognition scenario
+class CV_EXPORTS BaseOCR
 {
 public:
-    //Default constructor
-    OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL,
-                 int oem=0, int psmode=0);
-
-    ~OCRTesseract();
-
-    void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0);
+    virtual ~BaseOCR() {};
+    virtual void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
+            vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+            int component_level=0) = 0;
 };
-#endif
 
+class CV_EXPORTS OCRTesseract : public BaseOCR
+{
+public:
+    virtual void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
+            vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+            int component_level=0)
+    {
+      CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
+      CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
+      output_text.clear();
+      if (component_rects != NULL)
+        component_rects->clear();
+      if (component_texts != NULL)
+        component_texts->clear();
+      if (component_confidences != NULL)
+        component_confidences->clear();
+    }
+    static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, int oem=3, int psmode=3);
+};
 
 
 }

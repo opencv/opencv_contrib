@@ -47,25 +47,32 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+using namespace std;
 
 namespace cv
 {
 namespace text
 {
 
-using namespace std;
 
+class OCRTesseractImpl : public OCRTesseract
+{
+private:
+#ifdef HAVE_TESSERACT
+    tesseract::TessBaseAPI tess;
+#endif
+
+public:
+    //Default constructor
+    OCRTesseractImpl(const char* datapath, const char* language, const char* char_whitelist, int oemode, int psmode)
+    {
 
 #ifdef HAVE_TESSERACT
-//Default constructor
-OCRTesseract::OCRTesseract(const char* datapath, const char* language, const char* char_whitelist, tesseract::OcrEngineMode oemode, tesseract::PageSegMode psmode)
-{
-
     const char *lang = "eng";
     if (language != NULL)
         lang = language;
 
-    if (tess.Init(datapath, lang, oemode))
+    if (tess.Init(datapath, lang, (tesseract::OcrEngineMode)oemode))
     {
         cout << "OCRTesseract: Could not initialize tesseract." << endl;
         throw 1;
@@ -73,7 +80,7 @@ OCRTesseract::OCRTesseract(const char* datapath, const char* language, const cha
 
     //cout << "OCRTesseract: tesseract version " << tess.Version() << endl;
 
-    tesseract::PageSegMode pagesegmode = psmode;
+    tesseract::PageSegMode pagesegmode = (tesseract::PageSegMode)psmode;
     tess.SetPageSegMode(pagesegmode);
 
     if(char_whitelist != NULL)
@@ -82,18 +89,33 @@ OCRTesseract::OCRTesseract(const char* datapath, const char* language, const cha
         tess.SetVariable("tessedit_char_whitelist", "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
     tess.SetVariable("save_best_choices", "T");
+#else
+    cout << "OCRTesseract("<<oemode<<psmode<<"): Tesseract not found." << endl;
+    if (datapath != NULL)
+      cout << "            " << datapath << endl;
+    if (language != NULL)
+      cout << "            " << language << endl;
+    if (char_whitelist != NULL)
+      cout << "            " << char_whitelist << endl;
+#endif
+    }
 
-}
+    ~OCRTesseractImpl()
+    {
+#ifdef HAVE_TESSERACT
+      tess.End();
+#endif
+    }
 
-OCRTesseract::~OCRTesseract()
-{
-    tess.End();
-}
+    void run(Mat& image, string& output, vector<Rect>* component_rects=NULL,
+             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+             int component_level=0)
+    {
+    
+      CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
 
-void OCRTesseract::run(Mat& image, string& output, vector<Rect>* component_rects,
-                       vector<string>* component_texts, vector<float>* component_confidences, int component_level)
-{
-    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
+#ifdef HAVE_TESSERACT
+
     if (component_texts != 0)
         component_texts->clear();
     if (component_rects != 0)
@@ -135,30 +157,8 @@ void OCRTesseract::run(Mat& image, string& output, vector<Rect>* component_rects
     }
 
     tess.Clear();
-}
+
 #else
-//Stub constructor
-OCRTesseract::OCRTesseract(const char* datapath, const char* language, const char* char_whitelist, int oemode, int psmode)
-{
-    cout << "OCRTesseract("<<oemode<<psmode<<"): Tesseract not found." << endl;
-    if (datapath != NULL)
-      cout << "            " << datapath << endl;
-    if (language != NULL)
-      cout << "            " << language << endl;
-    if (char_whitelist != NULL)
-      cout << "            " << char_whitelist << endl;
-}
-
-//Stub destructor
-OCRTesseract::~OCRTesseract()
-{
-}
-
-//Stub method, does nothing
-void OCRTesseract::run(Mat& image, string& output, vector<Rect>* component_rects,
-                       vector<string>* component_texts, vector<float>* component_confidences, int component_level)
-{
-    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
 
     cout << "OCRTesseract(" << component_level << image.type() <<"): Tesseract not found." << endl;
     output.clear();
@@ -168,9 +168,16 @@ void OCRTesseract::run(Mat& image, string& output, vector<Rect>* component_rects
         component_texts->clear();
     if(component_confidences)
         component_confidences->clear();
-}
 #endif
+    }
 
+
+};
+
+Ptr<OCRTesseract> OCRTesseract::create(const char* datapath, const char* language, const char* char_whitelist, int oem, int psmode)
+{
+   return makePtr<OCRTesseractImpl>(datapath,language,char_whitelist,oem,psmode);
+}
 
 
 }
