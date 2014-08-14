@@ -46,7 +46,6 @@
 
 #include <vector>
 #include <string>
-using namespace std;
 
 namespace cv
 {
@@ -65,29 +64,20 @@ class CV_EXPORTS BaseOCR
 {
 public:
     virtual ~BaseOCR() {};
-    virtual void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-            vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-            int component_level=0) = 0;
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0) = 0;
 };
 
 class CV_EXPORTS OCRTesseract : public BaseOCR
 {
 public:
-    virtual void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-            vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-            int component_level=0)
-    {
-      CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
-      CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
-      output_text.clear();
-      if (component_rects != NULL)
-        component_rects->clear();
-      if (component_texts != NULL)
-        component_texts->clear();
-      if (component_confidences != NULL)
-        component_confidences->clear();
-    }
-    static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, int oem=3, int psmode=3);
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
+                                    const char* char_whitelist=NULL, int oem=3, int psmode=3);
 };
 
 
