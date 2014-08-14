@@ -101,6 +101,6 @@ Allow to implicitly load the default character classifier when creating an OCRHM
 
     :param filename: The XML or YAML file with the classifier model (e.g. OCRHMM_knn_model_data.xml)
 
-The default classifier is based in the scene text recognition method proposed by Lukás Neumann & Jiri Matas in [Neumann11]. Basically, the region (contour) in the input image is normalized to a fixed size, while retaining the centroid and aspect ratio, in order to extract a feature vector based on gradient orientations along the chain-code of its perimeter. Then, the region is classified using a KNN model trained with synthetic data of rendered characters with different standard font types.
+The default classifier is based in the scene text recognition method proposed by Lukás Neumann & Jiri Matas in [Neumann11b]. Basically, the region (contour) in the input image is normalized to a fixed size, while retaining the centroid and aspect ratio, in order to extract a feature vector based on gradient orientations along the chain-code of its perimeter. Then, the region is classified using a KNN model trained with synthetic data of rendered characters with different standard font types.
 
-.. [Neumann11] Neumann L., Matas J.: Text Localization in Real-world Images using Efficiently Pruned Exhaustive Search, ICDAR 2011. The paper is available online at http://cmp.felk.cvut.cz/~neumalu1/icdar2011_article.pdf
+.. [Neumann11b] Neumann L., Matas J.: Text Localization in Real-world Images using Efficiently Pruned Exhaustive Search, ICDAR 2011. The paper is available online at http://cmp.felk.cvut.cz/~neumalu1/icdar2011_article.pdf
