@@ -5,39 +5,19 @@ Scene Text Recognition
 
 OCRTesseract
 ------------
-.. ocv:class:: OCRTesseract
+.. ocv:class:: OCRTesseract : public BaseOCR
 
 OCRTesseract class provides an interface with the tesseract-ocr API (v3.02.02) in C++. Notice that it is compiled only when tesseract-ocr is correctly installed. ::
 
-    class CV_EXPORTS OCRTesseract
-    {
-    private:
-        tesseract::TessBaseAPI tess;
-    
-    public:
-        //! Default constructor
-        OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL,
-                     tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO);
-    
-        ~OCRTesseract();
-    
-        /*!
-        the key method. Takes image on input and returns recognized text in the output_text parameter
-        optionally provides also the Rects for individual text elements (e.g. words) and a list of 
-        ranked recognition alternatives.
-        */
-        void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-                 vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-                 int component_level=0);
-    };
+.. note::
 
-To see the OCRTesseract combined with scene text detection, have a look at the end_to_end_recognition demo: https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp
+    * (C++) An example of OCRTesseract recognition combined with scene text detection can be found at the end_to_end_recognition demo: https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp
 
-OCRTesseract::OCRTesseract
---------------------------
-Constructor.
+OCRTesseract::create
+--------------------
+Creates an instance of the OCRTesseract class. Initializes Tesseract.
 
-.. ocv:function:: void OCRTesseract::OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO)
+.. ocv:function:: Ptr<OCRTesseract> OCRTesseract::create(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL, int oem=(int)tesseract::OEM_DEFAULT, int psmode=(int)tesseract::PSM_AUTO)
 
     :param datapath: the name of the parent directory of tessdata ended with "/", or NULL to use the system's default directory.
     :param language: an ISO 639-3 code or NULL will default to "eng".
