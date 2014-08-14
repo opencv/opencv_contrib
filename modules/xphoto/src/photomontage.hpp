@@ -175,17 +175,17 @@ singleExpansion(const int alpha)
 
         for (int j = 0; j < width - 1; ++j)
         {
-            setWeights( graph, cv::Point(i, j), cv::Point(i, j + 1), currentRow[j], currentRow[j + 1], alpha );
-            setWeights( graph, cv::Point(i, j), cv::Point(i + 1, j), currentRow[j],     nextRow[j],    alpha );
+            setWeights( graph, cv::Point(j, i), cv::Point(j + 1, i), currentRow[j], currentRow[j + 1], alpha );
+            setWeights( graph, cv::Point(j, i), cv::Point(j, i + 1), currentRow[j],     nextRow[j],    alpha );
         }
 
-        setWeights( graph, cv::Point(i, width - 1), cv::Point(i + 1, width - 1),
+        setWeights( graph, cv::Point(width - 1, i), cv::Point(width - 1, i + 1),
                     currentRow[width - 1], nextRow[width - 1], alpha );
     }
 
     const int *currentRow = (const int *) x_i.template ptr <int>(height - 1);
     for (int i = 0; i < width - 1; ++i)
-        setWeights( graph, cv::Point(height - 1, i), cv::Point(height - 1, i + 1),
+        setWeights( graph, cv::Point(i, height - 1), cv::Point(i + 1, height - 1),
                     currentRow[i], currentRow[i + 1], alpha );
 
     /** Max-flow computation **/

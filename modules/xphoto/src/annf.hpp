@@ -211,7 +211,7 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
             int current = i*whs.cols + j;
 
             int dy[] = {0, 1, 0}, dx[] = {0, 0, 1};
-            for (int k = 0; k < sizeof(dy)/sizeof(int); ++k)
+            for (int k = 0; k < int( sizeof(dy)/sizeof(int) ); ++k)
                 if (i - dy[k] >= 0 && j - dx[k] >= 0)
                 {
                     int neighbor = (i - dy[k])*whs.cols + (j - dx[k]);
@@ -240,8 +240,8 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
 
     for (int i = 0, t = 0; i < annfHist.rows; ++i)
     {
-        double  *pAnnfHist =  annfHist.template ptr<double>(i);
-        double *_pAnnfHist = _annfHist.template ptr<double>(i);
+        double  *pAnnfHist =  annfHist.ptr<double>(i);
+        double *_pAnnfHist = _annfHist.ptr<double>(i);
 
         for (int j = 0; j < annfHist.cols; ++j)
             if ( pAnnfHist[j] != 0 && pAnnfHist[j] == _pAnnfHist[j] )

@@ -101,10 +101,10 @@ static void nextProjection(std::vector <cv::Mat> &projections, const cv::Point &
 
     for (int i = dy; i < nproj.rows; ++i)
     {
-        float *vxNext = nproj.template ptr<float>(i - dy);
-        float  *vNext = nproj.template ptr<float>(i);
+        float *vxNext = nproj.ptr<float>(i - dy);
+        float  *vNext = nproj.ptr<float>(i);
 
-        float *vxCurrent = proj.template ptr<float>(i - dy);
+        float *vxCurrent = proj.ptr<float>(i - dy);
 
         if (plusToMinusUpdate)
             for (int j = dx; j < nproj.cols; ++j)
