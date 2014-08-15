@@ -46,6 +46,7 @@ public:
 };
 
 //OCR recognition is done in parallel for different detections
+template <class T>
 class Parallel_OCR: public cv::ParallelLoopBody
 {
 private:
@@ -54,12 +55,12 @@ private:
     vector< vector<Rect> > &boxes;
     vector< vector<string> > &words;
     vector< vector<float> > &confidences;
-    vector< Ptr<OCRTesseract> > &ocrs;
+    vector< Ptr<T> > &ocrs;
 
 public:
     Parallel_OCR(vector<Mat> &_detections, vector<string> &_outputs, vector< vector<Rect> > &_boxes,
                  vector< vector<string> > &_words, vector< vector<float> > &_confidences, 
-                 vector< Ptr<OCRTesseract> > &_ocrs)
+                 vector< Ptr<T> > &_ocrs)
         : detections(_detections), outputs(_outputs), boxes(_boxes), words(_words), 
           confidences(_confidences), ocrs(_ocrs)
     {}
@@ -88,6 +89,7 @@ int main(int argc, char* argv[])
     cout << "  Usage:  " << argv[0] << " [camera_index]" << endl << endl;
     cout << "  Press 'e' to switch between MSER/CSER regions." << endl;
     cout << "  Press 'g' to switch between Horizontal and Arbitrary oriented grouping." << endl;
+    cout << "  Press 'o' to switch between OCRTesseract/OCRHMMDecoder recognition." << endl;
     cout << "  Press 's' to scale down frame size to 320x240." << endl;
     cout << "  Press 'ESC' to exit." << endl << endl;
 
@@ -98,7 +100,7 @@ int main(int argc, char* argv[])
     int  RECOGNITION = 0;
     char *region_types_str[2] = {const_cast<char *>("ERStats"), const_cast<char *>("MSER")};
     char *grouping_algorithms_str[2] = {const_cast<char *>("exhaustive_search"), const_cast<char *>("multioriented")};
-    char *recognitions_str[3] = {const_cast<char *>("Tesseract"), const_cast<char *>("NM_chain_features + KNN"), const_cast<char *>("NM_chain_features + MLP")};
+    char *recognitions_str[2] = {const_cast<char *>("Tesseract"), const_cast<char *>("NM_chain_features + KNN")};
 
     Mat frame,grey,orig_grey,out_img;
     vector<Mat> channels;
@@ -119,12 +121,29 @@ int main(int argc, char* argv[])
     //double t_r = getTickCount();
 
     //Initialize OCR engine (we initialize 10 instances in order to work several recognitions in parallel)
+    cout << "Initializing OCR engines ..." << endl;
     int num_ocrs = 10;
     vector< Ptr<OCRTesseract> > ocrs;
     for (int o=0; o<num_ocrs; o++)
     {
       ocrs.push_back(OCRTesseract::create());
     }
+
+    Mat transition_p;
+    string filename = "OCRHMM_transitions_table.xml";
+    FileStorage fs(filename, FileStorage::READ);
+    fs["transition_probabilities"] >> transition_p;
+    fs.release();
+    Mat emission_p = Mat::eye(62,62,CV_64FC1);
+    string voc = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    vector< Ptr<OCRHMMDecoder> > decoders;
+    for (int o=0; o<num_ocrs; o++)
+    {
+      decoders.push_back(OCRHMMDecoder::create(loadOCRHMMClassifierNM("OCRHMM_knn_model_data.xml.gz"), 
+                                               voc, transition_p, emission_p));
+    }
+    cout << " Done!" << endl;
 
     //cout << "TIME_OCR_INITIALIZATION_ALT = "<< ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
 
@@ -216,7 +235,12 @@ int main(int argc, char* argv[])
         float scale_img  = (float)(600.f/frame.rows);
         float scale_font = (float)(2-scale_img)/1.4f;
         vector<string> words_detection;
-        float min_confidence1 = 51.f, min_confidence2 = 60.f;
+        float min_confidence1 = 0.f, min_confidence2 = 0.f;
+        
+        if (RECOGNITION == 0)
+        {
+          min_confidence1 = 51.f; min_confidence2 = 60.f;
+        }
 
         vector<Mat> detections;
 
@@ -238,25 +262,32 @@ int main(int argc, char* argv[])
         vector< vector<string> > words((int)detections.size());
         vector< vector<float> > confidences((int)detections.size());
         
-        // parallel process detections in batches of ocrs.size()
-        for (int i=0; i<(int)detections.size(); i=i+(int)ocrs.size()) 
+        // parallel process detections in batches of ocrs.size() (== num_ocrs)
+        for (int i=0; i<(int)detections.size(); i=i+(int)num_ocrs) 
         {
           Range r;
-          if (i+(int)ocrs.size() <= (int)detections.size())
-            r = Range(i,i+(int)ocrs.size());
+          if (i+(int)num_ocrs <= (int)detections.size())
+            r = Range(i,i+(int)num_ocrs);
           else
             r = Range(i,(int)detections.size());
 
-          parallel_for_(r, Parallel_OCR(detections, outputs, boxes, words, confidences, ocrs));
+          switch(RECOGNITION)
+          {
+            case 0:
+              parallel_for_(r, Parallel_OCR<OCRTesseract>(detections, outputs, boxes, words, confidences, ocrs));
+              break;
+            case 1:
+              parallel_for_(r, Parallel_OCR<OCRHMMDecoder>(detections, outputs, boxes, words, confidences, decoders));
+              break;
+          }
         }
 
 
         for (int i=0; i<(int)detections.size(); i++)
         {
 
-
             outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
-            //cout << "OCR output = \"" << output << "\" lenght = " << output.size() << endl;
+            //cout << "OCR output = \"" << outputs[i] << "\" lenght = " << outputs[i].size() << endl;
             if (outputs[i].size() < 3)
                 continue;
 
@@ -308,15 +339,15 @@ int main(int argc, char* argv[])
             {
             case 103: //g
                 GROUPING_ALGORITHM = (GROUPING_ALGORITHM+1)%2;
-                cout << "Grouping switched to " << GROUPING_ALGORITHM << endl;
+                cout << "Grouping switched to " << grouping_algorithms_str[GROUPING_ALGORITHM] << endl;
                 break;
-                //case 111: //o
-                //  RECOGNITION = (RECOGNITION+1)%3;
-                //  cout << "OCR switched to " << RECOGNITION << endl;
-                //  break;
+            case 111: //o
+                RECOGNITION = (RECOGNITION+1)%2;
+                cout << "OCR switched to " << recognitions_str[RECOGNITION] << endl;
+                break;
             case 114: //r
                 REGION_TYPE = (REGION_TYPE+1)%2;
-                cout << "Regions switched to " << REGION_TYPE << endl;
+                cout << "Regions switched to " << region_types_str[REGION_TYPE] << endl;
                 break;
             case 115: //s
                 downsize = !downsize;
