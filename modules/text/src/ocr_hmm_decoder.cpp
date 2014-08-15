@@ -272,7 +272,7 @@ public:
                 start_p[i] = 1.0/vocabulary.size();
 
 
-            Mat V = Mat::zeros(observations.size(),vocabulary.size(),CV_64FC1);
+            Mat V = Mat::zeros((int)observations.size(),(int)vocabulary.size(),CV_64FC1);
             vector<string> path(vocabulary.size());
 
             // Initialize base cases (t == 0)
@@ -326,7 +326,7 @@ public:
             int best_idx = 0;
             for (int i=0; i<(int)vocabulary.size(); i++)
             {
-                double prob = V.at<double>(obs.size()-1,i);
+                double prob = V.at<double>((int)obs.size()-1,i);
                 if ( prob > max_prob)
                 {
                     max_prob = prob;
@@ -342,7 +342,7 @@ public:
             if (component_texts != NULL)
                 component_texts->push_back(path[best_idx]);
             if (component_confidences != NULL)
-                component_confidences->push_back(max_prob);
+                component_confidences->push_back((float)max_prob);
 
         }
 
@@ -516,7 +516,7 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
                 maps[i](Rect(x,y,7,7)).copyTo(patch);
                 Scalar mean,std;
                 meanStdDev(patch,mean,std);
-                sample.at<float>(0,i*25+((int)x/7)+((int)y/7)*5) = mean[0]/255;
+                sample.at<float>(0,i*25+((int)x/7)+((int)y/7)*5) = (float)(mean[0]/255);
                 //cout << " avg " << mean[0] << " in patch " << x << "," << y << " channel " << i << " idx = " << i*25+((int)x/7)+((int)y/7)*5<< endl;
             }
         }
@@ -528,7 +528,6 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
     Scalar dist_sum = sum(dists);
     Mat class_predictions = Mat::zeros(1,62,CV_64FC1);
 
-    //static const char* ascii[62] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9"};
     vector<vector<int> > equivalency_mat(62);
     equivalency_mat[2].push_back(28);  // c -> C
     equivalency_mat[28].push_back(2);  // C -> c
@@ -587,8 +586,6 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
             out_confidence.push_back(class_predictions.at<double>(0,i));
         }
     }
-
-    //printf("\n !! The char sample is predicted as: %s \n\n", ascii[(int)predictions.at<float>(0,0)]);
 
 }
 
