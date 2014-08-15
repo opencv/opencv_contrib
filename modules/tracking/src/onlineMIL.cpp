@@ -99,7 +99,7 @@ ClfMilBoost::Params::Params()
 {
   _numSel = 50;
   _numFeat = 250;
-  _lRate = 0.85;
+  _lRate = 0.85f;
 }
 
 ClfMilBoost::ClfMilBoost()

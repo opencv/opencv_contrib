@@ -86,7 +86,8 @@ namespace cv
 namespace bioinspired
 {
 
-class TransientAreasSegmentationModuleImpl: protected BasicRetinaFilter
+class TransientAreasSegmentationModuleImpl :
+	protected BasicRetinaFilter
 {
 public:
 
@@ -136,7 +137,7 @@ public:
     /**
      * @return the current parameters setup
      */
-    struct TransientAreasSegmentationModule::TransientAreasSegmentationModule::SegmentationParameters getParameters();
+    struct TransientAreasSegmentationModule::SegmentationParameters getParameters();
 
     /**
      * parameters setup display method
@@ -219,19 +220,21 @@ protected:
     // Buffer conversion utilities
     void _convertValarrayBuffer2cvMat(const std::valarray<bool> &grayMatrixToConvert, const unsigned int nbRows, const unsigned int nbColumns, OutputArray outBuffer);
     bool _convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray<float> &outputValarrayMatrix);
+	
+	const TransientAreasSegmentationModuleImpl & operator = (const TransientAreasSegmentationModuleImpl &);
 };
 
 class TransientAreasSegmentationModuleImpl_: public  TransientAreasSegmentationModule
 {
 public:
-TransientAreasSegmentationModuleImpl_(const Size size):_segmTool(size){};
+	TransientAreasSegmentationModuleImpl_(const Size size):_segmTool(size){};
     inline virtual Size getSize(){return _segmTool.getSize();};
     inline virtual void write( cv::FileStorage& fs ) const{_segmTool.write(fs);};
     inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure){_segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure);};
     inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure){_segmTool.setup(fs, applyDefaultSetupOnFailure);};
     inline virtual void setup(TransientAreasSegmentationModule::SegmentationParameters newParameters){_segmTool.setup(newParameters);};
     inline virtual const String printSetup(){return _segmTool.printSetup();};
-    inline virtual struct TransientAreasSegmentationModule::TransientAreasSegmentationModule::SegmentationParameters getParameters(){return _segmTool.getParameters();};
+    inline virtual struct TransientAreasSegmentationModule::SegmentationParameters getParameters(){return _segmTool.getParameters();};
     inline virtual void write( String fs ) const{_segmTool.write(fs);};
     inline virtual void run(InputArray inputToSegment, const int channelIndex){_segmTool.run(inputToSegment, channelIndex);};
     inline virtual void getSegmentationPicture(OutputArray transientAreas){return _segmTool.getSegmentationPicture(transientAreas);};

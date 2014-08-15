@@ -33,13 +33,12 @@
  *
  */
 
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
-#include <opencv2/rgbd.hpp>
+#include "precomp.hpp"
 
-namespace
+namespace cv
 {
+namespace rgbd
+{    
   /** Just compute the norm of a vector
    * @param vec a vector of size 3 and any type T
    * @return
@@ -47,7 +46,7 @@ namespace
   template<typename T>
   T
   inline
-  norm_vec(const cv::Vec<T, 3> &vec)
+  norm_vec(const Vec<T, 3> &vec)
   {
     return std::sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
   }
@@ -57,16 +56,16 @@ namespace
    * @return
    */
   template<typename T>
-  cv::Mat_<T>
-  computeRadius(const cv::Mat &points)
+  Mat_<T>
+  computeRadius(const Mat &points)
   {
-    typedef cv::Vec<T, 3> PointT;
+    typedef Vec<T, 3> PointT;
 
     // Compute the
-    cv::Size size(points.cols, points.rows);
-    cv::Mat_<T> r(size);
+    Size size(points.cols, points.rows);
+    Mat_<T> r(size);
     if (points.isContinuous())
-      size = cv::Size(points.cols * points.rows, 1);
+      size = Size(points.cols * points.rows, 1);
     for (int y = 0; y < size.height; ++y)
     {
       const PointT* point = points.ptr < PointT > (y), *point_end = points.ptr < PointT > (y) + size.width;
@@ -83,21 +82,21 @@ namespace
   // by H. Badino, D. Huber, Y. Park and T. Kanade
   template<typename T>
   void
-  computeThetaPhi(int rows, int cols, const cv::Matx<T, 3, 3>& K, cv::Mat &cos_theta, cv::Mat &sin_theta,
-                  cv::Mat &cos_phi, cv::Mat &sin_phi)
+  computeThetaPhi(int rows, int cols, const Matx<T, 3, 3>& K, Mat &cos_theta, Mat &sin_theta,
+                  Mat &cos_phi, Mat &sin_phi)
   {
     // Create some bogus coordinates
-    cv::Mat depth_image = K(0, 0) * cv::Mat_ < T > ::ones(rows, cols);
-    cv::Mat points3d;
-    depthTo3d(depth_image, cv::Mat(K), points3d);
+    Mat depth_image = K(0, 0) * Mat_ < T > ::ones(rows, cols);
+    Mat points3d;
+    depthTo3d(depth_image, Mat(K), points3d);
 
-    typedef cv::Vec<T, 3> Vec3T;
+    typedef Vec<T, 3> Vec3T;
 
-    cos_theta = cv::Mat_ < T > (rows, cols);
-    sin_theta = cv::Mat_ < T > (rows, cols);
-    cos_phi = cv::Mat_ < T > (rows, cols);
-    sin_phi = cv::Mat_ < T > (rows, cols);
-    cv::Mat r = computeRadius<T>(points3d);
+    cos_theta = Mat_ < T > (rows, cols);
+    sin_theta = Mat_ < T > (rows, cols);
+    cos_phi = Mat_ < T > (rows, cols);
+    sin_phi = Mat_ < T > (rows, cols);
+    Mat r = computeRadius<T>(points3d);
     for (int y = 0; y < rows; ++y)
     {
       T *row_cos_theta = cos_theta.ptr < T > (y), *row_sin_theta = sin_theta.ptr < T > (y);
@@ -111,10 +110,10 @@ namespace
         // In the paper, z goes away from the camera, y goes down, x goes right
         // OpenCV has the same conventions
         // Theta goes from z to x (and actually goes from -pi/2 to pi/2, phi goes from z to y
-        float theta = std::atan2(row_points->val[0], row_points->val[2]);
+        float theta = (float)std::atan2(row_points->val[0], row_points->val[2]);
         *row_cos_theta = std::cos(theta);
         *row_sin_theta = std::sin(theta);
-        float phi = std::asin(row_points->val[1] / (*row_r));
+        float phi = (float)std::asin(row_points->val[1] / (*row_r));
         *row_cos_phi = std::cos(phi);
         *row_sin_phi = std::sin(phi);
       }
@@ -127,9 +126,9 @@ namespace
   template<typename T>
   inline
   void
-  signNormal(const cv::Vec<T, 3> & normal_in, cv::Vec<T, 3> & normal_out)
+  signNormal(const Vec<T, 3> & normal_in, Vec<T, 3> & normal_out)
   {
-    cv::Vec<T, 3> res;
+    Vec<T, 3> res;
     if (normal_in[2] > 0)
       res = -normal_in / norm_vec(normal_in);
     else
@@ -144,7 +143,7 @@ namespace
   template<typename T>
   inline
   void
-  signNormal(T a, T b, T c, cv::Vec<T, 3> & normal)
+  signNormal(T a, T b, T c, Vec<T, 3> & normal)
   {
     T norm = 1 / std::sqrt(a * a + b * b + c * c);
     if (c > 0)
@@ -160,16 +159,14 @@ namespace
       normal[2] = c * norm;
     }
   }
-}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace
-{
   class RgbdNormalsImpl
   {
   public:
-    RgbdNormalsImpl(int rows, int cols, int window_size, int depth, const cv::Mat &K,
-                    cv::RgbdNormals::RGBD_NORMALS_METHOD method)
+    RgbdNormalsImpl(int rows, int cols, int window_size, int depth, const Mat &K,
+                    RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           rows_(rows),
           cols_(cols),
@@ -190,19 +187,19 @@ namespace
     cache()=0;
 
     bool
-    validate(int rows, int cols, int depth, const cv::Mat &K_ori, int window_size, int method) const
+    validate(int rows, int cols, int depth, const Mat &K_ori, int window_size, int method) const
     {
       if ((K_ori.cols != K_ori_.cols) || (K_ori.rows != K_ori_.rows) || (K_ori.type() != K_ori_.type()))
         return false;
-      bool K_test = !(cv::countNonZero(K_ori != K_ori_));
-      return (rows == rows_) && (cols = cols_) && (window_size == window_size_) && (depth == depth_) && (K_test)
+      bool K_test = !(countNonZero(K_ori != K_ori_));
+      return (rows == rows_) && (cols == cols_) && (window_size == window_size_) && (depth == depth_) && (K_test)
              && (method == method_);
     }
   protected:
     int rows_, cols_, depth_;
-    cv::Mat K_, K_ori_;
+    Mat K_, K_ori_;
     int window_size_;
-    cv::RgbdNormals::RGBD_NORMALS_METHOD method_;
+    RgbdNormals::RGBD_NORMALS_METHOD method_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,11 +213,11 @@ namespace
   class FALS: public RgbdNormalsImpl
   {
   public:
-    typedef cv::Matx<T, 3, 3> Mat33T;
-    typedef cv::Vec<T, 9> Vec9T;
-    typedef cv::Vec<T, 3> Vec3T;
+    typedef Matx<T, 3, 3> Mat33T;
+    typedef Vec<T, 9> Vec9T;
+    typedef Vec<T, 3> Vec3T;
 
-    FALS(int rows, int cols, int window_size, int depth, const cv::Mat &K, cv::RgbdNormals::RGBD_NORMALS_METHOD method)
+    FALS(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
     {
@@ -235,18 +232,18 @@ namespace
     cache()
     {
       // Compute theta and phi according to equation 3
-      cv::Mat cos_theta, sin_theta, cos_phi, sin_phi;
+      Mat cos_theta, sin_theta, cos_phi, sin_phi;
       computeThetaPhi<T>(rows_, cols_, K_, cos_theta, sin_theta, cos_phi, sin_phi);
 
       // Compute all the v_i for every points
-      std::vector<cv::Mat> channels(3);
+      std::vector<Mat> channels(3);
       channels[0] = sin_theta.mul(cos_phi);
       channels[1] = sin_phi;
       channels[2] = cos_theta.mul(cos_phi);
-      cv::merge(channels, V_);
+      merge(channels, V_);
 
       // Compute M
-      cv::Mat_<Vec9T> M(rows_, cols_);
+      Mat_<Vec9T> M(rows_, cols_);
       Mat33T VVt;
       const Vec3T * vec = V_[0];
       Vec9T * M_ptr = M[0], *M_ptr_end = M_ptr + rows_ * cols_;
@@ -256,7 +253,7 @@ namespace
         *M_ptr = Vec9T(VVt.val);
       }
 
-      cv::boxFilter(M, M, M.depth(), cv::Size(window_size_, window_size_), cv::Point(-1, -1), false);
+      boxFilter(M, M, M.depth(), Size(window_size_, window_size_), Point(-1, -1), false);
 
       // Compute M's inverse
       Mat33T M_inv;
@@ -265,7 +262,7 @@ namespace
       for (M_ptr = &M(0); M_ptr != M_ptr_end; ++M_inv_ptr, ++M_ptr)
       {
         // We have a semi-definite matrix
-        cv::invert(Mat33T(M_ptr->val), M_inv, cv::DECOMP_CHOLESKY);
+        invert(Mat33T(M_ptr->val), M_inv, DECOMP_CHOLESKY);
         *M_inv_ptr = Vec9T(M_inv.val);
       }
     }
@@ -275,10 +272,10 @@ namespace
      * @return
      */
     virtual void
-    compute(const cv::Mat&, const cv::Mat &r, cv::Mat & normals) const
+    compute(const Mat&, const Mat &r, Mat & normals) const
     {
       // Compute B
-      cv::Mat_<Vec3T> B(rows_, cols_);
+      Mat_<Vec3T> B(rows_, cols_);
 
       const T* row_r = r.ptr < T > (0), *row_r_end = row_r + rows_ * cols_;
       const Vec3T *row_V = V_[0];
@@ -292,7 +289,7 @@ namespace
       }
 
       // Apply a box filter to B
-      cv::boxFilter(B, B, B.depth(), cv::Size(window_size_, window_size_), cv::Point(-1, -1), false);
+      boxFilter(B, B, B.depth(), Size(window_size_, window_size_), Point(-1, -1), false);
 
       // compute the Minv*B products
       row_r = r.ptr < T > (0);
@@ -307,14 +304,20 @@ namespace
           (*normal)[2] = *row_r;
         }
         else
-          signNormal((*M_inv) * (*B_vec), *normal);
+        {
+            Mat33T Mr = *M_inv;
+            Vec3T Br = *B_vec;
+            Vec3T MBr(Mr(0, 0) * Br[0] + Mr(0, 1)*Br[1] + Mr(0, 2)*Br[2],
+                      Mr(1, 0) * Br[0] + Mr(1, 1)*Br[1] + Mr(1, 2)*Br[2],
+                      Mr(2, 0) * Br[0] + Mr(2, 1)*Br[1] + Mr(2, 2)*Br[2]);
+           signNormal(MBr, *normal);
+        }
     }
 
   private:
-    cv::Mat_<Vec3T> V_;
-    cv::Mat_<Vec9T> M_inv_;
+    Mat_<Vec3T> V_;
+    Mat_<Vec9T> M_inv_;
   };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -328,15 +331,13 @@ namespace
  */
 template<typename T, typename U>
 void
-multiply_by_K_inv(const cv::Matx<T, 3, 3> & K_inv, U a, U b, U c, cv::Vec<T, 3> &res)
+multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
 {
-  res[0] = K_inv(0, 0) * a + K_inv(0, 1) * b + K_inv(0, 2) * c;
-  res[1] = K_inv(1, 1) * b + K_inv(1, 2) * c;
-  res[2] = c;
+  res[0] = (T)(K_inv(0, 0) * a + K_inv(0, 1) * b + K_inv(0, 2) * c);
+  res[1] = (T)(K_inv(1, 1) * b + K_inv(1, 2) * c);
+  res[2] = (T)c;
 }
 
-namespace
-{
   /** Given a depth image, compute the normals as detailed in the LINEMOD paper
    * ``Gradient Response Maps for Real-Time Detection of Texture-Less Objects``
    * by S. Hinterstoisser, C. Cagniart, S. Ilic, P. Sturm, N. Navab, P. Fua, and V. Lepetit
@@ -345,11 +346,11 @@ namespace
   class LINEMOD: public RgbdNormalsImpl
   {
   public:
-    typedef cv::Vec<T, 3> Vec3T;
-    typedef cv::Matx<T, 3, 3> Mat33T;
+    typedef Vec<T, 3> Vec3T;
+    typedef Matx<T, 3, 3> Mat33T;
 
-    LINEMOD(int rows, int cols, int window_size, int depth, const cv::Mat &K,
-            cv::RgbdNormals::RGBD_NORMALS_METHOD method)
+    LINEMOD(int rows, int cols, int window_size, int depth, const Mat &K,
+            RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
     {
@@ -367,25 +368,25 @@ namespace
      * @param normals the output normals
      */
     void
-    compute(const cv::Mat& depth_in, cv::Mat & normals) const
+    compute(const Mat& depth_in, Mat & normals) const
     {
       switch (depth_in.depth())
       {
         case CV_16U:
         {
-          const cv::Mat_<unsigned short> &depth(depth_in);
+          const Mat_<unsigned short> &depth(depth_in);
           computeImpl<unsigned short, long>(depth, normals);
           break;
         }
         case CV_32F:
         {
-          const cv::Mat_<float> &depth(depth_in);
+          const Mat_<float> &depth(depth_in);
           computeImpl<float, float>(depth, normals);
           break;
         }
         case CV_64F:
         {
-          const cv::Mat_<double> &depth(depth_in);
+          const Mat_<double> &depth(depth_in);
           computeImpl<double, double>(depth, normals);
           break;
         }
@@ -398,8 +399,8 @@ namespace
      * @return
      */
     template<typename DepthDepth, typename ContainerDepth>
-    cv::Mat
-    computeImpl(const cv::Mat_<DepthDepth> &depth, cv::Mat & normals) const
+    Mat
+    computeImpl(const Mat_<DepthDepth> &depth, Mat & normals) const
     {
       const int r = 5; // used to be 7
       const int sample_step = r;
@@ -422,9 +423,9 @@ namespace
         }
 
       // Define K_inv by hand, just for higher accuracy
-      Mat33T K_inv = cv::Matx<T, 3, 3>::eye(), K;
+      Mat33T K_inv = Matx<T, 3, 3>::eye(), K;
       K_.copyTo(K);
-      K_inv(0, 0) = 1.0 / K(0, 0);
+      K_inv(0, 0) = 1.0f / K(0, 0);
       K_inv(0, 1) = -K(0, 1) / (K(0, 0) * K(1, 1));
       K_inv(0, 2) = (K(0, 1) * K(1, 2) - K(0, 2) * K(1, 1)) / (K(0, 0) * K(1, 1));
       K_inv(1, 1) = 1 / K(1, 1);
@@ -486,12 +487,8 @@ namespace
       return normals;
     }
   };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-namespace
-{
 
   /** Given a set of 3d points in a depth image, compute the normals at each point
    * using the SRI method described in
@@ -502,11 +499,11 @@ namespace
   class SRI: public RgbdNormalsImpl
   {
   public:
-    typedef cv::Matx<T, 3, 3> Mat33T;
-    typedef cv::Vec<T, 9> Vec9T;
-    typedef cv::Vec<T, 3> Vec3T;
+    typedef Matx<T, 3, 3> Mat33T;
+    typedef Vec<T, 9> Vec9T;
+    typedef Vec<T, 3> Vec3T;
 
-    SRI(int rows, int cols, int window_size, int depth, const cv::Mat &K, cv::RgbdNormals::RGBD_NORMALS_METHOD method)
+    SRI(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method),
           phi_step_(0),
@@ -519,7 +516,7 @@ namespace
     virtual void
     cache()
     {
-      cv::Mat_<T> cos_theta, sin_theta, cos_phi, sin_phi;
+      Mat_<T> cos_theta, sin_theta, cos_phi, sin_phi;
       computeThetaPhi<T>(rows_, cols_, K_, cos_theta, sin_theta, cos_phi, sin_phi);
 
       // Create the derivative kernels
@@ -527,10 +524,10 @@ namespace
       getDerivKernels(kx_dy_, ky_dy_, 0, 1, window_size_, true, depth_);
 
       // Get the mapping function for SRI
-      float min_theta = std::asin(sin_theta(0, 0)), max_theta = std::asin(sin_theta(0, cols_ - 1));
-      float min_phi = std::asin(sin_phi(0, cols_/2-1)), max_phi = std::asin(sin_phi(rows_ - 1, cols_/2-1));
+      float min_theta = (float)std::asin(sin_theta(0, 0)), max_theta = (float)std::asin(sin_theta(0, cols_ - 1));
+      float min_phi = (float)std::asin(sin_phi(0, cols_/2-1)), max_phi = (float)	std::asin(sin_phi(rows_ - 1, cols_/2-1));
 
-      std::vector<cv::Point3f> points3d(cols_ * rows_);
+      std::vector<Point3f> points3d(cols_ * rows_);
       R_hat_.create(rows_, cols_);
       phi_step_ = float(max_phi - min_phi) / (rows_ - 1);
       theta_step_ = float(max_theta - min_theta) / (cols_ - 1);
@@ -541,13 +538,13 @@ namespace
         {
           float theta = min_theta + theta_int * theta_step_;
           // Store the 3d point to project it later
-          points3d[k] = cv::Point3f(std::sin(theta) * std::cos(phi), std::sin(phi), std::cos(theta) * std::cos(phi));
+          points3d[k] = Point3f(std::sin(theta) * std::cos(phi), std::sin(phi), std::cos(theta) * std::cos(phi));
 
           // Cache the rotation matrix and negate it
-          cv::Mat_<T> mat =
-              (cv::Mat_ < T > (3, 3) << 0, 1, 0, 0, 0, 1, 1, 0, 0) * ((cv::Mat_ < T > (3, 3) << std::cos(theta), -std::sin(
+          Mat_<T> mat =
+              (Mat_ < T > (3, 3) << 0, 1, 0, 0, 0, 1, 1, 0, 0) * ((Mat_ < T > (3, 3) << std::cos(theta), -std::sin(
                   theta), 0, std::sin(theta), std::cos(theta), 0, 0, 0, 1))
-              * ((cv::Mat_ < T > (3, 3) << std::cos(phi), 0, -std::sin(phi), 0, 1, 0, std::sin(phi), 0, std::cos(phi)));
+              * ((Mat_ < T > (3, 3) << std::cos(phi), 0, -std::sin(phi), 0, 1, 0, std::sin(phi), 0, std::cos(phi)));
           for (unsigned char i = 0; i < 3; ++i)
             mat(i, 1) = mat(i, 1) / std::cos(phi);
           // The second part of the matrix is never explained in the paper ... but look at the wikipedia normal article
@@ -560,28 +557,28 @@ namespace
       }
 
       map_.create(rows_, cols_);
-      cv::projectPoints(points3d, cv::Mat(3,1,CV_32FC1,cv::Scalar::all(0.0f)), cv::Mat(3,1,CV_32FC1,cv::Scalar::all(0.0f)), K_, cv::Mat(), map_);
+      projectPoints(points3d, Mat(3,1,CV_32FC1,Scalar::all(0.0f)), Mat(3,1,CV_32FC1,Scalar::all(0.0f)), K_, Mat(), map_);
       map_ = map_.reshape(2, rows_);
-      cv::convertMaps(map_, cv::Mat(), xy_, fxy_, CV_16SC2);
+      convertMaps(map_, Mat(), xy_, fxy_, CV_16SC2);
 
       //map for converting from Spherical coordinate space to Euclidean space
       euclideanMap_.create(rows_,cols_);
-      float invFx = 1.0f/K_.at<T>(0,0), cx = K_.at<T>(0,2);
+      float invFx = (float)(1.0f/K_.at<T>(0,0)), cx = (float)K_.at<T>(0,2);
       double invFy = 1.0f/K_.at<T>(1,1), cy = K_.at<T>(1,2);
       for (int i = 0; i < rows_; i++)
       {
-          float y = (i - cy)*invFy;
+          float y = (float)((i - cy)*invFy);
           for (int j = 0; j < cols_; j++)
           {
               float x = (j - cx)*invFx;
               float theta = std::atan(x);
               float phi = std::asin(y/std::sqrt(x*x+y*y+1.0f));
 
-              euclideanMap_(i,j) = cv::Vec2f((theta-min_theta)/theta_step_,(phi-min_phi)/phi_step_);
+              euclideanMap_(i,j) = Vec2f((theta-min_theta)/theta_step_,(phi-min_phi)/phi_step_);
           }
       }
       //convert map to 2 maps in short format for increasing speed in remap function
-      cv::convertMaps(euclideanMap_, cv::Mat(), invxy_, invfxy_, CV_16SC2);
+      convertMaps(euclideanMap_, Mat(), invxy_, invfxy_, CV_16SC2);
 
       // Update the kernels: the steps are due to the fact that derivatives will be computed on a grid where
       // the step is not 1. Only need to do it on one dimension as it computes derivatives in only one direction
@@ -594,10 +591,10 @@ namespace
      * @return
      */
     virtual void
-    compute(const cv::Mat& points3d, const cv::Mat &r, cv::Mat & normals) const
+    compute(const Mat& points3d, const Mat &r, Mat & normals) const
     {
-      const cv::Mat_<T>& r_T(r);
-      const cv::Mat_<Vec3T> &points3d_T(points3d);
+      const Mat_<T>& r_T(r);
+      const Mat_<Vec3T> &points3d_T(points3d);
       compute(points3d_T, r_T, normals);
     }
 
@@ -606,23 +603,23 @@ namespace
      * @return
      */
     void
-    compute(const cv::Mat_<Vec3T> &, const cv::Mat_<T> &r_non_interp, cv::Mat & normals_out) const
+    compute(const Mat_<Vec3T> &, const Mat_<T> &r_non_interp, Mat & normals_out) const
     {
       // Interpolate the radial image to make derivatives meaningful
-      cv::Mat_<T> r;
+      Mat_<T> r;
       // higher quality remapping does not help here
-      cv::remap(r_non_interp, r, xy_, fxy_, CV_INTER_LINEAR);
+      remap(r_non_interp, r, xy_, fxy_, INTER_LINEAR);
 
       // Compute the derivatives with respect to theta and phi
       // TODO add bilateral filtering (as done in kinfu)
-      cv::Mat_<T> r_theta, r_phi;
-      cv::sepFilter2D(r, r_theta, r.depth(), kx_dx_, ky_dx_);
+      Mat_<T> r_theta, r_phi;
+      sepFilter2D(r, r_theta, r.depth(), kx_dx_, ky_dx_);
       //current OpenCV version sometimes corrupts r matrix after second call of sepFilter2D
       //it depends on resolution, be careful
-      cv::sepFilter2D(r, r_phi, r.depth(), kx_dy_, ky_dy_);
+      sepFilter2D(r, r_phi, r.depth(), kx_dy_, ky_dy_);
 
       // Fill the result matrix
-      cv::Mat_<Vec3T> normals(rows_, cols_);
+      Mat_<Vec3T> normals(rows_, cols_);
 
       const T* r_theta_ptr = r_theta[0], *r_theta_ptr_end = r_theta_ptr + rows_ * cols_;
       const T* r_phi_ptr = r_phi[0];
@@ -648,7 +645,7 @@ namespace
         }
       }
 
-      cv::remap(normals, normals_out, invxy_, invfxy_, cv::INTER_LINEAR);
+      remap(normals, normals_out, invxy_, invfxy_, INTER_LINEAR);
       normal = normals_out.ptr<Vec3T>(0);
       Vec3T * normal_end = normal + rows_ * cols_;
       for (; normal != normal_end; ++normal)
@@ -656,24 +653,21 @@ namespace
     }
   private:
     /** Stores R */
-    cv::Mat_<Vec9T> R_hat_;
+    Mat_<Vec9T> R_hat_;
     float phi_step_, theta_step_;
 
     /** Derivative kernels */
-    cv::Mat kx_dx_, ky_dx_, kx_dy_, ky_dy_;
+    Mat kx_dx_, ky_dx_, kx_dy_, ky_dy_;
     /** mapping function to get an SRI image */
-    cv::Mat_<cv::Vec2f> map_;
-    cv::Mat xy_, fxy_;
+    Mat_<Vec2f> map_;
+    Mat xy_, fxy_;
 
-    cv::Mat_<cv::Vec2f> euclideanMap_;
-    cv::Mat invxy_, invfxy_;
+    Mat_<Vec2f> euclideanMap_;
+    Mat invxy_, invfxy_;
   };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace cv
-{
   /** Default constructor of the Algorithm class that computes normals
    */
   RgbdNormals::RgbdNormals(int rows, int cols, int depth, InputArray K_in, int window_size, int method_in)
@@ -733,7 +727,7 @@ namespace cv
   }
 
   void
-  RgbdNormals::initialize_normals_impl(int rows, int cols, int depth, const cv::Mat & K, int window_size,
+  RgbdNormals::initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size,
                                        int method_in) const
   {
     CV_Assert(rows > 0 && cols > 0 && (depth == CV_32F || depth == CV_64F));
@@ -795,7 +789,7 @@ namespace cv
   void
   RgbdNormals::operator()(InputArray points3d_in, OutputArray normals_out) const
   {
-    cv::Mat points3d_ori = points3d_in.getMat();
+    Mat points3d_ori = points3d_in.getMat();
 
     CV_Assert(points3d_ori.dims == 2);
     // Either we have 3d points or a depth image
@@ -824,7 +818,7 @@ namespace cv
     initialize();
 
     // Precompute something for RGBD_NORMALS_METHOD_SRI and RGBD_NORMALS_METHOD_FALS
-    cv::Mat points3d, radius;
+    Mat points3d, radius;
     if ((method_ == RGBD_NORMALS_METHOD_SRI) || (method_ == RGBD_NORMALS_METHOD_FALS))
     {
       // Make the points have the right depth
@@ -845,7 +839,7 @@ namespace cv
     if (points3d_in.empty())
       return;
 
-    cv::Mat normals = normals_out.getMat();
+    Mat normals = normals_out.getMat();
     switch (method_)
     {
       case (RGBD_NORMALS_METHOD_FALS):
@@ -859,11 +853,11 @@ namespace cv
       case RGBD_NORMALS_METHOD_LINEMOD:
       {
         // Only focus on the depth image for LINEMOD
-        cv::Mat depth;
+        Mat depth;
         if (points3d_ori.channels() == 3)
         {
-          std::vector<cv::Mat> channels;
-          cv::split(points3d, channels);
+          std::vector<Mat> channels;
+          split(points3d, channels);
           depth = channels[2];
         }
         else
@@ -886,3 +880,5 @@ namespace cv
     }
   }
 }
+}
+

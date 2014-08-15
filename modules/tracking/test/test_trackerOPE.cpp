@@ -138,15 +138,15 @@ std::vector<std::string> TrackerOPETest::splitString( std::string s, std::string
 
 float TrackerOPETest::calcDistance( Rect a, Rect b )
 {
-  Point2f p_a( a.x + a.width / 2, a.y + a.height / 2 );
-  Point2f p_b( b.x + b.width / 2, b.y + b.height / 2 );
+  Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
+  Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
   return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
 }
 
 float TrackerOPETest::calcOverlap( Rect a, Rect b )
 {
-  float aArea = a.width * a.height;
-  float bArea = b.width * b.height;
+  float aArea = (float)(a.width * a.height);
+  float bArea = (float)(b.width * b.height);
 
   if( aArea < bArea )
   {
@@ -165,8 +165,8 @@ float TrackerOPETest::calcOverlap( Rect a, Rect b )
 
   Rect rectIntersection = a & b;
   Rect rectUnion = a | b;
-  float iArea = rectIntersection.width * rectIntersection.height;
-  float uArea = rectUnion.width * rectUnion.height;
+  float iArea = (float)(rectIntersection.width * rectIntersection.height);
+  float uArea = (float)(rectUnion.width * rectUnion.height);
   float overlap = iArea / uArea;
   return overlap;
 }

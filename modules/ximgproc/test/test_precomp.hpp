@@ -15,6 +15,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/ximpgroc.hpp"
 #include "opencv2/ts.hpp"
-#include <iostream>
+#include <opencv2/ts/ts_perf.hpp>
+#include <opencv2/core/utility.hpp>
 
 #endif

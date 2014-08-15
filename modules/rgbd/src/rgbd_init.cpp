@@ -40,6 +40,8 @@
 
 namespace cv
 {
+namespace rgbd
+{
   CV_INIT_ALGORITHM(DepthCleaner, "RGBD.DepthCleaner",
       obj.info()->addParam(obj, "window_size", obj.window_size_);
       obj.info()->addParam(obj, "depth", obj.depth_);
@@ -84,7 +86,7 @@ namespace cv
       obj.info()->addParam(obj, "transformType", obj.transformType);
       obj.info()->addParam(obj, "maxTranslation", obj.maxTranslation);
       obj.info()->addParam(obj, "maxRotation", obj.maxRotation);
-      obj.info()->addParam(obj, "normalsComputer", obj.normalsComputer, true);)
+      obj.info()->addParam<RgbdNormals>(obj, "normalsComputer", obj.normalsComputer, true, NULL, NULL);)
 
   CV_INIT_ALGORITHM(RgbdICPOdometry, "RGBD.RgbdICPOdometry",
       obj.info()->addParam(obj, "cameraMatrix", obj.cameraMatrix);
@@ -97,7 +99,7 @@ namespace cv
       obj.info()->addParam(obj, "transformType", obj.transformType);
       obj.info()->addParam(obj, "maxTranslation", obj.maxTranslation);
       obj.info()->addParam(obj, "maxRotation", obj.maxRotation);
-      obj.info()->addParam(obj, "normalsComputer", obj.normalsComputer, true);)
+      obj.info()->addParam<RgbdNormals>(obj, "normalsComputer", obj.normalsComputer, true, NULL, NULL);)
 
   bool
   initModule_rgbd(void);
@@ -113,3 +115,5 @@ namespace cv
     return all;
   }
 }
+}
+
