@@ -43,17 +43,9 @@
 #include <iostream>
 #include <cmath>
 
-#include "opencv2/ximpgroc/structured_edge_detection.hpp"
-
-#include "opencv2/imgproc.hpp"
-
-#include "opencv2/core.hpp"
-#include "opencv2/core/core_c.h"
+#include "precomp.hpp"
 
 #include "advanced_types.hpp"
-#include "opencv2/core/types.hpp"
-#include "opencv2/core/types_c.h"
-
 
 /********************* Helper functions *********************/
 
@@ -196,7 +188,7 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
     magnitude.create( src.size(), cv::DataType<float>::type );
     phase.create( src.size(), cv::DataType<float>::type );
-    histogram.create( src.size()/float(pSize),
+    histogram.create( cv::Size(src.size().width/float(pSize), src.size().height/float(pSize)) ,
         CV_MAKETYPE(cv::DataType<float>::type, nBins) );
 
     histogram.setTo(0);
@@ -257,6 +249,8 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 /********************* RFFeatureGetter class *********************/
 
 namespace cv
+{
+namespace ximgproc
 {
 
 class RFFeatureGetterImpl : public RFFeatureGetter
@@ -325,11 +319,14 @@ Ptr<RFFeatureGetter> createRFFeatureGetter()
         return makePtr<RFFeatureGetterImpl>();
 }
 
-};
+}
+}
 
 /********************* StructuredEdgeDetection class *********************/
 
 namespace cv
+{
+namespace ximgproc
 {
 
 class StructuredEdgeDetectionImpl : public StructuredEdgeDetection
@@ -691,4 +688,5 @@ Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const String &model,
         return makePtr<StructuredEdgeDetectionImpl>(model, howToGetFeatures);
 }
 
+}
 }

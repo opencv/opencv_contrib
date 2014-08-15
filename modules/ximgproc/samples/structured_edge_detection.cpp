@@ -1,10 +1,9 @@
-#include "opencv2/ximpgroc/structured_edge_detection.hpp"
-
-#include "opencv2/imgproc.hpp"
+#include <opencv2/ximgproc.hpp>
 #include "opencv2/highgui.hpp"
-
 #include "opencv2/core/utility.hpp"
-#include "opencv2/imgproc/types_c.h"
+
+using namespace cv;
+using namespace cv::ximgproc;
 
 const char* keys =
 {
@@ -49,8 +48,8 @@ int main( int argc, const char** argv )
 
     cv::Mat edges(image.size(), image.type());
 
-    cv::Ptr<cv::StructuredEdgeDetection> pDollar =
-        cv::createStructuredEdgeDetection(modelFilename);
+    cv::Ptr<StructuredEdgeDetection> pDollar =
+        createStructuredEdgeDetection(modelFilename);
     pDollar->detectEdges(image, edges);
 
     if ( outFilename == "" )

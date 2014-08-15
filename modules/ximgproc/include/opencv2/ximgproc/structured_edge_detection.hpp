@@ -42,6 +42,7 @@
 
 #ifndef __OPENCV_STRUCTURED_EDGE_DETECTION_HPP__
 #define __OPENCV_STRUCTURED_EDGE_DETECTION_HPP__
+#ifdef __cplusplus
 
 /*
  * structured_edge_detection.hpp
@@ -57,7 +58,8 @@
  */
 namespace cv
 {
-
+namespace ximgproc
+{
 /*! \class RFFeatureGetter
   Helper class for training part of [P. Dollar and C. L. Zitnick. Structured Forests for Fast Edge Detection, 2013].
  */
@@ -120,5 +122,6 @@ CV_EXPORTS_W Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const St
     const RFFeatureGetter *howToGetFeatures = NULL);
 
 }
-
+}
+#endif
 #endif /* __OPENCV_STRUCTURED_EDGE_DETECTION_HPP__ */

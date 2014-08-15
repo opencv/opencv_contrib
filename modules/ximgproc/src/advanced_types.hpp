@@ -39,6 +39,7 @@
 
 #ifndef __ADVANCED_TYPES_HPP__
 #define __ADVANCED_TYPES_HPP__
+#ifdef __cplusplus
 
 #include <opencv2/core.hpp>
 
@@ -69,6 +70,8 @@ typedef cv::Mat NChannelsMat;
 
 namespace cv
 {
+namespace ximgproc
+{
 
 template <typename _Tp, typename _Tp2> inline
     cv::Size_<_Tp> operator * (const _Tp2 &x, const cv::Size_<_Tp> &sz)
@@ -83,5 +86,6 @@ template <typename _Tp, typename _Tp2> inline
 }
 
 } // cv
-
+}
+#endif
 #endif /* __ADVANCED_TYPES_HPP__ */
