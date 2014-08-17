@@ -142,15 +142,15 @@ std::vector<std::string> TrackerSRETest::splitString( std::string s, std::string
 
 float TrackerSRETest::calcDistance( Rect a, Rect b )
 {
-  Point2f p_a( a.x + a.width / 2, a.y + a.height / 2 );
-  Point2f p_b( b.x + b.width / 2, b.y + b.height / 2 );
+  Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
+  Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
   return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
 }
 
 float TrackerSRETest::calcOverlap( Rect a, Rect b )
 {
-  float aArea = a.width * a.height;
-  float bArea = b.width * b.height;
+  float aArea = (float)(a.width * a.height);
+  float bArea = (float)(b.width * b.height);
 
   if( aArea < bArea )
   {
@@ -169,8 +169,8 @@ float TrackerSRETest::calcOverlap( Rect a, Rect b )
 
   Rect rectIntersection = a & b;
   Rect rectUnion = a | b;
-  float iArea = rectIntersection.width * rectIntersection.height;
-  float uArea = rectUnion.width * rectUnion.height;
+  float iArea = (float)(rectIntersection.width * rectIntersection.height);
+  float uArea = (float)(rectUnion.width * rectUnion.height);
   float overlap = iArea / uArea;
   return overlap;
 }
@@ -327,81 +327,81 @@ void TrackerSRETest::checkDataTest()
       {
         case 1:
           //center shift left
-          bb.x = bb.x - ceil( 0.1 * bb.width );
+          bb.x = bb.x - (int)ceil( 0.1 * bb.width );
           break;
         case 2:
           //center shift right
-          bb.x = bb.x + ceil( 0.1 * bb.width );
+          bb.x = bb.x + (int)ceil( 0.1 * bb.width );
           break;
         case 3:
           //center shift up
-          bb.y = bb.y - ceil( 0.1 * bb.height );
+          bb.y = bb.y - (int)ceil( 0.1 * bb.height );
           break;
         case 4:
           //center shift down
-          bb.y = bb.y + ceil( 0.1 * bb.height );
+          bb.y = bb.y + (int)ceil( 0.1 * bb.height );
           break;
         case 5:
           //corner shift top-left
-          bb.x = round( bb.x - ( 0.1 * bb.width ) );
-          bb.y = round( bb.y - ( 0.1 * bb.height ) );
+          bb.x = (int)cvRound( bb.x -  0.1 * bb.width );
+          bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 6:
           //corner shift top-right
-          xLimit = round( xLimit + 0.1 * bb.width );
+          xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
 
-          bb.y = round( bb.y - ( 0.1 * bb.height ) );
+          bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 7:
           //corner shift bottom-left
-          bb.x = round( bb.x - ( 0.1 * bb.width ) );
-          yLimit = round( yLimit + 0.1 * bb.height );
+          bb.x = (int)cvRound( bb.x - 0.1 * bb.width );
+          yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 8:
           //corner shift bottom-right
-          xLimit = round( xLimit + 0.1 * bb.width );
-          yLimit = round( yLimit + 0.1 * bb.height );
+          xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
+          yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
 
           bb.width = xLimit - bb.x + 1;
           bb.height = yLimit - bb.y + 1;
           break;
         case 9:
           //scale 0.8
-          ratio = 0.8;
-          w = ratio * bb.width;
-          h = ratio * bb.height;
+          ratio = 0.8f;
+          w = (int)(ratio * bb.width);
+          h = (int)(ratio * bb.height);
 
           bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
           break;
         case 10:
           //scale 0.9
-          ratio = 0.9;
-          w = ratio * bb.width;
-          h = ratio * bb.height;
+          ratio = 0.9f;
+          w = (int)(ratio * bb.width);
+          h = (int)(ratio * bb.height);
 
           bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
           break;
         case 11:
           //scale 1.1
-          ratio = 1.1;
-          w = ratio * bb.width;
-          h = ratio * bb.height;
+          ratio = 1.1f;
+          w = (int)(ratio * bb.width);
+          h = (int)(ratio * bb.height);
 
           bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
           break;
         case 12:
           //scale 1.2
-          ratio = 1.2;
-          w = ratio * bb.width;
-          h = ratio * bb.height;
+          ratio = 1.2f;
+          w = (int)(ratio * bb.width);
+          h = (int)(ratio * bb.height);
 
           bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
           break;

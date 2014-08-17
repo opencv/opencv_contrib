@@ -57,7 +57,7 @@ TrackerMILModel::TrackerMILModel( const Rect& boundingBox )
   height = boundingBox.height;
 
   Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState> initState = Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState>(
-      new TrackerStateEstimatorMILBoosting::TrackerMILTargetState( Point2f( boundingBox.x, boundingBox.y ), boundingBox.width, boundingBox.height,
+      new TrackerStateEstimatorMILBoosting::TrackerMILTargetState( Point2f( (float)boundingBox.x, (float)boundingBox.y ), boundingBox.width, boundingBox.height,
                                                                    true, Mat() ) );
   trajectory.push_back( initState );
 }
@@ -97,7 +97,7 @@ void TrackerMILModel::responseToConfidenceMap( const std::vector<Mat>& responses
       Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState> currentState = Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState>(
           new TrackerStateEstimatorMILBoosting::TrackerMILTargetState( currentOfs, width, height, foreground, singleResponse ) );
 
-      confidenceMap.push_back( std::make_pair( currentState, 0 ) );
+      confidenceMap.push_back( std::make_pair( currentState, 0.0f ) );
 
     }
 

@@ -394,7 +394,7 @@ void TrackerStateEstimatorAdaBoosting::updateImpl( std::vector<ConfidenceMap>& c
       swappedClassifier[i] = -1;
     }
 
-    int mapPosition = i + lastConfidenceMap.size() / 2;
+    int mapPosition = (int)(i + lastConfidenceMap.size() / 2);
     Ptr<TrackerAdaBoostingTargetState> currentTargetState2 = lastConfidenceMap.at( mapPosition ).first.staticCast<TrackerAdaBoostingTargetState>();
 
     currentFg = 1;

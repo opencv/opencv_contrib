@@ -69,34 +69,56 @@ The following detector types are supported:
 Creating Own Tracker
 --------------------
 
-If you want create a new tracker, you should follow some simple rules.
+If you want create a new tracker, here's what you have to do. First, decide on the name of the class for the tracker (to meet the existing style,
+we suggest something with prefix "tracker", e.g. trackerMIL, trackerBoosting) -- we shall refer to this choice as to "classname" in subsequent. Also,
+you should decide upon the name of the tracker, is it will be known to user (the current style suggests using all capitals, say MIL or BOOSTING) --
+we'll call it a "name".
 
-First, your tracker should be inherit from :ocv:class:`Tracker`, so you must implement two method:
+* Declare your tracker in ``include/opencv2/tracking/tracker.hpp``.
+  Your tracker should inherit from :ocv:class:`Tracker` (please, see the example below). You should declare the specialized ``Param``
+  structure, where you probably will want to put the data, needed to initialize your tracker. Also don't forget to put the 
+  BOILERPLATE_CODE(name,classname) macro inside the class declaration. That macro will generate static ``createTracker()`` function, which
+  we'll talk about later. You should get something similar to ::
 
-* Tracker: initImpl, it should be called once in the first frame, here you should initialize all structures. The second argument is the initial bounding box of the target.
+    class CV_EXPORTS_W TrackerMIL : public Tracker
+    {
+     public:
+      struct CV_EXPORTS Params
+      {
+        Params();
+        //parameters for sampler
+        float samplerInitInRadius;	// radius for gathering positive instances during init
+        int samplerInitMaxNegNum;  // # negative samples to use during init
+        float samplerSearchWinSize;  // size of search window
+        float samplerTrackInRadius;  // radius for gathering positive instances during tracking
+        int samplerTrackMaxPosNum;	// # positive samples to use during tracking
+        int samplerTrackMaxNegNum;	// # negative samples to use during tracking
+        int featureSetNumFeatures;  // #features
 
-* Tracker:updateImpl, it should be called at the begin of in loop through video frames. Here you should overwrite the bounding box with new location.
+        void read( const FileNode& fn );
+        void write( FileStorage& fs ) const;
+      };
 
-Example of creating specialized Tracker ``TrackerMIL`` : ::
+  of course, you can also add any additional methods of your choice. It should be pointed out, however, that it is not expected to have a constructor
+  declared, as creation should be done via the corresponding ``createTracker()`` method.
+* In ``src/tracker.cpp`` file add BOILERPLATE_CODE(name,classname) line to the body of ``Tracker::create()`` method you will find there, like ::
 
-   class CV_EXPORTS_W TrackerMIL : public Tracker
-   {
-    public:
-     TrackerMIL( const TrackerMIL::Params &parameters = TrackerMIL::Params() );
-     virtual ~TrackerMIL();
-     ...
+    Ptr<Tracker> Tracker::create( const String& trackerType )
+    {
+      BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
+      BOILERPLATE_CODE("MIL",TrackerMIL);
+      return Ptr<Tracker>();
+    }
+* Finally, you should implement the function with signature ::
 
-    protected:
-     bool initImpl( const Mat& image, const Rect2d& boundingBox );
-     bool updateImpl( const Mat& image, Rect2d& boundingBox );
-     ...
-   };
+    Ptr<classname> classname::createTracker(const classname::Params &parameters){
+        ...
+    }
 
+  That function can (and probably will) return a pointer to some derived class of "classname", which will probably have a real constructor.
 
 Every tracker has three component :ocv:class:`TrackerSampler`, :ocv:class:`TrackerFeatureSet` and :ocv:class:`TrackerModel`.
 The first two are instantiated from Tracker base class, instead the last component is abstract, so you must implement your TrackerModel.
-
-Finally add your tracker in the file tracking_init.cpp
 
 TrackerSampler
 ..............

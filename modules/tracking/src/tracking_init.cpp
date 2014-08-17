@@ -45,17 +45,9 @@
 namespace cv
 {
 
-CV_INIT_ALGORITHM(TrackerMIL, "TRACKER.MIL",);
-
-CV_INIT_ALGORITHM(TrackerBoosting, "TRACKER.BOOSTING",);
-
 bool initModule_tracking(void)
 {
-  bool all = true;
-  all &= !TrackerMIL_info_auto.name().empty();
-  all &= !TrackerBoosting_info_auto.name().empty();
-
-  return all;
+  return true;
 }
 
 }

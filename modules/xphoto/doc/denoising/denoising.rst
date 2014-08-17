@@ -17,4 +17,4 @@ link: http://www.ipol.im/pub/art/2011/ys-dct/.
 
 .. seealso::
 
-    :ocv:func:`fastNLMeansDenoising`
+    :ocv:func:`fastNlMeansDenoising`

@@ -41,6 +41,12 @@
 
 #include "precomp.hpp"
 
+#undef BOILERPLATE_CODE
+#define BOILERPLATE_CODE(name,classname)\
+  if(trackerType==name){\
+      return classname::createTracker();\
+  }
+
 namespace cv
 {
 
@@ -72,7 +78,7 @@ bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
   //check if the model component is initialized
   if( model == 0 )
   {
-    CV_Error( -1, "The model are not initialized" );
+    CV_Error( -1, "The model is not initialized" );
     return false;
   }
 
@@ -98,10 +104,17 @@ bool Tracker::update( const Mat& image, Rect2d& boundingBox )
   return updateImpl( image, boundingBox );
 }
 
+AlgorithmInfo* Tracker::info() const{
+    return 0;
+}
+
 Ptr<Tracker> Tracker::create( const String& trackerType )
 {
-
-  return Algorithm::create<Tracker>( "TRACKER." + trackerType );
+  BOILERPLATE_CODE("MIL",TrackerMIL);
+  BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
+  BOILERPLATE_CODE("TLD",TrackerTLD);
+  return Ptr<Tracker>();
 }
 
 } /* namespace cv */

@@ -40,6 +40,11 @@
 
 #include <opencv2/rgbd.hpp>
 
+namespace cv
+{
+namespace rgbd
+{
+
 /** If the input image is of type CV_16UC1 (like the Kinect one), the image is converted to floats, divided
  * by 1000 to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
  * Otherwise, the image is simply converted to floats
@@ -50,20 +55,23 @@
  */
 template<typename T>
 void
-rescaleDepthTemplated(const cv::Mat& in, cv::Mat& out);
+rescaleDepthTemplated(const Mat& in, Mat& out);
 
 template<>
 inline void
-rescaleDepthTemplated<float>(const cv::Mat& in, cv::Mat& out)
+rescaleDepthTemplated<float>(const Mat& in, Mat& out)
 {
   rescaleDepth(in, CV_32F, out);
 }
 
 template<>
 inline void
-rescaleDepthTemplated<double>(const cv::Mat& in, cv::Mat& out)
+rescaleDepthTemplated<double>(const Mat& in, Mat& out)
 {
   rescaleDepth(in, CV_64F, out);
+}
+
+}
 }
 
 #endif /* __cplusplus */
