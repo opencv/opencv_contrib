@@ -59,7 +59,6 @@
 
 #include "opencv2/highgui.hpp"
 
-
 namespace xphotoInternal
 {
 #  include "photomontage.hpp"

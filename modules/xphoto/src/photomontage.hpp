@@ -45,6 +45,7 @@
 #include "gcgraph.hpp"
 
 #define GCInfinity 10*1000*1000*1000.0
+#define eps 0.02
 
 template <typename Tp> static int min_idx(std::vector <Tp> vec)
 {
@@ -163,8 +164,8 @@ singleExpansion(const int alpha)
 
         for (int j = 0; j < width; ++j)
             graph.addTermWeights( graph.addVtx(),
-                                  maskAlphaRow[j] ? 0 : GCInfinity,
-             masks[ labelRow[j] ].template at<uchar>(i, j) ? 0 : GCInfinity );
+                                          maskAlphaRow[j] ? 0 : GCInfinity,
+            masks[ labelRow[j] ].template at<uchar>(i, j) ? 0 : GCInfinity );
     }
 
     /** Neighbor links **/
@@ -199,7 +200,8 @@ singleExpansion(const int alpha)
         int *outRow = (int *) labelings[alpha].template ptr <int>(i);
 
         for (int j = 0; j < width; ++j)
-            outRow[j] = graph.inSourceSegment(i*width + j) ? inRow[j] : alpha;
+            outRow[j] = graph.inSourceSegment(i*width + j)
+                              ? inRow[j] : alpha;
     }
 
     return result;
@@ -218,7 +220,7 @@ gradientDescent()
         int minIndex = min_idx(distances);
         double minValue = distances[minIndex];
 
-        if (minValue < 0.98*optValue)
+        if (minValue < (1.00 - eps)*optValue)
             optValue = distances[num = minIndex];
 
         if (num == -1)

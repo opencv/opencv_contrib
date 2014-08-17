@@ -77,7 +77,8 @@ private:
     };
 
     const int height, width;
-    const int leafNumber;
+    const int leafNumber; // maximum number of point per leaf
+    const int zeroThresh; // radius of prohibited shifts
 
     std::vector <cv::Vec <Tp, cn> > data;
     std::vector <int> idx;
@@ -89,7 +90,7 @@ private:
 public:
     void updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist);
 
-    KDTree(const cv::Mat &data, const int leafNumber = 8);
+    KDTree(const cv::Mat &data, const int leafNumber = 8, const int zeroThresh = 16);
     ~KDTree(){};
 };
 
@@ -111,11 +112,13 @@ getMaxSpreadN(const int _left, const int _right) const
 }
 
 template <typename Tp, int cn> KDTree <Tp, cn>::
-KDTree(const cv::Mat &img, const int _leafNumber)
+KDTree(const cv::Mat &img, const int _leafNumber, const int _zeroThresh)
     : height(img.rows), width(img.cols),
-      leafNumber(_leafNumber)
+      leafNumber(_leafNumber), zeroThresh(_zeroThresh)
 ///////////////////////////////////////////////////
 {
+    CV_Assert( img.isContinuous() );
+
     std::copy( (cv::Vec <Tp, cn> *) img.data,
         (cv::Vec <Tp, cn> *) img.data + img.total(),
         std::back_inserter(data) );
@@ -162,9 +165,11 @@ updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
         int y = idx0/width, ny = idx[k]/width;
         int x = idx0%width, nx = idx[k]%width;
 
-        if (abs(ny - y) + abs(nx - x) < 32)
+        if (abs(ny - y) < zeroThresh &&
+            abs(nx - x) < zeroThresh)
             continue;
-        if (nx == width - 1 || ny == height - 1)
+        if (nx > width  - 1 || nx < 1 ||
+            ny > height - 1 || ny > 1 )
             continue;
 
         double ndist = norm2(data[idx0], data[idx[k]]);
@@ -199,7 +204,7 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
     cv::Mat whs; // Walsh-Hadamard series
     cv::merge(channels, whs);
 
-    KDTree <float, 24> kdTree(whs);
+    KDTree <float, 24> kdTree(whs, 16, 32);
     std::vector <int> annf( whs.total(), 0 );
 
     /** Propagation-assisted kd-tree search **/
@@ -224,14 +229,14 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
 
     /** Local maxima extraction **/
 
-    cv::Mat_<double> annfHist(2*whs.rows, 2*whs.cols, 0.0),
-                    _annfHist(2*whs.rows, 2*whs.cols, 0.0);
+    cv::Mat_<double> annfHist(2*whs.rows - 1, 2*whs.cols - 1, 0.0),
+                    _annfHist(2*whs.rows - 1, 2*whs.cols - 1, 0.0);
     for (size_t i = 0; i < annf.size(); ++i)
-        ++annfHist( (annf[i] - int(i))/whs.cols + whs.rows,
-                    (annf[i] - int(i))%whs.cols + whs.cols );
+        ++annfHist( (annf[i] - int(i))/whs.cols + whs.rows - 1,
+                    (annf[i] - int(i))%whs.cols + whs.cols - 1 );
 
     cv::GaussianBlur( annfHist, annfHist,
-        cv::Size(9, 9), 1.41, 0.0, cv::BORDER_CONSTANT);
+        cv::Size(0, 0), std::sqrt(2.0), 0.0, cv::BORDER_CONSTANT);
     cv::dilate( annfHist, _annfHist,
         cv::Matx<uchar, 9, 9>::ones() );
 
@@ -247,8 +252,8 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
             if ( pAnnfHist[j] != 0 && pAnnfHist[j] == _pAnnfHist[j] )
             {
                 amount.push_back( std::make_pair(pAnnfHist[j], t++) );
-                shiftM.push_back(cv::Point2i(j - whs.cols,
-                                             i - whs.rows));
+                shiftM.push_back( cv::Point2i(j - whs.cols + 1,
+                                              i - whs.rows + 1) );
             }
     }
 
