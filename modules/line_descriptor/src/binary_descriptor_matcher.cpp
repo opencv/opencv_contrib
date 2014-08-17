@@ -119,6 +119,12 @@ void BinaryDescriptorMatcher::checkKDistances( UINT32 * numres, int k, std::vect
 void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks )
 {
   /* check data validity */
+  if( queryDescriptors.rows == 0 )
+  {
+    std::cout << "Error: query descriptors'matrix is empty" << std::endl;
+    return;
+  }
+
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but match function received " << masks.size()
@@ -139,7 +145,6 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
 
   /* execute query */
   dataset->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
-
   /* compose matches */
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
@@ -149,16 +154,14 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
     /* get info about original image of each returned descriptor */
     itup = indexesMap.upper_bound( results[counter] - 1 );
     itup--;
-
     /* data validity check */
     if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
     {
       std::stringstream ss;
       ss << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
          << "1 column. Program will be terminated";
-      throw std::runtime_error( ss.str() );
+      //throw std::runtime_error( ss.str() );
     }
-
     /* create a DMatch object if required by mask or if there is
      no mask at all */
     else if( masks.empty() || masks[itup->second].at<uchar>( counter ) != 0 )
@@ -187,6 +190,12 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
 {
 
   /* check data validity */
+  if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
+  {
+    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    return;
+  }
+
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
   {
     std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
@@ -243,6 +252,12 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
 
 {
   /* check data validity */
+  if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
+  {
+    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    return;
+  }
+
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows || mask.cols != 1 ) )
   {
     std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
@@ -318,6 +333,12 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
 {
 
   /* check data validity */
+  if( queryDescriptors.rows == 0 )
+  {
+    std::cout << "Error: descriptors matrix cannot be void" << std::endl;
+    return;
+  }
+
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but knnMatch function received " << masks.size()
@@ -402,6 +423,12 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
 {
 
   /* check data validity */
+  if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
+  {
+    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    return;
+  }
+
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
   {
     std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
@@ -413,7 +440,8 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   Mihasher* mh = new Mihasher( 256, 32 );
 
   /* populate Mihasher */
-  Mat copy = queryDescriptors.clone();
+  //Mat copy = queryDescriptors.clone();
+  Mat copy = trainDescriptors.clone();
   mh->populate( copy, copy.rows, copy.cols );
 
   /* set K */
@@ -434,15 +462,16 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
     checkKDistances( numres, trainDescriptors.rows, k_distances, i, 256 );
 
     std::vector<DMatch> tempVector;
-    for ( int j = 0; j < index + trainDescriptors.rows; j++ )
+    for ( int j = index; j < index + trainDescriptors.rows; j++ )
     {
-      if( numres[j] <= maxDistance )
+//      if( numres[j] <= maxDistance )
+      if( k_distances[j - index] <= maxDistance )
       {
         if( mask.empty() || mask.at<uchar>( i ) != 0 )
         {
           DMatch dm;
           dm.queryIdx = i;
-          dm.trainIdx = results[j] - 1;
+          dm.trainIdx = (int) ( results[j] - 1 );
           dm.imgIdx = 0;
           dm.distance = (float) k_distances[j - index];
 
@@ -466,13 +495,19 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   delete numres;
 }
 
-/* for every input desciptor, find all the ones falling in a
- certaing atching radius (from one image to a set) */
+/* for every input descriptor, find all the ones falling in a
+ certain matching radius (from one image to a set) */
 void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
                                            const std::vector<Mat>& masks, bool compactResult )
 {
 
   /* check data validity */
+  if( queryDescriptors.rows == 0 )
+  {
+    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    return;
+  }
+
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but radiusMatch function received " << masks.size()
@@ -528,7 +563,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
           dm.queryIdx = counter;
           dm.trainIdx = results[j] - 1;
           dm.imgIdx = itup->second;
-          dm.distance = (float)k_distances[j - index];
+          dm.distance = (float) k_distances[j - index];
 
           tempVector.push_back( dm );
         }

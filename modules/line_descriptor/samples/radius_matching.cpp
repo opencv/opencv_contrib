@@ -84,6 +84,7 @@ int main( int argc, char** argv )
     /* get path to image */
     std::stringstream image_path;
     image_path << pathToImages << images[i];
+    std::cout << image_path.str().c_str() << std::endl;
 
     /* load image */
     Mat loadedImage = imread( image_path.str().c_str(), 1 );
@@ -127,5 +128,15 @@ int main( int argc, char** argv )
   /* compute matches */
   std::vector<std::vector<DMatch> > matches;
   bdm->radiusMatch( queries, matches, 30 );
+  std::cout << "size matches sample " << matches.size() << std::endl;
+
+  for ( int i = 0; i < matches.size(); i++ )
+  {
+    for ( int j = 0; j < matches[i].size(); j++ )
+    {
+      std::cout << "match: " << matches[i][j].queryIdx << " " << matches[i][j].trainIdx << " " << matches[i][j].distance << std::endl;
+    }
+
+  }
 
 }
