@@ -83,6 +83,8 @@ private:
     void smoothnessTerm( const Mat W, const Mat weightsX, const Mat weightsY, Mat b1, Mat b2 );
     void sorSolve( const Mat a11, const Mat a12, const Mat a22, const Mat b1, const Mat b2,
             const Mat smoothX, const Mat smoothY, Mat dW );
+    void sorUnfolded( const Mat a11, const Mat a12, const Mat a22, const Mat b1, const Mat b2,
+            const Mat smoothX, const Mat smoothY, Mat dW );
     std::vector<Mat> buildPyramid( const Mat& src );
 
     int interpolationType;
@@ -461,6 +463,7 @@ void OpticalFlowDeepFlow::smoothnessTerm( const Mat W, const Mat weightsX, const
         }
     }
 }
+
 void OpticalFlowDeepFlow::sorSolve( const Mat a11, const Mat a12, const Mat a22, const Mat b1,
         const Mat b2, const Mat smoothX, const Mat smoothY, Mat dW )
 {
@@ -472,6 +475,12 @@ void OpticalFlowDeepFlow::sorSolve( const Mat a11, const Mat a12, const Mat a22,
     CV_Assert(smoothX.isContinuous());
     CV_Assert(smoothY.isContinuous());
 
+    if(dW.cols > 2 && dW.rows > 2)
+    {
+        sorUnfolded(a11, a12, a22, b1, b2, smoothX, smoothY, dW );
+        //more efficient version - this one is mostly for future reference and readability
+        return;
+    }
     std::vector<Mat> dWChannels(2);
     split(dW, dWChannels);
 
@@ -580,23 +589,258 @@ void OpticalFlowDeepFlow::sorSolve( const Mat a11, const Mat a12, const Mat a22,
                             + psmoothY[o - s] * pdv[o - s]
                             + psmoothY[o] * pdv[o + s];
                 }
-                A22 = *pa11 + dPsi;
                 A11 = *pa22 + dPsi;
                 A12 = -*pa12;
+                A22 = *pa11 + dPsi;
                 det = A11 * A22 - A12 * A12;
-                A22 /= det;
                 A11 /= det;
                 A12 /= det;
+                A22 /= det;
                 B1 = *pb1 + sigmaU;
                 B2 = *pb2 + sigmaV;
                 pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
                 pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
-
                 ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
             }
         }
     }
     merge(dWChannels, dW);
+}
+
+
+void OpticalFlowDeepFlow::sorUnfolded( const Mat a11, const Mat a12, const Mat a22, const Mat b1, const Mat b2,
+        const Mat smoothX, const Mat smoothY, Mat dW )
+{
+    // the same effect as sorSolve(), but written more efficiently
+    std::vector<Mat> dWChannels(2);
+    split(dW, dWChannels);
+
+    Mat *du = &(dWChannels[0]);
+    Mat *dv = &(dWChannels[1]);
+
+    CV_Assert(du->isContinuous());
+    CV_Assert(dv->isContinuous());
+
+    const float *pa11, *pa12, *pa22, *pb1, *pb2, *psmoothX, *psmoothY;
+    float *pdu, *pdv;
+
+
+    float sigmaU, sigmaV, dPsi, A11, A22, A12, B1, B2, det;
+
+    int cols = dW.cols;
+    int rows = dW.rows;
+
+    int s = dW.cols; // step between rows
+    int j, i, o; //row, column, offset
+
+    for ( int iter = 0; iter < sorIterations; ++iter )
+    {
+        pa11 = a11.ptr<float>(0);
+        pa12 = a12.ptr<float>(0);
+        pa22 = a22.ptr<float>(0);
+        pb1 = b1.ptr<float>(0);
+        pb2 = b2.ptr<float>(0);
+        psmoothX = smoothX.ptr<float>(0);
+        psmoothY = smoothY.ptr<float>(0);
+        pdu = du->ptr<float>(0);
+        pdv = dv->ptr<float>(0);
+
+        // first row
+        // first column
+        o=0;
+        dPsi = psmoothX[o] + psmoothY[o];
+        sigmaU = psmoothX[o] * pdu[o + 1] + psmoothY[o] * pdu[o + s];
+        sigmaV = psmoothX[o] * pdv[o + 1] + psmoothY[o] * pdv[o + s];
+        A11 = *pa22 + dPsi;
+        A12 = -*pa12;
+        A22 = *pa11 + dPsi;
+        det = A11 * A22 - A12 * A12;
+        A11 /= det;
+        A12 /= det;
+        A22 /= det;
+        B1 = *pb1 + sigmaU;
+        B2 = *pb2 + sigmaV;
+        pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+        pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+        ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+        // middle rows
+        for ( o = 1; o < cols-1; ++o )
+        {
+            dPsi = psmoothX[o - 1] + psmoothX[o] + psmoothY[o];
+            sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                    + psmoothX[o] * pdu[o + 1] + psmoothY[o] * pdu[o + s];
+            sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                    + psmoothX[o] * pdv[o + 1] + psmoothY[o] * pdv[o + s];
+            A11 = *pa22 + dPsi;
+            A12 = -*pa12;
+            A22 = *pa11 + dPsi;
+            det = A11 * A22 - A12 * A12;
+            A11 /= det;
+            A12 /= det;
+            A22 /= det;
+            B1 = *pb1 + sigmaU;
+            B2 = *pb2 + sigmaV;
+            pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+            pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+            ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+        }
+        // last column
+        dPsi = psmoothX[o - 1] + psmoothY[o];
+        sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                + psmoothY[o] * pdu[o + s];
+        sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                + psmoothY[o] * pdv[o + s];
+        A11 = *pa22 + dPsi;
+        A12 = -*pa12;
+        A22 = *pa11 + dPsi;
+        det = A11 * A22 - A12 * A12;
+        A11 /= det;
+        A12 /= det;
+        A22 /= det;
+        B1 = *pb1 + sigmaU;
+        B2 = *pb2 + sigmaV;
+        pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+        pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+        ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+        ++o;
+        //middle rows
+        for ( j = 1; j < rows - 1; ++j)
+        {
+            // first column
+            dPsi = psmoothX[o] + psmoothY[o - s] + psmoothY[o];
+            sigmaU = psmoothX[o] * pdu[o + 1]
+                    + psmoothY[o - s] * pdu[o - s]
+                    + psmoothY[o] * pdu[o + s];
+            sigmaV = psmoothX[o] * pdv[o + 1]
+                    + psmoothY[o - s] * pdv[o - s]
+                    + psmoothY[o] * pdv[o + s];
+            A11 = *pa22 + dPsi;
+            A12 = -*pa12;
+            A22 = *pa11 + dPsi;
+            det = A11 * A22 - A12 * A12;
+            A11 /= det;
+            A12 /= det;
+            A22 /= det;
+            B1 = *pb1 + sigmaU;
+            B2 = *pb2 + sigmaV;
+            pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+            pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+            ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+            ++o;
+            // middle columns
+            for ( i = 1; i < cols - 1; ++i)
+            {
+                dPsi = psmoothX[o - 1] + psmoothX[o] + psmoothY[o - s]
+                        + psmoothY[o];
+                sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                        + psmoothX[o] * pdu[o + 1]
+                        + psmoothY[o - s] * pdu[o - s]
+                        + psmoothY[o] * pdu[o + s];
+                sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                        + psmoothX[o] * pdv[o + 1]
+                        + psmoothY[o - s] * pdv[o - s]
+                        + psmoothY[o] * pdv[o + s];
+                A11 = *pa22 + dPsi;
+                A12 = -*pa12;
+                A22 = *pa11 + dPsi;
+                det = A11 * A22 - A12 * A12;
+                A11 /= det;
+                A12 /= det;
+                A22 /= det;
+                B1 = *pb1 + sigmaU;
+                B2 = *pb2 + sigmaV;
+                pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+                pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+                ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+                ++o;
+            }
+            //last column
+            dPsi = psmoothX[o - 1] + psmoothY[o - s] + psmoothY[o];
+            sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                    + psmoothY[o - s] * pdu[o - s]
+                    + psmoothY[o] * pdu[o + s];
+            sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                    + psmoothY[o - s] * pdv[o - s]
+                    + psmoothY[o] * pdv[o + s];
+            A11 = *pa22 + dPsi;
+            A12 = -*pa12;
+            A22 = *pa11 + dPsi;
+            det = A11 * A22 - A12 * A12;
+            A11 /= det;
+            A12 /= det;
+            A22 /= det;
+            B1 = *pb1 + sigmaU;
+            B2 = *pb2 + sigmaV;
+            pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+            pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+            ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+            ++o;
+        }
+        //last row
+        //first column
+        dPsi = psmoothX[o] + psmoothY[o - s];
+        sigmaU = psmoothX[o] * pdu[o + 1]
+                + psmoothY[o - s] * pdu[o - s];
+        sigmaV = psmoothX[o] * pdv[o + 1]
+                + psmoothY[o - s] * pdv[o - s];
+        A11 = *pa22 + dPsi;
+        A12 = -*pa12;
+        A22 = *pa11 + dPsi;
+        det = A11 * A22 - A12 * A12;
+        A11 /= det;
+        A12 /= det;
+        A22 /= det;
+        B1 = *pb1 + sigmaU;
+        B2 = *pb2 + sigmaV;
+        pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+        pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+        ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+        ++o;
+        //middle columns
+        for ( i = 1; i < cols - 1; ++i)
+        {
+            dPsi = psmoothX[o - 1] + psmoothX[o] + psmoothY[o - s];
+            sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                    + psmoothX[o] * pdu[o + 1]
+                    + psmoothY[o - s] * pdu[o - s];
+            sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                    + psmoothX[o] * pdv[o + 1]
+                    + psmoothY[o - s] * pdv[o - s];
+            A11 = *pa22 + dPsi;
+            A12 = -*pa12;
+            A22 = *pa11 + dPsi;
+            det = A11 * A22 - A12 * A12;
+            A11 /= det;
+            A12 /= det;
+            A22 /= det;
+            B1 = *pb1 + sigmaU;
+            B2 = *pb2 + sigmaV;
+            pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+            pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+            ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+            ++o;
+        }
+        //last column
+        dPsi = psmoothX[o - 1] + psmoothY[o - s];
+        sigmaU = psmoothX[o - 1] * pdu[o - 1]
+                + psmoothY[o - s] * pdu[o - s];
+        sigmaV = psmoothX[o - 1] * pdv[o - 1]
+                + psmoothY[o - s] * pdv[o - s];
+        A11 = *pa22 + dPsi;
+        A12 = -*pa12;
+        A22 = *pa11 + dPsi;
+        det = A11 * A22 - A12 * A12;
+        A11 /= det;
+        A12 /= det;
+        A22 /= det;
+        B1 = *pb1 + sigmaU;
+        B2 = *pb2 + sigmaV;
+        pdu[o] += omega * (A11 * B1 + A12 * B2 - pdu[o]);
+        pdv[o] += omega * (A12 * B1 + A22 * B2 - pdv[o]);
+        ++pa11; ++pa12; ++pa22; ++pb1; ++pb2;
+    }
+    merge(dWChannels, dW);
+
 }
 void OpticalFlowDeepFlow::collectGarbage()
 {
