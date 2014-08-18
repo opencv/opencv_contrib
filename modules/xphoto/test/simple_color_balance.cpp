@@ -12,6 +12,7 @@ namespace cvtest
         {
             cv::String srcName = dir + cv::format( "sources/%02d.png", i + 1);
             cv::Mat src = cv::imread( srcName, 1 );
+            ASSERT_TRUE(!src.empty());
 
             cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
