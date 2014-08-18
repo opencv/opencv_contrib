@@ -247,8 +247,8 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_SimpleFlow();
     else if ( method == "tvl1" )
         algorithm = createOptFlow_DualTVL1();
-//    else if ( method == "deepflow" )
-//        algorithm = createOptFlow_DeepFlow();
+    else if ( method == "deepflow" )
+        algorithm = createOptFlow_DeepFlow();
     else
     {
         printf("Wrong method!\n");
