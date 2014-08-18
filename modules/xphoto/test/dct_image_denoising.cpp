@@ -25,7 +25,7 @@ namespace cvtest
 
             cv::Mat currentResult;
 
-            cv::dctDenoising(src, currentResult, sigma[i], psize[i]);
+            cv::xphoto::dctDenoising(src, currentResult, sigma[i], psize[i]);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );

@@ -44,7 +44,7 @@ int main( int argc, const char** argv )
     }
 
     cv::Mat res(src.size(), src.type());
-    cv::balanceWhite(src, res, cv::WHITE_BALANCE_SIMPLE);
+    cv::xphoto::balanceWhite(src, res, cv::xphoto::WHITE_BALANCE_SIMPLE);
 
     if ( outFilename == "" )
     {

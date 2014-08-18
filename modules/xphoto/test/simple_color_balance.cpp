@@ -19,7 +19,7 @@ namespace cvtest
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
 
             cv::Mat currentResult;
-            cv::balanceWhite(src, currentResult, cv::WHITE_BALANCE_SIMPLE);
+            cv::xphoto::balanceWhite(src, currentResult, cv::xphoto::WHITE_BALANCE_SIMPLE);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );
