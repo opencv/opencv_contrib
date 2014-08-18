@@ -41,8 +41,10 @@
 
 #ifndef __OPENCV_CCALIB_CPP__
 #define __OPENCV_CCALIB_CPP__
+#ifdef __cplusplus
 
-#include "ccalib.hpp"
+#include "precomp.hpp"
+#include "opencv2/ccalib.hpp"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/types_c.h> // CV_TERM
@@ -486,4 +488,6 @@ void CustomPattern::drawOrientation(InputOutputArray image, InputArray tvec, Inp
 
 } // namespace cv
 
-#endif
+#endif //_CPP
+#endif // cplusplus
+
