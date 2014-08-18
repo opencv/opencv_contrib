@@ -70,7 +70,7 @@ CV_EXPORTS_W bool writeOpticalFlow( const String& path, InputArray flow );
 
 // DeepFlow implementation, based on:
 //   P. Weinzaepfel, J. Revaud, Z. Harchaoui, and C. Schmid, “DeepFlow: Large Displacement Optical Flow with Deep Matching,”
-//CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
 
 // Additional interface to the SimpleFlow algorithm - calcOpticalFlowSF()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
