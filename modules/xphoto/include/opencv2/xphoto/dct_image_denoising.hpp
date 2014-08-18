@@ -57,6 +57,8 @@ Namespace where all the C++ OpenCV functionality resides
 */
 namespace cv
 {
+namespace xphoto
+{
     /*! This function implements simple dct-based image denoising,
 	 *	link: http://www.ipol.im/pub/art/2011/ys-dct/
      *
@@ -66,6 +68,7 @@ namespace cv
 	 *  \param psize : size of block side where dct is computed
      */
     CV_EXPORTS_W void dctDenoising(const Mat &src, Mat &dst, const double sigma, const int psize = 16);
+}
 }
 
 #endif // __OPENCV_DCT_IMAGE_DENOISING_HPP__

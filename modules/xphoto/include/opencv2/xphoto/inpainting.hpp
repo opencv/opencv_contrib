@@ -57,6 +57,8 @@ Namespace where all the C++ OpenCV functionality resides
 */
 namespace cv
 {
+namespace xphoto
+{
     //! various inpainting algorithms
     enum
     {
@@ -70,6 +72,7 @@ namespace cv
     *  \param algorithmType : inpainting method.
     */
     CV_EXPORTS_W void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType);
+}
 }
 
 #endif // __OPENCV_INPAINTING_HPP__

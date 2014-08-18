@@ -5,10 +5,11 @@ namespace cvtest
 
 TEST(ximpgroc_StructuredEdgeDetection, regression)
 {
-    cv::String dir = cvtest::TS::ptr()->get_data_path();
+    cv::String subfolder = "cv/ximgproc/";
+    cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder;
     int nTests = 12;
     float threshold = 0.01f;
-
+    
     cv::String modelName = dir + "model.yml.gz";
     cv::Ptr<cv::ximgproc::StructuredEdgeDetection> pDollar =
         cv::ximgproc::createStructuredEdgeDetection(modelName);
@@ -17,6 +18,7 @@ TEST(ximpgroc_StructuredEdgeDetection, regression)
     {
         cv::String srcName = dir + cv::format( "sources/%02d.png", i + 1);
         cv::Mat src = cv::imread( srcName, 1 );
+        ASSERT_TRUE(!src.empty());
 
         cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
         cv::Mat previousResult = cv::imread( previousResultName, 0 );
