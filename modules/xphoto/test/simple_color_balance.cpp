@@ -4,7 +4,8 @@ namespace cvtest
 {
     TEST(xphoto_simplecolorbalance, regression)
     {
-        cv::String dir = cvtest::TS::ptr()->get_data_path() + "simple_white_balance/";
+        cv::String subfolder = "cv/xphoto/";
+        cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder + "simple_white_balance/";
         int nTests = 12;
         float threshold = 0.005f;
 

@@ -4,7 +4,8 @@ namespace cvtest
 {
     TEST(xphoto_dctimagedenoising, regression)
     {
-        cv::String dir = cvtest::TS::ptr()->get_data_path() + "dct_image_denoising/";
+        cv::String subfolder = "cv/xphoto/";
+        cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder + "dct_image_denoising/";
         int nTests = 1;
 
         double thresholds[] = {0.2};
