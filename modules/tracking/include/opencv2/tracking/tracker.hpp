@@ -804,7 +804,8 @@ class CV_EXPORTS_W TrackerSamplerCS : public TrackerSamplerAlgorithm
 
 };
 
-class CV_EXPORTS_W TrackerSamplerPF : public TrackerSamplerAlgorithm{
+class CV_EXPORTS_W TrackerSamplerPF : public TrackerSamplerAlgorithm
+{
 public:
   struct CV_EXPORTS Params
   {
@@ -819,8 +820,8 @@ protected:
   bool samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample );
 private:
   Params params;
-  Ptr<optim::Solver> _solver;
-  Ptr<optim::Solver::Function> _function;
+  Ptr<MinProblemSolver> _solver;
+  Ptr<MinProblemSolver::Function> _function;
 };
 
 /************************************ Specific TrackerFeature Classes ************************************/

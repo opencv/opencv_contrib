@@ -8,7 +8,7 @@
 #include <climits>
 
 const int CMDLINEMAX = 30;
-const int ASSESS_TILL = 100;
+const int ASSESS_TILL = INT_MAX;
 const int LINEMAX = 40;
 
 using namespace std;

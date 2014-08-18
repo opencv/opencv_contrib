@@ -1,4 +1,4 @@
-#include "opencv2/optim.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/core/core_c.h"
 #include <algorithm>
 #include <typeinfo>
@@ -8,9 +8,9 @@
 namespace cv{
 
     //!particle filtering class
-    class PFSolver : public optim::Solver{
+    class PFSolver : public MinProblemSolver{
     public:
-        class Function : public optim::Solver::Function
+        class Function : public MinProblemSolver::Function
         {
         public:
             //!if parameters have no sense due to some reason (e.g. lie outside of function domain), this function "corrects" them,
@@ -31,13 +31,13 @@ namespace cv{
         void getParamsSTD(OutputArray std)const;
         void setParamsSTD(InputArray std);
 
-        Ptr<optim::Solver::Function> getFunction() const;
-        void setFunction(const Ptr<Solver::Function>& f);
+        Ptr<MinProblemSolver::Function> getFunction() const;
+        void setFunction(const Ptr<MinProblemSolver::Function>& f);
         TermCriteria getTermCriteria() const;
         void setTermCriteria(const TermCriteria& termcrit);
     private:
         Mat_<double> _std,_particles,_logweight;
-        Ptr<Solver::Function> _Function;
+        Ptr<MinProblemSolver::Function> _Function;
         PFSolver::Function* _real_function;
         TermCriteria _termcrit;
         int _maxItNum,_iter,_particlesNum;
@@ -46,11 +46,11 @@ namespace cv{
         RNG rng;
     };
 
-    CV_EXPORTS_W Ptr<PFSolver> createPFSolver(const Ptr<optim::Solver::Function>& f=Ptr<optim::Solver::Function>(),InputArray std=Mat(),
+    CV_EXPORTS_W Ptr<PFSolver> createPFSolver(const Ptr<MinProblemSolver::Function>& f=Ptr<MinProblemSolver::Function>(),InputArray std=Mat(),
             TermCriteria termcrit=TermCriteria(TermCriteria::MAX_ITER,5,0.0),int particlesNum=100,double alpha=0.6);
 
     PFSolver::PFSolver(){
-        _Function=Ptr<Solver::Function>();
+        _Function=Ptr<MinProblemSolver::Function>();
         _real_function=NULL;
         _std=Mat_<double>();
         rng=RNG(getTickCount());
@@ -154,14 +154,14 @@ namespace cv{
     double PFSolver::getAlpha(){
         return _alpha;
     }
-    Ptr<optim::Solver::Function> PFSolver::getFunction() const{
+    Ptr<MinProblemSolver::Function> PFSolver::getFunction() const{
         return _Function;
     }
-    void PFSolver::setFunction(const Ptr<optim::Solver::Function>& f){
+    void PFSolver::setFunction(const Ptr<MinProblemSolver::Function>& f){
         CV_Assert(f.empty()==false);
 
-        Ptr<Solver::Function> non_const_f(f);
-        Solver::Function* f_ptr=static_cast<Solver::Function*>(non_const_f);
+        Ptr<MinProblemSolver::Function> non_const_f(f);
+        MinProblemSolver::Function* f_ptr=static_cast<MinProblemSolver::Function*>(non_const_f);
 
         PFSolver::Function *pff=dynamic_cast<PFSolver::Function*>(f_ptr);
         CV_Assert(pff!=NULL);
@@ -194,7 +194,7 @@ namespace cv{
         }
     }
 
-    Ptr<PFSolver> createPFSolver(const Ptr<optim::Solver::Function>& f,InputArray std,TermCriteria termcrit,int particlesNum,double alpha){
+    Ptr<PFSolver> createPFSolver(const Ptr<MinProblemSolver::Function>& f,InputArray std,TermCriteria termcrit,int particlesNum,double alpha){
             Ptr<PFSolver> ptr(new PFSolver());
 
             if(f.empty()==false){
