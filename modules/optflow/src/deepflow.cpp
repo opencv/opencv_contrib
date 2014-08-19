@@ -176,14 +176,14 @@ void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray
     Mat W = _flow.getMat(); // if any data present - will be discarded
 
     // pre-smooth images
-    int kernelLen = (floor(3 * sigma) * 2) + 1;
+    int kernelLen = ((int)floor(3 * sigma) * 2) + 1;
     Size kernelSize(kernelLen, kernelLen);
     GaussianBlur(I0, I0, kernelSize, sigma);
     GaussianBlur(I1, I1, kernelSize, sigma);
     // build down-sized pyramids
     std::vector<Mat> pyramid_I0 = buildPyramid(I0);
     std::vector<Mat> pyramid_I1 = buildPyramid(I1);
-    int levelCount = pyramid_I0.size();
+    int levelCount = (int) pyramid_I0.size();
 
     // initialize the first version of flow estimate to zeros
     Size smallestSize = pyramid_I0[levelCount - 1].size();
@@ -293,7 +293,7 @@ void OpticalFlowDeepFlow::dataTerm( const Mat W, const Mat dW, const Mat Ix, con
           //color constancy component
             derivNorm = (*pIx) * (*pIx) + (*pIy) * (*pIy) + zeta_squared;
             Ik1z = *pIz + (*pIx * *pdU) + (*pIy * *pdV);
-            temp = (0.5*delta/3) / sqrt(Ik1z * Ik1z / derivNorm + epsilon_squared);
+            temp = (0.5f*delta/3) / sqrt(Ik1z * Ik1z / derivNorm + epsilon_squared);
             *pa11 = *pIx * *pIx * temp / derivNorm;
             *pa12 = *pIx * *pIy * temp / derivNorm;
             *pa22 = *pIy * *pIy * temp / derivNorm;
@@ -307,7 +307,7 @@ void OpticalFlowDeepFlow::dataTerm( const Mat W, const Mat dW, const Mat Ix, con
             Ik1zx = *pIxz + *pIxx * *pdU + *pIxy * *pdV;
             Ik1zy = *pIyz + *pIxy * *pdU + *pIyy * *pdV;
 
-            temp = (0.5*gamma/3)
+            temp = (0.5f*gamma/3)
                     / sqrt(
                             Ik1zx * Ik1zx / derivNorm + Ik1zy * Ik1zy / derivNorm2
                                     + epsilon_squared);
