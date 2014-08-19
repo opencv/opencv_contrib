@@ -105,7 +105,7 @@ public:
 	bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
 				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
 				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = ITERATIVE);
-    /*
+        /*
 		Uses solvePnPRansac()
 	*/
 
@@ -135,7 +135,7 @@ private:
 	bool findPatternPass(const Mat& image, std::vector<Point2f>& matched_features, std::vector<Point3f>& pattern_points,
 						 Mat& H, std::vector<Point2f>& scene_corners, const double pratio, const double proj_error,
 						 const bool refine_position = false, const Mat& mask = Mat(), OutputArray output = noArray());
-	void scaleFoundPoints(const double squareSize, const std::vector<KeyPoint>& corners, std::vector<Point3f>& points3d);
+	void scaleFoundPoints(const double squareSize, const std::vector<KeyPoint>& corners, std::vector<Point3f>& pts3d);
 	void check_matches(std::vector<Point2f>& matched, const std::vector<Point2f>& pattern, std::vector<DMatch>& good, std::vector<Point3f>& pattern_3d, const Mat& H);
 
 	void keypoints2points(const std::vector<KeyPoint>& in, std::vector<Point2f>& out);

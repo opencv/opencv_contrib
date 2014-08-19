@@ -49,6 +49,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/types_c.h> // CV_TERM
 #include <opencv2/core/core_c.h>  // CV_RGB
+#include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 
@@ -185,11 +186,11 @@ Ptr<DescriptorMatcher> CustomPattern::getDescriptorMatcher()
 }
 
 void CustomPattern::scaleFoundPoints(const double pixelSize,
-            const vector<KeyPoint>& corners, vector<Point3f>& points3d)
+            const vector<KeyPoint>& corners, vector<Point3f>& pts3d)
 {
     for (unsigned int i = 0; i < corners.size(); ++i)
     {
-        points3d.push_back(Point3f(
+        pts3d.push_back(Point3f(
                 corners[i].pt.x * pixelSize,
                 corners[i].pt.y * pixelSize,
                 0));
