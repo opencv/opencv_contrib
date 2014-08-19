@@ -11,3 +11,4 @@ The opencv_optflow module includes different algorithms for tracking points
 
     dense_optflow
     motion_templates
+    optflow_io
