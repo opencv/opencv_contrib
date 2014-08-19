@@ -47,7 +47,6 @@
 #include "feature.hpp"
 #include "onlineMIL.hpp"
 #include "onlineBoosting.hpp"
-#include "opencv2/optim.hpp"
 #include <iostream>
 
 #define BOILERPLATE_CODE(name,classname) \
