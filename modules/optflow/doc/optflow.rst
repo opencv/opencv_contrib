@@ -1,5 +1,5 @@
 ******************************************
-text. Optical Flow Algorithms
+optflow. Optical Flow Algorithms
 ******************************************
 
 .. highlight:: cpp

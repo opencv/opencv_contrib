@@ -1,6 +1,6 @@
-**********************************
-xphoto. Addon to basic photo modul
-**********************************
+***********************************************
+xphoto. Additional photo processing algorithms
+***********************************************
 
 .. toctree::
     :maxdepth: 2
