@@ -46,11 +46,11 @@
 #include "precomp.hpp"
 #include "opencv2/ccalib.hpp"
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/core/types_c.h> // CV_TERM
 #include <opencv2/core/core_c.h>  // CV_RGB
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/features2d.hpp>
 
 #include <vector>
 #include <cstring>
