@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,48 +39,60 @@
  //
  //M*/
 
-#pragma once
-#include "kyheader.h"
+#ifndef __OPENCV_FILTER_TIG_HPP__
+#define __OPENCV_FILTER_TIG_HPP__
+
+#include "src/kyheader.hpp"
+
+namespace cv
+{
+namespace saliency
+{
+
 class FilterTIG
 {
-public:
-    void update(CMat &w);
+ public:
+  void update( CMat &w );
 
-    // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
-    cv::Mat matchTemplate(const cv::Mat &mag1u);
+  // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
+  cv::Mat matchTemplate( const cv::Mat &mag1u );
 
-    inline float dot(const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8);
+  inline float dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 );
 
-public:
-    void reconstruct(cv::Mat &w); // For illustration purpose
+ public:
+  void reconstruct( cv::Mat &w );  // For illustration purpose
 
-private:
-    static const int NUM_COMP = 2; // Number of components
-    static const int D = 64; // Dimension of TIG
-    int64_t _bTIGs[NUM_COMP]; // Binary TIG features
-    float _coeffs1[NUM_COMP]; // Coefficients of binary TIG features
+ private:
+  static const int NUM_COMP = 2;  // Number of components
+  static const int D = 64;  // Dimension of TIG
+  int64_t _bTIGs[NUM_COMP];  // Binary TIG features
+  float _coeffs1[NUM_COMP];  // Coefficients of binary TIG features
 
-    // For efficiently deals with different bits in CV_8U gradient map
-    float _coeffs2[NUM_COMP], _coeffs4[NUM_COMP], _coeffs8[NUM_COMP];
+  // For efficiently deals with different bits in CV_8U gradient map
+  float _coeffs2[NUM_COMP], _coeffs4[NUM_COMP], _coeffs8[NUM_COMP];
 };
 
-
-inline float FilterTIG::dot(const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8)
+inline float FilterTIG::dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 )
 {
-  int64_t bcT1 = (int64_t)POPCNT64(tig1);
-  int64_t bcT2 = (int64_t)POPCNT64(tig2);
-  int64_t bcT4 = (int64_t)POPCNT64(tig4);
-  int64_t bcT8 = (int64_t)POPCNT64(tig8);
+  int64_t bcT1 = (int64_t) POPCNT64( tig1 );
+  int64_t bcT2 = (int64_t) POPCNT64( tig2 );
+  int64_t bcT4 = (int64_t) POPCNT64( tig4 );
+  int64_t bcT8 = (int64_t) POPCNT64( tig8 );
 
-  int64_t bc01 = (int64_t)(POPCNT64(_bTIGs[0] & tig1) << 1) - bcT1;
-  int64_t bc02 = (int64_t)((POPCNT64(_bTIGs[0] & tig2) << 1) - bcT2) << 1;
-  int64_t bc04 = (int64_t)((POPCNT64(_bTIGs[0] & tig4) << 1) - bcT4) << 2;
-  int64_t bc08 = (int64_t)((POPCNT64(_bTIGs[0] & tig8) << 1) - bcT8) << 3;
+  int64_t bc01 = (int64_t) ( POPCNT64(_bTIGs[0] & tig1) << 1 ) - bcT1;
+  int64_t bc02 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig2) << 1 ) - bcT2 ) << 1;
+  int64_t bc04 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig4) << 1 ) - bcT4 ) << 2;
+  int64_t bc08 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig8) << 1 ) - bcT8 ) << 3;
 
-  int64_t bc11 = (int64_t)(POPCNT64(_bTIGs[1] & tig1) << 1) - bcT1;
-  int64_t bc12 = (int64_t)((POPCNT64(_bTIGs[1] & tig2) << 1) - bcT2) << 1;
-  int64_t bc14 = (int64_t)((POPCNT64(_bTIGs[1] & tig4) << 1) - bcT4) << 2;
-  int64_t bc18 = (int64_t)((POPCNT64(_bTIGs[1] & tig8) << 1) - bcT8) << 3;
+  int64_t bc11 = (int64_t) ( POPCNT64(_bTIGs[1] & tig1) << 1 ) - bcT1;
+  int64_t bc12 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig2) << 1 ) - bcT2 ) << 1;
+  int64_t bc14 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig4) << 1 ) - bcT4 ) << 2;
+  int64_t bc18 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig8) << 1 ) - bcT8 ) << 3;
 
-    return _coeffs1[0] * (bc01 + bc02 + bc04 + bc08) + _coeffs1[1] * (bc11 + bc12 + bc14 + bc18);
+  return _coeffs1[0] * ( bc01 + bc02 + bc04 + bc08 ) + _coeffs1[1] * ( bc11 + bc12 + bc14 + bc18 );
 }
+
+} /* namespace saliency */
+} /* namespace cv */
+
+#endif //__OPENCV_FILTER_TIG_HPP__

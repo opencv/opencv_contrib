@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,11 +39,17 @@
  //
  //M*/
 
-#pragma once
+#ifndef __OPENCV_VAL_STRUCT_VEC_HPP__
+#define __OPENCV_VAL_STRUCT_VEC_HPP__
 
 /************************************************************************/
 /* A value struct vector that supports efficient sorting                */
 /************************************************************************/
+
+namespace cv
+{
+namespace saliency
+{
 
 template<typename VT, typename ST>
 struct ValStructVec
@@ -142,3 +148,7 @@ std::vector<std::pair<VT, int> > ValStructVec<VT, ST>::getvalIdxes()
   return valIdxes;
 }
 
+} /* namespace saliency */
+} /* namespace cv */
+
+#endif //__OPENCV_VAL_STRUCT_VEC_HPP__

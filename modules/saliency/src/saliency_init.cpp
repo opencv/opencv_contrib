@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -44,6 +44,8 @@
 
 namespace cv
 {
+namespace saliency
+{
 
 CV_INIT_ALGORITHM( StaticSaliencySpectralResidual, "SALIENCY.SPECTRAL_RESIDUAL",
                    obj.info()->addParam( obj, "resImWidth", obj.resImWidth); obj.info()->addParam( obj, "resImHeight", obj.resImHeight) );
@@ -68,4 +70,5 @@ bool initModule_saliency( void )
   return all;
 }
 
-}
+}  // namespace saliency
+}  // namespace cv

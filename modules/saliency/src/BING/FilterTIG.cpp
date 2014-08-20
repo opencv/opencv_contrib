@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,10 +39,14 @@
  //
  //M*/
 
-#include "CmShow.h"
-#include "opencv2/saliency/FilterTIG.h"
+#include "precomp.hpp"
+#include "CmShow.hpp"
+#include "src/FilterTIG.hpp"
 
-using namespace cv;
+namespace cv
+{
+namespace saliency
+{
 
 void FilterTIG::update( CMat &w1f )
 {
@@ -125,3 +129,6 @@ Mat FilterTIG::matchTemplate( const Mat &mag1u )
   scores( Rect( 8, 8, W - 7, H - 7 ) ).copyTo( matchCost1f );
   return matchCost1f;
 }
+
+} // namespace saliency
+} // namespace cv

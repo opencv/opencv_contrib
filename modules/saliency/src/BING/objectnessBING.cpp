@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -41,10 +41,12 @@
 
 #include "precomp.hpp"
 
-#include "CmTimer.h"
-#include "CmFile.h"
+#include "CmTimer.hpp"
+#include "CmFile.hpp"
 
 namespace cv
+{
+namespace saliency
 {
 
 /**
@@ -116,7 +118,7 @@ int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, 
   CV_Assert( _svmSzIdxs.size() > 1 && filters1f.size() == Size(_W, _W) && filters1f.type() == CV_32F );
   _svmFilter = filters1f;
 
-  if( !matRead( s2, _svmReW1f ) || _svmReW1f.size() != Size( 2, (int)_svmSzIdxs.size() ) )
+  if( !matRead( s2, _svmReW1f ) || _svmReW1f.size() != Size( 2, (int) _svmSzIdxs.size() ) )
   {
     _svmReW1f = Mat();
     return -1;
@@ -126,7 +128,7 @@ int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, 
 
 void ObjectnessBING::predictBBoxSI( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ, bool fast )
 {
-  const int numSz =(int) _svmSzIdxs.size();
+  const int numSz = (int) _svmSzIdxs.size();
   const int imgW = img3u.cols, imgH = img3u.rows;
   valBoxes.reserve( 10000 );
   sz.clear();
@@ -374,7 +376,7 @@ void ObjectnessBING::gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u )
     const int *x = x1i.ptr<int>( r ), *y = y1i.ptr<int>( r );
     BYTE* m = mag1u.ptr<BYTE>( r );
     for ( int c = 0; c < W; c++ )
-      m[c] = (BYTE)min( x[c] + y[c], 255 );   //((int)sqrt(sqr(x[c]) + sqr(y[c])), 255);
+      m[c] = (BYTE) min( x[c] + y[c], 255 );   //((int)sqrt(sqr(x[c]) + sqr(y[c])), 255);
   }
 }
 
@@ -491,7 +493,7 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   Mat( sortedBB ).copyTo( objectnessBoundingBox );
 
   // List of the rectangles' objectness value
-  unsigned long int valIdxesSize = (unsigned long int)finalBoxes.getvalIdxes().size();
+  unsigned long int valIdxesSize = (unsigned long int) finalBoxes.getvalIdxes().size();
   objectnessValues.resize( valIdxesSize );
   for ( uint i = 0; i < valIdxesSize; i++ )
     objectnessValues[i] = finalBoxes.getvalIdxes()[i].first;
@@ -499,4 +501,5 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   return true;
 }
 
+} /* namespace saliency */
 }/* namespace cv */

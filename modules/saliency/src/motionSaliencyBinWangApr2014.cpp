@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -47,6 +47,8 @@
 #define thetaL_VAL 250
 
 namespace cv
+{
+namespace saliency
 {
 
 /* cv::Ptr<Size> MotionSaliencyBinWangApr2014::getWsize()
@@ -157,7 +159,7 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
       for ( size_t z = 0; z < backgroundModel.size(); z++ )
       {
 
-        counter += (int)backgroundModel[z]->ptr<Vec2f>( i )[j][1];
+        counter += (int) backgroundModel[z]->ptr<Vec2f>( i )[j][1];
       }
 
       if( counter != 0 )  //if at least the first template is activated / initialized
@@ -460,17 +462,17 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               else if( i == 0 && j == 0 )  // upper leftt
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i, (int)ceil( roiSize / 2 ), (int)ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j, i, (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
               }
               else if( j == 0 && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle left
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int)ceil( roiSize / 2 ), roiSize ) );
+                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), roiSize ) );
               }
               else if( i == ( backgroundModel[z]->rows - 1 ) && j == 0 )  //down left
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int)ceil( roiSize / 2 ), (int)ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
               }
               else if( i == 0 && j > 0 && j < ( backgroundModel[z]->cols - 1 ) )  // upper - middle
               {
@@ -486,7 +488,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               else if( i == 0 && j == ( backgroundModel[z]->cols - 1 ) )  // upper right
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j - (int)floor( roiSize / 2 ), i, (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j - (int) floor( roiSize / 2 ), i, (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
               }
               else if( j == ( backgroundModel[z]->cols - 1 ) && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle - right
               {
@@ -572,4 +574,5 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   return true;
 }
 
+}  // namespace saliency
 }  // namespace cv

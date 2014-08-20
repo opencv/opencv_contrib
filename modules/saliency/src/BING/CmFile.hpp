@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,7 +39,8 @@
  //
  //M*/
 
-#pragma once
+#ifndef __OPENCV_CM_FILE_HPP__
+#define __OPENCV_CM_FILE_HPP__
 
 #ifdef _WIN32
 #include <windows.h>
@@ -48,10 +49,20 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "opencv2/saliency/kyheader.h"
+#include "src/kyheader.hpp"
 #endif
+
+namespace cv
+{
+namespace saliency
+{
 
 struct CmFile
 {
     static bool MkDir(CStr&  path);
 };
+
+}
+}
+
+#endif

@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -42,14 +42,16 @@
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
-#include "kyheader.h"
-#include "ValStructVec.h"
-#include "FilterTIG.h"
+#include "src/kyheader.hpp"
+#include "src/ValStructVec.hpp"
+#include "src/FilterTIG.hpp"
 #include <cstdio>
 #include <string>
 #include <iostream>
 
 namespace cv
+{
+namespace saliency
 {
 
 /************************************ Specific Static Saliency Specialized Classes ************************************/
@@ -65,12 +67,6 @@ class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
   //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
   StaticSaliencySpectralResidual();
   ~StaticSaliencySpectralResidual();
-
-  //typedef Ptr<Size> (Algorithm::*SizeGetter)();
-  //typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
-
-  //Ptr<Size> getWsize();
-  //void setWsize( const Ptr<Size> &newSize );
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
@@ -99,12 +95,6 @@ class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
  public:
   MotionSaliencyBinWangApr2014();
   ~MotionSaliencyBinWangApr2014();
-
-  /*typedef Ptr<Size> (Algorithm::*SizeGetter)();
-   typedef void (Algorithm::*SizeSetter)( const Ptr<Size> & );
-
-   Ptr<Size> getWsize();
-   void setWsize( const Ptr<Size> &newSize ); */
 
   void setImagesize( int W, int H );
   bool init();
@@ -274,6 +264,7 @@ class CV_EXPORTS ObjectnessBING : public Objectness
 
 };
 
+} /* namespace saliency */
 } /* namespace cv */
 
 #endif

@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -50,6 +50,8 @@
 #include <complex>
 
 namespace cv
+{
+namespace saliency
 {
 
 /************************************ Saliency Base Class ************************************/
@@ -117,6 +119,7 @@ class CV_EXPORTS Objectness : public virtual Saliency
 
 };
 
+} /* namespace saliency */
 } /* namespace cv */
 
 #endif

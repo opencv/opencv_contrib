@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,7 +39,13 @@
  //
  //M*/
 
-#include "CmFile.h"
+#include "precomp.hpp"
+#include "CmFile.hpp"
+
+namespace cv
+{
+namespace saliency
+{
 
 bool CmFile::MkDir( CStr &_path )
 {
@@ -74,3 +80,6 @@ bool CmFile::MkDir( CStr &_path )
   return true;
 #endif
 }
+
+}  // namespace saliency
+}  // namespace cv

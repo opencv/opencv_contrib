@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -39,13 +39,24 @@
  //
  //M*/
 
-#pragma once
-#include "opencv2/saliency/kyheader.h"
+#ifndef __OPENCV_CM_SHOW_HPP__
+#define __OPENCV_CM_SHOW_HPP__
+
+#include "src/kyheader.hpp"
+
+namespace cv
+{
+namespace saliency
+{
 class CmShow
 {
-public:
-    static cv::Mat HistBins(CMat& color3f, CMat& val, CStr& title, bool descendShow = false, CMat &with = cv::Mat());
-    static void showTinyMat(CStr &title, CMat &m);
-    static inline void SaveShow(CMat& img, CStr& title);
+ public:
+  static cv::Mat HistBins( CMat& color3f, CMat& val, CStr& title, bool descendShow = false, CMat &with = cv::Mat() );
+  static void showTinyMat( CStr &title, CMat &m );
+  static inline void SaveShow( CMat& img, CStr& title );
 };
 
+}
+}
+
+#endif //__OPENCV_CM_SHOW_HPP__

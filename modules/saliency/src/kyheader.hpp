@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -86,6 +86,11 @@ typedef unsigned char BYTE;
 #else
 #include <windows.h>
 #endif
+
+namespace cv
+{
+namespace saliency
+{
 
 typedef std::vector<int> vecI;
 typedef const std::string CStr;
@@ -278,6 +283,9 @@ inline int popcnt_byte( register uint32_t u )
     u >>= 8;
   }
   return (int)c;
+}
+
+}
 }
 
 /////

@@ -10,7 +10,7 @@
  //                           License Agreement
  //                For Open Source Computer Vision Library
  //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ // Copyright (C) 2014, OpenCV Foundation, all rights reserved.
  // Third party copyrights are property of their respective owners.
  //
  // Redistribution and use in source and binary forms, with or without modification,
@@ -43,25 +43,27 @@
 
 namespace cv
 {
+namespace saliency
+{
 
 /**
  * SaliencySpectralResidual
  */
 
 /*cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize()
-{
-  return resizedImageSize;
-}
-void StaticSaliencySpectralResidual::setWsize( const cv::Ptr<Size>& newSize )
-{
-  resizedImageSize = newSize;
-}*/
+ {
+ return resizedImageSize;
+ }
+ void StaticSaliencySpectralResidual::setWsize( const cv::Ptr<Size>& newSize )
+ {
+ resizedImageSize = newSize;
+ }*/
 
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual()
 {
   className = "SPECTRAL_RESIDUAL";
-  resImWidth=64;
-  resImHeight=64;
+  resImWidth = 64;
+  resImHeight = 64;
   //resizedImageSize = Ptr<Size>( new Size( 64, 64 ) );
 }
 
@@ -70,12 +72,12 @@ StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
 
 }
 
-void StaticSaliencySpectralResidual::read( const cv::FileNode& /*fn*/ )
+void StaticSaliencySpectralResidual::read( const cv::FileNode& /*fn*/)
 {
   //params.read( fn );
 }
 
-void StaticSaliencySpectralResidual::write( cv::FileStorage& /*fs*/ ) const
+void StaticSaliencySpectralResidual::write( cv::FileStorage& /*fs*/) const
 {
   //params.write( fs );
 }
@@ -84,7 +86,7 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image
 {
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;
-  Size resizedImageSize(resImWidth, resImHeight);
+  Size resizedImageSize( resImWidth, resImHeight );
 
   Mat realImage( resizedImageSize, CV_64F );
   Mat imaginaryImage( resizedImageSize, CV_64F );
@@ -148,4 +150,5 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image
 
 }
 
+} /* namespace saliency */
 }/* namespace cv */
