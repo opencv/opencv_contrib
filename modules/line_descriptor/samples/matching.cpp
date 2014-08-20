@@ -52,6 +52,7 @@
 #define MATCHES_DIST_THRESHOLD 25
 
 using namespace cv;
+using namespace cv::line_descriptor;
 
 static const char* keys =
 { "{@image_path1 | | Image path 1 }"
@@ -146,7 +147,7 @@ int main( int argc, char** argv )
 
   imshow( "Matches", outImg );
   waitKey();
-  imwrite("/home/ubisum/Desktop/images/matches.jpg", outImg);
+  imwrite("/home/ubisum/Desktop/images/env_match/matches.jpg", outImg);
   /* create an LSD detector */
   Ptr<LSDDetector> lsd = LSDDetector::createLSDDetector();
 
@@ -203,5 +204,7 @@ int main( int argc, char** argv )
 
   imshow( "LSD matches", lsd_outImg );
   waitKey();
+
+
 }
 

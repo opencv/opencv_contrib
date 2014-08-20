@@ -41,7 +41,11 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
+//using namespace cv;
+namespace cv
+{
+namespace line_descriptor
+{
 
 /* constructor */
 BinaryDescriptorMatcher::BinaryDescriptorMatcher()
@@ -582,4 +586,6 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   delete results;
   delete numres;
 
+}
+}
 }

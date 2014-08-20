@@ -52,6 +52,7 @@
 #include <time.h>
 
 using namespace cv;
+using namespace cv::line_descriptor;
 
 static const char* keys =
 { "{@image_path1 | | Image path 1 }"
@@ -192,8 +193,6 @@ int main( int argc, char** argv )
   /* require knn match */
   bdm->knnMatch( descr1, descr2, matches, 6 );
 
-
-
-
 }
+
 

@@ -43,6 +43,8 @@
 
 namespace cv
 {
+namespace line_descriptor
+{
 /* draw matches between two images */
 void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
                       const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor, const Scalar& singleLineColor,
@@ -184,4 +186,5 @@ void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& 
   }
 }
 
+}
 }

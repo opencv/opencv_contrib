@@ -50,6 +50,8 @@
 #include <iostream>
 
 using namespace cv;
+using namespace cv::line_descriptor;
+
 
 static const char* keys =
 { "{@image_path | | Image path }" };
@@ -96,3 +98,5 @@ int main( int argc, char** argv )
   bd->compute( imageMat, keylines, descriptors);
 
 }
+
+

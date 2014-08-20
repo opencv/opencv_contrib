@@ -43,6 +43,8 @@
 
 namespace cv
 {
+namespace line_descriptor
+{
 
 CV_INIT_ALGORITHM( BinaryDescriptor, "BINARY.DESCRIPTOR", );
 CV_INIT_ALGORITHM( BinaryDescriptorMatcher, "BINARY.DESCRIPTOR.MATCHER", );
@@ -58,4 +60,5 @@ bool initModule_line_descriptor( void )
   return all;
 }
 
+}
 }

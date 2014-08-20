@@ -51,6 +51,7 @@
 #include <vector>
 
 using namespace cv;
+using namespace cv::line_descriptor;
 
 static const std::string images[] =
 { "cameraman.jpg", "church.jpg", "church2.png", "einstein.jpg", "stuff.jpg" };

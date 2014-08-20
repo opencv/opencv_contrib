@@ -66,6 +66,7 @@
 #include <time.h>
 #include <stdexcept>
 #include <sstream>
+#include <vector>
 
 #include "opencv2/line_descriptor.hpp"
 

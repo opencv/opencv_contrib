@@ -42,6 +42,7 @@
 #include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::line_descriptor;
 
 /****************************************************************************************\
 *            Regression tests for line detector comparing keylines.                 *

@@ -50,6 +50,7 @@
 #include <iostream>
 
 using namespace cv;
+using namespace cv::line_descriptor;
 using namespace std;
 
 static const char* keys =

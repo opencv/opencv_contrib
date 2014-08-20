@@ -42,6 +42,7 @@
 #include "perf_precomp.hpp"
 
 using namespace cv;
+using namespace cv::line_descriptor;
 using namespace std;
 using namespace perf;
 using std::tr1::make_tuple;

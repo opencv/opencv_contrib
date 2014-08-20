@@ -41,8 +41,11 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
-
+//using namespace cv;
+namespace cv
+{
+namespace line_descriptor
+{
 Ptr<LSDDetector> LSDDetector::createLSDDetector()
 {
   return Ptr<LSDDetector>( new LSDDetector() );
@@ -199,10 +202,12 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
     {
       KeyLine kl = keylines[keyCounter];
-      if( mask.at<uchar>( (int)kl.startPointY, (int)kl.startPointX ) == 0 && mask.at<uchar>( (int)kl.endPointY, (int)kl.endPointX ) == 0 )
+      if( mask.at<uchar>( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at<uchar>( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
     }
   }
 
+}
+}
 }
 

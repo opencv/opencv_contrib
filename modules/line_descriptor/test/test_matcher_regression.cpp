@@ -42,6 +42,7 @@
 #include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::line_descriptor;
 
 class CV_BinaryDescriptorMatcherTest : public cvtest::BaseTest
 {

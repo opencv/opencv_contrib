@@ -46,6 +46,8 @@
 //using namespace cv;
 namespace cv
 {
+namespace line_descriptor
+{
 
 /* combinations of internal indeces for binary descriptor extractor */
 static const int combinations[32][2] =
@@ -1343,5 +1345,6 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
 
   return 1;
 
+}
 }
 }

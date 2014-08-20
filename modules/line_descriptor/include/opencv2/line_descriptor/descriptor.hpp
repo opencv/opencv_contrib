@@ -55,8 +55,10 @@
 
 namespace cv
 {
+namespace line_descriptor
+{
 
-CV_EXPORTS bool initModule_line_descriptor();
+//CV_EXPORTS bool initModule_line_descriptor();
 
 struct CV_EXPORTS KeyLine
 {
@@ -421,14 +423,15 @@ struct CV_EXPORTS DrawLinesMatchesFlags
 
 /* draw matches between two images */
 CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
-                                   const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
-                                   const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
-                                   int flags = DrawLinesMatchesFlags::DEFAULT );
+                                 const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
+                                 const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
+                                 int flags = DrawLinesMatchesFlags::DEFAULT );
 
 /* draw extracted lines on original image */
 CV_EXPORTS void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& outImage, const Scalar& color = Scalar::all( -1 ),
-                                int flags = DrawLinesMatchesFlags::DEFAULT );
+                              int flags = DrawLinesMatchesFlags::DEFAULT );
 
+}
 }
 
 #endif
