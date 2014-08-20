@@ -72,8 +72,8 @@ MotionSaliencyBinWangApr2014::MotionSaliencyBinWangApr2014()
   K = 3;  // Number of background model template
   N = 4;   // NxN is the size of the block for downsampling in the lowlowResolutionDetection
   alpha = (float) 0.01;  // Learning rate
-  L0 = 300;  // Upper-bound values for C0 (efficacy of the first template (matrices) of backgroundModel
-  L1 = 200;  // Upper-bound values for C1 (efficacy of the second template (matrices) of backgroundModel
+  L0 = 1000;  // Upper-bound values for C0 (efficacy of the first template (matrices) of backgroundModel
+  L1 = 800;  // Upper-bound values for C1 (efficacy of the second template (matrices) of backgroundModel
   thetaL = thetaL_VAL;  // T0, T1 swap threshold
   thetaA = thetaA_VAL;
   gamma = 3;
@@ -384,8 +384,8 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
 //if at least the first template is activated / initialized for all pixels
   if( countNonZero( temp[1] ) <= ( temp[1].cols * temp[1].rows ) / 2 )
   {
-    thetaA = 15;
-    thetaL = 40;
+    thetaA = 50;
+    thetaL = 150;
     neighborhoodCheck = false;
 
   }

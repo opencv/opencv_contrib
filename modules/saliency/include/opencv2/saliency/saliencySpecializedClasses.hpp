@@ -64,7 +64,7 @@ public:
 
   //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
   StaticSaliencySpectralResidual();
-  ~StaticSaliencySpectralResidual();
+  virtual ~StaticSaliencySpectralResidual();
 
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
@@ -92,7 +92,7 @@ class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
 public:
   MotionSaliencyBinWangApr2014();
-  ~MotionSaliencyBinWangApr2014();
+  virtual ~MotionSaliencyBinWangApr2014();
 
   void setImagesize( int W, int H );
   bool init();
@@ -122,7 +122,7 @@ private:
   // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
   Mat potentialBackground;// Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
                           // and in the secon level there are the Ca value, the counter for each potential value.
-  Mat epslonPixelsValue;// epslon threshold
+  Mat epslonPixelsValue;  // epslon threshold
   //Mat activityPixelsValue; // Activity level of each pixel
   //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
   // detection process,however, after the low resolution detection, it has become a
@@ -163,7 +163,7 @@ class CV_EXPORTS ObjectnessBING : public Objectness
 public:
 
   ObjectnessBING();
-  ~ObjectnessBING();
+  virtual ~ObjectnessBING();
 
   void read();
   void write() const;
