@@ -42,9 +42,7 @@
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
-#include "src/kyheader.hpp"
-#include "src/ValStructVec.hpp"
-#include "src/FilterTIG.hpp"
+#include "opencv2/saliency/kyheader.hpp"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -179,7 +177,57 @@ class CV_EXPORTS ObjectnessBING : public Objectness
   AlgorithmInfo* info() const;
 
  private:
-  // Parameters
+
+  class FilterTIG
+  {
+   public:
+    void update( CMat &w );
+
+    // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
+    Mat matchTemplate( const cv::Mat &mag1u );
+
+    float dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 );
+
+   public:
+    void reconstruct( cv::Mat &w );  // For illustration purpose
+
+   private:
+    static const int NUM_COMP = 2;  // Number of components
+    static const int D = 64;  // Dimension of TIG
+    int64_t _bTIGs[NUM_COMP];  // Binary TIG features
+    float _coeffs1[NUM_COMP];  // Coefficients of binary TIG features
+
+    // For efficiently deals with different bits in CV_8U gradient map
+    float _coeffs2[NUM_COMP], _coeffs4[NUM_COMP], _coeffs8[NUM_COMP];
+  };
+
+  template<typename VT, typename ST>
+  struct ValStructVec
+  {
+    ValStructVec();
+    int size() const;
+    void clear();
+    void reserve( int resSz );
+    void pushBack( const VT& val, const ST& structVal );
+    const VT& operator ()( int i ) const;
+    const ST& operator []( int i ) const;
+    VT& operator ()( int i );
+    ST& operator []( int i );
+
+    void sort( bool descendOrder = true );
+    const std::vector<ST> &getSortedStructVal();
+    std::vector<std::pair<VT, int> > getvalIdxes();
+    void append( const ValStructVec<VT, ST> &newVals, int startV = 0 );
+
+    std::vector<ST> structVals;  // struct values
+    int sz;  // size of the value struct vector
+    std::vector<std::pair<VT, int> > valIdxes;  // Indexes after sort
+    bool smaller()
+    {
+      return true;
+    }
+    std::vector<ST> sortedStructVals;
+  };
 
   enum
   {

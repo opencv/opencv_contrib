@@ -39,30 +39,15 @@
  //
  //M*/
 
-#ifndef __OPENCV_CM_FILE_HPP__
-#define __OPENCV_CM_FILE_HPP__
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <iostream>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include "opencv2/saliency/kyheader.hpp"
-#endif
+#include "precomp.hpp"
 
 namespace cv
 {
 namespace saliency
 {
 
-struct CmFile
-{
-    static bool MkDir(CStr&  path);
-};
+
 
 }
 }
 
-#endif

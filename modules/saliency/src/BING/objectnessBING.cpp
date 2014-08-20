@@ -501,5 +501,97 @@ bool ObjectnessBING::computeSaliencyImpl( const InputArray image, OutputArray ob
   return true;
 }
 
+template<typename VT, typename ST>
+void ObjectnessBING::ValStructVec<VT, ST>::append( const ValStructVec<VT, ST> &newVals, int startV )
+{
+  int newValsSize = newVals.size();
+  for ( int i = 0; i < newValsSize; i++ )
+    pushBack( (float) ( ( i + 300 ) * startV ), newVals[i] );
+}
+
+template<typename VT, typename ST>
+void ObjectnessBING::ValStructVec<VT, ST>::sort( bool descendOrder /* = true */)
+{
+  if( descendOrder )
+    std::sort( valIdxes.begin(), valIdxes.end(), std::greater<std::pair<VT, int> >() );
+  else
+    std::sort( valIdxes.begin(), valIdxes.end(), std::less<std::pair<VT, int> >() );
+}
+
+template<typename VT, typename ST>
+const std::vector<ST>& ObjectnessBING::ValStructVec<VT, ST>::getSortedStructVal()
+{
+  sortedStructVals.resize( sz );
+  for ( int i = 0; i < sz; i++ )
+    sortedStructVals[i] = structVals[valIdxes[i].second];
+  return sortedStructVals;
+}
+
+template<typename VT, typename ST>
+std::vector<std::pair<VT, int> > ObjectnessBING::ValStructVec<VT, ST>::getvalIdxes()
+{
+  return valIdxes;
+}
+
+template<typename VT, typename ST>
+ObjectnessBING::ValStructVec<VT, ST>::ValStructVec()
+{
+  clear();
+}
+
+template<typename VT, typename ST>
+int ObjectnessBING::ValStructVec<VT, ST>::size() const
+{
+  return sz;
+}
+
+template<typename VT, typename ST>
+void ObjectnessBING::ValStructVec<VT, ST>::clear()
+{
+  sz = 0;
+  structVals.clear();
+  valIdxes.clear();
+}
+
+template<typename VT, typename ST>
+void ObjectnessBING::ValStructVec<VT, ST>::reserve( int resSz )
+{
+  clear();
+  structVals.reserve( resSz );
+  valIdxes.reserve( resSz );
+}
+
+template<typename VT, typename ST>
+void ObjectnessBING::ValStructVec<VT, ST>::pushBack( const VT& val, const ST& structVal )
+{
+  valIdxes.push_back( std::make_pair( val, sz ) );
+  structVals.push_back( structVal );
+  sz++;
+}
+
+template<typename VT, typename ST>
+const VT& ObjectnessBING::ValStructVec<VT, ST>::operator ()( int i ) const
+{
+  return valIdxes[i].first;
+}  // Should be called after sort
+
+template<typename VT, typename ST>
+const ST& ObjectnessBING::ValStructVec<VT, ST>::operator []( int i ) const
+{
+  return structVals[valIdxes[i].second];
+}  // Should be called after sort
+
+template<typename VT, typename ST>
+VT& ObjectnessBING::ValStructVec<VT, ST>::operator ()( int i )
+{
+  return valIdxes[i].first;
+}  // Should be called after sort
+
+template<typename VT, typename ST>
+ST& ObjectnessBING::ValStructVec<VT, ST>::operator []( int i )
+{
+  return structVals[valIdxes[i].second];
+}
+
 } /* namespace saliency */
 }/* namespace cv */

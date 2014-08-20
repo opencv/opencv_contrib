@@ -41,14 +41,33 @@
 
 #include "precomp.hpp"
 #include "CmShow.hpp"
-#include "src/FilterTIG.hpp"
 
 namespace cv
 {
 namespace saliency
 {
 
-void FilterTIG::update( CMat &w1f )
+float ObjectnessBING::FilterTIG::dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 )
+{
+  int64_t bcT1 = (int64_t) POPCNT64( tig1 );
+  int64_t bcT2 = (int64_t) POPCNT64( tig2 );
+  int64_t bcT4 = (int64_t) POPCNT64( tig4 );
+  int64_t bcT8 = (int64_t) POPCNT64( tig8 );
+
+  int64_t bc01 = (int64_t) ( POPCNT64(_bTIGs[0] & tig1) << 1 ) - bcT1;
+  int64_t bc02 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig2) << 1 ) - bcT2 ) << 1;
+  int64_t bc04 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig4) << 1 ) - bcT4 ) << 2;
+  int64_t bc08 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig8) << 1 ) - bcT8 ) << 3;
+
+  int64_t bc11 = (int64_t) ( POPCNT64(_bTIGs[1] & tig1) << 1 ) - bcT1;
+  int64_t bc12 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig2) << 1 ) - bcT2 ) << 1;
+  int64_t bc14 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig4) << 1 ) - bcT4 ) << 2;
+  int64_t bc18 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig8) << 1 ) - bcT8 ) << 3;
+
+  return _coeffs1[0] * ( bc01 + bc02 + bc04 + bc08 ) + _coeffs1[1] * ( bc11 + bc12 + bc14 + bc18 );
+}
+
+void ObjectnessBING::FilterTIG::update( CMat &w1f )
 {
   CV_Assert( w1f.cols * w1f.rows == D && w1f.type() == CV_32F && w1f.isContinuous() );
   float b[D], residuals[D];
@@ -72,7 +91,7 @@ void FilterTIG::update( CMat &w1f )
   }
 }
 
-void FilterTIG::reconstruct( Mat &w1f )
+void ObjectnessBING::FilterTIG::reconstruct( Mat &w1f )
 {
   w1f = Mat::zeros( 8, 8, CV_32F );
   float *weight = (float*) w1f.data;
@@ -86,7 +105,7 @@ void FilterTIG::reconstruct( Mat &w1f )
 
 // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
 // Please refer to my paper for definition of the variables used in this function
-Mat FilterTIG::matchTemplate( const Mat &mag1u )
+Mat ObjectnessBING::FilterTIG::matchTemplate( const Mat &mag1u )
 {
   const int H = mag1u.rows, W = mag1u.cols;
   const Size sz( W + 1, H + 1 );  // Expand original size to avoid dealing with boundary conditions

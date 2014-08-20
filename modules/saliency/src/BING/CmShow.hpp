@@ -42,7 +42,7 @@
 #ifndef __OPENCV_CM_SHOW_HPP__
 #define __OPENCV_CM_SHOW_HPP__
 
-#include "src/kyheader.hpp"
+#include "opencv2/saliency/kyheader.hpp"
 
 namespace cv
 {
