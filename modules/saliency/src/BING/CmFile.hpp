@@ -49,7 +49,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "opencv2/saliency/kyheader.hpp"
+#include "BING/kyheader.hpp"
 #endif
 
 namespace cv

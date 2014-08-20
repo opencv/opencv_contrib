@@ -42,6 +42,8 @@
 #ifndef __OPENCV_CM_TIMER_HPP__
 #define __OPENCV_CM_TIMER_HPP__
 
+#include "BING/kyheader.hpp"
+
 namespace cv
 {
 namespace saliency

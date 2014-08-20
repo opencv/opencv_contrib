@@ -67,7 +67,7 @@ float ObjectnessBING::FilterTIG::dot( const int64_t tig1, const int64_t tig2, co
   return _coeffs1[0] * ( bc01 + bc02 + bc04 + bc08 ) + _coeffs1[1] * ( bc11 + bc12 + bc14 + bc18 );
 }
 
-void ObjectnessBING::FilterTIG::update( CMat &w1f )
+void ObjectnessBING::FilterTIG::update( Mat &w1f )
 {
   CV_Assert( w1f.cols * w1f.rows == D && w1f.type() == CV_32F && w1f.isContinuous() );
   float b[D], residuals[D];
@@ -149,5 +149,5 @@ Mat ObjectnessBING::FilterTIG::matchTemplate( const Mat &mag1u )
   return matchCost1f;
 }
 
-} // namespace saliency
-} // namespace cv
+}  // namespace saliency
+}  // namespace cv

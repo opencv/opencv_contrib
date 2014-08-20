@@ -42,7 +42,7 @@
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
-#include "opencv2/saliency/kyheader.hpp"
+//#include "opencv2/saliency/kyheader.hpp"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -60,7 +60,7 @@ namespace saliency
  */
 class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
 {
- public:
+public:
 
   //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
   StaticSaliencySpectralResidual();
@@ -69,7 +69,7 @@ class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
- protected:
+protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;CV_PROP_RW
   int resImWidth;
@@ -90,18 +90,18 @@ class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
 
 class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
- public:
+public:
   MotionSaliencyBinWangApr2014();
   ~MotionSaliencyBinWangApr2014();
 
   void setImagesize( int W, int H );
   bool init();
 
- protected:
+protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;
 
- private:
+private:
 
   // classification (and adaptation) functions
   bool fullResolutionDetection( const Mat& image, Mat& highResBFMask );
@@ -117,12 +117,12 @@ class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
   //bool decisionThresholdAdaptation();
 
   // changing structure
-  std::vector<Ptr<Mat> > backgroundModel;  // The vector represents the background template T0---TK of reference paper.
+  std::vector<Ptr<Mat> > backgroundModel;// The vector represents the background template T0---TK of reference paper.
   // Matrices are two-channel matrix. In the first layer there are the B (background value)
   // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
-  Mat potentialBackground;  // Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
-                            // and in the secon level there are the Ca value, the counter for each potential value.
-  Mat epslonPixelsValue;  // epslon threshold
+  Mat potentialBackground;// Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
+                          // and in the secon level there are the Ca value, the counter for each potential value.
+  Mat epslonPixelsValue;// epslon threshold
   //Mat activityPixelsValue; // Activity level of each pixel
   //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
   // detection process,however, after the low resolution detection, it has become a
@@ -130,19 +130,19 @@ class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
 
   //fixed parameter
   bool neighborhoodCheck;
-  int N_DS;  // Number of template to be downsampled and used in lowResolutionDetection function
+  int N_DS;// Number of template to be downsampled and used in lowResolutionDetection function
   //Ptr<Size> imgSize;
-  int imageWidth;  // Width of input image
-  int imageHeight;  //Height of input image
-  int K;  // Number of background model template
-  int N;  // NxN is the size of the block for downsampling in the lowlowResolutionDetection
-  float alpha;  // Learning rate
-  int L0, L1;  // Upper-bound values for C0 and C1 (efficacy of the first two template (matrices) of backgroundModel
-  int thetaL;  // T0, T1 swap threshold
-  int thetaA;  // Potential background value threshold
-  int gamma;  // Parameter that controls the time that the newly updated long-term background value will remain in the
-              // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
-              //restrain the generation of ghosts.
+  int imageWidth;// Width of input image
+  int imageHeight;//Height of input image
+  int K;// Number of background model template
+  int N;// NxN is the size of the block for downsampling in the lowlowResolutionDetection
+  float alpha;// Learning rate
+  int L0, L1;// Upper-bound values for C0 and C1 (efficacy of the first two template (matrices) of backgroundModel
+  int thetaL;// T0, T1 swap threshold
+  int thetaA;// Potential background value threshold
+  int gamma;// Parameter that controls the time that the newly updated long-term background value will remain in the
+            // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
+            //restrain the generation of ghosts.
   //int Ainc; // Activity Incrementation;
   //int Bmax; // Upper-bound value for pixel activity
   //int Bth;  // Max activity threshold
@@ -160,7 +160,7 @@ class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
  */
 class CV_EXPORTS ObjectnessBING : public Objectness
 {
- public:
+public:
 
   ObjectnessBING();
   ~ObjectnessBING();
@@ -172,30 +172,30 @@ class CV_EXPORTS ObjectnessBING : public Objectness
   void setTrainingPath( std::string trainingPath );
   void setBBResDir( std::string resultsDir );
 
- protected:
+protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
   AlgorithmInfo* info() const;
 
- private:
+private:
 
   class FilterTIG
   {
-   public:
-    void update( CMat &w );
+  public:
+    void update( Mat &w );
 
     // For a W by H gradient magnitude map, find a W-7 by H-7 CV_32F matching score map
-    Mat matchTemplate( const cv::Mat &mag1u );
+    Mat matchTemplate( const Mat &mag1u );
 
     float dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 );
 
-   public:
-    void reconstruct( cv::Mat &w );  // For illustration purpose
+  public:
+    void reconstruct( Mat &w );// For illustration purpose
 
-   private:
-    static const int NUM_COMP = 2;  // Number of components
-    static const int D = 64;  // Dimension of TIG
-    int64_t _bTIGs[NUM_COMP];  // Binary TIG features
-    float _coeffs1[NUM_COMP];  // Coefficients of binary TIG features
+  private:
+    static const int NUM_COMP = 2;// Number of components
+    static const int D = 64;// Dimension of TIG
+    int64_t _bTIGs[NUM_COMP];// Binary TIG features
+    float _coeffs1[NUM_COMP];// Coefficients of binary TIG features
 
     // For efficiently deals with different bits in CV_8U gradient map
     float _coeffs2[NUM_COMP], _coeffs4[NUM_COMP], _coeffs8[NUM_COMP];
@@ -220,8 +220,8 @@ class CV_EXPORTS ObjectnessBING : public Objectness
     void append( const ValStructVec<VT, ST> &newVals, int startV = 0 );
 
     std::vector<ST> structVals;  // struct values
-    int sz;  // size of the value struct vector
-    std::vector<std::pair<VT, int> > valIdxes;  // Indexes after sort
+    int sz;// size of the value struct vector
+    std::vector<std::pair<VT, int> > valIdxes;// Indexes after sort
     bool smaller()
     {
       return true;
@@ -237,27 +237,27 @@ class CV_EXPORTS ObjectnessBING : public Objectness
   };
 
   double _base, _logBase;  // base for window size quantization
-  int _W;  // As described in the paper: #Size, Size(_W, _H) of feature window.
-  int _NSS;  // Size for non-maximal suppress
-  int _maxT, _minT, _numT;  // The minimal and maximal dimensions of the template
+  int _W;// As described in the paper: #Size, Size(_W, _H) of feature window.
+  int _NSS;// Size for non-maximal suppress
+  int _maxT, _minT, _numT;// The minimal and maximal dimensions of the template
 
-  int _Clr;  //
+  int _Clr;//
   static const char* _clrName[3];
 
   // Names and paths to read model and to store results
   std::string _modelName, _bbResDir, _trainingPath, _resultsDir;
 
-  vecI _svmSzIdxs;  // Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
-  Mat _svmFilter;  // Filters learned at stage I, each is a _H by _W CV_32F matrix
-  FilterTIG _tigF;  // TIG filter
-  Mat _svmReW1f;  // Re-weight parameters learned at stage II.
+  std::vector<int> _svmSzIdxs;// Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
+  Mat _svmFilter;// Filters learned at stage I, each is a _H by _W CV_32F matrix
+  FilterTIG _tigF;// TIG filter
+  Mat _svmReW1f;// Re-weight parameters learned at stage II.
 
   // List of the rectangles' objectness value, in the same order as
   // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
   std::vector<float> objectnessValues;
   //vector<Vec4i> objectnessBoundingBox;
 
- private:
+private:
   // functions
 
   inline static float LoG( float x, float y, float delta )
@@ -272,12 +272,12 @@ class CV_EXPORTS ObjectnessBING : public Objectness
   void setColorSpace( int clr = MAXBGR );
 
   // Load trained model.
-  int loadTrainedModel( std::string modelName = "" );  // Return -1, 0, or 1 if partial, none, or all loaded
+  int loadTrainedModel( std::string modelName = "" );// Return -1, 0, or 1 if partial, none, or all loaded
 
   // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
   // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
   // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
-  void getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
+  void getObjBndBoxes( Mat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
   void getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize );
 
   bool filtersLoaded()
@@ -285,16 +285,16 @@ class CV_EXPORTS ObjectnessBING : public Objectness
     int n = (int) _svmSzIdxs.size();
     return n > 0 && _svmReW1f.size() == Size( 2, n ) && _svmFilter.size() == Size( _W, _W );
   }
-  void predictBBoxSI( CMat &mag3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ = 100, bool fast = true );
-  void predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const vecI &sz );
+  void predictBBoxSI( Mat &mag3u, ValStructVec<float, Vec4i> &valBoxes, std::vector<int> &sz, int NUM_WIN_PSZ = 100, bool fast = true );
+  void predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const std::vector<int> &sz );
 
   // Calculate the image gradient: center option as in VLFeat
-  void gradientMag( CMat &imgBGR3u, Mat &mag1u );
+  void gradientMag( Mat &imgBGR3u, Mat &mag1u );
 
-  static void gradientRGB( CMat &bgr3u, Mat &mag1u );
-  static void gradientGray( CMat &bgr3u, Mat &mag1u );
-  static void gradientHSV( CMat &bgr3u, Mat &mag1u );
-  static void gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u );
+  static void gradientRGB( Mat &bgr3u, Mat &mag1u );
+  static void gradientGray( Mat &bgr3u, Mat &mag1u );
+  static void gradientHSV( Mat &bgr3u, Mat &mag1u );
+  static void gradientXY( Mat &x1i, Mat &y1i, Mat &mag1u );
 
   static inline int bgrMaxDist( const Vec3b &u, const Vec3b &v )
   {
@@ -308,11 +308,12 @@ class CV_EXPORTS ObjectnessBING : public Objectness
   }
 
   //Non-maximal suppress
-  static void nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true );
+  static void nonMaxSup( Mat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true );
 
 };
 
-} /* namespace saliency */
+}
+/* namespace saliency */
 } /* namespace cv */
 
 #endif

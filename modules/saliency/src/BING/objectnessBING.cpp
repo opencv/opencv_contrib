@@ -41,6 +41,7 @@
 
 #include "precomp.hpp"
 
+#include "BING/kyheader.hpp"
 #include "CmTimer.hpp"
 #include "CmFile.hpp"
 
@@ -126,7 +127,7 @@ int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, 
   return 1;
 }
 
-void ObjectnessBING::predictBBoxSI( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, vecI &sz, int NUM_WIN_PSZ, bool fast )
+void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valBoxes, std::vector<int> &sz, int NUM_WIN_PSZ, bool fast )
 {
   const int numSz = (int) _svmSzIdxs.size();
   const int imgW = img3u.cols, imgH = img3u.rows;
@@ -173,7 +174,7 @@ void ObjectnessBING::predictBBoxSI( CMat &img3u, ValStructVec<float, Vec4i> &val
 
 }
 
-void ObjectnessBING::predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const vecI &sz )
+void ObjectnessBING::predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const std::vector<int> &sz )
 {
   int numI = valBoxes.size();
   for ( int i = 0; i < numI; i++ )
@@ -190,7 +191,7 @@ void ObjectnessBING::predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const
 // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
 // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
 // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
-void ObjectnessBING::getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize )
+void ObjectnessBING::getObjBndBoxes( Mat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize )
 {
   //CV_Assert_(filtersLoaded() , ("SVM filters should be initialized before getting object proposals\n"));
   vecI sz;
@@ -199,7 +200,7 @@ void ObjectnessBING::getObjBndBoxes( CMat &img3u, ValStructVec<float, Vec4i> &va
   return;
 }
 
-void ObjectnessBING::nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS, int maxPoint, bool fast )
+void ObjectnessBING::nonMaxSup( Mat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS, int maxPoint, bool fast )
 {
   const int _h = matchCost1f.rows, _w = matchCost1f.cols;
   Mat isMax1u = Mat::ones( _h, _w, CV_8U ), costSmooth1f;
@@ -249,7 +250,7 @@ void ObjectnessBING::nonMaxSup( CMat &matchCost1f, ValStructVec<float, Point> &m
   }
 }
 
-void ObjectnessBING::gradientMag( CMat &imgBGR3u, Mat &mag1u )
+void ObjectnessBING::gradientMag( Mat &imgBGR3u, Mat &mag1u )
 {
   switch ( _Clr )
   {
@@ -267,7 +268,7 @@ void ObjectnessBING::gradientMag( CMat &imgBGR3u, Mat &mag1u )
   }
 }
 
-void ObjectnessBING::gradientRGB( CMat &bgr3u, Mat &mag1u )
+void ObjectnessBING::gradientRGB( Mat &bgr3u, Mat &mag1u )
 {
   const int H = bgr3u.rows, W = bgr3u.cols;
   Mat Ix( H, W, CV_32S ), Iy( H, W, CV_32S );
@@ -303,7 +304,7 @@ void ObjectnessBING::gradientRGB( CMat &bgr3u, Mat &mag1u )
   gradientXY( Ix, Iy, mag1u );
 }
 
-void ObjectnessBING::gradientGray( CMat &bgr3u, Mat &mag1u )
+void ObjectnessBING::gradientGray( Mat &bgr3u, Mat &mag1u )
 {
   Mat g1u;
   cvtColor( bgr3u, g1u, COLOR_BGR2GRAY );
@@ -335,7 +336,7 @@ void ObjectnessBING::gradientGray( CMat &bgr3u, Mat &mag1u )
   gradientXY( Ix, Iy, mag1u );
 }
 
-void ObjectnessBING::gradientHSV( CMat &bgr3u, Mat &mag1u )
+void ObjectnessBING::gradientHSV( Mat &bgr3u, Mat &mag1u )
 {
   Mat hsv3u;
   cvtColor( bgr3u, hsv3u, COLOR_BGR2HSV );
@@ -367,7 +368,7 @@ void ObjectnessBING::gradientHSV( CMat &bgr3u, Mat &mag1u )
   gradientXY( Ix, Iy, mag1u );
 }
 
-void ObjectnessBING::gradientXY( CMat &x1i, CMat &y1i, Mat &mag1u )
+void ObjectnessBING::gradientXY( Mat &x1i, Mat &y1i, Mat &mag1u )
 {
   const int H = x1i.rows, W = x1i.cols;
   mag1u.create( H, W, CV_8U );
