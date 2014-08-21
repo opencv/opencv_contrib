@@ -86,8 +86,7 @@ PERF_TEST_P(Image, CUDA_SURF,
     }
     else
     {
-        cv::SURF surf;
-
+        cv::xfeatures2d::SURF surf;
         std::vector<cv::KeyPoint> cpu_keypoints;
         cv::Mat cpu_descriptors;
 

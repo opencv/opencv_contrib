@@ -43,11 +43,14 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
+#include "opencv2/xfeatures2d/cuda.hpp"
+
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/imgproc.hpp"
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
+#include "opencv2/core/private.cuda.hpp"
 
 //#include "opencv2/nonfree/cuda.hpp"
 //#include "opencv2/core/private.cuda.hpp"
