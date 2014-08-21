@@ -41,6 +41,10 @@
 
 #include "precomp.hpp"
 
+#define MAX_B 37
+double ARRAY_RESIZE_FACTOR = 1.1;    // minimum is 1.0
+double ARRAY_RESIZE_ADD_FACTOR = 4;  // minimum is 1
+
 //using namespace cv;
 namespace cv
 {
@@ -59,7 +63,7 @@ BinaryDescriptorMatcher::BinaryDescriptorMatcher()
 /* constructor with smart pointer */
 Ptr<BinaryDescriptorMatcher> BinaryDescriptorMatcher::createBinaryDescriptorMatcher()
 {
-  return Ptr<BinaryDescriptorMatcher>( new BinaryDescriptorMatcher() );
+  return Ptr < BinaryDescriptorMatcher > ( new BinaryDescriptorMatcher() );
 }
 
 /* store new descriptors to be inserted in dataset */
@@ -132,7 +136,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but match function received " << masks.size()
-              << " masks. Program will be terminated" << std::endl;
+        << " masks. Program will be terminated" << std::endl;
 
     return;
   }
@@ -163,12 +167,12 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
     {
       std::stringstream ss;
       ss << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
-         << "1 column. Program will be terminated";
+          << "1 column. Program will be terminated";
       //throw std::runtime_error( ss.str() );
     }
     /* create a DMatch object if required by mask or if there is
      no mask at all */
-    else if( masks.empty() || masks[itup->second].at<uchar>( counter ) != 0 )
+    else if( masks.empty() || masks[itup->second].at < uchar > ( counter ) != 0 )
     {
       std::vector<int> k_distances;
       checkKDistances( numres, 1, k_distances, counter, 256 );
@@ -227,7 +231,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   {
     /* create a DMatch object if required by mask or if there is
      no mask at all */
-    if( mask.empty() || ( !mask.empty() && mask.at<uchar>( counter ) != 0 ) )
+    if( mask.empty() || ( !mask.empty() && mask.at < uchar > ( counter ) != 0 ) )
     {
       std::vector<int> k_distances;
       checkKDistances( numres, 1, k_distances, counter, 256 );
@@ -291,10 +295,10 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
     /* initialize a vector of matches */
-    std::vector<DMatch> tempVec;
+    std::vector < DMatch > tempVec;
 
     /* chech whether query should be ignored */
-    if( !mask.empty() && mask.at<uchar>( counter ) == 0 )
+    if( !mask.empty() && mask.at < uchar > ( counter ) == 0 )
     {
       /* if compact result is not requested, add an empty vector */
       if( !compactResult )
@@ -346,7 +350,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but knnMatch function received " << masks.size()
-              << " masks. Program will be terminated" << std::endl;
+        << " masks. Program will be terminated" << std::endl;
 
     return;
   }
@@ -369,7 +373,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
     /* create a void vector of matches */
-    std::vector<DMatch> tempVector;
+    std::vector < DMatch > tempVector;
 
     /* loop over k results returned for every query */
     for ( int j = index; j < index + k; j++ )
@@ -384,14 +388,14 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
       if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
       {
         std::cout << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
-                  << "1 column. Program will be terminated" << std::endl;
+            << "1 column. Program will be terminated" << std::endl;
 
         return;
       }
 
       /* decide if, according to relative mask, returned match should be
        considered */
-      else if( masks.size() == 0 || masks[itup->second].at<uchar>( counter ) != 0 )
+      else if( masks.size() == 0 || masks[itup->second].at < uchar > ( counter ) != 0 )
       {
         std::vector<int> k_distances;
         checkKDistances( numres, k, k_distances, counter, 256 );
@@ -465,13 +469,13 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
     std::vector<int> k_distances;
     checkKDistances( numres, trainDescriptors.rows, k_distances, i, 256 );
 
-    std::vector<DMatch> tempVector;
+    std::vector < DMatch > tempVector;
     for ( int j = index; j < index + trainDescriptors.rows; j++ )
     {
 //      if( numres[j] <= maxDistance )
       if( k_distances[j - index] <= maxDistance )
       {
-        if( mask.empty() || mask.at<uchar>( i ) != 0 )
+        if( mask.empty() || mask.at < uchar > ( i ) != 0 )
         {
           DMatch dm;
           dm.queryIdx = i;
@@ -515,7 +519,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
     std::cout << "Error: the number of images in dataset is " << numImages << " but radiusMatch function received " << masks.size()
-              << " masks. Program will be terminated" << std::endl;
+        << " masks. Program will be terminated" << std::endl;
 
     return;
   }
@@ -537,7 +541,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   int index = 0;
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
-    std::vector<DMatch> tempVector;
+    std::vector < DMatch > tempVector;
     for ( int j = index; j < index + descrInDS; j++ )
     {
       std::vector<int> k_distances;
@@ -554,13 +558,13 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
         if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
         {
           std::cout << "Error: mask " << itup->second << " in radiusMatch function " << "should have " << queryDescriptors.rows << " and "
-                    << "1 column. Program will be terminated" << std::endl;
+              << "1 column. Program will be terminated" << std::endl;
 
           return;
         }
 
         /* add match if necessary */
-        else if( masks.empty() || masks[itup->second].at<uchar>( counter ) != 0 )
+        else if( masks.empty() || masks[itup->second].at < uchar > ( counter ) != 0 )
         {
 
           DMatch dm;
@@ -587,5 +591,477 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   delete numres;
 
 }
+
+/* execute a batch query */
+void BinaryDescriptorMatcher::Mihasher::batchquery( UINT32 * results, UINT32 *numres, const cv::Mat & queries, UINT32 numq, int dim1queries )
+{
+  /* create and initialize a bitarray */
+  counter = new bitarray;
+  counter->init( N );
+
+  UINT32 *res = new UINT32[K * ( D + 1 )];
+  UINT64 *chunks = new UINT64[m];
+  UINT32 * presults = results;
+  UINT32 *pnumres = numres;
+
+  /* make a copy of input queries */
+  cv::Mat queries_clone = queries.clone();
+
+  /* set a pointer to first query (row) */
+  UINT8 *pq = queries_clone.ptr();
+
+  /* loop over number of descriptors */
+  for ( size_t i = 0; i < numq; i++ )
+  {
+    /* for every descriptor, query database */
+    query( presults, pnumres, pq, chunks, res );
+
+    /* move pointer to write next K indeces */
+    presults += K;
+    pnumres += B + 1;
+
+    /* move forward pointer to current row in descriptors matrix */
+    pq += dim1queries;
+
+  }
+
+  delete[] res;
+  delete[] chunks;
+
+  delete counter;
+}
+
+/* execute a single query */
+void BinaryDescriptorMatcher::Mihasher::query( UINT32* results, UINT32* numres, UINT8 * Query, UINT64 *chunks, UINT32 *res )
+{
+  /* if K == 0 that means we want everything to be processed.
+   So maxres = N in that case. Otherwise K limits the results processed */
+  UINT32 maxres = K ? K : (UINT32) N;
+
+  /* number of results so far obtained (up to a distance of s per chunk) */
+  UINT32 n = 0;
+
+  /* number of candidates tested with full codes (not counting duplicates) */
+  UINT32 nc = 0;
+
+  /* counting everything retrieved (duplicates are counted multiple times)
+   number of lookups (and xors) */
+  UINT32 nl = 0;
+
+  UINT32 nd = 0;
+  UINT32 *arr;
+  int size = 0;
+  UINT32 index;
+  int hammd;
+
+  counter->erase();
+  memset( numres, 0, ( B + 1 ) * sizeof ( *numres ) );
+
+  split( chunks, Query, m, mplus, b );
+
+  /* the growing search radius per substring */
+  int s;
+
+  /* current b: for the first mplus substrings it is b, for the rest it is (b-1) */
+  int curb = b;
+
+  for ( s = 0; s <= d && n < maxres; s++ )
+  {
+    for ( int k = 0; k < m; k++ )
+    {
+      if( k < mplus )
+        curb = b;
+      else
+        curb = b - 1;
+      UINT64 chunksk = chunks[k];
+      /* number of bit-strings with s number of 1s */
+      nl += xornum[s + 1] - xornum[s];
+
+      /* the bit-string with s number of 1s */
+      UINT64 bitstr = 0;
+      for ( int i = 0; i < s; i++ )
+        /* power[i] stores the location of the i'th 1 */
+        power[i] = i;
+      /* used for stopping criterion (location of (s+1)th 1) */
+      power[s] = curb + 1;
+
+      /* bit determines the 1 that should be moving to the left */
+      int bit = s - 1;
+
+      /* start from the left-most 1, and move it to the left until
+       it touches another one */
+
+      /* the loop for changing bitstr */
+      bool infiniteWhile = true;
+      while ( infiniteWhile )
+      {
+        if( bit != -1 )
+        {
+          bitstr ^= ( power[bit] == bit ) ? (UINT64) 1 << power[bit] : (UINT64) 3 << ( power[bit] - 1 );
+          power[bit]++;
+          bit--;
+        }
+
+        else
+        { /* bit == -1 */
+          /* the binary code bitstr is available for processing */
+          arr = H[k].query( chunksk ^ bitstr, &size );  // lookup
+          if( size )
+          { /* the corresponding bucket is not empty */
+            nd += size;
+            for ( int c = 0; c < size; c++ )
+            {
+              index = arr[c];
+              if( !counter->get( index ) )
+              { /* if it is not a duplicate */
+                counter->set( index );
+                hammd = cv::line_descriptor::match( codes.ptr() + (UINT64) index * ( B_over_8 ), Query, B_over_8 );
+
+                nc++;
+                if( hammd <= D && numres[hammd] < maxres )
+                  res[hammd * K + numres[hammd]] = index + 1;
+
+                numres[hammd]++;
+              }
+            }
+          }
+
+          /* end of processing */
+          while ( ++bit < s && power[bit] == power[bit + 1] - 1 )
+          {
+            bitstr ^= (UINT64) 1 << ( power[bit] - 1 );
+            power[bit] = bit;
+          }
+          if( bit == s )
+            break;
+        }
+      }
+
+      n = n + numres[s * m + k];
+      if( n >= maxres )
+        break;
+    }
+  }
+
+  n = 0;
+  for ( s = 0; s <= D && (int) n < K; s++ )
+  {
+    for ( int c = 0; c < (int) numres[s] && (int) n < K; c++ )
+      results[n++] = res[s * K + c];
+  }
+
+}
+
+/* constructor 2 */
+BinaryDescriptorMatcher::Mihasher::Mihasher( int _B, int _m )
+{
+  B = _B;
+  B_over_8 = B / 8;
+  m = _m;
+  b = (int) ceil( (double) B / m );
+
+  /* assuming that B/2 is large enough radius to include
+   all of the k nearest neighbors */
+  D = (int) ceil( B / 2.0 );
+  d = (int) ceil( (double) D / m );
+
+  /* mplus is the number of chunks with b bits
+   (m-mplus) is the number of chunks with (b-1) bits */
+  mplus = B - m * ( b - 1 );
+
+  xornum = new UINT32[d + 2];
+  xornum[0] = 0;
+  for ( int i = 0; i <= d; i++ )
+    xornum[i + 1] = xornum[i] + (UINT32) choose( b, i );
+
+  H = new SparseHashtable[m];
+
+  /* H[i].init might fail */
+  for ( int i = 0; i < mplus; i++ )
+    H[i].init( b );
+  for ( int i = mplus; i < m; i++ )
+    H[i].init( b - 1 );
+}
+
+/* K setter */
+void BinaryDescriptorMatcher::Mihasher::setK( int _K )
+{
+  K = _K;
+}
+
+/* desctructor */
+BinaryDescriptorMatcher::Mihasher::~Mihasher()
+{
+  delete[] xornum;
+  delete[] H;
+}
+
+/* populate tables */
+void BinaryDescriptorMatcher::Mihasher::populate( cv::Mat & _codes, UINT32 _N, int dim1codes )
+{
+  N = _N;
+  codes = _codes;
+  UINT64 * chunks = new UINT64[m];
+
+  UINT8 * pcodes = codes.ptr();
+  for ( UINT64 i = 0; i < N; i++, pcodes += dim1codes )
+  {
+    split( chunks, pcodes, m, mplus, b );
+
+    for ( int k = 0; k < m; k++ )
+      H[k].insert( chunks[k], (UINT32) i );
+
+    if( i % (int) ceil( N / 1000.0 ) == 0 )
+      fflush (stdout);
+  }
+
+  delete[] chunks;
+}
+
+/* constructor */
+BinaryDescriptorMatcher::SparseHashtable::SparseHashtable()
+{
+  table = NULL;
+  size = 0;
+  b = 0;
+}
+
+/* initializer */
+int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
+{
+  b = _b;
+
+  if( b < 5 || b > MAX_B || b > (int) ( sizeof(UINT64) * 8 ) )
+    return 1;
+
+  size = UINT64_1 << ( b - 5 );  // size = 2 ^ b
+  table = (BucketGroup*) calloc( size, sizeof(BucketGroup) );
+
+  return 0;
+
+}
+
+/* destructor */
+BinaryDescriptorMatcher::SparseHashtable::~SparseHashtable()
+{
+  free( table );
+}
+
+/* insert data */
+void BinaryDescriptorMatcher::SparseHashtable::insert( UINT64 index, UINT32 data )
+{
+  table[index >> 5].insert( (int) ( index % 32 ), data );
+}
+
+/* query data */
+UINT32* BinaryDescriptorMatcher::SparseHashtable::query( UINT64 index, int *Size )
+{
+  return table[index >> 5].query( (int) ( index % 32 ), Size );
+}
+
+/* constructor */
+BinaryDescriptorMatcher::BucketGroup::BucketGroup()
+{
+  empty = 0;
+  group = NULL;
+}
+
+/* destructor */
+BinaryDescriptorMatcher::BucketGroup::~BucketGroup()
+{
+  if( group != NULL )
+    delete group;
+}
+
+/* insert data into the bucket */
+void BinaryDescriptorMatcher::BucketGroup::insert( int subindex, UINT32 data )
+{
+  if( group == NULL )
+  {
+    group = new Array32();
+    group->push( 0 );
+  }
+
+  UINT32 lowerbits = ( (UINT32) 1 << subindex ) - 1;
+  int end = popcnt( empty & lowerbits );
+
+  if( ! ( empty & ( (UINT32) 1 << subindex ) ) )
+  {
+    group->insert( end, group->arr[end + 2] );
+    empty |= (UINT32) 1 << subindex;
+  }
+
+  int totones = popcnt( empty );
+  group->insert( totones + 1 + group->arr[2 + end + 1], data );
+  for ( int i = end + 1; i < totones + 1; i++ )
+    group->arr[2 + i]++;
+}
+
+/* perform a query to the bucket */
+UINT32* BinaryDescriptorMatcher::BucketGroup::query( int subindex, int *size )
+{
+  if( empty & ( (UINT32) 1 << subindex ) )
+  {
+    UINT32 lowerbits = ( (UINT32) 1 << subindex ) - 1;
+    int end = popcnt( empty & lowerbits );
+    int totones = popcnt( empty );
+    *size = group->arr[2 + end + 1] - group->arr[2 + end];
+    return group->arr + 2 + totones + 1 + group->arr[2 + end];
+  }
+
+  else
+  {
+    *size = 0;
+    return NULL;
+  }
+}
+
+/* set ARRAY_RESIZE_FACTOR */
+void BinaryDescriptorMatcher::Array32::setArrayResizeFactor( double arf )
+{
+  ARRAY_RESIZE_FACTOR = arf;
+}
+
+/* constructor */
+BinaryDescriptorMatcher::Array32::Array32()
+{
+  arr = NULL;
+  ARRAY_RESIZE_FACTOR = 1.1;    // minimum is 1.0
+  ARRAY_RESIZE_ADD_FACTOR = 4;  // minimum is 1
+
+}
+
+/* definition of operator =
+ Array32& Array32::operator = (const Array32 &rhs) */
+void BinaryDescriptorMatcher::Array32::operator =( const Array32 &rhs )
+{
+  if( &rhs != this )
+    this->arr = rhs.arr;
+}
+
+/* destructor */
+BinaryDescriptorMatcher::Array32::~Array32()
+{
+  cleanup();
+}
+
+/* cleaning function used in destructor */
+void BinaryDescriptorMatcher::Array32::cleanup()
+{
+  free( arr );
+}
+
+/* push data */
+void BinaryDescriptorMatcher::Array32::push( UINT32 Data )
+{
+  if( arr )
+  {
+    if( arr[0] == arr[1] )
+    {
+      arr[1] = (UINT32) std::max( ceil( arr[1] * ARRAY_RESIZE_FACTOR ), arr[1] + ARRAY_RESIZE_ADD_FACTOR );
+      UINT32* new_Data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
+      if( new_Data == NULL )
+      {
+        /* could not realloc, but orig still valid */
+        std::cout << "ALERT!!!! Not enough memory, operation aborted!" << std::endl;
+        exit( 0 );
+      }
+      else
+      {
+        arr = new_Data;
+      }
+
+    }
+
+    arr[2 + arr[0]] = Data;
+    arr[0]++;
+
+  }
+
+  else
+  {
+    arr = (UINT32*) malloc( ( size_t )( 2 + ARRAY_RESIZE_ADD_FACTOR ) * sizeof(UINT32) );
+    arr[0] = 1;
+    arr[1] = 1;
+    arr[2] = Data;
+  }
+}
+
+/* insert data at given index */
+void BinaryDescriptorMatcher::Array32::insert( UINT32 index, UINT32 Data )
+{
+  if( arr )
+  {
+    if( arr[0] == arr[1] )
+    {
+      arr[1] = (UINT32) ceil( arr[0] * 1.1 );
+      UINT32* new_data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
+      if( new_data == NULL )
+      {
+        // could not realloc, but orig still valid
+        std::cout << "ALERT!!!! Not enough memory, operation aborted!" << std::endl;
+        exit( 0 );
+      }
+      else
+      {
+        arr = new_data;
+      }
+    }
+
+    memmove( arr + ( 2 + index ) + 1, arr + ( 2 + index ), ( arr[0] - index ) * sizeof ( *arr ) );
+
+    arr[2 + index] = Data;
+    arr[0]++;
+  }
+
+  else
+  {
+    arr = (UINT32*) malloc( 3 * sizeof(UINT32) );
+    arr[0] = 1;
+    arr[1] = 1;
+    arr[2] = Data;
+  }
+}
+
+/* return data */
+UINT32* BinaryDescriptorMatcher::Array32::data()
+{
+  return arr ? arr + 2 : NULL;
+}
+
+/* return data size */
+UINT32 BinaryDescriptorMatcher::Array32::size()
+{
+  return arr ? arr[0] : 0;
+}
+
+/* return capacity */
+UINT32 BinaryDescriptorMatcher::Array32::capacity()
+{
+  return arr ? arr[1] : 0;
+}
+
+/* print data */
+void BinaryDescriptorMatcher::Array32::print()
+{
+  for ( int i = 0; i < (int) size(); i++ )
+    printf( "%d, ", arr[i + 2] );
+
+  printf( "\n" );
+}
+
+/* initializer */
+void BinaryDescriptorMatcher::Array32::init( int Size )
+{
+  if( arr == NULL )
+  {
+    arr = (UINT32*) malloc( ( 2 + Size ) * sizeof(UINT32) );
+    arr[0] = 0;
+    arr[1] = Size;
+  }
+}
+
+
 }
 }
+

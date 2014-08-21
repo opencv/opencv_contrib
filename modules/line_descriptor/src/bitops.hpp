@@ -43,6 +43,8 @@
 #ifndef __OPENCV_BITOPTS_HPP
 #define __OPENCV_BITOPTS_HPP
 
+#include "precomp.hpp"
+
 #ifdef _WIN32
 # include <intrin.h>
 # define popcnt __popcnt
@@ -63,6 +65,10 @@ const int lookup[] =
     3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5,
     6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8 };
 
+namespace cv
+{
+namespace line_descriptor
+{
 /*matching function */
 inline int match( UINT8*P, UINT8*Q, int codelb )
 {
@@ -162,6 +168,8 @@ inline UINT64 choose( int n, int r )
   }
 
   return nchooser;
+}
+}
 }
 
 #endif

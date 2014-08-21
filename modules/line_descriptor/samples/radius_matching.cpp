@@ -62,22 +62,22 @@ static const char* keys =
 static void help()
 {
   std::cout << "\nThis example shows the functionalities of radius matching " << "Please, run this sample using a command in the form\n"
-            << "./example_line_descriptor_radius_matching <path_to_input_images>/" << std::endl;
+      << "./example_line_descriptor_radius_matching <path_to_input_images>/" << std::endl;
 }
 
 int main( int argc, char** argv )
 {
   /* get parameters from comand line */
   CommandLineParser parser( argc, argv, keys );
-  String pathToImages = parser.get<String>( 0 );
+  String pathToImages = parser.get < String > ( 0 );
 
   /* create structures for hosting KeyLines and descriptors */
   int num_elements = sizeof ( images ) / sizeof ( images[0] );
-  std::vector<Mat> descriptorsMat;
-  std::vector<std::vector<KeyLine> > linesMat;
+  std::vector < Mat > descriptorsMat;
+  std::vector < std::vector<KeyLine> > linesMat;
 
   /*create a pointer to a BinaryDescriptor object */
-  Ptr<BinaryDescriptor> bd = BinaryDescriptor::createBinaryDescriptor();
+  Ptr < BinaryDescriptor > bd = BinaryDescriptor::createBinaryDescriptor();
 
   /* compute lines and descriptors */
   for ( int i = 0; i < num_elements; i++ )
@@ -97,7 +97,7 @@ int main( int argc, char** argv )
     }
 
     /* compute lines and descriptors */
-    std::vector<KeyLine> lines;
+    std::vector < KeyLine > lines;
     Mat computedDescr;
     bd->detect( loadedImage, lines );
     bd->compute( loadedImage, lines, computedDescr );
@@ -121,19 +121,19 @@ int main( int argc, char** argv )
   std::cout << "It has been generated a matrix of " << queries.rows << " descriptors" << std::endl;
 
   /* create a BinaryDescriptorMatcher object */
-  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+  Ptr < BinaryDescriptorMatcher > bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
 
   /* populate matcher */
   bdm->add( descriptorsMat );
 
   /* compute matches */
-  std::vector<std::vector<DMatch> > matches;
+  std::vector < std::vector<DMatch> > matches;
   bdm->radiusMatch( queries, matches, 30 );
   std::cout << "size matches sample " << matches.size() << std::endl;
 
-  for ( int i = 0; i < matches.size(); i++ )
+  for ( int i = 0; i < (int) matches.size(); i++ )
   {
-    for ( int j = 0; j < matches[i].size(); j++ )
+    for ( int j = 0; j < (int) matches[i].size(); j++ )
     {
       std::cout << "match: " << matches[i][j].queryIdx << " " << matches[i][j].trainIdx << " " << matches[i][j].distance << std::endl;
     }

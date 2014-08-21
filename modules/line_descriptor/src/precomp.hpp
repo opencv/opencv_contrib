@@ -68,6 +68,10 @@
 #include <sstream>
 #include <vector>
 
+#include "bitarray.hpp"
+#include "bitops.hpp"
+#include "types.hpp"
+
 #include "opencv2/line_descriptor.hpp"
 
 #endif
