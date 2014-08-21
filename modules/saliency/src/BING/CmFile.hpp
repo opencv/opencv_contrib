@@ -49,8 +49,9 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "kyheader.hpp"
 #endif
+
+#include "kyheader.hpp"
 
 namespace cv
 {
