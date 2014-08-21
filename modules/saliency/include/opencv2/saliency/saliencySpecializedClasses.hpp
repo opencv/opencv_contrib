@@ -46,6 +46,7 @@
 #include <cstdio>
 #include <string>
 #include <iostream>
+#include <stdint.h>
 
 namespace cv
 {
@@ -187,8 +188,6 @@ private:
     Mat matchTemplate( const Mat &mag1u );
 
     float dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 );
-
-  public:
     void reconstruct( Mat &w );// For illustration purpose
 
   private:
