@@ -62,16 +62,6 @@ static void help()
        << endl;
 }
 
-inline float calcOverlap( Rect a, Rect b )
-{
-  Rect rectIntersection = a & b;
-  Rect rectUnion = a | b;
-  float iArea = rectIntersection.width * rectIntersection.height;
-  float uArea = rectUnion.width * rectUnion.height;
-  float overlap = iArea / uArea;
-  return overlap;
-}
-
 int main( int argc, char** argv )
 {
   CommandLineParser parser( argc, argv, keys );
