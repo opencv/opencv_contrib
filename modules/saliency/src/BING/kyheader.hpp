@@ -87,11 +87,6 @@ typedef unsigned char BYTE;
 #include <windows.h>
 #endif
 
-namespace cv
-{
-namespace saliency
-{
-
 typedef std::vector<int> vecI;
 typedef const std::string CStr;
 typedef const cv::Mat CMat;
@@ -99,6 +94,11 @@ typedef std::vector<std::string> vecS;
 typedef std::vector<cv::Mat> vecM;
 typedef std::vector<float> vecF;
 typedef std::vector<double> vecD;
+
+namespace cv
+{
+namespace saliency
+{
 
 enum
 {

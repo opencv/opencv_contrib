@@ -49,7 +49,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "BING/kyheader.hpp"
+#include "kyheader.hpp"
 #endif
 
 namespace cv
@@ -59,7 +59,7 @@ namespace saliency
 
 struct CmFile
 {
-    static bool MkDir(CStr&  path);
+    static bool MkDir(std::string&  path);
 };
 
 }

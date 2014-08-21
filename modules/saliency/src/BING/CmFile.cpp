@@ -47,7 +47,7 @@ namespace cv
 namespace saliency
 {
 
-bool CmFile::MkDir( CStr &_path )
+bool CmFile::MkDir( std::string &_path )
 {
   if( _path.size() == 0 )
     return false;
