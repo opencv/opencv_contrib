@@ -22,11 +22,11 @@
 #include "cvconfig.h"
 
 #ifdef HAVE_OPENCV_OCL
-#  include "opencv2/nonfree/ocl.hpp"
+#  include "opencv2/ocl.hpp"
 #endif
 
 #ifdef HAVE_CUDA
-#  include "opencv2/nonfree/cuda.hpp"
+#  include "opencv2/xfeatures2d/cuda.hpp"
 #endif
 
 #endif
