@@ -43,6 +43,7 @@
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/ml.hpp"
+#include <limits>
 #include <fstream>
 #include <queue>
 
@@ -1402,9 +1403,9 @@ static double NFA(int n, int k, double p, double logNT)
     int i;
 
     if (p<=0)
-        p=0.000000000000000000000000000001;
+        p = std::numeric_limits<double>::min();
     if (p>=1)
-        p=0.999999999999999999999999999999;
+        p = 1 - std::numeric_limits<double>::epsilon();
 
     /* check parameters */
     if( n<0 || k<0 || k>n || p<=0.0 || p>=1.0 )
