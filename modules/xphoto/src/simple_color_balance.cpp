@@ -54,6 +54,9 @@
 
 namespace cv
 {
+namespace xphoto
+{
+
     template <typename T>
     void balanceWhite(std::vector < Mat_<T> > &src, Mat &dst,
         const float inputMin, const float inputMax,
@@ -204,4 +207,5 @@ namespace cv
                 break;
         }
     }
+}
 }

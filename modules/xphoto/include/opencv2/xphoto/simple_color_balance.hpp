@@ -57,6 +57,8 @@ Namespace where all the C++ OpenCV functionality resides
 */
 namespace cv
 {
+namespace xphoto
+{
     //! various white balance algorithms
     enum
     {
@@ -76,6 +78,7 @@ namespace cv
     CV_EXPORTS_W void balanceWhite(const Mat &src, Mat &dst, const int algorithmType,
         const float inputMin  = 0.0f, const float inputMax  = 255.0f,
         const float outputMin = 0.0f, const float outputMax = 255.0f);
+}
 }
 
 #endif // __OPENCV_SIMPLE_COLOR_BALANCE_HPP__

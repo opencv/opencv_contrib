@@ -54,6 +54,9 @@
 
 namespace cv
 {
+namespace xphoto
+{
+
     void grayDctDenoising(const Mat &, Mat &, const double, const int);
     void rgbDctDenoising(const Mat &, Mat &, const double, const int);
     void dctDenoising(const Mat &, Mat &, const double, const int);
@@ -178,4 +181,5 @@ namespace cv
         img.convertTo( dst, src.type() );
     }
 
+}
 }

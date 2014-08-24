@@ -40,11 +40,10 @@
 //
 //M*/
 
-#ifndef __OPENCV_EDGEDETECTION_HPP__
-#define __OPENCV_EDGEDETECTION_HPP__
+#ifndef __OPENCV_XPHOTO_HPP__
+#define __OPENCV_XPHOTO_HPP__
 
-#include "opencv2/xphoto.hpp"
-#include "opencv2/xphoto/inpainting.hpp"
-#include "opencv2/xphoto/simple_color_balance.hpp"
-#include "opencv2/xphoto/dct_image_denoising.hpp"
+#include "xphoto/inpainting.hpp"
+#include "xphoto/simple_color_balance.hpp"
+#include "xphoto/dct_image_denoising.hpp"
 #endif

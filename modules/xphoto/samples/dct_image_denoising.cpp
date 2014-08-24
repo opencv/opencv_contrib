@@ -54,7 +54,7 @@ int main( int argc, const char** argv )
         psize = 16;
 
     cv::Mat res(src.size(), src.type());
-    cv::dctDenoising(src, res, sigma, psize);
+    cv::xphoto::dctDenoising(src, res, sigma, psize);
 
     if ( outFilename == "" )
     {

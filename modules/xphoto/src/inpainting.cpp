@@ -68,6 +68,9 @@ namespace xphotoInternal
 
 namespace cv
 {
+namespace xphoto
+{
+
     template <typename Tp, unsigned int cn>
     static void shiftMapInpaint(const Mat &src, const Mat &mask, Mat &dst,
         const int nTransform = 60, const int psize = 8)
@@ -119,7 +122,7 @@ namespace cv
 
         switch ( algorithmType )
         {
-            case INPAINT_SHIFTMAP:
+            case xphoto::INPAINT_SHIFTMAP:
                 shiftMapInpaint <Tp, cn>(src, mask, dst);
                 break;
             default:
@@ -233,4 +236,5 @@ namespace cv
                 break;
         }
     }
+}
 }

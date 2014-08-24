@@ -4,7 +4,8 @@ namespace cvtest
 {
     TEST(xphoto_simplecolorbalance, regression)
     {
-        cv::String dir = cvtest::TS::ptr()->get_data_path() + "simple_white_balance/";
+        cv::String subfolder = "cv/xphoto/";
+        cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder + "simple_white_balance/";
         int nTests = 12;
         float threshold = 0.005f;
 
@@ -12,12 +13,13 @@ namespace cvtest
         {
             cv::String srcName = dir + cv::format( "sources/%02d.png", i + 1);
             cv::Mat src = cv::imread( srcName, 1 );
+            ASSERT_TRUE(!src.empty());
 
             cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
 
             cv::Mat currentResult;
-            cv::balanceWhite(src, currentResult, cv::WHITE_BALANCE_SIMPLE);
+            cv::xphoto::balanceWhite(src, currentResult, cv::xphoto::WHITE_BALANCE_SIMPLE);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );

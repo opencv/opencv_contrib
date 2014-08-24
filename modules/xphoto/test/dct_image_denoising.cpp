@@ -4,10 +4,11 @@ namespace cvtest
 {
     TEST(xphoto_dctimagedenoising, regression)
     {
-        cv::String dir = cvtest::TS::ptr()->get_data_path() + "dct_image_denoising/";
+        cv::String subfolder = "cv/xphoto/";
+        cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder + "dct_image_denoising/";
         int nTests = 1;
 
-        double thresholds[] = {0.1};
+        double thresholds[] = {0.2};
 
         int psize[] = {8};
         double sigma[] = {9.0};
@@ -16,13 +17,15 @@ namespace cvtest
         {
             cv::String srcName = dir + cv::format( "sources/%02d.png", i + 1);
             cv::Mat src = cv::imread( srcName, 1 );
+            ASSERT_TRUE(!src.empty());
 
             cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
+            ASSERT_TRUE(!src.empty());
 
-            cv::Mat currentResult, fastNlMeansResult;
+            cv::Mat currentResult;
 
-            cv::dctDenoising(src, currentResult, sigma[i], psize[i]);
+            cv::xphoto::dctDenoising(src, currentResult, sigma[i], psize[i]);
 
             cv::Mat sqrError = ( currentResult - previousResult )
                 .mul( currentResult - previousResult );

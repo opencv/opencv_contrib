@@ -56,7 +56,7 @@ int main( int argc, const char** argv )
     }
 
     cv::Mat res(src.size(), src.type());
-    cv::inpaint( src, mask, res, cv::INPAINT_SHIFTMAP );
+    cv::xphoto::inpaint( src, mask, res, cv::xphoto::INPAINT_SHIFTMAP );
     cv::cvtColor(res, res, CV_Lab2RGB);
 
     if ( outFilename == "" )

@@ -50,8 +50,8 @@ StructuredEdgeDetection::detectEdges
 
 .. seealso::
 
-    :ocv:class:`Sobel`,
-    :ocv:class:`Canny`
+    :ocv:func:`Sobel`,
+    :ocv:func:`Canny`
 
 createStructuredEdgeDetection
 +++++++++++++++++++++++++++++
