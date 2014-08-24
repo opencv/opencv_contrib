@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <fstream>
 #include <time.h>
 #include <functional>
 
@@ -98,6 +99,7 @@ namespace cv
 
             warpPerspective( masks[0], masks[i + 1], transforms[i],
                              masks[0].size(), INTER_NEAREST);
+            cv::imwrite(cv::format("C:/Users/Yury/Projects/inpaint/output/%d.png", i), images[i]);
             masks[i + 1] &= invMask;
         }
 

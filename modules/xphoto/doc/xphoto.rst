@@ -1,6 +1,6 @@
-**********************************
-xphoto. Addon to basic photo modul
-**********************************
+*****************************
+xphoto. Extended photo module
+*****************************
 
 .. toctree::
     :maxdepth: 2
