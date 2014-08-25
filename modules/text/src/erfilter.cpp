@@ -3495,7 +3495,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
 
     Point center_i(i->rect.x+i->rect.width/2, i->rect.y+i->rect.height/2);
     Point center_j(j->rect.x+j->rect.width/2, j->rect.y+j->rect.height/2);
-    float centroid_angle = (float)atan2(center_j.y-center_i.y, center_j.x-center_i.x);
+    float centroid_angle = (float)atan2((float)(center_j.y-center_i.y), (float)(center_j.x-center_i.x));
 
     int avg_width = (i->rect.width + j->rect.width) / 2;
     float norm_distance = (float)(j->rect.x-(i->rect.x+i->rect.width))/avg_width;
