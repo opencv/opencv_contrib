@@ -397,11 +397,11 @@ bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::ve
     Ptr<TrackerTargetState> ptr;
     Mat_<double> _last_guess=(Mat_<double>(1,4)<<(double)boundingBox.x,(double)boundingBox.y,
     (double)boundingBox.x+boundingBox.width,(double)boundingBox.y+boundingBox.height);
-    PFSolver* promoted_solver=dynamic_cast<PFSolver*>(static_cast<optim::Solver*>(_solver));
+    PFSolver* promoted_solver=dynamic_cast<PFSolver*>(static_cast<MinProblemSolver*>(_solver));
 
     promoted_solver->setParamsSTD(params.std);
     promoted_solver->minimize(_last_guess);
-    dynamic_cast<TrackingFunctionPF*>(static_cast<optim::Solver::Function*>(promoted_solver->getFunction()))->update(image);
+    dynamic_cast<TrackingFunctionPF*>(static_cast<MinProblemSolver::Function*>(promoted_solver->getFunction()))->update(image);
     while(promoted_solver->iteration() <= promoted_solver->getTermCriteria().maxCount);
     promoted_solver->getOptParam(_last_guess);
 

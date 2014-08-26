@@ -608,7 +608,7 @@ bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std
     END_TICK("detector");
 
     dfprintf((stdout, "after NCC: nneg = %d npos = %d\n", nneg, npos));
-#if !0
+#if !1
         std::vector<Rect2d> poss, negs;
 
         for( int i = 0; i < (int)patches.size(); i++ )

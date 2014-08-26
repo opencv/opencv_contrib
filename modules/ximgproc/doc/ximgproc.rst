@@ -1,5 +1,5 @@
 ********************************************
-ximgproc. Extended image processing module.
+ximgproc. Extended Image Processing
 ********************************************
 
 .. highlight:: cpp
@@ -7,4 +7,5 @@ ximgproc. Extended image processing module.
 .. toctree::
     :maxdepth: 2
 
+    structured_edge_detection
     edge_aware_filters

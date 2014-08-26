@@ -44,24 +44,13 @@
 #ifndef __OPENCV_TEXT_OCR_HPP__
 #define __OPENCV_TEXT_OCR_HPP__
 
-#include "text_config.hpp"
-
-#ifdef HAVE_TESSERACT
-#include <tesseract/baseapi.h>
-#include <tesseract/resultiterator.h>
-#endif
-
-#include "opencv2/core.hpp"
 #include <vector>
 #include <string>
-
 
 namespace cv
 {
 namespace text
 {
-
-using namespace std;
 
 enum
 {
@@ -69,41 +58,75 @@ enum
     OCR_LEVEL_TEXTLINE
 };
 
-#ifdef HAVE_TESSERACT
-class CV_EXPORTS OCRTesseract
-{
-private:
-    tesseract::TessBaseAPI tess;
-
-public:
-    //Default constructor
-    OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL,
-                 tesseract::OcrEngineMode oem=tesseract::OEM_DEFAULT, tesseract::PageSegMode psmode=tesseract::PSM_AUTO);
-
-    ~OCRTesseract();
-
-    void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0);
-};
-#else
-//stub
-class CV_EXPORTS OCRTesseract
+//base class BaseOCR declares a common API that would be used in a typical text recognition scenario
+class CV_EXPORTS BaseOCR
 {
 public:
-    //Default constructor
-    OCRTesseract(const char* datapath=NULL, const char* language=NULL, const char* char_whitelist=NULL,
-                 int oem=0, int psmode=0);
-
-    ~OCRTesseract();
-
-    void run(Mat& image, string& output_text, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0);
+    virtual ~BaseOCR() {};
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0) = 0;
 };
-#endif
+
+/* OCR Tesseract */
+
+class CV_EXPORTS OCRTesseract : public BaseOCR
+{
+public:
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
+                                    const char* char_whitelist=NULL, int oem=3, int psmode=3);
+};
 
 
+/* OCR HMM Decoder */
+
+enum decoder_mode
+{
+    OCR_DECODER_VITERBI = 0 // Other algorithms may be added
+};
+
+class CV_EXPORTS OCRHMMDecoder : public BaseOCR
+{
+public:
+
+    //! callback with the character classifier is made a class. This way we hide the feature extractor and the classifier itself
+    class CV_EXPORTS ClassifierCallback
+    {
+    public:
+        virtual ~ClassifierCallback() { }
+        //! The classifier must return a (ranked list of) class(es) id('s)
+        virtual void eval( InputArray image, std::vector<int>& out_class, std::vector<double>& out_confidence);
+    };
+
+public:
+    //! Decode a group of regions and output the most likely sequence of characters
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
+                                     const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                                                                       //     size() must be equal to the number of classes
+                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
+                                                                                       //     cols == rows == vocabulari.size()
+                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
+                                                                                       //     cols == rows == vocabulari.size()
+                                     decoder_mode mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
+
+protected:
+
+    Ptr<OCRHMMDecoder::ClassifierCallback> classifier;
+    std::string vocabulary;
+    Mat transition_p;
+    Mat emission_p;
+    decoder_mode mode;
+};
+
+CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string& filename);
 
 }
 }

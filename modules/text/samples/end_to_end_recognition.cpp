@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     /*Text Recognition (OCR)*/
 
     double t_r = (double)getTickCount();
-    OCRTesseract* ocr = new OCRTesseract();
+    Ptr<OCRTesseract> ocr = OCRTesseract::create();
     cout << "TIME_OCR_INITIALIZATION = " << ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
     string output;
 

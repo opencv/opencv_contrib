@@ -48,6 +48,69 @@ See [Tao2012]_. And site of project - http://graphics.berkeley.edu/papers/Tao-SA
 .. note::
 
    * An example using the simpleFlow algorithm can be found at samples/simpleflow_demo.cpp
-   
+
+
+optflow::OpticalFlowDeepFlow
+-----------------------------
+DeepFlow optical flow algorithm implementation.
+
+.. ocv:class:: optflow::OpticalFlowDeepFlow: public DenseOpticalFlow
+
+
+  The class implements the DeepFlow optical flow algorithm described in [Weinzaepfel2013]_ . See also http://lear.inrialpes.fr/src/deepmatching/ .
+
+  Parameters - class fields - that may be modified after creating a class instance:
+
+    .. ocv:member:: float alpha
+
+    Smoothness assumption weight
+
+    .. ocv:member:: float delta
+
+    Color constancy assumption weight
+
+    .. ocv:member:: float gamma
+
+    Gradient constancy weight
+        
+    .. ocv:member:: float sigma
+
+    Gaussian smoothing parameter
+        
+    .. ocv:member:: int minSize
+
+    Minimal dimension of an image in the pyramid (next, smaller images in the pyramid are
+    generated until one of the dimensions reaches this size)
+        
+    .. ocv:member:: float downscaleFactor
+
+    Scaling factor in the image pyramid (must be < 1) 
+        
+    .. ocv:member:: int fixedPointIterations
+
+    How many iterations on each level of the pyramid
+        
+    .. ocv:member:: int sorIterations
+
+    Iterations of Succesive Over-Relaxation (solver)
+        
+    .. ocv:member:: float omega
+
+    Relaxation factor in SOR
+
+
+optflow::createOptFlow_DeepFlow
+---------------------------------
+Create an OpticalFlowDeepFlow instance
+
+  .. ocv:function:: Ptr<DenseOpticalFlow> optflow::createOptFlow_DeepFlow()
+
+  Returns a pointer to a ``DenseOpticalFlow`` instance - see ``DenseOpticalFlow::calc()``
+
+
+  
+
+        
 
 .. [Tao2012] Michael Tao, Jiamin Bai, Pushmeet Kohli and Sylvain Paris. SimpleFlow: A Non-iterative, Sublinear Optical Flow Algorithm. Computer Graphics Forum (Eurographics 2012)
+.. [Weinzaepfel2013] P. Weinzaepfel, J. Revaud, Z. Harchaoui, and C. Schmid, “DeepFlow: Large Displacement Optical Flow with Deep Matching,” 2013 IEEE Int. Conf. Comput. Vis., pp. 1385–1392, Dec. 2013.

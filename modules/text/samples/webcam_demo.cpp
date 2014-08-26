@@ -45,6 +45,36 @@ public:
     Parallel_extractCSER & operator=(const Parallel_extractCSER &a);
 };
 
+//OCR recognition is done in parallel for different detections
+template <class T>
+class Parallel_OCR: public cv::ParallelLoopBody
+{
+private:
+    vector<Mat> &detections;
+    vector<string> &outputs;
+    vector< vector<Rect> > &boxes;
+    vector< vector<string> > &words;
+    vector< vector<float> > &confidences;
+    vector< Ptr<T> > &ocrs;
+
+public:
+    Parallel_OCR(vector<Mat> &_detections, vector<string> &_outputs, vector< vector<Rect> > &_boxes,
+                 vector< vector<string> > &_words, vector< vector<float> > &_confidences, 
+                 vector< Ptr<T> > &_ocrs)
+        : detections(_detections), outputs(_outputs), boxes(_boxes), words(_words), 
+          confidences(_confidences), ocrs(_ocrs)
+    {}
+
+    virtual void operator()( const cv::Range &r ) const
+    {
+        for (int c=r.start; c < r.end; c++)
+        {
+            ocrs[c%ocrs.size()]->run(detections[c], outputs[c], &boxes[c], &words[c], &confidences[c], OCR_LEVEL_WORD);
+        }
+    }
+    Parallel_OCR & operator=(const Parallel_OCR &a);
+};
+
 
 //Discard wrongly recognised strings
 bool   isRepetitive(const string& s);
@@ -59,6 +89,7 @@ int main(int argc, char* argv[])
     cout << "  Usage:  " << argv[0] << " [camera_index]" << endl << endl;
     cout << "  Press 'e' to switch between MSER/CSER regions." << endl;
     cout << "  Press 'g' to switch between Horizontal and Arbitrary oriented grouping." << endl;
+    cout << "  Press 'o' to switch between OCRTesseract/OCRHMMDecoder recognition." << endl;
     cout << "  Press 's' to scale down frame size to 320x240." << endl;
     cout << "  Press 'ESC' to exit." << endl << endl;
 
@@ -69,7 +100,7 @@ int main(int argc, char* argv[])
     int  RECOGNITION = 0;
     char *region_types_str[2] = {const_cast<char *>("ERStats"), const_cast<char *>("MSER")};
     char *grouping_algorithms_str[2] = {const_cast<char *>("exhaustive_search"), const_cast<char *>("multioriented")};
-    char *recognitions_str[3] = {const_cast<char *>("Tesseract"), const_cast<char *>("NM_chain_features + KNN"), const_cast<char *>("NM_chain_features + MLP")};
+    char *recognitions_str[2] = {const_cast<char *>("Tesseract"), const_cast<char *>("NM_chain_features + KNN")};
 
     Mat frame,grey,orig_grey,out_img;
     vector<Mat> channels;
@@ -87,10 +118,32 @@ int main(int argc, char* argv[])
         er_filters2.push_back(er_filter2);
     }
 
-    //Initialize OCR engine
     //double t_r = getTickCount();
 
-    OCRTesseract *ocr_tess = new OCRTesseract();
+    //Initialize OCR engine (we initialize 10 instances in order to work several recognitions in parallel)
+    cout << "Initializing OCR engines ..." << endl;
+    int num_ocrs = 10;
+    vector< Ptr<OCRTesseract> > ocrs;
+    for (int o=0; o<num_ocrs; o++)
+    {
+      ocrs.push_back(OCRTesseract::create());
+    }
+
+    Mat transition_p;
+    string filename = "OCRHMM_transitions_table.xml";
+    FileStorage fs(filename, FileStorage::READ);
+    fs["transition_probabilities"] >> transition_p;
+    fs.release();
+    Mat emission_p = Mat::eye(62,62,CV_64FC1);
+    string voc = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    vector< Ptr<OCRHMMDecoder> > decoders;
+    for (int o=0; o<num_ocrs; o++)
+    {
+      decoders.push_back(OCRHMMDecoder::create(loadOCRHMMClassifierNM("OCRHMM_knn_model_data.xml.gz"), 
+                                               voc, transition_p, emission_p));
+    }
+    cout << " Done!" << endl;
 
     //cout << "TIME_OCR_INITIALIZATION_ALT = "<< ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
 
@@ -182,7 +235,14 @@ int main(int argc, char* argv[])
         float scale_img  = (float)(600.f/frame.rows);
         float scale_font = (float)(2-scale_img)/1.4f;
         vector<string> words_detection;
-        string output;
+        float min_confidence1 = 0.f, min_confidence2 = 0.f;
+        
+        if (RECOGNITION == 0)
+        {
+          min_confidence1 = 51.f; min_confidence2 = 60.f;
+        }
+
+        vector<Mat> detections;
 
         //t_r = getTickCount();
 
@@ -195,42 +255,58 @@ int main(int argc, char* argv[])
             er_draw(channels, regions, nm_region_groups[i], group_img);
             group_img(nm_boxes[i]).copyTo(group_img);
             copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+            detections.push_back(group_img);
+        }
+        vector<string> outputs((int)detections.size());
+        vector< vector<Rect> > boxes((int)detections.size());
+        vector< vector<string> > words((int)detections.size());
+        vector< vector<float> > confidences((int)detections.size());
+        
+        // parallel process detections in batches of ocrs.size() (== num_ocrs)
+        for (int i=0; i<(int)detections.size(); i=i+(int)num_ocrs) 
+        {
+          Range r;
+          if (i+(int)num_ocrs <= (int)detections.size())
+            r = Range(i,i+(int)num_ocrs);
+          else
+            r = Range(i,(int)detections.size());
 
-            vector<Rect>   boxes;
-            vector<string> words;
-            vector<float>  confidences;
+          switch(RECOGNITION)
+          {
+            case 0:
+              parallel_for_(r, Parallel_OCR<OCRTesseract>(detections, outputs, boxes, words, confidences, ocrs));
+              break;
+            case 1:
+              parallel_for_(r, Parallel_OCR<OCRHMMDecoder>(detections, outputs, boxes, words, confidences, decoders));
+              break;
+          }
+        }
 
 
-            float min_confidence1 = 0.f, min_confidence2 = 0.f;
+        for (int i=0; i<(int)detections.size(); i++)
+        {
 
-            if (RECOGNITION == 0)
-            {
-                ocr_tess->run(group_img, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
-                min_confidence1 = 51.f;
-                min_confidence2 = 60.f;
-            }
-
-            output.erase(remove(output.begin(), output.end(), '\n'), output.end());
-            //cout << "OCR output = \"" << output << "\" lenght = " << output.size() << endl;
-            if (output.size() < 3)
+            outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
+            //cout << "OCR output = \"" << outputs[i] << "\" lenght = " << outputs[i].size() << endl;
+            if (outputs[i].size() < 3)
                 continue;
 
-            for (int j=0; j<(int)boxes.size(); j++)
+            for (int j=0; j<(int)boxes[i].size(); j++)
             {
-                boxes[j].x += nm_boxes[i].x-15;
-                boxes[j].y += nm_boxes[i].y-15;
+                boxes[i][j].x += nm_boxes[i].x-15;
+                boxes[i][j].y += nm_boxes[i].y-15;
 
                 //cout << "  word = " << words[j] << "\t confidence = " << confidences[j] << endl;
-                if ((words[j].size() < 2) || (confidences[j] < min_confidence1) ||
-                        ((words[j].size()==2) && (words[j][0] == words[j][1])) ||
-                        ((words[j].size()< 4) && (confidences[j] < min_confidence2)) ||
-                        isRepetitive(words[j]))
+                if ((words[i][j].size() < 2) || (confidences[i][j] < min_confidence1) ||
+                        ((words[i][j].size()==2) && (words[i][j][0] == words[i][j][1])) ||
+                        ((words[i][j].size()< 4) && (confidences[i][j] < min_confidence2)) ||
+                        isRepetitive(words[i][j]))
                     continue;
-                words_detection.push_back(words[j]);
-                rectangle(out_img, boxes[j].tl(), boxes[j].br(), Scalar(255,0,255),3);
-                Size word_size = getTextSize(words[j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
-                rectangle(out_img, boxes[j].tl()-Point(3,word_size.height+3), boxes[j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
-                putText(out_img, words[j], boxes[j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
+                words_detection.push_back(words[i][j]);
+                rectangle(out_img, boxes[i][j].tl(), boxes[i][j].br(), Scalar(255,0,255),3);
+                Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
+                rectangle(out_img, boxes[i][j].tl()-Point(3,word_size.height+3), boxes[i][j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
+                putText(out_img, words[i][j], boxes[i][j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
             }
 
         }
@@ -263,15 +339,15 @@ int main(int argc, char* argv[])
             {
             case 103: //g
                 GROUPING_ALGORITHM = (GROUPING_ALGORITHM+1)%2;
-                cout << "Grouping switched to " << GROUPING_ALGORITHM << endl;
+                cout << "Grouping switched to " << grouping_algorithms_str[GROUPING_ALGORITHM] << endl;
                 break;
-                //case 111: //o
-                //  RECOGNITION = (RECOGNITION+1)%3;
-                //  cout << "OCR switched to " << RECOGNITION << endl;
-                //  break;
+            case 111: //o
+                RECOGNITION = (RECOGNITION+1)%2;
+                cout << "OCR switched to " << recognitions_str[RECOGNITION] << endl;
+                break;
             case 114: //r
                 REGION_TYPE = (REGION_TYPE+1)%2;
-                cout << "Regions switched to " << REGION_TYPE << endl;
+                cout << "Regions switched to " << region_types_str[REGION_TYPE] << endl;
                 break;
             case 115: //s
                 downsize = !downsize;

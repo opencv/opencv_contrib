@@ -1,5 +1,5 @@
 **************************
-reg. Registration
+reg. Image Registration
 **************************
 
 .. toctree::

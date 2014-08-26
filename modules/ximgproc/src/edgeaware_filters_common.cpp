@@ -1,3 +1,39 @@
+/*
+ *  By downloading, copying, installing or using the software you agree to this license.
+ *  If you do not agree to this license, do not download, install,
+ *  copy or use the software.
+ *  
+ *  
+ *  License Agreement
+ *  For Open Source Computer Vision Library
+ *  (3 - clause BSD License)
+ *  
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met :
+ *  
+ *  *Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *  
+ *  * Redistributions in binary form must reproduce the above copyright notice,
+ *  this list of conditions and the following disclaimer in the documentation
+ *  and / or other materials provided with the distribution.
+ *  
+ *  * Neither the names of the copyright holders nor the names of the contributors
+ *  may be used to endorse or promote products derived from this software
+ *  without specific prior written permission.
+ *  
+ *  This software is provided by the copyright holders and contributors "as is" and
+ *  any express or implied warranties, including, but not limited to, the implied
+ *  warranties of merchantability and fitness for a particular purpose are disclaimed.
+ *  In no event shall copyright holders or contributors be liable for any direct,
+ *  indirect, incidental, special, exemplary, or consequential damages
+ *  (including, but not limited to, procurement of substitute goods or services;
+ *  loss of use, data, or profits; or business interruption) however caused
+ *  and on any theory of liability, whether in contract, strict liability,
+ *  or tort(including negligence or otherwise) arising in any way out of
+ *  the use of this software, even if advised of the possibility of such damage.
+ */
+
 #include "precomp.hpp"
 #include "edgeaware_filters_common.hpp"
 #include "dtfilter_cpu.hpp"
@@ -11,12 +47,8 @@ using namespace std;
 #define SQR(x) ((x)*(x))
 #endif
 
-#if defined(CV_SSE)
+#if CV_SSE
 static volatile bool CPU_SUPPORT_SSE1 = cv::checkHardwareSupport(CV_CPU_SSE);
-#endif
-
-#ifdef CV_SSE2
-static volatile bool CPU_SUPPORT_SSE2 = cv::checkHardwareSupport(CV_CPU_SSE2);
 #endif
 
 namespace cv
@@ -113,7 +145,7 @@ inline float getFloatSignBit()
 void add_(register float *dst, register float *src1, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b;
@@ -133,7 +165,7 @@ void add_(register float *dst, register float *src1, int w)
 void mul(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b;
@@ -153,7 +185,7 @@ void mul(register float *dst, register float *src1, register float *src2, int w)
 void mul(register float *dst, register float *src1, float src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b;
@@ -173,7 +205,7 @@ void mul(register float *dst, register float *src1, float src2, int w)
 void mad(register float *dst, register float *src1, float alpha, float beta, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b, c;
@@ -195,7 +227,7 @@ void mad(register float *dst, register float *src1, float alpha, float beta, int
 void sqr_(register float *dst, register float *src1, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a;
@@ -214,7 +246,7 @@ void sqr_(register float *dst, register float *src1, int w)
 void sqr_dif(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 d;
@@ -233,7 +265,7 @@ void sqr_dif(register float *dst, register float *src1, register float *src2, in
 void add_mul(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b, c;
@@ -257,7 +289,7 @@ void add_mul(register float *dst, register float *src1, register float *src2, in
 void add_sqr(register float *dst, register float *src1, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, c;
@@ -280,7 +312,7 @@ void add_sqr(register float *dst, register float *src1, int w)
 void add_sqr_dif(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, d;
@@ -303,7 +335,7 @@ void add_sqr_dif(register float *dst, register float *src1, register float *src2
 void sub_mul(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b, c;
@@ -325,7 +357,7 @@ void sub_mul(register float *dst, register float *src1, register float *src2, in
 void sub_mad(register float *dst, register float *src1, register float *src2, float c0, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b, c;
@@ -349,7 +381,7 @@ void sub_mad(register float *dst, register float *src1, register float *src2, fl
 void det_2x2(register float *dst, register float *a00, register float *a01, register float *a10, register float *a11, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b;
@@ -369,7 +401,7 @@ void det_2x2(register float *dst, register float *a00, register float *a01, regi
 void div_det_2x2(register float *a00, register float *a01, register float *a11, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         const __m128 SIGN_MASK = _mm_set_ps1(getFloatSignBit());
@@ -409,7 +441,7 @@ void div_det_2x2(register float *a00, register float *a01, register float *a11, 
 void div_1x(register float *a1, register float *b1, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 _a1, _b1;
@@ -430,7 +462,7 @@ void div_1x(register float *a1, register float *b1, int w)
 void inv_self(register float *src, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a;
@@ -450,7 +482,7 @@ void inv_self(register float *src, int w)
 void sqrt_(register float *dst, register float *src, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a;
@@ -468,7 +500,7 @@ void sqrt_(register float *dst, register float *src, int w)
 void min_(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 a, b;
@@ -489,7 +521,7 @@ void min_(register float *dst, register float *src1, register float *src2, int w
 void rf_vert_row_pass(register float *curRow, register float *prevRow, float alphaVal, int w)
 {
     register int j = 0;
-#ifdef CV_SSE
+#if CV_SSE
     if (CPU_SUPPORT_SSE1)
     {
         __m128 cur, prev, res;
