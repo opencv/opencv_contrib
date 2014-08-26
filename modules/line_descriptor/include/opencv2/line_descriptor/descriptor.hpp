@@ -888,51 +888,6 @@ protected:
 AlgorithmInfo* info() const;
 
 private:
-class Array32
-{
-
-public:
-/* set ARRAY_RESIZE_FACTOR */
-static void setArrayResizeFactor( double arf );
-
-/* constructor */
-Array32();
-
-/* destructor */
-~Array32();
-
-/* cleaning function used in destructor */
-void cleanup();
-
-/* push data */
-void push( UINT32 data );
-
-/* insert data at given index */
-void insert( UINT32 index, UINT32 data );
-
-/* return data */
-UINT32* data();
-
-/* return data size */
-UINT32 size();
-
-/* return capacity */
-UINT32 capacity();
-
-/* definition of operator = */
-void operator=( const Array32& );
-
-/* print data */
-void print();
-
-/* initializer */
-void init( int size );
-
-/* data */
-UINT32 *arr;
-
-};
-
 class BucketGroup
 {
 
@@ -949,9 +904,14 @@ void insert( int subindex, UINT32 data );
 /* perform a query to the bucket */
 UINT32* query( int subindex, int *size );
 
+/* utility functions */
+void insert_value( std::vector<uint32_t>& vec, int index, UINT32 data );
+void push_value( std::vector<uint32_t>& vec, UINT32 Data );
+
 /* data fields */
 UINT32 empty;
-Array32 *group;
+std::vector<uint32_t> group;
+
 
 };
 

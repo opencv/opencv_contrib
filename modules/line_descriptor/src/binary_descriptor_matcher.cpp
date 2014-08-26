@@ -844,7 +844,7 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
 /* destructor */
 BinaryDescriptorMatcher::SparseHashtable::~SparseHashtable()
 {
-  free( table );
+  free (table);
 }
 
 /* insert data */
@@ -863,23 +863,71 @@ UINT32* BinaryDescriptorMatcher::SparseHashtable::query( UINT64 index, int *Size
 BinaryDescriptorMatcher::BucketGroup::BucketGroup()
 {
   empty = 0;
-  group = NULL;
+  group = std::vector < uint32_t > ( 2, 0 );
 }
 
 /* destructor */
 BinaryDescriptorMatcher::BucketGroup::~BucketGroup()
 {
-  if( group != NULL )
-    delete group;
+}
+
+ void BinaryDescriptorMatcher::BucketGroup::insert_value( std::vector<uint32_t>& vec, int index, UINT32 data )
+{
+  if( vec.size() > 1 )
+  {
+    if( vec[0] == vec[1] )
+    {
+      vec[1] = (UINT32) ceil( vec[0] * 1.1 );
+      for ( int i = 0; i < (int) ( 2 + vec[1] - vec.size() ); i++ )
+        vec.push_back( 0 );
+
+    }
+
+    vec.insert( vec.begin() + 2 + index, data );
+    vec[2 + index] = data;
+    vec[0]++;
+  }
+
+  else
+  {
+    vec = std::vector < uint32_t > ( 3, 0 );
+    vec[0] = 1;
+    vec[1] = 1;
+    vec[2] = data;
+  }
+}
+
+void BinaryDescriptorMatcher::BucketGroup::push_value( std::vector<uint32_t>& vec, UINT32 Data )
+{
+  if( vec.size() > 0 )
+  {
+    if( vec[0] == vec[1] )
+    {
+      vec[1] = (UINT32) std::max( ceil( vec[1] * ARRAY_RESIZE_FACTOR ), vec[1] + ARRAY_RESIZE_ADD_FACTOR );
+      for ( int i = 0; i < (int) ( 2 + vec[1] - vec.size() ); i++ )
+        vec.push_back( 0 );
+    }
+
+    vec[2 + vec[0]] = Data;
+    vec[0]++;
+
+  }
+
+  else
+  {
+    vec = std::vector < uint32_t > ( 2 + ARRAY_RESIZE_ADD_FACTOR, 0 );
+    vec[0] = 1;
+    vec[1] = 1;
+    vec[2] = Data;
+  }
 }
 
 /* insert data into the bucket */
 void BinaryDescriptorMatcher::BucketGroup::insert( int subindex, UINT32 data )
 {
-  if( group == NULL )
+  if( group.size() == 0 )
   {
-    group = new Array32();
-    group->push( 0 );
+    push_value( group, 0 );
   }
 
   UINT32 lowerbits = ( (UINT32) 1 << subindex ) - 1;
@@ -887,14 +935,15 @@ void BinaryDescriptorMatcher::BucketGroup::insert( int subindex, UINT32 data )
 
   if( ! ( empty & ( (UINT32) 1 << subindex ) ) )
   {
-    group->insert( end, group->arr[end + 2] );
+    insert_value( group, end, group[end + 2] );
     empty |= (UINT32) 1 << subindex;
   }
 
   int totones = popcnt( empty );
-  group->insert( totones + 1 + group->arr[2 + end + 1], data );
+  insert_value( group, totones + 1 + group[2 + end + 1], data );
+
   for ( int i = end + 1; i < totones + 1; i++ )
-    group->arr[2 + i]++;
+    group[2 + i]++;
 }
 
 /* perform a query to the bucket */
@@ -905,8 +954,9 @@ UINT32* BinaryDescriptorMatcher::BucketGroup::query( int subindex, int *size )
     UINT32 lowerbits = ( (UINT32) 1 << subindex ) - 1;
     int end = popcnt( empty & lowerbits );
     int totones = popcnt( empty );
-    *size = group->arr[2 + end + 1] - group->arr[2 + end];
-    return group->arr + 2 + totones + 1 + group->arr[2 + end];
+
+    *size = group[2 + end + 1] - group[2 + end];
+    return & ( * ( group.begin() + 2 + totones + 1 + (int) group[2 + end] ) );
   }
 
   else
@@ -915,152 +965,6 @@ UINT32* BinaryDescriptorMatcher::BucketGroup::query( int subindex, int *size )
     return NULL;
   }
 }
-
-/* set ARRAY_RESIZE_FACTOR */
-void BinaryDescriptorMatcher::Array32::setArrayResizeFactor( double arf )
-{
-  ARRAY_RESIZE_FACTOR = arf;
-}
-
-/* constructor */
-BinaryDescriptorMatcher::Array32::Array32()
-{
-  arr = NULL;
-  ARRAY_RESIZE_FACTOR = 1.1;    // minimum is 1.0
-  ARRAY_RESIZE_ADD_FACTOR = 4;  // minimum is 1
-
-}
-
-/* definition of operator =
- Array32& Array32::operator = (const Array32 &rhs) */
-void BinaryDescriptorMatcher::Array32::operator =( const Array32 &rhs )
-{
-  if( &rhs != this )
-    this->arr = rhs.arr;
-}
-
-/* destructor */
-BinaryDescriptorMatcher::Array32::~Array32()
-{
-  cleanup();
-}
-
-/* cleaning function used in destructor */
-void BinaryDescriptorMatcher::Array32::cleanup()
-{
-  free( arr );
-}
-
-/* push data */
-void BinaryDescriptorMatcher::Array32::push( UINT32 Data )
-{
-  if( arr )
-  {
-    if( arr[0] == arr[1] )
-    {
-      arr[1] = (UINT32) std::max( ceil( arr[1] * ARRAY_RESIZE_FACTOR ), arr[1] + ARRAY_RESIZE_ADD_FACTOR );
-      UINT32* new_Data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
-      if( new_Data == NULL )
-      {
-        /* could not realloc, but orig still valid */
-        std::cout << "ALERT!!!! Not enough memory, operation aborted!" << std::endl;
-        exit( 0 );
-      }
-      else
-      {
-        arr = new_Data;
-      }
-
-    }
-
-    arr[2 + arr[0]] = Data;
-    arr[0]++;
-
-  }
-
-  else
-  {
-    arr = (UINT32*) malloc( ( size_t )( 2 + ARRAY_RESIZE_ADD_FACTOR ) * sizeof(UINT32) );
-    arr[0] = 1;
-    arr[1] = 1;
-    arr[2] = Data;
-  }
-}
-
-/* insert data at given index */
-void BinaryDescriptorMatcher::Array32::insert( UINT32 index, UINT32 Data )
-{
-  if( arr )
-  {
-    if( arr[0] == arr[1] )
-    {
-      arr[1] = (UINT32) ceil( arr[0] * 1.1 );
-      UINT32* new_data = static_cast<UINT32*>( realloc( arr, sizeof(UINT32) * ( 2 + arr[1] ) ) );
-      if( new_data == NULL )
-      {
-        // could not realloc, but orig still valid
-        std::cout << "ALERT!!!! Not enough memory, operation aborted!" << std::endl;
-        exit( 0 );
-      }
-      else
-      {
-        arr = new_data;
-      }
-    }
-
-    memmove( arr + ( 2 + index ) + 1, arr + ( 2 + index ), ( arr[0] - index ) * sizeof ( *arr ) );
-
-    arr[2 + index] = Data;
-    arr[0]++;
-  }
-
-  else
-  {
-    arr = (UINT32*) malloc( 3 * sizeof(UINT32) );
-    arr[0] = 1;
-    arr[1] = 1;
-    arr[2] = Data;
-  }
-}
-
-/* return data */
-UINT32* BinaryDescriptorMatcher::Array32::data()
-{
-  return arr ? arr + 2 : NULL;
-}
-
-/* return data size */
-UINT32 BinaryDescriptorMatcher::Array32::size()
-{
-  return arr ? arr[0] : 0;
-}
-
-/* return capacity */
-UINT32 BinaryDescriptorMatcher::Array32::capacity()
-{
-  return arr ? arr[1] : 0;
-}
-
-/* print data */
-void BinaryDescriptorMatcher::Array32::print()
-{
-  for ( int i = 0; i < (int) size(); i++ )
-    printf( "%d, ", arr[i + 2] );
-
-  printf( "\n" );
-}
-
-/* initializer */
-void BinaryDescriptorMatcher::Array32::init( int Size )
-{
-  if( arr == NULL )
-  {
-    arr = (UINT32*) malloc( ( 2 + Size ) * sizeof(UINT32) );
-    arr[0] = 0;
-    arr[1] = Size;
-  }
-}
-
 
 }
 }
