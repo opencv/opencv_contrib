@@ -59,9 +59,9 @@ private:
 
 public:
     Parallel_OCR(vector<Mat> &_detections, vector<string> &_outputs, vector< vector<Rect> > &_boxes,
-                 vector< vector<string> > &_words, vector< vector<float> > &_confidences, 
+                 vector< vector<string> > &_words, vector< vector<float> > &_confidences,
                  vector< Ptr<T> > &_ocrs)
-        : detections(_detections), outputs(_outputs), boxes(_boxes), words(_words), 
+        : detections(_detections), outputs(_outputs), boxes(_boxes), words(_words),
           confidences(_confidences), ocrs(_ocrs)
     {}
 
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     cout << endl << argv[0] << endl << endl;
     cout << "A demo program of End-to-end Scene Text Detection and Recognition using webcam." << endl << endl;
     cout << "  Usage:  " << argv[0] << " [camera_index]" << endl << endl;
-    cout << "  Press 'e' to switch between MSER/CSER regions." << endl;
+    cout << "  Press 'r' to switch between MSER/CSER regions." << endl;
     cout << "  Press 'g' to switch between Horizontal and Arbitrary oriented grouping." << endl;
     cout << "  Press 'o' to switch between OCRTesseract/OCRHMMDecoder recognition." << endl;
     cout << "  Press 's' to scale down frame size to 320x240." << endl;
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
     vector< Ptr<OCRHMMDecoder> > decoders;
     for (int o=0; o<num_ocrs; o++)
     {
-      decoders.push_back(OCRHMMDecoder::create(loadOCRHMMClassifierNM("OCRHMM_knn_model_data.xml.gz"), 
+      decoders.push_back(OCRHMMDecoder::create(loadOCRHMMClassifierNM("OCRHMM_knn_model_data.xml.gz"),
                                                voc, transition_p, emission_p));
     }
     cout << " Done!" << endl;
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
         float scale_font = (float)(2-scale_img)/1.4f;
         vector<string> words_detection;
         float min_confidence1 = 0.f, min_confidence2 = 0.f;
-        
+
         if (RECOGNITION == 0)
         {
           min_confidence1 = 51.f; min_confidence2 = 60.f;
@@ -261,9 +261,9 @@ int main(int argc, char* argv[])
         vector< vector<Rect> > boxes((int)detections.size());
         vector< vector<string> > words((int)detections.size());
         vector< vector<float> > confidences((int)detections.size());
-        
+
         // parallel process detections in batches of ocrs.size() (== num_ocrs)
-        for (int i=0; i<(int)detections.size(); i=i+(int)num_ocrs) 
+        for (int i=0; i<(int)detections.size(); i=i+(int)num_ocrs)
         {
           Range r;
           if (i+(int)num_ocrs <= (int)detections.size())
