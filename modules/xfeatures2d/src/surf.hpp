@@ -1,7 +1,7 @@
 ///////////// see LICENSE.txt in the OpenCV root directory //////////////
 
-#ifndef __OPENCV_NONFREE_SURF_HPP__
-#define __OPENCV_NONFREE_SURF_HPP__
+#ifndef __OPENCV_XFEATURES2D_SURF_HPP__
+#define __OPENCV_XFEATURES2D_SURF_HPP__
 
 namespace cv
 {
