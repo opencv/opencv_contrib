@@ -46,6 +46,8 @@
 #include <vector>
 #include <set>
 
+#include "dataset.h"
+
 struct object
 {
     std::string wnid; // TODO: string -> unsigned int
@@ -53,16 +55,20 @@ struct object
     std::string imageUrl;
 };
 
-class or_imagenet
+class or_imagenet : public dataset
 {
 public:
     or_imagenet() {}
-    or_imagenet(std::string &fileName);
+    or_imagenet(std::string &path);
+    virtual ~or_imagenet() {}
 
-    void loadDataset(std::string &fileName);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<object> train;
     std::set<std::string> wnids;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

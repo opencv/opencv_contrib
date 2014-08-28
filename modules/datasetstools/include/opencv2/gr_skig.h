@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct gesture
 {
     std::string rgb;
@@ -52,15 +54,19 @@ struct gesture
     unsigned char person, background, illumination, pose, actionType;
 };
 
-class gr_skig
+class gr_skig : public dataset
 {
 public:
     gr_skig() {}
     gr_skig(std::string &path);
+    virtual ~gr_skig() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<gesture> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

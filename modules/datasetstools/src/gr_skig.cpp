@@ -55,6 +55,11 @@ gr_skig::gr_skig(std::string &path)
     loadDataset(path);
 }
 
+void gr_skig::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void gr_skig::loadDataset(string &path)
 {
     for (unsigned int i=1; i<=6; ++i)

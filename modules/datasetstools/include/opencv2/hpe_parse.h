@@ -45,16 +45,22 @@
 #include <string>
 #include <vector>
 
-class hpe_parse
+#include "dataset.h"
+
+class hpe_parse : public dataset
 {
 public:
     hpe_parse() {}
     hpe_parse(std::string &path);
+    virtual ~hpe_parse() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<std::string> train;
     std::vector<std::string> test;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

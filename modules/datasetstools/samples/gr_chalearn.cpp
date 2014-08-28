@@ -39,14 +39,13 @@
 //
 //M*/
 
-#include <opencv2/gr_chalearn.h>
+#include "opencv2/gr_chalearn.h"
+#include <opencv2/core.hpp>
 
 #include <cstdio>
 
 #include <string>
 #include <vector>
-
-#include <opencv2/core/core.hpp>
 
 using namespace std;
 

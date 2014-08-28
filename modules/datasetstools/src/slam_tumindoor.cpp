@@ -55,6 +55,11 @@ slam_tumindoor::slam_tumindoor(std::string &path)
     loadDataset(path);
 }
 
+void slam_tumindoor::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void slam_tumindoor::loadDataset(string &path)
 {
     string infoPath(path + "info/2011-12-17_15.02.56-info.csv"); // TODO

@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct cameraParam
 {
     std::string imageName;
@@ -53,15 +55,19 @@ struct cameraParam
     double t[3];
 };
 
-class msm_middlebury
+class msm_middlebury : public dataset
 {
 public:
     msm_middlebury() {}
     msm_middlebury(std::string &path);
+    virtual ~msm_middlebury() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<cameraParam> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

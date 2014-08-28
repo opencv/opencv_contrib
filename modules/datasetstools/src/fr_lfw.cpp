@@ -53,6 +53,11 @@ fr_lfw::fr_lfw(std::string &path)
     loadDataset(path);
 }
 
+void fr_lfw::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void fr_lfw::loadDataset(string &path)
 {
     vector<string> fileNames;

@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include <opencv2/or_imagenet.h>
+#include "opencv2/or_imagenet.h"
+#include <opencv2/core.hpp>
 
 #include <cstdio>
 #include <cstdlib> // atoi
@@ -47,8 +48,6 @@
 #include <string>
 #include <vector>
 #include <set>
-
-#include <opencv2/core/core.hpp>
 
 using namespace std;
 

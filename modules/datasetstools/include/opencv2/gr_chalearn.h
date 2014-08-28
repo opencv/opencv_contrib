@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct groundTruth
 {
     unsigned int gestureID, initialFrame, lastFrame;
@@ -68,15 +70,19 @@ struct gesture
     std::vector<skeleton> skeletons;
 };
 
-class gr_chalearn
+class gr_chalearn : public dataset
 {
 public:
     gr_chalearn() {}
     gr_chalearn(std::string &path);
+    virtual ~gr_chalearn() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<gesture> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

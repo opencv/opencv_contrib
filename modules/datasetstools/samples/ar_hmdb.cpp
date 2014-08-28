@@ -39,14 +39,13 @@
 //
 //M*/
 
-#include <opencv2/ar_hmdb.h>
+#include "opencv2/ar_hmdb.h"
+#include <opencv2/core.hpp>
 
 #include <cstdio>
 
 #include <string>
 #include <vector>
-
-#include <opencv2/core/core.hpp>
 
 using namespace std;
 
@@ -66,7 +65,7 @@ int main(int argc, char *argv[])
     ar_hmdb dataset[3];
     for (unsigned int i=0; i<3; ++i)
     {
-        dataset[i].loadDataset(path, i+1);
+        dataset[i].load(path, i);
     }
 
     // ***************

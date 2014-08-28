@@ -53,6 +53,11 @@ hpe_parse::hpe_parse(std::string &path)
     loadDataset(path);
 }
 
+void hpe_parse::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void hpe_parse::loadDataset(string &path)
 {
     unsigned int i=0;

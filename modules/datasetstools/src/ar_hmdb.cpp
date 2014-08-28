@@ -70,10 +70,15 @@ ar_hmdb::ar_hmdb(string &path, unsigned int number)
     loadDataset(path, number);
 }
 
+void ar_hmdb::load(string &path, unsigned int number)
+{
+    loadDataset(path, number);
+}
+
 void ar_hmdb::loadDataset(string &path, unsigned int number)
 {
-    // valid number [1,2,3]
-    if (number<1 || number>3)
+    // valid number [0,1,2]
+    if (number>2)
     {
         return;
     }
@@ -92,7 +97,7 @@ void ar_hmdb::loadDataset(string &path, unsigned int number)
         test.push_back(curr);
 
         char tmp[2];
-        sprintf(tmp, "%u", number);
+        sprintf(tmp, "%u", number+1);
         string fileName(pathSplit + curr.name + "_test_split" + tmp + ".txt");
         loadAction(fileName, train.back().videoNames, test.back().videoNames);
     }

@@ -102,6 +102,11 @@ tr_svt::tr_svt(std::string &path)
     loadDataset(path);
 }
 
+void tr_svt::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void tr_svt::loadDataset(string &path)
 {
     string trainXml(path + "train.xml");

@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct object
 {
     std::string imageName;
@@ -53,15 +55,19 @@ struct object
     std::string humanSeg; // TODO: read human segmented
 };
 
-class is_weizmann
+class is_weizmann : public dataset
 {
 public:
     is_weizmann() {}
     is_weizmann(std::string &path);
+    virtual ~is_weizmann() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<object> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

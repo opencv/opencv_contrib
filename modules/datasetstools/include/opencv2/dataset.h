@@ -39,38 +39,18 @@
 //
 //M*/
 
-#ifndef IR_ROBOT_H
-#define IR_ROBOT_H
+#ifndef DATASET_H
+#define DATASET_H
 
 #include <string>
-#include <vector>
 
-#include "dataset.h"
-
-// calibration matrix from calibrationFile.mat
-// 2.8290e+03   0.0000e+00   8.0279e+02
-// 0.0000e+00   2.8285e+03   6.1618e+02
-// 0.0000e+00   0.0000e+00   1.0000e+00
-
-struct scene
-{
-    std::string name;
-    std::vector<std::string> images; // TODO: implement more complex structure
-};
-
-class ir_robot : public dataset
+class dataset
 {
 public:
-    ir_robot() {}
-    ir_robot(std::string &path);
-    virtual ~ir_robot() {}
+    dataset() {}
+    virtual ~dataset() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
-
-    std::vector<scene> train;
-
-private:
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0) = 0;
 };
 
 #endif

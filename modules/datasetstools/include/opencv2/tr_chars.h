@@ -45,22 +45,28 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct character
 {
     std::string imgName;
     unsigned int label;
 };
 
-class tr_chars
+class tr_chars : public dataset
 {
 public:
     tr_chars() {}
-    tr_chars(std::string &path, unsigned int number);
+    tr_chars(std::string &path, unsigned int number = 0);
+    virtual ~tr_chars() {}
 
-    void loadDataset(std::string &path, unsigned int number);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<character> train;
     std::vector<character> test;
+
+private:
+    void loadDataset(std::string &path, unsigned int number = 0);
 };
 
 #endif

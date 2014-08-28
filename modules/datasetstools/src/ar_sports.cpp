@@ -74,6 +74,11 @@ ar_sports::ar_sports(string &path)
     loadDataset(path);
 }
 
+void ar_sports::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void ar_sports::loadDataset(string &path)
 {
     string trainPath(path + "original/train_partition.txt");

@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct tag
 {
     std::string value;
@@ -58,16 +60,20 @@ struct image
     std::vector<tag> tags;
 };
 
-class tr_svt
+class tr_svt : public dataset
 {
 public:
     tr_svt() {}
     tr_svt(std::string &path);
+    virtual ~tr_svt() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<image> train;
     std::vector<image> test;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

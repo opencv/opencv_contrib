@@ -45,22 +45,28 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct element
 {
     std::string videoUrl;
     std::vector<unsigned int> labels;
 };
 
-class ar_sports
+class ar_sports : public dataset
 {
 public:
     ar_sports() {}
     ar_sports(std::string &path);
+    virtual ~ar_sports() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<element> train;
     std::vector<element> test;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

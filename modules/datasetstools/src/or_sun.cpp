@@ -53,6 +53,11 @@ or_sun::or_sun(std::string &path)
     loadDataset(path);
 }
 
+void or_sun::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void or_sun::loadDataset(string &path)
 {
     string classNameFile(path + "ClassName.txt");

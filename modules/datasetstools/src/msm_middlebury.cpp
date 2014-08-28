@@ -52,6 +52,11 @@ msm_middlebury::msm_middlebury(std::string &path)
     loadDataset(path);
 }
 
+void msm_middlebury::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void msm_middlebury::loadDataset(string &path)
 {
     string name(path.substr(0, path.length()-1));

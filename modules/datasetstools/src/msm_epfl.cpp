@@ -63,6 +63,11 @@ msm_epfl::msm_epfl(std::string &path)
     loadDataset(path);
 }
 
+void msm_epfl::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void msm_epfl::loadDataset(string &path)
 {
     string pathBounding(path + "bounding/");

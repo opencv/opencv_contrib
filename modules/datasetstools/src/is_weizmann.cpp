@@ -53,6 +53,11 @@ is_weizmann::is_weizmann(std::string &path)
     loadDataset(path);
 }
 
+void is_weizmann::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void is_weizmann::loadDataset(string &path)
 {
     vector<string> fileNames;

@@ -45,22 +45,28 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct action
 {
     std::string name;
     std::vector<std::string> videoNames;
 };
 
-class ar_hmdb
+class ar_hmdb : public dataset
 {
 public:
     ar_hmdb() {}
-    ar_hmdb(std::string &path, unsigned int number);
+    ar_hmdb(std::string &path, unsigned int number = 0);
+    virtual ~ar_hmdb() {}
 
-    void loadDataset(std::string &path, unsigned int number);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<action> train;
     std::vector<action> test;
+
+private:
+    void loadDataset(std::string &path, unsigned int number = 0);
 };
 
 #endif

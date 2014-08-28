@@ -45,21 +45,27 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct imageParams
 {
     std::string imageName;
     double mat[3][3];
 };
 
-class ir_affine
+class ir_affine : public dataset
 {
 public:
     ir_affine() {}
     ir_affine(std::string &path);
+    virtual ~ir_affine() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<imageParams> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

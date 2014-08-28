@@ -45,21 +45,27 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct object
 {
     std::string name;
     std::vector<std::string> imageNames;
 };
 
-class or_sun
+class or_sun : public dataset
 {
 public:
     or_sun() {}
     or_sun(std::string &path);
+    virtual ~or_sun() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<object> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

@@ -54,6 +54,11 @@ gr_chalearn::gr_chalearn(std::string &path)
     loadDataset(path);
 }
 
+void gr_chalearn::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void gr_chalearn::loadDataset(string &path)
 {
     vector<string> fileNames;

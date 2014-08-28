@@ -45,21 +45,27 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct face
 {
     std::string name;
     std::vector<std::string> images;
 };
 
-class fr_lfw
+class fr_lfw : public dataset
 {
 public:
     fr_lfw() {}
     fr_lfw(std::string &path);
+    virtual ~fr_lfw() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<face> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

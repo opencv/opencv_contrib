@@ -45,21 +45,27 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct object
 {
     std::string imageName;
     std::vector<double> bounding, camera, p; // TODO: implement better structures
 };
 
-class msm_epfl
+class msm_epfl : public dataset
 {
 public:
     msm_epfl() {}
     msm_epfl(std::string &path);
+    virtual ~msm_epfl() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<object> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

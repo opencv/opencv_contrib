@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 enum imageType
 {
     LEFT = 0,
@@ -59,15 +61,19 @@ struct imageInfo
     imageType type;
 };
 
-class slam_tumindoor
+class slam_tumindoor : public dataset
 {
 public:
     slam_tumindoor() {}
     slam_tumindoor(std::string &path);
+    virtual ~slam_tumindoor() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<imageInfo> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

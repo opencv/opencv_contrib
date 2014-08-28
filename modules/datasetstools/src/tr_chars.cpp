@@ -70,6 +70,11 @@ tr_chars::tr_chars(std::string &path, unsigned int number)
     loadDataset(path, number);
 }
 
+void tr_chars::load(string &path, unsigned int number)
+{
+    loadDataset(path, number);
+}
+
 void tr_chars::loadDataset(string &path, unsigned int number)
 {
     vector<int> allLabels, trainSet, testSet;

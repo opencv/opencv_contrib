@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "dataset.h"
+
 struct pose
 {
     double elem[12];
@@ -59,15 +61,19 @@ struct sequence
     std::vector<pose> posesArray;
 };
 
-class slam_kitti
+class slam_kitti : public dataset
 {
 public:
     slam_kitti() {}
     slam_kitti(std::string &path);
+    virtual ~slam_kitti() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<sequence> train;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

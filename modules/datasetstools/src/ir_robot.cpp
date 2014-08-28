@@ -53,6 +53,11 @@ ir_robot::ir_robot(std::string &path)
     loadDataset(path);
 }
 
+void ir_robot::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void ir_robot::loadDataset(string &path)
 {
     vector<string> fileNames;

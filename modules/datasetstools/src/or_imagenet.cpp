@@ -49,14 +49,19 @@
 
 using namespace std;
 
-or_imagenet::or_imagenet(std::string &fileName)
+or_imagenet::or_imagenet(std::string &path)
 {
-    loadDataset(fileName);
+    loadDataset(path);
 }
 
-void or_imagenet::loadDataset(string &fileName)
+void or_imagenet::load(string &path, unsigned int number)
 {
-    ifstream infile((fileName + "fall11_urls.txt").c_str());
+    loadDataset(path);
+}
+
+void or_imagenet::loadDataset(string &path)
+{
+    ifstream infile((path + "fall11_urls.txt").c_str());
     string line;
     while (getline(infile, line))
     {

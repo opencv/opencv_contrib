@@ -62,6 +62,11 @@ is_bsds::is_bsds(std::string &path)
     loadDataset(path);
 }
 
+void is_bsds::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void is_bsds::loadDataset(string &path)
 {
     string trainName(path + "iids_train.txt");

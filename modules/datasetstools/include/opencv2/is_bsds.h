@@ -45,16 +45,22 @@
 #include <string>
 #include <vector>
 
-class is_bsds
+#include "dataset.h"
+
+class is_bsds : public dataset
 {
 public:
     is_bsds() {}
     is_bsds(std::string &path);
+    virtual ~is_bsds() {}
 
-    void loadDataset(std::string &path);
+    virtual void load(std::string &path, unsigned int number = 0);
 
     std::vector<std::string> train;
     std::vector<std::string> test;
+
+private:
+    void loadDataset(std::string &path);
 };
 
 #endif

@@ -53,6 +53,11 @@ ir_affine::ir_affine(std::string &path)
     loadDataset(path);
 }
 
+void ir_affine::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void ir_affine::loadDataset(string &path)
 {
     for (unsigned int i=1; i<=6; ++i)

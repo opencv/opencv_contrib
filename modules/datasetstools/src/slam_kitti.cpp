@@ -54,6 +54,11 @@ slam_kitti::slam_kitti(std::string &path)
     loadDataset(path);
 }
 
+void slam_kitti::load(string &path, unsigned int number)
+{
+    loadDataset(path);
+}
+
 void slam_kitti::loadDataset(string &path)
 {
     string pathSequence(path + "sequences/");

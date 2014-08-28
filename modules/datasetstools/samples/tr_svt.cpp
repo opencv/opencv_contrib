@@ -39,15 +39,14 @@
 //
 //M*/
 
-#include <opencv2/tr_svt.h>
+#include "opencv2/tr_svt.h"
+#include <opencv2/core.hpp>
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <string>
 #include <vector>
-
-#include <opencv2/core/core.hpp>
 
 using namespace std;
 

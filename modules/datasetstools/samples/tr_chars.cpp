@@ -39,15 +39,14 @@
 //
 //M*/
 
-#include <opencv2/tr_chars.h>
+#include "opencv2/tr_chars.h"
+#include <opencv2/core.hpp>
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <string>
 #include <vector>
-
-#include <opencv2/core/core.hpp>
 
 using namespace std;
 
@@ -70,7 +69,7 @@ int main(int argc, char *argv[])
         tr_chars curr;
         dataset.push_back(curr);
 
-        dataset.back().loadDataset(path, dataset.size()-1);
+        dataset.back().load(path, dataset.size()-1);
     } while (dataset.back().train.size()>0);
     dataset.pop_back(); // remove last empty split
 
