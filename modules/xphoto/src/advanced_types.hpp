@@ -37,16 +37,30 @@
 //
 //M*/
 
-#ifndef __NORM2_HPP__
-#define __NORM2_HPP__
+#ifndef __ADVANCED_TYPES_HPP__
+#define __ADVANCED_TYPES_HPP__
+#ifdef __cplusplus
 
-template <typename _Tp> struct is_norm2_type :
-    std::integral_constant<bool, !std::is_unsigned<_Tp>::value && !std::is_same<_Tp, char>::value> {};
+#include <opencv2/core.hpp>
 
-template <typename _Tp, int cn> static inline typename std::enable_if< is_norm2_type<_Tp>::value, _Tp >::
-    type norm2(cv::Vec<_Tp, cn> a, cv::Vec<_Tp, cn> b) { return (a - b).dot(a - b); }
+/********************* Functions *********************/
 
-template <typename _Tp> static inline typename std::enable_if< is_norm2_type<_Tp>::value, _Tp >::
-    type norm2(const _Tp &a, const _Tp &b) { return (a - b)*(a - b); }
+namespace cv
+{
 
-#endif /* __NORM2_HPP__ */
+template <typename _Tp, typename _Tp2> static inline
+    cv::Size_<_Tp> operator * (const _Tp2 x, const cv::Size_<_Tp> &sz)
+{
+    return cv::Size_<_Tp>(cv::saturate_cast<_Tp>(x*sz.width), cv::saturate_cast<_Tp>(x*sz.height));
+}
+
+template <typename _Tp, typename _Tp2> static inline
+    cv::Size_<_Tp> operator / (const cv::Size_<_Tp> &sz, const _Tp2 x)
+{
+    return cv::Size_<_Tp>(cv::saturate_cast<_Tp>(sz.width/x), cv::saturate_cast<_Tp>(sz.height/x));
+}
+
+} // cv
+
+#endif
+#endif /* __ADVANCED_TYPES_HPP__ */

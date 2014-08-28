@@ -37,16 +37,9 @@
 //
 //M*/
 
-#ifndef __NORM2_HPP__
-#define __NORM2_HPP__
+#ifndef __BLENDING_HPP__
+#define __BLENDING_HPP__
 
-template <typename _Tp> struct is_norm2_type :
-    std::integral_constant<bool, !std::is_unsigned<_Tp>::value && !std::is_same<_Tp, char>::value> {};
 
-template <typename _Tp, int cn> static inline typename std::enable_if< is_norm2_type<_Tp>::value, _Tp >::
-    type norm2(cv::Vec<_Tp, cn> a, cv::Vec<_Tp, cn> b) { return (a - b).dot(a - b); }
 
-template <typename _Tp> static inline typename std::enable_if< is_norm2_type<_Tp>::value, _Tp >::
-    type norm2(const _Tp &a, const _Tp &b) { return (a - b)*(a - b); }
-
-#endif /* __NORM2_HPP__ */
+#endif /* __BLENDING_HPP__ */

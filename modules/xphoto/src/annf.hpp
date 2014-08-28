@@ -40,6 +40,16 @@
 #ifndef __ANNF_HPP__
 #define __ANNF_HPP__
 
+#include <vector>
+#include <stack>
+#include <limits>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <fstream>
+#include <time.h>
+#include <functional>
+
 #include "norm2.hpp"
 #include "whs.hpp"
 
@@ -170,8 +180,8 @@ updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
         if (abs(ny - y) < zeroThresh &&
             abs(nx - x) < zeroThresh)
             continue;
-        if (nx > width  - 1 || nx < 1 ||
-            ny > height - 1 || ny < 1 )
+        if (nx >= width  - 1 || nx < 1 ||
+            ny >= height - 1 || ny < 1 )
             continue;
 
         double ndist = norm2(data[idx0], data[idx[k]]);
@@ -186,11 +196,11 @@ updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
 
 /************************** ANNF search **************************/
 
-static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
+static void dominantTransforms(const cv::Mat &img, std::vector <cv::Point2i> &transforms,
                                const int nTransform, const int psize)
 {
     const int zeroThresh = 2*psize;
-    const int leafNum = 63;
+    const int leafNum = 64;
 
     /** Walsh-Hadamard Transformation **/
 
@@ -222,13 +232,13 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
 
             int dy[] = {0, 1, 0}, dx[] = {0, 0, 1};
             for (int k = 0; k < int( sizeof(dy)/sizeof(int) ); ++k)
-                if (i - dy[k] >= 0 && j - dx[k] >= 0)
+                if ( i - dy[k] >= 0 && j - dx[k] >= 0 )
                 {
                     int neighbor = (i - dy[k])*whs.cols + (j - dx[k]);
                     int leafIdx = (dx[k] == 0 && dy[k] == 0)
                         ? neighbor : annf[neighbor] + dy[k]*whs.cols + dx[k];
                     kdTree.updateDist(leafIdx, current,
-                               annf[i*whs.cols + j], dist);
+                                annf[i*whs.cols + j], dist);
                 }
         }
 
@@ -265,15 +275,11 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
     std::partial_sort( amount.begin(), amount.begin() + nTransform,
         amount.end(), std::greater< std::pair<double, int> >() );
 
-    std::ofstream out("C:/Users/Yury/Projects/inpaint/output/log.log");
     transforms.resize(nTransform);
     for (int i = 0; i < nTransform; ++i)
     {
         int idx = amount[i].second;
-        transforms[i] = cv::Matx33f(1, 0, float(shiftM[idx].x),
-                                    0, 1, float(shiftM[idx].y),
-                                    0, 0,         1          );
-        out << int(shiftM[idx].x) << "," << int(shiftM[idx].y) << std::endl;
+        transforms[i] = cv::Point2i( shiftM[idx].x, shiftM[idx].y );
     }
 }
 

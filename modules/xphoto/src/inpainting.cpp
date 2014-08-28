@@ -60,59 +60,137 @@
 
 #include "opencv2/highgui.hpp"
 
-namespace xphotoInternal
-{
-#  include "photomontage.hpp"
-#  include "annf.hpp"
-}
+#include "photomontage.hpp"
+#include "annf.hpp"
+#include "advanced_types.hpp"
 
 namespace cv
 {
 namespace xphoto
 {
-
     template <typename Tp, unsigned int cn>
-    static void shiftMapInpaint(const Mat &src, const Mat &mask, Mat &dst,
-        const int nTransform = 60, const int psize = 8)
+    static void shiftMapInpaint( const Mat &_src, const Mat &_mask, Mat &dst,
+        const int nTransform = 60, const int psize = 8, const cv::Point2i dsize = cv::Point2i(800, 600) )
     {
         /** Preparing input **/
-        cv::Mat img;
+        cv::Mat src, mask, img, dmask, ddmask;
+
+        const float ls = std::max(/**/ std::min( /*...*/
+            std::max(_src.rows, _src.cols)/float(dsize.x),
+            std::min(_src.rows, _src.cols)/float(dsize.y)
+                                               ), 1.0f /**/);
+
+
+        cv::resize(_mask, mask, _mask.size()/ls, 0, 0, cv::INTER_NEAREST);
+        cv::resize(_src,  src,  _src.size()/ls,  0, 0,    cv::INTER_AREA);
+
         src.convertTo( img, CV_32F );
         img.setTo(0, 255 - mask);
 
+        cv::erode( mask,  dmask, cv::Mat(), cv::Point(-1,-1), 2);
+        cv::erode(dmask, ddmask, cv::Mat(), cv::Point(-1,-1), 2);
+
+        std::vector <Point2i> pPath;
+        cv::Mat_<int> backref( ddmask.size(), int(-1) );
+
+        for (int i = 0; i < ddmask.rows; ++i)
+        {
+            uchar *dmask_data = (uchar *) ddmask.template ptr<uchar>(i);
+            int *backref_data = (int *) backref.template ptr< int >(i);
+
+            for (int j = 0; j < ddmask.cols; ++j)
+                if (dmask_data[j] == 0)
+                {
+                    backref_data[j] = int(pPath.size());
+                     pPath.push_back( cv::Point(j, i) );
+                }
+        }
+
         /** ANNF computation **/
-        std::vector <Matx33f> transforms( nTransform );
-        xphotoInternal::dominantTransforms(img,
-                    transforms, nTransform, psize);
+        std::vector <cv::Point2i> transforms( nTransform );
+        dominantTransforms(img, transforms, nTransform, psize);
+        transforms.push_back( cv::Point2i(0, 0) );
 
         /** Warping **/
-        std::vector <Mat> images( nTransform + 1 ); // source image transformed with transforms
-        std::vector <Mat> masks( nTransform + 1 );  // definition domain for current shift
+        std::vector <std::vector <cv::Vec <float, cn> > > pointSeq( pPath.size() ); // source image transformed with transforms
+        std::vector <int> labelSeq( pPath.size() );                                 // resulting label sequence
+        std::vector <std::vector <int> >  linkIdx( pPath.size() );                  // neighbor links for pointSeq elements
+        std::vector <std::vector <unsigned char > > maskSeq( pPath.size() );        // corresponding mask
 
-        Mat_<uchar> invMask = 255 - mask;
-        dilate(invMask, invMask, Mat(), Point(-1,-1), 2);
-
-        img.copyTo( images[0] );
-        mask.copyTo( masks[0] );
-
-        for (int i = 0; i < nTransform; ++i)
+        for (size_t i = 0; i < pPath.size(); ++i)
         {
-            warpPerspective( images[0], images[i + 1], transforms[i],
-                             images[0].size(), INTER_LINEAR );
+            for (int j = 0; j < nTransform + 1; ++j)
+            {
+                cv::Point2i u = pPath[i] + transforms[j];
+                uchar xmask = dmask.template at<uchar>(pPath[i]);
 
-            warpPerspective( masks[0], masks[i + 1], transforms[i],
-                             masks[0].size(), INTER_NEAREST);
-            cv::imwrite(cv::format("C:/Users/Yury/Projects/inpaint/output/%d.png", i), images[i]);
-            masks[i + 1] &= invMask;
+                unsigned char vmask = 0;
+                cv::Vec <float, cn> vimg = 0;
+
+                if ( u.y < src.rows && u.y >= 0
+                &&   u.x < src.cols && u.x >= 0 )
+                {
+                    if ( xmask == 0 || j == nTransform )
+                        vmask = mask.template at<uchar>(u);
+                    vimg = img.template at<cv::Vec<float, cn> >(u);
+                }
+
+                maskSeq[i].push_back(vmask);
+                pointSeq[i].push_back(vimg);
+
+                if (vmask != 0)
+                    labelSeq[i] = j;
+            }
+
+            cv::Point2i  p[] = {
+                                 pPath[i] + cv::Point2i(0, +1),
+                                 pPath[i] + cv::Point2i(+1, 0)
+                               };
+
+            for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                if ( p[j].y < src.rows && p[j].y >= 0 &&
+                     p[j].x < src.cols && p[j].x >= 0 )
+                    linkIdx[i].push_back( backref(p[j]) );
+                else
+                    linkIdx[i].push_back( -1 );
         }
 
         /** Stitching **/
-        Mat photomontageResult;
-        xphotoInternal::Photomontage < cv::Vec <float, cn> >( images, masks )
-            .assignResImage(photomontageResult);
+        photomontage( pointSeq, maskSeq, linkIdx, labelSeq );
+
+        /** Upscaling **/
+        if (ls != 1)
+        {
+        //    _src.convertTo( img, CV_32F );
+        //
+        //    for (size_t k = 0; k < pPath.size(); ++k)
+        //    {
+        //        int clabel = labelSeq[k];
+        //        int nearSeam = 0;
+        //
+        //        for (size_t i = 0; i < linkIdx[k].size(); ++i)
+        //            nearSeam |= linkIdx[k] == -1
+        //                || clabel != labelSeq[linkIdx[k][i]];
+        //
+        //        if (nearSeam == 0)
+        //            ...
+        //        else
+        //        {
+        //            ...
+        //        }
+        //    }
+        //
+        //    xphotoInternal::Photomontage < cv::Vec <float, cn> > ( /*...*/
+        //        pointSeq, maskSeq, linkIdx, labelSeq );
+        }
 
         /** Writing result **/
-        photomontageResult.convertTo( dst, dst.type() );
+        for (size_t i = 0; i < labelSeq.size(); ++i)
+        {
+            cv::Vec <float, cn> val = pointSeq[i][labelSeq[i]];
+            img.template at<cv::Vec <float, cn> >(pPath[i]) = val;
+        }
+        img.convertTo( dst, dst.type() );
     }
 
     template <typename Tp, unsigned int cn>

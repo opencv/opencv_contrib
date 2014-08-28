@@ -6,6 +6,8 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/imgproc/types_c.h"
 
+#include <ctime>
+#include <iostream>
 
 const char* keys =
 {
@@ -54,9 +56,15 @@ int main( int argc, const char** argv )
         printf( "Cannot read image file: %s\n", maskFilename.c_str() );
         return -1;
     }
+    cv::threshold(mask, mask, 128, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
 
     cv::Mat res(src.size(), src.type());
+
+    int time = clock();
     cv::xphoto::inpaint( src, mask, res, cv::xphoto::INPAINT_SHIFTMAP );
+    std::cout << "time = " << (clock() - time)
+        / double(CLOCKS_PER_SEC) << std::endl;
+
     cv::cvtColor(res, res, CV_Lab2RGB);
 
     if ( outFilename == "" )
