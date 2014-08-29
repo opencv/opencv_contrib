@@ -14,6 +14,7 @@ Action Recognition
 ar_hmdb
 =======
 .. ocv:class:: ar_hmdb
+
 Implements loading dataset:
 
 _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resource/hmdb-a-large-human-motion-database/
@@ -29,6 +30,7 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 ar_sports
 =========
 .. ocv:class:: ar_sports
+
 Implements loading dataset:
 
 _`"Sports-1M Dataset"`: http://cs.stanford.edu/people/karpathy/deepvideo/
@@ -45,6 +47,7 @@ Face Recognition
 fr_lfw
 ======
 .. ocv:class:: fr_lfw
+
 Implements loading dataset:
 
 _`"Labeled Faces in the Wild-a"`: http://www.openu.ac.il/home/hassner/data/lfwa/
@@ -63,6 +66,7 @@ Gesture Recognition
 gr_chalearn
 ===========
 .. ocv:class:: gr_chalearn
+
 Implements loading dataset:
 
 _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
@@ -78,6 +82,7 @@ _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
 gr_skig
 =======
 .. ocv:class:: gr_skig
+
 Implements loading dataset:
 
 _`"Sheffield Kinect Gesture Dataset"`: http://lshao.staff.shef.ac.uk/data/SheffieldKinectGesture.htm
@@ -96,6 +101,7 @@ Human Pose Estimation
 hpe_parse
 =========
 .. ocv:class:: hpe_parse
+
 Implements loading dataset:
 
 _`"PARSE Dataset"`: http://www.ics.uci.edu/~dramanan/papers/parse/
@@ -114,6 +120,7 @@ Image Registration
 ir_affine
 =========
 .. ocv:class:: ir_affine
+
 Implements loading dataset:
 
 _`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/data-aff.html
@@ -129,6 +136,7 @@ _`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/dat
 ir_robot
 ========
 .. ocv:class:: ir_robot
+
 Implements loading dataset:
 
 _`"Robot Data Set"`: http://roboimagedata.compute.dtu.dk/?page_id=24
@@ -146,6 +154,7 @@ Image Segmentation
 is_bsds
 =======
 .. ocv:class:: is_bsds
+
 Implements loading dataset:
 
 _`"The Berkeley Segmentation Dataset and Benchmark"`: https://www.eecs.berkeley.edu/Research/Projects/CS/vision/bsds/
@@ -161,6 +170,7 @@ _`"The Berkeley Segmentation Dataset and Benchmark"`: https://www.eecs.berkeley.
 is_weizmann
 ===========
 .. ocv:class:: is_weizmann
+
 Implements loading dataset:
 
 _`"Weizmann Segmentation Evaluation Database"`: http://www.wisdom.weizmann.ac.il/~vision/Seg_Evaluation_DB/
@@ -179,6 +189,7 @@ Multiview Stereo Matching
 msm_epfl
 ========
 .. ocv:class:: msm_epfl
+
 Implements loading dataset:
 
 _`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS.html
@@ -194,6 +205,7 @@ _`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS
 msm_middlebury
 ==============
 .. ocv:class:: msm_middlebury
+
 Implements loading dataset:
 
 _`"Stereo – Middlebury Computer Vision"`: http://vision.middlebury.edu/mview/
@@ -212,6 +224,7 @@ Object Recognition
 or_imagenet
 ===========
 .. ocv:class:: or_imagenet
+
 Implements loading dataset:
 
 _`"ImageNet"`: http://www.image-net.org/
@@ -229,6 +242,7 @@ Currently implemented loading full list with urls. Planned to implement dataset 
 or_sun
 ======
 .. ocv:class:: or_sun
+
 Implements loading dataset:
 
 _`"SUN Database"`: http://sun.cs.princeton.edu/
@@ -249,6 +263,7 @@ SLAM
 slam_kitti
 ==========
 .. ocv:class:: slam_kitti
+
 Implements loading dataset:
 
 _`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
@@ -264,6 +279,7 @@ _`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.
 slam_tumindoor
 ==============
 .. ocv:class:: slam_tumindoor
+
 Implements loading dataset:
 
 _`"TUMindoor Dataset"`: http://www.navvis.lmt.ei.tum.de/dataset/
@@ -282,6 +298,7 @@ Text Recognition
 tr_chars
 ========
 .. ocv:class:: tr_chars
+
 Implements loading dataset:
 
 _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
@@ -299,6 +316,7 @@ _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
 tr_svt
 ======
 .. ocv:class:: tr_svt
+
 Implements loading dataset:
 
 _`"The Street View Text Dataset"`: http://vision.ucsd.edu/~kai/svt/

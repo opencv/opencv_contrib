@@ -89,7 +89,7 @@ void getDirList(string &dirName, vector<string> &fileNames)
     struct _finddata_t file;
     string filter(dirName);
     filter += "\\*.*";
-    int hFile = _findfirst(filter.c_str(), &file);
+    intptr_t hFile = _findfirst(filter.c_str(), &file);
     if (hFile==-1)
     {
         return;

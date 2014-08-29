@@ -72,7 +72,8 @@ int main(int argc, char *argv[])
         tr_chars curr;
         dataset.push_back(curr);
 
-        dataset.back().load(path, dataset.size()-1);
+        unsigned int number = (unsigned int)dataset.size()-1;
+        dataset.back().load(path, number);
     } while (dataset.back().train.size()>0);
     dataset.pop_back(); // remove last empty split
 

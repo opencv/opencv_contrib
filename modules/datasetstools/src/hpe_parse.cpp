@@ -76,7 +76,7 @@ void hpe_parse::loadDataset(string &path)
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
         string &file = *it, ext;
-        unsigned int len = file.length();
+        size_t len = file.length();
         if (len>4)
         {
             ext = file.substr(len-4, 4);

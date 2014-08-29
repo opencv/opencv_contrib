@@ -92,15 +92,15 @@ void gr_skig::loadDataset(string &path)
             curr.dep = pathDatasetDep + curr.dep;
 
             size_t pos = file.find("person_"); // TODO: check ::npos
-            curr.person = atoi( file.substr(pos+strlen("person_"), 1).c_str() );
+            curr.person = (unsigned char)atoi( file.substr(pos+strlen("person_"), 1).c_str() );
             pos = file.find("backgroud_");
-            curr.background = atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
+            curr.background = (unsigned char)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
             pos = file.find("illumination_");
-            curr.illumination = atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
+            curr.illumination = (unsigned char)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
             pos = file.find("pose_");
-            curr.pose = atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
+            curr.pose = (unsigned char)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
             pos = file.find("actionType_");
-            curr.actionType = atoi( file.substr(pos+strlen("actionType_"), 1).c_str() );
+            curr.actionType = (unsigned char)atoi( file.substr(pos+strlen("actionType_"), 1).c_str() );
 
             train.push_back(curr);
         }
