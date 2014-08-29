@@ -48,7 +48,6 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/types_c.h> // CV_TERM
-#include <opencv2/core/core_c.h>  // CV_RGB
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
@@ -122,7 +121,7 @@ bool CustomPattern::init(Mat& image, const float pixel_size, OutputArray output)
     if (output.needed())
     {
         Mat out;
-        drawKeypoints(img_roi, keypoints, out, CV_RGB(255, 0, 0));
+        drawKeypoints(img_roi, keypoints, out, Scalar(0, 0, 255));
         out.copyTo(output);
     }
 
@@ -480,9 +479,9 @@ void CustomPattern::drawOrientation(InputOutputArray image, InputArray tvec, Inp
     projectPoints(axis, rvec, tvec, cameraMatrix, distCoeffs, proj_axis);
 
     Mat img = image.getMat();
-    line(img, proj_axis[0], proj_axis[1], CV_RGB(255, 0, 0), axis_width);
-    line(img, proj_axis[0], proj_axis[2], CV_RGB(0, 255, 0), axis_width);
-    line(img, proj_axis[0], proj_axis[3], CV_RGB(0, 0, 255), axis_width);
+    line(img, proj_axis[0], proj_axis[1], Scalar(0, 0, 255), axis_width); // red
+    line(img, proj_axis[0], proj_axis[2], Scalar(0, 255, 0), axis_width); // green
+    line(img, proj_axis[0], proj_axis[3], Scalar(255, 0, 0), axis_width); // blue
 
     img.copyTo(image);
 }
