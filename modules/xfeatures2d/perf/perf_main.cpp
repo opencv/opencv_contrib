@@ -8,4 +8,4 @@ static const char * impls[] = {
     "plain"
 };
 
-CV_PERF_TEST_MAIN_WITH_IMPLS(nonfree, impls, perf::printCudaInfo())
+CV_PERF_TEST_MAIN_WITH_IMPLS(xfeatures2d, impls, perf::printCudaInfo())

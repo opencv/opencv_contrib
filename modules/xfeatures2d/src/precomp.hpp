@@ -52,7 +52,7 @@
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/private.cuda.hpp"
 
-//#include "opencv2/nonfree/cuda.hpp"
+//#include "opencv2/xfeatures2d/cuda.hpp"
 //#include "opencv2/core/private.cuda.hpp"
 
 #include "opencv2/core/ocl.hpp"
