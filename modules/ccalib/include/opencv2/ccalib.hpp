@@ -110,7 +110,7 @@ public:
 	*/
 
 	void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix,
-						 InputArray distCoeffs, double axis_length = 3, double axis_width = 2);
+						 InputArray distCoeffs, double axis_length = 3, int axis_width = 2);
 	/*
 		pattern_corners -> projected over the image position of the edges of the pattern.
 	*/

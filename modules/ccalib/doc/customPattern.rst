@@ -5,7 +5,7 @@ Custom Calibration Pattern
 
 CustomPattern
 -------------
-A custom pattern class that can be used to calibrate a camera and to further track the translation and rotation of the pattern.
+A custom pattern class that can be used to calibrate a camera and to further track the translation and rotation of the pattern. Defaultly it uses an ``ORB`` feature detector and a ``BruteForce-Hamming(2)`` descriptor matcher to find the location of the pattern feature points that will subsequently be used for calibration.
 
 .. ocv:class:: CustomPattern : public Algorithm
 
@@ -184,7 +184,7 @@ CustomPattern::drawOrientation
 ------------------------------
 Draws the ``(x,y,z)`` axis on the image, in the center of the pattern, showing the orientation of the pattern.
 
-.. ocv:function:: void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix, InputArray distCoeffs, double axis_length = 3, double axis_width = 2)
+.. ocv:function:: void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix, InputArray distCoeffs, double axis_length = 3, int axis_width = 2)
 
     :param image: The image, based on which the rotation and translation was calculated. The axis will be drawn in color - ``x`` - in red, ``y`` - in green, ``z`` - in blue.
 

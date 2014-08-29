@@ -88,8 +88,8 @@ bool CustomPattern::init(Mat& image, const float pixel_size, OutputArray output)
     image.copyTo(img_roi);
     //Setup object corners
     obj_corners = std::vector<Point2f>(4);
-    obj_corners[0] = Point2f(0, 0); obj_corners[1] = Point2f(img_roi.cols, 0);
-    obj_corners[2] = Point2f(img_roi.cols, img_roi.rows); obj_corners[3] = Point2f(0, img_roi.rows);
+    obj_corners[0] = Point2f(0, 0); obj_corners[1] = Point2f(float(img_roi.cols), 0);
+    obj_corners[2] = Point2f(float(img_roi.cols), float(img_roi.rows)); obj_corners[3] = Point2f(0, float(img_roi.rows));
 
     if (!detector)   // if no detector chosen, use default
     {
@@ -190,8 +190,8 @@ void CustomPattern::scaleFoundPoints(const double pixelSize,
     for (unsigned int i = 0; i < corners.size(); ++i)
     {
         pts3d.push_back(Point3f(
-                corners[i].pt.x * pixelSize,
-                corners[i].pt.y * pixelSize,
+                float(corners[i].pt.x * pixelSize),
+                float(corners[i].pt.y * pixelSize),
                 0));
     }
 }
@@ -321,7 +321,7 @@ bool CustomPattern::findPatternPass(const Mat& image, vector<Point2f>& matched_f
 
     if (good_matches.empty()) return false;
 
-    uint numb_elem = good_matches.size();
+    size_t numb_elem = good_matches.size();
     check_matches(matched_features, obj_points, good_matches, pattern_points, H);
     if (good_matches.empty() || numb_elem < good_matches.size()) return false;
 
@@ -465,15 +465,16 @@ bool CustomPattern::findRtRANSAC(InputArray image, InputArray cameraMatrix, Inpu
 
 void CustomPattern::drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec,
                                     InputArray cameraMatrix, InputArray distCoeffs,
-                                    double axis_length, double axis_width)
+                                    double axis_length, int axis_width)
 {
-    Point3f ptrCtr3d = Point3f((img_roi.cols * pxSize)/2, (img_roi.rows * pxSize)/2, 0);
+    Point3f ptrCtr3d = Point3f(float((img_roi.cols * pxSize)/2.0), float((img_roi.rows * pxSize)/2.0), 0);
 
     vector<Point3f> axis(4);
+    float alen = float(axis_length * pxSize);
     axis[0] = ptrCtr3d;
-    axis[1] = Point3f(axis_length * pxSize, 0, 0) + ptrCtr3d;
-    axis[2] = Point3f(0, axis_length * pxSize, 0) + ptrCtr3d;
-    axis[3] = Point3f(0, 0, -axis_length * pxSize) + ptrCtr3d;
+    axis[1] = Point3f(alen, 0, 0) + ptrCtr3d;
+    axis[2] = Point3f(0, alen, 0) + ptrCtr3d;
+    axis[3] = Point3f(0, 0, -alen) + ptrCtr3d;
 
     vector<Point2f> proj_axis;
     projectPoints(axis, rvec, tvec, cameraMatrix, distCoeffs, proj_axis);
