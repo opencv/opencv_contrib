@@ -309,7 +309,7 @@ _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
 
  2. Unpack them.
 
- 3. Move *.m files from folder ListsTXT/ to appropriate folder. For example, English/list_English_Img.m for EnglishImg.tgz.
+ 3. Move .m files from folder ListsTXT/ to appropriate folder. For example, English/list_English_Img.m for EnglishImg.tgz.
 
  4. To load data, for example "EnglishImg", run: ./opencv/build/bin/example_datasetstools_tr_chars -p=/home/user/path_to_unpacked_folder/English/
 
