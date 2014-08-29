@@ -91,9 +91,9 @@ public:
 	*/
 
 	bool findRt(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
-                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = ITERATIVE);
+                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
 	bool findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = ITERATIVE);
+                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
 	/*
 		Uses solvePnP to find the rotation and translation of the pattern
 		with respect to the camera frame.
@@ -101,10 +101,10 @@ public:
 
 	bool findRtRANSAC(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
 				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = ITERATIVE);
+				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
 	bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
 				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = ITERATIVE);
+				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
         /*
 		Uses solvePnPRansac()
 	*/
