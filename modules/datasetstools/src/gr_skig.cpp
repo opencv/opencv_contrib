@@ -39,14 +39,19 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/gr_skig.h>
+#include "opencv2/util.hpp"
+#include "opencv2/gr_skig.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
 #include <cstring>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -57,6 +62,11 @@ gr_skig::gr_skig(std::string &path)
 
 void gr_skig::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -75,7 +85,7 @@ void gr_skig::loadDataset(string &path)
         {
             string &file = *it;
 
-            gesture curr;
+            gestureSkig curr;
             curr.rgb = pathDatasetRgb + file;
             curr.dep = file;
             curr.dep[0] = 'K';
@@ -95,4 +105,7 @@ void gr_skig::loadDataset(string &path)
             train.push_back(curr);
         }
     }
+}
+
+}
 }

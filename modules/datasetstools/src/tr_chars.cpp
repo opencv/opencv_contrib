@@ -39,17 +39,22 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/tr_chars.h>
+#include "opencv2/util.hpp"
+#include "opencv2/tr_chars.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <fstream>
 
+namespace cv
+{
+namespace datasetstools
+{
+
 using namespace std;
 
-void parseLine(string &line, vector<int> &currSet, unsigned int number)
+void tr_chars::parseLine(string &line, vector<int> &currSet, unsigned int number)
 {
     vector<string> elems;
     split(line, elems, ' ');
@@ -157,7 +162,7 @@ void tr_chars::loadDataset(string &path, unsigned int number)
 
     for (vector<int>::iterator it=trainSet.begin(); it!=trainSet.end(); ++it)
     {
-        if (*it>=allNames.size() || *it>=allLabels.size())
+        if (*it>=(int)allNames.size() || *it>=(int)allLabels.size())
         {
             printf("incorrect train index: %u\n", *it);
             continue;
@@ -171,7 +176,7 @@ void tr_chars::loadDataset(string &path, unsigned int number)
 
     for (vector<int>::iterator it=testSet.begin(); it!=testSet.end(); ++it)
     {
-        if (*it>=allNames.size() || *it>=allLabels.size())
+        if (*it>=(int)allNames.size() || *it>=(int)allLabels.size())
         {
             printf("incorrect test index: %u\n", *it);
             continue;
@@ -182,4 +187,7 @@ void tr_chars::loadDataset(string &path, unsigned int number)
         curr.label = allLabels[*it];
         test.push_back(curr);
     }
+}
+
+}
 }

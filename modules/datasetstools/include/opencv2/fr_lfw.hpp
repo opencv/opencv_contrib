@@ -39,41 +39,43 @@
 //
 //M*/
 
-#ifndef SLAM_KITTI_H
-#define SLAM_KITTI_H
+#ifndef FR_LFW_H
+#define FR_LFW_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct pose
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    double elem[12];
-};
+namespace datasetstools
+{
 
-struct sequence
+struct face
 {
     std::string name;
-    std::vector<std::string> images[4];
-    std::vector<std::string> velodyne;
-    std::vector<double> times, p[4];
-    std::vector<pose> posesArray;
+    std::vector<std::string> images;
 };
 
-class slam_kitti : public dataset
+class CV_EXPORTS fr_lfw : public dataset
 {
 public:
-    slam_kitti() {}
-    slam_kitti(std::string &path);
-    virtual ~slam_kitti() {}
+    fr_lfw() {}
+    fr_lfw(std::string &path);
+    virtual ~fr_lfw() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<sequence> train;
+    std::vector<face> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

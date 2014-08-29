@@ -39,17 +39,22 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/ar_sports.h>
+#include "opencv2/util.hpp"
+#include "opencv2/ar_sports.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <fstream>
 
+namespace cv
+{
+namespace datasetstools
+{
+
 using namespace std;
 
-void loadDatasetPart(string &fileName, vector<element> &dataset)
+void ar_sports::loadDatasetPart(string &fileName, vector<element> &dataset_)
 {
     ifstream infile(fileName.c_str());
     string videoUrl, labels;
@@ -65,7 +70,7 @@ void loadDatasetPart(string &fileName, vector<element> &dataset)
             curr.labels.push_back(atoi((*it).c_str()));
         }
 
-        dataset.push_back(curr);
+        dataset_.push_back(curr);
     }
 }
 
@@ -76,6 +81,11 @@ ar_sports::ar_sports(string &path)
 
 void ar_sports::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -89,4 +99,7 @@ void ar_sports::loadDataset(string &path)
 
     // loading test video urls & labels
     loadDatasetPart(testPath, test);
+}
+
+}
 }

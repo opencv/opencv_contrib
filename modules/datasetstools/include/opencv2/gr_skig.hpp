@@ -39,28 +39,44 @@
 //
 //M*/
 
-#ifndef IS_BSDS_H
-#define IS_BSDS_H
+#ifndef GR_SKIG_H
+#define GR_SKIG_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-class is_bsds : public dataset
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace datasetstools
+{
+
+struct gestureSkig
+{
+    std::string rgb;
+    std::string dep;
+    unsigned char person, background, illumination, pose, actionType;
+};
+
+class CV_EXPORTS gr_skig : public dataset
 {
 public:
-    is_bsds() {}
-    is_bsds(std::string &path);
-    virtual ~is_bsds() {}
+    gr_skig() {}
+    gr_skig(std::string &path);
+    virtual ~gr_skig() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<std::string> train;
-    std::vector<std::string> test;
+    std::vector<gestureSkig> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

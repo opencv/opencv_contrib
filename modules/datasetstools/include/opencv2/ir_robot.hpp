@@ -39,41 +39,48 @@
 //
 //M*/
 
-#ifndef SLAM_TUMINDOOR_H
-#define SLAM_TUMINDOOR_H
+#ifndef IR_ROBOT_H
+#define IR_ROBOT_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-enum imageType
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    LEFT = 0,
-    RIGHT,
-    LADYBUG
-};
+namespace datasetstools
+{
 
-struct imageInfo
+// calibration matrix from calibrationFile.mat
+// 2.8290e+03   0.0000e+00   8.0279e+02
+// 0.0000e+00   2.8285e+03   6.1618e+02
+// 0.0000e+00   0.0000e+00   1.0000e+00
+
+struct scene
 {
     std::string name;
-    double transformMat[4][4];
-    imageType type;
+    std::vector<std::string> images; // TODO: implement more complex structure
 };
 
-class slam_tumindoor : public dataset
+class CV_EXPORTS ir_robot : public dataset
 {
 public:
-    slam_tumindoor() {}
-    slam_tumindoor(std::string &path);
-    virtual ~slam_tumindoor() {}
+    ir_robot() {}
+    ir_robot(std::string &path);
+    virtual ~ir_robot() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<imageInfo> train;
+    std::vector<scene> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

@@ -39,16 +39,21 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/msm_epfl.h>
+#include "opencv2/util.hpp"
+#include "opencv2/msm_epfl.hpp"
 
 #include <cstdio>
 
 #include <fstream>
 
+namespace cv
+{
+namespace datasetstools
+{
+
 using namespace std;
 
-void readFileDouble(string fileName, vector<double>& out)
+void msm_epfl::readFileDouble(string fileName, vector<double> &out)
 {
     ifstream infile(fileName.c_str());
     double val;
@@ -65,6 +70,11 @@ msm_epfl::msm_epfl(std::string &path)
 
 void msm_epfl::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -79,7 +89,7 @@ void msm_epfl::loadDataset(string &path)
     getDirList(pathPng, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        object curr;
+        objectEpfl curr;
         curr.imageName = *it;
 
         readFileDouble(pathBounding + curr.imageName + ".bounding", curr.bounding);
@@ -88,4 +98,7 @@ void msm_epfl::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

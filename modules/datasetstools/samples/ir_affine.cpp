@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include "opencv2/ir_affine.h"
+#include "opencv2/ir_affine.hpp"
+
 #include <opencv2/core.hpp>
 
 #include <cstdio>
@@ -49,13 +50,15 @@
 #include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasetstools;
 
 int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
             "{ path p         |true| path to dataset folder }";
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
     {

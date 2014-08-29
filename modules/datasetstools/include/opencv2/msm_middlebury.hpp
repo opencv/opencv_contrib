@@ -39,34 +39,45 @@
 //
 //M*/
 
-#ifndef AR_HMDB_H
-#define AR_HMDB_H
+#ifndef MSM_MIDDLEBURY_H
+#define MSM_MIDDLEBURY_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct action
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string name;
-    std::vector<std::string> videoNames;
+namespace datasetstools
+{
+
+struct cameraParam
+{
+    std::string imageName;
+    double k[3][3];
+    double r[3][3];
+    double t[3];
 };
 
-class ar_hmdb : public dataset
+class CV_EXPORTS msm_middlebury : public dataset
 {
 public:
-    ar_hmdb() {}
-    ar_hmdb(std::string &path, unsigned int number = 0);
-    virtual ~ar_hmdb() {}
+    msm_middlebury() {}
+    msm_middlebury(std::string &path);
+    virtual ~msm_middlebury() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<action> train;
-    std::vector<action> test;
+    std::vector<cameraParam> train;
 
 private:
-    void loadDataset(std::string &path, unsigned int number = 0);
+    void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

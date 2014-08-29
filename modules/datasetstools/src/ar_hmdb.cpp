@@ -39,16 +39,21 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/ar_hmdb.h>
+#include "opencv2/util.hpp"
+#include "opencv2/ar_hmdb.hpp"
 
 #include <cstdio>
 
 #include <fstream>
 
+namespace cv
+{
+namespace datasetstools
+{
+
 using namespace std;
 
-void loadAction(string &fileName, vector<string> &train, vector<string> &test)
+void ar_hmdb::loadAction(string &fileName, vector<string> &train_, vector<string> &test_)
 {
     ifstream infile(fileName.c_str());
     string video, label;
@@ -56,11 +61,11 @@ void loadAction(string &fileName, vector<string> &train, vector<string> &test)
     {
         if ("1"==label)
         {
-            train.push_back(video);
+            train_.push_back(video);
         } else
         if ("2"==label)
         {
-            test.push_back(video);
+            test_.push_back(video);
         }
     }
 }
@@ -101,4 +106,7 @@ void ar_hmdb::loadDataset(string &path, unsigned int number)
         string fileName(pathSplit + curr.name + "_test_split" + tmp + ".txt");
         loadAction(fileName, train.back().videoNames, test.back().videoNames);
     }
+}
+
+}
 }

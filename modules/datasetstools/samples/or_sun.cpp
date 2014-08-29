@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include "opencv2/or_sun.h"
+#include "opencv2/or_sun.hpp"
+
 #include <opencv2/core.hpp>
 
 #include <cstdio>
@@ -48,13 +49,15 @@
 #include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasetstools;
 
 int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
             "{ path p         |true| path to dataset (SUN397 folder) }";
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
     {
@@ -68,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains for each object its images.
     // For example, let output dataset size and last object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    object &example = dataset.train.back();
+    objectSun &example = dataset.train.back();
     printf("last object name: %s\n", example.name.c_str());
     printf("last object images number: %u\n", (unsigned int)example.imageNames.size());
     vector<string> &imageNames = example.imageNames;

@@ -39,12 +39,17 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/hpe_parse.h>
+#include "opencv2/util.hpp"
+#include "opencv2/hpe_parse.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -55,6 +60,11 @@ hpe_parse::hpe_parse(std::string &path)
 
 void hpe_parse::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -83,4 +93,7 @@ void hpe_parse::loadDataset(string &path)
             ++i;
         }
     }
+}
+
+}
 }

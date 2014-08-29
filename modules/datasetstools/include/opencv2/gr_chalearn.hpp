@@ -39,33 +39,60 @@
 //
 //M*/
 
-#ifndef FR_LFW_H
-#define FR_LFW_H
+#ifndef GR_CHALEARN_H
+#define GR_CHALEARN_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct face
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string name;
-    std::vector<std::string> images;
+namespace datasetstools
+{
+
+struct groundTruth
+{
+    unsigned int gestureID, initialFrame, lastFrame;
 };
 
-class fr_lfw : public dataset
+struct join
+{
+    double Wx, Wy, Wz, Rx, Ry, Rz, Rw, Px, Py;
+};
+
+struct skeleton
+{
+    join s[20];
+};
+
+struct gesture
+{
+    std::string name, nameColor, nameDepth, nameUser;
+    unsigned int numFrames, fps, depth;
+    std::vector<groundTruth> groundTruths;
+    std::vector<skeleton> skeletons;
+};
+
+class CV_EXPORTS gr_chalearn : public dataset
 {
 public:
-    fr_lfw() {}
-    fr_lfw(std::string &path);
-    virtual ~fr_lfw() {}
+    gr_chalearn() {}
+    gr_chalearn(std::string &path);
+    virtual ~gr_chalearn() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<face> train;
+    std::vector<gesture> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

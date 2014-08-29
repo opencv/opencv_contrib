@@ -39,36 +39,24 @@
 //
 //M*/
 
-#ifndef OR_IMAGENET_H
-#define OR_IMAGENET_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <string>
 #include <vector>
-#include <set>
 
-#include "dataset.h"
+#include <opencv2/core.hpp>
 
-struct object
+namespace cv
 {
-    std::string wnid; // TODO: string -> unsigned int
-    unsigned int id2;
-    std::string imageUrl;
-};
-
-class or_imagenet : public dataset
+namespace datasetstools
 {
-public:
-    or_imagenet() {}
-    or_imagenet(std::string &path);
-    virtual ~or_imagenet() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+void split(std::string s, std::vector<std::string> &elems, char delim);
 
-    std::vector<object> train;
-    std::set<std::string> wnids;
+void getDirList(std::string &dirName, std::vector<std::string> &fileNames);
 
-private:
-    void loadDataset(std::string &path);
-};
+}
+}
 
 #endif

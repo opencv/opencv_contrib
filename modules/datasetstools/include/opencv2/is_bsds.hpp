@@ -39,35 +39,40 @@
 //
 //M*/
 
-#ifndef MSM_MIDDLEBURY_H
-#define MSM_MIDDLEBURY_H
+#ifndef IS_BSDS_H
+#define IS_BSDS_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct cameraParam
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string imageName;
-    double k[3][3];
-    double r[3][3];
-    double t[3];
-};
+namespace datasetstools
+{
 
-class msm_middlebury : public dataset
+class CV_EXPORTS is_bsds : public dataset
 {
 public:
-    msm_middlebury() {}
-    msm_middlebury(std::string &path);
-    virtual ~msm_middlebury() {}
+    is_bsds() {}
+    is_bsds(std::string &path);
+    virtual ~is_bsds() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<cameraParam> train;
+    std::vector<std::string> train;
+    std::vector<std::string> test;
 
 private:
     void loadDataset(std::string &path);
+
+    void loadDatasetPart(std::string &fileName, std::vector<std::string> &dataset_);
 };
+
+}
+}
 
 #endif

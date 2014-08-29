@@ -39,13 +39,18 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/or_imagenet.h>
+#include "opencv2/util.hpp"
+#include "opencv2/or_imagenet.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -56,6 +61,11 @@ or_imagenet::or_imagenet(std::string &path)
 
 void or_imagenet::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -68,7 +78,7 @@ void or_imagenet::loadDataset(string &path)
         vector<string> elems;
         split(line, elems, '\t');
 
-        object curr;
+        objectImagenet curr;
         curr.imageUrl = elems[1];
 
         string id(elems[0]);
@@ -82,4 +92,7 @@ void or_imagenet::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

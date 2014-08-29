@@ -39,34 +39,43 @@
 //
 //M*/
 
-#ifndef GR_SKIG_H
-#define GR_SKIG_H
+#ifndef OR_SUN_H
+#define OR_SUN_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct gesture
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string rgb;
-    std::string dep;
-    unsigned char person, background, illumination, pose, actionType;
+namespace datasetstools
+{
+
+struct objectSun
+{
+    std::string name;
+    std::vector<std::string> imageNames;
 };
 
-class gr_skig : public dataset
+class CV_EXPORTS or_sun : public dataset
 {
 public:
-    gr_skig() {}
-    gr_skig(std::string &path);
-    virtual ~gr_skig() {}
+    or_sun() {}
+    or_sun(std::string &path);
+    virtual ~or_sun() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<gesture> train;
+    std::vector<objectSun> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

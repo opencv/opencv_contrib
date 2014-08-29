@@ -39,28 +39,46 @@
 //
 //M*/
 
-#ifndef HPE_PARSE_H
-#define HPE_PARSE_H
+#ifndef AR_HMDB_H
+#define AR_HMDB_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-class hpe_parse : public dataset
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace datasetstools
+{
+
+struct action
+{
+    std::string name;
+    std::vector<std::string> videoNames;
+};
+
+class CV_EXPORTS ar_hmdb : public dataset
 {
 public:
-    hpe_parse() {}
-    hpe_parse(std::string &path);
-    virtual ~hpe_parse() {}
+    ar_hmdb() {}
+    ar_hmdb(std::string &path, unsigned int number = 0);
+    virtual ~ar_hmdb() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<std::string> train;
-    std::vector<std::string> test;
+    std::vector<action> train;
+    std::vector<action> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(std::string &path, unsigned int number = 0);
+
+    void loadAction(std::string &fileName, std::vector<std::string> &train_, std::vector<std::string> &test_);
 };
+
+}
+}
 
 #endif

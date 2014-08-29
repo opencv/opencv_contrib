@@ -39,33 +39,51 @@
 //
 //M*/
 
-#ifndef OR_SUN_H
-#define OR_SUN_H
+#ifndef SLAM_KITTI_H
+#define SLAM_KITTI_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct object
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string name;
-    std::vector<std::string> imageNames;
+namespace datasetstools
+{
+
+struct pose
+{
+    double elem[12];
 };
 
-class or_sun : public dataset
+struct sequence
+{
+    std::string name;
+    std::vector<std::string> images[4];
+    std::vector<std::string> velodyne;
+    std::vector<double> times, p[4];
+    std::vector<pose> posesArray;
+};
+
+class CV_EXPORTS slam_kitti : public dataset
 {
 public:
-    or_sun() {}
-    or_sun(std::string &path);
-    virtual ~or_sun() {}
+    slam_kitti() {}
+    slam_kitti(std::string &path);
+    virtual ~slam_kitti() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<object> train;
+    std::vector<sequence> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

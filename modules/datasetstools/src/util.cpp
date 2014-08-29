@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include <opencv2/util.h>
+#include "opencv2/util.hpp"
 
 #include <cstdlib>
 
@@ -52,6 +52,11 @@
     #include <io.h>
     #include <direct.h>
 #endif
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -70,7 +75,7 @@ void getDirList(string &dirName, vector<string> &fileNames)
 #ifdef __GNUC__
     struct dirent **namelist;
     int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
-    for (unsigned int i=0; i<n; ++i)
+    for (int i=0; i<n; ++i)
     {
         string fileName(namelist[i]->d_name);
         if ('.' != fileName[0])
@@ -99,4 +104,7 @@ void getDirList(string &dirName, vector<string> &fileNames)
     } while (_findnext(hFile, &file)==0);
     _findclose(hFile);
 #endif
+}
+
+}
 }

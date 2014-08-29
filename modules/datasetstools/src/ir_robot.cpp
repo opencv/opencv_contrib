@@ -39,12 +39,17 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/ir_robot.h>
+#include "opencv2/util.hpp"
+#include "opencv2/ir_robot.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -55,6 +60,11 @@ ir_robot::ir_robot(std::string &path)
 
 void ir_robot::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -77,4 +87,7 @@ void ir_robot::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

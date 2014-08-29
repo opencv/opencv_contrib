@@ -39,13 +39,18 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/slam_kitti.h>
+#include "opencv2/util.hpp"
+#include "opencv2/slam_kitti.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atof
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -56,6 +61,11 @@ slam_kitti::slam_kitti(std::string &path)
 
 void slam_kitti::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -72,12 +82,12 @@ void slam_kitti::loadDataset(string &path)
         string currPath(pathSequence + curr.name);
 
         // loading velodyne
-        string pathSequence(currPath + "/velodyne/");
-        vector<string> sequenceNames;
-        getDirList(pathSequence, sequenceNames);
-        for (vector<string>::iterator itSequence=sequenceNames.begin(); itSequence!=sequenceNames.end(); ++itSequence)
+        string pathVelodyne(currPath + "/velodyne/");
+        vector<string> velodyneNames;
+        getDirList(pathVelodyne, velodyneNames);
+        for (vector<string>::iterator itV=velodyneNames.begin(); itV!=velodyneNames.end(); ++itV)
         {
-            curr.velodyne.push_back(*itSequence);
+            curr.velodyne.push_back(*itV);
         }
 
         // loading gray & color images
@@ -109,10 +119,10 @@ void slam_kitti::loadDataset(string &path)
             getline(infile2, line);
             vector<string> elems;
             split(line, elems, ' ');
-            vector<string>::iterator it=elems.begin();
-            for (++it; it!=elems.end(); ++it)
+            vector<string>::iterator itE=elems.begin();
+            for (++itE; itE!=elems.end(); ++itE)
             {
-                curr.p[i].push_back(atof((*it).c_str()));
+                curr.p[i].push_back(atof((*itE).c_str()));
             }
         }
 
@@ -125,13 +135,13 @@ void slam_kitti::loadDataset(string &path)
             unsigned int i=0;
             vector<string> elems;
             split(line, elems, ' ');
-            for (vector<string>::iterator it=elems.begin(); it!=elems.end(); ++it, ++i)
+            for (vector<string>::iterator itE=elems.begin(); itE!=elems.end(); ++itE, ++i)
             {
                 if (i>11)
                 {
                     break;
                 }
-                p.elem[i] = atof((*it).c_str());
+                p.elem[i] = atof((*itE).c_str());
             }
 
             curr.posesArray.push_back(p);
@@ -139,4 +149,7 @@ void slam_kitti::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

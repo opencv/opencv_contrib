@@ -39,33 +39,46 @@
 //
 //M*/
 
-#ifndef IR_AFFINE_H
-#define IR_AFFINE_H
+#ifndef TR_CHARS_H
+#define TR_CHARS_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct imageParams
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string imageName;
-    double mat[3][3];
+namespace datasetstools
+{
+
+struct character
+{
+    std::string imgName;
+    unsigned int label;
 };
 
-class ir_affine : public dataset
+class CV_EXPORTS tr_chars : public dataset
 {
 public:
-    ir_affine() {}
-    ir_affine(std::string &path);
-    virtual ~ir_affine() {}
+    tr_chars() {}
+    tr_chars(std::string &path, unsigned int number = 0);
+    virtual ~tr_chars() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<imageParams> train;
+    std::vector<character> train;
+    std::vector<character> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(std::string &path, unsigned int number = 0);
+
+    void parseLine(std::string &line, std::vector<int> &currSet, unsigned int number);
 };
+
+}
+}
 
 #endif

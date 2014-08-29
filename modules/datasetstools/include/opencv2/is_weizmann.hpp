@@ -39,18 +39,45 @@
 //
 //M*/
 
-#ifndef DATASET_H
-#define DATASET_H
+#ifndef IS_WEIZMANN_H
+#define IS_WEIZMANN_H
 
 #include <string>
+#include <vector>
 
-class dataset
+#include "opencv2/dataset.hpp"
+
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace datasetstools
+{
+
+struct object
+{
+    std::string imageName;
+    std::string srcBw;
+    std::string srcColor;
+    std::string humanSeg; // TODO: read human segmented
+};
+
+class CV_EXPORTS is_weizmann : public dataset
 {
 public:
-    dataset() {}
-    virtual ~dataset() {}
+    is_weizmann() {}
+    is_weizmann(std::string &path);
+    virtual ~is_weizmann() {}
 
-    virtual void load(std::string &path, unsigned int number = 0) = 0;
+    virtual void load(std::string &path, unsigned int number = 0);
+
+    std::vector<object> train;
+
+private:
+    void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

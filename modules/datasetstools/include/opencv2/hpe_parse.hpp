@@ -39,14 +39,38 @@
 //
 //M*/
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef HPE_PARSE_H
+#define HPE_PARSE_H
 
 #include <string>
 #include <vector>
 
-void split(std::string s, std::vector<std::string> &elems, char delim);
+#include "opencv2/dataset.hpp"
 
-void getDirList(std::string &dirName, std::vector<std::string> &fileNames);
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace datasetstools
+{
+
+class CV_EXPORTS hpe_parse : public dataset
+{
+public:
+    hpe_parse() {}
+    hpe_parse(std::string &path);
+    virtual ~hpe_parse() {}
+
+    virtual void load(std::string &path, unsigned int number = 0);
+
+    std::vector<std::string> train;
+    std::vector<std::string> test;
+
+private:
+    void loadDataset(std::string &path);
+};
+
+}
+}
 
 #endif

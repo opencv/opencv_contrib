@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include "opencv2/gr_skig.h"
+#include "opencv2/gr_skig.hpp"
+
 #include <opencv2/core.hpp>
 
 #include <cstdio>
@@ -49,13 +50,15 @@
 #include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasetstools;
 
 int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
             "{ path p         |true| path to dataset (subject* folders) }";
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
     {
@@ -68,7 +71,7 @@ int main(int argc, char *argv[])
     // ***************
     // dataset contains pair of rgb\dep images
     // For example, let output train size and first element.
-    gesture &example = dataset.train[0];
+    gestureSkig &example = dataset.train[0];
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("first train image:\nrgb: %s\ndep: %s\n", example.rgb.c_str(), example.dep.c_str());
     printf("person: %u, backgroud: %u, illumination: %u, pose: %u, actionType: %u\n",

@@ -39,33 +39,43 @@
 //
 //M*/
 
-#ifndef MSM_EPFL_H
-#define MSM_EPFL_H
+#ifndef IR_AFFINE_H
+#define IR_AFFINE_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct object
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace datasetstools
+{
+
+struct imageParams
 {
     std::string imageName;
-    std::vector<double> bounding, camera, p; // TODO: implement better structures
+    double mat[3][3];
 };
 
-class msm_epfl : public dataset
+class CV_EXPORTS ir_affine : public dataset
 {
 public:
-    msm_epfl() {}
-    msm_epfl(std::string &path);
-    virtual ~msm_epfl() {}
+    ir_affine() {}
+    ir_affine(std::string &path);
+    virtual ~ir_affine() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<object> train;
+    std::vector<imageParams> train;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

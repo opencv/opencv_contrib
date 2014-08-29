@@ -39,11 +39,16 @@
 //
 //M*/
 
-#include <opencv2/msm_middlebury.h>
+#include "opencv2/msm_middlebury.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -54,6 +59,11 @@ msm_middlebury::msm_middlebury(std::string &path)
 
 void msm_middlebury::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -95,4 +105,7 @@ void msm_middlebury::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

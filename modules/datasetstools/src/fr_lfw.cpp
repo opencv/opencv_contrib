@@ -39,12 +39,17 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/fr_lfw.h>
+#include "opencv2/util.hpp"
+#include "opencv2/fr_lfw.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -55,6 +60,11 @@ fr_lfw::fr_lfw(std::string &path)
 
 void fr_lfw::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -77,4 +87,7 @@ void fr_lfw::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

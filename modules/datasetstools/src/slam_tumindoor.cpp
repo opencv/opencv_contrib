@@ -39,14 +39,19 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/slam_tumindoor.h>
+#include "opencv2/util.hpp"
+#include "opencv2/slam_tumindoor.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atof
 #include <cstring>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -57,6 +62,11 @@ slam_tumindoor::slam_tumindoor(std::string &path)
 
 void slam_tumindoor::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -95,4 +105,7 @@ void slam_tumindoor::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

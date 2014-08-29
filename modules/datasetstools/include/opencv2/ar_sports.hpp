@@ -39,34 +39,46 @@
 //
 //M*/
 
-#ifndef TR_CHARS_H
-#define TR_CHARS_H
+#ifndef AR_SPORTS_H
+#define AR_SPORTS_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct character
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string imgName;
-    unsigned int label;
+namespace datasetstools
+{
+
+struct element
+{
+    std::string videoUrl;
+    std::vector<unsigned int> labels;
 };
 
-class tr_chars : public dataset
+class CV_EXPORTS ar_sports : public dataset
 {
 public:
-    tr_chars() {}
-    tr_chars(std::string &path, unsigned int number = 0);
-    virtual ~tr_chars() {}
+    ar_sports() {}
+    ar_sports(std::string &path);
+    virtual ~ar_sports() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<character> train;
-    std::vector<character> test;
+    std::vector<element> train;
+    std::vector<element> test;
 
 private:
-    void loadDataset(std::string &path, unsigned int number = 0);
+    void loadDataset(std::string &path);
+
+    void loadDatasetPart(std::string &fileName, std::vector<element> &dataset_);
 };
+
+}
+}
 
 #endif

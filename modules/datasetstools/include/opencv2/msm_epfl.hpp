@@ -39,50 +39,45 @@
 //
 //M*/
 
-#ifndef GR_CHALEARN_H
-#define GR_CHALEARN_H
+#ifndef MSM_EPFL_H
+#define MSM_EPFL_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct groundTruth
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    unsigned int gestureID, initialFrame, lastFrame;
+namespace datasetstools
+{
+
+struct objectEpfl
+{
+    std::string imageName;
+    std::vector<double> bounding, camera, p; // TODO: implement better structures
 };
 
-struct join
-{
-    double Wx, Wy, Wz, Rx, Ry, Rz, Rw, Px, Py;
-};
-
-struct skeleton
-{
-    join s[20];
-};
-
-struct gesture
-{
-    std::string name, nameColor, nameDepth, nameUser;
-    unsigned int numFrames, fps, depth;
-    std::vector<groundTruth> groundTruths;
-    std::vector<skeleton> skeletons;
-};
-
-class gr_chalearn : public dataset
+class CV_EXPORTS msm_epfl : public dataset
 {
 public:
-    gr_chalearn() {}
-    gr_chalearn(std::string &path);
-    virtual ~gr_chalearn() {}
+    msm_epfl() {}
+    msm_epfl(std::string &path);
+    virtual ~msm_epfl() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<gesture> train;
+    std::vector<objectEpfl> train;
 
 private:
     void loadDataset(std::string &path);
+
+    void readFileDouble(std::string fileName, std::vector<double> &out);
 };
+
+}
+}
 
 #endif

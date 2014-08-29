@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include "opencv2/msm_epfl.h"
+#include "opencv2/msm_epfl.hpp"
+
 #include <opencv2/core.hpp>
 
 #include <cstdio>
@@ -48,13 +49,15 @@
 #include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasetstools;
 
 int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
             "{ path p         |true| path to dataset (bounding/, camera/, P/, png/ folders) }";
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
     {
@@ -68,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    object &example = dataset.train[0];
+    objectEpfl &example = dataset.train[0];
     printf("first image:\nname: %s\n", example.imageName.c_str());
 
     printf("bounding:\n");

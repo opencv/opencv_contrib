@@ -39,13 +39,18 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/gr_chalearn.h>
+#include "opencv2/util.hpp"
+#include "opencv2/gr_chalearn.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -56,6 +61,11 @@ gr_chalearn::gr_chalearn(std::string &path)
 
 void gr_chalearn::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -87,13 +97,13 @@ void gr_chalearn::loadDataset(string &path)
         ifstream infileGroundTruth(fileGroundTruth.c_str());
         while (getline(infileGroundTruth, line))
         {
-            vector<string> elems;
-            split(line, elems, ',');
+            vector<string> elems2;
+            split(line, elems2, ',');
 
             groundTruth currGroundTruth;
-            currGroundTruth.gestureID = atoi(elems[0].c_str());
-            currGroundTruth.initialFrame = atoi(elems[1].c_str());
-            currGroundTruth.lastFrame = atoi(elems[2].c_str());
+            currGroundTruth.gestureID = atoi(elems2[0].c_str());
+            currGroundTruth.initialFrame = atoi(elems2[1].c_str());
+            currGroundTruth.lastFrame = atoi(elems2[2].c_str());
 
             curr.groundTruths.push_back(currGroundTruth);
         }
@@ -105,20 +115,20 @@ void gr_chalearn::loadDataset(string &path)
         {
             skeleton currSkeleton;
 
-            vector<string> elems;
-            split(line, elems, ',');
+            vector<string> elems2;
+            split(line, elems2, ',');
 
-            for (unsigned int i=0, numJoin=0; i<elems.size(); i+=9, ++numJoin)
+            for (unsigned int i=0, numJoin=0; i<elems2.size(); i+=9, ++numJoin)
             {
-                currSkeleton.s[numJoin].Wx = atof(elems[i+0].c_str());
-                currSkeleton.s[numJoin].Wy = atof(elems[i+1].c_str());
-                currSkeleton.s[numJoin].Wz = atof(elems[i+2].c_str());
-                currSkeleton.s[numJoin].Rx = atof(elems[i+3].c_str());
-                currSkeleton.s[numJoin].Ry = atof(elems[i+4].c_str());
-                currSkeleton.s[numJoin].Rz = atof(elems[i+5].c_str());
-                currSkeleton.s[numJoin].Rw = atof(elems[i+6].c_str());
-                currSkeleton.s[numJoin].Px = atof(elems[i+7].c_str());
-                currSkeleton.s[numJoin].Py = atof(elems[i+8].c_str());
+                currSkeleton.s[numJoin].Wx = atof(elems2[i+0].c_str());
+                currSkeleton.s[numJoin].Wy = atof(elems2[i+1].c_str());
+                currSkeleton.s[numJoin].Wz = atof(elems2[i+2].c_str());
+                currSkeleton.s[numJoin].Rx = atof(elems2[i+3].c_str());
+                currSkeleton.s[numJoin].Ry = atof(elems2[i+4].c_str());
+                currSkeleton.s[numJoin].Rz = atof(elems2[i+5].c_str());
+                currSkeleton.s[numJoin].Rw = atof(elems2[i+6].c_str());
+                currSkeleton.s[numJoin].Px = atof(elems2[i+7].c_str());
+                currSkeleton.s[numJoin].Py = atof(elems2[i+8].c_str());
             }
 
             curr.skeletons.push_back(currSkeleton);
@@ -126,4 +136,7 @@ void gr_chalearn::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

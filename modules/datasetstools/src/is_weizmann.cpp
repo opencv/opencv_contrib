@@ -39,12 +39,17 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/is_weizmann.h>
+#include "opencv2/util.hpp"
+#include "opencv2/is_weizmann.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -55,6 +60,11 @@ is_weizmann::is_weizmann(std::string &path)
 
 void is_weizmann::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -77,4 +87,7 @@ void is_weizmann::loadDataset(string &path)
             train.push_back(curr);
         }
     }
+}
+
+}
 }

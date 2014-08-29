@@ -39,34 +39,53 @@
 //
 //M*/
 
-#ifndef AR_SPORTS_H
-#define AR_SPORTS_H
+#ifndef TR_SVT_H
+#define TR_SVT_H
 
 #include <string>
 #include <vector>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct element
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string videoUrl;
-    std::vector<unsigned int> labels;
+namespace datasetstools
+{
+
+struct tag
+{
+    std::string value;
+    unsigned int height, width, x, y;
 };
 
-class ar_sports : public dataset
+struct image
+{
+    std::string fileName;
+    std::vector<std::string> lex;
+    std::vector<tag> tags;
+};
+
+class CV_EXPORTS tr_svt : public dataset
 {
 public:
-    ar_sports() {}
-    ar_sports(std::string &path);
-    virtual ~ar_sports() {}
+    tr_svt() {}
+    tr_svt(std::string &path);
+    virtual ~tr_svt() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<element> train;
-    std::vector<element> test;
+    std::vector<image> train;
+    std::vector<image> test;
 
 private:
     void loadDataset(std::string &path);
+
+    void xmlParse(std::string &set, std::vector<image> &out);
 };
+
+}
+}
 
 #endif

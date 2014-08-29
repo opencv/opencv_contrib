@@ -39,12 +39,17 @@
 //
 //M*/
 
-#include <opencv2/util.h>
-#include <opencv2/or_sun.h>
+#include "opencv2/util.hpp"
+#include "opencv2/or_sun.hpp"
 
 #include <cstdio>
 
 #include <fstream>
+
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
 
@@ -55,6 +60,11 @@ or_sun::or_sun(std::string &path)
 
 void or_sun::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -65,7 +75,7 @@ void or_sun::loadDataset(string &path)
     string line;
     while (getline(infile, line))
     {
-        object curr;
+        objectSun curr;
         curr.name = line;
 
         string currPath(path + curr.name);
@@ -78,4 +88,7 @@ void or_sun::loadDataset(string &path)
 
         train.push_back(curr);
     }
+}
+
+}
 }

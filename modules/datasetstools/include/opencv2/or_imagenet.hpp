@@ -39,41 +39,46 @@
 //
 //M*/
 
-#ifndef TR_SVT_H
-#define TR_SVT_H
+#ifndef OR_IMAGENET_H
+#define OR_IMAGENET_H
 
 #include <string>
 #include <vector>
+#include <set>
 
-#include "dataset.h"
+#include "opencv2/dataset.hpp"
 
-struct tag
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    std::string value;
-    unsigned int height, width, x, y;
+namespace datasetstools
+{
+
+struct objectImagenet
+{
+    std::string wnid; // TODO: string -> unsigned int
+    unsigned int id2;
+    std::string imageUrl;
 };
 
-struct image
-{
-    std::string fileName;
-    std::vector<std::string> lex;
-    std::vector<tag> tags;
-};
-
-class tr_svt : public dataset
+class CV_EXPORTS or_imagenet : public dataset
 {
 public:
-    tr_svt() {}
-    tr_svt(std::string &path);
-    virtual ~tr_svt() {}
+    or_imagenet() {}
+    or_imagenet(std::string &path);
+    virtual ~or_imagenet() {}
 
     virtual void load(std::string &path, unsigned int number = 0);
 
-    std::vector<image> train;
-    std::vector<image> test;
+    std::vector<objectImagenet> train;
+    std::set<std::string> wnids;
 
 private:
     void loadDataset(std::string &path);
 };
+
+}
+}
 
 #endif

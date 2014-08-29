@@ -39,7 +39,8 @@
 //
 //M*/
 
-#include "opencv2/is_weizmann.h"
+#include "opencv2/is_weizmann.hpp"
+
 #include <opencv2/core.hpp>
 
 #include <cstdio>
@@ -48,13 +49,15 @@
 #include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasetstools;
 
 int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
             "{ path p         |true| path to dataset (1obj/2obj folders) }";
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
     {

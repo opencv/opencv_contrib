@@ -39,21 +39,26 @@
 //
 //M*/
 
-#include <opencv2/is_bsds.h>
+#include "opencv2/is_bsds.hpp"
 
 #include <cstdio>
 
 #include <fstream>
 
+namespace cv
+{
+namespace datasetstools
+{
+
 using namespace std;
 
-void loadDatasetPart(string &fileName, vector<string> &dataset)
+void is_bsds::loadDatasetPart(string &fileName, vector<string> &dataset_)
 {
     ifstream infile(fileName.c_str());
     string imageName;
     while (infile >> imageName)
     {
-        dataset.push_back(imageName);
+        dataset_.push_back(imageName);
     }
 }
 
@@ -64,6 +69,11 @@ is_bsds::is_bsds(std::string &path)
 
 void is_bsds::load(string &path, unsigned int number)
 {
+    if (number!=0)
+    {
+        return;
+    }
+
     loadDataset(path);
 }
 
@@ -77,4 +87,7 @@ void is_bsds::loadDataset(string &path)
 
     // loading test
     loadDatasetPart(testName, test);
+}
+
+}
 }

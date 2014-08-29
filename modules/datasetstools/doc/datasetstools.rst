@@ -24,7 +24,7 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 
  2. Unpack them.
 
- 3. To load data run: ./ar_hmdb -p=/home/user/path_to_unpacked_folders/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_ar_hmdb -p=/home/user/path_to_unpacked_folders/
 
 ar_sports
 =========
@@ -37,7 +37,7 @@ _`"Sports-1M Dataset"`: http://cs.stanford.edu/people/karpathy/deepvideo/
 
  1. From link above download dataset files (git clone https://code.google.com/p/sports-1m-dataset/).
 
- 2. To load data run: ./ar_sports -p=/home/user/path_to_downloaded_folders/
+ 2. To load data run: ./opencv/build/bin/example_datasetstools_ar_sports -p=/home/user/path_to_downloaded_folders/
 
 Face Recognition
 ----------------
@@ -55,7 +55,7 @@ _`"Labeled Faces in the Wild-a"`: http://www.openu.ac.il/home/hassner/data/lfwa/
 
  2. Unpack it.
 
- 3. To load data run: ./fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
 
 Gesture Recognition
 -------------------
@@ -73,7 +73,7 @@ _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
 
  2. Unpack train archives Train1.zip-Train5.zip to one folder (currently loading validation files wasn't implemented)
 
- 3. To load data run: ./gr_chalearn -p=/home/user/path_to_unpacked_folder/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_gr_chalearn -p=/home/user/path_to_unpacked_folder/
 
 gr_skig
 =======
@@ -88,7 +88,7 @@ _`"Sheffield Kinect Gesture Dataset"`: http://lshao.staff.shef.ac.uk/data/Sheffi
 
  2. Unpack them.
 
- 3. To load data run: ./gr_skig -p=/home/user/path_to_unpacked_folders/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_gr_skig -p=/home/user/path_to_unpacked_folders/
 
 Human Pose Estimation
 ---------------------
@@ -106,7 +106,7 @@ _`"PARSE Dataset"`: http://www.ics.uci.edu/~dramanan/papers/parse/
 
  2. Unpack it.
 
- 3. To load data run: ./hpe_parse -p=/home/user/path_to_unpacked_folder/people_all/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_hpe_parse -p=/home/user/path_to_unpacked_folder/people_all/
 
 Image Registration
 ------------------
@@ -124,7 +124,7 @@ _`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/dat
 
  2. Unpack them.
 
- 3. To load data, for example, for "bark", run: ./ir_affine -p=/home/user/path_to_unpacked_folder/bark/
+ 3. To load data, for example, for "bark", run: ./opencv/build/bin/example_datasetstools_ir_affine -p=/home/user/path_to_unpacked_folder/bark/
 
 ir_robot
 ========
@@ -138,7 +138,7 @@ _`"Robot Data Set"`: http://roboimagedata.compute.dtu.dk/?page_id=24
  1. From link above download files for dataset "Point Feature Data Set – 2010": SET001_6.tar.gz-SET055_60.tar.gz (there are two data sets: - Full resolution images (1200×1600), ~500 Gb and - Half size image (600×800), ~115 Gb.)
  2. Unpack them to one folder.
 
- 3. To load data run: ./ir_robot -p=/home/user/path_to_unpacked_folder/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_ir_robot -p=/home/user/path_to_unpacked_folder/
 
 Image Segmentation
 ------------------
@@ -156,7 +156,7 @@ _`"The Berkeley Segmentation Dataset and Benchmark"`: https://www.eecs.berkeley.
 
  2. Unpack them.
 
- 3. To load data run: ./is_bsds -p=/home/user/path_to_unpacked_folder/BSDS300/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_is_bsds -p=/home/user/path_to_unpacked_folder/BSDS300/
 
 is_weizmann
 ===========
@@ -171,7 +171,7 @@ _`"Weizmann Segmentation Evaluation Database"`: http://www.wisdom.weizmann.ac.il
 
  2. Unpack them.
 
- 3. To load data, for example, for 1 object dataset, run: ./is_weizmann -p=/home/user/path_to_unpacked_folder/1obj/
+ 3. To load data, for example, for 1 object dataset, run: ./opencv/build/bin/example_datasetstools_is_weizmann -p=/home/user/path_to_unpacked_folder/1obj/
 
 Multiview Stereo Matching
 -------------------------
@@ -189,7 +189,7 @@ _`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS
 
  2. Unpack them in separate folder for each object. For example, for "fountain", in folder fountain/ : fountain_dense_bounding.tar.gz -> bounding/, fountain_dense_cameras.tar.gz -> camera/, fountain_dense_images.tar.gz -> png/, fountain_dense_p.tar.gz -> P/
 
- 3. To load data, for example, for "fountain", run: ./msm_epfl -p=/home/user/path_to_unpacked_folder/fountain/
+ 3. To load data, for example, for "fountain", run: ./opencv/build/bin/example_datasetstools_msm_epfl -p=/home/user/path_to_unpacked_folder/fountain/
 
 msm_middlebury
 ==============
@@ -204,7 +204,7 @@ _`"Stereo – Middlebury Computer Vision"`: http://vision.middlebury.edu/mview/
 
  2. Unpack them.
 
- 3. To load data, for example "temple" dataset, run: ./msm_middlebury -p=/home/user/path_to_unpacked_folder/temple/
+ 3. To load data, for example "temple" dataset, run: ./opencv/build/bin/example_datasetstools_msm_middlebury -p=/home/user/path_to_unpacked_folder/temple/
 
 Object Recognition
 ------------------
@@ -224,7 +224,7 @@ Currently implemented loading full list with urls. Planned to implement dataset 
 
  2. Unpack it.
 
- 3. To load data run: ./or_imagenet -p=/home/user/path_to_unpacked_file/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_or_imagenet -p=/home/user/path_to_unpacked_file/
 
 or_sun
 ======
@@ -241,7 +241,7 @@ Currently implemented loading "Scene Recognition Benchmark. SUN397". Planned to 
 
  2. Unpack it.
 
- 3. To load data run: ./or_sun -p=/home/user/path_to_unpacked_folder/SUN397/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_or_sun -p=/home/user/path_to_unpacked_folder/SUN397/
 
 SLAM
 ----
@@ -259,7 +259,7 @@ _`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.
 
  2. Unpack data_odometry_poses.zip, it creates folder dataset/poses/. After that unpack data_odometry_gray.zip, data_odometry_color.zip, data_odometry_velodyne.zip. Folder dataset/sequences/ will be created with folders 00/..21/. Each of these folders will contain: image_0/, image_1/, image_2/, image_3/, velodyne/ and files calib.txt & times.txt. These two last files will be replaced after unpacking data_odometry_calib.zip at the end.
 
- 3. To load data run: ./slam_kitti -p=/home/user/path_to_unpacked_folder/dataset/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_slam_kitti -p=/home/user/path_to_unpacked_folder/dataset/
 
 slam_tumindoor
 ==============
@@ -274,7 +274,7 @@ _`"TUMindoor Dataset"`: http://www.navvis.lmt.ei.tum.de/dataset/
 
  2. Unpack them in separate folder for each dataset. dslr.tar.bz2 -> dslr/, info.tar.bz2 -> info/, ladybug.tar.bz2 -> ladybug/, pointcloud.tar.bz2 -> pointcloud/.
 
- 3. To load each dataset run: ./slam_tumindoor -p=/home/user/path_to_unpacked_folders/
+ 3. To load each dataset run: ./opencv/build/bin/example_datasetstools_slam_tumindoor -p=/home/user/path_to_unpacked_folders/
 
 Text Recognition
 ----------------
@@ -294,7 +294,7 @@ _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
 
  3. Move *.m files from folder ListsTXT/ to appropriate folder. For example, English/list_English_Img.m for EnglishImg.tgz.
 
- 4. To load data, for example "EnglishImg", run: ./tr_chars -p=/home/user/path_to_unpacked_folder/English/
+ 4. To load data, for example "EnglishImg", run: ./opencv/build/bin/example_datasetstools_tr_chars -p=/home/user/path_to_unpacked_folder/English/
 
 tr_svt
 ======
@@ -309,5 +309,5 @@ _`"The Street View Text Dataset"`: http://vision.ucsd.edu/~kai/svt/
 
  2. Unpack it.
 
- 3. To load data run: ./tr_svt -p=/home/user/path_to_unpacked_folder/svt/svt1/
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_tr_svt -p=/home/user/path_to_unpacked_folder/svt/svt1/
 
