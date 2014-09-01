@@ -339,11 +339,11 @@ public:
      * \param filename : name of the file where the model is stored
      */
     StructuredEdgeDetectionImpl(const cv::String &filename,
-        const RFFeatureGetter *_howToGetFeatures)
+        Ptr<const RFFeatureGetter> _howToGetFeatures)
         : name("StructuredEdgeDetection"),
-          howToGetFeatures( _howToGetFeatures != NULL
+          howToGetFeatures( (!_howToGetFeatures.empty())
                           ? _howToGetFeatures
-                          : createRFFeatureGetter() )
+                          : createRFFeatureGetter().staticCast<const RFFeatureGetter>() )
     {
         cv::FileStorage modelFile(filename, FileStorage::READ);
         CV_Assert( modelFile.isOpened() );
@@ -631,7 +631,7 @@ protected:
     String name;
 
     /*! optional feature getter (getFeatures method) */
-    const RFFeatureGetter *howToGetFeatures;
+    Ptr<const RFFeatureGetter> howToGetFeatures;
 
     /*! random forest used to detect edges */
     struct RandomForest
@@ -684,7 +684,7 @@ protected:
 };
 
 Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const String &model,
-    const RFFeatureGetter *howToGetFeatures)
+    Ptr<const RFFeatureGetter> howToGetFeatures)
 {
         return makePtr<StructuredEdgeDetectionImpl>(model, howToGetFeatures);
 }
