@@ -127,6 +127,7 @@ public:
      *  CV_32F is the only supported data type.
      *  @param [in] dstPC The input point cloud for the scene. It is assumed that the model is registered on the scene. Scene remains static. Expected to have the normals (Nx6). Currently, CV_32F is the only supported data type.
      *  @param [out] residual The output registration error.
+     *  @param [out] pose Transformation between srcPC and dstPC.
      *  \return On successful termination, the function returns 0.
      *
      *  \details It is assumed that the model is registered on the scene. Scene remains static, while the model transforms. The output poses transform the models onto the scene. Because of the point to plane minimization, the scene is expected to have the normals available. Expected to have the normals (Nx6).
@@ -139,12 +140,12 @@ public:
      *  @param [in] srcPC The input point cloud for the model. Expected to have the normals (Nx6). Currently,
      *  CV_32F is the only supported data type.
      *  @param [in] dstPC The input point cloud for the scene. Currently, CV_32F is the only supported data type.
-     *  @param [out] poses List output of poses. For more detailed information check out Pose3D.
+     *  @param [in,out] poses Input poses to start with but also list output of poses.
      *  \return On successful termination, the function returns 0.
      *
      *  \details It is assumed that the model is registered on the scene. Scene remains static, while the model transforms. The output poses transform the models onto the scene. Because of the point to plane minimization, the scene is expected to have the normals available. Expected to have the normals (Nx6).
      */
-  int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3D*>& poses);
+  int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses);
 
 private:
   float m_tolerance;

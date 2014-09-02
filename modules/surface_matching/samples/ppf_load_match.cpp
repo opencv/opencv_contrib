@@ -104,7 +104,7 @@ int main(int argc, char** argv)
     
     // Match the model to the scene and get the pose
     cout << endl << "Starting matching..." << endl;
-    vector < Pose3D* > results;
+    vector<Pose3DPtr> results;
     tick1 = cv::getTickCount();
     detector.match(pcTest, results, 1.0/40.0, 0.05);
     tick2 = cv::getTickCount();
@@ -113,9 +113,7 @@ int main(int argc, char** argv)
          
     // Get only first N results
     int N = 2;
-    vector<Pose3D*>::const_iterator first = results.begin();
-    vector<Pose3D*>::const_iterator last = results.begin() + N;
-    vector<Pose3D*> resultsSub(first, last);
+    vector<Pose3DPtr> resultsSub(results.begin(),results.begin()+N);
     
     // Create an instance of ICP
     ICP icp(100, 0.005f, 2.5f, 8);
@@ -133,7 +131,7 @@ int main(int argc, char** argv)
     // debug first five poses
     for (size_t i=0; i<resultsSub.size(); i++)
     {
-        Pose3D* result = resultsSub[i];
+        Pose3DPtr result = resultsSub[i];
         cout << "Pose Result " << i << endl;
         result->printPose();
         if (i==0)

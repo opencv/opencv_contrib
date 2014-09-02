@@ -293,12 +293,11 @@ static hashtable_int* getHashtable(int* data, size_t length, int numMaxElement)
 }
 
 // source point clouds are assumed to contain their normals
-int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residual, double Pose[16])
+int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, double pose[16])
 {
   int n = srcPC.rows;
-  //double PoseInit[16];
 
-  bool UseRobustReject = m_rejectionScale>0;
+  const bool useRobustReject = m_rejectionScale>0;
 
   Mat srcTemp = srcPC.clone();
   Mat dstTemp = dstPC.clone();
@@ -314,8 +313,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
 
   double scale = (double)n / ((distSrc + distDst)*0.5);
 
-  //srcTemp(cv::Range(0, srcTemp.rows), cv::Range(0,3)) = (srcTemp(cv::Range(0, srcTemp.rows), cv::Range(0,3)) )  * scale;
-  //dstTemp(cv::Range(0, dstTemp.rows), cv::Range(0,3)) = (dstTemp(cv::Range(0, dstTemp.rows), cv::Range(0,3)) )  * scale;
   srcTemp(cv::Range(0, srcTemp.rows), cv::Range(0,3)) *= scale;
   dstTemp(cv::Range(0, dstTemp.rows), cv::Range(0,3)) *= scale;
 
@@ -323,7 +320,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
   Mat dstPC0 = dstTemp;
 
   // initialize pose
-  matrixIdentity(4, Pose);
+  matrixIdentity(4, pose);
 
   void* flann = indexPCFlann(dstPC0);
   Mat M = Mat::eye(4,4,CV_64F);
@@ -342,7 +339,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
     const int MaxIterationsPyr = cvRound((double)m_maxIterations/(level+1));
 
     // Obtain the sampled point clouds for this level: Also rotates the normals
-    Mat srcPCT = transformPCPose(srcPC0, Pose);
+    Mat srcPCT = transformPCPose(srcPC0, pose);
 
     const int sampleStep = cvRound((double)n/(double)numSamples);
     std::vector<int> srcSampleInd;
@@ -395,7 +392,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
         newJ[di] = indices[di];
       }
 
-      if (UseRobustReject)
+      if (useRobustReject)
       {
         int numInliers = 0;
         float threshold = getRejectionThreshold(distances, Distances.rows, m_rejectionScale);
@@ -503,13 +500,13 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
     }
 
     double TempPose[16];
-    matrixProduct44(PoseX, Pose, TempPose);
+    matrixProduct44(PoseX, pose, TempPose);
 
     // no need to copy the last 4 rows
     for (int c=0; c<12; c++)
-      Pose[c] = TempPose[c];
+      pose[c] = TempPose[c];
 
-    Residual = tempResidual;
+    residual = tempResidual;
 
     delete[] newI;
     delete[] newJ;
@@ -522,27 +519,26 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
   }
 
   // Pose(1:3, 4) = Pose(1:3, 4)./scale;
-  Pose[3] = Pose[3]/scale + meanAvg[0];
-  Pose[7] = Pose[7]/scale + meanAvg[1];
-  Pose[11] = Pose[11]/scale + meanAvg[2];
+  pose[3] = pose[3]/scale + meanAvg[0];
+  pose[7] = pose[7]/scale + meanAvg[1];
+  pose[11] = pose[11]/scale + meanAvg[2];
 
   // In MATLAB this would be : Pose(1:3, 4) = Pose(1:3, 4)./scale + meanAvg' - Pose(1:3, 1:3)*meanAvg';
   double Rpose[9], Cpose[3];
-  poseToR(Pose, Rpose);
+  poseToR(pose, Rpose);
   matrixProduct331(Rpose, meanAvg, Cpose);
-  Pose[3] -= Cpose[0];
-  Pose[7] -= Cpose[1];
-  Pose[11] -= Cpose[2];
+  pose[3] -= Cpose[0];
+  pose[7] -= Cpose[1];
+  pose[11] -= Cpose[2];
 
-  Residual = tempResidual;
+  residual = tempResidual;
 
   destroyFlann(flann);
-  flann = 0;
   return 0;
 }
 
 // source point clouds are assumed to contain their normals
-int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3D*>& poses)
+int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses)
 {
   for (size_t i=0; i<poses.size(); i++)
   {
@@ -551,7 +547,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Po
     registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
     poses[i]->appendPose(poseICP);
   }
-
   return 0;
 }
 

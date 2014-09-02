@@ -41,6 +41,7 @@
 #ifndef __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
 #define __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
 
+#include "opencv2/core/cvstd.hpp" // cv::Ptr
 #include <vector>
 #include <string>
 
@@ -48,6 +49,13 @@ namespace cv
 {
 namespace ppf_match_3d
 {
+
+class Pose3D;
+typedef Ptr<Pose3D> Pose3DPtr;
+
+class PoseCluster3D;
+typedef Ptr<PoseCluster3D> PoseCluster3DPtr;
+
 /**
 * @class Pose3D
 * @brief Class, allowing the storage of a pose. The data structure stores both
@@ -105,7 +113,7 @@ public:
   void appendPose(double IncrementalPose[16]);
   void printPose();
 
-  Pose3D* clone();
+  Pose3DPtr clone();
 
   int writePose(FILE* f);
   int readPose(FILE* f);
@@ -135,7 +143,7 @@ public:
     id=0;
   }
 
-  PoseCluster3D(Pose3D* newPose)
+  PoseCluster3D(Pose3DPtr newPose)
   {
     poseList.clear();
     poseList.push_back(newPose);
@@ -143,7 +151,7 @@ public:
     id=0;
   }
 
-  PoseCluster3D(Pose3D* newPose, int newId)
+  PoseCluster3D(Pose3DPtr newPose, int newId)
   {
     poseList.push_back(newPose);
     this->numVotes = newPose->numVotes;
@@ -158,17 +166,18 @@ public:
    *  in order to preserve the consistency
    *  \param [in] newPose Pose to add to the cluster
    */
-  void addPose(Pose3D* newPose);
+  void addPose(Pose3DPtr newPose);
 
   int writePoseCluster(FILE* f);
   int readPoseCluster(FILE* f);
   int writePoseCluster(const std::string& FileName);
   int readPoseCluster(const std::string& FileName);
 
-  std::vector < Pose3D* > poseList;
+  std::vector<Pose3DPtr> poseList;
   int numVotes;
   int id;
 };
+
 
 } // namespace ppf_match_3d
 } // namespace cv

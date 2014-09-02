@@ -54,12 +54,13 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 #if defined (_OPENMP)
 #include<omp.h>
 #endif
 
-#include <sstream>  // WTF bananas
+#include <sstream>  // flann dependency, needed in precomp now
 #include "opencv2/flann.hpp"
 
 #include "c_utils.hpp"

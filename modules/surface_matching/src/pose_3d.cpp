@@ -219,9 +219,9 @@ void Pose3D::appendPose(double IncrementalPose[16])
     pose[i]=PoseFull[i];
 }
 
-Pose3D* Pose3D::clone()
+Pose3DPtr Pose3D::clone()
 {
-  Pose3D* new_pose = new Pose3D(alpha, modelIndex, numVotes);
+  Ptr<Pose3D> new_pose(new Pose3D(alpha, modelIndex, numVotes));
   for (int i=0; i<16; i++)
     new_pose->pose[i]= this->pose[i];
 
@@ -314,7 +314,7 @@ int Pose3D::readPose(const std::string& FileName)
 }
 
 
-void PoseCluster3D::addPose(Pose3D* newPose)
+void PoseCluster3D::addPose(Pose3DPtr newPose)
 {
   poseList.push_back(newPose);
   this->numVotes += newPose->numVotes;
@@ -356,7 +356,7 @@ int PoseCluster3D::readPoseCluster(FILE* f)
   poseList.resize(numPoses);
   for (size_t i=0; i<poseList.size(); i++)
   {
-    poseList[i] = new Pose3D();
+    poseList[i] = Pose3DPtr(new Pose3D());
     poseList[i]->readPose(f);
   }
 

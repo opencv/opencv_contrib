@@ -49,15 +49,15 @@ namespace ppf_match_3d
 static const size_t PPF_LENGTH = 5;
 
 // routines for assisting sort
-static int qsortPoseCmp(const void * a, const void * b)
+static bool pose3DPtrCompare(const Pose3DPtr& a, const Pose3DPtr& b)
 {
-  Pose3D* pose1 = *(Pose3D**)a;
-  Pose3D* pose2 = *(Pose3D**)b;
-  return ( pose2->numVotes - pose1->numVotes );
+  CV_Assert(!a.empty() && !b.empty());
+  return ( a->numVotes > b->numVotes );
 }
 
-static int sortPoseClusters(const PoseCluster3D* a, const PoseCluster3D* b)
+static int sortPoseClusters(const PoseCluster3DPtr& a, const PoseCluster3DPtr& b)
 {
+  CV_Assert(!a.empty() && !b.empty());
   return ( a->numVotes > b->numVotes );
 }
 
@@ -331,25 +331,24 @@ bool PPF3DDetector::matchPose(const Pose3D& sourcePose, const Pose3D& targetPose
   return (phi<this->rotation_threshold && dNorm < this->position_threshold);
 }
 
-int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pose3D*>& finalPoses)
+void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses)
 {
-  std::vector<PoseCluster3D*> poseClusters;
-  poseClusters.clear();
+  std::vector<PoseCluster3DPtr> poseClusters;
 
   finalPoses.clear();
 
   // sort the poses for stability
-  qsort(poseList, numPoses, sizeof(Pose3D*), qsortPoseCmp);
+  std::sort(poseList.begin(), poseList.end(), pose3DPtrCompare);
 
   for (int i=0; i<numPoses; i++)
   {
-    Pose3D* pose = poseList[i];
+    Pose3DPtr pose = poseList[i];
     bool assigned = false;
 
     // search all clusters
     for (size_t j=0; j<poseClusters.size() && !assigned; j++)
     {
-      const Pose3D* poseCenter = poseClusters[j]->poseList[0];
+      const Pose3DPtr poseCenter = poseClusters[j]->poseList[0];
       if (matchPose(*pose, *poseCenter))
       {
         poseClusters[j]->addPose(pose);
@@ -359,12 +358,12 @@ int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pos
 
     if (!assigned)
     {
-      poseClusters.push_back ( new PoseCluster3D(pose));
+      poseClusters.push_back(PoseCluster3DPtr(new PoseCluster3D(pose)));
     }
   }
 
   // sort the clusters so that we could output multiple hypothesis
-  std::sort (poseClusters.begin(), poseClusters.end(), sortPoseClusters);
+  std::sort(poseClusters.begin(), poseClusters.end(), sortPoseClusters);
 
   finalPoses.resize(poseClusters.size());
 
@@ -382,8 +381,8 @@ int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pos
       double qAvg[4]={0}, tAvg[3]={0};
 
       // Perform the final averaging
-      PoseCluster3D* curCluster = poseClusters[i];
-      std::vector<Pose3D*> curPoses = curCluster->poseList;
+      PoseCluster3DPtr curCluster = poseClusters[i];
+      std::vector<Pose3DPtr> curPoses = curCluster->poseList;
       int curSize = (int)curPoses.size();
       int numTotalVotes = 0;
 
@@ -420,8 +419,6 @@ int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pos
       curPoses[0]->numVotes=curCluster->numVotes;
 
       finalPoses[i]=curPoses[0]->clone();
-
-      delete poseClusters[i];
     }
   }
   else
@@ -435,9 +432,9 @@ int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pos
       double qAvg[4]={0}, tAvg[3]={0};
 
       // Perform the final averaging
-      PoseCluster3D* curCluster = poseClusters[i];
-      std::vector<Pose3D*> curPoses = curCluster->poseList;
-      int curSize = (int)curPoses.size();
+      PoseCluster3DPtr curCluster = poseClusters[i];
+      std::vector<Pose3DPtr> curPoses = curCluster->poseList;
+      const int curSize = (int)curPoses.size();
 
       for (int j=0; j<curSize; j++)
       {
@@ -464,18 +461,13 @@ int PPF3DDetector::clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pos
       curPoses[0]->numVotes=curCluster->numVotes;
 
       finalPoses[i]=curPoses[0]->clone();
-
-      // we won't need this
-      delete poseClusters[i];
     }
   }
 
   poseClusters.clear();
-
-  return 0;
 }
 
-void PPF3DDetector::match(const Mat& pc, std::vector<Pose3D*>& results, const double relativeSceneSampleStep, const double relativeSceneDistance)
+void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const double relativeSceneSampleStep, const double relativeSceneDistance)
 {
   if (!trained)
   {
@@ -491,7 +483,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3D*>& results, const do
   int numAngles = (int) (floor (2 * M_PI / angle_step));
   float distanceStep = (float)distance_step;
   unsigned int n = num_ref_points;
-  Pose3D** poseList;
+  std::vector<Pose3DPtr> poseList;
   int sceneSamplingStep = scene_sample_step;
 
   // compute bbox
@@ -511,7 +503,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3D*>& results, const do
      unsigned int* accumulator = (unsigned int*)calloc(numAngles*n, sizeof(unsigned int));
   #endif*/
 
-  poseList = (Pose3D**)calloc((sampled.rows/sceneSamplingStep)+4, sizeof(Pose3D*));
+  poseList.reserve((sampled.rows/sceneSamplingStep)+4);
 
 #if defined _OPENMP
 #pragma omp parallel for
@@ -651,13 +643,13 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3D*>& results, const do
     getUnitXRotation_44(alpha, Talpha);
 
     double Temp[16]={0};
-    double Pose[16]={0};
+    double rawPose[16]={0};
     matrixProduct44(Talpha, Tmg, Temp);
-    matrixProduct44(TsgInv, Temp, Pose);
+    matrixProduct44(TsgInv, Temp, rawPose);
 
-    Pose3D *pose = new Pose3D(alpha, refIndMax, maxVotes);
-    pose->updatePose(Pose);
-    poseList[i/sceneSamplingStep] = pose;
+    Pose3DPtr pose(new Pose3D(alpha, refIndMax, maxVotes));
+    pose->updatePose(rawPose);
+    poseList.push_back(pose);
 
 #if defined (_OPENMP)
     free(accumulator);
@@ -670,18 +662,6 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3D*>& results, const do
   int numPosesAdded = sampled.rows/sceneSamplingStep;
 
   clusterPoses(poseList, numPosesAdded, results);
-
-  // free up the used space
-  sampled.release();
-
-  for (int i=0; i<numPosesAdded; i++)
-  {
-    Pose3D* pose = poseList[i];
-    delete pose;
-    poseList[i]=0;
-  }
-
-  free(poseList);
 }
 
 } // namespace ppf_match_3d

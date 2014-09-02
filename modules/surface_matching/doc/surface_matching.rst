@@ -138,13 +138,13 @@ Source Code for PPF Matching
 	// the scene (Mx6)
 	ppf_match_3d::PPF3DDetector detector(0.03, 0.05);
 	detector.trainModel(pc);
-	vector < Pose3D* > results;
+	vector<Pose3DPtr> results;
 	detector.match(pcTest, results, 1.0/10.0, 0.05);
 	cout << "Poses: " << endl;
 	// print the poses
 	for (size_t i=0; i<results.size(); i++)
 	{
-	    Pose3D* pose = results[i];
+	    Pose3DPtr pose = results[i];
 	    cout << "Pose Result " << i << endl;
 	    pose->printPose();
 	}
