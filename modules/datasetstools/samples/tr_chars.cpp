@@ -83,17 +83,17 @@ int main(int argc, char *argv[])
     // And number of splits.
     printf("splits number: %u\n", (unsigned int)dataset.size());
 
-    vector<character> &currTrain = dataset.back().train;
-    vector<character> &currTest = dataset.back().test;
+    vector< Ptr<object> > &currTrain = dataset.back().train;
+    vector< Ptr<object> > &currTest = dataset.back().test;
     printf("train size: %u\n", (unsigned int)currTrain.size());
     printf("test size: %u\n", (unsigned int)currTest.size());
 
-    character &currTrainCh = currTrain[0];
-    character &currTestCh = currTest[0];
-    printf("first train element:\nname: %s\n", currTrainCh.imgName.c_str());
-    printf("label: %u\n", currTrainCh.label);
-    printf("first test element:\nname: %s\n", currTestCh.imgName.c_str());
-    printf("label: %u\n", currTestCh.label);
+    character *example1 = static_cast<character *>(currTrain[0].get());
+    character *example2 = static_cast<character *>(currTest[0].get());
+    printf("first train element:\nname: %s\n", example1->imgName.c_str());
+    printf("label: %u\n", example1->label);
+    printf("first test element:\nname: %s\n", example2->imgName.c_str());
+    printf("label: %u\n", example2->label);
 
     return 0;
 }

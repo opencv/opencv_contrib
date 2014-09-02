@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectEpfl
+struct objectEpfl : public object
 {
     std::string imageName;
     std::vector<double> bounding, camera, p; // TODO: implement better structures
@@ -68,8 +68,6 @@ public:
     virtual ~MSM_epfl() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<objectEpfl> train;
 
 private:
     void loadDataset(const std::string &path);

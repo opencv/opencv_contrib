@@ -70,15 +70,15 @@ void IR_robot::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        scene curr;
-        curr.name = *it;
+        Ptr<scene> curr(new scene);
+        curr->name = *it;
 
-        string pathScene(path + curr.name + "/");
+        string pathScene(path + curr->name + "/");
         vector<string> sceneNames;
         getDirList(pathScene, sceneNames);
         for (vector<string>::iterator itScene=sceneNames.begin(); itScene!=sceneNames.end(); ++itScene)
         {
-            curr.images.push_back(*itScene);
+            curr->images.push_back(*itScene);
         }
 
         train.push_back(curr);

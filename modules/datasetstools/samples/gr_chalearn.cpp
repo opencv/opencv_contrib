@@ -71,18 +71,18 @@ int main(int argc, char *argv[])
     // dataset contains information for each sample.
     // For example, let output dataset size and first element.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    gesture &example = dataset.train[0];
-    printf("first dataset sample:\n%s\n", example.name.c_str());
-    printf("color video:\n%s\n", example.nameColor .c_str());
-    printf("depth video:\n%s\n", example.nameDepth.c_str());
-    printf("user video:\n%s\n", example.nameUser.c_str());
-    printf("video:\nnumber of frames: %u\nfps: %u\nmaximum depth: %u\n", example.numFrames, example.fps, example.depth);
-    for (vector<groundTruth>::iterator it=example.groundTruths.begin(); it!=example.groundTruths.end(); ++it)
+    gesture *example = static_cast<gesture *>(dataset.train[0].get());
+    printf("first dataset sample:\n%s\n", example->name.c_str());
+    printf("color video:\n%s\n", example->nameColor .c_str());
+    printf("depth video:\n%s\n", example->nameDepth.c_str());
+    printf("user video:\n%s\n", example->nameUser.c_str());
+    printf("video:\nnumber of frames: %u\nfps: %u\nmaximum depth: %u\n", example->numFrames, example->fps, example->depth);
+    for (vector<groundTruth>::iterator it=example->groundTruths.begin(); it!=example->groundTruths.end(); ++it)
     {
         printf("gestureID: %u, initial frame: %u, last frame: %u\n", (*it).gestureID, (*it).initialFrame, (*it).lastFrame);
     }
-    printf("skeletons number: %u\n", (unsigned int)example.skeletons.size());
-    skeleton &last = example.skeletons.back();
+    printf("skeletons number: %u\n", (unsigned int)example->skeletons.size());
+    skeleton &last = example->skeletons.back();
     printf("last skeleton:\n");
     for (unsigned int i=0; i<20; ++i)
     {

@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct element
+struct element : public object
 {
     std::string videoUrl;
     std::vector<int> labels;
@@ -69,13 +69,10 @@ public:
 
     virtual void load(const std::string &path, int number = 0);
 
-    std::vector<element> train;
-    std::vector<element> test;
-
 private:
     void loadDataset(const std::string &path);
 
-    void loadDatasetPart(const std::string &fileName, std::vector<element> &dataset_);
+    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<object> > &dataset_);
 };
 
 }

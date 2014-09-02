@@ -72,25 +72,25 @@ int main(int argc, char *argv[])
     // For example, let output first image information and dataset size.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
 
-    imageInfo &example = dataset.train[0];
-    printf("first image:\ntype: %u\n", example.type);
+    imageInfo *example = static_cast<imageInfo *>(dataset.train[0].get());
+    printf("first image:\ntype: %u\n", example->type);
 
     string imagePath(path);
-    if (LADYBUG == example.type)
+    if (LADYBUG == example->type)
     {
         imagePath += "ladybug/";
     } else
     {
         imagePath += "dslr/";
     }
-    printf("file name: %s\n", (imagePath + example.name).c_str());
+    printf("file name: %s\n", (imagePath + example->name).c_str());
 
     printf("transformation matrix:\n");
     for (unsigned int i=0; i<4; ++i)
     {
         for (unsigned int j=0; j<4; ++j)
         {
-            printf("%f ", example.transformMat[i][j]);
+            printf("%f ", example->transformMat[i][j]);
         }
         printf("\n");
     }

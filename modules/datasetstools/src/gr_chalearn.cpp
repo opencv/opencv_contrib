@@ -70,25 +70,25 @@ void GR_chalearn::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        gesture curr;
-        curr.name = *it;
-        curr.nameColor = curr.name + "/" + curr.name + "_color.mp4";
-        curr.nameDepth = curr.name + "/" + curr.name + "_depth.mp4";
-        curr.nameUser = curr.name + "/" + curr.name + "_user.mp4";
+        Ptr<gesture> curr(new gesture);
+        curr->name = *it;
+        curr->nameColor = curr->name + "/" + curr->name + "_color.mp4";
+        curr->nameDepth = curr->name + "/" + curr->name + "_depth.mp4";
+        curr->nameUser = curr->name + "/" + curr->name + "_user.mp4";
 
         // loading video info
-        string fileVideoInfo(path + curr.name + "/" + curr.name + "_data.csv");
+        string fileVideoInfo(path + curr->name + "/" + curr->name + "_data.csv");
         ifstream infile(fileVideoInfo.c_str());
         string line;
         getline(infile, line);
         vector<string> elems;
         split(line, elems, ',');
-        curr.numFrames = atoi(elems[0].c_str());
-        curr.fps = atoi(elems[1].c_str());
-        curr.depth = atoi(elems[2].c_str());
+        curr->numFrames = atoi(elems[0].c_str());
+        curr->fps = atoi(elems[1].c_str());
+        curr->depth = atoi(elems[2].c_str());
 
         // loading ground truth
-        string fileGroundTruth(path + curr.name + "/" + curr.name + "_labels.csv");
+        string fileGroundTruth(path + curr->name + "/" + curr->name + "_labels.csv");
         ifstream infileGroundTruth(fileGroundTruth.c_str());
         while (getline(infileGroundTruth, line))
         {
@@ -100,11 +100,11 @@ void GR_chalearn::loadDataset(const string &path)
             currGroundTruth.initialFrame = atoi(elems2[1].c_str());
             currGroundTruth.lastFrame = atoi(elems2[2].c_str());
 
-            curr.groundTruths.push_back(currGroundTruth);
+            curr->groundTruths.push_back(currGroundTruth);
         }
 
         // loading skeleton
-        string fileSkeleton(path + curr.name + "/" + curr.name + "_skeleton.csv");
+        string fileSkeleton(path + curr->name + "/" + curr->name + "_skeleton.csv");
         ifstream infileSkeleton(fileSkeleton.c_str());
         while (getline(infileSkeleton, line))
         {
@@ -126,7 +126,7 @@ void GR_chalearn::loadDataset(const string &path)
                 currSkeleton.s[numJoin].Py = atof(elems2[i+8].c_str());
             }
 
-            curr.skeletons.push_back(currSkeleton);
+            curr->skeletons.push_back(currSkeleton);
         }
 
         train.push_back(curr);

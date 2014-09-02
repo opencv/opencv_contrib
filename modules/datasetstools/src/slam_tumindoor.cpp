@@ -76,26 +76,26 @@ void SLAM_tumindoor::loadDataset(const string &path)
         vector<string> elems;
         split(line, elems, ';');
 
-        imageInfo curr;
+        Ptr<imageInfo> curr(new imageInfo);
 
-        curr.name = elems[0];
-        if (curr.name.substr(0, strlen("dslr_left")) == "dslr_left")
+        curr->name = elems[0];
+        if (curr->name.substr(0, strlen("dslr_left")) == "dslr_left")
         {
-            curr.type = LEFT;
+            curr->type = LEFT;
         } else
-        if (curr.name.substr(0, strlen("dslr_right")) == "dslr_right")
+        if (curr->name.substr(0, strlen("dslr_right")) == "dslr_right")
         {
-            curr.type = RIGHT;
+            curr->type = RIGHT;
         } else
         {
-            curr.type = LADYBUG;
+            curr->type = LADYBUG;
         }
 
         for (unsigned int i=0; i<4; ++i)
         {
             for (unsigned int j=0; j<4; ++j)
             {
-                curr.transformMat[i][j] = atof(elems[1 + j + i*4].c_str());
+                curr->transformMat[i][j] = atof(elems[1 + j + i*4].c_str());
             }
         }
 

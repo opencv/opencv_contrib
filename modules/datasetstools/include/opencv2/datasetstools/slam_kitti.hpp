@@ -59,7 +59,7 @@ struct pose
     double elem[12];
 };
 
-struct sequence
+struct sequence : public object
 {
     std::string name;
     std::vector<std::string> images[4];
@@ -76,8 +76,6 @@ public:
     virtual ~SLAM_kitti() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<sequence> train;
 
 private:
     void loadDataset(const std::string &path);

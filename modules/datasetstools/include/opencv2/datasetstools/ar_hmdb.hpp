@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct action
+struct action : public object
 {
     std::string name;
     std::vector<std::string> videoNames;
@@ -68,9 +68,6 @@ public:
     virtual ~AR_hmdb() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<action> train;
-    std::vector<action> test;
 
 private:
     void loadDataset(const std::string &path, int number = 0);

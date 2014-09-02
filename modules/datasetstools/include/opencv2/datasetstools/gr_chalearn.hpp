@@ -69,7 +69,7 @@ struct skeleton
     join s[20];
 };
 
-struct gesture
+struct gesture : public object
 {
     std::string name, nameColor, nameDepth, nameUser;
     int numFrames, fps, depth;
@@ -85,8 +85,6 @@ public:
     virtual ~GR_chalearn() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<gesture> train;
 
 private:
     void loadDataset(const std::string &path);

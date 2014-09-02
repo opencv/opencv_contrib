@@ -71,10 +71,10 @@ int main(int argc, char *argv[])
     // dataset contains for each object its images.
     // For example, let output dataset size and last object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    objectSun &example = dataset.train.back();
-    printf("last object name: %s\n", example.name.c_str());
-    printf("last object images number: %u\n", (unsigned int)example.imageNames.size());
-    vector<string> &imageNames = example.imageNames;
+    objectSun *example = static_cast<objectSun *>(dataset.train.back().get());
+    printf("last object name: %s\n", example->name.c_str());
+    printf("last object images number: %u\n", (unsigned int)example->imageNames.size());
+    vector<string> &imageNames = example->imageNames;
     for (vector<string>::iterator it=imageNames.begin(); it!=imageNames.end(); ++it)
     {
         printf("%s\n", (*it).c_str());

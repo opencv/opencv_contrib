@@ -85,12 +85,12 @@ void MSM_epfl::loadDataset(const string &path)
     getDirList(pathPng, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        objectEpfl curr;
-        curr.imageName = *it;
+        Ptr<objectEpfl> curr(new objectEpfl);
+        curr->imageName = *it;
 
-        readFileDouble(string(pathBounding + curr.imageName + ".bounding"), curr.bounding);
-        readFileDouble(string(pathCamera + curr.imageName + ".camera"), curr.camera);
-        readFileDouble(string(pathP + curr.imageName + ".P"), curr.p);
+        readFileDouble(string(pathBounding + curr->imageName + ".bounding"), curr->bounding);
+        readFileDouble(string(pathCamera + curr->imageName + ".camera"), curr->camera);
+        readFileDouble(string(pathP + curr->imageName + ".P"), curr->p);
 
         train.push_back(curr);
     }

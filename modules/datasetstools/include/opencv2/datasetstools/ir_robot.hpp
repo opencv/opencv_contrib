@@ -59,7 +59,7 @@ namespace datasetstools
 // 0.0000e+00   2.8285e+03   6.1618e+02
 // 0.0000e+00   0.0000e+00   1.0000e+00
 
-struct scene
+struct scene : public object
 {
     std::string name;
     std::vector<std::string> images; // TODO: implement more complex structure
@@ -73,8 +73,6 @@ public:
     virtual ~IR_robot() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<scene> train;
 
 private:
     void loadDataset(const std::string &path);

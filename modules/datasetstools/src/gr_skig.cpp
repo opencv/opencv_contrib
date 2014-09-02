@@ -81,22 +81,22 @@ void GR_skig::loadDataset(const string &path)
         {
             string &file = *it;
 
-            gestureSkig curr;
-            curr.rgb = pathDatasetRgb + file;
-            curr.dep = file;
-            curr.dep[0] = 'K';
-            curr.dep = pathDatasetDep + curr.dep;
+            Ptr<gestureSkig> curr(new gestureSkig);
+            curr->rgb = pathDatasetRgb + file;
+            curr->dep = file;
+            curr->dep[0] = 'K';
+            curr->dep = pathDatasetDep + curr->dep;
 
             size_t pos = file.find("person_"); // TODO: check ::npos
-            curr.person = (unsigned char)atoi( file.substr(pos+strlen("person_"), 1).c_str() );
+            curr->person = (unsigned char)atoi( file.substr(pos+strlen("person_"), 1).c_str() );
             pos = file.find("backgroud_");
-            curr.background = (backgroundType)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
+            curr->background = (backgroundType)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
             pos = file.find("illumination_");
-            curr.illumination = (illuminationType)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
+            curr->illumination = (illuminationType)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
             pos = file.find("pose_");
-            curr.pose = (poseType)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
+            curr->pose = (poseType)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
             pos = file.find("actionType_");
-            curr.type = (actionType)atoi( file.substr(pos+strlen("actionType_"), 2).c_str() );
+            curr->type = (actionType)atoi( file.substr(pos+strlen("actionType_"), 2).c_str() );
 
             train.push_back(curr);
         }

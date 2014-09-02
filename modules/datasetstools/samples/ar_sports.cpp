@@ -75,10 +75,10 @@ int main(int argc, char *argv[])
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
 
-    element &first = dataset.test[0];
-    printf("url: %s\n", first.videoUrl.c_str());
+    element *example = static_cast<element *>(dataset.test[0].get());
+    printf("url: %s\n", example->videoUrl.c_str());
     printf("labels: ");
-    vector<int> &labels = first.labels;
+    vector<int> &labels = example->labels;
     for (vector<int>::iterator it=labels.begin(); it!=labels.end(); ++it)
     {
         printf("%u ", *it);

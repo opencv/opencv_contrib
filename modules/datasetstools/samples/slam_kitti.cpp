@@ -72,39 +72,39 @@ int main(int argc, char *argv[])
     // For example, let output first sequence and dataset size.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
 
-    sequence &example = dataset.train[0];
-    printf("first dataset sequence:\n%s\n", example.name.c_str());
+    sequence *example = static_cast<sequence *>(dataset.train[0].get());
+    printf("first dataset sequence:\n%s\n", example->name.c_str());
 
-    /*string pathVelodyne(path + "sequences/" + example.name + "/velodyne/");
-    for (vector<string>::iterator it=example.velodyne.begin(); it!=example.velodyne.end(); ++it)
+    /*string pathVelodyne(path + "sequences/" + example->name + "/velodyne/");
+    for (vector<string>::iterator it=example->velodyne.begin(); it!=example->velodyne.end(); ++it)
     {
         printf("%s\n", (pathVelodyne + (*it)).c_str());
     }*/
-    printf("number of velodyne images: %u\n", (unsigned int)example.velodyne.size());
+    printf("number of velodyne images: %u\n", (unsigned int)example->velodyne.size());
 
     for (unsigned int i=0; i<=3; ++i)
     {
         /*char tmp[2];
         sprintf(tmp, "%u", i);
         // 0,1 - gray, 2,3 - color
-        string currPath(path + "sequences/" + example.name + "/image_" + tmp + "/");
-        for (vector<string>::iterator it=example.images[i].begin(); it!=example.images[i].end(); ++it)
+        string currPath(path + "sequences/" + example->name + "/image_" + tmp + "/");
+        for (vector<string>::iterator it=example->images[i].begin(); it!=example->images[i].end(); ++it)
         {
             printf("%s\n", (currPath + (*it)).c_str());
         }*/
-        printf("number of images %u: %u\n", i, (unsigned int)example.images[i].size());
+        printf("number of images %u: %u\n", i, (unsigned int)example->images[i].size());
     }
 
     /*printf("times:\n");
-    for (vector<double>::iterator it=example.times.begin(); it!=example.times.end(); ++it)
+    for (vector<double>::iterator it=example->times.begin(); it!=example->times.end(); ++it)
     {
         printf("%f ", *it);
     }
     printf("\n");*/
-    printf("number of times: %u\n", (unsigned int)example.times.size());
+    printf("number of times: %u\n", (unsigned int)example->times.size());
 
     /*printf("poses:\n");
-    for (vector<pose>::iterator it=example.posesArray.begin(); it!=example.posesArray.end(); ++it)
+    for (vector<pose>::iterator it=example->posesArray.begin(); it!=example->posesArray.end(); ++it)
     {
         for (unsigned int i=0; i<12; ++i)
         {
@@ -112,12 +112,12 @@ int main(int argc, char *argv[])
         }
         printf("\n");
     }*/
-    printf("number of poses: %u\n", (unsigned int)example.posesArray.size());
+    printf("number of poses: %u\n", (unsigned int)example->posesArray.size());
 
     for (unsigned int i=0; i<4; ++i)
     {
         printf("calibration %u:\n", i);
-        for (vector<double>::iterator it=example.p[i].begin(); it!=example.p[i].end(); ++it)
+        for (vector<double>::iterator it=example->p[i].begin(); it!=example->p[i].end(); ++it)
         {
             printf("%f ", *it);
         }

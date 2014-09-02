@@ -71,25 +71,25 @@ int main(int argc, char *argv[])
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    objectEpfl &example = dataset.train[0];
-    printf("first image:\nname: %s\n", example.imageName.c_str());
+    objectEpfl *example = static_cast<objectEpfl *>(dataset.train[0].get());
+    printf("first image:\nname: %s\n", example->imageName.c_str());
 
     printf("bounding:\n");
-    for (vector<double>::iterator it=example.bounding.begin(); it!=example.bounding.end(); ++it)
+    for (vector<double>::iterator it=example->bounding.begin(); it!=example->bounding.end(); ++it)
     {
         printf("%f ", *it);
     }
     printf("\n");
 
     printf("camera:\n");
-    for (vector<double>::iterator it=example.camera.begin(); it!=example.camera.end(); ++it)
+    for (vector<double>::iterator it=example->camera.begin(); it!=example->camera.end(); ++it)
     {
         printf("%f ", *it);
     }
     printf("\n");
 
     printf("P:\n");
-    for (vector<double>::iterator it=example.p.begin(); it!=example.p.end(); ++it)
+    for (vector<double>::iterator it=example->p.begin(); it!=example->p.end(); ++it)
     {
         printf("%f ", *it);
     }

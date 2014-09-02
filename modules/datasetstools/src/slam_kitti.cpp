@@ -71,10 +71,10 @@ void SLAM_kitti::loadDataset(const string &path)
     getDirList(pathSequence, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        sequence curr;
-        curr.name = *it;
+        Ptr<sequence> curr(new sequence);
+        curr->name = *it;
 
-        string currPath(pathSequence + curr.name);
+        string currPath(pathSequence + curr->name);
 
         // loading velodyne
         string pathVelodyne(currPath + "/velodyne/");
@@ -82,7 +82,7 @@ void SLAM_kitti::loadDataset(const string &path)
         getDirList(pathVelodyne, velodyneNames);
         for (vector<string>::iterator itV=velodyneNames.begin(); itV!=velodyneNames.end(); ++itV)
         {
-            curr.velodyne.push_back(*itV);
+            curr->velodyne.push_back(*itV);
         }
 
         // loading gray & color images
@@ -95,7 +95,7 @@ void SLAM_kitti::loadDataset(const string &path)
             getDirList(pathImage, imageNames);
             for (vector<string>::iterator itImage=imageNames.begin(); itImage!=imageNames.end(); ++itImage)
             {
-                curr.images[i].push_back(*itImage);
+                curr->images[i].push_back(*itImage);
             }
         }
 
@@ -104,7 +104,7 @@ void SLAM_kitti::loadDataset(const string &path)
         string line;
         while (getline(infile, line))
         {
-            curr.times.push_back(atof(line.c_str()));
+            curr->times.push_back(atof(line.c_str()));
         }
 
         // loading calibration
@@ -117,12 +117,12 @@ void SLAM_kitti::loadDataset(const string &path)
             vector<string>::iterator itE=elems.begin();
             for (++itE; itE!=elems.end(); ++itE)
             {
-                curr.p[i].push_back(atof((*itE).c_str()));
+                curr->p[i].push_back(atof((*itE).c_str()));
             }
         }
 
         // loading poses
-        ifstream infile3((path + "poses/" + curr.name + ".txt").c_str());
+        ifstream infile3((path + "poses/" + curr->name + ".txt").c_str());
         while (getline(infile3, line))
         {
             pose p;
@@ -139,7 +139,7 @@ void SLAM_kitti::loadDataset(const string &path)
                 p.elem[i] = atof((*itE).c_str());
             }
 
-            curr.posesArray.push_back(p);
+            curr->posesArray.push_back(p);
         }
 
         train.push_back(curr);

@@ -54,6 +54,11 @@ namespace cv
 namespace datasetstools
 {
 
+struct objectParse : public object
+{
+    std::string name;
+};
+
 class CV_EXPORTS HPE_parse : public Dataset
 {
 public:
@@ -62,9 +67,6 @@ public:
     virtual ~HPE_parse() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<std::string> train;
-    std::vector<std::string> test;
 
 private:
     void loadDataset(const std::string &path);

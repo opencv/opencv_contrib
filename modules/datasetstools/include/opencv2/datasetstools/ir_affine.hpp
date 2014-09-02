@@ -55,7 +55,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct imageParams
+struct imageParams : public object
 {
     std::string imageName;
     Matx33d mat;
@@ -69,8 +69,6 @@ public:
     virtual ~IR_affine() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<imageParams> train;
 
 private:
     void loadDataset(const std::string &path);

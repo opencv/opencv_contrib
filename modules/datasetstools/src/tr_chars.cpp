@@ -163,9 +163,9 @@ void TR_chars::loadDataset(const string &path, int number)
             continue;
         }
 
-        character curr;
-        curr.imgName = allNames[*it];
-        curr.label = allLabels[*it];
+        Ptr<character> curr(new character);
+        curr->imgName = allNames[*it];
+        curr->label = allLabels[*it];
         train.push_back(curr);
     }
 
@@ -177,9 +177,9 @@ void TR_chars::loadDataset(const string &path, int number)
             continue;
         }
 
-        character curr;
-        curr.imgName = allNames[*it];
-        curr.label = allLabels[*it];
+        Ptr<character> curr(new character);
+        curr->imgName = allNames[*it];
+        curr->label = allLabels[*it];
         test.push_back(curr);
     }
 }

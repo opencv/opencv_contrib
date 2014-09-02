@@ -79,12 +79,15 @@ void HPE_parse::loadDataset(const string &path)
         }
         if (ext==".jpg")
         {
+            Ptr<objectParse> curr(new objectParse);
+            curr->name = file;
+
             if (i<100)
             {
-                train.push_back(file);
+                train.push_back(curr);
             } else
             {
-                test.push_back(file);
+                test.push_back(curr);
             }
             ++i;
         }

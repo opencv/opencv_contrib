@@ -71,10 +71,10 @@ int main(int argc, char *argv[])
     // dataset contains object with name and its images.
     // For example, let output dataset size and sixth element.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    face &example = dataset.train[5];
-    printf("sixth dataset object:\n%s\n", example.name.c_str());
-    string currPath(path + example.name + "/");
-    for (vector<string>::iterator it=example.images.begin(); it!=example.images.end(); ++it)
+    face *example = static_cast<face *>(dataset.train[5].get());
+    printf("sixth dataset object:\n%s\n", example->name.c_str());
+    string currPath(path + example->name + "/");
+    for (vector<string>::iterator it=example->images.begin(); it!=example->images.end(); ++it)
     {
         printf("%s\n", (currPath+(*it)).c_str());
     }

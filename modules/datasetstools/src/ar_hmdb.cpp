@@ -91,16 +91,18 @@ void AR_hmdb::loadDataset(const string &path, int number)
     getDirList(pathDataset, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        action curr;
-        curr.name = *it;
+        Ptr<action> currTrain(new action);
+        Ptr<action> currTest(new action);
+        currTrain->name = *it;
+        currTest->name = *it;
 
-        train.push_back(curr);
-        test.push_back(curr);
+        train.push_back(currTrain);
+        test.push_back(currTest);
 
         char tmp[2];
         sprintf(tmp, "%u", number+1);
-        string fileName(pathSplit + curr.name + "_test_split" + tmp + ".txt");
-        loadAction(fileName, train.back().videoNames, test.back().videoNames);
+        string fileName(pathSplit + currTrain->name + "_test_split" + tmp + ".txt");
+        loadAction(fileName, currTrain->videoNames, currTest->videoNames);
     }
 }
 

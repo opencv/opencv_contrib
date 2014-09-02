@@ -88,7 +88,7 @@ enum backgroundType
     paperWithCharacters
 };
 
-struct gestureSkig
+struct gestureSkig : public object
 {
     std::string rgb;
     std::string dep;
@@ -107,8 +107,6 @@ public:
     virtual ~GR_skig() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<gestureSkig> train;
 
 private:
     void loadDataset(const std::string &path);

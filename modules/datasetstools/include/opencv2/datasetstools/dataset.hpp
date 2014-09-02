@@ -43,6 +43,7 @@
 #define OPENCV_DATASETSTOOLS_DATASET_HPP
 
 #include <string>
+#include <vector>
 
 #include <opencv2/core.hpp>
 
@@ -51,13 +52,28 @@ namespace cv
 namespace datasetstools
 {
 
+struct object
+{
+};
+
+enum datasetType
+{
+    AR_HMDB,
+    AR_SPORTS
+};
+
 class CV_EXPORTS Dataset
 {
 public:
     Dataset() {}
-    virtual ~Dataset() {}
+    virtual ~Dataset() {train.clear(); test.clear();}
 
     virtual void load(const std::string &path, int number = 0) = 0;
+
+    std::vector< Ptr<object> > train;
+    std::vector< Ptr<object> > test;
+
+    static Ptr<Dataset> create(datasetType type);
 };
 
 }

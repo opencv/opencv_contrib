@@ -68,11 +68,11 @@ void IR_affine::loadDataset(const string &path)
 {
     for (unsigned int i=1; i<=6; ++i)
     {
-        imageParams curr;
+        Ptr<imageParams> curr(new imageParams);
 
         char tmp[2];
         sprintf(tmp, "%u", i);
-        curr.imageName = path + "img" + tmp + ".ppm";
+        curr->imageName = path + "img" + tmp + ".ppm";
 
         if (i>1)
         {
@@ -82,7 +82,7 @@ void IR_affine::loadDataset(const string &path)
             {
                 for (int j=0; j<3; ++j)
                 {
-                    infile >> curr.mat(k, j);
+                    infile >> curr->mat(k, j);
                 }
             }
         }

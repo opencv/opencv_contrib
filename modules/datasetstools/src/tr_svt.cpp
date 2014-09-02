@@ -52,7 +52,7 @@ namespace datasetstools
 using namespace std;
 using namespace tinyxml2;
 
-void TR_svt::xmlParse(const string &set, vector<image> &out)
+void TR_svt::xmlParse(const string &set, vector< Ptr<object> > &out)
 {
     XMLDocument doc;
     doc.LoadFile(set.c_str());
@@ -67,9 +67,9 @@ void TR_svt::xmlParse(const string &set, vector<image> &out)
             string imageName = child->FirstChildElement("imageName")->GetText();
             string lex = child->FirstChildElement("lex")->GetText();
 
-            image img;
-            img.fileName = imageName;
-            split(lex, img.lex, ',');
+            Ptr<image> curr(new image);
+            curr->fileName = imageName;
+            split(lex, curr->lex, ',');
 
             XMLElement *childTaggeds = child->FirstChildElement("taggedRectangles");
             if (childTaggeds)
@@ -84,13 +84,13 @@ void TR_svt::xmlParse(const string &set, vector<image> &out)
                     t.width = atoi(childTagged->Attribute("width"));
                     t.x = atoi(childTagged->Attribute("x"));
                     t.y = atoi(childTagged->Attribute("y"));
-                    img.tags.push_back(t);
+                    curr->tags.push_back(t);
 
                     childTagged = childTagged->NextSiblingElement(strTagged.c_str());
                 }
             }
 
-            out.push_back(img);
+            out.push_back(curr);
 
             child = child->NextSiblingElement(strImage.c_str());
         }

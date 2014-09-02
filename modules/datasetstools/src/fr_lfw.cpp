@@ -70,15 +70,15 @@ void FR_lfw::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        face curr;
-        curr.name = *it;
+        Ptr<face> curr(new face);
+        curr->name = *it;
 
-        string pathFace(path + curr.name + "/");
+        string pathFace(path + curr->name + "/");
         vector<string> faceNames;
         getDirList(pathFace, faceNames);
         for (vector<string>::iterator itFace=faceNames.begin(); itFace!=faceNames.end(); ++itFace)
         {
-            curr.images.push_back(*itFace);
+            curr->images.push_back(*itFace);
         }
 
         train.push_back(curr);

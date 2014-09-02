@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectSun
+struct objectSun : public object
 {
     std::string name;
     std::vector<std::string> imageNames;
@@ -68,8 +68,6 @@ public:
     virtual ~OR_sun() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<objectSun> train;
 
 private:
     void loadDataset(const std::string &path);

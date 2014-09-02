@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct character
+struct character : public object
 {
     std::string imgName;
     int label;
@@ -68,9 +68,6 @@ public:
     virtual ~TR_chars() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<character> train;
-    std::vector<character> test;
 
 private:
     void loadDataset(const std::string &path, int number = 0);

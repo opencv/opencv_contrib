@@ -72,8 +72,10 @@ int main(int argc, char *argv[])
     // For example, let output their sizes and first elements.
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
-    printf("first train image: %s\n", dataset.train[0].c_str());
-    printf("first test image: %s\n", dataset.test[0].c_str());
+    objectParse *example1 = static_cast<objectParse *>(dataset.train[0].get());
+    objectParse *example2 = static_cast<objectParse *>(dataset.test[0].get());
+    printf("first train image: %s\n", example1->name.c_str());
+    printf("first test image: %s\n", example2->name.c_str());
 
     return 0;
 }

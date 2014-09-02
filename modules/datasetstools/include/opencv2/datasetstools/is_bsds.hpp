@@ -54,6 +54,11 @@ namespace cv
 namespace datasetstools
 {
 
+struct objectBsds : public object
+{
+    std::string name;
+};
+
 class CV_EXPORTS IS_bsds : public Dataset
 {
 public:
@@ -63,13 +68,10 @@ public:
 
     virtual void load(const std::string &path, int number = 0);
 
-    std::vector<std::string> train;
-    std::vector<std::string> test;
-
 private:
     void loadDataset(const std::string &path);
 
-    void loadDatasetPart(const std::string &fileName, std::vector<std::string> &dataset_);
+    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<object> > &dataset_);
 };
 
 }

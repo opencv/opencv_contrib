@@ -61,7 +61,7 @@ enum imageType
     LADYBUG
 };
 
-struct imageInfo
+struct imageInfo : public object
 {
     std::string name;
     double transformMat[4][4];
@@ -76,8 +76,6 @@ public:
     virtual ~SLAM_tumindoor() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<imageInfo> train;
 
 private:
     void loadDataset(const std::string &path);

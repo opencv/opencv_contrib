@@ -71,15 +71,15 @@ void OR_sun::loadDataset(const string &path)
     string line;
     while (getline(infile, line))
     {
-        objectSun curr;
-        curr.name = line;
+        Ptr<objectSun> curr(new objectSun);
+        curr->name = line;
 
-        string currPath(path + curr.name);
+        string currPath(path + curr->name);
         vector<string> fileNames;
         getDirList(currPath, fileNames);
         for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
         {
-            curr.imageNames.push_back(*it);
+            curr->imageNames.push_back(*it);
         }
 
         train.push_back(curr);

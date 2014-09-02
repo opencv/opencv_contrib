@@ -75,14 +75,14 @@ int main(int argc, char *argv[])
     // And dataset size.
     printf("size: %u\n", (unsigned int)dataset.train.size());
 
-    imageParams &example = dataset.train.back();
-    printf("image name: %s\n", example.imageName.c_str());
+    imageParams *example = static_cast<imageParams *>(dataset.train.back().get());
+    printf("image name: %s\n", example->imageName.c_str());
     printf("matrix:\n");
     for (int i=0; i<3; ++i)
     {
         for (int j=0; j<3; ++j)
         {
-            printf("%f ", example.mat(i, j));
+            printf("%f ", example->mat(i, j));
         }
         printf("\n");
     }

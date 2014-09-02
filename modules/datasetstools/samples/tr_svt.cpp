@@ -76,15 +76,15 @@ int main(int argc, char *argv[])
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
 
-    image &example = dataset.train.back();
-    printf("last element:\nfile name: %s", example.fileName.c_str());
+    image *example = static_cast<image *>(dataset.train.back().get());
+    printf("last element:\nfile name: %s", example->fileName.c_str());
     printf("\nlex: ");
-    for (vector<string>::iterator it=example.lex.begin(); it!=example.lex.end(); ++it)
+    for (vector<string>::iterator it=example->lex.begin(); it!=example->lex.end(); ++it)
     {
         printf("%s,", (*it).c_str());
     }
     printf("\ntags:\n");
-    for (vector<tag>::iterator it=example.tags.begin(); it!=example.tags.end(); ++it)
+    for (vector<tag>::iterator it=example->tags.begin(); it!=example->tags.end(); ++it)
     {
         tag &t = (*it);
         printf("%s\nheight: %u, width: %u, x: %u, y: %u\n",

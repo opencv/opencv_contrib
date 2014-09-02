@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct cameraParam
+struct cameraParam : public object
 {
     std::string imageName;
     double k[3][3];
@@ -70,8 +70,6 @@ public:
     virtual ~MSM_middlebury() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<cameraParam> train;
 
 private:
     void loadDataset(const std::string &path);

@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct face
+struct face : public object
 {
     std::string name;
     std::vector<std::string> images;
@@ -69,7 +69,7 @@ public:
 
     virtual void load(const std::string &path, int number = 0);
 
-    std::vector<face> train;
+    //std::vector<face> train;
 
 private:
     void loadDataset(const std::string &path);

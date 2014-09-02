@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct object
+struct objectWeizmann : public object
 {
     std::string imageName;
     std::string srcBw;
@@ -70,8 +70,6 @@ public:
     virtual ~IS_weizmann() {}
 
     virtual void load(const std::string &path, int number = 0);
-
-    std::vector<object> train;
 
 private:
     void loadDataset(const std::string &path);

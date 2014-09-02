@@ -73,17 +73,17 @@ void OR_imagenet::loadDataset(const string &path)
         vector<string> elems;
         split(line, elems, '\t');
 
-        objectImagenet curr;
-        curr.imageUrl = elems[1];
+        Ptr<objectImagenet> curr(new objectImagenet);
+        curr->imageUrl = elems[1];
 
         string id(elems[0]);
         elems.clear();
         split(id, elems, '_');
 
-        curr.wnid = elems[0];
-        curr.id2 = atoi(elems[1].c_str());
+        curr->wnid = elems[0];
+        curr->id2 = atoi(elems[1].c_str());
 
-        wnids.insert(curr.wnid);
+        wnids.insert(curr->wnid);
 
         train.push_back(curr);
     }

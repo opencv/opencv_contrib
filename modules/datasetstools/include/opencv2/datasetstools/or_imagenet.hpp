@@ -55,7 +55,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectImagenet
+struct objectImagenet : public object
 {
     std::string wnid;
     int id2;
@@ -71,7 +71,6 @@ public:
 
     virtual void load(const std::string &path, int number = 0);
 
-    std::vector<objectImagenet> train;
     std::set<std::string> wnids;
 
 private:

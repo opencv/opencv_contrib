@@ -78,26 +78,26 @@ void MSM_middlebury::loadDataset(const string &path)
     infile >> imageName; // skip header
     while (infile >> imageName)
     {
-        cameraParam curr;
-        curr.imageName = imageName;
+        Ptr<cameraParam> curr(new cameraParam);
+        curr->imageName = imageName;
 
         for (int i=0; i<3; ++i)
         {
             for (int j=0; j<3; ++j)
             {
-                infile >> curr.k[i][j];
+                infile >> curr->k[i][j];
             }
         }
         for (int i=0; i<3; ++i)
         {
             for (int j=0; j<3; ++j)
             {
-                infile >> curr.r[i][j];
+                infile >> curr->r[i][j];
             }
         }
         for (int i=0; i<3; ++i)
         {
-            infile >> curr.t[i];
+            infile >> curr->t[i];
         }
 
         train.push_back(curr);

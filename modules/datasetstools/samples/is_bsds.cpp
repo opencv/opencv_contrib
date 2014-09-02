@@ -75,9 +75,12 @@ int main(int argc, char *argv[])
     // And sets size.
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
-    string fullPath(path + "images/train/" + dataset.train[0] + ".jpg");
+
+    objectBsds *example1 = static_cast<objectBsds *>(dataset.train[0].get());
+    string fullPath(path + "images/train/" + example1->name + ".jpg");
     printf("first train image: %s\n", fullPath.c_str());
-    fullPath = path + "images/test/" + dataset.test[0] + ".jpg";
+    objectBsds *example2 = static_cast<objectBsds *>(dataset.test[0].get());
+    fullPath = path + "images/test/" + example2->name + ".jpg";
     printf("first test image: %s\n", fullPath.c_str());
 
     return 0;
