@@ -206,7 +206,7 @@ void destroyFlann(void* flannIndex)
 }
 
 // For speed purposes this function assumes that PC, Indices and Distances are created with continuous structures
-void queryPCFlann(void* flannIndex, cv::Mat& pc, cv::Mat& indices, cv::Mat& distances)
+void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances)
 {
     Mat obj_32f; 
     pc.colRange(0,3).copyTo(obj_32f);
@@ -518,11 +518,11 @@ Mat transformPCPose(Mat pc, double Pose[16])
 
 Mat genRandomMat(int rows, int cols, double mean, double stddev, int type)
 {
-    cv::Mat meanMat = mean*cv::Mat::ones(1,1,type);
-    cv::Mat sigmaMat= stddev*cv::Mat::ones(1,1,type);
-    cv::RNG rng(time(0));
-    cv::Mat matr(rows, cols,type);
-    rng.fill(matr, cv::RNG::NORMAL, meanMat, sigmaMat);
+    Mat meanMat = mean*Mat::ones(1,1,type);
+    Mat sigmaMat= stddev*Mat::ones(1,1,type);
+    RNG rng(time(0));
+    Mat matr(rows, cols,type);
+    rng.fill(matr, RNG::NORMAL, meanMat, sigmaMat);
     
     return matr;
 }

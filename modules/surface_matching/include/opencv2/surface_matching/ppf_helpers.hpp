@@ -56,16 +56,16 @@ namespace ppf_match_3d
  *  and whether it should be loaded or not
  *  \return Returns the matrix on successfull load
  */
-CV_EXPORTS cv::Mat loadPLYSimple(const char* fileName, int withNormals);
+CV_EXPORTS Mat loadPLYSimple(const char* fileName, int withNormals);
 
 /**
  *  \brief Write a point cloud to PLY file
  *  \param [in] fileName The PLY model file to write
 */
-CV_EXPORTS void writePLY(cv::Mat PC, const char* fileName);
+CV_EXPORTS void writePLY(Mat PC, const char* fileName);
 
-cv::Mat samplePCUniform(cv::Mat PC, int sampleStep);
-cv::Mat samplePCUniformInd(cv::Mat PC, int sampleStep, std::vector<int>& indices);
+Mat samplePCUniform(Mat PC, int sampleStep);
+Mat samplePCUniformInd(Mat PC, int sampleStep, std::vector<int>& indices);
 
 /**
  *  Sample a point cloud using uniform steps
@@ -79,13 +79,13 @@ cv::Mat samplePCUniformInd(cv::Mat PC, int sampleStep, std::vector<int>& indices
  *  by the distance to the origin. This parameter enables/disables the use of weighting.
  *  \return Sampled point cloud
 */
-CV_EXPORTS cv::Mat samplePCByQuantization(cv::Mat pc, float xrange[2], float yrange[2], float zrange[2], float sample_step_relative, int weightByCenter=0);
+CV_EXPORTS Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrange[2], float sample_step_relative, int weightByCenter=0);
 
-void computeBboxStd(cv::Mat pc, float xRange[2], float yRange[2], float zRange[2]);
+void computeBboxStd(Mat pc, float xRange[2], float yRange[2], float zRange[2]);
 
-void* indexPCFlann(cv::Mat pc);
+void* indexPCFlann(Mat pc);
 void destroyFlann(void* flannIndex);
-void queryPCFlann(void* flannIndex, cv::Mat& pc, cv::Mat& indices, cv::Mat& distances);
+void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances);
 
 /**
  *  Mostly for visualization purposes. Normalizes the point cloud in a Hartley-Zissermann
@@ -96,10 +96,10 @@ void queryPCFlann(void* flannIndex, cv::Mat& pc, cv::Mat& indices, cv::Mat& dist
  *  @param [in] scale The scale after normalization. Default to 1.
  *  \return Normalized point cloud
 */
-CV_EXPORTS cv::Mat normalize_pc(cv::Mat pc, float scale);
+CV_EXPORTS Mat normalize_pc(Mat pc, float scale);
 
-cv::Mat normalizePCCoeff(cv::Mat pc, float scale, float* Cx, float* Cy, float* Cz, float* MinVal, float* MaxVal);
-cv::Mat transPCCoeff(cv::Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal, float MaxVal);
+Mat normalizePCCoeff(Mat pc, float scale, float* Cx, float* Cy, float* Cz, float* MinVal, float* MaxVal);
+Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal, float MaxVal);
 
 /**
  *  Transforms the point cloud with a given a homogeneous 4x4 pose matrix (in double precision)
@@ -109,7 +109,7 @@ cv::Mat transPCCoeff(cv::Mat pc, float scale, float Cx, float Cy, float Cz, floa
  *  @param [in] Pose 4x4 pose matrix, but linearized in row-major form.
  *  \return Transformed point cloud
 */
-CV_EXPORTS cv::Mat transformPCPose(cv::Mat pc, double Pose[16]);
+CV_EXPORTS Mat transformPCPose(Mat pc, double Pose[16]);
 
 /**
  *  Generate a random 4x4 pose matrix
@@ -123,7 +123,7 @@ CV_EXPORTS void getRandomPose(double Pose[16]);
  *  @param [in] scale Input scale of the noise. The larger the scale, the more
  *  noisy the output
 */
-CV_EXPORTS cv::Mat addNoisePC(cv::Mat pc, double scale);
+CV_EXPORTS Mat addNoisePC(Mat pc, double scale);
 
 /**
  *  \brief Compute the normals of an arbitrary point cloud
@@ -140,7 +140,7 @@ CV_EXPORTS cv::Mat addNoisePC(cv::Mat pc, double scale);
  *  If PCNormals is provided to be an Nx6 matrix, then no new allocation
  *  is made, instead the existing memory is overwritten.
  */
-CV_EXPORTS int computeNormalsPC3d(const cv::Mat& PC, cv::Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3]);
+CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3]);
 } // namespace ppf_match_3d
 } // namespace cv
 
