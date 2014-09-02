@@ -38,8 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#ifndef __OPENCV_HASH_MURMUR_HPP_
-#define __OPENCV_HASH_MURMUR_HPP_
+#ifndef __OPENCV_SURFACE_MATCHING_HASH_MURMUR_HPP_
+#define __OPENCV_SURFACE_MATCHING_HASH_MURMUR_HPP_
 
 namespace cv
 {

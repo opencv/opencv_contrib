@@ -38,8 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#ifndef __OPENCV_PPF_3D_HELPERS_HPP__
-#define __OPENCV_PPF_3D_HELPERS_HPP__
+#ifndef __OPENCV_SURFACE_MATCHING_HELPERS_HPP__
+#define __OPENCV_SURFACE_MATCHING_HELPERS_HPP__
 
 #include <opencv2/core.hpp>
 

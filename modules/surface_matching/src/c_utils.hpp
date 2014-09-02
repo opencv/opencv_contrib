@@ -38,8 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#ifndef __OPENCV_PPF_UTILS_HPP_
-#define __OPENCV_PPF_UTILS_HPP_
+#ifndef __OPENCV_SURFACE_MATCHING_UTILS_HPP_
+#define __OPENCV_SURFACE_MATCHING_UTILS_HPP_
 
 #include <cmath>
 #include <cstdio>

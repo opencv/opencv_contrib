@@ -52,8 +52,8 @@ IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVP
 // Author: Tolga Birdal  <tbirdal AT gmail.com>
 
 
-#ifndef __OPENCV_OBJDETECT_PPF_3D_HPP__
-#define __OPENCV_OBJDETECT_PPF_3D_HPP__
+#ifndef __OPENCV_SURFACE_MATCHING_PPF_MATCH_3D_HPP__
+#define __OPENCV_SURFACE_MATCHING_PPF_MATCH_3D_HPP__
 
 #include <opencv2/core.hpp>
 

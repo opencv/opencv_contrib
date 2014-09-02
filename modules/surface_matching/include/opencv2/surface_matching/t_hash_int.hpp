@@ -38,8 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#ifndef __OPENCV_T_HASH_INT_HPP__
-#define __OPENCV_T_HASH_INT_HPP__
+#ifndef __OPENCV_SURFACE_MATCHING_T_HASH_INT_HPP__
+#define __OPENCV_SURFACE_MATCHING_T_HASH_INT_HPP__
 
 #include <stdio.h>
 #include <stdlib.h>

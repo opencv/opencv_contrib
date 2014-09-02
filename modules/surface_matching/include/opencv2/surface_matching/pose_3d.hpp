@@ -38,8 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#ifndef _OPENCV_POSE3D_HPP_
-#define _OPENCV_POSE3D_HPP_
+#ifndef __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
+#define __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
 
 #include <vector>
 #include <string>

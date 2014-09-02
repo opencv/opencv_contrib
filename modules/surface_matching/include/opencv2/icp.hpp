@@ -46,8 +46,8 @@
   * @author    Tolga Birdal
  */
 
-#ifndef __OPENCV_ICP_HPP__
-#define __OPENCV_ICP_HPP__
+#ifndef __OPENCV_SURFACE_MATCHING_ICP_HPP__
+#define __OPENCV_SURFACE_MATCHING_ICP_HPP__
 
 #include <opencv2/core.hpp>
 
