@@ -108,12 +108,9 @@ int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, 
     return 0;
   }
 
-  //filters1f = aFilter(0.8f, 8);
-  //normalize(filters1f, filters1f, p, 1, NORM_MINMAX);
 
   normalize( filters1f, show3u, 1, 255, NORM_MINMAX, CV_8U );
   _tigF.update( filters1f );
-  //_tigF.reconstruct(filters1f);
 
   _svmSzIdxs = idx1i;
   CV_Assert( _svmSzIdxs.size() > 1 && filters1f.size() == Size(_W, _W) && filters1f.type() == CV_32F );
@@ -145,10 +142,6 @@ void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valB
     Mat im3u, matchCost1f, mag1u;
     resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ) );
     gradientMag( im3u, mag1u );
-
-    //Mat mag1f;
-    //mag1u.convertTo(mag1f, CV_32F);
-    //matchTemplate(mag1f, _svmFilter, matchCost1f, CV_TM_CCORR);
 
     matchCost1f = _tigF.matchTemplate( mag1u );
 
@@ -448,21 +441,6 @@ bool ObjectnessBING::matRead( const std::string& filename, Mat& _M )
   FileStorage fs2( filenamePlusExt, FileStorage::READ );
   Mat M;
   fs2[String( removeExtension( basename( filename ) ).c_str() )] >> M;
-
-  /* FILE* f = fopen(_S(filename), "rb");
-   if (f == NULL)
-   return false;
-   char buf[8];
-   int pre = fread(buf,sizeof(char), 5, f);
-   if (strncmp(buf, "CmMat", 5) != 0)  {
-   printf("Invalidate CvMat data file %s\n", _S(filename));
-   return false;
-   }
-   int headData[3]; // Width, height, type
-   fread(headData, sizeof(int), 3, f);
-   Mat M(headData[1], headData[0], headData[2]);
-   fread(M.data, sizeof(char), M.step * M.rows, f);
-   fclose(f); */
 
   M.copyTo( _M );
   return true;

@@ -63,7 +63,6 @@ class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
 {
 public:
 
-  //StaticSaliencySpectralResidual( const StaticSaliencySpectralResidual::Params &parameters = StaticSaliencySpectralResidual::Params() );
   StaticSaliencySpectralResidual();
   virtual ~StaticSaliencySpectralResidual();
 
@@ -75,7 +74,6 @@ protected:
   AlgorithmInfo* info() const;CV_PROP_RW
   int resImWidth;
   int resImHeight;
-  //Ptr<Size> resizedImageSize;
 
 };
 
@@ -107,15 +105,10 @@ private:
   // classification (and adaptation) functions
   bool fullResolutionDetection( const Mat& image, Mat& highResBFMask );
   bool lowResolutionDetection( const Mat& image, Mat& lowResBFMask );
-  //bool templateUpdate( Mat highResBFMask );
 
   // Background model maintenance functions
   bool templateOrdering();
   bool templateReplacement( const Mat& finalBFMask, const Mat& image );
-
-  // Decision threshold adaptation and Activity control function
-  //bool activityControl(vector<Mat> noisePixelMask);
-  //bool decisionThresholdAdaptation();
 
   // changing structure
   std::vector<Ptr<Mat> > backgroundModel;// The vector represents the background template T0---TK of reference paper.
@@ -124,15 +117,10 @@ private:
   Mat potentialBackground;// Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
                           // and in the secon level there are the Ca value, the counter for each potential value.
   Mat epslonPixelsValue;  // epslon threshold
-  //Mat activityPixelsValue; // Activity level of each pixel
-  //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
-  // detection process,however, after the low resolution detection, it has become a
-  // background pixel. In a noise-pixel mask, the identified noise-pixels are set to 1 while other pixels are 0;
 
   //fixed parameter
   bool neighborhoodCheck;
   int N_DS;// Number of template to be downsampled and used in lowResolutionDetection function
-  //Ptr<Size> imgSize;
   int imageWidth;// Width of input image
   int imageHeight;//Height of input image
   int K;// Number of background model template
@@ -144,12 +132,6 @@ private:
   int gamma;// Parameter that controls the time that the newly updated long-term background value will remain in the
             // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
             //restrain the generation of ghosts.
-  //int Ainc; // Activity Incrementation;
-  //int Bmax; // Upper-bound value for pixel activity
-  //int Bth;  // Max activity threshold
-  //int Binc, Bdec; // Threshold for pixel-level decision threshold (epslon) adaptation
-  //int deltaINC, deltaDEC; // Increment-decrement value for epslon adaptation
-  //int epslonMIN, epslonMAX; // Range values for epslon threshold
 
 };
 
@@ -254,7 +236,6 @@ private:
   // List of the rectangles' objectness value, in the same order as
   // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
   std::vector<float> objectnessValues;
-  //vector<Vec4i> objectnessBoundingBox;
 
 private:
   // functions

@@ -145,7 +145,7 @@ int main( int argc, char** argv )
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
-
+        std::cout << "Objectness done" << std::endl;
       }
     }
 
@@ -169,7 +169,7 @@ int main( int argc, char** argv )
         Mat saliencyMap;
         if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )
         {
-          //std::cout << "motion saliency done" << std::endl;
+          std::cout << "current frame motion saliency done" << std::endl;
         }
 
         imshow( "image", frame );

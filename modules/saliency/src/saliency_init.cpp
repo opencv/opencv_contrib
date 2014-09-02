@@ -50,7 +50,6 @@ namespace saliency
 CV_INIT_ALGORITHM( StaticSaliencySpectralResidual, "SALIENCY.SPECTRAL_RESIDUAL",
                    obj.info()->addParam( obj, "resImWidth", obj.resImWidth); obj.info()->addParam( obj, "resImHeight", obj.resImHeight) );
 
-//CV_INIT_ALGORITHM( MotionSaliencySuBSENSE, "SALIENCY.SuBSENSE", );
 
 CV_INIT_ALGORITHM(
     ObjectnessBING, "SALIENCY.BING",

@@ -75,7 +75,6 @@ class CV_EXPORTS Saliency : public virtual Algorithm
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
-  //bool computeSaliency( const Mat& image, Mat& saliencyMap );
   bool computeSaliency( const InputArray image, OutputArray saliencyMap );
 
   /**
@@ -85,7 +84,7 @@ class CV_EXPORTS Saliency : public virtual Algorithm
   String getClassName() const;
 
  protected:
-  //virtual bool computeSaliencyImpl( const Mat& image, Mat& saliencyMap ) = 0;
+
   virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap ) = 0;
   String className;
 };

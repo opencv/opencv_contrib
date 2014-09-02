@@ -102,33 +102,5 @@ Mat CmShow::HistBins( CMat& color3f, CMat& val, CStr& title, bool descendShow, C
   return showImg3b;
 }
 
-/* void CmShow::showTinyMat(CStr &title, CMat &m)
- {
- int scale = 50, sz = m.rows * m.cols;
- while (sz > 200){
- scale /= 2;
- sz /= 4;
- }
-
- Mat img;
- resize(m, img, Size(), scale, scale, INTER_NEAREST );
- if (img.channels() == 3)
- cvtColor(img, img, COLOR_RGB2BGR);
- SaveShow(img, title);
- }
-
- void CmShow::SaveShow(CMat& img, CStr& title)
- {
- if (title.size() == 0)
- return;
-
- int mDepth = CV_MAT_DEPTH(img.type());
- double scale = (mDepth == CV_32F || mDepth == CV_64F ? 255 : 1);
- if (title.size() > 4 && title[title.size() - 4] == '.')
- imwrite(String(title.c_str()), img*scale);
- else if (title.size())
- imshow(String(title.c_str()), img);
- } */
-
 }  // namespace saliency
 }  // namespace cv

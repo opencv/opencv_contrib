@@ -51,15 +51,6 @@ namespace cv
 namespace saliency
 {
 
-/* cv::Ptr<Size> MotionSaliencyBinWangApr2014::getWsize()
- {
- return imgSize;
- }
- void MotionSaliencyBinWangApr2014::setWsize( const cv::Ptr<Size>& newSize )
- {
- imgSize = newSize;
- } */
-
 void MotionSaliencyBinWangApr2014::setImagesize( int W, int H )
 {
   imageWidth = W;
@@ -91,7 +82,6 @@ bool MotionSaliencyBinWangApr2014::init()
   // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
 
   potentialBackground = Mat( imgSize.height, imgSize.width, CV_32FC2, Scalar( NAN, 0 ) );
-  //backgroundModel = std::vector<Mat>( K + 1, Mat::zeros( imgSize->height, imgSize->width, CV_32FC2 ) );
 
   backgroundModel.resize( K + 1 );
 
@@ -121,17 +111,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
   float currentPixelValue;
   float currentEpslonValue;
   bool backgFlag = false;
-
-  /*  for ( int i = 0; i <= K; i++ )
-   {
-   vector<Mat> spl;
-   split( * ( backgroundModel[i] ), spl );
-   stringstream windowTitle;
-   windowTitle << "TEST_t" << i << "B";
-   Mat convert;
-   spl[0].convertTo( convert, CV_8UC1 );
-   imshow( windowTitle.str().c_str(), convert );
-   }*/
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
   highResBFMask.create( image.rows, image.cols, CV_32F );
@@ -176,12 +155,10 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
           //continue;
           if( ( *currentC ) > 0 )  //The current template is active
           {
-            //cout<< "DIFFERENCE: "<<abs( currentPixelValue -  ( *currentB ) )<<endl;
             // If there is a match with a current background template
             if( abs( currentPixelValue - ( *currentB ) ) < currentEpslonValue && !backgFlag )
             {
               // The correspondence pixel in the  BF mask is set as background ( 0 value)
-              //highResBFMask.at<uchar>( i, j ) = 0;
               pMask[j] = 0;
               if( ( *currentC < L0 && z == 0 ) || ( *currentC < L1 && z == 1 ) || ( z > 1 ) )
               {
@@ -190,7 +167,6 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
 
               *currentB = ( ( 1 - alpha ) * ( *currentB ) ) + ( alpha * currentPixelValue );  // Update the template value
               backgFlag = true;
-              //break;
             }
             else
             {
@@ -347,7 +323,6 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
       }
 
       // SORT Template T0 and T1
-      //if( backgroundModel[1]->at<Vec2f>( i, j )[1] > thetaL && backgroundModel[0]->at<Vec2f>( i, j )[1] < thetaL )
       if( bgModel_1P[j][1] > thetaL && bgModel_0P[j][1] < thetaL )
       {
 
@@ -367,17 +342,6 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 }
 bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, const Mat& image )
 {
-  /* Mat test( image.rows, image.cols, CV_8U );
-   for ( int i = 0; i < test.rows; i++ )
-   {
-   for ( int j = 0; j < test.cols; j++ )
-   {
-
-   test.at<uchar>( i, j ) = (int) potentialBackground.at<Vec2f>( i, j )[0];
-   }
-   }
-   imshow( "test_BA", test );*/
-
   std::vector<Mat> temp;
   split( *backgroundModel[0], temp );
 
@@ -451,9 +415,6 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               // Neighborhood of current pixel in the current background model template.
               // The ROI is centered in the pixel coordinates
 
-              /*if( ( i - floor( roiSize / 2 ) >= 0 ) && ( j - floor( roiSize / 2 ) >= 0 )
-               && ( i + floor( roiSize / 2 ) <= ( backgroundModel[z].rows - 1 ) )
-               && ( j + floor( roiSize / 2 ) <= ( backgroundModel[z].cols - 1 ) ) ) */
               if( i > 0 && j > 0 && i < ( backgroundModel[z]->rows - 1 ) && j < ( backgroundModel[z]->cols - 1 ) )
               {
                 split( *backgroundModel[z], mv );
@@ -550,26 +511,14 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
   fullResolutionDetection( image.getMat(), highResBFMask );
   lowResolutionDetection( image.getMat(), lowResBFMask );
 
-  /*imshow( "highResBFMask", highResBFMask * 255 );
-   imshow( "lowResBFMask", lowResBFMask * 255 );
-   */
 
 // Compute the final background-foreground mask. One pixel is marked as foreground if and only if it is
 // foreground in both masks (full and low)
   bitwise_and( highResBFMask, lowResBFMask, saliencyMap );
 
-// Detect the noise pixels (i.e. for a given pixel, fullRes(pixel) = foreground and lowRes(pixel)= background)
-  //bitwise_not( lowResBFMask, not_lowResBFMask );
-  //bitwise_and( highResBFMask, not_lowResBFMask, noisePixelsMask );
-
   templateOrdering();
   templateReplacement( saliencyMap.getMat(), image.getMat() );
   templateOrdering();
-
-  /* Mat kernel = getStructuringElement( MORPH_RECT, Size( 3, 3 ));
-   Mat kernel2 = getStructuringElement( MORPH_RECT, Size( 3, 3 ));
-   morphologyEx(saliencyMap.getMat(), saliencyMap.getMat(), MORPH_OPEN, kernel);
-   morphologyEx(saliencyMap.getMat(), saliencyMap.getMat(), MORPH_CLOSE, kernel2);*/
 
   return true;
 }

@@ -53,11 +53,9 @@
 #include <time.h>
 #include <fstream>
 #include <stdint.h>
-//#include <omp.h>
 
 // TODO: reference additional headers your program requires here
-//#include "LibLinear/linear.h"
-//#include <opencv2/opencv.hpp>
+
 #include "opencv2/core.hpp"
 
 #define CV_VERSION_ID CVAUX_STR(CV_MAJOR_VERSION) CVAUX_STR(CV_MINOR_VERSION) CVAUX_STR(CV_SUBMINOR_VERSION)
@@ -66,10 +64,6 @@
 #else
 #define cvLIB(name) "opencv_" name CV_VERSION_ID
 #endif
-
-//#pragma comment( lib, cvLIB("core"))
-//#pragma comment( lib, cvLIB("imgproc"))
-//#pragma comment( lib, cvLIB("highgui"))
 
 #ifdef WIN32
 /* windows stuff */
@@ -121,13 +115,6 @@ enum
 template<typename T>
 static inline int findFromList( const T &word, const std::vector<T> &strList )
 {
-  //TODO delete test code
-  //cout << "\n\n" << "word" <<" "<< word << endl;
-  for ( int i = 0; i < strList.size(); i++ )
-  {
-    //cout <<"test word:"<< word << " " << endl;
-    //cout << "Size w " << word.size() << " Size L "<< strList[i].size() << endl;
-  }
 
   std::vector<cv::String>::iterator it = std::find( strList.begin(), strList.end(), word );
   if( it == strList.end() )
@@ -138,21 +125,8 @@ static inline int findFromList( const T &word, const std::vector<T> &strList )
   {
     int index = it - strList.begin();
     return index;
-    //vector<String>::iterator index = std::distance( strList.begin(), it );
-    //cout << "index" <<" "<< index << endl;
-    //return int( index );
   }
 }
-/*template<typename T>
- static inline int findFromList(const string &word, const vector<T> &strList) {
- //for(int i=0; i<strList.size(); i++){
- //cout <<"element: " <<strList[i]<<" "<<word << endl;
- //if (std::strcmp(word.c_str(),strList[i].c_str())==0) return i;
- }
-
- return -1;
- }
- */
 
 template<typename T> inline T sqr( T x )
 {
@@ -174,15 +148,7 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 {
   return cv::Rect( cv::Point( v[0] - 1, v[1] - 1 ), cv::Point( v[2], v[3] ) );
 }
-/*
-#ifdef __WIN32
-#define INT64 long long
-#else
-#define INT64 long
-typedef unsigned long UINT64_;
-//#define UINT64 unsigned long
-#endif
-*/
+
 
  #if defined(_MSC_VER)
  # include <intrin.h>
@@ -287,7 +253,5 @@ inline int popcnt_byte( register uint32_t u )
 
 }
 }
-
-/////
 
 #endif // KYHEADER_H

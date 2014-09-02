@@ -50,21 +50,12 @@ namespace saliency
  * SaliencySpectralResidual
  */
 
-/*cv::Ptr<Size> StaticSaliencySpectralResidual::getWsize()
- {
- return resizedImageSize;
- }
- void StaticSaliencySpectralResidual::setWsize( const cv::Ptr<Size>& newSize )
- {
- resizedImageSize = newSize;
- }*/
 
 StaticSaliencySpectralResidual::StaticSaliencySpectralResidual()
 {
   className = "SPECTRAL_RESIDUAL";
   resImWidth = 64;
   resImHeight = 64;
-  //resizedImageSize = Ptr<Size>( new Size( 64, 64 ) );
 }
 
 StaticSaliencySpectralResidual::~StaticSaliencySpectralResidual()
