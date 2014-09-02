@@ -58,8 +58,8 @@ IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVP
 #include <opencv2/core.hpp>
 
 #include <vector>
-#include "surface_matching/pose_3d.hpp"
-#include "surface_matching/t_hash_int.hpp"
+#include "pose_3d.hpp"
+#include "t_hash_int.hpp"
 
 namespace cv
 {

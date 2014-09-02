@@ -51,7 +51,7 @@
 
 #include <opencv2/core.hpp>
 
-#include "surface_matching/pose_3d.hpp"
+#include "pose_3d.hpp"
 #include <vector>
 
 namespace cv

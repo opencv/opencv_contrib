@@ -38,7 +38,7 @@
 #ifndef __OPENCV_SURFACE_MATCHING_HPP__
 #define __OPENCV_SURFACE_MATCHING_HPP__
 
-#include "ppf_match_3d.hpp"
-#include "icp.hpp"
+#include "surface_matching/ppf_match_3d.hpp"
+#include "surface_matching/icp.hpp"
 
 #endif

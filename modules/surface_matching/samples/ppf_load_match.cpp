@@ -38,9 +38,8 @@
 //
 // Author: Tolga Birdal <tbirdal AT gmail.com>
 
-#include "opencv2/ppf_match_3d.hpp"
+#include "opencv2/surface_matching.hpp"
 #include <iostream>
-#include "opencv2/icp.hpp"
 #include "opencv2/surface_matching/ppf_helpers.hpp"
 #include "opencv2/core/utility.hpp"
 
