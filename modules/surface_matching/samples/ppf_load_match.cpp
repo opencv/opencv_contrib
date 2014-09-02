@@ -47,24 +47,24 @@ using namespace std;
 using namespace cv;
 using namespace ppf_match_3d;
 
-static void help(std::string errorMessage)
+static void help(const string& errorMessage)
 {
-    std::cout<<"Program init error : "<<errorMessage<<std::endl;
-    std::cout<<"\nUsage : ppf_matching [input model file] [input scene file]"<<std::endl;
-    std::cout<<"\nPlease start again with new parameters"<<std::endl;
+    cout << "Program init error : "<< errorMessage << endl;
+    cout << "\nUsage : ppf_matching [input model file] [input scene file]"<< endl;
+    cout << "\nPlease start again with new parameters"<< endl;
 }
 
 int main(int argc, char** argv)
 {
     // welcome message
-    std::cout<< "****************************************************"<<std::endl;
-    std::cout<< "* Surface Matching demonstration : demonstrates the use of surface matching"
-             " using point pair features."<<std::endl;
-    std::cout<< "* The sample loads a model and a scene, where the model lies in a different"
+    cout << "****************************************************" << endl;
+    cout << "* Surface Matching demonstration : demonstrates the use of surface matching"
+             " using point pair features." << endl;
+    cout << "* The sample loads a model and a scene, where the model lies in a different"
              " pose than the training.\n* It then trains the model and searches for it in the"
              " input scene. The detected poses are further refined by ICP\n* and printed to the "
-             " standard output."<<std::endl;
-    std::cout<< "****************************************************"<<std::endl;
+             " standard output." << endl;
+    cout << "****************************************************" << endl;
     
     if (argc < 3)
     {
@@ -73,15 +73,15 @@ int main(int argc, char** argv)
     }
     
 #if (defined __x86_64__ || defined _M_X64)
-    std::cout << "Running on 64 bits" << std::endl;
+    cout << "Running on 64 bits" << endl;
 #else
-    std::cout << "Running on 32 bits" << std::endl;
+    cout << "Running on 32 bits" << endl;
 #endif
     
 #ifdef _OPENMP
-    std::cout << "Running with OpenMP" << std::endl;
+    cout << "Running with OpenMP" << endl;
 #else
-    std::cout << "Running without OpenMP and without TBB" << std::endl;
+    cout << "Running without OpenMP and without TBB" << endl;
 #endif
     
     string modelFileName = (string)argv[1];

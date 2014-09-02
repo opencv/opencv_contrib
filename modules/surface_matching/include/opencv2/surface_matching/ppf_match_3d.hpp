@@ -36,6 +36,7 @@
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
 //
+
 /**
 ** ppf_match_3d : Interfaces for matching 3d surfaces in 3d scenes. This module implements the algorithm from Bertram Drost and Slobodan Ilic.
 ** Use: Read a 3D model, load a 3D scene and match the model to the scene
@@ -69,9 +70,9 @@ namespace ppf_match_3d
 #define T_PPF_LENGTH 5
 
 /**
-* @struct THash
-* @brief Struct, holding a node in the hashtable
-*/
+  * @struct THash
+  * @brief Struct, holding a node in the hashtable
+  */
 typedef struct THash
 {
     int id;
@@ -79,97 +80,97 @@ typedef struct THash
 } THash;
 
 /**
-* @class PPF3DDetector
-* @brief Class, allowing the load and matching 3D models.
-* Typical Use:
-*
-* // Train a model
-*   ppf_match_3d::PPF3DDetector detector(0.05, 0.05);
-* detector.trainModel(pc);
-* // Search the model in a given scene
-*   vector < Pose3D* > results;
-* detector.match(pcTest, results, 1.0/5.0,0.05);
-*
-*/
+  * @class PPF3DDetector
+  * @brief Class, allowing the load and matching 3D models.
+  * Typical Use:
+  *
+  * // Train a model
+  *   ppf_match_3d::PPF3DDetector detector(0.05, 0.05);
+  * detector.trainModel(pc);
+  * // Search the model in a given scene
+  *   vector < Pose3D* > results;
+  * detector.match(pcTest, results, 1.0/5.0,0.05);
+  *
+  */
 class CV_EXPORTS PPF3DDetector
 {
-    public:
-    
-        /**
-         * \brief Empty constructor. Sets default arguments
-         */
-        PPF3DDetector();
-        
-        /**
-        * Constructor with arguments
-        * @param [in] relativeSamplingStep Sampling distance relative to the object's diameter. Models are first sampled uniformly in order to improve efficiency. Decreasing this value leads to a denser model, and a more accurate pose estimation but the larger the model, the slower the training. Increasing the value leads to a less accurate pose computation but a smaller model and faster model generation and matching. Beware of the memory consumption when using small values.
-        * @param [in] relativeDistanceStep The discretization distance of the point pair distance relative to the model's diameter. This value has a direct impact on the hashtable. Using small values would lead to too fine discretization, and thus ambiguity in the bins of hashtable. Too large values would lead to no discrimination over the feature vectors and different point pair features would be assigned to the same bin. This argument defaults to the value of RelativeSamplingStep. For noisy scenes, the value can be increased to improve the robustness of the matching against noisy points.
-        * @param [in] numAngles Set the discretization of the point pair orientation as the number of subdivisions of the angle. This value is the equivalent of RelativeDistanceStep for the orientations. Increasing the value increases the precision of the matching but decreases the robustness against incorrect normal directions. Decreasing the value decreases the precision of the matching but increases the robustness against incorrect normal directions. For very noisy scenes where the normal directions can not be computed accurately, the value can be set to 25 or 20.
-        */
-        PPF3DDetector(const double relativeSamplingStep, const double relativeDistanceStep=0.05, const double numAngles=30);
-        
-        virtual ~PPF3DDetector();
-        
-        /**
-        *  Set the parameters for the search
-        *  @param [in] numPoses The maximum number of poses to return
-        *  @param [in] positionThreshold Position threshold controlling the similarity of translations. Depends on the units of calibration/model.
-        *  @param [in] rotationThreshold Position threshold controlling the similarity of rotations. This parameter can be perceived as a threshold over the difference of angles
-        *  @param [in] minMatchScore Not used at the moment
-        *  @param [in] useWeightedClustering The algorithm by default clusters the poses without weighting. A non-zero value would indicate that the pose clustering should take into account the number of votes as the weights and perform a weighted averaging instead of a simple one.
-        */
-        void setSearchParams(const int numPoses=5, const double positionThreshold=-1, const double rotationThreshold=-1, const double minMatchScore=0.5, const bool useWeightedClustering=false);
-        
-        /**
-        *  \brief Trains a new model. 
-        *
-        *  @param [in] Model The input point cloud with normals (Nx6)
-        *
-        *  \details Uses the parameters set in the constructor to downsample and learn a new model. When the model is learnt, the instance gets ready for calling "match".
-        */
-        void trainModel(const Mat& Model);
-        
-        /**
-        *  \brief Matches a trained model across a provided scene.
-        *
-        *  @param [in] scene Point cloud for the scene
-        *  @param [out] results List of output poses
-        *  @param [in] relativeSceneSampleStep The ratio of scene points to be used for the matching after sampling with relativeSceneDistance. For example, if this value is set to 1.0/5.0, every 5th point from the scene is used for pose estimation. This parameter allows an easy trade-off between speed and accuracy of the matching. Increasing the value leads to less points being used and in turn to a faster but less accurate pose computation. Decreasing the value has the inverse effect.
-        *  @param [in] relativeSceneDistance Set the distance threshold relative to the diameter of the model. This parameter is equivalent to relativeSamplingStep in the training stage. This parameter acts like a prior sampling with the relativeSceneSampleStep parameter.
-        */
-        void match(const Mat& scene, std::vector<Pose3D*>& results, const double relativeSceneSampleStep=1.0/5.0, const double relativeSceneDistance=0.03);
-        
-        void read(const FileNode& fn);
-        void write(FileStorage& fs) const;
-        
-    protected:
-    
-        double maxDist, angle_step, angleStepRadians, distance_step;
-        double samplingStepRelative, angleStepRelative, distanceStepRelative;
-        Mat inputPC, sampledPC, PPF;
-        int num_ref_points, sampled_step, ppf_step;
-        hashtable_int* hash_table;
-        THash* hash_nodes;
-        
-        int NumPoses;
-        double PositionThreshold, RotationThreshold, MinMatchScore;
-        bool UseWeightedAvg;
-        
-        float sampleStepSearch;
-        int SceneSampleStep;
-        
-        void clearTrainingModels();
-        
-    private:
-        void computePPFFeatures( const double p1[4], const double n1[4],
-                                 const double p2[4], const double n2[4],
-                                 double f[4]);
-                                 
-        bool matchPose(const Pose3D& sourcePose, const Pose3D& targetPose);
-        
-        int clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pose3D*>& finalPoses);
-        
-        bool trained;
+public:
+
+  /**
+   * \brief Empty constructor. Sets default arguments
+   */
+  PPF3DDetector();
+
+  /**
+    * Constructor with arguments
+    * @param [in] relativeSamplingStep Sampling distance relative to the object's diameter. Models are first sampled uniformly in order to improve efficiency. Decreasing this value leads to a denser model, and a more accurate pose estimation but the larger the model, the slower the training. Increasing the value leads to a less accurate pose computation but a smaller model and faster model generation and matching. Beware of the memory consumption when using small values.
+    * @param [in] relativeDistanceStep The discretization distance of the point pair distance relative to the model's diameter. This value has a direct impact on the hashtable. Using small values would lead to too fine discretization, and thus ambiguity in the bins of hashtable. Too large values would lead to no discrimination over the feature vectors and different point pair features would be assigned to the same bin. This argument defaults to the value of RelativeSamplingStep. For noisy scenes, the value can be increased to improve the robustness of the matching against noisy points.
+    * @param [in] numAngles Set the discretization of the point pair orientation as the number of subdivisions of the angle. This value is the equivalent of RelativeDistanceStep for the orientations. Increasing the value increases the precision of the matching but decreases the robustness against incorrect normal directions. Decreasing the value decreases the precision of the matching but increases the robustness against incorrect normal directions. For very noisy scenes where the normal directions can not be computed accurately, the value can be set to 25 or 20.
+    */
+  PPF3DDetector(const double relativeSamplingStep, const double relativeDistanceStep=0.05, const double numAngles=30);
+
+  virtual ~PPF3DDetector();
+
+  /**
+    *  Set the parameters for the search
+    *  @param [in] numPoses The maximum number of poses to return
+    *  @param [in] positionThreshold Position threshold controlling the similarity of translations. Depends on the units of calibration/model.
+    *  @param [in] rotationThreshold Position threshold controlling the similarity of rotations. This parameter can be perceived as a threshold over the difference of angles
+    *  @param [in] minMatchScore Not used at the moment
+    *  @param [in] useWeightedClustering The algorithm by default clusters the poses without weighting. A non-zero value would indicate that the pose clustering should take into account the number of votes as the weights and perform a weighted averaging instead of a simple one.
+    */
+  void setSearchParams(const int numPoses=5, const double positionThreshold=-1, const double rotationThreshold=-1, const double minMatchScore=0.5, const bool useWeightedClustering=false);
+
+  /**
+    *  \brief Trains a new model.
+    *
+    *  @param [in] Model The input point cloud with normals (Nx6)
+    *
+    *  \details Uses the parameters set in the constructor to downsample and learn a new model. When the model is learnt, the instance gets ready for calling "match".
+    */
+  void trainModel(const Mat& Model);
+
+  /**
+    *  \brief Matches a trained model across a provided scene.
+    *
+    *  @param [in] scene Point cloud for the scene
+    *  @param [out] results List of output poses
+    *  @param [in] relativeSceneSampleStep The ratio of scene points to be used for the matching after sampling with relativeSceneDistance. For example, if this value is set to 1.0/5.0, every 5th point from the scene is used for pose estimation. This parameter allows an easy trade-off between speed and accuracy of the matching. Increasing the value leads to less points being used and in turn to a faster but less accurate pose computation. Decreasing the value has the inverse effect.
+    *  @param [in] relativeSceneDistance Set the distance threshold relative to the diameter of the model. This parameter is equivalent to relativeSamplingStep in the training stage. This parameter acts like a prior sampling with the relativeSceneSampleStep parameter.
+    */
+  void match(const Mat& scene, std::vector<Pose3D*>& results, const double relativeSceneSampleStep=1.0/5.0, const double relativeSceneDistance=0.03);
+
+  void read(const FileNode& fn);
+  void write(FileStorage& fs) const;
+
+protected:
+
+  double maxDist, angle_step, angleStepRadians, distance_step;
+  double samplingStepRelative, angleStepRelative, distanceStepRelative;
+  Mat inputPC, sampledPC, PPF;
+  int num_ref_points, sampled_step, ppf_step;
+  hashtable_int* hash_table;
+  THash* hash_nodes;
+
+  int NumPoses;
+  double PositionThreshold, RotationThreshold, MinMatchScore;
+  bool UseWeightedAvg;
+
+  float sampleStepSearch;
+  int SceneSampleStep;
+
+  void clearTrainingModels();
+
+private:
+  void computePPFFeatures(const double p1[4], const double n1[4],
+                          const double p2[4], const double n2[4],
+                          double f[4]);
+
+  bool matchPose(const Pose3D& sourcePose, const Pose3D& targetPose);
+
+  int clusterPoses(Pose3D** poseList, int numPoses, std::vector<Pose3D*>& finalPoses);
+
+  bool trained;
 };
 
 } // namespace ppf_match_3d
