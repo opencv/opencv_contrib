@@ -89,9 +89,9 @@ public:
 
   ICP()
   {
-    m_tolerence = 0.005f;
+    m_tolerance = 0.005f;
     m_rejectionScale = 2.5f;
-    m_maxItereations = 250;
+    m_maxIterations = 250;
     m_numLevels = 6;
     m_sampleType = ICP_SAMPLING_TYPE_UNIFORM;
     m_numNeighborsCorr = 1;
@@ -112,10 +112,10 @@ public:
      */
   ICP(const int iterations, const float tolerence=0.05, const float rejectionScale=2.5, const int numLevels=6, const ICP_SAMPLING_TYPE sampleType = ICP_SAMPLING_TYPE_UNIFORM, const int numMaxCorr=1)
   {
-    m_tolerence = tolerence;
+    m_tolerance = tolerence;
     m_numNeighborsCorr = numMaxCorr;
     m_rejectionScale = rejectionScale;
-    m_maxItereations = iterations;
+    m_maxIterations = iterations;
     m_numLevels = numLevels;
     m_sampleType = sampleType;
   }
@@ -147,8 +147,8 @@ public:
   int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3D*>& poses);
 
 private:
-  float m_tolerence;
-  int m_maxItereations;
+  float m_tolerance;
+  int m_maxIterations;
   float m_rejectionScale;
   int m_numNeighborsCorr;
   int m_numLevels;

@@ -133,12 +133,12 @@ int main(int argc, char** argv)
     // debug first five poses
     for (size_t i=0; i<resultsSub.size(); i++)
     {
-        Pose3D* pose = resultsSub[i];
+        Pose3D* result = resultsSub[i];
         cout << "Pose Result " << i << endl;
-        pose->printPose();
+        result->printPose();
         if (i==0)
         {
-            Mat pct = transformPCPose(pc, pose->Pose);
+            Mat pct = transformPCPose(pc, result->pose);
             writePLY(pct, "para6700PCTrans.ply");
         }
     }

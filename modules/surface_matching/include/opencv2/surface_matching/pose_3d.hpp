@@ -66,7 +66,7 @@ public:
     residual = 0;
 
     for (int i=0; i<16; i++)
-      Pose[i]=0;
+      pose[i]=0;
   }
 
   Pose3D(double Alpha, unsigned int ModelIndex=0, unsigned int NumVotes=0)
@@ -77,7 +77,7 @@ public:
     residual=0;
 
     for (int i=0; i<16; i++)
-      Pose[i]=0;
+      pose[i]=0;
   }
 
   /**
@@ -117,7 +117,7 @@ public:
   double alpha, residual;
   unsigned int modelIndex;
   unsigned int numVotes;
-  double Pose[16], angle, t[3], q[4];
+  double pose[16], angle, t[3], q[4];
 };
 
 /**

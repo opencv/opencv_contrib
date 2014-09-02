@@ -338,8 +338,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& Residu
     double div = pow((double)impact, (double)level);
     //double div2 = div*div;
     const int numSamples = cvRound((double)(n/(div)));
-    const double TolP = m_tolerence*(double)(level+1)*(level+1);
-    const int MaxIterationsPyr = cvRound((double)m_maxItereations/(level+1));
+    const double TolP = m_tolerance*(double)(level+1)*(level+1);
+    const int MaxIterationsPyr = cvRound((double)m_maxIterations/(level+1));
 
     // Obtain the sampled point clouds for this level: Also rotates the normals
     Mat srcPCT = transformPCPose(srcPC0, Pose);
@@ -546,10 +546,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Po
 {
   for (size_t i=0; i<poses.size(); i++)
   {
-    double PoseICP[16]={0};
-    Mat srcTemp = transformPCPose(srcPC, poses[i]->Pose);
-    registerModelToScene(srcTemp, dstPC, poses[i]->residual, PoseICP);
-    poses[i]->appendPose(PoseICP);
+    double poseICP[16]={0};
+    Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
+    registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
+    poses[i]->appendPose(poseICP);
   }
 
   return 0;

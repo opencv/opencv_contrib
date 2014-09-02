@@ -67,16 +67,14 @@ namespace cv
 namespace ppf_match_3d
 {
 
-#define T_PPF_LENGTH 5
-
 /**
   * @struct THash
   * @brief Struct, holding a node in the hashtable
   */
 typedef struct THash
 {
-    int id;
-    int i, ppfInd;
+  int id;
+  int i, ppfInd;
 } THash;
 
 /**
@@ -113,13 +111,11 @@ public:
 
   /**
     *  Set the parameters for the search
-    *  @param [in] numPoses The maximum number of poses to return
     *  @param [in] positionThreshold Position threshold controlling the similarity of translations. Depends on the units of calibration/model.
     *  @param [in] rotationThreshold Position threshold controlling the similarity of rotations. This parameter can be perceived as a threshold over the difference of angles
-    *  @param [in] minMatchScore Not used at the moment
     *  @param [in] useWeightedClustering The algorithm by default clusters the poses without weighting. A non-zero value would indicate that the pose clustering should take into account the number of votes as the weights and perform a weighted averaging instead of a simple one.
     */
-  void setSearchParams(const int numPoses=5, const double positionThreshold=-1, const double rotationThreshold=-1, const double minMatchScore=0.5, const bool useWeightedClustering=false);
+  void setSearchParams(const double positionThreshold=-1, const double rotationThreshold=-1, const bool useWeightedClustering=false);
 
   /**
     *  \brief Trains a new model.
@@ -145,19 +141,17 @@ public:
 
 protected:
 
-  double maxDist, angle_step, angleStepRadians, distance_step;
-  double samplingStepRelative, angleStepRelative, distanceStepRelative;
-  Mat inputPC, sampledPC, PPF;
-  int num_ref_points, sampled_step, ppf_step;
+  double angle_step, angle_step_radians, distance_step;
+  double sampling_step_relative, angle_step_relative, distance_step_relative;
+  Mat sampled_pc, ppf;
+  int num_ref_points, ppf_step;
   hashtable_int* hash_table;
   THash* hash_nodes;
 
-  int NumPoses;
-  double PositionThreshold, RotationThreshold, MinMatchScore;
-  bool UseWeightedAvg;
+  double position_threshold, rotation_threshold;
+  bool use_weighted_avg;
 
-  float sampleStepSearch;
-  int SceneSampleStep;
+  int scene_sample_step;
 
   void clearTrainingModels();
 
