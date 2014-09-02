@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef GR_SKIG_H
-#define GR_SKIG_H
+#ifndef OPENCV_DATASETSTOOLS_TR_CHARS_HPP
+#define OPENCV_DATASETSTOOLS_TR_CHARS_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,26 +54,28 @@ namespace cv
 namespace datasetstools
 {
 
-struct gestureSkig
+struct character
 {
-    std::string rgb;
-    std::string dep;
-    unsigned char person, background, illumination, pose, actionType;
+    std::string imgName;
+    int label;
 };
 
-class CV_EXPORTS gr_skig : public dataset
+class CV_EXPORTS TR_chars : public Dataset
 {
 public:
-    gr_skig() {}
-    gr_skig(std::string &path);
-    virtual ~gr_skig() {}
+    TR_chars() {}
+    TR_chars(const std::string &path, int number = 0);
+    virtual ~TR_chars() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<gestureSkig> train;
+    std::vector<character> train;
+    std::vector<character> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path, int number = 0);
+
+    void parseLine(const std::string &line, std::vector<int> &currSet, int number);
 };
 
 }

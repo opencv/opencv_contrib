@@ -39,11 +39,13 @@
 //
 //M*/
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef OPENCV_DATASETSTOOLS_TR_SVT_HPP
+#define OPENCV_DATASETSTOOLS_TR_SVT_HPP
 
 #include <string>
 #include <vector>
+
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -52,9 +54,36 @@ namespace cv
 namespace datasetstools
 {
 
-void split(std::string s, std::vector<std::string> &elems, char delim);
+struct tag
+{
+    std::string value;
+    int height, width, x, y;
+};
 
-void getDirList(std::string &dirName, std::vector<std::string> &fileNames);
+struct image
+{
+    std::string fileName;
+    std::vector<std::string> lex;
+    std::vector<tag> tags;
+};
+
+class CV_EXPORTS TR_svt : public Dataset
+{
+public:
+    TR_svt() {}
+    TR_svt(const std::string &path);
+    virtual ~TR_svt() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+    std::vector<image> train;
+    std::vector<image> test;
+
+private:
+    void loadDataset(const std::string &path);
+
+    void xmlParse(const std::string &set, std::vector<image> &out);
+};
 
 }
 }

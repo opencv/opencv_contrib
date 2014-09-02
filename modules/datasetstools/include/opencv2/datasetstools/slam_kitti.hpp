@@ -39,10 +39,13 @@
 //
 //M*/
 
-#ifndef DATASET_H
-#define DATASET_H
+#ifndef OPENCV_DATASETSTOOLS_SLAM_KITTI_HPP
+#define OPENCV_DATASETSTOOLS_SLAM_KITTI_HPP
 
 #include <string>
+#include <vector>
+
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -51,13 +54,33 @@ namespace cv
 namespace datasetstools
 {
 
-class CV_EXPORTS dataset
+struct pose
+{
+    double elem[12];
+};
+
+struct sequence
+{
+    std::string name;
+    std::vector<std::string> images[4];
+    std::vector<std::string> velodyne;
+    std::vector<double> times, p[4];
+    std::vector<pose> posesArray;
+};
+
+class CV_EXPORTS SLAM_kitti : public Dataset
 {
 public:
-    dataset() {}
-    virtual ~dataset() {}
+    SLAM_kitti() {}
+    SLAM_kitti(const std::string &path);
+    virtual ~SLAM_kitti() {}
 
-    virtual void load(std::string &path, unsigned int number = 0) = 0;
+    virtual void load(const std::string &path, int number = 0);
+
+    std::vector<sequence> train;
+
+private:
+    void loadDataset(const std::string &path);
 };
 
 }

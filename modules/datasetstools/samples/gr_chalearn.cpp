@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/gr_chalearn.hpp"
+#include "opencv2/datasetstools/gr_chalearn.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    gr_chalearn dataset(path);
+    GR_chalearn dataset(path);
 
     // ***************
     // dataset contains information for each sample.

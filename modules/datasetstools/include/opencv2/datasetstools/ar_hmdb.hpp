@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef OR_SUN_H
-#define OR_SUN_H
+#ifndef OPENCV_DATASETSTOOLS_AR_HMDB_HPP
+#define OPENCV_DATASETSTOOLS_AR_HMDB_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,25 +54,28 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectSun
+struct action
 {
     std::string name;
-    std::vector<std::string> imageNames;
+    std::vector<std::string> videoNames;
 };
 
-class CV_EXPORTS or_sun : public dataset
+class CV_EXPORTS AR_hmdb : public Dataset
 {
 public:
-    or_sun() {}
-    or_sun(std::string &path);
-    virtual ~or_sun() {}
+    AR_hmdb() {}
+    AR_hmdb(const std::string &path, int number = 0);
+    virtual ~AR_hmdb() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<objectSun> train;
+    std::vector<action> train;
+    std::vector<action> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path, int number = 0);
+
+    void loadAction(const std::string &fileName, std::vector<std::string> &train_, std::vector<std::string> &test_);
 };
 
 }

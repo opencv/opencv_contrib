@@ -39,13 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/tr_chars.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include "opencv2/datasetstools/tr_chars.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -54,33 +49,33 @@ namespace datasetstools
 
 using namespace std;
 
-void tr_chars::parseLine(string &line, vector<int> &currSet, unsigned int number)
+void TR_chars::parseLine(const string &line, vector<int> &currSet, int number)
 {
     vector<string> elems;
     split(line, elems, ' ');
-    if (number>=elems.size())
+    if (number >= (int)elems.size())
     {
         return;
     }
 
     unsigned int ind = atoi(elems[number].c_str());
-    if (ind>0)
+    if (ind > 0)
     {
-        currSet.push_back(ind-1); // take first split
+        currSet.push_back(ind-1);
     }
 }
 
-tr_chars::tr_chars(std::string &path, unsigned int number)
+TR_chars::TR_chars(const string &path, int number)
 {
     loadDataset(path, number);
 }
 
-void tr_chars::load(string &path, unsigned int number)
+void TR_chars::load(const string &path, int number)
 {
     loadDataset(path, number);
 }
 
-void tr_chars::loadDataset(string &path, unsigned int number)
+void TR_chars::loadDataset(const string &path, int number)
 {
     vector<int> allLabels, trainSet, testSet;
     vector<string> allNames;

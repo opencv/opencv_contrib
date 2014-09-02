@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/ir_affine.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include "opencv2/datasetstools/ir_affine.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-ir_affine::ir_affine(std::string &path)
+IR_affine::IR_affine(const string &path)
 {
     loadDataset(path);
 }
 
-void ir_affine::load(string &path, unsigned int number)
+void IR_affine::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void ir_affine::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void ir_affine::loadDataset(string &path)
+void IR_affine::loadDataset(const string &path)
 {
     for (unsigned int i=1; i<=6; ++i)
     {
@@ -86,7 +82,7 @@ void ir_affine::loadDataset(string &path)
             {
                 for (int j=0; j<3; ++j)
                 {
-                    infile >> curr.mat[k][j];
+                    infile >> curr.mat(k, j);
                 }
             }
         }

@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/hpe_parse.hpp"
+#include "opencv2/datasetstools/hpe_parse.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    hpe_parse dataset(path);
+    HPE_parse dataset(path);
 
     // ***************
     // dataset. train & test contain appropriate images

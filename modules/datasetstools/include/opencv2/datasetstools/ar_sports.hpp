@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef TR_SVT_H
-#define TR_SVT_H
+#ifndef OPENCV_DATASETSTOOLS_AR_SPORTS_HPP
+#define OPENCV_DATASETSTOOLS_AR_SPORTS_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,35 +54,28 @@ namespace cv
 namespace datasetstools
 {
 
-struct tag
+struct element
 {
-    std::string value;
-    unsigned int height, width, x, y;
+    std::string videoUrl;
+    std::vector<int> labels;
 };
 
-struct image
-{
-    std::string fileName;
-    std::vector<std::string> lex;
-    std::vector<tag> tags;
-};
-
-class CV_EXPORTS tr_svt : public dataset
+class CV_EXPORTS AR_sports : public Dataset
 {
 public:
-    tr_svt() {}
-    tr_svt(std::string &path);
-    virtual ~tr_svt() {}
+    AR_sports() {}
+    AR_sports(const std::string &path);
+    virtual ~AR_sports() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<image> train;
-    std::vector<image> test;
+    std::vector<element> train;
+    std::vector<element> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 
-    void xmlParse(std::string &set, std::vector<image> &out);
+    void loadDatasetPart(const std::string &fileName, std::vector<element> &dataset_);
 };
 
 }

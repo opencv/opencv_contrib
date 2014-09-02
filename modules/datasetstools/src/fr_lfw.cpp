@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/fr_lfw.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/fr_lfw.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-fr_lfw::fr_lfw(std::string &path)
+FR_lfw::FR_lfw(const string &path)
 {
     loadDataset(path);
 }
 
-void fr_lfw::load(string &path, unsigned int number)
+void FR_lfw::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void fr_lfw::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void fr_lfw::loadDataset(string &path)
+void FR_lfw::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);

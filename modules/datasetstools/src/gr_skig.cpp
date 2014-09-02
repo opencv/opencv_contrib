@@ -39,14 +39,10 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/gr_skig.hpp"
+#include "opencv2/datasetstools/gr_skig.hpp"
+#include "precomp.hpp"
 
-#include <cstdio>
-#include <cstdlib> // atoi
 #include <cstring>
-
-#include <fstream>
 
 namespace cv
 {
@@ -55,12 +51,12 @@ namespace datasetstools
 
 using namespace std;
 
-gr_skig::gr_skig(std::string &path)
+GR_skig::GR_skig(const string &path)
 {
     loadDataset(path);
 }
 
-void gr_skig::load(string &path, unsigned int number)
+void GR_skig::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -70,7 +66,7 @@ void gr_skig::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void gr_skig::loadDataset(string &path)
+void GR_skig::loadDataset(const string &path)
 {
     for (unsigned int i=1; i<=6; ++i)
     {
@@ -94,13 +90,13 @@ void gr_skig::loadDataset(string &path)
             size_t pos = file.find("person_"); // TODO: check ::npos
             curr.person = (unsigned char)atoi( file.substr(pos+strlen("person_"), 1).c_str() );
             pos = file.find("backgroud_");
-            curr.background = (unsigned char)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
+            curr.background = (backgroundType)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
             pos = file.find("illumination_");
-            curr.illumination = (unsigned char)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
+            curr.illumination = (illuminationType)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
             pos = file.find("pose_");
-            curr.pose = (unsigned char)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
+            curr.pose = (poseType)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
             pos = file.find("actionType_");
-            curr.actionType = (unsigned char)atoi( file.substr(pos+strlen("actionType_"), 1).c_str() );
+            curr.type = (actionType)atoi( file.substr(pos+strlen("actionType_"), 2).c_str() );
 
             train.push_back(curr);
         }

@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef FR_LFW_H
-#define FR_LFW_H
+#ifndef OPENCV_DATASETSTOOLS_IS_BSDS_HPP
+#define OPENCV_DATASETSTOOLS_IS_BSDS_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,25 +54,22 @@ namespace cv
 namespace datasetstools
 {
 
-struct face
-{
-    std::string name;
-    std::vector<std::string> images;
-};
-
-class CV_EXPORTS fr_lfw : public dataset
+class CV_EXPORTS IS_bsds : public Dataset
 {
 public:
-    fr_lfw() {}
-    fr_lfw(std::string &path);
-    virtual ~fr_lfw() {}
+    IS_bsds() {}
+    IS_bsds(const std::string &path);
+    virtual ~IS_bsds() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<face> train;
+    std::vector<std::string> train;
+    std::vector<std::string> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
+
+    void loadDatasetPart(const std::string &fileName, std::vector<std::string> &dataset_);
 };
 
 }

@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/is_weizmann.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/is_weizmann.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-is_weizmann::is_weizmann(std::string &path)
+IS_weizmann::IS_weizmann(const string &path)
 {
     loadDataset(path);
 }
 
-void is_weizmann::load(string &path, unsigned int number)
+void IS_weizmann::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void is_weizmann::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void is_weizmann::loadDataset(string &path)
+void IS_weizmann::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);

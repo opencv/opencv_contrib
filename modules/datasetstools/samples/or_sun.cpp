@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/or_sun.hpp"
+#include "opencv2/datasetstools/or_sun.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    or_sun dataset(path);
+    OR_sun dataset(path);
 
     // ***************
     // dataset contains for each object its images.

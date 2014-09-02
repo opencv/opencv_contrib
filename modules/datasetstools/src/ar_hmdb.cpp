@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/ar_hmdb.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/ar_hmdb.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,7 +49,7 @@ namespace datasetstools
 
 using namespace std;
 
-void ar_hmdb::loadAction(string &fileName, vector<string> &train_, vector<string> &test_)
+void AR_hmdb::loadAction(const string &fileName, vector<string> &train_, vector<string> &test_)
 {
     ifstream infile(fileName.c_str());
     string video, label;
@@ -70,20 +66,20 @@ void ar_hmdb::loadAction(string &fileName, vector<string> &train_, vector<string
     }
 }
 
-ar_hmdb::ar_hmdb(string &path, unsigned int number)
+AR_hmdb::AR_hmdb(const string &path, int number)
 {
     loadDataset(path, number);
 }
 
-void ar_hmdb::load(string &path, unsigned int number)
+void AR_hmdb::load(const string &path, int number)
 {
     loadDataset(path, number);
 }
 
-void ar_hmdb::loadDataset(string &path, unsigned int number)
+void AR_hmdb::loadDataset(const string &path, int number)
 {
     // valid number [0,1,2]
-    if (number>2)
+    if (number<0 || number>2)
     {
         return;
     }

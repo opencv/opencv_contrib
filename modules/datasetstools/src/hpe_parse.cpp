@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/hpe_parse.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/hpe_parse.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-hpe_parse::hpe_parse(std::string &path)
+HPE_parse::HPE_parse(const string &path)
 {
     loadDataset(path);
 }
 
-void hpe_parse::load(string &path, unsigned int number)
+void HPE_parse::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void hpe_parse::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void hpe_parse::loadDataset(string &path)
+void HPE_parse::loadDataset(const string &path)
 {
     unsigned int i=0;
     vector<string> fileNames;

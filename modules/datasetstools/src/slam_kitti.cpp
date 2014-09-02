@@ -39,13 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/slam_kitti.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atof
-
-#include <fstream>
+#include "opencv2/datasetstools/slam_kitti.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -54,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-slam_kitti::slam_kitti(std::string &path)
+SLAM_kitti::SLAM_kitti(const string &path)
 {
     loadDataset(path);
 }
 
-void slam_kitti::load(string &path, unsigned int number)
+void SLAM_kitti::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -69,7 +64,7 @@ void slam_kitti::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void slam_kitti::loadDataset(string &path)
+void SLAM_kitti::loadDataset(const string &path)
 {
     string pathSequence(path + "sequences/");
     vector<string> fileNames;

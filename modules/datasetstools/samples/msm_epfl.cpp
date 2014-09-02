@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/msm_epfl.hpp"
+#include "opencv2/datasetstools/msm_epfl.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    msm_epfl dataset(path);
+    MSM_epfl dataset(path);
 
     // ***************
     // dataset contains all information for each image.

@@ -39,11 +39,8 @@
 //
 //M*/
 
-#include "opencv2/msm_middlebury.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/msm_middlebury.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -52,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-msm_middlebury::msm_middlebury(std::string &path)
+MSM_middlebury::MSM_middlebury(const string &path)
 {
     loadDataset(path);
 }
 
-void msm_middlebury::load(string &path, unsigned int number)
+void MSM_middlebury::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -67,7 +64,7 @@ void msm_middlebury::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void msm_middlebury::loadDataset(string &path)
+void MSM_middlebury::loadDataset(const string &path)
 {
     string name(path.substr(0, path.length()-1));
     size_t start = name.rfind('/');

@@ -39,13 +39,11 @@
 //
 //M*/
 
-#ifndef IS_WEIZMANN_H
-#define IS_WEIZMANN_H
+#ifndef OPENCV_DATASETSTOOLS_UTIL_HPP
+#define OPENCV_DATASETSTOOLS_UTIL_HPP
 
 #include <string>
 #include <vector>
-
-#include "opencv2/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,28 +52,9 @@ namespace cv
 namespace datasetstools
 {
 
-struct object
-{
-    std::string imageName;
-    std::string srcBw;
-    std::string srcColor;
-    std::string humanSeg; // TODO: read human segmented
-};
+void split(const std::string s, std::vector<std::string> &elems, char delim);
 
-class CV_EXPORTS is_weizmann : public dataset
-{
-public:
-    is_weizmann() {}
-    is_weizmann(std::string &path);
-    virtual ~is_weizmann() {}
-
-    virtual void load(std::string &path, unsigned int number = 0);
-
-    std::vector<object> train;
-
-private:
-    void loadDataset(std::string &path);
-};
+void getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
 
 }
 }

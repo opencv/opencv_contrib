@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
+#include "opencv2/datasetstools/util.hpp"
 
 #include <cstdlib>
 
@@ -60,7 +60,7 @@ namespace datasetstools
 
 using namespace std;
 
-void split(string s, vector<string> &elems, char delim)
+void split(const string s, vector<string> &elems, char delim)
 {
     stringstream ss(s);
     string item;
@@ -70,7 +70,7 @@ void split(string s, vector<string> &elems, char delim)
     }
 }
 
-void getDirList(string &dirName, vector<string> &fileNames)
+void getDirList(const string &dirName, vector<string> &fileNames)
 {
 #ifdef __GNUC__
     struct dirent **namelist;

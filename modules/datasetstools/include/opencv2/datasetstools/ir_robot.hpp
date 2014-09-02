@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef MSM_MIDDLEBURY_H
-#define MSM_MIDDLEBURY_H
+#ifndef OPENCV_DATASETSTOOLS_IR_ROBOT_HPP
+#define OPENCV_DATASETSTOOLS_IR_ROBOT_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,27 +54,30 @@ namespace cv
 namespace datasetstools
 {
 
-struct cameraParam
+// calibration matrix from calibrationFile.mat
+// 2.8290e+03   0.0000e+00   8.0279e+02
+// 0.0000e+00   2.8285e+03   6.1618e+02
+// 0.0000e+00   0.0000e+00   1.0000e+00
+
+struct scene
 {
-    std::string imageName;
-    double k[3][3];
-    double r[3][3];
-    double t[3];
+    std::string name;
+    std::vector<std::string> images; // TODO: implement more complex structure
 };
 
-class CV_EXPORTS msm_middlebury : public dataset
+class CV_EXPORTS IR_robot : public Dataset
 {
 public:
-    msm_middlebury() {}
-    msm_middlebury(std::string &path);
-    virtual ~msm_middlebury() {}
+    IR_robot() {}
+    IR_robot(const std::string &path);
+    virtual ~IR_robot() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<cameraParam> train;
+    std::vector<scene> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

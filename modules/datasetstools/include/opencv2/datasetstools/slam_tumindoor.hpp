@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef GR_CHALEARN_H
-#define GR_CHALEARN_H
+#ifndef OPENCV_DATASETSTOOLS_SLAM_TUMINDOOR_HPP
+#define OPENCV_DATASETSTOOLS_SLAM_TUMINDOOR_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,42 +54,33 @@ namespace cv
 namespace datasetstools
 {
 
-struct groundTruth
+enum imageType
 {
-    unsigned int gestureID, initialFrame, lastFrame;
+    LEFT = 0,
+    RIGHT,
+    LADYBUG
 };
 
-struct join
+struct imageInfo
 {
-    double Wx, Wy, Wz, Rx, Ry, Rz, Rw, Px, Py;
+    std::string name;
+    double transformMat[4][4];
+    imageType type;
 };
 
-struct skeleton
-{
-    join s[20];
-};
-
-struct gesture
-{
-    std::string name, nameColor, nameDepth, nameUser;
-    unsigned int numFrames, fps, depth;
-    std::vector<groundTruth> groundTruths;
-    std::vector<skeleton> skeletons;
-};
-
-class CV_EXPORTS gr_chalearn : public dataset
+class CV_EXPORTS SLAM_tumindoor : public Dataset
 {
 public:
-    gr_chalearn() {}
-    gr_chalearn(std::string &path);
-    virtual ~gr_chalearn() {}
+    SLAM_tumindoor() {}
+    SLAM_tumindoor(const std::string &path);
+    virtual ~SLAM_tumindoor() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<gesture> train;
+    std::vector<imageInfo> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

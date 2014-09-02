@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef SLAM_TUMINDOOR_H
-#define SLAM_TUMINDOOR_H
+#ifndef OPENCV_DATASETSTOOLS_MSM_MIDDLEBURY_HPP
+#define OPENCV_DATASETSTOOLS_MSM_MIDDLEBURY_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,33 +54,27 @@ namespace cv
 namespace datasetstools
 {
 
-enum imageType
+struct cameraParam
 {
-    LEFT = 0,
-    RIGHT,
-    LADYBUG
+    std::string imageName;
+    double k[3][3];
+    double r[3][3];
+    double t[3];
 };
 
-struct imageInfo
-{
-    std::string name;
-    double transformMat[4][4];
-    imageType type;
-};
-
-class CV_EXPORTS slam_tumindoor : public dataset
+class CV_EXPORTS MSM_middlebury : public Dataset
 {
 public:
-    slam_tumindoor() {}
-    slam_tumindoor(std::string &path);
-    virtual ~slam_tumindoor() {}
+    MSM_middlebury() {}
+    MSM_middlebury(const std::string &path);
+    virtual ~MSM_middlebury() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<imageInfo> train;
+    std::vector<cameraParam> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

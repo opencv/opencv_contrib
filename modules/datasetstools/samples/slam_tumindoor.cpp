@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/slam_tumindoor.hpp"
+#include "opencv2/datasetstools/slam_tumindoor.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    slam_tumindoor dataset(path);
+    SLAM_tumindoor dataset(path);
 
     // ***************
     // dataset contains image and its information.

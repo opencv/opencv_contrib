@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/tr_svt.hpp"
+#include "opencv2/datasetstools/tr_svt.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     // loading train & test images description
-    tr_svt dataset(path);
+    TR_svt dataset(path);
 
     // ***************
     // dataset. train & test contains images description.

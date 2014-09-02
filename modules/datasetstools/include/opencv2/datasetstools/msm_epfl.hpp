@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef SLAM_KITTI_H
-#define SLAM_KITTI_H
+#ifndef OPENCV_DATASETSTOOLS_MSM_EPFL_HPP
+#define OPENCV_DATASETSTOOLS_MSM_EPFL_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,33 +54,27 @@ namespace cv
 namespace datasetstools
 {
 
-struct pose
+struct objectEpfl
 {
-    double elem[12];
+    std::string imageName;
+    std::vector<double> bounding, camera, p; // TODO: implement better structures
 };
 
-struct sequence
-{
-    std::string name;
-    std::vector<std::string> images[4];
-    std::vector<std::string> velodyne;
-    std::vector<double> times, p[4];
-    std::vector<pose> posesArray;
-};
-
-class CV_EXPORTS slam_kitti : public dataset
+class CV_EXPORTS MSM_epfl : public Dataset
 {
 public:
-    slam_kitti() {}
-    slam_kitti(std::string &path);
-    virtual ~slam_kitti() {}
+    MSM_epfl() {}
+    MSM_epfl(const std::string &path);
+    virtual ~MSM_epfl() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<sequence> train;
+    std::vector<objectEpfl> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
+
+    void readFileDouble(const std::string &fileName, std::vector<double> &out);
 };
 
 }

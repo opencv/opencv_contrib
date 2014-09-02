@@ -39,13 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/gr_chalearn.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include "opencv2/datasetstools/gr_chalearn.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -54,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-gr_chalearn::gr_chalearn(std::string &path)
+GR_chalearn::GR_chalearn(const string &path)
 {
     loadDataset(path);
 }
 
-void gr_chalearn::load(string &path, unsigned int number)
+void GR_chalearn::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -69,7 +64,7 @@ void gr_chalearn::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void gr_chalearn::loadDataset(string &path)
+void GR_chalearn::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);

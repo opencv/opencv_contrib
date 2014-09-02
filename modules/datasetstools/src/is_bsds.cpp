@@ -39,11 +39,8 @@
 //
 //M*/
 
-#include "opencv2/is_bsds.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/is_bsds.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -52,7 +49,7 @@ namespace datasetstools
 
 using namespace std;
 
-void is_bsds::loadDatasetPart(string &fileName, vector<string> &dataset_)
+void IS_bsds::loadDatasetPart(const string &fileName, vector<string> &dataset_)
 {
     ifstream infile(fileName.c_str());
     string imageName;
@@ -62,12 +59,12 @@ void is_bsds::loadDatasetPart(string &fileName, vector<string> &dataset_)
     }
 }
 
-is_bsds::is_bsds(std::string &path)
+IS_bsds::IS_bsds(const string &path)
 {
     loadDataset(path);
 }
 
-void is_bsds::load(string &path, unsigned int number)
+void IS_bsds::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -77,7 +74,7 @@ void is_bsds::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void is_bsds::loadDataset(string &path)
+void IS_bsds::loadDataset(const string &path)
 {
     string trainName(path + "iids_train.txt");
     string testName(path + "iids_test.txt");

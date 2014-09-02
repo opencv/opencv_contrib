@@ -39,13 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/or_imagenet.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include "opencv2/datasetstools/or_imagenet.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -54,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-or_imagenet::or_imagenet(std::string &path)
+OR_imagenet::OR_imagenet(const string &path)
 {
     loadDataset(path);
 }
 
-void or_imagenet::load(string &path, unsigned int number)
+void OR_imagenet::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -69,7 +64,7 @@ void or_imagenet::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void or_imagenet::loadDataset(string &path)
+void OR_imagenet::loadDataset(const string &path)
 {
     ifstream infile((path + "fall11_urls.txt").c_str());
     string line;

@@ -39,43 +39,41 @@
 //
 //M*/
 
-#ifndef OR_IMAGENET_H
-#define OR_IMAGENET_H
+#ifndef OPENCV_DATASETSTOOLS_IR_AFFINE_HPP
+#define OPENCV_DATASETSTOOLS_IR_AFFINE_HPP
 
 #include <string>
 #include <vector>
-#include <set>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
+#include <opencv2/core/matx.hpp>
 
 namespace cv
 {
 namespace datasetstools
 {
 
-struct objectImagenet
+struct imageParams
 {
-    std::string wnid; // TODO: string -> unsigned int
-    unsigned int id2;
-    std::string imageUrl;
+    std::string imageName;
+    Matx33d mat;
 };
 
-class CV_EXPORTS or_imagenet : public dataset
+class CV_EXPORTS IR_affine : public Dataset
 {
 public:
-    or_imagenet() {}
-    or_imagenet(std::string &path);
-    virtual ~or_imagenet() {}
+    IR_affine() {}
+    IR_affine(const std::string &path);
+    virtual ~IR_affine() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<objectImagenet> train;
-    std::set<std::string> wnids;
+    std::vector<imageParams> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

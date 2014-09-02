@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/slam_kitti.hpp"
+#include "opencv2/datasetstools/slam_kitti.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    slam_kitti dataset(path);
+    SLAM_kitti dataset(path);
 
     // ***************
     // dataset contains sequence with name and its data.

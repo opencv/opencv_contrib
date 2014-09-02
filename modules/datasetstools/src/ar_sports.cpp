@@ -39,13 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/ar_sports.hpp"
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include "opencv2/datasetstools/ar_sports.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -54,7 +49,7 @@ namespace datasetstools
 
 using namespace std;
 
-void ar_sports::loadDatasetPart(string &fileName, vector<element> &dataset_)
+void AR_sports::loadDatasetPart(const string &fileName, vector<element> &dataset_)
 {
     ifstream infile(fileName.c_str());
     string videoUrl, labels;
@@ -74,12 +69,12 @@ void ar_sports::loadDatasetPart(string &fileName, vector<element> &dataset_)
     }
 }
 
-ar_sports::ar_sports(string &path)
+AR_sports::AR_sports(const string &path)
 {
     loadDataset(path);
 }
 
-void ar_sports::load(string &path, unsigned int number)
+void AR_sports::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -89,7 +84,7 @@ void ar_sports::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void ar_sports::loadDataset(string &path)
+void AR_sports::loadDataset(const string &path)
 {
     string trainPath(path + "original/train_partition.txt");
     string testPath(path + "original/test_partition.txt");

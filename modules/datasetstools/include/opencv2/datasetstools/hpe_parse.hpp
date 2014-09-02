@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef IR_ROBOT_H
-#define IR_ROBOT_H
+#ifndef OPENCV_DATASETSTOOLS_HPE_PARSE_HPP
+#define OPENCV_DATASETSTOOLS_HPE_PARSE_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,30 +54,20 @@ namespace cv
 namespace datasetstools
 {
 
-// calibration matrix from calibrationFile.mat
-// 2.8290e+03   0.0000e+00   8.0279e+02
-// 0.0000e+00   2.8285e+03   6.1618e+02
-// 0.0000e+00   0.0000e+00   1.0000e+00
-
-struct scene
-{
-    std::string name;
-    std::vector<std::string> images; // TODO: implement more complex structure
-};
-
-class CV_EXPORTS ir_robot : public dataset
+class CV_EXPORTS HPE_parse : public Dataset
 {
 public:
-    ir_robot() {}
-    ir_robot(std::string &path);
-    virtual ~ir_robot() {}
+    HPE_parse() {}
+    HPE_parse(const std::string &path);
+    virtual ~HPE_parse() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<scene> train;
+    std::vector<std::string> train;
+    std::vector<std::string> test;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

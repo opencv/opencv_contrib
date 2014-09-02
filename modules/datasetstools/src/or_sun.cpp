@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/or_sun.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/or_sun.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-or_sun::or_sun(std::string &path)
+OR_sun::OR_sun(const string &path)
 {
     loadDataset(path);
 }
 
-void or_sun::load(string &path, unsigned int number)
+void OR_sun::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void or_sun::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void or_sun::loadDataset(string &path)
+void OR_sun::loadDataset(const string &path)
 {
     string classNameFile(path + "ClassName.txt");
     ifstream infile(classNameFile.c_str());

@@ -39,13 +39,10 @@
 //
 //M*/
 
-#ifndef IS_BSDS_H
-#define IS_BSDS_H
+#ifndef OPENCV_DATASETSTOOLS_DATASET_HPP
+#define OPENCV_DATASETSTOOLS_DATASET_HPP
 
 #include <string>
-#include <vector>
-
-#include "opencv2/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,22 +51,13 @@ namespace cv
 namespace datasetstools
 {
 
-class CV_EXPORTS is_bsds : public dataset
+class CV_EXPORTS Dataset
 {
 public:
-    is_bsds() {}
-    is_bsds(std::string &path);
-    virtual ~is_bsds() {}
+    Dataset() {}
+    virtual ~Dataset() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
-
-    std::vector<std::string> train;
-    std::vector<std::string> test;
-
-private:
-    void loadDataset(std::string &path);
-
-    void loadDatasetPart(std::string &fileName, std::vector<std::string> &dataset_);
+    virtual void load(const std::string &path, int number = 0) = 0;
 };
 
 }

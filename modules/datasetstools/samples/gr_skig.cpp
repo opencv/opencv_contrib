@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/gr_skig.hpp"
+#include "opencv2/datasetstools/gr_skig.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -66,16 +66,16 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    gr_skig dataset(path);
+    GR_skig dataset(path);
 
     // ***************
     // dataset contains pair of rgb\dep images
-    // For example, let output train size and first element.
-    gestureSkig &example = dataset.train[0];
+    // For example, let output train size and second element.
+    gestureSkig &example = dataset.train[1];
     printf("train size: %u\n", (unsigned int)dataset.train.size());
-    printf("first train image:\nrgb: %s\ndep: %s\n", example.rgb.c_str(), example.dep.c_str());
+    printf("second train image:\nrgb: %s\ndep: %s\n", example.rgb.c_str(), example.dep.c_str());
     printf("person: %u, backgroud: %u, illumination: %u, pose: %u, actionType: %u\n",
-           example.person, example.background, example.illumination, example.pose, example.actionType);
+           example.person, example.background, example.illumination, example.pose, example.type);
 
     return 0;
 }

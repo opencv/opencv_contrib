@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef AR_HMDB_H
-#define AR_HMDB_H
+#ifndef OPENCV_DATASETSTOOLS_GR_SKIG_HPP
+#define OPENCV_DATASETSTOOLS_GR_SKIG_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,28 +54,64 @@ namespace cv
 namespace datasetstools
 {
 
-struct action
+enum actionType
 {
-    std::string name;
-    std::vector<std::string> videoNames;
+    circle = 1,
+    triangle,
+    updown,
+    rightleft,
+    wave,
+    z,
+    cross,
+    comehere,
+    turnaround,
+    pat
 };
 
-class CV_EXPORTS ar_hmdb : public dataset
+enum poseType
+{
+    fist = 1,
+    index,
+    flat
+};
+
+enum illuminationType
+{
+    light = 1,
+    dark
+};
+
+enum backgroundType
+{
+    woodenBoard = 1,
+    whitePaper,
+    paperWithCharacters
+};
+
+struct gestureSkig
+{
+    std::string rgb;
+    std::string dep;
+    char person; // 1..6
+    backgroundType background;
+    illuminationType illumination;
+    poseType pose;
+    actionType type;
+};
+
+class CV_EXPORTS GR_skig : public Dataset
 {
 public:
-    ar_hmdb() {}
-    ar_hmdb(std::string &path, unsigned int number = 0);
-    virtual ~ar_hmdb() {}
+    GR_skig() {}
+    GR_skig(const std::string &path);
+    virtual ~GR_skig() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<action> train;
-    std::vector<action> test;
+    std::vector<gestureSkig> train;
 
 private:
-    void loadDataset(std::string &path, unsigned int number = 0);
-
-    void loadAction(std::string &fileName, std::vector<std::string> &train_, std::vector<std::string> &test_);
+    void loadDataset(const std::string &path);
 };
 
 }

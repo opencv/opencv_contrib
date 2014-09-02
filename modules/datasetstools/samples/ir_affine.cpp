@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/ir_affine.hpp"
+#include "opencv2/datasetstools/ir_affine.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     // loading dataset
-    ir_affine dataset(path);
+    IR_affine dataset(path);
 
     // ***************
     // dataset contains for each image in dataset it's matrix.
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     {
         for (int j=0; j<3; ++j)
         {
-            printf("%f ", example.mat[i][j]);
+            printf("%f ", example.mat(i, j));
         }
         printf("\n");
     }

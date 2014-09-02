@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/ar_sports.hpp"
+#include "opencv2/datasetstools/ar_sports.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    ar_sports dataset(path);
+    AR_sports dataset(path);
 
     // ***************
     // dataset. train & test contains for each video url in dataset all it's labels.
@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
     element &first = dataset.test[0];
     printf("url: %s\n", first.videoUrl.c_str());
     printf("labels: ");
-    vector<unsigned int> &labels = first.labels;
-    for (vector<unsigned int>::iterator it=labels.begin(); it!=labels.end(); ++it)
+    vector<int> &labels = first.labels;
+    for (vector<int>::iterator it=labels.begin(); it!=labels.end(); ++it)
     {
         printf("%u ", *it);
     }

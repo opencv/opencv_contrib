@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/msm_epfl.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/msm_epfl.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,7 +49,7 @@ namespace datasetstools
 
 using namespace std;
 
-void msm_epfl::readFileDouble(string fileName, vector<double> &out)
+void MSM_epfl::readFileDouble(const string &fileName, vector<double> &out)
 {
     ifstream infile(fileName.c_str());
     double val;
@@ -63,12 +59,12 @@ void msm_epfl::readFileDouble(string fileName, vector<double> &out)
     }
 }
 
-msm_epfl::msm_epfl(std::string &path)
+MSM_epfl::MSM_epfl(const string &path)
 {
     loadDataset(path);
 }
 
-void msm_epfl::load(string &path, unsigned int number)
+void MSM_epfl::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -78,7 +74,7 @@ void msm_epfl::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void msm_epfl::loadDataset(string &path)
+void MSM_epfl::loadDataset(const string &path)
 {
     string pathBounding(path + "bounding/");
     string pathCamera(path + "camera/");
@@ -92,9 +88,9 @@ void msm_epfl::loadDataset(string &path)
         objectEpfl curr;
         curr.imageName = *it;
 
-        readFileDouble(pathBounding + curr.imageName + ".bounding", curr.bounding);
-        readFileDouble(pathCamera + curr.imageName + ".camera", curr.camera);
-        readFileDouble(pathP + curr.imageName + ".P", curr.p);
+        readFileDouble(string(pathBounding + curr.imageName + ".bounding"), curr.bounding);
+        readFileDouble(string(pathCamera + curr.imageName + ".camera"), curr.camera);
+        readFileDouble(string(pathP + curr.imageName + ".P"), curr.p);
 
         train.push_back(curr);
     }

@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/tr_chars.hpp"
+#include "opencv2/datasetstools/tr_chars.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -66,13 +66,13 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector<tr_chars> dataset;
+    vector<TR_chars> dataset;
     do
     {
-        tr_chars curr;
+        TR_chars curr;
         dataset.push_back(curr);
 
-        unsigned int number = (unsigned int)dataset.size()-1;
+        int number = (int)dataset.size()-1;
         dataset.back().load(path, number);
     } while (dataset.back().train.size()>0);
     dataset.pop_back(); // remove last empty split

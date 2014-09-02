@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/ar_hmdb.hpp"
+#include "opencv2/datasetstools/ar_hmdb.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    ar_hmdb dataset[3];
-    for (unsigned int i=0; i<3; ++i)
+    AR_hmdb dataset[3];
+    for (int i=0; i<3; ++i)
     {
         dataset[i].load(path, i);
     }

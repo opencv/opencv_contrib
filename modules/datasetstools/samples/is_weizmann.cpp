@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/is_weizmann.hpp"
+#include "opencv2/datasetstools/is_weizmann.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    is_weizmann dataset(path);
+    IS_weizmann dataset(path);
 
     // ***************
     // dataset contains all information for each image.

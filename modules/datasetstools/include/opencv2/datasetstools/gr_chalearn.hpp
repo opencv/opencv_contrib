@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef AR_SPORTS_H
-#define AR_SPORTS_H
+#ifndef OPENCV_DATASETSTOOLS_GR_CHALEARN_HPP
+#define OPENCV_DATASETSTOOLS_GR_CHALEARN_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,28 +54,42 @@ namespace cv
 namespace datasetstools
 {
 
-struct element
+struct groundTruth
 {
-    std::string videoUrl;
-    std::vector<unsigned int> labels;
+    int gestureID, initialFrame, lastFrame;
 };
 
-class CV_EXPORTS ar_sports : public dataset
+struct join
+{
+    double Wx, Wy, Wz, Rx, Ry, Rz, Rw, Px, Py;
+};
+
+struct skeleton
+{
+    join s[20];
+};
+
+struct gesture
+{
+    std::string name, nameColor, nameDepth, nameUser;
+    int numFrames, fps, depth;
+    std::vector<groundTruth> groundTruths;
+    std::vector<skeleton> skeletons;
+};
+
+class CV_EXPORTS GR_chalearn : public Dataset
 {
 public:
-    ar_sports() {}
-    ar_sports(std::string &path);
-    virtual ~ar_sports() {}
+    GR_chalearn() {}
+    GR_chalearn(const std::string &path);
+    virtual ~GR_chalearn() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<element> train;
-    std::vector<element> test;
+    std::vector<gesture> train;
 
 private:
-    void loadDataset(std::string &path);
-
-    void loadDatasetPart(std::string &fileName, std::vector<element> &dataset_);
+    void loadDataset(const std::string &path);
 };
 
 }

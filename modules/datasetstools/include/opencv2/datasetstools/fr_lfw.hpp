@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef IR_AFFINE_H
-#define IR_AFFINE_H
+#ifndef OPENCV_DATASETSTOOLS_FR_LFW_HPP
+#define OPENCV_DATASETSTOOLS_FR_LFW_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,25 +54,25 @@ namespace cv
 namespace datasetstools
 {
 
-struct imageParams
+struct face
 {
-    std::string imageName;
-    double mat[3][3];
+    std::string name;
+    std::vector<std::string> images;
 };
 
-class CV_EXPORTS ir_affine : public dataset
+class CV_EXPORTS FR_lfw : public Dataset
 {
 public:
-    ir_affine() {}
-    ir_affine(std::string &path);
-    virtual ~ir_affine() {}
+    FR_lfw() {}
+    FR_lfw(const std::string &path);
+    virtual ~FR_lfw() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<imageParams> train;
+    std::vector<face> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

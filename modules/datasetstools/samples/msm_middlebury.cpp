@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/msm_middlebury.hpp"
+#include "opencv2/datasetstools/msm_middlebury.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    msm_middlebury dataset(path);
+    MSM_middlebury dataset(path);
 
     // ***************
     // dataset contains camera parameters for each image.

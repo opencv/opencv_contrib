@@ -39,12 +39,8 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/ir_robot.hpp"
-
-#include <cstdio>
-
-#include <fstream>
+#include "opencv2/datasetstools/ir_robot.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -53,12 +49,12 @@ namespace datasetstools
 
 using namespace std;
 
-ir_robot::ir_robot(std::string &path)
+IR_robot::IR_robot(const string &path)
 {
     loadDataset(path);
 }
 
-void ir_robot::load(string &path, unsigned int number)
+void IR_robot::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -68,7 +64,7 @@ void ir_robot::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void ir_robot::loadDataset(string &path)
+void IR_robot::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);

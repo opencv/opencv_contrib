@@ -39,15 +39,10 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/tr_svt.hpp"
+#include "opencv2/datasetstools/tr_svt.hpp"
+#include "precomp.hpp"
 
-#include <tinyxml2/tinyxml2.h>
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <fstream>
+#include <opencv2/datasetstools/tinyxml2/tinyxml2.h>
 
 namespace cv
 {
@@ -57,7 +52,7 @@ namespace datasetstools
 using namespace std;
 using namespace tinyxml2;
 
-void tr_svt::xmlParse(string &set, vector<image> &out)
+void TR_svt::xmlParse(const string &set, vector<image> &out)
 {
     XMLDocument doc;
     doc.LoadFile(set.c_str());
@@ -102,12 +97,12 @@ void tr_svt::xmlParse(string &set, vector<image> &out)
     }
 }
 
-tr_svt::tr_svt(std::string &path)
+TR_svt::TR_svt(const string &path)
 {
     loadDataset(path);
 }
 
-void tr_svt::load(string &path, unsigned int number)
+void TR_svt::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -117,7 +112,7 @@ void tr_svt::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void tr_svt::loadDataset(string &path)
+void TR_svt::loadDataset(const string &path)
 {
     string trainXml(path + "train.xml");
     string testXml(path + "test.xml");

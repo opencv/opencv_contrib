@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/is_bsds.hpp"
+#include "opencv2/datasetstools/is_bsds.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    is_bsds dataset(path);
+    IS_bsds dataset(path);
 
     // TODO: read human/ folder for evaluation
 

@@ -39,14 +39,10 @@
 //
 //M*/
 
-#include "opencv2/util.hpp"
-#include "opencv2/slam_tumindoor.hpp"
+#include "opencv2/datasetstools/slam_tumindoor.hpp"
+#include "precomp.hpp"
 
-#include <cstdio>
-#include <cstdlib> // atof
 #include <cstring>
-
-#include <fstream>
 
 namespace cv
 {
@@ -55,12 +51,12 @@ namespace datasetstools
 
 using namespace std;
 
-slam_tumindoor::slam_tumindoor(std::string &path)
+SLAM_tumindoor::SLAM_tumindoor(const string &path)
 {
     loadDataset(path);
 }
 
-void slam_tumindoor::load(string &path, unsigned int number)
+void SLAM_tumindoor::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -70,7 +66,7 @@ void slam_tumindoor::load(string &path, unsigned int number)
     loadDataset(path);
 }
 
-void slam_tumindoor::loadDataset(string &path)
+void SLAM_tumindoor::loadDataset(const string &path)
 {
     string infoPath(path + "info/2011-12-17_15.02.56-info.csv"); // TODO
     ifstream infile(infoPath.c_str());

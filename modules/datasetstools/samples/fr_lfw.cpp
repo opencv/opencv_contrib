@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/fr_lfw.hpp"
+#include "opencv2/datasetstools/fr_lfw.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    fr_lfw dataset(path);
+    FR_lfw dataset(path);
 
     // ***************
     // dataset contains object with name and its images.

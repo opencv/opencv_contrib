@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef HPE_PARSE_H
-#define HPE_PARSE_H
+#ifndef OPENCV_DATASETSTOOLS_OR_SUN_HPP
+#define OPENCV_DATASETSTOOLS_OR_SUN_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,20 +54,25 @@ namespace cv
 namespace datasetstools
 {
 
-class CV_EXPORTS hpe_parse : public dataset
+struct objectSun
+{
+    std::string name;
+    std::vector<std::string> imageNames;
+};
+
+class CV_EXPORTS OR_sun : public Dataset
 {
 public:
-    hpe_parse() {}
-    hpe_parse(std::string &path);
-    virtual ~hpe_parse() {}
+    OR_sun() {}
+    OR_sun(const std::string &path);
+    virtual ~OR_sun() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<std::string> train;
-    std::vector<std::string> test;
+    std::vector<objectSun> train;
 
 private:
-    void loadDataset(std::string &path);
+    void loadDataset(const std::string &path);
 };
 
 }

@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/or_imagenet.hpp"
+#include "opencv2/datasetstools/or_imagenet.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    or_imagenet dataset(path);
+    OR_imagenet dataset(path);
 
     // ***************
     // dataset contains for each object its id & image url.

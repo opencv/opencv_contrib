@@ -39,45 +39,14 @@
 //
 //M*/
 
-#ifndef MSM_EPFL_H
-#define MSM_EPFL_H
+#ifndef __OPENCV_PRECOMP_H__
+#define __OPENCV_PRECOMP_H__
 
-#include <string>
-#include <vector>
+#include <cstdio>
+#include <cstdlib> // atoi, atof
 
-#include "opencv2/dataset.hpp"
+#include <fstream>
 
-#include <opencv2/core.hpp>
-
-namespace cv
-{
-namespace datasetstools
-{
-
-struct objectEpfl
-{
-    std::string imageName;
-    std::vector<double> bounding, camera, p; // TODO: implement better structures
-};
-
-class CV_EXPORTS msm_epfl : public dataset
-{
-public:
-    msm_epfl() {}
-    msm_epfl(std::string &path);
-    virtual ~msm_epfl() {}
-
-    virtual void load(std::string &path, unsigned int number = 0);
-
-    std::vector<objectEpfl> train;
-
-private:
-    void loadDataset(std::string &path);
-
-    void readFileDouble(std::string fileName, std::vector<double> &out);
-};
-
-}
-}
+#include "opencv2/datasetstools/util.hpp"
 
 #endif

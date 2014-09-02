@@ -39,13 +39,13 @@
 //
 //M*/
 
-#ifndef TR_CHARS_H
-#define TR_CHARS_H
+#ifndef OPENCV_DATASETSTOOLS_IS_WEIZMANN_HPP
+#define OPENCV_DATASETSTOOLS_IS_WEIZMANN_HPP
 
 #include <string>
 #include <vector>
 
-#include "opencv2/dataset.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -54,28 +54,27 @@ namespace cv
 namespace datasetstools
 {
 
-struct character
+struct object
 {
-    std::string imgName;
-    unsigned int label;
+    std::string imageName;
+    std::string srcBw;
+    std::string srcColor;
+    std::string humanSeg; // TODO: read human segmented
 };
 
-class CV_EXPORTS tr_chars : public dataset
+class CV_EXPORTS IS_weizmann : public Dataset
 {
 public:
-    tr_chars() {}
-    tr_chars(std::string &path, unsigned int number = 0);
-    virtual ~tr_chars() {}
+    IS_weizmann() {}
+    IS_weizmann(const std::string &path);
+    virtual ~IS_weizmann() {}
 
-    virtual void load(std::string &path, unsigned int number = 0);
+    virtual void load(const std::string &path, int number = 0);
 
-    std::vector<character> train;
-    std::vector<character> test;
+    std::vector<object> train;
 
 private:
-    void loadDataset(std::string &path, unsigned int number = 0);
-
-    void parseLine(std::string &line, std::vector<int> &currSet, unsigned int number);
+    void loadDataset(const std::string &path);
 };
 
 }

@@ -39,45 +39,46 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/ir_robot.hpp"
-
-#include <opencv2/core.hpp>
-
-#include <cstdio>
+#ifndef OPENCV_DATASETSTOOLS_OR_IMAGENET_HPP
+#define OPENCV_DATASETSTOOLS_OR_IMAGENET_HPP
 
 #include <string>
 #include <vector>
+#include <set>
 
-using namespace std;
-using namespace cv;
-using namespace cv::datasetstools;
+#include "opencv2/datasetstools/dataset.hpp"
 
-int main(int argc, char *argv[])
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset folders }";
-    CommandLineParser parser(argc, argv, keys);
-    string path(parser.get<string>("path"));
-    if (parser.has("help") || path=="true")
-    {
-        parser.printMessage();
-        return -1;
-    }
+namespace datasetstools
+{
 
-    IR_robot dataset(path);
+struct objectImagenet
+{
+    std::string wnid;
+    int id2;
+    std::string imageUrl;
+};
 
-    // ***************
-    // dataset contains object with name and its images.
-    // For example, let output last element and dataset size.
-    scene &example = dataset.train.back();
-    printf("last dataset object:\n%s\n", example.name.c_str());
-    string currPath(path + example.name + "/");
-    for (vector<string>::iterator it=example.images.begin(); it!=example.images.end(); ++it)
-    {
-        printf("%s\n", (currPath+(*it)).c_str());
-    }
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
+class CV_EXPORTS OR_imagenet : public Dataset
+{
+public:
+    OR_imagenet() {}
+    OR_imagenet(const std::string &path);
+    virtual ~OR_imagenet() {}
 
-    return 0;
+    virtual void load(const std::string &path, int number = 0);
+
+    std::vector<objectImagenet> train;
+    std::set<std::string> wnids;
+
+private:
+    void loadDataset(const std::string &path);
+};
+
 }
+}
+
+#endif
