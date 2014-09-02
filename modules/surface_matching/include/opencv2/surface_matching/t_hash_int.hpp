@@ -66,7 +66,7 @@ typedef struct HSHTBL_i
 } hashtable_int;
 
 
-__inline static unsigned int next_power_of_two(unsigned int value)
+inline static unsigned int next_power_of_two(unsigned int value)
 {
     /* Round up to the next highest power of 2 */
     /* from http://www-graphics.stanford.edu/~seander/bithacks.html */
