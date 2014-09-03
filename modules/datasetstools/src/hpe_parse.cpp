@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-HPE_parse::HPE_parse(const string &path)
+class CV_EXPORTS HPE_parseImp : public HPE_parse
+{
+public:
+    HPE_parseImp() {}
+    //HPE_parseImp(const std::string &path);
+    virtual ~HPE_parseImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*HPE_parseImp::HPE_parseImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void HPE_parse::load(const string &path, int number)
+void HPE_parseImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void HPE_parse::load(const string &path, int number)
     loadDataset(path);
 }
 
-void HPE_parse::loadDataset(const string &path)
+void HPE_parseImp::loadDataset(const string &path)
 {
     unsigned int i=0;
     vector<string> fileNames;
@@ -92,6 +105,11 @@ void HPE_parse::loadDataset(const string &path)
             ++i;
         }
     }
+}
+
+Ptr<HPE_parse> HPE_parse::create()
+{
+    return Ptr<HPE_parseImp>(new HPE_parseImp);
 }
 
 }

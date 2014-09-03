@@ -68,14 +68,9 @@ struct IR_robotObj : public Object
 class CV_EXPORTS IR_robot : public Dataset
 {
 public:
-    IR_robot() {}
-    IR_robot(const std::string &path);
-    virtual ~IR_robot() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<IR_robot> create();
 };
 
 }

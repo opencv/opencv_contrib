@@ -63,16 +63,9 @@ struct AR_hmdbObj : public Object
 class CV_EXPORTS AR_hmdb : public Dataset
 {
 public:
-    AR_hmdb() {}
-    AR_hmdb(const std::string &path, int number = 0);
-    virtual ~AR_hmdb() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path, int number = 0);
-
-    void loadAction(const std::string &fileName, std::vector<std::string> &train_, std::vector<std::string> &test_);
+    static Ptr<AR_hmdb> create();
 };
 
 }

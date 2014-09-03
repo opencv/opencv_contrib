@@ -67,16 +67,17 @@ int main(int argc, char *argv[])
     }
 
     // loading train & test images description
-    TR_svt dataset(path);
+    Ptr<TR_svt> dataset = TR_svt::create();
+    dataset->load(path);
 
     // ***************
     // dataset. train & test contains images description.
     // For example, let output the last element in train set and it's description.
     // And their sizes.
-    printf("train size: %u\n", (unsigned int)dataset.train.size());
-    printf("test size: %u\n", (unsigned int)dataset.test.size());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
 
-    TR_svtObj *example = static_cast<TR_svtObj *>(dataset.train.back().get());
+    TR_svtObj *example = static_cast<TR_svtObj *>(dataset->getTrain().back().get());
     printf("last element:\nfile name: %s", example->fileName.c_str());
     printf("\nlex: ");
     for (vector<string>::iterator it=example->lex.begin(); it!=example->lex.end(); ++it)

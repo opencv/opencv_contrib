@@ -71,14 +71,9 @@ struct SLAM_kittiObj : public Object
 class CV_EXPORTS SLAM_kitti : public Dataset
 {
 public:
-    SLAM_kitti() {}
-    SLAM_kitti(const std::string &path);
-    virtual ~SLAM_kitti() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<SLAM_kitti> create();
 };
 
 }

@@ -70,16 +70,9 @@ struct TR_svtObj : public Object
 class CV_EXPORTS TR_svt : public Dataset
 {
 public:
-    TR_svt() {}
-    TR_svt(const std::string &path);
-    virtual ~TR_svt() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
-
-    void xmlParse(const std::string &set, std::vector< Ptr<Object> > &out);
+    static Ptr<TR_svt> create();
 };
 
 }

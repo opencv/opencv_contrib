@@ -65,13 +65,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    OR_sun dataset(path);
+    Ptr<OR_sun> dataset = OR_sun::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains for each object its images.
     // For example, let output dataset size and last object.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    OR_sunObj *example = static_cast<OR_sunObj *>(dataset.train.back().get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    OR_sunObj *example = static_cast<OR_sunObj *>(dataset->getTrain().back().get());
     printf("last object name: %s\n", example->name.c_str());
     printf("last object images number: %u\n", (unsigned int)example->imageNames.size());
     vector<string> &imageNames = example->imageNames;

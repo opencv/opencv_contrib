@@ -63,16 +63,9 @@ struct MSM_epflObj : public Object
 class CV_EXPORTS MSM_epfl : public Dataset
 {
 public:
-    MSM_epfl() {}
-    MSM_epfl(const std::string &path);
-    virtual ~MSM_epfl() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
-
-    void readFileDouble(const std::string &fileName, std::vector<double> &out);
+    static Ptr<MSM_epfl> create();
 };
 
 }

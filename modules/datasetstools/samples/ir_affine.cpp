@@ -67,15 +67,16 @@ int main(int argc, char *argv[])
     }
 
     // loading dataset
-    IR_affine dataset(path);
+    Ptr<IR_affine> dataset = IR_affine::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains for each image in dataset it's matrix.
     // For example, let output the last element in dataset and it's matrix.
     // And dataset size.
-    printf("size: %u\n", (unsigned int)dataset.train.size());
+    printf("size: %u\n", (unsigned int)dataset->getTrain().size());
 
-    IR_affineObj *example = static_cast<IR_affineObj *>(dataset.train.back().get());
+    IR_affineObj *example = static_cast<IR_affineObj *>(dataset->getTrain().back().get());
     printf("image name: %s\n", example->imageName.c_str());
     printf("matrix:\n");
     for (int i=0; i<3; ++i)

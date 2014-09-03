@@ -65,14 +65,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    SLAM_tumindoor dataset(path);
+    Ptr<SLAM_tumindoor> dataset = SLAM_tumindoor::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains image and its information.
     // For example, let output first image information and dataset size.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
 
-    SLAM_tumindoorObj *example = static_cast<SLAM_tumindoorObj *>(dataset.train[0].get());
+    SLAM_tumindoorObj *example = static_cast<SLAM_tumindoorObj *>(dataset->getTrain()[0].get());
     printf("first image:\ntype: %u\n", example->type);
 
     string imagePath(path);
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
     {
         for (unsigned int j=0; j<4; ++j)
         {
-            printf("%f ", example->transformMat[i][j]);
+            printf("%f ", example->transformMat(i, j));
         }
         printf("\n");
     }

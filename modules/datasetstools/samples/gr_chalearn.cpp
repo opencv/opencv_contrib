@@ -65,13 +65,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    GR_chalearn dataset(path);
+    Ptr<GR_chalearn> dataset = GR_chalearn::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains information for each sample.
     // For example, let output dataset size and first element.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    GR_chalearnObj *example = static_cast<GR_chalearnObj *>(dataset.train[0].get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    GR_chalearnObj *example = static_cast<GR_chalearnObj *>(dataset->getTrain()[0].get());
     printf("first dataset sample:\n%s\n", example->name.c_str());
     printf("color video:\n%s\n", example->nameColor .c_str());
     printf("depth video:\n%s\n", example->nameDepth.c_str());

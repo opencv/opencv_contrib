@@ -64,6 +64,10 @@ public:
 
     virtual void load(const std::string &path, int number = 0) = 0;
 
+    std::vector< Ptr<Object> >& getTrain() { return train; }
+    std::vector< Ptr<Object> >& getTest() { return test; }
+
+protected:
     std::vector< Ptr<Object> > train;
     std::vector< Ptr<Object> > test;
 };

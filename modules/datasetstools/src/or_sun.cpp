@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-OR_sun::OR_sun(const string &path)
+class CV_EXPORTS OR_sunImp : public OR_sun
+{
+public:
+    OR_sunImp() {}
+    //OR_sunImp(const std::string &path);
+    virtual ~OR_sunImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*OR_sunImp::OR_sunImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void OR_sun::load(const string &path, int number)
+void OR_sunImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void OR_sun::load(const string &path, int number)
     loadDataset(path);
 }
 
-void OR_sun::loadDataset(const string &path)
+void OR_sunImp::loadDataset(const string &path)
 {
     string classNameFile(path + "ClassName.txt");
     ifstream infile(classNameFile.c_str());
@@ -84,6 +97,11 @@ void OR_sun::loadDataset(const string &path)
 
         train.push_back(curr);
     }
+}
+
+Ptr<OR_sun> OR_sun::create()
+{
+    return Ptr<OR_sunImp>(new OR_sunImp);
 }
 
 }

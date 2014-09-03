@@ -44,7 +44,6 @@
 
 #include <string>
 #include <vector>
-#include <set>
 
 #include "opencv2/datasetstools/dataset.hpp"
 
@@ -65,16 +64,9 @@ struct OR_imagenetObj : public Object
 class CV_EXPORTS OR_imagenet : public Dataset
 {
 public:
-    OR_imagenet() {}
-    OR_imagenet(const std::string &path);
-    virtual ~OR_imagenet() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-    std::set<std::string> wnids;
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<OR_imagenet> create();
 };
 
 }

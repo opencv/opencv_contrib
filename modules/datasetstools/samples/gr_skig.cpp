@@ -66,13 +66,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    GR_skig dataset(path);
+    Ptr<GR_skig> dataset = GR_skig::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains pair of rgb\dep images
     // For example, let output train size and second element.
-    GR_skigObj *example = static_cast<GR_skigObj *>(dataset.train[1].get());
-    printf("train size: %u\n", (unsigned int)dataset.train.size());
+    GR_skigObj *example = static_cast<GR_skigObj *>(dataset->getTrain()[1].get());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
     printf("second train image:\nrgb: %s\ndep: %s\n", example->rgb.c_str(), example->dep.c_str());
     printf("person: %u, backgroud: %u, illumination: %u, pose: %u, actionType: %u\n",
            example->person, example->background, example->illumination, example->pose, example->type);

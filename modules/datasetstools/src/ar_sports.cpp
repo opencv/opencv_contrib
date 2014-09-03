@@ -49,7 +49,22 @@ namespace datasetstools
 
 using namespace std;
 
-void AR_sports::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
+class CV_EXPORTS AR_sportsImp : public AR_sports
+{
+public:
+    AR_sportsImp() {}
+    //AR_sportsImp(const std::string &path);
+    virtual ~AR_sportsImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+
+    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
+};
+
+void AR_sportsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
 {
     ifstream infile(fileName.c_str());
     string videoUrl, labels;
@@ -69,12 +84,12 @@ void AR_sports::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &d
     }
 }
 
-AR_sports::AR_sports(const string &path)
+/*AR_sportsImp::AR_sportsImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void AR_sports::load(const string &path, int number)
+void AR_sportsImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -84,7 +99,7 @@ void AR_sports::load(const string &path, int number)
     loadDataset(path);
 }
 
-void AR_sports::loadDataset(const string &path)
+void AR_sportsImp::loadDataset(const string &path)
 {
     string trainPath(path + "original/train_partition.txt");
     string testPath(path + "original/test_partition.txt");
@@ -94,6 +109,11 @@ void AR_sports::loadDataset(const string &path)
 
     // loading test video urls & labels
     loadDatasetPart(testPath, test);
+}
+
+Ptr<AR_sports> AR_sports::create()
+{
+    return Ptr<AR_sportsImp>(new AR_sportsImp);
 }
 
 }

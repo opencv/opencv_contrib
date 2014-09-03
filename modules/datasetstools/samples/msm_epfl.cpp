@@ -65,13 +65,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    MSM_epfl dataset(path);
+    Ptr<MSM_epfl> dataset = MSM_epfl::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    MSM_epflObj *example = static_cast<MSM_epflObj *>(dataset.train[0].get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    MSM_epflObj *example = static_cast<MSM_epflObj *>(dataset->getTrain()[0].get());
     printf("first image:\nname: %s\n", example->imageName.c_str());
 
     printf("bounding:\n");

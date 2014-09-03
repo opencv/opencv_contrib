@@ -52,7 +52,22 @@ namespace datasetstools
 using namespace std;
 using namespace tinyxml2;
 
-void TR_svt::xmlParse(const string &set, vector< Ptr<Object> > &out)
+class CV_EXPORTS TR_svtImp : public TR_svt
+{
+public:
+    TR_svtImp() {}
+    //TR_svtImp(const std::string &path);
+    virtual ~TR_svtImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+
+    void xmlParse(const std::string &set, std::vector< Ptr<Object> > &out);
+};
+
+void TR_svtImp::xmlParse(const string &set, vector< Ptr<Object> > &out)
 {
     XMLDocument doc;
     doc.LoadFile(set.c_str());
@@ -97,12 +112,12 @@ void TR_svt::xmlParse(const string &set, vector< Ptr<Object> > &out)
     }
 }
 
-TR_svt::TR_svt(const string &path)
+/*TR_svtImp::TR_svtImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void TR_svt::load(const string &path, int number)
+void TR_svtImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -112,7 +127,7 @@ void TR_svt::load(const string &path, int number)
     loadDataset(path);
 }
 
-void TR_svt::loadDataset(const string &path)
+void TR_svtImp::loadDataset(const string &path)
 {
     string trainXml(path + "train.xml");
     string testXml(path + "test.xml");
@@ -122,6 +137,11 @@ void TR_svt::loadDataset(const string &path)
 
     // loading test images description
     xmlParse(testXml, test);
+}
+
+Ptr<TR_svt> TR_svt::create()
+{
+    return Ptr<TR_svtImp>(new TR_svtImp);
 }
 
 }

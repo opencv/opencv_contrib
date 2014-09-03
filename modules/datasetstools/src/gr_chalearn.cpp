@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-GR_chalearn::GR_chalearn(const string &path)
+class CV_EXPORTS GR_chalearnImp : public GR_chalearn
+{
+public:
+    GR_chalearnImp() {}
+    //GR_chalearnImp(const std::string &path);
+    virtual ~GR_chalearnImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*GR_chalearnImp::GR_chalearnImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void GR_chalearn::load(const string &path, int number)
+void GR_chalearnImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void GR_chalearn::load(const string &path, int number)
     loadDataset(path);
 }
 
-void GR_chalearn::loadDataset(const string &path)
+void GR_chalearnImp::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -131,6 +144,11 @@ void GR_chalearn::loadDataset(const string &path)
 
         train.push_back(curr);
     }
+}
+
+Ptr<GR_chalearn> GR_chalearn::create()
+{
+    return Ptr<GR_chalearnImp>(new GR_chalearnImp);
 }
 
 }

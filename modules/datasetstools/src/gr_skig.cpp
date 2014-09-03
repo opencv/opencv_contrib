@@ -51,12 +51,25 @@ namespace datasetstools
 
 using namespace std;
 
-GR_skig::GR_skig(const string &path)
+class CV_EXPORTS GR_skigImp : public GR_skig
+{
+public:
+    GR_skigImp() {}
+    //GR_skigImp(const std::string &path);
+    virtual ~GR_skigImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*GR_skigImp::GR_skigImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void GR_skig::load(const string &path, int number)
+void GR_skigImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -66,7 +79,7 @@ void GR_skig::load(const string &path, int number)
     loadDataset(path);
 }
 
-void GR_skig::loadDataset(const string &path)
+void GR_skigImp::loadDataset(const string &path)
 {
     for (unsigned int i=1; i<=6; ++i)
     {
@@ -101,6 +114,11 @@ void GR_skig::loadDataset(const string &path)
             train.push_back(curr);
         }
     }
+}
+
+Ptr<GR_skig> GR_skig::create()
+{
+    return Ptr<GR_skigImp>(new GR_skigImp);
 }
 
 }

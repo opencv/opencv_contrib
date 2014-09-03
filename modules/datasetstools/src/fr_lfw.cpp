@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-FR_lfw::FR_lfw(const string &path)
+class CV_EXPORTS FR_lfwImp : public FR_lfw
+{
+public:
+    FR_lfwImp() {}
+    //FR_lfwImp(const std::string &path);
+    virtual ~FR_lfwImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*FR_lfwImp::FR_lfwImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void FR_lfw::load(const string &path, int number)
+void FR_lfwImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void FR_lfw::load(const string &path, int number)
     loadDataset(path);
 }
 
-void FR_lfw::loadDataset(const string &path)
+void FR_lfwImp::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -83,6 +96,11 @@ void FR_lfw::loadDataset(const string &path)
 
         train.push_back(curr);
     }
+}
+
+Ptr<FR_lfw> FR_lfw::create()
+{
+    return Ptr<FR_lfwImp>(new FR_lfwImp);
 }
 
 }

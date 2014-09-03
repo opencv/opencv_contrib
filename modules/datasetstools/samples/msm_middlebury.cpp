@@ -65,20 +65,21 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    MSM_middlebury dataset(path);
+    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains camera parameters for each image.
     // For example, let output number of elements and last element.
-    printf("images number: %u\n", (unsigned int)dataset.train.size());
-    MSM_middleburyObj *example = static_cast<MSM_middleburyObj *>(dataset.train.back().get());
+    printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
+    MSM_middleburyObj *example = static_cast<MSM_middleburyObj *>(dataset->getTrain().back().get());
     printf("last image name: %s\n", (path + example->imageName).c_str());
     printf("K:\n");
     for (int i=0; i<3; ++i)
     {
         for (int j=0; j<3; ++j)
         {
-            printf("%f ", example->k[i][j]);
+            printf("%f ", example->k(i, j));
         }
         printf("\n");
     }
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
     {
         for (int j=0; j<3; ++j)
         {
-            printf("%f ", example->r[i][j]);
+            printf("%f ", example->r(i, j));
         }
         printf("\n");
     }

@@ -66,15 +66,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector<TR_chars> dataset;
+    vector< Ptr<TR_chars> > dataset;
     do
     {
-        TR_chars curr;
+        Ptr<TR_chars> curr = TR_chars::create();
         dataset.push_back(curr);
 
         int number = (int)dataset.size()-1;
-        dataset.back().load(path, number);
-    } while (dataset.back().train.size()>0);
+        dataset.back()->load(path, number);
+    } while (dataset.back()->getTrain().size()>0);
     dataset.pop_back(); // remove last empty split
 
     // ***************
@@ -83,8 +83,8 @@ int main(int argc, char *argv[])
     // And number of splits.
     printf("splits number: %u\n", (unsigned int)dataset.size());
 
-    vector< Ptr<Object> > &currTrain = dataset.back().train;
-    vector< Ptr<Object> > &currTest = dataset.back().test;
+    vector< Ptr<Object> > &currTrain = dataset.back()->getTrain();
+    vector< Ptr<Object> > &currTest = dataset.back()->getTest();
     printf("train size: %u\n", (unsigned int)currTrain.size());
     printf("test size: %u\n", (unsigned int)currTest.size());
 

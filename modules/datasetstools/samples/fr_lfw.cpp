@@ -65,13 +65,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    FR_lfw dataset(path);
+    Ptr<FR_lfw> dataset = FR_lfw::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains object with name and its images.
     // For example, let output dataset size and sixth element.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset.train[5].get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTrain()[5].get());
     printf("sixth dataset object:\n%s\n", example->name.c_str());
     string currPath(path + example->name + "/");
     for (vector<string>::iterator it=example->images.begin(); it!=example->images.end(); ++it)

@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-IS_weizmann::IS_weizmann(const string &path)
+class CV_EXPORTS IS_weizmannImp : public IS_weizmann
+{
+public:
+    IS_weizmannImp() {}
+    //IS_weizmannImp(const std::string &path);
+    virtual ~IS_weizmannImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*IS_weizmannImp::IS_weizmannImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void IS_weizmann::load(const string &path, int number)
+void IS_weizmannImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void IS_weizmann::load(const string &path, int number)
     loadDataset(path);
 }
 
-void IS_weizmann::loadDataset(const string &path)
+void IS_weizmannImp::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -83,6 +96,11 @@ void IS_weizmann::loadDataset(const string &path)
             train.push_back(curr);
         }
     }
+}
+
+Ptr<IS_weizmann> IS_weizmann::create()
+{
+    return Ptr<IS_weizmannImp>(new IS_weizmannImp);
 }
 
 }

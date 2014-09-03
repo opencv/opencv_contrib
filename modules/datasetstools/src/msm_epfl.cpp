@@ -49,7 +49,22 @@ namespace datasetstools
 
 using namespace std;
 
-void MSM_epfl::readFileDouble(const string &fileName, vector<double> &out)
+class CV_EXPORTS MSM_epflImp : public MSM_epfl
+{
+public:
+    MSM_epflImp() {}
+    //MSM_epflImp(const std::string &path);
+    virtual ~MSM_epflImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+
+    void readFileDouble(const std::string &fileName, std::vector<double> &out);
+};
+
+void MSM_epflImp::readFileDouble(const string &fileName, vector<double> &out)
 {
     ifstream infile(fileName.c_str());
     double val;
@@ -59,12 +74,12 @@ void MSM_epfl::readFileDouble(const string &fileName, vector<double> &out)
     }
 }
 
-MSM_epfl::MSM_epfl(const string &path)
+/*MSM_epflImp::MSM_epflImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void MSM_epfl::load(const string &path, int number)
+void MSM_epflImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -74,7 +89,7 @@ void MSM_epfl::load(const string &path, int number)
     loadDataset(path);
 }
 
-void MSM_epfl::loadDataset(const string &path)
+void MSM_epflImp::loadDataset(const string &path)
 {
     string pathBounding(path + "bounding/");
     string pathCamera(path + "camera/");
@@ -94,6 +109,11 @@ void MSM_epfl::loadDataset(const string &path)
 
         train.push_back(curr);
     }
+}
+
+Ptr<MSM_epfl> MSM_epfl::create()
+{
+    return Ptr<MSM_epflImp>(new MSM_epflImp);
 }
 
 }

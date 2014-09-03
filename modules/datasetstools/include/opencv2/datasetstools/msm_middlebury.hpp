@@ -57,22 +57,17 @@ namespace datasetstools
 struct MSM_middleburyObj : public Object
 {
     std::string imageName;
-    double k[3][3];
-    double r[3][3];
+    Matx33d k;
+    Matx33d r;
     double t[3];
 };
 
 class CV_EXPORTS MSM_middlebury : public Dataset
 {
 public:
-    MSM_middlebury() {}
-    MSM_middlebury(const std::string &path);
-    virtual ~MSM_middlebury() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<MSM_middlebury> create();
 };
 
 }

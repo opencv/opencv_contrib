@@ -64,21 +64,16 @@ enum imageType
 struct SLAM_tumindoorObj : public Object
 {
     std::string name;
-    double transformMat[4][4];
+    Matx44d transformMat;
     imageType type;
 };
 
 class CV_EXPORTS SLAM_tumindoor : public Dataset
 {
 public:
-    SLAM_tumindoor() {}
-    SLAM_tumindoor(const std::string &path);
-    virtual ~SLAM_tumindoor() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<SLAM_tumindoor> create();
 };
 
 }

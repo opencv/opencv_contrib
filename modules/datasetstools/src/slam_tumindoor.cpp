@@ -51,12 +51,25 @@ namespace datasetstools
 
 using namespace std;
 
-SLAM_tumindoor::SLAM_tumindoor(const string &path)
+class CV_EXPORTS SLAM_tumindoorImp : public SLAM_tumindoor
+{
+public:
+    SLAM_tumindoorImp() {}
+    //SLAM_tumindoorImp(const std::string &path);
+    virtual ~SLAM_tumindoorImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*SLAM_tumindoorImp::SLAM_tumindoorImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void SLAM_tumindoor::load(const string &path, int number)
+void SLAM_tumindoorImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -66,7 +79,7 @@ void SLAM_tumindoor::load(const string &path, int number)
     loadDataset(path);
 }
 
-void SLAM_tumindoor::loadDataset(const string &path)
+void SLAM_tumindoorImp::loadDataset(const string &path)
 {
     string infoPath(path + "info/2011-12-17_15.02.56-info.csv"); // TODO
     ifstream infile(infoPath.c_str());
@@ -95,12 +108,17 @@ void SLAM_tumindoor::loadDataset(const string &path)
         {
             for (unsigned int j=0; j<4; ++j)
             {
-                curr->transformMat[i][j] = atof(elems[1 + j + i*4].c_str());
+                curr->transformMat(i, j) = atof(elems[1 + j + i*4].c_str());
             }
         }
 
         train.push_back(curr);
     }
+}
+
+Ptr<SLAM_tumindoor> SLAM_tumindoor::create()
+{
+    return Ptr<SLAM_tumindoorImp>(new SLAM_tumindoorImp);
 }
 
 }

@@ -63,16 +63,9 @@ struct AR_sportsObj : public Object
 class CV_EXPORTS AR_sports : public Dataset
 {
 public:
-    AR_sports() {}
-    AR_sports(const std::string &path);
-    virtual ~AR_sports() {}
+    virtual void load(const std::string &path, int number = 0) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
-
-    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
+    static Ptr<AR_sports> create();
 };
 
 }

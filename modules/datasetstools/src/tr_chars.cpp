@@ -49,7 +49,22 @@ namespace datasetstools
 
 using namespace std;
 
-void TR_chars::parseLine(const string &line, vector<int> &currSet, int number)
+class CV_EXPORTS TR_charsImp : public TR_chars
+{
+public:
+    TR_charsImp() {}
+    //TR_charsImp(const std::string &path, int number = 0);
+    virtual ~TR_charsImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path, int number = 0);
+
+    void parseLine(const std::string &line, std::vector<int> &currSet, int number);
+};
+
+void TR_charsImp::parseLine(const string &line, vector<int> &currSet, int number)
 {
     vector<string> elems;
     split(line, elems, ' ');
@@ -65,17 +80,17 @@ void TR_chars::parseLine(const string &line, vector<int> &currSet, int number)
     }
 }
 
-TR_chars::TR_chars(const string &path, int number)
+/*TR_charsImp::TR_charsImp(const string &path, int number)
+{
+    loadDataset(path, number);
+}*/
+
+void TR_charsImp::load(const string &path, int number)
 {
     loadDataset(path, number);
 }
 
-void TR_chars::load(const string &path, int number)
-{
-    loadDataset(path, number);
-}
-
-void TR_chars::loadDataset(const string &path, int number)
+void TR_charsImp::loadDataset(const string &path, int number)
 {
     vector<int> allLabels, trainSet, testSet;
     vector<string> allNames;
@@ -182,6 +197,11 @@ void TR_chars::loadDataset(const string &path, int number)
         curr->label = allLabels[*it];
         test.push_back(curr);
     }
+}
+
+Ptr<TR_chars> TR_chars::create()
+{
+    return Ptr<TR_charsImp>(new TR_charsImp);
 }
 
 }

@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-IR_robot::IR_robot(const string &path)
+class CV_EXPORTS IR_robotImp : public IR_robot
+{
+public:
+    IR_robotImp() {}
+    //IR_robotImp(const std::string &path);
+    virtual ~IR_robotImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*IR_robotImp::IR_robotImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void IR_robot::load(const string &path, int number)
+void IR_robotImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void IR_robot::load(const string &path, int number)
     loadDataset(path);
 }
 
-void IR_robot::loadDataset(const string &path)
+void IR_robotImp::loadDataset(const string &path)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -83,6 +96,11 @@ void IR_robot::loadDataset(const string &path)
 
         train.push_back(curr);
     }
+}
+
+Ptr<IR_robot> IR_robot::create()
+{
+    return Ptr<IR_robotImp>(new IR_robotImp);
 }
 
 }

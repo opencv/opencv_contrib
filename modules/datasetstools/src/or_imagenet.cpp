@@ -49,12 +49,25 @@ namespace datasetstools
 
 using namespace std;
 
-OR_imagenet::OR_imagenet(const string &path)
+class CV_EXPORTS OR_imagenetImp : public OR_imagenet
+{
+public:
+    OR_imagenetImp() {}
+    //OR_imagenetImp(const std::string &path);
+    virtual ~OR_imagenetImp() {}
+
+    virtual void load(const std::string &path, int number = 0);
+
+private:
+    void loadDataset(const std::string &path);
+};
+
+/*OR_imagenetImp::OR_imagenetImp(const string &path)
 {
     loadDataset(path);
-}
+}*/
 
-void OR_imagenet::load(const string &path, int number)
+void OR_imagenetImp::load(const string &path, int number)
 {
     if (number!=0)
     {
@@ -64,7 +77,7 @@ void OR_imagenet::load(const string &path, int number)
     loadDataset(path);
 }
 
-void OR_imagenet::loadDataset(const string &path)
+void OR_imagenetImp::loadDataset(const string &path)
 {
     ifstream infile((path + "fall11_urls.txt").c_str());
     string line;
@@ -83,10 +96,13 @@ void OR_imagenet::loadDataset(const string &path)
         curr->wnid = elems[0];
         curr->id2 = atoi(elems[1].c_str());
 
-        wnids.insert(curr->wnid);
-
         train.push_back(curr);
     }
+}
+
+Ptr<OR_imagenet> OR_imagenet::create()
+{
+    return Ptr<OR_imagenetImp>(new OR_imagenetImp);
 }
 
 }
