@@ -52,7 +52,7 @@ bool CmFile::MkDir( std::string &_path )
   if( _path.size() == 0 )
     return false;
   static char buffer[1024];
-  strcpy( buffer, _S( _path ) );
+  strcpy( buffer, _path.c_str() );
 #ifdef _WIN32
   for (int i = 0; buffer[i] != 0; i ++)
   {
@@ -64,7 +64,7 @@ bool CmFile::MkDir( std::string &_path )
     }
   }
 
-  CreateDirectoryA(_S(_path), 0);
+  CreateDirectoryA(_path.c_str(), 0);
   return true;
 #else
   for ( int i = 0; buffer[i] != 0; i++ )
@@ -76,7 +76,7 @@ bool CmFile::MkDir( std::string &_path )
       buffer[i] = '/';
     }
   }
-  mkdir( _S( _path ), 0 );
+  mkdir( _path.c_str(), 0 );
   return true;
 #endif
 }
