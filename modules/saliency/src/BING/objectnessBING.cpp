@@ -104,7 +104,7 @@ int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, 
 
   if( !matRead( s1, filters1f ) || !matRead( sI, idx1i ) )
   {
-    printf( "Can't load model: %s or %s\n", _S( s1 ), _S( sI ) );
+    printf( "Can't load model: %s or %s\n", s1.c_str(), sI.c_str() );
     return 0;
   }
 
@@ -401,7 +401,7 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
   CStr fName = _bbResDir + "bb";
   std::vector<Vec4i> sortedBB = finalBoxes.getSortedStructVal();
   std::ofstream ofs;
-  ofs.open( _S( fName + ".txt" ), std::ofstream::out );
+  ofs.open( ( fName + ".txt" ).c_str(), std::ofstream::out );
   std::stringstream dim;
   dim << sortedBB.size();
   ofs << dim.str() << "\n";

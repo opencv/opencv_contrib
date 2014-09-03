@@ -100,7 +100,6 @@ enum
   CV_FLIP_VERTICAL = 0,
   CV_FLIP_HORIZONTAL = 1
 };
-#define _S(str) ((str).c_str())
 #define CHK_IND(p) ((p).x >= 0 && (p).x < _w && (p).y >= 0 && (p).y < _h)
 #define CV_Assert_(expr, args) \
 {\
