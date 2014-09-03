@@ -218,7 +218,7 @@ add_custom_command(
             --jinja2     ${JINJA2_PATH}
             --hdrparser  ${HDR_PARSER_PATH}
             --rstparser  ${RST_PARSER_PATH}
-            --moduleroot ${CMAKE_SOURCE_DIR}/modules
+            --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
             --extra      ${opencv_extra_hdrs}
             --outdir     ${CMAKE_CURRENT_BINARY_DIR}
