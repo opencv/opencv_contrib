@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectWeizmann : public object
+struct IS_weizmannObj : public Object
 {
     std::string imageName;
     std::string srcBw;

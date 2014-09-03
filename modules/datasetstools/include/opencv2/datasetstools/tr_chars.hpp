@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct character : public object
+struct TR_charsObj : public Object
 {
     std::string imgName;
     int label;

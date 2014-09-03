@@ -73,7 +73,7 @@ void IS_weizmann::loadDataset(const string &path)
         string &imageName = *it;
         if (imageName.find('.') == string::npos) // only folders, discard .mat
         {
-            Ptr<objectWeizmann> curr(new objectWeizmann);
+            Ptr<IS_weizmannObj> curr(new IS_weizmannObj);
             curr->imageName = imageName;
             curr->srcBw = imageName + "/src_bw/" + imageName + ".png";
             curr->srcColor = imageName + "/src_color/" + imageName + ".png";

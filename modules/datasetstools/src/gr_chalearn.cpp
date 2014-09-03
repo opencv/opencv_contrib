@@ -70,7 +70,7 @@ void GR_chalearn::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<gesture> curr(new gesture);
+        Ptr<GR_chalearnObj> curr(new GR_chalearnObj);
         curr->name = *it;
         curr->nameColor = curr->name + "/" + curr->name + "_color.mp4";
         curr->nameDepth = curr->name + "/" + curr->name + "_depth.mp4";

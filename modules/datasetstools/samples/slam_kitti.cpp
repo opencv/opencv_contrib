@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     // For example, let output first sequence and dataset size.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
 
-    sequence *example = static_cast<sequence *>(dataset.train[0].get());
+    SLAM_kittiObj *example = static_cast<SLAM_kittiObj *>(dataset.train[0].get());
     printf("first dataset sequence:\n%s\n", example->name.c_str());
 
     /*string pathVelodyne(path + "sequences/" + example->name + "/velodyne/");

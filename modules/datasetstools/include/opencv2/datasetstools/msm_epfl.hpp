@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectEpfl : public object
+struct MSM_epflObj : public Object
 {
     std::string imageName;
     std::vector<double> bounding, camera, p; // TODO: implement better structures

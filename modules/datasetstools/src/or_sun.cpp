@@ -71,7 +71,7 @@ void OR_sun::loadDataset(const string &path)
     string line;
     while (getline(infile, line))
     {
-        Ptr<objectSun> curr(new objectSun);
+        Ptr<OR_sunObj> curr(new OR_sunObj);
         curr->name = line;
 
         string currPath(path + curr->name);

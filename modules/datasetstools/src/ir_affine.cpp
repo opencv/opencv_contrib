@@ -68,7 +68,7 @@ void IR_affine::loadDataset(const string &path)
 {
     for (unsigned int i=1; i<=6; ++i)
     {
-        Ptr<imageParams> curr(new imageParams);
+        Ptr<IR_affineObj> curr(new IR_affineObj);
 
         char tmp[2];
         sprintf(tmp, "%u", i);

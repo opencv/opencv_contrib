@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains camera parameters for each image.
     // For example, let output number of elements and last element.
     printf("images number: %u\n", (unsigned int)dataset.train.size());
-    cameraParam *example = static_cast<cameraParam *>(dataset.train.back().get());
+    MSM_middleburyObj *example = static_cast<MSM_middleburyObj *>(dataset.train.back().get());
     printf("last image name: %s\n", (path + example->imageName).c_str());
     printf("K:\n");
     for (int i=0; i<3; ++i)

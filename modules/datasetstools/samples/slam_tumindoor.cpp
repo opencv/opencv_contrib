@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     // For example, let output first image information and dataset size.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
 
-    imageInfo *example = static_cast<imageInfo *>(dataset.train[0].get());
+    SLAM_tumindoorObj *example = static_cast<SLAM_tumindoorObj *>(dataset.train[0].get());
     printf("first image:\ntype: %u\n", example->type);
 
     string imagePath(path);

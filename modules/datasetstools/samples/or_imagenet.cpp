@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     // For example, let output dataset size and first object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
     printf("wnids number: %u\n", (unsigned int)dataset.wnids.size());
-    objectImagenet *example = static_cast<objectImagenet *>(dataset.train[0].get());
+    OR_imagenetObj *example = static_cast<OR_imagenetObj *>(dataset.train[0].get());
     printf("first object url: %s\n", example->imageUrl.c_str());
     printf("first object wnid: %s\n", example->wnid.c_str());
     printf("first object id2: %u\n", example->id2);

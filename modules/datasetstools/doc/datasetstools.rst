@@ -11,9 +11,9 @@ First version of this module was implemented for **Fall2014 OpenCV Challenge**.
 Action Recognition
 ------------------
 
-ar_hmdb
+AR_hmdb
 =======
-.. ocv:class:: ar_hmdb
+.. ocv:class:: AR_hmdb
 
 Implements loading dataset:
 
@@ -27,9 +27,9 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_ar_hmdb -p=/home/user/path_to_unpacked_folders/
 
-ar_sports
+AR_sports
 =========
-.. ocv:class:: ar_sports
+.. ocv:class:: AR_sports
 
 Implements loading dataset:
 
@@ -44,9 +44,9 @@ _`"Sports-1M Dataset"`: http://cs.stanford.edu/people/karpathy/deepvideo/
 Face Recognition
 ----------------
 
-fr_lfw
+FR_lfw
 ======
-.. ocv:class:: fr_lfw
+.. ocv:class:: FR_lfw
 
 Implements loading dataset:
 
@@ -63,9 +63,9 @@ _`"Labeled Faces in the Wild-a"`: http://www.openu.ac.il/home/hassner/data/lfwa/
 Gesture Recognition
 -------------------
 
-gr_chalearn
+GR_chalearn
 ===========
-.. ocv:class:: gr_chalearn
+.. ocv:class:: GR_chalearn
 
 Implements loading dataset:
 
@@ -79,9 +79,9 @@ _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_gr_chalearn -p=/home/user/path_to_unpacked_folder/
 
-gr_skig
+GR_skig
 =======
-.. ocv:class:: gr_skig
+.. ocv:class:: GR_skig
 
 Implements loading dataset:
 
@@ -98,9 +98,9 @@ _`"Sheffield Kinect Gesture Dataset"`: http://lshao.staff.shef.ac.uk/data/Sheffi
 Human Pose Estimation
 ---------------------
 
-hpe_parse
+HPE_parse
 =========
-.. ocv:class:: hpe_parse
+.. ocv:class:: HPE_parse
 
 Implements loading dataset:
 
@@ -117,9 +117,9 @@ _`"PARSE Dataset"`: http://www.ics.uci.edu/~dramanan/papers/parse/
 Image Registration
 ------------------
 
-ir_affine
+IR_affine
 =========
-.. ocv:class:: ir_affine
+.. ocv:class:: IR_affine
 
 Implements loading dataset:
 
@@ -133,9 +133,9 @@ _`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/dat
 
  3. To load data, for example, for "bark", run: ./opencv/build/bin/example_datasetstools_ir_affine -p=/home/user/path_to_unpacked_folder/bark/
 
-ir_robot
+IR_robot
 ========
-.. ocv:class:: ir_robot
+.. ocv:class:: IR_robot
 
 Implements loading dataset:
 
@@ -151,9 +151,9 @@ _`"Robot Data Set"`: http://roboimagedata.compute.dtu.dk/?page_id=24
 Image Segmentation
 ------------------
 
-is_bsds
+IS_bsds
 =======
-.. ocv:class:: is_bsds
+.. ocv:class:: IS_bsds
 
 Implements loading dataset:
 
@@ -167,9 +167,9 @@ _`"The Berkeley Segmentation Dataset and Benchmark"`: https://www.eecs.berkeley.
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_is_bsds -p=/home/user/path_to_unpacked_folder/BSDS300/
 
-is_weizmann
+IS_weizmann
 ===========
-.. ocv:class:: is_weizmann
+.. ocv:class:: IS_weizmann
 
 Implements loading dataset:
 
@@ -186,9 +186,9 @@ _`"Weizmann Segmentation Evaluation Database"`: http://www.wisdom.weizmann.ac.il
 Multiview Stereo Matching
 -------------------------
 
-msm_epfl
+MSM_epfl
 ========
-.. ocv:class:: msm_epfl
+.. ocv:class:: MSM_epfl
 
 Implements loading dataset:
 
@@ -202,9 +202,9 @@ _`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS
 
  3. To load data, for example, for "fountain", run: ./opencv/build/bin/example_datasetstools_msm_epfl -p=/home/user/path_to_unpacked_folder/fountain/
 
-msm_middlebury
+MSM_middlebury
 ==============
-.. ocv:class:: msm_middlebury
+.. ocv:class:: MSM_middlebury
 
 Implements loading dataset:
 
@@ -221,9 +221,9 @@ _`"Stereo – Middlebury Computer Vision"`: http://vision.middlebury.edu/mview/
 Object Recognition
 ------------------
 
-or_imagenet
+OR_imagenet
 ===========
-.. ocv:class:: or_imagenet
+.. ocv:class:: OR_imagenet
 
 Implements loading dataset:
 
@@ -239,9 +239,9 @@ Currently implemented loading full list with urls. Planned to implement dataset 
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_or_imagenet -p=/home/user/path_to_unpacked_file/
 
-or_sun
+OR_sun
 ======
-.. ocv:class:: or_sun
+.. ocv:class:: OR_sun
 
 Implements loading dataset:
 
@@ -260,9 +260,9 @@ Currently implemented loading "Scene Recognition Benchmark. SUN397". Planned to 
 SLAM
 ----
 
-slam_kitti
+SLAM_kitti
 ==========
-.. ocv:class:: slam_kitti
+.. ocv:class:: SLAM_kitti
 
 Implements loading dataset:
 
@@ -276,9 +276,9 @@ _`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_slam_kitti -p=/home/user/path_to_unpacked_folder/dataset/
 
-slam_tumindoor
+SLAM_tumindoor
 ==============
-.. ocv:class:: slam_tumindoor
+.. ocv:class:: SLAM_tumindoor
 
 Implements loading dataset:
 
@@ -295,9 +295,9 @@ _`"TUMindoor Dataset"`: http://www.navvis.lmt.ei.tum.de/dataset/
 Text Recognition
 ----------------
 
-tr_chars
+TR_chars
 ========
-.. ocv:class:: tr_chars
+.. ocv:class:: TR_chars
 
 Implements loading dataset:
 
@@ -313,9 +313,9 @@ _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
 
  4. To load data, for example "EnglishImg", run: ./opencv/build/bin/example_datasetstools_tr_chars -p=/home/user/path_to_unpacked_folder/English/
 
-tr_svt
+TR_svt
 ======
-.. ocv:class:: tr_svt
+.. ocv:class:: TR_svt
 
 Implements loading dataset:
 

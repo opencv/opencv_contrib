@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     // dataset contains for each split: a set of video file names for each action.
     // For example, let output all training video file names for second split and first action.
     // And its size.
-    action *example = static_cast<action *>(dataset[1].train[0].get());
+    AR_hmdbObj *example = static_cast<AR_hmdbObj *>(dataset[1].train[0].get());
     printf("name: %s\n", example->name.c_str());
     vector<string> &videoNames = example->videoNames;
     printf("size: %u\n", (unsigned int)videoNames.size());

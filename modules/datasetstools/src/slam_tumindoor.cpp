@@ -76,7 +76,7 @@ void SLAM_tumindoor::loadDataset(const string &path)
         vector<string> elems;
         split(line, elems, ';');
 
-        Ptr<imageInfo> curr(new imageInfo);
+        Ptr<SLAM_tumindoorObj> curr(new SLAM_tumindoorObj);
 
         curr->name = elems[0];
         if (curr->name.substr(0, strlen("dslr_left")) == "dslr_left")

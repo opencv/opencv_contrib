@@ -78,7 +78,7 @@ void MSM_middlebury::loadDataset(const string &path)
     infile >> imageName; // skip header
     while (infile >> imageName)
     {
-        Ptr<cameraParam> curr(new cameraParam);
+        Ptr<MSM_middleburyObj> curr(new MSM_middleburyObj);
         curr->imageName = imageName;
 
         for (int i=0; i<3; ++i)

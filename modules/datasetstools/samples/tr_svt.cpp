@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
 
-    image *example = static_cast<image *>(dataset.train.back().get());
+    TR_svtObj *example = static_cast<TR_svtObj *>(dataset.train.back().get());
     printf("last element:\nfile name: %s", example->fileName.c_str());
     printf("\nlex: ");
     for (vector<string>::iterator it=example->lex.begin(); it!=example->lex.end(); ++it)

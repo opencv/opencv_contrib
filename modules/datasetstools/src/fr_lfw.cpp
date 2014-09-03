@@ -70,7 +70,7 @@ void FR_lfw::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<face> curr(new face);
+        Ptr<FR_lfwObj> curr(new FR_lfwObj);
         curr->name = *it;
 
         string pathFace(path + curr->name + "/");

@@ -79,7 +79,7 @@ void HPE_parse::loadDataset(const string &path)
         }
         if (ext==".jpg")
         {
-            Ptr<objectParse> curr(new objectParse);
+            Ptr<HPE_parseObj> curr(new HPE_parseObj);
             curr->name = file;
 
             if (i<100)

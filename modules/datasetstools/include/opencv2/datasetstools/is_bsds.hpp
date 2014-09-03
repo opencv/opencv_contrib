@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectBsds : public object
+struct IS_bsdsObj : public Object
 {
     std::string name;
 };
@@ -71,7 +71,7 @@ public:
 private:
     void loadDataset(const std::string &path);
 
-    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<object> > &dataset_);
+    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
 };
 
 }

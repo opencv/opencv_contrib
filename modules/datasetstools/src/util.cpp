@@ -60,7 +60,7 @@ namespace datasetstools
 
 using namespace std;
 
-void split(const string s, vector<string> &elems, char delim)
+void split(const string &s, vector<string> &elems, char delim)
 {
     stringstream ss(s);
     string item;

@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     // ***************
     // dataset contains object with name and its images.
     // For example, let output last element and dataset size.
-    scene *example = static_cast<scene *>(dataset.train.back().get());
+    IR_robotObj *example = static_cast<IR_robotObj *>(dataset.train.back().get());
     printf("last dataset object:\n%s\n", example->name.c_str());
     string currPath(path + example->name + "/");
     for (vector<string>::iterator it=example->images.begin(); it!=example->images.end(); ++it)

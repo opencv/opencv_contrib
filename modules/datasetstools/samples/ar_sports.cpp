@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
 
-    element *example = static_cast<element *>(dataset.test[0].get());
+    AR_sportsObj *example = static_cast<AR_sportsObj *>(dataset.test[0].get());
     printf("url: %s\n", example->videoUrl.c_str());
     printf("labels: ");
     vector<int> &labels = example->labels;

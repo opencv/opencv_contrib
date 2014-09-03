@@ -60,7 +60,7 @@ struct tag
     int height, width, x, y;
 };
 
-struct image : public object
+struct TR_svtObj : public Object
 {
     std::string fileName;
     std::vector<std::string> lex;
@@ -79,7 +79,7 @@ public:
 private:
     void loadDataset(const std::string &path);
 
-    void xmlParse(const std::string &set, std::vector< Ptr<object> > &out);
+    void xmlParse(const std::string &set, std::vector< Ptr<Object> > &out);
 };
 
 }

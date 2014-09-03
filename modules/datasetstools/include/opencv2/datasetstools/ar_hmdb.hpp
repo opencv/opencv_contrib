@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct action : public object
+struct AR_hmdbObj : public Object
 {
     std::string name;
     std::vector<std::string> videoNames;

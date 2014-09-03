@@ -88,7 +88,7 @@ enum backgroundType
     paperWithCharacters
 };
 
-struct gestureSkig : public object
+struct GR_skigObj : public Object
 {
     std::string rgb;
     std::string dep;

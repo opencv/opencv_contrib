@@ -52,7 +52,7 @@ namespace datasetstools
 using namespace std;
 using namespace tinyxml2;
 
-void TR_svt::xmlParse(const string &set, vector< Ptr<object> > &out)
+void TR_svt::xmlParse(const string &set, vector< Ptr<Object> > &out)
 {
     XMLDocument doc;
     doc.LoadFile(set.c_str());
@@ -67,7 +67,7 @@ void TR_svt::xmlParse(const string &set, vector< Ptr<object> > &out)
             string imageName = child->FirstChildElement("imageName")->GetText();
             string lex = child->FirstChildElement("lex")->GetText();
 
-            Ptr<image> curr(new image);
+            Ptr<TR_svtObj> curr(new TR_svtObj);
             curr->fileName = imageName;
             split(lex, curr->lex, ',');
 

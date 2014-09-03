@@ -81,7 +81,7 @@ void GR_skig::loadDataset(const string &path)
         {
             string &file = *it;
 
-            Ptr<gestureSkig> curr(new gestureSkig);
+            Ptr<GR_skigObj> curr(new GR_skigObj);
             curr->rgb = pathDatasetRgb + file;
             curr->dep = file;
             curr->dep[0] = 'K';

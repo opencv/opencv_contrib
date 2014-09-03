@@ -55,7 +55,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectImagenet : public object
+struct OR_imagenetObj : public Object
 {
     std::string wnid;
     int id2;

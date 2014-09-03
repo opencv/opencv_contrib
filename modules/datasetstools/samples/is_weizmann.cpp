@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    objectWeizmann *example = static_cast<objectWeizmann *>(dataset.train[0].get());
+    IS_weizmannObj *example = static_cast<IS_weizmannObj *>(dataset.train[0].get());
     printf("first image:\nname: %s\n", example->imageName.c_str());
     printf("src bw: %s\nsrc color: %s\n", example->srcBw.c_str(), example->srcColor.c_str());
 

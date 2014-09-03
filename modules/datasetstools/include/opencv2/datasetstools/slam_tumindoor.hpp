@@ -61,7 +61,7 @@ enum imageType
     LADYBUG
 };
 
-struct imageInfo : public object
+struct SLAM_tumindoorObj : public Object
 {
     std::string name;
     double transformMat[4][4];

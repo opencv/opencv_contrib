@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains information for each sample.
     // For example, let output dataset size and first element.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    gesture *example = static_cast<gesture *>(dataset.train[0].get());
+    GR_chalearnObj *example = static_cast<GR_chalearnObj *>(dataset.train[0].get());
     printf("first dataset sample:\n%s\n", example->name.c_str());
     printf("color video:\n%s\n", example->nameColor .c_str());
     printf("depth video:\n%s\n", example->nameDepth.c_str());

@@ -71,7 +71,7 @@ void SLAM_kitti::loadDataset(const string &path)
     getDirList(pathSequence, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<sequence> curr(new sequence);
+        Ptr<SLAM_kittiObj> curr(new SLAM_kittiObj);
         curr->name = *it;
 
         string currPath(pathSequence + curr->name);

@@ -52,28 +52,20 @@ namespace cv
 namespace datasetstools
 {
 
-struct object
+struct Object
 {
-};
-
-enum datasetType
-{
-    AR_HMDB,
-    AR_SPORTS
 };
 
 class CV_EXPORTS Dataset
 {
 public:
     Dataset() {}
-    virtual ~Dataset() {train.clear(); test.clear();}
+    virtual ~Dataset() {}
 
     virtual void load(const std::string &path, int number = 0) = 0;
 
-    std::vector< Ptr<object> > train;
-    std::vector< Ptr<object> > test;
-
-    static Ptr<Dataset> create(datasetType type);
+    std::vector< Ptr<Object> > train;
+    std::vector< Ptr<Object> > test;
 };
 
 }

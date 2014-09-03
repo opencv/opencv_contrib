@@ -91,8 +91,8 @@ void AR_hmdb::loadDataset(const string &path, int number)
     getDirList(pathDataset, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<action> currTrain(new action);
-        Ptr<action> currTest(new action);
+        Ptr<AR_hmdbObj> currTrain(new AR_hmdbObj);
+        Ptr<AR_hmdbObj> currTest(new AR_hmdbObj);
         currTrain->name = *it;
         currTest->name = *it;
 

@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("test size: %u\n", (unsigned int)dataset.test.size());
 
-    objectBsds *example1 = static_cast<objectBsds *>(dataset.train[0].get());
+    IS_bsdsObj *example1 = static_cast<IS_bsdsObj *>(dataset.train[0].get());
     string fullPath(path + "images/train/" + example1->name + ".jpg");
     printf("first train image: %s\n", fullPath.c_str());
-    objectBsds *example2 = static_cast<objectBsds *>(dataset.test[0].get());
+    IS_bsdsObj *example2 = static_cast<IS_bsdsObj *>(dataset.test[0].get());
     fullPath = path + "images/test/" + example2->name + ".jpg";
     printf("first test image: %s\n", fullPath.c_str());
 

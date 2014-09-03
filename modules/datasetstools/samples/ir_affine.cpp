@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     // And dataset size.
     printf("size: %u\n", (unsigned int)dataset.train.size());
 
-    imageParams *example = static_cast<imageParams *>(dataset.train.back().get());
+    IR_affineObj *example = static_cast<IR_affineObj *>(dataset.train.back().get());
     printf("image name: %s\n", example->imageName.c_str());
     printf("matrix:\n");
     for (int i=0; i<3; ++i)

@@ -59,7 +59,7 @@ struct pose
     double elem[12];
 };
 
-struct sequence : public object
+struct SLAM_kittiObj : public Object
 {
     std::string name;
     std::vector<std::string> images[4];

@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct cameraParam : public object
+struct MSM_middleburyObj : public Object
 {
     std::string imageName;
     double k[3][3];

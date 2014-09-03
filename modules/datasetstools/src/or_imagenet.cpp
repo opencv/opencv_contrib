@@ -73,7 +73,7 @@ void OR_imagenet::loadDataset(const string &path)
         vector<string> elems;
         split(line, elems, '\t');
 
-        Ptr<objectImagenet> curr(new objectImagenet);
+        Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
         curr->imageUrl = elems[1];
 
         string id(elems[0]);

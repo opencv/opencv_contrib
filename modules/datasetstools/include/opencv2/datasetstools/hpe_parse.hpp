@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectParse : public object
+struct HPE_parseObj : public Object
 {
     std::string name;
 };

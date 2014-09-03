@@ -69,7 +69,7 @@ struct skeleton
     join s[20];
 };
 
-struct gesture : public object
+struct GR_chalearnObj : public Object
 {
     std::string name, nameColor, nameDepth, nameUser;
     int numFrames, fps, depth;

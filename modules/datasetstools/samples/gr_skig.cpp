@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     // ***************
     // dataset contains pair of rgb\dep images
     // For example, let output train size and second element.
-    gestureSkig *example = static_cast<gestureSkig *>(dataset.train[1].get());
+    GR_skigObj *example = static_cast<GR_skigObj *>(dataset.train[1].get());
     printf("train size: %u\n", (unsigned int)dataset.train.size());
     printf("second train image:\nrgb: %s\ndep: %s\n", example->rgb.c_str(), example->dep.c_str());
     printf("person: %u, backgroud: %u, illumination: %u, pose: %u, actionType: %u\n",

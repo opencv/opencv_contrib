@@ -55,7 +55,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct imageParams : public object
+struct IR_affineObj : public Object
 {
     std::string imageName;
     Matx33d mat;

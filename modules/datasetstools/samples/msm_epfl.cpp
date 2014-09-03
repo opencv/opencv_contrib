@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
     printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    objectEpfl *example = static_cast<objectEpfl *>(dataset.train[0].get());
+    MSM_epflObj *example = static_cast<MSM_epflObj *>(dataset.train[0].get());
     printf("first image:\nname: %s\n", example->imageName.c_str());
 
     printf("bounding:\n");

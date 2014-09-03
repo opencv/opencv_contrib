@@ -49,13 +49,13 @@ namespace datasetstools
 
 using namespace std;
 
-void IS_bsds::loadDatasetPart(const string &fileName, vector< Ptr<object> > &dataset_)
+void IS_bsds::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
 {
     ifstream infile(fileName.c_str());
     string imageName;
     while (infile >> imageName)
     {
-        Ptr<objectBsds> curr(new objectBsds);
+        Ptr<IS_bsdsObj> curr(new IS_bsdsObj);
         curr->name = imageName;
         dataset_.push_back(curr);
     }

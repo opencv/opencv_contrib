@@ -49,13 +49,13 @@ namespace datasetstools
 
 using namespace std;
 
-void AR_sports::loadDatasetPart(const string &fileName, vector< Ptr<object> > &dataset_)
+void AR_sports::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
 {
     ifstream infile(fileName.c_str());
     string videoUrl, labels;
     while (infile >> videoUrl >> labels)
     {
-        Ptr<element> curr(new element);
+        Ptr<AR_sportsObj> curr(new AR_sportsObj);
         curr->videoUrl = videoUrl;
 
         vector<string> elems;

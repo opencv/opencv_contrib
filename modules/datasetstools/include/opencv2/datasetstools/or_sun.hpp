@@ -54,7 +54,7 @@ namespace cv
 namespace datasetstools
 {
 
-struct objectSun : public object
+struct OR_sunObj : public Object
 {
     std::string name;
     std::vector<std::string> imageNames;
