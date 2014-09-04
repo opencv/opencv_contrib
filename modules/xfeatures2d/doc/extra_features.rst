@@ -1,5 +1,5 @@
-Non-free 2D Features Algorithms
-=================================
+Experimental 2D Features Algorithms
+===================================
 
 This section describes experimental algorithms for 2d feature detection.
 
