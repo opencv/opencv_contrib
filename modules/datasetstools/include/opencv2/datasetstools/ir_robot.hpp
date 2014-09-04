@@ -59,10 +59,15 @@ namespace datasetstools
 // 0.0000e+00   2.8285e+03   6.1618e+02
 // 0.0000e+00   0.0000e+00   1.0000e+00
 
+struct cameraPos
+{
+    std::vector<std::string> images;
+};
+
 struct IR_robotObj : public Object
 {
     std::string name;
-    std::vector<std::string> images; // TODO: implement more complex structure
+    std::vector<cameraPos> pos;
 };
 
 class CV_EXPORTS IR_robot : public Dataset

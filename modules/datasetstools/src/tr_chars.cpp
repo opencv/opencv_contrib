@@ -53,15 +53,19 @@ class CV_EXPORTS TR_charsImp : public TR_chars
 {
 public:
     TR_charsImp() {}
-    //TR_charsImp(const std::string &path, int number = 0);
+    //TR_charsImp(const string &path, int number = 0);
     virtual ~TR_charsImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path, int number = 0);
 
 private:
-    void loadDataset(const std::string &path, int number = 0);
+    void loadDataset(const string &path, int number = 0);
 
-    void parseLine(const std::string &line, std::vector<int> &currSet, int number);
+    void parseLine(const string &line, vector<int> &currSet, int number);
+
+    inline void convert(vector<int> &from, vector< Ptr<Object> > &to, vector<int> &allLabels, vector<string> &allNames);
+
+    inline void parseSet(const string &line, const string &pattern, bool &flag, vector<int> &set, int number);
 };
 
 void TR_charsImp::parseLine(const string &line, vector<int> &currSet, int number)
@@ -80,6 +84,38 @@ void TR_charsImp::parseLine(const string &line, vector<int> &currSet, int number
     }
 }
 
+inline void TR_charsImp::convert(vector<int> &from, std::vector< Ptr<Object> > &to, vector<int> &allLabels, vector<string> &allNames)
+{
+    for (vector<int>::iterator it=from.begin(); it!=from.end(); ++it)
+    {
+        if (*it>=(int)allNames.size() || *it>=(int)allLabels.size())
+        {
+            printf("incorrect index: %u\n", *it);
+            continue;
+        }
+
+        Ptr<TR_charsObj> curr(new TR_charsObj);
+        curr->imgName = allNames[*it];
+        curr->label = allLabels[*it];
+        to.push_back(curr);
+    }
+}
+
+inline void TR_charsImp::parseSet(const string &line, const string &pattern, bool &flag, vector<int> &set, int number)
+{
+    size_t pos = line.find(pattern);
+    if (string::npos != pos)
+    {
+        flag = true;
+        string s(line.substr(pos + pattern.length()));
+        parseLine(s, set, number);
+    } else
+    if (flag)
+    {
+        parseLine(line, set, number);
+    }
+}
+
 /*TR_charsImp::TR_charsImp(const string &path, int number)
 {
     loadDataset(path, number);
@@ -92,21 +128,22 @@ void TR_charsImp::load(const string &path, int number)
 
 void TR_charsImp::loadDataset(const string &path, int number)
 {
-    vector<int> allLabels, trainSet, testSet;
+    vector<int> allLabels, trainSet, testSet, validationSet;
     vector<string> allNames;
 
     ifstream infile((path + "list_English_Img.m").c_str());
     string line;
-    bool labels = false, names = false, isTrain = false, isTest = false;
+    bool labels = false, names = false, isTrain = false, isTest = false, isValidation = false;
     while (getline(infile, line))
     {
         size_t pos = line.find("];");
-        if (string::npos!=pos)
+        if (string::npos != pos)
         {
             labels = false;
             names = false;
             isTrain = false;
             isTest = false;
+            isValidation = false;
         }
 
         string slabels("list.ALLlabels = [");
@@ -124,7 +161,7 @@ void TR_charsImp::loadDataset(const string &path, int number)
 
         string snames("list.ALLnames = [");
         pos = line.find(snames);
-        if (string::npos!=pos)
+        if (string::npos != pos)
         {
             names = true;
             size_t start = pos+snames.length();
@@ -137,66 +174,24 @@ void TR_charsImp::loadDataset(const string &path, int number)
             allNames.push_back(s);
         }
 
-        string strain("list.TRNind = [");
-        pos = line.find(strain);
-        if (string::npos!=pos)
-        {
-            isTrain = true;
-            string s(line.substr(pos+strain.length()));
-            parseLine(s, trainSet, number);
-        } else
-        if (isTrain)
-        {
-            parseLine(line, trainSet, number);
-        }
+        string trainStr("list.TRNind = [");
+        parseSet(line, trainStr, isTrain, trainSet, number);
 
-        string stest("list.TSTind = [");
-        pos = line.find(stest);
-        if (string::npos!=pos)
-        {
-            isTest = true;
-            string s(line.substr(pos+stest.length()));
-            parseLine(s, testSet, number);
-        } else
-        if (isTest)
-        {
-            parseLine(line, testSet, number);
-        }
+        string testStr("list.TSTind = [");
+        parseSet(line, testStr, isTest, testSet, number);
+
+        string validationStr("list.VALind = [");
+        parseSet(line, validationStr, isValidation, validationSet, number);
 
         /*"list.classlabels = ["
         "list.classnames = ["
         "list.NUMclasses = 62;"
-        "list.VALind = [" // TODO: load validation
         "list.TXNind = ["*/
     }
 
-    for (vector<int>::iterator it=trainSet.begin(); it!=trainSet.end(); ++it)
-    {
-        if (*it>=(int)allNames.size() || *it>=(int)allLabels.size())
-        {
-            printf("incorrect train index: %u\n", *it);
-            continue;
-        }
-
-        Ptr<TR_charsObj> curr(new TR_charsObj);
-        curr->imgName = allNames[*it];
-        curr->label = allLabels[*it];
-        train.push_back(curr);
-    }
-
-    for (vector<int>::iterator it=testSet.begin(); it!=testSet.end(); ++it)
-    {
-        if (*it>=(int)allNames.size() || *it>=(int)allLabels.size())
-        {
-            printf("incorrect test index: %u\n", *it);
-            continue;
-        }
-
-        Ptr<TR_charsObj> curr(new TR_charsObj);
-        curr->imgName = allNames[*it];
-        curr->label = allLabels[*it];
-        test.push_back(curr);
-    }
+    convert(trainSet, train, allLabels, allNames);
+    convert(testSet, test, allLabels, allNames);
+    convert(validationSet, validation, allLabels, allNames);
 }
 
 Ptr<TR_chars> TR_chars::create()

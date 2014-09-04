@@ -66,10 +66,12 @@ public:
 
     std::vector< Ptr<Object> >& getTrain() { return train; }
     std::vector< Ptr<Object> >& getTest() { return test; }
+    std::vector< Ptr<Object> >& getValidation() { return validation; }
 
 protected:
     std::vector< Ptr<Object> > train;
     std::vector< Ptr<Object> > test;
+    std::vector< Ptr<Object> > validation;
 };
 
 }

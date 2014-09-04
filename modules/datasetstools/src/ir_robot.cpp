@@ -89,9 +89,20 @@ void IR_robotImp::loadDataset(const string &path)
         string pathScene(path + curr->name + "/");
         vector<string> sceneNames;
         getDirList(pathScene, sceneNames);
+        int currImageNum = 0;
         for (vector<string>::iterator itScene=sceneNames.begin(); itScene!=sceneNames.end(); ++itScene)
         {
-            curr->images.push_back(*itScene);
+            string &fileName = *itScene;
+
+            int imageNum = atoi( fileName.substr(3, 3).c_str() );
+            int pos = atoi( fileName.substr(6, 2).c_str() );
+            if (imageNum != currImageNum)
+            {
+                curr->pos.push_back(cameraPos());
+                currImageNum = imageNum;
+            }
+
+            curr->pos.back().images.push_back(fileName);
         }
 
         train.push_back(curr);

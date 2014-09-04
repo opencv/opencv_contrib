@@ -71,10 +71,11 @@ int main(int argc, char *argv[])
     // ***************
     // dataset contains information for each sample.
     // For example, let output dataset size and first element.
-    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("validation size: %u\n", (unsigned int)dataset->getValidation().size());
     GR_chalearnObj *example = static_cast<GR_chalearnObj *>(dataset->getTrain()[0].get());
     printf("first dataset sample:\n%s\n", example->name.c_str());
-    printf("color video:\n%s\n", example->nameColor .c_str());
+    printf("color video:\n%s\n", example->nameColor.c_str());
     printf("depth video:\n%s\n", example->nameDepth.c_str());
     printf("user video:\n%s\n", example->nameUser.c_str());
     printf("video:\nnumber of frames: %u\nfps: %u\nmaximum depth: %u\n", example->numFrames, example->fps, example->depth);

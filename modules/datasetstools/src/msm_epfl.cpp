@@ -60,19 +60,7 @@ public:
 
 private:
     void loadDataset(const std::string &path);
-
-    void readFileDouble(const std::string &fileName, std::vector<double> &out);
 };
-
-void MSM_epflImp::readFileDouble(const string &fileName, vector<double> &out)
-{
-    ifstream infile(fileName.c_str());
-    double val;
-    while (infile >> val)
-    {
-        out.push_back(val);
-    }
-}
 
 /*MSM_epflImp::MSM_epflImp(const string &path)
 {
@@ -103,9 +91,58 @@ void MSM_epflImp::loadDataset(const string &path)
         Ptr<MSM_epflObj> curr(new MSM_epflObj);
         curr->imageName = *it;
 
-        readFileDouble(string(pathBounding + curr->imageName + ".bounding"), curr->bounding);
-        readFileDouble(string(pathCamera + curr->imageName + ".camera"), curr->camera);
-        readFileDouble(string(pathP + curr->imageName + ".P"), curr->p);
+        // load boundary
+        string fileBounding(pathBounding + curr->imageName + ".bounding");
+        ifstream infile(fileBounding.c_str());
+        for (int k=0; k<2; ++k)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infile >> curr->bounding(k, j);
+            }
+        }
+
+        // load camera parameters
+        string fileCamera(pathCamera + curr->imageName + ".camera");
+        ifstream infileCamera(fileCamera.c_str());
+        for (int i=0; i<3; ++i)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infileCamera >> curr->camera.mat1(i, j);
+            }
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            infileCamera >> curr->camera.mat2[i];
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infileCamera >> curr->camera.mat3(i, j);
+            }
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            infileCamera >> curr->camera.mat4[i];
+        }
+
+        infileCamera >> curr->camera.imageWidth >> curr->camera.imageHeight;
+
+        // load P
+        string fileP(pathP + curr->imageName + ".P");
+        ifstream infileP(fileP.c_str());
+        for (int k=0; k<3; ++k)
+        {
+            for (int j=0; j<4; ++j)
+            {
+                infileP >> curr->p(k, j);
+            }
+        }
 
         train.push_back(curr);
     }

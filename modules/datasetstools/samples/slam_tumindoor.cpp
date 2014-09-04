@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     }
     printf("file name: %s\n", (imagePath + example->name).c_str());
 
-    printf("transformation matrix:\n");
+    printf("\ntransformation matrix:\n");
     for (unsigned int i=0; i<4; ++i)
     {
         for (unsigned int j=0; j<4; ++j)

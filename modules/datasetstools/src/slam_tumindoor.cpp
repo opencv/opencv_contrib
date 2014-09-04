@@ -81,8 +81,34 @@ void SLAM_tumindoorImp::load(const string &path, int number)
 
 void SLAM_tumindoorImp::loadDataset(const string &path)
 {
-    string infoPath(path + "info/2011-12-17_15.02.56-info.csv"); // TODO
-    ifstream infile(infoPath.c_str());
+    string infoPath(path + "info/");
+
+    // get info map name, .csv should be only one such file in folder
+    string csvName;
+    vector<string> infoNames;
+    getDirList(infoPath, infoNames);
+    for (vector<string>::iterator it=infoNames.begin(); it!=infoNames.end(); ++it)
+    {
+        string &name = *it;
+        if (name.length()>3 && name.substr( name.length()-4, 4 )==".csv")
+        {
+            if (csvName.length()==0)
+            {
+                csvName = name;
+            } else
+            {
+                printf("more than one .csv file in info folder\n");
+                return;
+            }
+        }
+    }
+    if (csvName.length()==0)
+    {
+        printf("didn't find .csv file in info folder\n");
+        return;
+    }
+
+    ifstream infile((infoPath + csvName).c_str());
     string line;
     while (getline(infile, line))
     {

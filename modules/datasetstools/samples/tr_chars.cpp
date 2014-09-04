@@ -85,15 +85,20 @@ int main(int argc, char *argv[])
 
     vector< Ptr<Object> > &currTrain = dataset.back()->getTrain();
     vector< Ptr<Object> > &currTest = dataset.back()->getTest();
+    vector< Ptr<Object> > &currValidation = dataset.back()->getValidation();
     printf("train size: %u\n", (unsigned int)currTrain.size());
     printf("test size: %u\n", (unsigned int)currTest.size());
+    printf("validation size: %u\n", (unsigned int)currValidation.size());
 
-    TR_charsObj *example1 = static_cast<TR_charsObj *>(currTrain[0].get());
-    TR_charsObj *example2 = static_cast<TR_charsObj *>(currTest[0].get());
-    printf("first train element:\nname: %s\n", example1->imgName.c_str());
-    printf("label: %u\n", example1->label);
-    printf("first test element:\nname: %s\n", example2->imgName.c_str());
-    printf("label: %u\n", example2->label);
+    TR_charsObj *exampleTrain = static_cast<TR_charsObj *>(currTrain[0].get());
+    TR_charsObj *exampleTest = static_cast<TR_charsObj *>(currTest[0].get());
+    TR_charsObj *exampleValidation = static_cast<TR_charsObj *>(currValidation[0].get());
+    printf("first train element:\nname: %s\n", exampleTrain->imgName.c_str());
+    printf("label: %u\n", exampleTrain->label);
+    printf("first test element:\nname: %s\n", exampleTest->imgName.c_str());
+    printf("label: %u\n", exampleTest->label);
+    printf("first validation element:\nname: %s\n", exampleValidation->imgName.c_str());
+    printf("label: %u\n", exampleValidation->label);
 
     return 0;
 }
