@@ -60,12 +60,12 @@ namespace cv{ namespace ccalib{
 using namespace std;
 
 const int MIN_CONTOUR_AREA_PX      = 100;
-const float MIN_CONTOUR_AREA_RATIO = 0.2;
-const float MAX_CONTOUR_AREA_RATIO = 5.0;
+const float MIN_CONTOUR_AREA_RATIO = 0.2f;
+const float MAX_CONTOUR_AREA_RATIO = 5.0f;
 
 const int MIN_POINTS_FOR_H         = 10;
 
-const float MAX_PROJ_ERROR_PX      = 5.0;
+const float MAX_PROJ_ERROR_PX      = 5.0f;
 
 CustomPattern::CustomPattern()
 {
