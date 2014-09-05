@@ -55,17 +55,17 @@
 #include <vector>
 #include <cstring>
 
+namespace cv{ namespace ccalib{
+
 using namespace std;
 
-#define MIN_CONTOUR_AREA_PX     100
-#define MIN_CONTOUR_AREA_RATIO  0.2
-#define MAX_CONTOUR_AREA_RATIO  5
+const int MIN_CONTOUR_AREA_PX      = 100;
+const float MIN_CONTOUR_AREA_RATIO = 0.2;
+const float MAX_CONTOUR_AREA_RATIO = 5.0;
 
-#define MIN_POINTS_FOR_H        10
+const int MIN_POINTS_FOR_H         = 10;
 
-#define MAX_PROJ_ERROR_PX       5.0
-
-namespace cv{
+const float MAX_PROJ_ERROR_PX      = 5.0;
 
 CustomPattern::CustomPattern()
 {
@@ -487,8 +487,8 @@ void CustomPattern::drawOrientation(InputOutputArray image, InputArray tvec, Inp
     img.copyTo(image);
 }
 
-} // namespace cv
+}} // namespace ccalib, cv
 
-#endif //_CPP
+#endif // __OPENCV_CCALIB_CPP__
 #endif // cplusplus
 

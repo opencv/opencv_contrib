@@ -49,7 +49,7 @@
 
 #include <vector>
 
-namespace cv{
+namespace cv{ namespace ccalib{
 
 class CV_EXPORTS CustomPattern : public Algorithm
 {
@@ -144,6 +144,6 @@ private:
 	void refineKeypointsPos(const Mat& img, std::vector<KeyPoint>& kp);
 };
 
-} // cv
+}} // namespace ccalib, cv
 
 #endif
