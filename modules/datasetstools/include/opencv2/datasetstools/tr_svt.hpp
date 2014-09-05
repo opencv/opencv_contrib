@@ -70,7 +70,7 @@ struct TR_svtObj : public Object
 class CV_EXPORTS TR_svt : public Dataset
 {
 public:
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
     static Ptr<TR_svt> create();
 };

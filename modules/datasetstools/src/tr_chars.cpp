@@ -56,10 +56,12 @@ public:
     //TR_charsImp(const string &path, int number = 0);
     virtual ~TR_charsImp() {}
 
-    virtual void load(const string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const string &path, int number = 0);
+    void loadDatasetSplit(const string &path, int number);
+
+    void loadDataset(const string &path);
 
     void parseLine(const string &line, vector<int> &currSet, int number);
 
@@ -84,7 +86,7 @@ void TR_charsImp::parseLine(const string &line, vector<int> &currSet, int number
     }
 }
 
-inline void TR_charsImp::convert(vector<int> &from, std::vector< Ptr<Object> > &to, vector<int> &allLabels, vector<string> &allNames)
+inline void TR_charsImp::convert(vector<int> &from, vector< Ptr<Object> > &to, vector<int> &allLabels, vector<string> &allNames)
 {
     for (vector<int>::iterator it=from.begin(); it!=from.end(); ++it)
     {
@@ -121,13 +123,31 @@ inline void TR_charsImp::parseSet(const string &line, const string &pattern, boo
     loadDataset(path, number);
 }*/
 
-void TR_charsImp::load(const string &path, int number)
+void TR_charsImp::load(const string &path)
 {
-    loadDataset(path, number);
+    loadDataset(path);
 }
 
-void TR_charsImp::loadDataset(const string &path, int number)
+void TR_charsImp::loadDataset(const string &path)
 {
+    int number = 0;
+    do
+    {
+        loadDatasetSplit(path, number);
+        number++;
+    } while (train.back().size()>0);
+
+    train.pop_back(); // remove last empty split
+    test.pop_back(); // remove last empty split
+    validation.pop_back(); // remove last empty split
+}
+
+void TR_charsImp::loadDatasetSplit(const string &path, int number)
+{
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     vector<int> allLabels, trainSet, testSet, validationSet;
     vector<string> allNames;
 
@@ -189,9 +209,9 @@ void TR_charsImp::loadDataset(const string &path, int number)
         "list.TXNind = ["*/
     }
 
-    convert(trainSet, train, allLabels, allNames);
-    convert(testSet, test, allLabels, allNames);
-    convert(validationSet, validation, allLabels, allNames);
+    convert(trainSet, train.back(), allLabels, allNames);
+    convert(testSet, test.back(), allLabels, allNames);
+    convert(validationSet, validation.back(), allLabels, allNames);
 }
 
 Ptr<TR_chars> TR_chars::create()

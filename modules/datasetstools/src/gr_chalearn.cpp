@@ -53,15 +53,15 @@ class CV_EXPORTS GR_chalearnImp : public GR_chalearn
 {
 public:
     GR_chalearnImp() {}
-    //GR_chalearnImp(const std::string &path);
+    //GR_chalearnImp(const string &path);
     virtual ~GR_chalearnImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 
-    void loadDatasetPart(const std::string &path, std::vector< Ptr<Object> > &dataset_, bool loadLabels);
+    void loadDatasetPart(const string &path, vector< Ptr<Object> > &dataset_, bool loadLabels);
 };
 
 /*GR_chalearnImp::GR_chalearnImp(const string &path)
@@ -69,13 +69,8 @@ private:
     loadDataset(path);
 }*/
 
-void GR_chalearnImp::load(const string &path, int number)
+void GR_chalearnImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
@@ -153,12 +148,16 @@ void GR_chalearnImp::loadDatasetPart(const string &path, vector< Ptr<Object> > &
 
 void GR_chalearnImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string pathTrain(path + "Train/");
-    loadDatasetPart(pathTrain, train, true);
+    loadDatasetPart(pathTrain, train.back(), true);
 
     // freely available validation set doesn't have labels
     string pathValidation(path + "Validation/");
-    loadDatasetPart(pathValidation, validation, false);
+    loadDatasetPart(pathValidation, validation.back(), false);
 }
 
 Ptr<GR_chalearn> GR_chalearn::create()

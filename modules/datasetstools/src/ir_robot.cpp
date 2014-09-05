@@ -53,13 +53,13 @@ class CV_EXPORTS IR_robotImp : public IR_robot
 {
 public:
     IR_robotImp() {}
-    //IR_robotImp(const std::string &path);
+    //IR_robotImp(const string &path);
     virtual ~IR_robotImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*IR_robotImp::IR_robotImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void IR_robotImp::load(const string &path, int number)
+void IR_robotImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void IR_robotImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
@@ -95,7 +94,7 @@ void IR_robotImp::loadDataset(const string &path)
             string &fileName = *itScene;
 
             int imageNum = atoi( fileName.substr(3, 3).c_str() );
-            int pos = atoi( fileName.substr(6, 2).c_str() );
+            //int pos = atoi( fileName.substr(6, 2).c_str() );
             if (imageNum != currImageNum)
             {
                 curr->pos.push_back(cameraPos());
@@ -105,7 +104,7 @@ void IR_robotImp::loadDataset(const string &path)
             curr->pos.back().images.push_back(fileName);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

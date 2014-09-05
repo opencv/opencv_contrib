@@ -53,15 +53,15 @@ class CV_EXPORTS IS_bsdsImp : public IS_bsds
 {
 public:
     IS_bsdsImp() {}
-    //IS_bsdsImp(const std::string &path);
+    //IS_bsdsImp(const string &path);
     virtual ~IS_bsdsImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 
-    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
+    void loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_);
 };
 
 void IS_bsdsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
@@ -81,26 +81,25 @@ void IS_bsdsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &
     loadDataset(path);
 }*/
 
-void IS_bsdsImp::load(const string &path, int number)
+void IS_bsdsImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void IS_bsdsImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string trainName(path + "iids_train.txt");
     string testName(path + "iids_test.txt");
 
     // loading train
-    loadDatasetPart(trainName, train);
+    loadDatasetPart(trainName, train.back());
 
     // loading test
-    loadDatasetPart(testName, test);
+    loadDatasetPart(testName, test.back());
 }
 
 Ptr<IS_bsds> IS_bsds::create()

@@ -53,15 +53,15 @@ class CV_EXPORTS AR_sportsImp : public AR_sports
 {
 public:
     AR_sportsImp() {}
-    //AR_sportsImp(const std::string &path);
+    //AR_sportsImp(const string &path);
     virtual ~AR_sportsImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 
-    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
+    void loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_);
 };
 
 void AR_sportsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
@@ -89,26 +89,25 @@ void AR_sportsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> >
     loadDataset(path);
 }*/
 
-void AR_sportsImp::load(const string &path, int number)
+void AR_sportsImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void AR_sportsImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string trainPath(path + "original/train_partition.txt");
     string testPath(path + "original/test_partition.txt");
 
     // loading train video urls & labels
-    loadDatasetPart(trainPath, train);
+    loadDatasetPart(trainPath, train.back());
 
     // loading test video urls & labels
-    loadDatasetPart(testPath, test);
+    loadDatasetPart(testPath, test.back());
 }
 
 Ptr<AR_sports> AR_sports::create()

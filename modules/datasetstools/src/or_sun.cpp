@@ -53,13 +53,13 @@ class CV_EXPORTS OR_sunImp : public OR_sun
 {
 public:
     OR_sunImp() {}
-    //OR_sunImp(const std::string &path);
+    //OR_sunImp(const string &path);
     virtual ~OR_sunImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*OR_sunImp::OR_sunImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void OR_sunImp::load(const string &path, int number)
+void OR_sunImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void OR_sunImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string classNameFile(path + "ClassName.txt");
     ifstream infile(classNameFile.c_str());
     string line;
@@ -95,7 +94,7 @@ void OR_sunImp::loadDataset(const string &path)
             curr->imageNames.push_back(*it);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

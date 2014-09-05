@@ -53,13 +53,13 @@ class CV_EXPORTS MSM_epflImp : public MSM_epfl
 {
 public:
     MSM_epflImp() {}
-    //MSM_epflImp(const std::string &path);
+    //MSM_epflImp(const string &path);
     virtual ~MSM_epflImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*MSM_epflImp::MSM_epflImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void MSM_epflImp::load(const string &path, int number)
+void MSM_epflImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void MSM_epflImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string pathBounding(path + "bounding/");
     string pathCamera(path + "camera/");
     string pathP(path + "P/");
@@ -144,7 +143,7 @@ void MSM_epflImp::loadDataset(const string &path)
             }
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

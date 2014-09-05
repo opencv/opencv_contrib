@@ -63,7 +63,7 @@ struct FR_lfwObj : public Object
 class CV_EXPORTS FR_lfw : public Dataset
 {
 public:
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
     static Ptr<FR_lfw> create();
 };

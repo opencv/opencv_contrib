@@ -53,13 +53,13 @@ class CV_EXPORTS IR_affineImp : public IR_affine
 {
 public:
     IR_affineImp() {}
-    //IR_affineImp(const std::string &path);
+    //IR_affineImp(const string &path);
     virtual ~IR_affineImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*IR_affineImp::IR_affineImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void IR_affineImp::load(const string &path, int number)
+void IR_affineImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void IR_affineImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     for (unsigned int i=1; i<=6; ++i)
     {
         Ptr<IR_affineObj> curr(new IR_affineObj);
@@ -100,7 +99,7 @@ void IR_affineImp::loadDataset(const string &path)
             }
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

@@ -63,7 +63,7 @@ struct AR_hmdbObj : public Object
 class CV_EXPORTS AR_hmdb : public Dataset
 {
 public:
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
     static Ptr<AR_hmdb> create();
 };

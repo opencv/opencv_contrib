@@ -64,7 +64,7 @@ struct OR_imagenetObj : public Object
 class CV_EXPORTS OR_imagenet : public Dataset
 {
 public:
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
     static Ptr<OR_imagenet> create();
 };

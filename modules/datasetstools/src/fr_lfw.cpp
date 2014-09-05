@@ -53,13 +53,13 @@ class CV_EXPORTS FR_lfwImp : public FR_lfw
 {
 public:
     FR_lfwImp() {}
-    //FR_lfwImp(const std::string &path);
+    //FR_lfwImp(const string &path);
     virtual ~FR_lfwImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*FR_lfwImp::FR_lfwImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void FR_lfwImp::load(const string &path, int number)
+void FR_lfwImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void FR_lfwImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
@@ -94,7 +93,7 @@ void FR_lfwImp::loadDataset(const string &path)
             curr->images.push_back(*itFace);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

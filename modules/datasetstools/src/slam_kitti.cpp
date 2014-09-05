@@ -53,13 +53,13 @@ class CV_EXPORTS SLAM_kittiImp : public SLAM_kitti
 {
 public:
     SLAM_kittiImp() {}
-    //SLAM_kittiImp(const std::string &path);
+    //SLAM_kittiImp(const string &path);
     virtual ~SLAM_kittiImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*SLAM_kittiImp::SLAM_kittiImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void SLAM_kittiImp::load(const string &path, int number)
+void SLAM_kittiImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void SLAM_kittiImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string pathSequence(path + "sequences/");
     vector<string> fileNames;
     getDirList(pathSequence, fileNames);
@@ -155,7 +154,7 @@ void SLAM_kittiImp::loadDataset(const string &path)
             curr->posesArray.push_back(p);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

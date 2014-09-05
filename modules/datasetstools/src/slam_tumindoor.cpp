@@ -55,13 +55,13 @@ class CV_EXPORTS SLAM_tumindoorImp : public SLAM_tumindoor
 {
 public:
     SLAM_tumindoorImp() {}
-    //SLAM_tumindoorImp(const std::string &path);
+    //SLAM_tumindoorImp(const string &path);
     virtual ~SLAM_tumindoorImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*SLAM_tumindoorImp::SLAM_tumindoorImp(const string &path)
@@ -69,18 +69,17 @@ private:
     loadDataset(path);
 }*/
 
-void SLAM_tumindoorImp::load(const string &path, int number)
+void SLAM_tumindoorImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void SLAM_tumindoorImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string infoPath(path + "info/");
 
     // get info map name, .csv should be only one such file in folder
@@ -138,7 +137,7 @@ void SLAM_tumindoorImp::loadDataset(const string &path)
             }
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

@@ -53,15 +53,17 @@ class CV_EXPORTS AR_hmdbImp : public AR_hmdb
 {
 public:
     AR_hmdbImp() {}
-    //AR_hmdbImp(const std::string &path, int number = 0);
+    //AR_hmdbImp(const string &path, int number = 0);
     virtual ~AR_hmdbImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path, int number = 0);
+    void loadDatasetSplit(const string &path, int number = 0);
 
-    void loadAction(const std::string &fileName, std::vector<std::string> &train_, std::vector<std::string> &test_);
+    void loadDataset(const string &path);
+
+    void loadAction(const string &fileName, vector<string> &train_, vector<string> &test_);
 };
 
 void AR_hmdbImp::loadAction(const string &fileName, vector<string> &train_, vector<string> &test_)
@@ -86,18 +88,30 @@ void AR_hmdbImp::loadAction(const string &fileName, vector<string> &train_, vect
     loadDataset(path, number);
 }*/
 
-void AR_hmdbImp::load(const string &path, int number)
+void AR_hmdbImp::load(const string &path)
 {
-    loadDataset(path, number);
+    loadDataset(path);
 }
 
-void AR_hmdbImp::loadDataset(const string &path, int number)
+void AR_hmdbImp::loadDataset(const string &path)
+{
+    for (int i=0; i<3; ++i)
+    {
+        loadDatasetSplit(path, i);
+    }
+}
+
+void AR_hmdbImp::loadDatasetSplit(const string &path, int number)
 {
     // valid number [0,1,2]
     if (number<0 || number>2)
     {
         return;
     }
+
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
     string pathDataset(path + "hmdb51_org/");
     string pathSplit(path + "testTrainMulti_7030_splits/");
@@ -111,8 +125,8 @@ void AR_hmdbImp::loadDataset(const string &path, int number)
         currTrain->name = *it;
         currTest->name = *it;
 
-        train.push_back(currTrain);
-        test.push_back(currTest);
+        train.back().push_back(currTrain);
+        test.back().push_back(currTest);
 
         char tmp[2];
         sprintf(tmp, "%u", number+1);

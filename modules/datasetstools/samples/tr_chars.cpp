@@ -66,26 +66,19 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector< Ptr<TR_chars> > dataset;
-    do
-    {
-        Ptr<TR_chars> curr = TR_chars::create();
-        dataset.push_back(curr);
-
-        int number = (int)dataset.size()-1;
-        dataset.back()->load(path, number);
-    } while (dataset.back()->getTrain().size()>0);
-    dataset.pop_back(); // remove last empty split
+    Ptr<TR_chars> dataset = TR_chars::create();
+    dataset->load(path);
 
     // ***************
     // dataset. train, test contain information about each element of appropriate sets and splits.
     // For example, let output first elements of these vectors and their sizes for last split.
     // And number of splits.
-    printf("splits number: %u\n", (unsigned int)dataset.size());
+    int numSplits = dataset->getNumSplits();
+    printf("splits number: %u\n", numSplits);
 
-    vector< Ptr<Object> > &currTrain = dataset.back()->getTrain();
-    vector< Ptr<Object> > &currTest = dataset.back()->getTest();
-    vector< Ptr<Object> > &currValidation = dataset.back()->getValidation();
+    vector< Ptr<Object> > &currTrain = dataset->getTrain(numSplits-1);
+    vector< Ptr<Object> > &currTest = dataset->getTest(numSplits-1);
+    vector< Ptr<Object> > &currValidation = dataset->getValidation(numSplits-1);
     printf("train size: %u\n", (unsigned int)currTrain.size());
     printf("test size: %u\n", (unsigned int)currTest.size());
     printf("validation size: %u\n", (unsigned int)currValidation.size());

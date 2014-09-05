@@ -56,15 +56,15 @@ class CV_EXPORTS TR_svtImp : public TR_svt
 {
 public:
     TR_svtImp() {}
-    //TR_svtImp(const std::string &path);
+    //TR_svtImp(const string &path);
     virtual ~TR_svtImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 
-    void xmlParse(const std::string &set, std::vector< Ptr<Object> > &out);
+    void xmlParse(const string &set, vector< Ptr<Object> > &out);
 };
 
 void TR_svtImp::xmlParse(const string &set, vector< Ptr<Object> > &out)
@@ -117,26 +117,25 @@ void TR_svtImp::xmlParse(const string &set, vector< Ptr<Object> > &out)
     loadDataset(path);
 }*/
 
-void TR_svtImp::load(const string &path, int number)
+void TR_svtImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void TR_svtImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string trainXml(path + "train.xml");
     string testXml(path + "test.xml");
 
     // loading train images description
-    xmlParse(trainXml, train);
+    xmlParse(trainXml, train.back());
 
     // loading test images description
-    xmlParse(testXml, test);
+    xmlParse(testXml, test.back());
 }
 
 Ptr<TR_svt> TR_svt::create()

@@ -55,13 +55,13 @@ class CV_EXPORTS GR_skigImp : public GR_skig
 {
 public:
     GR_skigImp() {}
-    //GR_skigImp(const std::string &path);
+    //GR_skigImp(const string &path);
     virtual ~GR_skigImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*GR_skigImp::GR_skigImp(const string &path)
@@ -69,18 +69,17 @@ private:
     loadDataset(path);
 }*/
 
-void GR_skigImp::load(const string &path, int number)
+void GR_skigImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void GR_skigImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     for (unsigned int i=1; i<=6; ++i)
     {
         char number[2];
@@ -117,7 +116,7 @@ void GR_skigImp::loadDataset(const string &path)
                 curr->pose = (poseType)atoi( file.substr(posPose + strlen("pose_"), 1).c_str() );
                 curr->type = (actionType)atoi( file.substr(posType + strlen("actionType_"), 2).c_str() );
 
-                train.push_back(curr);
+                train.back().push_back(curr);
             } else
             {
                 printf("incorrect file name: %s", file.c_str());

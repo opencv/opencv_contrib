@@ -62,16 +62,18 @@ public:
     Dataset() {}
     virtual ~Dataset() {}
 
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
-    std::vector< Ptr<Object> >& getTrain() { return train; }
-    std::vector< Ptr<Object> >& getTest() { return test; }
-    std::vector< Ptr<Object> >& getValidation() { return validation; }
+    std::vector< Ptr<Object> >& getTrain(int splitNum = 0) { return train[splitNum]; }
+    std::vector< Ptr<Object> >& getTest(int splitNum = 0) { return test[splitNum]; }
+    std::vector< Ptr<Object> >& getValidation(int splitNum = 0) { return validation[splitNum]; }
+
+    int getNumSplits() const { return train.size(); }
 
 protected:
-    std::vector< Ptr<Object> > train;
-    std::vector< Ptr<Object> > test;
-    std::vector< Ptr<Object> > validation;
+    std::vector< std::vector< Ptr<Object> > > train;
+    std::vector< std::vector< Ptr<Object> > > test;
+    std::vector< std::vector< Ptr<Object> > > validation;
 };
 
 }

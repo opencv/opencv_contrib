@@ -53,13 +53,13 @@ class CV_EXPORTS MSM_middleburyImp : public MSM_middlebury
 {
 public:
     MSM_middleburyImp() {}
-    //MSM_middleburyImp(const std::string &path);
+    //MSM_middleburyImp(const string &path);
     virtual ~MSM_middleburyImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*MSM_middleburyImp::MSM_middleburyImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void MSM_middleburyImp::load(const string &path, int number)
+void MSM_middleburyImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void MSM_middleburyImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     string name(path.substr(0, path.length()-1));
     size_t start = name.rfind('/');
     name = name.substr(start+1, name.length()-start);
@@ -113,7 +112,7 @@ void MSM_middleburyImp::loadDataset(const string &path)
             infile >> curr->t[i];
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

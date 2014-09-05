@@ -53,13 +53,13 @@ class CV_EXPORTS OR_imagenetImp : public OR_imagenet
 {
 public:
     OR_imagenetImp() {}
-    //OR_imagenetImp(const std::string &path);
+    //OR_imagenetImp(const string &path);
     virtual ~OR_imagenetImp() {}
 
-    virtual void load(const std::string &path, int number = 0);
+    virtual void load(const string &path);
 
 private:
-    void loadDataset(const std::string &path);
+    void loadDataset(const string &path);
 };
 
 /*OR_imagenetImp::OR_imagenetImp(const string &path)
@@ -67,18 +67,17 @@ private:
     loadDataset(path);
 }*/
 
-void OR_imagenetImp::load(const string &path, int number)
+void OR_imagenetImp::load(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
-
     loadDataset(path);
 }
 
 void OR_imagenetImp::loadDataset(const string &path)
 {
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
     ifstream infile((path + "fall11_urls.txt").c_str());
     string line;
     while (getline(infile, line))
@@ -96,7 +95,7 @@ void OR_imagenetImp::loadDataset(const string &path)
         curr->wnid = elems[0];
         curr->id2 = atoi(elems[1].c_str());
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
 }
 

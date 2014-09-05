@@ -62,7 +62,7 @@ struct HPE_parseObj : public Object
 class CV_EXPORTS HPE_parse : public Dataset
 {
 public:
-    virtual void load(const std::string &path, int number = 0) = 0;
+    virtual void load(const std::string &path) = 0;
 
     static Ptr<HPE_parse> create();
 };

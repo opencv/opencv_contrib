@@ -65,18 +65,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    Ptr<AR_hmdb> dataset[3];
-    for (int i=0; i<3; ++i)
-    {
-        dataset[i] = AR_hmdb::create();
-        dataset[i]->load(path, i);
-    }
+    Ptr<AR_hmdb> dataset = AR_hmdb::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains for each split: a set of video file names for each action.
     // For example, let output all training video file names for second split and first action.
     // And its size.
-    AR_hmdbObj *example = static_cast<AR_hmdbObj *>(dataset[1]->getTrain()[0].get());
+    AR_hmdbObj *example = static_cast<AR_hmdbObj *>(dataset->getTrain()[0].get());
     printf("name: %s\n", example->name.c_str());
     vector<string> &videoNames = example->videoNames;
     printf("size: %u\n", (unsigned int)videoNames.size());
