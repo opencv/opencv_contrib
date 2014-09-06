@@ -64,16 +64,19 @@ public:
 
     virtual void load(const std::string &path) = 0;
 
-    std::vector< Ptr<Object> >& getTrain(int splitNum = 0) { return train[splitNum]; }
-    std::vector< Ptr<Object> >& getTest(int splitNum = 0) { return test[splitNum]; }
-    std::vector< Ptr<Object> >& getValidation(int splitNum = 0) { return validation[splitNum]; }
+    std::vector< Ptr<Object> >& getTrain(int splitNum = 0);
+    std::vector< Ptr<Object> >& getTest(int splitNum = 0);
+    std::vector< Ptr<Object> >& getValidation(int splitNum = 0);
 
-    int getNumSplits() const { return train.size(); }
+    int getNumSplits() const;
 
 protected:
     std::vector< std::vector< Ptr<Object> > > train;
     std::vector< std::vector< Ptr<Object> > > test;
     std::vector< std::vector< Ptr<Object> > > validation;
+
+private:
+    std::vector< Ptr<Object> > empty;
 };
 
 }

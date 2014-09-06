@@ -39,47 +39,51 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/ar_hmdb.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
+#include "precomp.hpp"
 
-#include <opencv2/core.hpp>
-
-#include <cstdio>
-
-#include <string>
-#include <vector>
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
-using namespace cv;
-using namespace cv::datasetstools;
 
-int main(int argc, char *argv[])
+vector< Ptr<Object> >& Dataset::getTrain(int splitNum)
 {
-    const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset }";
-    CommandLineParser parser(argc, argv, keys);
-    string path(parser.get<string>("path"));
-    if (parser.has("help") || path=="true")
+    if (splitNum >= (int)train.size())
     {
-        parser.printMessage();
-        return -1;
+        return empty;
     }
 
-    Ptr<AR_hmdb> dataset = AR_hmdb::create();
-    dataset->load(path);
-
-    // ***************
-    // dataset contains for each split: a set of video file names for each action.
-    // For example, let output all training video file names for second split and first action.
-    // And its size.
-    AR_hmdbObj *example = static_cast<AR_hmdbObj *>(dataset->getTrain(1)[0].get());
-    printf("name: %s\n", example->name.c_str());
-    vector<string> &videoNames = example->videoNames;
-    printf("size: %u\n", (unsigned int)videoNames.size());
-    for (vector<string>::iterator it=videoNames.begin(); it!=videoNames.end(); ++it)
-    {
-        printf("%s\n", (*it).c_str());
-    }
-
-    return 0;
+    return train[splitNum];
 }
+
+vector< Ptr<Object> >& Dataset::getTest(int splitNum)
+{
+    if (splitNum >= (int)test.size())
+    {
+        return empty;
+    }
+
+    return test[splitNum];
+}
+
+vector< Ptr<Object> >& Dataset::getValidation(int splitNum)
+{
+    if (splitNum >= (int)validation.size())
+    {
+        return empty;
+    }
+
+    return validation[splitNum];
+}
+
+int Dataset::getNumSplits() const
+{
+    return (int)train.size();
+}
+
+}
+}
+
