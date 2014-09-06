@@ -871,7 +871,7 @@ BinaryDescriptorMatcher::BucketGroup::~BucketGroup()
 {
 }
 
- void BinaryDescriptorMatcher::BucketGroup::insert_value( std::vector<uint32_t>& vec, int index, UINT32 data )
+void BinaryDescriptorMatcher::BucketGroup::insert_value( std::vector<uint32_t>& vec, int index, UINT32 data )
 {
   if( vec.size() > 1 )
   {
@@ -915,7 +915,7 @@ void BinaryDescriptorMatcher::BucketGroup::push_value( std::vector<uint32_t>& ve
 
   else
   {
-    vec = std::vector < uint32_t > ( 2 + ARRAY_RESIZE_ADD_FACTOR, 0 );
+    vec = std::vector < uint32_t > ( 2 + (uint32_t) ARRAY_RESIZE_ADD_FACTOR, 0 );
     vec[0] = 1;
     vec[1] = 1;
     vec[2] = Data;
