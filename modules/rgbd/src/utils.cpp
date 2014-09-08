@@ -40,6 +40,8 @@
 
 namespace cv
 {
+namespace rgbd
+{    
   /** If the input image is of type CV_16UC1 (like the Kinect one), the image is converted to floats, divided
    * by 1000 to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
    * Otherwise, the image is simply converted to floats
@@ -62,16 +64,18 @@ namespace cv
     if (in_depth == CV_16U)
     {
       in.convertTo(out, depth, 1 / 1000.0); //convert to float so that it is in meters
-      cv::Mat valid_mask = in == std::numeric_limits<uint16_t>::min(); // Should we do std::numeric_limits<uint16_t>::max() too ?
+      cv::Mat valid_mask = in == std::numeric_limits<ushort>::min(); // Should we do std::numeric_limits<ushort>::max() too ?
       out.setTo(std::numeric_limits<float>::quiet_NaN(), valid_mask); //set a$
     }
     if (in_depth == CV_16S)
     {
       in.convertTo(out, depth, 1 / 1000.0); //convert to float so tha$
-      cv::Mat valid_mask = (in == std::numeric_limits<int16_t>::min()) | (in == std::numeric_limits<int16_t>::max()); // Should we do std::numeric_limits<uint16_t>::max() too ?
+      cv::Mat valid_mask = (in == std::numeric_limits<short>::min()) | (in == std::numeric_limits<short>::max()); // Should we do std::numeric_limits<ushort>::max() too ?
       out.setTo(std::numeric_limits<float>::quiet_NaN(), valid_mask); //set a$
     }
     if ((in_depth == CV_32F) || (in_depth == CV_64F))
       in.convertTo(out, depth);
   }
 }
+}
+

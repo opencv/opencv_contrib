@@ -150,15 +150,15 @@ std::vector<std::string> TrackerTRETest::splitString( std::string s, std::string
 
 float TrackerTRETest::calcDistance( Rect a, Rect b )
 {
-  Point2f p_a( a.x + a.width / 2, a.y + a.height / 2 );
-  Point2f p_b( b.x + b.width / 2, b.y + b.height / 2 );
+  Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
+  Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
   return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
 }
 
 float TrackerTRETest::calcOverlap( Rect a, Rect b )
 {
-  float aArea = a.width * a.height;
-  float bArea = b.width * b.height;
+  float aArea = (float)(a.width * a.height);
+  float bArea = (float)(b.width * b.height);
 
   if( aArea < bArea )
   {
@@ -177,8 +177,8 @@ float TrackerTRETest::calcOverlap( Rect a, Rect b )
 
   Rect rectIntersection = a & b;
   Rect rectUnion = a | b;
-  float iArea = rectIntersection.width * rectIntersection.height;
-  float uArea = rectUnion.width * rectUnion.height;
+  float iArea = (float)(rectIntersection.width * rectIntersection.height);
+  float uArea = (float)(rectUnion.width * rectUnion.height);
   float overlap = iArea / uArea;
   return overlap;
 }
@@ -190,7 +190,8 @@ void TrackerTRETest::distanceTest()
 
   int fc = ( startFrame - gtStartFrame );
 
-  Rect currentBB = bbs.at( fc );
+  Rect currentBBi = bbs.at( fc );
+  Rect2d currentBB(currentBBi);
   float sumDistance = 0;
   string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 
@@ -250,7 +251,8 @@ void TrackerTRETest::overlapTest()
   bool initialized = false;
 
   int fc = ( startFrame - gtStartFrame );
-  Rect currentBB = bbs.at( fc );
+  Rect currentBBi = bbs.at( fc );
+  Rect2d currentBB(currentBBi);
   float sumOverlap = 0;
   string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 
@@ -359,7 +361,7 @@ void TrackerTRETest::checkDataTest()
   gtStartFrame = startFrame;
   //compute the start and the and for each segment
   int segmentLength = sizeof ( SEGMENTS)/sizeof(int);
-  int numFrame = validSequence.size() / segmentLength;
+  int numFrame = (int)(validSequence.size() / segmentLength);
   startFrame += ( segmentIdx - 1 ) * numFrame;
   endFrame = startFrame + numFrame;
 
@@ -387,8 +389,7 @@ void TrackerTRETest::checkDataTest()
   gt2.close();
 
   if( segmentIdx == ( sizeof ( SEGMENTS)/sizeof(int) ) )
-  endFrame = bbs.size();
-
+	endFrame = (int)bbs.size();
 }
 
 void TrackerTRETest::run()

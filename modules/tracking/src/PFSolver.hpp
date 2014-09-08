@@ -1,4 +1,4 @@
-#include "opencv2/optim.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/core/core_c.h"
 #include <algorithm>
 #include <typeinfo>
@@ -8,9 +8,9 @@
 namespace cv{
 
     //!particle filtering class
-    class PFSolver : public optim::Solver{
+    class PFSolver : public MinProblemSolver{
     public:
-        class Function : public optim::Solver::Function
+        class Function : public MinProblemSolver::Function
         {
         public:
             //!if parameters have no sense due to some reason (e.g. lie outside of function domain), this function "corrects" them,
@@ -31,13 +31,13 @@ namespace cv{
         void getParamsSTD(OutputArray std)const;
         void setParamsSTD(InputArray std);
 
-        Ptr<optim::Solver::Function> getFunction() const;
-        void setFunction(const Ptr<Solver::Function>& f);
+        Ptr<MinProblemSolver::Function> getFunction() const;
+        void setFunction(const Ptr<MinProblemSolver::Function>& f);
         TermCriteria getTermCriteria() const;
         void setTermCriteria(const TermCriteria& termcrit);
     private:
         Mat_<double> _std,_particles,_logweight;
-        Ptr<Solver::Function> _Function;
+        Ptr<MinProblemSolver::Function> _Function;
         PFSolver::Function* _real_function;
         TermCriteria _termcrit;
         int _maxItNum,_iter,_particlesNum;
@@ -46,11 +46,11 @@ namespace cv{
         RNG rng;
     };
 
-    CV_EXPORTS_W Ptr<PFSolver> createPFSolver(const Ptr<optim::Solver::Function>& f=Ptr<optim::Solver::Function>(),InputArray std=Mat(),
+    CV_EXPORTS_W Ptr<PFSolver> createPFSolver(const Ptr<MinProblemSolver::Function>& f=Ptr<MinProblemSolver::Function>(),InputArray std=Mat(),
             TermCriteria termcrit=TermCriteria(TermCriteria::MAX_ITER,5,0.0),int particlesNum=100,double alpha=0.6);
 
     PFSolver::PFSolver(){
-        _Function=Ptr<Solver::Function>();
+        _Function=Ptr<MinProblemSolver::Function>();
         _real_function=NULL;
         _std=Mat_<double>();
         rng=RNG(getTickCount());
@@ -103,7 +103,10 @@ namespace cv{
                 _particles.row(i).copyTo(new_particles.row(num_particles));
             }
         }
-        Mat_<double> maxrow=_particles.row(std::max_element(_logweight.begin(),_logweight.end())-_logweight.begin());
+        //Mat_<double> maxrow=_particles.row(std::max_element(_logweight.begin(),_logweight.end())-_logweight.begin());
+        double max_element;
+        minMaxLoc(_logweight, 0, &max_element);
+        Mat_<double> maxrow=_particles.row((int)max_element);
         for(;num_particles<new_particles.rows;num_particles++){
                 maxrow.copyTo(new_particles.row(num_particles));
         }
@@ -133,7 +136,7 @@ namespace cv{
         }
 
         _logweight.create(1,_particles.rows);
-        _logweight.setTo(-log(_particles.rows));
+        _logweight.setTo(-log((double)_particles.rows));
         return 0.0;
     }
 
@@ -151,14 +154,14 @@ namespace cv{
     double PFSolver::getAlpha(){
         return _alpha;
     }
-    Ptr<optim::Solver::Function> PFSolver::getFunction() const{
+    Ptr<MinProblemSolver::Function> PFSolver::getFunction() const{
         return _Function;
     }
-    void PFSolver::setFunction(const Ptr<optim::Solver::Function>& f){
+    void PFSolver::setFunction(const Ptr<MinProblemSolver::Function>& f){
         CV_Assert(f.empty()==false);
 
-        Ptr<Solver::Function> non_const_f(f);
-        Solver::Function* f_ptr=static_cast<Solver::Function*>(non_const_f);
+        Ptr<MinProblemSolver::Function> non_const_f(f);
+        MinProblemSolver::Function* f_ptr=static_cast<MinProblemSolver::Function*>(non_const_f);
 
         PFSolver::Function *pff=dynamic_cast<PFSolver::Function*>(f_ptr);
         CV_Assert(pff!=NULL);
@@ -191,7 +194,7 @@ namespace cv{
         }
     }
 
-    Ptr<PFSolver> createPFSolver(const Ptr<optim::Solver::Function>& f,InputArray std,TermCriteria termcrit,int particlesNum,double alpha){
+    Ptr<PFSolver> createPFSolver(const Ptr<MinProblemSolver::Function>& f,InputArray std,TermCriteria termcrit,int particlesNum,double alpha){
             Ptr<PFSolver> ptr(new PFSolver());
 
             if(f.empty()==false){
@@ -208,7 +211,9 @@ namespace cv{
     }
     void PFSolver::normalize(Mat_<double>& row){
         double logsum=0.0;
-        double max=*(std::max_element(row.begin(),row.end()));
+        //double max=*(std::max_element(row.begin(),row.end()));
+        double max;
+        minMaxLoc(row, 0, &max);
         row-=max;
         for(int i=0;i<row.cols;i++){
             logsum+=exp(row(0,i));

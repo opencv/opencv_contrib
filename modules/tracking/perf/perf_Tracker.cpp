@@ -124,12 +124,12 @@ void getSegment( int segmentId, int numSegments, int bbCounter, int& startFrame,
 
 void getMatOfRects( const vector<Rect>& bbs, Mat& bbs_mat )
 {
-  for ( size_t b = 0; b < bbs.size(); b++ )
+  for ( int b = 0, size = (int)bbs.size(); b < size; b++ )
   {
-    bbs_mat.at<float>( b, 0 ) = bbs[b].x;
-    bbs_mat.at<float>( b, 1 ) = bbs[b].y;
-    bbs_mat.at<float>( b, 2 ) = bbs[b].width;
-    bbs_mat.at<float>( b, 3 ) = bbs[b].height;
+    bbs_mat.at<float>( b, 0 ) = (float)bbs[b].x;
+    bbs_mat.at<float>( b, 1 ) = (float)bbs[b].y;
+    bbs_mat.at<float>( b, 2 ) = (float)bbs[b].width;
+    bbs_mat.at<float>( b, 3 ) = (float)bbs[b].height;
   }
 }
 
@@ -149,7 +149,7 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
   string gtFile = getDataPath( TRACKING_DIR + "/" + video + "/gt.txt" );
   if( !getGroundTruth( gtFile, gtBBs ) )
     FAIL()<< "Ground truth file " << gtFile << " can not be read" << endl;
-  int bbCounter = gtBBs.size();
+  int bbCounter = (int)gtBBs.size();
 
   Mat frame;
   bool initialized = false;
@@ -161,7 +161,8 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
   int endFrame = 0;
   getSegment( segmentId, numSegments, bbCounter, startFrame, endFrame );
 
-  Rect currentBB = gtBBs[startFrame - gtStartFrame];
+  Rect currentBBi = gtBBs[startFrame - gtStartFrame];
+  Rect2d currentBB(currentBBi);
 
   TEST_CYCLE_N(1)
   {
@@ -196,7 +197,7 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat( bbs.size(), 4, CV_32F );
+  Mat bbs_mat( (int)bbs.size(), 4, CV_32F );
   getMatOfRects( bbs, bbs_mat );
 
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );
@@ -219,7 +220,7 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
   string gtFile = getDataPath( TRACKING_DIR + "/" + video + "/gt.txt" );
   if( !getGroundTruth( gtFile, gtBBs ) )
     FAIL()<< "Ground truth file " << gtFile << " can not be read" << endl;
-  int bbCounter = gtBBs.size();
+  int bbCounter = (int)gtBBs.size();
 
   Mat frame;
   bool initialized = false;
@@ -231,7 +232,8 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
   int endFrame = 0;
   getSegment( segmentId, numSegments, bbCounter, startFrame, endFrame );
 
-  Rect currentBB = gtBBs[startFrame - gtStartFrame];
+  Rect currentBBi = gtBBs[startFrame - gtStartFrame];
+  Rect2d currentBB(currentBBi);
 
   TEST_CYCLE_N(1)
   {
@@ -265,7 +267,7 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat( bbs.size(), 4, CV_32F );
+  Mat bbs_mat( (int)bbs.size(), 4, CV_32F );
   getMatOfRects( bbs, bbs_mat );
 
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );

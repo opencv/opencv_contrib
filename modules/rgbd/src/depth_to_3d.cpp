@@ -34,12 +34,13 @@
  */
 
 #include <opencv2/rgbd.hpp>
-#include <limits>
 
 #include "depth_to_3d.h"
 #include "utils.h"
 
-namespace
+namespace cv
+{
+namespace rgbd
 {
   /**
    * @param K
@@ -47,7 +48,7 @@ namespace
    * @param mask the mask of the points to consider (can be empty)
    * @param points3d the resulting 3d points, a 3-channel matrix
    */
-  void
+  static void
   depthTo3d_from_uvz(const cv::Mat& in_K, const cv::Mat& u_mat, const cv::Mat& v_mat, const cv::Mat& z_mat,
                      cv::Mat& points3d)
   {
@@ -89,7 +90,7 @@ namespace
    * @param mask the mask of the points to consider (can be empty)
    * @param points3d the resulting 3d points
    */
-  void
+  static void
   depthTo3dMask(const cv::Mat& depth, const cv::Mat& K, const cv::Mat& mask, cv::Mat& points3d)
   {
     // Create 3D points in one go.
@@ -104,9 +105,9 @@ namespace
     size_t n_points;
 
     if (depth.depth() == CV_16U)
-      n_points = convertDepthToFloat<uint16_t>(depth, mask, 1.0 / 1000.0f, u_mat, v_mat, z_mat);
+      n_points = convertDepthToFloat<ushort>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else if (depth.depth() == CV_16S)
-      n_points = convertDepthToFloat<int16_t>(depth, mask, 1.0 / 1000.0f, u_mat, v_mat, z_mat);
+      n_points = convertDepthToFloat<short>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else
     {
       CV_Assert(depth.type() == CV_32F);
@@ -168,12 +169,8 @@ namespace
       }
     }
   }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace cv
-{
 
   /**
    * @param K
@@ -199,9 +196,9 @@ namespace cv
     cv::Mat_<float> z_mat;
 
     if (depth.depth() == CV_16U)
-      convertDepthToFloat<uint16_t>(depth, 1.0 / 1000.0f, points_float, z_mat);
+      convertDepthToFloat<ushort>(depth, 1.0f / 1000.0f, points_float, z_mat);
     else if (depth.depth() == CV_16U)
-      convertDepthToFloat<int16_t>(depth, 1.0 / 1000.0f, points_float, z_mat);
+      convertDepthToFloat<short>(depth, 1.0f / 1000.0f, points_float, z_mat);
     else
     {
       CV_Assert(depth.type() == CV_32F);
@@ -262,4 +259,5 @@ namespace cv
         depthTo3dNoMask<float>(depth, K_new, points3d);
     }
   }
+}
 }

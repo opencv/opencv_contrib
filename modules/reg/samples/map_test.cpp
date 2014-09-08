@@ -38,14 +38,16 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp> // OpenCV window I/O
 #include <opencv2/imgproc.hpp> // OpenCV image transformations
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/types_c.h>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <opencv2/highgui/highgui_c.h>
 
 #ifdef COMPARE_FEATURES
-#include <opencv2/nonfree.hpp>
+#include <opencv2/xfeatures2d/nonfree.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/calib3d/calib3d_c.h>
 #endif
@@ -125,7 +127,7 @@ static void testEuclidean(const Mat& img1)
     Mat img2;
 
     // Warp original image
-    double theta = 3*M_PI/180;
+    double theta = 3*CV_PI/180;
     double cosT = cos(theta);
     double sinT = sin(theta);
     Matx<double, 2, 2> linTr(cosT, -sinT, sinT, cosT);
@@ -163,7 +165,7 @@ static void testSimilarity(const Mat& img1)
     Mat img2;
 
     // Warp original image
-    double theta = 3*M_PI/180;
+    double theta = 3*CV_PI/180;
     double scale = 0.95;
     double a = scale*cos(theta);
     double b = scale*sin(theta);
