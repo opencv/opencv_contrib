@@ -7,6 +7,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
+#define CVVISUAL_DEBUGMODE
 #include <opencv2/cvv/debug_mode.hpp>
 #include <opencv2/cvv/show_image.hpp>
 #include <opencv2/cvv/filter.hpp>
@@ -27,7 +28,7 @@ template<class T> std::string toString(const T& p_arg)
 void
 usage()
 {
-  printf("usage: cvvt [-r WxH]\n");
+  printf("usage: cvv_demo [-r WxH]\n");
   printf("-h       print this help\n");
   printf("-r WxH   change resolution to width W and height H\n");
 }

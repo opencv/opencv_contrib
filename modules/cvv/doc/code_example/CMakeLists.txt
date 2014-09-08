@@ -29,6 +29,6 @@ link_directories("${OpenCVVisual_DIR}/build/release")
 add_executable(cvvt main.cpp)
 target_link_libraries(cvvt
   opencv_core opencv_highgui opencv_imgproc opencv_features2d
-  cvvisual
+  opencv_cvv
   Qt5Core Qt5Widgets Qt5Gui
 )
