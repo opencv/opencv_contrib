@@ -78,13 +78,27 @@ void IR_affineImp::loadDataset(const string &path)
     test.push_back(vector< Ptr<Object> >());
     validation.push_back(vector< Ptr<Object> >());
 
+    // detect image extension
+    string ext;
+    vector<string> fileNames;
+    getDirList(path, fileNames);
+    for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
+    {
+        string &name = *it;
+        if (name.length()>=8 && name.substr(0, 3)=="img")
+        {
+            ext = name.substr(name.length()-4, 4);
+            break;
+        }
+    }
+
     for (unsigned int i=1; i<=6; ++i)
     {
         Ptr<IR_affineObj> curr(new IR_affineObj);
 
         char tmp[2];
         sprintf(tmp, "%u", i);
-        curr->imageName = path + "img" + tmp + ".ppm";
+        curr->imageName = path + "img" + tmp + ext;
 
         if (i>1)
         {
