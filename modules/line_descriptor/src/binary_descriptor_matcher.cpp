@@ -753,9 +753,9 @@ void BinaryDescriptorMatcher::Mihasher::query( UINT32* results, UINT32* numres, 
 }
 
 /* constructor 2 */
-BinaryDescriptorMatcher::Mihasher::Mihasher( int _B, int _m )
+BinaryDescriptorMatcher::Mihasher::Mihasher( int B_val, int _m )
 {
-  B = _B;
+  B = B_val;
   B_over_8 = B / 8;
   m = _m;
   b = (int) ceil( (double) B / m );
@@ -784,9 +784,9 @@ BinaryDescriptorMatcher::Mihasher::Mihasher( int _B, int _m )
 }
 
 /* K setter */
-void BinaryDescriptorMatcher::Mihasher::setK( int _K )
+void BinaryDescriptorMatcher::Mihasher::setK( int K_val )
 {
-  K = _K;
+  K = K_val;
 }
 
 /* desctructor */
@@ -797,9 +797,9 @@ BinaryDescriptorMatcher::Mihasher::~Mihasher()
 }
 
 /* populate tables */
-void BinaryDescriptorMatcher::Mihasher::populate( cv::Mat & _codes, UINT32 _N, int dim1codes )
+void BinaryDescriptorMatcher::Mihasher::populate( cv::Mat & _codes, UINT32 N_val, int dim1codes )
 {
-  N = _N;
+  N = N_val;
   codes = _codes;
   UINT64 * chunks = new UINT64[m];
 
