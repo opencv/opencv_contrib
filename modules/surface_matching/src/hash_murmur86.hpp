@@ -48,6 +48,7 @@
 void PMurHash32_Process(MH_UINT32 *ph1, MH_UINT32 *pcarry, const void *key, int len);
 MH_UINT32 PMurHash32_Result(MH_UINT32 h1, MH_UINT32 carry, MH_UINT32 total_length);
 MH_UINT32 PMurHash32(MH_UINT32 seed, const void *key, int len);
+void hashMurmurx86 ( const void * key, const int len, const unsigned int seed, void * out );
 
 /* I used ugly type names in the header to avoid potential conflicts with
 * application or system typedefs & defines. Since I'm not including any more
