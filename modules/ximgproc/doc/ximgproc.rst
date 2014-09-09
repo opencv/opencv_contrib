@@ -9,3 +9,4 @@ ximgproc. Extended Image Processing
 
     structured_edge_detection
     edge_aware_filters
+    superpixels
