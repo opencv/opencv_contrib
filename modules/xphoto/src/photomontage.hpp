@@ -200,10 +200,6 @@ gradientDescent()
         int minIndex = min_idx(distances);
         TWeight minValue = distances[minIndex];
 
-        std::cerr << optValue << "    " <<
-            *max_element(distances.begin(), distances.end())
-                << std::endl;
-
         if (minValue < (1.00 - eps)*optValue)
             optValue = distances[num = minIndex];
 

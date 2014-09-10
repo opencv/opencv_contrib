@@ -161,27 +161,116 @@ namespace xphoto
         /** Upscaling **/
         if (ls != 1)
         {
-        //    _src.convertTo( img, CV_32F );
-        //
-        //    for (size_t k = 0; k < pPath.size(); ++k)
-        //    {
-        //        int clabel = labelSeq[k];
-        //        int nearSeam = 0;
-        //
-        //        for (size_t i = 0; i < linkIdx[k].size(); ++i)
-        //            nearSeam |= linkIdx[k] == -1
-        //                || clabel != labelSeq[linkIdx[k][i]];
-        //
-        //        if (nearSeam == 0)
-        //            ...
-        //        else
-        //        {
-        //            ...
-        //        }
-        //    }
-        //
-        //    xphotoInternal::Photomontage < cv::Vec <float, cn> > ( /*...*/
-        //        pointSeq, maskSeq, linkIdx, labelSeq );
+            _src.convertTo( img, CV_32F );
+
+            std::vector <Point2i> __pPath = pPath; pPath.clear();
+
+            cv::Mat_<int> __backref( img.size(), -1 );
+
+            std::vector <std::vector <cv::Vec <float, cn> > > __pointSeq = pointSeq; pointSeq.clear();
+            std::vector <int> __labelSeq = labelSeq; labelSeq.clear();
+            std::vector <std::vector <int> > __linkIdx = linkIdx; linkIdx.clear();
+            std::vector <std::vector <unsigned char > > __maskSeq = maskSeq; maskSeq.clear();
+
+            for (size_t i = 0; i < __pPath.size(); ++i)
+            {
+                cv::Point2i p[] = {
+                    __pPath[i] + cv::Point2i(0, -1),
+                    __pPath[i] + cv::Point2i(-1, 0)
+                };
+
+                for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                    if ( p[j].y < src.rows && p[j].y >= 0 &&
+                        p[j].x < src.cols && p[j].x >= 0 )
+                        __linkIdx[i].push_back( backref(p[j]) );
+                    else
+                        __linkIdx[i].push_back( -1 );
+            }
+
+            for (size_t k = 0; k < __pPath.size(); ++k)
+            {
+                int clabel = __labelSeq[k];
+                int nearSeam = 0;
+
+                for (size_t i = 0; i < __linkIdx[k].size(); ++i)
+                    nearSeam |= ( __linkIdx[k][i] == -1
+                        || clabel != __labelSeq[__linkIdx[k][i]] );
+
+                if (nearSeam != 0)
+                    for (int i = 0; i < ls; ++i)
+                        for (int j = 0; j < ls; ++j)
+                        {
+                            cv::Point2i u = ls*(__pPath[k] + transforms[__labelSeq[k]]) + cv::Point2i(j, i);
+
+                            pPath.push_back( ls*__pPath[k] + cv::Point2i(j, i) );
+                            labelSeq.push_back( 0 );
+
+                            __backref(i, j) = int( pPath.size() );
+
+                            cv::Point2i dv[] = {
+                                                 cv::Point2i(0,  0),
+                                                 cv::Point2i(-1, 0),
+                                                 cv::Point2i(+1, 0),
+                                                 cv::Point2i(0, -1),
+                                                 cv::Point2i(0, +1)
+                                               };
+
+                            std::vector <cv::Vec <float, cn> > pointVec;
+                                            std::vector <uchar> maskVec;
+
+                            for (int q = 0; q < sizeof(dv)/sizeof(cv::Point2i); ++q)
+                                if (u.x + dv[q].x >= 0 && u.x + dv[q].x < img.cols
+                                &&  u.y + dv[q].y >= 0 && u.y + dv[q].y < img.rows)
+                                {
+                                    pointVec.push_back(img.template at<cv::Vec <float, cn> >(u + dv[q]));
+                                    maskVec.push_back(_mask.template at<uchar>(u + dv[q]));
+                                }
+                                else
+                                {
+                                    pointVec.push_back( cv::Vec <float, cn>::all(0) );
+                                    maskVec.push_back( 0 );
+                                }
+
+                            pointSeq.push_back(pointVec);
+                              maskSeq.push_back(maskVec);
+                        }
+                else
+                {
+                    cv::Point2i fromIdx = ls*(__pPath[k] + transforms[__labelSeq[k]]),
+                                  toIdx = ls*__pPath[k];
+
+                    for (int i = 0; i < ls; ++i)
+                    {
+                        cv::Vec <float, cn> *from = img.template ptr<cv::Vec <float, cn> >(fromIdx.y + i) + fromIdx.x;
+                        cv::Vec <float, cn>   *to = img.template ptr<cv::Vec <float, cn> >(toIdx.y + i) + toIdx.x;
+
+                        for (int j = 0; j < ls; ++j)
+                            to[j] = from[j];
+                    }
+                }
+            }
+
+
+            for (int i = 0; i < pPath.size(); ++i)
+            {
+                cv::Point2i  p[] = {
+                    pPath[i] + cv::Point2i(0, +1),
+                    pPath[i] + cv::Point2i(+1, 0)
+                };
+
+                std::vector <int> linkVec;
+
+                for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                    if ( p[j].y < src.rows && p[j].y >= 0 &&
+                        p[j].x < src.cols && p[j].x >= 0 )
+                        linkVec.push_back( __backref(p[j]) );
+                    else
+                        linkVec.push_back( -1 );
+
+                linkIdx.push_back(linkVec);
+            }
+
+            photomontage( pointSeq, maskSeq, linkIdx, labelSeq );
         }
 
         /** Writing result **/
