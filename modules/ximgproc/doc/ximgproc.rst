@@ -1,5 +1,5 @@
 ********************************************
-ximgproc. Extended image processing module.
+ximgproc. Extended Image Processing
 ********************************************
 
 .. highlight:: cpp

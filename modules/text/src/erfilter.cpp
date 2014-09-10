@@ -43,6 +43,7 @@
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/ml.hpp"
+#include <limits>
 #include <fstream>
 #include <queue>
 
@@ -1402,9 +1403,9 @@ static double NFA(int n, int k, double p, double logNT)
     int i;
 
     if (p<=0)
-        p=0.000000000000000000000000000001;
+        p = std::numeric_limits<double>::min();
     if (p>=1)
-        p=0.999999999999999999999999999999;
+        p = 1 - std::numeric_limits<double>::epsilon();
 
     /* check parameters */
     if( n<0 || k<0 || k>n || p<=0.0 || p>=1.0 )
@@ -3494,7 +3495,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
 
     Point center_i(i->rect.x+i->rect.width/2, i->rect.y+i->rect.height/2);
     Point center_j(j->rect.x+j->rect.width/2, j->rect.y+j->rect.height/2);
-    float centroid_angle = (float)atan2(center_j.y-center_i.y, center_j.x-center_i.x);
+    float centroid_angle = (float)atan2((float)(center_j.y-center_i.y), (float)(center_j.x-center_i.x));
 
     int avg_width = (i->rect.width + j->rect.width) / 2;
     float norm_distance = (float)(j->rect.x-(i->rect.x+i->rect.width))/avg_width;

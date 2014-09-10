@@ -42,7 +42,7 @@
 
 #include "precomp.hpp"
 
-#if 0
+#if 1
 
 using namespace cv;
 using namespace cv::cuda;
@@ -115,7 +115,7 @@ namespace
     class SURF_CUDA_Invoker
     {
     public:
-        SURF_CUDA_Invoker(SURF_CUDA& surf, const GpuMat& img, const GpuMat& mask) :
+        SURF_CUDA_Invoker(cv::cuda::SURF_CUDA& surf, const GpuMat& img, const GpuMat& mask) :
             surf_(surf),
             img_cols(img.cols), img_rows(img.rows),
             use_mask(!mask.empty())

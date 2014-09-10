@@ -5,11 +5,7 @@ Structured forests for fast edge detection
 
 Introduction
 ------------
-Today most digital images and imaging devices use 8 bits per channel thus limiting the dynamic range of the device to two orders of magnitude (actually 256 levels), while human eye can adapt to lighting conditions varying by ten orders of magnitude. When we take photographs of a real world scene bright regions may be overexposed, while the dark ones may be underexposed, so we can't capture all details using a single exposure. HDR imaging works with images that use more that 8 bits per channel (usually 32-bit float values), allowing much wider dynamic range.
-
-There are different ways to obtain HDR images, but the most common one is to use photographs of the scene taken with different exposure values. To combine this exposures it is useful to know your camera’s response function and there are algorithms to estimate it. After the HDR image has been blended it has to be converted back to 8-bit to view it on usual displays. This process is called tonemapping. Additional complexities arise when objects of the scene or camera move between shots, since images with different exposures should be registered and aligned.
-
-In this tutorial we show how to generate and display HDR image from an exposure sequence. In our case images are already aligned and there are no moving objects. We also demonstrate an alternative approach called exposure fusion that produces low dynamic range image. Each step of HDR pipeline can be implemented using different algorithms so take a look at the reference manual to see them all.
+In this tutorial you will learn how to use structured forests for the purpose of edge detection in an image.
 
 Examples
 --------

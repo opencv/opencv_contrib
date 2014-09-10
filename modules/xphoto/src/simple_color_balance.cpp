@@ -75,7 +75,7 @@ namespace xphoto
                         ++depth;
                     int bins = 16; // number of bins at each histogram level
 
-                    int nElements = int( pow(bins, depth) );
+                    int nElements = int( pow((float)bins, (float)depth) );
                      // number of elements in histogram tree
 
                     for (size_t i = 0; i < src.size(); ++i)

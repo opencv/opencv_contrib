@@ -107,7 +107,7 @@ public:
      * \param dst : destination image (grayscale, float, in [0;1])
      *              where edges are drawn
      */
-    CV_WRAP virtual void detectEdges(const Mat &src, Mat &dst) const = 0;
+    CV_WRAP virtual void detectEdges(const Mat &src, CV_OUT Mat &dst) const = 0;
 };
 
 /*!
@@ -119,7 +119,7 @@ public:
 *                           own forest, pass NULL otherwise
 */
 CV_EXPORTS_W Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const String &model,
-    const RFFeatureGetter *howToGetFeatures = NULL);
+    Ptr<const RFFeatureGetter> howToGetFeatures = Ptr<RFFeatureGetter>());
 
 }
 }

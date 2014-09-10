@@ -11,7 +11,7 @@ class MatlabWrapperGenerator(object):
     constructed. Given an instance, the gen() method performs the translation.
     """
 
-    def gen(self, module_root, modules, extras, output_dir):
+    def gen(self, module_roots, modules, extras, output_dir):
         """
         Generate a set of Matlab mex source files by parsing exported symbols
         in a set of C++ headers. The headers can be input in one (or both) of
@@ -45,8 +45,14 @@ class MatlabWrapperGenerator(object):
         path_template = Template('${module}/include/opencv2/${module}.hpp')
 
         for module in modules:
-            # construct a header path from the module root and a path template
-            header = os.path.join(module_root, path_template.substitute(module=module))
+            for module_root in module_roots:
+                # construct a header path from the module root and a path template
+                header = os.path.join(module_root, path_template.substitute(module=module))
+                if os.path.isfile(header):
+                    break
+            else:
+                raise Exception('no header found for module %s!' % module)
+
             # parse the definitions
             ns[module] = parser.parse(header)
             # parse the documentation
@@ -142,7 +148,7 @@ if __name__ == "__main__":
     Usage: python gen_matlab.py --jinja2 /path/to/jinja2/engine
                                 --hdrparser /path/to/hdr_parser/dir
                                 --rstparser /path/to/rst_parser/dir
-                                --moduleroot /path/to/opencv/modules
+                                --moduleroot [ /path/to/opencv/modules /path/to/opencv_contrib/modules etc ]
                                 --modules [core imgproc objdetect etc]
                                 --extra namespace=/path/to/extra/header.hpp
                                 --outdir /path/to/output/generated/srcs
@@ -163,7 +169,7 @@ if __name__ == "__main__":
                    (opencv/modules/python/src2)
     --rstparser    the path to the rst parser directory
                    (opencv/modules/java/generator)
-    --moduleroot   (optional) path to the opencv directory containing the modules
+    --moduleroot   (optional) paths to the opencv directories containing the modules
     --modules      (optional - required if --moduleroot specified) the modules
                    to produce bindings for. The path to the include directories
                    as well as the namespaces are constructed from the modules
@@ -182,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument('--jinja2')
     parser.add_argument('--hdrparser')
     parser.add_argument('--rstparser')
-    parser.add_argument('--moduleroot', default='', required=False)
+    parser.add_argument('--moduleroot', nargs='*', default=[], required=False)
     parser.add_argument('--modules', nargs='*', default=[], required=False)
     parser.add_argument('--extra', nargs='*', default=[], required=False)
     parser.add_argument('--outdir')

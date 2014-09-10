@@ -41,6 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_OPTFLOW_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/video.hpp"
 
 namespace cv
 {
@@ -57,8 +58,26 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      double sigma_dist_fix, double sigma_color_fix, double occ_thr,
                                      int upscale_averaging_radius, double upscale_sigma_dist,
                                      double upscale_sigma_color, double speed_up_thr );    
-    
-}
+
+//! reads optical flow from a file, Middlebury format:
+// http://vision.middlebury.edu/flow/code/flow-code/README.txt
+CV_EXPORTS_W Mat readOpticalFlow( const String& path );
+//! writes optical flow to a file, Middlebury format
+CV_EXPORTS_W bool writeOpticalFlow( const String& path, InputArray flow );
+
+
+
+
+// DeepFlow implementation, based on:
+//   P. Weinzaepfel, J. Revaud, Z. Harchaoui, and C. Schmid, “DeepFlow: Large Displacement Optical Flow with Deep Matching,”
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
+
+// Additional interface to the SimpleFlow algorithm - calcOpticalFlowSF()
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
+
+// Additional interface to the Farneback's algorithm - calcOpticalFlowFarneback()
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
+} //optflow
 }
 
 #include "opencv2/optflow/motempl.hpp"

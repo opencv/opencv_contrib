@@ -8,7 +8,7 @@
 #include <climits>
 
 const int CMDLINEMAX = 30;
-const int ASSESS_TILL = 100;
+      int ASSESS_TILL = INT_MAX;
 const int LINEMAX = 40;
 
 using namespace std;
@@ -62,6 +62,10 @@ static void help(){
        "./tracker [<keys and args>] <video_name> <ground_truth> <algorithm1> <init_box1> <algorithm2> <init_box2> ...\n"
        << endl;
 
+  cout << "\n\nConsole keys: \n"
+       "\t-s - save images\n"
+       "\t-l=100 - assess only, say, first 100 frames\n";
+
   cout << "\n\nHot keys: \n"
        "\tq - quit the program\n"
        "\tp - pause video\n";
@@ -74,8 +78,13 @@ static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[
     for(int i=1;i<argc;i++){
         if(argv[i][0]=='-'){
             for(int j=0;j<CMDLINEMAX;j++){
-                if(!strcmp(argv[i],keys[j])){
-                    keys[j][0]='\0';
+                char* ptr = strchr(argv[i], '=');
+                if( !strncmp(argv[i], keys[j], (ptr == NULL) ? strlen(argv[i]) : (ptr-argv[i]) ) )
+                {
+                    if( ptr == NULL )
+                        keys[j][0]='\0';
+                    else
+                        strcpy(keys[j], ptr+1);
                 }
             }
             continue;
@@ -293,6 +302,7 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           exit(EXIT_FAILURE);
       }
       rectangle( image, boundingBox,palette[0], 2, 1 );
+      putText(image, "GROUND TRUTH", Point(1,16 + 0*14), FONT_HERSHEY_SIMPLEX, 0.5, palette[0],2);
       
       frameCounter++;
       for(int i=0;i<(int)trackers.size();i++){
@@ -301,10 +311,14 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
           trackerRes=trackers[i]->update( frame, initBoxes[i] );
           start=clock()-start;
           averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
-          if(trackerRes==false){
+          if( trackerRes == false )
+          {
               initBoxes[i].height=initBoxes[i].width=-1.0;
-          }else{
+          }
+          else
+          {
               rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
+              putText(image, algorithms[i], Point(1,16 + (i+1)*14), FONT_HERSHEY_SIMPLEX, 0.5, palette[i+1],2);
           }
           for(int j=0;j<(int)res.results[i].size();j++)
               res.results[i][j]->assess(boundingBox,initBoxes[i]);
@@ -340,15 +354,23 @@ static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],cha
 }
 
 int main( int argc, char** argv ){
-  palette.push_back(Scalar(255,0,0));//BGR
-  palette.push_back(Scalar(0,0,255));
-  palette.push_back(Scalar(0,255,255));
+  palette.push_back(Scalar(255,0,0));//BGR, blue
+  palette.push_back(Scalar(0,0,255));//red
+  palette.push_back(Scalar(0,255,255));//yellow
+  palette.push_back(Scalar(255,255,0));//orange
   int vcount=0,acount=0;
   char* videos[CMDLINEMAX],*gts[CMDLINEMAX],*algorithms[CMDLINEMAX],*initBoxes[CMDLINEMAX][CMDLINEMAX];
   char keys[CMDLINEMAX][LINEMAX];
   strcpy(keys[0],"-s");
+  strcpy(keys[1],"-a");
+
   parseCommandLineArgs(argc,argv,videos,gts,&vcount,algorithms,initBoxes,&acount,keys);
+
   saveImageKey=(keys[0][0]=='\0');
+  if( strcmp(keys[1],"-a") != 0 )
+      ASSESS_TILL = atoi(keys[1]);
+  else
+      ASSESS_TILL = INT_MAX;
 
   CV_Assert(acount<CMDLINEMAX && vcount<CMDLINEMAX);
   printf("videos and gts\n");
@@ -365,9 +387,8 @@ int main( int argc, char** argv ){
   }
 
   std::vector<AssessmentRes> results;
-  for(int i=0;i<vcount;i++){
+  for(int i=0;i<vcount;i++)
       results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
-  }
   CV_Assert( (int)results[0].results[0].size() < CMDLINEMAX );
   printf("\n\n");
 
@@ -379,10 +400,10 @@ int main( int argc, char** argv ){
           resultStrings[i].push_back(buf+i*CMDLINEMAX*LINEMAX + j*40);
       }
   }
-  for(int i=0;i<(int)results[0].results[0].size();i++){
+  for(int i=0;i<(int)results[0].results[0].size();i++)
       nameStrings.push_back(buf2+LINEMAX*i);
-  }
-  for(int tableCount=0;tableCount<(int)results[0].results[0].size();tableCount++){
+  for(int tableCount=0;tableCount<(int)results[0].results[0].size();tableCount++)
+  {
       CV_Assert(results[0].results[0][tableCount]->printName(nameStrings[tableCount])<LINEMAX);
       for(int videoCount=0;videoCount<(int)results.size();videoCount++)
           for(int algoCount=0;algoCount<(int)results[0].results.size();algoCount++){

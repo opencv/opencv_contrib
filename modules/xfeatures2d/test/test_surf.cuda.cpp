@@ -94,7 +94,7 @@ CUDA_TEST_P(SURF, Detector)
     std::vector<cv::KeyPoint> keypoints;
     surf(loadMat(image), cv::cuda::GpuMat(), keypoints);
 
-    cv::SURF surf_gold;
+    cv::xfeatures2d::SURF surf_gold;
     surf_gold.hessianThreshold = hessianThreshold;
     surf_gold.nOctaves = nOctaves;
     surf_gold.nOctaveLayers = nOctaveLayers;
@@ -130,7 +130,7 @@ CUDA_TEST_P(SURF, Detector_Masked)
     std::vector<cv::KeyPoint> keypoints;
     surf(loadMat(image), loadMat(mask), keypoints);
 
-    cv::SURF surf_gold;
+    cv::xfeatures2d::SURF surf_gold;
     surf_gold.hessianThreshold = hessianThreshold;
     surf_gold.nOctaves = nOctaves;
     surf_gold.nOctaveLayers = nOctaveLayers;
@@ -160,7 +160,7 @@ CUDA_TEST_P(SURF, Descriptor)
     surf.upright = upright;
     surf.keypointsRatio = 0.05f;
 
-    cv::SURF surf_gold;
+    cv::xfeatures2d::SURF surf_gold;
     surf_gold.hessianThreshold = hessianThreshold;
     surf_gold.nOctaves = nOctaves;
     surf_gold.nOctaveLayers = nOctaveLayers;
