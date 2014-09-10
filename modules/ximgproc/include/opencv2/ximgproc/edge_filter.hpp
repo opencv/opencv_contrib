@@ -57,44 +57,42 @@ enum EdgeAwareFiltersList
 
 
 /*Interface for DT filters*/
-class CV_EXPORTS DTFilter : public Algorithm
+class CV_EXPORTS_W DTFilter : public Algorithm
 {
 public:
 
-    virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
 };
 
-typedef Ptr<DTFilter> DTFilterPtr;
-
 /*Fabric function for DT filters*/
-CV_EXPORTS
+CV_EXPORTS_W
 Ptr<DTFilter> createDTFilter(InputArray guide, double sigmaSpatial, double sigmaColor, int mode = DTF_NC, int numIters = 3);
 
 /*One-line DT filter call*/
-CV_EXPORTS
+CV_EXPORTS_W
 void dtFilter(InputArray guide, InputArray src, OutputArray dst, double sigmaSpatial, double sigmaColor, int mode = DTF_NC, int numIters = 3);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 /*Interface for Guided Filter*/
-class CV_EXPORTS GuidedFilter : public Algorithm
+class CV_EXPORTS_W GuidedFilter : public Algorithm
 {
 public:
 
-    virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
 };
 
 /*Fabric function for Guided Filter*/
-CV_EXPORTS Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps);
+CV_EXPORTS_W Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps);
 
 /*One-line Guided Filter call*/
-CV_EXPORTS void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth = -1);
+CV_EXPORTS_W void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth = -1);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class CV_EXPORTS AdaptiveManifoldFilter : public Algorithm
+class CV_EXPORTS_W AdaptiveManifoldFilter : public Algorithm
 {
 public:
     /**
@@ -103,23 +101,23 @@ public:
         * @param dst       Adaptive-manifold filter response.
         * @param src_joint Image for joint filtering (optional).
         */
-    virtual void filter(InputArray src, OutputArray dst, InputArray joint = noArray()) = 0;
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst, InputArray joint = noArray()) = 0;
 
-    virtual void collectGarbage() = 0;
+    CV_WRAP virtual void collectGarbage() = 0;
 
     static Ptr<AdaptiveManifoldFilter> create();
 };
 
 //Fabric function for AM filter algorithm
-CV_EXPORTS Ptr<AdaptiveManifoldFilter> createAMFilter(double sigma_s, double sigma_r, bool adjust_outliers = false);
+CV_EXPORTS_W Ptr<AdaptiveManifoldFilter> createAMFilter(double sigma_s, double sigma_r, bool adjust_outliers = false);
 
 //One-line Adaptive Manifold filter call
-CV_EXPORTS void amFilter(InputArray joint, InputArray src, OutputArray dst, double sigma_s, double sigma_r, bool adjust_outliers = false);
+CV_EXPORTS_W void amFilter(InputArray joint, InputArray src, OutputArray dst, double sigma_s, double sigma_r, bool adjust_outliers = false);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-CV_EXPORTS
+CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
 }
