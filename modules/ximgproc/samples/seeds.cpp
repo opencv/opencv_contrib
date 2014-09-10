@@ -13,6 +13,8 @@ using namespace cv;
 using namespace cv::ximgproc;
 using namespace std;
 
+void trackbarChanged(int pos, void* data);
+
 static void help()
 {
     cout << "\nThis program demonstrates SEEDS superpixels using OpenCV class SuperpixelSEEDS\n"
@@ -29,7 +31,7 @@ static const char* window_name = "SEEDS Superpixels";
 
 static bool init = false;
 
-void trackbarChanged(int pos, void* data)
+void trackbarChanged(int, void*)
 {
     init = false;
 }
