@@ -44,10 +44,19 @@
 #include "_lsvmc_matching.h"
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
+std::string extractModelName( const std::string& filename );
+
 const int pca_size = 31;
+
+CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename);
+void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector);
+CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
+                                CvLatentSvmDetectorCaskade* detector,
+                                CvMemStorage* storage,
+                                float overlap_threshold);
 
 /*
 // load trained detector from a file
@@ -97,7 +106,7 @@ CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename)
 // detector             - CvLatentSvmDetectorCaskade structure to be released
 // OUTPUT
 */
-CVAPI(void) cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector)
+void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector)
 {
     free((*detector)->b);
     free((*detector)->num_part_filters);
@@ -181,14 +190,12 @@ CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
 
     for (int i = 0; i < numBoxesOut; i++)
     {
-        CvObjectDetection detection = {{0, 0, 0, 0}, 0};
+        CvObjectDetection detection;
         detection.score = scoreOut[i];
-        CvRect bounding_box = {0, 0, 0, 0};
-        bounding_box.x = pointsOut[i].x;
-        bounding_box.y = pointsOut[i].y;
-        bounding_box.width = oppPointsOut[i].x - pointsOut[i].x;
-        bounding_box.height = oppPointsOut[i].y - pointsOut[i].y;
-        detection.rect = bounding_box;
+        detection.rect.x = pointsOut[i].x;
+        detection.rect.y = pointsOut[i].y;
+        detection.rect.width = oppPointsOut[i].x - pointsOut[i].x;
+        detection.rect.height = oppPointsOut[i].y - pointsOut[i].y;
         cvSeqPush(result_seq, &detection);
     }
 
@@ -204,77 +211,42 @@ CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
     return result_seq;
 }
 
-LatentSvmDetector::ObjectDetection::ObjectDetection() : score(0.f), classID(-1)
-{}
-
-LatentSvmDetector::ObjectDetection::ObjectDetection( const Rect& _rect, float _score, int _classID ) :
-    rect(_rect), score(_score), classID(_classID)
-{}
-
-LatentSvmDetector::LatentSvmDetector()
-{}
-
-LatentSvmDetector::LatentSvmDetector( const vector<string>& filenames, const vector<string>& _classNames )
+class LSVMDetectorImpl : public LSVMDetector
 {
-    load( filenames, _classNames );
+public:
+
+    LSVMDetectorImpl( const std::vector<std::string>& filenames, const std::vector<std::string>& classNames=std::vector<std::string>() );
+    ~LSVMDetectorImpl();
+
+    bool isEmpty() const;
+
+    void detect(cv::Mat const &image, CV_OUT std::vector<ObjectDetection>& objects, float overlapThreshold=0.5f);
+
+    const std::vector<std::string>& getClassNames() const;
+    size_t getClassCount() const;
+
+private:
+    std::vector<CvLatentSvmDetectorCaskade*> detectors;
+    std::vector<std::string> classNames;
+};
+
+cv::Ptr<LSVMDetector> LSVMDetector::create(std::vector<std::string> const &filenames,
+                                     std::vector<std::string> const &classNames)
+{
+    return cv::makePtr<LSVMDetectorImpl>(filenames, classNames);
 }
 
-LatentSvmDetector::~LatentSvmDetector()
+LSVMDetectorImpl::ObjectDetection::ObjectDetection() : score(0.f), classID(-1) {}
+
+LSVMDetectorImpl::ObjectDetection::ObjectDetection( const Rect& _rect, float _score, int _classID ) :
+    rect(_rect), score(_score), classID(_classID) {}
+
+
+LSVMDetectorImpl::LSVMDetectorImpl( const std::vector<std::string>& filenames, const std::vector<std::string>& _classNames )
 {
-    clear();
-}
-
-void LatentSvmDetector::clear()
-{
-    for( size_t i = 0; i < detectors.size(); i++ )
-      cv::lsvmc::cvReleaseLatentSvmDetectorCaskade( &detectors[i] );
-    detectors.clear();
-
-    classNames.clear();
-}
-
-bool LatentSvmDetector::empty() const
-{
-    return detectors.empty();
-}
-
-const vector<string>& LatentSvmDetector::getClassNames() const
-{
-    return classNames;
-}
-
-size_t LatentSvmDetector::getClassCount() const
-{
-    return classNames.size();
-}
-
-string extractModelName( const string& filename )
-{
-    size_t startPos = filename.rfind('/');
-    if( startPos == string::npos )
-        startPos = filename.rfind('\\');
-
-    if( startPos == string::npos )
-        startPos = 0;
-    else
-        startPos++;
-
-    const int extentionSize = 4; //.xml
-
-    int substrLength = (int)(filename.size() - startPos - extentionSize);
-
-    return filename.substr(startPos, substrLength);
-}
-
-bool LatentSvmDetector::load( const vector<string>& filenames, const vector<string>& _classNames )
-{
-    clear();
-
-    CV_Assert( _classNames.empty() || _classNames.size() == filenames.size() );
-
     for( size_t i = 0; i < filenames.size(); i++ )
     {
-        const string filename = filenames[i];
+        const std::string filename = filenames[i];
         if( filename.length() < 5 || filename.substr(filename.length()-4, 4) != ".xml" )
             continue;
 
@@ -290,13 +262,50 @@ bool LatentSvmDetector::load( const vector<string>& filenames, const vector<stri
                 classNames.push_back( _classNames[i] );
         }
     }
-
-    return !empty();
 }
 
-void LatentSvmDetector::detect( const Mat& image,
-                                vector<ObjectDetection>& objectDetections,
-                                float overlapThreshold)
+LSVMDetectorImpl::~LSVMDetectorImpl()
+{
+    for(size_t i = 0; i < detectors.size(); i++)
+      cv::lsvm::cvReleaseLatentSvmDetectorCaskade(&detectors[i]);
+}
+
+bool LSVMDetectorImpl::isEmpty() const
+{
+    return detectors.empty();
+}
+
+const std::vector<std::string>& LSVMDetectorImpl::getClassNames() const
+{
+    return classNames;
+}
+
+size_t LSVMDetectorImpl::getClassCount() const
+{
+    return classNames.size();
+}
+
+std::string extractModelName( const std::string& filename )
+{
+    size_t startPos = filename.rfind('/');
+    if( startPos == std::string::npos )
+        startPos = filename.rfind('\\');
+
+    if( startPos == std::string::npos )
+        startPos = 0;
+    else
+        startPos++;
+
+    const int extentionSize = 4; //.xml
+
+    int substrLength = (int)(filename.size() - startPos - extentionSize);
+
+    return filename.substr(startPos, substrLength);
+}
+
+void LSVMDetectorImpl::detect( cv::Mat const &image,
+                               std::vector<ObjectDetection> &objectDetections,
+                               float overlapThreshold)
 {
     objectDetections.clear();
     
@@ -304,7 +313,7 @@ void LatentSvmDetector::detect( const Mat& image,
     {
         IplImage image_ipl = image;
         CvMemStorage* storage = cvCreateMemStorage(0);
-        CvSeq* detections = cv::lsvmc::cvLatentSvmDetectObjectsCaskade( &image_ipl, (CvLatentSvmDetectorCaskade*)(detectors[classID]), storage, overlapThreshold);
+        CvSeq* detections = cv::lsvm::cvLatentSvmDetectObjectsCaskade( &image_ipl, (CvLatentSvmDetectorCaskade*)(detectors[classID]), storage, overlapThreshold);
 
         // convert results
         objectDetections.reserve( objectDetections.size() + detections->total );

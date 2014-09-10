@@ -43,11 +43,11 @@
 #include "_lsvmc_function.h"
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
 float calcM    (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter){
-    unsigned int i, j;
+    int i, j;
     float m = 0.0f;
     for(j = dj; j < dj + filter->sizeY; j++){
         for(i = di * H->pyramid[k]->numFeatures; i < (di + filter->sizeX) * H->pyramid[k]->numFeatures; i++){
@@ -58,7 +58,7 @@ float calcM    (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, cons
     return m;
 }
 float calcM_PCA(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter){
-    unsigned int i, j;
+    int i, j;
     float m = 0.0f;
     for(j = dj; j < dj + filter->sizeY; j++){
         for(i = di * H->pyramid[k]->numFeatures; i < (di + filter->sizeX) * H->pyramid[k]->numFeatures; i++){
@@ -70,8 +70,7 @@ float calcM_PCA(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, cons
     return m;
 }
 float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter, float * cashM, int * maskM, int step){
-    unsigned int i, j, mean;
-    unsigned int n;
+    int i, j, n;
     float m = 0.0f;
     float tmp1, tmp2, tmp3, tmp4;
     float res;
@@ -101,8 +100,7 @@ float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H,
                 tmp4 += a[4 * i + 3] * b[4 * i + 3];
             }
             
-            mean = (n >> 2) << 2;
-            for (i = mean; i < n; ++i)
+            for (i = (n >> 2) << 2; i < n; ++i) //?
             {
                 res += a[i] * b[i];
             }

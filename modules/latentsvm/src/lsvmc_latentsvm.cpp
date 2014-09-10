@@ -44,14 +44,6 @@
 #include "_lsvmc_matching.h"
 #include "_lsvmc_function.h"
 
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 #ifdef HAVE_TBB
 #include <tbb/tbb.h>
 #include "tbb/parallel_for.h"
@@ -60,9 +52,20 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
+int estimateBoxes(CvPoint *points, int *levels, int kPoints,
+                  int sizeX, int sizeY, CvPoint **oppositePoints);
+
+int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
+                          const CvLSVMFeaturePyramidCaskade *H_PCA,
+                          const CvLSVMFilterObjectCaskade **all_F, int n,
+                          float b,
+                          int maxXBorder, int maxYBorder,
+                          float scoreThreshold,
+                          CvPoint **points, int **levels, int *kPoints,
+                          float **score, CvPoint ***partsDisplacement);
 
 void FeaturePyramid32(CvLSVMFeaturePyramidCaskade* H, int maxX, int maxY){
     CvLSVMFeatureMapCaskade *H32; 
@@ -344,7 +347,7 @@ int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
     //FILE *dump;
 
   float p;
-  float fine, pfine;
+  float fine;
   float mpath;
 
   CvPoint *tmpPoints;
@@ -429,7 +432,6 @@ int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
                     if(PCAScore > all_F[path - 1]->Deformation_PCA)
                     {
               p = F_MIN ;
-                        pfine = 0.f;
                         //pathX = (i - maxXBorder - 1) * 2 + maxXBorder + 1 + all_F[path]->V.x;
                         //pathY = (j - maxYBorder - 1) * 2 + maxYBorder + 1 + all_F[path]->V.y; 
                         pathX = i * 2 - maxXBorder + all_F[path]->V.x;
@@ -449,7 +451,6 @@ int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
                       mpath = calcM_PCA_cash(k - LAMBDA, di, dj, H_PCA, all_F[path], cashM[path - 1], maskM[path - 1], maxPathX) - fine;
                       if( mpath > p){
                         p     = mpath;
-                                        pfine = fine;
                                 }
                                 }
                             }
@@ -537,7 +538,6 @@ int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
                         mpath = calcM(k - LAMBDA, di, dj, H, all_F[path]) - fine;
               if(mpath > p){
                 p = mpath;
-                            pfine = fine;
                 (*partsDisplacement)[(*kPoints)][path].x = di;
                 (*partsDisplacement)[(*kPoints)][path].y = dj;
               }
@@ -906,7 +906,6 @@ int searchObjectThresholdSomeComponents(const CvLSVMFeaturePyramidCaskade *H,
                                         CvPoint **points, CvPoint **oppPoints,
                                         float **score, int *kPoints)
 {
-     int error = 0;
     int i, j, s, f, *componentIndex;
     unsigned int maxXBorder, maxYBorder;
     CvPoint **pointsArr, **oppPointsArr, ***partsDisplacementArr;
@@ -924,7 +923,7 @@ int searchObjectThresholdSomeComponents(const CvLSVMFeaturePyramidCaskade *H,
     componentIndex = (int *)malloc(sizeof(int) * kComponents);
     
     // Getting maximum filter dimensions
-    error = getMaxFilterDims(filters, kComponents, kPartFilters, &maxXBorder, &maxYBorder);
+    getMaxFilterDims(filters, kComponents, kPartFilters, &maxXBorder, &maxYBorder);
     *kPoints = 0;
     sum = 0;
     componentIndex[0] = 0;

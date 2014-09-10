@@ -43,6 +43,7 @@
 #include "test_precomp.hpp"
 
 #include <string>
+//#include "opencv2/highgui/highgui_c.h"
 
 #ifdef HAVE_CVCONFIG_H
 #include "cvconfig.h"
@@ -54,84 +55,8 @@
 
 using namespace cv;
 
-const int num_detections = 3;
-const float true_scores[3] = {-0.383931f, -0.825876f, -0.959934f};
 const float score_thr = 0.05f;
-const CvRect true_bounding_boxes[3] = {cvRect(0, 45, 362, 452), cvRect(304, 0, 64, 80), cvRect(236, 0, 108, 59)};
 
-class CV_LatentSVMDetectorCaskadeTest : public cvtest::BaseTest
-{
-protected:
-    void run(int);
-    bool isEqual(CvRect r1, CvRect r2, int eps);
-};
-
-bool CV_LatentSVMDetectorCaskadeTest::isEqual(CvRect r1, CvRect r2, int eps)
-{
-    return (std::abs(r1.x - r2.x) <= eps
-            && std::abs(r1.y - r2.y) <= eps
-            && std::abs(r1.width - r2.width) <= eps
-            && std::abs(r1.height - r2.height) <= eps);
-}
-
-void CV_LatentSVMDetectorCaskadeTest::run( int /* start_from */)
-{
-    string img_path = string(ts->get_data_path()) + "latentsvmdetector/cat.png";
-    string model_path = string(ts->get_data_path()) + "latentsvmdetector/models_VOC2007_caskad/cat.xml";
-
-#ifdef HAVE_TBB
-    int numThreads = 2;
-    tbb::task_scheduler_init init(tbb::task_scheduler_init::deferred);
-    init.initialize(numThreads);
-#endif
-
-    IplImage* image = cvLoadImage(img_path.c_str());
-    if (!image)
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
-        return;
-    }
-
-    CvLatentSvmDetectorCaskade* detector;
-    detector = cv::lsvmc::cvLoadLatentSvmDetectorCaskade(model_path.c_str());
-    if (!detector)
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
-        cvReleaseImage(&image);
-        return;
-    }
-
-    CvMemStorage* storage = cvCreateMemStorage(0);
-    CvSeq* detections = 0;
-    detections = cv::lsvmc::cvLatentSvmDetectObjectsCaskade(image, detector, storage, 0.5f);
-    if (detections->total != num_detections)
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_MISMATCH );
-    }
-    else
-    {
-        ts->set_failed_test_info(cvtest::TS::OK);
-        for (int i = 0; i < detections->total; i++)
-        {
-            CvObjectDetection detection = *(CvObjectDetection*)cvGetSeqElem( detections, i );
-            CvRect bounding_box = detection.rect;
-            float score = detection.score;
-            if ((!isEqual(bounding_box, true_bounding_boxes[i], 1)) || (fabs(score - true_scores[i]) > score_thr))
-            {
-                ts->set_failed_test_info( cvtest::TS::FAIL_MISMATCH );
-                break;
-            }
-        }
-    }
-#ifdef HAVE_TBB
-    init.terminate();
-#endif
-    cvReleaseMemStorage( &storage );
-    cv::lsvmc::cvReleaseLatentSvmDetectorCaskade( &detector );
-    cvReleaseImage( &image );
-}
-
-// Test for c++ version of Latent SVM
 
 class LatentSVMDetectorCaskadeTest : public cvtest::BaseTest
 {
@@ -139,20 +64,20 @@ protected:
     void run(int);
 };
 
-static void writeDetections( FileStorage& fs, const string& nodeName, const vector<lsvmc::LatentSvmDetector::ObjectDetection>& detections )
+static void writeDetections( FileStorage& fs, const std::string& nodeName, const std::vector<lsvm::LSVMDetector::ObjectDetection>& detections )
 {
     fs << nodeName << "[";
-    for( size_t i = 0; i < detections.size(); i++ )
+    for( size_t i = 0; i < detections.size(); i++ ) //FIXME operator <<
     {
-        const lsvmc::LatentSvmDetector::ObjectDetection& d = detections[i];
+        lsvm::LSVMDetector::ObjectDetection const &d = detections[i];
         fs << d.rect.x << d.rect.y << d.rect.width << d.rect.height
            << d.score << d.classID;
     }
     fs << "]";
 }
 
-static void readDetections( FileStorage fs, const string& nodeName, 
-                           vector<lsvmc::LatentSvmDetector::ObjectDetection>& detections )
+static void readDetections( FileStorage fs, const std::string& nodeName, 
+                           std::vector<lsvm::LSVMDetector::ObjectDetection>& detections )
 {
     detections.clear();
 
@@ -160,15 +85,15 @@ static void readDetections( FileStorage fs, const string& nodeName,
     FileNodeIterator fni = fn.begin();
     while( fni != fn.end() )
     {
-        lsvmc::LatentSvmDetector::ObjectDetection d;
+        lsvm::LSVMDetector::ObjectDetection d;
         fni >> d.rect.x >> d.rect.y >> d.rect.width >> d.rect.height
             >> d.score >> d.classID;
         detections.push_back( d );
     }
 }
 
-static inline bool isEqualCaskad( const lsvmc::LatentSvmDetector::ObjectDetection& d1, 
-                           const lsvmc::LatentSvmDetector::ObjectDetection& d2, int eps, float threshold)
+static inline bool isEqualCaskad( const lsvm::LSVMDetector::ObjectDetection& d1,
+                           const lsvm::LSVMDetector::ObjectDetection& d2, int eps, float threshold)
 {
     return (
            std::abs(d1.rect.x - d2.rect.x) <= eps
@@ -181,16 +106,17 @@ static inline bool isEqualCaskad( const lsvmc::LatentSvmDetector::ObjectDetectio
 }
 
 
-bool compareResults( const vector<lsvmc::LatentSvmDetector::ObjectDetection>& calc, 
-                    const vector<lsvmc::LatentSvmDetector::ObjectDetection>& valid, int eps, float threshold)
+bool compareResults( const std::vector<lsvm::LSVMDetector::ObjectDetection>& calc,
+                    const std::vector<lsvm::LSVMDetector::ObjectDetection>& valid, int eps, float threshold)
 {
     if( calc.size() != valid.size() )
         return false;
 
     for( size_t i = 0; i < calc.size(); i++ )
     {
-        const lsvmc::LatentSvmDetector::ObjectDetection& c = calc[i];
-        const lsvmc::LatentSvmDetector::ObjectDetection& v = valid[i];
+        lsvm::LSVMDetector::ObjectDetection const &c = calc[i];
+        lsvm::LSVMDetector::ObjectDetection const &v = valid[i];
+
         if( !isEqualCaskad(c, v, eps, threshold) )
         {
             std::cerr << "Expected: " << v.rect << " class=" << v.classID << " score=" << v.score << std::endl;
@@ -203,13 +129,13 @@ bool compareResults( const vector<lsvmc::LatentSvmDetector::ObjectDetection>& ca
 
 void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
 {
-    string img_path_cat = string(ts->get_data_path()) + "latentsvmdetector/cat.png";
-    string img_path_cars = string(ts->get_data_path()) + "latentsvmdetector/cars.png";
+    std::string img_path_cat = std::string(ts->get_data_path()) + "cat.png";
+    std::string img_path_cars = std::string(ts->get_data_path()) + "cars.png";
 
-    string model_path_cat = string(ts->get_data_path()) + "latentsvmdetector/models_VOC2007_caskad/cat.xml";
-    string model_path_car = string(ts->get_data_path()) + "latentsvmdetector/models_VOC2007_caskad/car.xml";
+    std::string model_path_cat = std::string(ts->get_data_path()) + "models_VOC2007_caskade/cat.xml";
+    std::string model_path_car = std::string(ts->get_data_path()) + "models_VOC2007_caskade/car.xml";
 
-    string true_res_path = string(ts->get_data_path()) + "latentsvmdetector/results_caskad.xml";
+    std::string true_res_path = std::string(ts->get_data_path()) + "results_caskad.xml";
 
 
 #ifdef HAVE_TBB
@@ -229,14 +155,14 @@ void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
     // detector12 - to test case of two (several) classes 'cat' and car
 
     // Load detectors
-    lsvmc::LatentSvmDetector detector1( vector<string>(1,model_path_cat) );
+    cv::Ptr<lsvm::LSVMDetector> detector1 = lsvm::LSVMDetector::create(std::vector<std::string>(1,model_path_cat));
 
-    vector<string> models_pathes(2);
+    std::vector<std::string> models_pathes(2);
     models_pathes[0] = model_path_cat;
     models_pathes[1] = model_path_car;
-    lsvmc::LatentSvmDetector detector12( models_pathes );
+    cv::Ptr<lsvm::LSVMDetector> detector12 = lsvm::LSVMDetector::create(models_pathes);
 
-    if( detector1.empty() || detector12.empty() || detector12.getClassCount() != 2 )
+    if( detector1->isEmpty() || detector12->isEmpty() || detector12->getClassCount() != 2 )
     {
         ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
         return;
@@ -244,20 +170,19 @@ void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
 
     // 1. Test method detect
     // Run detectors
-    vector<lsvmc::LatentSvmDetector::ObjectDetection> detections1_cat, detections12_cat, detections12_cars;
-    detector1.detect( image_cat, detections1_cat, 0.5);
-    detector12.detect( image_cat, detections12_cat, 0.5);
-    detector12.detect( image_cars, detections12_cars, 0.5);
+    std::vector<lsvm::LSVMDetector::ObjectDetection> detections1_cat, detections12_cat, detections12_cars;
+    detector1->detect( image_cat, detections1_cat, 0.5);
+    detector12->detect( image_cat, detections12_cat, 0.5);
+    detector12->detect( image_cars, detections12_cars, 0.5);
 
     // Load true results
     FileStorage fs( true_res_path, FileStorage::READ );
     if( fs.isOpened() )
     {
-        vector<lsvmc::LatentSvmDetector::ObjectDetection> true_detections1_cat, true_detections12_cat, true_detections12_cars;
+        std::vector<lsvm::LSVMDetector::ObjectDetection> true_detections1_cat, true_detections12_cat, true_detections12_cars;
         readDetections( fs, "detections1_cat", true_detections1_cat );
         readDetections( fs, "detections12_cat", true_detections12_cat );
         readDetections( fs, "detections12_cars", true_detections12_cars );
-
 
         if( !compareResults(detections1_cat, true_detections1_cat, 1, score_thr) )
         {
@@ -288,22 +213,7 @@ void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
             std::cerr << "File " << true_res_path << " cann't be opened to save test results" << std::endl;
     }
 
-    // 2. Simple tests of other methods
-    if( detector1.getClassCount() != 1 || detector1.getClassNames()[0] != "cat" )
-    {
-        std::cerr << "Incorrect result of method getClassNames() or getClassCount()" << std::endl;
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_OUTPUT);
-    }
-
-    detector1.clear();
-    if( !detector1.empty() )
-    {
-        std::cerr << "There is a bug in method clear() or empty()" << std::endl;
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_OUTPUT);
-    }
-
     ts->set_failed_test_info( cvtest::TS::OK);
 }
 
-TEST(Objdetect_LatentSVMDetectorCaskade_c, DISABLED_regression) { CV_LatentSVMDetectorCaskadeTest test; test.safe_run(); }
-TEST(Objdetect_LatentSVMDetectorCaskade_cpp, DISABLED_regression) { LatentSVMDetectorCaskadeTest test; test.safe_run(); }
+TEST(Objdetect_LatentSVMDetectorCaskade_cpp, regression) { LatentSVMDetectorCaskadeTest test; test.safe_run(); }

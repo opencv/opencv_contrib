@@ -16,3 +16,7 @@ _`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
 
  4. To load data, for example "EnglishImg", run: ./opencv/build/bin/example_datasets_tr_chars -p=/home/user/path_to_unpacked_folder/English/
 
+**References:**
+
+.. [Campos09] T. E. de Campos, B. R. Babu and M. Varma. Character recognition in natural images. In Proceedings of the International Conference on Computer Vision Theory and Applications (VISAPP), 2009
+

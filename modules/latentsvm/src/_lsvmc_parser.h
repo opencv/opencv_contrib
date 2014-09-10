@@ -108,7 +108,7 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
     int loadModel(

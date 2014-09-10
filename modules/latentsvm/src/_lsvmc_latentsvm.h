@@ -53,9 +53,8 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
-
 
 //////////////////////////////////////////////////////////////
 // Building feature pyramid

@@ -61,7 +61,27 @@ static void cumsum(const Mat_<float>& src, Mat_<float> dst)
     }
 }
 
-int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
+//fast log implementation. A bit less accurate but ~5x faster
+inline float fast_log2 (float val)
+{
+   int * const    exp_ptr = reinterpret_cast <int *> (&val);
+   int            x = *exp_ptr;
+   const int      log_2 = ((x >> 23) & 255) - 128;
+   x &= ~(255 << 23);
+   x += 127 << 23;
+   *exp_ptr = x;
+
+   val = ((-1.0f/3) * val + 2) * val - 2.0f/3;   // (1)
+
+   return (val + log_2);
+} 
+
+inline float fast_log (const float &val)
+{
+   return (fast_log2 (val) * 0.69314718f);
+}
+
+int Stump::train(const Mat& data, const Mat& labels, const Mat& weights, const std::vector<int>& visited_features, bool use_fast_log)
 {
     CV_Assert(labels.rows == 1 && labels.cols == data.cols);
     CV_Assert(weights.rows == 1 && weights.cols == data.cols);
@@ -95,8 +115,11 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
     /* For every feature */
     for( int row = 0; row < data.rows; ++row )
     {
-        for( int col = 0; col < data.cols; ++col )
-            d(0, col) = data.at<int>(row, col);
+        if(std::find(visited_features.begin(), visited_features.end(), row) != visited_features.end()) {
+              //feature discarded
+              continue;
+        }
+        data.row(row).copyTo(d.row(0));
 
         sortIdx(d, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
 
@@ -141,8 +164,16 @@ int Stump::train(const Mat& data, const Mat& labels, const Mat& weights)
 
             err = sqrt(pos_right * neg_wrong) + sqrt(pos_wrong * neg_right);
 
-            h_pos = .5f * log((pos_right + eps) / (pos_wrong + eps));
-            h_neg = .5f * log((neg_wrong + eps) / (neg_right + eps));
+            if(use_fast_log)
+            {
+              h_pos = .5f * fast_log((pos_right + eps) / (pos_wrong + eps));
+              h_neg = .5f * fast_log((neg_wrong + eps) / (neg_right + eps));
+            }
+            else
+            {
+              h_pos = .5f * log((pos_right + eps) / (pos_wrong + eps));
+              h_neg = .5f * log((neg_wrong + eps) / (neg_right + eps));
+            }
 
             if( err < min_err )
             {

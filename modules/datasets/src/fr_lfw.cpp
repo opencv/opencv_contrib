@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/fr_lfw.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <map>
 
@@ -52,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS FR_lfwImp : public FR_lfw
+class FR_lfwImp : public FR_lfw
 {
 public:
     FR_lfwImp() {}

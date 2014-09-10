@@ -41,7 +41,8 @@
 
 #include "opencv2/datasets/or_imagenet.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
+
+#include <map>
 
 namespace cv
 {
@@ -50,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS OR_imagenetImp : public OR_imagenet
+class OR_imagenetImp : public OR_imagenet
 {
 public:
     OR_imagenetImp() {}
@@ -61,6 +62,8 @@ public:
 
 private:
     void loadDataset(const string &path);
+
+    void numberToString(int number, string &out);
 };
 
 /*OR_imagenetImp::OR_imagenetImp(const string &path)
@@ -73,30 +76,87 @@ void OR_imagenetImp::load(const string &path)
     loadDataset(path);
 }
 
+void OR_imagenetImp::numberToString(int number, string &out)
+{
+    char numberStr[9];
+    sprintf(numberStr, "%u", number);
+    for (unsigned int i=0; i<8-strlen(numberStr); ++i)
+    {
+        out += "0";
+    }
+    out += numberStr;
+}
+
 void OR_imagenetImp::loadDataset(const string &path)
 {
     train.push_back(vector< Ptr<Object> >());
     test.push_back(vector< Ptr<Object> >());
     validation.push_back(vector< Ptr<Object> >());
 
-    ifstream infile((path + "fall11_urls.txt").c_str());
+    map<string, int> labels;
+    ifstream infile((path + "labels.txt").c_str());
     string line;
     while (getline(infile, line))
     {
         vector<string> elems;
-        split(line, elems, '\t');
+        split(line, elems, ',');
+        string syn = elems[0];
+        int number = atoi(elems[1].c_str());
 
+        labels.insert(make_pair(syn, number));
+    }
+
+    string pathTrain(path + "train/");
+    vector<string> fileNames;
+    getDirList(pathTrain, fileNames);
+    for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
+    {
+        string pathSyn((*it) + "/");
+        vector<string> fileNamesSyn;
+        getDirList((pathTrain + pathSyn), fileNamesSyn);
+        for (vector<string>::iterator itSyn=fileNamesSyn.begin(); itSyn!=fileNamesSyn.end(); ++itSyn)
+        {
+            Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
+            curr->image = "train/" + pathSyn + *itSyn;
+            curr->id = labels[*it];
+
+            train.back().push_back(curr);
+        }
+    }
+
+    ifstream infileVal((path + "ILSVRC2010_validation_ground_truth.txt").c_str());
+    while (getline(infileVal, line))
+    {
         Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
-        curr->imageUrl = elems[1];
+        curr->id = atoi(line.c_str());
+        numberToString(validation.back().size()+1, curr->image);
+        curr->image = "val/ILSVRC2010_val_" + curr->image + ".JPEG";
 
-        string id(elems[0]);
-        elems.clear();
-        split(id, elems, '_');
+        validation.back().push_back(curr);
+    }
 
-        curr->wnid = elems[0];
-        curr->id2 = atoi(elems[1].c_str());
+    vector<int> testGT;
+    ifstream infileTest((path + "ILSVRC2010_test_ground_truth.txt").c_str());
+    while (getline(infileTest, line))
+    {
+        testGT.push_back(atoi(line.c_str()));
+    }
+    if (testGT.size()==0) // have no test labels, set them to 1000 - unknown
+    {
+        for (int i=0; i<150000; ++i)
+        {
+            testGT.push_back(1000); // unknown
+        }
+    }
 
-        train.back().push_back(curr);
+    for (vector<int>::iterator it=testGT.begin(); it!=testGT.end(); ++it)
+    {
+        Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
+        curr->id = *it;
+        numberToString(test.back().size()+1, curr->image);
+        curr->image = "test/ILSVRC2010_test_" + curr->image + ".JPEG";
+
+        test.back().push_back(curr);
     }
 }
 

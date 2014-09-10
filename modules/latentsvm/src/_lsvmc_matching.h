@@ -52,7 +52,7 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
 

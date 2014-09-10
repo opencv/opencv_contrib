@@ -46,7 +46,7 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
 float calcM         (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter);

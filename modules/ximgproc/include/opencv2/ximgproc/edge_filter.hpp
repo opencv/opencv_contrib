@@ -64,8 +64,6 @@ public:
     CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
 };
 
-typedef Ptr<DTFilter> DTFilterPtr;
-
 /*Fabric function for DT filters*/
 CV_EXPORTS_W
 Ptr<DTFilter> createDTFilter(InputArray guide, double sigmaSpatial, double sigmaColor, int mode = DTF_NC, int numIters = 3);
@@ -101,7 +99,7 @@ public:
         * @brief Apply High-dimensional filtering using adaptive manifolds
         * @param src       Input image to be filtered.
         * @param dst       Adaptive-manifold filter response.
-        * @param src_joint Image for joint filtering (optional).
+        * @param joint Image for joint filtering (optional).
         */
     CV_WRAP virtual void filter(InputArray src, OutputArray dst, InputArray joint = noArray()) = 0;
 

@@ -14,3 +14,11 @@ _`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.
 
  3. To load data run: ./opencv/build/bin/example_datasets_slam_kitti -p=/home/user/path_to_unpacked_folder/dataset/
 
+**References:**
+
+.. [Geiger2012CVPR] Andreas Geiger and Philip Lenz and Raquel Urtasun. Are we ready for Autonomous Driving? The KITTI Vision Benchmark Suite. CVPR, 2012
+
+.. [Geiger2013IJRR] Andreas Geiger and Philip Lenz and Christoph Stiller and Raquel Urtasun. Vision meets Robotics: The KITTI Dataset. IJRR, 2013
+
+.. [Fritsch2013ITSC] Jannik Fritsch and Tobias Kuehnl and Andreas Geiger. A New Performance Measure and Evaluation Benchmark for Road Detection Algorithms. ITSC, 2013
+

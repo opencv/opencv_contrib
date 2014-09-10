@@ -165,15 +165,14 @@ public:
     probability is above a global limit pmin and the difference between local maximum and
     local minimum is greater than minProbabilityDiff).
 
-    \param  cb                Callback with the classifier.
-                              default classifier can be implicitly load with function loadClassifierNM1()
-                              from file in samples/cpp/trained_classifierNM1.xml
-    \param  thresholdDelta    Threshold step in subsequent thresholds when extracting the component tree
-    \param  minArea           The minimum area (% of image size) allowed for retreived ER's
-    \param  minArea           The maximum area (% of image size) allowed for retreived ER's
-    \param  minProbability    The minimum probability P(er|character) allowed for retreived ER's
-    \param  nonMaxSuppression Whenever non-maximum suppression is done over the branch probabilities
-    \param  minProbability    The minimum probability difference between local maxima and local minima ERs
+    @param cb – Callback with the classifier. Default classifier can be implicitly load with function
+        loadClassifierNM1(), e.g. from file in samples/cpp/trained_classifierNM1.xml
+    @param thresholdDelta – Threshold step in subsequent thresholds when extracting the component tree
+    @param minArea – The minimum area (% of image size) allowed for retreived ER’s
+    @param maxArea – The maximum area (% of image size) allowed for retreived ER’s
+    @param minProbability – The minimum probability P(er|character) allowed for retreived ER’s
+    @param nonMaxSuppression – Whenever non-maximum suppression is done over the branch probabilities
+    @param minProbabilityDiff – The minimum probability difference between local maxima and local minima ERs
 */
 CV_EXPORTS Ptr<ERFilter> createERFilterNM1(const Ptr<ERFilter::Callback>& cb,
                                                   int thresholdDelta = 1, float minArea = 0.00025,
@@ -260,11 +259,20 @@ enum { ERGROUPING_ORIENTATION_HORIZ,
     combine all these hypotheses to get the final estimate. Each of the resulting groups are finally
     validated using a classifier in order to assest if they form a valid horizontally-aligned text block.
 
-    \param  src            Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
-    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
-    \param  filename       The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)
-    \param  minProbability The minimum probability for accepting a group
-    \param  groups         The output of the algorithm are stored in this parameter as list of rectangles.
+    @param img – Original RGB or Grayscale image from wich the regions were extracted.
+    @param channels – Vector of single channel images CV_8UC1 from wich the regions were extracted.
+    @param regions – Vector of ER’s retreived from the ERFilter algorithm from each channel.
+    @param groups – The output of the algorithm is stored in this parameter as set of lists of
+        indexes to provided regions.
+    @param groups_rects – The output of the algorithm are stored in this parameter as list of rectangles.
+    @param method – Grouping method (see the details below). Can be one of ERGROUPING_ORIENTATION_HORIZ,
+        ERGROUPING_ORIENTATION_ANY.
+    @param filename – The XML or YAML file with the classifier model (e.g.
+        samples/trained_classifier_erGrouping.xml). Only to use when grouping method is
+        ERGROUPING_ORIENTATION_ANY.
+    @param minProbablity – The minimum probability for accepting a group. Only to use when grouping
+        method is ERGROUPING_ORIENTATION_ANY.
+
 */
 CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
                                            std::vector<std::vector<ERStat> > &regions,

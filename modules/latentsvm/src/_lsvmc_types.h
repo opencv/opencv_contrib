@@ -65,12 +65,23 @@
 #define VAL_OF_TRUNCATE 0.2f 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
-
 //////////////////////////////////////////////////////////////
 // main data structures                                     //
 //////////////////////////////////////////////////////////////
+
+// data type: STRUCT CvObjectDetection
+// structure contains the bounding box and confidence level for detected object
+// rect					- bounding box for a detected object
+// score				- confidence level
+
+typedef struct CvObjectDetection
+{
+    cv::Rect rect;
+    float score;
+} CvObjectDetection;
+
 
 // DataType: STRUCT featureMap
 // FEATURE MAP DESCRIPTION
@@ -108,6 +119,68 @@ typedef struct{
     int *x;
     int *y;
 } CvLSVMFilterDisposition;
+
+// DataType: STRUCT position
+// Structure describes the position of the filter in the feature pyramid
+// l - level in the feature pyramid
+// (x, y) - coordinate in level l
+
+typedef struct CvLSVMFilterPosition
+{
+    int x;
+    int y;
+    int l;
+} CvLSVMFilterPosition;
+
+// DataType: STRUCT filterObject
+// Description of the filter, which corresponds to the part of the object
+// V               - ideal (penalty = 0) position of the partial filter
+//                   from the root filter position (V_i in the paper)
+// penaltyFunction - vector describes penalty function (d_i in the paper)
+//                   pf[0] * x + pf[1] * y + pf[2] * x^2 + pf[3] * y^2
+// FILTER DESCRIPTION
+//   Rectangular map (sizeX x sizeY),
+//   every cell stores feature vector (dimension = p)
+// H               - matrix of feature vectors
+//                   to set and get feature vectors (i,j)
+//                   used formula H[(j * sizeX + i) * p + k], where
+//                   k - component of feature vector in cell (i, j)
+// END OF FILTER DESCRIPTION
+
+typedef struct CvLSVMFilterObjectCaskade{
+    CvLSVMFilterPosition V;
+    float fineFunction[4];
+    int sizeX;
+    int sizeY;
+    int numFeatures;
+    float *H;
+    float *H_PCA;
+    float Hypothesis, Deformation;
+    float Hypothesis_PCA, Deformation_PCA;
+    int deltaX;
+    int deltaY;
+} CvLSVMFilterObjectCaskade;
+
+// data type: STRUCT CvLatentSvmDetector
+// structure contains internal representation of trained Latent SVM detector
+// num_filters			- total number of filters (root plus part) in model
+// num_components		- number of components in model
+// num_part_filters		- array containing number of part filters for each component
+// filters				- root and part filters for all model components
+// b					- biases for all model components
+// score_threshold		- confidence level threshold
+
+typedef struct CvLatentSvmDetectorCaskade
+{
+    int num_filters;
+    int num_components;
+    int* num_part_filters;
+    CvLSVMFilterObjectCaskade** filters;
+    float* b;
+    float score_threshold;
+    float *pca;
+    int pca_size;
+} CvLatentSvmDetectorCaskade;
 }
 }
 #endif

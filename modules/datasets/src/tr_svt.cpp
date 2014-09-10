@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/tr_svt.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <opencv2/datasets/tinyxml2/tinyxml2.h>
 
@@ -53,7 +52,7 @@ namespace datasets
 using namespace std;
 using namespace tinyxml2;
 
-class CV_EXPORTS TR_svtImp : public TR_svt
+class TR_svtImp : public TR_svt
 {
 public:
     TR_svtImp() {}

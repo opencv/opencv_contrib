@@ -70,16 +70,15 @@ int main(int argc, char *argv[])
 
     // ***************
     // dataset contains for each object its images.
-    // For example, let output dataset size and last object.
+    // For example, let output splits number, dataset size and last image.
+    int numSplits = dataset->getNumSplits();
+    printf("splits number: %u\n", numSplits);
     printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+
     OR_sunObj *example = static_cast<OR_sunObj *>(dataset->getTrain().back().get());
-    printf("last object name: %s\n", example->name.c_str());
-    printf("last object images number: %u\n", (unsigned int)example->imageNames.size());
-    vector<string> &imageNames = example->imageNames;
-    for (vector<string>::iterator it=imageNames.begin(); it!=imageNames.end(); ++it)
-    {
-        printf("%s\n", (*it).c_str());
-    }
+    printf("last image:\nname: %s\n", example->name.c_str());
+    printf("label: %u\n", example->label);
+    printf("label path: %s\n", dataset->paths[example->label].c_str());
 
     return 0;
 }

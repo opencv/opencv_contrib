@@ -46,7 +46,7 @@
 
 namespace cv
 {
-namespace lsvmc
+namespace lsvm
 {
 
 IplImage * resize_opencv (IplImage * img, float scale);
