@@ -119,10 +119,11 @@ namespace xphoto
 
         for (size_t i = 0; i < pPath.size(); ++i)
         {
+            uchar xmask = dmask.template at<uchar>(pPath[i]);
+
             for (int j = 0; j < nTransform + 1; ++j)
             {
                 cv::Point2i u = pPath[i] + transforms[j];
-                uchar xmask = dmask.template at<uchar>(pPath[i]);
 
                 unsigned char vmask = 0;
                 cv::Vec <float, cn> vimg = 0;
