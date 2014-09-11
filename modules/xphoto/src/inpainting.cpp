@@ -37,6 +37,7 @@
 //
 //M*/
 
+#include <type_traits>
 #include <vector>
 #include <stack>
 #include <limits>
