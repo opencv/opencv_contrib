@@ -50,12 +50,11 @@
 #include <time.h>
 #include <functional>
 
-#include "norm2.hpp"
-#include "blending.hpp"
-
-
 namespace gcoptimization
 {
+
+#include "norm2.hpp"
+#include "blending.hpp"
 #include "gcgraph.hpp"
 
 

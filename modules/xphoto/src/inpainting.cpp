@@ -148,7 +148,7 @@ namespace xphoto
                                  pPath[i] + cv::Point2i(+1, 0)
                                };
 
-            for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+            for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                 if ( p[j].y < src.rows && p[j].y >= 0 &&
                      p[j].x < src.cols && p[j].x >= 0 )
                     linkIdx[i].push_back( backref(p[j]) );
@@ -180,7 +180,7 @@ namespace xphoto
                     __pPath[i] + cv::Point2i(-1, 0)
                 };
 
-                for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                     if ( p[j].y < src.rows && p[j].y >= 0 &&
                         p[j].x < src.cols && p[j].x >= 0 )
                         __linkIdx[i].push_back( backref(p[j]) );
@@ -219,7 +219,7 @@ namespace xphoto
                             std::vector <cv::Vec <float, cn> > pointVec;
                                             std::vector <uchar> maskVec;
 
-                            for (int q = 0; q < sizeof(dv)/sizeof(cv::Point2i); ++q)
+                            for (uint q = 0; q < sizeof(dv)/sizeof(cv::Point2i); ++q)
                                 if (u.x + dv[q].x >= 0 && u.x + dv[q].x < img.cols
                                 &&  u.y + dv[q].y >= 0 && u.y + dv[q].y < img.rows)
                                 {
@@ -252,7 +252,7 @@ namespace xphoto
             }
 
 
-            for (int i = 0; i < pPath.size(); ++i)
+            for (size_t i = 0; i < pPath.size(); ++i)
             {
                 cv::Point2i  p[] = {
                     pPath[i] + cv::Point2i(0, +1),
@@ -261,7 +261,7 @@ namespace xphoto
 
                 std::vector <int> linkVec;
 
-                for (int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                     if ( p[j].y < src.rows && p[j].y >= 0 &&
                         p[j].x < src.cols && p[j].x >= 0 )
                         linkVec.push_back( __backref(p[j]) );
