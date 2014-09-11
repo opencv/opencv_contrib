@@ -54,13 +54,15 @@ template<class T, T v> struct int_const { // integral_constant
 typedef int_const<bool,true> ttype; // true_type
 typedef int_const<bool,false> ftype; // false_type
 
-template<class T, class U> struct same_as : ftype {};
-template<class T> struct same_as<T, T> : ttype {};   // is_same
-
+template <class T, class U> struct same_as : ftype {};
+template <class T> struct same_as<T, T> : ttype {};   // is_same
 
 
 template <typename _Tp> struct is_norm2_type :
-    int_const<bool, _Tp(-1) < _Tp(0) && !same_as<_Tp, char>::value> {};
+    int_const<bool, !same_as<_Tp,   char>::value
+                 && !same_as<_Tp,  uchar>::value
+                 && !same_as<_Tp, ushort>::value
+                 && !same_as<_Tp,   uint>::value>{};
 
 template <typename _Tp, int cn> static inline typename iftype< is_norm2_type<_Tp>::value, _Tp >::
     type norm2(cv::Vec<_Tp, cn> a, cv::Vec<_Tp, cn> b) { return (a - b).dot(a - b); }
