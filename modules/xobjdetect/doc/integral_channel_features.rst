@@ -183,7 +183,7 @@ Train detector.
 
 .. ocv:function:: void ICFDetector::train(const String& pos_path, const String& bg_path, ICFDetectorParams params = ICFDetectorParams())
 
-    :param pos_path: path to folder with images of objects (wildcards like /my/path/*.png are allowed)
+    :param pos_path: path to folder with images of objects (wildcards like ``/my/path/*.png`` are allowed)
     :param bg_path: path to folder with background images
     :param params: parameters for detector training
 
