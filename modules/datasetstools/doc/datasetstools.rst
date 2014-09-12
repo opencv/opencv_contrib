@@ -50,13 +50,13 @@ FR_lfw
 
 Implements loading dataset:
 
-_`"Labeled Faces in the Wild-a"`: http://www.openu.ac.il/home/hassner/data/lfwa/
+_`"Labeled Faces in the Wild"`: http://vis-www.cs.umass.edu/lfw/
 
 .. note:: Usage
 
- 1. From link above download dataset file: lfwa.tar.gz.
+ 1. From link above download any dataset file: lfw.tgz\lfwa.tar.gz\lfw-deepfunneled.tgz\lfw-funneled.tgz and file with 10 test splits: pairs.txt.
 
- 2. Unpack it.
+ 2. Unpack dataset file and place pairs.txt in created folder.
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
 

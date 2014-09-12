@@ -42,6 +42,8 @@
 #include "opencv2/datasetstools/fr_lfw.hpp"
 #include "precomp.hpp"
 
+#include <map>
+
 namespace cv
 {
 namespace datasetstools
@@ -60,6 +62,8 @@ public:
 
 private:
     void loadDataset(const string &path);
+
+    map< string, vector<string> > faces;
 };
 
 /*FR_lfwImp::FR_lfwImp(const string &path)
@@ -74,26 +78,69 @@ void FR_lfwImp::load(const string &path)
 
 void FR_lfwImp::loadDataset(const string &path)
 {
-    train.push_back(vector< Ptr<Object> >());
-    test.push_back(vector< Ptr<Object> >());
-    validation.push_back(vector< Ptr<Object> >());
-
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<FR_lfwObj> curr(new FR_lfwObj);
-        curr->name = *it;
+        if ("pairs.txt" == *it)
+        {
+            continue;
+        }
 
-        string pathFace(path + curr->name + "/");
+        string &name = *it;
+        vector<string> images;
+
+        string pathFace(path + name + "/");
         vector<string> faceNames;
         getDirList(pathFace, faceNames);
         for (vector<string>::iterator itFace=faceNames.begin(); itFace!=faceNames.end(); ++itFace)
         {
-            curr->images.push_back(*itFace);
+            images.push_back(*itFace);
         }
 
-        train.back().push_back(curr);
+        faces.insert(make_pair(name, images));
+    }
+
+    // test loading
+    ifstream infile((path + "pairs.txt").c_str());
+    string line;
+    getline(infile, line); // should be 10 300
+    unsigned int num = 0;
+    while (getline(infile, line))
+    {
+        if (0 == (num % 600))
+        {
+            train.push_back(vector< Ptr<Object> >());
+            test.push_back(vector< Ptr<Object> >());
+            validation.push_back(vector< Ptr<Object> >());
+        }
+
+        vector<string> elems;
+        split(line, elems, '\t');
+
+        Ptr<FR_lfwObj> curr(new FR_lfwObj);
+        string &person1 = elems[0];
+        unsigned int imageNumber1 = atoi(elems[1].c_str())-1;
+        curr->image1 = person1 + "/" + faces[person1][imageNumber1];
+
+        string person2;
+        unsigned int imageNumber2;
+        if (3 == elems.size())
+        {
+            person2 = elems[0];
+            imageNumber2 = atoi(elems[2].c_str())-1;
+            curr->same = true;
+        } else
+        {
+            person2 = elems[2];
+            imageNumber2 = atoi(elems[3].c_str())-1;
+            curr->same = false;
+        }
+        curr->image2 = person2 + "/" + faces[person2][imageNumber2];
+
+        test.back().push_back(curr);
+
+        num++;
     }
 }
 

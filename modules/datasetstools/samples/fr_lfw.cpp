@@ -69,16 +69,21 @@ int main(int argc, char *argv[])
     dataset->load(path);
 
     // ***************
-    // dataset contains object with name and its images.
-    // For example, let output dataset size and sixth element.
-    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
-    FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTrain()[5].get());
-    printf("sixth dataset object:\n%s\n", example->name.c_str());
-    string currPath(path + example->name + "/");
-    for (vector<string>::iterator it=example->images.begin(); it!=example->images.end(); ++it)
-    {
-        printf("%s\n", (currPath+(*it)).c_str());
-    }
+    // test contains two images and flag that they belong to one person.
+    // For example, let output splits number, test size and split 1, elements: 1, 301.
+    int numSplits = dataset->getNumSplits();
+    printf("splits number: %u\n", numSplits);
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
+
+    FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTest()[0].get());
+    printf("first test, first image: %s\n", example->image1.c_str());
+    printf("first test, second image: %s\n", example->image2.c_str());
+    printf("first test, same: %s\n", example->same?"yes":"no");
+
+    example = static_cast<FR_lfwObj *>(dataset->getTest()[300].get());
+    printf("300 test, first image: %s\n", example->image1.c_str());
+    printf("300 test, second image: %s\n", example->image2.c_str());
+    printf("300 test, same: %s\n", example->same?"yes":"no");
 
     return 0;
 }

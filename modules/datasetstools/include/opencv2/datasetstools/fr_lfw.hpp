@@ -56,8 +56,8 @@ namespace datasetstools
 
 struct FR_lfwObj : public Object
 {
-    std::string name;
-    std::vector<std::string> images;
+    std::string image1, image2;
+    bool same;
 };
 
 class CV_EXPORTS FR_lfw : public Dataset
