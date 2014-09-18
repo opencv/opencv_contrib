@@ -835,7 +835,7 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
     return 1;
 
   size = UINT64_1 << ( b - 5 );  // size = 2 ^ b
-  table = (BucketGroup*) calloc( size, sizeof(BucketGroup) );
+  table = (BucketGroup*) calloc( (size_t)size, sizeof(BucketGroup) );
 
   return 0;
 
