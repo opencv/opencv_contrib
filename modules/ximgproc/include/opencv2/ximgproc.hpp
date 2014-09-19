@@ -39,5 +39,6 @@
 
 #include "ximgproc/edge_filter.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
+#include "ximgproc/seeds.hpp"
 
 #endif
