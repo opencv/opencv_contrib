@@ -39,54 +39,51 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/ir_affine.hpp"
+#include "opencv2/datasetstools/dataset.hpp"
+#include "precomp.hpp"
 
-#include <opencv2/core.hpp>
-
-#include <cstdio>
-#include <cstdlib> // atoi
-
-#include <string>
-#include <vector>
+namespace cv
+{
+namespace datasetstools
+{
 
 using namespace std;
-using namespace cv;
-using namespace cv::datasetstools;
 
-int main(int argc, char *argv[])
+vector< Ptr<Object> >& Dataset::getTrain(int splitNum)
 {
-    const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset folder }";
-    CommandLineParser parser(argc, argv, keys);
-    string path(parser.get<string>("path"));
-    if (parser.has("help") || path=="true")
+    if (splitNum >= (int)train.size())
     {
-        parser.printMessage();
-        return -1;
+        return empty;
     }
 
-    // loading dataset
-    Ptr<IR_affine> dataset = IR_affine::create();
-    dataset->load(path);
-
-    // ***************
-    // dataset contains for each image in dataset it's matrix.
-    // For example, let output the last element in dataset and it's matrix.
-    // And dataset size.
-    printf("size: %u\n", (unsigned int)dataset->getTrain().size());
-
-    IR_affineObj *example = static_cast<IR_affineObj *>(dataset->getTrain().back().get());
-    printf("image name: %s\n", example->imageName.c_str());
-    printf("matrix:\n");
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<3; ++j)
-        {
-            printf("%f ", example->mat(i, j));
-        }
-        printf("\n");
-    }
-
-    return 0;
+    return train[splitNum];
 }
+
+vector< Ptr<Object> >& Dataset::getTest(int splitNum)
+{
+    if (splitNum >= (int)test.size())
+    {
+        return empty;
+    }
+
+    return test[splitNum];
+}
+
+vector< Ptr<Object> >& Dataset::getValidation(int splitNum)
+{
+    if (splitNum >= (int)validation.size())
+    {
+        return empty;
+    }
+
+    return validation[splitNum];
+}
+
+int Dataset::getNumSplits() const
+{
+    return (int)train.size();
+}
+
+}
+}
+

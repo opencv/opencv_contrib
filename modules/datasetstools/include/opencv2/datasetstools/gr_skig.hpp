@@ -102,14 +102,9 @@ struct GR_skigObj : public Object
 class CV_EXPORTS GR_skig : public Dataset
 {
 public:
-    GR_skig() {}
-    GR_skig(const std::string &path);
-    virtual ~GR_skig() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<GR_skig> create();
 };
 
 }

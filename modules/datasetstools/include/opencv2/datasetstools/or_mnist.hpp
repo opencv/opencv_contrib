@@ -39,54 +39,36 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/ir_affine.hpp"
-
-#include <opencv2/core.hpp>
-
-#include <cstdio>
-#include <cstdlib> // atoi
+#ifndef OPENCV_DATASETSTOOLS_OR_MNIST_HPP
+#define OPENCV_DATASETSTOOLS_OR_MNIST_HPP
 
 #include <string>
 #include <vector>
 
-using namespace std;
-using namespace cv;
-using namespace cv::datasetstools;
+#include "opencv2/datasetstools/dataset.hpp"
 
-int main(int argc, char *argv[])
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset folder }";
-    CommandLineParser parser(argc, argv, keys);
-    string path(parser.get<string>("path"));
-    if (parser.has("help") || path=="true")
-    {
-        parser.printMessage();
-        return -1;
-    }
+namespace datasetstools
+{
 
-    // loading dataset
-    Ptr<IR_affine> dataset = IR_affine::create();
-    dataset->load(path);
+struct OR_mnistObj : public Object
+{
+    char label; // 0..9
+    Mat image; // [28][28]
+};
 
-    // ***************
-    // dataset contains for each image in dataset it's matrix.
-    // For example, let output the last element in dataset and it's matrix.
-    // And dataset size.
-    printf("size: %u\n", (unsigned int)dataset->getTrain().size());
+class CV_EXPORTS OR_mnist : public Dataset
+{
+public:
+    virtual void load(const std::string &path) = 0;
 
-    IR_affineObj *example = static_cast<IR_affineObj *>(dataset->getTrain().back().get());
-    printf("image name: %s\n", example->imageName.c_str());
-    printf("matrix:\n");
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<3; ++j)
-        {
-            printf("%f ", example->mat(i, j));
-        }
-        printf("\n");
-    }
+    static Ptr<OR_mnist> create();
+};
 
-    return 0;
 }
+}
+
+#endif

@@ -51,23 +51,35 @@ namespace datasetstools
 
 using namespace std;
 
-GR_skig::GR_skig(const string &path)
+class CV_EXPORTS GR_skigImp : public GR_skig
+{
+public:
+    GR_skigImp() {}
+    //GR_skigImp(const string &path);
+    virtual ~GR_skigImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*GR_skigImp::GR_skigImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void GR_skigImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void GR_skig::load(const string &path, int number)
+void GR_skigImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void GR_skig::loadDataset(const string &path)
-{
     for (unsigned int i=1; i<=6; ++i)
     {
         char number[2];
@@ -87,20 +99,35 @@ void GR_skig::loadDataset(const string &path)
             curr->dep[0] = 'K';
             curr->dep = pathDatasetDep + curr->dep;
 
-            size_t pos = file.find("person_"); // TODO: check ::npos
-            curr->person = (unsigned char)atoi( file.substr(pos+strlen("person_"), 1).c_str() );
-            pos = file.find("backgroud_");
-            curr->background = (backgroundType)atoi( file.substr(pos+strlen("backgroud_"), 1).c_str() );
-            pos = file.find("illumination_");
-            curr->illumination = (illuminationType)atoi( file.substr(pos+strlen("illumination_"), 1).c_str() );
-            pos = file.find("pose_");
-            curr->pose = (poseType)atoi( file.substr(pos+strlen("pose_"), 1).c_str() );
-            pos = file.find("actionType_");
-            curr->type = (actionType)atoi( file.substr(pos+strlen("actionType_"), 2).c_str() );
+            size_t posPerson = file.find("person_");
+            size_t posBackground = file.find("backgroud_");
+            size_t posIllumination = file.find("illumination_");
+            size_t posPose = file.find("pose_");
+            size_t posType = file.find("actionType_");
+            if (string::npos != posPerson &&
+                string::npos != posBackground &&
+                string::npos != posIllumination &&
+                string::npos != posPose &&
+                string::npos != posType)
+            {
+                curr->person = (unsigned char)atoi( file.substr(posPerson + strlen("person_"), 1).c_str() );
+                curr->background = (backgroundType)atoi( file.substr(posBackground + strlen("backgroud_"), 1).c_str() );
+                curr->illumination = (illuminationType)atoi( file.substr(posIllumination + strlen("illumination_"), 1).c_str() );
+                curr->pose = (poseType)atoi( file.substr(posPose + strlen("pose_"), 1).c_str() );
+                curr->type = (actionType)atoi( file.substr(posType + strlen("actionType_"), 2).c_str() );
 
-            train.push_back(curr);
+                train.back().push_back(curr);
+            } else
+            {
+                printf("incorrect file name: %s", file.c_str());
+            }
         }
     }
+}
+
+Ptr<GR_skig> GR_skig::create()
+{
+    return Ptr<GR_skigImp>(new GR_skigImp);
 }
 
 }

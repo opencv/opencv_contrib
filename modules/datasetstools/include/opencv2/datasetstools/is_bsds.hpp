@@ -62,16 +62,9 @@ struct IS_bsdsObj : public Object
 class CV_EXPORTS IS_bsds : public Dataset
 {
 public:
-    IS_bsds() {}
-    IS_bsds(const std::string &path);
-    virtual ~IS_bsds() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
-
-    void loadDatasetPart(const std::string &fileName, std::vector< Ptr<Object> > &dataset_);
+    static Ptr<IS_bsds> create();
 };
 
 }

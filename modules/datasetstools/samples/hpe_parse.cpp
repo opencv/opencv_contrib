@@ -65,15 +65,16 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    HPE_parse dataset(path);
+    Ptr<HPE_parse> dataset = HPE_parse::create();
+    dataset->load(path);
 
     // ***************
     // dataset. train & test contain appropriate images
     // For example, let output their sizes and first elements.
-    printf("train size: %u\n", (unsigned int)dataset.train.size());
-    printf("test size: %u\n", (unsigned int)dataset.test.size());
-    HPE_parseObj *example1 = static_cast<HPE_parseObj *>(dataset.train[0].get());
-    HPE_parseObj *example2 = static_cast<HPE_parseObj *>(dataset.test[0].get());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
+    HPE_parseObj *example1 = static_cast<HPE_parseObj *>(dataset->getTrain()[0].get());
+    HPE_parseObj *example2 = static_cast<HPE_parseObj *>(dataset->getTest()[0].get());
     printf("first train image: %s\n", example1->name.c_str());
     printf("first test image: %s\n", example2->name.c_str());
 

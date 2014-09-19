@@ -54,25 +54,29 @@ namespace cv
 namespace datasetstools
 {
 
+struct cameraParam
+{
+    Matx33d mat1;
+    double mat2[3];
+    Matx33d mat3;
+    double mat4[3];
+    int imageWidth, imageHeight;
+};
+
 struct MSM_epflObj : public Object
 {
     std::string imageName;
-    std::vector<double> bounding, camera, p; // TODO: implement better structures
+    Matx23d bounding;
+    Matx34d p;
+    cameraParam camera;
 };
 
 class CV_EXPORTS MSM_epfl : public Dataset
 {
 public:
-    MSM_epfl() {}
-    MSM_epfl(const std::string &path);
-    virtual ~MSM_epfl() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
-
-    void readFileDouble(const std::string &fileName, std::vector<double> &out);
+    static Ptr<MSM_epfl> create();
 };
 
 }

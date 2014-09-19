@@ -65,7 +65,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    IS_bsds dataset(path);
+    Ptr<IS_bsds> dataset = IS_bsds::create();
+    dataset->load(path);
 
     // TODO: read human/ folder for evaluation
 
@@ -73,13 +74,13 @@ int main(int argc, char *argv[])
     // dataset. train & test contain names of appropriate images.
     // For example, let output full path & name for first train and test images.
     // And sets size.
-    printf("train size: %u\n", (unsigned int)dataset.train.size());
-    printf("test size: %u\n", (unsigned int)dataset.test.size());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
 
-    IS_bsdsObj *example1 = static_cast<IS_bsdsObj *>(dataset.train[0].get());
+    IS_bsdsObj *example1 = static_cast<IS_bsdsObj *>(dataset->getTrain()[0].get());
     string fullPath(path + "images/train/" + example1->name + ".jpg");
     printf("first train image: %s\n", fullPath.c_str());
-    IS_bsdsObj *example2 = static_cast<IS_bsdsObj *>(dataset.test[0].get());
+    IS_bsdsObj *example2 = static_cast<IS_bsdsObj *>(dataset->getTest()[0].get());
     fullPath = path + "images/test/" + example2->name + ".jpg";
     printf("first test image: %s\n", fullPath.c_str());
 

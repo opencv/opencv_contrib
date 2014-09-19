@@ -49,23 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-IR_robot::IR_robot(const string &path)
+class CV_EXPORTS IR_robotImp : public IR_robot
+{
+public:
+    IR_robotImp() {}
+    //IR_robotImp(const string &path);
+    virtual ~IR_robotImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*IR_robotImp::IR_robotImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void IR_robotImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void IR_robot::load(const string &path, int number)
+void IR_robotImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void IR_robot::loadDataset(const string &path)
-{
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
@@ -76,13 +88,29 @@ void IR_robot::loadDataset(const string &path)
         string pathScene(path + curr->name + "/");
         vector<string> sceneNames;
         getDirList(pathScene, sceneNames);
+        int currImageNum = 0;
         for (vector<string>::iterator itScene=sceneNames.begin(); itScene!=sceneNames.end(); ++itScene)
         {
-            curr->images.push_back(*itScene);
+            string &fileName = *itScene;
+
+            int imageNum = atoi( fileName.substr(3, 3).c_str() );
+            //int pos = atoi( fileName.substr(6, 2).c_str() );
+            if (imageNum != currImageNum)
+            {
+                curr->pos.push_back(cameraPos());
+                currImageNum = imageNum;
+            }
+
+            curr->pos.back().images.push_back(fileName);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
+}
+
+Ptr<IR_robot> IR_robot::create()
+{
+    return Ptr<IR_robotImp>(new IR_robotImp);
 }
 
 }

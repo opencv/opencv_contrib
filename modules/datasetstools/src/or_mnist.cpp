@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/is_weizmann.hpp"
+#include "opencv2/datasetstools/or_mnist.hpp"
 #include "precomp.hpp"
 
 namespace cv
@@ -49,57 +49,93 @@ namespace datasetstools
 
 using namespace std;
 
-class CV_EXPORTS IS_weizmannImp : public IS_weizmann
+class CV_EXPORTS OR_mnistImp : public OR_mnist
 {
 public:
-    IS_weizmannImp() {}
-    //IS_weizmannImp(const string &path);
-    virtual ~IS_weizmannImp() {}
+    OR_mnistImp() {}
+    //OR_mnistImp(const string &path);
+    virtual ~OR_mnistImp() {}
 
     virtual void load(const string &path);
 
 private:
     void loadDataset(const string &path);
+
+    void loadDatasetPart(const string &imagesFile, const string &labelsFile, unsigned int num, vector< Ptr<Object> > &dataset_);
 };
 
-/*IS_weizmannImp::IS_weizmannImp(const string &path)
+/*OR_mnistImp::OR_mnistImp(const string &path)
 {
     loadDataset(path);
 }*/
 
-void IS_weizmannImp::load(const string &path)
+void OR_mnistImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void IS_weizmannImp::loadDataset(const string &path)
+void OR_mnistImp::loadDatasetPart(const string &imagesFile, const string &labelsFile, unsigned int num, vector< Ptr<Object> > &dataset_)
+{
+    FILE *f = fopen(imagesFile.c_str(), "rb");
+    fseek(f, 16, SEEK_CUR);
+    unsigned int imageSize = 28*28;
+    char *images = new char[num*imageSize];
+    size_t res = fread(images, 1, num*imageSize, f);
+    fclose(f);
+    if (num*imageSize != res)
+    {
+        return;
+    }
+    f = fopen(labelsFile.c_str(), "rb");
+    fseek(f, 8, SEEK_CUR);
+    char *labels = new char[num];
+    res = fread(labels, 1, num, f);
+    fclose(f);
+    if (num != res)
+    {
+        return;
+    }
+
+    for (unsigned int i=0; i<num; ++i)
+    {
+        Ptr<OR_mnistObj> curr(new OR_mnistObj);
+        curr->label = labels[i];
+
+        curr->image = Mat(28, 28, CV_8U);
+        unsigned int imageIdx = i*imageSize;
+        for (int j=0; j<curr->image.rows; ++j)
+        {
+            char *im = curr->image.ptr<char>(j);
+            for (int k=0; k<curr->image.cols; ++k)
+            {
+                im[k] = images[imageIdx + j*28 + k];
+            }
+        }
+
+        dataset_.push_back(curr);
+    }
+    delete[] images;
+    delete[] labels;
+}
+
+void OR_mnistImp::loadDataset(const string &path)
 {
     train.push_back(vector< Ptr<Object> >());
     test.push_back(vector< Ptr<Object> >());
     validation.push_back(vector< Ptr<Object> >());
 
-    vector<string> fileNames;
-    getDirList(path, fileNames);
-    for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
-    {
-        string &imageName = *it;
-        if (imageName.find('.') == string::npos) // only folders, discard .mat
-        {
-            Ptr<IS_weizmannObj> curr(new IS_weizmannObj);
-            curr->imageName = imageName;
-            curr->srcBw = imageName + "/src_bw/" + imageName + ".png";
-            curr->srcColor = imageName + "/src_color/" + imageName + ".png";
+    string trainImagesFile(path + "train-images.idx3-ubyte");
+    string trainLabelsFile(path + "train-labels.idx1-ubyte");
+    loadDatasetPart(trainImagesFile, trainLabelsFile, 60000, train.back());
 
-            curr->humanSeg = imageName + "human_seg/";
-
-            train.back().push_back(curr);
-        }
-    }
+    string testImagesFile(path + "t10k-images.idx3-ubyte");
+    string testLabelsFile(path + "t10k-labels.idx1-ubyte");
+    loadDatasetPart(testImagesFile, testLabelsFile, 10000, test.back());
 }
 
-Ptr<IS_weizmann> IS_weizmann::create()
+Ptr<OR_mnist> OR_mnist::create()
 {
-    return Ptr<IS_weizmannImp>(new IS_weizmannImp);
+    return Ptr<OR_mnistImp>(new OR_mnistImp);
 }
 
 }

@@ -63,16 +63,9 @@ struct TR_charsObj : public Object
 class CV_EXPORTS TR_chars : public Dataset
 {
 public:
-    TR_chars() {}
-    TR_chars(const std::string &path, int number = 0);
-    virtual ~TR_chars() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path, int number = 0);
-
-    void parseLine(const std::string &line, std::vector<int> &currSet, int number);
+    static Ptr<TR_chars> create();
 };
 
 }

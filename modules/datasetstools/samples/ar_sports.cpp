@@ -66,16 +66,17 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    AR_sports dataset(path);
+    Ptr<AR_sports> dataset = AR_sports::create();
+    dataset->load(path);
 
     // ***************
     // dataset. train & test contains for each video url in dataset all it's labels.
     // For example, let output the first element in test dataset and it's labels.
     // And sizes of both datasets.
-    printf("train size: %u\n", (unsigned int)dataset.train.size());
-    printf("test size: %u\n", (unsigned int)dataset.test.size());
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
 
-    AR_sportsObj *example = static_cast<AR_sportsObj *>(dataset.test[0].get());
+    AR_sportsObj *example = static_cast<AR_sportsObj *>(dataset->getTest()[0].get());
     printf("url: %s\n", example->videoUrl.c_str());
     printf("labels: ");
     vector<int> &labels = example->labels;

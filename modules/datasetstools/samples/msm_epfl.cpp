@@ -65,35 +65,70 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    MSM_epfl dataset(path);
+    Ptr<MSM_epfl> dataset = MSM_epfl::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains all information for each image.
     // For example, let output dataset size and first object.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    MSM_epflObj *example = static_cast<MSM_epflObj *>(dataset.train[0].get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    MSM_epflObj *example = static_cast<MSM_epflObj *>(dataset->getTrain()[0].get());
     printf("first image:\nname: %s\n", example->imageName.c_str());
 
-    printf("bounding:\n");
-    for (vector<double>::iterator it=example->bounding.begin(); it!=example->bounding.end(); ++it)
+    printf("\nbounding:\n");
+    for (int i=0; i<2; ++i)
     {
-        printf("%f ", *it);
+        for (int j=0; j<3; ++j)
+        {
+            printf("%f ", example->bounding(i, j));
+        }
+        printf("\n");
+    }
+
+    printf("\ncamera:\n");
+    for (int i=0; i<3; ++i)
+    {
+        for (int j=0; j<3; ++j)
+        {
+            printf("%f ", example->camera.mat1(i, j));
+        }
+        printf("\n");
     }
     printf("\n");
 
-    printf("camera:\n");
-    for (vector<double>::iterator it=example->camera.begin(); it!=example->camera.end(); ++it)
+    for (int i=0; i<3; ++i)
     {
-        printf("%f ", *it);
+        printf("%f ", example->camera.mat2[i]);
+    }
+    printf("\n\n");
+
+    for (int i=0; i<3; ++i)
+    {
+        for (int j=0; j<3; ++j)
+        {
+            printf("%f ", example->camera.mat3(i, j));
+        }
+        printf("\n");
     }
     printf("\n");
 
-    printf("P:\n");
-    for (vector<double>::iterator it=example->p.begin(); it!=example->p.end(); ++it)
+    for (int i=0; i<3; ++i)
     {
-        printf("%f ", *it);
+        printf("%f ", example->camera.mat4[i]);
     }
-    printf("\n");
+    printf("\n\n");
+
+    printf("image width: %u, height: %u\n", example->camera.imageWidth, example->camera.imageHeight);
+
+    printf("\nP:\n");
+    for (int i=0; i<3; ++i)
+    {
+        for (int j=0; j<4; ++j)
+        {
+            printf("%f ", example->p(i, j));
+        }
+        printf("\n");
+    }
 
     return 0;
 }

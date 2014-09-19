@@ -51,25 +51,63 @@ namespace datasetstools
 
 using namespace std;
 
-SLAM_tumindoor::SLAM_tumindoor(const string &path)
+class CV_EXPORTS SLAM_tumindoorImp : public SLAM_tumindoor
+{
+public:
+    SLAM_tumindoorImp() {}
+    //SLAM_tumindoorImp(const string &path);
+    virtual ~SLAM_tumindoorImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*SLAM_tumindoorImp::SLAM_tumindoorImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void SLAM_tumindoorImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void SLAM_tumindoor::load(const string &path, int number)
+void SLAM_tumindoorImp::loadDataset(const string &path)
 {
-    if (number!=0)
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
+    string infoPath(path + "info/");
+
+    // get info map name, .csv should be only one such file in folder
+    string csvName;
+    vector<string> infoNames;
+    getDirList(infoPath, infoNames);
+    for (vector<string>::iterator it=infoNames.begin(); it!=infoNames.end(); ++it)
     {
+        string &name = *it;
+        if (name.length()>3 && name.substr( name.length()-4, 4 )==".csv")
+        {
+            if (csvName.length()==0)
+            {
+                csvName = name;
+            } else
+            {
+                printf("more than one .csv file in info folder\n");
+                return;
+            }
+        }
+    }
+    if (csvName.length()==0)
+    {
+        printf("didn't find .csv file in info folder\n");
         return;
     }
 
-    loadDataset(path);
-}
-
-void SLAM_tumindoor::loadDataset(const string &path)
-{
-    string infoPath(path + "info/2011-12-17_15.02.56-info.csv"); // TODO
-    ifstream infile(infoPath.c_str());
+    ifstream infile((infoPath + csvName).c_str());
     string line;
     while (getline(infile, line))
     {
@@ -95,12 +133,17 @@ void SLAM_tumindoor::loadDataset(const string &path)
         {
             for (unsigned int j=0; j<4; ++j)
             {
-                curr->transformMat[i][j] = atof(elems[1 + j + i*4].c_str());
+                curr->transformMat(i, j) = atof(elems[1 + j + i*4].c_str());
             }
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
+}
+
+Ptr<SLAM_tumindoor> SLAM_tumindoor::create()
+{
+    return Ptr<SLAM_tumindoorImp>(new SLAM_tumindoorImp);
 }
 
 }

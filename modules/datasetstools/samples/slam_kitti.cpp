@@ -65,14 +65,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    SLAM_kitti dataset(path);
+    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains sequence with name and its data.
     // For example, let output first sequence and dataset size.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
 
-    SLAM_kittiObj *example = static_cast<SLAM_kittiObj *>(dataset.train[0].get());
+    SLAM_kittiObj *example = static_cast<SLAM_kittiObj *>(dataset->getTrain()[0].get());
     printf("first dataset sequence:\n%s\n", example->name.c_str());
 
     /*string pathVelodyne(path + "sequences/" + example->name + "/velodyne/");

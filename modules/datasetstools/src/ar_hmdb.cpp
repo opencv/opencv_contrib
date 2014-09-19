@@ -49,7 +49,24 @@ namespace datasetstools
 
 using namespace std;
 
-void AR_hmdb::loadAction(const string &fileName, vector<string> &train_, vector<string> &test_)
+class CV_EXPORTS AR_hmdbImp : public AR_hmdb
+{
+public:
+    AR_hmdbImp() {}
+    //AR_hmdbImp(const string &path, int number = 0);
+    virtual ~AR_hmdbImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDatasetSplit(const string &path, int number = 0);
+
+    void loadDataset(const string &path);
+
+    void loadAction(const string &fileName, vector<string> &train_, vector<string> &test_);
+};
+
+void AR_hmdbImp::loadAction(const string &fileName, vector<string> &train_, vector<string> &test_)
 {
     ifstream infile(fileName.c_str());
     string video, label;
@@ -66,23 +83,35 @@ void AR_hmdb::loadAction(const string &fileName, vector<string> &train_, vector<
     }
 }
 
-AR_hmdb::AR_hmdb(const string &path, int number)
+/*AR_hmdbImp::AR_hmdbImp(const string &path, int number)
 {
     loadDataset(path, number);
-}
+}*/
 
-void AR_hmdb::load(const string &path, int number)
+void AR_hmdbImp::load(const string &path)
 {
-    loadDataset(path, number);
+    loadDataset(path);
 }
 
-void AR_hmdb::loadDataset(const string &path, int number)
+void AR_hmdbImp::loadDataset(const string &path)
+{
+    for (int i=0; i<3; ++i)
+    {
+        loadDatasetSplit(path, i);
+    }
+}
+
+void AR_hmdbImp::loadDatasetSplit(const string &path, int number)
 {
     // valid number [0,1,2]
     if (number<0 || number>2)
     {
         return;
     }
+
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
     string pathDataset(path + "hmdb51_org/");
     string pathSplit(path + "testTrainMulti_7030_splits/");
@@ -96,14 +125,19 @@ void AR_hmdb::loadDataset(const string &path, int number)
         currTrain->name = *it;
         currTest->name = *it;
 
-        train.push_back(currTrain);
-        test.push_back(currTest);
+        train.back().push_back(currTrain);
+        test.back().push_back(currTest);
 
         char tmp[2];
         sprintf(tmp, "%u", number+1);
         string fileName(pathSplit + currTrain->name + "_test_split" + tmp + ".txt");
         loadAction(fileName, currTrain->videoNames, currTest->videoNames);
     }
+}
+
+Ptr<AR_hmdb> AR_hmdb::create()
+{
+    return Ptr<AR_hmdbImp>(new AR_hmdbImp);
 }
 
 }

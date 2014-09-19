@@ -49,33 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-void MSM_epfl::readFileDouble(const string &fileName, vector<double> &out)
+class CV_EXPORTS MSM_epflImp : public MSM_epfl
 {
-    ifstream infile(fileName.c_str());
-    double val;
-    while (infile >> val)
-    {
-        out.push_back(val);
-    }
-}
+public:
+    MSM_epflImp() {}
+    //MSM_epflImp(const string &path);
+    virtual ~MSM_epflImp() {}
 
-MSM_epfl::MSM_epfl(const string &path)
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*MSM_epflImp::MSM_epflImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void MSM_epflImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void MSM_epfl::load(const string &path, int number)
+void MSM_epflImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void MSM_epfl::loadDataset(const string &path)
-{
     string pathBounding(path + "bounding/");
     string pathCamera(path + "camera/");
     string pathP(path + "P/");
@@ -88,12 +90,66 @@ void MSM_epfl::loadDataset(const string &path)
         Ptr<MSM_epflObj> curr(new MSM_epflObj);
         curr->imageName = *it;
 
-        readFileDouble(string(pathBounding + curr->imageName + ".bounding"), curr->bounding);
-        readFileDouble(string(pathCamera + curr->imageName + ".camera"), curr->camera);
-        readFileDouble(string(pathP + curr->imageName + ".P"), curr->p);
+        // load boundary
+        string fileBounding(pathBounding + curr->imageName + ".bounding");
+        ifstream infile(fileBounding.c_str());
+        for (int k=0; k<2; ++k)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infile >> curr->bounding(k, j);
+            }
+        }
 
-        train.push_back(curr);
+        // load camera parameters
+        string fileCamera(pathCamera + curr->imageName + ".camera");
+        ifstream infileCamera(fileCamera.c_str());
+        for (int i=0; i<3; ++i)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infileCamera >> curr->camera.mat1(i, j);
+            }
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            infileCamera >> curr->camera.mat2[i];
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            for (int j=0; j<3; ++j)
+            {
+                infileCamera >> curr->camera.mat3(i, j);
+            }
+        }
+
+        for (int i=0; i<3; ++i)
+        {
+            infileCamera >> curr->camera.mat4[i];
+        }
+
+        infileCamera >> curr->camera.imageWidth >> curr->camera.imageHeight;
+
+        // load P
+        string fileP(pathP + curr->imageName + ".P");
+        ifstream infileP(fileP.c_str());
+        for (int k=0; k<3; ++k)
+        {
+            for (int j=0; j<4; ++j)
+            {
+                infileP >> curr->p(k, j);
+            }
+        }
+
+        train.back().push_back(curr);
     }
+}
+
+Ptr<MSM_epfl> MSM_epfl::create()
+{
+    return Ptr<MSM_epflImp>(new MSM_epflImp);
 }
 
 }

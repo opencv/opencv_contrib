@@ -65,14 +65,9 @@ struct IS_weizmannObj : public Object
 class CV_EXPORTS IS_weizmann : public Dataset
 {
 public:
-    IS_weizmann() {}
-    IS_weizmann(const std::string &path);
-    virtual ~IS_weizmann() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<IS_weizmann> create();
 };
 
 }

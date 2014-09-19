@@ -49,22 +49,32 @@ namespace datasetstools
 
 using namespace std;
 
-GR_chalearn::GR_chalearn(const string &path)
+class CV_EXPORTS GR_chalearnImp : public GR_chalearn
+{
+public:
+    GR_chalearnImp() {}
+    //GR_chalearnImp(const string &path);
+    virtual ~GR_chalearnImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+
+    void loadDatasetPart(const string &path, vector< Ptr<Object> > &dataset_, bool loadLabels);
+};
+
+/*GR_chalearnImp::GR_chalearnImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void GR_chalearnImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void GR_chalearn::load(const string &path, int number)
-{
-    if (number!=0)
-    {
-        return;
-    }
-
-    loadDataset(path);
-}
-
-void GR_chalearn::loadDataset(const string &path)
+void GR_chalearnImp::loadDatasetPart(const string &path, vector< Ptr<Object> > &dataset_, bool loadLabels)
 {
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -88,19 +98,22 @@ void GR_chalearn::loadDataset(const string &path)
         curr->depth = atoi(elems[2].c_str());
 
         // loading ground truth
-        string fileGroundTruth(path + curr->name + "/" + curr->name + "_labels.csv");
-        ifstream infileGroundTruth(fileGroundTruth.c_str());
-        while (getline(infileGroundTruth, line))
+        if (loadLabels)
         {
-            vector<string> elems2;
-            split(line, elems2, ',');
+            string fileGroundTruth(path + curr->name + "/" + curr->name + "_labels.csv");
+            ifstream infileGroundTruth(fileGroundTruth.c_str());
+            while (getline(infileGroundTruth, line))
+            {
+                vector<string> elems2;
+                split(line, elems2, ',');
 
-            groundTruth currGroundTruth;
-            currGroundTruth.gestureID = atoi(elems2[0].c_str());
-            currGroundTruth.initialFrame = atoi(elems2[1].c_str());
-            currGroundTruth.lastFrame = atoi(elems2[2].c_str());
+                groundTruth currGroundTruth;
+                currGroundTruth.gestureID = atoi(elems2[0].c_str());
+                currGroundTruth.initialFrame = atoi(elems2[1].c_str());
+                currGroundTruth.lastFrame = atoi(elems2[2].c_str());
 
-            curr->groundTruths.push_back(currGroundTruth);
+                curr->groundTruths.push_back(currGroundTruth);
+            }
         }
 
         // loading skeleton
@@ -129,8 +142,27 @@ void GR_chalearn::loadDataset(const string &path)
             curr->skeletons.push_back(currSkeleton);
         }
 
-        train.push_back(curr);
+        dataset_.push_back(curr);
     }
+}
+
+void GR_chalearnImp::loadDataset(const string &path)
+{
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
+    string pathTrain(path + "Train/");
+    loadDatasetPart(pathTrain, train.back(), true);
+
+    // freely available validation set doesn't have labels
+    string pathValidation(path + "Validation/");
+    loadDatasetPart(pathValidation, validation.back(), false);
+}
+
+Ptr<GR_chalearn> GR_chalearn::create()
+{
+    return Ptr<GR_chalearnImp>(new GR_chalearnImp);
 }
 
 }

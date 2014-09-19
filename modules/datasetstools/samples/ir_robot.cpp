@@ -65,19 +65,26 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    IR_robot dataset(path);
+    Ptr<IR_robot> dataset = IR_robot::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains object with name and its images.
     // For example, let output last element and dataset size.
-    IR_robotObj *example = static_cast<IR_robotObj *>(dataset.train.back().get());
-    printf("last dataset object:\n%s\n", example->name.c_str());
+    IR_robotObj *example = static_cast<IR_robotObj *>(dataset->getTrain().back().get());
+    printf("last dataset object:\n");
+    printf("name: %s\n", example->name.c_str());
+    printf("number postitions: %u\n", (unsigned int)example->pos.size());
     string currPath(path + example->name + "/");
-    for (vector<string>::iterator it=example->images.begin(); it!=example->images.end(); ++it)
+
+    for (vector<cameraPos>::iterator itP=example->pos.begin(); itP!=example->pos.end(); ++itP)
     {
-        printf("%s\n", (currPath+(*it)).c_str());
+        for (vector<string>::iterator it=itP->images.begin(); it!=itP->images.end(); ++it)
+        {
+            printf("%s\n", (currPath+(*it)).c_str());
+        }
     }
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
 
     return 0;
 }

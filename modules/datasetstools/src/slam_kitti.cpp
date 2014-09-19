@@ -49,23 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-SLAM_kitti::SLAM_kitti(const string &path)
+class CV_EXPORTS SLAM_kittiImp : public SLAM_kitti
+{
+public:
+    SLAM_kittiImp() {}
+    //SLAM_kittiImp(const string &path);
+    virtual ~SLAM_kittiImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*SLAM_kittiImp::SLAM_kittiImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void SLAM_kittiImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void SLAM_kitti::load(const string &path, int number)
+void SLAM_kittiImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void SLAM_kitti::loadDataset(const string &path)
-{
     string pathSequence(path + "sequences/");
     vector<string> fileNames;
     getDirList(pathSequence, fileNames);
@@ -142,8 +154,13 @@ void SLAM_kitti::loadDataset(const string &path)
             curr->posesArray.push_back(p);
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
+}
+
+Ptr<SLAM_kitti> SLAM_kitti::create()
+{
+    return Ptr<SLAM_kittiImp>(new SLAM_kittiImp);
 }
 
 }

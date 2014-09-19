@@ -62,14 +62,9 @@ struct HPE_parseObj : public Object
 class CV_EXPORTS HPE_parse : public Dataset
 {
 public:
-    HPE_parse() {}
-    HPE_parse(const std::string &path);
-    virtual ~HPE_parse() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<HPE_parse> create();
 };
 
 }

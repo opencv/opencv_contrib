@@ -64,14 +64,9 @@ struct IR_affineObj : public Object
 class CV_EXPORTS IR_affine : public Dataset
 {
 public:
-    IR_affine() {}
-    IR_affine(const std::string &path);
-    virtual ~IR_affine() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<IR_affine> create();
 };
 
 }

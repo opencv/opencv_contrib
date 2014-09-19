@@ -66,34 +66,32 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector<TR_chars> dataset;
-    do
-    {
-        TR_chars curr;
-        dataset.push_back(curr);
-
-        int number = (int)dataset.size()-1;
-        dataset.back().load(path, number);
-    } while (dataset.back().train.size()>0);
-    dataset.pop_back(); // remove last empty split
+    Ptr<TR_chars> dataset = TR_chars::create();
+    dataset->load(path);
 
     // ***************
     // dataset. train, test contain information about each element of appropriate sets and splits.
     // For example, let output first elements of these vectors and their sizes for last split.
     // And number of splits.
-    printf("splits number: %u\n", (unsigned int)dataset.size());
+    int numSplits = dataset->getNumSplits();
+    printf("splits number: %u\n", numSplits);
 
-    vector< Ptr<Object> > &currTrain = dataset.back().train;
-    vector< Ptr<Object> > &currTest = dataset.back().test;
+    vector< Ptr<Object> > &currTrain = dataset->getTrain(numSplits-1);
+    vector< Ptr<Object> > &currTest = dataset->getTest(numSplits-1);
+    vector< Ptr<Object> > &currValidation = dataset->getValidation(numSplits-1);
     printf("train size: %u\n", (unsigned int)currTrain.size());
     printf("test size: %u\n", (unsigned int)currTest.size());
+    printf("validation size: %u\n", (unsigned int)currValidation.size());
 
-    TR_charsObj *example1 = static_cast<TR_charsObj *>(currTrain[0].get());
-    TR_charsObj *example2 = static_cast<TR_charsObj *>(currTest[0].get());
-    printf("first train element:\nname: %s\n", example1->imgName.c_str());
-    printf("label: %u\n", example1->label);
-    printf("first test element:\nname: %s\n", example2->imgName.c_str());
-    printf("label: %u\n", example2->label);
+    TR_charsObj *exampleTrain = static_cast<TR_charsObj *>(currTrain[0].get());
+    TR_charsObj *exampleTest = static_cast<TR_charsObj *>(currTest[0].get());
+    TR_charsObj *exampleValidation = static_cast<TR_charsObj *>(currValidation[0].get());
+    printf("first train element:\nname: %s\n", exampleTrain->imgName.c_str());
+    printf("label: %u\n", exampleTrain->label);
+    printf("first test element:\nname: %s\n", exampleTest->imgName.c_str());
+    printf("label: %u\n", exampleTest->label);
+    printf("first validation element:\nname: %s\n", exampleValidation->imgName.c_str());
+    printf("label: %u\n", exampleValidation->label);
 
     return 0;
 }

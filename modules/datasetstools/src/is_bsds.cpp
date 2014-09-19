@@ -49,7 +49,22 @@ namespace datasetstools
 
 using namespace std;
 
-void IS_bsds::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
+class CV_EXPORTS IS_bsdsImp : public IS_bsds
+{
+public:
+    IS_bsdsImp() {}
+    //IS_bsdsImp(const string &path);
+    virtual ~IS_bsdsImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+
+    void loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_);
+};
+
+void IS_bsdsImp::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dataset_)
 {
     ifstream infile(fileName.c_str());
     string imageName;
@@ -61,31 +76,35 @@ void IS_bsds::loadDatasetPart(const string &fileName, vector< Ptr<Object> > &dat
     }
 }
 
-IS_bsds::IS_bsds(const string &path)
+/*IS_bsdsImp::IS_bsdsImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void IS_bsdsImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void IS_bsds::load(const string &path, int number)
+void IS_bsdsImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void IS_bsds::loadDataset(const string &path)
-{
     string trainName(path + "iids_train.txt");
     string testName(path + "iids_test.txt");
 
     // loading train
-    loadDatasetPart(trainName, train);
+    loadDatasetPart(trainName, train.back());
 
     // loading test
-    loadDatasetPart(testName, test);
+    loadDatasetPart(testName, test.back());
+}
+
+Ptr<IS_bsds> IS_bsds::create()
+{
+    return Ptr<IS_bsdsImp>(new IS_bsdsImp);
 }
 
 }

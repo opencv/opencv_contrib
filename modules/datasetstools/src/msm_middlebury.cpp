@@ -49,23 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-MSM_middlebury::MSM_middlebury(const string &path)
+class CV_EXPORTS MSM_middleburyImp : public MSM_middlebury
+{
+public:
+    MSM_middleburyImp() {}
+    //MSM_middleburyImp(const string &path);
+    virtual ~MSM_middleburyImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*MSM_middleburyImp::MSM_middleburyImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void MSM_middleburyImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void MSM_middlebury::load(const string &path, int number)
+void MSM_middleburyImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void MSM_middlebury::loadDataset(const string &path)
-{
     string name(path.substr(0, path.length()-1));
     size_t start = name.rfind('/');
     name = name.substr(start+1, name.length()-start);
@@ -85,14 +97,14 @@ void MSM_middlebury::loadDataset(const string &path)
         {
             for (int j=0; j<3; ++j)
             {
-                infile >> curr->k[i][j];
+                infile >> curr->k(i, j);
             }
         }
         for (int i=0; i<3; ++i)
         {
             for (int j=0; j<3; ++j)
             {
-                infile >> curr->r[i][j];
+                infile >> curr->r(i, j);
             }
         }
         for (int i=0; i<3; ++i)
@@ -100,8 +112,13 @@ void MSM_middlebury::loadDataset(const string &path)
             infile >> curr->t[i];
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
+}
+
+Ptr<MSM_middlebury> MSM_middlebury::create()
+{
+    return Ptr<MSM_middleburyImp>(new MSM_middleburyImp);
 }
 
 }

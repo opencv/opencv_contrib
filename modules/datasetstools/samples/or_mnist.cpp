@@ -39,12 +39,12 @@
 //
 //M*/
 
-#include "opencv2/datasetstools/ir_affine.hpp"
+#include "opencv2/datasetstools/or_mnist.hpp"
 
 #include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include <cstdio>
-#include <cstdlib> // atoi
 
 #include <string>
 #include <vector>
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset folder }";
+            "{ path p         |true| path to dataset (SUN397 folder) }";
     CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
@@ -66,27 +66,24 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // loading dataset
-    Ptr<IR_affine> dataset = IR_affine::create();
+    Ptr<OR_mnist> dataset = OR_mnist::create();
     dataset->load(path);
 
     // ***************
-    // dataset contains for each image in dataset it's matrix.
-    // For example, let output the last element in dataset and it's matrix.
-    // And dataset size.
-    printf("size: %u\n", (unsigned int)dataset->getTrain().size());
+    // dataset contains for each object its image and label.
+    // For example, let output train & test sizes and their first elements.
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    printf("test size: %u\n", (unsigned int)dataset->getTest().size());
 
-    IR_affineObj *example = static_cast<IR_affineObj *>(dataset->getTrain().back().get());
-    printf("image name: %s\n", example->imageName.c_str());
-    printf("matrix:\n");
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<3; ++j)
-        {
-            printf("%f ", example->mat(i, j));
-        }
-        printf("\n");
-    }
+    OR_mnistObj *example = static_cast<OR_mnistObj *>(dataset->getTrain()[0].get());
+    printf("first train:\nlabel: %u\n", example->label);
+    printf("image was saved to train0.png\n");
+    imwrite("train0.png", example->image);
+
+    example = static_cast<OR_mnistObj *>(dataset->getTest()[0].get());
+    printf("first test:\nlabel: %u\n", example->label);
+    printf("image was saved to test0.png\n");
+    imwrite("test0.png", example->image);
 
     return 0;
 }
