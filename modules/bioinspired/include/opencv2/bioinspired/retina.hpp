@@ -107,13 +107,13 @@ enum {
  * _take a look at imagelogpolprojection.hpp to discover retina spatial log sampling which originates from Barthelemy Durette phd with Jeanny Herault. A Retina / V1 cortex projection is also proposed and originates from Jeanny's discussions.
  * ====> more informations in the above cited Jeanny Heraults's book.
  */
-class CV_EXPORTS Retina : public Algorithm {
+class CV_EXPORTS_W Retina : public Algorithm {
 
 public:
 
     // parameters structure for better clarity, check explenations on the comments of methods : setupOPLandIPLParvoChannel and setupIPLMagnoChannel
-    struct RetinaParameters{
-        struct OPLandIplParvoParameters{ // Outer Plexiform Layer (OPL) and Inner Plexiform Layer Parvocellular (IplParvo) parameters
+    struct CV_EXPORTS_W RetinaParameters{
+        struct CV_EXPORTS_W OPLandIplParvoParameters{ // Outer Plexiform Layer (OPL) and Inner Plexiform Layer Parvocellular (IplParvo) parameters
                OPLandIplParvoParameters():colorMode(true),
                                  normaliseOutput(true),
                                  photoreceptorsLocalAdaptationSensitivity(0.75f),
@@ -123,11 +123,11 @@ public:
                                  hcellsTemporalConstant(0.5f),
                                  hcellsSpatialConstant(7.f),
                                  ganglionCellsSensitivity(0.75f) { } // default setup
-               bool colorMode, normaliseOutput;
-               float photoreceptorsLocalAdaptationSensitivity, photoreceptorsTemporalConstant, photoreceptorsSpatialConstant, horizontalCellsGain, hcellsTemporalConstant, hcellsSpatialConstant, ganglionCellsSensitivity;
-           };
-           struct IplMagnoParameters{ // Inner Plexiform Layer Magnocellular channel (IplMagno)
-               IplMagnoParameters():
+               CV_PROP_RW bool colorMode, normaliseOutput;
+               CV_PROP_RW float photoreceptorsLocalAdaptationSensitivity, photoreceptorsTemporalConstant, photoreceptorsSpatialConstant, horizontalCellsGain, hcellsTemporalConstant, hcellsSpatialConstant, ganglionCellsSensitivity;
+        };
+        struct CV_EXPORTS_W IplMagnoParameters{ // Inner Plexiform Layer Magnocellular channel (IplMagno)
+            IplMagnoParameters():
                           normaliseOutput(true),
                           parasolCells_beta(0.f),
                           parasolCells_tau(0.f),
@@ -136,22 +136,22 @@ public:
                           V0CompressionParameter(0.95f),
                           localAdaptintegration_tau(0.f),
                           localAdaptintegration_k(7.f) { } // default setup
-               bool normaliseOutput;
-               float parasolCells_beta, parasolCells_tau, parasolCells_k, amacrinCellsTemporalCutFrequency, V0CompressionParameter, localAdaptintegration_tau, localAdaptintegration_k;
-           };
-            struct OPLandIplParvoParameters OPLandIplParvo;
-            struct IplMagnoParameters IplMagno;
+            CV_PROP_RW bool normaliseOutput;
+            CV_PROP_RW float parasolCells_beta, parasolCells_tau, parasolCells_k, amacrinCellsTemporalCutFrequency, V0CompressionParameter, localAdaptintegration_tau, localAdaptintegration_k;
+        };
+        CV_PROP_RW OPLandIplParvoParameters OPLandIplParvo;
+        CV_PROP_RW IplMagnoParameters IplMagno;
     };
 
     /**
     * retreive retina input buffer size
     */
-    virtual Size getInputSize()=0;
+    CV_WRAP virtual Size getInputSize()=0;
 
     /**
     * retreive retina output buffer size
     */
-    virtual Size getOutputSize()=0;
+    CV_WRAP virtual Size getOutputSize()=0;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -160,7 +160,7 @@ public:
      * @param retinaParameterFile : the parameters filename
          * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
+    CV_WRAP virtual void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -169,7 +169,7 @@ public:
      * @param fs : the open Filestorage which contains retina parameters
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true)=0;
+    CV_WRAP virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true)=0;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -178,30 +178,30 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
          * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(RetinaParameters newParameters)=0;
+    CV_WRAP virtual void setup(RetinaParameters newParameters)=0;
 
     /**
     * @return the current parameters setup
     */
-    virtual struct Retina::RetinaParameters getParameters()=0;
+    CV_WRAP virtual RetinaParameters getParameters()=0;
 
     /**
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    virtual const String printSetup()=0;
+    CV_WRAP virtual const String printSetup()=0;
 
     /**
      * write xml/yml formated parameters information
      * @rparam fs : the filename of the xml file that will be open and writen with formatted parameters information
      */
-    virtual void write( String fs ) const=0;
+    CV_WRAP virtual void write( String fs ) const=0;
 
     /**
      * write xml/yml formated parameters information
      * @param fs : a cv::Filestorage object ready to be filled
          */
-    virtual void write( FileStorage& fs ) const=0;
+    CV_WRAP virtual void write( FileStorage& fs ) const=0;
 
     /**
      * setup the OPL and IPL parvo channels (see biologocal model)
@@ -218,7 +218,7 @@ public:
      * @param HcellsSpatialConstant: the spatial constant of the first order low pass filter of the horizontal cells, use it to cut low spatial frequencies (local luminance), unit is pixels, typical value is 5 pixel, this value is also used for local contrast computing when computing the local contrast adaptation at the ganglion cells level (Inner Plexiform Layer parvocellular channel model)
      * @param ganglionCellsSensitivity: the compression strengh of the ganglion cells local adaptation output, set a value between 160 and 250 for best results, a high value increases more the low value sensitivity... and the output saturates faster, recommended value: 230
      */
-    virtual void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7, const float photoreceptorsTemporalConstant=0.5, const float photoreceptorsSpatialConstant=0.53, const float horizontalCellsGain=0, const float HcellsTemporalConstant=1, const float HcellsSpatialConstant=7, const float ganglionCellsSensitivity=0.7)=0;
+    CV_WRAP virtual void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7, const float photoreceptorsTemporalConstant=0.5, const float photoreceptorsSpatialConstant=0.53, const float horizontalCellsGain=0, const float HcellsTemporalConstant=1, const float HcellsSpatialConstant=7, const float ganglionCellsSensitivity=0.7)=0;
 
     /**
      * set parameters values for the Inner Plexiform Layer (IPL) magnocellular channel
@@ -232,13 +232,13 @@ public:
      * @param localAdaptintegration_tau: specifies the temporal constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      * @param localAdaptintegration_k: specifies the spatial constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      */
-    virtual void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0, const float parasolCells_tau=0, const float parasolCells_k=7, const float amacrinCellsTemporalCutFrequency=1.2, const float V0CompressionParameter=0.95, const float localAdaptintegration_tau=0, const float localAdaptintegration_k=7)=0;
+    CV_WRAP virtual void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0, const float parasolCells_tau=0, const float parasolCells_k=7, const float amacrinCellsTemporalCutFrequency=1.2, const float V0CompressionParameter=0.95, const float localAdaptintegration_tau=0, const float localAdaptintegration_k=7)=0;
 
     /**
      * method which allows retina to be applied on an input image, after run, encapsulated retina module is ready to deliver its outputs using dedicated acccessors, see getParvo and getMagno methods
      * @param inputImage : the input cv::Mat image to be processed, can be gray level or BGR coded in any format (from 8bit to 16bits)
      */
-    virtual void run(InputArray inputImage)=0;
+    CV_WRAP virtual void run(InputArray inputImage)=0;
 
     /**
      * method that applies a luminance correction (initially High Dynamic Range (HDR) tone mapping) using only the 2 local adaptation stages of the retina parvo channel : photoreceptors level and ganlion cells level. Spatio temporal filtering is applied but limited to temporal smoothing and eventually high frequencies attenuation. This is a lighter method than the one available using the regular run method. It is then faster but it does not include complete temporal filtering nor retina spectral whitening. Then, it can have a more limited effect on images with a very high dynamic range. This is an adptation of the original still image HDR tone mapping algorithm of David Alleyson, Sabine Susstruck and Laurence Meylan's work, please cite:
@@ -246,35 +246,35 @@ public:
      @param inputImage the input image to process RGB or gray levels
      @param outputToneMappedImage the output tone mapped image
      */
-    virtual void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage)=0;
+    CV_WRAP virtual void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage)=0;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    virtual void getParvo(OutputArray retinaOutput_parvo)=0;
+    CV_WRAP virtual void getParvo(OutputArray retinaOutput_parvo)=0;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : a cv::Mat header filled with the internal parvo buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    virtual void getParvoRAW(OutputArray retinaOutput_parvo)=0;
+    CV_WRAP virtual void getParvoRAW(OutputArray retinaOutput_parvo)=0;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    virtual void getMagno(OutputArray retinaOutput_magno)=0;
+    CV_WRAP virtual void getMagno(OutputArray retinaOutput_magno)=0;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : a cv::Mat header filled with the internal retina magno buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    virtual void getMagnoRAW(OutputArray retinaOutput_magno)=0;
+    CV_WRAP virtual void getMagnoRAW(OutputArray retinaOutput_magno)=0;
 
     // original API level data accessors : get buffers addresses from a Mat header, similar to getParvoRAW and getMagnoRAW...
-    virtual const Mat getMagnoRAW() const=0;
-    virtual const Mat getParvoRAW() const=0;
+    CV_WRAP virtual const Mat getMagnoRAW() const=0;
+    CV_WRAP virtual const Mat getParvoRAW() const=0;
 
     /**
      * activate color saturation as the final step of the color demultiplexing process
@@ -282,30 +282,31 @@ public:
      * @param saturateColors: boolean that activates color saturation (if true) or desactivate (if false)
      * @param colorSaturationValue: the saturation factor
      */
-    virtual void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0)=0;
+    CV_WRAP virtual void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0)=0;
 
     /**
      * clear all retina buffers (equivalent to opening the eyes after a long period of eye close ;o)
      */
-    virtual void clearBuffers()=0;
+    CV_WRAP virtual void clearBuffers()=0;
 
     /**
     * Activate/desactivate the Magnocellular pathway processing (motion information extraction), by default, it is activated
     * @param activate: true if Magnocellular output should be activated, false if not
     */
-    virtual void activateMovingContoursProcessing(const bool activate)=0;
+    CV_WRAP virtual void activateMovingContoursProcessing(const bool activate)=0;
 
     /**
     * Activate/desactivate the Parvocellular pathway processing (contours information extraction), by default, it is activated
     * @param activate: true if Parvocellular (contours information extraction) output should be activated, false if not
     */
-    virtual void activateContoursProcessing(const bool activate)=0;
+    CV_WRAP virtual void activateContoursProcessing(const bool activate)=0;
 };
-CV_EXPORTS Ptr<Retina> createRetina(Size inputSize);
-CV_EXPORTS Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
 
-CV_EXPORTS Ptr<Retina> createRetina_OCL(Size inputSize);
-CV_EXPORTS Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize);
+CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+
+CV_EXPORTS_W Ptr<Retina> createRetina_OCL(Size inputSize);
+CV_EXPORTS_W Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
 }
 }
 #endif /* __OPENCV_BIOINSPIRED_RETINA_HPP__ */
