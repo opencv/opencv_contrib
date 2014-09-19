@@ -52,9 +52,9 @@ namespace cv
 namespace datasetstools
 {
 
-void split(const std::string &s, std::vector<std::string> &elems, char delim);
+void CV_EXPORTS split(const std::string &s, std::vector<std::string> &elems, char delim);
 
-void getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
+void CV_EXPORTS getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
 
 }
 }

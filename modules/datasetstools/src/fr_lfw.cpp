@@ -82,12 +82,13 @@ void FR_lfwImp::loadDataset(const string &path)
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        if ("pairs.txt" == *it)
+        string &name = *it;
+
+        if (name.length()>3 && name.substr(name.length()-4) == ".txt")
         {
             continue;
         }
 
-        string &name = *it;
         vector<string> images;
 
         string pathFace(path + name + "/");
@@ -141,6 +142,37 @@ void FR_lfwImp::loadDataset(const string &path)
         test.back().push_back(curr);
 
         num++;
+    }
+
+    // dev train loading to train[0]
+    ifstream infile2((path + "pairsDevTrain.txt").c_str());
+    getline(infile2, line); // should 1100
+    while (getline(infile2, line))
+    {
+        vector<string> elems;
+        split(line, elems, '\t');
+
+        Ptr<FR_lfwObj> curr(new FR_lfwObj);
+        string &person1 = elems[0];
+        unsigned int imageNumber1 = atoi(elems[1].c_str())-1;
+        curr->image1 = person1 + "/" + faces[person1][imageNumber1];
+
+        string person2;
+        unsigned int imageNumber2;
+        if (3 == elems.size())
+        {
+            person2 = elems[0];
+            imageNumber2 = atoi(elems[2].c_str())-1;
+            curr->same = true;
+        } else
+        {
+            person2 = elems[2];
+            imageNumber2 = atoi(elems[3].c_str())-1;
+            curr->same = false;
+        }
+        curr->image2 = person2 + "/" + faces[person2][imageNumber2];
+
+        train[0].push_back(curr);
     }
 }
 

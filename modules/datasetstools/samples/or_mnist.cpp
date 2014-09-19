@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset (SUN397 folder) }";
+            "{ path p         |true| path to dataset }";
     CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
