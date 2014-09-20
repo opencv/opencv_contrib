@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/msm_epfl.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 namespace cv

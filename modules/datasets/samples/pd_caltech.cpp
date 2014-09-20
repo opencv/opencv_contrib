@@ -39,71 +39,48 @@
 //
 //M*/
 
-#include "opencv2/datasets/or_imagenet.hpp"
-#include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
+#include "opencv2/datasets/pd_caltech.hpp"
 
-namespace cv
-{
-namespace datasets
-{
+#include <opencv2/core.hpp>
+
+#include <cstdio>
+
+#include <string>
+#include <vector>
 
 using namespace std;
+using namespace cv;
+using namespace cv::datasets;
 
-class CV_EXPORTS OR_imagenetImp : public OR_imagenet
+int main(int argc, char *argv[])
 {
-public:
-    OR_imagenetImp() {}
-    //OR_imagenetImp(const string &path);
-    virtual ~OR_imagenetImp() {}
-
-    virtual void load(const string &path);
-
-private:
-    void loadDataset(const string &path);
-};
-
-/*OR_imagenetImp::OR_imagenetImp(const string &path)
-{
-    loadDataset(path);
-}*/
-
-void OR_imagenetImp::load(const string &path)
-{
-    loadDataset(path);
-}
-
-void OR_imagenetImp::loadDataset(const string &path)
-{
-    train.push_back(vector< Ptr<Object> >());
-    test.push_back(vector< Ptr<Object> >());
-    validation.push_back(vector< Ptr<Object> >());
-
-    ifstream infile((path + "fall11_urls.txt").c_str());
-    string line;
-    while (getline(infile, line))
+    const char *keys =
+            "{ help h usage ? |    | show this message }"
+            "{ path p         |true| path to dataset }";
+    CommandLineParser parser(argc, argv, keys);
+    string path(parser.get<string>("path"));
+    if (parser.has("help") || path=="true")
     {
-        vector<string> elems;
-        split(line, elems, '\t');
-
-        Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
-        curr->imageUrl = elems[1];
-
-        string id(elems[0]);
-        elems.clear();
-        split(id, elems, '_');
-
-        curr->wnid = elems[0];
-        curr->id2 = atoi(elems[1].c_str());
-
-        train.back().push_back(curr);
+        parser.printMessage();
+        return -1;
     }
-}
 
-Ptr<OR_imagenet> OR_imagenet::create()
-{
-    return Ptr<OR_imagenetImp>(new OR_imagenetImp);
-}
+    Ptr<PD_caltech> dataset = PD_caltech::create();
+    dataset->load(path);
 
-}
+    // ***************
+    // dataset contains for each object its images.
+    // currently on loading extract all images to folder path/../images/
+    // For example, let output train size and first element of first object
+    // and number of it's images.
+    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+
+    PD_caltechObj *example = static_cast<PD_caltechObj *>(dataset->getTrain()[0].get());
+    printf("first train object:\n");
+    printf("name: %s\n", example->name.c_str());
+    printf("images number: %u\n", (unsigned int)example->imageNames.size());
+    printf("first image name: %s\n", example->imageNames[0].c_str());
+    printf("images were extracted to path/../images/\n");
+
+    return 0;
 }

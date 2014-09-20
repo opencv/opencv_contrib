@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/tr_svt.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 #include <opencv2/datasets/tinyxml2/tinyxml2.h>

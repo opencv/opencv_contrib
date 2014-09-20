@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/slam_tumindoor.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 #include <cstring>

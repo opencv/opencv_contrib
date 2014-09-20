@@ -39,71 +39,46 @@
 //
 //M*/
 
-#include "opencv2/datasets/or_imagenet.hpp"
-#include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
+#ifndef OPENCV_DATASETS_PD_CALTECH_HPP
+#define OPENCV_DATASETS_PD_CALTECH_HPP
+
+#include <string>
+#include <vector>
+
+#include "opencv2/datasets/dataset.hpp"
+
+#include <opencv2/core.hpp>
 
 namespace cv
 {
 namespace datasets
 {
 
-using namespace std;
-
-class CV_EXPORTS OR_imagenetImp : public OR_imagenet
+struct PD_caltechObj : public Object
 {
-public:
-    OR_imagenetImp() {}
-    //OR_imagenetImp(const string &path);
-    virtual ~OR_imagenetImp() {}
-
-    virtual void load(const string &path);
-
-private:
-    void loadDataset(const string &path);
+    //double groundTrue[][];
+    //Mat image;
+    std::string name;
+    std::vector< std::string > imageNames;
 };
 
-/*OR_imagenetImp::OR_imagenetImp(const string &path)
+//
+// first version of Caltech Pedestrian dataset loading
+// code to unpack all frames from seq files commented as their number is huge
+// so currently load only meta information without data
+//
+// also ground truth isn't processed, as need to convert it from mat files first
+//
+
+class CV_EXPORTS PD_caltech : public Dataset
 {
-    loadDataset(path);
-}*/
+public:
+    virtual void load(const std::string &path) = 0;
 
-void OR_imagenetImp::load(const string &path)
-{
-    loadDataset(path);
-}
-
-void OR_imagenetImp::loadDataset(const string &path)
-{
-    train.push_back(vector< Ptr<Object> >());
-    test.push_back(vector< Ptr<Object> >());
-    validation.push_back(vector< Ptr<Object> >());
-
-    ifstream infile((path + "fall11_urls.txt").c_str());
-    string line;
-    while (getline(infile, line))
-    {
-        vector<string> elems;
-        split(line, elems, '\t');
-
-        Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
-        curr->imageUrl = elems[1];
-
-        string id(elems[0]);
-        elems.clear();
-        split(id, elems, '_');
-
-        curr->wnid = elems[0];
-        curr->id2 = atoi(elems[1].c_str());
-
-        train.back().push_back(curr);
-    }
-}
-
-Ptr<OR_imagenet> OR_imagenet::create()
-{
-    return Ptr<OR_imagenetImp>(new OR_imagenetImp);
-}
+    static Ptr<PD_caltech> create();
+};
 
 }
 }
+
+#endif

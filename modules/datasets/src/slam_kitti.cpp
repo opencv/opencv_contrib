@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/slam_kitti.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 namespace cv

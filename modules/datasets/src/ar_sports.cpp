@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/ar_sports.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 namespace cv

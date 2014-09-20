@@ -48,6 +48,7 @@
 #ifdef __GNUC__
     #include <unistd.h>
     #include <dirent.h>
+    #include <sys/stat.h>
 #else
     #include <io.h>
     #include <direct.h>
@@ -68,6 +69,15 @@ void split(const string &s, vector<string> &elems, char delim)
     {
         elems.push_back(item);
     }
+}
+
+void createDirectory(const string &path)
+{
+#ifdef __GNUC__
+    mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#else
+    mkdir(path.c_str());
+#endif
 }
 
 void getDirList(const string &dirName, vector<string> &fileNames)

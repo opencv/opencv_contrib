@@ -40,6 +40,7 @@
 //M*/
 
 #include "opencv2/datasets/gr_skig.hpp"
+#include "opencv2/datasets/util.hpp"
 #include "precomp.hpp"
 
 #include <cstring>
