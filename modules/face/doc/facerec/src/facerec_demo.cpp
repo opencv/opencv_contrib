@@ -16,6 +16,9 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgproc.hpp"
+
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"

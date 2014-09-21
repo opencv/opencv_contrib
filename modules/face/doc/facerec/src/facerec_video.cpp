@@ -16,6 +16,8 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
+#include "opencv2/imgproc/imgproc_c.h"
+
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
@@ -146,8 +148,10 @@ int main(int argc, const char *argv[]) {
         // And display it:
         char key = (char) waitKey(20);
         // Exit this loop on escape:
-        if(key == 27)
+        if(key == 27) {
+            cap.release();
             break;
+        }
     }
     return 0;
 }

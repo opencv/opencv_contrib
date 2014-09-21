@@ -16,6 +16,9 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgproc.hpp"
+
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
@@ -175,8 +178,8 @@ int main(int argc, const char *argv[]) {
     for(int num_components = min(W.cols, 10); num_components < min(W.cols, 300); num_components+=15) {
         // slice the eigenvectors from the model
         Mat evs = Mat(W, Range::all(), Range(0, num_components));
-        Mat projection = subspaceProject(evs, mean, images[0].reshape(1,1));
-        Mat reconstruction = subspaceReconstruct(evs, mean, projection);
+        Mat projection = LDA::subspaceProject(evs, mean, images[0].reshape(1,1));
+        Mat reconstruction = LDA::subspaceReconstruct(evs, mean, projection);
         // Normalize the result:
         reconstruction = norm_0_255(reconstruction.reshape(1, images[0].rows));
         // Display or save:
