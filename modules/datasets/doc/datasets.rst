@@ -1,378 +1,105 @@
-*********************************************************
-datasets. Framework for working with different datasets.
-*********************************************************
+*******************************************************
+datasets. Framework for working with different datasets
+*******************************************************
 
 .. highlight:: cpp
 
-The datasets module includes classes for working with different datasets.
+The datasets module includes classes for working with different datasets: load data, evaluate different algorithms on them, etc.
+
+.. toctree::
+    :hidden:
+
+    datasets/ar_hmdb
+    datasets/ar_sports
+    datasets/fr_lfw
+    datasets/gr_chalearn
+    datasets/gr_skig
+    datasets/hpe_parse
+    datasets/ir_affine
+    datasets/ir_robot
+    datasets/is_bsds
+    datasets/is_weizmann
+    datasets/msm_epfl
+    datasets/msm_middlebury
+    datasets/or_imagenet
+    datasets/or_mnist
+    datasets/or_sun
+    datasets/pd_caltech
+    datasets/slam_kitti
+    datasets/slam_tumindoor
+    datasets/tr_chars
+    datasets/tr_svt
 
 Action Recognition
 ------------------
 
-AR_hmdb
-=======
-.. ocv:class:: AR_hmdb
+    :doc:`datasets/ar_hmdb`
 
-Implements loading dataset:
-
-_`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resource/hmdb-a-large-human-motion-database/
-
-.. note:: Usage
-
- 1. From link above download dataset files: hmdb51_org.rar & test_train_splits.rar.
-
- 2. Unpack them.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_ar_hmdb -p=/home/user/path_to_unpacked_folders/
-
-AR_sports
-=========
-.. ocv:class:: AR_sports
-
-Implements loading dataset:
-
-_`"Sports-1M Dataset"`: http://cs.stanford.edu/people/karpathy/deepvideo/
-
-.. note:: Usage
-
- 1. From link above download dataset files (git clone https://code.google.com/p/sports-1m-dataset/).
-
- 2. To load data run: ./opencv/build/bin/example_datasets_ar_sports -p=/home/user/path_to_downloaded_folders/
+    :doc:`datasets/ar_sports`
 
 Face Recognition
 ----------------
 
-FR_lfw
-======
-.. ocv:class:: FR_lfw
-
-Implements loading dataset:
-
-_`"Labeled Faces in the Wild"`: http://vis-www.cs.umass.edu/lfw/
-
-.. note:: Usage
-
- 1. From link above download any dataset file: lfw.tgz\lfwa.tar.gz\lfw-deepfunneled.tgz\lfw-funneled.tgz and files with pairs: 10 test splits: pairs.txt and developer train split: pairsDevTrain.txt.
-
- 2. Unpack dataset file and place pairs.txt and pairsDevTrain.txt in created folder.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
-
-.. note:: Benchmark
-
- - For this dataset was implemented benchmark, which gives accuracy: 0.623833 +- 0.005223 (train split: pairsDevTrain.txt, dataset: lfwa)
- - To run this benchmark execute: ./opencv/build/bin/example_datasets_fr_lfw_benchmark -p=/home/user/path_to_unpacked_folder/lfw2/
+    :doc:`datasets/fr_lfw`
 
 Gesture Recognition
 -------------------
 
-GR_chalearn
-===========
-.. ocv:class:: GR_chalearn
+    :doc:`datasets/gr_chalearn`
 
-Implements loading dataset:
-
-_`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
-
-.. note:: Usage
-
- 1. Follow instruction from site above, download files for dataset "Track 3: Gesture Recognition": Train1.zip-Train5.zip, Validation1.zip-Validation3.zip (Register on site: www.codalab.org and accept the terms and conditions of competition: https://www.codalab.org/competitions/991#learn_the_details There are three mirrors for downloading dataset files. When I downloaded data only mirror: "Universitat Oberta de Catalunya" works).
-
- 2. Unpack train archives Train1.zip-Train5.zip to folder Train/, validation archives Validation1.zip-Validation3.zip to folder Validation/
-
- 3. Unpack all archives in Train/ & Validation/ in the folders with the same names, for example: Sample0001.zip to Sample0001/
-
- 4. To load data run: ./opencv/build/bin/example_datasets_gr_chalearn -p=/home/user/path_to_unpacked_folders/
-
-GR_skig
-=======
-.. ocv:class:: GR_skig
-
-Implements loading dataset:
-
-_`"Sheffield Kinect Gesture Dataset"`: http://lshao.staff.shef.ac.uk/data/SheffieldKinectGesture.htm
-
-.. note:: Usage
-
- 1. From link above download dataset files: subject1_dep.7z-subject6_dep.7z, subject1_rgb.7z-subject6_rgb.7z.
-
- 2. Unpack them.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_gr_skig -p=/home/user/path_to_unpacked_folders/
+    :doc:`datasets/gr_skig`
 
 Human Pose Estimation
 ---------------------
 
-HPE_parse
-=========
-.. ocv:class:: HPE_parse
-
-Implements loading dataset:
-
-_`"PARSE Dataset"`: http://www.ics.uci.edu/~dramanan/papers/parse/
-
-.. note:: Usage
-
- 1. From link above download dataset file: people.zip.
-
- 2. Unpack it.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_hpe_parse -p=/home/user/path_to_unpacked_folder/people_all/
+    :doc:`datasets/hpe_parse`
 
 Image Registration
 ------------------
 
-IR_affine
-=========
-.. ocv:class:: IR_affine
+    :doc:`datasets/ir_affine`
 
-Implements loading dataset:
-
-_`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/data-aff.html
-
-.. note:: Usage
-
- 1. From link above download dataset files: bark\\bikes\\boat\\graf\\leuven\\trees\\ubc\\wall.tar.gz.
-
- 2. Unpack them.
-
- 3. To load data, for example, for "bark", run: ./opencv/build/bin/example_datasets_ir_affine -p=/home/user/path_to_unpacked_folder/bark/
-
-IR_robot
-========
-.. ocv:class:: IR_robot
-
-Implements loading dataset:
-
-_`"Robot Data Set"`: http://roboimagedata.compute.dtu.dk/?page_id=24
-
-.. note:: Usage
-
- 1. From link above download files for dataset "Point Feature Data Set – 2010": SET001_6.tar.gz-SET055_60.tar.gz (there are two data sets: - Full resolution images (1200×1600), ~500 Gb and - Half size image (600×800), ~115 Gb.)
- 2. Unpack them to one folder.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_ir_robot -p=/home/user/path_to_unpacked_folder/
+    :doc:`datasets/ir_robot`
 
 Image Segmentation
 ------------------
 
-IS_bsds
-=======
-.. ocv:class:: IS_bsds
+    :doc:`datasets/is_bsds`
 
-Implements loading dataset:
-
-_`"The Berkeley Segmentation Dataset and Benchmark"`: https://www.eecs.berkeley.edu/Research/Projects/CS/vision/bsds/
-
-.. note:: Usage
-
- 1. From link above download dataset files: BSDS300-human.tgz & BSDS300-images.tgz.
-
- 2. Unpack them.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_is_bsds -p=/home/user/path_to_unpacked_folder/BSDS300/
-
-IS_weizmann
-===========
-.. ocv:class:: IS_weizmann
-
-Implements loading dataset:
-
-_`"Weizmann Segmentation Evaluation Database"`: http://www.wisdom.weizmann.ac.il/~vision/Seg_Evaluation_DB/
-
-.. note:: Usage
-
- 1. From link above download dataset files: Weizmann_Seg_DB_1obj.ZIP & Weizmann_Seg_DB_2obj.ZIP.
-
- 2. Unpack them.
-
- 3. To load data, for example, for 1 object dataset, run: ./opencv/build/bin/example_datasets_is_weizmann -p=/home/user/path_to_unpacked_folder/1obj/
+    :doc:`datasets/is_weizmann`
 
 Multiview Stereo Matching
 -------------------------
 
-MSM_epfl
-========
-.. ocv:class:: MSM_epfl
+    :doc:`datasets/msm_epfl`
 
-Implements loading dataset:
-
-_`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS.html
-
-.. note:: Usage
-
- 1. From link above download dataset files: castle_dense\\castle_dense_large\\castle_entry\\fountain\\herzjesu_dense\\herzjesu_dense_large_bounding\\cameras\\images\\p.tar.gz.
-
- 2. Unpack them in separate folder for each object. For example, for "fountain", in folder fountain/ : fountain_dense_bounding.tar.gz -> bounding/, fountain_dense_cameras.tar.gz -> camera/, fountain_dense_images.tar.gz -> png/, fountain_dense_p.tar.gz -> P/
-
- 3. To load data, for example, for "fountain", run: ./opencv/build/bin/example_datasets_msm_epfl -p=/home/user/path_to_unpacked_folder/fountain/
-
-MSM_middlebury
-==============
-.. ocv:class:: MSM_middlebury
-
-Implements loading dataset:
-
-_`"Stereo – Middlebury Computer Vision"`: http://vision.middlebury.edu/mview/
-
-.. note:: Usage
-
- 1. From link above download dataset files: dino\\dinoRing\\dinoSparseRing\\temple\\templeRing\\templeSparseRing.zip
-
- 2. Unpack them.
-
- 3. To load data, for example "temple" dataset, run: ./opencv/build/bin/example_datasets_msm_middlebury -p=/home/user/path_to_unpacked_folder/temple/
+    :doc:`datasets/msm_middlebury`
 
 Object Recognition
 ------------------
 
-OR_imagenet
-===========
-.. ocv:class:: OR_imagenet
+    :doc:`datasets/or_imagenet`
 
-Implements loading dataset:
+    :doc:`datasets/or_mnist`
 
-_`"ImageNet"`: http://www.image-net.org/
-
-Currently implemented loading full list with urls. Planned to implement dataset from ILSVRC challenge. 
-
-.. note:: Usage
-
- 1. From link above download dataset file: imagenet_fall11_urls.tgz
-
- 2. Unpack it.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_or_imagenet -p=/home/user/path_to_unpacked_file/
-
-OR_mnist
-===========
-.. ocv:class:: OR_mnist
-
-Implements loading dataset:
-
-_`"MNIST"`: http://yann.lecun.com/exdb/mnist/
-
-.. note:: Usage
-
- 1. From link above download dataset files: t10k-images-idx3-ubyte.gz, t10k-labels-idx1-ubyte.gz, train-images-idx3-ubyte.gz, train-labels-idx1-ubyte.gz.
-
- 2. Unpack them.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_or_mnist -p=/home/user/path_to_unpacked_files/
-
-OR_sun
-======
-.. ocv:class:: OR_sun
-
-Implements loading dataset:
-
-_`"SUN Database"`: http://sundatabase.mit.edu/
-
-Currently implemented loading "Scene Recognition Benchmark. SUN397". Planned to implement also "Object Detection Benchmark. SUN2012". 
-
-.. note:: Usage
-
- 1. From link above download dataset file: SUN397.tar
-
- 2. Unpack it.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_or_sun -p=/home/user/path_to_unpacked_folder/SUN397/
+    :doc:`datasets/or_sun`
 
 Pedestrian Detection
 --------------------
 
-PD_caltech
-==========
-.. ocv:class:: PD_caltech
-
-Implements loading dataset:
-
-_`"Caltech Pedestrian Detection Benchmark"`: http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/
-
-.. note:: First version of Caltech Pedestrian dataset loading.
-
- Code to unpack all frames from seq files commented as their number is huge!
- So currently load only meta information without data.
-
- Also ground truth isn't processed, as need to convert it from mat files first.
-
-.. note:: Usage
-
- 1. From link above download dataset files: set00.tar-set10.tar.
-
- 2. Unpack them to separate folder.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_pd_caltech -p=/home/user/path_to_unpacked_folders/
+    :doc:`datasets/pd_caltech`
 
 SLAM
 ----
 
-SLAM_kitti
-==========
-.. ocv:class:: SLAM_kitti
+    :doc:`datasets/slam_kitti`
 
-Implements loading dataset:
-
-_`"KITTI Vision Benchmark"`: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
-
-.. note:: Usage
-
- 1. From link above download "Odometry" dataset files: data_odometry_gray\\data_odometry_color\\data_odometry_velodyne\\data_odometry_poses\\data_odometry_calib.zip.
-
- 2. Unpack data_odometry_poses.zip, it creates folder dataset/poses/. After that unpack data_odometry_gray.zip, data_odometry_color.zip, data_odometry_velodyne.zip. Folder dataset/sequences/ will be created with folders 00/..21/. Each of these folders will contain: image_0/, image_1/, image_2/, image_3/, velodyne/ and files calib.txt & times.txt. These two last files will be replaced after unpacking data_odometry_calib.zip at the end.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_slam_kitti -p=/home/user/path_to_unpacked_folder/dataset/
-
-SLAM_tumindoor
-==============
-.. ocv:class:: SLAM_tumindoor
-
-Implements loading dataset:
-
-_`"TUMindoor Dataset"`: http://www.navvis.lmt.ei.tum.de/dataset/
-
-.. note:: Usage
-
- 1. From link above download dataset files: dslr\\info\\ladybug\\pointcloud.tar.bz2 for each dataset: 11-11-28 (1st floor)\\11-12-13 (1st floor N1)\\11-12-17a (4th floor)\\11-12-17b (3rd floor)\\11-12-17c (Ground I)\\11-12-18a (Ground II)\\11-12-18b (2nd floor)
-
- 2. Unpack them in separate folder for each dataset. dslr.tar.bz2 -> dslr/, info.tar.bz2 -> info/, ladybug.tar.bz2 -> ladybug/, pointcloud.tar.bz2 -> pointcloud/.
-
- 3. To load each dataset run: ./opencv/build/bin/example_datasets_slam_tumindoor -p=/home/user/path_to_unpacked_folders/
+    :doc:`datasets/slam_tumindoor`
 
 Text Recognition
 ----------------
 
-TR_chars
-========
-.. ocv:class:: TR_chars
+    :doc:`datasets/tr_chars`
 
-Implements loading dataset:
-
-_`"The Chars74K Dataset"`: http://www.ee.surrey.ac.uk/CVSSP/demos/chars74k/
-
-.. note:: Usage
-
- 1. From link above download dataset files: EnglishFnt\\EnglishHnd\\EnglishImg\\KannadaHnd\\KannadaImg.tgz, ListsTXT.tgz.
-
- 2. Unpack them.
-
- 3. Move .m files from folder ListsTXT/ to appropriate folder. For example, English/list_English_Img.m for EnglishImg.tgz.
-
- 4. To load data, for example "EnglishImg", run: ./opencv/build/bin/example_datasets_tr_chars -p=/home/user/path_to_unpacked_folder/English/
-
-TR_svt
-======
-.. ocv:class:: TR_svt
-
-Implements loading dataset:
-
-_`"The Street View Text Dataset"`: http://vision.ucsd.edu/~kai/svt/
-
-.. note:: Usage
-
- 1. From link above download dataset file: svt.zip.
-
- 2. Unpack it.
-
- 3. To load data run: ./opencv/build/bin/example_datasets_tr_svt -p=/home/user/path_to_unpacked_folder/svt/svt1/
+    :doc:`datasets/tr_svt`
 

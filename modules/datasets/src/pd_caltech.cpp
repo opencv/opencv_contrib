@@ -167,6 +167,11 @@ void PD_caltechImp::loadDataset(const string &path)
                 fseek(f, 12, SEEK_CUR);
             }
 
+            if (0 != res) // should fix unused variable warning
+            {
+                res = 0;
+            }
+
             fclose(f);
         }
 
