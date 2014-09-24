@@ -14,3 +14,16 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 
  3. To load data run: ./opencv/build/bin/example_datasets_ar_hmdb -p=/home/user/path_to_unpacked_folders/
 
+Benchmark
+"""""""""
+
+For this dataset was implemented benchmark, which gives accuracy: 0.107407 (using precomputed HOG/HOF "STIP" features from site, averaging for 3 splits)
+
+To run this benchmark execute:
+
+.. code-block:: bash
+
+ ./opencv/build/bin/example_datasets_ar_hmdb_benchmark -p=/home/user/path_to_unpacked_folders/
+
+(precomputed features should be unpacked in the same folder: /home/user/path_to_unpacked_folders/hmdb51_org_stips/)
+

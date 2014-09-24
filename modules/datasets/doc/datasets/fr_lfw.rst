@@ -14,8 +14,14 @@ _`"Labeled Faces in the Wild"`: http://vis-www.cs.umass.edu/lfw/
 
  3. To load data run: ./opencv/build/bin/example_datasets_fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
 
-.. note:: Benchmark
+Benchmark
+"""""""""
 
- - For this dataset was implemented benchmark, which gives accuracy: 0.623833 +- 0.005223 (train split: pairsDevTrain.txt, dataset: lfwa)
- - To run this benchmark execute: ./opencv/build/bin/example_datasets_fr_lfw_benchmark -p=/home/user/path_to_unpacked_folder/lfw2/
+For this dataset was implemented benchmark, which gives accuracy: 0.623833 +- 0.005223 (train split: pairsDevTrain.txt, dataset: lfwa)
+
+To run this benchmark execute:
+
+.. code-block:: bash
+
+ ./opencv/build/bin/example_datasets_fr_lfw_benchmark -p=/home/user/path_to_unpacked_folder/lfw2/
 
