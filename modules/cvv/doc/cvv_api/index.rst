@@ -10,10 +10,11 @@ Introduction
 Namespace for all functions is **cvv**, i.e. *cvv::showImage()*.
 
 Compilation:
-* For development, i.e. for cvv GUI to show up, compile your code using cvv with *cmake -DCVV_DEBUG_MODE=ON* (or *g++ -DCVVISUAL_DEBUGMODE*). 
-* For release, i.e. cvv calls doing nothing, compile your code with *cmake -DCVV_DEBUG_MODE=OFF* (or *g++* without *-DCVVISUAL_DEBUGMODE* flag). 
 
-See cvv tutorial TODO-ADD-LINK for a commented example application using cvv.
+* For development, i.e. for cvv GUI to show up, compile your code using cvv with *cmake -DCVV_DEBUG_MODE=ON* (or *g++ -DCVVISUAL_DEBUGMODE*). 
+* For release, i.e. cvv calls doing nothing, compile your code with *cmake -DCVV_DEBUG_MODE=OFF* (or *g++* without above flag). 
+
+See cvv tutorial for a commented example application using cvv.
 
 
 
@@ -24,7 +25,7 @@ API Functions
 
 showImage
 ---------
-Add a single image to debug GUI (similar to imshow()).
+Add a single image to debug GUI (similar to :ocv:func:`imshow` ).
 
 .. ocv:function:: void showImage(InputArray img, const CallMetaData& metaData, const string& description, const string& view)
 
@@ -51,24 +52,24 @@ Add two images to debug GUI for comparison. Usually the input and output of some
 
 debugDMatch
 -----------
-TODO
+Add a filled in :ocv:struct:`DMatch` to debug GUI. The matches can are visualized for interactive inspection in different GUI views (one similar to an interactive :ocv:func:`drawMatches` ).
 
 .. ocv:function:: void debugDMatch(InputArray img1, std::vector<cv::KeyPoint> keypoints1, InputArray img2, std::vector<cv::KeyPoint> keypoints2, std::vector<cv::DMatch> matches, const CallMetaData& metaData, const string& description, const string& view, bool useTrainDescriptor)
 
-    :param img1: First image used in DMatch.
+    :param img1: First image used in :ocv:struct:`DMatch`
     :param keypoints1: Keypoints of first image.
     :param img2:  Second image used in DMatch.
     :param keypoints2:  Keypoints of second image.
     :param metaData: See :ocv:func:`showImage`
     :param description: See :ocv:func:`showImage`
     :param view: See :ocv:func:`showImage`
-    :param useTrainDescriptor: TODO
+    :param useTrainDescriptor: Use :ocv:struct:`DMatch`'s train descriptor index instead of query descriptor index.
 
 
 
 finalShow
 ---------
-This function ***must*** be called **once** **after** all cvv calls if any.
+This function **must** be called *once* *after* all cvv calls if any.
 As an alternative create an instance of FinalShowCaller, which calls finalShow() in its destructor (RAII-style).
 
 .. ocv:function:: void finalShow()
