@@ -25,7 +25,7 @@ API Functions
 
 showImage
 ---------
-Add a single image to debug GUI (similar to :ocv:func:`imshow` ).
+Add a single image to debug GUI (similar to :imshow:`imshow <>`).
 
 .. ocv:function:: void showImage(InputArray img, const CallMetaData& metaData, const string& description, const string& view)
 
@@ -52,7 +52,7 @@ Add two images to debug GUI for comparison. Usually the input and output of some
 
 debugDMatch
 -----------
-Add a filled in :ocv:struct:`DMatch` to debug GUI. The matches can are visualized for interactive inspection in different GUI views (one similar to an interactive :ocv:func:`drawMatches` ).
+Add a filled in :ocv:struct:`DMatch` to debug GUI. The matches can are visualized for interactive inspection in different GUI views (one similar to an interactive :draw_matches:`drawMatches<>`).
 
 .. ocv:function:: void debugDMatch(InputArray img1, std::vector<cv::KeyPoint> keypoints1, InputArray img2, std::vector<cv::KeyPoint> keypoints2, std::vector<cv::DMatch> matches, const CallMetaData& metaData, const string& description, const string& view, bool useTrainDescriptor)
 
