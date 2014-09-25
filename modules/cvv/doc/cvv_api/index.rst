@@ -11,8 +11,8 @@ Namespace for all functions is **cvv**, i.e. *cvv::showImage()*.
 
 Compilation:
 
-* For development, i.e. for cvv GUI to show up, compile your code using cvv with *cmake -DCVV_DEBUG_MODE=ON* (or *g++ -DCVVISUAL_DEBUGMODE*). 
-* For release, i.e. cvv calls doing nothing, compile your code with *cmake -DCVV_DEBUG_MODE=OFF* (or *g++* without above flag). 
+* For development, i.e. for cvv GUI to show up, compile your code using cvv with *g++ -DCVVISUAL_DEBUGMODE*.
+* For release, i.e. cvv calls doing nothing, compile your code without above flag. 
 
 See cvv tutorial for a commented example application using cvv.
 
