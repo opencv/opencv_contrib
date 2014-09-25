@@ -52,18 +52,18 @@ Add two images to debug GUI for comparison. Usually the input and output of some
 
 debugDMatch
 -----------
-Add a filled in :ocv:struct:`DMatch` to debug GUI. The matches can are visualized for interactive inspection in different GUI views (one similar to an interactive :draw_matches:`drawMatches<>`).
+Add a filled in :basicstructures:`DMatch <dmatch>` to debug GUI. The matches can are visualized for interactive inspection in different GUI views (one similar to an interactive :draw_matches:`drawMatches<>`).
 
 .. ocv:function:: void debugDMatch(InputArray img1, std::vector<cv::KeyPoint> keypoints1, InputArray img2, std::vector<cv::KeyPoint> keypoints2, std::vector<cv::DMatch> matches, const CallMetaData& metaData, const string& description, const string& view, bool useTrainDescriptor)
 
-    :param img1: First image used in :ocv:struct:`DMatch`
+    :param img1: First image used in :basicstructures:`DMatch <dmatch>`.
     :param keypoints1: Keypoints of first image.
     :param img2:  Second image used in DMatch.
     :param keypoints2:  Keypoints of second image.
     :param metaData: See :ocv:func:`showImage`
     :param description: See :ocv:func:`showImage`
     :param view: See :ocv:func:`showImage`
-    :param useTrainDescriptor: Use :ocv:struct:`DMatch`'s train descriptor index instead of query descriptor index.
+    :param useTrainDescriptor: Use :basicstructures:`DMatch <dmatch>`'s train descriptor index instead of query descriptor index.
 
 
 
