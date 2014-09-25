@@ -8,3 +8,4 @@ The module provides an interactive GUI to debug and incrementally design compute
     :maxdepth: 2
 
     CVV API Documentation <cvv_api/index>
+    CVV GUI Documentation <cvv_gui/index>

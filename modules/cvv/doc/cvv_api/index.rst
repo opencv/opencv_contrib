@@ -1,5 +1,5 @@
-CVV : an Interactive Visual Debugging GUI
-*****************************************
+CVV : the API
+*************
 
 .. highlight:: cpp
 
