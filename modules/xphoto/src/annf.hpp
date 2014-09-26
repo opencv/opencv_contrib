@@ -40,6 +40,16 @@
 #ifndef __ANNF_HPP__
 #define __ANNF_HPP__
 
+#include <vector>
+#include <stack>
+#include <limits>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <fstream>
+#include <time.h>
+#include <functional>
+
 #include "norm2.hpp"
 #include "whs.hpp"
 
@@ -95,11 +105,12 @@ public:
 };
 
 template <typename Tp, int cn> int KDTree <Tp, cn>::
-getMaxSpreadN(const int _left, const int _right) const
+getMaxSpreadN(const int left, const int right) const
 {
-    cv::Vec<Tp, cn> maxValue = data[ idx[_left] ],
-                    minValue = data[ idx[_left] ];
-    for (int i = _left + 1; i < _right; i += cn)
+    cv::Vec<Tp, cn> maxValue = data[ idx[left] ],
+                    minValue = data[ idx[left] ];
+
+    for (int i = left + 1; i < right; ++i)
         for (int j = 0; j < cn; ++j)
         {
             minValue[j] = std::min( minValue[j], data[idx[i]][j] );
@@ -143,6 +154,7 @@ KDTree(const cv::Mat &img, const int _leafNumber, const int _zeroThresh)
         }
 
         int nth = _left + (_right - _left)/2;
+
         int dimIdx = getMaxSpreadN(_left, _right);
         KDTreeComparator comp( this, dimIdx );
 
@@ -168,8 +180,8 @@ updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
         if (abs(ny - y) < zeroThresh &&
             abs(nx - x) < zeroThresh)
             continue;
-        if (nx > width  - 1 || nx < 1 ||
-            ny > height - 1 || ny > 1 )
+        if (nx >= width  - 1 || nx < 1 ||
+            ny >= height - 1 || ny < 1 )
             continue;
 
         double ndist = norm2(data[idx0], data[idx[k]]);
@@ -184,9 +196,12 @@ updateDist(const int leaf, const int &idx0, int &bestIdx, double &dist)
 
 /************************** ANNF search **************************/
 
-static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &transforms,
+static void dominantTransforms(const cv::Mat &img, std::vector <cv::Point2i> &transforms,
                                const int nTransform, const int psize)
 {
+    const int zeroThresh = 2*psize;
+    const int leafNum = 64;
+
     /** Walsh-Hadamard Transformation **/
 
     std::vector <cv::Mat> channels;
@@ -204,7 +219,7 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
     cv::Mat whs; // Walsh-Hadamard series
     cv::merge(channels, whs);
 
-    KDTree <float, 24> kdTree(whs, 16, 32);
+    KDTree <float, 24> kdTree(whs, leafNum, zeroThresh);
     std::vector <int> annf( whs.total(), 0 );
 
     /** Propagation-assisted kd-tree search **/
@@ -217,13 +232,13 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
 
             int dy[] = {0, 1, 0}, dx[] = {0, 0, 1};
             for (int k = 0; k < int( sizeof(dy)/sizeof(int) ); ++k)
-                if (i - dy[k] >= 0 && j - dx[k] >= 0)
+                if ( i - dy[k] >= 0 && j - dx[k] >= 0 )
                 {
                     int neighbor = (i - dy[k])*whs.cols + (j - dx[k]);
-                    int leafIdx = k == 0 ? neighbor :
-                        annf[neighbor] + dy[k]*whs.cols + dx[k];
+                    int leafIdx = (dx[k] == 0 && dy[k] == 0)
+                        ? neighbor : annf[neighbor] + dy[k]*whs.cols + dx[k];
                     kdTree.updateDist(leafIdx, current,
-                               annf[i*whs.cols + j], dist);
+                                annf[i*whs.cols + j], dist);
                 }
         }
 
@@ -232,8 +247,8 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
     cv::Mat_<double> annfHist(2*whs.rows - 1, 2*whs.cols - 1, 0.0),
                     _annfHist(2*whs.rows - 1, 2*whs.cols - 1, 0.0);
     for (size_t i = 0; i < annf.size(); ++i)
-        ++annfHist( (annf[i] - int(i))/whs.cols + whs.rows - 1,
-                    (annf[i] - int(i))%whs.cols + whs.cols - 1 );
+        ++annfHist( annf[i]/whs.cols - int(i)/whs.cols + whs.rows - 1,
+                    annf[i]%whs.cols - int(i)%whs.cols + whs.cols - 1 );
 
     cv::GaussianBlur( annfHist, annfHist,
         cv::Size(0, 0), std::sqrt(2.0), 0.0, cv::BORDER_CONSTANT);
@@ -264,9 +279,7 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Matx33f> &tr
     for (int i = 0; i < nTransform; ++i)
     {
         int idx = amount[i].second;
-        transforms[i] = cv::Matx33f(1, 0, float(shiftM[idx].x),
-                                    0, 1, float(shiftM[idx].y),
-                                    0, 0,          1          );
+        transforms[i] = cv::Point2i( shiftM[idx].x, shiftM[idx].y );
     }
 }
 

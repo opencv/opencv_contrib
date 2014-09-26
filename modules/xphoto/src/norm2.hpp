@@ -40,52 +40,34 @@
 #ifndef __NORM2_HPP__
 #define __NORM2_HPP__
 
-/************************ General template *************************/
+template<bool B, class T = void> struct iftype {};
+template<class T> struct iftype<true, T> { typedef T type; }; // enable_if
 
-template <typename Tp> static inline Tp sqr(Tp x) { return x*x; }
+template<class T, T v> struct int_const { // integral_constant
+    static const T value = v;
+    typedef T value_type;
+    typedef int_const type;
+    operator value_type() const { return value; }
+    value_type operator()() const { return value; }
+};
 
-template <typename Tp, int cn> static inline Tp sqr( cv::Vec<Tp, cn> x) { return x.dot(x); }
+typedef int_const<bool,true> ttype; // true_type
+typedef int_const<bool,false> ftype; // false_type
 
-template <typename Tp> static inline Tp norm2(const Tp &a, const Tp &b) { return sqr(a - b); }
-
-template <typename Tp, int cn> static inline
-Tp norm2(const cv::Vec <Tp, cn> &a, const cv::Vec<Tp, cn> &b) { return sqr(a - b); }
-
+template <class T, class U> struct same_as : ftype {};
+template <class T> struct same_as<T, T> : ttype {};   // is_same
 
 
-/******************* uchar, char, ushort, uint *********************/
+template <typename _Tp> struct is_norm2_type :
+    int_const<bool, !same_as<_Tp,   char>::value
+                 && !same_as<_Tp,  uchar>::value
+                 && !same_as<_Tp, ushort>::value
+                 && !same_as<_Tp,   uint>::value>{};
 
-static inline int norm2(const uchar &a, const uchar &b) { return sqr(int(a) - int(b)); }
+template <typename _Tp, int cn> static inline typename iftype< is_norm2_type<_Tp>::value, _Tp >::
+    type norm2(cv::Vec<_Tp, cn> a, cv::Vec<_Tp, cn> b) { return (a - b).dot(a - b); }
 
-template <int cn> static inline
-    int norm2(const cv::Vec <uchar, cn> &a, const cv::Vec<uchar, cn> &b)
-{
-    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
-}
-
-static inline int norm2(const char &a, const char &b) { return sqr(int(a) - int(b)); }
-
-template <int cn> static inline
-    int norm2(const cv::Vec <char, cn> &a, const cv::Vec<char, cn> &b)
-{
-    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
-}
-
-static inline short norm2(const ushort &a, const ushort &b) { return sqr <short>(short(a) - short(b)); }
-
-template <int cn> static inline
-    short norm2(const cv::Vec <ushort, cn> &a, const cv::Vec<ushort, cn> &b)
-{
-    return sqr( cv::Vec<short, cn>(a) - cv::Vec<short, cn>(b) );
-}
-
-static inline int norm2(const uint &a, const uint &b) { return sqr(int(a) - int(b)); }
-
-template <int cn> static inline
-    int norm2(const cv::Vec <uint, cn> &a, const cv::Vec<uint, cn> &b)
-{
-    return sqr( cv::Vec<int, cn>(a) - cv::Vec<int, cn>(b) );
-}
-
+template <typename _Tp> static inline typename iftype< is_norm2_type<_Tp>::value, _Tp >::
+    type norm2(const _Tp &a, const _Tp &b) { return (a - b)*(a - b); }
 
 #endif /* __NORM2_HPP__ */

@@ -137,8 +137,11 @@ static void rgb2whs(const cv::Mat &src, cv::Mat &dst, const int nProjections, co
         nextProjection(projections, snake_idx[i - 1],
             snake_idx[i], npsize);
 
+    int pad = 0;
+
     cv::merge(projections, img);
-    img(cv::Rect(npsize, npsize, src.cols, src.rows)).copyTo(dst);
+    img(cv::Rect(npsize + pad, npsize + pad, src.cols - pad,
+        src.rows - pad)).copyTo(dst);
 }
 
 

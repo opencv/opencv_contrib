@@ -40,12 +40,32 @@
 #ifndef __PHOTOMONTAGE_HPP__
 #define __PHOTOMONTAGE_HPP__
 
+#include <vector>
+#include <stack>
+#include <limits>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <fstream>
+#include <time.h>
+#include <functional>
 
 #include "norm2.hpp"
+#include "blending.hpp"
+
+namespace gcoptimization
+{
+
 #include "gcgraph.hpp"
 
-#define GCInfinity 10*1000*1000*1000.0
+
+typedef float TWeight;
+typedef  int  labelTp;
+
+
+#define GCInfinity 10*1000*1000
 #define eps 0.02
+
 
 template <typename Tp> static int min_idx(std::vector <Tp> vec)
 {
@@ -58,22 +78,17 @@ template <typename Tp> static int min_idx(std::vector <Tp> vec)
 template <typename Tp> class Photomontage
 {
 private:
-    const std::vector <cv::Mat> &images; // vector of images for different labels
-    const std::vector <cv::Mat>  &masks; // vector of definition domains for each image
+    const std::vector <std::vector <Tp> > &pointSeq;   // points for stitching
+    const std::vector <std::vector <uchar> > &maskSeq; // corresponding masks
 
-    std::vector <cv::Mat> labelings; // vector of labelings for different expansions
-    std::vector <double>  distances; // vector of max-flow costs for different labeling
+    const std::vector <std::vector <int> > &linkIdx;   // vector of neighbors for pointSeq
 
-    const int height;
-    const int width;
-    const int type;
-    const int channels;
-    const int lsize;
+    std::vector <std::vector <labelTp> > labelings;    // vector of labelings
+    std::vector <TWeight>  distances;                  // vector of max-flow costs for different labeling
 
-    cv::Mat x_i; // current best labeling
+    std::vector <labelTp> &labelSeq;                   // current best labeling
 
-    double singleExpansion(const int alpha); // single neighbor computing
-    void gradientDescent(); // gradient descent in alpha-expansion topology
+    TWeight singleExpansion(const int alpha);          // single neighbor computing
 
     class ParallelExpansion : public cv::ParallelLoopBody
     {
@@ -88,121 +103,86 @@ private:
             for (int i = range.start; i <= range.end - 1; ++i)
                 main->distances[i] = main->singleExpansion(i);
         }
-    };
+    } parallelExpansion;
 
     void operator =(const Photomontage <Tp>&) const {};
 
 protected:
-    virtual double dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2);
-    virtual void setWeights(GCGraph <double> &graph, const cv::Point &pA,
-        const cv::Point &pB, const int lA, const int lB, const int lX);
+    virtual TWeight dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2);
+    virtual void setWeights(GCGraph <TWeight> &graph,
+        const int idx1, const int idx2, const int l1, const int l2, const int lx);
 
 public:
-    Photomontage(const std::vector <cv::Mat> &images, const std::vector <cv::Mat> &masks);
-    virtual ~Photomontage(){};
+    void gradientDescent(); // gradient descent in alpha-expansion topology
 
-    void assignLabeling(cv::Mat &img);
-    void assignResImage(cv::Mat &img);
+    Photomontage(const std::vector <std::vector <Tp> > &pointSeq,
+                 const std::vector <std::vector <uchar> > &maskSeq,
+                 const std::vector <std::vector <int> > &linkIdx,
+                       std::vector <labelTp> &labelSeq);
+    virtual ~Photomontage(){};
 };
 
-template <typename Tp> inline double Photomontage <Tp>::
+template <typename Tp> inline TWeight Photomontage <Tp>::
 dist(const Tp &l1p1, const Tp &l1p2, const Tp &l2p1, const Tp &l2p2)
 {
     return norm2(l1p1, l2p1) + norm2(l1p2, l2p2);
 }
 
 template <typename Tp> void Photomontage <Tp>::
-setWeights(GCGraph <double> &graph, const cv::Point &pA, const cv::Point &pB, const int lA, const int lB, const int lX)
+setWeights(GCGraph <TWeight> &graph, const int idx1, const int idx2,
+    const int l1, const int l2, const int lx)
 {
-    if (lA == lB)
+    if (l1 == l2)
     {
         /** Link from A to B **/
-        double weightAB = dist( images[lA].template at<Tp>(pA),
-                                images[lA].template at<Tp>(pB),
-                                images[lX].template at<Tp>(pA),
-                                images[lX].template at<Tp>(pB) );
-        graph.addEdges( int(pA.y*width + pA.x), int(pB.y*width + pB.x), weightAB, weightAB);
+        TWeight weightAB = dist( pointSeq[idx1][l1], pointSeq[idx2][l1],
+                                 pointSeq[idx1][lx], pointSeq[idx2][lx] );
+        graph.addEdges( idx1, idx2, weightAB, weightAB );
     }
     else
     {
         int X = graph.addVtx();
 
         /** Link from X to sink **/
-        double weightXS = dist( images[lA].template at<Tp>(pA),
-                                images[lA].template at<Tp>(pB),
-                                images[lB].template at<Tp>(pA),
-                                images[lB].template at<Tp>(pB) );
-        graph.addTermWeights(X, 0, weightXS);
+        TWeight weightXS = dist( pointSeq[idx1][l1], pointSeq[idx2][l1],
+                                 pointSeq[idx1][l2], pointSeq[idx2][l2] );
+        graph.addTermWeights( X, 0, weightXS );
 
         /** Link from A to X **/
-        double weightAX = dist( images[lA].template at<Tp>(pA),
-                                images[lA].template at<Tp>(pB),
-                                images[lX].template at<Tp>(pA),
-                                images[lX].template at<Tp>(pB) );
-        graph.addEdges( int(pA.y*width + pA.x), X, weightAX, weightAX);
+        TWeight weightAX = dist( pointSeq[idx1][l1], pointSeq[idx2][l1],
+                                 pointSeq[idx1][lx], pointSeq[idx2][lx] );
+        graph.addEdges( idx1, X, weightAX, weightAX );
 
         /** Link from X to B **/
-        double weightXB = dist( images[lX].template at<Tp>(pA),
-                                images[lX].template at<Tp>(pB),
-                                images[lB].template at<Tp>(pA),
-                                images[lB].template at<Tp>(pB) );
-        graph.addEdges(X, int(pB.y*width + pB.x), weightXB, weightXB);
+        TWeight weightXB = dist( pointSeq[idx1][lx], pointSeq[idx1][lx],
+                                 pointSeq[idx1][l2], pointSeq[idx1][l2] );
+        graph.addEdges( X, idx2, weightXB, weightXB );
     }
 }
 
-template <typename Tp> double Photomontage <Tp>::
+template <typename Tp> TWeight Photomontage <Tp>::
 singleExpansion(const int alpha)
 {
-    int actualEdges = (height - 1)*width + height*(width - 1);
-    GCGraph <double> graph(actualEdges + height*width, 2*actualEdges);
+    GCGraph <TWeight> graph( 3*int(pointSeq.size()), 4*int(pointSeq.size()) );
 
     /** Terminal links **/
-    for (int i = 0; i < height; ++i)
-    {
-        const uchar *maskAlphaRow = masks[alpha].template ptr <uchar>(i);
-        const int *labelRow = (const int *) x_i.template ptr <int>(i);
-
-        for (int j = 0; j < width; ++j)
-            graph.addTermWeights( graph.addVtx(),
-                                          maskAlphaRow[j] ? 0 : GCInfinity,
-            masks[ labelRow[j] ].template at<uchar>(i, j) ? 0 : GCInfinity );
-    }
+    for (size_t i = 0; i < maskSeq.size(); ++i)
+        graph.addTermWeights( graph.addVtx(),
+            maskSeq[i][alpha] ? TWeight(0) : TWeight(GCInfinity), 0 );
 
     /** Neighbor links **/
-    for (int i = 0; i < height - 1; ++i)
-    {
-        const int *currentRow = (const int *) x_i.template ptr <int>(i);
-        const int *nextRow = (const int *) x_i.template ptr <int>(i + 1);
-
-        for (int j = 0; j < width - 1; ++j)
-        {
-            setWeights( graph, cv::Point(j, i), cv::Point(j + 1, i), currentRow[j], currentRow[j + 1], alpha );
-            setWeights( graph, cv::Point(j, i), cv::Point(j, i + 1), currentRow[j],     nextRow[j],    alpha );
-        }
-
-        setWeights( graph, cv::Point(width - 1, i), cv::Point(width - 1, i + 1),
-                    currentRow[width - 1], nextRow[width - 1], alpha );
-    }
-
-    const int *currentRow = (const int *) x_i.template ptr <int>(height - 1);
-    for (int i = 0; i < width - 1; ++i)
-        setWeights( graph, cv::Point(i, height - 1), cv::Point(i + 1, height - 1),
-                    currentRow[i], currentRow[i + 1], alpha );
+    for (size_t i = 0; i < pointSeq.size(); ++i)
+        for (size_t j = 0; j < linkIdx[i].size(); ++j)
+            if ( linkIdx[i][j] != -1)
+                setWeights( graph, int(i), linkIdx[i][j],
+                    labelSeq[i], labelSeq[linkIdx[i][j]], alpha );
 
     /** Max-flow computation **/
-    double result = graph.maxFlow();
+    TWeight result = graph.maxFlow();
 
     /** Writing results **/
-    labelings[alpha].create( height, width, CV_32SC1 );
-    for (int i = 0; i < height; ++i)
-    {
-        const int *inRow = (const int *) x_i.template ptr <int>(i);
-        int *outRow = (int *) labelings[alpha].template ptr <int>(i);
-
-        for (int j = 0; j < width; ++j)
-            outRow[j] = graph.inSourceSegment(i*width + j)
-                              ? inRow[j] : alpha;
-    }
+    for (size_t i = 0; i < pointSeq.size(); ++i)
+        labelings[i][alpha] = graph.inSourceSegment(int(i)) ? labelSeq[i] : alpha;
 
     return result;
 }
@@ -210,55 +190,51 @@ singleExpansion(const int alpha)
 template <typename Tp> void Photomontage <Tp>::
 gradientDescent()
 {
-    double optValue = std::numeric_limits<double>::max();
+    TWeight optValue = std::numeric_limits<TWeight>::max();
 
     for (int num = -1; /**/; num = -1)
     {
-        parallel_for_( cv::Range(0, lsize),
-            ParallelExpansion(this) );
+        int range = int( pointSeq[0].size() );
+        parallel_for_( cv::Range(0, range), parallelExpansion );
 
         int minIndex = min_idx(distances);
-        double minValue = distances[minIndex];
+        TWeight minValue = distances[minIndex];
 
         if (minValue < (1.00 - eps)*optValue)
             optValue = distances[num = minIndex];
 
         if (num == -1)
             break;
-        labelings[num].copyTo(x_i);
+
+        for (size_t i = 0; i < labelSeq.size(); ++i)
+            labelSeq[i] = labelings[i][num];
     }
 }
 
-template <typename Tp> void Photomontage <Tp>::
-assignLabeling(cv::Mat &img)
-{
-    x_i.setTo(0);
-    gradientDescent();
-    x_i.copyTo(img);
-}
-
-template <typename Tp> void Photomontage <Tp>::
-assignResImage(cv::Mat &img)
-{
-    cv::Mat optimalLabeling;
-    assignLabeling(optimalLabeling);
-
-    img.create( height, width, type );
-
-    for (int i = 0; i < height; ++i)
-        for (int j = 0; j < width; ++j)
-        {
-            cv::Mat M = images[optimalLabeling.template at<int>(i, j)];
-            img.template at<Tp>(i, j) = M.template at<Tp>(i, j);
-        }
-}
-
 template <typename Tp> Photomontage <Tp>::
-Photomontage(const std::vector <cv::Mat> &_images, const std::vector <cv::Mat> &_masks)
+Photomontage( const std::vector <std::vector <Tp> > &_pointSeq,
+            const std::vector <std::vector <uchar> > &_maskSeq,
+              const std::vector <std::vector <int> > &_linkIdx,
+                              std::vector <labelTp> &_labelSeq )
   :
-    images(_images), masks(_masks), labelings(images.size()), distances(images.size()),
-    height(int(images[0].rows)), width(int(images[0].cols)), type(images[0].type()),
-    channels(images[0].channels()), lsize(int(images.size())), x_i(height, width, CV_32SC1){}
+    pointSeq(_pointSeq), maskSeq(_maskSeq), linkIdx(_linkIdx),
+    distances(pointSeq[0].size()), labelSeq(_labelSeq), parallelExpansion(this)
+{
+    size_t lsize = pointSeq[0].size();
+    labelings.assign( pointSeq.size(),
+      std::vector <labelTp>( lsize ) );
+}
 
+}
+
+template <typename Tp> static inline
+void photomontage( const std::vector <std::vector <Tp> > &pointSeq,
+                 const std::vector <std::vector <uchar> > &maskSeq,
+                   const std::vector <std::vector <int> > &linkIdx,
+                   std::vector <gcoptimization::labelTp> &labelSeq )
+{
+    gcoptimization::Photomontage <Tp>(pointSeq, maskSeq,
+        linkIdx, labelSeq).gradientDescent();
+}
 
 #endif /* __PHOTOMONTAGE_HPP__ */
