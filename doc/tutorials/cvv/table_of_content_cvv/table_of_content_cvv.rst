@@ -5,7 +5,7 @@
 
 Here you will learn how to use the cvv module to ease programming computer vision software through visual debugging aids.
 
-.. include:: ../../definitions/tocDefinitions.rst
+ .. include:: ../../definitions/tocDefinitions.rst
 
 +
   .. tabularcolumns:: m{100pt} m{300pt}
@@ -27,9 +27,9 @@ Here you will learn how to use the cvv module to ease programming computer visio
                   :width:  90pt
 
 
-.. raw:: latex
+ .. raw:: latex
 
-   \pagebreak
+    \pagebreak
 
 .. toctree::
    :hidden:
