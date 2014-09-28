@@ -1,0 +1,293 @@
+// Protocol buffer to describe a conv net.
+// To compile:
+// protoc -I=./ --cpp_out=$DST_DIR $SRC_DIR/convnet_config.proto
+
+package config;
+
+message Layer {
+  required string name = 1;
+  optional int32 num_channels = 2;
+  optional int32 size = 3 [default = -1]; 
+  optional float dropprob = 4 [default=0];
+  optional bool is_input = 5 [default=false]; // DEPRECATED
+  enum Activation {
+    LINEAR = 0;
+    LOGISTIC = 1;
+    RECTIFIED_LINEAR = 2;
+    SOFTMAX = 3;
+    SOFTMAX_DIST = 4;  // not one-of-K, but a distribution over K.
+    HINGE_LINEAR = 5;
+    HINGE_QUADRATIC = 6;
+  }
+  optional Activation activation = 6 [default=LINEAR];
+  optional bool is_spatial_output = 7 [default=false];
+  optional bool is_classifier_output = 8 [default=false];
+  optional bool display = 9 [default=false];
+  optional bool is_output = 10 [default=false];  // DEPRECATED
+  optional bool gaussian_dropout = 11 [default=false];
+  optional float max_act_gaussian_dropout = 12 [default = -1];
+  optional int32 gpu_id = 13 [default = 0];
+  optional float hinge_margin = 14 [default=0];
+}
+
+message Optimizer {
+  enum OptimizerType {
+    STOCHASTIC_GRADIENT_DESCENT = 0;
+    LBFGS = 1;
+  }
+  optional OptimizerType optimizer_type = 1 [default = STOCHASTIC_GRADIENT_DESCENT];
+  optional float epsilon = 2 [default = 0.0];
+  optional int32 epsilon_decay_timescale = 3 [default = 0];
+  optional float initial_momentum = 4 [default = 0.0];
+  optional float final_momentum = 5 [default = 0.0];
+  optional int32 momentum_transition_timescale = 6 [default = 0];
+  optional float l2_decay = 7 [default = 0.0];
+  optional float weight_norm_limit = 8 [default=0];
+  optional float weight_norm_constraint = 9 [default=0];
+  
+  enum Decay {
+    NONE = 0;
+    INVERSE_T = 1;
+    EXPONENTIAL = 2;
+    LINEAR = 3;
+  }
+  optional Decay epsilon_decay = 10 [default = NONE]; 
+  optional float minimum_epsilon = 11 [default=0];
+
+  // Clip gradients. Default : -1 (Don't clip).
+  optional float gradient_clip = 12 [default = -1];
+
+  // Number of steps to remember.
+  optional int32 lbfgs_memory = 13 [default=0];
+
+  optional int32 start_optimization_after = 14 [default=0];
+}
+
+message Edge {
+
+  // Names of the source and destination layers.
+  required string source = 1;
+  required string dest = 2;
+
+  enum EdgeType {
+    FC = 0;  // Fully Connected.
+    CONVOLUTIONAL = 1;  // Convolutional.
+    LOCAL = 2;  // Locally connected.
+    MAXPOOL = 3;  // Maxpool.
+    RESPONSE_NORM = 4;  // Cross-Map response normalization.
+    UPSAMPLE = 5;
+    DOWNSAMPLE = 6;
+    RGBTOYUV = 7;
+    AVERAGE_POOL = 8;
+    CONV_ONETOONE = 9;
+  }
+  optional EdgeType edge_type = 3 [default=FC];
+
+  // Hyperparameters for convolution-like edges.
+  optional int32 kernel_size = 4 [default=-1];
+  optional int32 stride = 5 [default=1];
+  optional int32 padding = 6 [default=0];
+
+  // Weight initialization. 
+  enum Initialization {
+    DENSE_GAUSSIAN = 0;
+    SPARSE_GAUSSIAN = 1;
+    CONSTANT = 2;
+    DENSE_GAUSSIAN_SQRT_FAN_IN = 3;
+    PRETRAINED = 4;
+    DENSE_UNIFORM = 5;
+    DENSE_UNIFORM_SQRT_FAN_IN = 6;
+  }
+  optional Initialization initialization = 7 [default=DENSE_GAUSSIAN_SQRT_FAN_IN];
+
+  // Initial weight scale.
+  // This will be divided by sqrt fan-in, depending on initialization.
+  optional float init_wt = 8 [default = 1.0];
+
+  // Initial biases (constant).
+  optional float init_bias = 9 [default = 0.0];
+
+  optional Optimizer weight_optimizer = 10;
+  optional Optimizer bias_optimizer = 11;
+
+  // Whether biases whould be tied for convolutional layers.
+  optional bool shared_bias = 12 [default = false];
+
+  // Block backprop through this edge.
+  optional bool block_backprop = 13 [default=false];
+  
+  // name of the edge to which this edge is tied. Name is specified as "source:dest".
+  optional string tied_to = 14;
+
+  // Make the edge have no bias - This is useful when multiple edges feed into
+  // one layer and only one of them needs to have a bias.
+  optional bool has_no_bias = 15 [default=false];
+
+  // Scale the gradients from this edge by this amount before computing updates.
+  // Useful when the edge is tied and we want the contributions from different
+  // sources to be scaled.
+  optional float scale_gradients = 16 [default = 1.0];
+
+  // Used for convolutional layers. Makes outer product faster by doing partial
+  // sums and then adding up. Default = 0 means add up over all locations in the
+  // kernel (slowest, uses less memory). Must exactly divide number of convolution
+  // locations.
+  optional int32 partial_sum = 17 [default=0];
+
+  // Factor to up/down sample.
+  optional int32 sample_factor = 18 [default=1];
+
+  // Hyperparameters for RESPONSE_NORM layer.
+  optional bool response_norm_in_blocks = 19 [default=false];
+  optional float add_scale = 20 [default = 0];
+  optional float pow_scale = 21 [default = 0];
+  optional float frac_of_filters_response_norm = 22 [default=0];
+
+  // Polyak averaging.
+  optional int32 polyak_queue_size = 23 [default = 0];
+
+  optional int32 gpu_id = 24 [default = 0];
+
+  optional string pretrained_model = 25;
+  optional string pretrained_edge_name = 26;
+  
+  optional bool display = 27 [default=false];
+}
+
+message Subnet {
+  required string name = 1;
+  required string model_file = 2;
+  optional string parameters_file = 3;
+  message MergeLayer {
+    required string subnet_layer = 1;
+    required string net_layer = 2;
+  }
+  repeated MergeLayer merge_layer = 4;
+  optional bool block_backprop = 5 [default=false];
+  optional int32 start_optimization_after = 6 [default=0];
+  optional int32 gpu_id_offset = 7 [default=0];
+  optional int32 num_channels_multiplier = 8 [default=1];
+  repeated string remove_layer = 9;
+}
+
+message Model {
+  required string name = 1;
+  repeated Layer layer = 2;
+  repeated Edge edge = 3;
+  required int32 seed = 4;
+  optional int32 max_iter = 5 [default = -1];
+  optional int32 display_after = 6 [default = -1];
+  optional int32 save_after = 7 [default = -1];
+  optional int32 image_size = 8 [default = 0];
+  optional int32 patch_size = 9 [default = 0];
+  optional int32 print_after = 10 [default = -1];
+
+
+  optional bool localizer = 11 [default = false];
+
+  optional string checkpoint_dir = 12;
+  optional bool print_weights = 13 [default=false];
+  repeated string timestamp = 15;
+  optional bool display = 17 [default=false];
+  optional int32 validate_after = 18 [default = -1];
+  
+  // For reducing learning rates.
+  optional float reduce_lr_factor = 19 [default=1.0];
+  optional float reduce_lr_threshold = 20 [default = 0];
+  optional int32 reduce_lr_num_steps = 21 [default = 0];
+  optional int32 reduce_lr_max = 22 [default = 0];
+  optional bool smaller_is_better = 23 [default=false];
+
+  // Polyak averaging.
+  optional int32 polyak_after = 24 [default=0];
+  optional int32 polyak_queue_size = 25 [default = 0];
+
+  // Include other networks.
+  repeated Subnet subnet = 26;
+
+}
+message DataStreamConfig {
+  required string file_pattern = 1;
+  required string layer_name = 2;
+  
+  // Name of the dataset within in a data collection. For example, within an
+  // hdf5 file.
+  optional string dataset_name = 3;
+  
+  enum DataType {
+    DUMMY = 0;
+    HDF5 = 1;
+    IMAGE_RAW = 2;
+    SLIDING_WINDOW = 3;
+    TXT = 4;
+    BOUNDING_BOX = 5;
+    CROPS = 6;
+  }
+  optional DataType data_type = 4 [default=HDF5];
+
+  // Options applicable to image data -
+  // Resize the original image so that the shorter side is raw_image_size,
+  // then take an image_size patch.
+  optional int32 raw_image_size = 5 [default=0];
+  optional int32 image_size = 6;   // resize to this.
+  optional bool can_translate = 7 [default=false];
+  optional bool can_flip = 8 [default=false];
+  optional bool pixelwise_normalize = 9 [default=false];
+  optional float pca_noise_stddev = 10 [default=0];
+
+  // Normalize the data by subtracting mean and dividing by stddev.
+  optional bool normalize = 11;
+
+  // The GPU on which this data needs to be loaded.
+  optional int32 gpu_id = 12 [default = 0];
+
+  // For sliding windows.
+  optional int32 stride = 13 [default=1];
+
+  // Mean, stddev, eig values etc.
+  optional string mean_file = 14;
+  
+  optional int32 num_colors = 15 [default=3];
+
+  // Enable parallel disk access. Use multiple threads to access the disk.
+  // Makes sense for reading raw image files.
+  optional bool parallel_disk_access = 16 [default=false];
+
+  optional bool random_rotate_raw_image = 17 [default=false];
+  optional float random_rotate_max_angle = 18 [default=0];
+  optional float min_scale = 19 [default=0];
+
+  // This layer needs the noise added to 'noise_layer_name'.
+  // Used for communicating jitter noise to bounding box outputs.
+  optional string noise_layer_name = 20;
+
+  optional bool avg10_full_image = 21;  // Applicable to IMAGE_RAW.
+  optional string bbox_file = 22;  // Applicable to IMAGE_RAW.
+  optional float context_factor = 23 [default=1.0];  // Applicable to IMAGE_RAW.
+  optional bool center_on_bbox = 24 [default=false];  // Applicable to IMAGE_RAW.
+  optional bool warp_bbox = 25 [default=false];
+}
+
+message DatasetConfig {
+  repeated DataStreamConfig data_config = 1;
+  optional int32 batch_size = 2 [default=1]; 
+  optional int32 chunk_size = 3 [default=0];
+  optional int32 max_reuse_count = 4 [default = 0];
+  optional bool pipeline_loads = 5 [default = false];
+  optional bool randomize_cpu = 6 [default=false];
+  optional bool randomize_gpu = 7 [default=false];
+  optional int32 random_access_chunk_size = 8 [default=1]; 
+  optional int32 max_dataset_size = 9 [default = 0];
+  optional int32 multiplicity = 10 [default=1];
+}
+
+message FeatureStreamConfig {
+  required string layer = 1;
+  optional int32 average_batches = 2 [default=1];
+  optional int32 average_online = 3 [default=1];
+}
+message FeatureExtractorConfig {
+  required string output_file = 1;
+  repeated FeatureStreamConfig feature = 2;
+  required DatasetConfig input = 3;
+}
