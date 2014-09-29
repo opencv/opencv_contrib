@@ -1,7 +1,12 @@
-@startuml
-package "TrackerSampler package" #DDDDDD {
+TrackerSampler diagram
+======================
 
-class TrackerSampler{
+.. uml::
+
+  ..@startuml
+  package "TrackerSampler package" #DDDDDD {
+
+  class TrackerSampler{
     -vector<pair<String, Ptr<TrackerSamplerAlgorithm> > > samplers
     -vector<Mat> samples;
     ...
@@ -14,31 +19,27 @@ class TrackerSampler{
     +bool addTrackerSamplerAlgorithm(Ptr<TrackerSamplerAlgorithm>& sampler);
     ---
     -void clearSamples();
-}
+  }
 
-class TrackerSamplerAlgorithm{
+  class TrackerSamplerAlgorithm{
     ~TrackerSamplerAlgorithm();
     +static Ptr<TrackerSamplerAlgorithm> create(const String& trackerSamplerType);
     +bool sampling(const Mat& image, Rect boundingBox, vector<Mat>& sample);
-}
-note bottom: A tracker could sample the target\nor it could sample the target and the background
+  }
+  note bottom: A tracker could sample the target\nor it could sample the target and the background
 
 
-class TrackerSamplerCS{
+  class TrackerSamplerCS{
     TrackerSamplerCS();
     ~TrackerSamplerCS();
     +bool sampling(const Mat& image, Rect boundingBox, vector<Mat>& sample);
-}
-class TrackerSamplerCSC{
+  }
+  class TrackerSamplerCSC{
     TrackerSamplerCSC();
     ~TrackerSamplerCSC();
     +bool sampling(const Mat& image, Rect boundingBox, vector<Mat>& sample);
-}
+  }
 
 
-
-TrackerSampler *-- TrackerSamplerAlgorithm
-TrackerSamplerAlgorithm <|-- TrackerSamplerCS
-TrackerSamplerAlgorithm <|-- TrackerSamplerCSC
-}
-@enduml
+  }
+  ..@enduml

@@ -1,12 +1,17 @@
-@startuml
-package "TrackerModel package" #DDDDDD {
+TrackerModel diagram
+====================
 
-class Typedef << (T,#FF7700) >>{
+.. uml::
+
+  ..@startuml
+  package "TrackerModel package" #DDDDDD {
+
+  class Typedef << (T,#FF7700) >>{
     ConfidenceMap
     Trajectory
-}
+  }
 
-class TrackerModel{
+  class TrackerModel{
     -vector<ConfidenceMap> confidenceMaps;
     -Trajectory trajectory;
     -Ptr<TrackerStateEstimator> stateEstimator;
@@ -24,39 +29,39 @@ class TrackerModel{
 
     +const vector<ConfidenceMap>& getConfidenceMaps();
     +const ConfidenceMap& getLastConfidenceMap();
-}
-class TrackerTargetState <<virtual>>{
+  }
+  class TrackerTargetState <<virtual>>{
     Point2f targetPosition;
     ---
     Point2f getTargetPosition();
     void setTargetPosition(Point2f position);
-}
-class TrackerTargetState
-note bottom: Each TrackerStateEstimator can create own state
+  }
+  class TrackerTargetState
+  note bottom: Each tracker can create own state
 
-class TrackerStateEstimator <<virtual>>{
+  class TrackerStateEstimator <<virtual>>{
     ~TrackerStateEstimator();
     static Ptr<TrackerStateEstimator> create(const String& trackeStateEstimatorType);
     Ptr<TrackerTargetState> estimate(const vector<ConfidenceMap>& confidenceMaps)
     void update(vector<ConfidenceMap>& confidenceMaps)
-}
+  }
 
-class TrackerStateEstimatorSVM{
+  class TrackerStateEstimatorSVM{
     TrackerStateEstimatorSVM()
     ~TrackerStateEstimatorSVM()
     Ptr<TrackerTargetState> estimate(const vector<ConfidenceMap>& confidenceMaps)
     void update(vector<ConfidenceMap>& confidenceMaps)
-}
-class TrackerStateEstimatorMILBoosting{
+  }
+  class TrackerStateEstimatorMILBoosting{
     TrackerStateEstimatorMILBoosting()
     ~TrackerStateEstimatorMILBoosting()
     Ptr<TrackerTargetState> estimate(const vector<ConfidenceMap>& confidenceMaps)
     void update(vector<ConfidenceMap>& confidenceMaps)
-}
+  }
 
-TrackerModel -> TrackerStateEstimator: create
-TrackerModel *-- TrackerTargetState
-TrackerStateEstimator <|-- TrackerStateEstimatorMILBoosting
-TrackerStateEstimator <|-- TrackerStateEstimatorSVM
-}
-@enduml
+  TrackerModel -> TrackerStateEstimator: create
+  TrackerModel *-- TrackerTargetState
+  TrackerStateEstimator <|-- TrackerStateEstimatorMILBoosting
+  TrackerStateEstimator <|-- TrackerStateEstimatorSVM
+  }
+  ..@enduml

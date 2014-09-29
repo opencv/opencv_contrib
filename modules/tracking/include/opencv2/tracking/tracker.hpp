@@ -59,7 +59,7 @@
  * 	- [AAM] S. Salti, A. Cavallaro, L. Di Stefano, Adaptive Appearance Modeling for Video Tracking: Survey and Evaluation
  *  - [AMVOT] X. Li, W. Hu, C. Shen, Z. Zhang, A. Dick, A. van den Hengel, A Survey of Appearance Models in Visual Object Tracking
  *
- * This Tracking API has been designed with PlantUML. If you modify this API please change UML files under modules/tracking/misc/
+ * This Tracking API has been designed with PlantUML. If you modify this API please change UML files under modules/tracking/doc/uml
  *
  */
 
