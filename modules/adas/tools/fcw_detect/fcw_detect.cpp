@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     string out_image_path = parser.get<string>("out_image_path");
     bool is_grayscale = parser.get<bool>("is_grayscale");
     float threshold = parser.get<float>("threshold");
-    int step = parser.get<float>("step");
+    int step = parser.get<int>("step");
     
     int min_rows, min_cols, max_rows, max_cols;
     string min_window_size = parser.get<string>("min_window_size");

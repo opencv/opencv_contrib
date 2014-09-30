@@ -256,8 +256,7 @@ void ICFDetector::detect(const Mat& img, vector<Rect>& objects,
 
     if(factorStep <= 0)
     {
-      CV_Error(CV_StsBadArg, "factorStep must be > 0");
-      CV_Assert(false);
+      CV_Error_(CV_StsBadArg, ("factorStep must be > 0"));
     }
     
     objects.clear();

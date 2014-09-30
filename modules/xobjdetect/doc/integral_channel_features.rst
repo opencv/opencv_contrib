@@ -199,7 +199,7 @@ Detect objects on image.
 
 .. ocv:function:: void ICFDetector::detect(const Mat& image, vector<Rect>& objects, float scaleFactor, Size minSize, Size maxSize, float threshold, int slidingStep, std::vector<float>& values)
 
-.. ocv:function:: detect(const Mat& img, std::vector<Rect>& objects, float minScaleFactor, float maxScaleFactor, float factorStep, float threshold, int slidingStep, std::vector<float>& values);
+.. ocv:function:: detect(const Mat& img, std::vector<Rect>& objects, float minScaleFactor, float maxScaleFactor, float factorStep, float threshold, int slidingStep, std::vector<float>& values)
 
     :param image: image for detection
     :param objects: output array of bounding boxes

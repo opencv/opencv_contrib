@@ -166,7 +166,7 @@ struct CV_EXPORTS ICFDetectorParams
     bool use_fast_log;
 
     ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
-        model_n_rows(56), model_n_cols(56), bg_per_image(5), alpha(0.02), is_grayscale(false), use_fast_log(false)
+        model_n_rows(56), model_n_cols(56), bg_per_image(5), alpha(0.02f), is_grayscale(false), use_fast_log(false)
     {}
 };
 

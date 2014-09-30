@@ -26,11 +26,13 @@ using cv::imread;
 #include <opencv2/core/utility.hpp>
 using cv::CommandLineParser;
 using cv::FileStorage;
+#include <opencv2/core/utility.hpp>
 
 #include <ctime>        // std::time
 #include <cstdlib>      // std::rand, std::srand
 
 #include <opencv2/xobjdetect.hpp>
+
 
 using cv::xobjdetect::ICFDetectorParams;
 using cv::xobjdetect::ICFDetector;
@@ -160,16 +162,12 @@ int main(int argc, char *argv[])
     
     if((int)((params.bg_per_image * bg_filenames.size()) + pos_filenames.size()) >max_samples_allowed)
     {
-      std::cout<<std::endl<<"ERROR: exceeded maximum number of samples "<<std::endl<<std::endl;
-      std::cout<<"exceeded maximum number of samples (pos + neg) with "<<features_size<<" features is: "<<max_samples_allowed<<std::endl<<std::endl;
-      CV_Assert(false);
+      CV_Error_(1, ("exceeded maximum number of samples. Maximum number of samples with %d features is %d\n",features_size,max_samples_allowed ));
     }
     
     if(params.feature_count >max_features_allowed)
     {
-      std::cout<<std::endl<<"ERROR: exceeded maximum number of features"<<std::endl<<std::endl;
-      std::cout<<"maximum number of features with "<<samples_size<<" samples is: "<<max_features_allowed<<std::endl<<std::endl;
-      CV_Assert(false);
+      CV_Error_(1, ("exceeded maximum number of features. Maximum number of features with %d samples is %d\n",samples_size,max_features_allowed ));
     }
     
     std::cout<<pos_filenames.size()<<std::endl;
