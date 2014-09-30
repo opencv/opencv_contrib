@@ -33,10 +33,12 @@ public:
             {-1, +1}
 
         weights — matrix of sample weights, size 1 x N
+         
+        visited_features: vector of already visited features (ignored in successive calls)
 
     Returns chosen feature index. Feature enumeration starts from 0
     */
-    int train(const Mat& data, const Mat& labels, const Mat& weights);
+    int train(const Mat& data, const Mat& labels, const Mat& weights, const std::vector<int>& visited_features, bool use_fast_log = false);
 
     /* Predict object class given
 

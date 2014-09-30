@@ -50,10 +50,93 @@ using std::cout;
 using std::endl;
 
 
+
+
+
+
 namespace cv
 {
+
 namespace xobjdetect
 {
+  //sort in-place of columns of the input matrix
+  void sort_columns_without_copy(Mat& m, Mat indices)
+  {
+    
+    if(indices.data == 0)
+      sortIdx(m, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
+    
+    Mat indices_of_indices;
+    sortIdx(indices, indices_of_indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
+      
+    std::vector<bool> visited;
+    for(int c = 0; c<m.cols; c++)
+      visited.push_back(false);
+      
+    int ind_v = 0;
+    Mat temp_column = Mat();
+    int next = 0;
+    Mat column;
+    while(ind_v < m.cols)
+    {
+
+      if(temp_column.data == 0)
+      {
+        (m.col(indices_of_indices.at<int>(0,ind_v))).copyTo(column);
+      }
+      else
+      {
+        temp_column.copyTo(column);
+      }
+      
+      
+      if(indices_of_indices.at<int>(0,next) != next) //value is in the right place
+      {
+        //store the next value to change
+        (m.col(indices_of_indices.at<int>(0,next))).copyTo(temp_column);
+        //insert the value to change at the right place
+        column.copyTo(m.col(indices_of_indices.at<int>(0,next)));
+        
+        //find the index of the next value to change
+        next = indices_of_indices.at<int>(0,next);
+        //if the idenx is not visited yet
+        if(visited[next] == false)
+        {
+          //then mark it as visited, it will be computed in the next round
+          visited[next] = true;
+        }
+        else
+        {
+          //find first non visited index
+          int i = 0;
+          while(visited[i] == true && i<(int)visited.size())
+          {
+            i++;
+          }
+          ind_v = i;
+          next = i;
+          temp_column = Mat();
+          
+        }
+      }
+      else // value is already at the right place
+      {
+        visited[next] = true;
+        int i = 0;
+        while(visited[i] == true && i<(int)visited.size())
+        {
+          i++;
+        }
+        next = i;
+        temp_column = Mat();
+        ind_v = i;
+      }
+      
+      
+    }
+    
+    
+  }
 
 class WaldBoostImpl : public WaldBoost
 {
@@ -63,8 +146,8 @@ public:
         params_(params)
     {}
 
-    virtual std::vector<int> train(const Mat& data,
-                                   const Mat& labels);
+    virtual std::vector<int> train(Mat& data,
+                                   const Mat& labels, bool use_fast_log=false);
 
     virtual float predict(
         const Ptr<FeatureEvaluator>& feature_evaluator) const;
@@ -138,13 +221,12 @@ void WaldBoostImpl::write(FileStorage& fs) const
 
 }
 
-vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
+vector<int> WaldBoostImpl::train(Mat& data, const Mat& labels_, bool use_fast_log)
 {
-    CV_Assert(labels_.rows == 1 && labels_.cols == data_.cols);
-    CV_Assert(data_.rows >= params_.weak_count);
+    CV_Assert(labels_.rows == 1 && labels_.cols == data.cols);    
+    CV_Assert(data.rows >= params_.weak_count);
 
-    Mat labels, data;
-    data_.copyTo(data);
+    Mat labels;
     labels_.copyTo(labels);
 
     bool null_data = true;
@@ -175,18 +257,18 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
         feature_indices_pool.push_back(ind);
 
     vector<int> feature_indices;
+    vector<int> visited_features;
     Mat_<float> trace = Mat_<float>::zeros(labels.rows, labels.cols);
     stumps_.clear();
     thresholds_.clear();
     for( int i = 0; i < params_.weak_count; ++i)
-    {
-        cout << "stage " << i << endl;
+    {        
         Stump s;
-        int feature_ind = s.train(data, labels, weights);
-        cout << "feature_ind " << feature_ind << endl;
+        int feature_ind = s.train(data, labels, weights, visited_features, use_fast_log);
         stumps_.push_back(s);
         int ind = feature_indices_pool[feature_ind];
-        feature_indices_pool.erase(feature_indices_pool.begin() + feature_ind);
+        //we don't need to erase the feature index anymore, because we ignore them if already visited
+        //feature_indices_pool.erase(feature_indices_pool.begin() + feature_ind);
         feature_indices.push_back(ind);
 
         // Recompute weights
@@ -198,12 +280,13 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
             weights.at<float>(0, col) *= exp(-label * h);
         }
 
-        // Erase row for feature in data
-        Mat fixed_data;
-        fixed_data.push_back(data.rowRange(0, feature_ind));
-        fixed_data.push_back(data.rowRange(feature_ind + 1, data.rows));
+        // set to zero row for feature in data
+        for(int jc = 0; jc<data.cols; jc++)
+        {
+          data.at<int>(feature_ind, jc) = 0;
+        }
+        visited_features.push_back(feature_ind);
 
-        data = fixed_data;
 
 
         // Normalize weights
@@ -218,7 +301,6 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
         sortIdx(trace, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
         Mat new_weights = Mat_<float>::zeros(weights.rows, weights.cols);
         Mat new_labels = Mat_<int>::zeros(labels.rows, labels.cols);
-        Mat new_data = Mat_<int>::zeros(data.rows, data.cols);
         Mat new_trace;
         for( int col = 0; col < new_weights.cols; ++col )
         {
@@ -226,14 +308,11 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
                 weights.at<float>(0, indices.at<int>(0, col));
             new_labels.at<int>(0, col) =
                 labels.at<int>(0, indices.at<int>(0, col));
-            for( int row = 0; row < new_data.rows; ++row )
-            {
-                new_data.at<int>(row, col) =
-                    data.at<int>(row, indices.at<int>(0, col));
-            }
         }
+        
+        //sort in-place to save memory
+        sort_columns_without_copy(data, indices);
         sort(trace, new_trace, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
-
 
         // Compute threshold for trace
         /*
@@ -262,19 +341,16 @@ vector<int> WaldBoostImpl::train(const Mat& data_, const Mat& labels_)
         }
 
         thresholds_.push_back(new_trace.at<float>(0, max_col));
-        cout << "threshold " << *(thresholds_.end() - 1) << endl;
-
-        cout << "col " << max_col << " size " << data.cols << endl;
 
         // Drop samples below threshold
-        new_data.colRange(max_col, new_data.cols).copyTo(data);
+        //uses Rois instead of copyTo to save memory
+        data = data(Rect(max_col, 0, data.cols - max_col, data.rows));
         new_trace.colRange(max_col, new_trace.cols).copyTo(trace);
         new_weights.colRange(max_col, new_weights.cols).copyTo(weights);
         new_labels.colRange(max_col, new_labels.cols).copyTo(labels);
 
         pos_count = count(labels, +1);
         neg_count = count(labels, -1);
-        cout << "pos_count " << pos_count << "; neg_count " << neg_count << endl;
 
         if( data.cols < 2 || neg_count == 0)
         {
@@ -293,6 +369,7 @@ float WaldBoostImpl::predict(
     {
         int value = feature_evaluator->evaluate(i);
         trace += stumps_[i].predict(value);
+        
         if( trace < thresholds_[i] )
             return -1;
     }

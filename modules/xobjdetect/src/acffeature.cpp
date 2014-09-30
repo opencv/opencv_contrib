@@ -120,18 +120,14 @@ void ICFFeatureEvaluatorImpl::setChannels(InputArrayOfArrays channels)
     channels_.clear();
     vector<Mat> ch;
     channels.getMatVector(ch);
-    CV_Assert(ch.size() == 10);
 
     for( size_t i = 0; i < ch.size(); ++i )
     {
         const Mat &channel = ch[i];
         Mat integral_channel;
         integral(channel, integral_channel, CV_32F);
-        Mat_<int> chan(integral_channel.rows, integral_channel.cols);
-        for( int row = 0; row < integral_channel.rows; ++row )
-            for( int col = 0; col < integral_channel.cols; ++col )
-                chan(row, col) = (int)integral_channel.at<float>(row, col);
-        channels_.push_back(chan.clone());
+        integral_channel.convertTo(integral_channel, CV_32S);
+        channels_.push_back(integral_channel.clone());
     }
 }
 
@@ -140,11 +136,13 @@ void ICFFeatureEvaluatorImpl::setPosition(Size position)
     position_ = position;
 }
 
+
 int ICFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
 {
-    CV_Assert(channels_.size() == 10);
-    CV_Assert(feature_ind < features_.size());
-
+    /*
+    
+    //following return is equal to this commented code, left here for readability. The new code runs much faster.
+    * 
     const vector<int>& feature = features_[feature_ind];
     int x = feature[0] + position_.height;
     int y = feature[1] + position_.width;
@@ -153,6 +151,14 @@ int ICFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
     int n = feature[4];
     const Mat_<int>& ch = channels_[n];
     return ch(y_to + 1, x_to + 1) - ch(y, x_to + 1) - ch(y_to + 1, x) + ch(y, x);
+    */
+  
+    CV_Assert(feature_ind < features_.size());
+
+    return *(channels_[features_[feature_ind][4]].ptr<int>()+((channels_[features_[feature_ind][4]].cols*(features_[feature_ind][3] + position_.width+1))+ features_[feature_ind][2] + position_.height + 1)) - 
+            *(channels_[features_[feature_ind][4]].ptr<int>()+((channels_[features_[feature_ind][4]].cols*(features_[feature_ind][1] + position_.width))+ features_[feature_ind][2] + position_.height + 1)) -
+            *(channels_[features_[feature_ind][4]].ptr<int>()+((channels_[features_[feature_ind][4]].cols*(features_[feature_ind][3] + position_.width+1))+ features_[feature_ind][0] + position_.height)) +
+            *(channels_[features_[feature_ind][4]].ptr<int>()+((channels_[features_[feature_ind][4]].cols*(features_[feature_ind][1] + position_.width))+ features_[feature_ind][0] + position_.height));
 }
 
 class ACFFeatureEvaluatorImpl : public FeatureEvaluatorImpl
@@ -173,7 +179,6 @@ void ACFFeatureEvaluatorImpl::setChannels(InputArrayOfArrays channels)
     channels_.clear();
     vector<Mat> ch;
     channels.getMatVector(ch);
-    CV_Assert(ch.size() == 10);
 
     for( size_t i = 0; i < ch.size(); ++i )
     {
@@ -203,7 +208,6 @@ void ACFFeatureEvaluatorImpl::setPosition(Size position)
 
 int ACFFeatureEvaluatorImpl::evaluate(size_t feature_ind) const
 {
-    CV_Assert(channels_.size() == 10);
     CV_Assert(feature_ind < features_.size());
 
     const vector<int>& feature = features_[feature_ind];
@@ -271,13 +275,23 @@ vector<vector<int> > generateFeatures(Size window_size, const std::string& type,
 
 void computeChannels(InputArray image, vector<Mat>& channels)
 {
-    Mat src(image.getMat().rows, image.getMat().cols, CV_32FC3);
-    image.getMat().convertTo(src, CV_32FC3, 1./255);
-
     Mat_<float> grad;
-    Mat luv, gray;
-    cvtColor(src, gray, CV_RGB2GRAY);
-    cvtColor(src, luv, CV_RGB2Luv);
+    Mat luv, gray, src;
+    
+    if(image.getMat().channels() > 1)
+    {
+      src = Mat(image.getMat().rows, image.getMat().cols, CV_32FC3);
+      image.getMat().convertTo(src, CV_32FC3, 1./255);
+
+      cvtColor(src, gray, CV_RGB2GRAY);
+      cvtColor(src, luv, CV_RGB2Luv);
+    }
+    else
+    {
+      src = Mat(image.getMat().rows, image.getMat().cols, CV_32FC1);
+      image.getMat().convertTo(src, CV_32FC1, 1./255);
+      src.copyTo(gray);
+    }
 
     Mat_<float> row_der, col_der;
     Sobel(gray, row_der, CV_32F, 0, 1);
@@ -304,10 +318,13 @@ void computeChannels(InputArray image, vector<Mat>& channels)
 
     channels.clear();
 
-    Mat luv_channels[3];
-    split(luv, luv_channels);
-    for( int i = 0; i < 3; ++i )
-        channels.push_back(luv_channels[i]);
+    if(image.getMat().channels() > 1)
+    {
+      Mat luv_channels[3];
+      split(luv, luv_channels);
+      for( int i = 0; i < 3; ++i )
+          channels.push_back(luv_channels[i]);
+    }
 
     channels.push_back(grad);
 

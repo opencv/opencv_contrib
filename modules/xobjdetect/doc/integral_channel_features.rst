@@ -165,9 +165,14 @@ Params for ICFDetector training.
         int model_n_rows;
         int model_n_cols;
         int bg_per_image;
+        std::string features_type;
+        float alpha;
+        bool is_grayscale;
+        bool use_fast_log;
 
         ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
-            model_n_rows(56), model_n_cols(56), bg_per_image(5)
+            model_n_rows(56), model_n_cols(56), bg_per_image(5), 
+            alpha(0.02), is_grayscale(false), use_fast_log(false)
         {}
     };
 
@@ -181,7 +186,7 @@ ICFDetector::train
 
 Train detector.
 
-.. ocv:function:: void ICFDetector::train(const String& pos_path, const String& bg_path, ICFDetectorParams params = ICFDetectorParams())
+.. ocv:function:: void ICFDetector::train(const std::vector<String>& pos_filenames, const std::vector<String>& bg_filenames, ICFDetectorParams params = ICFDetectorParams())
 
     :param pos_path: path to folder with images of objects (wildcards like ``/my/path/*.png`` are allowed)
     :param bg_path: path to folder with background images
@@ -192,13 +197,20 @@ ICFDetector::detect
 
 Detect objects on image.
 
-.. ocv:function:: void ICFDetector::detect(const Mat& image, vector<Rect>& objects, float scaleFactor, Size minSize, Size maxSize, float threshold)
+.. ocv:function:: void ICFDetector::detect(const Mat& image, vector<Rect>& objects, float scaleFactor, Size minSize, Size maxSize, float threshold, int slidingStep, std::vector<float>& values)
+
+.. ocv:function:: detect(const Mat& img, std::vector<Rect>& objects, float minScaleFactor, float maxScaleFactor, float factorStep, float threshold, int slidingStep, std::vector<float>& values);
 
     :param image: image for detection
     :param objects: output array of bounding boxes
     :param scaleFactor: scale between layers in detection pyramid
     :param minSize: min size of objects in pixels
     :param maxSize: max size of objects in pixels
+    :param minScaleFactor: min factor by which the image will be resized
+    :param maxScaleFactor: max factor by which the image will be resized
+    :param factorStep: scaling factor is incremented each pyramid layer according to this parameter
+    :param slidingStep: sliding window step
+    :param values: output vector with values of positive samples 
 
 ICFDetector::write
 ------------------
