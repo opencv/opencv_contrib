@@ -109,7 +109,7 @@ namespace xobjdetect
         {
           //find first non visited index
           int i = 0;
-          while(visited[i] == true && i<(int)visited.size())
+          while(i<(int)visited.size() && visited[i] == true)
           {
             i++;
           }
@@ -123,7 +123,7 @@ namespace xobjdetect
       {
         visited[next] = true;
         int i = 0;
-        while(visited[i] == true && i<(int)visited.size())
+        while(i<(int)visited.size() && visited[i] == true)
         {
           i++;
         }
