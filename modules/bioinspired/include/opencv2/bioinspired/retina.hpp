@@ -301,12 +301,12 @@ public:
     */
     CV_WRAP virtual void activateContoursProcessing(const bool activate)=0;
 };
-CV_EXPORTS Ptr<Retina> createRetina(Size inputSize);
-CV_EXPORTS Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize);
+CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
 
 #ifdef HAVE_OPENCV_OCL
-CV_EXPORTS Ptr<Retina> createRetina_OCL(Size inputSize);
-CV_EXPORTS Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+Ptr<Retina> createRetina_OCL(Size inputSize);
+Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
 #endif
 }
 }
