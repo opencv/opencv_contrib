@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_antique, test)
 {
@@ -31,9 +34,9 @@ TEST(photoeffects_antique, invalid_image_format)
 
 TEST(photoeffects_antique, regression)
 {
-    string input = "./testdata/antique_test.png";
-    string texture = "./testdata/antique_texture_test.png";
-    string expectedOut = "./testdata/antique_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/antique_test.png";
+    string texture = cvtest::TS::ptr()->get_data_path() + "photoeffects/antique_texture_test.png";
+    string expectedOut = cvtest::TS::ptr()->get_data_path() + "photoeffects/antique_test_result.png";
     Mat src = imread(input, CV_LOAD_IMAGE_COLOR);
     if (src.empty())
     {

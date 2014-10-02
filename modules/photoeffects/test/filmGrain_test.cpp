@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_filmGrain, invalid_image_format)
 {
@@ -20,8 +23,8 @@ TEST(photoeffects_filmGrain, test) {
 
 TEST(photoeffects_filmGrain, regression)
 {
-    string input = "./testdata/filmGrain_test.png";
-    string expectedOutput = "./testdata/filmGrain_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/filmGrain_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/filmGrain_test_result.png";
 
     Mat image = imread(input, CV_LOAD_IMAGE_COLOR);
     Mat rightDst = imread(expectedOutput, CV_LOAD_IMAGE_COLOR);

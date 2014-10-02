@@ -15,7 +15,7 @@ int filmGrain(InputArray src, OutputArray dst, int grainValue, RNG& rng)
     Mat dstMat=dst.getMat();
     if(src.type()==CV_8UC3)
     {
-        cvtColor(noise, noise, CV_GRAY2RGB);
+        cvtColor(noise, noise, COLOR_GRAY2RGB);
     }
     dstMat=image+noise;
     return 0;

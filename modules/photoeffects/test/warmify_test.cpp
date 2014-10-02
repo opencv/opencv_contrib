@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_warmify, invalid_image_format)
 {
@@ -33,8 +36,8 @@ TEST(photoeffects_warmify, test)
 
 TEST(photoeffects_warmify, regression)
 {
-    string input = cvtest::TS::ptr()->get_data_path() + "testdata/warmify_test.png";
-    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "testdata/warmify_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/warmify_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/warmify_test_result.png";
 
     Mat image, dst, rightDst;
     image = imread(input, CV_LOAD_IMAGE_COLOR);

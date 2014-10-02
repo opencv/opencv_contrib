@@ -1,4 +1,5 @@
 #include "precomp.hpp"
+#include <opencv2/core/utility.hpp>
 
 namespace cv { namespace photoeffects {
 

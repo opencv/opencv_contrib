@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_boostColor, test)
 {
@@ -13,8 +16,8 @@ TEST(photoeffects_boostColor, test)
 
 TEST(photoeffects_boostColor, regression)
 {
-    string input = "./testdata/boostColor_test.png";
-    string expectedOutput = "./testdata/boostColor_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/boostColor_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/boostColor_test_result.png";
 
     Mat image = imread(input, CV_LOAD_IMAGE_COLOR);
     Mat rightDst = imread(expectedOutput, CV_LOAD_IMAGE_COLOR);

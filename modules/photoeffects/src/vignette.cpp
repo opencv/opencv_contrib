@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-class VignetteInvoker
+class VignetteInvoker: public cv::ParallelLoopBody
 {
 public:
     VignetteInvoker(const Mat& src, Mat& dst, Size rect):
@@ -16,15 +16,15 @@ public:
         radiusMax = centerRow * centerRow / aSquare + centerCol * centerCol / bSquare - 1.0f;
     }
 
-    void operator()(const BlockedRange& rows) const
+    void operator()(const Range& rows) const
     {
-        Mat srcStripe = imgSrc.rowRange(rows.begin(), rows.end());
-        Mat dstStripe = imgDst.rowRange(rows.begin(), rows.end());
+        Mat srcStripe = imgSrc.rowRange(rows.start, rows.end);
+        Mat dstStripe = imgDst.rowRange(rows.start, rows.end);
         srcStripe.copyTo(dstStripe);
 
-        for (int i = rows.begin(); i < rows.end(); i++)
+        for (int i = rows.start; i < rows.end; i++)
         {
-            uchar* dstRow = (uchar*)dstStripe.row(i - rows.begin()).data;
+            uchar* dstRow = (uchar*)dstStripe.row(i - rows.start).data;
             for (int j = 0; j < imgSrc.cols; j++)
             {
                 float dist = (i - centerRow) * (i - centerRow) / aSquare +
@@ -59,7 +59,7 @@ int vignette(InputArray src, OutputArray dst, Size rect)
     dst.create(imgSrc.size(), CV_8UC3);
     Mat imgDst = dst.getMat();
 
-    parallel_for(BlockedRange(0, imgSrc.rows), VignetteInvoker(imgSrc, imgDst, rect));
+    parallel_for_(Range(0, imgSrc.rows), VignetteInvoker(imgSrc, imgDst, rect));
 
     return 0;
 }

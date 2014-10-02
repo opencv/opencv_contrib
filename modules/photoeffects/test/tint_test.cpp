@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_tint, test) {
     Mat src(10, 10, CV_8UC3), dst;
@@ -26,8 +29,8 @@ TEST(photoeffects_tint, wrong_density)
 
 TEST(photoeffects_tint, regression)
 {
-    string input = "./testdata/tint_test.png";
-    string expectedOutput = "./testdata/tint_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/tint_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/tint_test_result.png";
 
     Mat src, dst, rightDst;
 

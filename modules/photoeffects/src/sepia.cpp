@@ -1,4 +1,7 @@
 #include "precomp.hpp"
+#include <vector>
+
+using namespace std;
 
 namespace cv { namespace photoeffects {
 
@@ -19,7 +22,7 @@ int sepia(InputArray src, OutputArray dst)
     sepiaPlanes[2] = img + value;
     merge(sepiaPlanes, hsvImg);
 
-    cvtColor(hsvImg, dst, CV_HSV2BGR);
+    cvtColor(hsvImg, dst, COLOR_HSV2BGR);
     return 0;
 }
 

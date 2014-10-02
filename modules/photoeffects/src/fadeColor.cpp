@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-class FadeColorInvoker
+class FadeColorInvoker: public cv::ParallelLoopBody
 {
 public:
     FadeColorInvoker(Mat& dst, int A,int B,int C,int mD)
@@ -10,11 +10,11 @@ public:
           A_(A),B_(B),C_(C),maxDistance(mD),
           cols_(dst.cols) {}
 
-    void operator()(const BlockedRange& rowsRange) const
+    void operator()(const Range& rowsRange) const
     {
-        Mat dstStripe = dst_.rowRange(rowsRange.begin(), rowsRange.end());
+        Mat dstStripe = dst_.rowRange(rowsRange.start, rowsRange.end);
         int rows = dstStripe.rows;
-        int rowNum=rowsRange.begin();
+        int rowNum = rowsRange.start;
         for (int i = 0; i < rows; i++)
         {
             uchar* dstRow = (uchar*)dstStripe.row(i).data;
@@ -96,7 +96,7 @@ int fadeColor(InputArray src, OutputArray dst,
     int maxDistance=abs(A*farthestPoint.y+B*farthestPoint.x+C);
     Mat dstMat;
     image.copyTo(dstMat);
-    parallel_for(BlockedRange(0, image.rows), FadeColorInvoker(dstMat, A,B,C,maxDistance));
+    parallel_for_(Range(0, image.rows), FadeColorInvoker(dstMat, A,B,C,maxDistance));
     dstMat.copyTo(dst);
     return 0;
 }

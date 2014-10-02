@@ -1,6 +1,9 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
 
 TEST(photoeffects_edgeBlur, test)
 {
@@ -30,8 +33,8 @@ TEST(photoeffects_edgeBlur, wrong_indent)
 
 TEST(photoeffects_edgeBlur, regression)
 {
-    string input = "./testdata/edgeBlur_test.png";
-    string expectedOutput = "./testdata/edgeBlur_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/edgeBlur_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/edgeBlur_test_result.png";
 
     Mat src, dst, rightDst;
 

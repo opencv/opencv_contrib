@@ -1,6 +1,12 @@
-#include "precomp.hpp"
+#include "test_precomp.hpp"
+#include <opencv2/imgproc.hpp>
 
 using namespace cv;
+using namespace cv::photoeffects;
+
+using namespace std;
+
+namespace cvtest {
 
 TEST(photoeffects_sepia, invalid_image_format)
 {
@@ -17,7 +23,7 @@ TEST(photoeffects_sepia, test)
     vector<Mat> channels(3);
 
     EXPECT_EQ(0, sepia(src, dst));
-    cvtColor(dst, hsvDst, CV_BGR2HSV);
+    cvtColor(dst, hsvDst, COLOR_BGR2HSV);
     split(hsvDst, channels);
     EXPECT_LE(19 - 1, channels[0].at<uchar>(0, 0)); // hue = 19
     EXPECT_GE(19 + 1, channels[0].at<uchar>(0, 0));
@@ -29,8 +35,8 @@ TEST(photoeffects_sepia, test)
 
 TEST(photoeffects_sepia, regression)
 {
-    string input = "./testdata/sepia_test.png";
-    string expectedOutput = "./testdata/sepia_test_result.png";
+    string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/sepia_test.png";
+    string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/sepia_test_result.png";
 
     Mat image, rightDst;
 
@@ -48,4 +54,6 @@ TEST(photoeffects_sepia, regression)
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;
     EXPECT_EQ(0, countNonZero(mask));
+}
+
 }
