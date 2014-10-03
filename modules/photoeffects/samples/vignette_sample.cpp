@@ -1,7 +1,10 @@
 #include <opencv2/photoeffects.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <iostream>
 
 using namespace cv;
+using namespace cv::photoeffects;
 using namespace std;
 
 const char *helper =

@@ -22,8 +22,8 @@ Example.
 
 |src| |dst|
 
-.. |src| image:: boost_color_before.jpg
+.. |src| image:: pics/boost_color_before.jpg
    :width: 40%
 
-.. |dst| image:: boost_color_after.jpg
+.. |dst| image:: pics/boost_color_after.jpg
    :width: 40%

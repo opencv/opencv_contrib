@@ -20,8 +20,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: film_grain_before.png
+.. |srcImage| image:: pics/film_grain_before.png
    :width: 40%
 
-.. |dstImage| image:: film_grain_after.png
+.. |dstImage| image:: pics/film_grain_after.png
    :width: 40%

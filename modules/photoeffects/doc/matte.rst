@@ -26,8 +26,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: matte_before.jpg
+.. |srcImage| image:: pics/matte_before.jpg
    :width: 40%
 
-.. |dstImage| image:: matte_after.jpg
+.. |dstImage| image:: pics/matte_after.jpg
    :width: 40%

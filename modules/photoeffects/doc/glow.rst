@@ -30,7 +30,7 @@ The algorithm.
 
     .. math::
 
-     C = intensity * A + (1 - intensity) * B
+        C = intensity * A + (1 - intensity) * B
 
    where :math:`A` is the pixel's tonal value that lies in the previous blended image, :math:`B` is the pixel's tonal value that lies in the source image, :math:`C` is the tonal value of the blended pixel.
 
@@ -40,8 +40,8 @@ Example.
 
 |src| |dst|
 
-.. |src| image:: glow_before.jpg
+.. |src| image:: pics/glow_before.jpg
    :width: 40%
 
-.. |dst| image:: glow_after.jpg
+.. |dst| image:: pics/glow_after.jpg
    :width: 40%

@@ -21,8 +21,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: antique_before.jpg
+.. |srcImage| image:: pics/antique_before.jpg
    :width: 40%
 
-.. |dstImage| image:: antique_after.jpg
+.. |dstImage| image:: pics/antique_after.jpg
    :width: 40%

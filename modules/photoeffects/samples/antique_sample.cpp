@@ -1,7 +1,10 @@
 #include <opencv2/photoeffects.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <iostream>
 
 using namespace cv;
+using namespace cv::photoeffects;
 using namespace std;
 
 const string ORIGINAL_IMAGE = "Original image";
@@ -26,10 +29,10 @@ int main(int argc, char** argv)
         cout<< helper << endl;
         return 1;
     }
-    namedWindow(ORIGINAL_IMAGE, CV_WINDOW_AUTOSIZE);
+    namedWindow(ORIGINAL_IMAGE, WINDOW_AUTOSIZE);
     imshow(ORIGINAL_IMAGE,src);
     antique(src, dst, texture, alpha);
-    namedWindow(ANTIQUE_IMAGE,CV_WINDOW_AUTOSIZE);
+    namedWindow(ANTIQUE_IMAGE, WINDOW_AUTOSIZE);
     imshow(ANTIQUE_IMAGE,dst);
     cout<<"Press any key"<<endl;
     waitKey(0);

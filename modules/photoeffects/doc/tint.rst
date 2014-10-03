@@ -26,8 +26,8 @@ Example:
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: tint_before.png
+.. |srcImage| image:: pics/tint_before.png
    :width: 40%
 
-.. |dstImage| image:: tint_after.png
+.. |dstImage| image:: pics/tint_after.png
    :width: 40%

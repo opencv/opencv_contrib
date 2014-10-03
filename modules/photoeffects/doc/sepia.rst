@@ -23,8 +23,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: sepia_before.jpg
+.. |srcImage| image:: pics/sepia_before.jpg
    :width: 40%
 
-.. |dstImage| image:: sepia_after.jpg
+.. |dstImage| image:: pics/sepia_after.jpg
    :width: 40%

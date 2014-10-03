@@ -1,7 +1,12 @@
 #include <opencv2/photoeffects.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <iostream>
 
 using namespace cv;
+using namespace cv::photoeffects;
 using namespace std;
 
 const char *helper =
@@ -71,7 +76,7 @@ void preparePicture()
             BaseColor.at<Vec3b>(i,j) = hsv;
         }
     }
-    cvtColor(BaseColor, BaseColor, CV_HSV2BGR);
+    cvtColor(BaseColor, BaseColor, COLOR_HSV2BGR);
 }
 
 void trackbarTint(int pos, void*)

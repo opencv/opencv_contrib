@@ -28,8 +28,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: fade_color_before.jpg
+.. |srcImage| image:: pics/fade_color_before.jpg
    :width: 40%
 
-.. |dstImage| image:: fade_color_after.jpg
+.. |dstImage| image:: pics/fade_color_after.jpg
    :width: 40%

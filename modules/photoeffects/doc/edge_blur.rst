@@ -27,8 +27,8 @@ Example.
 
 |src| |dst|
 
-.. |src| image:: edge_blur_before.png
+.. |src| image:: pics/edge_blur_before.png
    :width: 40%
 
-.. |dst| image:: edge_blur_after.png
+.. |dst| image:: pics/edge_blur_after.png
    :width: 40%

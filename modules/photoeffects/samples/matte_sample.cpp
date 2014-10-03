@@ -1,7 +1,12 @@
 #include <opencv2/photoeffects.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <iostream>
 
 using namespace cv;
+using namespace cv::photoeffects;
 using namespace std;
 
 const string ORIGINAL_IMAGE = "Original image";
@@ -29,7 +34,7 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
             {
                 firstPoint = Point(x,y);
                 src.copyTo(srcCpy);
-                circle(srcCpy, firstPoint, 3, CV_RGB(255, 0, 0), 3);
+                circle(srcCpy, firstPoint, 3, Scalar(255, 0, 0), 3);
                 imshow(ORIGINAL_IMAGE, srcCpy);
                 numberOfChoosenPoints++;
                 break;
@@ -38,13 +43,13 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
             {
                 secondPoint = Point(x,y);
                 src.copyTo(srcCpy);
-                circle(srcCpy, firstPoint, 3, CV_RGB(255, 0, 0), 3);
-                circle(srcCpy, secondPoint, 3, CV_RGB(255, 0, 0), 3);
+                circle(srcCpy, firstPoint, 3, Scalar(255, 0, 0), 3);
+                circle(srcCpy, secondPoint, 3, Scalar(255, 0, 0), 3);
                 imshow(ORIGINAL_IMAGE, srcCpy);
                 numberOfChoosenPoints++;
                 Mat dst;
                 matte(src, dst, firstPoint, secondPoint, sigmaX, sigmaY);
-                namedWindow(MATTE_IMAGE, CV_WINDOW_AUTOSIZE);
+                namedWindow(MATTE_IMAGE, WINDOW_AUTOSIZE);
                 imshow(MATTE_IMAGE, dst);
                 break;
             }
@@ -62,7 +67,7 @@ int main(int argc, char** argv)
         cout << helper << endl;
         return 1;
     }
-    namedWindow(ORIGINAL_IMAGE, CV_WINDOW_AUTOSIZE);
+    namedWindow(ORIGINAL_IMAGE, WINDOW_AUTOSIZE);
     imshow(ORIGINAL_IMAGE, src);
     setMouseCallback(ORIGINAL_IMAGE,CallBackFunc, &src);
     cout<<"Press any key"<<endl;

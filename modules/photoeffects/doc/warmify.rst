@@ -25,8 +25,8 @@ Example.
 
 |srcImage| |dstImage|
 
-.. |srcImage| image:: warmify_before.jpg
+.. |srcImage| image:: pics/warmify_before.jpg
    :width: 40%
 
-.. |dstImage| image:: warmify_after.jpg
+.. |dstImage| image:: pics/warmify_after.jpg
    :width: 40%
