@@ -40,6 +40,10 @@
 #include <cstring>
 #include <limits>
 
+#ifdef _MSC_VER
+#   pragma warning(disable: 4512)
+#endif
+
 namespace
 {
 
@@ -182,24 +186,20 @@ private: /*inline functions*/
         CV_DbgAssert(dst.size() == smallSize);
     }
 
-    void downsample(const vector<Mat>& srcv, vector<Mat>& dstv)
-    {
-        dstv.resize(srcv.size());
-        for (int i = 0; i < (int)srcv.size(); i++)
-            downsample(srcv[i], dstv[i]);
-    }
-
     void upsample(const Mat& src, Mat& dst)
     {
         CV_DbgAssert(src.empty() || src.size() == smallSize);
         resize(src, dst, srcSize, 0, 0);
     }
 
+    void downsample(const vector<Mat>& srcv, vector<Mat>& dstv)
+    {
+        mapParallel(&AdaptiveManifoldFilterN::downsample, srcv, dstv);
+    }
+
     void upsample(const vector<Mat>& srcv, vector<Mat>& dstv)
     {
-        dstv.resize(srcv.size());
-        for (int i = 0; i < (int)srcv.size(); i++)
-            upsample(srcv[i], dstv[i]);
+        mapParallel(&AdaptiveManifoldFilterN::upsample, srcv, dstv);
     }
 
 private:
@@ -230,6 +230,35 @@ private:
     static void computeEigenVector(const vector<Mat>& X, const Mat1b& mask, Mat1f& vecDst, int num_pca_iterations, const Mat1f& vecRand);
 
     static void computeOrientation(const vector<Mat>& X, const Mat1f& vec, Mat1f& dst);
+
+private: /*Parallelization routines*/
+
+    typedef void (AdaptiveManifoldFilterN::*MapFunc)(const Mat& src, Mat& dst);
+
+    void mapParallel(MapFunc func, const vector<Mat>& srcv, vector<Mat>& dstv)
+    {
+        dstv.resize(srcv.size());
+        parallel_for_(Range(0, (int)srcv.size()), MapPrallelLoopBody(this, func, srcv, dstv));
+    }
+
+    struct MapPrallelLoopBody : public cv::ParallelLoopBody
+    {
+        MapPrallelLoopBody(AdaptiveManifoldFilterN *_instancePtr, MapFunc _transform, const vector<Mat>& _srcv, vector<Mat>& _dstv)
+            : instancePtr(_instancePtr), transform(_transform), srcv(_srcv), dstv(_dstv)
+        {}
+
+        AdaptiveManifoldFilterN *instancePtr;
+        MapFunc transform;
+        const vector<Mat>& srcv;
+        vector<Mat>& dstv;
+        
+        void operator () (const Range& range) const 
+        {
+            for (int i = range.start; i < range.end; i++)
+                (instancePtr->*transform)(srcv[i], dstv[i]);
+        }
+    };
+
 };
 
 CV_INIT_ALGORITHM(AdaptiveManifoldFilterN, "AdaptiveManifoldFilter",

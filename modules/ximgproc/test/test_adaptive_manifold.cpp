@@ -67,6 +67,8 @@ TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
 {
     RNG rnd(0);
 
+    cv::setNumThreads(cv::getNumberOfCPUs());
+
     for (int i = 0; i < 10; i++)
     {
         Size sz(rnd.uniform(512, 1024), rnd.uniform(512, 1024));
@@ -125,6 +127,8 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
 
     Mat srcImg = imread(getOpenCVExtraDir() + srcImgPath);
     ASSERT_TRUE(!srcImg.empty());
+
+    cv::setNumThreads(cv::getNumberOfCPUs());
 
     for (int i = 0; i < 3; i++)
     {
@@ -190,9 +194,11 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
         double sigma_r = rnd.uniform(0.1, 0.9);
         bool adjust_outliers = (iter % 2 == 0);
 
+        cv::setNumThreads(cv::getNumberOfCPUs());
         Mat res;
         amFilter(guide, src, res, sigma_s, sigma_r, adjust_outliers);
 
+        cv::setNumThreads(1);
         Mat resRef;
         Ptr<AdaptiveManifoldFilter> amf = createAMFilterRefImpl(sigma_s, sigma_r, adjust_outliers);
         amf->filter(src, resRef, guide);
