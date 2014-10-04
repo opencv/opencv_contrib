@@ -49,30 +49,56 @@ namespace datasetstools
 
 using namespace std;
 
-IR_affine::IR_affine(const string &path)
+class CV_EXPORTS IR_affineImp : public IR_affine
+{
+public:
+    IR_affineImp() {}
+    //IR_affineImp(const string &path);
+    virtual ~IR_affineImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*IR_affineImp::IR_affineImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void IR_affineImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void IR_affine::load(const string &path, int number)
+void IR_affineImp::loadDataset(const string &path)
 {
-    if (number!=0)
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
+
+    // detect image extension
+    string ext;
+    vector<string> fileNames;
+    getDirList(path, fileNames);
+    for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        return;
+        string &name = *it;
+        if (name.length()>=8 && name.substr(0, 3)=="img")
+        {
+            ext = name.substr(name.length()-4, 4);
+            break;
+        }
     }
 
-    loadDataset(path);
-}
-
-void IR_affine::loadDataset(const string &path)
-{
     for (unsigned int i=1; i<=6; ++i)
     {
         Ptr<IR_affineObj> curr(new IR_affineObj);
 
         char tmp[2];
         sprintf(tmp, "%u", i);
-        curr->imageName = path + "img" + tmp + ".ppm";
+        curr->imageName = path + "img" + tmp + ext;
 
         if (i>1)
         {
@@ -87,8 +113,13 @@ void IR_affine::loadDataset(const string &path)
             }
         }
 
-        train.push_back(curr);
+        train.back().push_back(curr);
     }
+}
+
+Ptr<IR_affine> IR_affine::create()
+{
+    return Ptr<IR_affineImp>(new IR_affineImp);
 }
 
 }

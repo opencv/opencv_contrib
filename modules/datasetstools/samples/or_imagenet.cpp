@@ -67,14 +67,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    OR_imagenet dataset(path);
+    Ptr<OR_imagenet> dataset = OR_imagenet::create();
+    dataset->load(path);
 
     // ***************
     // dataset contains for each object its id & image url.
     // For example, let output dataset size and first object.
-    printf("dataset size: %u\n", (unsigned int)dataset.train.size());
-    printf("wnids number: %u\n", (unsigned int)dataset.wnids.size());
-    OR_imagenetObj *example = static_cast<OR_imagenetObj *>(dataset.train[0].get());
+    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+    OR_imagenetObj *example = static_cast<OR_imagenetObj *>(dataset->getTrain()[0].get());
     printf("first object url: %s\n", example->imageUrl.c_str());
     printf("first object wnid: %s\n", example->wnid.c_str());
     printf("first object id2: %u\n", example->id2);

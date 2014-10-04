@@ -149,12 +149,11 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 }
 
 
- #if defined(_MSC_VER)
- # include <intrin.h>
- # define POPCNT(x) __popcnt(x)
- # define POPCNT64(x) __popcnt64(x)
- #endif
-
+#if defined(_MSC_VER)
+# include <intrin.h>
+# define POPCNT(x) __popcnt(x)
+# define POPCNT64(x) (__popcnt((unsigned)(x)) + __popcnt((unsigned)((uint64_t)(x) >> 32)))
+#endif
 
 #if defined(__GNUC__)
 # define POPCNT(x) __builtin_popcount(x)

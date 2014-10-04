@@ -56,21 +56,16 @@ namespace datasetstools
 
 struct FR_lfwObj : public Object
 {
-    std::string name;
-    std::vector<std::string> images;
+    std::string image1, image2;
+    bool same;
 };
 
 class CV_EXPORTS FR_lfw : public Dataset
 {
 public:
-    FR_lfw() {}
-    FR_lfw(const std::string &path);
-    virtual ~FR_lfw() {}
+    virtual void load(const std::string &path) = 0;
 
-    virtual void load(const std::string &path, int number = 0);
-
-private:
-    void loadDataset(const std::string &path);
+    static Ptr<FR_lfw> create();
 };
 
 }

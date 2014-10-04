@@ -49,23 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-IS_weizmann::IS_weizmann(const string &path)
+class CV_EXPORTS IS_weizmannImp : public IS_weizmann
+{
+public:
+    IS_weizmannImp() {}
+    //IS_weizmannImp(const string &path);
+    virtual ~IS_weizmannImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*IS_weizmannImp::IS_weizmannImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void IS_weizmannImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void IS_weizmann::load(const string &path, int number)
+void IS_weizmannImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void IS_weizmann::loadDataset(const string &path)
-{
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
@@ -80,9 +92,14 @@ void IS_weizmann::loadDataset(const string &path)
 
             curr->humanSeg = imageName + "human_seg/";
 
-            train.push_back(curr);
+            train.back().push_back(curr);
         }
     }
+}
+
+Ptr<IS_weizmann> IS_weizmann::create()
+{
+    return Ptr<IS_weizmannImp>(new IS_weizmannImp);
 }
 
 }

@@ -49,23 +49,35 @@ namespace datasetstools
 
 using namespace std;
 
-HPE_parse::HPE_parse(const string &path)
+class CV_EXPORTS HPE_parseImp : public HPE_parse
+{
+public:
+    HPE_parseImp() {}
+    //HPE_parseImp(const string &path);
+    virtual ~HPE_parseImp() {}
+
+    virtual void load(const string &path);
+
+private:
+    void loadDataset(const string &path);
+};
+
+/*HPE_parseImp::HPE_parseImp(const string &path)
+{
+    loadDataset(path);
+}*/
+
+void HPE_parseImp::load(const string &path)
 {
     loadDataset(path);
 }
 
-void HPE_parse::load(const string &path, int number)
+void HPE_parseImp::loadDataset(const string &path)
 {
-    if (number!=0)
-    {
-        return;
-    }
+    train.push_back(vector< Ptr<Object> >());
+    test.push_back(vector< Ptr<Object> >());
+    validation.push_back(vector< Ptr<Object> >());
 
-    loadDataset(path);
-}
-
-void HPE_parse::loadDataset(const string &path)
-{
     unsigned int i=0;
     vector<string> fileNames;
     getDirList(path, fileNames);
@@ -84,14 +96,19 @@ void HPE_parse::loadDataset(const string &path)
 
             if (i<100)
             {
-                train.push_back(curr);
+                train.back().push_back(curr);
             } else
             {
-                test.push_back(curr);
+                test.back().push_back(curr);
             }
             ++i;
         }
     }
+}
+
+Ptr<HPE_parse> HPE_parse::create()
+{
+    return Ptr<HPE_parseImp>(new HPE_parseImp);
 }
 
 }

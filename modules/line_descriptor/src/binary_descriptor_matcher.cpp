@@ -189,8 +189,8 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
   }
 
   /* delete data */
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 }
 
 /* for every input descriptor, find the best matching one (for a pair of images) */
@@ -248,8 +248,8 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
 
   /* delete data */
   delete mh;
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 
 }
 
@@ -330,8 +330,8 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
 
   /* delete data */
   delete mh;
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 }
 
 /* for every input descriptor,
@@ -419,8 +419,8 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   }
 
   /* delete data */
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 }
 
 /* for every input desciptor, find all the ones falling in a
@@ -499,8 +499,8 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
 
   /* delete data */
   delete mh;
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 }
 
 /* for every input descriptor, find all the ones falling in a
@@ -587,8 +587,8 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   }
 
   /* delete data */
-  delete results;
-  delete numres;
+  delete[] results;
+  delete[] numres;
 
 }
 
@@ -835,7 +835,7 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
     return 1;
 
   size = UINT64_1 << ( b - 5 );  // size = 2 ^ b
-  table = (BucketGroup*) calloc( size, sizeof(BucketGroup) );
+  table = (BucketGroup*) calloc( (size_t)size, sizeof(BucketGroup) );
 
   return 0;
 

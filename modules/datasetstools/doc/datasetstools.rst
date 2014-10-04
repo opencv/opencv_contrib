@@ -6,8 +6,6 @@ datasetstools. Tools for working with different datasets.
 
 The datasetstools module includes classes for working with different datasets.
 
-First version of this module was implemented for **Fall2014 OpenCV Challenge**.
-
 Action Recognition
 ------------------
 
@@ -50,13 +48,13 @@ FR_lfw
 
 Implements loading dataset:
 
-_`"Labeled Faces in the Wild-a"`: http://www.openu.ac.il/home/hassner/data/lfwa/
+_`"Labeled Faces in the Wild"`: http://vis-www.cs.umass.edu/lfw/
 
 .. note:: Usage
 
- 1. From link above download dataset file: lfwa.tar.gz.
+ 1. From link above download any dataset file: lfw.tgz\lfwa.tar.gz\lfw-deepfunneled.tgz\lfw-funneled.tgz and file with 10 test splits: pairs.txt.
 
- 2. Unpack it.
+ 2. Unpack dataset file and place pairs.txt in created folder.
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_fr_lfw -p=/home/user/path_to_unpacked_folder/lfw2/
 
@@ -75,9 +73,11 @@ _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
 
  1. Follow instruction from site above, download files for dataset "Track 3: Gesture Recognition": Train1.zip-Train5.zip, Validation1.zip-Validation3.zip (Register on site: www.codalab.org and accept the terms and conditions of competition: https://www.codalab.org/competitions/991#learn_the_details There are three mirrors for downloading dataset files. When I downloaded data only mirror: "Universitat Oberta de Catalunya" works).
 
- 2. Unpack train archives Train1.zip-Train5.zip to one folder (currently loading validation files wasn't implemented)
+ 2. Unpack train archives Train1.zip-Train5.zip to folder Train/, validation archives Validation1.zip-Validation3.zip to folder Validation/
 
- 3. To load data run: ./opencv/build/bin/example_datasetstools_gr_chalearn -p=/home/user/path_to_unpacked_folder/
+ 3. Unpack all archives in Train/ & Validation/ in the folders with the same names, for example: Sample0001.zip to Sample0001/
+
+ 4. To load data run: ./opencv/build/bin/example_datasetstools_gr_chalearn -p=/home/user/path_to_unpacked_folders/
 
 GR_skig
 =======
@@ -239,13 +239,29 @@ Currently implemented loading full list with urls. Planned to implement dataset 
 
  3. To load data run: ./opencv/build/bin/example_datasetstools_or_imagenet -p=/home/user/path_to_unpacked_file/
 
+OR_mnist
+===========
+.. ocv:class:: OR_mnist
+
+Implements loading dataset:
+
+_`"MNIST"`: http://yann.lecun.com/exdb/mnist/
+
+.. note:: Usage
+
+ 1. From link above download dataset files: t10k-images-idx3-ubyte.gz, t10k-labels-idx1-ubyte.gz, train-images-idx3-ubyte.gz, train-labels-idx1-ubyte.gz.
+
+ 2. Unpack them.
+
+ 3. To load data run: ./opencv/build/bin/example_datasetstools_or_mnist -p=/home/user/path_to_unpacked_files/
+
 OR_sun
 ======
 .. ocv:class:: OR_sun
 
 Implements loading dataset:
 
-_`"SUN Database"`: http://sun.cs.princeton.edu/
+_`"SUN Database"`: http://sundatabase.mit.edu/
 
 Currently implemented loading "Scene Recognition Benchmark. SUN397". Planned to implement also "Object Detection Benchmark. SUN2012". 
 
