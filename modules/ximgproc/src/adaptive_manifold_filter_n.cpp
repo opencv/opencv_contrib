@@ -53,8 +53,6 @@ using namespace cv::ximgproc::intrinsics;
 #define SQR(x) ((x)*(x))
 #endif
 
-void computeEigenVector(const Mat1f& X, const Mat1b& mask, Mat1f& dst, int num_pca_iterations, const Mat1f& rand_vec);
-
 inline double Log2(double n)
 {
     return log(n) / log(2.0);
@@ -176,40 +174,32 @@ private: /*inline functions*/
         return Size( cvRound(srcSize.width * (1.0/df)), cvRound(srcSize.height*(1.0/df)) ) ;
     }
 
-    void downsample(InputArray src, OutputArray dst)
+    void downsample(const Mat& src, Mat& dst)
     {
-        if (src.isMatVector())
-        {
-            vector<Mat>& srcv = *static_cast< vector<Mat>* >(src.getObj());
-            vector<Mat>& dstv = *static_cast< vector<Mat>* >(dst.getObj());
-            dstv.resize(srcv.size());
-            for (int i = 0; i < (int)srcv.size(); i++)
-                downsample(srcv[i], dstv[i]);
-        }
-        else
-        {
-            double df = getResizeRatio();
-            CV_DbgAssert(src.empty() || src.size() == srcSize);
-            resize(src, dst, Size(), 1.0 / df, 1.0 / df, INTER_LINEAR);
-            CV_DbgAssert(dst.size() == smallSize);
-        }
+        double df = getResizeRatio();
+        CV_DbgAssert(src.empty() || src.size() == srcSize);
+        resize(src, dst, Size(), 1.0 / df, 1.0 / df, INTER_LINEAR);
+        CV_DbgAssert(dst.size() == smallSize);
     }
 
-    void upsample(InputArray src, OutputArray dst)
+    void downsample(const vector<Mat>& srcv, vector<Mat>& dstv)
     {
-        if (src.isMatVector())
-        {
-            vector<Mat>& srcv = *static_cast< vector<Mat>* >(src.getObj());
-            vector<Mat>& dstv = *static_cast< vector<Mat>* >(dst.getObj());
-            dstv.resize(srcv.size());
-            for (int i = 0; i < (int)srcv.size(); i++)
-                upsample(srcv[i], dstv[i]);
-        }
-        else
-        {
-            CV_DbgAssert(src.empty() || src.size() == smallSize);
-            resize(src, dst, srcSize, 0, 0);
-        }
+        dstv.resize(srcv.size());
+        for (int i = 0; i < (int)srcv.size(); i++)
+            downsample(srcv[i], dstv[i]);
+    }
+
+    void upsample(const Mat& src, Mat& dst)
+    {
+        CV_DbgAssert(src.empty() || src.size() == smallSize);
+        resize(src, dst, srcSize, 0, 0);
+    }
+
+    void upsample(const vector<Mat>& srcv, vector<Mat>& dstv)
+    {
+        dstv.resize(srcv.size());
+        for (int i = 0; i < (int)srcv.size(); i++)
+            upsample(srcv[i], dstv[i]);
     }
 
 private:
@@ -236,6 +226,10 @@ private:
     static void computeDTHor(vector<Mat>& srcCn, Mat& dst, float ss, float sr);
 
     static void computeDTVer(vector<Mat>& srcCn, Mat& dst, float ss, float sr);
+
+    static void computeEigenVector(const vector<Mat>& X, const Mat1b& mask, Mat1f& vecDst, int num_pca_iterations, const Mat1f& vecRand);
+
+    static void computeOrientation(const vector<Mat>& X, const Mat1f& vec, Mat1f& dst);
 };
 
 CV_INIT_ALGORITHM(AdaptiveManifoldFilterN, "AdaptiveManifoldFilter",
@@ -660,35 +654,35 @@ void AdaptiveManifoldFilterN::RFFilterPass(vector<Mat>& joint, vector<Mat>& Psi_
 
 void AdaptiveManifoldFilterN::computeClusters(Mat1b& cluster, Mat1b& cluster_minus, Mat1b& cluster_plus)
 {
-    Mat difEtaSrc;
+    
+    Mat1f difOreientation;
+    if (jointCnNum > 1)
     {
-        vector<Mat> eta_difCn(jointCnNum);
+        Mat1f initVec(1, jointCnNum);
+        if (useRNG)
+        {
+            rnd.fill(initVec, RNG::UNIFORM, -0.5, 0.5);
+        }
+        else
+        {
+            for (int i = 0; i < (int)initVec.total(); i++)
+                initVec(0, i) = (i % 2 == 0) ? 0.5f : -0.5f;
+        }
+
+        vector<Mat> difEtaSrc(jointCnNum);
         for (int i = 0; i < jointCnNum; i++)
-            subtract(jointCn[i], etaFull[i], eta_difCn[i]);
+            subtract(jointCn[i], etaFull[i], difEtaSrc[i]);
 
-        merge(eta_difCn, difEtaSrc);
-        difEtaSrc = difEtaSrc.reshape(1, (int)difEtaSrc.total());
-        CV_DbgAssert(difEtaSrc.cols == jointCnNum);
-    }
+        Mat1f eigenVec(1, jointCnNum);
+        computeEigenVector(difEtaSrc, cluster, eigenVec, num_pca_iterations_, initVec);
 
-    Mat1f initVec(1, jointCnNum);
-    if (useRNG)
-    {
-        rnd.fill(initVec, RNG::UNIFORM, -0.5, 0.5);
+        computeOrientation(difEtaSrc, eigenVec, difOreientation);
+        CV_DbgAssert(difOreientation.size() == srcSize);
     }
     else
     {
-        for (int i = 0; i < (int)initVec.total(); i++)
-            initVec(0, i) = (i % 2 == 0) ? 0.5f : -0.5f;
+        subtract(jointCn[0], etaFull[0], difOreientation);
     }
-
-    Mat1f eigenVec(1, jointCnNum);
-    computeEigenVector(difEtaSrc, cluster, eigenVec, num_pca_iterations_, initVec);
-
-    Mat1f difOreientation;
-    gemm(difEtaSrc, eigenVec, 1, noArray(), 0, difOreientation, GEMM_2_T);
-    difOreientation = difOreientation.reshape(1, srcSize.height);
-    CV_DbgAssert(difOreientation.size() == srcSize);
 
     compare(difOreientation, 0, cluster_minus, CMP_LT);
     bitwise_and(cluster_minus, cluster, cluster_minus);
@@ -721,59 +715,101 @@ void AdaptiveManifoldFilterN::computeEta(Mat& teta, Mat1b& cluster, vector<Mat>&
     }
 }
 
-void computeEigenVector(const Mat1f& X, const Mat1b& mask, Mat1f& dst, int num_pca_iterations, const Mat1f& rand_vec)
+void AdaptiveManifoldFilterN::computeEigenVector(const vector<Mat>& X, const Mat1b& mask, Mat1f& vecDst, int num_pca_iterations, const Mat1f& vecRand)
 {
-    CV_DbgAssert( X.cols == rand_vec.cols );
-    CV_DbgAssert( X.rows == mask.size().area() );
-    CV_DbgAssert( rand_vec.rows == 1 );
+    int cnNum = (int)X.size();
+    int height = X[0].rows;
+    int width = X[0].cols;
 
-    dst.create(rand_vec.size());
-    rand_vec.copyTo(dst);
+    vecDst.create(1, cnNum);
+    CV_Assert(vecRand.size() == Size(cnNum, 1) && vecDst.size() == Size(cnNum, 1));
+    CV_Assert(mask.rows == height && mask.cols == width);
+    
+    const float *pVecRand = vecRand.ptr<float>();
+    Mat1d vecDstd(1, cnNum, 0.0);
+    double *pVecDst = vecDstd.ptr<double>();
+    Mat1f Xw(height, width);
 
-    Mat1f t(X.size());
-
-    float* dst_row = dst[0];
-
-    for (int i = 0; i < num_pca_iterations; ++i)
+    for (int iter = 0; iter < num_pca_iterations; iter++)
     {
-        t.setTo(Scalar::all(0));
-
-        for (int y = 0, ind = 0; y < mask.rows; ++y)
+        for (int  i = 0; i < height; i++)
         {
-            const uchar* mask_row = mask[y];
+            const uchar *maskRow = mask.ptr<uchar>(i);
+            float *mulRow = Xw.ptr<float>(i);
 
-            for (int x = 0; x < mask.cols; ++x, ++ind)
+            //first multiplication 
+            for (int cn = 0; cn < cnNum; cn++)
             {
-                if (mask_row[x])
+                const float *srcRow = X[cn].ptr<float>(i);
+                const float cnVal = pVecRand[cn];
+
+                if (cn == 0)
                 {
-                    const float* X_row = X[ind];
-                    float* t_row = t[ind];
-
-                    float dots = 0.0;
-                    for (int c = 0; c < X.cols; ++c)
-                        dots += dst_row[c] * X_row[c];
-
-                    for (int c = 0; c < X.cols; ++c)
-                        t_row[c] = dots * X_row[c];
+                    for (int j = 0; j < width; j++)
+                        mulRow[j] = cnVal*srcRow[j];
+                }
+                else
+                {
+                    for (int j = 0; j < width; j++)
+                        mulRow[j] += cnVal*srcRow[j];
                 }
             }
-        }
 
-        dst.setTo(0.0);
-        for (int k = 0; k < X.rows; ++k)
-        {
-            const float* t_row = t[k];
+            for (int j = 0; j < width; j++)
+                if (!maskRow[j]) mulRow[j] = 0.0f;
 
-            for (int c = 0; c < X.cols; ++c)
+            //second multiplication
+            for (int cn = 0; cn < cnNum; cn++)
             {
-                dst_row[c] += t_row[c];
+                float curCnSum = 0.0f;
+                const float *srcRow = X[cn].ptr<float>(i);
+
+                for (int j = 0; j < width; j++)
+                    curCnSum += mulRow[j]*srcRow[j];
+
+                //TODO: parallel reduce 
+                pVecDst[cn] += curCnSum;
             }
         }
     }
 
-    double n = norm(dst);
-    divide(dst, n, dst);
+    divide(vecDstd, norm(vecDstd), vecDst);
 }
+
+void AdaptiveManifoldFilterN::computeOrientation(const vector<Mat>& X, const Mat1f& vec, Mat1f& dst)
+{
+    int height = X[0].rows;
+    int width = X[0].cols;
+    int cnNum = (int)X.size();
+    dst.create(height, width);
+    CV_DbgAssert(vec.rows == 1 && vec.cols == cnNum);
+
+    const float *pVec = vec.ptr<float>();
+
+    for (int i = 0; i < height; i++)
+    {
+        float *dstRow = dst.ptr<float>(i);
+
+        for (int cn = 0; cn < cnNum; cn++)
+        {
+            const float *srcRow = X[cn].ptr<float>(i);
+            const float cnVal = pVec[cn];
+
+            if (cn == 0)
+            {
+                for (int j = 0; j < width; j++)
+                    dstRow[j] = cnVal*srcRow[j];
+            }
+            else
+            {
+                for (int j = 0; j < width; j++)
+                    dstRow[j] += cnVal*srcRow[j];
+            }
+        }
+    }
+}
+
+
 }
 
 
