@@ -1,0 +1,15 @@
+data_config {
+  file_pattern: "./data/mnist.h5"
+  layer_name: "input"
+  dataset_name: "train_full"
+  data_type: HDF5
+}
+data_config {
+  file_pattern: "./data/mnist.h5"
+  layer_name: "output"
+  dataset_name: "train_full_labels"
+  data_type: HDF5
+}
+batch_size : 100
+randomize_cpu: true
+randomize_gpu: true

@@ -1,0 +1,92 @@
+name: "mnist_net";
+seed: 42;
+max_iter: 100000;
+print_after: 1000;
+save_after: 10000;
+patch_size: 28;
+validate_after: 1000;
+reduce_lr_factor: 0.5;
+reduce_lr_num_steps: 6;
+reduce_lr_max: 10;
+reduce_lr_threshold: 0.0;
+checkpoint_dir: "./checkpoint_dir";
+display: true;
+display_after: 100;
+localizer: true;
+
+layer {
+  name: "input";
+  num_channels: 1;
+  is_input: true;
+  display: true;
+  dropprob: 0.2;
+}
+
+layer {
+  name: "hidden1";
+  num_channels: 1024;
+  activation: RECTIFIED_LINEAR;
+  dropprob: 0.5;
+}
+
+layer {
+  name: "hidden2";
+  num_channels: 1024;
+  activation: RECTIFIED_LINEAR;
+  dropprob: 0.5;
+}
+
+layer {
+  name: "output";
+  num_channels: 10;
+  activation: SOFTMAX;
+  is_output: true;
+}
+
+edge {
+  source: "input";
+  dest: "hidden1";
+  edge_type: FC;
+  init_wt: 1.0;
+  weight_optimizer {
+    epsilon: 0.1;
+    weight_norm_limit: 2.0;
+    final_momentum : 0.95;
+  }
+  bias_optimizer {
+    epsilon: 0.1;
+    final_momentum : 0.95;
+  }
+}
+
+edge {
+  source: "hidden1";
+  dest: "hidden2";
+  edge_type: FC;
+  init_wt: 1.0;
+  weight_optimizer {
+    epsilon: 0.1;
+    final_momentum : 0.95;
+    weight_norm_limit: 2.0;
+  }
+  bias_optimizer {
+    epsilon: 0.1;
+    final_momentum : 0.95;
+  }
+}
+
+edge {
+  source: "hidden2";
+  dest: "output";
+  edge_type: FC;
+  init_wt: 1.0;
+  weight_optimizer {
+    epsilon: 0.01;
+    final_momentum : 0.95;
+    weight_norm_limit: 3.5;
+  }
+  bias_optimizer {
+    epsilon: 0.01;
+    final_momentum : 0.95;
+  }
+}

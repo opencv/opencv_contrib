@@ -86,7 +86,7 @@ void DataWriter::WriteHDF5(Matrix& m, const string& dataset, int numcases, bool 
     }
     H5Dwrite(s.dataset, H5T_NATIVE_UCHAR, mem_dataspace, s.dataspace, H5P_DEFAULT,
              uchar_buf);
-    delete uchar_buf;
+    delete[] uchar_buf;
   } else {
     H5Dwrite(s.dataset, H5T_NATIVE_FLOAT, mem_dataspace, s.dataspace, H5P_DEFAULT,
             data);
