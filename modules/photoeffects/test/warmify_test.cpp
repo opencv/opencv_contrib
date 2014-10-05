@@ -17,17 +17,16 @@ TEST(photoeffects_warmify, test)
 {
     Mat image(100, 100, CV_8UC3);
     Mat dst;
-    Vec3b intensity_src;
-    Vec3b intensity_dst;
 
-    EXPECT_EQ(0, warmify(image, dst, 30));
+    warmify(image, dst, 30);
+
     for (int i = 0; i < image.rows; i++)
     {
         for (int j = 0; j < image.cols; j++)
         {
             // blue_dst = blue_src
-            intensity_src = image.at<Vec3b>(i, j);
-            intensity_dst = dst.at<Vec3b>(i, j);
+            Vec3b intensity_src = image.at<Vec3b>(i, j);
+            Vec3b intensity_dst = dst.at<Vec3b>(i, j);
             EXPECT_LE (intensity_dst[0] - 1, intensity_src[0]);
             EXPECT_GE (intensity_dst[0] + 1, intensity_src[0]);
         }
@@ -52,7 +51,7 @@ TEST(photoeffects_warmify, regression)
         FAIL() << "Can't read " + expectedOutput + " image";
     }
 
-    EXPECT_EQ(0, warmify(image, dst, 30));
+    warmify(image, dst, 30);
 
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;

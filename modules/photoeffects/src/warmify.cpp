@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-int warmify(cv::InputArray src, cv::OutputArray dst, uchar delta)
+void warmify(cv::InputArray src, cv::OutputArray dst, uchar delta)
 {
     CV_Assert(src.type() == CV_8UC3);
     Mat imgSrc = src.getMat();
@@ -11,7 +11,6 @@ int warmify(cv::InputArray src, cv::OutputArray dst, uchar delta)
     Mat imgDst = dst.getMat();
 
     imgDst = imgSrc + Scalar(0, delta, delta);
-    return 0;
 }
 
 }}

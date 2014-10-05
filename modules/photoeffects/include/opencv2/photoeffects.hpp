@@ -26,7 +26,7 @@ CV_EXPORTS_W  int antique(cv::InputArray src, cv::OutputArray dst, cv::InputArra
 
 CV_EXPORTS_W  void vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect);
 
-CV_EXPORTS_W  int warmify(cv::InputArray src, cv::OutputArray dst, uchar delta = 30);
+CV_EXPORTS_W  void warmify(cv::InputArray src, cv::OutputArray dst, uchar delta = 30);
 
 CV_EXPORTS_W  int matte(cv::InputArray src, cv::OutputArray dst, cv::Point firstPoint, cv::Point secondPoint,
           float sigmaX, float sigmaY, cv::Size ksize=cv::Size(0, 0));
