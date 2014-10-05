@@ -24,7 +24,7 @@ CV_EXPORTS_W  void boostColor(cv::InputArray src, cv::OutputArray dst, float int
 
 CV_EXPORTS_W  int antique(cv::InputArray src, cv::OutputArray dst, cv::InputArray texture, float alpha);
 
-CV_EXPORTS_W  int vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect);
+CV_EXPORTS_W  void vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect);
 
 CV_EXPORTS_W  int warmify(cv::InputArray src, cv::OutputArray dst, uchar delta = 30);
 

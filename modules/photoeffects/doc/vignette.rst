@@ -4,31 +4,25 @@ Vignette
 
 Makes the edges of the photo less bright, creating an oval frame around its central part.
 
-.. cpp:function:: int vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect)
+.. ocv:function:: void vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect)
 
-   :param src: Source 8-bit three-channel image.
+   :param src: Source 3-channel image.
    :param dst: Destination image of the same size and the same type as **src**.
-   :param rect: Size of rectangle describes an ellipse, whose center is at the center image.
-   :return: Error code.
+   :param rect: Size of rectangle describes an ellipse, whose center is at the center of an image.
 
 The algorithm.
 
-#. Create a new 3-channel image, which is interpreted as BGR image.
+ For every pixel of the **src** image calculate :math:`dist` and :math:`coefficient`, where
+  :math:`dist` is an amount, which describes a distance from the current pixel to border of the ellipse;
+  :math:`coefficient` is a number which cuts a part of the channel's intensity of the **src** image (value is in the range :math:`[0, 1]`). New value stores to the **dst** image.
 
-#. For every channel calculate :math:`dist`, :math:`radius\_ellipse` and :math:`coefficient`, where
-   :math:`dist` is a distance between the current pixel and the center of image;
-   :math:`radius\_ellipse` is a radius of ellipse in the this point which belongs the same line as a pixel;
-   :math:`coefficient` is a number which multiplies the intensity channel.
+  The :math:`coefficient` is calculated by the following formula:
 
-   The :math:`coefficient` is calculated by the following formula:
+  .. math::
 
-   .. math::
+   coefficient = 1 - ((dist - 1) / radiusMax),
 
-      coefficient = 1 - ((dist - radius\_ellipse) / (max\_radius - radius\_ellipse)),
-
-    where :math:`max\_radius` is a distance between the pixel (0, img_src.cols) and the center image.
-
-#. Convert image to a BGR format.
+  where :math:`radiusMax` is a maximum distance from border of the ellipse to the farthest pixel (a corner of the image).
 
 Example.
 
