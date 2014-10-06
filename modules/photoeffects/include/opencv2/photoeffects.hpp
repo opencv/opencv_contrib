@@ -14,11 +14,11 @@ CV_EXPORTS_W  int filmGrain(cv::InputArray src, cv::OutputArray dst, int grainVa
 
 CV_EXPORTS_W  int fadeColor(cv::InputArray src, cv::OutputArray dst,cv::Point startPoint,cv::Point endPoint);
 
-CV_EXPORTS_W  int tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
+CV_EXPORTS_W  void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
 
 CV_EXPORTS_W  void glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f);
 
-CV_EXPORTS_W  int edgeBlur(cv::InputArray src, cv::OutputArray dst, int indentTop, int indentLeft);
+CV_EXPORTS_W  void edgeBlur(cv::InputArray src, cv::OutputArray dst, int indentTop, int indentLeft);
 
 CV_EXPORTS_W  void boostColor(cv::InputArray src, cv::OutputArray dst, float intensity = 0.0f);
 

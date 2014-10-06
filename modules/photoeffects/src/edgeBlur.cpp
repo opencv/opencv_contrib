@@ -2,69 +2,88 @@
 
 namespace cv { namespace photoeffects {
 
-int edgeBlur(InputArray src, OutputArray dst, int indentTop, int indentLeft)
+class edgeBlurInvoker :public ParallelLoopBody
+{
+public:
+    edgeBlurInvoker(const Mat& src,
+                    const Mat& boxFilt,
+                    Mat& dst,
+                    int indentTop,
+                    int indentLeft)
+    :   src_(src),
+        boxFilt_(boxFilt),
+        dst_(dst),
+        cols_(src.cols),
+        indentTop_(indentTop),
+        indentLeft_(indentLeft) {}
+
+    void operator()(const Range& range) const
+    {
+        float halfWidth = src_.cols / 2.0f;
+        float halfHeight = src_.rows / 2.0f;
+        float a = (halfWidth - indentLeft_) * (halfWidth - indentLeft_);
+        float b = (halfHeight - indentTop_) * (halfHeight - indentTop_);
+
+        Mat srcStripe = src_.rowRange(range.start, range.end);
+        Mat boxStripe = boxFilt_.rowRange(range.start, range.end);
+        Mat dstStripe = dst_.rowRange(range.start, range.end);
+
+        int rows = srcStripe.rows;
+        for (int i = 0; i < rows; i++)
+        {
+            uchar* row = (uchar*)srcStripe.row(i).data;
+            uchar* boxRow = (uchar*)boxStripe.row(i).data;
+            uchar* dstRow = (uchar*)dstStripe.row(i).data;
+            float y_part = (halfHeight - (i + range.start)) *
+                           (halfHeight - (i + range.start)) / b;
+
+            for (int j = 0; j < 3 * cols_; j += 3)
+            {
+                float maskEl = min(max(2.0f *
+                               ((halfWidth - j / 3) * (halfWidth - j / 3) / a +
+                               y_part - 0.5f), 0.0f), 1.0f);
+                float negMask = 1.0f - maskEl;
+
+                dstRow[j] = boxRow[j] * maskEl + row[j] * negMask;
+                dstRow[j + 1] = boxRow[j + 1] * maskEl + row[j + 1] * negMask;
+                dstRow[j + 2] = boxRow[j + 2] * maskEl + row[j + 2] * negMask;
+            }
+        }
+    }
+
+private:
+    const Mat& src_;
+    const Mat& boxFilt_;
+    Mat& dst_;
+    int indentTop_;
+    int indentLeft_;
+    int cols_;
+
+    edgeBlurInvoker& operator=(const edgeBlurInvoker&);
+};
+
+void edgeBlur(InputArray src, OutputArray dst, int indentTop, int indentLeft)
 {
     CV_Assert(!src.empty());
     CV_Assert(src.type() == CV_8UC3);
+
     dst.create(src.size(), src.type());
     Mat image = src.getMat(), outputImage = dst.getMat();
 
     CV_Assert(indentTop >= 0 && indentTop <= (image.rows / 2 - 10));
     CV_Assert(indentLeft >= 0 && indentLeft <= (image.cols / 2 - 10));
 
-    float halfWidth = image.cols / 2.0f;
-    float halfHeight = image.rows / 2.0f;
-    float a = (halfWidth - indentLeft)
-            * (halfWidth - indentLeft);
-    float b = (halfHeight - indentTop)
-            * (halfHeight - indentTop);
-    int kSizeEdges = halfWidth * halfWidth / a + halfHeight * halfHeight / b;
+    Mat boxFilt;
 
-    // 15 is a maximal kernel size
-    kSizeEdges = MIN(kSizeEdges, 15);
-    Mat bearingImage;
-    copyMakeBorder(image, bearingImage, kSizeEdges, kSizeEdges,
-        kSizeEdges, kSizeEdges, BORDER_REPLICATE);
+    boxFilter(image, boxFilt, -1, Size(7, 7), Point(-1, -1),
+        true, BORDER_REPLICATE);
 
-
-    for (int i = kSizeEdges; i < bearingImage.rows - kSizeEdges; i++)
-    {
-        for (int j = kSizeEdges; j < bearingImage.cols - kSizeEdges; j++)
-        {
-            float radius = (halfHeight - i)
-                    * (halfHeight- i)
-                    / b
-                    + (halfWidth - j)
-                    * (halfWidth - j)
-                    / a;
-            if (radius < 1.0f)
-            {
-                outputImage.at<Vec3b>(i - kSizeEdges, j - kSizeEdges) =
-                    bearingImage.at<Vec3b>(i, j);
-                continue;
-            }
-            int size = MIN(radius, kSizeEdges);
-            radius = 2.0f * (radius - 0.5f) * (radius - 0.5f);
-            float sumC = 0.0f;
-            Vec3f sumF;
-            float coeff1 = 1.0f / (CV_PI * radius);
-            for (int x = -size; x <= size; x++)
-            {
-                for (int y = -size; y <= size; y++)
-                {
-                    float coeff2 = coeff1 * exp(- (x * x + y * y) / radius);
-                    Vec3b Color = bearingImage.at<Vec3b>(x + i, y + j);
-                    sumF += coeff2 * (Vec3f)Color;
-                    sumC += coeff2;
-                }
-            }
-            sumF *= (1.0f / sumC);
-            outputImage.at<Vec3b>(i - kSizeEdges,
-                                  j - kSizeEdges) = (Vec3b)sumF;
-        }
-    }
-
-    return 0;
+    parallel_for_(Range(0, image.rows),
+                  edgeBlurInvoker(image,
+                                  boxFilt,
+                                  outputImage,
+                                  indentTop,
+                                  indentLeft));
 }
 
 }}

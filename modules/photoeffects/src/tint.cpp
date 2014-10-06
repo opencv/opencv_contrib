@@ -4,7 +4,7 @@ using namespace cv;
 
 namespace cv { namespace photoeffects {
 
-int tint(InputArray src, OutputArray dst, const Vec3b &colorTint, float density)
+void tint(InputArray src, OutputArray dst, const Vec3b &colorTint, float density)
 {
     CV_Assert(src.type() == CV_8UC3);
     CV_Assert(density >= 0.0f && density <= 1.0f);
@@ -14,7 +14,6 @@ int tint(InputArray src, OutputArray dst, const Vec3b &colorTint, float density)
         Scalar(colorTint[0], colorTint[1], colorTint[2]));
 
     outputImage = matColTint * density + image * (1 - density);
-    return 0;
 }
 
 }}
