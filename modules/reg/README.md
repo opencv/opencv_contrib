@@ -1,4 +1,5 @@
-# OpenCV pixel-intensity based registration module
+OpenCV pixel-intensity based registration module
+================================================
 
 Author and maintainer: Alfonso Sanchez-Beato
                        alfonsosanchezbeato\_\_\_\_gmail.com
