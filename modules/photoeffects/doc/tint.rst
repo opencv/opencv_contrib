@@ -3,7 +3,7 @@ Tint
 =======================================
 Add a tint to the image.
 
-.. cpp:function:: void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density)
+.. ocv:function:: void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density)
 
    :param src: Source 8-bit 3-channel (RGB) image.
    :param dst: Destination image of the same size and the same type as **src**.

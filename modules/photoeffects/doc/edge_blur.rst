@@ -3,7 +3,7 @@ Edge Blur
 =======================================
 Blurs the edges of an image, keeping center in focus.
 
-.. cpp:function:: void edgeBlur(InputArray src, OutputArray dst, int indentTop, int indentLeft)
+.. ocv:function:: void edgeBlur(InputArray src, OutputArray dst, int indentTop, int indentLeft)
 
    :param src: RGB image.
    :param dst: Destination image of the same size and the same type as **src**.
@@ -25,9 +25,14 @@ The algorithm.
 
           * Form the mask:
 
-            :math:`mask(x, y) = 0, dist(x, y) < 0.75`;
-            :math:`mask(x, y) = 2 * dist(x, y) + 1.5, dist(x, y) > 0.75 \space \& \space dist(x, y) < 1.25`;
-            :math:`mask(x, y) = 1, dist(x, y) > 1.25`.
+          .. math::
+            mask(x, y) = \left\{
+                    \begin{array}{lll}
+                        0 & \quad dist(x, y) \leq 0.75\\
+                        2 * dist(x, y) + 1.5 & \quad dist(x, y ) \in (0.75, 1.25]\\
+                        1 & \quad dsit(x, y) > 1.25
+                    \end{array}
+                \right.
 
           * Result
 

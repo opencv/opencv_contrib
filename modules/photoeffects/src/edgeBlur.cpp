@@ -13,7 +13,6 @@ public:
     :   src_(src),
         boxFilt_(boxFilt),
         dst_(dst),
-        cols_(src.cols),
         indentTop_(indentTop),
         indentLeft_(indentLeft) {}
 
@@ -37,7 +36,7 @@ public:
             float y_part = (halfHeight - (i + range.start)) *
                            (halfHeight - (i + range.start)) / b;
 
-            for (int j = 0; j < 3 * cols_; j += 3)
+            for (int j = 0; j < 3 * src_.cols; j += 3)
             {
                 float maskEl = min(max(2.0f *
                                ((halfWidth - j / 3) * (halfWidth - j / 3) / a +
@@ -57,7 +56,6 @@ private:
     Mat& dst_;
     int indentTop_;
     int indentLeft_;
-    int cols_;
 
     edgeBlurInvoker& operator=(const edgeBlurInvoker&);
 };
