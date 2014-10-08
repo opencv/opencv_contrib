@@ -5,15 +5,6 @@ using namespace cv::photoeffects;
 
 using namespace std;
 
-TEST(photoeffects_boostColor, test)
-{
-    Mat image(10, 10, CV_32FC3), dst;
-
-    image = Mat::zeros(10, 10, CV_32FC3);
-
-    EXPECT_EQ(0, boostColor(image, dst, 0.5f));
-}
-
 TEST(photoeffects_boostColor, regression)
 {
     string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/boostColor_test.png";
@@ -28,12 +19,9 @@ TEST(photoeffects_boostColor, regression)
         FAIL() << "Can't read " + expectedOutput + " image";
 
     Mat dst;
-    EXPECT_EQ(0, boostColor(image, dst, 0.5f));
-
+    boostColor(image, dst, 0.5f);
     Mat diff = abs(rightDst - dst);
-
     Mat mask = diff.reshape(1) > 1;
-
     EXPECT_EQ(0, countNonZero(mask));
 }
 

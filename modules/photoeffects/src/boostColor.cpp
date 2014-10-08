@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-int boostColor(cv::InputArray src, cv::OutputArray dst, float intensity)
+void boostColor(cv::InputArray src, cv::OutputArray dst, float intensity)
 {
     const int MAX_INTENSITY = 255;
 
@@ -25,7 +25,6 @@ int boostColor(cv::InputArray src, cv::OutputArray dst, float intensity)
     cvtColor(srcHls, dst, COLOR_HLS2BGR);
 
     dst.getMat().convertTo(dst, srcImg.type());
-    return 0;
 }
 
 }}
