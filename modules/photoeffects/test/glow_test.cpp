@@ -5,13 +5,6 @@ using namespace cv::photoeffects;
 
 using namespace std;
 
-TEST(photoeffects_glow, test) {
-    Mat image(10, 10, CV_32FC3), dst;
-    image = Mat::zeros(10, 10, CV_32FC3);
-
-    EXPECT_EQ(0, glow(image, dst, 1.0f, 0.5f));
-}
-
 TEST(photoeffects_glow, regression) {
     string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/glow_test.png";
     string expectedOutput = cvtest::TS::ptr()->get_data_path() + "photoeffects/glow_test_result.png";
@@ -27,7 +20,7 @@ TEST(photoeffects_glow, regression) {
         FAIL() << "Can't read " + expectedOutput + " image";
 
     Mat dst;
-    EXPECT_EQ(0, glow(image, dst, 33, 0.9f));
+    glow(image, dst, 33, 0.9f);
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;
     EXPECT_EQ(0, countNonZero(mask));

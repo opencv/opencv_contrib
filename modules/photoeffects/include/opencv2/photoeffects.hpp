@@ -16,7 +16,7 @@ CV_EXPORTS_W  int fadeColor(cv::InputArray src, cv::OutputArray dst,cv::Point st
 
 CV_EXPORTS_W  int tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
 
-CV_EXPORTS_W  int glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f);
+CV_EXPORTS_W  void glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f);
 
 CV_EXPORTS_W  int edgeBlur(cv::InputArray src, cv::OutputArray dst, int indentTop, int indentLeft);
 

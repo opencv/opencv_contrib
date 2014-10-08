@@ -3,13 +3,12 @@ Glow
 =======================================
 Applies glow effect to the initial image
 
-.. cpp:function:: int glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f)
+.. ocv:function:: void glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f)
 
    :param src: RGB image.
    :param dst: Destination image of the same size and the same type as **src**.
    :param radius: Radius of box filter kernel, must be positive integer number
    :param intensity:  Effect intensity, must be real number from 0.0 to 1.0
-   :return: Error code.
 
 The algorithm.
 

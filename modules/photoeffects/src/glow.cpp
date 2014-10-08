@@ -47,11 +47,10 @@ namespace
         const Mat &backImg;
         Mat &resImg;
         int width;
-        //OverlayInvoker& operator=(const OverlayInvoker&);
     };
 }
 
-int glow(InputArray src, OutputArray dst, int radius, float intensity)
+void glow(InputArray src, OutputArray dst, int radius, float intensity)
 {
     Mat srcImg = src.getMat();
 
@@ -77,8 +76,6 @@ int glow(InputArray src, OutputArray dst, int radius, float intensity)
     Mat dstImg = (coeff * overlayImg + (255 - coeff) * srcImg) / 255;
 
     dstImg.convertTo(dst, srcImgType);
-
-    return 0;
 }
 
 }}
