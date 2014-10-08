@@ -50,6 +50,7 @@
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/calib3d/calib3d_c.h>
+using namespace cv::xfeatures2d;
 #endif
 
 #include "opencv2/reg/mapaffine.hpp"
@@ -67,7 +68,6 @@ static const char* DIFF_REGPIX_IM = "Image difference: pixel registered";
 
 using namespace cv;
 using namespace cv::reg;
-using namespace cv::xfeatures2d;
 using namespace std;
 
 static void showDifference(const Mat& image1, const Mat& image2, const char* title)
