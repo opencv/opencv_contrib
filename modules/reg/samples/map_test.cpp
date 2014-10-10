@@ -47,9 +47,10 @@
 #include <opencv2/highgui/highgui_c.h>
 
 #ifdef COMPARE_FEATURES
-#include <opencv2/xfeatures2d/nonfree.hpp>
+#include <opencv2/xfeatures2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/calib3d/calib3d_c.h>
+using namespace cv::xfeatures2d;
 #endif
 
 #include "opencv2/reg/mapaffine.hpp"
