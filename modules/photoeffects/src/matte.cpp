@@ -1,64 +1,55 @@
 #include "precomp.hpp"
-#include <vector>
+
 
 using namespace std;
-
 namespace cv { namespace photoeffects {
 
-namespace
-{
-    Point topleftFind(Point firstPoint, Point secondPoint, int &xsize, int &ysize)
-    {
-        Point topleft(0, 0);
-        if(xsize < 0)
-        {
-            topleft.x = firstPoint.x;
-            xsize = -xsize;
-        }
-        else
-        {
-            topleft.x = secondPoint.x;
-        }
-        if(ysize < 0)
-        {
-            topleft.y = secondPoint.y;
-            ysize = -ysize;
-        }
-        else
-        {
-            topleft.y = firstPoint.y;
-        }
-        return topleft;
-    }
-}
 
-int matte(InputArray src, OutputArray dst, Point firstPoint, Point secondPoint, float sigmaX,
-            float sigmaY, Size ksize)
+void matte(InputArray src, OutputArray dst, float sigma=25)
 {
     CV_Assert((src.type() == CV_8UC3) || (src.type() == CV_32FC3));
-    CV_Assert((sigmaX > 0.0f) || (sigmaY > 0.0f));
-    Mat srcImg = src.getMat();
-    CV_Assert(!(srcImg.empty()));
-    if(srcImg.type() != CV_32FC3)
-    {
-        srcImg.convertTo(srcImg, CV_32FC3, 1.0f/255.0f);
-    }
-    int xsize = firstPoint.x - secondPoint.x;
-    int ysize = firstPoint.y - secondPoint.y;
-    Point topLeft = topleftFind(firstPoint, secondPoint, xsize, ysize);
-    const Scalar black = Scalar(0.0f,0.0f,0.0f);
-    const Scalar white = Scalar(1.0f,1.0f,1.0f);
-    Mat mask(srcImg.rows, srcImg.cols, CV_32FC1, black);
-    ellipse(mask, Point((topLeft.x+xsize/2),(topLeft.y-ysize/2)),
-            Size(xsize/2,ysize/2), 0, 0, 360, white, -1);
-    GaussianBlur(mask, mask, ksize, sigmaX, sigmaY);
-    vector<Mat> ch_img;
-    split(srcImg,ch_img);
-    ch_img[0]=ch_img[0].mul(mask)+1.0f-mask;
-    ch_img[1]=ch_img[1].mul(mask)+1.0f-mask;
-    ch_img[2]=ch_img[2].mul(mask)+1.0f-mask;
-    merge(ch_img,dst);
-    return 0;
-}
+    CV_Assert((sigma > 0.0f));
 
+    Mat imgSrc = src.getMat();
+
+    dst.create(src.size(), CV_8UC3);
+    Mat imgDst = dst.getMat();
+
+    imgSrc.copyTo(imgDst);
+
+
+    float centerX , centerY;
+    centerX = imgDst.cols/2.0f;
+    centerY = imgDst.rows/2.0f;
+
+    Size s;
+
+    s.height = imgDst.rows/sigma*10;
+    s.width = imgDst.cols/sigma*10;
+
+    float aSquare = s.height * s.height / 4.0f;
+    float bSquare = s.width * s.width / 4.0f;
+
+    float radiusMax = centerY * centerY/ aSquare + centerX * centerX / bSquare - 1.0f;
+
+
+    for (int i =0;i<imgDst.rows;i++)
+    {
+        for (int j=0;j<imgDst.cols;j++)
+        {
+
+            float dist= (i-centerY)*(i-centerY)/aSquare + (j-centerX)*(j-centerX)/bSquare;
+            float coef = 1.0f;
+            if (dist > 1.0f)
+            {
+                coef = 1.0f -(dist - 1.0f) / radiusMax;
+                coef = -2*coef*coef*coef*coef*coef + 4*coef*coef*coef - coef;
+            }
+
+            imgDst.at<Vec3b>(i, j) = imgDst.at<Vec3b>(i, j)*coef+
+                    Vec3b(255, 255, 255)*(1.0f-coef);
+
+        }
+    }
+}
 }}

@@ -6,84 +6,45 @@
 #include <iostream>
 
 using namespace cv;
+
 using namespace cv::photoeffects;
 using namespace std;
 
 const string ORIGINAL_IMAGE = "Original image";
 const string MATTE_IMAGE = "Matte image";
-
-Point firstPoint, secondPoint;
-int numberOfChoosenPoints = 0;
-float sigmaX = 0.0f;
-float sigmaY = 0.0f;
 const char *helper = "./matte_sample <img> <sigma1> <sigma2>\n\
 \t<img>-file name contained the processed image\n\
-\t<sigmaX>-float param - power of the blur in X derection\n\
-\t<sigmaY>-float param - power of the blur in Y derection";
+\t<sigma>-float param - power of the blur";
 
 
-void CallBackFunc(int event, int x, int y, int flags, void* userdata)
-{
-    Mat src=*((Mat*)userdata);
-    Mat srcCpy;
-    if (event == EVENT_LBUTTONDOWN)
-    {
-        switch(numberOfChoosenPoints)
-        {
-            case 0:
-            {
-                firstPoint = Point(x,y);
-                src.copyTo(srcCpy);
-                circle(srcCpy, firstPoint, 3, Scalar(255, 0, 0), 3);
-                imshow(ORIGINAL_IMAGE, srcCpy);
-                numberOfChoosenPoints++;
-                break;
-            }
-            case 1:
-            {
-                secondPoint = Point(x,y);
-                src.copyTo(srcCpy);
-                circle(srcCpy, firstPoint, 3, Scalar(255, 0, 0), 3);
-                circle(srcCpy, secondPoint, 3, Scalar(255, 0, 0), 3);
-                imshow(ORIGINAL_IMAGE, srcCpy);
-                numberOfChoosenPoints++;
-                Mat dst;
-                matte(src, dst, firstPoint, secondPoint, sigmaX, sigmaY);
-                namedWindow(MATTE_IMAGE, WINDOW_AUTOSIZE);
-                imshow(MATTE_IMAGE, dst);
-                break;
-            }
-        }
-    }
-}
-
-int processArguments(int argc, char **argv, Mat &src);
-
+int processArguments(int argc, char **argv, Mat &src,float &sigma);
 int main(int argc, char** argv)
 {
-    Mat src;
-    if(processArguments(argc, argv, src) != 0)
+    float sigma;
+    Mat src, matteImage;
+    if ( processArguments ( argc , argv , src,sigma) != 0)
     {
         cout << helper << endl;
         return 1;
     }
-    namedWindow(ORIGINAL_IMAGE, WINDOW_AUTOSIZE);
-    imshow(ORIGINAL_IMAGE, src);
-    setMouseCallback(ORIGINAL_IMAGE,CallBackFunc, &src);
-    cout<<"Press any key"<<endl;
+    namedWindow ( ORIGINAL_IMAGE , WINDOW_AUTOSIZE ) ;
+    imshow ( ORIGINAL_IMAGE , src );
+    matte ( src , matteImage , sigma );
+    namedWindow ( MATTE_IMAGE , WINDOW_AUTOSIZE);
+    imshow ( MATTE_IMAGE , matteImage);
     waitKey(0);
     destroyAllWindows();
     return 0;
 }
 
-int processArguments(int argc, char **argv, Mat &src)
+int processArguments(int argc, char **argv, Mat &src, float &sigma)
 {
-    if(argc < 4)
+    if ( argc < 3 )
     {
         return 1;
     }
-    src = imread(argv[1], CV_LOAD_IMAGE_COLOR);
-    sigmaX=atof(argv[2]);
-    sigmaY=atof(argv[3]);
+    src = imread ( argv[1] , CV_LOAD_IMAGE_COLOR) ;
+    sigma = atof ( argv[2] );
+
     return 0;
 }

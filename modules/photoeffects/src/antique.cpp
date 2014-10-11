@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-int antique(InputArray src, OutputArray dst, InputArray texture, float alpha)
+void antique(InputArray src, OutputArray dst, InputArray texture, float alpha)
 {
     CV_Assert((src.type() == CV_8UC3) || (src.type() == CV_32FC3));
     CV_Assert((texture.type() == CV_8UC3) || (texture.type() == CV_32FC3));
@@ -16,7 +16,6 @@ int antique(InputArray src, OutputArray dst, InputArray texture, float alpha)
     transform(newSrc,newSrc,m_sepiaKernel);
     float beta = 1.0f-alpha;
     addWeighted(textureImg, alpha , newSrc, beta, 0.0f, dst);
-    return 0;
 }
 
 }}
