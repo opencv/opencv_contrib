@@ -23,14 +23,6 @@ TEST(photoeffects_fadeColor, invalid_argument)
     EXPECT_ERROR(CV_StsAssert, fadeColor(src, dst, Point(5,5), Point(5,5)));
 }
 
-TEST(photoeffects_fadeColor, test) {
-    Mat imageWithOneChannel(100, 200, CV_8UC1);
-    Mat imageWithThreeChannel(100, 200, CV_8UC3);
-    Mat dst;
-    EXPECT_EQ(0, fadeColor(imageWithOneChannel, dst, Point(5,5), Point(5,8)));
-    EXPECT_EQ(0, fadeColor(imageWithThreeChannel, dst, Point(5,5), Point(5,8)));
-}
-
 TEST(photoeffects_fadeColor, regression)
 {
     string input = cvtest::TS::ptr()->get_data_path() + "photoeffects/fadeColor_test.png";
@@ -45,7 +37,7 @@ TEST(photoeffects_fadeColor, regression)
     if (rightDst.empty())
         FAIL() << "Can't read " + expectedOutput + " image";
 
-    EXPECT_EQ(0, fadeColor(image, dst, Point(100, 100), Point(250, 250)));
+    fadeColor(image, dst, Point(100, 100), Point(250, 250));
 
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;
