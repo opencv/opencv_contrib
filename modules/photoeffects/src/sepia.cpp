@@ -5,7 +5,7 @@ using namespace std;
 
 namespace cv { namespace photoeffects {
 
-int sepia(InputArray src, OutputArray dst)
+void sepia(InputArray src, OutputArray dst)
 {
     CV_Assert(src.type() == CV_8UC1);
     Mat img = src.getMat(), hsvImg, sepiaH, sepiaS;
@@ -23,7 +23,6 @@ int sepia(InputArray src, OutputArray dst)
     merge(sepiaPlanes, hsvImg);
 
     cvtColor(hsvImg, dst, COLOR_HSV2BGR);
-    return 0;
 }
 
 }}

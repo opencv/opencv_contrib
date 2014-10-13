@@ -22,7 +22,7 @@ TEST(photoeffects_sepia, test)
     Mat src(10, 10, CV_8UC1, Scalar(0)), dst, hsvDst;
     vector<Mat> channels(3);
 
-    EXPECT_EQ(0, sepia(src, dst));
+    sepia(src, dst);
     cvtColor(dst, hsvDst, COLOR_BGR2HSV);
     split(hsvDst, channels);
     EXPECT_LE(19 - 1, channels[0].at<uchar>(0, 0)); // hue = 19
@@ -49,7 +49,7 @@ TEST(photoeffects_sepia, regression)
         FAIL() << "Can't read " + expectedOutput + " image";
 
     Mat dst;
-    EXPECT_EQ(0, sepia(image, dst));
+    sepia(image, dst);
 
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;

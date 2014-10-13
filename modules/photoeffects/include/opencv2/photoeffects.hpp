@@ -8,7 +8,7 @@
 
 namespace cv { namespace photoeffects {
 
-CV_EXPORTS_W  int sepia(cv::InputArray src, cv::OutputArray dst);
+CV_EXPORTS_W  void sepia(cv::InputArray src, cv::OutputArray dst);
 
 CV_EXPORTS_W  void filmGrain(cv::InputArray src, cv::OutputArray dst, int grainValue = 8, cv::RNG& rng = cv::theRNG());
 

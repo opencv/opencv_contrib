@@ -25,19 +25,25 @@ int main(int argc, char **argv)
         cout << helper << endl;
         return 1;
     }
-    int opRes = sepia(img, sepiaImg);
-    if (opRes == 1)
+
+    int errorCode = 0;
+    try
     {
-        cout << "Incorrect image type." << endl;
-        return 2;
+        sepia(img, sepiaImg);
+    }
+    catch (cv::Exception &e)
+    {
+        errorCode = e.code;
     }
 
-    namedWindow(srcImgWinName);
-    namedWindow(dstImgWinName);
-    imshow(srcImgWinName, img);
-    imshow(dstImgWinName, sepiaImg);
-    waitKey();
-    destroyAllWindows();
+    if (errorCode == 0)
+    {
+        namedWindow(srcImgWinName);
+        namedWindow(dstImgWinName);
+        imshow(srcImgWinName, img);
+        imshow(dstImgWinName, sepiaImg);
+        waitKey();
+    }
     return 0;
 }
 

@@ -3,11 +3,10 @@ Sepia
 =======================================
 Applies sepia effect to image.
 
-.. cpp:function:: int sepia(cv::InputArray src, cv::OutputArray dst)
+.. ocv:function:: void sepia(cv::InputArray src, cv::OutputArray dst)
 
    :param src: Source 8-bit single-channel image.
    :param dst: Destination image of the same size and the same type as **src**.
-   :return: Error code.
 
 The algorithm.
 
