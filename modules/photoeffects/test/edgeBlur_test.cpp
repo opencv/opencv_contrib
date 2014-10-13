@@ -38,6 +38,8 @@ TEST(photoeffects_edgeBlur, regression)
     if (rightDst.empty())
         FAIL() << "Can't read " + expectedOutput + " image";
 
+    edgeBlur(src, dst, 130, 160);
+    imwrite("edgeBlur_test_result.png", dst);
     Mat diff = abs(rightDst - dst);
     Mat mask = diff.reshape(1) > 1;
     EXPECT_EQ(0, countNonZero(mask));

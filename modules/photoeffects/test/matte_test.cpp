@@ -35,7 +35,6 @@ TEST(photoeffects_matte, regression)
     }
     Mat dst;
     matte(src, dst, 25);
-    dst.convertTo(dst, CV_8UC3, 255);
     Mat diff = abs(expectedDst - dst);
     Mat mask = diff.reshape(1) > 1;
     EXPECT_EQ(0, countNonZero(mask));

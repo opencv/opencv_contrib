@@ -53,7 +53,7 @@ TEST(photoeffects_antique, regression)
         FAIL() << "Can't read" + expectedOut + " image";
     }
     Mat dst;
-    EXPECT_ERROR(CV_StsAssert, antique(src, dst, txtre, 0.9f));
+    antique(src, dst, txtre, 0.9f);
     Mat diff = abs(expectedDst - dst);
     Mat mask = diff.reshape(1) > 1;
     EXPECT_EQ(0, countNonZero(mask));

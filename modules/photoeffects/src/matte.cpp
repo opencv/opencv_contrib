@@ -5,7 +5,7 @@ using namespace std;
 namespace cv { namespace photoeffects {
 
 
-void matte(InputArray src, OutputArray dst, float sigma=25)
+void matte(InputArray src, OutputArray dst, float sigma)
 {
     CV_Assert((src.type() == CV_8UC3) || (src.type() == CV_32FC3));
     CV_Assert((sigma > 0.0f));
@@ -32,7 +32,6 @@ void matte(InputArray src, OutputArray dst, float sigma=25)
 
     float radiusMax = centerY * centerY/ aSquare + centerX * centerX / bSquare - 1.0f;
 
-
     for (int i =0;i<imgDst.rows;i++)
     {
         for (int j=0;j<imgDst.cols;j++)
@@ -52,4 +51,5 @@ void matte(InputArray src, OutputArray dst, float sigma=25)
         }
     }
 }
+
 }}

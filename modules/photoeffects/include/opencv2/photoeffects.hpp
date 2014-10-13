@@ -22,13 +22,13 @@ CV_EXPORTS_W  void edgeBlur(cv::InputArray src, cv::OutputArray dst, int indentT
 
 CV_EXPORTS_W  void boostColor(cv::InputArray src, cv::OutputArray dst, float intensity = 0.0f);
 
-CV_EXPORTS_W  void antique(cv::InputArray src, cv::OutputArray dst, cv::InputArray texture, float alpha);
+CV_EXPORTS_W  void antique(cv::InputArray src, cv::OutputArray dst, cv::InputArray texture, float alpha = 0.5f);
 
 CV_EXPORTS_W  void vignette(cv::InputArray src, cv::OutputArray dst, cv::Size rect);
 
 CV_EXPORTS_W  void warmify(cv::InputArray src, cv::OutputArray dst, uchar delta = 30);
 
-CV_EXPORTS_W  void matte(cv::InputArray src, cv::OutputArray dst, float sigma);
+CV_EXPORTS_W  void matte(cv::InputArray src, cv::OutputArray dst, float sigma = 25.0f);
 
 }}
 
