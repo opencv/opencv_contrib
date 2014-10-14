@@ -27,8 +27,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    rectangle.height = image.rows / 1.5f;
-    rectangle.width = image.cols / 2.0f;
+    rectangle.height = (int)(image.rows / 1.5f);
+    rectangle.width = (int)(image.cols / 2.0f);
 
     try
     {

@@ -10,8 +10,8 @@ TEST(photoeffects_vignette, incorrect_image)
     Mat image(100, 100, CV_8UC1);
     Mat dst;
     Size rectangle;
-    rectangle.height = image.rows / 1.5f;
-    rectangle.width = image.cols / 2.0f;
+    rectangle.height = (int)(image.rows / 1.5f);
+    rectangle.width = (int)(image.cols / 2.0f);
 
     EXPECT_ERROR(CV_StsAssert, vignette(image, dst, rectangle));
 }
@@ -21,8 +21,8 @@ TEST(photoeffects_vignette, incorrect_ellipse_size)
     Mat image(100, 100, CV_8UC3);
     Mat dst;
     Size rectangle;
-    rectangle.height = 0.0f;
-    rectangle.width = 0.0f;
+    rectangle.height = 0;
+    rectangle.width = 0;
 
     EXPECT_ERROR(CV_StsAssert, vignette(image, dst, rectangle));
 }
@@ -46,8 +46,8 @@ TEST(photoeffects_vignette, regression)
     }
 
     Size rectangle;
-    rectangle.height = image.rows / 1.5f;
-    rectangle.width = image.cols / 2.0f;
+    rectangle.height = (int)(image.rows / 1.5f);
+    rectangle.width = (int)(image.cols / 2.0f);
 
     vignette(image, dst, rectangle);
 

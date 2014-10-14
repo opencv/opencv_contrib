@@ -19,7 +19,7 @@ const char *helper =
 Point startPoint,endPoint;
 int numberChoosenPoint=0;
 
-void CallBackFunc(int event, int x, int y, int flags, void* userdata);
+void CallBackFunc(int event, int x, int y, int, void* userdata);
 int processArguments(int argc, char **argv, Mat &img);
 
 int main(int argc, char** argv)
@@ -47,7 +47,7 @@ int processArguments(int argc, char **argv, Mat &img)
     img = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     return 0;
 }
-void CallBackFunc(int event, int x, int y, int flags, void* userdata)
+void CallBackFunc(int event, int x, int y, int, void* userdata)
 {
     Mat src=*((Mat*)userdata);
     Mat srcCopy;

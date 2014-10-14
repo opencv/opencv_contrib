@@ -24,8 +24,8 @@ void matte(InputArray src, OutputArray dst, float sigma)
 
     Size s;
 
-    s.height = imgDst.rows/sigma*10;
-    s.width = imgDst.cols/sigma*10;
+    s.height = (int)(imgDst.rows/sigma*10.0f);
+    s.width = (int)(imgDst.cols/sigma*10.0f);
 
     float aSquare = s.height * s.height / 4.0f;
     float bSquare = s.width * s.width / 4.0f;

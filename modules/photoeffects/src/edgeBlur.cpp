@@ -43,9 +43,9 @@ public:
                                y_part - 0.5f), 0.0f), 1.0f);
                 float negMask = 1.0f - maskEl;
 
-                dstRow[j] = boxRow[j] * maskEl + row[j] * negMask;
-                dstRow[j + 1] = boxRow[j + 1] * maskEl + row[j + 1] * negMask;
-                dstRow[j + 2] = boxRow[j + 2] * maskEl + row[j + 2] * negMask;
+                dstRow[j] = (uchar)(boxRow[j] * maskEl + row[j] * negMask);
+                dstRow[j + 1] = (uchar)(boxRow[j + 1] * maskEl + row[j + 1] * negMask);
+                dstRow[j + 2] = (uchar)(boxRow[j + 2] * maskEl + row[j + 2] * negMask);
             }
         }
     }

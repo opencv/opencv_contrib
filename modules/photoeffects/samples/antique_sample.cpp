@@ -47,6 +47,6 @@ int processArguments(int argc, char** argv, Mat &src, Mat &texture, float &alpha
     }
     src = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     texture = imread(argv[2], CV_LOAD_IMAGE_COLOR);
-    alpha = atof(argv[3]);
+    alpha = (float)atof(argv[3]);
     return 0;
 }

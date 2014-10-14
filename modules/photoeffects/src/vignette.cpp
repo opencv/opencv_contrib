@@ -34,9 +34,9 @@ public:
                 {
                     coefficient = 1.0f - (dist - 1.0f) / distMax;
                 }
-                dstRow[3 * j] *= coefficient;
-                dstRow[3 * j + 1] *= coefficient;
-                dstRow[3 * j + 2] *= coefficient;
+                dstRow[3 * j] = (uchar)(dstRow[3 * j] * coefficient);
+                dstRow[3 * j + 1] = (uchar)(dstRow[3 * j + 1] * coefficient);
+                dstRow[3 * j + 2] = (uchar)(dstRow[3 * j + 2] * coefficient);
             }
         }
     }

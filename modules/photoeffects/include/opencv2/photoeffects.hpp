@@ -10,11 +10,11 @@ namespace cv { namespace photoeffects {
 
 CV_EXPORTS_W  void sepia(cv::InputArray src, cv::OutputArray dst);
 
-CV_EXPORTS_W  void filmGrain(cv::InputArray src, cv::OutputArray dst, int grainValue = 8, cv::RNG& rng = cv::theRNG());
+CV_EXPORTS  void filmGrain(cv::InputArray src, cv::OutputArray dst, int grainValue = 8, cv::RNG& rng = cv::theRNG());
 
 CV_EXPORTS_W  void fadeColor(cv::InputArray src, cv::OutputArray dst,cv::Point startPoint,cv::Point endPoint);
 
-CV_EXPORTS_W  void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
+CV_EXPORTS  void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
 
 CV_EXPORTS_W  void glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f);
 

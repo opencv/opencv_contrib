@@ -35,12 +35,12 @@ TEST(photoeffects_glow, bad_radius) {
 TEST(photoeffects_glow, bad_intensity) {
     Mat image(10, 10, CV_32FC3), dst;
 
-    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5.0f, 5.0f));
-    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5.0f, -5.0f));
+    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5, 5.0f));
+    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5, -5.0f));
 }
 
 TEST(photoeffects_glow, bad_image) {
     Mat image(10, 10, CV_8UC1), dst;
 
-    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5.0f, 0.5f));
+    EXPECT_ERROR(CV_StsAssert, glow(image, dst, 5, 0.5f));
 }

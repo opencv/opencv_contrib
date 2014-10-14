@@ -17,8 +17,8 @@ const char *nameWinFilter = "Edge blur";
 Mat img, filterImg;
 int indentTop = 0, indentLeft = 0;
 
-void trackbarIndTop(int pos, void *);
-void trackbarIndLeft(int pos, void *);
+void trackbarIndTop(int, void *);
+void trackbarIndLeft(int, void *);
 int processArguments(int argc, char** argv, Mat &image);
 
 int main(int argc, char** argv)
@@ -55,13 +55,13 @@ int processArguments(int argc, char **argv, Mat &image)
     return 0;
 }
 
-void trackbarIndTop(int pos, void*)
+void trackbarIndTop(int, void*)
 {
     edgeBlur(img, filterImg, indentTop, indentLeft);
     imshow(nameWinFilter, filterImg);
 }
 
-void trackbarIndLeft(int pos, void*)
+void trackbarIndLeft(int, void*)
 {
     edgeBlur(img, filterImg, indentTop, indentLeft);
     imshow(nameWinFilter, filterImg);

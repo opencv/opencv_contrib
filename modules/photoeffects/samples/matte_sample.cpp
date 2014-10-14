@@ -44,7 +44,7 @@ int processArguments(int argc, char **argv, Mat &src, float &sigma)
         return 1;
     }
     src = imread(argv[1], CV_LOAD_IMAGE_COLOR);
-    sigma = atof(argv[2]);
+    sigma = (float)atof(argv[2]);
 
     return 0;
 }
