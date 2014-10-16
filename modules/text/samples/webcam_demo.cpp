@@ -191,7 +191,8 @@ int main(int argc, char* argv[])
         {
             //Extract MSER
             vector<vector<Point> > contours;
-            MSER(21,(int)(0.00002*grey.cols*grey.rows),(int)(0.05*grey.cols*grey.rows),1,0.7)(grey, contours);
+            Ptr<MSER> mser = MSER::create(21,(int)(0.00002*grey.cols*grey.rows),(int)(0.05*grey.cols*grey.rows),1,0.7);
+            mser->detectAndStore(grey, contours);
 
             //Convert the output of MSER to suitable input for the grouping/recognition algorithms
             if (contours.size() > 0)

@@ -79,7 +79,7 @@ SURF_OCL::SURF_OCL()
     status = -1;
 }
 
-bool SURF_OCL::init(const SURF* p)
+bool SURF_OCL::init(const SURF_Impl* p)
 {
     params = p;
     if(status < 0)

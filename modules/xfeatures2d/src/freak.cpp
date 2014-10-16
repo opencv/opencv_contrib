@@ -46,6 +46,99 @@ namespace cv
 namespace xfeatures2d
 {
 
+/*!
+ FREAK implementation
+ */
+class FREAK_Impl : public FREAK
+{
+public:
+    /** Constructor
+     * @param orientationNormalized enable orientation normalization
+     * @param scaleNormalized enable scale normalization
+     * @param patternScale scaling of the description pattern
+     * @param nbOctave number of octaves covered by the detected keypoints
+     * @param selectedPairs (optional) user defined selected pairs
+     */
+    explicit FREAK_Impl( bool orientationNormalized = true,
+                   bool scaleNormalized = true,
+                   float patternScale = 22.0f,
+                   int nOctaves = 4,
+                   const std::vector<int>& selectedPairs = std::vector<int>());
+
+    virtual ~FREAK_Impl();
+
+    /** returns the descriptor length in bytes */
+    virtual int descriptorSize() const;
+
+    /** returns the descriptor type */
+    virtual int descriptorType() const;
+
+    /** returns the default norm type */
+    virtual int defaultNorm() const;
+
+    /** select the 512 "best description pairs"
+     * @param images grayscale images set
+     * @param keypoints set of detected keypoints
+     * @param corrThresh correlation threshold
+     * @param verbose print construction information
+     * @return list of best pair indexes
+     */
+    std::vector<int> selectPairs( const std::vector<Mat>& images, std::vector<std::vector<KeyPoint> >& keypoints,
+                                 const double corrThresh = 0.7, bool verbose = true );
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors );
+
+protected:
+
+    void buildPattern();
+
+    template <typename imgType, typename iiType>
+    imgType meanIntensity( InputArray image, InputArray integral, const float kp_x, const float kp_y,
+                          const unsigned int scale, const unsigned int rot, const unsigned int point );
+
+    template <typename srcMatType, typename iiMatType>
+    void computeDescriptors( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors );
+
+    template <typename srcMatType>
+    void extractDescriptor(srcMatType *pointsValue, void ** ptr);
+
+    bool orientationNormalized; //true if the orientation is normalized, false otherwise
+    bool scaleNormalized; //true if the scale is normalized, false otherwise
+    double patternScale; //scaling of the pattern
+    int nOctaves; //number of octaves
+    bool extAll; // true if all pairs need to be extracted for pairs selection
+
+    double patternScale0;
+    int nOctaves0;
+    std::vector<int> selectedPairs0;
+
+    struct PatternPoint
+    {
+        float x; // x coordinate relative to center
+        float y; // x coordinate relative to center
+        float sigma; // Gaussian smoothing sigma
+    };
+
+    struct DescriptionPair
+    {
+        uchar i; // index of the first point
+        uchar j; // index of the second point
+    };
+
+    struct OrientationPair
+    {
+        uchar i; // index of the first point
+        uchar j; // index of the second point
+        int weight_dx; // dx/(norm_sq))*4096
+        int weight_dy; // dy/(norm_sq))*4096
+    };
+    
+    std::vector<PatternPoint> patternLookup; // look-up table for the pattern points (position+sigma of all points at all scales and orientation)
+    int patternSizes[NB_SCALES]; // size of the pattern at a specific scale (used to check if a point is within image boundaries)
+    DescriptionPair descriptionPairs[NB_PAIRS];
+    OrientationPair orientationPairs[NB_ORIENPAIRS];
+};
+
+
 static const double FREAK_LOG2 = 0.693147180559945;
 static const int FREAK_NB_ORIENTATION = 256;
 static const int FREAK_NB_POINTS = 43;
@@ -55,7 +148,7 @@ static const int FREAK_NB_PAIRS = FREAK::NB_PAIRS;
 static const int FREAK_NB_ORIENPAIRS = FREAK::NB_ORIENPAIRS;
 
 // default pairs
-static const int FREAK_DEF_PAIRS[FREAK::NB_PAIRS] =
+static const int FREAK_DEF_PAIRS[FREAK_Impl::NB_PAIRS] =
 {
      404,431,818,511,181,52,311,874,774,543,719,230,417,205,11,
      560,149,265,39,306,165,857,250,8,61,15,55,717,44,412,
@@ -108,7 +201,7 @@ struct sortMean
     }
 };
 
-void FREAK::buildPattern()
+void FREAK_Impl::buildPattern()
 {
     if( patternScale == patternScale0 && nOctaves == nOctaves0 && !patternLookup.empty() )
         return;
@@ -229,7 +322,7 @@ void FREAK::buildPattern()
     }
 }
 
-void FREAK::computeImpl( InputArray _image, std::vector<KeyPoint>& keypoints, OutputArray _descriptors ) const
+void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, OutputArray _descriptors )
 {
     Mat image = _image.getMat();
     if( image.empty() )
@@ -237,7 +330,7 @@ void FREAK::computeImpl( InputArray _image, std::vector<KeyPoint>& keypoints, Ou
     if( keypoints.empty() )
         return;
 
-    ((FREAK*)this)->buildPattern();
+    ((FREAK_Impl*)this)->buildPattern();
 
     // Convert to gray if not already
     Mat grayImage = image;
@@ -271,7 +364,7 @@ void FREAK::computeImpl( InputArray _image, std::vector<KeyPoint>& keypoints, Ou
 }
 
 template <typename srcMatType>
-void FREAK::extractDescriptor(srcMatType *pointsValue, void ** ptr) const
+void FREAK_Impl::extractDescriptor(srcMatType *pointsValue, void ** ptr)
 {
     std::bitset<FREAK_NB_PAIRS>** ptrScalar = (std::bitset<FREAK_NB_PAIRS>**) ptr;
 
@@ -293,7 +386,7 @@ void FREAK::extractDescriptor(srcMatType *pointsValue, void ** ptr) const
 
 #if CV_SSE2
 template <>
-void FREAK::extractDescriptor(uchar *pointsValue, void ** ptr) const
+void FREAK_Impl::extractDescriptor(uchar *pointsValue, void ** ptr)
 {
     __m128i** ptrSSE = (__m128i**) ptr;
 
@@ -352,7 +445,7 @@ void FREAK::extractDescriptor(uchar *pointsValue, void ** ptr) const
 #endif
 
 template <typename srcMatType, typename iiMatType>
-void FREAK::computeDescriptors( InputArray _image, std::vector<KeyPoint>& keypoints, OutputArray _descriptors ) const {
+void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& keypoints, OutputArray _descriptors ){
 
     Mat image = _image.getMat();
     Mat imgIntegral;
@@ -529,12 +622,13 @@ void FREAK::computeDescriptors( InputArray _image, std::vector<KeyPoint>& keypoi
 
 // simply take average on a square patch, not even gaussian approx
 template <typename imgType, typename iiType>
-imgType FREAK::meanIntensity( InputArray _image, InputArray _integral,
+imgType FREAK_Impl::meanIntensity( InputArray _image, InputArray _integral,
                               const float kp_x,
                               const float kp_y,
                               const unsigned int scale,
                               const unsigned int rot,
-                              const unsigned int point) const {
+                              const unsigned int point)
+{
     Mat image = _image.getMat(), integral = _integral.getMat();
     // get point position in image
     const PatternPoint& FreakPoint = patternLookup[scale*FREAK_NB_ORIENTATION*FREAK_NB_POINTS + rot*FREAK_NB_POINTS + point];
@@ -584,7 +678,7 @@ imgType FREAK::meanIntensity( InputArray _image, InputArray _integral,
 }
 
 // pair selection algorithm from a set of training images and corresponding keypoints
-std::vector<int> FREAK::selectPairs(const std::vector<Mat>& images
+std::vector<int> FREAK_Impl::selectPairs(const std::vector<Mat>& images
                                         , std::vector<std::vector<KeyPoint> >& keypoints
                                         , const double corrTresh
                                         , bool verbose )
@@ -599,7 +693,7 @@ std::vector<int> FREAK::selectPairs(const std::vector<Mat>& images
     for( size_t i = 0;i < images.size(); ++i )
     {
         Mat descriptorsTmp;
-        computeImpl(images[i],keypoints[i],descriptorsTmp);
+        compute(images[i],keypoints[i],descriptorsTmp);
         descriptors.push_back(descriptorsTmp);
     }
 
@@ -705,30 +799,40 @@ void FREAKImpl::drawPattern()
 
 // -------------------------------------------------
 /* FREAK interface implementation */
-FREAK::FREAK( bool _orientationNormalized, bool _scaleNormalized
+FREAK_Impl::FREAK_Impl( bool _orientationNormalized, bool _scaleNormalized
             , float _patternScale, int _nOctaves, const std::vector<int>& _selectedPairs )
     : orientationNormalized(_orientationNormalized), scaleNormalized(_scaleNormalized),
     patternScale(_patternScale), nOctaves(_nOctaves), extAll(false), nOctaves0(0), selectedPairs0(_selectedPairs)
 {
 }
 
-FREAK::~FREAK()
+FREAK_Impl::~FREAK_Impl()
 {
 }
 
-int FREAK::descriptorSize() const
+int FREAK_Impl::descriptorSize() const
 {
     return FREAK_NB_PAIRS / 8; // descriptor length in bytes
 }
 
-int FREAK::descriptorType() const
+int FREAK_Impl::descriptorType() const
 {
     return CV_8U;
 }
 
-int FREAK::defaultNorm() const
+int FREAK_Impl::defaultNorm() const
 {
     return NORM_HAMMING;
+}
+
+Ptr<FREAK> FREAK::create(bool orientationNormalized,
+                         bool scaleNormalized,
+                         float patternScale,
+                         int nOctaves,
+                         const std::vector<int>& selectedPairs)
+{
+    return makePtr<FREAK_Impl>(orientationNormalized, scaleNormalized,
+                               patternScale, nOctaves, selectedPairs);
 }
 
 }
