@@ -101,7 +101,7 @@ public:
         * @brief Apply High-dimensional filtering using adaptive manifolds
         * @param src       Input image to be filtered.
         * @param dst       Adaptive-manifold filter response.
-        * @param src_joint Image for joint filtering (optional).
+        * @param joint Image for joint filtering (optional).
         */
     CV_WRAP virtual void filter(InputArray src, OutputArray dst, InputArray joint = noArray()) = 0;
 

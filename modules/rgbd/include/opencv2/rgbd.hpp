@@ -233,7 +233,7 @@ namespace rgbd
 
   /**
    * @param depth the depth image
-   * @param K
+   * @param in_K
    * @param in_points the list of xy coordinates
    * @param points3d the resulting 3d points
    */
@@ -259,7 +259,7 @@ namespace rgbd
    * Otherwise, the image is simply converted to floats
    * @param in the depth image (if given as short int CV_U, it is assumed to be the depth in millimeters
    *              (as done with the Microsoft Kinect), it is assumed in meters)
-   * @param the desired output depth (floats or double)
+   * @param depth the desired output depth (floats or double)
    * @param out The rescaled float depth image
    */
   CV_EXPORTS
@@ -290,10 +290,10 @@ namespace rgbd
 
     /** Find The planes in a depth image
      * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
-     * @param the normals for every point in the depth image
+     * @param normals the normals for every point in the depth image
      * @param mask An image where each pixel is labeled with the plane it belongs to
      *        and 255 if it does not belong to any plane
-     * @param the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0, norm(a,b,c)=1
+     * @param plane_coefficients the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0, norm(a,b,c)=1
      *        and c < 0 (so that the normal points towards the camera)
      */
     void
@@ -304,7 +304,7 @@ namespace rgbd
      * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
      * @param mask An image where each pixel is labeled with the plane it belongs to
      *        and 255 if it does not belong to any plane
-     * @param the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0
+     * @param plane_coefficients the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0
      */
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
@@ -457,11 +457,10 @@ namespace rgbd
     /** Prepare a cache for the frame. The function checks the precomputed/passed data (throws the error if this data
      * does not satisfy) and computes all remaining cache data needed for the frame. Returned size is a resolution
      * of the prepared frame.
-     * @param odometry The odometry which will process the frame.
+     * @param frame The odometry which will process the frame.
      * @param cacheType The cache type: CACHE_SRC, CACHE_DST or CACHE_ALL.
      */
-    virtual Size
-    prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
   protected:
     virtual void
@@ -488,14 +487,15 @@ namespace rgbd
      * @param iterCounts Count of iterations on each pyramid level.
      * @param minGradientMagnitudes For each pyramid level the pixels will be filtered out
      *                              if they have gradient magnitude less than minGradientMagnitudes[level].
+     * @param maxPointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
+     * @param transformType Class of transformation
      */
     RgbdOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
                  float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), const std::vector<int>& iterCounts = std::vector<int>(),
                  const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
                  int transformType = RIGID_BODY_MOTION);
 
-    virtual Size
-    prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
     AlgorithmInfo*
     info() const;
@@ -536,15 +536,15 @@ namespace rgbd
      * @param maxDepth Pixels with depth larger than maxDepth will not be used
      * @param maxDepthDiff Correspondences between pixels of two given frames will be filtered out
      *                     if their depth difference is larger than maxDepthDiff
-     * @param pointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
+     * @param maxPointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
      * @param iterCounts Count of iterations on each pyramid level.
+     * @param transformType Class of trasformation
      */
     ICPOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
                 float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
                 const std::vector<int>& iterCounts = std::vector<int>(), int transformType = RIGID_BODY_MOTION);
 
-    virtual Size
-    prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
     AlgorithmInfo*
     info() const;
@@ -586,10 +586,11 @@ namespace rgbd
      * @param maxDepth Pixels with depth larger than maxDepth will not be used
      * @param maxDepthDiff Correspondences between pixels of two given frames will be filtered out
      *                     if their depth difference is larger than maxDepthDiff
-     * @param pointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
+     * @param maxPointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
      * @param iterCounts Count of iterations on each pyramid level.
      * @param minGradientMagnitudes For each pyramid level the pixels will be filtered out
      *                              if they have gradient magnitude less than minGradientMagnitudes[level].
+     * @param transformType Class of trasformation
      */
     RgbdICPOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
                     float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
@@ -597,8 +598,7 @@ namespace rgbd
                     const std::vector<float>& minGradientMagnitudes = std::vector<float>(),
                     int transformType = RIGID_BODY_MOTION);
 
-    virtual Size
-    prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
     AlgorithmInfo*
     info() const;
