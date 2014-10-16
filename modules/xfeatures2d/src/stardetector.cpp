@@ -483,6 +483,11 @@ StarDetectorImpl::StarDetectorImpl(int _maxSize, int _responseThreshold,
 void StarDetectorImpl::detect( InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask )
 {
     Mat image = _image.getMat(), mask = _mask.getMat(), grayImage = image;
+    if( image.empty() )
+    {
+        keypoints.clear();
+        return;
+    }
     if( image.channels() > 1 ) cvtColor( image, grayImage, COLOR_BGR2GRAY );
 
     Mat responses, sizes;

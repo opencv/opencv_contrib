@@ -1223,12 +1223,12 @@ protected:
 
 TEST(Features2d_SIFT_using_mask, regression)
 {
-    FeatureDetectorUsingMaskTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"));
+    FeatureDetectorUsingMaskTest test(SIFT::create());
     test.safe_run();
 }
 
 TEST(DISABLED_Features2d_SURF_using_mask, regression)
 {
-    FeatureDetectorUsingMaskTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"));
+    FeatureDetectorUsingMaskTest test(SURF::create());
     test.safe_run();
 }
