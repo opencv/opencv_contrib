@@ -1,0 +1,52 @@
+cv.drawMatches void 
+    Mat img1 
+    vector_KeyPoint keypoints1 
+    Mat img2 
+    vector_KeyPoint keypoints2 
+    vector_DMatch matches1to2 
+    Mat outImg /O
+    Scalar matchColor Scalar::all(-1)
+    Scalar singlePointColor Scalar::all(-1)
+    vector_char matchesMask std::vector<char>()
+    int flags DrawMatchesFlags::DEFAULT
+cv.morphologyDefaultBorderValue Scalar
+cv.abs Mat
+    Mat src
+cv.sum Mat
+    Mat src
+cv.KeyPoint.convert void /S
+    vector<KeyPoint> keypoints
+    vector<Point2f> points2f /O
+cv.KeyPoint.convert void /S
+    vector<Point2f> points2f
+    vector<KeyPoint> keypoints /O
+    float size 1
+    float response
+    int octave 0
+    int class_id -1
+cv.DescriptorMatcher.radiusMatch void
+    cv::Mat queryDescriptors
+    cv::Mat trainDescriptors
+    vector_vector_DMatch matches /O
+    float maxDistance
+    cv::Mat mask cv::Mat()
+    bool compactResult false
+cv.findEssentialMat Mat 
+    Mat points1 
+    Mat points2 
+    double focal 1.0
+    Point2d pp Point2d(0, 0)
+    int method RANSAC
+    double prob 0.999
+    double threshold 1.0
+    Mat mask Mat()/O; /O
+cv.recoverPose int 
+    Mat E 
+    Mat points1 
+    Mat points2 
+    Mat R /O; /O
+    Mat t /O; /O
+    double focal 1.0
+    Point2d pp Point2d(0, 0)
+    Mat mask Mat()/IO; /IO
+

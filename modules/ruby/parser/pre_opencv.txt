@@ -1,0 +1,691 @@
+const CV_MAX_DIM 32 
+const IPL_BORDER_CONSTANT 0
+const IPL_BORDER_REPLICATE 1
+const IPL_BORDER_REFLECT 2 
+const IPL_BORDER_WRAP 3 
+const IPL_BORDER_REFLECT_101 4 
+const IPL_BORDER_TRANSPARENT 5 
+const CV_LMEDS 4 
+const CV_RANSAC 8 
+const CV_ITERATIVE 0 
+const CV_EPNP 1 
+const CV_P3P 2 
+const CV_CALIB_USE_INTRINSIC_GUESS 0x00001 
+const CV_CALIB_FIX_ASPECT_RATIO 0x00002 
+const CV_CALIB_FIX_PRINCIPAL_POINT 0x00004 
+const CV_CALIB_ZERO_TANGENT_DIST 0x00008 
+const CV_CALIB_FIX_FOCAL_LENGTH 0x00010 
+const CV_CALIB_FIX_K1 0x00020 
+const CV_CALIB_FIX_K2 0x00040 
+const CV_CALIB_FIX_K3 0x00080 
+const CV_CALIB_FIX_K4 0x00800 
+const CV_CALIB_FIX_K5 0x01000 
+const CV_CALIB_FIX_K6 0x02000 
+const CV_CALIB_RATIONAL_MODEL 0x04000 
+const CV_CALIB_THIN_PRISM_MODEL 0x08000 
+const CV_CALIB_FIX_S1_S2_S3_S4 0x10000 
+const CV_CALIB_FIX_INTRINSIC 0x00100 
+const CV_CALIB_SAME_FOCAL_LENGTH 0x00200 
+const CV_CALIB_ZERO_DISPARITY 0x00400 
+const CV_FM_7POINT 1 
+const CV_FM_8POINT 2 
+const CV_FM_LMEDS 4 
+const CV_FM_RANSAC 8 
+const CV_AFM_4POINT 16 
+const CV_AFM_LMEDS 32 
+const CV_AFM_RANSAC 64 
+const CV_WINDOW_NORMAL 0x00000000 
+const CV_WINDOW_AUTOSIZE 0x00000001 
+const CV_WINDOW_OPENGL 0x00001000 
+const CV_WINDOW_FULLSCREEN 1 
+const CV_WINDOW_FREERATIO 0x00000100 
+const CV_WINDOW_KEEPRATIO 0x00000000 
+const CV_WND_PROP_FULLSCREEN 0 
+const CV_WND_PROP_AUTOSIZE 1 
+const CV_WND_PROP_ASPECT_RATIO 2 
+const CV_WND_PROP_OPENGL 3 
+const InputArray.KINDSHIFT 16
+const CV_LKFLOW_PYR_A_READY       1
+const CV_LKFLOW_PYR_B_READY       2
+const CV_LKFLOW_INITIAL_GUESSES   4
+const CV_LKFLOW_GET_MIN_EIGENVALS 8
+const INT_MAX 2147483647
+const CV_8U 0
+const CV_8S 1
+const CV_16U 2
+const CV_16S 3
+const CV_32S 4
+const CV_32F 5
+const CV_64F 6
+const CV_8UC1 (1-1)*8 + CV_8U
+const CV_8UC2 (2-1)*8 + CV_8U
+const CV_8UC3 (3-1)*8 + CV_8U
+const CV_8UC4 (4-1)*8 + CV_8U
+const CV_8SC1 (1-1)*8 + CV_8S
+const CV_8SC2 (2-1)*8 + CV_8S
+const CV_8SC3 (3-1)*8 + CV_8S
+const CV_8SC4 (4-1)*8 + CV_8S
+const CV_16UC1 (1-1)*8 + CV_16U
+const CV_16UC2 (2-1)*8 + CV_16U
+const CV_16UC3 (3-1)*8 + CV_16U
+const CV_16UC4 (4-1)*8 + CV_16U
+const CV_16SC1 (1-1)*8 + CV_16S
+const CV_16SC2 (2-1)*8 + CV_16S
+const CV_16SC3 (3-1)*8 + CV_16S
+const CV_16SC4 (4-1)*8 + CV_16S
+const CV_32SC1 (1-1)*8 + CV_32S
+const CV_32SC2 (2-1)*8 + CV_32S
+const CV_32SC3 (3-1)*8 + CV_32S
+const CV_32SC4 (4-1)*8 + CV_32S
+const CV_32FC1 (1-1)*8 + CV_32F
+const CV_32FC2 (2-1)*8 + CV_32F
+const CV_32FC3 (3-1)*8 + CV_32F
+const CV_32FC4 (4-1)*8 + CV_32F
+const CV_64FC1 (1-1)*8 + CV_64F
+const CV_64FC2 (2-1)*8 + CV_64F
+const CV_64FC3 (3-1)*8 + CV_64F
+const CV_64FC4 (4-1)*8 + CV_64F
+const CV_CN_MAX 512
+const CV_CN_SHIFT 3
+const CV_DEPTH_MAX (1 << CV_CN_SHIFT)
+const CV_MAT_CN_MASK ((CV_CN_MAX - 1) << CV_CN_SHIFT)
+const CV_MAT_TYPE_MASK (CV_DEPTH_MAX*CV_CN_MAX - 1)
+const CV_MAT_CONT_FLAG_SHIFT 14
+const CV_MAT_CONT_FLAG (1 << CV_MAT_CONT_FLAG_SHIFT)
+const CV_SUBMAT_FLAG_SHIFT 15
+const CV_SUBMAT_FLAG (1 << CV_SUBMAT_FLAG_SHIFT)
+class cv.Range
+    int start /RW
+    int end   /RW
+cv.Range.Range
+    int start
+    int end
+cv.Range.size int
+cv.Range.size bool
+cv.Range.all Range /S
+cv.Range.all Range
+cv.Range.operator== bool
+    Range r
+cv.Range.operator!= bool
+    Range r
+cv.Range.operator& Range
+    Range r
+cv.Range.operator+ Range
+    int delta
+cv.Range.operator- Range
+    int delta
+class cv.String
+cv.String.String
+cv.String.String
+    c_string str
+    size_t length
+cv.String.String
+    String other
+cv.String.size size_t
+cv.String.length size_t
+cv.String.operator[] char
+    size_t idx
+cv.String.c_str const_c_string
+cv.String.empty bool
+cv.String.clear void
+cv.String.compare int
+    String str
+cv.String.swap void
+    String str /IO
+class cv.Scalar
+    double* val
+cv.Scalar.Scalar
+cv.Scalar.Scalar
+    double v0
+cv.Scalar.Scalar
+    double v0
+    double v1
+    double v2 0
+    double v3 0
+cv.Scalar.all Scalar /S
+    double v0
+cv.Scalar.mul Scalar
+    Scalar other
+    double scale 1
+cv.Scalar.conj Scalar
+cv.Scalar.isReal bool
+cv.Scalar.operator[] double
+    size_t elem
+class cv.Point
+    int x /RW
+    int y /RW
+class cv.Rect
+    int x /RW
+    int y /RW
+    int width /RW
+    int height /RW
+cv.Point.Point
+cv.Point.Point
+    int x
+    int y
+cv.Point.Point
+    Point pt
+cv.Point.dot int
+    Point pt
+cv.Point.dot double
+    Point pt
+cv.Point.cross double
+    Point pt
+cv.Point.inside bool
+    Rect rect
+cv.Point.operator+ Point
+    Point pt
+cv.Point.operator- Point
+    Point pt
+cv.Point.operator* Point
+    int val
+cv.Point.operator== bool
+    Point pt
+cv.Point.operator!= bool
+    Point pt
+class cv.Point2f
+    float x /RW
+    float y /RW
+cv.Point2f.Point2f
+cv.Point2f.Point2f
+    float x
+    float y
+cv.Point2f.Point2f
+    Point2f pt
+cv.Point2f.dot float
+    Point2f pt
+cv.Point2f.dot double
+    Point2f pt
+cv.Point2f.cross double
+    Point2f pt
+cv.Point2f.operator+ Point2f
+    Point2f pt
+cv.Point2f.operator- Point2f
+    Point2f pt
+cv.Point2f.operator* Point2f
+    float val
+cv.Point2f.operator== bool
+    Point2f pt
+cv.Point2f.operator!= bool
+    Point2f pt
+class cv.Point2d
+    double x /RW
+    double y /RW
+cv.Point2d.Point2d
+cv.Point2d.Point2d
+    double x
+    double y
+cv.Point2d.operator+ Point2d
+    Point2d pt
+cv.Point2d.operator- Point2d
+    Point2d pt
+cv.Point2d.operator* Point2d
+    double val
+cv.Point2d.Point2d
+    Point2d pt
+cv.Point2d.dot double
+    Point2d pt
+cv.Point2d.dot double
+    Point2d pt
+cv.Point2d.cross double
+    Point2d pt
+cv.Point2d.operator== bool
+    Point2d pt
+cv.Point2d.operator!= bool
+    Point2d pt
+class cv.Point3f
+    float x /RW
+    float y /RW
+    float z /RW
+cv.Point3f.Point3f
+cv.Point3f.Point3f
+    float x
+    float y
+    float z
+cv.Point3f.Point3f
+    Point3f pt
+cv.Point3f.dot float
+    Point3f pt
+cv.Point3f.ddot double
+    Point3f pt
+cv.Point3f.cross Point3f
+    Point3f pt
+cv.Point3f.operator+ Point3f
+    Point3f pt
+cv.Point3f.operator- Point3f
+    Point3f pt
+cv.Point3f.operator* Point3f
+    float val
+cv.Point3f.operator== bool
+    Point3f pt
+cv.Point3f.operator!= bool
+    Point3f pt
+class cv.Point3d
+    double x /RW
+    double y /RW
+    double z /RW
+cv.Point3d.Point3d
+cv.Point3d.Point3d
+    double x
+    double y
+    double z
+cv.Point3d.Point3d
+    Point3d pt
+cv.Point3d.dot double
+    Point3d pt
+cv.Point3d.ddot double
+    Point3d pt
+cv.Point3d.cross Point3d
+    Point3d pt
+cv.Point3d.operator+ Point3d
+    Point3d pt
+cv.Point3d.operator- Point3d
+    Point3d pt
+cv.Point3d.operator* Point3d
+    double val
+cv.Point3d.operator== bool
+    Point3d pt
+cv.Point3d.operator!= bool
+    Point3d pt
+class cv.Size
+    int width  /RW
+    int height /RW
+cv.Size.Size
+cv.Size.Size
+    Size sz
+cv.Size.Size
+    Point  pt
+cv.Size.Size
+    int width
+    int height
+cv.Size.area int
+class cv.Size2f
+    float width  /RW
+    float height /RW
+cv.Size2f.Size2f
+cv.Size2f.Size2f
+    Size2f sz
+cv.Size2f.Size2f
+    Point2f  pt
+cv.Size2f.Size2f
+    float width
+    float height
+cv.Size2f.area float
+cv.Rect.Rect
+cv.Rect.Rect
+    Rect rect
+cv.Rect.Rect
+    int x
+    int y
+    int width
+    int height
+cv.Rect.tl Point
+cv.Rect.br Point
+cv.Rect.size Size
+cv.Rect.area int
+cv.Rect.contains bool
+    Point point
+class cvflann.flann_algorithm_t
+class cvflann.flann_distance_t
+class cv.RotatedRect
+    Point2f center /RW
+    Size2f size    /RW
+    float angle    /RW
+cv.RotatedRect.RotatedRect
+cv.RotatedRect.RotatedRect
+    Point2f center
+    Size2f size
+    float angle
+cv.RotatedRect.boundingRect Rect
+class cv.FileNode
+class cv.TermCriteria
+cv.TermCriteria.TermCriteria
+    int type /RW
+    int maxCount /RW
+    double epsilon /RW
+cv.TermCriteria.TermCriteria
+    int type
+    int maxCount
+    double epsilon
+class cv.flann::IndexParams
+class cv.flann::SearchParams
+class cv.FeatureDetector
+class cv.Mat
+    int flags
+    int rows
+    int cols
+    size_t step
+    uchar* data
+cv.Mat.Mat
+cv.Mat.Mat
+    Mat m
+cv.Mat.Mat
+    Size size
+    int type
+cv.Mat.Mat
+    int rows
+    int cols
+    int type
+cv.Mat.Mat
+    int rows
+    int cols
+    int type
+    void* data 
+    size_t step AUTO_STEP
+cv.Mat.Mat
+    Size size
+    int type
+    void* data 
+    size_t step AUTO_STEP
+cv.Mat.Mat
+    int rows
+    int cols
+    int type
+    Scalar scalar
+cv.Mat.Mat
+    Size size
+    int type
+    Scalar scalar
+cv.Mat.Mat
+    Mat m
+    Range row_range
+    Range col_range Range::all()
+cv.Mat.Mat
+    Mat m
+    Rect roi
+cv.Mat.operator+ Mat
+    Mat mat
+cv.Mat.operator+ Mat
+    double val
+cv.Mat.operator+ Mat
+    int val
+cv.Mat.operator- Mat
+    Mat mat
+cv.Mat.operator- Mat
+    double val
+cv.Mat.operator- Mat
+    int val
+cv.Mat.operator* Mat
+    Mat mat
+cv.Mat.operator* Mat
+    double val
+cv.Mat.operator* Mat
+    int val
+cv.Mat.operator/ Mat
+    Mat mat
+cv.Mat.operator/ Mat
+    double val
+cv.Mat.operator/ Mat
+    int val
+cv.Mat.row Mat
+    int y
+cv.Mat.col Mat
+    int c
+cv.Mat.rowRange Mat
+    int startrow
+    int endrow
+cv.Mat.rowRange Mat
+        Range r
+cv.Mat.colRange Mat
+    int startcol
+    int endcol
+cv.Mat.colRange Mat
+    Range r
+cv.Mat.diag Mat
+    int d 0
+cv.Mat.clone Mat
+cv.Mat.copyTo void
+    Mat m /O
+cv.Mat.copyTo void
+    Mat m /O
+    Mat mask /IO
+cv.Mat.convertTo void
+    Mat m /O
+    int rtype
+    double alpha 1
+    double beta 0
+cv.Mat.assignTo void
+    Mat m /O
+    int type -1
+cv.Mat.reshape Mat
+    int cn
+    int rows 0
+cv.Mat.t Mat
+cv.Mat.inv Mat
+    int method DECOMP_LU
+cv.Mat.mul Mat
+    Mat m
+    double scale 1
+cv.Mat.cross Mat
+    Mat m
+cv.Mat.dot double
+    Mat m
+cv.Mat.diag Mat /S
+    Mat d
+cv.Mat.zeros Mat /S
+    int rows
+    int cols
+    int type
+cv.Mat.zeros Mat /S
+    Size size
+    int type
+cv.Mat.ones Mat /S
+    int rows
+    int cols
+    int type
+cv.Mat.ones Mat /S
+    Size size
+    int type
+cv.Mat.eye Mat /S
+    int rows
+    int cols
+    int type
+cv.Mat.eye Mat /S
+    Size size
+    int type
+cv.Mat.create void
+    int rows
+    int cols
+    int type
+cv.Mat.create void
+    Size size
+    int type
+cv.Mat.isContinuous bool
+cv.Mat.isSubmatrix bool
+cv.Mat.elemSize size_t
+cv.Mat.elemSize1 size_t
+cv.Mat.size Size
+cv.Mat.type int
+cv.Mat.depth int
+cv.Mat.channels int
+cv.Mat.step1 size_t
+    int i 0
+cv.Mat.empty bool
+cv.Mat.total size_t
+cv.Mat.checkVector int
+    int elemChannels
+    int depth -1
+    bool requireContinuous true
+cv.Mat.ptr uchar*
+    int i0 0
+cv.Mat.ptr uchar*
+    int i0
+    int i1
+cv.Mat.ptr uchar*
+    int i0
+    int i1
+    int i2
+cv.Mat.operator () Mat =block
+    Rect rect
+class cv.RNG
+    uint64 state
+cv.RNG.RNG
+cv.RNG.RNG
+    uint64 state
+cv.RNG.uniform int
+    int a
+    int b
+cv.RNG.uniform float 
+    float a
+    float b
+cv.RNG.uniform double 
+    double a
+    double b
+cv.RNG.fill void
+    Mat mat /IO
+    int distType
+    Mat a
+    Mat b
+    bool saturateRange false
+cv.RNG.gaussian double
+    double sigma
+class cv.FileStorage
+cv.write void =write_scalar_int
+    FileStorage fs /IO
+    int val
+cv.write void =write_scalar_float
+    FileStorage fs /IO
+    float val
+cv.write void =write_scalar_double
+    FileStorage fs /IO
+    double val
+cv.write void =write_scalar_string
+    FileStorage fs /IO
+    String val
+cv.write void =write_int
+    FileStorage fs /IO
+    String name
+    int val
+cv.write void =write_float
+    FileStorage fs /IO
+    String name
+    float val
+cv.write void =write_double
+    FileStorage fs /IO
+    String name
+    double val
+cv.write void =write_string
+    FileStorage fs /IO
+    String name
+    String val
+cv.write void =write_mat
+    FileStorage fs /IO
+    String name
+    Mat val
+cv.write void =write_point
+    FileStorage fs /IO
+    String name
+    Point val
+cv.write void =write_point2f
+    FileStorage fs /IO
+    String name
+    Point2f val
+cv.write void =write_point3f
+    FileStorage fs /IO
+    String name
+    Point3f val
+cv.write void =write_point2d
+    FileStorage fs /IO
+    String name
+    Point2d val
+cv.write void =write_point3d
+    FileStorage fs /IO
+    String name
+    Point3d val
+cv.write void =write_rect
+    FileStorage fs /IO
+    String name
+    Rect val
+cv.write void =write_range
+    FileStorage fs /IO
+    String name
+    Range val
+cv.write void =write_scalar
+    FileStorage fs /IO
+    String name
+    Scalar val
+cv.write void =write_size
+    FileStorage fs /IO
+    String name
+    Size val
+cv.write void =write_vec2f
+    FileStorage fs /IO
+    String name
+    Vec2f val
+cv.write void =write_vec3f
+    FileStorage fs /IO
+    String name
+    Vec3f val
+cv.write void =write_vec2d
+    FileStorage fs /IO
+    String name
+    Vec2d val
+cv.write void =write_vec3d
+    FileStorage fs /IO
+    String name
+    Vec3d val
+cv.read void =read_int
+    FileNode fn /IO
+    int val /O
+    int default_val
+cv.read void =read_float
+    FileNode fn /IO
+    float val /O
+    float default_val
+cv.read void =read_double
+    FileNode fn /IO
+    double val /O
+    double default_val
+cv.read void =read_string
+    FileNode fn /IO
+    String val /O
+    String default_val
+cv.read void =read_mat
+    FileNode fn /IO
+    Mat val /O
+    Mat default_val
+cv.FileStorage.operator<< FileStorage =write_int /O
+    int val
+cv.FileStorage.operator<< FileStorage =write_float /O
+    float val
+cv.FileStorage.operator<< FileStorage =write_double /O
+    double val
+cv.FileStorage.operator<< FileStorage =write_string /O
+    String val
+cv.FileStorage.operator<< FileStorage =write_size /O
+    Size val
+cv.FileStorage.operator<< FileStorage =write_point /O
+    Point val
+cv.FileStorage.operator<< FileStorage =write_point2f /O
+    Point2f val
+cv.FileStorage.operator<< FileStorage =write_point3f /O
+    Point3f val
+cv.FileStorage.operator<< FileStorage =write_point2d /O
+    Point2d val
+cv.FileStorage.operator<< FileStorage =write_point3d /O
+    Point3d val
+cv.FileStorage.operator<< FileStorage =write_rect /O
+    Rect val
+cv.FileStorage.operator<< FileStorage =write_mat /O
+    Mat val
+class cv.FileNodeIterator
+cv.FileNode.operator>> void =read_int
+    int val /IO
+cv.FileNode.operator>> void =read_float
+    float val /IO
+cv.FileNode.operator>> void =read_double
+    double val /IO
+cv.FileNode.operator>> void =read_string
+    String val /IO
+cv.FileNode.operator>> void =read_mat
+    Mat val /IO
+cv.FileNode.begin FileNodeIterator
+cv.FileNode.end FileNodeIterator
+cv.FileNodeIterator.operator++ FileNodeIterator
+cv.FileNodeIterator.operator-- FileNodeIterator
+cv.FileNodeIterator.operator* FileNode =to_node
+cv.FileNodeIterator.operator== bool
+    FileNodeIterator other
+cv.FileNodeIterator.operator!= bool
+    FileNodeIterator other
+
