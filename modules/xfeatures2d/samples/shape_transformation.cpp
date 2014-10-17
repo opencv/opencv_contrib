@@ -34,20 +34,15 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // detecting keypoints
-    SurfFeatureDetector detector(5000);
+    // detecting keypoints & computing descriptors
+    Ptr<SURF> surf = SURF::create(5000);
     vector<KeyPoint> keypoints1, keypoints2;
-    detector.detect(img1, keypoints1);
-    detector.detect(img2, keypoints2);
-
-    // computing descriptors
-    SurfDescriptorExtractor extractor;
     Mat descriptors1, descriptors2;
-    extractor.compute(img1, keypoints1, descriptors1);
-    extractor.compute(img2, keypoints2, descriptors2);
+    surf->detectAndCompute(img1, Mat(), keypoints1, descriptors1);
+    surf->detectAndCompute(img2, Mat(), keypoints2, descriptors2);
 
     // matching descriptors
-    BFMatcher matcher(extractor.defaultNorm());
+    BFMatcher matcher(surf->defaultNorm());
     vector<DMatch> matches;
     matcher.match(descriptors1, descriptors2, matches);
 

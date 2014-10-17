@@ -867,16 +867,7 @@ struct SURFInvoker : ParallelLoopBody
 };
 
 
-SURF::SURF()
-{
-    hessianThreshold = 100;
-    extended = false;
-    upright = false;
-    nOctaves = 4;
-    nOctaveLayers = 3;
-}
-
-SURF::SURF(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
+SURF_Impl::SURF_Impl(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
 {
     hessianThreshold = _threshold;
     extended = _extended;
@@ -885,20 +876,49 @@ SURF::SURF(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended,
     nOctaveLayers = _nOctaveLayers;
 }
 
-int SURF::descriptorSize() const { return extended ? 128 : 64; }
-int SURF::descriptorType() const { return CV_32F; }
-int SURF::defaultNorm() const { return NORM_L2; }
-
-void SURF::operator()(InputArray imgarg, InputArray maskarg,
-                      CV_OUT std::vector<KeyPoint>& keypoints) const
+void SURF_Impl::set(int prop, double value)
 {
-    (*this)(imgarg, maskarg, keypoints, noArray(), false);
+    if( prop == HESSIAN_THRESHOLD )
+        hessianThreshold = value;
+    else if( prop == NOCTAVES )
+        nOctaves = cvRound(value);
+    else if( prop == NOCTAVE_LAYERS )
+        nOctaveLayers = cvRound(value);
+    else if( prop == EXTENDED )
+        extended = value != 0;
+    else if( prop == UPRIGHT )
+        upright = value != 0;
+    else
+        CV_Error(Error::StsBadArg, "");
 }
 
-void SURF::operator()(InputArray _img, InputArray _mask,
+double SURF_Impl::get(int prop) const
+{
+    double value = 0;
+    if( prop == HESSIAN_THRESHOLD )
+        value = hessianThreshold;
+    else if( prop == NOCTAVES )
+        value = nOctaves;
+    else if( prop == NOCTAVE_LAYERS )
+        value = nOctaveLayers;
+    else if( prop == EXTENDED )
+        value = extended;
+    else if( prop == UPRIGHT )
+        value = upright;
+    else
+        CV_Error(Error::StsBadArg, "");
+    return value;
+}
+
+int SURF_Impl::descriptorSize() const { return extended ? 128 : 64; }
+int SURF_Impl::descriptorType() const { return CV_32F; }
+int SURF_Impl::defaultNorm() const { return NORM_L2; }
+
+
+void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
                       CV_OUT std::vector<KeyPoint>& keypoints,
                       OutputArray _descriptors,
-                      bool useProvidedKeypoints) const
+                      bool useProvidedKeypoints)
 {
     int imgtype = _img.type(), imgcn = CV_MAT_CN(imgtype);
     bool doDescriptors = _descriptors.needed();
@@ -1012,17 +1032,11 @@ void SURF::operator()(InputArray _img, InputArray _mask,
     }
 }
 
-
-void SURF::detectImpl( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask) const
+Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
 {
-    (*this)(image.getMat(), mask.getMat(), keypoints, noArray(), false);
+    return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
-
-void SURF::computeImpl( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) const
-{
-    (*this)(image, Mat(), keypoints, descriptors, true);
-}
-
+    
 }
 }
 

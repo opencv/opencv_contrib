@@ -21,10 +21,10 @@ PERF_TEST_P(surf, detect, testing::Values(SURF_IMAGES))
 
     Mat mask;
     declare.in(frame).time(90);
-    SURF detector;
+    Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
 
-    TEST_CYCLE() detector(frame, mask, points);
+    TEST_CYCLE() detector->detect(frame, points, mask);
 
     SANITY_CHECK_KEYPOINTS(points, 1e-3);
 }
@@ -38,12 +38,12 @@ PERF_TEST_P(surf, extract, testing::Values(SURF_IMAGES))
     Mat mask;
     declare.in(frame).time(90);
 
-    SURF detector;
+    Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
     vector<float> descriptors;
-    detector(frame, mask, points);
+    detector->detect(frame, points, mask);
 
-    TEST_CYCLE() detector(frame, mask, points, descriptors, true);
+    TEST_CYCLE() detector->compute(frame, points, descriptors);
 
     SANITY_CHECK(descriptors, 1e-4);
 }
@@ -56,11 +56,11 @@ PERF_TEST_P(surf, full, testing::Values(SURF_IMAGES))
 
     Mat mask;
     declare.in(frame).time(90);
-    SURF detector;
+    Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
     vector<float> descriptors;
 
-    TEST_CYCLE() detector(frame, mask, points, descriptors, false);
+    TEST_CYCLE() detector->detectAndCompute(frame, mask, points, descriptors, false);
 
     SANITY_CHECK_KEYPOINTS(points, 1e-3);
     SANITY_CHECK(descriptors, 1e-4);

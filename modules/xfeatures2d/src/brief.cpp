@@ -52,9 +52,41 @@ namespace cv
 namespace xfeatures2d
 {
 
+/*
+ * BRIEF Descriptor
+ */
+class BriefDescriptorExtractorImpl : public BriefDescriptorExtractor
+{
+public:
+    enum { PATCH_SIZE = 48, KERNEL_SIZE = 9 };
+
+    // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
+    BriefDescriptorExtractorImpl( int bytes = 32 );
+
+    virtual void read( const FileNode& );
+    virtual void write( FileStorage& ) const;
+
+    virtual int descriptorSize() const;
+    virtual int descriptorType() const;
+    virtual int defaultNorm() const;
+
+    virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
+
+protected:
+    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray);
+    
+    int bytes_;
+    PixelTestFn test_fn_;
+};
+
+Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes )
+{
+    return makePtr<BriefDescriptorExtractorImpl>(bytes);
+}
+
 inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x)
 {
-    static const int HALF_KERNEL = BriefDescriptorExtractor::KERNEL_SIZE / 2;
+    static const int HALF_KERNEL = BriefDescriptorExtractorImpl::KERNEL_SIZE / 2;
 
     int img_y = (int)(pt.pt.y + 0.5) + y;
     int img_x = (int)(pt.pt.x + 0.5) + x;
@@ -99,7 +131,7 @@ static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints
     }
 }
 
-BriefDescriptorExtractor::BriefDescriptorExtractor(int bytes) :
+BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes) :
     bytes_(bytes), test_fn_(NULL)
 {
     switch (bytes)
@@ -118,22 +150,22 @@ BriefDescriptorExtractor::BriefDescriptorExtractor(int bytes) :
     }
 }
 
-int BriefDescriptorExtractor::descriptorSize() const
+int BriefDescriptorExtractorImpl::descriptorSize() const
 {
     return bytes_;
 }
 
-int BriefDescriptorExtractor::descriptorType() const
+int BriefDescriptorExtractorImpl::descriptorType() const
 {
     return CV_8UC1;
 }
 
-int BriefDescriptorExtractor::defaultNorm() const
+int BriefDescriptorExtractorImpl::defaultNorm() const
 {
     return NORM_HAMMING;
 }
 
-void BriefDescriptorExtractor::read( const FileNode& fn)
+void BriefDescriptorExtractorImpl::read( const FileNode& fn)
 {
     int dSize = fn["descriptorSize"];
     switch (dSize)
@@ -153,12 +185,14 @@ void BriefDescriptorExtractor::read( const FileNode& fn)
     bytes_ = dSize;
 }
 
-void BriefDescriptorExtractor::write( FileStorage& fs) const
+void BriefDescriptorExtractorImpl::write( FileStorage& fs) const
 {
     fs << "descriptorSize" << bytes_;
 }
 
-void BriefDescriptorExtractor::computeImpl(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) const
+void BriefDescriptorExtractorImpl::compute(InputArray image,
+                                           std::vector<KeyPoint>& keypoints,
+                                           OutputArray descriptors)
 {
     // Construct integral image for fast smoothing (box filter)
     Mat sum;
