@@ -32,6 +32,9 @@ public:
     //! returns the descriptor type
     CV_WRAP int defaultNorm() const;
 
+    void set(int, double);
+    double get(int) const;
+
     //! finds the keypoints and computes their descriptors.
     // Optionally it can compute descriptors for the user-provided keypoints
     void detectAndCompute(InputArray img, InputArray mask,

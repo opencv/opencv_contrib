@@ -74,6 +74,7 @@ typedef SIFT SiftDescriptorExtractor;
 class CV_EXPORTS_W SURF : public Feature2D
 {
 public:
+    enum { HESSIAN_THRESHOLD = 10000, NOCTAVES=10001, NOCTAVE_LAYERS=10002, EXTENDED=10003, UPRIGHT=10004 };
     CV_WRAP static Ptr<SURF> create(double hessianThreshold=100,
                   int nOctaves = 4, int nOctaveLayers = 3,
                   bool extended = false, bool upright = false);

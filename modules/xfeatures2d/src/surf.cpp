@@ -876,6 +876,40 @@ SURF_Impl::SURF_Impl(double _threshold, int _nOctaves, int _nOctaveLayers, bool 
     nOctaveLayers = _nOctaveLayers;
 }
 
+void SURF_Impl::set(int prop, double value)
+{
+    if( prop == HESSIAN_THRESHOLD )
+        hessianThreshold = value;
+    else if( prop == NOCTAVES )
+        nOctaves = cvRound(value);
+    else if( prop == NOCTAVE_LAYERS )
+        nOctaveLayers = cvRound(value);
+    else if( prop == EXTENDED )
+        extended = value != 0;
+    else if( prop == UPRIGHT )
+        upright = value != 0;
+    else
+        CV_Error(Error::StsBadArg, "");
+}
+
+double SURF_Impl::get(int prop) const
+{
+    double value = 0;
+    if( prop == HESSIAN_THRESHOLD )
+        value = hessianThreshold;
+    else if( prop == NOCTAVES )
+        value = nOctaves;
+    else if( prop == NOCTAVE_LAYERS )
+        value = nOctaveLayers;
+    else if( prop == EXTENDED )
+        value = extended;
+    else if( prop == UPRIGHT )
+        value = upright;
+    else
+        CV_Error(Error::StsBadArg, "");
+    return value;
+}
+
 int SURF_Impl::descriptorSize() const { return extended ? 128 : 64; }
 int SURF_Impl::descriptorType() const { return CV_32F; }
 int SURF_Impl::defaultNorm() const { return NORM_L2; }
