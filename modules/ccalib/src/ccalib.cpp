@@ -93,10 +93,11 @@ bool CustomPattern::init(Mat& image, const float pixel_size, OutputArray output)
 
     if (!detector)   // if no detector chosen, use default
     {
-        detector = ORB::create();
-        detector->set(ORB::NFEATURES, 2000);
-        detector->set(ORB::SCALE_FACTOR, 1.15);
-        detector->set(ORB::NLEVELS, 30);
+        Ptr<ORB> orb = ORB::create();
+        orb->setMaxFeatures(2000);
+        orb->setScaleFactor(1.15);
+        orb->setNLevels(30);
+        detector = orb;
     }
 
     detector->detect(img_roi, keypoints);
