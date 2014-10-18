@@ -42,11 +42,26 @@ public:
                           OutputArray descriptors,
                           bool useProvidedKeypoints = false);
 
-    CV_PROP_RW double hessianThreshold;
-    CV_PROP_RW int nOctaves;
-    CV_PROP_RW int nOctaveLayers;
-    CV_PROP_RW bool extended;
-    CV_PROP_RW bool upright;
+    void setHessianThreshold(double hessianThreshold_) { hessianThreshold = hessianThreshold_; }
+    double getHessianThreshold() const { return hessianThreshold; }
+
+    void setNOctaves(int nOctaves_) { nOctaves = nOctaves_; }
+    int getNOctaves() const { return nOctaves; }
+
+    void setNOctaveLayers(int nOctaveLayers_) { nOctaveLayers = nOctaveLayers_; }
+    int getNOctaveLayers() const { return nOctaveLayers; }
+
+    void setExtended(bool extended_) { extended = extended_; }
+    bool getExtended() const { return extended; }
+
+    void setUpright(bool upright_) { upright = upright_; }
+    bool getUpright() const { return upright; }
+
+    double hessianThreshold;
+    int nOctaves;
+    int nOctaveLayers;
+    bool extended;
+    bool upright;
 };
 
 class SURF_OCL

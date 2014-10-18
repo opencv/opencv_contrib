@@ -449,8 +449,8 @@ protected:
             fs.open( string(ts->get_data_path()) + FEATURES2D_DIR + "/keypoints.xml.gz", FileStorage::WRITE );
             if( fs.isOpened() )
             {
-                SurfFeatureDetector fd;
-                fd.detect(img, keypoints);
+                Ptr<SURF> fd = SURF::create();
+                fd->detect(img, keypoints);
                 write( fs, "keypoints", keypoints );
             }
             else

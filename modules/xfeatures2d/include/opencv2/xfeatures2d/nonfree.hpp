@@ -74,10 +74,24 @@ typedef SIFT SiftDescriptorExtractor;
 class CV_EXPORTS_W SURF : public Feature2D
 {
 public:
-    enum { HESSIAN_THRESHOLD = 10000, NOCTAVES=10001, NOCTAVE_LAYERS=10002, EXTENDED=10003, UPRIGHT=10004 };
     CV_WRAP static Ptr<SURF> create(double hessianThreshold=100,
                   int nOctaves = 4, int nOctaveLayers = 3,
                   bool extended = false, bool upright = false);
+
+    CV_WRAP virtual void setHessianThreshold(double hessianThreshold) = 0;
+    CV_WRAP virtual double getHessianThreshold() const = 0;
+
+    CV_WRAP virtual void setNOctaves(int nOctaves) = 0;
+    CV_WRAP virtual int getNOctaves() const = 0;
+
+    CV_WRAP virtual void setNOctaveLayers(int nOctaveLayers) = 0;
+    CV_WRAP virtual int getNOctaveLayers() const = 0;
+
+    CV_WRAP virtual void setExtended(bool extended) = 0;
+    CV_WRAP virtual bool getExtended() const = 0;
+
+    CV_WRAP virtual void setUpright(bool upright) = 0;
+    CV_WRAP virtual bool getUpright() const = 0;
 };
 
 typedef SURF SurfFeatureDetector;
