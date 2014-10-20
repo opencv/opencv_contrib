@@ -17,7 +17,7 @@ const char *nameWinImage = "Image";
 const char *nameWinFilter = "Filter";
 const char *nameWinParam = "Settings";
 
-Vec3b ColorTint;
+Scalar ColorTint;
 Mat BaseColor, img, filterImg;
 int valueHue = 0;
 int valueDen = 50;

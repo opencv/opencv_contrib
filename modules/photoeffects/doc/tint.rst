@@ -3,7 +3,7 @@ Tint
 =======================================
 Add a tint to the image.
 
-.. ocv:function:: void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density)
+.. ocv:function:: void tint(cv::InputArray src, cv::OutputArray dst, const cv::Scalar &colorTint, float density)
 
    :param src: Source 8-bit 3-channel (RGB) image.
    :param dst: Destination image of the same size and the same type as **src**.
@@ -21,7 +21,7 @@ The algorithm:
 
 Example:
 
-    **density** = 0.1, **colorTint** = Vec3b(255, 255, 0), i.e. cyan.
+    **density** = 0.1, **colorTint** = Scalar(255, 255, 0), i.e. cyan.
 
 |srcImage| |dstImage|
 
