@@ -1776,7 +1776,7 @@ static void NN_chain_core(const int_fast32_t N, double * const D, t_members * co
             }
             for (i=active_nodes.succ[idx2]; i<N; i=active_nodes.succ[i])
             {
-                if (D_(idx2,i) < min && !double_equal(D_(i,idx2), min))
+                if (D_(idx2,i) < min && !double_equal(D_(idx2,i), min))
                 {
                     min = D_(idx2,i);
                     idx1 = i;
