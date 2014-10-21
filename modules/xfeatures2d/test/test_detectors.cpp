@@ -61,7 +61,7 @@ public:
     ~CV_DetectorsTest();
 protected:
     void run(int);
-    template <class T> bool testDetector(const Mat& img, const T& detector, vector<KeyPoint>& expected);
+    bool testDetector(const Mat& img, Ptr<Feature2D> detector, vector<KeyPoint>& expected);
 
     void LoadExpected(const string& file, vector<KeyPoint>& out);
 };
@@ -153,10 +153,10 @@ struct WrapPoint
 
 struct sortByR { bool operator()(const KeyPoint& kp1, const KeyPoint& kp2) { return norm(kp1.pt) < norm(kp2.pt); } };
 
-template <class T> bool CV_DetectorsTest::testDetector(const Mat& img, const T& detector, vector<KeyPoint>& exp)
+bool CV_DetectorsTest::testDetector(const Mat& img, Ptr<Feature2D> detector, vector<KeyPoint>& exp)
 {
     vector<KeyPoint> orig_kpts;
-    detector(img, orig_kpts);
+    detector->detect(img, orig_kpts);
 
     typedef void (*TransfFunc )(const Mat&, Mat&, Mat& FransfFunc);
     const TransfFunc transfFunc[] = { getRotation, getZoom, getBlur, getBrightness };
@@ -173,7 +173,7 @@ template <class T> bool CV_DetectorsTest::testDetector(const Mat& img, const T& 
     for(size_t i = 0; i < case_num; ++i)
     {
         transfFunc[i](img, affs[i], new_imgs[i]);
-        detector(new_imgs[i], new_kpts[i]);
+        detector->detect(new_imgs[i], new_kpts[i]);
         transform(orig_kpts.begin(), orig_kpts.end(), back_inserter(transf_kpts[i]), WrapPoint(affs[i]));
         //show(names[i], new_imgs[i], new_kpts[i], transf_kpts[i]);
     }
@@ -253,14 +253,6 @@ template <class T> bool CV_DetectorsTest::testDetector(const Mat& img, const T& 
     return true;
 }
 
-struct SurfNoMaskWrap
-{
-    const SURF& detector;
-    SurfNoMaskWrap(const SURF& surf) : detector(surf) {}
-    SurfNoMaskWrap& operator=(const SurfNoMaskWrap&);
-    void operator()(const Mat& img, vector<KeyPoint>& kpts) const { detector(img, Mat(), kpts); }
-};
-
 void CV_DetectorsTest::LoadExpected(const string& file, vector<KeyPoint>& out)
 {
     Mat mat_exp;
@@ -298,14 +290,14 @@ void CV_DetectorsTest::run( int /*start_from*/ )
     if (exp.empty())
         return;
 
-    if (!testDetector(to_test, SurfNoMaskWrap(SURF(1536+512+512, 2)), exp))
+    if (!testDetector(to_test, SURF::create(1536+512+512, 2, 2, true, false), exp))
         return;
 
     LoadExpected(string(ts->get_data_path()) + "detectors/star.xml", exp);
     if (exp.empty())
         return;
 
-    if (!testDetector(to_test, StarDetector(45, 30, 10, 8, 5), exp))
+    if (!testDetector(to_test, StarDetector::create(45, 30, 10, 8, 5), exp))
         return;
 
     ts->set_failed_test_info( cvtest::TS::OK);

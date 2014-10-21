@@ -35,18 +35,17 @@ static double getTime()
     return work_end /((double)getTickFrequency() )* 1000.;
 }
 
-template<class KPDetector>
 struct SURFDetector
 {
-    KPDetector surf;
+    Ptr<Feature2D> surf;
     SURFDetector(double hessian = 800.0)
-        :surf(hessian)
     {
+        surf = SURF::create(hessian);
     }
     template<class T>
     void operator()(const T& in, const T& mask, std::vector<cv::KeyPoint>& pts, T& descriptors, bool useProvided = false)
     {
-        surf(in, mask, pts, descriptors, useProvided);
+        surf->detectAndCompute(in, mask, pts, descriptors, useProvided);
     }
 };
 
@@ -191,7 +190,7 @@ int main(int argc, char* argv[])
         descriptors2 = _descriptors2.getMat(ACCESS_RW);
 
     //instantiate detectors/matchers
-    SURFDetector<SURF> surf;
+    SURFDetector surf;
 
     SURFMatcher<BFMatcher> matcher;
 

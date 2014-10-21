@@ -46,6 +46,43 @@ namespace cv
 namespace xfeatures2d
 {
 
+/*!
+ The "Star" Detector.
+
+ The class implements the keypoint detector introduced by K. Konolige.
+ */
+class StarDetectorImpl : public StarDetector
+{
+public:
+    //! the full constructor
+    StarDetectorImpl(int _maxSize=45, int _responseThreshold=30,
+                         int _lineThresholdProjected=10,
+                         int _lineThresholdBinarized=8,
+                         int _suppressNonmaxSize=5);
+
+    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() );
+
+protected:
+    int maxSize;
+    int responseThreshold;
+    int lineThresholdProjected;
+    int lineThresholdBinarized;
+    int suppressNonmaxSize;
+};
+
+Ptr<StarDetector> StarDetector::create(int _maxSize,
+                                       int _responseThreshold,
+                                       int _lineThresholdProjected,
+                                       int _lineThresholdBinarized,
+                                       int _suppressNonmaxSize)
+{
+    return makePtr<StarDetectorImpl>(_maxSize, _responseThreshold,
+                                     _lineThresholdProjected,
+                                     _lineThresholdBinarized,
+                                     _suppressNonmaxSize);
+}
+
+
 template <typename inMatType, typename outMatType> static void
 computeIntegralImages( const Mat& matI, Mat& matS, Mat& matT, Mat& _FT,
                        int iiType )
@@ -432,7 +469,7 @@ StarDetectorSuppressNonmax( const Mat& responses, const Mat& sizes,
         }
 }
 
-StarDetector::StarDetector(int _maxSize, int _responseThreshold,
+StarDetectorImpl::StarDetectorImpl(int _maxSize, int _responseThreshold,
                            int _lineThresholdProjected,
                            int _lineThresholdBinarized,
                            int _suppressNonmaxSize)
@@ -443,32 +480,32 @@ StarDetector::StarDetector(int _maxSize, int _responseThreshold,
 {}
 
 
-void StarDetector::detectImpl( InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask ) const
+void StarDetectorImpl::detect( InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask )
 {
     Mat image = _image.getMat(), mask = _mask.getMat(), grayImage = image;
+    if( image.empty() )
+    {
+        keypoints.clear();
+        return;
+    }
     if( image.channels() > 1 ) cvtColor( image, grayImage, COLOR_BGR2GRAY );
 
-    (*this)(grayImage, keypoints);
-    KeyPointsFilter::runByPixelsMask( keypoints, mask );
-}
-
-void StarDetector::operator()(const Mat& img, std::vector<KeyPoint>& keypoints) const
-{
     Mat responses, sizes;
     int border;
 
     // Use 32-bit integers if we won't overflow in the integral image
-    if ((img.depth() == CV_8U || img.depth() == CV_8S) &&
-        (img.rows * img.cols) < 8388608 ) // 8388608 = 2 ^ (32 - 8(bit depth) - 1(sign bit))
-        border = StarDetectorComputeResponses<int>( img, responses, sizes, maxSize, CV_32S );
+    if ((grayImage.depth() == CV_8U || grayImage.depth() == CV_8S) &&
+        (int)grayImage.total() < 8388608 ) // 8388608 = 2 ^ (32 - 8(bit depth) - 1(sign bit))
+        border = StarDetectorComputeResponses<int>( grayImage, responses, sizes, maxSize, CV_32S );
     else
-        border = StarDetectorComputeResponses<double>( img, responses, sizes, maxSize, CV_64F );
+        border = StarDetectorComputeResponses<double>( grayImage, responses, sizes, maxSize, CV_64F );
 
     keypoints.clear();
     if( border >= 0 )
         StarDetectorSuppressNonmax( responses, sizes, keypoints, border,
-                                    responseThreshold, lineThresholdProjected,
-                                    lineThresholdBinarized, suppressNonmaxSize );
+                                   responseThreshold, lineThresholdProjected,
+                                   lineThresholdBinarized, suppressNonmaxSize );
+    KeyPointsFilter::runByPixelsMask( keypoints, mask );
 }
 
 }

@@ -58,45 +58,9 @@ namespace xfeatures2d
 class CV_EXPORTS_W SIFT : public Feature2D
 {
 public:
-    CV_WRAP explicit SIFT( int nfeatures = 0, int nOctaveLayers = 3,
-          double contrastThreshold = 0.04, double edgeThreshold = 10,
-          double sigma = 1.6);
-
-    //! returns the descriptor size in floats (128)
-    CV_WRAP int descriptorSize() const;
-
-    //! returns the descriptor type
-    CV_WRAP int descriptorType() const;
-
-    //! returns the default norm type
-    CV_WRAP int defaultNorm() const;
-
-    //! finds the keypoints using SIFT algorithm
-    void operator()(InputArray img, InputArray mask,
-                    std::vector<KeyPoint>& keypoints) const;
-    //! finds the keypoints and computes descriptors for them using SIFT algorithm.
-    //! Optionally it can compute descriptors for the user-provided keypoints
-    void operator()(InputArray img, InputArray mask,
-                    std::vector<KeyPoint>& keypoints,
-                    OutputArray descriptors,
-                    bool useProvidedKeypoints = false) const;
-
-    AlgorithmInfo* info() const;
-
-    void buildGaussianPyramid( const Mat& base, std::vector<Mat>& pyr, int nOctaves ) const;
-    void buildDoGPyramid( const std::vector<Mat>& pyr, std::vector<Mat>& dogpyr ) const;
-    void findScaleSpaceExtrema( const std::vector<Mat>& gauss_pyr, const std::vector<Mat>& dog_pyr,
-                                std::vector<KeyPoint>& keypoints ) const;
-
-protected:
-    void detectImpl( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask = noArray() ) const;
-    void computeImpl( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) const;
-
-    CV_PROP_RW int nfeatures;
-    CV_PROP_RW int nOctaveLayers;
-    CV_PROP_RW double contrastThreshold;
-    CV_PROP_RW double edgeThreshold;
-    CV_PROP_RW double sigma;
+    CV_WRAP static Ptr<SIFT> create( int nfeatures = 0, int nOctaveLayers = 3,
+                                    double contrastThreshold = 0.04, double edgeThreshold = 10,
+                                    double sigma = 1.6);
 };
 
 typedef SIFT SiftFeatureDetector;
@@ -110,42 +74,24 @@ typedef SIFT SiftDescriptorExtractor;
 class CV_EXPORTS_W SURF : public Feature2D
 {
 public:
-    //! the default constructor
-    CV_WRAP SURF();
-    //! the full constructor taking all the necessary parameters
-    explicit CV_WRAP SURF(double hessianThreshold,
-                  int nOctaves = 4, int nOctaveLayers = 2,
-                  bool extended = true, bool upright = false);
+    CV_WRAP static Ptr<SURF> create(double hessianThreshold=100,
+                  int nOctaves = 4, int nOctaveLayers = 3,
+                  bool extended = false, bool upright = false);
 
-    //! returns the descriptor size in float's (64 or 128)
-    CV_WRAP int descriptorSize() const;
+    CV_WRAP virtual void setHessianThreshold(double hessianThreshold) = 0;
+    CV_WRAP virtual double getHessianThreshold() const = 0;
 
-    //! returns the descriptor type
-    CV_WRAP int descriptorType() const;
+    CV_WRAP virtual void setNOctaves(int nOctaves) = 0;
+    CV_WRAP virtual int getNOctaves() const = 0;
 
-    //! returns the descriptor type
-    CV_WRAP int defaultNorm() const;
+    CV_WRAP virtual void setNOctaveLayers(int nOctaveLayers) = 0;
+    CV_WRAP virtual int getNOctaveLayers() const = 0;
 
-    //! finds the keypoints using fast hessian detector used in SURF
-    void operator()(InputArray img, InputArray mask,
-                    CV_OUT std::vector<KeyPoint>& keypoints) const;
-    //! finds the keypoints and computes their descriptors. Optionally it can compute descriptors for the user-provided keypoints
-    void operator()(InputArray img, InputArray mask,
-                    CV_OUT std::vector<KeyPoint>& keypoints,
-                    OutputArray descriptors,
-                    bool useProvidedKeypoints = false) const;
+    CV_WRAP virtual void setExtended(bool extended) = 0;
+    CV_WRAP virtual bool getExtended() const = 0;
 
-    AlgorithmInfo* info() const;
-
-    CV_PROP_RW double hessianThreshold;
-    CV_PROP_RW int nOctaves;
-    CV_PROP_RW int nOctaveLayers;
-    CV_PROP_RW bool extended;
-    CV_PROP_RW bool upright;
-
-protected:
-    void detectImpl( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask = noArray() ) const;
-    void computeImpl( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) const;
+    CV_WRAP virtual void setUpright(bool upright) = 0;
+    CV_WRAP virtual bool getUpright() const = 0;
 };
 
 typedef SURF SurfFeatureDetector;
