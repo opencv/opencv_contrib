@@ -3,22 +3,24 @@ Matte
 =======================================
 Increases the brightness of peripheral pixels.
 
-.. cpp:function:: int matte(cv::InputArray src, cv::OutputArray dst, cv::Point firstPoint, cv::Point secondPoint, float sigma)
+.. ocv:function:: void matte(cv::InputArray src, cv::OutputArray dst, float sigma)
 
    :param src: RGB image.
    :param dst: Destination image of the same size and the same type as **src**.
-   :param firstPoint: The first point for creating ellipse.
-   :param secondPoint: The second point for creatin ellipse.
-   :param sigma: The deviation in the Gaussian blur effect.
-   :return: Error code.
+   :param sigma: Size of the white area at the edges.
 
 The algorithm.
 
-#. Create new image with white background for mask.
-#. Draw black ellipse inscribed in a rectangle that is defined by two opposite corner points (**firstPoint** and **secondPoint**) on the mask image. It's a meaning part.
-#. Apply gaussian blur to the meaning part to make fade effect.
-#. Convolve mask with the image.
-#. Convert resulting image to the same color format as **src**.
+#. For every pixel of the src image calculate  dist and  coefficient.
+#. Dist is an amount, which describes a distance from the current pixel to border of the ellipse.
+#. Coefficient is a number which cuts a part of the channel's intensity of the src image (value is in the range  [0, 1] ).
+#. New value stores to the dst image.
+#. The  coefficient is calculated by the following formula:
+
+    coef = 1 - ( ( dist - 1 ) / radiusMax );
+    coef = -2 * coef * coef * coef * coef * coef + 4 * coef * coef * coef - coef,
+    
+    where  radiusMax is a maximum distance from border of the ellipse to the farthest pixel (a corner of the image).
 
 Example.
 
