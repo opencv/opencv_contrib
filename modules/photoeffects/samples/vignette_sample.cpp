@@ -12,38 +12,36 @@ const char *helper =
 \t<img> - file name contained the processed image\n\
 ";
 
+const char *srcImgWinName = "Initial image",
+           *dstImgWinName = "Processed image";
+Mat image, vignetteImg;
+Size rectSlider;
+
 int processArguments(int argc, char **argv, Mat &img);
+void on_trackbar_width(int, void*);
+void on_trackbar_height(int, void*);
 
 int main(int argc, char** argv)
 {
-    const char *srcImgWinName = "Initial image",
-               *dstImgWinName = "Processed image";
-    Mat image, vignetteImg;
-    Size rectangle;
-
     if (processArguments(argc, argv, image) != 0)
     {
         cout << helper << endl;
         return 1;
     }
 
-    rectangle.height = (int)(image.rows / 1.5f);
-    rectangle.width = (int)(image.cols / 2.0f);
+    namedWindow(srcImgWinName, WINDOW_FREERATIO);
+    namedWindow(dstImgWinName, WINDOW_FREERATIO);
 
-    try
-    {
-        vignette(image, vignetteImg, rectangle);
-    }
-    catch(...)
-    {
-        cout << "Incorrect image type, size of rectangle or image wasn't found." << endl;
-        return 2;
-    }
+    rectSlider.width = (int)(image.cols / 2.0f);
+    rectSlider.height = (int)(image.rows / 1.5f);
 
-    namedWindow(srcImgWinName);
-    namedWindow(dstImgWinName);
+    createTrackbar("Ellipse Width", srcImgWinName, &rectSlider.width, image.cols - 1, on_trackbar_width);
+    createTrackbar("Ellipse Height", srcImgWinName, &rectSlider.height, image.rows - 1, on_trackbar_height);
+
     imshow(srcImgWinName, image);
+    vignette(image, vignetteImg, rectSlider);
     imshow(dstImgWinName, vignetteImg);
+
     waitKey();
     destroyAllWindows();
     return 0;
@@ -57,4 +55,20 @@ int processArguments(int argc, char **argv, Mat &img)
     }
     img = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     return 0;
+}
+
+void on_trackbar_width(int, void*)
+{
+    rectSlider.width++;
+
+    vignette(image, vignetteImg, rectSlider);
+    imshow(dstImgWinName, vignetteImg);
+}
+
+void on_trackbar_height(int, void*)
+{
+    rectSlider.height++;
+
+    vignette(image, vignetteImg, rectSlider);
+    imshow(dstImgWinName, vignetteImg);
 }
