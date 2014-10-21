@@ -276,6 +276,7 @@ vector<vector<int> > generateFeatures(Size window_size, const std::string& type,
 void computeChannels(InputArray image, vector<Mat>& channels)
 {
     Mat_<float> grad;
+    Mat_<float> angles;
     Mat luv, gray, src;
     
     if(image.getMat().channels() > 1)
@@ -297,13 +298,15 @@ void computeChannels(InputArray image, vector<Mat>& channels)
     Sobel(gray, row_der, CV_32F, 0, 1);
     Sobel(gray, col_der, CV_32F, 1, 0);
 
-    magnitude(row_der, col_der, grad);
+    cartToPolar(col_der, row_der, grad, angles, true);
+    //magnitude(row_der, col_der, grad);
 
     Mat_<Vec6f> hist = Mat_<Vec6f>::zeros(grad.rows, grad.cols);
-    const float to_deg = 180 / 3.1415926f;
+    //const float to_deg = 180 / 3.1415926f;
     for (int row = 0; row < grad.rows; ++row) {
         for (int col = 0; col < grad.cols; ++col) {
-            float angle = atan2(row_der(row, col), col_der(row, col)) * to_deg;
+            //float angle = atan2(row_der(row, col), col_der(row, col)) * to_deg;
+            float angle = angles(row, col);
             if (angle < 0)
                 angle += 180;
             int ind = (int)(angle / 30);

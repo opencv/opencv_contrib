@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
         cerr << "Error reading model size from `" << model_size << "`" << endl;
         return 1;
     }
-
+    
     if( params.feature_count <= 0 )
     {
         cerr << "feature_count must be positive number" << endl;
@@ -159,15 +159,17 @@ int main(int argc, char *argv[])
     int features_size = params.feature_count;
     int max_features_allowed = (int)(INT_MAX/(sizeof(int)* samples_size));
     int max_samples_allowed = (int)(INT_MAX/(sizeof(int)* features_size));
+    int total_samples = (int)((params.bg_per_image * bg_filenames.size()) + pos_filenames.size());
     
-    if((int)((params.bg_per_image * bg_filenames.size()) + pos_filenames.size()) >max_samples_allowed)
+    
+    if(total_samples >max_samples_allowed)
     {
-      CV_Error_(1, ("exceeded maximum number of samples. Maximum number of samples with %d features is %d\n",features_size,max_samples_allowed ));
+      CV_Error_(1, ("exceeded maximum number of samples. Maximum number of samples with %d features is %d, you have %d (%d positive samples + (%d bg * %d bg_per_image))\n",features_size,max_samples_allowed,total_samples,pos_filenames.size(),bg_filenames.size(),params.bg_per_image ));
     }
     
     if(params.feature_count >max_features_allowed)
     {
-      CV_Error_(1, ("exceeded maximum number of features. Maximum number of features with %d samples is %d\n",samples_size,max_features_allowed ));
+      CV_Error_(1, ("exceeded maximum number of features. Maximum number of features with %d samples is %d, you have %d\n",samples_size,max_features_allowed, features_size ));
     }
     
     std::cout<<pos_filenames.size()<<std::endl;
