@@ -2,7 +2,7 @@
 
 namespace cv { namespace photoeffects {
 
-void filmGrain(InputArray src, OutputArray dst, int grainValue, RNG& rng)
+void filmGrain(InputArray src, OutputArray dst, int grainValue, int seed)
 {
     CV_Assert(!src.empty());
     CV_Assert(src.type() == CV_8UC1 || src.type() == CV_8UC3);
@@ -10,6 +10,8 @@ void filmGrain(InputArray src, OutputArray dst, int grainValue, RNG& rng)
     Mat image=src.getMat();
     Mat noise;
     noise.create(image.size(), CV_8UC1);
+    
+    RNG rng(0);
     rng.fill(noise, RNG::UNIFORM, 0, grainValue);
     dst.create(src.size(), src.type());
     Mat dstMat=dst.getMat();

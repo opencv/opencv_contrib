@@ -27,7 +27,7 @@ TEST(photoeffects_filmGrain, regression)
         FAIL() << "Can't read " + input + " image";
 
     Mat dst;
-    theRNG()=RNG(0);
+
     filmGrain(image, dst, 25);
 
     Mat diff = abs(rightDst - dst);
