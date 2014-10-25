@@ -41,6 +41,8 @@
 
 #include "precomp.hpp"
 #include <time.h>
+#include "PFSolver.hpp"
+#include "TrackingFunctionPF.hpp"
 
 #ifdef _WIN32
 #define TIME( arg ) (((double) clock()) / CLOCKS_PER_SEC)
@@ -377,6 +379,36 @@ std::vector<Mat> TrackerSamplerCS::patchesRegularScan( const Mat& image, Rect tr
   CV_Assert( curPatch == num );
 
   return sample;
+}
+
+TrackerSamplerPF::Params::Params(){
+    iterationNum=20;
+    particlesNum=100;
+    alpha=0.9;
+    std=(Mat_<double>(1,4)<<15.0,15.0,15.0,15.0); 
+}
+TrackerSamplerPF::TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters):
+    params( parameters ),_function(new TrackingFunctionPF(chosenRect)){
+        className="PF";
+        _solver=createPFSolver(_function,parameters.std,TermCriteria(TermCriteria::MAX_ITER,parameters.iterationNum,0.0),
+        parameters.particlesNum,parameters.alpha);
+}
+bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample ){
+    Ptr<TrackerTargetState> ptr;
+    Mat_<double> _last_guess=(Mat_<double>(1,4)<<(double)boundingBox.x,(double)boundingBox.y,
+    (double)boundingBox.x+boundingBox.width,(double)boundingBox.y+boundingBox.height);
+    PFSolver* promoted_solver=dynamic_cast<PFSolver*>(static_cast<MinProblemSolver*>(_solver));
+
+    promoted_solver->setParamsSTD(params.std);
+    promoted_solver->minimize(_last_guess);
+    dynamic_cast<TrackingFunctionPF*>(static_cast<MinProblemSolver::Function*>(promoted_solver->getFunction()))->update(image);
+    while(promoted_solver->iteration() <= promoted_solver->getTermCriteria().maxCount);
+    promoted_solver->getOptParam(_last_guess);
+
+    Rect res=Rect(Point_<int>((int)_last_guess(0,0),(int)_last_guess(0,1)),Point_<int>((int)_last_guess(0,2),(int)_last_guess(0,3)));
+    sample.clear();
+    sample.push_back(image(res));
+    return true;
 }
 
 } /* namespace cv */

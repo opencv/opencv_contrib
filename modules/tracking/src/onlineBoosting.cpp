@@ -132,9 +132,9 @@ int StrongClassifierDirectSelection::getSwappedClassifier() const
 
 bool StrongClassifierDirectSelection::update( const Mat& image, int target, float importance )
 {
-  m_errorMask.assign( numAllWeakClassifier, 0 );
-  m_errors.assign( numAllWeakClassifier, 0 );
-  m_sumErrors.assign( numAllWeakClassifier, 0 );
+  m_errorMask.assign( (size_t)numAllWeakClassifier, false );
+  m_errors.assign( (size_t)numAllWeakClassifier, 0.0f );
+  m_sumErrors.assign( (size_t)numAllWeakClassifier, 0.0f );
 
   baseClassifier[0]->trainClassifier( image, target, importance, m_errorMask );
   for ( int curBaseClassifier = 0; curBaseClassifier < numBaseClassifier; curBaseClassifier++ )
@@ -287,7 +287,7 @@ void BaseClassifier::trainClassifier( const Mat& image, int target, float import
   double A = 1;
   int K = 0;
   int K_max = 10;
-  while ( 1 )
+  for ( ; ; )
   {
     double U_k = (double) rand() / RAND_MAX;
     A *= U_k;
@@ -572,7 +572,7 @@ void Detector::prepareDetectionsMemory( int numDetections )
 
 void Detector::classifySmooth( const std::vector<Mat>& images, float minMargin )
 {
-  int numPatches = images.size();
+  int numPatches = static_cast<int>(images.size());
 
   prepareConfidencesMemory( numPatches );
 

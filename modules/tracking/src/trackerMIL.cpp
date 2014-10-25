@@ -45,6 +45,22 @@
 namespace cv
 {
 
+class TrackerMILImpl : public TrackerMIL
+{
+ public:
+  TrackerMILImpl( const TrackerMIL::Params &parameters = TrackerMIL::Params() );
+  void read( const FileNode& fn );
+  void write( FileStorage& fs ) const;
+
+ protected:
+
+  bool initImpl( const Mat& image, const Rect2d& boundingBox );
+  bool updateImpl( const Mat& image, Rect2d& boundingBox );
+  void compute_integral( const Mat & img, Mat & ii_img );
+
+  TrackerMIL::Params params;
+};
+
 /*
  *  TrackerMIL
  */
@@ -89,31 +105,26 @@ void TrackerMIL::Params::write( cv::FileStorage& fs ) const
 /*
  * Constructor
  */
-TrackerMIL::TrackerMIL( const TrackerMIL::Params &parameters ) :
+Ptr<TrackerMIL> TrackerMIL::createTracker(const TrackerMIL::Params &parameters){
+    return Ptr<TrackerMILImpl>(new TrackerMILImpl(parameters));
+}
+TrackerMILImpl::TrackerMILImpl( const TrackerMIL::Params &parameters ) :
     params( parameters )
 {
   isInit = false;
 }
 
-/*
- * Destructor
- */
-TrackerMIL::~TrackerMIL()
-{
-
-}
-
-void TrackerMIL::read( const cv::FileNode& fn )
+void TrackerMILImpl::read( const cv::FileNode& fn )
 {
   params.read( fn );
 }
 
-void TrackerMIL::write( cv::FileStorage& fs ) const
+void TrackerMILImpl::write( cv::FileStorage& fs ) const
 {
   params.write( fs );
 }
 
-void TrackerMIL::compute_integral( const Mat & img, Mat & ii_img )
+void TrackerMILImpl::compute_integral( const Mat & img, Mat & ii_img )
 {
   Mat ii;
   std::vector<Mat> ii_imgs;
@@ -122,8 +133,9 @@ void TrackerMIL::compute_integral( const Mat & img, Mat & ii_img )
   ii_img = ii_imgs[0];
 }
 
-bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
+bool TrackerMILImpl::initImpl( const Mat& image, const Rect2d& boundingBox )
 {
+  srand (1);
   Mat intImage;
   compute_integral( image, intImage );
   TrackerSamplerCSC::Params CSCparameters;
@@ -157,7 +169,7 @@ bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
   //compute HAAR features
   TrackerFeatureHAAR::Params HAARparameters;
   HAARparameters.numFeatures = params.featureSetNumFeatures;
-  HAARparameters.rectSize = Size( boundingBox.width, boundingBox.height );
+  HAARparameters.rectSize = Size( (int)boundingBox.width, (int)boundingBox.height );
   HAARparameters.isIntegral = true;
   Ptr<TrackerFeature> trackerFeature = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARparameters ) );
   featureSet->addTrackerFeature( trackerFeature );
@@ -183,14 +195,14 @@ bool TrackerMIL::initImpl( const Mat& image, const Rect& boundingBox )
   return true;
 }
 
-bool TrackerMIL::updateImpl( const Mat& image, Rect& boundingBox )
+bool TrackerMILImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
 {
   Mat intImage;
   compute_integral( image, intImage );
 
   //get the last location [AAM] X(k-1)
   Ptr<TrackerTargetState> lastLocation = model->getLastTargetState();
-  Rect lastBoundingBox( lastLocation->getTargetPosition().x, lastLocation->getTargetPosition().y, lastLocation->getTargetWidth(),
+  Rect lastBoundingBox( (int)lastLocation->getTargetPosition().x, (int)lastLocation->getTargetPosition().y, lastLocation->getTargetWidth(),
                         lastLocation->getTargetHeight() );
 
   //sampling new frame based on last location
@@ -228,7 +240,7 @@ bool TrackerMIL::updateImpl( const Mat& image, Rect& boundingBox )
   }
 
   Ptr<TrackerTargetState> currentState = model->getLastTargetState();
-  boundingBox = Rect( currentState->getTargetPosition().x, currentState->getTargetPosition().y, currentState->getTargetWidth(),
+  boundingBox = Rect( (int)currentState->getTargetPosition().x, (int)currentState->getTargetPosition().y, currentState->getTargetWidth(),
                       currentState->getTargetHeight() );
 
   /*//TODO debug
