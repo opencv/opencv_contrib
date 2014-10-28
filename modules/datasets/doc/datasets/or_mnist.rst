@@ -14,3 +14,7 @@ _`"MNIST"`: http://yann.lecun.com/exdb/mnist/
 
  3. To load data run: ./opencv/build/bin/example_datasets_or_mnist -p=/home/user/path_to_unpacked_files/
 
+**References:**
+
+.. [LeCun98a] Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner. Gradient-based learning applied to document recognition. Proceedings of the IEEE, 1998.
+

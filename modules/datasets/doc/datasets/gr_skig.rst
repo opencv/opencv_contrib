@@ -14,3 +14,7 @@ _`"Sheffield Kinect Gesture Dataset"`: http://lshao.staff.shef.ac.uk/data/Sheffi
 
  3. To load data run: ./opencv/build/bin/example_datasets_gr_skig -p=/home/user/path_to_unpacked_folders/
 
+**References:**
+
+.. [Liu13] L. Liu and L. Shao, “Learning Discriminative Representations from RGB-D Video Data”, In Proc. International Joint Conference on Artificial Intelligence (IJCAI), Beijing, China, 2013.
+

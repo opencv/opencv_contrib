@@ -14,3 +14,7 @@ _`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS
 
  3. To load data, for example, for "fountain", run: ./opencv/build/bin/example_datasets_msm_epfl -p=/home/user/path_to_unpacked_folder/fountain/
 
+**References:**
+
+.. [Strecha08] C. Strecha, W. von Hansen, L. Van Gool, P. Fua, U. Thoennessen. On Benchmarking Camera Calibration and Multi-View Stereo for High Resolution Imagery. CVPR, 2008
+

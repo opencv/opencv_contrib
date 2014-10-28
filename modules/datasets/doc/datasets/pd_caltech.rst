@@ -21,3 +21,9 @@ _`"Caltech Pedestrian Detection Benchmark"`: http://www.vision.caltech.edu/Image
 
  3. To load data run: ./opencv/build/bin/example_datasets_pd_caltech -p=/home/user/path_to_unpacked_folders/
 
+**References:**
+
+.. [Dollár12] P. Dollár, C. Wojek, B. Schiele and P. Perona. Pedestrian Detection: An Evaluation of the State of the Art. PAMI, 2012.
+
+.. [DollárCVPR09] P. Dollár, C. Wojek, B. Schiele and P. Perona. Pedestrian Detection: A Benchmark. CVPR, 2009
+
