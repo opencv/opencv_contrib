@@ -83,12 +83,12 @@ namespace cv
 namespace bioinspired
 {
 
-class CV_EXPORTS TransientAreasSegmentationModule: public Algorithm
+class CV_EXPORTS_W TransientAreasSegmentationModule: public Algorithm
 {
 public:
 
     // parameters structure
-    struct SegmentationParameters{
+    struct CV_EXPORTS_W SegmentationParameters{
         SegmentationParameters():
             thresholdON(100),
             thresholdOFF(100),
@@ -101,16 +101,16 @@ public:
             // context neighborhood energy filtering parameters : the aim is to get information about the energy on a wide neighborhood area to filtered out local effects
             contextEnergy_temporalConstant(1),
             contextEnergy_spatialConstant(75){};// default setup
-        float thresholdON, thresholdOFF;
-        float localEnergy_temporalConstant, localEnergy_spatialConstant;
-        float neighborhoodEnergy_temporalConstant, neighborhoodEnergy_spatialConstant;
-        float contextEnergy_temporalConstant, contextEnergy_spatialConstant;
+        CV_PROP_RW float thresholdON, thresholdOFF;
+        CV_PROP_RW float localEnergy_temporalConstant, localEnergy_spatialConstant;
+        CV_PROP_RW float neighborhoodEnergy_temporalConstant, neighborhoodEnergy_spatialConstant;
+        CV_PROP_RW float contextEnergy_temporalConstant, contextEnergy_spatialConstant;
     };
 
     /**
      * @return the sze of the manage input and output images
      */
-    virtual Size getSize()=0;
+    CV_WRAP virtual Size getSize()=0;
 
     /**
      * try to open an XML segmentation parameters file to adjust current segmentation instance setup
@@ -119,7 +119,7 @@ public:
      * @param retinaParameterFile : the parameters filename
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(String segmentationParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
+    CV_WRAP virtual void setup(String segmentationParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
 
     /**
      * try to open an XML segmentation parameters file to adjust current segmentation instance setup
@@ -128,7 +128,7 @@ public:
      * @param fs : the open Filestorage which contains segmentation parameters
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true)=0;
+    CV_WRAP virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true)=0;
 
     /**
      * try to open an XML segmentation parameters file to adjust current segmentation instance setup
@@ -137,55 +137,55 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    virtual void setup(SegmentationParameters newParameters)=0;
+    CV_WRAP virtual void setup(SegmentationParameters newParameters)=0;
 
     /**
      * @return the current parameters setup
      */
-    virtual SegmentationParameters getParameters()=0;
+    CV_WRAP virtual SegmentationParameters getParameters()=0;
 
     /**
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    virtual const String printSetup()=0;
+    CV_WRAP virtual const String printSetup()=0;
 
     /**
      * write xml/yml formated parameters information
      * @rparam fs : the filename of the xml file that will be open and writen with formatted parameters information
      */
-    virtual void write( String fs ) const=0;
+    CV_WRAP virtual void write( String fs ) const=0;
 
     /**
      * write xml/yml formated parameters information
      * @param fs : a cv::Filestorage object ready to be filled
          */
-    virtual void write( cv::FileStorage& fs ) const=0;
+    CV_WRAP virtual void write( cv::FileStorage& fs ) const=0;
 
     /**
      * main processing method, get result using methods getSegmentationPicture()
      * @param inputToSegment : the image to process, it must match the instance buffer size !
      * @param channelIndex : the channel to process in case of multichannel images
      */
-    virtual void run(InputArray inputToSegment, const int channelIndex=0)=0;
+    CV_WRAP virtual void run(InputArray inputToSegment, const int channelIndex=0)=0;
 
     /**
      * access function
      * @return the last segmentation result: a boolean picture which is resampled between 0 and 255 for a display purpose
      */
-    virtual void getSegmentationPicture(OutputArray transientAreas)=0;
+    CV_WRAP virtual void getSegmentationPicture(OutputArray transientAreas)=0;
 
     /**
      * cleans all the buffers of the instance
      */
-    virtual void clearAllBuffers()=0;
+    CV_WRAP virtual void clearAllBuffers()=0;
 };
 
     /**
      * allocator
      * @param Size : size of the images input to segment (output will be the same size)
      */
-CV_EXPORTS Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize);
+CV_EXPORTS_W Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize);
 
 }} // namespaces end : cv and bioinspired
 

@@ -449,8 +449,8 @@ protected:
             fs.open( string(ts->get_data_path()) + FEATURES2D_DIR + "/keypoints.xml.gz", FileStorage::WRITE );
             if( fs.isOpened() )
             {
-                SurfFeatureDetector fd;
-                fd.detect(img, keypoints);
+                Ptr<SURF> fd = SURF::create();
+                fd->detect(img, keypoints);
                 write( fs, "keypoints", keypoints );
             }
             else
@@ -977,19 +977,19 @@ void CV_DescriptorMatcherTest::run( int )
 
 TEST( Features2d_Detector_SIFT, regression )
 {
-    CV_FeatureDetectorTest test( "detector-sift", FeatureDetector::create("SIFT") );
+    CV_FeatureDetectorTest test( "detector-sift", SIFT::create() );
     test.safe_run();
 }
 
 TEST( Features2d_Detector_SURF, regression )
 {
-    CV_FeatureDetectorTest test( "detector-surf", FeatureDetector::create("SURF") );
+    CV_FeatureDetectorTest test( "detector-surf", SURF::create() );
     test.safe_run();
 }
 
 TEST( Features2d_Detector_STAR, regression )
 {
-    CV_FeatureDetectorTest test( "detector-star", FeatureDetector::create("STAR") );
+    CV_FeatureDetectorTest test( "detector-star", StarDetector::create() );
     test.safe_run();
 }
 
@@ -999,14 +999,14 @@ TEST( Features2d_Detector_STAR, regression )
 TEST( Features2d_DescriptorExtractor_SIFT, regression )
 {
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-sift", 0.03f,
-                                                  DescriptorExtractor::create("SIFT") );
+                                                SIFT::create() );
     test.safe_run();
 }
 
 TEST( Features2d_DescriptorExtractor_SURF, regression )
 {
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf",  0.05f,
-                                                 DescriptorExtractor::create("SURF") );
+                                                SURF::create() );
     test.safe_run();
 }
 
@@ -1014,14 +1014,14 @@ TEST( Features2d_DescriptorExtractor_FREAK, regression )
 {
     // TODO adjust the parameters below
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-freak",  (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
-                                             DescriptorExtractor::create("FREAK") );
+                                             FREAK::create() );
     test.safe_run();
 }
 
 TEST( Features2d_DescriptorExtractor_BRIEF, regression )
 {
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-brief",  1,
-                                             DescriptorExtractor::create("BRIEF") );
+                                             BriefDescriptorExtractor::create() );
     test.safe_run();
 }
 
@@ -1049,10 +1049,10 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     const int sz = 100;
     const int k = 3;
 
-    Ptr<DescriptorExtractor> ext = DescriptorExtractor::create("SURF");
+    Ptr<DescriptorExtractor> ext = SURF::create();
     ASSERT_TRUE(ext != NULL);
 
-    Ptr<FeatureDetector> det = FeatureDetector::create("SURF");
+    Ptr<FeatureDetector> det = SURF::create();
     //"%YAML:1.0\nhessianThreshold: 8000.\noctaves: 3\noctaveLayers: 4\nupright: 0\n"
     ASSERT_TRUE(det != NULL);
 
@@ -1104,13 +1104,13 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
 class CV_DetectPlanarTest : public cvtest::BaseTest
 {
 public:
-    CV_DetectPlanarTest(const string& _fname, int _min_ninliers) : fname(_fname), min_ninliers(_min_ninliers) {}
+    CV_DetectPlanarTest(const string& _fname, int _min_ninliers, const Ptr<Feature2D>& _f2d)
+    : fname(_fname), min_ninliers(_min_ninliers), f2d(_f2d) {}
 
 protected:
     void run(int)
     {
-        Ptr<Feature2D> f = Algorithm::create<Feature2D>("Feature2D." + fname);
-        if(!f)
+        if(f2d.empty())
             return;
         string path = string(ts->get_data_path()) + "detectors_descriptors_evaluation/planar/";
         string imgname1 = path + "box.png";
@@ -1125,15 +1125,15 @@ protected:
         }
         vector<KeyPoint> kpt1, kpt2;
         Mat d1, d2;
-        f->operator()(img1, Mat(), kpt1, d1);
-        f->operator()(img1, Mat(), kpt2, d2);
+        f2d->detectAndCompute(img1, Mat(), kpt1, d1);
+        f2d->detectAndCompute(img1, Mat(), kpt2, d2);
         for( size_t i = 0; i < kpt1.size(); i++ )
             CV_Assert(kpt1[i].response > 0 );
         for( size_t i = 0; i < kpt2.size(); i++ )
             CV_Assert(kpt2[i].response > 0 );
 
         vector<DMatch> matches;
-        BFMatcher(f->defaultNorm(), true).match(d1, d2, matches);
+        BFMatcher(f2d->defaultNorm(), true).match(d1, d2, matches);
 
         vector<Point2f> pt1, pt2;
         for( size_t i = 0; i < matches.size(); i++ ) {
@@ -1154,10 +1154,11 @@ protected:
 
     string fname;
     int min_ninliers;
+    Ptr<Feature2D> f2d;
 };
 
-TEST(Features2d_SIFTHomographyTest, regression) { CV_DetectPlanarTest test("SIFT", 80); test.safe_run(); }
-TEST(Features2d_SURFHomographyTest, regression) { CV_DetectPlanarTest test("SURF", 80); test.safe_run(); }
+TEST(Features2d_SIFTHomographyTest, regression) { CV_DetectPlanarTest test("SIFT", 80, SIFT::create()); test.safe_run(); }
+TEST(Features2d_SURFHomographyTest, regression) { CV_DetectPlanarTest test("SURF", 80, SURF::create()); test.safe_run(); }
 
 class FeatureDetectorUsingMaskTest : public cvtest::BaseTest
 {
@@ -1222,12 +1223,12 @@ protected:
 
 TEST(Features2d_SIFT_using_mask, regression)
 {
-    FeatureDetectorUsingMaskTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"));
+    FeatureDetectorUsingMaskTest test(SIFT::create());
     test.safe_run();
 }
 
 TEST(DISABLED_Features2d_SURF_using_mask, regression)
 {
-    FeatureDetectorUsingMaskTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"));
+    FeatureDetectorUsingMaskTest test(SURF::create());
     test.safe_run();
 }

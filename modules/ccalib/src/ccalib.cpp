@@ -93,10 +93,11 @@ bool CustomPattern::init(Mat& image, const float pixel_size, OutputArray output)
 
     if (!detector)   // if no detector chosen, use default
     {
-        detector = FeatureDetector::create("ORB");
-        detector->set("nFeatures", 2000);
-        detector->set("scaleFactor", 1.15);
-        detector->set("nLevels", 30);
+        Ptr<ORB> orb = ORB::create();
+        orb->setMaxFeatures(2000);
+        orb->setScaleFactor(1.15);
+        orb->setNLevels(30);
+        detector = orb;
     }
 
     detector->detect(img_roi, keypoints);
@@ -108,7 +109,7 @@ bool CustomPattern::init(Mat& image, const float pixel_size, OutputArray output)
     refineKeypointsPos(img_roi, keypoints);
 
     if (!descriptorExtractor)   // if no extractor chosen, use default
-        descriptorExtractor = DescriptorExtractor::create("ORB");
+        descriptorExtractor = ORB::create();
     descriptorExtractor->compute(img_roi, keypoints, descriptor);
 
     if (!descriptorMatcher)

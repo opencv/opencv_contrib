@@ -616,7 +616,7 @@ protected:
  */
 TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 {
-    DetectorRotationInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"),
+    DetectorRotationInvarianceTest test(SURF::create(),
                                         0.44f,
                                         0.76f);
     test.safe_run();
@@ -624,7 +624,7 @@ TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 
 TEST(Features2d_RotationInvariance_Detector_SIFT, DISABLED_regression)
 {
-    DetectorRotationInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"),
+    DetectorRotationInvarianceTest test(SIFT::create(),
                                         0.45f,
                                         0.70f);
     test.safe_run();
@@ -635,8 +635,8 @@ TEST(Features2d_RotationInvariance_Detector_SIFT, DISABLED_regression)
  */
 TEST(Features2d_RotationInvariance_Descriptor_SURF, regression)
 {
-    DescriptorRotationInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"),
-                                          Algorithm::create<DescriptorExtractor>("Feature2D.SURF"),
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          SURF::create(),
                                           NORM_L1,
                                           0.83f);
     test.safe_run();
@@ -644,8 +644,8 @@ TEST(Features2d_RotationInvariance_Descriptor_SURF, regression)
 
 TEST(Features2d_RotationInvariance_Descriptor_SIFT, regression)
 {
-    DescriptorRotationInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"),
-                                          Algorithm::create<DescriptorExtractor>("Feature2D.SIFT"),
+    DescriptorRotationInvarianceTest test(SIFT::create(),
+                                          SIFT::create(),
                                           NORM_L1,
                                           0.98f);
     test.safe_run();
@@ -656,7 +656,7 @@ TEST(Features2d_RotationInvariance_Descriptor_SIFT, regression)
  */
 TEST(Features2d_ScaleInvariance_Detector_SURF, regression)
 {
-    DetectorScaleInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"),
+    DetectorScaleInvarianceTest test(SURF::create(),
                                      0.64f,
                                      0.84f);
     test.safe_run();
@@ -664,7 +664,7 @@ TEST(Features2d_ScaleInvariance_Detector_SURF, regression)
 
 TEST(Features2d_ScaleInvariance_Detector_SIFT, regression)
 {
-    DetectorScaleInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"),
+    DetectorScaleInvarianceTest test(SIFT::create(),
                                      0.69f,
                                      0.99f);
     test.safe_run();
@@ -675,8 +675,8 @@ TEST(Features2d_ScaleInvariance_Detector_SIFT, regression)
  */
 TEST(Features2d_ScaleInvariance_Descriptor_SURF, regression)
 {
-    DescriptorScaleInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"),
-                                       Algorithm::create<DescriptorExtractor>("Feature2D.SURF"),
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       SURF::create(),
                                        NORM_L1,
                                        0.61f);
     test.safe_run();
@@ -684,8 +684,8 @@ TEST(Features2d_ScaleInvariance_Descriptor_SURF, regression)
 
 TEST(Features2d_ScaleInvariance_Descriptor_SIFT, regression)
 {
-    DescriptorScaleInvarianceTest test(Algorithm::create<FeatureDetector>("Feature2D.SIFT"),
-                                       Algorithm::create<DescriptorExtractor>("Feature2D.SIFT"),
+    DescriptorScaleInvarianceTest test(SIFT::create(),
+                                       SIFT::create(),
                                        NORM_L1,
                                        0.78f);
     test.safe_run();
@@ -698,11 +698,10 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     line(cross, Point(30, 50), Point(69, 50), Scalar(100), 3);
     line(cross, Point(50, 30), Point(50, 69), Scalar(100), 3);
 
-    SURF surf(8000., 3, 4, true, false);
+    Ptr<SURF> surf = SURF::create(8000., 3, 4, true, false);
 
     vector<KeyPoint> keypoints;
-
-    surf(cross, noArray(), keypoints);
+    surf->detect(cross, keypoints);
 
     ASSERT_EQ(keypoints.size(), (vector<KeyPoint>::size_type) 5);
     ASSERT_LT( fabs(keypoints[1].response - keypoints[2].response), 1e-6);

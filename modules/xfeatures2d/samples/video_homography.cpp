@@ -123,7 +123,7 @@ int main(int ac, char ** av)
         return 1;
     }
 
-    BriefDescriptorExtractor brief(32);
+    Ptr<BriefDescriptorExtractor> brief = BriefDescriptorExtractor::create(32);
 
     VideoCapture capture;
     capture.open(atoi(av[1]));
@@ -143,7 +143,7 @@ int main(int ac, char ** av)
 
     vector<DMatch> matches;
 
-    BFMatcher desc_matcher(brief.defaultNorm());
+    BFMatcher desc_matcher(brief->defaultNorm());
 
     vector<Point2f> train_pts, query_pts;
     vector<KeyPoint> train_kpts, query_kpts;
@@ -154,7 +154,7 @@ int main(int ac, char ** av)
     bool ref_live = true;
 
     Mat train_desc, query_desc;
-    FastFeatureDetector detector(10, true);
+    Ptr<FastFeatureDetector> detector = FastFeatureDetector::create(10, true);
 
     Mat H_prev = Mat::eye(3, 3, CV_32FC1);
     for (;;)
@@ -165,9 +165,8 @@ int main(int ac, char ** av)
 
         cvtColor(frame, gray, COLOR_RGB2GRAY);
 
-        detector.detect(gray, query_kpts); //Find interest points
-
-        brief.compute(gray, query_kpts, query_desc); //Compute brief descriptors at each keypoint location
+        detector->detect(gray, query_kpts); //Find interest points
+        brief->compute(gray, query_kpts, query_desc); //Compute brief descriptors at each keypoint location
 
         if (!train_kpts.empty())
         {

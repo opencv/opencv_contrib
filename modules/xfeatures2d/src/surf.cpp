@@ -867,16 +867,7 @@ struct SURFInvoker : ParallelLoopBody
 };
 
 
-SURF::SURF()
-{
-    hessianThreshold = 100;
-    extended = false;
-    upright = false;
-    nOctaves = 4;
-    nOctaveLayers = 3;
-}
-
-SURF::SURF(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
+SURF_Impl::SURF_Impl(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
 {
     hessianThreshold = _threshold;
     extended = _extended;
@@ -885,20 +876,15 @@ SURF::SURF(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended,
     nOctaveLayers = _nOctaveLayers;
 }
 
-int SURF::descriptorSize() const { return extended ? 128 : 64; }
-int SURF::descriptorType() const { return CV_32F; }
-int SURF::defaultNorm() const { return NORM_L2; }
+int SURF_Impl::descriptorSize() const { return extended ? 128 : 64; }
+int SURF_Impl::descriptorType() const { return CV_32F; }
+int SURF_Impl::defaultNorm() const { return NORM_L2; }
 
-void SURF::operator()(InputArray imgarg, InputArray maskarg,
-                      CV_OUT std::vector<KeyPoint>& keypoints) const
-{
-    (*this)(imgarg, maskarg, keypoints, noArray(), false);
-}
 
-void SURF::operator()(InputArray _img, InputArray _mask,
+void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
                       CV_OUT std::vector<KeyPoint>& keypoints,
                       OutputArray _descriptors,
-                      bool useProvidedKeypoints) const
+                      bool useProvidedKeypoints)
 {
     int imgtype = _img.type(), imgcn = CV_MAT_CN(imgtype);
     bool doDescriptors = _descriptors.needed();
@@ -1012,17 +998,11 @@ void SURF::operator()(InputArray _img, InputArray _mask,
     }
 }
 
-
-void SURF::detectImpl( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask) const
+Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, bool _extended, bool _upright)
 {
-    (*this)(image.getMat(), mask.getMat(), keypoints, noArray(), false);
+    return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
-
-void SURF::computeImpl( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) const
-{
-    (*this)(image, Mat(), keypoints, descriptors, true);
-}
-
+    
 }
 }
 

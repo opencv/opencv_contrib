@@ -2512,6 +2512,23 @@ static void computeGnuPlotOutput( const string& resPath, const string& objClassN
     vocData.savePrecRecallToGnuplot( resPath + plotsDir + "/" + plotFile, precision, recall, ap, objClassName, CV_VOC_PLOT_PNG );
 }
 
+static Ptr<Feature2D> createByName(const String& name)
+{
+    if( name == "SIFT" )
+        return SIFT::create();
+    if( name == "SURF" )
+        return SURF::create();
+    if( name == "ORB" )
+        return ORB::create();
+    if( name == "BRISK" )
+        return BRISK::create();
+    if( name == "KAZE" )
+        return KAZE::create();
+    if( name == "AKAZE" )
+        return AKAZE::create();
+    return Ptr<Feature2D>();
+}
+
 int main(int argc, char** argv)
 {
     if( argc != 3 && argc != 6 )
@@ -2519,9 +2536,6 @@ int main(int argc, char** argv)
         help(argv);
         return -1;
     }
-
-    initModule_features2d();
-    initModule_xfeatures2d();
 
     const string vocPath = argv[1], resPath = argv[2];
 
@@ -2563,8 +2577,13 @@ int main(int argc, char** argv)
     }
 
     // Create detector, descriptor, matcher.
-    Ptr<FeatureDetector> featureDetector = FeatureDetector::create( ddmParams.detectorType );
-    Ptr<DescriptorExtractor> descExtractor = DescriptorExtractor::create( ddmParams.descriptorType );
+    if( ddmParams.detectorType != ddmParams.descriptorType )
+    {
+        cout << "detector and descriptor should be the same\n";
+        return -1;
+    }
+    Ptr<Feature2D> featureDetector = createByName( ddmParams.detectorType );
+    Ptr<DescriptorExtractor> descExtractor = featureDetector;
     Ptr<BOWImgDescriptorExtractor> bowExtractor;
     if( !featureDetector || !descExtractor )
     {

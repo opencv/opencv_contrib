@@ -55,13 +55,12 @@ const string IMAGE_FILENAME = "tsukuba.png";
 class CV_FeatureDetectorKeypointsTest : public cvtest::BaseTest
 {
 public:
-    CV_FeatureDetectorKeypointsTest(const Ptr<FeatureDetector>& _detector) :
+    explicit CV_FeatureDetectorKeypointsTest(const Ptr<Feature2D>& _detector) :
         detector(_detector) {}
 
 protected:
     virtual void run(int)
     {
-        cv::initModule_features2d();
         CV_Assert(detector);
         string imgFilename = string(ts->get_data_path()) + FEATURES2D_DIR + "/" + IMAGE_FILENAME;
 
@@ -113,7 +112,7 @@ protected:
         ts->set_failed_test_info(cvtest::TS::OK);
     }
 
-    Ptr<FeatureDetector> detector;
+    Ptr<Feature2D> detector;
 };
 
 
@@ -121,18 +120,18 @@ protected:
 
 TEST(Features2d_Detector_Keypoints_SURF, validation)
 {
-    CV_FeatureDetectorKeypointsTest test(Algorithm::create<FeatureDetector>("Feature2D.SURF"));
+    CV_FeatureDetectorKeypointsTest test(xfeatures2d::SURF::create());
     test.safe_run();
 }
 
 TEST(Features2d_Detector_Keypoints_SIFT, validation)
 {
-    CV_FeatureDetectorKeypointsTest test(FeatureDetector::create("SIFT"));
+    CV_FeatureDetectorKeypointsTest test(xfeatures2d::SIFT::create());
     test.safe_run();
 }
 
 TEST(Features2d_Detector_Keypoints_Star, validation)
 {
-    CV_FeatureDetectorKeypointsTest test(Algorithm::create<FeatureDetector>("Feature2D.STAR"));
+    CV_FeatureDetectorKeypointsTest test(xfeatures2d::StarDetector::create());
     test.safe_run();
 }
