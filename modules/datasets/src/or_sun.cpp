@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/or_sun.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <map>
 
@@ -52,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS OR_sunImp : public OR_sun
+class OR_sunImp : public OR_sun
 {
 public:
     OR_sunImp() {}

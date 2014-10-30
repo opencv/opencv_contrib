@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/dataset.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {

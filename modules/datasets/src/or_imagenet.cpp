@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/or_imagenet.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <map>
 
@@ -52,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS OR_imagenetImp : public OR_imagenet
+class OR_imagenetImp : public OR_imagenet
 {
 public:
     OR_imagenetImp() {}

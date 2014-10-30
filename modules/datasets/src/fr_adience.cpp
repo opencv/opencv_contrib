@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/fr_adience.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS FR_adienceImp : public FR_adience
+class FR_adienceImp : public FR_adience
 {
 public:
     FR_adienceImp() {}

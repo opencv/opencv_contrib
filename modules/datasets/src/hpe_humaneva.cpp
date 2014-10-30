@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/hpe_humaneva.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <cstring>
 

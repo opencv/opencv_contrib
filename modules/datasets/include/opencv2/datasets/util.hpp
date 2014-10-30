@@ -45,6 +45,11 @@
 #include <string>
 #include <vector>
 
+#include <cstdio>
+#include <cstdlib> // atoi, atof
+
+#include <fstream>
+
 #include <opencv2/core.hpp>
 
 namespace cv
