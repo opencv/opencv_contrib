@@ -96,13 +96,11 @@ public:
 
   /**
    *  \brief Updates the pose with the new one
-   *  \param [in] NewPose New pose to overwrite
    */
   void updatePose(double NewR[9], double NewT[3]);
 
   /**
    *  \brief Updates the pose with the new one, but this time using quaternions to represent rotation
-   *  \param [in] NewPose New pose to overwrite
    */
   void updatePoseQuat(double Q[4], double NewT[3]);
 
