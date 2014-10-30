@@ -14,7 +14,7 @@ CV_EXPORTS  void filmGrain(cv::InputArray src, cv::OutputArray dst, int grainVal
 
 CV_EXPORTS_W  void fadeColor(cv::InputArray src, cv::OutputArray dst,cv::Point startPoint,cv::Point endPoint);
 
-CV_EXPORTS  void tint(cv::InputArray src, cv::OutputArray dst, const cv::Vec3b &colorTint, float density);
+CV_EXPORTS_W  void tint(cv::InputArray src, cv::OutputArray dst, const cv::Scalar &colorTint, float density);
 
 CV_EXPORTS_W  void glow(cv::InputArray src, cv::OutputArray dst, int radius = 0, float intensity = 0.0f);
 

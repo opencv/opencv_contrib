@@ -8,14 +8,14 @@ using namespace std;
 TEST(photoeffects_tint, wrong_image)
 {
     Mat src(10, 10, CV_8UC2), dst;
-    Vec3b color;
+    Scalar color;
     EXPECT_ERROR(CV_StsAssert, tint(src, dst, color, 0.5f));
 }
 
 TEST(photoeffects_tint, wrong_density)
 {
     Mat src(10, 10, CV_8UC3), dst;
-    Vec3b color;
+    Scalar color;
 
     EXPECT_ERROR(CV_StsAssert, tint(src, dst, color, 15.0f));
     EXPECT_ERROR(CV_StsAssert, tint(src, dst, color, -1.0f));
@@ -36,7 +36,7 @@ TEST(photoeffects_tint, regression)
     if (rightDst.empty())
         FAIL() << "Can't read " + expectedOutput + " image";
 
-    Vec3b color(128, 255, 0);
+    Scalar color(128, 255, 0);
 
     tint(src, dst, color, 0.1f);
     Mat diff = abs(rightDst - dst);
