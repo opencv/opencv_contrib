@@ -53,6 +53,6 @@ int processArguments(int argc, char **argv, Mat &img)
 
 void on_trackbar(int, void*)
 {
-    warmify(image, warmifyImg, warmRatio);
+    warmify(image, warmifyImg, (uchar)warmRatio);
     imshow(dstImgWinName, warmifyImg);
 }
