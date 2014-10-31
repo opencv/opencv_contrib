@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/gr_chalearn.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS GR_chalearnImp : public GR_chalearn
+class GR_chalearnImp : public GR_chalearn
 {
 public:
     GR_chalearnImp() {}

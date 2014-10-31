@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/gr_skig.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <cstring>
 
@@ -52,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS GR_skigImp : public GR_skig
+class GR_skigImp : public GR_skig
 {
 public:
     GR_skigImp() {}

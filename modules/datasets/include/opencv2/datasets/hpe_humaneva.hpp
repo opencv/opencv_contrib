@@ -39,46 +39,47 @@
 //
 //M*/
 
-#include "opencv2/datasets/or_sun.hpp"
-
-#include <opencv2/core.hpp>
-
-#include <cstdio>
+#ifndef OPENCV_DATASETS_HPE_HUMANEVA_HPP
+#define OPENCV_DATASETS_HPE_HUMANEVA_HPP
 
 #include <string>
 #include <vector>
 
-using namespace std;
-using namespace cv;
-using namespace cv::datasets;
+#include "opencv2/datasets/dataset.hpp"
 
-int main(int argc, char *argv[])
+#include <opencv2/core.hpp>
+
+namespace cv
 {
-    const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset (SUN397 folder) }";
-    CommandLineParser parser(argc, argv, keys);
-    string path(parser.get<string>("path"));
-    if (parser.has("help") || path=="true")
-    {
-        parser.printMessage();
-        return -1;
-    }
+namespace datasets
+{
 
-    Ptr<OR_sun> dataset = OR_sun::create();
-    dataset->load(path);
+struct HPE_humanevaObj : public Object
+{
+    char person; // 1..4
+    std::string action;
+    int type1;
+    std::string type2;
+    Matx13d ofs;
+    std::string fileName;
+    std::vector<std::string> imageNames; // for HumanEva_II
+};
 
-    // ***************
-    // dataset contains for each object its images.
-    // For example, let output splits number, dataset size and last image.
-    int numSplits = dataset->getNumSplits();
-    printf("splits number: %u\n", numSplits);
-    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
+enum datasetType
+{
+    humaneva_1 = 1,
+    humaneva_2
+};
 
-    OR_sunObj *example = static_cast<OR_sunObj *>(dataset->getTrain().back().get());
-    printf("last image:\nname: %s\n", example->name.c_str());
-    printf("label: %u\n", example->label);
-    printf("label path: %s\n", dataset->paths[example->label].c_str());
+class CV_EXPORTS HPE_humaneva : public Dataset
+{
+public:
+    virtual void load(const std::string &path) = 0;
 
-    return 0;
+    static Ptr<HPE_humaneva> create(int num=humaneva_1);
+};
+
 }
+}
+
+#endif

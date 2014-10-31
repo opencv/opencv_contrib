@@ -39,12 +39,62 @@
 //
 //M*/
 
-#ifndef __OPENCV_PRECOMP_H__
-#define __OPENCV_PRECOMP_H__
+#include "opencv2/datasets/hpe_humaneva.hpp"
+
+#include <opencv2/core.hpp>
 
 #include <cstdio>
-#include <cstdlib> // atoi, atof
+#include <cstdlib> // atoi
 
-#include <fstream>
+#include <string>
+#include <vector>
 
-#endif
+using namespace std;
+using namespace cv;
+using namespace cv::datasets;
+
+int main(int argc, char *argv[])
+{
+    const char *keys =
+            "{ help h usage ? |    | show this message }"
+            "{ path p         |true| path to dataset folder }";
+    CommandLineParser parser(argc, argv, keys);
+    string path(parser.get<string>("path"));
+    if (parser.has("help") || path=="true")
+    {
+        parser.printMessage();
+        return -1;
+    }
+
+    for (unsigned int i=1; i<=2; ++i)
+    {
+        printf("\tHumanEva %u\n", i);
+        char number[2];
+        sprintf(number, "%u", i);
+        string pathCurr(path+"HumanEva_"+number+"/");
+
+        Ptr<HPE_humaneva> dataset = HPE_humaneva::create(i);
+        dataset->load(pathCurr);
+
+        // ***************
+        // dataset contains pair of rgb\dep images
+        // For example, let output train size and last element.
+        HPE_humanevaObj *example = static_cast<HPE_humanevaObj *>(dataset->getTrain().back().get());
+        printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+        printf("last train video:\n");
+        printf("person: %u\n", example->person);
+        printf("action: %s\n", example->action.c_str());
+        printf("type1: %u\n", example->type1);
+        printf("type2: %s\n", example->type2.c_str());
+        printf("filename: %s\n", example->fileName.c_str());
+        printf("num images: %u\n", (int)example->imageNames.size());
+        printf("ofs:");
+        for (int j=0; j<3; ++j)
+        {
+            printf(" %f", example->ofs(0, j));
+        }
+        printf("\n");
+    }
+
+    return 0;
+}

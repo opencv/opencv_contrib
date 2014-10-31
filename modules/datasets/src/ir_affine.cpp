@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/ir_affine.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS IR_affineImp : public IR_affine
+class IR_affineImp : public IR_affine
 {
 public:
     IR_affineImp() {}

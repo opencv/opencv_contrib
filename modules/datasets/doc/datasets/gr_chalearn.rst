@@ -16,3 +16,7 @@ _`"ChaLearn Looking at People"`: http://gesture.chalearn.org/
 
  4. To load data run: ./opencv/build/bin/example_datasets_gr_chalearn -p=/home/user/path_to_unpacked_folders/
 
+**References:**
+
+.. [Escalera14] S. Escalera, X. Baró, J. Gonzàlez, M.A. Bautista, M. Madadi, M. Reyes, V. Ponce-López, H.J. Escalante, J. Shotton, I. Guyon, "ChaLearn Looking at People Challenge 2014: Dataset and Results", ECCV Workshops, 2014
+

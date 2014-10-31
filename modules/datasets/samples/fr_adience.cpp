@@ -39,7 +39,7 @@
 //
 //M*/
 
-#include "opencv2/datasets/or_sun.hpp"
+#include "opencv2/datasets/fr_adience.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset (SUN397 folder) }";
+            "{ path p         |true| path to dataset folder and splits }";
     CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    Ptr<OR_sun> dataset = OR_sun::create();
+    Ptr<FR_adience> dataset = FR_adience::create();
     dataset->load(path);
 
     // ***************
@@ -75,10 +75,31 @@ int main(int argc, char *argv[])
     printf("splits number: %u\n", numSplits);
     printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
 
-    OR_sunObj *example = static_cast<OR_sunObj *>(dataset->getTrain().back().get());
-    printf("last image:\nname: %s\n", example->name.c_str());
-    printf("label: %u\n", example->label);
-    printf("label path: %s\n", dataset->paths[example->label].c_str());
+    FR_adienceObj *example = static_cast<FR_adienceObj *>(dataset->getTrain().back().get());
+    printf("last image:\n");
+    printf("user_id: %s\n", example->user_id.c_str());
+    printf("original_image: %s\n", example->original_image.c_str());
+    printf("face_id: %u\n", example->face_id);
+    printf("age: %s\n", example->age.c_str());
+    printf("gender: ");
+    if (example->gender == male)
+    {
+        printf("m\n");
+    } else
+    if (example->gender == female)
+    {
+        printf("f\n");
+    } else
+    {
+        printf("none\n");
+    }
+    printf("x: %u\n", example->x);
+    printf("y: %u\n", example->y);
+    printf("dx: %u\n", example->dx);
+    printf("dy: %u\n", example->dy);
+    printf("tilt_ang: %u\n", example->tilt_ang);
+    printf("fiducial_yaw_angle: %u\n", example->fiducial_yaw_angle);
+    printf("fiducial_score: %u\n", example->fiducial_score);
 
     return 0;
 }

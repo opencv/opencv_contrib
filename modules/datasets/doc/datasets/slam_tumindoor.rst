@@ -14,3 +14,7 @@ _`"TUMindoor Dataset"`: http://www.navvis.lmt.ei.tum.de/dataset/
 
  3. To load each dataset run: ./opencv/build/bin/example_datasets_slam_tumindoor -p=/home/user/path_to_unpacked_folders/
 
+**References:**
+
+.. [TUMindoor] R. Huitl and G. Schroth and S. Hilsenbeck and F. Schweiger and E. Steinbach. {TUM}indoor: An Extensive Image and Point Cloud Dataset for Visual Indoor Localization and Mapping. 2012
+

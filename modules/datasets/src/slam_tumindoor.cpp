@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/slam_tumindoor.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 #include <cstring>
 
@@ -52,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS SLAM_tumindoorImp : public SLAM_tumindoor
+class SLAM_tumindoorImp : public SLAM_tumindoor
 {
 public:
     SLAM_tumindoorImp() {}

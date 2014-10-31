@@ -41,7 +41,8 @@
 
 #include "opencv2/datasets/or_sun.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
+
+#include <map>
 
 namespace cv
 {
@@ -50,7 +51,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS OR_sunImp : public OR_sun
+class OR_sunImp : public OR_sun
 {
 public:
     OR_sunImp() {}
@@ -61,6 +62,10 @@ public:
 
 private:
     void loadDataset(const string &path);
+
+    void loadDatasetPart(const string &path, vector< Ptr<Object> > &dataset_);
+
+    map<string, int> pathLabel;
 };
 
 /*OR_sunImp::OR_sunImp(const string &path)
@@ -73,13 +78,40 @@ void OR_sunImp::load(const string &path)
     loadDataset(path);
 }
 
+void OR_sunImp::loadDatasetPart(const string &path, vector< Ptr<Object> > &dataset_)
+{
+    string line;
+    ifstream infile(path.c_str());
+    while (getline(infile, line))
+    {
+        Ptr<OR_sunObj> curr(new OR_sunObj);
+        curr->label = 397;
+        curr->name = line;
+
+        size_t pos = curr->name.rfind('/');
+        if (pos != string::npos)
+        {
+            string labelStr(curr->name.substr(0, pos+1));
+            map<string, int>::iterator it = pathLabel.find(labelStr);
+            if (it != pathLabel.end())
+            {
+                curr->label = (*it).second;
+            } else
+            {
+                curr->label = pathLabel.size();
+                pathLabel.insert(make_pair(labelStr, curr->label));
+                paths.push_back(labelStr);
+            }
+            curr->name = curr->name.substr(pos+1);
+        }
+
+        dataset_.push_back(curr);
+    }
+}
+
 void OR_sunImp::loadDataset(const string &path)
 {
-    train.push_back(vector< Ptr<Object> >());
-    test.push_back(vector< Ptr<Object> >());
-    validation.push_back(vector< Ptr<Object> >());
-
-    string classNameFile(path + "ClassName.txt");
+    /*string classNameFile(path + "ClassName.txt");
     ifstream infile(classNameFile.c_str());
     string line;
     while (getline(infile, line))
@@ -96,6 +128,29 @@ void OR_sunImp::loadDataset(const string &path)
         }
 
         train.back().push_back(curr);
+    }*/
+
+    for (unsigned int i=1; i<=10; ++i)
+    {
+        char tmp[3];
+        sprintf(tmp, "%u", i);
+        string numStr;
+        if (i<10)
+        {
+            numStr = string("0") + string(tmp);
+        } else
+        {
+            numStr = tmp;
+        }
+        string trainFile(path + "Partitions/Training_" + numStr + ".txt");
+        string testFile(path + "Partitions/Testing_" + numStr + ".txt");
+
+        train.push_back(vector< Ptr<Object> >());
+        test.push_back(vector< Ptr<Object> >());
+        validation.push_back(vector< Ptr<Object> >());
+
+        loadDatasetPart(trainFile, train.back());
+        loadDatasetPart(testFile, test.back());
     }
 }
 

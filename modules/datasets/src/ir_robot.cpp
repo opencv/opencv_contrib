@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/ir_robot.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS IR_robotImp : public IR_robot
+class IR_robotImp : public IR_robot
 {
 public:
     IR_robotImp() {}

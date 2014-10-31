@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/ar_hmdb.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS AR_hmdbImp : public AR_hmdb
+class AR_hmdbImp : public AR_hmdb
 {
 public:
     AR_hmdbImp() {}

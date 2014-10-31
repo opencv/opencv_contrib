@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/slam_kitti.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS SLAM_kittiImp : public SLAM_kitti
+class SLAM_kittiImp : public SLAM_kitti
 {
 public:
     SLAM_kittiImp() {}

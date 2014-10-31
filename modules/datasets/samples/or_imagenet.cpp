@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to file with urls: fall11_urls.txt }";
+            "{ path p         |true| path to folder with dataset }";
     CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
@@ -71,13 +71,28 @@ int main(int argc, char *argv[])
     dataset->load(path);
 
     // ***************
-    // dataset contains for each object its id & image url.
-    // For example, let output dataset size and first object.
-    printf("dataset size: %u\n", (unsigned int)dataset->getTrain().size());
-    OR_imagenetObj *example = static_cast<OR_imagenetObj *>(dataset->getTrain()[0].get());
-    printf("first object url: %s\n", example->imageUrl.c_str());
-    printf("first object wnid: %s\n", example->wnid.c_str());
-    printf("first object id2: %u\n", example->id2);
+    // dataset contains for each object its id & image path
+    // For example, let output train\test\validation size and first image.
+    vector< Ptr<Object> > &curr = dataset->getTrain();
+    printf("train:\nsize: %u\n", (unsigned int)curr.size());
+    OR_imagenetObj *example = static_cast<OR_imagenetObj *>(curr[0].get());
+    printf("first image:\n");
+    printf("image: %s\n", example->image.c_str());
+    printf("id: %u\n", example->id);
+
+    vector< Ptr<Object> > &currT = dataset->getTest();
+    printf("test:\nsize: %u\n", (unsigned int)currT.size());
+    example = static_cast<OR_imagenetObj *>(currT[0].get());
+    printf("first image:\n");
+    printf("image: %s\n", example->image.c_str());
+    printf("id: %u\n", example->id);
+
+    vector< Ptr<Object> > &currV = dataset->getValidation();
+    printf("validation:\nsize: %u\n", (unsigned int)currV.size());
+    example = static_cast<OR_imagenetObj *>(currV[0].get());
+    printf("first image:\n");
+    printf("image: %s\n", example->image.c_str());
+    printf("id: %u\n", example->id);
 
     return 0;
 }
