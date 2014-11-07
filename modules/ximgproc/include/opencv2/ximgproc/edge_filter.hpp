@@ -64,8 +64,6 @@ public:
     CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
 };
 
-typedef Ptr<DTFilter> DTFilterPtr;
-
 /*Fabric function for DT filters*/
 CV_EXPORTS_W
 Ptr<DTFilter> createDTFilter(InputArray guide, double sigmaSpatial, double sigmaColor, int mode = DTF_NC, int numIters = 3);
