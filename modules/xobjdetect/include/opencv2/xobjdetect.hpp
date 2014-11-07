@@ -43,6 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_XOBJDETECT_XOBJDETECT_HPP__
 
 #include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <vector>
 #include <string>
 
@@ -102,6 +103,8 @@ std::vector<std::vector<int> >
 generateFeatures(Size window_size, const std::string& type,
                  int count = INT_MAX, int channel_count = 10);
 
+//sort in-place of columns of the input matrix
+void sort_columns_without_copy(Mat& m, Mat indices = Mat());
 
 struct CV_EXPORTS WaldBoostParams
 {
@@ -127,8 +130,8 @@ public:
     Returns feature indices chosen for cascade.
     Feature enumeration starts from 0
     */
-    virtual std::vector<int> train(const Mat& /*data*/,
-                                   const Mat& /*labels*/) = 0;
+    virtual std::vector<int> train(Mat& /*data*/,
+                                   const Mat& /*labels*/, bool use_fast_log=false) = 0;
 
     /* Predict object class given object that can compute object features
 
@@ -157,9 +160,13 @@ struct CV_EXPORTS ICFDetectorParams
     int model_n_rows;
     int model_n_cols;
     int bg_per_image;
+    std::string features_type;
+    float alpha;
+    bool is_grayscale;
+    bool use_fast_log;
 
     ICFDetectorParams(): feature_count(UINT_MAX), weak_count(100),
-        model_n_rows(56), model_n_cols(56), bg_per_image(5)
+        model_n_rows(56), model_n_cols(56), bg_per_image(5), alpha(0.02f), is_grayscale(false), use_fast_log(false)
     {}
 };
 
@@ -167,18 +174,18 @@ class CV_EXPORTS ICFDetector
 {
 public:
 
-    ICFDetector(): waldboost_(), features_() {}
+    ICFDetector(): waldboost_(), features_(), ftype_() {}
 
     /* Train detector
 
-        pos_path — path to folder with images of objects
+        pos_filenames — paths to objects images
 
-        bg_path — path to folder with background images
+        bg_filenames — path backgrounds images
 
         params — parameters for detector training
     */
-    void train(const String& pos_path,
-               const String& bg_path,
+    void train(const std::vector<String>& pos_filenames,
+               const std::vector<String>& bg_filenames,
                ICFDetectorParams params = ICFDetectorParams());
 
     /* Detect object on image
@@ -192,9 +199,35 @@ public:
         minSize — min size of objects in pixels
 
         maxSize — max size of objects in pixels
+        
+        slidingStep — sliding window step
+        
+        values — output vector with values of positive samples 
+        
     */
+        
     void detect(const Mat& image, std::vector<Rect>& objects,
-        float scaleFactor, Size minSize, Size maxSize, float threshold);
+        float scaleFactor, Size minSize, Size maxSize, float threshold, int slidingStep, std::vector<float>& values);
+    
+    /* Detect object on image
+
+        image — image for detection
+
+        object — output array of bounding boxes
+        
+        minScaleFactor — min factor image will be resized
+
+        maxScaleFactor — max factor image will be resized
+
+        factorStep — scaling factor is incremented according to factorStep
+        
+        slidingStep — sliding window step
+        
+        values — output vector with values of positive samples
+
+        
+    */
+    void detect(const Mat& img, std::vector<Rect>& objects, float minScaleFactor, float maxScaleFactor, float factorStep, float threshold, int slidingStep, std::vector<float>& values);
 
     /* Write detector to FileStorage */
     void write(FileStorage &fs) const;
@@ -207,6 +240,7 @@ private:
     std::vector<std::vector<int> > features_;
     int model_n_rows_;
     int model_n_cols_;
+    std::string ftype_;
 };
 
 CV_EXPORTS void write(FileStorage& fs, String&, const ICFDetector& detector);
