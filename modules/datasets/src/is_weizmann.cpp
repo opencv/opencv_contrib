@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/is_weizmann.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS IS_weizmannImp : public IS_weizmann
+class IS_weizmannImp : public IS_weizmann
 {
 public:
     IS_weizmannImp() {}

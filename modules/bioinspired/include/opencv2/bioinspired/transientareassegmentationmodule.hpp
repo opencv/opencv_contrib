@@ -116,7 +116,7 @@ public:
      * try to open an XML segmentation parameters file to adjust current segmentation instance setup
      * => if the xml file does not exist, then default setup is applied
      * => warning, Exceptions are thrown if read XML file is not valid
-     * @param retinaParameterFile : the parameters filename
+     * @param segmentationParameterFile : the parameters filename
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
     CV_WRAP virtual void setup(String segmentationParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
@@ -135,7 +135,6 @@ public:
      * => if the xml file does not exist, then default setup is applied
      * => warning, Exceptions are thrown if read XML file is not valid
      * @param newParameters : a parameters structures updated with the new target configuration
-     * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
     CV_WRAP virtual void setup(SegmentationParameters newParameters)=0;
 
@@ -152,7 +151,7 @@ public:
 
     /**
      * write xml/yml formated parameters information
-     * @rparam fs : the filename of the xml file that will be open and writen with formatted parameters information
+     * @param fs : the filename of the xml file that will be open and writen with formatted parameters information
      */
     CV_WRAP virtual void write( String fs ) const=0;
 
@@ -181,9 +180,8 @@ public:
     CV_WRAP virtual void clearAllBuffers()=0;
 };
 
-    /**
-     * allocator
-     * @param Size : size of the images input to segment (output will be the same size)
+    /** allocator
+     * @param inputSize : size of the images input to segment (output will be the same size)
      */
 CV_EXPORTS_W Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize);
 

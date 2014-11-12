@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/or_mnist.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS OR_mnistImp : public OR_mnist
+class OR_mnistImp : public OR_mnist
 {
 public:
     OR_mnistImp() {}

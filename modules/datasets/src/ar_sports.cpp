@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/ar_sports.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS AR_sportsImp : public AR_sports
+class AR_sportsImp : public AR_sports
 {
 public:
     AR_sportsImp() {}

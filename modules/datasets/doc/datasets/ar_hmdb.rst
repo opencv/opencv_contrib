@@ -17,7 +17,7 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 Benchmark
 """""""""
 
-For this dataset was implemented benchmark, which gives accuracy: 0.107407 (using precomputed HOG/HOF "STIP" features from site, averaging for 3 splits)
+For this dataset was implemented benchmark with accuracy: 0.107407 (using precomputed HOG/HOF "STIP" features from site, averaging for 3 splits)
 
 To run this benchmark execute:
 
@@ -26,4 +26,11 @@ To run this benchmark execute:
  ./opencv/build/bin/example_datasets_ar_hmdb_benchmark -p=/home/user/path_to_unpacked_folders/
 
 (precomputed features should be unpacked in the same folder: /home/user/path_to_unpacked_folders/hmdb51_org_stips/)
+
+**References:**
+
+.. [Kuehne11] H. Kuehne, H. Jhuang, E. Garrote, T. Poggio, and T. Serre. HMDB: A Large Video Database for Human Motion Recognition. ICCV, 2011
+
+.. [Laptev08] I. Laptev, M. Marszalek, C. Schmid, and B. Rozenfeld. Learning Realistic Human Actions From Movies. CVPR, 2008
+
 

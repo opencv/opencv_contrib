@@ -3751,7 +3751,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
     _src.getMatVector(src);
 
     CV_Assert ( !src.empty() );
-    CV_Assert ( src.size() == regions.size() );
+    //CV_Assert ( src.size() == regions.size() );
     size_t num_channels = src.size();
 
     Mat img = _img.getMat();

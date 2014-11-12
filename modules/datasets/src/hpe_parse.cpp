@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/hpe_parse.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS HPE_parseImp : public HPE_parse
+class HPE_parseImp : public HPE_parse
 {
 public:
     HPE_parseImp() {}

@@ -56,9 +56,8 @@ namespace datasets
 
 struct OR_imagenetObj : public Object
 {
-    std::string wnid;
-    int id2;
-    std::string imageUrl;
+    int id;
+    std::string image;
 };
 
 class CV_EXPORTS OR_imagenet : public Dataset

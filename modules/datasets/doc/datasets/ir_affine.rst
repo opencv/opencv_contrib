@@ -14,3 +14,7 @@ _`"Affine Covariant Regions Datasets"`: http://www.robots.ox.ac.uk/~vgg/data/dat
 
  3. To load data, for example, for "bark", run: ./opencv/build/bin/example_datasets_ir_affine -p=/home/user/path_to_unpacked_folder/bark/
 
+**References:**
+
+.. [Mikolajczyk05]  K. Mikolajczyk, T. Tuytelaars, C. Schmid, A. Zisserman, J. Matas, F. Schaffalitzky, T. Kadir, L. Van Gool. A Comparison of Affine Region Detectors. International Journal of Computer Vision, Volume 65, Number 1/2, page 43--72, 2005
+

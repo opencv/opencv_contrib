@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/pd_caltech.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS PD_caltechImp : public PD_caltech
+class PD_caltechImp : public PD_caltech
 {
 public:
     PD_caltechImp() {}

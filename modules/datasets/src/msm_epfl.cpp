@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/msm_epfl.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS MSM_epflImp : public MSM_epfl
+class MSM_epflImp : public MSM_epfl
 {
 public:
     MSM_epflImp() {}

@@ -86,11 +86,12 @@ PERF_TEST_P(Image, CUDA_SURF,
     }
     else
     {
-        cv::xfeatures2d::SURF surf;
+        cv::Ptr<cv::Feature2D> surf = cv::xfeatures2d::SURF::create();
         std::vector<cv::KeyPoint> cpu_keypoints;
         cv::Mat cpu_descriptors;
 
-        TEST_CYCLE() surf(img, cv::noArray(), cpu_keypoints, cpu_descriptors);
+        TEST_CYCLE() surf->detect(img, cpu_keypoints);
+        TEST_CYCLE() surf->compute(img, cpu_keypoints, cpu_descriptors);
 
         SANITY_CHECK_KEYPOINTS(cpu_keypoints);
         SANITY_CHECK(cpu_descriptors);

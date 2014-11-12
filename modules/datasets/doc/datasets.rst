@@ -4,16 +4,24 @@ datasets. Framework for working with different datasets
 
 .. highlight:: cpp
 
-The datasets module includes classes for working with different datasets: load data, evaluate different algorithms on them, etc.
+The datasets module includes classes for working with different datasets: load data, evaluate different algorithms on them, contains benchmarks, etc.
+
+It is planned to have:
+
+ * basic: loading code for all datasets to help start work with them.
+ * next stage: quick benchmarks for all datasets to show how to solve them using OpenCV and implement evaluation code.
+ * finally: implement on OpenCV state-of-the-art algorithms, which solve these tasks.
 
 .. toctree::
     :hidden:
 
     datasets/ar_hmdb
     datasets/ar_sports
+    datasets/fr_adience
     datasets/fr_lfw
     datasets/gr_chalearn
     datasets/gr_skig
+    datasets/hpe_humaneva
     datasets/hpe_parse
     datasets/ir_affine
     datasets/ir_robot
@@ -33,14 +41,16 @@ The datasets module includes classes for working with different datasets: load d
 Action Recognition
 ------------------
 
-    :doc:`datasets/ar_hmdb`
+    :doc:`datasets/ar_hmdb` [#f1]_
 
     :doc:`datasets/ar_sports`
 
 Face Recognition
 ----------------
 
-    :doc:`datasets/fr_lfw`
+    :doc:`datasets/fr_adience`
+
+    :doc:`datasets/fr_lfw` [#f1]_
 
 Gesture Recognition
 -------------------
@@ -51,6 +61,8 @@ Gesture Recognition
 
 Human Pose Estimation
 ---------------------
+
+    :doc:`datasets/hpe_humaneva`
 
     :doc:`datasets/hpe_parse`
 
@@ -80,14 +92,14 @@ Object Recognition
 
     :doc:`datasets/or_imagenet`
 
-    :doc:`datasets/or_mnist`
+    :doc:`datasets/or_mnist` [#f2]_
 
     :doc:`datasets/or_sun`
 
 Pedestrian Detection
 --------------------
 
-    :doc:`datasets/pd_caltech`
+    :doc:`datasets/pd_caltech` [#f2]_
 
 SLAM
 ----
@@ -101,5 +113,9 @@ Text Recognition
 
     :doc:`datasets/tr_chars`
 
-    :doc:`datasets/tr_svt`
+    :doc:`datasets/tr_svt` [#f1]_
 
+*Footnotes*
+
+ .. [#f1] Benchmark implemented
+ .. [#f2] Not used in Vision Challenge

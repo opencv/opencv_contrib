@@ -41,7 +41,6 @@
 
 #include "opencv2/datasets/tr_chars.hpp"
 #include "opencv2/datasets/util.hpp"
-#include "precomp.hpp"
 
 namespace cv
 {
@@ -50,7 +49,7 @@ namespace datasets
 
 using namespace std;
 
-class CV_EXPORTS TR_charsImp : public TR_chars
+class TR_charsImp : public TR_chars
 {
 public:
     TR_charsImp() {}
