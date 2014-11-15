@@ -58,23 +58,6 @@ using namespace cv::datasets;
 using namespace cv::flann;
 using namespace cv::ml;
 
-unsigned int getNumFiles(vector< Ptr<Object> > &curr);
-unsigned int getNumFiles(vector< Ptr<Object> > &curr)
-{
-    unsigned int numFiles = 0;
-    for (unsigned int i=0; i<curr.size(); ++i)
-    {
-        AR_hmdbObj *example = static_cast<AR_hmdbObj *>(curr[i].get());
-        vector<string> &videoNames = example->videoNames;
-        for (vector<string>::iterator it=videoNames.begin(); it!=videoNames.end(); ++it)
-        {
-            numFiles++;
-        }
-    }
-
-    return numFiles;
-}
-
 void fillData(const string &path, vector< Ptr<Object> > &curr, Index &flann_index, Mat1f &data, Mat1i &labels);
 void fillData(const string &path, vector< Ptr<Object> > &curr, Index &flann_index, Mat1f &data, Mat1i &labels)
 {
@@ -87,36 +70,31 @@ void fillData(const string &path, vector< Ptr<Object> > &curr, Index &flann_inde
     for (unsigned int i=0; i<curr.size(); ++i)
     {
         AR_hmdbObj *example = static_cast<AR_hmdbObj *>(curr[i].get());
-        vector<string> &videoNames = example->videoNames;
-        for (vector<string>::iterator it=videoNames.begin(); it!=videoNames.end(); ++it)
+        string featuresFullPath = path + "hmdb51_org_stips/" + example->name + "/" + example->videoName + ".txt";
+
+        ifstream infile(featuresFullPath.c_str());
+        string line;
+        // skip header
+        for (unsigned int j=0; j<3; ++j)
         {
-            string featuresFile = *it + ".txt";
-            string featuresFullPath = path + "hmdb51_org_stips/" + example->name + "/" + featuresFile;
-
-            ifstream infile(featuresFullPath.c_str());
-            string line;
-            // skip header
-            for (unsigned int j=0; j<3; ++j)
-            {
-                getline(infile, line);
-            }
-            while (getline(infile, line))
-            {
-                // 7 skip, hog+hof: 72+90 read
-                vector<string> elems;
-                split(line, elems, '\t');
-
-                for (unsigned int j=0; j<descriptorNum; ++j)
-                {
-                    sample(0, j) = (float)atof(elems[j+7].c_str());
-                }
-
-                flann_index.knnSearch(sample, nresps, dists, 1, SearchParams());
-                data(numFiles, nresps(0, 0)) ++;
-            }
-            labels(numFiles, 0) = i;
-            numFiles++;
+            getline(infile, line);
         }
+        while (getline(infile, line))
+        {
+            // 7 skip, hog+hof: 72+90 read
+            vector<string> elems;
+            split(line, elems, '\t');
+
+            for (unsigned int j=0; j<descriptorNum; ++j)
+            {
+                sample(0, j) = (float)atof(elems[j+7].c_str());
+            }
+
+            flann_index.knnSearch(sample, nresps, dists, 1, SearchParams());
+            data(numFiles, nresps(0, 0)) ++;
+        }
+        labels(numFiles, 0) = example->id;
+        numFiles++;
     }
 }
 
@@ -148,43 +126,35 @@ int main(int argc, char *argv[])
     vector<double> res;
     for (int currSplit=0; currSplit<numSplits; ++currSplit)
     {
-
         Mat1f samples(sampleNum, descriptorNum);
         unsigned int currSample = 0;
         vector< Ptr<Object> > &curr = dataset->getTrain(currSplit);
-        unsigned int numTrainFiles = getNumFiles(curr);
         unsigned int numFeatures = 0;
         for (unsigned int i=0; i<curr.size(); ++i)
         {
             AR_hmdbObj *example = static_cast<AR_hmdbObj *>(curr[i].get());
-            vector<string> &videoNames = example->videoNames;
-            for (vector<string>::iterator it=videoNames.begin(); it!=videoNames.end(); ++it)
+            string featuresFullPath = path + "hmdb51_org_stips/" + example->name + "/" + example->videoName + ".txt";
+            ifstream infile(featuresFullPath.c_str());
+            string line;
+            // skip header
+            for (unsigned int j=0; j<3; ++j)
             {
-                string featuresFile = *it + ".txt";
-                string featuresFullPath = path + "hmdb51_org_stips/" + example->name + "/" + featuresFile;
+                getline(infile, line);
+            }
+            while (getline(infile, line))
+            {
+                numFeatures++;
+                if (currSample < sampleNum)
+                {
+                    // 7 skip, hog+hof: 72+90 read
+                    vector<string> elems;
+                    split(line, elems, '\t');
 
-                ifstream infile(featuresFullPath.c_str());
-                string line;
-                // skip header
-                for (unsigned int j=0; j<3; ++j)
-                {
-                    getline(infile, line);
-                }
-                while (getline(infile, line))
-                {
-                    numFeatures++;
-                    if (currSample < sampleNum)
+                    for (unsigned int j=0; j<descriptorNum; ++j)
                     {
-                        // 7 skip, hog+hof: 72+90 read
-                        vector<string> elems;
-                        split(line, elems, '\t');
-
-                        for (unsigned int j=0; j<descriptorNum; ++j)
-                        {
-                            samples(currSample, j) = (float)atof(elems[j+7].c_str());
-                        }
-                        currSample++;
+                        samples(currSample, j) = (float)atof(elems[j+7].c_str());
                     }
+                    currSample++;
                 }
             }
         }
@@ -202,6 +172,7 @@ int main(int argc, char *argv[])
         printf("resulted clusters number: %u\n", resultClusters);
 
 
+        unsigned int numTrainFiles = curr.size();
         Mat1f trainData(numTrainFiles, resultClusters);
         Mat1i trainLabels(numTrainFiles, 1);
 
@@ -232,7 +203,7 @@ int main(int argc, char *argv[])
 
         // prepare to predict
         curr = dataset->getTest(currSplit);
-        unsigned int numTestFiles = getNumFiles(curr);
+        unsigned int numTestFiles = curr.size();
         Mat1f testData(numTestFiles, resultClusters);
         Mat1i testLabels(numTestFiles, 1); // ground true
 
@@ -262,7 +233,6 @@ int main(int argc, char *argv[])
         double accuracy = 1.0*correct/numTestFiles;
         printf("correctly recognized actions: %f\n", accuracy);
         res.push_back(accuracy);
-
     }
 
     double accuracy = 0.0;
