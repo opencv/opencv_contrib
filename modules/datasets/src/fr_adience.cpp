@@ -42,6 +42,9 @@
 #include "opencv2/datasets/fr_adience.hpp"
 #include "opencv2/datasets/util.hpp"
 
+#include <map>
+#include <set>
+
 namespace cv
 {
 namespace datasets
@@ -63,6 +66,9 @@ private:
 
     void loadFile(const string &filename, vector< Ptr<FR_adienceObj> > &out);
     void cv5ToSplits(vector< Ptr<FR_adienceObj> > fileList[5]);
+
+    map< string, vector<string> > realNames;
+    set<string> missing;
 };
 
 /*FR_adienceImp::FR_adienceImp(const string &path)
@@ -79,15 +85,38 @@ void FR_adienceImp::loadFile(const string &filename, vector< Ptr<FR_adienceObj> 
 {
     string line;
     ifstream infile(filename.c_str());
+    getline(infile, line); // skip header
     while (getline(infile, line))
     {
-        Ptr<FR_adienceObj> curr(new FR_adienceObj);
-
         vector<string> elems;
         split(line, elems, ',');
 
-        curr->user_id = elems[0];
-        curr->original_image = elems[1];
+        string user_id = elems[0];
+        string original_image = elems[1];
+
+        // convert original_image to real image name
+        bool isChanged = false;
+        vector<string> &currImgs = realNames[user_id];
+        for (vector<string>::iterator it=currImgs.begin(); it!=currImgs.end(); ++it)
+        {
+            string &name = *it;
+            size_t origImgLen = original_image.length();
+            if (name.length()>origImgLen && name.substr(name.length()-origImgLen) == original_image)
+            {
+                original_image = name;
+                isChanged = true;
+                break;
+            }
+        }
+        if (!isChanged)
+        {
+            missing.insert(user_id+"/"+original_image);
+            continue;
+        }
+
+        Ptr<FR_adienceObj> curr(new FR_adienceObj);
+        curr->user_id = user_id;
+        curr->original_image = original_image;
         curr->face_id = atoi(elems[2].c_str());
         curr->age = elems[3];
         if (elems[4]=="m")
@@ -142,6 +171,26 @@ void FR_adienceImp::cv5ToSplits(vector< Ptr<FR_adienceObj> > fileList[5])
 
 void FR_adienceImp::loadDataset(const string &path)
 {
+    // collect real image names
+    unsigned int num = 0;
+    vector<string> userNames;
+    getDirList(path+"faces/", userNames);
+    for (vector<string>::iterator itU=userNames.begin(); itU!=userNames.end(); ++itU)
+    {
+        vector<string> fileNames;
+        getDirList(path+"faces/"+*itU+"/", fileNames);
+        for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
+        {
+            string &name = *it;
+            if (name.length()>3 && name.substr(name.length()-4) == ".jpg")
+            {
+                realNames[*itU].push_back(name);
+                num++;
+            }
+        }
+    }
+    //printf("total images number: %u\n", num);
+
     vector< Ptr<FR_adienceObj> > fileList[5];
     for (unsigned int i=0; i<5; ++i)
     {
@@ -163,6 +212,13 @@ void FR_adienceImp::loadDataset(const string &path)
         loadFile(filename, fileList[i]);
     }
     cv5ToSplits(fileList);
+
+    /*for (set<string>::iterator it=missing.begin(); it!=missing.end(); ++it)
+    {
+        printf("missing image: %s\n", (*it).c_str());
+    }*/
+    realNames.clear();
+    missing.clear();
 }
 
 Ptr<FR_adience> FR_adience::create()

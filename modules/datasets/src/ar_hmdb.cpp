@@ -42,6 +42,8 @@
 #include "opencv2/datasets/ar_hmdb.hpp"
 #include "opencv2/datasets/util.hpp"
 
+#include <map>
+
 namespace cv
 {
 namespace datasets
@@ -63,25 +65,8 @@ private:
 
     void loadDataset(const string &path);
 
-    void loadAction(const string &fileName, vector<string> &train_, vector<string> &test_);
+    map<string, int> actionsId;
 };
-
-void AR_hmdbImp::loadAction(const string &fileName, vector<string> &train_, vector<string> &test_)
-{
-    ifstream infile(fileName.c_str());
-    string video, label;
-    while (infile >> video >> label)
-    {
-        if ("1"==label)
-        {
-            train_.push_back(video);
-        } else
-        if ("2"==label)
-        {
-            test_.push_back(video);
-        }
-    }
-}
 
 /*AR_hmdbImp::AR_hmdbImp(const string &path, int number)
 {
@@ -120,18 +105,40 @@ void AR_hmdbImp::loadDatasetSplit(const string &path, int number)
     getDirList(pathDataset, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
     {
-        Ptr<AR_hmdbObj> currTrain(new AR_hmdbObj);
-        Ptr<AR_hmdbObj> currTest(new AR_hmdbObj);
-        currTrain->name = *it;
-        currTest->name = *it;
-
-        train.back().push_back(currTrain);
-        test.back().push_back(currTest);
+        string &action = *it;
+        map<string, int>::iterator itId = actionsId.find(action);
+        int id;
+        if (itId == actionsId.end())
+        {
+            actionsId.insert(make_pair(action, actionsId.size()));
+            id = actionsId.size();
+        } else
+        {
+            id = (*itId).second;
+        }
 
         char tmp[2];
         sprintf(tmp, "%u", number+1);
-        string fileName(pathSplit + currTrain->name + "_test_split" + tmp + ".txt");
-        loadAction(fileName, currTrain->videoNames, currTest->videoNames);
+        string fileName(pathSplit + action + "_test_split" + tmp + ".txt");
+
+        ifstream infile(fileName.c_str());
+        string video, label;
+        while (infile >> video >> label)
+        {
+            Ptr<AR_hmdbObj> curr(new AR_hmdbObj);
+            curr->id = id;
+            curr->name = action;
+            curr->videoName = video;
+
+            if ("1"==label)
+            {
+                train.back().push_back(curr);
+            } else
+            if ("2"==label)
+            {
+                test.back().push_back(curr);
+            }
+        }
     }
 }
 

@@ -74,15 +74,14 @@ int main(int argc, char *argv[])
     // And its size.
     int numSplits = dataset->getNumSplits();
     printf("splits number: %u\n", numSplits);
+    printf("train 1 size: %u\n", (unsigned int)dataset->getTrain(1).size());
+    printf("test 1 size: %u\n", (unsigned int)dataset->getTest(1).size());
 
     AR_hmdbObj *example = static_cast<AR_hmdbObj *>(dataset->getTrain(1)[0].get());
-    printf("name: %s\n", example->name.c_str());
-    vector<string> &videoNames = example->videoNames;
-    printf("size: %u\n", (unsigned int)videoNames.size());
-    for (vector<string>::iterator it=videoNames.begin(); it!=videoNames.end(); ++it)
-    {
-        printf("%s\n", (*it).c_str());
-    }
+    printf("first image:\n");
+    printf("action id: %u\n", example->id);
+    printf("action: %s\n", example->name.c_str());
+    printf("file: %s\n", example->videoName.c_str());
 
     return 0;
 }
