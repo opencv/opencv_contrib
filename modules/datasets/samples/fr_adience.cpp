@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
     printf("y: %u\n", example->y);
     printf("dx: %u\n", example->dx);
     printf("dy: %u\n", example->dy);
-    printf("tilt_ang: %u\n", example->tilt_ang);
-    printf("fiducial_yaw_angle: %u\n", example->fiducial_yaw_angle);
+    printf("tilt_ang: %d\n", example->tilt_ang);
+    printf("fiducial_yaw_angle: %d\n", example->fiducial_yaw_angle);
     printf("fiducial_score: %u\n", example->fiducial_score);
 
     return 0;

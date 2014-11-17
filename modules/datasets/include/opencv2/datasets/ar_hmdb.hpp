@@ -56,8 +56,9 @@ namespace datasets
 
 struct AR_hmdbObj : public Object
 {
+    int id;
     std::string name;
-    std::vector<std::string> videoNames;
+    std::string videoName;
 };
 
 class CV_EXPORTS AR_hmdb : public Dataset

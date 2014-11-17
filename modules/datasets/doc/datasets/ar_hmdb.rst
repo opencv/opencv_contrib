@@ -10,7 +10,7 @@ _`"HMDB: A Large Human Motion Database"`: http://serre-lab.clps.brown.edu/resour
 
  1. From link above download dataset files: hmdb51_org.rar & test_train_splits.rar.
 
- 2. Unpack them.
+ 2. Unpack them. Unpack all archives from directory: hmdb51_org/ and remove them.
 
  3. To load data run: ./opencv/build/bin/example_datasets_ar_hmdb -p=/home/user/path_to_unpacked_folders/
 
@@ -25,7 +25,7 @@ To run this benchmark execute:
 
  ./opencv/build/bin/example_datasets_ar_hmdb_benchmark -p=/home/user/path_to_unpacked_folders/
 
-(precomputed features should be unpacked in the same folder: /home/user/path_to_unpacked_folders/hmdb51_org_stips/)
+(precomputed features should be unpacked in the same folder: /home/user/path_to_unpacked_folders/hmdb51_org_stips/. Also unpack all archives from directory: hmdb51_org_stips/ and remove them.)
 
 **References:**
 
