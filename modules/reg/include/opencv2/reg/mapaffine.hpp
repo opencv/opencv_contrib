@@ -43,6 +43,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Defines an affine transformation
@@ -96,6 +98,7 @@ private:
     cv::Vec<double, 2> shift_;
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

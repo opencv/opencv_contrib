@@ -43,6 +43,9 @@
 #ifndef OPENCV_BRIDGE_HPP_
 #define OPENCV_BRIDGE_HPP_
 
+/** @defgroup matlab MATLAB Bridge
+*/
+
 #include "mxarray.hpp"
 #include <vector>
 #include <string>
@@ -54,6 +57,9 @@
 
 namespace cv {
 namespace bridge {
+
+//! @addtogroup matlab
+//! @{
 
 /*
  * Custom typedefs
@@ -608,7 +614,7 @@ void deepCopyAndTranspose(const matlab::MxArray& in, cv::Mat& out) {
   //gemt('C', in.rows(), in.cols(), inp, in.rows(), outp, out.step1());
 }
 
-
+//! @}
 
 } // namespace bridge
 } // namespace cv

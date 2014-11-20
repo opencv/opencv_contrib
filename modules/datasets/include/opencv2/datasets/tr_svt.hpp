@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_tr
+//! @{
+
 struct tag
 {
     std::string value;
@@ -74,6 +77,8 @@ public:
 
     static Ptr<TR_svt> create();
 };
+
+//! @}
 
 }
 }

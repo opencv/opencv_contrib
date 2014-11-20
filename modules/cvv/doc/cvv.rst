@@ -7,5 +7,5 @@ The module provides an interactive GUI to debug and incrementally design compute
 .. toctree::
     :maxdepth: 2
 
-    CVV API Documentation <cvv_api/index>
-    CVV GUI Documentation <cvv_gui/index>
+    CVV API Documentation <cvv_api>
+    CVV GUI Documentation <cvv_gui>

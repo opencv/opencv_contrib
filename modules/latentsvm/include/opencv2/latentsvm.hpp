@@ -55,12 +55,48 @@
 #include <vector>
 #include <string>
 
+/** @defgroup latentsvm Latent SVM
+
+Discriminatively Trained Part Based Models for Object Detection
+---------------------------------------------------------------
+
+The object detector described below has been initially proposed by P.F. Felzenszwalb in
+@cite Felzenszwalb2010a. It is based on a Dalal-Triggs detector that uses a single filter on histogram
+of oriented gradients (HOG) features to represent an object category. This detector uses a sliding
+window approach, where a filter is applied at all positions and scales of an image. The first
+innovation is enriching the Dalal-Triggs model using a star-structured part-based model defined by a
+"root" filter (analogous to the Dalal-Triggs filter) plus a set of parts filters and associated
+deformation models. The score of one of star models at a particular position and scale within an
+image is the score of the root filter at the given location plus the sum over parts of the maximum,
+over placements of that part, of the part filter score on its location minus a deformation cost
+easuring the deviation of the part from its ideal location relative to the root. Both root and part
+filter scores are defined by the dot product between a filter (a set of weights) and a subwindow of
+a feature pyramid computed from the input image. Another improvement is a representation of the
+class of models by a mixture of star models. The score of a mixture model at a particular position
+and scale is the maximum over components, of the score of that component model at the given
+location.
+
+The detector was dramatically speeded-up with cascade algorithm proposed by P.F. Felzenszwalb in
+@cite Felzenszwalb2010b. The algorithm prunes partial hypotheses using thresholds on their scores.The
+basic idea of the algorithm is to use a hierarchy of models defined by an ordering of the original
+model's parts. For a model with (n+1) parts, including the root, a sequence of (n+1) models is
+obtained. The i-th model in this sequence is defined by the first i parts from the original model.
+Using this hierarchy, low scoring hypotheses can be pruned after looking at the best configuration
+of a subset of the parts. Hypotheses that score high under a weak model are evaluated further using
+a richer model.
+
+In OpenCV there is an C++ implementation of Latent SVM.
+
+*/
+
 namespace cv
 {
 
 namespace lsvm
 {
 
+/** @brief This is a C++ abstract class, it provides external user API to work with Latent SVM.
+ */
 class CV_EXPORTS_W LSVMDetector
 {
 public:
@@ -75,12 +111,32 @@ public:
     };
 
     virtual bool isEmpty() const = 0;
+
+    /** @brief Find rectangular regions in the given image that are likely to contain objects of loaded classes
+    (models) and corresponding confidence levels.
+    @param image An image.
+    @param objects The detections: rectangulars, scores and class IDs.
+    @param overlapThreshold Threshold for the non-maximum suppression algorithm.
+     */
     virtual void detect(cv::Mat const &image, CV_OUT std::vector<ObjectDetection> &objects,
                          float overlapThreshold=0.5f ) = 0;
 
+    /** @brief Return the class (model) names that were passed in constructor or method load or extracted from
+    models filenames in those methods.
+     */
     virtual std::vector<std::string> const& getClassNames() const = 0;
+
+    /** @brief Return a count of loaded models (classes).
+     */
     virtual size_t getClassCount() const = 0;
 
+        /** @brief Load the trained models from given .xml files and return cv::Ptr\<LSVMDetector\>.
+    @param filenames A set of filenames storing the trained detectors (models). Each file contains one
+    model. See examples of such files here `/opencv_extra/testdata/cv/LSVMDetector/models_VOC2007/`.
+    @param classNames A set of trained models names. If it's empty then the name of each model will be
+    constructed from the name of file containing the model. E.g. the model stored in
+    "/home/user/cat.xml" will get the name "cat".
+     */
     static cv::Ptr<LSVMDetector> create(std::vector<std::string> const &filenames,
                                         std::vector<std::string> const &classNames = std::vector<std::string>());
 

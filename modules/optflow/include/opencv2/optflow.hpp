@@ -43,15 +43,67 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/core.hpp"
 #include "opencv2/video.hpp"
 
+/**
+@defgroup optflow Optical Flow Algorithms
+
+Dense optical flow algorithms compute motion for each point:
+
+- cv::optflow::calcOpticalFlowSF
+- cv::optflow::createOptFlow_DeepFlow
+
+Motion templates is alternative technique for detecting motion and computing its direction.
+See samples/motempl.py.
+
+- cv::motempl::updateMotionHistory
+- cv::motempl::calcMotionGradient
+- cv::motempl::calcGlobalOrientation
+- cv::motempl::segmentMotion
+
+Functions reading and writing .flo files in "Middlebury" format, see: <http://vision.middlebury.edu/flow/code/flow-code/README.txt>
+
+- cv::optflow::readOpticalFlow
+- cv::optflow::writeOpticalFlow
+
+ */
+
 namespace cv
 {
 namespace optflow
 {
     
-//! computes dense optical flow using Simple Flow algorithm
+//! @addtogroup optflow
+//! @{
+
+/** @overload */
 CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray flow,
                                      int layers, int averaging_block_size, int max_flow);
 
+/** @brief Calculate an optical flow using "SimpleFlow" algorithm.
+
+@param from First 8-bit 3-channel image.
+@param to Second 8-bit 3-channel image of the same size as prev
+@param flow computed flow image that has the same size as prev and type CV_32FC2
+@param layers Number of layers
+@param averaging_block_size Size of block through which we sum up when calculate cost function
+for pixel
+@param max_flow maximal flow that we search at each level
+@param sigma_dist vector smooth spatial sigma parameter
+@param sigma_color vector smooth color sigma parameter
+@param postprocess_window window size for postprocess cross bilateral filter
+@param sigma_dist_fix spatial sigma for postprocess cross bilateralf filter
+@param sigma_color_fix color sigma for postprocess cross bilateral filter
+@param occ_thr threshold for detecting occlusions
+@param upscale_averaging_radius window size for bilateral upscale operation
+@param upscale_sigma_dist spatial sigma for bilateral upscale operation
+@param upscale_sigma_color color sigma for bilateral upscale operation
+@param speed_up_thr threshold to detect point with irregular flow - where flow should be
+recalculated after upscale
+
+See @cite Tao2012. And site of project - <http://graphics.berkeley.edu/papers/Tao-SAN-2012-05/>.
+
+@note
+   -   An example using the simpleFlow algorithm can be found at samples/simpleflow_demo.cpp
+ */
 CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray flow, int layers,
                                      int averaging_block_size, int max_flow,
                                      double sigma_dist, double sigma_color, int postprocess_window,
@@ -59,24 +111,62 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      int upscale_averaging_radius, double upscale_sigma_dist,
                                      double upscale_sigma_color, double speed_up_thr );    
 
-//! reads optical flow from a file, Middlebury format:
-// http://vision.middlebury.edu/flow/code/flow-code/README.txt
+/** @brief Read a .flo file
+
+@param path Path to the file to be loaded
+
+The function readOpticalFlow loads a flow field from a file and returns it as a single matrix.
+Resulting Mat has a type CV_32FC2 - floating-point, 2-channel. First channel corresponds to the
+flow in the horizontal direction (u), second - vertical (v).
+ */
 CV_EXPORTS_W Mat readOpticalFlow( const String& path );
-//! writes optical flow to a file, Middlebury format
+/** @brief Write a .flo to disk
+
+@param path Path to the file to be written
+@param flow Flow field to be stored
+
+The function stores a flow field in a file, returns true on success, false otherwise.
+The flow field must be a 2-channel, floating-point matrix (CV_32FC2). First channel corresponds
+to the flow in the horizontal direction (u), second - vertical (v).
+ */
 CV_EXPORTS_W bool writeOpticalFlow( const String& path, InputArray flow );
 
 
+/** @brief DeepFlow optical flow algorithm implementation.
 
-
-// DeepFlow implementation, based on:
-//   P. Weinzaepfel, J. Revaud, Z. Harchaoui, and C. Schmid, “DeepFlow: Large Displacement Optical Flow with Deep Matching,”
+The class implements the DeepFlow optical flow algorithm described in @cite Weinzaepfel2013 . See
+also <http://lear.inrialpes.fr/src/deepmatching/> .
+Parameters - class fields - that may be modified after creating a class instance:
+-   member float alpha
+Smoothness assumption weight
+-   member float delta
+Color constancy assumption weight
+-   member float gamma
+Gradient constancy weight
+-   member float sigma
+Gaussian smoothing parameter
+-   member int minSize
+Minimal dimension of an image in the pyramid (next, smaller images in the pyramid are generated
+until one of the dimensions reaches this size)
+-   member float downscaleFactor
+Scaling factor in the image pyramid (must be \< 1)
+-   member int fixedPointIterations
+How many iterations on each level of the pyramid
+-   member int sorIterations
+Iterations of Succesive Over-Relaxation (solver)
+-   member float omega
+Relaxation factor in SOR
+ */
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
 
-// Additional interface to the SimpleFlow algorithm - calcOpticalFlowSF()
+//! Additional interface to the SimpleFlow algorithm - calcOpticalFlowSF()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
 
-// Additional interface to the Farneback's algorithm - calcOpticalFlowFarneback()
+//! Additional interface to the Farneback's algorithm - calcOpticalFlowFarneback()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
+
+//! @}
+
 } //optflow
 }
 

@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_hpe
+//! @{
+
 struct HPE_humanevaObj : public Object
 {
     char person; // 1..4
@@ -78,6 +81,8 @@ public:
 
     static Ptr<HPE_humaneva> create(int num=humaneva_1);
 };
+
+//! @}
 
 }
 }

@@ -50,7 +50,10 @@
 Model Globally, Match Locally: Efficient and Robust 3D Object Recognition
 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR), San Francisco, California (USA), June 2010.
 ***/
-// Author: Tolga Birdal  <tbirdal AT gmail.com>
+
+/** @file
+@author Tolga Birdal  <tbirdal AT gmail.com>
+*/
 
 
 #ifndef __OPENCV_SURFACE_MATCHING_PPF_MATCH_3D_HPP__
@@ -67,8 +70,10 @@ namespace cv
 namespace ppf_match_3d
 {
 
+//! @addtogroup surface_matching
+//! @{
+
 /**
-  * @struct THash
   * @brief Struct, holding a node in the hashtable
   */
 typedef struct THash
@@ -78,17 +83,16 @@ typedef struct THash
 } THash;
 
 /**
-  * @class PPF3DDetector
   * @brief Class, allowing the load and matching 3D models.
   * Typical Use:
-  *
+  * @code
   * // Train a model
-  *   ppf_match_3d::PPF3DDetector detector(0.05, 0.05);
+  * ppf_match_3d::PPF3DDetector detector(0.05, 0.05);
   * detector.trainModel(pc);
   * // Search the model in a given scene
-  *   vector<Pose3DPtr> results;
+  * vector<Pose3DPtr> results;
   * detector.match(pcTest, results, 1.0/5.0,0.05);
-  *
+  * @endcode
   */
 class CV_EXPORTS PPF3DDetector
 {
@@ -166,6 +170,8 @@ private:
 
   bool trained;
 };
+
+//! @}
 
 } // namespace ppf_match_3d
 

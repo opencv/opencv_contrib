@@ -44,6 +44,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Calculates a map using a gaussian pyramid
@@ -69,7 +71,7 @@ private:
     const Mapper& baseMapper_;  /*!< Mapper used in inner level */
 };
 
-
+//! @}
 
 }}  // namespace cv::reg
 

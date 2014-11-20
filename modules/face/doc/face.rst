@@ -7,4 +7,4 @@ The module contains some recently added functionality that has not been stabiliz
 .. toctree::
     :maxdepth: 2
 
-    FaceRecognizer Documentation <facerec/index>
+    FaceRecognizer Documentation <index>

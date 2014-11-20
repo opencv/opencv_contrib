@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_pd
+//! @{
+
 struct PD_caltechObj : public Object
 {
     //double groundTrue[][];
@@ -77,6 +80,8 @@ public:
 
     static Ptr<PD_caltech> create();
 };
+
+//! @}
 
 }
 }

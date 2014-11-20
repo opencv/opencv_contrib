@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_ar
+//! @{
+
 struct AR_hmdbObj : public Object
 {
     int id;
@@ -68,6 +71,8 @@ public:
 
     static Ptr<AR_hmdb> create();
 };
+
+//! @}
 
 }
 }

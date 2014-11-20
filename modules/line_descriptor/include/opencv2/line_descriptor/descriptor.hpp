@@ -71,177 +71,247 @@ namespace cv
 namespace line_descriptor
 {
 
+//! @addtogroup line_descriptor
+//! @{
+
 CV_EXPORTS bool initModule_line_descriptor();
 
+/** @brief A class to represent a line
+
+As aformentioned, it is been necessary to design a class that fully stores the information needed to
+characterize completely a line and plot it on image it was extracted from, when required.
+
+*KeyLine* class has been created for such goal; it is mainly inspired to Feature2d's KeyPoint class,
+since KeyLine shares some of *KeyPoint*'s fields, even if a part of them assumes a different
+meaning, when speaking about lines. In particular:
+
+-   the *class_id* field is used to gather lines extracted from different octaves which refer to
+    same line inside original image (such lines and the one they represent in original image share
+    the same *class_id* value)
+-   the *angle* field represents line's slope with respect to (positive) X axis
+-   the *pt* field represents line's midpoint
+-   the *response* field is computed as the ratio between the line's length and maximum between
+    image's width and height
+-   the *size* field is the area of the smallest rectangle containing line
+
+Apart from fields inspired to KeyPoint class, KeyLines stores information about extremes of line in
+original image and in octave it was extracted from, about line's length and number of pixels it
+covers.
+ */
 struct CV_EXPORTS KeyLine
 {
  public:
-  /* orientation of the line */
-  /*CV_PROP_RW*/
+  /** orientation of the line */
   float angle;
 
-  /* object ID, that can be used to cluster keylines by the line they represent */
-  /*CV_PROP_RW*/
+  /** object ID, that can be used to cluster keylines by the line they represent */
   int class_id;
 
-  /* octave (pyramid layer), from which the keyline has been extracted */
-  /*CV_PROP_RW*/
+  /** octave (pyramid layer), from which the keyline has been extracted */
   int octave;
 
-  /* coordinates of the middlepoint */
-  /*CV_PROP_RW*/
+  /** coordinates of the middlepoint */
   Point2f pt;
 
-  /* the response, by which the strongest keylines have been selected.
+  /** the response, by which the strongest keylines have been selected.
    It's represented by the ratio between line's length and maximum between
    image's width and height */
-  /*CV_PROP_RW*/
   float response;
 
-  /* minimum area containing line */
-  /*CV_PROP_RW*/
+  /** minimum area containing line */
   float size;
 
-  /* lines's extremes in original image */
-  /*CV_PROP_RW*/
-  float startPointX;/*CV_PROP_RW*/
-  float startPointY;/*CV_PROP_RW*/
-  float endPointX;/*CV_PROP_RW*/
+  /** lines's extremes in original image */
+  float startPointX;
+  float startPointY;
+  float endPointX;
   float endPointY;
 
-  /* line's extremes in image it was extracted from */
-  /*CV_PROP_RW*/
-  float sPointInOctaveX;/*CV_PROP_RW*/
-  float sPointInOctaveY;/*CV_PROP_RW*/
-  float ePointInOctaveX;/*CV_PROP_RW*/
+  /** line's extremes in image it was extracted from */
+  float sPointInOctaveX;
+  float sPointInOctaveY;
+  float ePointInOctaveX;
   float ePointInOctaveY;
 
-  /* the length of line */
-  /*CV_PROP_RW*/
+  /** the length of line */
   float lineLength;
 
-  /* number of pixels covered by the line */
-  /*CV_PROP_RW*/
+  /** number of pixels covered by the line */
   int numOfPixels;
 
-  /* constructor */
-  /*CV_WRAP*/
+  /** constructor */
   KeyLine()
   {
   }
 };
 
+/** @brief Class implements both functionalities for detection of lines and computation of their
+binary descriptor.
+
+Class' interface is mainly based on the ones of classical detectors and extractors, such as
+Feature2d's @ref features2d_main and @ref features2d_match. Retrieved information about lines is
+stored in line_descriptor::KeyLine objects.
+ */
 class CV_EXPORTS BinaryDescriptor : public Algorithm
 {
 
  public:
+  /** @brief List of BinaryDescriptor parameters:
+  */
   struct CV_EXPORTS Params
   {
     /*CV_WRAP*/
     Params();
 
-    /* the number of image octaves (default = 1) */
-    /*CV_PROP_RW*/
+    /** the number of image octaves (default = 1) */
+
     int numOfOctave_;
 
-    /* the width of band; (default: 7) */
-    /*CV_PROP_RW*/
+    /** the width of band; (default: 7) */
+
     int widthOfBand_;
 
-    /* image's reduction ratio in construction of Gaussian pyramids */
-    /*CV_PROP_RW*/
+    /** image's reduction ratio in construction of Gaussian pyramids */
     int reductionRatio;
 
-    /*CV_PROP_RW*/
     int ksize_;
 
-    /* read parameters from a FileNode object and store them (struct function) */
-    /*CV_WRAP*/
+    /** read parameters from a FileNode object and store them (struct function) */
     void read( const FileNode& fn );
 
-    /* store parameters to a FileStorage object (struct function) */
-    /*CV_WRAP*/
+    /** store parameters to a FileStorage object (struct function) */
     void write( FileStorage& fs ) const;
 
   };
 
-  /* constructor */
-  /*CV_WRAP*/
+  /** @brief Constructor
+
+  @param parameters configuration parameters BinaryDescriptor::Params
+
+  If no argument is provided, constructor sets default values (see comments in the code snippet in
+  previous section). Default values are strongly reccomended.
+  */
   BinaryDescriptor( const BinaryDescriptor::Params &parameters = BinaryDescriptor::Params() );
 
-  /* constructors with smart pointers */
-  /*CV_WRAP*/
-  static Ptr<BinaryDescriptor> createBinaryDescriptor();/*CV_WRAP*/
+  /** @brief Create a BinaryDescriptor object with default parameters (or with the ones provided)
+  and return a smart pointer to it
+     */
+  static Ptr<BinaryDescriptor> createBinaryDescriptor();
   static Ptr<BinaryDescriptor> createBinaryDescriptor( Params parameters );
 
-  /* destructor */
+  /** destructor */
   ~BinaryDescriptor();
 
-  /* setters and getters */
-  /*CV_WRAP*/
+  /** @brief Get current number of octaves
+  */
   int getNumOfOctaves();/*CV_WRAP*/
+  /** @brief Set number of octaves
+    @param octaves number of octaves
+     */
   void setNumOfOctaves( int octaves );/*CV_WRAP*/
+  /** @brief Get current width of bands
+    */
   int getWidthOfBand();/*CV_WRAP*/
+  /** @brief Set width of bands
+    @param width width of bands
+    */
   void setWidthOfBand( int width );/*CV_WRAP*/
+  /** @brief Get current reduction ratio (used in Gaussian pyramids)
+    */
   int getReductionRatio();/*CV_WRAP*/
+  /** @brief Set reduction ratio (used in Gaussian pyramids)
+    @param rRatio reduction ratio
+     */
   void setReductionRatio( int rRatio );
 
-  /* reads parameters from a FileNode object and store them (class function ) */
-  /*CV_WRAP*/
+  /** @brief Read parameters from a FileNode object and store them
+
+    @param fn source FileNode file
+     */
   virtual void read( const cv::FileNode& fn );
 
-  /* stores parameters to a FileStorage object (class function) */
-  /*CV_WRAP*/
+  /** @brief Store parameters to a FileStorage object
+
+    @param fs output FileStorage file
+     */
   virtual void write( cv::FileStorage& fs ) const;
 
-  /* requires line detection (only one image) */
-  /*CV_WRAP*/
+  /** @brief Requires line detection
+
+    @param image input image
+    @param keypoints vector that will store extracted lines for one or more images
+    @param mask mask matrix to detect only KeyLines of interest
+     */
   void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
 
-  /* requires line detection (more than one image) */
-  /*CV_WRAP*/
+  /** @overload
+
+    @param images input images
+    @param keylines set of vectors that will store extracted lines for one or more images
+    @param masks vector of mask matrices to detect only KeyLines of interest from each input image
+     */
   void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, const std::vector<Mat>& masks =
                    std::vector<Mat>() ) const;
 
-  /* requires descriptors computation (only one image) */
-  /*CV_WRAP*/
+  /** @brief Requires descriptors computation
+
+    @param image input image
+    @param keylines vector containing lines for which descriptors must be computed
+    @param descriptors
+    @param returnFloatDescr flag (when set to true, original non-binary descriptors are returned)
+     */
   void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
 
-  /* requires descriptors computation (more than one image) */
-  /*CV_WRAP*/
+  /** @overload
+
+    @param images input images
+    @param keylines set of vectors containing lines for which descriptors must be computed
+    @param descriptors
+    @param returnFloatDescr flag (when set to true, original non-binary descriptors are returned)
+     */
   void compute( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, std::vector<Mat>& descriptors, bool returnFloatDescr =
                     false ) const;
 
-  /* returns descriptor size */
-  /*CV_WRAP*/
+  /** @brief Return descriptor size
+   */
   int descriptorSize() const;
 
-  /* returns data type */
-  /*CV_WRAP*/
+  /** @brief Return data type
+   */
   int descriptorType() const;
 
-  /* returns norm mode */
+  /** returns norm mode */
   /*CV_WRAP*/
   int defaultNorm() const;
 
-  /* definition of operator () */
-  //CV_WRAP_AS(detectAndCompute)
+  /** @brief Define operator '()' to perform detection of KeyLines and computation of descriptors in a row.
+
+    @param image input image
+    @param mask mask matrix to select which lines in KeyLines must be accepted among the ones
+    extracted (used when *keylines* is not empty)
+    @param keylines vector that contains input lines (when filled, the detection part will be skipped
+    and input lines will be passed as input to the algorithm computing descriptors)
+    @param descriptors matrix that will store final descriptors
+    @param useProvidedKeyLines flag (when set to true, detection phase will be skipped and only
+    computation of descriptors will be executed, using lines provided in *keylines*)
+    @param returnFloatDescr flag (when set to true, original non-binary descriptors are returned)
+     */
   virtual void operator()( InputArray image, InputArray mask, CV_OUT std::vector<KeyLine>& keylines, OutputArray descriptors,
                            bool useProvidedKeyLines = false, bool returnFloatDescr = false ) const;
 
  protected:
-  /* implementation of line detection */
+  /** implementation of line detection */
   virtual void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, const Mat& mask = Mat() ) const;
 
-  /* implementation of descriptors' computation */
+  /** implementation of descriptors' computation */
   virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr,
                             bool useDetectionData ) const;
 
-  /* function inherited from Algorithm */
+  /** function inherited from Algorithm */
   AlgorithmInfo* info() const;
 
  private:
-  /* struct to represent lines extracted from an octave */
+  /** struct to represent lines extracted from an octave */
   struct OctaveLine
   {
     unsigned int octaveCount;  //the octave which this line is detected
@@ -349,7 +419,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
   #define MLN10   2.30258509299404568402
   #define log_gamma(x)    ((x)>15.0?log_gamma_windschitl(x):log_gamma_lanczos(x))
 
-  /* This class is used to detect lines from input image.
+  /** This class is used to detect lines from input image.
    * First, edges are extracted from input image following the method presented in Cihan Topal and
    * Cuneyt Akinlar's paper:"Edge Drawing: A Heuristic Approach to Robust Real-Time Edge Detection", 2010.
    * Then, lines are extracted from the edge image following the method presented in Cuneyt Akinlar and
@@ -378,7 +448,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
      */
     int EDline( cv::Mat &image, LineChains &lines );
 
-    /* extract line from image, and store them */
+    /** extract line from image, and store them */
     int EDline( cv::Mat &image );
 
     cv::Mat dxImg_;  //store the dxImg;
@@ -454,7 +524,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     double LeastSquaresLineFit_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS, unsigned int newOffsetS, unsigned int offsetE,
                                  std::vector<double> &lineEquation );
 
-    /* Validate line based on the Helmholtz principle, which basically states that
+    /** Validate line based on the Helmholtz principle, which basically states that
      * for a structure to be perceptually meaningful, the expectation of this structure
      * by chance must be very low.
      */
@@ -780,6 +850,23 @@ std::vector<cv::Mat> octaveImages;
 
 };
 
+/**
+Lines extraction methodology
+----------------------------
+
+The lines extraction methodology described in the following is mainly based on @cite EDL. The
+extraction starts with a Gaussian pyramid generated from an original image, downsampled N-1 times,
+blurred N times, to obtain N layers (one for each octave), with layer 0 corresponding to input
+image. Then, from each layer (octave) in the pyramid, lines are extracted using LSD algorithm.
+
+Differently from EDLine lines extractor used in original article, LSD furnishes information only
+about lines extremes; thus, additional information regarding slope and equation of line are computed
+via analytic methods. The number of pixels is obtained using *LineIterator*. Extracted lines are
+returned in the form of KeyLine objects, but since extraction is based on a method different from
+the one used in *BinaryDescriptor* class, data associated to a line's extremes in original image and
+in octave it was extracted from, coincide. KeyLine's field *class_id* is used as an index to
+indicate the order of extraction of a line inside a single octave.
+*/
 class CV_EXPORTS LSDDetector : public Algorithm
 {
 public:
@@ -791,16 +878,27 @@ LSDDetector()
 }
 ;
 
-/* constructor with smart pointer */
-/*CV_WRAP*/
+/** @brief Creates ad LSDDetector object, using smart pointers.
+ */
 static Ptr<LSDDetector> createLSDDetector();
 
-/* requires line detection (only one image) */
-/*CV_WRAP*/
+/** @brief Detect lines inside an image.
+
+@param image input image
+@param keypoints vector that will store extracted lines for one or more images
+@param scale scale factor used in pyramids generation
+@param numOctaves number of octaves inside pyramid
+@param mask mask matrix to detect only KeyLines of interest
+ */
 void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
 
-/* requires line detection (more than one image) */
-/*CV_WRAP*/
+/** @overload
+@param images input images
+@param keylines set of vectors that will store extracted lines for one or more images
+@param scale scale factor used in pyramids generation
+@param numOctaves number of octaves inside pyramid
+@param masks vector of mask matrices to detect only KeyLines of interest from each input image
+*/
 void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
 const std::vector<Mat>& masks = std::vector<Mat>() ) const;
 
@@ -819,72 +917,159 @@ protected:
 AlgorithmInfo* info() const;
 };
 
+/** @brief furnishes all functionalities for querying a dataset provided by user or internal to
+class (that user must, anyway, populate) on the model of @ref features2d_match
+
+
+Once descriptors have been extracted from an image (both they represent lines and points), it
+becomes interesting to be able to match a descriptor with another one extracted from a different
+image and representing the same line or point, seen from a differente perspective or on a different
+scale. In reaching such goal, the main headache is designing an efficient search algorithm to
+associate a query descriptor to one extracted from a dataset. In the following, a matching modality
+based on *Multi-Index Hashing (MiHashing)* will be described.
+
+Multi-Index Hashing
+-------------------
+
+The theory described in this section is based on @cite MIH. Given a dataset populated with binary
+codes, each code is indexed *m* times into *m* different hash tables, according to *m* substrings it
+has been divided into. Thus, given a query code, all the entries close to it at least in one
+substring are returned by search as *neighbor candidates*. Returned entries are then checked for
+validity by verifying that their full codes are not distant (in Hamming space) more than *r* bits
+from query code. In details, each binary code **h** composed of *b* bits is divided into *m*
+disjoint substrings \f$\mathbf{h}^{(1)}, ..., \mathbf{h}^{(m)}\f$, each with length
+\f$\lfloor b/m \rfloor\f$ or \f$\lceil b/m \rceil\f$ bits. Formally, when two codes **h** and **g** differ
+by at the most *r* bits, in at the least one of their *m* substrings they differ by at the most
+\f$\lfloor r/m \rfloor\f$ bits. In particular, when \f$||\mathbf{h}-\mathbf{g}||_H \le r\f$ (where \f$||.||_H\f$
+is the Hamming norm), there must exist a substring *k* (with \f$1 \le k \le m\f$) such that
+
+\f[||\mathbf{h}^{(k)} - \mathbf{g}^{(k)}||_H \le \left\lfloor \frac{r}{m} \right\rfloor .\f]
+
+That means that if Hamming distance between each of the *m* substring is strictly greater than
+\f$\lfloor r/m \rfloor\f$, then \f$||\mathbf{h}-\mathbf{g}||_H\f$ must be larger that *r* and that is a
+contradiction. If the codes in dataset are divided into *m* substrings, then *m* tables will be
+built. Given a query **q** with substrings \f$\{\mathbf{q}^{(i)}\}^m_{i=1}\f$, *i*-th hash table is
+searched for entries distant at the most \f$\lfloor r/m \rfloor\f$ from \f$\mathbf{q}^{(i)}\f$ and a set of
+candidates \f$\mathcal{N}_i(\mathbf{q})\f$ is obtained. The union of sets
+\f$\mathcal{N}(\mathbf{q}) = \bigcup_i \mathcal{N}_i(\mathbf{q})\f$ is a superset of the *r*-neighbors
+of **q**. Then, last step of algorithm is computing the Hamming distance between **q** and each
+element in \f$\mathcal{N}(\mathbf{q})\f$, deleting the codes that are distant more that *r* from **q**.
+*/
 class CV_EXPORTS BinaryDescriptorMatcher : public Algorithm
 {
 
 public:
-/* for every input descriptor,
- find the best matching one (for a pair of images) */
-/*CV_WRAP*/
+/** @brief For every input query descriptor, retrieve the best matching one from a dataset provided from user
+or from the one internal to class
+
+@param queryDescriptors query descriptors
+@param trainDescriptors dataset of descriptors furnished by user
+@param matches vector to host retrieved matches
+@param mask mask to select which input descriptors must be matched to one in dataset
+ */
 void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
 
-/* for every input descriptor,
- find the best matching one (from one image to a set) */
-/*CV_WRAP*/
+/** @overload
+@param queryDescriptors query descriptors
+@param matches vector to host retrieved matches
+@param masks vector of masks to select which input descriptors must be matched to one in dataset
+(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+dataset relative to *i*-th image)
+*/
 void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
 
-/* for every input descriptor,
- find the best k matching descriptors (for a pair of images) */
-/*CV_WRAP*/
+/** @brief For every input query descriptor, retrieve the best *k* matching ones from a dataset provided from
+user or from the one internal to class
+
+@param queryDescriptors query descriptors
+@param trainDescriptors dataset of descriptors furnished by user
+@param matches vector to host retrieved matches
+@param k number of the closest descriptors to be returned for every input query
+@param mask mask to select which input descriptors must be matched to ones in dataset
+@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+matches for a given query is not inserted in final result)
+ */
 void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
 bool compactResult = false ) const;
 
-/* for every input descriptor,
- find the best k matching descriptors (from one image to a set) */
-/*CV_WRAP*/
+/** @overload
+@param queryDescriptors query descriptors
+@param matches vector to host retrieved matches
+@param k number of the closest descriptors to be returned for every input query
+@param masks vector of masks to select which input descriptors must be matched to ones in dataset
+(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+dataset relative to *i*-th image)
+@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+matches for a given query is not inserted in final result)
+*/
 void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
 bool compactResult = false );
 
-/* for every input descriptor, find all the ones falling in a
- certain matching radius (for a pair of images) */
-/*CV_WRAP*/
+/** @brief For every input query descriptor, retrieve, from a dataset provided from user or from the one
+internal to class, all the descriptors that are not further than *maxDist* from input query
+
+@param queryDescriptors query descriptors
+@param trainDescriptors dataset of descriptors furnished by user
+@param matches vector to host retrieved matches
+@param maxDistance search radius
+@param mask mask to select which input descriptors must be matched to ones in dataset
+@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+matches for a given query is not inserted in final result)
+ */
 void radiusMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
 const Mat& mask = Mat(), bool compactResult = false ) const;
 
-/* for every input descriptor, find all the ones falling in a
- certain matching radius (from one image to a set) */
-/*CV_WRAP*/
+/** @overload
+@param queryDescriptors query descriptors
+@param matches vector to host retrieved matches
+@param maxDistance search radius
+@param masks vector of masks to select which input descriptors must be matched to ones in dataset
+(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+dataset relative to *i*-th image)
+@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+matches for a given query is not inserted in final result)
+*/
 void radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
 std::vector<Mat>(),
 bool compactResult = false );
 
-/* store new descriptors to be inserted in dataset */
-/*CV_WRAP*/
+/** @brief Store locally new descriptors to be inserted in dataset, without updating dataset.
+
+@param descriptors matrices containing descriptors to be inserted into dataset
+
+@note Each matrix *i* in **descriptors** should contain descriptors relative to lines extracted from
+*i*-th image.
+ */
 void add( const std::vector<Mat>& descriptors );
 
-/* store new descriptors into dataset */
-/*CV_WRAP*/
+/** @brief Update dataset by inserting into it all descriptors that were stored locally by *add* function.
+
+@note Every time this function is invoked, current dataset is deleted and locally stored descriptors
+are inserted into dataset. The locally stored copy of just inserted descriptors is then removed.
+ */
 void train();
 
-/* constructor with smart pointer */
-/*CV_WRAP*/
+/** @brief Create a BinaryDescriptorMatcher object and return a smart pointer to it.
+ */
 static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
-/* clear dataset and internal data */
-/*CV_WRAP*/
+/** @brief Clear dataset and internal data
+ */
 void clear();
 
-/* constructor */
-/*CV_WRAP*/
+/** @brief Constructor.
+
+The BinaryDescriptorMatcher constructed is able to store and manage 256-bits long entries.
+ */
 BinaryDescriptorMatcher();
 
-/* destructor */
+/** destructor */
 ~BinaryDescriptorMatcher()
 {
 }
 
 protected:
-/* function inherited from Algorithm */
+/** function inherited from Algorithm */
 AlgorithmInfo* info() const;
 
 private:
@@ -892,23 +1077,23 @@ class BucketGroup
 {
 
 public:
-/* constructor */
+/** constructor */
 BucketGroup();
 
-/* destructor */
+/** destructor */
 ~BucketGroup();
 
-/* insert data into the bucket */
+/** insert data into the bucket */
 void insert( int subindex, UINT32 data );
 
-/* perform a query to the bucket */
+/** perform a query to the bucket */
 UINT32* query( int subindex, int *size );
 
-/* utility functions */
+/** utility functions */
 void insert_value( std::vector<uint32_t>& vec, int index, UINT32 data );
 void push_value( std::vector<uint32_t>& vec, UINT32 Data );
 
-/* data fields */
+/** data fields */
 UINT32 empty;
 std::vector<uint32_t> group;
 
@@ -920,60 +1105,60 @@ class SparseHashtable
 
 private:
 
-/* Maximum bits per key before folding the table */
+/** Maximum bits per key before folding the table */
 static const int MAX_B;
 
-/* Bins (each bin is an Array object for duplicates of the same key) */
+/** Bins (each bin is an Array object for duplicates of the same key) */
 BucketGroup *table;
 
 public:
 
-/* constructor */
+/** constructor */
 SparseHashtable();
 
-/* destructor */
+/** destructor */
 ~SparseHashtable();
 
-/* initializer */
+/** initializer */
 int init( int _b );
 
-/* insert data */
+/** insert data */
 void insert( UINT64 index, UINT32 data );
 
-/* query data */
+/** query data */
 UINT32* query( UINT64 index, int* size );
 
-/* Bits per index */
+/** Bits per index */
 int b;
 
-/*  Number of bins */
+/**  Number of bins */
 UINT64 size;
 
 };
 
-/* class defining a sequence of bits */
+/** class defining a sequence of bits */
 class bitarray
 {
 
 public:
-/* pointer to bits sequence and sequence's length */
+/** pointer to bits sequence and sequence's length */
 UINT32 *arr;
 UINT32 length;
 
-/* constructor setting default values */
+/** constructor setting default values */
 bitarray()
 {
 arr = NULL;
 length = 0;
 }
 
-/* constructor setting sequence's length */
+/** constructor setting sequence's length */
 bitarray( UINT64 _bits )
 {
 init( _bits );
 }
 
-/* initializer of private fields */
+/** initializer of private fields */
 void init( UINT64 _bits )
 {
 length = (UINT32) ceil( _bits / 32.00 );
@@ -981,7 +1166,7 @@ arr = new UINT32[length];
 erase();
 }
 
-/* destructor */
+/** destructor */
 ~bitarray()
 {
 if( arr )
@@ -1003,7 +1188,7 @@ inline UINT8 get( UINT64 index )
 return ( arr[index >> 5] & ( ( (UINT32) 0x01 ) << ( index % 32 ) ) ) != 0;
 }
 
-/* reserve menory for an UINT32 */
+/** reserve menory for an UINT32 */
 inline void erase()
 {
 memset( arr, 0, sizeof(UINT32) * length );
@@ -1015,91 +1200,91 @@ class Mihasher
 {
 
 public:
-/* Bits per code */
+/** Bits per code */
 int B;
 
-/* B/8 */
+/** B/8 */
 int B_over_8;
 
-/* Bits per chunk (must be less than 64) */
+/** Bits per chunk (must be less than 64) */
 int b;
 
-/* Number of chunks */
+/** Number of chunks */
 int m;
 
-/* Number of chunks with b bits (have 1 bit more than others) */
+/** Number of chunks with b bits (have 1 bit more than others) */
 int mplus;
 
-/* Maximum hamming search radius (we use B/2 by default) */
+/** Maximum hamming search radius (we use B/2 by default) */
 int D;
 
-/* Maximum hamming search radius per substring */
+/** Maximum hamming search radius per substring */
 int d;
 
-/* Maximum results to return */
+/** Maximum results to return */
 int K;
 
-/* Number of codes */
+/** Number of codes */
 UINT64 N;
 
-/* Table of original full-length codes */
+/** Table of original full-length codes */
 cv::Mat codes;
 
-/* Counter for eliminating duplicate results (it is not thread safe) */
+/** Counter for eliminating duplicate results (it is not thread safe) */
 bitarray *counter;
 
-/* Array of m hashtables */
+/** Array of m hashtables */
 SparseHashtable *H;
 
-/* Volume of a b-bit Hamming ball with radius s (for s = 0 to d) */
+/** Volume of a b-bit Hamming ball with radius s (for s = 0 to d) */
 UINT32 *xornum;
 
-/* Used within generation of binary codes at a certain Hamming distance */
+/** Used within generation of binary codes at a certain Hamming distance */
 int power[100];
 
-/* constructor */
+/** constructor */
 Mihasher();
 
-/* desctructor */
+/** desctructor */
 ~Mihasher();
 
-/* constructor 2 */
+/** constructor 2 */
 Mihasher( int B, int m );
 
-/* K setter */
+/** K setter */
 void setK( int K );
 
-/* populate tables */
+/** populate tables */
 void populate( cv::Mat & codes, UINT32 N, int dim1codes );
 
-/* execute a batch query */
+/** execute a batch query */
 void batchquery( UINT32 * results, UINT32 *numres/*, qstat *stats*/, const cv::Mat & q, UINT32 numq, int dim1queries );
 
 private:
 
-/* execute a single query */
+/** execute a single query */
 void query( UINT32 * results, UINT32* numres/*, qstat *stats*/, UINT8 *q, UINT64 * chunks, UINT32 * res );
 };
 
-/* retrieve Hamming distances */
+/** retrieve Hamming distances */
 void checkKDistances( UINT32 * numres, int k, std::vector<int>& k_distances, int row, int string_length ) const;
 
-/* matrix to store new descriptors */
+/** matrix to store new descriptors */
 Mat descriptorsMat;
 
-/* map storing where each bunch of descriptors benins in DS */
+/** map storing where each bunch of descriptors benins in DS */
 std::map<int, int> indexesMap;
 
-/* internal MiHaser representing dataset */
+/** internal MiHaser representing dataset */
 Mihasher* dataset;
 
-/* index from which next added descriptors' bunch must begin */
+/** index from which next added descriptors' bunch must begin */
 int nextAddedIndex;
 
-/* number of images whose descriptors are stored in DS */
+/** number of images whose descriptors are stored in DS */
 int numImages;
 
-/* number of descriptors in dataset */
+/** number of descriptors in dataset */
 int descrInDS;
 
 };
@@ -1108,31 +1293,55 @@ int descrInDS;
  UTILITY FUNCTIONS
  -------------------------------------------------------------------------------------------- */
 
-/* struct for drawing options */
+/** struct for drawing options */
 struct CV_EXPORTS DrawLinesMatchesFlags
 {
 enum
 {
-DEFAULT = 0,  // Output image matrix will be created (Mat::create),
-              // i.e. existing memory of output image may be reused.
-              // Two source images, matches, and single keylines
-              // will be drawn.
-DRAW_OVER_OUTIMG = 1,// Output image matrix will not be
-// created (using Mat::create). Matches will be drawn
-// on existing content of output image.
-NOT_DRAW_SINGLE_LINES = 2// Single keylines will not be drawn.
+DEFAULT = 0,  //!< Output image matrix will be created (Mat::create),
+              //!< i.e. existing memory of output image may be reused.
+              //!< Two source images, matches, and single keylines
+              //!< will be drawn.
+DRAW_OVER_OUTIMG = 1,//!< Output image matrix will not be
+//!< created (using Mat::create). Matches will be drawn
+//!< on existing content of output image.
+NOT_DRAW_SINGLE_LINES = 2//!< Single keylines will not be drawn.
 };
 };
 
-/* draw matches between two images */
+/** @brief Draws the found matches of keylines from two images.
+
+@param img1 first image
+@param keylines1 keylines extracted from first image
+@param img2 second image
+@param keylines2 keylines extracted from second image
+@param matches1to2 vector of matches
+@param outImg output matrix to draw on
+@param matchColor drawing color for matches (chosen randomly in case of default value)
+@param singleLineColor drawing color for keylines (chosen randomly in case of default value)
+@param matchesMask mask to indicate which matches must be drawn
+@param flags drawing flags, see DrawLinesMatchesFlags
+
+@note If both *matchColor* and *singleLineColor* are set to their default values, function draws
+matched lines and line connecting them with same color
+ */
 CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
                                  const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
                                  const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
                                  int flags = DrawLinesMatchesFlags::DEFAULT );
 
-/* draw extracted lines on original image */
+/** @brief Draws keylines.
+
+@param image input image
+@param keylines keylines to be drawn
+@param outImage output image to draw on
+@param color color of lines to be drawn (if set to defaul value, color is chosen randomly)
+@param flags drawing flags
+ */
 CV_EXPORTS void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& outImage, const Scalar& color = Scalar::all( -1 ),
                               int flags = DrawLinesMatchesFlags::DEFAULT );
+
+//! @}
 
 }
 }

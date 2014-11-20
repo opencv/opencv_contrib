@@ -44,6 +44,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Defines an transformation that consists on a simple displacement
@@ -87,6 +89,7 @@ private:
     cv::Vec<double, 2> shift_;      /*< Displacement */
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

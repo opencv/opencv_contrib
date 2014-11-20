@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_ar
+//! @{
+
 struct AR_sportsObj : public Object
 {
     std::string videoUrl;
@@ -67,6 +70,8 @@ public:
 
     static Ptr<AR_sports> create();
 };
+
+//! @}
 
 }
 }

@@ -36,7 +36,10 @@
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
 //
-// Author: Tolga Birdal <tbirdal AT gmail.com>
+
+/** @file
+@author Tolga Birdal <tbirdal AT gmail.com>
+*/
 
 #ifndef __OPENCV_SURFACE_MATCHING_HELPERS_HPP__
 #define __OPENCV_SURFACE_MATCHING_HELPERS_HPP__
@@ -47,6 +50,9 @@ namespace cv
 {
 namespace ppf_match_3d
 {
+
+//! @addtogroup surface_matching
+//! @{
 
 /**
  *  @brief Load a PLY file
@@ -140,6 +146,9 @@ CV_EXPORTS Mat addNoisePC(Mat pc, double scale);
  *  @return Returns 0 on success
  */
 CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3]);
+
+//! @}
+
 } // namespace ppf_match_3d
 } // namespace cv
 
