@@ -16,6 +16,9 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgproc.hpp"
+
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
@@ -173,8 +176,8 @@ int main(int argc, const char *argv[]) {
     for(int num_component = 0; num_component < min(16, W.cols); num_component++) {
         // Slice the Fisherface from the model:
         Mat ev = W.col(num_component);
-        Mat projection = subspaceProject(ev, mean, images[0].reshape(1,1));
-        Mat reconstruction = subspaceReconstruct(ev, mean, projection);
+        Mat projection = LDA::subspaceProject(ev, mean, images[0].reshape(1,1));
+        Mat reconstruction = LDA::subspaceReconstruct(ev, mean, projection);
         // Normalize the result:
         reconstruction = norm_0_255(reconstruction.reshape(1, images[0].rows));
         // Display or save:
