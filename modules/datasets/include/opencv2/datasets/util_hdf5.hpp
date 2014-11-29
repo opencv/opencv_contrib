@@ -39,18 +39,16 @@
 //
 //M*/
 
-#ifndef OPENCV_DATASETS_UTIL_HPP
-#define OPENCV_DATASETS_UTIL_HPP
+#ifdef HAVE_HDF5
+#ifndef OPENCV_DATASETS_UTIL_HDF5_HPP
+#define OPENCV_DATASETS_UTIL_HDF5_HPP
 
 #include <string>
 #include <vector>
 
-#include <cstdio>
-#include <cstdlib> // atoi, atof
-
-#include <fstream>
-
 #include <opencv2/core.hpp>
+
+#include <hdf5.h>
 
 namespace cv
 {
@@ -60,15 +58,9 @@ namespace datasets
 //! @addtogroup datasets
 //! @{
 
-void CV_EXPORTS split(const std::string &s, std::vector<std::string> &elems, char delim);
+void CV_EXPORTS writeFileToH5(const std::string &imagePath, const std::string &name, hid_t grp_id);
 
-void CV_EXPORTS createDirectory(const std::string &path);
-
-void CV_EXPORTS getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
-
-void CV_EXPORTS numberToString(int number, std::string &out);
-
-long CV_EXPORTS getFileSize(const std::string &fileName);
+void CV_EXPORTS write1DToH5(hid_t loc_id, hid_t type_id, const std::string &name, const void *buf, int num);
 
 //! @}
 
@@ -76,4 +68,4 @@ long CV_EXPORTS getFileSize(const std::string &fileName);
 }
 
 #endif
-
+#endif

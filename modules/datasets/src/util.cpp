@@ -116,5 +116,25 @@ void getDirList(const string &dirName, vector<string> &fileNames)
 #endif
 }
 
+void numberToString(int number, string &out)
+{
+    char numberStr[9+1];
+    sprintf(numberStr, "%u", number);
+    for (unsigned int i=0; i<9-strlen(numberStr); ++i)
+    {
+        out += "0";
+    }
+    out += numberStr;
+}
+
+long getFileSize(const string &fileName)
+{
+    FILE *f = fopen(fileName.c_str(), "rb");
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fclose(f);
+    return size;
+}
+
 }
 }
