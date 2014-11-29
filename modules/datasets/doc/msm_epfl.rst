@@ -4,7 +4,7 @@ EPFL Multi-View Stereo
 
 Implements loading dataset:
 
-_`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS.html
+_`"EPFL Multi-View Stereo"`: http://cvlabwww.epfl.ch/data/multiview/denseMVS.html
 
 .. note:: Usage
 

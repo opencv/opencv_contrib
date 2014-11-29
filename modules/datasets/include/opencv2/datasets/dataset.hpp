@@ -282,7 +282,7 @@ Usage:
 
 Implements loading dataset:
 
-"EPFL Multi-View Stereo": <http://cvlabwww.epfl.ch/~strecha/multiview/denseMVS.html>
+"EPFL Multi-View Stereo": <http://cvlabwww.epfl.ch/data/multiview/denseMVS.html>
 
 Usage:
 -# From link above download dataset files:
