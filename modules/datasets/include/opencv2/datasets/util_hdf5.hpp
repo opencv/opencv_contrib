@@ -39,102 +39,33 @@
 //
 //M*/
 
-#include "opencv2/datasets/util.hpp"
+#ifdef HAVE_HDF5
+#ifndef OPENCV_DATASETS_UTIL_HDF5_HPP
+#define OPENCV_DATASETS_UTIL_HDF5_HPP
 
-#include <cstdlib>
+#include <string>
+#include <vector>
 
-#include <sstream>
+#include <opencv2/core.hpp>
 
-#ifdef __GNUC__
-    #include <unistd.h>
-    #include <dirent.h>
-    #include <sys/stat.h>
-#else
-    #include <io.h>
-    #include <direct.h>
-#endif
+#include <hdf5.h>
 
 namespace cv
 {
 namespace datasets
 {
 
-using namespace std;
+//! @addtogroup datasets
+//! @{
 
-void split(const string &s, vector<string> &elems, char delim)
-{
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim))
-    {
-        elems.push_back(item);
-    }
+void CV_EXPORTS writeFileToH5(const std::string &imagePath, const std::string &name, hid_t grp_id);
+
+void CV_EXPORTS write1DToH5(hid_t loc_id, hid_t type_id, const std::string &name, const void *buf, int num);
+
+//! @}
+
+}
 }
 
-void createDirectory(const string &path)
-{
-#ifdef __GNUC__
-    mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#else
-    mkdir(path.c_str());
 #endif
-}
-
-void getDirList(const string &dirName, vector<string> &fileNames)
-{
-#ifdef __GNUC__
-    struct dirent **namelist;
-    int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
-    for (int i=0; i<n; ++i)
-    {
-        string fileName(namelist[i]->d_name);
-        if ('.' != fileName[0])
-        {
-            fileNames.push_back(fileName);
-        }
-        free(namelist[i]);
-    }
-    free(namelist);
-#else // for WIN32
-    struct _finddata_t file;
-    string filter(dirName);
-    filter += "\\*.*";
-    intptr_t hFile = _findfirst(filter.c_str(), &file);
-    if (hFile==-1)
-    {
-        return;
-    }
-    do
-    {
-        string fileName(file.name);
-        if ('.' != fileName[0])
-        {
-            fileNames.push_back(fileName);
-        }
-    } while (_findnext(hFile, &file)==0);
-    _findclose(hFile);
 #endif
-}
-
-void numberToString(int number, string &out)
-{
-    char numberStr[9+1];
-    sprintf(numberStr, "%u", number);
-    for (unsigned int i=0; i<9-strlen(numberStr); ++i)
-    {
-        out += "0";
-    }
-    out += numberStr;
-}
-
-long getFileSize(const string &fileName)
-{
-    FILE *f = fopen(fileName.c_str(), "rb");
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fclose(f);
-    return size;
-}
-
-}
-}

@@ -39,20 +39,9 @@
 //
 //M*/
 
+#ifdef HAVE_HDF5
+#include "opencv2/datasets/util_hdf5.hpp"
 #include "opencv2/datasets/util.hpp"
-
-#include <cstdlib>
-
-#include <sstream>
-
-#ifdef __GNUC__
-    #include <unistd.h>
-    #include <dirent.h>
-    #include <sys/stat.h>
-#else
-    #include <io.h>
-    #include <direct.h>
-#endif
 
 namespace cv
 {
@@ -61,80 +50,40 @@ namespace datasets
 
 using namespace std;
 
-void split(const string &s, vector<string> &elems, char delim)
+void writeFileToH5(const string &imagePath, const string &name, hid_t grp_id)
 {
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim))
+    long size = getFileSize(imagePath);
+    char *buf = new char[size];
+    FILE *f = fopen(imagePath.c_str(), "rb");
+    size_t res = fread(buf, 1, size, f);
+    if (size != (long)res) // suppress warning
     {
-        elems.push_back(item);
+        res = 0;
     }
-}
 
-void createDirectory(const string &path)
-{
-#ifdef __GNUC__
-    mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#else
-    mkdir(path.c_str());
-#endif
-}
+    hsize_t dim2[1];
+    dim2[0] = size;
+    hid_t space_id = H5Screate_simple(1, dim2, NULL);
+    hid_t dset_id = H5Dcreate(grp_id, name.c_str(), H5T_STD_U8LE, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dset_id, H5T_STD_U8LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+    H5Dclose(dset_id);
+    H5Sclose(space_id);
 
-void getDirList(const string &dirName, vector<string> &fileNames)
-{
-#ifdef __GNUC__
-    struct dirent **namelist;
-    int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
-    for (int i=0; i<n; ++i)
-    {
-        string fileName(namelist[i]->d_name);
-        if ('.' != fileName[0])
-        {
-            fileNames.push_back(fileName);
-        }
-        free(namelist[i]);
-    }
-    free(namelist);
-#else // for WIN32
-    struct _finddata_t file;
-    string filter(dirName);
-    filter += "\\*.*";
-    intptr_t hFile = _findfirst(filter.c_str(), &file);
-    if (hFile==-1)
-    {
-        return;
-    }
-    do
-    {
-        string fileName(file.name);
-        if ('.' != fileName[0])
-        {
-            fileNames.push_back(fileName);
-        }
-    } while (_findnext(hFile, &file)==0);
-    _findclose(hFile);
-#endif
-}
-
-void numberToString(int number, string &out)
-{
-    char numberStr[9+1];
-    sprintf(numberStr, "%u", number);
-    for (unsigned int i=0; i<9-strlen(numberStr); ++i)
-    {
-        out += "0";
-    }
-    out += numberStr;
-}
-
-long getFileSize(const string &fileName)
-{
-    FILE *f = fopen(fileName.c_str(), "rb");
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
     fclose(f);
-    return size;
+    delete[] buf;
+}
+
+void write1DToH5(hid_t loc_id, hid_t type_id, const string &name, const void *buf, int num)
+{
+    hsize_t dim[1];
+    dim[0] = num;
+    hid_t space_id = H5Screate_simple(1, dim, NULL);
+    hid_t dset_id = H5Dcreate(loc_id, name.c_str(), type_id, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dset_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+    H5Dclose(dset_id);
+    H5Sclose(space_id);
 }
 
 }
 }
+#endif

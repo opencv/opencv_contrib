@@ -45,6 +45,10 @@
 #include <map>
 #include <set>
 
+#ifdef HAVE_HDF5
+#include <hdf5.h>
+#endif
+
 namespace cv
 {
 namespace datasets
@@ -63,6 +67,7 @@ public:
 
 private:
     void loadDataset(const string &path);
+    void loadH5(const std::string &name);
 
     void loadFile(const string &filename, vector< Ptr<FR_adienceObj> > &out);
     void cv5ToSplits(vector< Ptr<FR_adienceObj> > fileList[5]);
@@ -78,7 +83,13 @@ private:
 
 void FR_adienceImp::load(const string &path)
 {
-    loadDataset(path);
+    if (path.length()>=3 && path.substr(path.length()-3)==".h5")
+    {
+        loadH5(path);
+    } else
+    {
+        loadDataset(path);
+    }
 }
 
 void FR_adienceImp::loadFile(const string &filename, vector< Ptr<FR_adienceObj> > &out)
@@ -220,6 +231,129 @@ void FR_adienceImp::loadDataset(const string &path)
     realNames.clear();
     missing.clear();
 }
+
+#ifdef HAVE_HDF5
+struct objToWrite
+{
+    objToWrite() {}
+
+    void fill(FR_adienceObj *pObj)
+    {
+        pObj->face_id = face_id;
+        pObj->gender = (genderType)gender;
+        pObj->x = x;
+        pObj->y = y;
+        pObj->dx = dx;
+        pObj->dy = dy;
+        pObj->tilt_ang = tilt_ang;
+        pObj->fiducial_yaw_angle = fiducial_yaw_angle;
+        pObj->fiducial_score = fiducial_score;
+
+        //= ref;
+    }
+
+    static hid_t createH5Type()
+    {
+        hid_t tid = H5Tcreate(H5T_COMPOUND, sizeof(objToWrite));
+        H5Tinsert(tid, "ref", HOFFSET(objToWrite, ref), H5T_STD_REF_OBJ);
+        H5Tinsert(tid, "face_id", HOFFSET(objToWrite, face_id), H5T_NATIVE_INT);
+        H5Tinsert(tid, "gender", HOFFSET(objToWrite, gender), H5T_NATIVE_INT);
+        H5Tinsert(tid, "x", HOFFSET(objToWrite, x), H5T_NATIVE_INT);
+        H5Tinsert(tid, "y", HOFFSET(objToWrite, y), H5T_NATIVE_INT);
+        H5Tinsert(tid, "dx", HOFFSET(objToWrite, dx), H5T_NATIVE_INT);
+        H5Tinsert(tid, "dy", HOFFSET(objToWrite, dy), H5T_NATIVE_INT);
+        H5Tinsert(tid, "tilt_ang", HOFFSET(objToWrite, tilt_ang), H5T_NATIVE_INT);
+        H5Tinsert(tid, "fiducial_yaw_angle", HOFFSET(objToWrite, fiducial_yaw_angle), H5T_NATIVE_INT);
+        H5Tinsert(tid, "fiducial_score", HOFFSET(objToWrite, fiducial_score), H5T_NATIVE_INT);
+
+        return tid;
+    }
+
+    hobj_ref_t ref;
+    int face_id;
+    //std::string age;
+    int gender;
+    int x;
+    int y;
+    int dx;
+    int dy;
+    int tilt_ang;
+    int fiducial_yaw_angle;
+    int fiducial_score;
+};
+
+void FR_adienceImp::loadH5(const std::string &name)
+{
+    hid_t file_id = H5Fopen(name.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    hid_t grp_data = H5Gopen(file_id, "data", H5P_DEFAULT);
+    hid_t grp_split_train = H5Gopen(file_id, "splits/train", H5P_DEFAULT);
+    hid_t grp_split_test = H5Gopen(file_id, "splits/test", H5P_DEFAULT);
+
+    // read objects
+    hid_t grp_obj = H5Gopen(file_id, "objects", H5P_DEFAULT);
+    hid_t tid = objToWrite::createH5Type();
+    hid_t dobjs_id = H5Dopen(grp_obj, "objects", H5P_DEFAULT);
+    hsize_t dobjs_size = H5Dget_storage_size(dobjs_id)/sizeof(tid);
+    vector<objToWrite> objs;
+    objs.resize(dobjs_size);
+    H5Dread(dobjs_id, tid, H5S_ALL, H5S_ALL, H5P_DEFAULT, &objs[0]);
+    H5Dclose(dobjs_id);
+    H5Tclose(tid);
+    H5Gclose(grp_obj);
+
+    for (int i=0; i<10; ++i)
+    {
+        train.push_back(vector< Ptr<Object> >());
+        test.push_back(vector< Ptr<Object> >());
+        validation.push_back(vector< Ptr<Object> >());
+        for (int s=0; s<2; ++s) // train test
+        {
+            vector< Ptr<Object> > *currSplit;
+            hid_t currSplitGroup;
+            if (0 == s)
+            {
+                currSplitGroup = grp_split_train;
+                currSplit = &train.back();
+            } else
+            {
+                currSplitGroup = grp_split_test;
+                currSplit = &test.back();
+            }
+
+            // read split
+            ssize_t size = 1 + H5Gget_objname_by_idx(currSplitGroup, i, NULL, 0);
+            string splitName;
+            splitName.resize(size);
+            H5Gget_objname_by_idx(currSplitGroup, i, &splitName[0], splitName.size());
+            hid_t dataset_id = H5Dopen(currSplitGroup, splitName.c_str(), H5P_DEFAULT);
+            hsize_t dsize = H5Dget_storage_size(dataset_id)/sizeof(int);
+            vector<int> objRefs;
+            objRefs.resize(dsize);
+            H5Dread(dataset_id, H5T_STD_U32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &objRefs[0]);
+            H5Dclose(dataset_id);
+
+            for (unsigned int j=0; j<dsize; ++j)
+            {
+                objToWrite &currH5 = objs[objRefs[j]];
+                Ptr<FR_adienceObj> curr(new FR_adienceObj);
+                currH5.fill(curr.get());
+                (*currSplit).push_back(curr);
+            }
+        }
+    }
+
+    H5Gclose(grp_split_test);
+    H5Gclose(grp_split_train);
+    H5Gclose(grp_data);
+    H5Fclose(file_id);
+}
+#else
+void FR_adienceImp::loadH5(const std::string &name)
+{
+    printf("loadH5(%s): libhdf5 absent\n", name.c_str());
+}
+#endif
 
 Ptr<FR_adience> FR_adience::create()
 {
