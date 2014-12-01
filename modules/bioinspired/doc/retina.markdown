@@ -1,11 +1,10 @@
-Retina : a Bio mimetic human retina model {#bioinspired_retina}
-=========================================
+Bioinspired Module Retina Introduction {#bioinspired_retina}
+======================================
 
 Retina
 ------
 
-**Note** : do not forget that the retina model is included in the following namespace :
-*cv::bioinspired*.
+@note do not forget that the retina model is included in the following namespace : cv::bioinspired
 
 ### Introduction
 
@@ -18,14 +17,13 @@ separable spatio-temporal filter modelling the two main retina information chann
 
 From a general point of view, this filter whitens the image spectrum and corrects luminance thanks
 to local adaptation. An other important property is its hability to filter out spatio-temporal noise
-while enhancing details. This model originates from Jeanny Herault work @cite Herault2010. It has been
+while enhancing details. This model originates from Jeanny Herault work @cite Herault2010 . It has been
 involved in Alexandre Benoit phd and his current research @cite Benoit2010, @cite Strat2013 (he
 currently maintains this module within OpenCV). It includes the work of other Jeanny's phd student
 such as @cite Chaix2007 and the log polar transformations of Barthelemy Durette described in Jeanny's
 book.
 
-**NOTES :**
-
+@note
 -   For ease of use in computer vision applications, the two retina channels are applied
     homogeneously on all the input images. This does not follow the real retina topology but this
     can still be done using the log sampling capabilities proposed within the class.
@@ -71,7 +69,7 @@ described hereafter. XML parameters file samples are shown at the end of the pag
 
 Here is an overview of the abstract Retina interface, allocate one instance with the *createRetina*
 functions.:
-
+@code{.cpp}
     namespace cv{namespace bioinspired{
 
     class Retina : public Algorithm
@@ -122,6 +120,7 @@ functions.:
       cv::Ptr<Retina> createRetina (Size inputSize);
       cv::Ptr<Retina> createRetina (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
       }} // cv and bioinspired namespaces end
+@endcode
 
 ### Description
 
@@ -146,59 +145,47 @@ Use : this model can be used basically for spatio-temporal video effects but als
 -   performing motion analysis also taking benefit of the previously cited properties (check out the
     magnocellular retina channel output, by using the provided **getMagno** methods)
 -   general image/video sequence description using either one or both channels. An example of the
-    use of Retina in a Bag of Words approach is given in @cite Strat2013.
+    use of Retina in a Bag of Words approach is given in @cite Strat2013 .
 
 Literature
 ----------
 
 For more information, refer to the following papers :
 
--   Model description :
+-   Model description : @cite Benoit2010
 
-[Benoit2010] Benoit A., Caplier A., Durette B., Herault, J., "Using Human Visual System Modeling For Bio-Inspired Low Level Image Processing", Elsevier, Computer Vision and Image Understanding 114 (2010), pp. 758-773. DOI <http://dx.doi.org/10.1016/j.cviu.2010.01.011>
+-   Model use in a Bag of Words approach : @cite Strat2013
 
--   Model use in a Bag of Words approach :
-
-[Strat2013] Strat S., Benoit A., Lambert P., "Retina enhanced SIFT descriptors for video indexing", CBMI2013, Veszprém, Hungary, 2013.
-
--   Please have a look at the reference work of Jeanny Herault that you can read in his book :
-
-[Herault2010] Vision: Images, Signals and Neural Networks: Models of Neural Processing in Visual Perception (Progress in Neural Processing),By: Jeanny Herault, ISBN: 9814273686. WAPI (Tower ID): 113266891.
+-   Please have a look at the reference work of Jeanny Herault that you can read in his book : @cite Herault2010
 
 This retina filter code includes the research contributions of phd/research collegues from which
 code has been redrawn by the author :
 
 -   take a look at the *retinacolor.hpp* module to discover Brice Chaix de Lavarene phD color
-    mosaicing/demosaicing and his reference paper:
-
-[Chaix2007] B. Chaix de Lavarene, D. Alleysson, B. Durette, J. Herault (2007). "Efficient demosaicing through recursive filtering", IEEE International Conference on Image Processing ICIP 2007
+    mosaicing/demosaicing and his reference paper: @cite Chaix2007
 
 -   take a look at *imagelogpolprojection.hpp* to discover retina spatial log sampling which
     originates from Barthelemy Durette phd with Jeanny Herault. A Retina / V1 cortex projection is
     also proposed and originates from Jeanny's discussions. More informations in the above cited
     Jeanny Heraults's book.
 
--   Meylan&al work on HDR tone mapping that is implemented as a specific method within the model :
-
-[Meylan2007] L. Meylan , D. Alleysson, S. Susstrunk, "A Model of Retinal Local Adaptation for the Tone Mapping of Color Filter Array Images", Journal of Optical Society of America, A, Vol. 24, N 9, September, 1st, 2007, pp. 2807-2816
+-   Meylan&al work on HDR tone mapping that is implemented as a specific method within the model : @cite Meylan2007
 
 Demos and experiments !
 -----------------------
 
-**NOTE : Complementary to the following examples, have a look at the Retina tutorial in the
+@note Complementary to the following examples, have a look at the Retina tutorial in the
 tutorial/contrib section for complementary explanations.**
 
 Take a look at the provided C++ examples provided with OpenCV :
 
--  **samples/cpp/retinademo.cpp** shows how to use the retina module for details enhancement (Parvo channel output) and transient maps observation (Magno channel output). You can play with images, video sequences and webcam video.
-   Typical uses are (provided your OpenCV installation is situated in folder
-        *OpenCVReleaseFolder*)
+-   **samples/cpp/retinademo.cpp** shows how to use the retina module for details enhancement (Parvo channel output) and transient maps observation (Magno channel output). You can play with images, video sequences and webcam video.
+    Typical uses are (provided your OpenCV installation is situated in folder *OpenCVReleaseFolder*)
+    -   image processing : **OpenCVReleaseFolder/bin/retinademo -image myPicture.jpg**
+    -   video processing : **OpenCVReleaseFolder/bin/retinademo -video myMovie.avi**
+    -   webcam processing: **OpenCVReleaseFolder/bin/retinademo -video**
 
-        -   image processing : **OpenCVReleaseFolder/bin/retinademo -image myPicture.jpg**
-        -   video processing : **OpenCVReleaseFolder/bin/retinademo -video myMovie.avi**
-        -   webcam processing: **OpenCVReleaseFolder/bin/retinademo -video**
-
-    **Note :** This demo generates the file *RetinaDefaultParameters.xml* which contains the
+    @note This demo generates the file *RetinaDefaultParameters.xml* which contains the
     default parameters of the retina. Then, rename this as *RetinaSpecificParameters.xml*, adjust
     the parameters the way you want and reload the program to check the effect.
 
@@ -217,7 +204,7 @@ Take a look at the provided C++ examples provided with OpenCV :
     Note that some sliders are made available to allow you to play with luminance compression.
 
     If not using the 'fast' option, then, tone mapping is performed using the full retina model
-    @cite Benoit2010. It includes spectral whitening that allows luminance energy to be reduced.
+    @cite Benoit2010 . It includes spectral whitening that allows luminance energy to be reduced.
     When using the 'fast' option, then, a simpler method is used, it is an adaptation of the
-    algorithm presented in @cite Meylan2007. This method gives also good results and is faster to
+    algorithm presented in @cite Meylan2007 . This method gives also good results and is faster to
     process but it sometimes requires some more parameters adjustement.

@@ -1,9 +1,9 @@
-Face Recognition with OpenCV {#face_tutorial}
+Face Recognition with OpenCV {#tutorial_face_main}
 ============================
 
 [TOC]
 
-Introduction {#face_tutorial_intro}
+Introduction {#tutorial_face_intro}
 ============
 
 [OpenCV (Open Source Computer Vision)](http://opencv.org) is a popular computer vision library
@@ -36,7 +36,7 @@ users.
 All code in this document is released under the [BSD
 license](http://www.opensource.org/licenses/bsd-license), so feel free to use it for your projects.
 
-Face Recognition {#face_tutorial_facerec}
+Face Recognition {#tutorial_face_facerec}
 ----------------
 
 Face recognition is an easy task for humans. Experiments in @cite Tu06 have shown, that even one to
@@ -59,7 +59,7 @@ to face recognition. One of the first automated face recognition systems was des
 the euclidean distance between feature vectors of a probe and reference image. Such a method is
 robust against changes in illumination by its nature, but has a huge drawback: the accurate
 registration of the marker points is complicated, even with state of the art algorithms. Some of the
-latest work on geometric face recognition was carried out in @cite Bru92. A 22-dimensional feature
+latest work on geometric face recognition was carried out in @cite Bru92 . A 22-dimensional feature
 vector was used and experiments on large datasets have shown, that geometrical features alone my not
 carry enough information for face recognition.
 
@@ -71,7 +71,7 @@ transformation is optimal from a reconstruction standpoint, it doesn't take any 
 account. Imagine a situation where the variance is generated from external sources, let it be light.
 The axes with maximum variance do not necessarily contain any discriminative information at all,
 hence a classification becomes impossible. So a class-specific projection with a Linear Discriminant
-Analysis was applied to face recognition in @cite BHK97. The basic idea is to minimize the variance
+Analysis was applied to face recognition in @cite BHK97 . The basic idea is to minimize the variance
 within a class, while maximizing the variance between the classes at the same time.
 
 Recently various methods for a local feature extraction emerged. To avoid the high-dimensionality of
@@ -82,7 +82,7 @@ Local Binary Patterns (@cite AHP04). It's still an open research question what's
 preserve spatial information when applying a local feature extraction, because spatial information
 is potentially useful information.
 
-Face Database  {#face_tutorial_facedb}
+Face Database  {#tutorial_face_facedb}
 -------------
 
 Let's get some data to experiment with first. I don't want to do a toy example here. We are doing
@@ -123,7 +123,7 @@ Three interesting databases are (parts of the description are quoted from
     same setup to take 16128 images of 28 people. The Extended Yale Facedatabase B is the merge of
     the two databases, which is now known as Extended Yalefacedatabase B.
 
-### Preparing the data  {#face_tutorial_prepare}
+### Preparing the data  {#tutorial_face_prepare}
 
 Once we have acquired some data, we'll need to read it in our program. In the demo applications I
 have decided to read the images from a very simple CSV file. Why? Because it's the simplest
@@ -131,9 +131,9 @@ platform-independent approach I can think of. However, if you know a simpler sol
 about it. Basically all the CSV file needs to contain are lines composed of a filename followed by a
 ; followed by the label (as *integer number*), making up a line like this:
 
-~~~
+@code{.csv}
 /path/to/image.ext;0
-~~~
+@endcode
 
 Let's dissect the line. /path/to/image.ext is the path to an image, probably something like this if
 you are in Windows: C:/faces/person0/image0.jpg. Then there is the separator ; and finally we assign
@@ -143,7 +143,7 @@ same subjects (persons) should have the same label.
 Download the AT&T Facedatabase from AT&T Facedatabase and the corresponding CSV file from at.txt,
 which looks like this (file is without ... of course):
 
-~~~
+@code{.csv}
 ./at/s1/1.pgm;0
 ./at/s1/2.pgm;0
 ...
@@ -152,20 +152,20 @@ which looks like this (file is without ... of course):
 ...
 ./at/s40/1.pgm;39
 ./at/s40/2.pgm;39
-~~~
+@endcode
 
 Imagine I have extracted the files to D:/data/at and have downloaded the CSV file to D:/data/at.txt.
 Then you would simply need to Search & Replace ./ with D:/data/. You can do that in an editor of
 your choice, every sufficiently advanced editor can do this. Once you have a CSV file with valid
 filenames and labels, you can run any of the demos by passing the path to the CSV file as parameter:
 
-~~~
+@code{.sh}
 facerec_demo.exe D:/data/at.txt
-~~~
+@endcode
 
-Please, see @ref face_tutorial_appendix_csv for details on creating CSV file.
+Please, see @ref tutorial_face_appendix_csv for details on creating CSV file.
 
-Eigenfaces  {#face_tutorial_eigenfaces}
+Eigenfaces  {#tutorial_face_eigenfaces}
 ----------
 
 The problem with the image representation we are given is its high dimensionality. Two-dimensional
@@ -181,7 +181,7 @@ high-dimensional dataset is often described by correlated variables and therefor
 meaningful dimensions account for most of the information. The PCA method finds the directions with
 the greatest variance in the data, called principal components.
 
-### Algorithmic Description of Eigenfaces method  {#face_tutorial_eigenfaces_algo}
+### Algorithmic Description of Eigenfaces method  {#tutorial_face_eigenfaces_algo}
 
 Let \f$X = \{ x_{1}, x_{2}, \ldots, x_{n} \}\f$ be a random vector with observations \f$x_i \in R^{d}\f$.
 
@@ -237,7 +237,7 @@ The resulting eigenvectors are orthogonal, to get orthonormal eigenvectors they 
 normalized to unit length. I don't want to turn this into a publication, so please look into
 @cite Duda01 for the derivation and proof of the equations.
 
-### Eigenfaces in OpenCV  {#face_tutorial_eigenfaces_use}
+### Eigenfaces in OpenCV  {#tutorial_face_eigenfaces_use}
 
 For the first source code example, I'll go through it with you. I am first giving you the whole
 source code listing, and after this we'll look at the most important lines in detail. Please note:
@@ -258,7 +258,7 @@ We've already seen, that we can reconstruct a face from its lower dimensional ap
 let's see how many Eigenfaces are needed for a good reconstruction. I'll do a subplot with
 \f$10,30,\ldots,310\f$ Eigenfaces:
 
-~~~{cpp}
+@code{.cpp}
 // Display or save the image reconstruction at some predefined steps:
 for(int num_components = 10; num_components < 300; num_components+=15) {
     // slice the eigenvectors from the model
@@ -274,7 +274,7 @@ for(int num_components = 10; num_components < 300; num_components+=15) {
         imwrite(format("%s/eigenface_reconstruction_%d.png", output_folder.c_str(), num_components), reconstruction);
     }
 }
-~~~
+@endcode
 
 10 Eigenvectors are obviously not sufficient for a good image reconstruction, 50 Eigenvectors may
 already be sufficient to encode important facial features. You'll get a good reconstruction with
@@ -284,7 +284,7 @@ data. @cite Zhao03 is the perfect point to start researching for this:
 
 ![image](img/eigenface_reconstruction_opencv.png)
 
-Fisherfaces  {#face_tutorial_fisherfaces}
+Fisherfaces  {#tutorial_face_fisherfaces}
 -----------
 
 The Principal Component Analysis (PCA), which is the core of the Eigenfaces method, finds a linear
@@ -300,16 +300,16 @@ for an example).
 The Linear Discriminant Analysis performs a class-specific dimensionality reduction and was invented
 by the great statistician [Sir R. A. Fisher](http://en.wikipedia.org/wiki/Ronald_Fisher). He
 successfully used it for classifying flowers in his 1936 paper *The use of multiple measurements in
-taxonomic problems* @cite Fisher36. In order to find the combination of features that separates best
+taxonomic problems* @cite Fisher36 . In order to find the combination of features that separates best
 between classes the Linear Discriminant Analysis maximizes the ratio of between-classes to
 within-classes scatter, instead of maximizing the overall scatter. The idea is simple: same classes
 should cluster tightly together, while different classes are as far away as possible from each other
 in the lower-dimensional representation. This was also recognized by
 [Belhumeur](http://www.cs.columbia.edu/~belhumeur/), [Hespanha](http://www.ece.ucsb.edu/~hespanha/)
 and [Kriegman](http://cseweb.ucsd.edu/~kriegman/) and so they applied a Discriminant Analysis to
-face recognition in @cite BHK97.
+face recognition in @cite BHK97 .
 
-### Algorithmic Description of Fisherfaces method {#face_tutorial_fisherfaces_algo}
+### Algorithmic Description of Fisherfaces method {#tutorial_face_fisherfaces_algo}
 
 Let \f$X\f$ be a random vector with samples drawn from \f$c\f$ classes:
 
@@ -365,7 +365,7 @@ given by:
 
 \f[W = W_{fld}^{T} W_{pca}^{T}\f]
 
-### Fisherfaces in OpenCV {#face_tutorial_fisherfaces_use}
+### Fisherfaces in OpenCV {#tutorial_face_fisherfaces_use}
 
 The source code for this demo application is also available in the src folder coming with this
 documentation:
@@ -393,7 +393,7 @@ reconstruction of the original image. For the Fisherfaces method we'll project t
 each of the Fisherfaces instead. So you'll have a nice visualization, which feature each of the
 Fisherfaces describes:
 
-~~~{cpp}
+@code{.cpp}
 // Display or save the image reconstruction at some predefined steps:
 for(int num_component = 0; num_component < min(16, W.cols); num_component++) {
     // Slice the Fisherface from the model:
@@ -409,13 +409,13 @@ for(int num_component = 0; num_component < min(16, W.cols); num_component++) {
         imwrite(format("%s/fisherface_reconstruction_%d.png", output_folder.c_str(), num_component), reconstruction);
     }
 }
-~~~
+@endcode
 
 The differences may be subtle for the human eyes, but you should be able to see some differences:
 
 ![image](img/fisherface_reconstruction_opencv.png)
 
-Local Binary Patterns Histograms {#face_tutorial_lbph}
+Local Binary Patterns Histograms {#tutorial_face_lbph}
 --------------------------------
 
 Eigenfaces and Fisherfaces take a somewhat holistic approach to face recognition. You treat your
@@ -461,7 +461,7 @@ literature actually used a fixed 3 x 3 neighborhood just like this:
 
 ![image](img/lbp/lbp.png)
 
-### Algorithmic Description of LBPH method {#face_tutorial_lbph_algo}
+### Algorithmic Description of LBPH method {#tutorial_face_lbph_algo}
 
 A more formal description of the LBP operator can be given as:
 
@@ -481,7 +481,7 @@ s(x) =
 This description enables you to capture very fine grained details in images. In fact the authors
 were able to compete with state of the art results for texture classification. Soon after the
 operator was published it was noted, that a fixed neighborhood fails to encode details differing in
-scale. So the operator was extended to use a variable neighborhood in @cite AHP04. The idea is to
+scale. So the operator was extended to use a variable neighborhood in @cite AHP04 . The idea is to
 align an abritrary number of neighbors on a circle with a variable radius, which enables to capture
 the following neighborhoods:
 
@@ -523,27 +523,27 @@ regions and extract a histogram from each. The spatially enhanced feature vector
 concatenating the local histograms (**not merging them**). These histograms are called *Local Binary
 Patterns Histograms*.
 
-### Local Binary Patterns Histograms in OpenCV {#face_tutorial_lbph_use}
+### Local Binary Patterns Histograms in OpenCV {#tutorial_face_lbph_use}
 
 The source code for this demo application is also available in the src folder coming with this
 documentation:
 
 @include src/facerec_lbph.cpp
 
-Conclusion {#face_tutorial_conclusion}
+Conclusion {#tutorial_face_conclusion}
 ----------
 
 You've learned how to use the new FaceRecognizer in real applications. After reading the document
 you also know how the algorithms work, so now it's time for you to experiment with the available
 algorithms. Use them, improve them and let the OpenCV community participate!
 
-Credits {#face_tutorial_credits}
+Credits {#tutorial_face_credits}
 -------
 
 This document wouldn't be possible without the kind permission to use the face images of the *AT&T
 Database of Faces* and the *Yale Facedatabase A/B*.
 
-### The Database of Faces {#face_tutorial_credits_db}
+### The Database of Faces {#tutorial_face_credits_db}
 
 __Important: when using these images, please give credit to "AT&T Laboratories, Cambridge."__
 
@@ -567,7 +567,7 @@ image number for that subject (between 1 and 10).
 A copy of the database can be retrieved from:
 [<http://www.cl.cam.ac.uk/research/dtg/attarchive/pub/data/att_faces.zip>](http://www.cl.cam.ac.uk/research/dtg/attarchive/pub/data/att_faces.zip).
 
-### Yale Facedatabase A {#face_tutorial_credits_yalea}
+### Yale Facedatabase A {#tutorial_face_credits_yalea}
 
 *With the permission of the authors I am allowed to show a small number of images (say subject 1 and
 all the variations) and all images such as Fisherfaces and Eigenfaces from either Yale Facedatabase
@@ -579,7 +579,7 @@ w/glasses, happy, left-light, w/no glasses, normal, right-light, sad, sleepy, su
 (Source:
 [<http://cvc.yale.edu/projects/yalefaces/yalefaces.html>](http://cvc.yale.edu/projects/yalefaces/yalefaces.html))
 
-### Yale Facedatabase B {#face_tutorial_credits_yaleb}
+### Yale Facedatabase B {#tutorial_face_credits_yaleb}
 
 *With the permission of the authors I am allowed to show a small number of images (say subject 1 and
 all the variations) and all images such as Fisherfaces and Eigenfaces from either Yale Facedatabase
@@ -607,14 +607,14 @@ experimental results with the cropped images, please reference the PAMI2005 pape
 Appendix {#face_appendix}
 --------
 
-### Creating the CSV File {#face_tutorial_appendix_csv}
+### Creating the CSV File {#tutorial_face_appendix_csv}
 
 You don't really want to create the CSV file by hand. I have prepared you a little Python script
 `create_csv.py` (you find it at `src/create_csv.py` coming with this tutorial) that automatically
 creates you a CSV file. If you have your images in hierarchie like this
 (`/basepath/<subject>/<image.ext>`):
 
-~~~~~~
+@code{.sh}
 philipp@mango:~/facerec/data/at$ tree
 .
 |-- s1
@@ -630,12 +630,12 @@ philipp@mango:~/facerec/data/at$ tree
 |   |-- 1.pgm
 |   |-- ...
 |   |-- 10.pgm
-~~~~~~
+@endcode
 
 Then simply call `create_csv.py` with the path to the folder, just like this and you could save the
 output:
 
-~~~~~~
+@code{.sh}
 philipp@mango:~/facerec/data$ python create_csv.py
 at/s13/2.pgm;0
 at/s13/7.pgm;0
@@ -654,30 +654,30 @@ at/s17/9.pgm;1
 at/s17/5.pgm;1
 at/s17/3.pgm;1
 [...]
-~~~~~~
+@endcode
 
 Here is the script, if you can't find it:
 
-@verbinclude src/create_csv.py
+@verbinclude face/doc/src/create_csv.py
 
-### Aligning Face Images {#face_tutorial_appendix_align}
+### Aligning Face Images {#tutorial_face_appendix_align}
 
 An accurate alignment of your image data is especially important in tasks like emotion detection,
 were you need as much detail as possible. Believe me... You don't want to do this by hand. So I've
 prepared you a tiny Python script. The code is really easy to use. To scale, rotate and crop the
-face image you just need to call *CropFace(image, eye\_left, eye\_right, offset\_pct, dest\_sz)*,
+face image you just need to call *CropFace(image, eye_left, eye_right, offset_pct, dest_sz)*,
 where:
 
--   *eye\_left* is the position of the left eye
--   *eye\_right* is the position of the right eye
--   *offset\_pct* is the percent of the image you want to keep next to the eyes (horizontal,
+-   *eye_left* is the position of the left eye
+-   *eye_right* is the position of the right eye
+-   *offset_pct* is the percent of the image you want to keep next to the eyes (horizontal,
     vertical direction)
--   *dest\_sz* is the size of the output image
+-   *dest_sz* is the size of the output image
 
-If you are using the same *offset\_pct* and *dest\_sz* for your images, they are all aligned at the
+If you are using the same *offset_pct* and *dest_sz* for your images, they are all aligned at the
 eyes.
 
-@verbinclude src/crop_face.py
+@verbinclude face/doc/src/crop_face.py
 
 Imagine we are given [this photo of Arnold
 Schwarzenegger](http://en.wikipedia.org/wiki/File:Arnold_Schwarzenegger_edit%28ws%29.jpg), which is
@@ -694,6 +694,6 @@ Configuration                   | Cropped, Scaled, Rotated Face
 0.3 (30%), 0.3 (30%), (200,200) | ![](tutorial/gender_classification/arnie_30_30_200_200.jpg)
 0.2 (20%), 0.2 (20%), (70,70)   | ![](tutorial/gender_classification/arnie_20_20_70_70.jpg)
 
-### CSV for the AT&T Facedatabase {#face_tutorial_appendix_attcsv}
+### CSV for the AT&T Facedatabase {#tutorial_face_appendix_attcsv}
 
-@verbinclude etc/at.txt
+@verbinclude face/doc/etc/at.txt
