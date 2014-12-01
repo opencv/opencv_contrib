@@ -12,3 +12,4 @@ Extended Image Processing
 - Paillou Filter
 - Fast Line Detector
 - Deriche Filter
+- Pei&Lin Normalization

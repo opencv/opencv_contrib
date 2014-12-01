@@ -51,6 +51,7 @@
 #include "ximgproc/paillou_filter.hpp"
 #include "ximgproc/fast_line_detector.hpp"
 #include "ximgproc/deriche_filter.hpp"
+#include "ximgproc/peilin.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
