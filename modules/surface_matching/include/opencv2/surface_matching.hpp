@@ -365,7 +365,7 @@ accurate representation. However, note that number of point pair features to be 
 quadratically increased as the complexity is O(N\^2). This is especially a concern for 32 bit
 systems, where large models can easily overshoot the available memory. Typically, values in the
 range of 0.025 - 0.05 seem adequate for most of the applications, where the default value is 0.03.
-(Note that there is a difference in this paremeter with the one presented in @cite drost2010. In
+(Note that there is a difference in this paremeter with the one presented in @cite drost2010 . In
 @cite drost2010 a uniform cuboid is used for quantization and model diameter is used for reference of
 sampling. In my implementation, the cuboid is a rectangular prism, and each dimension is quantized
 independently. I do not take reference from the diameter but along the individual dimensions.

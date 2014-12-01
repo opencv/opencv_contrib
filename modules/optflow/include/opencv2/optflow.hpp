@@ -99,7 +99,7 @@ for pixel
 @param speed_up_thr threshold to detect point with irregular flow - where flow should be
 recalculated after upscale
 
-See @cite Tao2012. And site of project - <http://graphics.berkeley.edu/papers/Tao-SAN-2012-05/>.
+See @cite Tao2012 . And site of project - <http://graphics.berkeley.edu/papers/Tao-SAN-2012-05/>.
 
 @note
    -   An example using the simpleFlow algorithm can be found at samples/simpleflow_demo.cpp

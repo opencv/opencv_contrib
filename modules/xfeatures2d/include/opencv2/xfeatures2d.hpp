@@ -64,7 +64,7 @@ namespace xfeatures2d
 //! @addtogroup xfeatures2d_experiment
 //! @{
 
-/** @brief Class implementing the FREAK (*Fast Retina Keypoint*) keypoint descriptor, described in @cite AOV12.
+/** @brief Class implementing the FREAK (*Fast Retina Keypoint*) keypoint descriptor, described in @cite AOV12 .
 
 The algorithm propose a novel keypoint descriptor inspired by the human visual system and more
 precisely the retina, coined Fast Retina Key- point (FREAK). A cascade of binary strings is
@@ -116,7 +116,7 @@ public:
  * BRIEF Descriptor
  */
 
-/** @brief Class for computing BRIEF descriptors described in @cite calon2010
+/** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
 @note
    -   A complete BRIEF extractor sample can be found at
