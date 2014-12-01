@@ -40,5 +40,6 @@
 #include "ximgproc/edge_filter.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
+#include "ximgproc/peilin.hpp"
 
 #endif
