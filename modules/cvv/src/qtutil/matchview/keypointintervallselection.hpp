@@ -1,7 +1,7 @@
 #ifndef CVVISUAL_KEY_POINT_INTERVALL_SELECTOR
 #define CVVISUAL_KEY_POINT_INTERVALL_SELECTOR
 
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "keypointselection.hpp"
 #include "keypointvaluechooser.hpp"

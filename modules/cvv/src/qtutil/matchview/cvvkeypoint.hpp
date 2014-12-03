@@ -9,8 +9,8 @@
 #include <QWidget>
 #include <QGraphicsScene>
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "keypointsettings.hpp"
 #include "../zoomableimage.hpp"

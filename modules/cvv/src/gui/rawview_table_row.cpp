@@ -10,6 +10,8 @@
 #include "../qtutil/util.hpp"
 #include "../stfl/stringutils.hpp"
 
+#include <set>
+
 namespace cvv
 {
 namespace gui

@@ -8,8 +8,8 @@
 #include <QGraphicsScene>
 #include <QGraphicsProxyWidget>
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
 #include "cvvmatch.hpp"
 #include "cvvkeypoint.hpp"
 #include "zoomableproxyobject.hpp"

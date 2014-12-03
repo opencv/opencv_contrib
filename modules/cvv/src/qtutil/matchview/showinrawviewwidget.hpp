@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "matchmanagement.hpp"
 #include "keypointmanagement.hpp"

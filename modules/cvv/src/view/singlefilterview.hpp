@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "filter_view.hpp"
 #include "../impl/filter_call.hpp"

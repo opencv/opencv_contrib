@@ -3,9 +3,11 @@
 #include <iostream>
 
 // library includes
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/features2d.hpp>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/videoio.hpp>
+#include <opencv2/videoio/videoio_c.h>
 
 #define CVVISUAL_DEBUGMODE
 #include <opencv2/cvv/debug_mode.hpp>
@@ -14,6 +16,7 @@
 #include <opencv2/cvv/dmatch.hpp>
 #include <opencv2/cvv/final_show.hpp>
 
+using namespace cv;
 
 template<class T> std::string toString(const T& p_arg)
 {
@@ -83,7 +86,7 @@ main(int argc, char** argv)
   cv::Mat prevDescriptors;
 
   int maxFeatureCount = 500;
-  cv::ORB detector(maxFeatureCount);
+  Ptr<ORB> detector = ORB::create(maxFeatureCount);
 
   cv::BFMatcher matcher(cv::NORM_HAMMING);
 
@@ -105,7 +108,7 @@ main(int argc, char** argv)
     // detect ORB features
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
-    detector(imgGray, cv::noArray(), keypoints, descriptors);
+    detector->detectAndCompute(imgGray, cv::noArray(), keypoints, descriptors);
     printf("%d: detected %zd keypoints\n", imgId, keypoints.size());
 
     // match them to previous image (if available)

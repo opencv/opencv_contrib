@@ -6,7 +6,7 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
 #include "../qtutil/accordion.hpp"
 #include "../qtutil/zoomableimageoptpanel.hpp"
