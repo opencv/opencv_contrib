@@ -43,6 +43,9 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
+
 /*!
  * Mapper for euclidean motion: rotation plus shift
  */
@@ -57,6 +60,7 @@ public:
     cv::Ptr<Map> getMap(void) const;
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

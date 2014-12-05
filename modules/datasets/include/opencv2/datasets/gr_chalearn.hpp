@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_gr
+//! @{
+
 struct groundTruth
 {
     int gestureID, initialFrame, lastFrame;
@@ -84,6 +87,8 @@ public:
 
     static Ptr<GR_chalearn> create();
 };
+
+//! @}
 
 }
 }

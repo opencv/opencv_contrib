@@ -47,4 +47,14 @@
 #include "opencv2/bioinspired/retina.hpp"
 #include "opencv2/bioinspired/retinafasttonemapping.hpp"
 #include "opencv2/bioinspired/transientareassegmentationmodule.hpp"
+
+/** @defgroup bioinspired Biologically inspired vision models and derivated tools
+
+The module provides biological visual systems models (human visual system and others). It also
+provides derivated objects that take advantage of those bio-inspired models.
+
+@ref bioinspired_retina
+
+*/
+
 #endif

@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_gr
+//! @{
+
 enum actionType
 {
     circle = 1,
@@ -106,6 +109,8 @@ public:
 
     static Ptr<GR_skig> create();
 };
+
+//! @}
 
 }
 }

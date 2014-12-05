@@ -43,35 +43,47 @@
 #ifndef __OPENCV_INPAINTING_HPP__
 #define __OPENCV_INPAINTING_HPP__
 
-/*
-* inpainting.hpp
-*
-*  Created on: Jul 22, 2014
-*      Author: Yury Gitman
+/** @file
+@date Jul 22, 2014
+@author Yury Gitman
 */
 
 #include <opencv2/core.hpp>
 
-/*! \namespace cv
-Namespace where all the C++ OpenCV functionality resides
-*/
 namespace cv
 {
 namespace xphoto
 {
+
+//! @addtogroup xphoto
+//! @{
+
     //! various inpainting algorithms
-    enum
+    enum InpaintTypes
     {
+        /** This algorithm searches for dominant correspondences (transformations) of
+        image patches and tries to seamlessly fill-in the area to be inpainted using this
+        transformations */
         INPAINT_SHIFTMAP = 0
     };
 
-    /*! The function reconstructs the selected image area from known area.
-    *  \param src : source image.
-    *  \param mask : inpainting mask, 8-bit 1-channel image. Zero pixels indicate the area that needs to be inpainted.
-    *  \param dst : destination image.
-    *  \param algorithmType : inpainting method.
+    /** @brief The function implements different single-image inpainting algorithms.
+
+    See the original paper @cite He2012 for details.
+
+    @param src source image, it could be of any type and any number of channels from 1 to 4. In case of
+    3- and 4-channels images the function expect them in CIELab colorspace or similar one, where first
+    color component shows intensity, while second and third shows colors. Nonetheless you can try any
+    colorspaces.
+    @param mask mask (CV_8UC1), where non-zero pixels indicate valid image area, while zero pixels
+    indicate area to be inpainted
+    @param dst destination image
+    @param algorithmType see xphoto::InpaintTypes
     */
     CV_EXPORTS_W void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType);
+
+//! @}
+
 }
 }
 

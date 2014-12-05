@@ -44,23 +44,22 @@
 #define __OPENCV_STRUCTURED_EDGE_DETECTION_HPP__
 #ifdef __cplusplus
 
-/*
- * structured_edge_detection.hpp
- *
- *  Created on: Jun 17, 2014
- *      Author: Yury Gitman
+/** @file
+@date Jun 17, 2014
+@author Yury Gitman
  */
 
 #include <opencv2/core.hpp>
 
-/*! \namespace cv
-  Namespace where all the C++ OpenCV functionality resides
- */
 namespace cv
 {
 namespace ximgproc
 {
-/*! \class RFFeatureGetter
+
+//! @addtogroup ximgproc_edge
+//! @{
+
+/*!
   Helper class for training part of [P. Dollar and C. L. Zitnick. Structured Forests for Fast Edge Detection, 2013].
  */
 class CV_EXPORTS_W RFFeatureGetter : public Algorithm
@@ -93,19 +92,19 @@ CV_EXPORTS_W Ptr<RFFeatureGetter> createRFFeatureGetter();
 
 
 
-/*! \class StructuredEdgeDetection
-  Prediction part of [P. Dollar and C. L. Zitnick. Structured Forests for Fast Edge Detection, 2013].
+/** @brief Class implementing edge detection algorithm from @cite Dollar2013 :
  */
 class CV_EXPORTS_W StructuredEdgeDetection : public Algorithm
 {
 public:
 
-    /*!
-     * The function detects edges in src and draw them to dst
-     *
-     * \param src : source image (RGB, float, in [0;1]) to detect edges
-     * \param dst : destination image (grayscale, float, in [0;1])
-     *              where edges are drawn
+    /** @brief The function detects edges in src and draw them to dst.
+
+    The algorithm underlies this function is much more robust to texture presence, than common
+    approaches, e.g. Sobel
+    @param src source image (RGB, float, in [0;1]) to detect edges
+    @param dst destination image (grayscale, float, in [0;1]) where edges are drawn
+    @sa Sobel, Canny
      */
     CV_WRAP virtual void detectEdges(const Mat &src, CV_OUT Mat &dst) const = 0;
 };
@@ -120,6 +119,8 @@ public:
 */
 CV_EXPORTS_W Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const String &model,
     Ptr<const RFFeatureGetter> howToGetFeatures = Ptr<RFFeatureGetter>());
+
+//! @}
 
 }
 }

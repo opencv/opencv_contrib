@@ -44,8 +44,12 @@
 namespace cv {
 namespace reg {
 
-/*
- * Encapsulates ways of calculating mappings between two images
+//! @addtogroup reg
+//! @{
+
+/** @brief Base class for modelling an algorithm for calculating a
+
+The class is only used to define the common interface for any possible mapping algorithm.
  */
 class CV_EXPORTS Mapper
 {
@@ -101,6 +105,7 @@ protected:
     }
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

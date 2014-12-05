@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_is
+//! @{
+
 struct IS_bsdsObj : public Object
 {
     std::string name;
@@ -66,6 +69,8 @@ public:
 
     static Ptr<IS_bsds> create();
 };
+
+//! @}
 
 }
 }

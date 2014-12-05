@@ -35,8 +35,10 @@
 // and on any theory of liability, whether in contract, strict liability,
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
-//
-// Author: Tolga Birdal <tbirdal AT gmail.com>
+
+/** @file
+@author Tolga Birdal <tbirdal AT gmail.com>
+*/
 
 #ifndef __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
 #define __OPENCV_SURFACE_MATCHING_POSE3D_HPP__
@@ -50,6 +52,9 @@ namespace cv
 namespace ppf_match_3d
 {
 
+//! @addtogroup surface_matching
+//! @{
+
 class Pose3D;
 typedef Ptr<Pose3D> Pose3DPtr;
 
@@ -57,7 +62,6 @@ class PoseCluster3D;
 typedef Ptr<PoseCluster3D> PoseCluster3DPtr;
 
 /**
-* @class Pose3D
 * @brief Class, allowing the storage of a pose. The data structure stores both
 * the quaternions and the matrix forms. It supports IO functionality together with
 * various helper methods to work with poses
@@ -127,7 +131,6 @@ public:
 };
 
 /**
-* @class PoseCluster3D
 * @brief When multiple poses (see Pose3D) are grouped together (contribute to the same transformation) 
 * pose clusters occur. This class is a general container for such groups of poses. It is possible to store,
 * load and perform IO on these poses.
@@ -176,6 +179,7 @@ public:
   int id;
 };
 
+//! @}
 
 } // namespace ppf_match_3d
 } // namespace cv

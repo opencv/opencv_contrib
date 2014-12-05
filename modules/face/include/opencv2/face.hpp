@@ -41,4 +41,12 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "opencv2/face/facerec.hpp"
 
+/**
+@defgroup face Face Recognition
+
+- @ref face_changelog
+- @ref face_tutorial
+
+*/
+
 #endif

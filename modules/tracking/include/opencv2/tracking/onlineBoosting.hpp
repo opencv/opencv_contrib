@@ -46,6 +46,10 @@
 
 namespace cv
 {
+
+//! @addtogroup tracking
+//! @{
+
 //TODO based on the original implementation
 //http://vision.ucsd.edu/~bbabenko/project_miltrack.shtml
 
@@ -276,6 +280,8 @@ class ClassifierThreshold
   float m_threshold;
   int m_parity;
 };
+
+//! @}
 
 } /* namespace cv */
 

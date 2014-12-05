@@ -54,7 +54,8 @@
 namespace cv {
 namespace linemod {
 
-/// @todo Convert doxy comments to rst
+//! @addtogroup rgbd
+//! @{
 
 /**
  * \brief Discriminant feature described by its location and label.
@@ -448,6 +449,8 @@ CV_EXPORTS Ptr<Detector> getDefaultLINE();
  * Default parameter settings suitable for VGA images.
  */
 CV_EXPORTS Ptr<Detector> getDefaultLINEMOD();
+
+//! @}
 
 } // namespace linemod
 } // namespace cv

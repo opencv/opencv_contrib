@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_fr
+//! @{
+
 struct FR_lfwObj : public Object
 {
     std::string image1, image2;
@@ -67,6 +70,8 @@ public:
 
     static Ptr<FR_lfw> create();
 };
+
+//! @}
 
 }
 }

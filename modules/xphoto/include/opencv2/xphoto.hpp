@@ -43,6 +43,9 @@
 #ifndef __OPENCV_XPHOTO_HPP__
 #define __OPENCV_XPHOTO_HPP__
 
+/** @defgroup xphoto Additional photo processing algorithms
+*/
+
 #include "xphoto/inpainting.hpp"
 #include "xphoto/simple_color_balance.hpp"
 #include "xphoto/dct_image_denoising.hpp"

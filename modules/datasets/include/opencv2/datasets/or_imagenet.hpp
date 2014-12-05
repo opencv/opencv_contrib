@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_or
+//! @{
+
 struct OR_imagenetObj : public Object
 {
     int id;
@@ -67,6 +70,8 @@ public:
 
     static Ptr<OR_imagenet> create();
 };
+
+//! @}
 
 }
 }

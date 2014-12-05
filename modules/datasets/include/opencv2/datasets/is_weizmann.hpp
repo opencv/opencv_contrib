@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_is
+//! @{
+
 struct IS_weizmannObj : public Object
 {
     std::string imageName;
@@ -69,6 +72,8 @@ public:
 
     static Ptr<IS_weizmann> create();
 };
+
+//! @}
 
 }
 }

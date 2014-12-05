@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_or
+//! @{
+
 struct OR_sunObj : public Object
 {
     int label;
@@ -69,6 +72,8 @@ public:
 
     std::vector<std::string> paths;
 };
+
+//! @}
 
 }
 }

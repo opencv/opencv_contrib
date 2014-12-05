@@ -36,7 +36,10 @@
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
 //
-// Author: Tolga Birdal <tbirdal AT gmail.com>
+
+/** @file
+@author Tolga Birdal <tbirdal AT gmail.com>
+*/
 
 #ifndef __OPENCV_SURFACE_MATCHING_T_HASH_INT_HPP__
 #define __OPENCV_SURFACE_MATCHING_T_HASH_INT_HPP__
@@ -48,6 +51,9 @@ namespace cv
 {
 namespace ppf_match_3d
 {
+
+//! @addtogroup surface_matching
+//! @{
 
 typedef unsigned int KeyType;
 
@@ -66,10 +72,12 @@ typedef struct HSHTBL_i
 } hashtable_int;
 
 
+/** @brief Round up to the next highest power of 2
+
+from http://www-graphics.stanford.edu/~seander/bithacks.html
+*/
 inline static unsigned int next_power_of_two(unsigned int value)
 {
-  /* Round up to the next highest power of 2 */
-  /* from http://www-graphics.stanford.edu/~seander/bithacks.html */
 
   --value;
   value |= value >> 1;
@@ -94,6 +102,8 @@ hashtable_int *hashtable_int_clone(hashtable_int *hashtbl);
 hashtable_int *hashtableRead(FILE* f);
 int hashtableWrite(const hashtable_int * hashtbl, const size_t dataSize, FILE* f);
 void hashtablePrint(hashtable_int *hashtbl);
+
+//! @}
 
 } // namespace ppf_match_3d
 

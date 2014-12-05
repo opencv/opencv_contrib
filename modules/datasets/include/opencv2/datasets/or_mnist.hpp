@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_or
+//! @{
+
 struct OR_mnistObj : public Object
 {
     char label; // 0..9
@@ -67,6 +70,8 @@ public:
 
     static Ptr<OR_mnist> create();
 };
+
+//! @}
 
 }
 }

@@ -43,6 +43,9 @@
 #ifndef OPENCV_TRANSPOSE_HPP_
 #define OPENCV_TRANSPOSE_HPP_
 
+//! @addtogroup matlab
+//! @{
+
 template <typename InputScalar, typename OutputScalar>
 void transposeBlock(const size_t M, const size_t N, const InputScalar* src, size_t lda, OutputScalar* dst, size_t ldb) {
   InputScalar cache[16];
@@ -138,4 +141,7 @@ void transpose4x4<float, float>(const float* src, size_t lda, float* dst, size_t
 }
 
 #endif
+
+//! @}
+
 #endif
