@@ -45,7 +45,13 @@
 #include <map>
 #include <vector>
 #include <list>
+
+#if defined _MSC_VER && _MSC_VER <= 1700
+#include <stdint.h>
+#else
 #include <inttypes.h>
+#endif
+
 #include <stdio.h>
 #include <iostream>
 
