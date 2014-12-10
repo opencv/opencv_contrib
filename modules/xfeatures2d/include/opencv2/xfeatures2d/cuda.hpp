@@ -47,6 +47,42 @@
 
 namespace cv { namespace cuda {
 
+//! @addtogroup xfeatures2d_nonfree
+//! @{
+
+/** @brief Class used for extracting Speeded Up Robust Features (SURF) from an image. :
+
+The class SURF_CUDA implements Speeded Up Robust Features descriptor. There is a fast multi-scale
+Hessian keypoint detector that can be used to find the keypoints (which is the default option). But
+the descriptors can also be computed for the user-specified keypoints. Only 8-bit grayscale images
+are supported.
+
+The class SURF_CUDA can store results in the GPU and CPU memory. It provides functions to convert
+results between CPU and GPU version ( uploadKeypoints, downloadKeypoints, downloadDescriptors ). The
+format of CPU results is the same as SURF results. GPU results are stored in GpuMat. The keypoints
+matrix is \f$\texttt{nFeatures} \times 7\f$ matrix with the CV_32FC1 type.
+
+-   keypoints.ptr\<float\>(X_ROW)[i] contains x coordinate of the i-th feature.
+-   keypoints.ptr\<float\>(Y_ROW)[i] contains y coordinate of the i-th feature.
+-   keypoints.ptr\<float\>(LAPLACIAN_ROW)[i] contains the laplacian sign of the i-th feature.
+-   keypoints.ptr\<float\>(OCTAVE_ROW)[i] contains the octave of the i-th feature.
+-   keypoints.ptr\<float\>(SIZE_ROW)[i] contains the size of the i-th feature.
+-   keypoints.ptr\<float\>(ANGLE_ROW)[i] contain orientation of the i-th feature.
+-   keypoints.ptr\<float\>(HESSIAN_ROW)[i] contains the response of the i-th feature.
+
+The descriptors matrix is \f$\texttt{nFeatures} \times \texttt{descriptorSize}\f$ matrix with the
+CV_32FC1 type.
+
+The class SURF_CUDA uses some buffers and provides access to it. All buffers can be safely released
+between function calls.
+
+@sa SURF
+
+@note
+   -   An example for using the SURF keypoint matcher on GPU can be found at
+        opencv_source_code/samples/gpu/surf_keypoint_matcher.cpp
+
+ */
 class CV_EXPORTS SURF_CUDA
 {
 public:
@@ -122,6 +158,8 @@ public:
 
     GpuMat maxPosBuffer;
 };
+
+//! @}
 
 }} // namespace cv { namespace cuda {
 

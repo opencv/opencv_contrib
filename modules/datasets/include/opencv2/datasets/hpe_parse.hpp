@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_hpe
+//! @{
+
 struct HPE_parseObj : public Object
 {
     std::string name;
@@ -66,6 +69,8 @@ public:
 
     static Ptr<HPE_parse> create();
 };
+
+//! @}
 
 }
 }

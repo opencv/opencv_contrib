@@ -43,6 +43,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Mapper for affine motion
@@ -58,6 +60,7 @@ public:
     cv::Ptr<Map> getMap(void) const;
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

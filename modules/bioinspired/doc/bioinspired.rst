@@ -7,4 +7,4 @@ The module provides biological visual systems models (human visual system and ot
 .. toctree::
     :maxdepth: 2
 
-    Human retina documentation <retina/index>
+    Human retina documentation <retina>

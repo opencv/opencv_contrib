@@ -47,58 +47,72 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 #include <string>
 
+/** @defgroup xobjdetect Extended object detection
+*/
+
 namespace cv
 {
 namespace xobjdetect
 {
 
-/* Compute channel pyramid for acf features
+//! @addtogroup xobjdetect
+//! @{
 
-    image — image, for which channels should be computed
+/** @brief Compute channels for integral channel features evaluation
 
-    channels — output array for computed channels
-
-*/
+@param image image for which channels should be computed
+@param channels output array for computed channels
+ */
 CV_EXPORTS void computeChannels(InputArray image, std::vector<Mat>& channels);
 
+/** @brief Feature evaluation interface
+ */
 class CV_EXPORTS FeatureEvaluator : public Algorithm
 {
 public:
-    /* Set channels for feature evaluation */
+    /** @brief Set channels for feature evaluation
+
+    @param channels array of channels to be set
+     */
     virtual void setChannels(InputArrayOfArrays channels) = 0;
 
-    /* Set window position */
+    /** @brief Set window position to sample features with shift. By default position is (0, 0).
+
+    @param position position to be set
+     */
     virtual void setPosition(Size position) = 0;
 
-    /* Evaluate feature with given index for current channels
-        and window position */
+    /** @brief Evaluate feature value with given index for current channels and window position.
+
+    @param feature_ind index of feature to be evaluated
+     */
     virtual int evaluate(size_t feature_ind) const = 0;
 
-    /* Evaluate all features for current channels and window position
+    /** @brief Evaluate all features for current channels and window position.
 
-    Returns matrix-column of features
-    */
+    @param feature_values matrix-column of evaluated feature values
+     */
     virtual void evaluateAll(OutputArray feature_values) const = 0;
 
     virtual void assertChannels() = 0;
 };
 
-/* Construct feature evaluator, set features to evaluate
-   type can "icf" or "acf" */
+/** @brief Construct feature evaluator.
+
+@param features features for evaluation
+@param type feature type. Can be "icf" or "acf"
+ */
 CV_EXPORTS Ptr<FeatureEvaluator>
 createFeatureEvaluator(const std::vector<std::vector<int> >& features,
                        const std::string& type);
 
-/* Generate acf features
+/** @brief Generate integral features. Returns vector of features.
 
-    window_size — size of window in which features should be evaluated
-
-    type — type of features, can be "icf" or "acf"
-    count — number of features to generate.
-    Max number of features is min(count, # possible distinct features)
-
-Returns vector of distinct acf features
-*/
+@param window_size size of window in which features should be evaluated
+@param type feature type. Can be "icf" or "acf"
+@param count number of features to generate.
+@param channel_count number of feature channels
+ */
 std::vector<std::vector<int> >
 generateFeatures(Size window_size, const std::string& type,
                  int count = INT_MAX, int channel_count = 10);
@@ -106,6 +120,8 @@ generateFeatures(Size window_size, const std::string& type,
 //sort in-place of columns of the input matrix
 void sort_columns_without_copy(Mat& m, Mat indices = Mat());
 
+/** @brief Parameters for WaldBoost. weak_count — number of weak learners, alpha — cascade thresholding param.
+ */
 struct CV_EXPORTS WaldBoostParams
 {
     int weak_count;
@@ -115,44 +131,48 @@ struct CV_EXPORTS WaldBoostParams
     {}
 };
 
-
-
+/** @brief WaldBoost object detector from @cite Sochman05
+*/
 class CV_EXPORTS WaldBoost : public Algorithm
 {
 public:
-    /* Train WaldBoost cascade for given data
+    /** @brief Train WaldBoost cascade for given data.
 
-        data — matrix of feature values, size M x N, one feature per row
+    Returns feature indices chosen for cascade. Feature enumeration starts from 0.
+    @param data matrix of feature values, size M x N, one feature per row
+    @param labels matrix of samples class labels, size 1 x N. Labels can be from {-1, +1}
+    @param use_fast_log
+     */
+    virtual std::vector<int> train(Mat& data,
+                                   const Mat& labels, bool use_fast_log=false) = 0;
 
-        labels — matrix of sample class labels, size 1 x N. Labels can be from
-            {-1, +1}
+    /** @brief Predict objects class given object that can compute object features.
 
-    Returns feature indices chosen for cascade.
-    Feature enumeration starts from 0
-    */
-    virtual std::vector<int> train(Mat& /*data*/,
-                                   const Mat& /*labels*/, bool use_fast_log=false) = 0;
-
-    /* Predict object class given object that can compute object features
-
-       feature_evaluator — object that can compute features by demand
-
-    Returns confidence_value — measure of confidense that object
-    is from class +1
-    */
+    Returns unnormed confidence value — measure of confidence that object is from class +1.
+    @param feature_evaluator object that can compute features by demand
+     */
     virtual float predict(
-        const Ptr<FeatureEvaluator>& /*feature_evaluator*/) const = 0;
+        const Ptr<FeatureEvaluator>& feature_evaluator) const = 0;
 
-    /* Write WaldBoost to FileStorage */
-    virtual void write(FileStorage& /*fs*/) const = 0;
+    /** @brief Write WaldBoost to FileStorage
+    @param fs FileStorage for output
+     */
+    virtual void write(FileStorage& fs) const = 0;
 
-    /* Read WaldBoost */
-    virtual void read(const FileNode& /*node*/) = 0;
+    /** @brief Write WaldBoost to FileNode
+
+    @param node FileNode for reading
+     */
+    virtual void read(const FileNode& node) = 0;
 };
 
+/** @brief Construct WaldBoost object.
+ */
 CV_EXPORTS Ptr<WaldBoost>
 createWaldBoost(const WaldBoostParams& params = WaldBoostParams());
 
+/** @brief Params for ICFDetector training.
+ */
 struct CV_EXPORTS ICFDetectorParams
 {
     int feature_count;
@@ -170,69 +190,57 @@ struct CV_EXPORTS ICFDetectorParams
     {}
 };
 
+/** @brief Integral Channel Features from @cite Dollar09
+*/
 class CV_EXPORTS ICFDetector
 {
 public:
 
     ICFDetector(): waldboost_(), features_(), ftype_() {}
 
-    /* Train detector
+    /** @brief Train detector.
 
-        pos_filenames — paths to objects images
-
-        bg_filenames — path backgrounds images
-
-        params — parameters for detector training
-    */
+    @param pos_filenames path to folder with images of objects (wildcards like /my/path/\*.png are allowed)
+    @param bg_filenames path to folder with background images
+    @param params parameters for detector training
+     */
     void train(const std::vector<String>& pos_filenames,
                const std::vector<String>& bg_filenames,
                ICFDetectorParams params = ICFDetectorParams());
 
-    /* Detect object on image
-
-        image — image for detection
-
-        object — output array of bounding boxes
-
-        scaleFactor — scale between layers in detection pyramid
-
-        minSize — min size of objects in pixels
-
-        maxSize — max size of objects in pixels
-        
-        slidingStep — sliding window step
-        
-        values — output vector with values of positive samples 
-        
-    */
-        
+    /** @brief Detect objects on image.
+    @param image image for detection
+    @param objects output array of bounding boxes
+    @param scaleFactor scale between layers in detection pyramid
+    @param minSize min size of objects in pixels
+    @param maxSize max size of objects in pixels
+    @param threshold
+    @param slidingStep sliding window step
+    @param values output vector with values of positive samples
+     */
     void detect(const Mat& image, std::vector<Rect>& objects,
         float scaleFactor, Size minSize, Size maxSize, float threshold, int slidingStep, std::vector<float>& values);
     
-    /* Detect object on image
-
-        image — image for detection
-
-        object — output array of bounding boxes
-        
-        minScaleFactor — min factor image will be resized
-
-        maxScaleFactor — max factor image will be resized
-
-        factorStep — scaling factor is incremented according to factorStep
-        
-        slidingStep — sliding window step
-        
-        values — output vector with values of positive samples
-
-        
-    */
+    /** @brief Detect objects on image.
+    @param img image for detection
+    @param objects output array of bounding boxes
+    @param minScaleFactor min factor by which the image will be resized
+    @param maxScaleFactor max factor by which the image will be resized
+    @param factorStep scaling factor is incremented each pyramid layer according to this parameter
+    @param threshold
+    @param slidingStep sliding window step
+    @param values output vector with values of positive samples
+     */
     void detect(const Mat& img, std::vector<Rect>& objects, float minScaleFactor, float maxScaleFactor, float factorStep, float threshold, int slidingStep, std::vector<float>& values);
 
-    /* Write detector to FileStorage */
+    /** @brief Write detector to FileStorage.
+    @param fs FileStorage for output
+     */
     void write(FileStorage &fs) const;
 
-    /* Read detector */
+    /** @brief Write ICFDetector to FileNode
+    @param node FileNode for reading
+     */
     void read(const FileNode &node);
 
 private:
@@ -247,6 +255,8 @@ CV_EXPORTS void write(FileStorage& fs, String&, const ICFDetector& detector);
 
 CV_EXPORTS void read(const FileNode& node, ICFDetector& d,
     const ICFDetector& default_value = ICFDetector());
+
+//! @}
 
 } /* namespace xobjdetect */
 } /* namespace cv */

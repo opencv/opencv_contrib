@@ -53,10 +53,16 @@ using Map = std::unordered_map<KeyType, ValueType>;
 
 #else
 
+//! @addtogroup matlab
+//! @{
+
 // If we don't have C++11 support, we wrap another map implementation
 // in the same public API as unordered_map
+
+//! @cond IGNORED
 #include <map>
 #include <stdexcept>
+//! @endcond
 
 template <typename KeyType, typename ValueType>
 class Map {
@@ -84,6 +90,8 @@ public:
     return *it;
   }
 };
+
+//! @}
 
 } // namespace matlab
 

@@ -35,15 +35,12 @@
 // and on any theory of liability, whether in contract, strict liability,
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
-//
-// Author: Tolga Birdal <tbirdal AT gmail.com>
-
 
 /**
- * @file icp.hpp
+ * @file
  *
  * @brief  Implementation of ICP (Iterative Closest Point) Algorithm
- * @author Tolga Birdal
+ * @author Tolga Birdal <tbirdal AT gmail.com>
  */
 
 #ifndef __OPENCV_SURFACE_MATCHING_ICP_HPP__
@@ -58,8 +55,11 @@ namespace cv
 {
 namespace ppf_match_3d
 {
+
+//! @addtogroup surface_matching
+//! @{
+
 /**
-* @class ICP
 * @brief This class implements a very efficient and robust variant of the iterative closest point (ICP) algorithm.
 * The task is to register a 3D model (or point cloud) against a set of noisy target data. The variants are put together
 * by myself after certain tests. The task is to be able to match partial, noisy point clouds in cluttered scenes, quickly.
@@ -160,6 +160,8 @@ private:
   int m_sampleType;
 
 };
+
+//! @}
 
 } // namespace ppf_match_3d
 

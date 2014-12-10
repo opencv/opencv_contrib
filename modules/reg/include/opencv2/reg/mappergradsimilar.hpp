@@ -43,6 +43,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Calculates a similarity transformation between to images (scale, rotation, and shift)
@@ -58,6 +60,7 @@ public:
     cv::Ptr<Map> getMap(void) const;
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

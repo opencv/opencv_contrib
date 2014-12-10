@@ -53,11 +53,17 @@ namespace cv
 namespace saliency
 {
 
+//! @addtogroup saliency
+//! @{
+
 /************************************ Specific Static Saliency Specialized Classes ************************************/
 
-/**
- * \brief Saliency based on algorithms described in [1]
- * [1]Hou, Xiaodi, and Liqing Zhang. "Saliency detection: A spectral residual approach." Computer Vision and Pattern Recognition, 2007. CVPR'07. IEEE Conference on. IEEE, 2007.
+/** @brief the Spectral Residual approach from  @cite SR
+
+Starting from the principle of natural image statistics, this method simulate the behavior of
+pre-attentive visual search. The algorithm analyze the log spectrum of each image and obtain the
+spectral residual. Then transform the spectral residual to spatial domain to obtain the saliency
+map, which suggests the positions of proto-objects.
  */
 class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
 {
@@ -71,7 +77,7 @@ public:
 
 protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
-  AlgorithmInfo* info() const;CV_PROP_RW
+  AlgorithmInfo* info() const;
   int resImWidth;
   int resImHeight;
 
@@ -86,17 +92,34 @@ protected:
  * [2]  B. Wang and P. Dudek "A Fast Self-tuning Background Subtraction Algorithm", in proc of IEEE Workshop on Change Detection, 2014
  *
  */
-
+/** @brief the Fast Self-tuning Background Subtraction Algorithm from @cite BinWangApr2014
+ */
 class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
 public:
   MotionSaliencyBinWangApr2014();
   virtual ~MotionSaliencyBinWangApr2014();
 
+  /** @brief This is a utility function that allows to set the correct size (taken from the input image) in the
+    corresponding variables that will be used to size the data structures of the algorithm.
+    @param W width of input image
+    @param H height of input image
+  */
   void setImagesize( int W, int H );
+  /** @brief This function allows the correct initialization of all data structures that will be used by the
+    algorithm.
+  */
   bool init();
 
 protected:
+  /** @brief Performs all the operations and calls all internal functions necessary for the accomplishment of the
+    Fast Self-tuning Background Subtraction Algorithm algorithm.
+    @param image input image. According to the needs of this specialized algorithm, the param image is a
+    single *Mat*.
+    @param saliencyMap Saliency Map. Is a binarized map that, in accordance with the nature of the algorithm, highlights the moving objects or areas of change in the scene.
+       The saliency map is given by a single *Mat* (one for each frame of an hypothetical video
+        stream).
+  */
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
   AlgorithmInfo* info() const;
 
@@ -141,6 +164,9 @@ private:
  * \brief Objectness algorithms based on [3]
  * [3] Cheng, Ming-Ming, et al. "BING: Binarized normed gradients for objectness estimation at 300fps." IEEE CVPR. 2014.
  */
+
+/** @brief the Binarized normed gradients algorithm from @cite BING
+ */
 class CV_EXPORTS ObjectnessBING : public Objectness
 {
 public:
@@ -151,11 +177,39 @@ public:
   void read();
   void write() const;
 
+  /** @brief Return the list of the rectangles' objectness value,
+
+    in the same order as the *vector\<Vec4i\> objectnessBoundingBox* returned by the algorithm (in
+    computeSaliencyImpl function). The bigger value these scores are, it is more likely to be an
+    object window.
+     */
   std::vector<float> getobjectnessValues();
+
+  /** @brief This is a utility function that allows to set the correct path from which the algorithm will load
+    the trained model.
+    @param trainingPath trained model path
+     */
   void setTrainingPath( std::string trainingPath );
+
+  /** @brief This is a utility function that allows to set an arbitrary path in which the algorithm will save the
+    optional results
+
+    (ie writing on file the total number and the list of rectangles returned by objectess, one for
+    each row).
+    @param resultsDir results' folder path
+     */
   void setBBResDir( std::string resultsDir );
 
 protected:
+  /** @brief Performs all the operations and calls all internal functions necessary for the
+  accomplishment of the Binarized normed gradients algorithm.
+
+    @param image input image. According to the needs of this specialized algorithm, the param image is a
+    single *Mat*
+    @param objectnessBoundingBox objectness Bounding Box vector. According to the result given by this
+    specialized algorithm, the objectnessBoundingBox is a *vector\<Vec4i\>*. Each bounding box is
+    represented by a *Vec4i* for (minX, minY, maxX, maxY).
+     */
   bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
   AlgorithmInfo* info() const;
 
@@ -291,6 +345,8 @@ private:
   static void nonMaxSup( Mat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true );
 
 };
+
+//! @}
 
 }
 /* namespace saliency */

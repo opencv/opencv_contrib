@@ -43,41 +43,50 @@
 #ifndef __OPENCV_SIMPLE_COLOR_BALANCE_HPP__
 #define __OPENCV_SIMPLE_COLOR_BALANCE_HPP__
 
-/*
-* simple_color_balance.hpp
-*
-*  Created on: Jun 26, 2014
-*      Author: Yury Gitman
+/** @file
+@date Jun 26, 2014
+@author Yury Gitman
 */
 
 #include <opencv2/core.hpp>
 
-/*! \namespace cv
-Namespace where all the C++ OpenCV functionality resides
-*/
 namespace cv
 {
 namespace xphoto
 {
+
+//! @addtogroup xphoto
+//! @{
+
     //! various white balance algorithms
-    enum
+    enum WhitebalanceTypes
     {
+        /** perform smart histogram adjustments (ignoring 4% pixels with minimal and maximal
+        values) for each channel */
         WHITE_BALANCE_SIMPLE = 0,
         WHITE_BALANCE_GRAYWORLD = 1
     };
 
-    /*! This function implements different white balance algorithms
-    *  \param src : source image
-    *  \param dst : destination image
-    *  \param algorithmType : type of the algorithm to use
-    *  \param inputMin : minimum input value
-    *  \param inputMax : maximum output value
-    *  \param outputMin : minimum input value
-    *  \param outputMax : maximum output value
-    */
+    /** @brief The function implements different algorithm of automatic white balance,
+
+    i.e. it tries to map image's white color to perceptual white (this can be violated due to
+    specific illumination or camera settings).
+
+    @param src
+    @param dst
+    @param algorithmType see xphoto::WhitebalanceTypes
+    @param inputMin minimum value in the input image
+    @param inputMax maximum value in the input image
+    @param outputMin minimum value in the output image
+    @param outputMax maximum value in the output image
+    @sa cvtColor, equalizeHist
+     */
     CV_EXPORTS_W void balanceWhite(const Mat &src, Mat &dst, const int algorithmType,
         const float inputMin  = 0.0f, const float inputMax  = 255.0f,
         const float outputMin = 0.0f, const float outputMax = 255.0f);
+
+//! @}
+
 }
 }
 

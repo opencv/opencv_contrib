@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_slam
+//! @{
+
 struct pose
 {
     double elem[12];
@@ -75,6 +78,8 @@ public:
 
     static Ptr<SLAM_kitti> create();
 };
+
+//! @}
 
 }
 }

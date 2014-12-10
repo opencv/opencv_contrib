@@ -43,31 +43,36 @@
 #ifndef __OPENCV_DCT_IMAGE_DENOISING_HPP__
 #define __OPENCV_DCT_IMAGE_DENOISING_HPP__
 
-/*
-* dct_image_denoising.hpp
-*
-*  Created on: Jun 26, 2014
-*      Author: Yury Gitman
+/** @file
+@date Jun 26, 2014
+@author Yury Gitman
 */
 
 #include <opencv2/core.hpp>
 
-/*! \namespace cv
-Namespace where all the C++ OpenCV functionality resides
-*/
 namespace cv
 {
 namespace xphoto
 {
-    /*! This function implements simple dct-based image denoising,
-	 *	link: http://www.ipol.im/pub/art/2011/ys-dct/
-     *
-	 *  \param src : source image
-     *  \param dst : destination image
-     *  \param sigma : expected noise standard deviation
-	 *  \param psize : size of block side where dct is computed
+
+//! @addtogroup xphoto
+//! @{
+
+    /** @brief The function implements simple dct-based denoising
+
+    <http://www.ipol.im/pub/art/2011/ys-dct/>.
+    @param src source image
+    @param dst destination image
+    @param sigma expected noise standard deviation
+    @param psize size of block side where dct is computed
+
+    @sa
+       fastNlMeansDenoising
      */
     CV_EXPORTS_W void dctDenoising(const Mat &src, Mat &dst, const double sigma, const int psize = 16);
+
+//! @}
+
 }
 }
 
