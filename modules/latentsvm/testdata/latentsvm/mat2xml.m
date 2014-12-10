@@ -85,13 +85,13 @@ for c = 1:csc_model.numcomponents
     end
     fprintf(f, '\t\t\t</WeightsPCA>\n');
 
-    fprintf(f, '\t<CascadeThreshold>\n');
-    fprintf(f, '\t\t<HypothesisThresholdPCA>%.16f/HypothesisThresholdPCA>\n', thresh(2*threshptr - 1));
-    fprintf(f, '\t\t<DeformationThresholdPCA>%.16f/DeformationThresholdPCA>\n', thresh(2*threshptr));
-    fprintf(f, '\t\t<HypothesisThreshold>%.16f/HypothesisThreshold>\n', thresh(thresh_half + 2*threshptr - 1));
-    fprintf(f, '\t\t<DeformationThreshold>%.16f/DeformationThreshold>\n', thresh(thresh_half + 2*threshptr));
+    fprintf(f, '\t<CascadeThresholds>\n');
+    fprintf(f, '\t\t<HypothesisThresholdPCA>%.16f</HypothesisThresholdPCA>\n', thresh(2*threshptr - 1));
+    fprintf(f, '\t\t<DeformationThresholdPCA>%.16f</DeformationThresholdPCA>\n', thresh(2*threshptr));
+    fprintf(f, '\t\t<HypothesisThreshold>%.16f</HypothesisThreshold>\n', thresh(thresh_half + 2*threshptr - 1));
+    fprintf(f, '\t\t<DeformationThreshold>%.16f</DeformationThreshold>\n', thresh(thresh_half + 2*threshptr));
     threshptr = threshptr + 1;
-    fprintf(f, '\t</CascadeThreshold>\n');
+    fprintf(f, '\t</CascadeThresholds>\n');
 
 
     fprintf(f, '\t\t\t<!-- Linear term in score function -->\n');
@@ -102,7 +102,7 @@ for c = 1:csc_model.numcomponents
     fprintf(f, '\t\t\t<NumPartFilters>%d</NumPartFilters>\n', numparts{c});
 
     for j=1:numparts{c}
-        fprintf(f, '\t\t\t<!-- Part filter ����d description -->\n', j);
+        fprintf(f, '\t\t\t<!-- Part filter %d description -->\n', j);
         fprintf(f, '\t\t\t<PartFilter>\n');
         partfilter = part{c,j};
         partfilter_pca = part_pca{c,j};
@@ -135,13 +135,13 @@ for c = 1:csc_model.numcomponents
         end
         fprintf(f, '\t\t\t\t</WeightsPCA>\n');
 
-    fprintf(f, '\t<CascadeThreshold>\n');
-    fprintf(f, '\t\t<HypothesisThresholdPCA>%.16f/HypothesisThresholdPCA>\n', thresh(2*threshptr - 1));
-    fprintf(f, '\t\t<DeformationThresholdPCA>%.16f/DeformationThresholdPCA>\n', thresh(2*threshptr));
-    fprintf(f, '\t\t<HypothesisThreshold>%.16f/HypothesisThreshold>\n', thresh(thresh_half + 2*threshptr - 1));
-    fprintf(f, '\t\t<DeformationThreshold>%.16f/DeformationThreshold>\n', thresh(thresh_half + 2*threshptr));
+    fprintf(f, '\t<CascadeThresholds>\n');
+    fprintf(f, '\t\t<HypothesisThresholdPCA>%.16f</HypothesisThresholdPCA>\n', thresh(2*threshptr - 1));
+    fprintf(f, '\t\t<DeformationThresholdPCA>%.16f</DeformationThresholdPCA>\n', thresh(2*threshptr));
+    fprintf(f, '\t\t<HypothesisThreshold>%.16f</HypothesisThreshold>\n', thresh(thresh_half + 2*threshptr - 1));
+    fprintf(f, '\t\t<DeformationThreshold>%.16f</DeformationThreshold>\n', thresh(thresh_half + 2*threshptr));
     threshptr = threshptr + 1;
-    fprintf(f, '\t</CascadeThreshold>\n');
+    fprintf(f, '\t</CascadeThresholds>\n');
 
         fprintf(f, '\t\t\t\t<!-- Part filter offset -->\n');
         fprintf(f, '\t\t\t\t<V>\n');
