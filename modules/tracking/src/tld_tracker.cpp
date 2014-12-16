@@ -347,11 +347,11 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
 
-    dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
-    for( int i = 0; i < (int)candidatesRes.size(); i++ )
-        dprintf(("\tcandidatesRes[%d] = %f\n", i, candidatesRes[i]));
-    data->printme();
-    tldModel->printme(stdout);
+    //dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
+    //for( int i = 0; i < (int)candidatesRes.size(); i++ )
+        //dprintf(("\tcandidatesRes[%d] = %f\n", i, candidatesRes[i]));
+    //data->printme();
+    //tldModel->printme(stdout);
 
     if( it == candidatesRes.end() )
     {
@@ -371,13 +371,13 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     if( it != candidatesRes.end() )
     {
         resample(imageForDetector, candidates[it - candidatesRes.begin()], standardPatch);
-        dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
-        if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
-            dfprintf((stderr, "detector WON\n"));
+        //dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
+        //if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
+            //dfprintf((stderr, "detector WON\n"));
     }
     else
     {
-        dfprintf((stderr, "%d x x\n", data->frameNum));
+        //dfprintf((stderr, "%d x x\n", data->frameNum));
     }
 #endif
 
@@ -409,7 +409,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
             detectorResults[i].isObject = expertResult;
         }
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
-        dprintf(("%d relabeled by nExpert\n", negRelabeled));
+        //dprintf(("%d relabeled by nExpert\n", negRelabeled));
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
         tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
         examplesForModel.clear(); examplesForEnsemble.clear();
@@ -497,7 +497,7 @@ timeStampPositiveNext(0), timeStampNegativeNext(0), params_(params), boundingBox
                 classifiers[k].integrate(blurredPatch, false);
         }
     }
-    dprintf(("positive patches: %d\nnegative patches: %d\n", (int)positiveExamples.size(), (int)negativeExamples.size()));
+    //dprintf(("positive patches: %d\nnegative patches: %d\n", (int)positiveExamples.size(), (int)negativeExamples.size()));
 }
 
 void TLDDetector::generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling)
@@ -532,7 +532,7 @@ void TLDDetector::generateScanGrid(int rows, int cols, Size initBox, std::vector
             break;
         }
     }
-    dprintf(("%d rects in res\n", (int)res.size()));
+    //dprintf(("%d rects in res\n", (int)res.size()));
 }
 
 bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches)
@@ -554,7 +554,7 @@ bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std
     double tmp = 0, maxSc = -5.0;
     Rect2d maxScRect;
 
-    START_TICK("detector");
+    //START_TICK("detector");
     do
     {
         Mat_<double> intImgP, intImgP2;
@@ -605,9 +605,9 @@ bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std
         GaussianBlur(resized_img, blurred_img, GaussBlurKernelSize, 0.0f);
     }
     while( size.width >= initSize.width && size.height >= initSize.height );
-    END_TICK("detector");
+    //END_TICK("detector");
 
-    dfprintf((stdout, "after NCC: nneg = %d npos = %d\n", nneg, npos));
+    //dfprintf((stdout, "after NCC: nneg = %d npos = %d\n", nneg, npos));
 #if !1
         std::vector<Rect2d> poss, negs;
 
@@ -618,11 +618,11 @@ bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std
             else
                 negs.push_back(patches[i].rect);
         }
-        dfprintf((stdout, "%d pos and %d neg\n", (int)poss.size(), (int)negs.size()));
+        //dfprintf((stdout, "%d pos and %d neg\n", (int)poss.size(), (int)negs.size()));
         drawWithRects(img, negs, poss, "tech");
 #endif
 
-    dfprintf((stdout, "%d after ensemble\n", pass));
+    //dfprintf((stdout, "%d after ensemble\n", pass));
     if( maxSc < 0 )
         return false;
     res = maxScRect;
@@ -727,6 +727,7 @@ void TrackerTLDModel::integrateRelabeled(Mat& img, Mat& imgBlurred, const std::v
                 classifiers[i].integrate(blurredPatch, patches[k].isObject);
         }
     }
+    /*
     if( negativeIntoModel > 0 )
         dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));
     if( positiveIntoModel > 0)
@@ -735,7 +736,7 @@ void TrackerTLDModel::integrateRelabeled(Mat& img, Mat& imgBlurred, const std::v
         dfprintf((stdout, "negativeIntoEnsemble = %d ", negativeIntoEnsemble));
     if( positiveIntoEnsemble > 0 )
         dfprintf((stdout, "positiveIntoEnsemble = %d ", positiveIntoEnsemble));
-    dfprintf((stdout, "\n"));
+    dfprintf((stdout, "\n"));*/
 }
 
 void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
@@ -771,6 +772,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
                 classifiers[i].integrate(eForEnsemble[k], isPositive);
         }
     }
+    /*
     if( negativeIntoModel > 0 )
         dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));
     if( positiveIntoModel > 0 )
@@ -779,7 +781,7 @@ void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForM
         dfprintf((stdout, "negativeIntoEnsemble = %d ", negativeIntoEnsemble));
     if( positiveIntoEnsemble > 0 )
         dfprintf((stdout, "positiveIntoEnsemble = %d ", positiveIntoEnsemble));
-    dfprintf((stdout, "\n"));
+    dfprintf((stdout, "\n"));*/
 }
 
 int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble)
@@ -844,7 +846,7 @@ Data::Data(Rect2d initBox)
     minSize.width = (int)(initBox.width * 20.0 / minDim);
     minSize.height = (int)(initBox.height * 20.0 / minDim);
     frameNum = 0;
-    dprintf(("minSize = %dx%d\n", minSize.width, minSize.height));
+    //dprintf(("minSize = %dx%d\n", minSize.width, minSize.height));
 }
 
 void Data::printme(FILE*  port)

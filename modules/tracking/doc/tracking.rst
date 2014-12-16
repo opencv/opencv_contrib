@@ -21,49 +21,25 @@ The TrackerSampler and the TrackerFeatureSet are the visual representation of th
 
 A recent benchmark between these algorithms can be found in [OOT]_.
 
-UML design:
------------
+.. only:: plantuml
 
-**General diagram**
+  UML design:
+  -----------
 
-.. image:: pics/package.png
-   :width: 50%
-   :alt: General diagram
-   :align: center
+  .. toctree::
 
-**Tracker diagram**
+    uml/package
+    uml/Tracker
+    uml/TrackerSampler
+    uml/TrackerFeature
+    uml/TrackerModel
 
-.. image:: pics/Tracker.png
-   :width: 80%
-   :alt: Tracker diagram
-   :align: center
-
-**TrackerSampler diagram**
-
-.. image:: pics/TrackerSampler.png
-   :width: 100%
-   :alt: TrackerSampler diagram
-   :align: center
-
-**TrackerFeatureSet diagram**
-
-.. image:: pics/TrackerFeature.png
-   :width: 100%
-   :alt: TrackerFeatureSet diagram
-   :align: center
-
-**TrackerModel diagram**
-
-.. image:: pics/TrackerModel.png
-   :width: 100%
-   :alt: TrackerModel diagram
-   :align: center
 
 To see how API works, try tracker demo:
 https://github.com/lenlen/opencv/blob/tracking_api/samples/cpp/tracker.cpp
 
 
-.. note:: This Tracking API has been designed with PlantUML. If you modify this API please change UML files under modules/tracking/misc/
+.. note:: This Tracking API has been designed with PlantUML. If you modify this API please change UML files under modules/tracking/doc/uml/
 
 The following reference was used in the API
 
