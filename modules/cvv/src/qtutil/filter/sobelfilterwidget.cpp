@@ -132,7 +132,7 @@ void SobelFilterWidget::applyFilter(InputArray in, OutputArray out) const
 		ksize = 7;
 		break;
 	case 4:
-		ksize = CV_SCHARR;
+		ksize = -1; // CV_SCHARR
 		break;
 	}
 
@@ -257,11 +257,11 @@ std::pair<bool, QString> SobelFilterWidget::checkInput(InputArray in) const
 		ksize = 7;
 		break;
 	case 4:
-		ksize = CV_SCHARR;
+		ksize = -1; // CV_SCHARR
 		break;
 	}
 
-	if (ksize == CV_SCHARR)
+	if (ksize == -1)
 	{
 		if (dx + dy != 1)
 		{
