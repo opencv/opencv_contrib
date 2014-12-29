@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "../qtutil/matchview/matchmanagement.hpp"
 #include "../qtutil/matchview/keypointmanagement.hpp"

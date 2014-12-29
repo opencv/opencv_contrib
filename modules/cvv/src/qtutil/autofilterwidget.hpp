@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include <QWidget>
 #include <QCheckBox>

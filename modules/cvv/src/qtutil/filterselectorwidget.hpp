@@ -12,7 +12,7 @@
 #include <QPushButton>
 
 // OCV
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 // CVV
 #include "signalslot.hpp"

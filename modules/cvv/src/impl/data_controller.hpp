@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "call.hpp"
 #include "../controller/view_controller.hpp"

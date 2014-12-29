@@ -1,7 +1,7 @@
 #ifndef CVVISUAL_EXTENSION_API_HPP
 #define CVVISUAL_EXTENSION_API_HPP
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
 #include <QString>
 #include <QWidget>

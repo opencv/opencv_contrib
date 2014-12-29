@@ -123,7 +123,7 @@ cv::Mat Histogram::drawHist(const std::vector<cv::Mat>& channelHists, cv::Size h
   int thickness = 1;
   for (int binTextId = 0; binTextId < binCount; binTextId += binTextStep) 
   {
-    auto text = QString::number(binTextId).toStdString();
+    auto text = cv::String(QString::number(binTextId).toUtf8());
     auto textSize = cv::getTextSize(text, fontFace, fontScale, thickness, NULL);
     auto textPt = cv::Point(std::max(0, binWidth * binTextId - textSize.width/2), histSize.height);
     cv::putText(histMat, text, textPt, fontFace, fontScale, textColor, thickness);

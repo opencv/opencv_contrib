@@ -5,7 +5,7 @@
 #include <thread>
 #include <functional>
 
-#include <opencv/highgui.h>
+#include <opencv2/highgui.hpp>
 
 #include <QDesktopServices>
 #include <QUrl>

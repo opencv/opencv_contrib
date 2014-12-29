@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"
