@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include <utility>
+#include <set>
 
 #include <QTableWidgetItem>
 #include <QImage>
