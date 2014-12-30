@@ -8,7 +8,7 @@ namespace cvv
 namespace impl
 {
 
-void showImage(cv::InputArray img, const CallMetaData &data,
+CV_EXPORTS void showImage(cv::InputArray img, const CallMetaData &data,
                const char *description, const char *view)
 {
 	debugSingleImageCall(img, data, description, view, "singleImage");

@@ -7,7 +7,7 @@ namespace cvv
 namespace impl
 {
 
-void finalShow()
+CV_EXPORTS void finalShow()
 {
 	auto &controller = impl::dataController();
 	if (controller.numCalls() != 0)

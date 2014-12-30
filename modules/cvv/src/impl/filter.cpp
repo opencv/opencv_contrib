@@ -8,7 +8,7 @@ namespace cvv
 namespace impl
 {
 
-void debugFilter(cv::InputArray original, cv::InputArray result,
+CV_EXPORTS void debugFilter(cv::InputArray original, cv::InputArray result,
                  const CallMetaData &data, const char *description,
                  const char *view)
 {
