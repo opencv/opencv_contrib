@@ -3,9 +3,9 @@
 #include <iostream>
 
 // library includes
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/features2d.hpp>
 
 #define CVVISUAL_DEBUGMODE
 #include <opencv2/cvv/debug_mode.hpp>
@@ -25,7 +25,7 @@ template<class T> std::string toString(const T& p_arg)
 }
 
 
-void
+static void
 usage()
 {
   printf("usage: cvv_demo [-r WxH]\n");
@@ -73,8 +73,8 @@ main(int argc, char** argv)
 
   if (resolution) {
     printf("Setting resolution to %dx%d\n", resolution->width, resolution->height);
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, resolution->width);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, resolution->height);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, resolution->width);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution->height);
   }
 
 
@@ -83,7 +83,7 @@ main(int argc, char** argv)
   cv::Mat prevDescriptors;
 
   int maxFeatureCount = 500;
-  cv::ORB detector(maxFeatureCount);
+  cv::Ptr<cv::ORB> detector = cv::ORB::create(maxFeatureCount);
 
   cv::BFMatcher matcher(cv::NORM_HAMMING);
 
@@ -99,13 +99,13 @@ main(int argc, char** argv)
 
     // convert to grayscale
     cv::Mat imgGray;
-    cv::cvtColor(imgRead, imgGray, CV_BGR2GRAY);
+    cv::cvtColor(imgRead, imgGray, cv::COLOR_BGR2GRAY);
 		cvv::debugFilter(imgRead, imgGray, CVVISUAL_LOCATION, "to gray");
 
     // detect ORB features
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
-    detector(imgGray, cv::noArray(), keypoints, descriptors);
+    detector->detectAndCompute(imgGray, cv::noArray(), keypoints, descriptors);
     printf("%d: detected %zd keypoints\n", imgId, keypoints.size());
 
     // match them to previous image (if available)
