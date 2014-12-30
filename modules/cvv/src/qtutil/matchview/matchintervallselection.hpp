@@ -1,7 +1,7 @@
 #ifndef CVVISUAL_MATCH_INTERVALL_SELECTOR
 #define CVVISUAL_MATCH_INTERVALL_SELECTOR
 
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "matchselection.hpp"
 #include "../intervallselector.hpp"
