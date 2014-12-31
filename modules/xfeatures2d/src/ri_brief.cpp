@@ -50,8 +50,6 @@ namespace cv
 {
 	namespace xfeatures2d
 	{
-
-
 		/*
 		* BRIEF Descriptor
 		*/
@@ -96,38 +94,39 @@ namespace cv
 				+ sum.at<int>(img_y - HALF_KERNEL, img_x - HALF_KERNEL);
 		}
 
-		static void calculateSums(const Mat &sum, const int count, const int *pattern, const float cos_theta, const float sin_theta, KeyPoint pt, int &suma, int &sumb){
+		static void calculateSums(const Mat &sum, const int count, const int *pattern, const float cos_theta, const float sin_theta, KeyPoint pt, int &suma, int &sumb)
+		{
 			int ax = pattern[count];
 			int ay = pattern[count + 1];
 
 			int	bx = pattern[count + 2];
 			int	by = pattern[count + 3];
 
-			int ax2 = ((float)ax)*cos_theta - ((float)ay)*sin_theta;
-			int ay2 = ((float)ax)*sin_theta + ((float)ay)*cos_theta;
-			int bx2 = ((float)bx)*cos_theta - ((float)by)*sin_theta;
-			int by2 = ((float)bx)*sin_theta + ((float)by)*cos_theta;
+			int ax2 = (int)(((float)ax)*cos_theta - ((float)ay)*sin_theta);
+			int ay2 = (int)(((float)ax)*sin_theta + ((float)ay)*cos_theta);
+			int bx2 = (int)(((float)bx)*cos_theta - ((float)by)*sin_theta);
+			int by2 = (int)(((float)bx)*sin_theta + ((float)by)*cos_theta);
 
+			int half_patch_size = RIBriefDescriptorExtractorImpl::PATCH_SIZE / 2;
+			if (ax2 > half_patch_size)
+				ax2 = half_patch_size;
+			if (ax2 < -half_patch_size)
+				ax2 = -half_patch_size;
 
-			if (ax2 > 24)
-				ax2 = 24;
-			if (ax2 < -24)
-				ax2 = -24;
+			if (ay2 > half_patch_size)
+				ay2 = half_patch_size;
+			if (ay2 < -half_patch_size)
+				ay2 = -half_patch_size;
 
-			if (ay2 > 24)
-				ay2 = 24;
-			if (ay2 < -24)
-				ay2 = -24;
+			if (bx2 > half_patch_size)
+				bx2 = half_patch_size;
+			if (bx2 < -half_patch_size)
+				bx2 = -half_patch_size;
 
-			if (bx2 > 24)
-				bx2 = 24;
-			if (bx2 < -24)
-				bx2 = -24;
-
-			if (by2 > 24)
-				by2 = 24;
-			if (by2 < -24)
-				by2 = -24;
+			if (by2 > half_patch_size)
+				by2 = half_patch_size;
+			if (by2 < -half_patch_size)
+				by2 = -half_patch_size;
 
 			suma = smoothedSum(sum, pt, ay2, ax2);
 			sumb = smoothedSum(sum, pt, by2, bx2);
