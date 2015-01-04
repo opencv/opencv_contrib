@@ -1025,6 +1025,14 @@ TEST( Features2d_DescriptorExtractor_BRIEF, regression )
     test.safe_run();
 }
 
+TEST( Features2d_DescriptorExtractor_LUCID, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-lucid",  1,
+                                             LUCID::create(1, 2) );
+    test.safe_run();
+}
+
+
 
 /*#if CV_SSE2
 TEST( Features2d_DescriptorExtractor_Calonder_uchar, regression )

@@ -128,7 +128,26 @@ class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 public:
     static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
-    
+
+
+// Locally Uniform Comparison Image Descriptor
+
+// @brief This class implements the Locally Uniform Comparison Image Descriptor @cite LUCID
+class CV_EXPORTS LUCID : public DescriptorExtractor
+{
+public:
+    static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+};
+
+/** @brief Separable box filter blur, needed by LUCID, also exposed for the user
+
+@param _src Image on which blur should be applied
+@param _dst Image resulting from _src having blur applied, the output image
+@param kernel Blur kernel size where 1 equates a 3x3 matrix, 2 = 5x5, 3 = 7x7, and so on
+*/
+CV_EXPORTS void separable_blur(const InputArray _src, CV_OUT OutputArray _dst, const int kernel);
+
+
 //! @}
 
 }
