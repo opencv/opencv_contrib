@@ -59,7 +59,7 @@ void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_
                        vector<string>* component_texts, vector<float>* component_confidences,
                        int component_level)
 {
-    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
+    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
     if (component_rects != NULL)
