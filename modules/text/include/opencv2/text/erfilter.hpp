@@ -140,7 +140,7 @@ public:
     Takes image on input and returns the selected regions in a vector of ERStat only distinctive
     ERs which correspond to characters are selected by a sequential classifier
 
-    @param image Sinle channel image CV_8UC1
+    @param image Single channel image CV_8UC1
 
     @param regions Output for the 1st stage and Input/Output for the 2nd. The selected Extremal Regions
     are stored here.
