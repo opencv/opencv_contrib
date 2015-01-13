@@ -160,7 +160,7 @@ The key method of ERFilter algorithm. Takes image on input and returns the selec
 
 .. ocv:function:: void ERFilter::run( InputArray image, std::vector<ERStat>& regions )
 
-    :param image: Sinle channel image ``CV_8UC1``
+    :param image: Single channel image ``CV_8UC1``
     :param regions: Output for the 1st stage and Input/Output for the 2nd. The selected Extremal Regions are stored here.
 
 Extracts the component tree (if needed) and filter the extremal regions (ER's) by using a given classifier.
