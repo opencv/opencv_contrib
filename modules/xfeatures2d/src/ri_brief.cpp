@@ -51,7 +51,7 @@ namespace cv
 	namespace xfeatures2d
 	{
 		/*
-		* BRIEF Descriptor
+		* Rotation Invariant BRIEF Descriptor
 		*/
 		class RIBriefDescriptorExtractorImpl : public RIBriefDescriptorExtractor
 		{
@@ -128,6 +128,7 @@ namespace cv
 			if (by2 < -half_patch_size)
 				by2 = -half_patch_size;
 
+
 			suma = smoothedSum(sum, pt, ay2, ax2);
 			sumb = smoothedSum(sum, pt, by2, bx2);
 		}
@@ -136,9 +137,9 @@ namespace cv
 		static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, const int *pattern, OutputArray _descriptors)
 		{
 			Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-			for (int i = 0; i < (int)keypoints.size(); ++i)
+			for (size_t i = 0; i < keypoints.size(); ++i)
 			{
-				uchar* desc = descriptors.ptr(i);
+				uchar* desc = descriptors.ptr(static_cast<int>(i));
 				const KeyPoint& pt = keypoints[i];
 
 				float angle = pt.angle;
@@ -162,9 +163,9 @@ namespace cv
 		static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, const int *pattern, OutputArray _descriptors)
 		{
 			Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-			for (int i = 0; i < (int)keypoints.size(); ++i)
+			for (size_t i = 0; i < keypoints.size(); ++i)
 			{
-				uchar* desc = descriptors.ptr(i);
+				uchar* desc = descriptors.ptr(static_cast<int>(i));
 				const KeyPoint& pt = keypoints[i];
 
 				float angle = pt.angle;
@@ -188,9 +189,9 @@ namespace cv
 		static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, const int *pattern, OutputArray _descriptors)
 		{
 			Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-			for (int i = 0; i < (int)keypoints.size(); ++i)
+			for (size_t i = 0; i < keypoints.size(); ++i)
 			{
-				uchar* desc = descriptors.ptr(i);
+				uchar* desc = descriptors.ptr(static_cast<int>(i));
 				const KeyPoint& pt = keypoints[i];
 
 				float angle = pt.angle;

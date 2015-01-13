@@ -41,7 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d/nonfree.hpp"
-
+#include <map>
 /** @defgroup xfeatures2d Extra 2D Features Framework
 @{
 @defgroup xfeatures2d_experiment Experimental 2D Features Algorithms
@@ -133,7 +133,12 @@ namespace cv
 		* Rotation Invariant BRIEF Descriptor
 		*/
 
-		/** @ri_brief Class for computing Rotation Invariant BRIEF descriptors described in @TODO: add reference to my blog
+		/** ri_brief Class for computing Rotation Invariant BRIEF descriptors. Rotation Invariance is added by using the Keypoint's
+			detector's estimation of the patch orientation in order to rotate BRIEF's sampling pairs
+
+			@note
+			-   A complete tutorial comparing between original and rotation invariant BRIEF can be found at:
+			opencv_source_code/tutorial/cpp/RI_BRIEF_match.cpp
 
 		*/
 		class CV_EXPORTS RIBriefDescriptorExtractor : public DescriptorExtractor
@@ -143,6 +148,7 @@ namespace cv
 		protected:
 			static int bit_pattern_64_[512 * 4];
 		};
+
 
 		//! @}
 
