@@ -226,7 +226,7 @@ namespace cv
 
 			virtual void saveWLsBin(const std::string output) const;
 
-			AlgorithmInfo* info() const;
+			//AlgorithmInfo* info() const;
 		protected:
 			std::string wlFile;
 			int nWLs;
