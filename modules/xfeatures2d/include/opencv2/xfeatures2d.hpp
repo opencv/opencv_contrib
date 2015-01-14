@@ -140,7 +140,12 @@ namespace cv
 		* BGM-HARD and BGM-Bilinear refers to different type of gradient binning - in the HARD version the gradient
 		* is assigned to the nearest orientation bin, in the bilinear version it is assigned to the two neighboring
 		* bins and in the soft version it is assigned to 8 nearest bins according to the cosine value between the gradient angle and the bin center.
+		
+		* Based on:
+		* 1. Trzcinski, Tomasz, et al. "Learning image descriptors with the boosting-trick." Advances in neural information processing systems. 2012.þ
+		* 2. Trzcinski, Tomasz, et al. "Boosting binary keypoint descriptors." Computer Vision and Pattern Recognition (CVPR), 2013 IEEE Conference on. Ieee, 2013.þ
 		*/
+
 		class CV_EXPORTS BGMDescriptorExtractor : public DescriptorExtractor
 		{
 		public:
