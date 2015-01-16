@@ -760,9 +760,12 @@ BinaryDescriptorMatcher::Mihasher::Mihasher( int B_val, int _m )
   m = _m;
   b = (int) ceil( (double) B / m );
 
+  /* assuming that B ( = maxDistance) is large enough radius to include
+  all of the k nearest neighbors */
+  D = B;
   /* assuming that B/2 is large enough radius to include
-   all of the k nearest neighbors */
-  D = (int) ceil( B / 2.0 );
+  all of the k nearest neighbors */
+  //D = (int) ceil( B / 2.0 );
   d = (int) ceil( (double) D / m );
 
   /* mplus is the number of chunks with b bits
