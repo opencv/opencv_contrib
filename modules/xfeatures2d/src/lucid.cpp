@@ -195,7 +195,7 @@ namespace cv {
 
             int x, y, j, d, p, m = (l_kernel*2+1)*(l_kernel*2+1)*3, width = src.cols, height = src.rows, r, c;
 
-            Mat_<uchar> desc(keypoints.size(), m);
+            Mat_<uchar> desc(static_cast<int>(keypoints.size()), m);
 
             for (std::size_t i = 0; i < keypoints.size(); ++i) {
                 x = static_cast<int>(keypoints[i].pt.x)-l_kernel, y = static_cast<int>(keypoints[i].pt.y)-l_kernel, d = x+2*l_kernel, p = y+2*l_kernel, j = x, r = static_cast<int>(i), c = 0;
