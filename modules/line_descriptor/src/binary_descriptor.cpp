@@ -2361,8 +2361,8 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           float y2 = (float) ( a2 * Py - a3 * Px - a5 );         //y
 		  // clip line to image size. 
 		  // implementation based on opencv clipLine, adapted for float
-		  float right = image.cols - 1;
-		  float bottom = image.rows - 1;
+		  float right = (float) ( image.cols - 1 );
+		  float bottom = (float) ( image.rows - 1 );
 		  int c1, c2;
 		  c1 = (x1 < 0) + (x1 > right) * 2 + (y1 < 0) * 4 + (y1 > bottom) * 8;
 		  c2 = (x2 < 0) + (x2 > right) * 2 + (y2 < 0) * 4 + (y2 > bottom) * 8;
@@ -2495,8 +2495,8 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           float y2 = (float) ( a2 * Py - a3 * Px - a5 );         //y
 		  // clip line to image size. 
 		  // implementation based on opencv clipLine, adapted for float
-		  float right = image.cols - 1;
-		  float bottom = image.rows - 1;
+		  float right = (float) ( image.cols - 1 );
+		  float bottom = (float) ( image.rows - 1 );
 		  int c1, c2;
 		  c1 = (x1 < 0) + (x1 > right) * 2 + (y1 < 0) * 4 + (y1 > bottom) * 8;
 		  c2 = (x2 < 0) + (x2 > right) * 2 + (y2 < 0) * 4 + (y2 > bottom) * 8;
