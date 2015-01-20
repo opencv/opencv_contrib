@@ -50,110 +50,24 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace cv {
     namespace xfeatures2d {
-        void separable_blur(const InputArray _src, OutputArray _dst, const int kernel) {
-            int z, p, r = 0, g = 0, b = 0, m = kernel*2+1, width, height;
-
-            Point3_<uchar> *pnt;
-
-            Mat_<Vec3b> src = _src.getMat();
-            if (src.empty()) {
-                CV_Error(Error::StsBadArg, "empty source image supplied");
-
-                return;
-            }
-
-            _dst.create(src.size(), src.type());
-            Mat_<Vec3b> dst = _dst.getMat();
-
-            width = dst.cols, height = dst.rows;
-
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
-                    z = kernel*-1;
-
-                    if (!x) {
-                        r = 0, g = 0, b = 0;
-
-                        for (p = x+z; z <= kernel; ++z, p=x+z) {
-                            pnt = src.ptr<Point3_<uchar> >(y, (p < 0 ? width+p : p >= width ? p-width : p));
-                            r += pnt->z;
-                            g += pnt->y;
-                            b += pnt->x;
-                        }
-                    }
-                    else {
-                        p = x+z-1;
-
-                        pnt = src.ptr<Point3_<uchar> >(y, (p < 0 ? width+p : p >= width ? p-width : p));
-                        r -= pnt->z;
-                        g -= pnt->y;
-                        b -= pnt->x;
-
-                        p = x+kernel;
-
-                        pnt = src.ptr<Point3_<uchar> >(y, (p < 0 ? width+p : p >= width ? p-width : p));
-                        r += pnt->z;
-                        g += pnt->y;
-                        b += pnt->x;
-                    }
-
-                    pnt = dst.ptr<Point3_<uchar> >(y, x);
-                    pnt->z = static_cast<uchar>(r/m);
-                    pnt->y = static_cast<uchar>(g/m);
-                    pnt->x = static_cast<uchar>(b/m);
-                }
-            }
-
-            for (int x = 0, rl = 0, gl = 0, bl = 0, rn = 0, gn = 0, bn = 0; x < width; ++x) {
-                for (int y = 0; y < height; ++y) {
-                    z = kernel*-1;
-
-                    if (!y) {
-                        r = 0, g = 0, b = 0;
-
-                        for (p = y+z; z <= kernel; ++z, p=y+z) {
-                            pnt = dst.ptr<Point3_<uchar> >((p < 0 ? height+p : p >= height ? p-height : p), x);
-                            r += pnt->z;
-                            g += pnt->y;
-                            b += pnt->x;
-                        }
-                    }
-                    else {
-                        p = y+z-1;
-
-                        pnt = dst.ptr<Point3_<uchar> >((p < 0 ? height+p : p >= height ? p-height : p), x);
-                        r -= pnt->z, r -= rl;
-                        g -= pnt->y, g -= gl;
-                        b -= pnt->x, b -= bl;
-
-                        p = y+kernel;
-
-                        pnt = dst.ptr<Point3_<uchar> >((p < 0 ? height+p : p >= height ? p-height : p), x);
-                        r += pnt->z, r += rn;
-                        g += pnt->y, g += gn;
-                        b += pnt->x, b += bn;
-                    }
-
-                    pnt = dst.ptr<Point3_<uchar> >(y, x);
-                    rl = pnt->z;
-                    gl = pnt->y;
-                    bl = pnt->x;
-                    rn = r/m;
-                    gn = g/m;
-                    bn = b/m;
-                    pnt->z = static_cast<uchar>(rn);
-                    pnt->y = static_cast<uchar>(gn);
-                    pnt->x = static_cast<uchar>(bn);
-                }
-            }
-        }
-
+        /*!
+         LUCID implementation
+         */
         class LUCIDImpl : public LUCID {
             public:
+                /** Constructor
+                 * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 */
                 LUCIDImpl(const int lucid_kernel = 1, const int blur_kernel = 2);
 
+                /** returns the descriptor length */
                 virtual int descriptorSize() const;
+
+                /** returns the descriptor type */
                 virtual int descriptorType() const;
+
+                /** returns the default norm type */
                 virtual int defaultNorm() const;
 
                 virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc);
@@ -168,7 +82,7 @@ namespace cv {
 
         LUCIDImpl::LUCIDImpl(const int lucid_kernel, const int blur_kernel) {
             l_kernel = lucid_kernel;
-            b_kernel = blur_kernel;
+            b_kernel = blur_kernel*2+1;
         }
 
         int LUCIDImpl::descriptorSize() const {
@@ -191,7 +105,7 @@ namespace cv {
 
             Mat_<Vec3b> src;
 
-            separable_blur(_src.getMat(), src, b_kernel);
+            blur(_src.getMat(), src, cv::Size(b_kernel, b_kernel));
 
             int x, y, j, d, p, m = (l_kernel*2+1)*(l_kernel*2+1)*3, width = src.cols, height = src.rows, r, c;
 
@@ -223,4 +137,4 @@ namespace cv {
                 sort(desc, _desc, SORT_EVERY_ROW | SORT_ASCENDING);
         }
     }
-}
+} // END NAMESPACE CV

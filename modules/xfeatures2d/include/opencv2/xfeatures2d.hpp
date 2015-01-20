@@ -130,22 +130,21 @@ public:
 };
 
 
-// Locally Uniform Comparison Image Descriptor
+/** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
 
-// @brief This class implements the Locally Uniform Comparison Image Descriptor @cite LUCID
+An image descriptor that can be computed very fast, while being
+about as robust as, for example, SURF or BRIEF.
+ */
 class CV_EXPORTS LUCID : public DescriptorExtractor
 {
 public:
+    /**
+     * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     */
     static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
 };
 
-/** @brief Separable box filter blur, needed by LUCID, also exposed for the user
-
-@param _src Image on which blur should be applied
-@param _dst Image resulting from _src having blur applied, the output image
-@param kernel Blur kernel size where 1 equates a 3x3 matrix, 2 = 5x5, 3 = 7x7, and so on
-*/
-CV_EXPORTS void separable_blur(const InputArray _src, CV_OUT OutputArray _dst, const int kernel);
 
 
 //! @}

@@ -91,28 +91,3 @@ We notice that for keypoint matching applications, image content has little effe
     :param keypoints: Set of detected keypoints
     :param corrThresh: Correlation threshold.
     :param verbose: Prints pair selection informations.
-
-
-
-LUCID
-------------------------
-.. ocv:class:: LUCID : public DescriptorExtractor
-
-Class for computing LUCID descriptors described in a paper by Ziegler, Andrew,
-Eric Christiansen, David Kriegman, and Serge J. Belongie.
-*Locally uniform comparison image descriptor.* In Advances in Neural Information Processing Systems, pp. 1-9. 2012. ::
-
-    class LUCID : public DescriptorExtractor
-    {
-    public:
-        LUCID(const int lucid_kernel = 1, const int blur_kernel = 2);
-
-        virtual int descriptorSize() const;
-        virtual int descriptorType() const;
-        virtual int defaultNorm() const;
-
-        virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc);
-
-    protected:
-        int l_kernel, b_kernel;
-    };
