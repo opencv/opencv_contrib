@@ -104,6 +104,7 @@ set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
 set(RST_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/java/generator)
 
 # set mex compiler options
+prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
 prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 if (MSVC)
     prepend("-L" MEX_LIB_DIR  ${LIBRARY_OUTPUT_PATH}/${CMAKE_CFG_INTDIR})

@@ -53,6 +53,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/photo.hpp>
+#include <opencv2/stitching.hpp>
 #include <opencv2/video.hpp>
 
 namespace cv {
@@ -87,6 +88,7 @@ typedef cv::Ptr<DenseOpticalFlow> Ptr_DenseOpticalFlow;
 typedef cv::Ptr<MergeDebevec> Ptr_MergeDebevec;
 typedef cv::Ptr<MergeMertens> Ptr_MergeMertens;
 typedef cv::Ptr<MergeRobertson> Ptr_MergeRobertson;
+typedef cv::Ptr<Stitcher> Ptr_Stitcher;
 typedef cv::Ptr<Tonemap> Ptr_Tonemap;
 typedef cv::Ptr<TonemapDrago> Ptr_TonemapDrago;
 typedef cv::Ptr<TonemapDurand> Ptr_TonemapDurand;
@@ -480,6 +482,11 @@ public:
   Bridge& operator=(const Ptr_MergeRobertson& ) { return *this; }
   Ptr_MergeRobertson toPtrMergeRobertson() { return Ptr_MergeRobertson(); }
   operator Ptr_MergeRobertson() { return toPtrMergeRobertson(); }
+
+  // ---------------------------   Ptr_Stitcher   ------------------------------
+  Bridge& operator=(const Ptr_Stitcher& ) { return *this; }
+  Ptr_Stitcher toPtrStitcher() { return Ptr_Stitcher(); }
+  operator Ptr_Stitcher() { return toPtrStitcher(); }
 
   // ---------------------------   Ptr_Tonemap   ------------------------------
   Bridge& operator=(const Ptr_Tonemap& ) { return *this; }
