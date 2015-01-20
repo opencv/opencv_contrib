@@ -347,7 +347,10 @@ hashtable_int *hashtableRead(FILE* f)
                 {
                     data=malloc(dataSize);
                     if (!data)
+                    {
+                        hashtableDestroy(hashtbl);
                         return NULL;
+                    }
                     status = fread(data, dataSize, 1, f);
                 }
                 else
