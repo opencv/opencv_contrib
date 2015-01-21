@@ -531,6 +531,11 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     bool LineValidation_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS, unsigned int offsetE, std::vector<double> &lineEquation,
                           float &direction );
 
+	/*  Implementation based on opencv clipLine, adapted for float. 
+		Used to get end points of the detected lines inside the image.
+	*/
+	bool clipLine2f(Size img_size, Point2f& pt1, Point2f& pt2);
+
     bool bValidate_;  //flag to decide whether line will be validated
 
     int ksize_;  //the size of Gaussian kernel: ksize X ksize, default value is 5.
@@ -959,333 +964,318 @@ class CV_EXPORTS BinaryDescriptorMatcher : public Algorithm
 {
 
 public:
-/** @brief For every input query descriptor, retrieve the best matching one from a dataset provided from user
-or from the one internal to class
+	/** @brief For every input query descriptor, retrieve the best matching one from a dataset provided from user
+	or from the one internal to class
 
-@param queryDescriptors query descriptors
-@param trainDescriptors dataset of descriptors furnished by user
-@param matches vector to host retrieved matches
-@param mask mask to select which input descriptors must be matched to one in dataset
- */
-void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
+	@param queryDescriptors query descriptors
+	@param trainDescriptors dataset of descriptors furnished by user
+	@param matches vector to host retrieved matches
+	@param mask mask to select which input descriptors must be matched to one in dataset
+	*/
+	void match(const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat()) const;
 
-/** @overload
-@param queryDescriptors query descriptors
-@param matches vector to host retrieved matches
-@param masks vector of masks to select which input descriptors must be matched to one in dataset
-(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
-dataset relative to *i*-th image)
-*/
-void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
+	/** @overload
+	@param queryDescriptors query descriptors
+	@param matches vector to host retrieved matches
+	@param masks vector of masks to select which input descriptors must be matched to one in dataset
+	(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+	dataset relative to *i*-th image)
+	*/
+	void match(const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>());
 
-/** @brief For every input query descriptor, retrieve the best *k* matching ones from a dataset provided from
-user or from the one internal to class
+	/** @brief For every input query descriptor, retrieve the best *k* matching ones from a dataset provided from
+	user or from the one internal to class
 
-@param queryDescriptors query descriptors
-@param trainDescriptors dataset of descriptors furnished by user
-@param matches vector to host retrieved matches
-@param k number of the closest descriptors to be returned for every input query
-@param mask mask to select which input descriptors must be matched to ones in dataset
-@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
-matches for a given query is not inserted in final result)
- */
-void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
-bool compactResult = false ) const;
+	@param queryDescriptors query descriptors
+	@param trainDescriptors dataset of descriptors furnished by user
+	@param matches vector to host retrieved matches
+	@param k number of the closest descriptors to be returned for every input query
+	@param mask mask to select which input descriptors must be matched to ones in dataset
+	@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+	matches for a given query is not inserted in final result)
+	*/
+	void knnMatch(const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
+		bool compactResult = false) const;
 
-/** @overload
-@param queryDescriptors query descriptors
-@param matches vector to host retrieved matches
-@param k number of the closest descriptors to be returned for every input query
-@param masks vector of masks to select which input descriptors must be matched to ones in dataset
-(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
-dataset relative to *i*-th image)
-@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
-matches for a given query is not inserted in final result)
-*/
-void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
-bool compactResult = false );
+	/** @overload
+	@param queryDescriptors query descriptors
+	@param matches vector to host retrieved matches
+	@param k number of the closest descriptors to be returned for every input query
+	@param masks vector of masks to select which input descriptors must be matched to ones in dataset
+	(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+	dataset relative to *i*-th image)
+	@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+	matches for a given query is not inserted in final result)
+	*/
+	void knnMatch(const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
+		bool compactResult = false);
 
-/** @brief For every input query descriptor, retrieve, from a dataset provided from user or from the one
-internal to class, all the descriptors that are not further than *maxDist* from input query
+	/** @brief For every input query descriptor, retrieve, from a dataset provided from user or from the one
+	internal to class, all the descriptors that are not further than *maxDist* from input query
 
-@param queryDescriptors query descriptors
-@param trainDescriptors dataset of descriptors furnished by user
-@param matches vector to host retrieved matches
-@param maxDistance search radius
-@param mask mask to select which input descriptors must be matched to ones in dataset
-@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
-matches for a given query is not inserted in final result)
- */
-void radiusMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
-const Mat& mask = Mat(), bool compactResult = false ) const;
+	@param queryDescriptors query descriptors
+	@param trainDescriptors dataset of descriptors furnished by user
+	@param matches vector to host retrieved matches
+	@param maxDistance search radius
+	@param mask mask to select which input descriptors must be matched to ones in dataset
+	@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+	matches for a given query is not inserted in final result)
+	*/
+	void radiusMatch(const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
+		const Mat& mask = Mat(), bool compactResult = false) const;
 
-/** @overload
-@param queryDescriptors query descriptors
-@param matches vector to host retrieved matches
-@param maxDistance search radius
-@param masks vector of masks to select which input descriptors must be matched to ones in dataset
-(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
-dataset relative to *i*-th image)
-@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
-matches for a given query is not inserted in final result)
-*/
-void radiusMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
-std::vector<Mat>(),
-bool compactResult = false );
+	/** @overload
+	@param queryDescriptors query descriptors
+	@param matches vector to host retrieved matches
+	@param maxDistance search radius
+	@param masks vector of masks to select which input descriptors must be matched to ones in dataset
+	(the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
+	dataset relative to *i*-th image)
+	@param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
+	matches for a given query is not inserted in final result)
+	*/
+	void radiusMatch(const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance, const std::vector<Mat>& masks =
+		std::vector<Mat>(),
+		bool compactResult = false);
 
-/** @brief Store locally new descriptors to be inserted in dataset, without updating dataset.
+	/** @brief Store locally new descriptors to be inserted in dataset, without updating dataset.
 
-@param descriptors matrices containing descriptors to be inserted into dataset
+	@param descriptors matrices containing descriptors to be inserted into dataset
 
-@note Each matrix *i* in **descriptors** should contain descriptors relative to lines extracted from
-*i*-th image.
- */
-void add( const std::vector<Mat>& descriptors );
+	@note Each matrix *i* in **descriptors** should contain descriptors relative to lines extracted from
+	*i*-th image.
+	*/
+	void add(const std::vector<Mat>& descriptors);
 
-/** @brief Update dataset by inserting into it all descriptors that were stored locally by *add* function.
+	/** @brief Update dataset by inserting into it all descriptors that were stored locally by *add* function.
 
-@note Every time this function is invoked, current dataset is deleted and locally stored descriptors
-are inserted into dataset. The locally stored copy of just inserted descriptors is then removed.
- */
-void train();
+	@note Every time this function is invoked, current dataset is deleted and locally stored descriptors
+	are inserted into dataset. The locally stored copy of just inserted descriptors is then removed.
+	*/
+	void train();
 
-/** @brief Create a BinaryDescriptorMatcher object and return a smart pointer to it.
- */
-static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
+	/** @brief Create a BinaryDescriptorMatcher object and return a smart pointer to it.
+	 */
+	static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
-/** @brief Clear dataset and internal data
- */
-void clear();
+	/** @brief Clear dataset and internal data
+	 */
+	void clear();
 
-/** @brief Constructor.
+	/** @brief Constructor.
 
-The BinaryDescriptorMatcher constructed is able to store and manage 256-bits long entries.
- */
-BinaryDescriptorMatcher();
+	The BinaryDescriptorMatcher constructed is able to store and manage 256-bits long entries.
+	*/
+	BinaryDescriptorMatcher();
 
-/** destructor */
-~BinaryDescriptorMatcher()
-{
-}
+	/** destructor */
+	~BinaryDescriptorMatcher();	
 
 protected:
-/** function inherited from Algorithm */
-AlgorithmInfo* info() const;
+	/** function inherited from Algorithm */
+	AlgorithmInfo* info() const;
 
 private:
-class BucketGroup
-{
+	// Below private classes implement "Fast exact nearest neighbor search in Hamming distance on binary codes with Multi-index hashing"
+	// http ://www.cs.toronto.edu/~norouzi/research/mih/
+	class Array32 {
 
-public:
-/** constructor */
-BucketGroup();
+	private:
+		static double ARRAY_RESIZE_FACTOR;
+		static int ARRAY_RESIZE_ADD_FACTOR;
 
-/** destructor */
-~BucketGroup();
+	public:
 
-/** insert data into the bucket */
-void insert( int subindex, UINT32 data );
+		static void set_array_resize_factor(double arf);
 
-/** perform a query to the bucket */
-UINT32* query( int subindex, int *size );
+		UINT32 *arr;
 
-/** utility functions */
-void insert_value( std::vector<uint32_t>& vec, int index, UINT32 data );
-void push_value( std::vector<uint32_t>& vec, UINT32 Data );
+		Array32();
 
-/** data fields */
-UINT32 empty;
-std::vector<uint32_t> group;
+		~Array32();
 
+		void cleanup();
 
-};
+		void push(UINT32 data);
 
-class SparseHashtable
-{
+		void insert(UINT32 index, UINT32 data);
 
-private:
+		UINT32* data();
 
-/** Maximum bits per key before folding the table */
-static const int MAX_B;
+		UINT32 size();
 
-/** Bins (each bin is an Array object for duplicates of the same key) */
-BucketGroup *table;
+		UINT32 capacity();
 
-public:
+		Array32& operator= (const Array32&);
 
-/** constructor */
-SparseHashtable();
+		void print();
 
-/** destructor */
-~SparseHashtable();
+		void init(int size);
 
-/** initializer */
-int init( int _b );
+	};
 
-/** insert data */
-void insert( UINT64 index, UINT32 data );
+	class BucketGroup {
 
-/** query data */
-UINT32* query( UINT64 index, int* size );
+	public:
 
-/** Bits per index */
-int b;
+		UINT32 empty;
 
-/**  Number of bins */
-UINT64 size;
+		Array32 *group;
 
-};
+		BucketGroup();
 
-/** class defining a sequence of bits */
-class bitarray
-{
+		~BucketGroup();
 
-public:
-/** pointer to bits sequence and sequence's length */
-UINT32 *arr;
-UINT32 length;
+		void insert(int subindex, UINT32 data);
 
-/** constructor setting default values */
-bitarray()
-{
-arr = NULL;
-length = 0;
-}
+		UINT32* query(int subindex, int *size);
 
-/** constructor setting sequence's length */
-bitarray( UINT64 _bits )
-{
-init( _bits );
-}
+	private:
 
-/** initializer of private fields */
-void init( UINT64 _bits )
-{
-length = (UINT32) ceil( _bits / 32.00 );
-arr = new UINT32[length];
-erase();
-}
+		/* Counting bits set, in parallel: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel */
+		UINT32 ones32(UINT32 i);
+	};
 
-/** destructor */
-~bitarray()
-{
-if( arr )
-delete[] arr;
-}
+	class SparseHashtable {
 
-inline void flip( UINT64 index )
-{
-arr[index >> 5] ^= ( (UINT32) 0x01 ) << ( index % 32 );
-}
+	private:
+		static const int MAX_B;	// Maximum bits per key before folding the table
 
-inline void set( UINT64 index )
-{
-arr[index >> 5] |= ( (UINT32) 0x01 ) << ( index % 32 );
-}
+		BucketGroup *table;		// Bins (each bin is an Array object for duplicates of the same key)
 
-inline UINT8 get( UINT64 index )
-{
-return ( arr[index >> 5] & ( ( (UINT32) 0x01 ) << ( index % 32 ) ) ) != 0;
-}
+	public:
 
-/** reserve menory for an UINT32 */
-inline void erase()
-{
-memset( arr, 0, sizeof(UINT32) * length );
-}
+		int b;			// Bits per index
 
-};
+		UINT64 size;		// Number of bins
 
-class Mihasher
-{
+		SparseHashtable();
 
-public:
-/** Bits per code */
-int B;
+		~SparseHashtable();
 
-/** B/8 */
-int B_over_8;
+		int init(int _b);
 
-/** Bits per chunk (must be less than 64) */
-int b;
+		void insert(UINT64 index, UINT32 data);
 
-/** Number of chunks */
-int m;
+		UINT32* query(UINT64 index, int* size);
 
-/** Number of chunks with b bits (have 1 bit more than others) */
-int mplus;
+	};
 
-/** Maximum hamming search radius (we use B/2 by default) */
-int D;
+	/** class defining a sequence of bits */
+	class bitarray {
 
-/** Maximum hamming search radius per substring */
-int d;
+	public:
 
-/** Maximum results to return */
-int K;
+		UINT32 *arr;
+		UINT32 length;
 
-/** Number of codes */
-UINT64 N;
+		bitarray()	{
+			arr = NULL;
+			length = 0;
+		}
 
-/** Table of original full-length codes */
-cv::Mat codes;
+		bitarray(UINT64 _bits) {
+			init(_bits);
+		}
 
-/** Counter for eliminating duplicate results (it is not thread safe) */
-bitarray *counter;
+		void init(UINT64 _bits) {
+			length = (UINT32)ceil(_bits / 32.00);
+			arr = new UINT32[length];
+			erase();
+		}
 
-/** Array of m hashtables */
-SparseHashtable *H;
+		~bitarray() {
+			if (arr)
+				delete[] arr;
+		}
 
-/** Volume of a b-bit Hamming ball with radius s (for s = 0 to d) */
-UINT32 *xornum;
+		inline void flip(UINT64 index) {
+			arr[index >> 5] ^= ((UINT32)0x01) << (index % 32);
+		}
 
-/** Used within generation of binary codes at a certain Hamming distance */
-int power[100];
+		inline void set(UINT64 index) {
+			arr[index >> 5] |= ((UINT32)0x01) << (index % 32);
+		}
 
-/** constructor */
-Mihasher();
+		inline UINT8 get(UINT64 index) {
+			return (arr[index >> 5] & (((UINT32)0x01) << (index % 32))) != 0;
+		}
 
-/** desctructor */
-~Mihasher();
+		inline void erase() {
+			memset(arr, 0, sizeof(UINT32) * length);
+		}
 
-/** constructor 2 */
-Mihasher( int B, int m );
+	};
+	class mihasher {
+	private:
 
-/** K setter */
-void setK( int K );
+		int B;			// Bits per code
 
-/** populate tables */
-void populate( cv::Mat & codes, UINT32 N, int dim1codes );
+		int B_over_8;
 
-/** execute a batch query */
-void batchquery( UINT32 * results, UINT32 *numres/*, qstat *stats*/, const cv::Mat & q, UINT32 numq, int dim1queries );
+		int b;			// Bits per chunk (must be less than 64)
 
-private:
+		int m;			// Number of chunks
 
-/** execute a single query */
-void query( UINT32 * results, UINT32* numres/*, qstat *stats*/, UINT8 *q, UINT64 * chunks, UINT32 * res );
-};
+		int mplus;			// Number of chunks with b bits (have 1 bit more than others)
 
-/** retrieve Hamming distances */
-void checkKDistances( UINT32 * numres, int k, std::vector<int>& k_distances, int row, int string_length ) const;
+		int D;			// Maximum hamming search radius (we use B/2 by default)
 
-/** matrix to store new descriptors */
-Mat descriptorsMat;
+		int d;			// Maximum hamming search radius per substring
 
-/** map storing where each bunch of descriptors benins in DS */
-std::map<int, int> indexesMap;
+		int K;			// Maximum results to return
 
-/** internal MiHaser representing dataset */
-Mihasher* dataset;
+		UINT64 N;			// Number of codes
 
-/** index from which next added descriptors' bunch must begin */
-int nextAddedIndex;
+		UINT8 *codes;		// Table of original full-length codes
 
-/** number of images whose descriptors are stored in DS */
-int numImages;
+		/* is not thread safe */
+		bitarray *counter;		// Counter for eliminating duplicate results
 
-/** number of descriptors in dataset */
-int descrInDS;
+		SparseHashtable *H;		// Array of m hashtables;
+
+		UINT32 *xornum;		// Volume of a b-bit Hamming ball with radius s (for s = 0 to d)
+
+		int power[100];		// Used within generation of binary codes at a certain Hamming distance
+
+	public:
+
+		mihasher();
+
+		~mihasher();
+
+		mihasher(int B, int m);
+
+		void setK(int K);
+
+		void populate(UINT8 *codes, UINT32 N, int dim1codes);
+
+		void batchquery(UINT32 *results, UINT32 *numres, UINT8 * q, UINT32 numq, int dim1queries);
+
+	private:
+		void query(UINT32 *results, UINT32* numres, UINT8 *q, UINT64 * chunks, UINT32 * res);
+	};
+
+	/** retrieve Hamming distances */
+	void checkKDistances(UINT32 * numres, int k, std::vector<int>& k_distances, int row, int string_length) const;
+
+	/** matrix to store new descriptors */
+	Mat descriptorsMat;
+
+	/** map storing where each bunch of descriptors benins in DS */
+	std::map<int, int> indexesMap;
+
+	/** internal MiHaser representing dataset */
+	mihasher* dataset;
+
+	/** index from which next added descriptors' bunch must begin */
+	int nextAddedIndex;
+
+	/** number of images whose descriptors are stored in DS */
+	int numImages;
+
+	/** number of descriptors in dataset */
+	int descrInDS;
 
 };
 

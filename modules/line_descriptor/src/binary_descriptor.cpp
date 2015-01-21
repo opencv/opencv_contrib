@@ -2223,6 +2223,63 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
   return 1;
 }
 
+bool BinaryDescriptor::EDLineDetector::clipLine2f(Size img_size, Point2f& pt1, Point2f& pt2)
+{
+	float x1 = pt1.x;
+	float y1 = pt1.y;
+	float x2 = pt2.x;
+	float y2 = pt2.y;
+
+	float right = (float)(img_size.width - 1);
+	float bottom = (float)(img_size.height - 1);
+	int c1, c2;
+	c1 = (x1 < 0) + (x1 > right) * 2 + (y1 < 0) * 4 + (y1 > bottom) * 8;
+	c2 = (x2 < 0) + (x2 > right) * 2 + (y2 < 0) * 4 + (y2 > bottom) * 8;
+	if ((c1 & c2) == 0 && (c1 | c2) != 0)
+	{
+		float a;
+		if (c1 & 12)
+		{
+			a = c1 < 8 ? 0 : bottom;
+			x1 += (a - y1) * (x2 - x1) / (y2 - y1);
+			y1 = a;
+			c1 = (x1 < 0) + (x1 > right) * 2;
+		}
+		if (c2 & 12)
+		{
+			a = c2 < 8 ? 0 : bottom;
+			x2 += (a - y2) * (x2 - x1) / (y2 - y1);
+			y2 = a;
+			c2 = (x2 < 0) + (x2 > right) * 2;
+		}
+		if ((c1 & c2) == 0 && (c1 | c2) != 0)
+		{
+			if (c1)
+			{
+				a = c1 == 1 ? 0 : right;
+				y1 += (a - x1) * (y2 - y1) / (x2 - x1);
+				x1 = a;
+				c1 = 0;
+			}
+			if (c2)
+			{
+				a = c2 == 1 ? 0 : right;
+				y2 += (a - x2) * (y2 - y1) / (x2 - x1);
+				x2 = a;
+				c2 = 0;
+			}
+		}
+		CV_Assert((c1 & c2) != 0 || ((int)x1 | (int)y1 | (int)x2 | (int)y2) >= 0);
+
+		pt1.x = x1;
+		pt1.y = y1;
+		pt2.x = x2;
+		pt2.y = y2;
+	}
+	
+	return (c1 | c2) == 0;
+}
+
 int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines )
 {
 
@@ -2359,53 +2416,15 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           Py = pLineYCors[offsetInLineArray - 1];
           float x2 = (float) ( a1 * Px - a3 * Py - a4 );         //x
           float y2 = (float) ( a2 * Py - a3 * Px - a5 );         //y
-		  // clip line to image size. 
-		  // implementation based on opencv clipLine, adapted for float
-		  float right = (float) ( image.cols - 1 );
-		  float bottom = (float) ( image.rows - 1 );
-		  int c1, c2;
-		  c1 = (x1 < 0) + (x1 > right) * 2 + (y1 < 0) * 4 + (y1 > bottom) * 8;
-		  c2 = (x2 < 0) + (x2 > right) * 2 + (y2 < 0) * 4 + (y2 > bottom) * 8;
-		  if ((c1 & c2) == 0 && (c1 | c2) != 0)
-		  {
-			  float a;
-			  if (c1 & 12)
-			  {
-				  a = c1 < 8 ? 0 : bottom;
-				  x1 += (a - y1) * (x2 - x1) / (y2 - y1);
-				  y1 = a;
-				  c1 = (x1 < 0) + (x1 > right) * 2;
-			  }
-			  if (c2 & 12)
-			  {
-				  a = c2 < 8 ? 0 : bottom;
-				  x2 += (a - y2) * (x2 - x1) / (y2 - y1);
-				  y2 = a;
-				  c2 = (x2 < 0) + (x2 > right) * 2;
-			  }
-			  if ((c1 & c2) == 0 && (c1 | c2) != 0)
-			  {
-				  if (c1)
-				  {
-					  a = c1 == 1 ? 0 : right;
-					  y1 += (a - x1) * (y2 - y1) / (x2 - x1);
-					  x1 = a;
-					  c1 = 0;
-				  }
-				  if (c2)
-				  {
-					  a = c2 == 1 ? 0 : right;
-					  y2 += (a - x2) * (y2 - y1) / (x2 - x1);
-					  x2 = a;
-					  c2 = 0;
-				  }
-			  }
-			  CV_Assert((c1 & c2) != 0 || ((int)x1 | (int)y1 | (int)x2 | (int)y2) >= 0);
-		  }
-		  lineEndP[0] = x1;
-		  lineEndP[1] = y1;
-		  lineEndP[2] = x2;
-		  lineEndP[3] = y2;
+
+		  cv::Point2f P1(x1, y1);
+		  cv::Point2f P2(x2, y2);
+		  clipLine2f(image.size(), P1, P2);
+
+		  lineEndP[0] = P1.x;
+		  lineEndP[1] = P1.y;
+		  lineEndP[2] = P2.x;
+		  lineEndP[3] = P2.y;
           lineEndpoints_.push_back( lineEndP );
           lineDirection_.push_back( direction );
           numOfLines++;
@@ -2493,53 +2512,15 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           Py = pLineYCors[offsetInLineArray - 1];
           float x2 = (float) ( a1 * Px - a3 * Py - a4 );         //x
           float y2 = (float) ( a2 * Py - a3 * Px - a5 );         //y
-		  // clip line to image size. 
-		  // implementation based on opencv clipLine, adapted for float
-		  float right = (float) ( image.cols - 1 );
-		  float bottom = (float) ( image.rows - 1 );
-		  int c1, c2;
-		  c1 = (x1 < 0) + (x1 > right) * 2 + (y1 < 0) * 4 + (y1 > bottom) * 8;
-		  c2 = (x2 < 0) + (x2 > right) * 2 + (y2 < 0) * 4 + (y2 > bottom) * 8;
-		  if ((c1 & c2) == 0 && (c1 | c2) != 0)
-		  {
-			  float a;
-			  if (c1 & 12)
-			  {
-				  a = c1 < 8 ? 0 : bottom;
-				  x1 += (a - y1) * (x2 - x1) / (y2 - y1);
-				  y1 = a;
-				  c1 = (x1 < 0) + (x1 > right) * 2;
-			  }
-			  if (c2 & 12)
-			  {
-				  a = c2 < 8 ? 0 : bottom;
-				  x2 += (a - y2) * (x2 - x1) / (y2 - y1);
-				  y2 = a;
-				  c2 = (x2 < 0) + (x2 > right) * 2;
-			  }
-			  if ((c1 & c2) == 0 && (c1 | c2) != 0)
-			  {
-				  if (c1)
-				  {
-					  a = c1 == 1 ? 0 : right;
-					  y1 += (a - x1) * (y2 - y1) / (x2 - x1);
-					  x1 = a;
-					  c1 = 0;
-				  }
-				  if (c2)
-				  {
-					  a = c2 == 1 ? 0 : right;
-					  y2 += (a - x2) * (y2 - y1) / (x2 - x1);
-					  x2 = a;
-					  c2 = 0;
-				  }
-			  }
-			  CV_Assert((c1 & c2) != 0 || ((int)x1 | (int)y1 | (int)x2 | (int)y2) >= 0);
-		  }
-		  lineEndP[0] = x1;
-		  lineEndP[1] = y1;
-		  lineEndP[2] = x2;
-		  lineEndP[3] = y2;
+		  
+		  cv::Point2f P1(x1, y1);
+		  cv::Point2f P2(x2, y2);
+		  clipLine2f(image.size(), P1, P2);
+
+		  lineEndP[0] = P1.x;
+		  lineEndP[1] = P1.y;
+		  lineEndP[2] = P2.x;
+		  lineEndP[3] = P2.y;
           lineEndpoints_.push_back( lineEndP );
           lineDirection_.push_back( direction );
           numOfLines++;
