@@ -1096,9 +1096,9 @@ private:
 
 		void cleanup();
 
-		void push(UINT32 data);
+		void push(UINT32 arrayData);
 
-		void insert(UINT32 index, UINT32 data);
+		void insert(UINT32 index, UINT32 arrayData);
 
 		UINT32* data();
 
@@ -1110,7 +1110,7 @@ private:
 
 		void print();
 
-		void init(int size);
+		void init(int arraySize);
 
 	};
 
@@ -1157,7 +1157,7 @@ private:
 
 		void insert(UINT64 index, UINT32 data);
 
-		UINT32* query(UINT64 index, int* size);
+		UINT32* query(UINT64 index, int* tableSize);
 
 	};
 
@@ -1253,7 +1253,7 @@ private:
 		void batchquery(UINT32 *results, UINT32 *numres, UINT8 * q, UINT32 numq, int dim1queries);
 
 	private:
-		void query(UINT32 *results, UINT32* numres, UINT8 *q, UINT64 * chunks, UINT32 * res);
+		void query(UINT32 *results, UINT32* numres, UINT8 *queryData, UINT64 * chunks, UINT32 * res);
 	};
 
 	/** retrieve Hamming distances */

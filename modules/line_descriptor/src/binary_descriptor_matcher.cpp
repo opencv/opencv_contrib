@@ -625,7 +625,7 @@ namespace cv
 		// Temp variables: chunks, res -- we did not want to malloc inside
 		// query, so these arrays are passed from outside
 
-		void BinaryDescriptorMatcher::mihasher::query(UINT32 *results, UINT32* numres, UINT8 *query, UINT64 *chunks, UINT32 *res)
+		void BinaryDescriptorMatcher::mihasher::query(UINT32 *results, UINT32* numres, UINT8 *queryData, UINT64 *chunks, UINT32 *res)
 		{
 			UINT32 maxres = K ? K : (UINT32) N;			// if K == 0 that means we want everything to be processed.
 			// So maxres = N in that case. Otherwise K limits the results processed.
@@ -638,14 +638,11 @@ namespace cv
 			int size = 0;
 			UINT32 index;
 			int hammd;
-			clock_t start, end;
-
-			start = clock();
-
+			
 			counter->erase();
 			memset(numres, 0, (B + 1)*sizeof(*numres));
 
-			split(chunks, query, m, mplus, b);
+			split(chunks, queryData, m, mplus, b);
 
 			int s;			// the growing search radius per substring
 
@@ -684,7 +681,7 @@ namespace cv
 									index = arr[c];
 									if (!counter->get(index)) { // if it is not a duplicate
 										counter->set(index);
-										hammd = cv::line_descriptor::match(codes + (UINT64)index*(B_over_8), query, B_over_8);
+										hammd = cv::line_descriptor::match(codes + (UINT64)index*(B_over_8), queryData, B_over_8);
 										nc++;
 										if (hammd <= D && numres[hammd] < maxres) {
 											res[hammd * K + numres[hammd]] = index + 1;
@@ -717,8 +714,6 @@ namespace cv
 						break;
 				}
 			}
-
-			end = clock();
 
 			n = 0;
 			for (s = 0; s <= D && (int)n < K; s++) {
@@ -794,7 +789,7 @@ namespace cv
 
 		int BinaryDescriptorMatcher::SparseHashtable::init(int _b) {
 			b = _b;
-			if (b < 5 || b > MAX_B || b > sizeof(UINT64) * 8)
+			if ((b < 5) || (b > MAX_B) || (b > (int)(sizeof(UINT64) * 8)))
 				return 1;
 
 			size = UINT64_1 << (b - 5);	// size = 2 ^ b
@@ -812,8 +807,8 @@ namespace cv
 			table[index >> 5].insert((int)(index % 32), data);
 		}
 
-		UINT32* BinaryDescriptorMatcher::SparseHashtable::query(UINT64 index, int *size) {
-			return table[index >> 5].query((int)(index % 32), size);
+		UINT32* BinaryDescriptorMatcher::SparseHashtable::query(UINT64 index, int *tableSize) {
+			return table[index >> 5].query((int)(index % 32), tableSize);
 		}
 
 		BinaryDescriptorMatcher::BucketGroup::BucketGroup() {
@@ -892,24 +887,24 @@ namespace cv
 			free(arr);			// sometimes call free on NULL pointers, but that should be fine.
 		}
 
-		void BinaryDescriptorMatcher::Array32::push(UINT32 data) {
+		void BinaryDescriptorMatcher::Array32::push(UINT32 arrayData) {
 			if (arr) {
 				if (arr[0] == arr[1]) {
 					arr[1] = std::max((int)ceil(arr[1] * ARRAY_RESIZE_FACTOR), (int)(arr[1] + ARRAY_RESIZE_ADD_FACTOR));
 					arr = (UINT32*)realloc(arr, sizeof(UINT32)*(2 + arr[1]));
 				}
-				arr[2 + arr[0]] = data;
+				arr[2 + arr[0]] = arrayData;
 				arr[0]++;
 			}
 			else {
 				arr = (UINT32*)malloc((2 + ARRAY_RESIZE_ADD_FACTOR)*sizeof(UINT32));
 				arr[0] = 1;
 				arr[1] = 1;
-				arr[2] = data;
+				arr[2] = arrayData;
 			}
 		}
 
-		void BinaryDescriptorMatcher::Array32::insert(UINT32 index, UINT32 data) {
+		void BinaryDescriptorMatcher::Array32::insert(UINT32 index, UINT32 arrayData) {
 			if (arr) {
 				if (arr[0] == arr[1]) {
 					arr[1] = (UINT32)ceil(arr[0] * ARRAY_RESIZE_FACTOR);
@@ -921,14 +916,14 @@ namespace cv
 				// for (int i=2+arr[0]; i>2+index; i--)
 				//     arr[i] = arr[i-1];
 
-				arr[2 + index] = data;
+				arr[2 + index] = arrayData;
 				arr[0]++;
 			}
 			else {
 				arr = (UINT32*)malloc(3 * sizeof(UINT32));
 				arr[0] = 1;
 				arr[1] = 1;
-				arr[2] = data;
+				arr[2] = arrayData;
 			}
 		}
 
@@ -939,11 +934,11 @@ namespace cv
 		}
 
 		UINT32 BinaryDescriptorMatcher::Array32::size() {
-			return arr ? arr[0] : NULL;
+			return arr ? arr[0] : 0;
 		}
 
 		UINT32 BinaryDescriptorMatcher::Array32::capacity() {
-			return arr ? arr[1] : NULL;
+			return arr ? arr[1] : 0;
 		}
 
 		void BinaryDescriptorMatcher::Array32::print() {
@@ -953,11 +948,11 @@ namespace cv
 			printf("\n");
 		}
 
-		void BinaryDescriptorMatcher::Array32::init(int size) {
+		void BinaryDescriptorMatcher::Array32::init(int arraySize) {
 			if (arr == NULL) {
-				arr = (UINT32*)malloc((2 + size)*sizeof(UINT32));
+				arr = (UINT32*)malloc((2 + arraySize)*sizeof(UINT32));
 				arr[0] = 0;
-				arr[1] = size;
+				arr[1] = arraySize;
 			}
 		}
 
