@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"
@@ -21,7 +21,7 @@ namespace cvv
 namespace impl
 {
 // implementation outside API
-void showImage(cv::InputArray img, const CallMetaData &data,
+CV_EXPORTS void showImage(cv::InputArray img, const CallMetaData &data,
                const char *description, const char *view);
 } // namespace impl
 

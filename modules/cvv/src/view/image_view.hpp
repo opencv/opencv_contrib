@@ -4,7 +4,7 @@
 #include <QString>
 #include <QWidget>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
 #include "../qtutil/zoomableimage.hpp"
 #include "../util/observer_ptr.hpp"
@@ -44,12 +44,12 @@ signals:
 	 * @param parent of this QWidget.
 	 **/
 	ImageView(const cv::Mat &image, QWidget *parent = nullptr);
-	
+
 	/**
 	 * @brief Shows the full image.
 	 */
 	void showFullImage();
-	
+
       private:
 	util::ObserverPtr<qtutil::ZoomableImage> image;
 };
@@ -57,4 +57,3 @@ signals:
 } // namespaces
 
 #endif
-

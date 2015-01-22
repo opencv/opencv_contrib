@@ -3,8 +3,8 @@
 #include <utility>
 #include <algorithm>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/features2d.hpp>
 
 #include <QVBoxLayout>
 #include <QStringList>
@@ -128,7 +128,7 @@ void RawviewGroupSubtable::customMenuRequested(QPoint location)
 	{
 		menu->addAction(new QAction("Show selected rows in view", this));
 	}
-	
+
 	auto formats = RawviewTableRow::getAvailableTextFormats();
 	for (auto format : formats)
 	{

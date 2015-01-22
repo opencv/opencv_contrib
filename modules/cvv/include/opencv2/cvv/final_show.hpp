@@ -1,6 +1,7 @@
 #ifndef CVVISUAL_FINAL_SHOW_HPP
 #define CVVISUAL_FINAL_SHOW_HPP
 
+#include "opencv2/core.hpp"
 #include "debug_mode.hpp"
 
 namespace cvv
@@ -11,7 +12,7 @@ namespace cvv
 
 namespace impl
 {
-void finalShow();
+CV_EXPORTS void finalShow();
 }
 
 /** @brief Passes the control to the debug-window for a last time.
