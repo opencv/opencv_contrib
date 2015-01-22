@@ -722,11 +722,11 @@ namespace cv
 			}
 		}
 
-		BinaryDescriptorMatcher::mihasher::mihasher(int _B, int _m)
+		BinaryDescriptorMatcher::mihasher::mihasher(int bitsPerCode, int nrChunks)
 		{
-			B = _B;
+			B = bitsPerCode;
 			B_over_8 = B / 8;
-			m = _m;
+			m = nrChunks;
 			b = (int)ceil((double)B / m);
 
 			D = B;
@@ -760,10 +760,10 @@ namespace cv
 			delete[] H;
 		}
 
-		void BinaryDescriptorMatcher::mihasher::populate(UINT8 *_codes, UINT32 _N, int dim1codes)
+		void BinaryDescriptorMatcher::mihasher::populate(UINT8 *inputCodes, UINT32 nrCodes, int dim1codes)
 		{
-			N = _N;
-			codes = _codes;
+			N = nrCodes;
+			codes = inputCodes;
 			UINT64 * chunks = new UINT64[m];
 
 			UINT8 * pcodes = codes;

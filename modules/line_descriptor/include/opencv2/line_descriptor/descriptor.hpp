@@ -1244,11 +1244,11 @@ private:
 
 		~mihasher();
 
-		mihasher(int B, int m);
+		mihasher(int bitsPerCode, int nrChunks);
 
 		void setK(int K);
 
-		void populate(UINT8 *codes, UINT32 N, int dim1codes);
+		void populate(UINT8 *inputCodes, UINT32 nrCodes, int dim1codes);
 
 		void batchquery(UINT32 *results, UINT32 *numres, UINT8 * q, UINT32 numq, int dim1queries);
 
