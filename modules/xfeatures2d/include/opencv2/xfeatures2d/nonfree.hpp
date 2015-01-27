@@ -54,7 +54,7 @@ namespace xfeatures2d
 //! @{
 
 /** @brief Class for extracting keypoints and computing descriptors using the Scale Invariant Feature Transform
-(SIFT) algorithm by D. Lowe @cite Lowe04.
+(SIFT) algorithm by D. Lowe @cite Lowe04 .
  */
 class CV_EXPORTS_W SIFT : public Feature2D
 {
@@ -84,7 +84,7 @@ public:
 typedef SIFT SiftFeatureDetector;
 typedef SIFT SiftDescriptorExtractor;
 
-/** @brief Class for extracting Speeded Up Robust Features from an image @cite Bay06.
+/** @brief Class for extracting Speeded Up Robust Features from an image @cite Bay06 .
 
 The algorithm parameters:
 -   member int extended

@@ -66,7 +66,7 @@ That is, MHI pixels where the motion occurs are set to the current timestamp , w
 where the motion happened last time a long time ago are cleared.
 
 The function, together with calcMotionGradient and calcGlobalOrientation , implements a motion
-templates technique described in @cite Davis97 and @cite Bradski00.
+templates technique described in @cite Davis97 and @cite Bradski00 .
  */
 CV_EXPORTS_W void updateMotionHistory( InputArray silhouette, InputOutputArray mhi,
                                        double timestamp, double duration );
