@@ -3,18 +3,25 @@
 
 #include <string>
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"
 
+#ifdef CV_DOXYGEN
+#define CVVISUAL_DEBUGMODE
+#endif
+
 namespace cvv
 {
 
+//! @addtogroup cvv
+//! @{
+
 namespace impl
 {
-void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
+CV_EXPORTS void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                  cv::InputArray img2, std::vector<cv::KeyPoint> keypoints2,
                  std::vector<cv::DMatch> matches, const CallMetaData &data,
                  const char *description, const char *view,
@@ -22,6 +29,22 @@ void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
 } // namespace impl
 
 #ifdef CVVISUAL_DEBUGMODE
+/** @brief Add a filled in DMatch \<dmatch\> to debug GUI.
+
+The matches can are visualized for interactive inspection in different GUI views (one similar to an
+interactive :draw_matches:drawMatches\<\>).
+
+@param img1 First image used in DMatch \<dmatch\>.
+@param keypoints1 Keypoints of first image.
+@param img2 Second image used in DMatch.
+@param keypoints2 Keypoints of second image.
+@param matches
+@param data See showImage
+@param description See showImage
+@param view See showImage
+@param useTrainDescriptor Use DMatch \<dmatch\>'s train descriptor index instead of query
+descriptor index.
+ */
 static inline void
 debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
             cv::InputArray img2, std::vector<cv::KeyPoint> keypoints2,
@@ -36,6 +59,7 @@ debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
 		                  data, description, view, useTrainDescriptor);
 	}
 }
+/** @overload */
 static inline void
 debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
             cv::InputArray img2, std::vector<cv::KeyPoint> keypoints2,
@@ -52,9 +76,6 @@ debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
 	}
 }
 #else
-/**
- * @brief Debug a set of matches between two images.
- */
 static inline void debugDMatch(cv::InputArray, std::vector<cv::KeyPoint>,
                                cv::InputArray, std::vector<cv::KeyPoint>,
                                std::vector<cv::DMatch>,
@@ -63,9 +84,6 @@ static inline void debugDMatch(cv::InputArray, std::vector<cv::KeyPoint>,
                                bool = true)
 {
 }
-/**
- * Dito.
- */
 static inline void debugDMatch(cv::InputArray, std::vector<cv::KeyPoint>,
                                cv::InputArray, std::vector<cv::KeyPoint>,
                                std::vector<cv::DMatch>,
@@ -74,6 +92,8 @@ static inline void debugDMatch(cv::InputArray, std::vector<cv::KeyPoint>,
 {
 }
 #endif
+
+//! @}
 
 } // namespace cvv
 

@@ -10,6 +10,9 @@
 namespace cvv
 {
 
+//! @addtogroup cvv
+//! @{
+
 namespace impl
 {
 
@@ -24,21 +27,24 @@ static inline bool &getDebugFlag()
 
 } // namespace impl
 
-/**
- * @brief Returns whether debug-mode is active for this TU and thread.
- */
+/** @brief Returns whether debug-mode is active for this TU and thread.
+*/
 static inline bool debugMode()
 {
 	return impl::getDebugFlag();
 }
 
-/**
- * @brief Set the debug-mode for this TU and thread.
+/** @brief Enable or disable cvv for current translation unit and thread
+
+(disabled this way has higher - but still low - overhead compared to using the compile flags).
+@param active
  */
 static inline void setDebugFlag(bool active)
 {
 	impl::getDebugFlag() = active;
 }
+
+//! @}
 
 } // namespace cvv
 

@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_fr
+//! @{
+
 enum genderType
 {
     male = 0,
@@ -86,6 +89,8 @@ public:
 
     std::vector<std::string> paths;
 };
+
+//! @}
 
 }
 }

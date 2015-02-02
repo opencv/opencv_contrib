@@ -41,10 +41,17 @@
 #include <opencv2/core.hpp>
 #include <limits>
 
+/** @defgroup rgbd RGB-Depth Processing
+*/
+
 namespace cv
 {
 namespace rgbd
 {    
+
+//! @addtogroup rgbd
+//! @{
+
   /** Checks if the value is a valid depth. For CV_16U or CV_16S, the convention is to be invalid if it is
    * a limit. For a float/double, we just check if it is a NaN
    * @param depth the depth to check for validity
@@ -650,6 +657,9 @@ namespace rgbd
 // TODO Depth interpolation
 // Curvature
 // Get rescaleDepth return dubles if asked for
+
+//! @}
+
 } /* namespace rgbd */
 } /* namespace cv */
 

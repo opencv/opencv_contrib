@@ -49,7 +49,13 @@
 
 #include <vector>
 
+/** @defgroup ccalib Custom Calibration Pattern for 3D reconstruction
+*/
+
 namespace cv{ namespace ccalib{
+
+//! @addtogroup ccalib
+//! @{
 
 class CV_EXPORTS CustomPattern : public Algorithm
 {
@@ -66,11 +72,11 @@ public:
 	bool isInitialized();
 
 	void getPatternPoints(OutputArray original_points);
-	/*
+    /**<
 		Returns a vector<Point> of the original points.
 	*/
 	double getPixelSize();
-	/*
+    /**<
 		Get the pixel size of the pattern
 	*/
 
@@ -86,7 +92,7 @@ public:
 				Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
 				OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs, int flags = 0,
 				TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
-	/*
+    /**<
 		Calls the calirateCamera function with the same inputs.
 	*/
 
@@ -94,7 +100,7 @@ public:
                 OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
 	bool findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                 OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
-	/*
+    /**<
 		Uses solvePnP to find the rotation and translation of the pattern
 		with respect to the camera frame.
 	*/
@@ -105,13 +111,13 @@ public:
 	bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
 				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
 				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
-        /*
+        /**<
 		Uses solvePnPRansac()
 	*/
 
 	void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix,
 						 InputArray distCoeffs, double axis_length = 3, int axis_width = 2);
-	/*
+    /**<
 		pattern_corners -> projected over the image position of the edges of the pattern.
 	*/
 
@@ -143,6 +149,8 @@ private:
 	void refinePointsPos(const Mat& img, std::vector<Point2f>& p);
 	void refineKeypointsPos(const Mat& img, std::vector<KeyPoint>& kp);
 };
+
+//! @}
 
 }} // namespace ccalib, cv
 

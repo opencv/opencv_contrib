@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_msm
+//! @{
+
 struct cameraParam
 {
     Matx33d mat1;
@@ -78,6 +81,8 @@ public:
 
     static Ptr<MSM_epfl> create();
 };
+
+//! @}
 
 }
 }

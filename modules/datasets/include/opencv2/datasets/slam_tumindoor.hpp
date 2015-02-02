@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_slam
+//! @{
+
 enum imageType
 {
     LEFT = 0,
@@ -75,6 +78,8 @@ public:
 
     static Ptr<SLAM_tumindoor> create();
 };
+
+//! @}
 
 }
 }

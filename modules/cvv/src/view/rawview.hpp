@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/features2d.hpp>
 
 #include <QWidget>
 #include <QString>
@@ -74,7 +74,7 @@ public:
 	 * @param parent of this QWidget.
 	 */
 	Rawview(const impl::MatchCall &call, QWidget *parent = nullptr)
-	    : Rawview(call.keyPoints1(), call.keyPoints2(), 
+	    : Rawview(call.keyPoints1(), call.keyPoints2(),
 				  call.matches(), call.usesTrainDescriptor())
 	{
 		setParent(parent);
@@ -87,11 +87,11 @@ public:
 	 * menus?
 	 */
 	bool doesShowShowInViewMenu();
-	
+
 	virtual std::vector<cv::DMatch> getMatchSelection();
 
 	virtual std::vector<cv::KeyPoint> getKeyPointSelection();
-	
+
 signals:
 	/**
 	 * @brief Requests to update the left footer of the window that displays
@@ -119,7 +119,7 @@ signals:
 	 * @param keyPoints seleted single key points
 	 */
 	void keyPointsSelected(const std::vector<cv::KeyPoint> &keyPoints);
-	
+
 public slots:
 
 	/**
@@ -138,11 +138,11 @@ public slots:
 	 */
 	void selectKeyPoints(const std::vector<cv::KeyPoint> &keyPoints);
 
-	
+
 	virtual void setMatchSelection(std::vector<cv::DMatch> matches);
 
 	virtual void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
-	
+
 	/**
 	 * @brief Issues the matchesSelected and the keyPointsSelected signal.
 	 * It uses the referenced key points (via the given matches) to find the
@@ -150,7 +150,7 @@ public slots:
 	 * @param matches the user selected matches.
 	 */
 	void matchesKeyPointsSelected(const std::vector<cv::DMatch> &matches);
-	
+
 private slots:
 
 	void filterQuery(QString query);
@@ -170,7 +170,7 @@ private:
 	gui::RawviewTable *table;
 	bool showShowInViewMenu = false;
 	bool usesTrainDescriptor = true;
-	
+
 	void initEngine();
 };
 }

@@ -43,6 +43,9 @@
 #ifndef OPENCV_BRIDGE_HPP_
 #define OPENCV_BRIDGE_HPP_
 
+/** @defgroup matlab MATLAB Bridge
+*/
+
 #include "mxarray.hpp"
 #include <vector>
 #include <string>
@@ -50,10 +53,14 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/photo.hpp>
+#include <opencv2/stitching.hpp>
 #include <opencv2/video.hpp>
 
 namespace cv {
 namespace bridge {
+
+//! @addtogroup matlab
+//! @{
 
 /*
  * Custom typedefs
@@ -81,6 +88,7 @@ typedef cv::Ptr<DenseOpticalFlow> Ptr_DenseOpticalFlow;
 typedef cv::Ptr<MergeDebevec> Ptr_MergeDebevec;
 typedef cv::Ptr<MergeMertens> Ptr_MergeMertens;
 typedef cv::Ptr<MergeRobertson> Ptr_MergeRobertson;
+typedef cv::Ptr<Stitcher> Ptr_Stitcher;
 typedef cv::Ptr<Tonemap> Ptr_Tonemap;
 typedef cv::Ptr<TonemapDrago> Ptr_TonemapDrago;
 typedef cv::Ptr<TonemapDurand> Ptr_TonemapDurand;
@@ -475,6 +483,11 @@ public:
   Ptr_MergeRobertson toPtrMergeRobertson() { return Ptr_MergeRobertson(); }
   operator Ptr_MergeRobertson() { return toPtrMergeRobertson(); }
 
+  // ---------------------------   Ptr_Stitcher   ------------------------------
+  Bridge& operator=(const Ptr_Stitcher& ) { return *this; }
+  Ptr_Stitcher toPtrStitcher() { return Ptr_Stitcher(); }
+  operator Ptr_Stitcher() { return toPtrStitcher(); }
+
   // ---------------------------   Ptr_Tonemap   ------------------------------
   Bridge& operator=(const Ptr_Tonemap& ) { return *this; }
   Ptr_Tonemap toPtrTonemap() { return Ptr_Tonemap(); }
@@ -608,7 +621,7 @@ void deepCopyAndTranspose(const matlab::MxArray& in, cv::Mat& out) {
   //gemt('C', in.rows(), in.cols(), inp, in.rows(), outp, out.step1());
 }
 
-
+//! @}
 
 } // namespace bridge
 } // namespace cv

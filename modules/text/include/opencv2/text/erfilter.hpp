@@ -54,15 +54,15 @@ namespace cv
 namespace text
 {
 
-/*!
-    Extremal Region Stat structure
+//! @addtogroup text_detect
+//! @{
 
-    The ERStat structure represents a class-specific Extremal Region (ER).
+/** @brief The ERStat structure represents a class-specific Extremal Region (ER).
 
-    An ER is a 4-connected set of pixels with all its grey-level values smaller than the values
-    in its outer boundary. A class-specific ER is selected (using a classifier) from all the ER's
-    in the component tree of the image.
-*/
+An ER is a 4-connected set of pixels with all its grey-level values smaller than the values in its
+outer boundary. A class-specific ER is selected (using a classifier) from all the ER's in the
+component tree of the image. :
+ */
 struct CV_EXPORTS ERStat
 {
 public:
@@ -111,31 +111,43 @@ public:
     ERStat* min_probability_ancestor;
 };
 
-/*!
-    Base class for 1st and 2nd stages of Neumann and Matas scene text detection algorithms
-    Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
+/** @brief Base class for 1st and 2nd stages of Neumann and Matas scene text detection algorithm [Neumann12]. :
 
-    Extracts the component tree (if needed) and filter the extremal regions (ER's) by using a given classifier.
-*/
+Extracts the component tree (if needed) and filter the extremal regions (ER's) by using a given classifier.
+ */
 class CV_EXPORTS ERFilter : public Algorithm
 {
 public:
 
-    //! callback with the classifier is made a class. By doing it we hide SVM, Boost etc.
+    /** @brief Callback with the classifier is made a class.
+
+    By doing it we hide SVM, Boost etc. Developers can provide their own classifiers to the
+    ERFilter algorithm.
+     */
     class CV_EXPORTS Callback
     {
     public:
         virtual ~Callback() { }
-        //! The classifier must return probability measure for the region.
+        /** @brief The classifier must return probability measure for the region.
+
+        @param  stat :   The region to be classified
+         */
         virtual double eval(const ERStat& stat) = 0; //const = 0; //TODO why cannot use const = 0 here?
     };
 
-    /*!
-        the key method. Takes image on input and returns the selected regions in a vector of ERStat
-        only distinctive ERs which correspond to characters are selected by a sequential classifier
-        \param image   is the input image
-        \param regions is output for the first stage, input/output for the second one.
-    */
+    /** @brief The key method of ERFilter algorithm.
+
+    Takes image on input and returns the selected regions in a vector of ERStat only distinctive
+    ERs which correspond to characters are selected by a sequential classifier
+
+    @param image Single channel image CV_8UC1
+
+    @param regions Output for the 1st stage and Input/Output for the 2nd. The selected Extremal Regions
+    are stored here.
+
+    Extracts the component tree (if needed) and filter the extremal regions (ER's) by using a given
+    classifier.
+     */
     virtual void run( InputArray image, std::vector<ERStat>& regions ) = 0;
 
 
@@ -174,106 +186,136 @@ public:
     @param nonMaxSuppression – Whenever non-maximum suppression is done over the branch probabilities
     @param minProbabilityDiff – The minimum probability difference between local maxima and local minima ERs
 */
+
+/** @brief Create an Extremal Region Filter for the 1st stage classifier of N&M algorithm [Neumann12].
+
+@param  cb :   Callback with the classifier. Default classifier can be implicitly load with function
+loadClassifierNM1, e.g. from file in samples/cpp/trained_classifierNM1.xml
+@param  thresholdDelta :   Threshold step in subsequent thresholds when extracting the component tree
+@param  minArea :   The minimum area (% of image size) allowed for retreived ER's
+@param  minArea :   The maximum area (% of image size) allowed for retreived ER's
+@param  minProbability :   The minimum probability P(er|character) allowed for retreived ER's
+@param  nonMaxSuppression :   Whenever non-maximum suppression is done over the branch probabilities
+@param  minProbability :   The minimum probability difference between local maxima and local minima ERs
+
+The component tree of the image is extracted by a threshold increased step by step from 0 to 255,
+incrementally computable descriptors (aspect_ratio, compactness, number of holes, and number of
+horizontal crossings) are computed for each ER and used as features for a classifier which estimates
+the class-conditional probability P(er|character). The value of P(er|character) is tracked using the
+inclusion relation of ER across all thresholds and only the ERs which correspond to local maximum of
+the probability P(er|character) are selected (if the local maximum of the probability is above a
+global limit pmin and the difference between local maximum and local minimum is greater than
+minProbabilityDiff).
+ */
 CV_EXPORTS Ptr<ERFilter> createERFilterNM1(const Ptr<ERFilter::Callback>& cb,
                                                   int thresholdDelta = 1, float minArea = 0.00025,
                                                   float maxArea = 0.13, float minProbability = 0.4,
                                                   bool nonMaxSuppression = true,
                                                   float minProbabilityDiff = 0.1);
 
-/*!
-    Create an Extremal Region Filter for the 2nd stage classifier of N&M algorithm
-    Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
+/** @brief Create an Extremal Region Filter for the 2nd stage classifier of N&M algorithm [Neumann12].
 
-    In the second stage, the ERs that passed the first stage are classified into character
-    and non-character classes using more informative but also more computationally expensive
-    features. The classifier uses all the features calculated in the first stage and the following
-    additional features: hole area ratio, convex hull ratio, and number of outer inflexion points.
+@param  cb :   Callback with the classifier. Default classifier can be implicitly load with function
+loadClassifierNM2, e.g. from file in samples/cpp/trained_classifierNM2.xml
+@param  minProbability :   The minimum probability P(er|character) allowed for retreived ER's
 
-    \param  cb             Callback with the classifier
-                           default classifier can be implicitly load with function loadClassifierNM2()
-                           from file in samples/cpp/trained_classifierNM2.xml
-    \param  minProbability The minimum probability P(er|character) allowed for retreived ER's
-*/
+In the second stage, the ERs that passed the first stage are classified into character and
+non-character classes using more informative but also more computationally expensive features. The
+classifier uses all the features calculated in the first stage and the following additional
+features: hole area ratio, convex hull ratio, and number of outer inflexion points.
+ */
 CV_EXPORTS Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
                                                   float minProbability = 0.3);
 
 
-/*!
-    Allow to implicitly load the default classifier when creating an ERFilter object.
-    The function takes as parameter the XML or YAML file with the classifier model
-    (e.g. trained_classifierNM1.xml) returns a pointer to ERFilter::Callback.
-*/
+/** @brief Allow to implicitly load the default classifier when creating an ERFilter object.
 
+@param filename The XML or YAML file with the classifier model (e.g. trained_classifierNM1.xml)
+
+returns a pointer to ERFilter::Callback.
+ */
 CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM1(const std::string& filename);
 
-/*!
-    Allow to implicitly load the default classifier when creating an ERFilter object.
-    The function takes as parameter the XML or YAML file with the classifier model
-    (e.g. trained_classifierNM1.xml) returns a pointer to ERFilter::Callback.
-*/
+/** @brief Allow to implicitly load the default classifier when creating an ERFilter object.
 
+@param filename The XML or YAML file with the classifier model (e.g. trained_classifierNM2.xml)
+
+returns a pointer to ERFilter::Callback.
+ */
 CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM2(const std::string& filename);
 
 
-// computeNMChannels operation modes
+//! computeNMChannels operation modes
 enum { ERFILTER_NM_RGBLGrad,
        ERFILTER_NM_IHSGrad
      };
 
-/*!
-    Compute the different channels to be processed independently in the N&M algorithm
-    Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
+/** @brief Compute the different channels to be processed independently in the N&M algorithm [Neumann12].
 
-    In N&M algorithm, the combination of intensity (I), hue (H), saturation (S), and gradient
-    magnitude channels (Grad) are used in order to obtain high localization recall.
-    This implementation also provides an alternative combination of red (R), green (G), blue (B),
-    lightness (L), and gradient magnitude (Grad).
+@param _src Source image. Must be RGB CV_8UC3.
 
-    \param  _src           Source image. Must be RGB CV_8UC3.
-    \param  _channels      Output vector<Mat> where computed channels are stored.
-    \param  _mode          Mode of operation. Currently the only available options are
-                           ERFILTER_NM_RGBLGrad (by default) and ERFILTER_NM_IHSGrad.
+@param _channels Output vector\<Mat\> where computed channels are stored.
 
-*/
+@param _mode Mode of operation. Currently the only available options are:
+**ERFILTER_NM_RGBLGrad** (used by default) and **ERFILTER_NM_IHSGrad**.
+
+In N&M algorithm, the combination of intensity (I), hue (H), saturation (S), and gradient magnitude
+channels (Grad) are used in order to obtain high localization recall. This implementation also
+provides an alternative combination of red (R), green (G), blue (B), lightness (L), and gradient
+magnitude (Grad).
+ */
 CV_EXPORTS void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels, int _mode = ERFILTER_NM_RGBLGrad);
 
 
 
-// erGrouping operation modes
-enum { ERGROUPING_ORIENTATION_HORIZ,
-       ERGROUPING_ORIENTATION_ANY
+//! text::erGrouping operation modes
+enum erGrouping_Modes {
+
+    /** Exhaustive Search algorithm proposed in [Neumann11] for grouping horizontally aligned text.
+    The algorithm models a verification function for all the possible ER sequences. The
+    verification fuction for ER pairs consists in a set of threshold-based pairwise rules which
+    compare measurements of two regions (height ratio, centroid angle, and region distance). The
+    verification function for ER triplets creates a word text line estimate using Least
+    Median-Squares fitting for a given triplet and then verifies that the estimate is valid (based
+    on thresholds created during training). Verification functions for sequences larger than 3 are
+    approximated by verifying that the text line parameters of all (sub)sequences of length 3 are
+    consistent.
+    */
+    ERGROUPING_ORIENTATION_HORIZ,
+    /** Text grouping method proposed in [Gomez13][Gomez14] for grouping arbitrary oriented text. Regions
+    are agglomerated by Single Linkage Clustering in a weighted feature space that combines proximity
+    (x,y coordinates) and similarity measures (color, size, gradient magnitude, stroke width, etc.).
+    SLC provides a dendrogram where each node represents a text group hypothesis. Then the algorithm
+    finds the branches corresponding to text groups by traversing this dendrogram with a stopping rule
+    that combines the output of a rotation invariant text group classifier and a probabilistic measure
+    for hierarchical clustering validity assessment.
+     */
+    ERGROUPING_ORIENTATION_ANY
 };
 
-/*!
-    Find groups of Extremal Regions that are organized as text blocks. This function implements
-    the grouping algorithm described in:
-    Gomez L. and Karatzas D.: Multi-script Text Extraction from Natural Scenes, ICDAR 2013.
-    Notice that this implementation constrains the results to horizontally-aligned text and
-    latin script (since ERFilter classifiers are trained only for latin script detection).
+/** @brief Find groups of Extremal Regions that are organized as text blocks.
 
-    The algorithm combines two different clustering techniques in a single parameter-free procedure
-    to detect groups of regions organized as text. The maximally meaningful groups are fist detected
-    in several feature spaces, where each feature space is a combination of proximity information
-    (x,y coordinates) and a similarity measure (intensity, color, size, gradient magnitude, etc.),
-    thus providing a set of hypotheses of text groups. Evidence Accumulation framework is used to
-    combine all these hypotheses to get the final estimate. Each of the resulting groups are finally
-    validated using a classifier in order to assest if they form a valid horizontally-aligned text block.
+@param img Original RGB or Greyscale image from wich the regions were extracted.
 
-    @param img – Original RGB or Grayscale image from wich the regions were extracted.
-    @param channels – Vector of single channel images CV_8UC1 from wich the regions were extracted.
-    @param regions – Vector of ER’s retreived from the ERFilter algorithm from each channel.
-    @param groups – The output of the algorithm is stored in this parameter as set of lists of
-        indexes to provided regions.
-    @param groups_rects – The output of the algorithm are stored in this parameter as list of rectangles.
-    @param method – Grouping method (see the details below). Can be one of ERGROUPING_ORIENTATION_HORIZ,
-        ERGROUPING_ORIENTATION_ANY.
-    @param filename – The XML or YAML file with the classifier model (e.g.
-        samples/trained_classifier_erGrouping.xml). Only to use when grouping method is
-        ERGROUPING_ORIENTATION_ANY.
-    @param minProbablity – The minimum probability for accepting a group. Only to use when grouping
-        method is ERGROUPING_ORIENTATION_ANY.
+@param channels Vector of single channel images CV_8UC1 from wich the regions were extracted.
 
-*/
+@param regions Vector of ER's retreived from the ERFilter algorithm from each channel.
+
+@param groups The output of the algorithm is stored in this parameter as set of lists of indexes to
+provided regions.
+
+@param groups_rects The output of the algorithm are stored in this parameter as list of rectangles.
+
+@param method Grouping method (see text::erGrouping_Modes). Can be one of ERGROUPING_ORIENTATION_HORIZ,
+ERGROUPING_ORIENTATION_ANY.
+
+@param filename The XML or YAML file with the classifier model (e.g.
+samples/trained_classifier_erGrouping.xml). Only to use when grouping method is
+ERGROUPING_ORIENTATION_ANY.
+
+@param minProbablity The minimum probability for accepting a group. Only to use when grouping
+method is ERGROUPING_ORIENTATION_ANY.
+ */
 CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
                                            std::vector<std::vector<ERStat> > &regions,
                                            std::vector<std::vector<Vec2i> > &groups,
@@ -282,14 +324,26 @@ CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
                                            const std::string& filename = std::string(),
                                            float minProbablity = 0.5);
 
-/*!
- * MSERsToERStats function converts MSER contours (vector<Point>) to ERStat regions.
- * It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors
- * of ERStats. MSER output contains both MSER+ and MSER- regions in a single vector<Point>, the function separates
- * them in two different vectors (this is the ERStats where extracted from two different channels).
- * */
+/** @brief Converts MSER contours (vector\<Point\>) to ERStat regions.
+
+@param image Source image CV_8UC1 from which the MSERs where extracted.
+
+@param contours Intput vector with all the contours (vector\<Point\>).
+
+@param regions Output where the ERStat regions are stored.
+
+It takes as input the contours provided by the OpenCV MSER feature detector and returns as output
+two vectors of ERStats. This is because MSER() output contains both MSER+ and MSER- regions in a
+single vector\<Point\>, the function separates them in two different vectors (this is as if the
+ERStats where extracted from two different channels).
+
+An example of MSERsToERStats in use can be found in the text detection webcam_demo:
+<https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+ */
 CV_EXPORTS void MSERsToERStats(InputArray image, std::vector<std::vector<Point> > &contours,
                                std::vector<std::vector<ERStat> > &regions);
+
+//! @}
 
 }
 }

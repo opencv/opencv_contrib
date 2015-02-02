@@ -47,6 +47,10 @@
 
 namespace cv
 {
+
+//! @addtogroup tracking
+//! @{
+
 //TODO based on the original implementation
 //http://vision.ucsd.edu/~bbabenko/project_miltrack.shtml
 
@@ -108,6 +112,8 @@ class ClfOnlineStump
   int _ind;
 
 };
+
+//! @}
 
 } /* namespace cv */
 

@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_msm
+//! @{
+
 struct MSM_middleburyObj : public Object
 {
     std::string imageName;
@@ -69,6 +72,8 @@ public:
 
     static Ptr<MSM_middlebury> create();
 };
+
+//! @}
 
 }
 }

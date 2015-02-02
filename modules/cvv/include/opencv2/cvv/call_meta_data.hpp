@@ -7,6 +7,10 @@
 
 namespace cvv
 {
+
+//! @addtogroup cvv
+//! @{
+
 namespace impl
 {
 
@@ -49,6 +53,9 @@ struct CallMetaData
 	const bool isKnown;
 };
 }
+
+//! @}
+
 } // namespaces
 
 #ifdef __GNUC__

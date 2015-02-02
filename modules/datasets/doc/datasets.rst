@@ -15,105 +15,105 @@ It is planned to have:
 .. toctree::
     :hidden:
 
-    datasets/ar_hmdb
-    datasets/ar_sports
-    datasets/fr_adience
-    datasets/fr_lfw
-    datasets/gr_chalearn
-    datasets/gr_skig
-    datasets/hpe_humaneva
-    datasets/hpe_parse
-    datasets/ir_affine
-    datasets/ir_robot
-    datasets/is_bsds
-    datasets/is_weizmann
-    datasets/msm_epfl
-    datasets/msm_middlebury
-    datasets/or_imagenet
-    datasets/or_mnist
-    datasets/or_sun
-    datasets/pd_caltech
-    datasets/slam_kitti
-    datasets/slam_tumindoor
-    datasets/tr_chars
-    datasets/tr_svt
+    ar_hmdb
+    ar_sports
+    fr_adience
+    fr_lfw
+    gr_chalearn
+    gr_skig
+    hpe_humaneva
+    hpe_parse
+    ir_affine
+    ir_robot
+    is_bsds
+    is_weizmann
+    msm_epfl
+    msm_middlebury
+    or_imagenet
+    or_mnist
+    or_sun
+    pd_caltech
+    slam_kitti
+    slam_tumindoor
+    tr_chars
+    tr_svt
 
 Action Recognition
 ------------------
 
-    :doc:`datasets/ar_hmdb` [#f1]_
+    :doc:`ar_hmdb` [#f1]_
 
-    :doc:`datasets/ar_sports`
+    :doc:`ar_sports`
 
 Face Recognition
 ----------------
 
-    :doc:`datasets/fr_adience`
+    :doc:`fr_adience`
 
-    :doc:`datasets/fr_lfw` [#f1]_
+    :doc:`fr_lfw` [#f1]_
 
 Gesture Recognition
 -------------------
 
-    :doc:`datasets/gr_chalearn`
+    :doc:`gr_chalearn`
 
-    :doc:`datasets/gr_skig`
+    :doc:`gr_skig`
 
 Human Pose Estimation
 ---------------------
 
-    :doc:`datasets/hpe_humaneva`
+    :doc:`hpe_humaneva`
 
-    :doc:`datasets/hpe_parse`
+    :doc:`hpe_parse`
 
 Image Registration
 ------------------
 
-    :doc:`datasets/ir_affine`
+    :doc:`ir_affine`
 
-    :doc:`datasets/ir_robot`
+    :doc:`ir_robot`
 
 Image Segmentation
 ------------------
 
-    :doc:`datasets/is_bsds`
+    :doc:`is_bsds`
 
-    :doc:`datasets/is_weizmann`
+    :doc:`is_weizmann`
 
 Multiview Stereo Matching
 -------------------------
 
-    :doc:`datasets/msm_epfl`
+    :doc:`msm_epfl`
 
-    :doc:`datasets/msm_middlebury`
+    :doc:`msm_middlebury`
 
 Object Recognition
 ------------------
 
-    :doc:`datasets/or_imagenet`
+    :doc:`or_imagenet`
 
-    :doc:`datasets/or_mnist` [#f2]_
+    :doc:`or_mnist` [#f2]_
 
-    :doc:`datasets/or_sun`
+    :doc:`or_sun`
 
 Pedestrian Detection
 --------------------
 
-    :doc:`datasets/pd_caltech` [#f2]_
+    :doc:`pd_caltech` [#f2]_
 
 SLAM
 ----
 
-    :doc:`datasets/slam_kitti`
+    :doc:`slam_kitti`
 
-    :doc:`datasets/slam_tumindoor`
+    :doc:`slam_tumindoor`
 
 Text Recognition
 ----------------
 
-    :doc:`datasets/tr_chars`
+    :doc:`tr_chars`
 
-    :doc:`datasets/tr_svt` [#f1]_
+    :doc:`tr_svt` [#f1]_
 
 *Footnotes*
 

@@ -55,6 +55,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_ir
+//! @{
+
 struct IR_affineObj : public Object
 {
     std::string imageName;
@@ -68,6 +71,8 @@ public:
 
     static Ptr<IR_affine> create();
 };
+
+//! @}
 
 }
 }

@@ -1,7 +1,12 @@
-@startuml
-package "TrackerFeature package" #DDDDDD {
+TrackerFeatureSet diagram
+=========================
 
-class TrackerFeatureSet{
+.. uml::
+
+  ..@startuml
+  package "TrackerFeature package" #DDDDDD {
+
+  class TrackerFeatureSet{
     -vector<pair<string, Ptr<TrackerFeature> > > features
     -vector<Mat> responses
     ...
@@ -16,16 +21,16 @@ class TrackerFeatureSet{
     +bool addTrackerFeature(string trackerFeatureType);
     +bool addTrackerFeature(Ptr<TrackerFeature>& feature);
     -clearResponses();
-}
+  }
 
-class TrackerFeature <<virtual>>{
+  class TrackerFeature <<virtual>>{
     static Ptr<TrackerFeature> = create(const string& trackerFeatureType);
     compute(const std::vector<Mat>& images, Mat& response);
     selection(Mat& response, int npoints);
-}
-note bottom: Can be specialized as in table II\nA tracker can use more types of features
+  }
+  note bottom: Can be specialized as in table II\nA tracker can use more types of features
 
-class TrackerFeatureFeature2D{
+  class TrackerFeatureFeature2D{
     -vector<Keypoints> keypoints
     ---
     TrackerFeatureFeature2D(string detectorType, string descriptorType);
@@ -33,23 +38,23 @@ class TrackerFeatureFeature2D{
     ---
     compute(const std::vector<Mat>& images, Mat& response);
     selection( Mat& response, int npoints);
-}
-class TrackerFeatureHOG{
+  }
+  class TrackerFeatureHOG{
     TrackerFeatureHOG();
     ~TrackerFeatureHOG();
     ---
     compute(const std::vector<Mat>& images, Mat& response);
     selection(Mat& response, int npoints);
-}
+  }
 
-TrackerFeatureSet *-- TrackerFeature
-TrackerFeature <|-- TrackerFeatureHOG
-TrackerFeature <|-- TrackerFeatureFeature2D
+  TrackerFeatureSet *-- TrackerFeature
+  TrackerFeature <|-- TrackerFeatureHOG
+  TrackerFeature <|-- TrackerFeatureFeature2D
 
 
-note "Per readability and simplicity in this diagram\n there are only two TrackerFeature but you\n can considering the implementation of the other TrackerFeature" as N1
-TrackerFeatureHOG .. N1
-TrackerFeatureFeature2D .. N1
-}
+  note "Per readability and simplicity in this diagram\n there are only two TrackerFeature but you\n can considering the implementation of the other TrackerFeature" as N1
+  TrackerFeatureHOG .. N1
+  TrackerFeatureFeature2D .. N1
+  }
 
-@enduml
+  ..@enduml

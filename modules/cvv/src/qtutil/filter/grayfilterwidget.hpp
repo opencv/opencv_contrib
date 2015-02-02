@@ -10,7 +10,7 @@
 #include <QObject>
 #include <QString>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "../filterfunctionwidget.hpp"
 #include "../../util/observer_ptr.hpp"

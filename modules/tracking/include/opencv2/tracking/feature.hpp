@@ -56,6 +56,9 @@
 namespace cv
 {
 
+//! @addtogroup tracking
+//! @{
+
 #define FEATURES "features"
 
 #define CC_FEATURES       FEATURES
@@ -404,6 +407,8 @@ inline uchar CvLBPEvaluator::Feature::calc( const Mat &_sum, size_t y ) const
       ( psum[p[8]] - psum[p[9]] - psum[p[12]] + psum[p[13]] >= cval ? 2 : 0 ) |   // 6
       ( psum[p[4]] - psum[p[5]] - psum[p[8]] + psum[p[9]] >= cval ? 1 : 0 ) );     // 3
 }
+
+//! @}
 
 } /* namespace cv */
 

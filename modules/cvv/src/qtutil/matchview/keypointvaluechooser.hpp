@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QComboBox>
 
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/features2d.hpp"
 
 
 namespace cvv{ namespace qtutil{

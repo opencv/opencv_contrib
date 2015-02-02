@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_ir
+//! @{
+
 // calibration matrix from calibrationFile.mat
 // 2.8290e+03   0.0000e+00   8.0279e+02
 // 0.0000e+00   2.8285e+03   6.1618e+02
@@ -77,6 +80,8 @@ public:
 
     static Ptr<IR_robot> create();
 };
+
+//! @}
 
 }
 }

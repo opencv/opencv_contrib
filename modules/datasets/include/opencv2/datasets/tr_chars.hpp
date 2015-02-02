@@ -54,6 +54,9 @@ namespace cv
 namespace datasets
 {
 
+//! @addtogroup datasets_tr
+//! @{
+
 struct TR_charsObj : public Object
 {
     std::string imgName;
@@ -67,6 +70,8 @@ public:
 
     static Ptr<TR_chars> create();
 };
+
+//! @}
 
 }
 }

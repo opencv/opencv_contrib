@@ -44,6 +44,8 @@
 namespace cv {
 namespace reg {
 
+//! @addtogroup reg
+//! @{
 
 /*!
  * Defines an transformation that consists on a projective transformation
@@ -96,6 +98,7 @@ private:
     cv::Matx<double, 3, 3> projTr_;       /*< Projection matrix */
 };
 
+//! @}
 
 }}  // namespace cv::reg
 

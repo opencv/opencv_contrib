@@ -3,23 +3,35 @@
 
 #include <string>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"
 
+#ifdef CV_DOXYGEN
+#define CVVISUAL_DEBUGMODE
+#endif
+
 namespace cvv
 {
+
+//! @addtogroup cvv
+//! @{
 
 namespace impl
 {
 // implementation outside API
-void debugFilter(cv::InputArray original, cv::InputArray result,
+CV_EXPORTS void debugFilter(cv::InputArray original, cv::InputArray result,
                  const CallMetaData &data, const char *description,
                  const char *view);
 } // namespace impl
 
 #ifdef CVVISUAL_DEBUGMODE
+/**
+ * @brief Use the debug-framework to compare two images (from which the second
+ * is intended to be the result of
+ * a filter applied to the first).
+ */
 static inline void
 debugFilter(cv::InputArray original, cv::InputArray result,
             impl::CallMetaData metaData = impl::CallMetaData(),
@@ -31,6 +43,7 @@ debugFilter(cv::InputArray original, cv::InputArray result,
 		                  view);
 	}
 }
+/** @overload */
 static inline void debugFilter(cv::InputArray original, cv::InputArray result,
                                impl::CallMetaData metaData,
                                const ::std::string &description,
@@ -43,26 +56,20 @@ static inline void debugFilter(cv::InputArray original, cv::InputArray result,
 	}
 }
 #else
-/**
- * @brief Use the debug-framework to compare two images (from which the second
- * is intended to be the result of
- * a filter applied to the first).
- */
 static inline void debugFilter(cv::InputArray, cv::InputArray,
                                impl::CallMetaData = impl::CallMetaData(),
                                const char * = nullptr, const char * = nullptr)
 {
 }
 
-/**
- * Dito.
- */
 static inline void debugFilter(cv::InputArray, cv::InputArray,
                                impl::CallMetaData, const ::std::string &,
                                const ::std::string &)
 {
 }
 #endif
+
+//! @}
 
 } // namespace cvv
 
