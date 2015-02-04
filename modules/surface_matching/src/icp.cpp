@@ -425,9 +425,9 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
         if (node)
         {
           // select the first node
-          int idx = reinterpret_cast<long>(node->data)-1, dn=0;
+          long idx = reinterpret_cast<long>(node->data)-1, dn=0;
           int dup = (int)node->key-1;
-          int minIdxD = idx;
+          long minIdxD = idx;
           float minDist = distances[idx];
 
           while ( node )

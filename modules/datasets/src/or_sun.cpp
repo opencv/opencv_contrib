@@ -98,7 +98,7 @@ void OR_sunImp::loadDatasetPart(const string &path, vector< Ptr<Object> > &datas
                 curr->label = (*it).second;
             } else
             {
-                curr->label = pathLabel.size();
+                curr->label = (int)pathLabel.size();
                 pathLabel.insert(make_pair(labelStr, curr->label));
                 paths.push_back(labelStr);
             }
