@@ -574,7 +574,6 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   Ptr<TrackerFeatureSet> featureSet;
   Ptr<TrackerSampler> sampler;
   Ptr<TrackerModel> model;
-  virtual AlgorithmInfo* info() const;
 };
 
 /************************************ Specific TrackerStateEstimator Classes ************************************/

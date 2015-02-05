@@ -146,13 +146,13 @@ namespace
 
             bindImgTex(img);
 
-            cuda::integral(img, surf_.sum, surf_.intBuffer);
+            cuda::integral(img, surf_.sum);
             sumOffset = bindSumTex(surf_.sum);
 
             if (use_mask)
             {
                 cuda::min(mask, 1.0, surf_.mask1);
-                cuda::integral(surf_.mask1, surf_.maskSum, surf_.intBuffer);
+                cuda::integral(surf_.mask1, surf_.maskSum);
                 maskOffset = bindMaskSumTex(surf_.maskSum);
             }
         }
@@ -425,7 +425,6 @@ void cv::cuda::SURF_CUDA::releaseMemory()
     sum.release();
     mask1.release();
     maskSum.release();
-    intBuffer.release();
     det.release();
     trace.release();
     maxPosBuffer.release();

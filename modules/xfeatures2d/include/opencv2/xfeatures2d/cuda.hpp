@@ -152,7 +152,7 @@ public:
     //! max keypoints = min(keypointsRatio * img.size().area(), 65535)
     float keypointsRatio;
 
-    GpuMat sum, mask1, maskSum, intBuffer;
+    GpuMat sum, mask1, maskSum;
 
     GpuMat det, trace;
 

@@ -179,13 +179,18 @@ namespace
     class AdaptiveManifoldFilterRefImpl : public AdaptiveManifoldFilter
     {
     public:
-        AlgorithmInfo* info() const;
-
         AdaptiveManifoldFilterRefImpl();
 
         void filter(InputArray src, OutputArray dst, InputArray joint);
 
         void collectGarbage();
+
+        CV_IMPL_PROPERTY(double, SigmaS, sigma_s_)
+        CV_IMPL_PROPERTY(double, SigmaR, sigma_r_)
+        CV_IMPL_PROPERTY(int, TreeHeight, tree_height_)
+        CV_IMPL_PROPERTY(int, PCAIterations, num_pca_iterations_)
+        CV_IMPL_PROPERTY(bool, AdjustOutliers, adjust_outliers_)
+        CV_IMPL_PROPERTY(bool, UseRNG, useRNG)
 
     protected:
         bool adjust_outliers_;
@@ -236,14 +241,6 @@ namespace
 
         min_pixel_dist_to_manifold_squared_.release();
     }
-
-    CV_INIT_ALGORITHM(AdaptiveManifoldFilterRefImpl, "AdaptiveManifoldFilterRefImpl",
-                      obj.info()->addParam(obj, "sigma_s", obj.sigma_s_, false, 0, 0, "Filter spatial standard deviation");
-                      obj.info()->addParam(obj, "sigma_r", obj.sigma_r_, false, 0, 0, "Filter range standard deviation");
-                      obj.info()->addParam(obj, "tree_height", obj.tree_height_, false, 0, 0, "Height of the manifold tree (default = -1 : automatically computed)");
-                      obj.info()->addParam(obj, "num_pca_iterations", obj.num_pca_iterations_, false, 0, 0, "Number of iterations to computed the eigenvector v1");
-                      obj.info()->addParam(obj, "adjust_outliers", obj.adjust_outliers_, false, 0, 0, "Specify supress outliers using Eq. 9 or not");
-                      obj.info()->addParam(obj, "use_RNG", obj.useRNG, false, 0, 0, "Specify use random to compute eigenvector or not");)
 
     inline double Log2(double n)
     {
@@ -974,9 +971,9 @@ Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r
 {
     Ptr<AdaptiveManifoldFilter> amf(new AdaptiveManifoldFilterRefImpl());
     
-    amf->set("sigma_s", sigma_s);
-    amf->set("sigma_r", sigma_r);
-    amf->set("adjust_outliers", adjust_outliers);
+    amf->setSigmaS(sigma_s);
+    amf->setSigmaR(sigma_r);
+    amf->setAdjustOutliers(adjust_outliers);
 
     return amf;
 }

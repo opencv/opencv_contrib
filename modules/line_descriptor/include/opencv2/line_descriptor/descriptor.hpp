@@ -74,8 +74,6 @@ namespace line_descriptor
 //! @addtogroup line_descriptor
 //! @{
 
-CV_EXPORTS bool initModule_line_descriptor();
-
 /** @brief A class to represent a line
 
 As aformentioned, it is been necessary to design a class that fully stores the information needed to
@@ -306,9 +304,6 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
   /** implementation of descriptors' computation */
   virtual void computeImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, Mat& descriptors, bool returnFloatDescr,
                             bool useDetectionData ) const;
-
-  /** function inherited from Algorithm */
-  AlgorithmInfo* info() const;
 
  private:
   /** struct to represent lines extracted from an octave */
@@ -911,10 +906,6 @@ void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int numOct
 
 /* matrices for Gaussian pyramids */
 std::vector<cv::Mat> gaussianPyrs;
-
-protected:
-/* function inherited from Algorithm */
-AlgorithmInfo* info() const;
 };
 
 /** @brief furnishes all functionalities for querying a dataset provided by user or internal to
@@ -1067,10 +1058,6 @@ BinaryDescriptorMatcher();
 ~BinaryDescriptorMatcher()
 {
 }
-
-protected:
-/** function inherited from Algorithm */
-AlgorithmInfo* info() const;
 
 private:
 class BucketGroup

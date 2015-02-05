@@ -47,6 +47,7 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include "opencv2/core.hpp"
 
 namespace cv
 {
@@ -75,9 +76,11 @@ public:
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
+  CV_IMPL_PROPERTY(int, ImageWidth, resImWidth)
+  CV_IMPL_PROPERTY(int, ImageHeight, resImHeight)
+
 protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
-  AlgorithmInfo* info() const;
   int resImWidth;
   int resImHeight;
 
@@ -111,6 +114,9 @@ public:
   */
   bool init();
 
+  CV_IMPL_PROPERTY(int, ImageWidth, imageWidth)
+  CV_IMPL_PROPERTY(int, ImageHeight, imageHeight)
+
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the accomplishment of the
     Fast Self-tuning Background Subtraction Algorithm algorithm.
@@ -121,7 +127,6 @@ protected:
         stream).
   */
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
-  AlgorithmInfo* info() const;
 
 private:
 
@@ -200,6 +205,10 @@ public:
      */
   void setBBResDir( std::string resultsDir );
 
+  CV_IMPL_PROPERTY(double, Base, _base)
+  CV_IMPL_PROPERTY(int, NSS, _NSS)
+  CV_IMPL_PROPERTY(int, W, _W)
+
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the
   accomplishment of the Binarized normed gradients algorithm.
@@ -211,7 +220,6 @@ protected:
     represented by a *Vec4i* for (minX, minY, maxX, maxY).
      */
   bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
-  AlgorithmInfo* info() const;
 
 private:
 

@@ -128,7 +128,7 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createEigenFaceRecognizer(10, 123.0);
     //
-    Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
+    Ptr<BasicFaceRecognizer> model = createEigenFaceRecognizer();
     for( int i = 0; i < nlabels; i++ )
         model->setLabelInfo(i, labelsInfo[i]);
     model->train(images, labels);
@@ -162,16 +162,16 @@ int main(int argc, const char *argv[]) {
         // to 0.0 without retraining the model. This can be useful if
         // you are evaluating the model:
         //
-        model->set("threshold", 0.0);
+        model->setThreshold(0.0);
         // Now the threshold of this model is set to 0.0. A prediction
         // now returns -1, as it's impossible to have a distance below
         // it
         predictedLabel = model->predict(testSample);
         cout << "Predicted class = " << predictedLabel << endl;
         // Here is how to get the eigenvalues of this Eigenfaces model:
-        Mat eigenvalues = model->getMat("eigenvalues");
+        Mat eigenvalues = model->getEigenValues();
         // And we can do the same to display the Eigenvectors (read Eigenfaces):
-        Mat W = model->getMat("eigenvectors");
+        Mat W = model->getEigenVectors();
         // From this we will display the (at most) first 10 Eigenfaces:
         for (int i = 0; i < min(10, W.cols); i++) {
             string msg = format("Eigenvalue #%d = %.5f", i, eigenvalues.at<double>(i));
