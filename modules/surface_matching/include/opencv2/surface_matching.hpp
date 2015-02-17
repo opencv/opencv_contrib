@@ -111,7 +111,7 @@ point sampling, I will be leaving that aside now in order to respect the general
 methods (Typically for such algorithms training on a CAD model is not needed, and a point cloud
 would be sufficient). Below is the outline of the entire algorithm:
 
-![Outline of the Algorithm](surface_matching/pics/outline.jpg)
+![Outline of the Algorithm](img/outline.jpg)
 
 As explained, the algorithm relies on the extraction and indexing of point pair features, which are
 defined as follows:
@@ -337,11 +337,11 @@ Results
 This section is dedicated to the results of surface matching (point-pair-feature matching and a
 following ICP refinement):
 
-![Several matches of a single frog model using ppf + icp](surface_matching/pics/gsoc_forg_matches.jpg)
+![Several matches of a single frog model using ppf + icp](img/gsoc_forg_matches.jpg)
 
 Matches of different models for Mian dataset is presented below:
 
-![Matches of different models for Mian dataset](surface_matching/pics/snapshot27.jpg)
+![Matches of different models for Mian dataset](img/snapshot27.jpg)
 
 You might checkout the video on [youTube here](http://www.youtube.com/watch?v=uFnqLFznuZU).
 

@@ -658,7 +658,7 @@ at/s17/3.pgm;1
 
 Here is the script, if you can't find it:
 
-@verbinclude face/doc/src/create_csv.py
+@verbinclude face/samples/src/create_csv.py
 
 ### Aligning Face Images {#tutorial_face_appendix_align}
 
@@ -677,7 +677,7 @@ where:
 If you are using the same *offset_pct* and *dest_sz* for your images, they are all aligned at the
 eyes.
 
-@verbinclude face/doc/src/crop_face.py
+@verbinclude face/samples/src/crop_face.py
 
 Imagine we are given [this photo of Arnold
 Schwarzenegger](http://en.wikipedia.org/wiki/File:Arnold_Schwarzenegger_edit%28ws%29.jpg), which is
@@ -689,11 +689,11 @@ Here are some examples:
 
 Configuration                   | Cropped, Scaled, Rotated Face
 --------------------------------|------------------------------------------------------------------
-0.1 (10%), 0.1 (10%), (200,200) | ![](tutorial/gender_classification/arnie_10_10_200_200.jpg)
-0.2 (20%), 0.2 (20%), (200,200) | ![](tutorial/gender_classification/arnie_20_20_200_200.jpg)
-0.3 (30%), 0.3 (30%), (200,200) | ![](tutorial/gender_classification/arnie_30_30_200_200.jpg)
-0.2 (20%), 0.2 (20%), (70,70)   | ![](tutorial/gender_classification/arnie_20_20_70_70.jpg)
+0.1 (10%), 0.1 (10%), (200,200) | ![](tutorials/gender_classification/arnie_10_10_200_200.jpg)
+0.2 (20%), 0.2 (20%), (200,200) | ![](tutorials/gender_classification/arnie_20_20_200_200.jpg)
+0.3 (30%), 0.3 (30%), (200,200) | ![](tutorials/gender_classification/arnie_30_30_200_200.jpg)
+0.2 (20%), 0.2 (20%), (70,70)   | ![](tutorials/gender_classification/arnie_20_20_70_70.jpg)
 
 ### CSV for the AT&T Facedatabase {#tutorial_face_appendix_attcsv}
 
-@verbinclude face/doc/etc/at.txt
+@verbinclude face/samples/etc/at.txt
