@@ -570,7 +570,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
   /* create a map to record association between KeyLines and their position
    in ScaleLines vector */
-  std::map<std::pair<int, int>, int> correspondences;
+  std::map<std::pair<int, int>, size_t> correspondences;
 
   /* fill ScaleLines object */
   for ( size_t slCounter = 0; slCounter < keylines.size(); slCounter++ )
@@ -601,7 +601,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     /* update map */
     int id = kl.class_id;
     int oct = kl.octave;
-    correspondences.insert( std::pair<std::pair<int, int>, int>( std::pair<int, int>( id, oct ), slCounter ) );
+    correspondences.insert( std::pair<std::pair<int, int>, size_t>( std::pair<int, int>( id, oct ), slCounter ) );
   }
 
   /* delete useless OctaveSingleLines */
@@ -632,7 +632,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     {
       /* get original index of keypoint */
       int lineOctave = ( sl[k][lineC] ).octaveCount;
-      int originalIndex = correspondences.find( std::pair<int, int>( k, lineOctave ) )->second;
+      int originalIndex = (int)correspondences.find( std::pair<int, int>( k, lineOctave ) )->second;
 
       if( !returnFloatDescr )
       {

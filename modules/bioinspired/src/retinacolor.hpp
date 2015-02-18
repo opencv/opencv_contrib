@@ -338,7 +338,7 @@ namespace bioinspired
 
         class Parallel_computeGradient: public cv::ParallelLoopBody
         {
-        private:
+        protected:
             float *imageGradient;
             const float *luminance;
             unsigned int nbColumns, doubleNbColumns, nbRows, nbPixels;

@@ -503,7 +503,7 @@ public:
     inline unsigned int getOutputNBpixels() { return _photoreceptorsPrefilter.getNBpixels(); }
 
 
-private:
+protected:
 
     // processing activation flags
     bool _useParvoOutput;

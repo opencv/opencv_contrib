@@ -129,7 +129,7 @@ void OR_imagenetImp::loadDataset(const string &path)
     {
         Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
         curr->id = atoi(line.c_str());
-        numberToString(validation.back().size()+1, curr->image);
+        numberToString((int)validation.back().size()+1, curr->image);
         curr->image = "val/ILSVRC2010_val_" + curr->image + ".JPEG";
 
         validation.back().push_back(curr);
@@ -153,7 +153,7 @@ void OR_imagenetImp::loadDataset(const string &path)
     {
         Ptr<OR_imagenetObj> curr(new OR_imagenetObj);
         curr->id = *it;
-        numberToString(test.back().size()+1, curr->image);
+        numberToString((int)test.back().size()+1, curr->image);
         curr->image = "test/ILSVRC2010_test_" + curr->image + ".JPEG";
 
         test.back().push_back(curr);
