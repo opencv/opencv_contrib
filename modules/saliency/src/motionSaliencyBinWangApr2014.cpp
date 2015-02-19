@@ -236,7 +236,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
     lowResBFMask.setTo( 1 );
 
     // Scan all the ROI of original matrices
-    for ( int i = 0; i < ceil( (float) image.rows / N ); i++ )
+    for ( int i = 0; i < (int)ceil( (float) image.rows / N ); i++ )
     {
       if( ( roi.y + ( N - 1 ) ) <= ( image.rows - 1 ) )
       {
@@ -244,7 +244,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
         roi = Rect( Point( roi.x, roi.y ), Size( N, N ) );
       }
 
-      for ( int j = 0; j < ceil( (float) image.cols / N ); j++ )
+      for ( int j = 0; j < (int)ceil( (float) image.cols / N ); j++ )
       {
         /* Pixels with activity greater than Bth are eliminated from the detection result. In this way,
          continuously blinking noise-pixels will be eliminated from the detection results,
