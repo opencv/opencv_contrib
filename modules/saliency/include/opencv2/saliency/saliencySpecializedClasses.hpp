@@ -270,7 +270,7 @@ private:
             // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
             //restrain the generation of ghosts.
 
-  int Ainc;// Activity Incrementation;
+  uchar Ainc;// Activity Incrementation;
   int Bmax;// Upper-bound value for pixel activity
   int Bth;// Max activity threshold
   int Binc, Bdec;// Threshold for pixel-level decision threshold (epslon) adaptation

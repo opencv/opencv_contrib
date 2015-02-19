@@ -58,7 +58,7 @@ typedef perf::TestBaseWithParam<std::string> sal;
 
 void getMatOfRects( const vector<Vec4i>& saliencyMap, Mat& bbs_mat )
 {
-  for ( size_t b = 0; b < saliencyMap.size(); b++ )
+  for ( int b = 0; b < (int)saliencyMap.size(); b++ )
   {
     bbs_mat.at<int>( b, 0 ) = saliencyMap[b].val[0];
     bbs_mat.at<int>( b, 1 ) = saliencyMap[b].val[1];
@@ -101,7 +101,7 @@ PERF_TEST_P(sal, objectnessBING, testing::Values(BING_IMAGES))
   }  //end CYCLE
 
   //save the bounding boxes in a Mat
-   Mat bbs_mat( saliencyMap.size(), 4, CV_32F );
+   Mat bbs_mat( (int)saliencyMap.size(), 4, CV_32F );
    getMatOfRects( saliencyMap, bbs_mat );
 
    SANITY_CHECK( bbs_mat);
