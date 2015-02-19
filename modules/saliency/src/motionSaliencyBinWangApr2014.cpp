@@ -327,7 +327,7 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
 
   Mat dstMask, tempMat, dstMask2, dstMask3;
   Mat convertMat1, convertMat2;
-  int backGroundModelSize = backgroundModel.size();
+  int backGroundModelSize = (int)backgroundModel.size();
 
   std::vector<std::vector<Mat> > channelSplit( backGroundModelSize );
   for ( int i = 0; i < backGroundModelSize; i++ )

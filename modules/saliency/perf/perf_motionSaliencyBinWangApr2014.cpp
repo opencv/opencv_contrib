@@ -65,7 +65,7 @@ PERF_TEST_P(sal, motionSaliencyBinWangApr2014, testing::Values(TESTSET_NAMES))
   int startFrame=0;
   Mat frame;
   Mat saliencyMap;
-  int videoSize=0;
+  double videoSize=0;
 
   Ptr<saliency::Saliency> saliencyAlgorithm = saliency::Saliency::create( "BinWangApr2014" );
 
