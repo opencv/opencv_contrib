@@ -104,10 +104,6 @@ bool Tracker::update( const Mat& image, Rect2d& boundingBox )
   return updateImpl( image, boundingBox );
 }
 
-AlgorithmInfo* Tracker::info() const{
-    return 0;
-}
-
 Ptr<Tracker> Tracker::create( const String& trackerType )
 {
   BOILERPLATE_CODE("MIL",TrackerMIL);

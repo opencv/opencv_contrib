@@ -2327,14 +2327,14 @@ static void removeBowImageDescriptorsByCount( vector<ObdImage>& images, vector<M
     CV_Assert( bowImageDescriptors.size() == objectPresent.size() );
 }
 
-static void setSVMParams( SVM::Params& svmParams, Mat& class_wts_cv, const Mat& responses, bool balanceClasses )
+static void setSVMParams( Ptr<SVM> & svm, const Mat& responses, bool balanceClasses )
 {
     int pos_ex = countNonZero(responses == 1);
     int neg_ex = countNonZero(responses == -1);
     cout << pos_ex << " positive training samples; " << neg_ex << " negative training samples" << endl;
 
-    svmParams.svmType = SVM::C_SVC;
-    svmParams.kernelType = SVM::RBF;
+    svm->setType(SVM::C_SVC);
+    svm->setKernel(SVM::RBF);
     if( balanceClasses )
     {
         Mat class_wts( 2, 1, CV_32FC1 );
@@ -2351,8 +2351,7 @@ static void setSVMParams( SVM::Params& svmParams, Mat& class_wts_cv, const Mat& 
             class_wts.at<float>(0) = static_cast<float>(neg_ex)/static_cast<float>(pos_ex+neg_ex);
             class_wts.at<float>(1) = static_cast<float>(pos_ex)/static_cast<float>(pos_ex+neg_ex);
         }
-        class_wts_cv = class_wts;
-        svmParams.classWeights = class_wts_cv;
+        svm->setClassWeights(class_wts);
     }
 }
 
@@ -2440,10 +2439,8 @@ static Ptr<SVM> trainSVMClassifier( const SVMTrainParamsExt& svmParamsExt, const
         }
 
         cout << "TRAINING SVM FOR CLASS ..." << objClassName << "..." << endl;
-        SVM::Params svmParams;
-        Mat class_wts_cv;
-        setSVMParams( svmParams, class_wts_cv, responses, svmParamsExt.balanceClasses );
-        svm = SVM::create(svmParams);
+        svm = SVM::create();
+        setSVMParams( svm, responses, svmParamsExt.balanceClasses );
         ParamGrid c_grid, gamma_grid, p_grid, nu_grid, coef_grid, degree_grid;
         setSVMTrainAutoParams( c_grid, gamma_grid,  p_grid, nu_grid, coef_grid, degree_grid );
 

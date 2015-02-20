@@ -81,8 +81,6 @@ public:
     {
     }
 
-    virtual AlgorithmInfo* info() const { return 0; }
-
     /**
      * Validate parameters and set up data structures for appropriate image size.
      * Must call before running on data.

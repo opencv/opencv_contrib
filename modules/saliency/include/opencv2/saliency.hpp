@@ -80,12 +80,4 @@ To see how API works, try tracker demo:
 
 */
 
-namespace cv
-{
-namespace saliency
-{
-CV_EXPORTS bool initModule_saliency( void );
-}
-}
-
 #endif //__OPENCV_SALIENCY_HPP__

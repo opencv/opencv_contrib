@@ -153,17 +153,6 @@ public:
      */
     virtual float predict(
         const Ptr<FeatureEvaluator>& feature_evaluator) const = 0;
-
-    /** @brief Write WaldBoost to FileStorage
-    @param fs FileStorage for output
-     */
-    virtual void write(FileStorage& fs) const = 0;
-
-    /** @brief Write WaldBoost to FileNode
-
-    @param node FileNode for reading
-     */
-    virtual void read(const FileNode& node) = 0;
 };
 
 /** @brief Construct WaldBoost object.
