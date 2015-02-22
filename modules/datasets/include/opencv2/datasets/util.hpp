@@ -66,9 +66,14 @@ void CV_EXPORTS createDirectory(const std::string &path);
 
 void CV_EXPORTS getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
 
+void CV_EXPORTS numberToString(int number, std::string &out);
+
+long CV_EXPORTS getFileSize(const std::string &fileName);
+
 //! @}
 
 }
 }
 
 #endif
+
