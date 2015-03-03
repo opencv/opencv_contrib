@@ -40,6 +40,7 @@
 #include "ximgproc/edge_filter.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
+#include "ximgproc/niblack.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
@@ -51,6 +52,8 @@ which somehow takes into account pixel affinities in natural images.
     @defgroup ximgproc_filters Filters
 
     @defgroup ximgproc_superpixel Superpixels
+
+    @defgroup ximgproc_niblack Niblack Thresholding
   @}
 */
 
