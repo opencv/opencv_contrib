@@ -17,4 +17,4 @@ foreach(dt5_dep Core Gui Widgets)
 endforeach()
 
 set(the_description "Debug visualization framework")
-ocv_define_module(cvv opencv_core opencv_imgproc opencv_features2d ${CVV_LIBRARIES})
+ocv_define_module(cvv opencv_core opencv_imgproc opencv_features2d ${CVV_LIBRARIES} WRAP python)
