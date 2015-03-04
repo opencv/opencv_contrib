@@ -84,6 +84,7 @@ void OR_mnistImp::loadDatasetPart(const string &imagesFile, const string &labels
     fclose(f);
     if (num*imageSize != res)
     {
+        delete[] images;
         return;
     }
     f = fopen(labelsFile.c_str(), "rb");
@@ -93,6 +94,8 @@ void OR_mnistImp::loadDatasetPart(const string &imagesFile, const string &labels
     fclose(f);
     if (num != res)
     {
+        delete[] images;
+        delete[] labels;
         return;
     }
 
