@@ -241,7 +241,7 @@ void CV_OdometryTest::run(int)
     if(!readData(image, depth))
         return;
         
-    odometry->set("cameraMatrix", K);
+    odometry->setCameraMatrix(K);
     
     Mat calcRt;
     
@@ -338,18 +338,18 @@ void CV_OdometryTest::run(int)
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.RgbdOdometry"), 0.99, 0.94);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.RgbdOdometry"), 0.99, 0.94);
     test.safe_run();
 }
 
 TEST(RGBD_Odometry_ICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.ICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
 TEST(RGBD_Odometry_RgbdICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::Algorithm::create<cv::rgbd::Odometry>("RGBD.RgbdICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }

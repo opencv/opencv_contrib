@@ -111,7 +111,7 @@ void AR_hmdbImp::loadDatasetSplit(const string &path, int number)
         if (itId == actionsId.end())
         {
             actionsId.insert(make_pair(action, actionsId.size()));
-            id = actionsId.size();
+            id = (int)actionsId.size();
         } else
         {
             id = (*itId).second;

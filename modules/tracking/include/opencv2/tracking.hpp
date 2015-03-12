@@ -327,10 +327,6 @@ The first argument is the name of the tracker and the second is a video source.
 
 */
 
-namespace cv
-{
-CV_EXPORTS bool initModule_tracking(void);
-}
-
 #include "opencv2/tracking/tracker.hpp"
+
 #endif //__OPENCV_TRACKING_LENLEN

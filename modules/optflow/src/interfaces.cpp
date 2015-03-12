@@ -56,7 +56,6 @@ public:
     OpticalFlowSimpleFlow();
     void calc(InputArray I0, InputArray I1, InputOutputArray flow);
     void collectGarbage();
-//    AlgorithmInfo* info() const;
 
 protected:
     int layers;
@@ -129,7 +128,6 @@ public:
     OpticalFlowFarneback();
     void calc(InputArray I0, InputArray I1, InputOutputArray flow);
     void collectGarbage();
-//    AlgorithmInfo* info() const;
 protected:
     int numLevels;
     double pyrScale;

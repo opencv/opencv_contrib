@@ -216,6 +216,13 @@ public:
     CV_WRAP virtual void collectGarbage() = 0;
 
     CV_WRAP static Ptr<AdaptiveManifoldFilter> create();
+
+    CV_PURE_PROPERTY(double, SigmaS)
+    CV_PURE_PROPERTY(double, SigmaR)
+    CV_PURE_PROPERTY(int, TreeHeight)
+    CV_PURE_PROPERTY(int, PCAIterations)
+    CV_PURE_PROPERTY(bool, AdjustOutliers)
+    CV_PURE_PROPERTY(bool, UseRNG)
 };
 
 /** @brief Factory method, create instance of AdaptiveManifoldFilter and produce some initialization routines.

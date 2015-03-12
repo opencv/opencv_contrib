@@ -70,7 +70,7 @@ namespace xphoto
 
         void operator() (const Range &range) const;
 
-    private:
+    protected:
         const Mat &src;
         std::vector <Mat> &patches; // image decomposition into sliding patches
 

@@ -56,8 +56,6 @@ public:
     void calc( InputArray I0, InputArray I1, InputOutputArray flow );
     void collectGarbage();
 
-//    AlgorithmInfo* info() const;
-
 protected:
     float sigma; // Gaussian smoothing parameter
     int minSize; // minimal dimension of an image in the pyramid

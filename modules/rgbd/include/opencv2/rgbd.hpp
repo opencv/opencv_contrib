@@ -137,9 +137,6 @@ namespace rgbd
 
     ~RgbdNormals();
 
-    AlgorithmInfo*
-    info() const;
-
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
      * @param normals a rows x cols x 3 matrix
@@ -153,14 +150,13 @@ namespace rgbd
     void
     initialize() const;
 
-    /** Return the current method in that normal computer
-     * @return
-     */
-    int
-    method() const
-    {
-      return method_;
-    }
+    CV_IMPL_PROPERTY(int, Rows, rows_)
+    CV_IMPL_PROPERTY(int, Cols, cols_)
+    CV_IMPL_PROPERTY(int, WindowSize, window_size_)
+    CV_IMPL_PROPERTY(int, Depth, depth_)
+    CV_IMPL_PROPERTY_S(cv::Mat, K, K_)
+    CV_IMPL_PROPERTY(int, Method, method_)
+
   protected:
     void
     initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size, int method) const;
@@ -204,9 +200,6 @@ namespace rgbd
 
     ~DepthCleaner();
 
-    AlgorithmInfo*
-    info() const;
-
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
      * @param depth a rows x cols matrix of the cleaned up depth
@@ -220,14 +213,10 @@ namespace rgbd
     void
     initialize() const;
 
-    /** Return the current method in that normal computer
-     * @return
-     */
-    int
-    method() const
-    {
-      return method_;
-    }
+    CV_IMPL_PROPERTY(int, WindowSize, window_size_)
+    CV_IMPL_PROPERTY(int, Depth, depth_)
+    CV_IMPL_PROPERTY(int, Method, method_)
+
   protected:
     void
     initialize_cleaner_impl() const;
@@ -316,8 +305,14 @@ namespace rgbd
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
 
-    AlgorithmInfo*
-    info() const;
+    CV_IMPL_PROPERTY(int, BlockSize, block_size_)
+    CV_IMPL_PROPERTY(int, MinSize, min_size_)
+    CV_IMPL_PROPERTY(int, Method, method_)
+    CV_IMPL_PROPERTY(double, Threshold, threshold_)
+    CV_IMPL_PROPERTY(double, SensorErrorA, sensor_error_a_)
+    CV_IMPL_PROPERTY(double, SensorErrorB, sensor_error_b_)
+    CV_IMPL_PROPERTY(double, SensorErrorC, sensor_error_c_)
+
   private:
     /** The method to use to compute the planes */
     int method_;
@@ -469,6 +464,19 @@ namespace rgbd
      */
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
+    static Ptr<Odometry> create(const String & odometryType);
+
+    //TODO: which properties are common for all Odometry successors?
+    CV_PURE_PROPERTY_S(cv::Mat, CameraMatrix)
+//    CV_PURE_PROPERTY(double, MinDepth)
+//    CV_PURE_PROPERTY(double, MaxDepth)
+//    CV_PURE_PROPERTY(double, MaxDepthDiff)
+//    CV_PURE_PROPERTY_S(cv::Mat, IterationCounts)
+//    CV_PURE_PROPERTY(double, MaxPointsPart)
+    CV_PURE_PROPERTY(int, TransformType)
+//    CV_PURE_PROPERTY(double, MaxTranslation)
+//    CV_PURE_PROPERTY(double, MaxRotation)
+
   protected:
     virtual void
     checkParams() const = 0;
@@ -504,8 +512,16 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
+    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
+    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
+    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
+    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
+    CV_IMPL_PROPERTY_S(cv::Mat, MinGradientMagnitudes, minGradientMagnitudes)
+    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
+    CV_IMPL_PROPERTY(int, TransformType, transformType)
+    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
+    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
 
   protected:
     virtual void
@@ -553,8 +569,16 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
+    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
+    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
+    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
+    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
+    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
+    CV_IMPL_PROPERTY(int, TransformType, transformType)
+    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
+    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
+    CV_IMPL_PROPERTY_RO(Ptr<RgbdNormals>, NormalsComputer, normalsComputer)
 
   protected:
     virtual void
@@ -607,8 +631,17 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
+    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
+    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
+    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
+    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
+    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
+    CV_IMPL_PROPERTY_S(cv::Mat, MinGradientMagnitudes, minGradientMagnitudes)
+    CV_IMPL_PROPERTY(int, TransformType, transformType)
+    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
+    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
+    CV_IMPL_PROPERTY_RO(Ptr<RgbdNormals>, NormalsComputer, normalsComputer)
 
   protected:
     virtual void
@@ -669,3 +702,4 @@ namespace rgbd
 #endif
 
 /* End of file. */
+

@@ -116,10 +116,4 @@ generates an 8 bit string. Concatenating 32 comparison strings, we get the 256-b
 representation of a single LBD.
 */
 
-namespace cv
-{
-CV_EXPORTS bool initModule_line_descriptor( void );
-
-}
-
 #endif 

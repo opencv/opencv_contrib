@@ -309,7 +309,7 @@ protected:
     TickMeter tm;
     tm.start();
     Mat in_normals;
-    if (normals_computer.method() == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
+    if (normals_computer.getMethod() == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
     {
       std::vector<Mat> channels;
       split(points3d, channels);

@@ -1998,7 +1998,7 @@ enum {
     computation.
 */
 class dissimilarity {
-private:
+protected:
     double * Xa;
     auto_array_ptr<double> Xnew;
     ptrdiff_t dim; // size_t saves many statis_cast<> in products
