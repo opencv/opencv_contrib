@@ -132,7 +132,7 @@ namespace cv
         Plot(cv::Mat _plotDataX, cv::Mat _plotDataY)
         {
             //f the matrix is not Nx1 or 1xN
-            if(_plotDataX.cols > 1 && _plotDataX.rows > 1 || _plotDataY.cols > 1 && _plotDataY.rows > 1)
+            if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
             {
                 std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
                 exit(0);
