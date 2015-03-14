@@ -56,7 +56,7 @@
 #include <iostream>
 #include <stdio.h>
 
-///This plot class allows you to easily plot data from a Mat or a vector. You can plot 1D or 2D plots, change the window size and the axis limits. It's simple yet very effective and usefull.
+//This plot class allows you to easily plot data from a Mat or a vector. You can plot 1D or 2D plots, change the window size and the axis limits. It's simple yet very effective and usefull.
 
 namespace cv
 {
@@ -69,7 +69,7 @@ namespace cv
         cv::Mat plotDataY_plusZero;
         const char * plotName;
 
-        ///dimensions and limits of the plot
+        //dimensions and limits of the plot
         int plotSizeWidth;
         int plotSizeHeight;
         double plotMinX;
@@ -82,19 +82,19 @@ namespace cv
         double plotMaxY_plusZero;
         int plotLineWidth;
 
-        ///colors of each plot element
+        //colors of each plot element
         cv::Scalar plotLineColor;
         cv::Scalar plotBackgroundColor;
         cv::Scalar plotAxisColor;
         cv::Scalar plotGridColor;
         cv::Scalar plotTextColor;
 
-        ///the final plot result
+        //the final plot result
         cv::Mat plotResult;
 
     public:
 
-        ///constructor accepting only Y data to be plotted
+        //constructor accepting only Y data to be plotted
         Plot(cv::Mat _plotData)
         {
             //if the matrix is not Nx1 or 1xN
@@ -124,11 +124,11 @@ namespace cv
                 plotDataX.at<double>(i,0) = i;
             }
 
-            ///calling the main constructor
+            //calling the main constructor
             plotHelper(plotDataX, plotDataY);
         }
 
-        ///constructor accepting X data and Y data to be plotted
+        //constructor accepting X data and Y data to be plotted
         Plot(cv::Mat _plotDataX, cv::Mat _plotDataY)
         {
             //f the matrix is not Nx1 or 1xN
@@ -158,7 +158,7 @@ namespace cv
             plotHelper(_plotDataX, _plotDataY);
         }
 
-        ///set functions
+        //set functions
         void setMinX(double _plotMinX)
         {
             plotMinX = _plotMinX;
@@ -216,18 +216,18 @@ namespace cv
                 plotSizeHeight = 300;
         }
 
-        ///render the plotResult to a Mat
+        //render the plotResult to a Mat
         void render(cv::Mat &_plotResult);
 
-        ///show the plotResult from within the class
+        //show the plotResult from within the class
         void show(const char * _plotName);
 
-        ///save the plotResult as a .png image
+        //save the plotResult as a .png image
         void save(const char * _plotFileName);
 
     protected:
 
-        ///a helper method to be used in the constructor
+        //a helper method to be used in the constructor
         void plotHelper(cv::Mat _plotDataX, cv::Mat _plotDataY)
         {
             plotDataX=_plotDataX;
@@ -252,19 +252,19 @@ namespace cv
             double MinY_plusZero;
             double MaxY_plusZero;
 
-            ///Obtain the minimum and maximum values of Xdata
+            //Obtain the minimum and maximum values of Xdata
             minMaxLoc(plotDataX,&MinX,&MaxX);
 
-            ///Obtain the minimum and maximum values of Ydata
+            //Obtain the minimum and maximum values of Ydata
             minMaxLoc(plotDataY,&MinY,&MaxY);
 
-            ///Obtain the minimum and maximum values of Xdata plus zero
+            //Obtain the minimum and maximum values of Xdata plus zero
             minMaxLoc(plotDataX_plusZero,&MinX_plusZero,&MaxX_plusZero);
 
-            ///Obtain the minimum and maximum values of Ydata plus zero
+            //Obtain the minimum and maximum values of Ydata plus zero
             minMaxLoc(plotDataY_plusZero,&MinY_plusZero,&MaxY_plusZero);
 
-            ///setting the min and max values for each axis
+            //setting the min and max values for each axis
             plotMinX = MinX;
             plotMaxX = MaxX;
             plotMinY = MinY;
@@ -274,13 +274,13 @@ namespace cv
             plotMinY_plusZero = MinY_plusZero;
             plotMaxY_plusZero = MaxY_plusZero;
 
-            ///setting the default size of a plot figure
+            //setting the default size of a plot figure
             setPlotSize(600, 400);
 
-            ///setting the default plot line size
+            //setting the default plot line size
             setPlotLineWidth(1);
 
-            ///setting default colors for the different elements of the plot
+            //setting default colors for the different elements of the plot
             setPlotAxisColor(cv::Scalar(0, 0, 255));
             setPlotGridColor(cv::Scalar(255, 255, 255));
             setPlotBackgroundColor(cv::Scalar(0, 0, 0));

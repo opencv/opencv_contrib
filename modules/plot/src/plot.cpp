@@ -50,10 +50,10 @@
 using namespace cv;
 using namespace std;
 
-///render the plotResult to a Mat
+//render the plotResult to a Mat
 void Plot::render(cv::Mat &_plotResult){
 
-    ///create the plot result
+    //create the plot result
     plotResult = cv::Mat::zeros(plotSizeHeight, plotSizeWidth, CV_8UC3);
 
     int NumVecElements = plotDataX.rows;
@@ -61,7 +61,7 @@ void Plot::render(cv::Mat &_plotResult){
     Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
     Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
 
-    ///Find the zeros in image coordinates
+    //Find the zeros in image coordinates
     Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
     Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
 
@@ -94,7 +94,7 @@ void Plot::render(cv::Mat &_plotResult){
 
 }
 
-///show the plotResult from within the class
+//show the plotResult from within the class
 void Plot::show(const char * _plotName)
 {
     namedWindow(_plotName);
@@ -102,7 +102,7 @@ void Plot::show(const char * _plotName)
     waitKey(5);
 }
 
-///save the plotResult as a .png image
+//save the plotResult as a .png image
 void Plot::save(const char * _plotFileName)
 {
     imwrite(_plotFileName, plotResult);
