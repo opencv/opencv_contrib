@@ -56,8 +56,9 @@
 #include <iostream>
 #include <stdio.h>
 
-
-//@defgroup plot Plot function for Mat data
+/**
+@defgroup plot Plot function for Mat data
+*/
 
 namespace cv
 {
