@@ -56,7 +56,8 @@
 #include <iostream>
 #include <stdio.h>
 
-//This plot class allows you to easily plot data from a Mat or a vector. You can plot 1D or 2D plots, change the window size and the axis limits. It's simple yet very effective and usefull.
+
+//@defgroup plot Plot function for Mat data
 
 namespace cv
 {
