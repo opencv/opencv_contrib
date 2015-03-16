@@ -849,7 +849,7 @@ std::vector<cv::Mat> octaveImages;
 Lines extraction methodology
 ----------------------------
 
-The lines extraction methodology described in the following is mainly based on @cite EDL. The
+The lines extraction methodology described in the following is mainly based on @cite EDL . The
 extraction starts with a Gaussian pyramid generated from an original image, downsampled N-1 times,
 blurred N times, to obtain N layers (one for each octave), with layer 0 corresponding to input
 image. Then, from each layer (octave) in the pyramid, lines are extracted using LSD algorithm.
@@ -922,7 +922,7 @@ based on *Multi-Index Hashing (MiHashing)* will be described.
 Multi-Index Hashing
 -------------------
 
-The theory described in this section is based on @cite MIH. Given a dataset populated with binary
+The theory described in this section is based on @cite MIH . Given a dataset populated with binary
 codes, each code is indexed *m* times into *m* different hash tables, according to *m* substrings it
 has been divided into. Thus, given a query code, all the entries close to it at least in one
 substring are returned by search as *neighbor candidates*. Returned entries are then checked for

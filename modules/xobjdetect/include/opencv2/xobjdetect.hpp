@@ -131,7 +131,7 @@ struct CV_EXPORTS WaldBoostParams
     {}
 };
 
-/** @brief WaldBoost object detector from @cite Sochman05
+/** @brief WaldBoost object detector from @cite Sochman05 .
 */
 class CV_EXPORTS WaldBoost : public Algorithm
 {
@@ -179,7 +179,7 @@ struct CV_EXPORTS ICFDetectorParams
     {}
 };
 
-/** @brief Integral Channel Features from @cite Dollar09
+/** @brief Integral Channel Features from @cite Dollar09 .
 */
 class CV_EXPORTS ICFDetector
 {

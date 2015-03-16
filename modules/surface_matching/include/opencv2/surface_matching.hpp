@@ -111,7 +111,7 @@ point sampling, I will be leaving that aside now in order to respect the general
 methods (Typically for such algorithms training on a CAD model is not needed, and a point cloud
 would be sufficient). Below is the outline of the entire algorithm:
 
-![Outline of the Algorithm](surface_matching/pics/outline.jpg)
+![Outline of the Algorithm](img/outline.jpg)
 
 As explained, the algorithm relies on the extraction and indexing of point pair features, which are
 defined as follows:
@@ -337,11 +337,11 @@ Results
 This section is dedicated to the results of surface matching (point-pair-feature matching and a
 following ICP refinement):
 
-![Several matches of a single frog model using ppf + icp](surface_matching/pics/gsoc_forg_matches.jpg)
+![Several matches of a single frog model using ppf + icp](img/gsoc_forg_matches.jpg)
 
 Matches of different models for Mian dataset is presented below:
 
-![Matches of different models for Mian dataset](surface_matching/pics/snapshot27.jpg)
+![Matches of different models for Mian dataset](img/snapshot27.jpg)
 
 You might checkout the video on [youTube here](http://www.youtube.com/watch?v=uFnqLFznuZU).
 
@@ -365,7 +365,7 @@ accurate representation. However, note that number of point pair features to be 
 quadratically increased as the complexity is O(N\^2). This is especially a concern for 32 bit
 systems, where large models can easily overshoot the available memory. Typically, values in the
 range of 0.025 - 0.05 seem adequate for most of the applications, where the default value is 0.03.
-(Note that there is a difference in this paremeter with the one presented in @cite drost2010. In
+(Note that there is a difference in this paremeter with the one presented in @cite drost2010 . In
 @cite drost2010 a uniform cuboid is used for quantization and model diameter is used for reference of
 sampling. In my implementation, the cuboid is a rectangular prism, and each dimension is quantized
 independently. I do not take reference from the diameter but along the individual dimensions.

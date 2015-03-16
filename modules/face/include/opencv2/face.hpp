@@ -43,7 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 @defgroup face Face Recognition
 
 - @ref face_changelog
-- @ref face_tutorial
+- @ref tutorial_face_main
 
 */
 

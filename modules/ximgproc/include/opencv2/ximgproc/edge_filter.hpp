@@ -61,7 +61,7 @@ enum EdgeAwareFiltersList
 
 /** @brief Interface for realizations of Domain Transform filter.
 
-For more details about this filter see @cite Gastal11.
+For more details about this filter see @cite Gastal11 .
  */
 class CV_EXPORTS_W DTFilter : public Algorithm
 {
@@ -125,7 +125,7 @@ void dtFilter(InputArray guide, InputArray src, OutputArray dst, double sigmaSpa
 
 /** @brief Interface for realizations of Guided Filter.
 
-For more details about this filter see @cite Kaiming10.
+For more details about this filter see @cite Kaiming10 .
  */
 class CV_EXPORTS_W GuidedFilter : public Algorithm
 {
@@ -153,7 +153,7 @@ channels then only first 3 channels will be used.
 @param eps regularization term of Guided Filter. \f${eps}^2\f$ is similar to the sigma in the color
 space into bilateralFilter.
 
-For more details about Guided Filter parameters, see the original article @cite Kaiming10.
+For more details about Guided Filter parameters, see the original article @cite Kaiming10 .
  */
 CV_EXPORTS_W Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps);
 
@@ -235,7 +235,7 @@ bilateralFilter.
 @param adjust_outliers optional, specify perform outliers adjust operation or not, (Eq. 9) in the
 original paper.
 
-For more details about Adaptive Manifold Filter parameters, see the original article @cite Gastal12.
+For more details about Adaptive Manifold Filter parameters, see the original article @cite Gastal12 .
 
 @note Joint images with CV_8U and CV_16U depth converted to images with CV_32F depth and [0; 1]
 color range before processing. Hence color space sigma sigma_r must be in [0; 1] range, unlike same
