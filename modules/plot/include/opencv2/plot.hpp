@@ -50,11 +50,10 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <vector>
 #include <iostream>
 #include <stdio.h>
+#include <vector>
 
 /**
 @defgroup plot Plot function for Mat data
@@ -62,13 +61,16 @@
 
 namespace cv
 {
+    namespace plot
+    {
+
     class CV_EXPORTS Plot
 {
     protected:
-        cv::Mat plotDataX;
-        cv::Mat plotDataY;
-        cv::Mat plotDataX_plusZero;
-        cv::Mat plotDataY_plusZero;
+        Mat plotDataX;
+        Mat plotDataY;
+        Mat plotDataX_plusZero;
+        Mat plotDataY_plusZero;
         const char * plotName;
 
         //dimensions and limits of the plot
@@ -85,19 +87,19 @@ namespace cv
         int plotLineWidth;
 
         //colors of each plot element
-        cv::Scalar plotLineColor;
-        cv::Scalar plotBackgroundColor;
-        cv::Scalar plotAxisColor;
-        cv::Scalar plotGridColor;
-        cv::Scalar plotTextColor;
+        Scalar plotLineColor;
+        Scalar plotBackgroundColor;
+        Scalar plotAxisColor;
+        Scalar plotGridColor;
+        Scalar plotTextColor;
 
         //the final plot result
-        cv::Mat plotResult;
+        Mat plotResult;
 
     public:
 
         //constructor accepting only Y data to be plotted
-        Plot(cv::Mat _plotData)
+        Plot(Mat _plotData)
         {
             //if the matrix is not Nx1 or 1xN
             if(_plotData.cols > 1 && _plotData.rows > 1)
@@ -131,7 +133,7 @@ namespace cv
         }
 
         //constructor accepting X data and Y data to be plotted
-        Plot(cv::Mat _plotDataX, cv::Mat _plotDataY)
+        Plot(Mat _plotDataX, Mat _plotDataY)
         {
             //f the matrix is not Nx1 or 1xN
             if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
@@ -185,23 +187,23 @@ namespace cv
         {
             plotLineWidth=_plotLineWidth;
         }
-        void setPlotLineColor(cv::Scalar _plotLineColor)
+        void setPlotLineColor(Scalar _plotLineColor)
         {
             plotLineColor=_plotLineColor;
         }
-        void setPlotBackgroundColor(cv::Scalar _plotBackgroundColor)
+        void setPlotBackgroundColor(Scalar _plotBackgroundColor)
         {
             plotBackgroundColor=_plotBackgroundColor;
         }
-        void setPlotAxisColor(cv::Scalar _plotAxisColor)
+        void setPlotAxisColor(Scalar _plotAxisColor)
         {
             plotAxisColor=_plotAxisColor;
         }
-        void setPlotGridColor(cv::Scalar _plotGridColor)
+        void setPlotGridColor(Scalar _plotGridColor)
         {
             plotGridColor=_plotGridColor;
         }
-        void setPlotTextColor(cv::Scalar _plotTextColor)
+        void setPlotTextColor(Scalar _plotTextColor)
         {
             plotTextColor=_plotTextColor;
         }
@@ -219,26 +221,20 @@ namespace cv
         }
 
         //render the plotResult to a Mat
-        void render(cv::Mat &_plotResult);
-
-        //show the plotResult from within the class
-        void show(const char * _plotName);
-
-        //save the plotResult as a .png image
-        void save(const char * _plotFileName);
+        void render(Mat &_plotResult);
 
     protected:
 
         //a helper method to be used in the constructor
-        void plotHelper(cv::Mat _plotDataX, cv::Mat _plotDataY)
+        void plotHelper(Mat _plotDataX, Mat _plotDataY)
         {
             plotDataX=_plotDataX;
             plotDataY=_plotDataY;
 
             int NumVecElements = plotDataX.rows;
 
-            plotDataX_plusZero = cv::Mat::zeros(NumVecElements+1,1,CV_64F);
-            plotDataY_plusZero = cv::Mat::zeros(NumVecElements+1,1,CV_64F);
+            plotDataX_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
+            plotDataY_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
 
             for(int i=0; i<NumVecElements; i++){
                 plotDataX_plusZero.at<double>(i,0) = plotDataX.at<double>(i,0);
@@ -283,19 +279,20 @@ namespace cv
             setPlotLineWidth(1);
 
             //setting default colors for the different elements of the plot
-            setPlotAxisColor(cv::Scalar(0, 0, 255));
-            setPlotGridColor(cv::Scalar(255, 255, 255));
-            setPlotBackgroundColor(cv::Scalar(0, 0, 0));
-            setPlotLineColor(cv::Scalar(0, 255, 255));
-            setPlotTextColor(cv::Scalar(255, 255, 255));
+            setPlotAxisColor(Scalar(0, 0, 255));
+            setPlotGridColor(Scalar(255, 255, 255));
+            setPlotBackgroundColor(Scalar(0, 0, 0));
+            setPlotLineColor(Scalar(0, 255, 255));
+            setPlotTextColor(Scalar(255, 255, 255));
         }
 
-        cv::Mat linearInterpolation(double Xa, double Xb, double Ya, double Yb, cv::Mat Xdata);
-        void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, cv::Scalar axisColor, cv::Scalar gridColor);
+        Mat linearInterpolation(double Xa, double Xb, double Ya, double Yb, Mat Xdata);
+        void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor);
         void drawValuesAsText(double Value, int Xloc, int Yloc, int XMargin, int YMargin);
         void drawValuesAsText(const char * Text, double Value, int Xloc, int Yloc, int XMargin, int YMargin);
-        void drawLine(int Xstart, int Xend, int Ystart, int Yend, cv::Scalar lineColor);
+        void drawLine(int Xstart, int Xend, int Ystart, int Yend, Scalar lineColor);
 };
+}
 }
 
 #endif

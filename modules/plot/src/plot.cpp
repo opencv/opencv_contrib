@@ -47,7 +47,7 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
+using namespace cv::plot;
 using namespace std;
 
 //render the plotResult to a Mat
@@ -92,20 +92,6 @@ void Plot::render(cv::Mat &_plotResult){
 
     _plotResult = plotResult.clone();
 
-}
-
-//show the plotResult from within the class
-void Plot::show(const char * _plotName)
-{
-    namedWindow(_plotName);
-    imshow(_plotName, plotResult);
-    waitKey(5);
-}
-
-//save the plotResult as a .png image
-void Plot::save(const char * _plotFileName)
-{
-    imwrite(_plotFileName, plotResult);
 }
 
 void Plot::drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor){
