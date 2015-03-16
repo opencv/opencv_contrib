@@ -47,7 +47,7 @@
 
 #include "precomp.hpp"
 
-using namespace cv::plot;
+using namespace cv;
 using namespace std;
 
 //render the plotResult to a Mat
