@@ -359,8 +359,8 @@ int TLDEnsembleClassifier::code(const uchar* data, int rowstep) const
     for( int i = 0; i < (int)measurements.size(); i++ )
     {
         position = position << 1;
-        if( *(data + rowstep * measurements[i].val[0] + measurements[i].val[1]) <
-                *(data + rowstep * measurements[i].val[2] + measurements[i].val[3]) )
+        if( *(data + rowstep * measurements[i].val[2] + measurements[i].val[0]) <
+                *(data + rowstep * measurements[i].val[3] + measurements[i].val[1]) )
         {
             position++;
         }
