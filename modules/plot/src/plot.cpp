@@ -48,13 +48,14 @@
 #include "precomp.hpp"
 
 using namespace cv;
+using namespace cv::plot;
 using namespace std;
 
 //render the plotResult to a Mat
-void Plot::render(cv::Mat &_plotResult){
+void Plot::render(Mat &_plotResult){
 
     //create the plot result
-    plotResult = cv::Mat::zeros(plotSizeHeight, plotSizeWidth, CV_8UC3);
+    plotResult = Mat::zeros(plotSizeHeight, plotSizeWidth, CV_8UC3);
 
     int NumVecElements = plotDataX.rows;
 
@@ -72,7 +73,7 @@ void Plot::render(cv::Mat &_plotResult){
     double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
 
     //Draw the plot by connecting lines between the points
-    cv::Point p1;
+    Point p1;
     p1.x = (int)InterpXdata.at<double>(0,0);
     p1.y = (int)InterpYdata.at<double>(0,0);
 
@@ -80,7 +81,7 @@ void Plot::render(cv::Mat &_plotResult){
 
     for (int r=1; r<InterpXdata.rows; r++){
 
-        cv::Point p2;
+        Point p2;
         p2.x = (int)InterpXdata.at<double>(r,0);
         p2.y = (int)InterpYdata.at<double>(r,0);
 
@@ -135,7 +136,7 @@ void Plot::drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double Curr
     }
 }
 
-Mat Plot::linearInterpolation(double Xa, double Xb, double Ya, double Yb, cv::Mat Xdata){
+Mat Plot::linearInterpolation(double Xa, double Xb, double Ya, double Yb, Mat Xdata){
 
     Mat Ydata = Xdata*0;
 
@@ -159,7 +160,7 @@ void Plot::drawValuesAsText(double Value, int Xloc, int Yloc, int XMargin, int Y
     double TextSize = 1;
 
     sprintf(AxisX_Min_Text, "%g", Value);
-    cv::Point AxisX_Min_Loc;
+    Point AxisX_Min_Loc;
     AxisX_Min_Loc.x = Xloc+XMargin;
     AxisX_Min_Loc.y = Yloc+YMargin;
 
@@ -172,7 +173,7 @@ void Plot::drawValuesAsText(const char *Text, double Value, int Xloc, int Yloc, 
     int TextSize = 1;
 
     sprintf(AxisX_Min_Text, Text, Value);
-    cv::Point AxisX_Min_Loc;
+    Point AxisX_Min_Loc;
     AxisX_Min_Loc.x = Xloc+XMargin;
     AxisX_Min_Loc.y = Yloc+YMargin;
 
@@ -183,8 +184,8 @@ void Plot::drawValuesAsText(const char *Text, double Value, int Xloc, int Yloc, 
 
 void Plot::drawLine(int Xstart, int Xend, int Ystart, int Yend, Scalar lineColor){
 
-    cv::Point Axis_start;
-    cv::Point Axis_end;
+    Point Axis_start;
+    Point Axis_end;
     Axis_start.x = Xstart;
     Axis_start.y = Ystart;
     Axis_end.x = Xend;
