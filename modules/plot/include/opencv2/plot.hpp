@@ -54,6 +54,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
 /**
 @defgroup plot Plot function for Mat data
@@ -63,236 +64,28 @@ namespace cv
 {
     namespace plot
     {
-
-    class CV_EXPORTS Plot
-{
-    protected:
-        Mat plotDataX;
-        Mat plotDataY;
-        Mat plotDataX_plusZero;
-        Mat plotDataY_plusZero;
-        const char * plotName;
-
-        //dimensions and limits of the plot
-        int plotSizeWidth;
-        int plotSizeHeight;
-        double plotMinX;
-        double plotMaxX;
-        double plotMinY;
-        double plotMaxY;
-        double plotMinX_plusZero;
-        double plotMaxX_plusZero;
-        double plotMinY_plusZero;
-        double plotMaxY_plusZero;
-        int plotLineWidth;
-
-        //colors of each plot element
-        Scalar plotLineColor;
-        Scalar plotBackgroundColor;
-        Scalar plotAxisColor;
-        Scalar plotGridColor;
-        Scalar plotTextColor;
-
-        //the final plot result
-        Mat plotResult;
-
-    public:
-
-        //constructor accepting only Y data to be plotted
-        Plot(Mat _plotData)
+        class CV_EXPORTS_W Plot2d : public Algorithm
         {
-            //if the matrix is not Nx1 or 1xN
-            if(_plotData.cols > 1 && _plotData.rows > 1)
-            {
-                std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                exit(0);
-            }
+            public:
 
-            //if the matrix type is not CV_64F
-            if(_plotData.type() != CV_64F)
-            {
-                std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                exit(0);
-            }
+            CV_WRAP virtual void setMinX(double _plotMinX) = 0;
+            CV_WRAP virtual void setMinY(double _plotMinY) = 0;
+            CV_WRAP virtual void setMaxX(double _plotMaxX) = 0;
+            CV_WRAP virtual void setMaxY(double _plotMaxY) = 0;
+            CV_WRAP virtual void setPlotLineWidth(int _plotLineWidth) = 0;
+            CV_WRAP virtual void setPlotLineColor(Scalar _plotLineColor) = 0;
+            CV_WRAP virtual void setPlotBackgroundColor(Scalar _plotBackgroundColor) = 0;
+            CV_WRAP virtual void setPlotAxisColor(Scalar _plotAxisColor) = 0;
+            CV_WRAP virtual void setPlotGridColor(Scalar _plotGridColor) = 0;
+            CV_WRAP virtual void setPlotTextColor(Scalar _plotTextColor) = 0;
+            CV_WRAP virtual void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) = 0;
+            CV_WRAP virtual void render(Mat &_plotResult) = 0;
+            CV_WRAP virtual void plotHelper(Mat _plotDataX, Mat _plotDataY) = 0;
+        };
 
-            //in case we have a row matrix than needs to be transposed
-            if(_plotData.cols > _plotData.rows)
-            {
-                _plotData = _plotData.t();
-            }
-
-            plotDataY=_plotData;
-            plotDataX = plotDataY*0;
-            for (int i=0; i<plotDataY.rows; i++)
-            {
-                plotDataX.at<double>(i,0) = i;
-            }
-
-            //calling the main constructor
-            plotHelper(plotDataX, plotDataY);
-        }
-
-        //constructor accepting X data and Y data to be plotted
-        Plot(Mat _plotDataX, Mat _plotDataY)
-        {
-            //f the matrix is not Nx1 or 1xN
-            if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
-            {
-                std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                exit(0);
-            }
-
-            //if the matrix type is not CV_64F
-            if(_plotDataX.type() != CV_64F || _plotDataY.type() != CV_64F)
-            {
-                std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                exit(0);
-            }
-
-            //in case we have a row matrix than needs to be transposed
-            if(_plotDataX.cols > _plotDataX.rows)
-            {
-                _plotDataX = _plotDataX.t();
-            }
-            if(_plotDataY.cols > _plotDataY.rows)
-            {
-                _plotDataY = _plotDataY.t();
-            }
-
-            plotHelper(_plotDataX, _plotDataY);
-        }
-
-        //set functions
-        void setMinX(double _plotMinX)
-        {
-            plotMinX = _plotMinX;
-            plotMinX_plusZero = _plotMinX;
-        }
-        void setMaxX(double _plotMaxX)
-        {
-            plotMaxX = _plotMaxX;
-            plotMaxX_plusZero = _plotMaxX;
-        }
-        void setMinY(double _plotMinY)
-        {
-            plotMinY = _plotMinY;
-            plotMinY_plusZero = _plotMinY;
-        }
-        void setMaxY(double _plotMaxY)
-        {
-            plotMaxY = _plotMaxY;
-            plotMaxY_plusZero = _plotMaxY;
-        }
-        void setPlotLineWidth(int _plotLineWidth)
-        {
-            plotLineWidth=_plotLineWidth;
-        }
-        void setPlotLineColor(Scalar _plotLineColor)
-        {
-            plotLineColor=_plotLineColor;
-        }
-        void setPlotBackgroundColor(Scalar _plotBackgroundColor)
-        {
-            plotBackgroundColor=_plotBackgroundColor;
-        }
-        void setPlotAxisColor(Scalar _plotAxisColor)
-        {
-            plotAxisColor=_plotAxisColor;
-        }
-        void setPlotGridColor(Scalar _plotGridColor)
-        {
-            plotGridColor=_plotGridColor;
-        }
-        void setPlotTextColor(Scalar _plotTextColor)
-        {
-            plotTextColor=_plotTextColor;
-        }
-        void setPlotSize(int _plotSizeWidth, int _plotSizeHeight)
-        {
-            if(_plotSizeWidth > 400)
-                plotSizeWidth = _plotSizeWidth;
-            else
-                plotSizeWidth = 400;
-
-            if(_plotSizeHeight > 300)
-                plotSizeHeight = _plotSizeHeight;
-            else
-                plotSizeHeight = 300;
-        }
-
-        //render the plotResult to a Mat
-        void render(Mat &_plotResult);
-
-    protected:
-
-        //a helper method to be used in the constructor
-        void plotHelper(Mat _plotDataX, Mat _plotDataY)
-        {
-            plotDataX=_plotDataX;
-            plotDataY=_plotDataY;
-
-            int NumVecElements = plotDataX.rows;
-
-            plotDataX_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
-            plotDataY_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
-
-            for(int i=0; i<NumVecElements; i++){
-                plotDataX_plusZero.at<double>(i,0) = plotDataX.at<double>(i,0);
-                plotDataY_plusZero.at<double>(i,0) = plotDataY.at<double>(i,0);
-            }
-
-            double MinX;
-            double MaxX;
-            double MinY;
-            double MaxY;
-            double MinX_plusZero;
-            double MaxX_plusZero;
-            double MinY_plusZero;
-            double MaxY_plusZero;
-
-            //Obtain the minimum and maximum values of Xdata
-            minMaxLoc(plotDataX,&MinX,&MaxX);
-
-            //Obtain the minimum and maximum values of Ydata
-            minMaxLoc(plotDataY,&MinY,&MaxY);
-
-            //Obtain the minimum and maximum values of Xdata plus zero
-            minMaxLoc(plotDataX_plusZero,&MinX_plusZero,&MaxX_plusZero);
-
-            //Obtain the minimum and maximum values of Ydata plus zero
-            minMaxLoc(plotDataY_plusZero,&MinY_plusZero,&MaxY_plusZero);
-
-            //setting the min and max values for each axis
-            plotMinX = MinX;
-            plotMaxX = MaxX;
-            plotMinY = MinY;
-            plotMaxY = MaxY;
-            plotMinX_plusZero = MinX_plusZero;
-            plotMaxX_plusZero = MaxX_plusZero;
-            plotMinY_plusZero = MinY_plusZero;
-            plotMaxY_plusZero = MaxY_plusZero;
-
-            //setting the default size of a plot figure
-            setPlotSize(600, 400);
-
-            //setting the default plot line size
-            setPlotLineWidth(1);
-
-            //setting default colors for the different elements of the plot
-            setPlotAxisColor(Scalar(0, 0, 255));
-            setPlotGridColor(Scalar(255, 255, 255));
-            setPlotBackgroundColor(Scalar(0, 0, 0));
-            setPlotLineColor(Scalar(0, 255, 255));
-            setPlotTextColor(Scalar(255, 255, 255));
-        }
-
-        Mat linearInterpolation(double Xa, double Xb, double Ya, double Yb, Mat Xdata);
-        void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor);
-        void drawValuesAsText(double Value, int Xloc, int Yloc, int XMargin, int YMargin);
-        void drawValuesAsText(const char * Text, double Value, int Xloc, int Yloc, int XMargin, int YMargin);
-        void drawLine(int Xstart, int Xend, int Ystart, int Yend, Scalar lineColor);
-};
-}
+        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(Mat data);
+        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(Mat dataX, Mat dataY);
+    }
 }
 
 #endif
