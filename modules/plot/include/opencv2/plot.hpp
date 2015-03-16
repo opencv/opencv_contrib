@@ -80,7 +80,6 @@ namespace cv
             CV_WRAP virtual void setPlotTextColor(Scalar _plotTextColor) = 0;
             CV_WRAP virtual void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) = 0;
             CV_WRAP virtual void render(Mat &_plotResult) = 0;
-            CV_WRAP virtual void plotHelper(Mat _plotDataX, Mat _plotDataY) = 0;
         };
 
         CV_EXPORTS_W Ptr<Plot2d> createPlot2d(Mat data);
