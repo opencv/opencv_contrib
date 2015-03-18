@@ -150,12 +150,54 @@ namespace rgbd
     void
     initialize() const;
 
-    CV_IMPL_PROPERTY(int, Rows, rows_)
-    CV_IMPL_PROPERTY(int, Cols, cols_)
-    CV_IMPL_PROPERTY(int, WindowSize, window_size_)
-    CV_IMPL_PROPERTY(int, Depth, depth_)
-    CV_IMPL_PROPERTY_S(cv::Mat, K, K_)
-    CV_IMPL_PROPERTY(int, Method, method_)
+    int getRows() const
+    {
+        return rows_;
+    }
+    void setRows(int val)
+    {
+        rows_ = val;
+    }
+    int getCols() const
+    {
+        return cols_;
+    }
+    void setCols(int val)
+    {
+        cols_ = val;
+    }
+    int getWindowSize() const
+    {
+        return window_size_;
+    }
+    void setWindowSize(int val)
+    {
+        window_size_ = val;
+    }
+    int getDepth() const
+    {
+        return depth_;
+    }
+    void setDepth(int val)
+    {
+        depth_ = val;
+    }
+    cv::Mat getK() const
+    {
+        return K_;
+    }
+    void setK(const cv::Mat &val)
+    {
+        K_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
 
   protected:
     void
@@ -213,9 +255,30 @@ namespace rgbd
     void
     initialize() const;
 
-    CV_IMPL_PROPERTY(int, WindowSize, window_size_)
-    CV_IMPL_PROPERTY(int, Depth, depth_)
-    CV_IMPL_PROPERTY(int, Method, method_)
+    int getWindowSize() const
+    {
+        return window_size_;
+    }
+    void setWindowSize(int val)
+    {
+        window_size_ = val;
+    }
+    int getDepth() const
+    {
+        return depth_;
+    }
+    void setDepth(int val)
+    {
+        depth_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
 
   protected:
     void
@@ -305,13 +368,62 @@ namespace rgbd
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
 
-    CV_IMPL_PROPERTY(int, BlockSize, block_size_)
-    CV_IMPL_PROPERTY(int, MinSize, min_size_)
-    CV_IMPL_PROPERTY(int, Method, method_)
-    CV_IMPL_PROPERTY(double, Threshold, threshold_)
-    CV_IMPL_PROPERTY(double, SensorErrorA, sensor_error_a_)
-    CV_IMPL_PROPERTY(double, SensorErrorB, sensor_error_b_)
-    CV_IMPL_PROPERTY(double, SensorErrorC, sensor_error_c_)
+    int getBlockSize() const
+    {
+        return block_size_;
+    }
+    void setBlockSize(int val)
+    {
+        block_size_ = val;
+    }
+    int getMinSize() const
+    {
+        return min_size_;
+    }
+    void setMinSize(int val)
+    {
+        min_size_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
+    double getThreshold() const
+    {
+        return threshold_;
+    }
+    void setThreshold(double val)
+    {
+        threshold_ = val;
+    }
+    double getSensorErrorA() const
+    {
+        return sensor_error_a_;
+    }
+    void setSensorErrorA(double val)
+    {
+        sensor_error_a_ = val;
+    }
+    double getSensorErrorB() const
+    {
+        return sensor_error_b_;
+    }
+    void setSensorErrorB(double val)
+    {
+        sensor_error_b_ = val;
+    }
+    double getSensorErrorC() const
+    {
+        return sensor_error_c_;
+    }
+    void setSensorErrorC(double val)
+    {
+        sensor_error_c_ = val;
+    }
 
   private:
     /** The method to use to compute the planes */
@@ -510,16 +622,86 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
-    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
-    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
-    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
-    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
-    CV_IMPL_PROPERTY_S(cv::Mat, MinGradientMagnitudes, minGradientMagnitudes)
-    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
-    CV_IMPL_PROPERTY(int, TransformType, transformType)
-    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
-    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    cv::Mat getMinGradientMagnitudes() const
+    {
+        return minGradientMagnitudes;
+    }
+    void setMinGradientMagnitudes(const cv::Mat &val)
+    {
+        minGradientMagnitudes = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
 
   protected:
     virtual void
@@ -567,16 +749,82 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
-    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
-    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
-    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
-    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
-    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
-    CV_IMPL_PROPERTY(int, TransformType, transformType)
-    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
-    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
-    CV_IMPL_PROPERTY_RO(Ptr<RgbdNormals>, NormalsComputer, normalsComputer)
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
+    Ptr<RgbdNormals> getNormalsComputer() const
+    {
+        return normalsComputer;
+    }
 
   protected:
     virtual void
@@ -629,17 +877,90 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_IMPL_PROPERTY_S(cv::Mat, CameraMatrix, cameraMatrix)
-    CV_IMPL_PROPERTY(double, MinDepth, minDepth)
-    CV_IMPL_PROPERTY(double, MaxDepth, maxDepth)
-    CV_IMPL_PROPERTY(double, MaxDepthDiff, maxDepthDiff)
-    CV_IMPL_PROPERTY(double, MaxPointsPart, maxPointsPart)
-    CV_IMPL_PROPERTY_S(cv::Mat, IterationCounts, iterCounts)
-    CV_IMPL_PROPERTY_S(cv::Mat, MinGradientMagnitudes, minGradientMagnitudes)
-    CV_IMPL_PROPERTY(int, TransformType, transformType)
-    CV_IMPL_PROPERTY(double, MaxTranslation, maxTranslation)
-    CV_IMPL_PROPERTY(double, MaxRotation, maxRotation)
-    CV_IMPL_PROPERTY_RO(Ptr<RgbdNormals>, NormalsComputer, normalsComputer)
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    cv::Mat getMinGradientMagnitudes() const
+    {
+        return minGradientMagnitudes;
+    }
+    void setMinGradientMagnitudes(const cv::Mat &val)
+    {
+        minGradientMagnitudes = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
+    Ptr<RgbdNormals> getNormalsComputer() const
+    {
+        return normalsComputer;
+    }
 
   protected:
     virtual void
