@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -217,12 +217,30 @@ public:
 
     CV_WRAP static Ptr<AdaptiveManifoldFilter> create();
 
-    CV_PURE_PROPERTY(double, SigmaS)
-    CV_PURE_PROPERTY(double, SigmaR)
-    CV_PURE_PROPERTY(int, TreeHeight)
-    CV_PURE_PROPERTY(int, PCAIterations)
-    CV_PURE_PROPERTY(bool, AdjustOutliers)
-    CV_PURE_PROPERTY(bool, UseRNG)
+    /** @see setSigmaS */
+    virtual double getSigmaS() const = 0;
+    /** @copybrief getSigmaS @see getSigmaS */
+    virtual void setSigmaS(double val) = 0;
+    /** @see setSigmaR */
+    virtual double getSigmaR() const = 0;
+    /** @copybrief getSigmaR @see getSigmaR */
+    virtual void setSigmaR(double val) = 0;
+    /** @see setTreeHeight */
+    virtual int getTreeHeight() const = 0;
+    /** @copybrief getTreeHeight @see getTreeHeight */
+    virtual void setTreeHeight(int val) = 0;
+    /** @see setPCAIterations */
+    virtual int getPCAIterations() const = 0;
+    /** @copybrief getPCAIterations @see getPCAIterations */
+    virtual void setPCAIterations(int val) = 0;
+    /** @see setAdjustOutliers */
+    virtual bool getAdjustOutliers() const = 0;
+    /** @copybrief getAdjustOutliers @see getAdjustOutliers */
+    virtual void setAdjustOutliers(bool val) = 0;
+    /** @see setUseRNG */
+    virtual bool getUseRNG() const = 0;
+    /** @copybrief getUseRNG @see getUseRNG */
+    virtual void setUseRNG(bool val) = 0;
 };
 
 /** @brief Factory method, create instance of AdaptiveManifoldFilter and produce some initialization routines.
