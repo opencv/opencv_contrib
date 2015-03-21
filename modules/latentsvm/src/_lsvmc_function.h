@@ -49,10 +49,10 @@ namespace cv
 namespace lsvm
 {
 
-float calcM         (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter);
-float calcM_PCA     (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter);
-float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter, float * cashM, int * maskM, int step);
-float calcFine (const CvLSVMFilterObjectCaskade *filter, int di, int dj);
+float calcM         (int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter);
+float calcM_PCA     (int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter);
+float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter, float * cashM, int * maskM, int step);
+float calcFine (const CvLSVMFilterObjectCascade *filter, int di, int dj);
 }
 }
 #endif

@@ -64,7 +64,7 @@ namespace lsvm
 
 int getPathOfFeaturePyramid(IplImage * image,
                             float step, int numStep, int startIndex,
-                            int sideLength, CvLSVMFeaturePyramidCaskade **maps);
+                            int sideLength, CvLSVMFeaturePyramidCascade **maps);
 
 /*
 // Getting feature map for the selected subimage
@@ -79,7 +79,7 @@ int getPathOfFeaturePyramid(IplImage * image,
 // RESULT
 // Error status
 */
-int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade **map)
+int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCascade **map)
 {
     int sizeX, sizeY;
     int p, px, stringSize;
@@ -289,7 +289,7 @@ int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade *
 // RESULT
 // Error status
 */
-int normalizeAndTruncate(CvLSVMFeatureMapCaskade *map, const float alfa)
+int normalizeAndTruncate(CvLSVMFeatureMapCascade *map, const float alfa)
 {
     int i,j, ii;
     int sizeX, sizeY, p, pos, pp, xp, pos1, pos2;
@@ -413,7 +413,7 @@ int normalizeAndTruncate(CvLSVMFeatureMapCaskade *map, const float alfa)
 // RESULT
 // Error status
 */
-int PCAFeatureMaps(CvLSVMFeatureMapCaskade *map)
+int PCAFeatureMaps(CvLSVMFeatureMapCascade *map)
 { 
     int i,j, ii, jj, k;
     int sizeX, sizeY, p,  pp, xp, yp, pos1, pos2;
@@ -485,9 +485,9 @@ int PCAFeatureMaps(CvLSVMFeatureMapCaskade *map)
 
 int getPathOfFeaturePyramid(IplImage * image, 
                             float step, int numStep, int startIndex,
-                            int sideLength, CvLSVMFeaturePyramidCaskade **maps)
+                            int sideLength, CvLSVMFeaturePyramidCascade **maps)
 {
-    CvLSVMFeatureMapCaskade *map;
+    CvLSVMFeatureMapCascade *map;
     IplImage *scaleTmp;
     float scale;
     int   i;
@@ -513,11 +513,11 @@ public:
     float step;
     int startIndex;
     int sideLength;
-    CvLSVMFeaturePyramidCaskade **maps;
+    CvLSVMFeaturePyramidCascade **maps;
 
     void operator() (const Range& range) const
     {
-        CvLSVMFeatureMapCaskade *map;
+        CvLSVMFeatureMapCascade *map;
         IplImage *scaleTmp;
         float scale;
         int   err;
@@ -538,7 +538,7 @@ public:
 
 int getPathOfFeaturePyramid_TBB(IplImage * image, 
                             float step, int numStep, int startIndex,
-                            int sideLength, CvLSVMFeaturePyramidCaskade **maps)
+                            int sideLength, CvLSVMFeaturePyramidCascade **maps)
 {
     PathOfFeaturePyramid str;
     str.step = step;
@@ -557,7 +557,7 @@ int getPathOfFeaturePyramid_TBB(IplImage * image,
 // Getting feature pyramid  
 //
 // API
-// int getFeaturePyramid(IplImage * image, const CvLSVMFilterObjectCaskade **all_F, 
+// int getFeaturePyramid(IplImage * image, const CvLSVMFilterObjectCascade **all_F, 
                       const int n_f,
                       const int lambda, const int k, 
                       const int startX, const int startY, 
@@ -569,7 +569,7 @@ int getPathOfFeaturePyramid_TBB(IplImage * image,
 // RESULT
 // Error status
 */
-int getFeaturePyramid(IplImage * image, CvLSVMFeaturePyramidCaskade **maps)
+int getFeaturePyramid(IplImage * image, CvLSVMFeaturePyramidCascade **maps)
 {
     IplImage *imgResize;
     float step;
