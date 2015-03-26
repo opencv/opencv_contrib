@@ -21,18 +21,18 @@ class CV_EXPORTS_W BasicFaceRecognizer : public FaceRecognizer
 {
 public:
     /** @see setNumComponents */
-    virtual int getNumComponents() const = 0;
+    CV_WRAP virtual int getNumComponents() const = 0;
     /** @copybrief getNumComponents @see getNumComponents */
-    virtual void setNumComponents(int val) = 0;
+    CV_WRAP virtual void setNumComponents(int val) = 0;
     /** @see setThreshold */
-    virtual double getThreshold() const = 0;
+    CV_WRAP virtual double getThreshold() const = 0;
     /** @copybrief getThreshold @see getThreshold */
-    virtual void setThreshold(double val) = 0;
-    virtual std::vector<cv::Mat> getProjections() const = 0;
-    virtual cv::Mat getLabels() const = 0;
-    virtual cv::Mat getEigenValues() const = 0;
-    virtual cv::Mat getEigenVectors() const = 0;
-    virtual cv::Mat getMean() const = 0;
+    CV_WRAP virtual void setThreshold(double val) = 0;
+    CV_WRAP virtual std::vector<cv::Mat> getProjections() const = 0;
+    CV_WRAP virtual cv::Mat getLabels() const = 0;
+    CV_WRAP virtual cv::Mat getEigenValues() const = 0;
+    CV_WRAP virtual cv::Mat getEigenVectors() const = 0;
+    CV_WRAP virtual cv::Mat getMean() const = 0;
 };
 
 /**
@@ -102,27 +102,27 @@ class CV_EXPORTS_W LBPHFaceRecognizer : public FaceRecognizer
 {
 public:
     /** @see setGridX */
-    virtual int getGridX() const = 0;
+    CV_WRAP virtual int getGridX() const = 0;
     /** @copybrief getGridX @see getGridX */
-    virtual void setGridX(int val) = 0;
+    CV_WRAP virtual void setGridX(int val) = 0;
     /** @see setGridY */
-    virtual int getGridY() const = 0;
+    CV_WRAP virtual int getGridY() const = 0;
     /** @copybrief getGridY @see getGridY */
-    virtual void setGridY(int val) = 0;
+    CV_WRAP virtual void setGridY(int val) = 0;
     /** @see setRadius */
-    virtual int getRadius() const = 0;
+    CV_WRAP virtual int getRadius() const = 0;
     /** @copybrief getRadius @see getRadius */
-    virtual void setRadius(int val) = 0;
+    CV_WRAP virtual void setRadius(int val) = 0;
     /** @see setNeighbors */
-    virtual int getNeighbors() const = 0;
+    CV_WRAP virtual int getNeighbors() const = 0;
     /** @copybrief getNeighbors @see getNeighbors */
-    virtual void setNeighbors(int val) = 0;
+    CV_WRAP virtual void setNeighbors(int val) = 0;
     /** @see setThreshold */
-    virtual double getThreshold() const = 0;
+    CV_WRAP virtual double getThreshold() const = 0;
     /** @copybrief getThreshold @see getThreshold */
-    virtual void setThreshold(double val) = 0;
-    virtual std::vector<cv::Mat> getHistograms() const = 0;
-    virtual cv::Mat getLabels() const = 0;
+    CV_WRAP virtual void setThreshold(double val) = 0;
+    CV_WRAP virtual std::vector<cv::Mat> getHistograms() const = 0;
+    CV_WRAP virtual cv::Mat getLabels() const = 0;
 };
 
 /**
