@@ -129,6 +129,11 @@ public:
     static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
 
+/** @brief The class implements the keypoint detector using AGAST algorithm by Elmar Mair. :
+ */
+CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
+                      int threshold, bool nonmaxSuppression=true );
+
 CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
                       int threshold, bool nonmaxSuppression, int type );
 
@@ -138,7 +143,7 @@ public:
     enum
     {
         AGAST_5_8 = 0, AGAST_7_12d = 1, AGAST_7_12s = 2, OAST_9_16 = 3,
-        THRESHOLD = 10000, NONMAX_SUPPRESSION=10001,
+        THRESHOLD = 10000, NONMAX_SUPPRESSION = 10001,
     };
 
     CV_WRAP static Ptr<AgastFeatureDetector> create( int threshold=10,
