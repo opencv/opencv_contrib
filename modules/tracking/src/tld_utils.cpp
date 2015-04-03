@@ -302,8 +302,8 @@ void TLDEnsembleClassifier::prepareClassifier(int rowstep)
         lastStep_ = rowstep;
         for( int i = 0; i < (int)offset.size(); i++ )
         {
-            offset[i].x = rowstep * measurements[i].val[0] + measurements[i].val[1];
-            offset[i].y = rowstep * measurements[i].val[2] + measurements[i].val[3];
+            offset[i].x = rowstep * measurements[i].val[2] + measurements[i].val[0];
+            offset[i].y = rowstep * measurements[i].val[3] + measurements[i].val[1];
         }
     }
 }
