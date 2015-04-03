@@ -56,7 +56,7 @@ using namespace cv;
 
 const float score_thr = 0.05f;
 
-class LatentSVMDetectorCaskadeTest : public cvtest::BaseTest
+class LatentSVMDetectorCascadeTest : public cvtest::BaseTest
 {
 protected:
     void run(int);
@@ -125,15 +125,16 @@ bool compareResults( const std::vector<lsvm::LSVMDetector::ObjectDetection>& cal
     return true;
 }
 
-void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
+void LatentSVMDetectorCascadeTest::run( int /* start_from */)
 {
-    std::string img_path_cat = std::string(ts->get_data_path()) + "cat.png";
-    std::string img_path_cars = std::string(ts->get_data_path()) + "cars.png";
+    std::string test_data_path = ts->get_data_path() + "latentsvmdetector/";
+    std::string img_path_cat = test_data_path  + "cat.png";
+    std::string img_path_cars = test_data_path + "cars.png";
 
-    std::string model_path_cat = std::string(ts->get_data_path()) + "models_VOC2007_cascade/cat.xml";
-    std::string model_path_car = std::string(ts->get_data_path()) + "models_VOC2007_cascade/car.xml";
+    std::string model_path_cat = test_data_path + "models_VOC2007_cascade/cat.xml";
+    std::string model_path_car = test_data_path + "models_VOC2007_cascade/car.xml";
 
-    std::string true_res_path = std::string(ts->get_data_path()) + "results_cascade.xml";
+    std::string true_res_path = test_data_path + "results_cascade.xml";
 
 
 #ifdef HAVE_TBB
@@ -214,4 +215,4 @@ void LatentSVMDetectorCaskadeTest::run( int /* start_from */)
     ts->set_failed_test_info( cvtest::TS::OK);
 }
 
-TEST(Objdetect_LatentSVMDetectorCaskade_cpp, regression) { LatentSVMDetectorCaskadeTest test; test.safe_run(); }
+TEST(Objdetect_LatentSVMDetectorCascade_cpp, regression) { LatentSVMDetectorCascadeTest test; test.safe_run(); }

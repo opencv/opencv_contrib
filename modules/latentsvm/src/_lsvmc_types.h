@@ -96,7 +96,7 @@ typedef struct{
     int sizeY;
     int numFeatures;
     float *map;
-} CvLSVMFeatureMapCaskade;
+} CvLSVMFeatureMapCascade;
 
 // DataType: STRUCT featurePyramid
 //
@@ -104,8 +104,8 @@ typedef struct{
 // pyramid      - array of pointers to feature map at different levels
 typedef struct{
     int numLevels;
-    CvLSVMFeatureMapCaskade **pyramid;
-} CvLSVMFeaturePyramidCaskade;
+    CvLSVMFeatureMapCascade **pyramid;
+} CvLSVMFeaturePyramidCascade;
 
 // DataType: STRUCT filterDisposition
 // The structure stores preliminary results in optimization process
@@ -147,7 +147,7 @@ typedef struct CvLSVMFilterPosition
 //                   k - component of feature vector in cell (i, j)
 // END OF FILTER DESCRIPTION
 
-typedef struct CvLSVMFilterObjectCaskade{
+typedef struct CvLSVMFilterObjectCascade{
     CvLSVMFilterPosition V;
     float fineFunction[4];
     int sizeX;
@@ -159,7 +159,7 @@ typedef struct CvLSVMFilterObjectCaskade{
     float Hypothesis_PCA, Deformation_PCA;
     int deltaX;
     int deltaY;
-} CvLSVMFilterObjectCaskade;
+} CvLSVMFilterObjectCascade;
 
 // data type: STRUCT CvLatentSvmDetector
 // structure contains internal representation of trained Latent SVM detector
@@ -170,17 +170,17 @@ typedef struct CvLSVMFilterObjectCaskade{
 // b					- biases for all model components
 // score_threshold		- confidence level threshold
 
-typedef struct CvLatentSvmDetectorCaskade
+typedef struct CvLatentSvmDetectorCascade
 {
     int num_filters;
     int num_components;
     int* num_part_filters;
-    CvLSVMFilterObjectCaskade** filters;
+    CvLSVMFilterObjectCascade** filters;
     float* b;
     float score_threshold;
     float *pca;
     int pca_size;
-} CvLatentSvmDetectorCaskade;
+} CvLatentSvmDetectorCascade;
 }
 }
 #endif

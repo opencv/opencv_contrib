@@ -79,26 +79,26 @@ int isHYPOTHES     (char *str);
 int isDEFORM       (char *str);
 int getTeg         (char *str);
 
-void addFilter(CvLSVMFilterObjectCaskade *** model, int *last, int *max);
+void addFilter(CvLSVMFilterObjectCascade *** model, int *last, int *max);
 
-void parserCascadeThresholds  (FILE * xmlf, CvLSVMFilterObjectCaskade * model);
+void parserCascadeThresholds  (FILE * xmlf, CvLSVMFilterObjectCascade * model);
 
-void parserRFilter  (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade * model, float *b);
+void parserRFilter  (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCascade * model, float *b);
 
-void parserV  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model);
+void parserV  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCascade * model);
 
-void parserD  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model);
+void parserD  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCascade * model);
 
-void parserPFilter  (FILE * xmlf, int p, int pca, int /*N_path*/, CvLSVMFilterObjectCaskade * model);
+void parserPFilter  (FILE * xmlf, int p, int pca, int /*N_path*/, CvLSVMFilterObjectCascade * model);
 
-void parserPFilterS (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade *** model, int *last, int *max);
+void parserPFilterS (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCascade *** model, int *last, int *max);
 
-void parserComp (FILE * xmlf, int p, int pca, int *N_comp, CvLSVMFilterObjectCaskade *** model, float *b, int *last, int *max);
+void parserComp (FILE * xmlf, int p, int pca, int *N_comp, CvLSVMFilterObjectCascade *** model, float *b, int *last, int *max);
 
-void parserModel(FILE * xmlf, CvLSVMFilterObjectCaskade *** model, int *last, int *max, int **comp, float **b, int *count, float * score, float** PCAcoeff);
+void parserModel(FILE * xmlf, CvLSVMFilterObjectCascade *** model, int *last, int *max, int **comp, float **b, int *count, float * score, float** PCAcoeff);
 
 void LSVMparser(const char * filename,
-                CvLSVMFilterObjectCaskade *** model,
+                CvLSVMFilterObjectCascade *** model,
                 int *last,
                 int *max,
                 int **comp,
@@ -336,21 +336,21 @@ int getTeg(char *str){
     return sum;
 }
 
-void addFilter(CvLSVMFilterObjectCaskade *** model, int *last, int *max)
+void addFilter(CvLSVMFilterObjectCascade *** model, int *last, int *max)
 {
-    CvLSVMFilterObjectCaskade ** nmodel;
+    CvLSVMFilterObjectCascade ** nmodel;
     int i;
     (*last) ++;
     if((*last) >= (*max)){
         (*max) += 10;
-        nmodel = (CvLSVMFilterObjectCaskade **)malloc(sizeof(CvLSVMFilterObjectCaskade *) * (*max));
+        nmodel = (CvLSVMFilterObjectCascade **)malloc(sizeof(CvLSVMFilterObjectCascade *) * (*max));
         for(i = 0; i < *last; i++){
             nmodel[i] = (* model)[i];
         }
         free(* model);
         (*model) = nmodel;
     }
-    (*model) [(*last)] = (CvLSVMFilterObjectCaskade *)malloc(sizeof(CvLSVMFilterObjectCaskade));
+    (*model) [(*last)] = (CvLSVMFilterObjectCascade *)malloc(sizeof(CvLSVMFilterObjectCascade));
     (*model) [(*last)]->Hypothesis      = 0.0f;
     (*model) [(*last)]->Deformation     = 0.0f;
     (*model) [(*last)]->Hypothesis_PCA  = 0.0f;
@@ -359,7 +359,7 @@ void addFilter(CvLSVMFilterObjectCaskade *** model, int *last, int *max)
 }
 
 //##############################################
-void parserCascadeThresholds  (FILE * xmlf, CvLSVMFilterObjectCaskade * model){
+void parserCascadeThresholds  (FILE * xmlf, CvLSVMFilterObjectCascade * model){
     int st = 0;
     int tag;
     int tagVal;
@@ -438,7 +438,7 @@ void parserCascadeThresholds  (FILE * xmlf, CvLSVMFilterObjectCaskade * model){
 }
 //##############################################
 
-void parserRFilter  (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade * model, float *b){
+void parserRFilter  (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCascade * model, float *b){
     int st = 0;
     int sizeX = 0, sizeY = 0;
     int tag;
@@ -548,7 +548,7 @@ void parserRFilter  (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade * mo
     }
 }
 
-void parserV  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model){
+void parserV  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCascade * model){
     int st = 0;
     int tag;
     int tagVal;
@@ -611,7 +611,7 @@ void parserV  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model){
         }        
     }
 }
-void parserD  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model){
+void parserD  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCascade * model){
     int st = 0;
     int tag;
     int tagVal;
@@ -700,7 +700,7 @@ void parserD  (FILE * xmlf, int /*p*/, CvLSVMFilterObjectCaskade * model){
     }
 }
 
-void parserPFilter  (FILE * xmlf, int p, int pca, int /*N_path*/, CvLSVMFilterObjectCaskade * model){
+void parserPFilter  (FILE * xmlf, int p, int pca, int /*N_path*/, CvLSVMFilterObjectCascade * model){
     int st = 0;
     int sizeX = 0, sizeY = 0;
     int tag;
@@ -806,7 +806,7 @@ void parserPFilter  (FILE * xmlf, int p, int pca, int /*N_path*/, CvLSVMFilterOb
         }        
     }
 }
-void parserPFilterS (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade *** model, int *last, int *max){
+void parserPFilterS (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCascade *** model, int *last, int *max){
     int st = 0;
     int N_path = 0;
     int tag;
@@ -850,7 +850,7 @@ void parserPFilterS (FILE * xmlf, int p, int pca, CvLSVMFilterObjectCaskade *** 
         }        
     }
 }
-void parserComp (FILE * xmlf, int p, int pca, int *N_comp, CvLSVMFilterObjectCaskade *** model, float *b, int *last, int *max){
+void parserComp (FILE * xmlf, int p, int pca, int *N_comp, CvLSVMFilterObjectCascade *** model, float *b, int *last, int *max){
     int st = 0;
     int tag;
     int tagVal;
@@ -895,7 +895,7 @@ void parserComp (FILE * xmlf, int p, int pca, int *N_comp, CvLSVMFilterObjectCas
         }        
     }
 }
-void parserModel(FILE * xmlf, CvLSVMFilterObjectCaskade *** model, int *last, int *max, int **comp, float **b, int *count, float * score, float** PCAcoeff){
+void parserModel(FILE * xmlf, CvLSVMFilterObjectCascade *** model, int *last, int *max, int **comp, float **b, int *count, float * score, float** PCAcoeff){
     int p = 0, pca = 0;
     int N_comp = 0;
     int * cmp;
@@ -1023,7 +1023,7 @@ void parserModel(FILE * xmlf, CvLSVMFilterObjectCaskade *** model, int *last, in
 }
 
 void LSVMparser(const char * filename, 
-                CvLSVMFilterObjectCaskade *** model, 
+                CvLSVMFilterObjectCascade *** model, 
                 int *last, 
                 int *max, 
                 int **comp, 
@@ -1040,7 +1040,7 @@ void LSVMparser(const char * filename,
 
     (*max) = 10;
     (*last) = -1;
-    (*model) = (CvLSVMFilterObjectCaskade ** )malloc((sizeof(CvLSVMFilterObjectCaskade * )) * (*max));
+    (*model) = (CvLSVMFilterObjectCascade ** )malloc((sizeof(CvLSVMFilterObjectCascade * )) * (*max));
 
     //printf("parse : %s\n", filename);
     xmlf = fopen(filename, "rb");
@@ -1075,7 +1075,7 @@ void LSVMparser(const char * filename,
 int loadModel(
               const char *modelPath,
              
-              CvLSVMFilterObjectCaskade ***filters,
+              CvLSVMFilterObjectCascade ***filters,
               int *kFilters, 
               int *kComponents, 
               int **kPartFilters, 

@@ -91,7 +91,7 @@ int computeBorderSize(int maxXBorder, int maxYBorder, int *bx, int *by)
 // RESULT
 // Error status
 */
-int addNullableBorder(CvLSVMFeatureMapCaskade *map, int bx, int by)
+int addNullableBorder(CvLSVMFeatureMapCascade *map, int bx, int by)
 {
     int sizeX, sizeY, i, j, k;
     float *new_map;
@@ -124,7 +124,7 @@ int addNullableBorder(CvLSVMFeatureMapCaskade *map, int bx, int by)
 // Computation maximum filter size for each dimension
 //
 // API
-// int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+// int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
                         const int *kPartFilters, 
                         unsigned int *maxXBorder, unsigned int *maxYBorder);
 // INPUT
@@ -138,7 +138,7 @@ int addNullableBorder(CvLSVMFeatureMapCaskade *map, int bx, int by)
 // RESULT
 // Error status
 */
-int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
                      const int *kPartFilters, 
                      unsigned int *maxXBorder, unsigned int *maxYBorder)
 {
