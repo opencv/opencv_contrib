@@ -128,7 +128,25 @@ class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 public:
     static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
-    
+
+
+/** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
+
+An image descriptor that can be computed very fast, while being
+about as robust as, for example, SURF or BRIEF.
+ */
+class CV_EXPORTS LUCID : public DescriptorExtractor
+{
+public:
+    /**
+     * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     */
+    static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+};
+
+
+
 //! @}
 
 }
