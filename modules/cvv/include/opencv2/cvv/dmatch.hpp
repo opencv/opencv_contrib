@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"
@@ -21,7 +21,7 @@ namespace cvv
 
 namespace impl
 {
-void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
+CV_EXPORTS void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                  cv::InputArray img2, std::vector<cv::KeyPoint> keypoints2,
                  std::vector<cv::DMatch> matches, const CallMetaData &data,
                  const char *description, const char *view,

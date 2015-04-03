@@ -32,4 +32,4 @@ if(ENABLE_SOLUTION_FOLDERS)
   set_target_properties(${the_target} PROPERTIES FOLDER "applications")
 endif()
 
-install(TARGETS ${the_target} RUNTIME DESTINATION bin COMPONENT main)
+install(TARGETS ${the_target} OPTIONAL RUNTIME DESTINATION bin COMPONENT main)

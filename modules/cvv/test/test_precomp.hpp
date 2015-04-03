@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include <string>
-#include <opencv2/ts/ts.hpp>
-#include <opencv2/cvv/cvv.hpp>
+#include <opencv2/ts.hpp>
+#include <opencv2/cvv.hpp>
 
 #endif

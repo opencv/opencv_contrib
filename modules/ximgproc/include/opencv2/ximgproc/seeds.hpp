@@ -54,7 +54,7 @@ namespace ximgproc
 //! @{
 
 /** @brief Class implementing the SEEDS (Superpixels Extracted via Energy-Driven Sampling) superpixels
-algorithm described in @cite VBRV14.
+algorithm described in @cite VBRV14 .
 
 The algorithm uses an efficient hill-climbing algorithm to optimize the superpixels' energy
 function that is based on color histograms and a boundary term, which is optional. The energy

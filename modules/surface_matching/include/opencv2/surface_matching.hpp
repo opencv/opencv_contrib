@@ -43,6 +43,40 @@
 
 /** @defgroup surface_matching Surface Matching
 
+Note about the License and Patents
+-----------------------------------
+
+The following patents have been issued for methods embodied in this
+software: "Recognition and pose determination of 3D objects in 3D scenes
+using geometric point pair descriptors and the generalized Hough
+Transform", Bertram Heinrich Drost, Markus Ulrich, EP Patent 2385483
+(Nov. 21, 2012), assignee: MVTec Software GmbH, 81675 Muenchen
+(Germany); "Recognition and pose determination of 3D objects in 3D
+scenes", Bertram Heinrich Drost, Markus Ulrich, US Patent 8830229 (Sept.
+9, 2014), assignee: MVTec Software GmbH, 81675 Muenchen (Germany).
+Further patents are pending. For further details, contact MVTec Software
+GmbH (info@mvtec.com).
+
+Note that restrictions imposed by these patents (and possibly others)
+exist independently of and may be in conflict with the freedoms granted
+in this license, which refers to copyright of the program, not patents
+for any methods that it implements.  Both copyright and patent law must
+be obeyed to legally use and redistribute this program and it is not the
+purpose of this license to induce you to infringe any patents or other
+property right claims or to contest validity of any such claims.  If you
+redistribute or use the program, then this license merely protects you
+from committing copyright infringement.  It does not protect you from
+committing patent infringement.  So, before you do anything with this
+program, make sure that you have permission to do so not merely in terms
+of copyright, but also in terms of patent law.
+
+Please note that this license is not to be understood as a guarantee
+either.  If you use the program according to this license, but in
+conflict with patent law, it does not mean that the licensor will refund
+you for any losses that you incur if you are sued for your patent
+infringement.
+
+
 Introduction to Surface Matching
 --------------------------------
 
@@ -77,7 +111,7 @@ point sampling, I will be leaving that aside now in order to respect the general
 methods (Typically for such algorithms training on a CAD model is not needed, and a point cloud
 would be sufficient). Below is the outline of the entire algorithm:
 
-![Outline of the Algorithm](surface_matching/pics/outline.jpg)
+![Outline of the Algorithm](img/outline.jpg)
 
 As explained, the algorithm relies on the extraction and indexing of point pair features, which are
 defined as follows:
@@ -303,11 +337,11 @@ Results
 This section is dedicated to the results of surface matching (point-pair-feature matching and a
 following ICP refinement):
 
-![Several matches of a single frog model using ppf + icp](surface_matching/pics/gsoc_forg_matches.jpg)
+![Several matches of a single frog model using ppf + icp](img/gsoc_forg_matches.jpg)
 
 Matches of different models for Mian dataset is presented below:
 
-![Matches of different models for Mian dataset](surface_matching/pics/snapshot27.jpg)
+![Matches of different models for Mian dataset](img/snapshot27.jpg)
 
 You might checkout the video on [youTube here](http://www.youtube.com/watch?v=uFnqLFznuZU).
 
@@ -331,7 +365,7 @@ accurate representation. However, note that number of point pair features to be 
 quadratically increased as the complexity is O(N\^2). This is especially a concern for 32 bit
 systems, where large models can easily overshoot the available memory. Typically, values in the
 range of 0.025 - 0.05 seem adequate for most of the applications, where the default value is 0.03.
-(Note that there is a difference in this paremeter with the one presented in @cite drost2010. In
+(Note that there is a difference in this paremeter with the one presented in @cite drost2010 . In
 @cite drost2010 a uniform cuboid is used for quantization and model diameter is used for reference of
 sampling. In my implementation, the cuboid is a rectangular prism, and each dimension is quantized
 independently. I do not take reference from the diameter but along the individual dimensions.

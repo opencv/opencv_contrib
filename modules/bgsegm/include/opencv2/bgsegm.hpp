@@ -57,7 +57,7 @@ namespace bgsegm
 
 /** @brief Gaussian Mixture-based Background/Foreground Segmentation Algorithm.
 
-The class implements the algorithm described in @cite KB2001.
+The class implements the algorithm described in @cite KB2001 .
  */
 class CV_EXPORTS_W BackgroundSubtractorMOG : public BackgroundSubtractor
 {
@@ -86,9 +86,9 @@ means some automatic value.
 CV_EXPORTS_W Ptr<BackgroundSubtractorMOG>
     createBackgroundSubtractorMOG(int history=200, int nmixtures=5,
                                   double backgroundRatio=0.7, double noiseSigma=0);
-                                  
 
-/** @brief Background Subtractor module based on the algorithm given in @cite Gold2012.
+
+/** @brief Background Subtractor module based on the algorithm given in @cite Gold2012 .
 
  Takes a series of images and returns a sequence of mask (8UC1)
  images of the same size, where 255 indicates Foreground and 0 represents Background.

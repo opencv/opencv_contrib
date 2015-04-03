@@ -139,7 +139,7 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
 
         Mat res;
         Ptr<AdaptiveManifoldFilter> amf = createAMFilter(sigma_s, sigma_r, false);
-        amf->setBool("use_RNG", false);
+        amf->setUseRNG(false);
         amf->filter(srcImg, res, srcImg);
         amf->collectGarbage();
 
@@ -155,7 +155,7 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
 
         Mat res;
         Ptr<AdaptiveManifoldFilter> amf = createAMFilter(sigma_s, sigma_r, true);
-        amf->setBool("use_RNG", false);
+        amf->setUseRNG(false);
         amf->filter(srcImg, res, srcImg);
         amf->collectGarbage();
 

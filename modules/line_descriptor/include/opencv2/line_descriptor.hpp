@@ -63,8 +63,8 @@ Computation of binary descriptors
 ---------------------------------
 
 To obtatin a binary descriptor representing a certain line detected from a certain octave of an
-image, we first compute a non-binary descriptor as described in @cite LBD. Such algorithm works on
-lines extracted using EDLine detector, as explained in @cite EDL. Given a line, we consider a
+image, we first compute a non-binary descriptor as described in @cite LBD . Such algorithm works on
+lines extracted using EDLine detector, as explained in @cite EDL . Given a line, we consider a
 rectangular region centered at it and called *line support region (LSR)*. Such region is divided
 into a set of bands \f$\{B_1, B_2, ..., B_m\}\f$, whose length equals the one of line.
 
@@ -115,11 +115,5 @@ consider 32 possible pairs of BD inside it; each couple of BD is compared bit by
 generates an 8 bit string. Concatenating 32 comparison strings, we get the 256-bit final binary
 representation of a single LBD.
 */
-
-namespace cv
-{
-CV_EXPORTS bool initModule_line_descriptor( void );
-
-}
 
 #endif 

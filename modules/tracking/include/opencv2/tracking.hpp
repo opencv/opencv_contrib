@@ -52,7 +52,7 @@ Long-term optical tracking API
 Long-term optical tracking is one of most important issue for many computer vision applications in
 real world scenario. The development in this area is very fragmented and this API is an unique
 interface useful for plug several algorithms and compare them. This work is partially based on
-@cite AAM and @cite AMVOT.
+@cite AAM and @cite AMVOT .
 
 This algorithms start from a bounding box of the target and with their internal representation they
 avoid the drift during the tracking. These long-term trackers are able to evaluate online the
@@ -67,36 +67,15 @@ most likely target states). The class TrackerTargetState represents a possible s
 The TrackerSampler and the TrackerFeatureSet are the visual representation of the target, instead
 the TrackerModel is the statistical model.
 
-A recent benchmark between these algorithms can be found in @cite OOT.
+A recent benchmark between these algorithms can be found in @cite OOT
 
-UML design:
------------
-
-**General diagram**
-
-![General diagram](pics/package.png)
-
-**Tracker diagram**
-
-![Tracker diagram](pics/Tracker.png)
-
-**TrackerSampler diagram**
-
-![TrackerSampler diagram](pics/TrackerSampler.png)
-
-**TrackerFeatureSet diagram**
-
-![TrackerFeatureSet diagram](pics/TrackerFeature.png)
-
-**TrackerModel diagram**
-
-![TrackerModel diagram](pics/TrackerModel.png)
+UML design: see @ref tracking_diagrams
 
 To see how API works, try tracker demo:
 <https://github.com/lenlen/opencv/blob/tracking_api/samples/cpp/tracker.cpp>
 
 @note This Tracking API has been designed with PlantUML. If you modify this API please change UML
-files under modules/tracking/misc/ The following reference was used in the API
+in <em>modules/tracking/doc/tracking_diagrams.markdown</em>. The following reference was used in the API
 
 Creating Own Tracker
 --------------------
@@ -327,10 +306,6 @@ The first argument is the name of the tracker and the second is a video source.
 
 */
 
-namespace cv
-{
-CV_EXPORTS bool initModule_tracking(void);
-}
-
 #include "opencv2/tracking/tracker.hpp"
+
 #endif //__OPENCV_TRACKING_LENLEN

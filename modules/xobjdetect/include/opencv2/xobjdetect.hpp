@@ -131,7 +131,7 @@ struct CV_EXPORTS WaldBoostParams
     {}
 };
 
-/** @brief WaldBoost object detector from @cite Sochman05
+/** @brief WaldBoost object detector from @cite Sochman05 .
 */
 class CV_EXPORTS WaldBoost : public Algorithm
 {
@@ -153,17 +153,6 @@ public:
      */
     virtual float predict(
         const Ptr<FeatureEvaluator>& feature_evaluator) const = 0;
-
-    /** @brief Write WaldBoost to FileStorage
-    @param fs FileStorage for output
-     */
-    virtual void write(FileStorage& fs) const = 0;
-
-    /** @brief Write WaldBoost to FileNode
-
-    @param node FileNode for reading
-     */
-    virtual void read(const FileNode& node) = 0;
 };
 
 /** @brief Construct WaldBoost object.
@@ -190,7 +179,7 @@ struct CV_EXPORTS ICFDetectorParams
     {}
 };
 
-/** @brief Integral Channel Features from @cite Dollar09
+/** @brief Integral Channel Features from @cite Dollar09 .
 */
 class CV_EXPORTS ICFDetector
 {

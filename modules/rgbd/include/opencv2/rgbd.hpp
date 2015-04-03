@@ -47,7 +47,7 @@
 namespace cv
 {
 namespace rgbd
-{    
+{
 
 //! @addtogroup rgbd
 //! @{
@@ -137,9 +137,6 @@ namespace rgbd
 
     ~RgbdNormals();
 
-    AlgorithmInfo*
-    info() const;
-
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
      * @param normals a rows x cols x 3 matrix
@@ -153,14 +150,55 @@ namespace rgbd
     void
     initialize() const;
 
-    /** Return the current method in that normal computer
-     * @return
-     */
-    int
-    method() const
+    int getRows() const
     {
-      return method_;
+        return rows_;
     }
+    void setRows(int val)
+    {
+        rows_ = val;
+    }
+    int getCols() const
+    {
+        return cols_;
+    }
+    void setCols(int val)
+    {
+        cols_ = val;
+    }
+    int getWindowSize() const
+    {
+        return window_size_;
+    }
+    void setWindowSize(int val)
+    {
+        window_size_ = val;
+    }
+    int getDepth() const
+    {
+        return depth_;
+    }
+    void setDepth(int val)
+    {
+        depth_ = val;
+    }
+    cv::Mat getK() const
+    {
+        return K_;
+    }
+    void setK(const cv::Mat &val)
+    {
+        K_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
+
   protected:
     void
     initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size, int method) const;
@@ -204,9 +242,6 @@ namespace rgbd
 
     ~DepthCleaner();
 
-    AlgorithmInfo*
-    info() const;
-
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
      * @param depth a rows x cols matrix of the cleaned up depth
@@ -220,14 +255,31 @@ namespace rgbd
     void
     initialize() const;
 
-    /** Return the current method in that normal computer
-     * @return
-     */
-    int
-    method() const
+    int getWindowSize() const
     {
-      return method_;
+        return window_size_;
     }
+    void setWindowSize(int val)
+    {
+        window_size_ = val;
+    }
+    int getDepth() const
+    {
+        return depth_;
+    }
+    void setDepth(int val)
+    {
+        depth_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
+
   protected:
     void
     initialize_cleaner_impl() const;
@@ -316,8 +368,63 @@ namespace rgbd
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
 
-    AlgorithmInfo*
-    info() const;
+    int getBlockSize() const
+    {
+        return block_size_;
+    }
+    void setBlockSize(int val)
+    {
+        block_size_ = val;
+    }
+    int getMinSize() const
+    {
+        return min_size_;
+    }
+    void setMinSize(int val)
+    {
+        min_size_ = val;
+    }
+    int getMethod() const
+    {
+        return method_;
+    }
+    void setMethod(int val)
+    {
+        method_ = val;
+    }
+    double getThreshold() const
+    {
+        return threshold_;
+    }
+    void setThreshold(double val)
+    {
+        threshold_ = val;
+    }
+    double getSensorErrorA() const
+    {
+        return sensor_error_a_;
+    }
+    void setSensorErrorA(double val)
+    {
+        sensor_error_a_ = val;
+    }
+    double getSensorErrorB() const
+    {
+        return sensor_error_b_;
+    }
+    void setSensorErrorB(double val)
+    {
+        sensor_error_b_ = val;
+    }
+    double getSensorErrorC() const
+    {
+        return sensor_error_c_;
+    }
+    void setSensorErrorC(double val)
+    {
+        sensor_error_c_ = val;
+    }
+
   private:
     /** The method to use to compute the planes */
     int method_;
@@ -436,7 +543,7 @@ namespace rgbd
     /** Method to compute a transformation from the source frame to the destination one.
      * Some odometry algorithms do not used some data of frames (eg. ICP does not use images).
      * In such case corresponding arguments can be set as empty Mat.
-     * The method returns true if all internal computions were possible (e.g. there were enough correspondences, 
+     * The method returns true if all internal computions were possible (e.g. there were enough correspondences,
      * system of equations has a solution, etc) and resulting transformation satisfies some test if it's provided
      * by the Odometry inheritor implementation (e.g. thresholds for maximum translation and rotation).
      * @param srcImage Image data of the source frame (CV_8UC1)
@@ -469,6 +576,17 @@ namespace rgbd
      */
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
+    static Ptr<Odometry> create(const String & odometryType);
+
+    /** @see setCameraMatrix */
+    virtual cv::Mat getCameraMatrix() const = 0;
+    /** @copybrief getCameraMatrix @see getCameraMatrix */
+    virtual void setCameraMatrix(const cv::Mat &val) = 0;
+    /** @see setTransformType */
+    virtual int getTransformType() const = 0;
+    /** @copybrief getTransformType @see getTransformType */
+    virtual void setTransformType(int val) = 0;
+
   protected:
     virtual void
     checkParams() const = 0;
@@ -478,7 +596,7 @@ namespace rgbd
                 const Mat& initRt) const = 0;
   };
 
-  /** Odometry based on the paper "Real-Time Visual Odometry from Dense RGB-D Images", 
+  /** Odometry based on the paper "Real-Time Visual Odometry from Dense RGB-D Images",
    * F. Steinbucker, J. Strum, D. Cremers, ICCV, 2011.
    */
   class CV_EXPORTS RgbdOdometry: public Odometry
@@ -504,8 +622,86 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    cv::Mat getMinGradientMagnitudes() const
+    {
+        return minGradientMagnitudes;
+    }
+    void setMinGradientMagnitudes(const cv::Mat &val)
+    {
+        minGradientMagnitudes = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
 
   protected:
     virtual void
@@ -530,7 +726,7 @@ namespace rgbd
     double maxTranslation, maxRotation;
   };
 
-  /** Odometry based on the paper "KinectFusion: Real-Time Dense Surface Mapping and Tracking", 
+  /** Odometry based on the paper "KinectFusion: Real-Time Dense Surface Mapping and Tracking",
    * Richard A. Newcombe, Andrew Fitzgibbon, at al, SIGGRAPH, 2011.
    */
   class ICPOdometry: public Odometry
@@ -553,8 +749,82 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
+    Ptr<RgbdNormals> getNormalsComputer() const
+    {
+        return normalsComputer;
+    }
 
   protected:
     virtual void
@@ -607,8 +877,90 @@ namespace rgbd
 
     virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    AlgorithmInfo*
-    info() const;
+    cv::Mat getCameraMatrix() const
+    {
+        return cameraMatrix;
+    }
+    void setCameraMatrix(const cv::Mat &val)
+    {
+        cameraMatrix = val;
+    }
+    double getMinDepth() const
+    {
+        return minDepth;
+    }
+    void setMinDepth(double val)
+    {
+        minDepth = val;
+    }
+    double getMaxDepth() const
+    {
+        return maxDepth;
+    }
+    void setMaxDepth(double val)
+    {
+        maxDepth = val;
+    }
+    double getMaxDepthDiff() const
+    {
+        return maxDepthDiff;
+    }
+    void setMaxDepthDiff(double val)
+    {
+        maxDepthDiff = val;
+    }
+    double getMaxPointsPart() const
+    {
+        return maxPointsPart;
+    }
+    void setMaxPointsPart(double val)
+    {
+        maxPointsPart = val;
+    }
+    cv::Mat getIterationCounts() const
+    {
+        return iterCounts;
+    }
+    void setIterationCounts(const cv::Mat &val)
+    {
+        iterCounts = val;
+    }
+    cv::Mat getMinGradientMagnitudes() const
+    {
+        return minGradientMagnitudes;
+    }
+    void setMinGradientMagnitudes(const cv::Mat &val)
+    {
+        minGradientMagnitudes = val;
+    }
+    int getTransformType() const
+    {
+        return transformType;
+    }
+    void setTransformType(int val)
+    {
+        transformType = val;
+    }
+    double getMaxTranslation() const
+    {
+        return maxTranslation;
+    }
+    void setMaxTranslation(double val)
+    {
+        maxTranslation = val;
+    }
+    double getMaxRotation() const
+    {
+        return maxRotation;
+    }
+    void setMaxRotation(double val)
+    {
+        maxRotation = val;
+    }
+    Ptr<RgbdNormals> getNormalsComputer() const
+    {
+        return normalsComputer;
+    }
 
   protected:
     virtual void
@@ -636,8 +988,8 @@ namespace rgbd
     mutable Ptr<RgbdNormals> normalsComputer;
   };
 
-  /** Warp the image: compute 3d points from the depth, transform them using given transformation, 
-   * then project color point cloud to an image plane. 
+  /** Warp the image: compute 3d points from the depth, transform them using given transformation,
+   * then project color point cloud to an image plane.
    * This function can be used to visualize results of the Odometry algorithm.
    * @param image The image (of CV_8UC1 or CV_8UC3 type)
    * @param depth The depth (of type used in depthTo3d fuction)
@@ -669,3 +1021,4 @@ namespace rgbd
 #endif
 
 /* End of file. */
+

@@ -122,8 +122,6 @@ public:
         bgmodel = Scalar::all(0);
     }
 
-    virtual AlgorithmInfo* info() const { return 0; }
-
     virtual void getBackgroundImage(OutputArray) const
     {
         CV_Error( Error::StsNotImplemented, "" );

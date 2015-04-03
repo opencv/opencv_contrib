@@ -47,6 +47,7 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include "opencv2/core.hpp"
 
 namespace cv
 {
@@ -75,9 +76,25 @@ public:
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
+  int getImageWidth() const
+  {
+    return resImWidth;
+  }
+  inline void setImageWidth(int val)
+  {
+    resImWidth = val;
+  }
+  int getImageHeight() const
+  {
+    return resImHeight;
+  }
+  void setImageHeight(int val)
+  {
+    resImHeight = val;
+  }
+
 protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
-  AlgorithmInfo* info() const;
   int resImWidth;
   int resImHeight;
 
@@ -111,6 +128,23 @@ public:
   */
   bool init();
 
+  int getImageWidth() const
+  {
+    return imageWidth;
+  }
+  inline void setImageWidth(int val)
+  {
+    imageWidth = val;
+  }
+  int getImageHeight() const
+  {
+    return imageHeight;
+  }
+  void setImageHeight(int val)
+  {
+    imageHeight = val;
+  }
+
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the accomplishment of the
     Fast Self-tuning Background Subtraction Algorithm algorithm.
@@ -121,7 +155,6 @@ protected:
         stream).
   */
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
-  AlgorithmInfo* info() const;
 
 private:
 
@@ -200,6 +233,31 @@ public:
      */
   void setBBResDir( std::string resultsDir );
 
+  double getBase() const
+  {
+    return _base;
+  }
+  inline void setBase(double val)
+  {
+    _base = val;
+  }
+  int getNSS() const
+  {
+    return _NSS;
+  }
+  void setNSS(int val)
+  {
+    _NSS = val;
+  }
+  int getW() const
+  {
+    return _W;
+  }
+  void setW(int val)
+  {
+    _W = val;
+  }
+
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the
   accomplishment of the Binarized normed gradients algorithm.
@@ -211,7 +269,6 @@ protected:
     represented by a *Vec4i* for (minX, minY, maxX, maxY).
      */
   bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
-  AlgorithmInfo* info() const;
 
 private:
 

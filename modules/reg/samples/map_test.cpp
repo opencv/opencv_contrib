@@ -289,23 +289,25 @@ static void calcHomographyFeature(const Mat& image1, const Mat& image2)
     else
         image2.copyTo(gray_image2);
 
-    //-- Step 1: Detect the keypoints using SURF Detector
+    //-- Step 1: Detect the keypoints using SIFT or SURF Detector
+#ifdef USE_SIFT
+    Ptr<Feature2D> features = SIFT::create();
+#else
     int minHessian = 400;
-
-    SurfFeatureDetector detector(minHessian);
+    Ptr<Feature2D> features = SURF::create(minHessian);
+#endif
 
     std::vector<KeyPoint> keypoints_object, keypoints_scene;
 
-    detector.detect(gray_image1, keypoints_object);
-    detector.detect(gray_image2, keypoints_scene);
+    features->detect(gray_image1, keypoints_object);
+    features->detect(gray_image2, keypoints_scene);
 
     //-- Step 2: Calculate descriptors (feature vectors)
-    SurfDescriptorExtractor extractor;
 
     Mat descriptors_object, descriptors_scene;
 
-    extractor.compute(gray_image1, keypoints_object, descriptors_object);
-    extractor.compute(gray_image2, keypoints_scene, descriptors_scene);
+    features->compute(gray_image1, keypoints_object, descriptors_object);
+    features->compute(gray_image2, keypoints_scene, descriptors_scene);
 
     //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
@@ -431,4 +433,3 @@ int main(void)
 
     return 0;
 }
-

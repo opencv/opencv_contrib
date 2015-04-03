@@ -12,6 +12,7 @@
 #include "types.hpp"
 
 #include <iostream>
+#include <sstream>
 
 /**
  * @brief Puts a value into a stringstream. (used to print char and uchar as a

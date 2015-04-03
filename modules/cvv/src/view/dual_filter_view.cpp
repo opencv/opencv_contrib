@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 #include <QApplication>
 #include <QGridLayout>

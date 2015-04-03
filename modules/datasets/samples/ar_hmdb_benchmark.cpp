@@ -188,17 +188,16 @@ int main(int argc, char *argv[])
         fillData(path, curr, flann_index, trainData, trainLabels);
 
         printf("train svm\n");
-        SVM::Params params;
-        params.svmType = SVM::C_SVC;
-        params.kernelType = SVM::POLY; //SVM::RBF;
-        params.degree = 0.5;
-        params.gamma = 1;
-        params.coef0 = 1;
-        params.C = 1;
-        params.nu = 0.5;
-        params.p = 0;
-        params.termCrit = TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS, 1000, 0.01);
-        Ptr<SVM> svm = SVM::create(params);
+        Ptr<SVM> svm = SVM::create();
+        svm->setType(SVM::C_SVC);
+        svm->setKernel(SVM::POLY); //SVM::RBF;
+        svm->setDegree(0.5);
+        svm->setGamma(1);
+        svm->setCoef0(1);
+        svm->setC(1);
+        svm->setNu(0.5);
+        svm->setP(0);
+        svm->setTermCriteria(TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS, 1000, 0.01));
         svm->train(trainData, ROW_SAMPLE, trainLabels);
 
         // prepare to predict

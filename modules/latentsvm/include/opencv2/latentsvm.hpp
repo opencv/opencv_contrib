@@ -61,7 +61,7 @@ Discriminatively Trained Part Based Models for Object Detection
 ---------------------------------------------------------------
 
 The object detector described below has been initially proposed by P.F. Felzenszwalb in
-@cite Felzenszwalb2010a. It is based on a Dalal-Triggs detector that uses a single filter on histogram
+@cite Felzenszwalb2010a . It is based on a Dalal-Triggs detector that uses a single filter on histogram
 of oriented gradients (HOG) features to represent an object category. This detector uses a sliding
 window approach, where a filter is applied at all positions and scales of an image. The first
 innovation is enriching the Dalal-Triggs model using a star-structured part-based model defined by a
@@ -77,7 +77,7 @@ and scale is the maximum over components, of the score of that component model a
 location.
 
 The detector was dramatically speeded-up with cascade algorithm proposed by P.F. Felzenszwalb in
-@cite Felzenszwalb2010b. The algorithm prunes partial hypotheses using thresholds on their scores.The
+@cite Felzenszwalb2010b . The algorithm prunes partial hypotheses using thresholds on their scores.The
 basic idea of the algorithm is to use a hierarchy of models defined by an ordering of the original
 model's parts. For a model with (n+1) parts, including the root, a sequence of (n+1) models is
 obtained. The i-th model in this sequence is defined by the first i parts from the original model.

@@ -574,7 +574,6 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   Ptr<TrackerFeatureSet> featureSet;
   Ptr<TrackerSampler> sampler;
   Ptr<TrackerModel> model;
-  virtual AlgorithmInfo* info() const;
 };
 
 /************************************ Specific TrackerStateEstimator Classes ************************************/
@@ -1073,7 +1072,7 @@ class CV_EXPORTS_W TrackerFeatureLBP : public TrackerFeature
 background.
 
 Multiple Instance Learning avoids the drift problem for a robust tracking. The implementation is
-based on @cite MIL.
+based on @cite MIL .
 
 Original code can be found here <http://vision.ucsd.edu/~bbabenko/project_miltrack.shtml>
  */
@@ -1105,7 +1104,7 @@ class CV_EXPORTS_W TrackerMIL : public Tracker
 /** @brief This is a real-time object tracking based on a novel on-line version of the AdaBoost algorithm.
 
 The classifier uses the surrounding background as negative examples in update step to avoid the
-drifting problem. The implementation is based on @cite OLB.
+drifting problem. The implementation is based on @cite OLB .
  */
 class CV_EXPORTS_W TrackerBoosting : public Tracker
 {
@@ -1137,7 +1136,7 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
 
 /** @brief Median Flow tracker implementation.
 
-Implementation of a paper @cite MedianFlow.
+Implementation of a paper @cite MedianFlow .
 
 The tracker is suitable for very smooth and predictable movements when object is visible throughout
 the whole sequence. It's quite and accurate for this type of problems (in particular, it was shown
@@ -1168,7 +1167,7 @@ tracking, learning and detection.
 
 The tracker follows the object from frame to frame. The detector localizes all appearances that
 have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
-errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD.
+errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
 
 The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this
 implementation, following authors. Tracker is supposed to be able to handle rapid motions, partial

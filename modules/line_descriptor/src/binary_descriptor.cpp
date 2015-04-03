@@ -570,7 +570,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
   /* create a map to record association between KeyLines and their position
    in ScaleLines vector */
-  std::map<std::pair<int, int>, int> correspondences;
+  std::map<std::pair<int, int>, size_t> correspondences;
 
   /* fill ScaleLines object */
   for ( size_t slCounter = 0; slCounter < keylines.size(); slCounter++ )
@@ -601,7 +601,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     /* update map */
     int id = kl.class_id;
     int oct = kl.octave;
-    correspondences.insert( std::pair<std::pair<int, int>, int>( std::pair<int, int>( id, oct ), slCounter ) );
+    correspondences.insert( std::pair<std::pair<int, int>, size_t>( std::pair<int, int>( id, oct ), slCounter ) );
   }
 
   /* delete useless OctaveSingleLines */
@@ -632,7 +632,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
     {
       /* get original index of keypoint */
       int lineOctave = ( sl[k][lineC] ).octaveCount;
-      int originalIndex = correspondences.find( std::pair<int, int>( k, lineOctave ) )->second;
+      int originalIndex = (int)correspondences.find( std::pair<int, int>( k, lineOctave ) )->second;
 
       if( !returnFloatDescr )
       {
@@ -756,7 +756,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
 
   /* some variables' declarations */
   float rho1, rho2, tempValue;
-  float direction, near, length;
+  float direction, diffNear, length;
   unsigned int octaveID, lineIDInOctave;
 
   /*more than one octave image, organize lines in scale space.
@@ -784,8 +784,8 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
         /*nearThreshold depends on the distance of the image coordinate origin to current line.
          *so nearThreshold = rho1 * nearThresholdRatio, where nearThresholdRatio = 1-cos(10*pi/180) = 0.0152*/
         tempValue = (float) ( rho1 * 0.0152 );
-        float nearThreshold = ( tempValue > 6 ) ? ( tempValue ) : 6;
-        nearThreshold = ( nearThreshold < 12 ) ? nearThreshold : 12;
+        float diffNearThreshold = ( tempValue > 6 ) ? ( tempValue ) : 6;
+        diffNearThreshold = ( diffNearThreshold < 12 ) ? diffNearThreshold : 12;
 
         /* compute scaled lenght of current line */
         dx = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][0] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][2] );  //x1-x2
@@ -831,10 +831,10 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
           /* get known term from equation to be compared */
           rho2 = (float) ( scale[octaveID] * fabs( edLineVec_[octaveID]->lineEquations_[lineIDInOctave][2] ) );
           /* compute difference between known ters */
-          near = fabs( rho1 - rho2 );
+          diffNear = fabs( rho1 - rho2 );
 
           /* two lines are not close in the image */
-          if( near > nearThreshold )
+          if( diffNear > diffNearThreshold )
           {
             continue;
           }

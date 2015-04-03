@@ -1,0 +1,29 @@
+The following patents have been issued for methods embodied in this
+software: "Recognition and pose determination of 3D objects in 3D scenes
+using geometric point pair descriptors and the generalized Hough
+Transform", Bertram Heinrich Drost, Markus Ulrich, EP Patent 2385483
+(Nov. 21, 2012), assignee: MVTec Software GmbH, 81675 Muenchen
+(Germany); "Recognition and pose determination of 3D objects in 3D
+scenes", Bertram Heinrich Drost, Markus Ulrich, US Patent 8830229 (Sept.
+9, 2014), assignee: MVTec Software GmbH, 81675 Muenchen (Germany).
+Further patents are pending. For further details, contact MVTec Software
+GmbH (info@mvtec.com).
+
+Note that restrictions imposed by these patents (and possibly others)
+exist independently of and may be in conflict with the freedoms granted
+in OpenCV license, which refers to copyright of the program, not patents
+for any methods that it implements. Both copyright and patent law must
+be obeyed to legally use and redistribute this program and it is not the
+purpose of this license to induce you to infringe any patents or other
+property right claims or to contest validity of any such claims.  If you
+redistribute or use the program, then this license merely protects you
+from committing copyright infringement.  It does not protect you from
+committing patent infringement.  So, before you do anything with this
+program, make sure that you have permission to do so not merely in terms
+of copyright, but also in terms of patent law.
+
+Please note that this license is not to be understood as a guarantee
+either.  If you use the program according to this license, but in
+conflict with patent law, it does not mean that the licensor will refund
+you for any losses that you incur if you are sued for your patent
+infringement.

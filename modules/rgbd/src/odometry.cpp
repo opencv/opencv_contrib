@@ -1069,6 +1069,17 @@ Size Odometry::prepareFrameCache(Ptr<OdometryFrame> &frame, int /*cacheType*/) c
     return Size();
 }
 
+Ptr<Odometry> Odometry::create(const String & odometryType)
+{
+    if (odometryType == "RgbdOdometry")
+        return makePtr<RgbdOdometry>();
+    else if (odometryType == "ICPOdometry")
+        return makePtr<ICPOdometry>();
+    else if (odometryType == "RgbdICPOdometry")
+        return makePtr<RgbdICPOdometry>();
+    return Ptr<Odometry>();
+}
+
 //
 RgbdOdometry::RgbdOdometry() :
     minDepth(DEFAULT_MIN_DEPTH()),
@@ -1229,10 +1240,15 @@ Size ICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) co
             else
             {
                 if(normalsComputer.empty() ||
-                   normalsComputer->get<int>("rows") != frame->depth.rows ||
-                   normalsComputer->get<int>("cols") != frame->depth.cols ||
-                   norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
-                   normalsComputer = Ptr<RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
+                   normalsComputer->getRows() != frame->depth.rows ||
+                   normalsComputer->getCols() != frame->depth.cols ||
+                   norm(normalsComputer->getK(), cameraMatrix) > FLT_EPSILON)
+                   normalsComputer = makePtr<RgbdNormals>(frame->depth.rows,
+                                                          frame->depth.cols,
+                                                          frame->depth.depth(),
+                                                          cameraMatrix,
+                                                          normalWinSize,
+                                                          normalMethod);
 
                 (*normalsComputer)(frame->pyramidCloud[0], frame->normals);
             }
@@ -1338,10 +1354,15 @@ Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
             else
             {
                 if(normalsComputer.empty() ||
-                   normalsComputer->get<int>("rows") != frame->depth.rows ||
-                   normalsComputer->get<int>("cols") != frame->depth.cols ||
-                   norm(normalsComputer->get<Mat>("K"), cameraMatrix) > FLT_EPSILON)
-                   normalsComputer = Ptr<RgbdNormals>(new RgbdNormals(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, normalWinSize, normalMethod));
+                   normalsComputer->getRows() != frame->depth.rows ||
+                   normalsComputer->getCols() != frame->depth.cols ||
+                   norm(normalsComputer->getK(), cameraMatrix) > FLT_EPSILON)
+                   normalsComputer = makePtr<RgbdNormals>(frame->depth.rows,
+                                                          frame->depth.cols,
+                                                          frame->depth.depth(),
+                                                          cameraMatrix,
+                                                          normalWinSize,
+                                                          normalMethod);
 
                 (*normalsComputer)(frame->pyramidCloud[0], frame->normals);
             }

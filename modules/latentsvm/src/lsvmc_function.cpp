@@ -46,7 +46,7 @@ namespace cv
 namespace lsvm
 {
 
-float calcM    (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter){
+float calcM    (int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter){
     int i, j;
     float m = 0.0f;
     for(j = dj; j < dj + filter->sizeY; j++){
@@ -57,7 +57,7 @@ float calcM    (int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, cons
     }
     return m;
 }
-float calcM_PCA(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter){
+float calcM_PCA(int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter){
     int i, j;
     float m = 0.0f;
     for(j = dj; j < dj + filter->sizeY; j++){
@@ -69,7 +69,7 @@ float calcM_PCA(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, cons
 
     return m;
 }
-float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H, const CvLSVMFilterObjectCaskade *filter, float * cashM, int * maskM, int step){
+float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCascade * H, const CvLSVMFilterObjectCascade *filter, float * cashM, int * maskM, int step){
     int i, j, n;
     float m = 0.0f;
     float tmp1, tmp2, tmp3, tmp4;
@@ -119,7 +119,7 @@ float calcM_PCA_cash(int k,int di,int dj, const CvLSVMFeaturePyramidCaskade * H,
     }
     return m;
 }
-float calcFine (const CvLSVMFilterObjectCaskade *filter, int di, int dj){
+float calcFine (const CvLSVMFilterObjectCascade *filter, int di, int dj){
     return filter->fineFunction[0] * di      + filter->fineFunction[1] * dj + 
            filter->fineFunction[2] * di * di + filter->fineFunction[3] * dj * dj;
 }

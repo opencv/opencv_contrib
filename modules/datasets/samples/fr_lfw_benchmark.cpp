@@ -78,7 +78,9 @@ int main(int argc, const char *argv[])
 {
     const char *keys =
             "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset (lfw2 folder) }";
+            "{ path p         |true| path to dataset (lfw2 folder) }"
+            "{ train t        |dev | train method: 'dev'(pairsDevTrain.txt) or 'split'(pairs.txt) }";
+
     CommandLineParser parser(argc, argv, keys);
     string path(parser.get<string>("path"));
     if (parser.has("help") || path=="true")
@@ -86,6 +88,7 @@ int main(int argc, const char *argv[])
         parser.printMessage();
         return -1;
     }
+    string trainMethod(parser.get<string>("train"));
 
     // These vectors hold the images and corresponding labels.
     vector<Mat> images;
@@ -97,23 +100,11 @@ int main(int argc, const char *argv[])
 
     unsigned int numSplits = dataset->getNumSplits();
     printf("splits number: %u\n", numSplits);
-    printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    if (trainMethod == "dev")
+        printf("train size: %u\n", (unsigned int)dataset->getTrain().size());
+    else
+        printf("train size: %u\n", (numSplits-1) * (unsigned int)dataset->getTest().size());
     printf("test size: %u\n", (unsigned int)dataset->getTest().size());
-
-    for (unsigned int i=0; i<dataset->getTrain().size(); ++i)
-    {
-        FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTrain()[i].get());
-
-        int currNum = getLabel(example->image1);
-        Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
-        images.push_back(img);
-        labels.push_back(currNum);
-
-        currNum = getLabel(example->image2);
-        img = imread(path+example->image2, IMREAD_GRAYSCALE);
-        images.push_back(img);
-        labels.push_back(currNum);
-    }
 
     // 2200 pairsDevTrain, first split: correct: 373, from: 600 -> 62.1667%
     Ptr<FaceRecognizer> model = createLBPHFaceRecognizer();
@@ -122,14 +113,58 @@ int main(int argc, const char *argv[])
     // 2200 pairsDevTrain, first split: correct: 372, from: 600 -> 62%
     //Ptr<FaceRecognizer> model = createFisherFaceRecognizer();
 
-    model->train(images, labels);
-    //string saveModelPath = "face-rec-model.txt";
-    //cout << "Saving the trained model to " << saveModelPath << endl;
-    //model->save(saveModelPath);
+    if (trainMethod == "dev") // train on personsDevTrain.txt
+    {
+        for (unsigned int i=0; i<dataset->getTrain().size(); ++i)
+        {
+            FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTrain()[i].get());
+
+            int currNum = getLabel(example->image1);
+            Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
+            images.push_back(img);
+            labels.push_back(currNum);
+
+            currNum = getLabel(example->image2);
+            img = imread(path+example->image2, IMREAD_GRAYSCALE);
+            images.push_back(img);
+            labels.push_back(currNum);
+        }
+        model->train(images, labels);
+        //string saveModelPath = "face-rec-model.txt";
+        //cout << "Saving the trained model to " << saveModelPath << endl;
+        //model->save(saveModelPath);
+    }
 
     vector<double> p;
     for (unsigned int j=0; j<numSplits; ++j)
     {
+        if (trainMethod == "split") // train on the remaining 9 splits from pairs.txt
+        {
+            images.clear();
+            labels.clear();
+            for (unsigned int j2=0; j2<numSplits; ++j2)
+            {
+                if (j==j2) continue; // skip test split for training
+
+                vector < Ptr<Object> > &curr = dataset->getTest(j2);
+                for (unsigned int i=0; i<curr.size(); ++i)
+                {
+                    FR_lfwObj *example = static_cast<FR_lfwObj *>(curr[i].get());
+
+                    int currNum = getLabel(example->image1);
+                    Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
+                    images.push_back(img);
+                    labels.push_back(currNum);
+
+                    currNum = getLabel(example->image2);
+                    img = imread(path+example->image2, IMREAD_GRAYSCALE);
+                    images.push_back(img);
+                    labels.push_back(currNum);
+                }
+            }
+            model->train(images, labels);
+        }
+
         unsigned int incorrect = 0, correct = 0;
         vector < Ptr<Object> > &curr = dataset->getTest(j);
         for (unsigned int i=0; i<curr.size(); ++i)
@@ -168,7 +203,7 @@ int main(int argc, const char *argv[])
         sigma += (*it - mu)*(*it - mu);
     }
     sigma = sqrt(sigma/p.size());
-    double se = sigma/sqrt(p.size());
+    double se = sigma/sqrt(double(p.size()));
     printf("estimated mean accuracy: %f and the standard error of the mean: %f\n", mu, se);
 
     return 0;

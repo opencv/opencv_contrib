@@ -53,9 +53,13 @@ Saliency::~Saliency()
 
 Ptr<Saliency> Saliency::create( const String& saliencyType )
 {
-
-  return Algorithm::create<Saliency>( "SALIENCY." + saliencyType );
-
+    if (saliencyType == "SPECTRAL_RESIDUAL")
+        return makePtr<StaticSaliencySpectralResidual>();
+    else if (saliencyType == "BING")
+        return makePtr<ObjectnessBING>();
+    else if (saliencyType == "BinWangApr2014")
+        return makePtr<MotionSaliencyBinWangApr2014>();
+    return Ptr<Saliency>();
 }
 
 bool Saliency::computeSaliency( const InputArray image, OutputArray saliencyMap )
