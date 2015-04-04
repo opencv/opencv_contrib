@@ -129,14 +129,30 @@ public:
     static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
 
-/** @brief The class implements the keypoint detector using AGAST algorithm by Elmar Mair. :
- */
+/** @overload */
 CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
                       int threshold, bool nonmaxSuppression=true );
 
+/** @brief Detects corners using the AGAST algorithm
+
+@param image grayscale image where keypoints (corners) are detected.
+@param keypoints keypoints detected on the image.
+@param threshold threshold on difference between intensity of the central pixel and pixels of a
+circle around this pixel.
+@param nonmaxSuppression if true, non-maximum suppression is applied to detected corners
+(keypoints).
+@param type one of the four neighborhoods as defined in the paper:
+AgastFeatureDetector::AGAST_5_8, AgastFeatureDetector::AGAST_7_12d,
+AgastFeatureDetector::AGAST_7_12s, AgastFeatureDetector::OAST_9_16
+
+Detects corners using the AGAST algorithm by @cite mair2010_agast .
+
+ */
 CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
                       int threshold, bool nonmaxSuppression, int type );
 
+/** @brief Wrapping class for feature detection using the AGAST method. :
+ */
 class CV_EXPORTS_W AgastFeatureDetector : public Feature2D
 {
 public:
