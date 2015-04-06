@@ -987,9 +987,16 @@ TEST( Features2d_Detector_SURF, regression )
     test.safe_run();
 }
 
+
 TEST( Features2d_Detector_STAR, regression )
 {
     CV_FeatureDetectorTest test( "detector-star", StarDetector::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Brisk, regression )
+{
+    CV_FeatureDetectorTest test( "detector-brisk", Brisk::create() );
     test.safe_run();
 }
 
@@ -1029,6 +1036,13 @@ TEST( Features2d_DescriptorExtractor_LUCID, regression )
 {
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-lucid",  1,
                                              LUCID::create(1, 2) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_Brisk, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-brisk",  1,
+                                             Brisk::create() );
     test.safe_run();
 }
 
