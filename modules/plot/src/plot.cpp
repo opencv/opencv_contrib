@@ -47,7 +47,6 @@
 
 #include "precomp.hpp"
 
-
 namespace cv
 {
     namespace plot
