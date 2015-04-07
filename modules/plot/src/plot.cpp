@@ -47,14 +47,13 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
-using namespace cv::plot;
-using namespace std;
 
 namespace cv
 {
     namespace plot
     {
+        using namespace std;
+
         class Plot2dImpl : public Plot2d
         {
             public:
