@@ -61,7 +61,7 @@ public:
     enum { PATCH_SIZE = 48, KERNEL_SIZE = 9 };
 
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
-    BriefDescriptorExtractorImpl( int bytes = 32 );
+    BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
     virtual void read( const FileNode& );
     virtual void write( FileStorage& ) const;
@@ -73,15 +73,16 @@ public:
     virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
 
 protected:
-    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray);
-    
+    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation_);
+
     int bytes_;
+    bool use_orientation_;
     PixelTestFn test_fn_;
 };
 
-Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes )
+Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool use_orientation )
 {
-    return makePtr<BriefDescriptorExtractorImpl>(bytes);
+    return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation);
 }
 
 inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x)
@@ -96,44 +97,136 @@ inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x)
            + sum.at<int>(img_y - HALF_KERNEL, img_x - HALF_KERNEL);
 }
 
-static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void calculateSums(const Mat &sum, const int count, const uchar *desc, const float cos_theta, const float sin_theta, KeyPoint pt, int &suma, int &sumb)
+{
+    int ax = desc[count];
+    int ay = desc[count + 1];
+
+    int bx = desc[count + 2];
+    int by = desc[count + 3];
+
+    int ax2 = (int) (((float)ax)*cos_theta - ((float)ay)*sin_theta);
+    int ay2 = (int) (((float)ax)*sin_theta + ((float)ay)*cos_theta);
+    int bx2 = (int) (((float)bx)*cos_theta - ((float)by)*sin_theta);
+    int by2 = (int) (((float)bx)*sin_theta + ((float)by)*cos_theta);
+
+    int half_patch_size = BriefDescriptorExtractorImpl::PATCH_SIZE/2;
+    if (ax2 > half_patch_size)
+      ax2 = half_patch_size;
+    if (ax2 < -half_patch_size)
+      ax2 = -half_patch_size;
+
+    if (ay2 > half_patch_size)
+      ay2 = half_patch_size;
+    if (ay2 < -half_patch_size)
+      ay2 = -half_patch_size;
+
+    if (bx2 > half_patch_size)
+      bx2 = half_patch_size;
+    if (bx2 < -half_patch_size)
+      bx2 = -half_patch_size;
+
+    if (by2 > half_patch_size)
+      by2 = half_patch_size;
+    if (by2 < -half_patch_size)
+      by2 = -half_patch_size;
+
+    suma = smoothedSum(sum, pt, ay2, ax2);
+    sumb = smoothedSum(sum, pt, by2, bx2);
+}
+
+static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
 #include "generated_16.i"
+        // invariance routine
+        if ( use_orientation )
+        {
+            float angle = pt.angle;
+            angle *= (float)(CV_PI / 180.f);
+            float cos_theta = cos(angle);
+            float sin_theta = sin(angle);
+
+            int count = 0;
+            for (int ix = 0; ix < 16; ix++){
+                for (int jx = 7; jx >= 0; jx--){
+                    int suma, sumb;
+                    calculateSums(sum, count, desc, cos_theta, sin_theta, pt, suma, sumb);
+                    desc[ix] += (uchar)((suma < sumb) << jx);
+                    count += 4;
+                }
+            }
+        }
     }
 }
 
-static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
-
 #include "generated_32.i"
+        // invariance routine
+        if ( use_orientation )
+        {
+            float angle = pt.angle;
+            angle *= (float)(CV_PI / 180.f);
+            float cos_theta = cos(angle);
+            float sin_theta = sin(angle);
+            int count = 0;
+
+            for (int ix = 0; ix < 32; ix++){
+                for (int jx = 7; jx >= 0; jx--){
+                    int suma, sumb;
+                    calculateSums(sum, count, desc, cos_theta, sin_theta, pt, suma, sumb);
+                    desc[ix] += (uchar)((suma < sumb) << jx);
+                    count += 4;
+                }
+            }
+        }
     }
 }
 
-static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
-
 #include "generated_64.i"
+        // invariance routine
+        if ( use_orientation )
+        {
+            float angle = pt.angle;
+            angle *= (float)(CV_PI / 180.f);
+            float cos_theta = cos(angle);
+            float sin_theta = sin(angle);
+
+            int count = 0;
+            for (int ix = 0; ix < 64; ix++){
+                for (int jx = 7; jx >= 0; jx--){
+                    int suma, sumb;
+                    calculateSums(sum, count, desc, cos_theta, sin_theta, pt, suma, sumb);
+                    desc[ix] += (uchar)((suma < sumb) << jx);
+                    count += 4;
+                }
+            }
+        }
     }
 }
 
-BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes) :
+BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation) :
     bytes_(bytes), test_fn_(NULL)
 {
+    use_orientation_ = use_orientation;
+
     switch (bytes)
     {
         case 16:
@@ -212,7 +305,7 @@ void BriefDescriptorExtractorImpl::compute(InputArray image,
 
     descriptors.create((int)keypoints.size(), bytes_, CV_8U);
     descriptors.setTo(Scalar::all(0));
-    test_fn_(sum, keypoints, descriptors);
+    test_fn_(sum, keypoints, descriptors, use_orientation_);
 }
 
 }

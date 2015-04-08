@@ -118,6 +118,9 @@ public:
 
 /** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
+@param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
+
 @note
    -   A complete BRIEF extractor sample can be found at
         opencv_source_code/samples/cpp/brief_match_test.cpp
@@ -126,7 +129,7 @@ public:
 class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @overload */
