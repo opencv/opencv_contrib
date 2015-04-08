@@ -130,7 +130,7 @@ public:
 class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false, use_scale = false );
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false, bool use_scale = false );
 };
 
 /** @overload */

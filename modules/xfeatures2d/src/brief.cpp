@@ -104,9 +104,7 @@ inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool us
 
     if ( use_orientation )
     {
-
         // (x,y)' = R * [x,y]
-
         const float R00lx = R(0,0)*lx, R10lx = R(1,0)*lx;
         const float R00rx = R(0,0)*rx, R10rx = R(1,0)*rx;
         const float R01ly = R(0,1)*ly, R11ly = R(1,1)*ly;
