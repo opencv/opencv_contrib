@@ -120,6 +120,7 @@ public:
 
 @param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
 @param use_orientation sample patterns using keypoints orientation, disabled by default.
+@param use_scale sample patterns using keypoints size and scale, disabled by default.
 
 @note
    -   A complete BRIEF extractor sample can be found at
@@ -129,7 +130,7 @@ public:
 class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false, use_scale = false );
 };
 
 /** @overload */
