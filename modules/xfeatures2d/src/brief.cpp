@@ -61,7 +61,7 @@ public:
     enum { PATCH_SIZE = 48, KERNEL_SIZE = 9 };
 
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
-    BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false, bool use_scale = false );
+    BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
     virtual void read( const FileNode& );
     virtual void write( FileStorage& ) const;
@@ -73,131 +73,102 @@ public:
     virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
 
 protected:
-    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation, bool use_scale);
+    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation );
 
     int bytes_;
     bool use_orientation_;
-    bool use_scale_;
     PixelTestFn test_fn_;
 };
 
-Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool use_orientation, bool use_scale )
+Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool use_orientation )
 {
-    return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation, use_scale);
+    return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation );
 }
 
-inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool use_orientation, Matx23f R)
+inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool use_orientation, Matx21f R)
 {
-    int response;
-
     static const int HALF_KERNEL = BriefDescriptorExtractorImpl::KERNEL_SIZE / 2;
-
-    // pattern point
-    const int img_y = (int)(pt.pt.y + 0.5) + y;
-    const int img_x = (int)(pt.pt.x + 0.5) + x;
-
-    // sampling edge
-    const int uy = img_y + HALF_KERNEL + 1;
-    const int rx = img_x + HALF_KERNEL + 1;
-    const int ly = img_y - HALF_KERNEL;
-    const int lx = img_x - HALF_KERNEL;
 
     if ( use_orientation )
     {
-        // (x,y)' = R * [x,y]
-        const float R00lx = R(0,0)*lx, R10lx = R(1,0)*lx;
-        const float R00rx = R(0,0)*rx, R10rx = R(1,0)*rx;
-        const float R01ly = R(0,1)*ly, R11ly = R(1,1)*ly;
-        const float R01uy = R(0,1)*uy, R11uy = R(1,1)*uy;
-
-        // (uy, rx)
-        const int uy0 = (int)(R10rx + R11uy + R(1,2) + 0.5);
-        const int rx0 = (int)(R00rx + R01uy + R(0,2) + 0.5);
-        // (uy, lx)
-        const int uy1 = (int)(R10lx + R11uy + R(1,2) + 0.5);
-        const int lx1 = (int)(R00lx + R01uy + R(0,2) + 0.5);
-        // (ly, rx)
-        const int ly2 = (int)(R10rx + R11ly + R(1,2) + 0.5);
-        const int rx2 = (int)(R00rx + R01ly + R(0,2) + 0.5);
-        // (ly, lx)
-        const int ly3 = (int)(R10lx + R11ly + R(1,2) + 0.5);
-        const int lx3 = (int)(R00lx + R01ly + R(0,2) + 0.5);
-
-        // if outside of image
-        if ((uy0 > sum.rows) || (uy0 < 0)) return 0;
-        if ((rx0 > sum.cols) || (rx0 < 0)) return 0;
-        if ((uy1 > sum.rows) || (uy1 < 0)) return 0;
-        if ((lx1 > sum.cols) || (lx1 < 0)) return 0;
-        if ((ly2 > sum.rows) || (ly2 < 0)) return 0;
-        if ((rx2 > sum.cols) || (rx2 < 0)) return 0;
-        if ((ly3 > sum.rows) || (ly3 < 0)) return 0;
-        if ((lx3 > sum.cols) || (lx3 < 0)) return 0;
-
-        response = sum.at<int>(uy0, rx0)
-                 - sum.at<int>(uy1, lx1)
-                 - sum.at<int>(ly2, rx2)
-                 + sum.at<int>(ly3, lx3);
+      int rx = ((float)x)*R(1,0) - ((float)y)*R(0,0);
+      int ry = ((float)x)*R(0,0) + ((float)y)*R(1,0);
+      if (rx > 24) rx = 24; if (rx < -24) rx = -24;
+      if (ry > 24) ry = 24; if (ry < -24) ry = -24;
+      x = rx; y = ry;
     }
-    else
-    {
-        response = sum.at<int>(uy, rx)
-                 - sum.at<int>(uy, lx)
-                 - sum.at<int>(ly, rx)
-                 + sum.at<int>(ly, lx);
-    }
-    return response;
+    const int img_y = (int)(pt.pt.y + 0.5) + y;
+    const int img_x = (int)(pt.pt.x + 0.5) + x;
+    return   sum.at<int>(img_y + HALF_KERNEL + 1, img_x + HALF_KERNEL + 1)
+           - sum.at<int>(img_y + HALF_KERNEL + 1, img_x - HALF_KERNEL)
+           - sum.at<int>(img_y - HALF_KERNEL, img_x + HALF_KERNEL + 1)
+           + sum.at<int>(img_y - HALF_KERNEL, img_x - HALF_KERNEL);
 }
 
-static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation, bool use_scale)
+static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation )
 {
-    Matx23f R;
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
     for (size_t i = 0; i < keypoints.size(); ++i)
     {
         uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
         if ( use_orientation )
-          R = getRotationMatrix2D( pt.pt, -pt.angle, use_scale ? pt.size : 1.0f );
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI/180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
 
 #include "generated_16.i"
     }
 }
 
-static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation, bool use_scale)
+static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
-    Matx23f R;
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
     for (size_t i = 0; i < keypoints.size(); ++i)
     {
         uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
         if ( use_orientation )
-          R = getRotationMatrix2D( pt.pt, -pt.angle, use_scale ? pt.size : 1.0f );
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI / 180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
 
 #include "generated_32.i"
     }
 }
 
-static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation, bool use_scale)
+static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
-    Matx23f R;
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
     for (size_t i = 0; i < keypoints.size(); ++i)
     {
         uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
         if ( use_orientation )
-          R = getRotationMatrix2D( pt.pt, -pt.angle, use_scale ? pt.size : 1.0f );
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI/180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
 
 #include "generated_64.i"
     }
 }
 
-BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation, bool use_scale) :
+BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation) :
     bytes_(bytes), test_fn_(NULL)
 {
     use_orientation_ = use_orientation;
-    use_scale_ = use_scale;
 
     switch (bytes)
     {
@@ -277,7 +248,7 @@ void BriefDescriptorExtractorImpl::compute(InputArray image,
 
     descriptors.create((int)keypoints.size(), bytes_, CV_8U);
     descriptors.setTo(Scalar::all(0));
-    test_fn_(sum, keypoints, descriptors, use_orientation_, use_scale_);
+    test_fn_(sum, keypoints, descriptors, use_orientation_);
 }
 
 }
