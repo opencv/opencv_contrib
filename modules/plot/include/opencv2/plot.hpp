@@ -50,11 +50,6 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <iostream>
-#include <stdio.h>
-#include <vector>
-#include <algorithm>
 
 /**
 @defgroup plot Plot function for Mat data
