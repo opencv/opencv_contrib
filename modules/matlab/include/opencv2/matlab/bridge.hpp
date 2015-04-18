@@ -85,6 +85,7 @@ typedef cv::Ptr<AlignMTB> Ptr_AlignMTB;
 typedef cv::Ptr<CalibrateDebevec> Ptr_CalibrateDebevec;
 typedef cv::Ptr<CalibrateRobertson> Ptr_CalibrateRobertson;
 typedef cv::Ptr<DenseOpticalFlow> Ptr_DenseOpticalFlow;
+typedef cv::Ptr<DualTVL1OpticalFlow> Ptr_DualTVL1OpticalFlow;
 typedef cv::Ptr<MergeDebevec> Ptr_MergeDebevec;
 typedef cv::Ptr<MergeMertens> Ptr_MergeMertens;
 typedef cv::Ptr<MergeRobertson> Ptr_MergeRobertson;
@@ -467,6 +468,11 @@ public:
   Bridge& operator=(const Ptr_DenseOpticalFlow& ) { return *this; }
   Ptr_DenseOpticalFlow toPtrDenseOpticalFlow() { return Ptr_DenseOpticalFlow(); }
   operator Ptr_DenseOpticalFlow() { return toPtrDenseOpticalFlow(); }
+
+  // ---------------------------   Ptr_DualTVL1OpticalFlow   -------------------
+  Bridge& operator=(const Ptr_DualTVL1OpticalFlow& ) { return *this; }
+  Ptr_DualTVL1OpticalFlow toPtrDualTVL1OpticalFlow() { return Ptr_DualTVL1OpticalFlow(); }
+  operator Ptr_DualTVL1OpticalFlow() { return toPtrDualTVL1OpticalFlow(); }
 
   // ---------------------------   Ptr_MergeDebevec   -----------------------
   Bridge& operator=(const Ptr_MergeDebevec& ) { return *this; }
