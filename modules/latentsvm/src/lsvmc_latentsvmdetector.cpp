@@ -51,10 +51,10 @@ std::string extractModelName( const std::string& filename );
 
 const int pca_size = 31;
 
-CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename);
-void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector);
-CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
-                                CvLatentSvmDetectorCaskade* detector,
+CvLatentSvmDetectorCascade* cvLoadLatentSvmDetectorCascade(const char* filename);
+void cvReleaseLatentSvmDetectorCascade(CvLatentSvmDetectorCascade** detector);
+CvSeq* cvLatentSvmDetectObjectsCascade(IplImage* image,
+                                CvLatentSvmDetectorCascade* detector,
                                 CvMemStorage* storage,
                                 float overlap_threshold);
 
@@ -62,17 +62,17 @@ CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
 // load trained detector from a file
 //
 // API
-// CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetector(const char* filename);
+// CvLatentSvmDetectorCascade* cvLoadLatentSvmDetector(const char* filename);
 // INPUT
 // filename             - path to the file containing the parameters of
 //                      - trained Latent SVM detector
 // OUTPUT
 // trained Latent SVM detector in internal representation
 */
-CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename)
+CvLatentSvmDetectorCascade* cvLoadLatentSvmDetectorCascade(const char* filename)
 {
-    CvLatentSvmDetectorCaskade* detector = 0;
-    CvLSVMFilterObjectCaskade** filters = 0;
+    CvLatentSvmDetectorCascade* detector = 0;
+    CvLSVMFilterObjectCascade** filters = 0;
     int kFilters = 0;
     int kComponents = 0;
     int* kPartFilters = 0;
@@ -84,7 +84,7 @@ CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename)
     err_code = loadModel(filename, &filters, &kFilters, &kComponents, &kPartFilters, &b, &scoreThreshold, &PCAcoeff);
     if (err_code != LATENT_SVM_OK) return 0;
 
-    detector = (CvLatentSvmDetectorCaskade*)malloc(sizeof(CvLatentSvmDetectorCaskade));
+    detector = (CvLatentSvmDetectorCascade*)malloc(sizeof(CvLatentSvmDetectorCascade));
     detector->filters = filters;
     detector->b = b;
     detector->num_components = kComponents;
@@ -98,15 +98,15 @@ CvLatentSvmDetectorCaskade* cvLoadLatentSvmDetectorCaskade(const char* filename)
 }
 
 /*
-// release memory allocated for CvLatentSvmDetectorCaskade structure
+// release memory allocated for CvLatentSvmDetectorCascade structure
 //
 // API
-// void cvReleaseLatentSvmDetector(CvLatentSvmDetectorCaskade** detector);
+// void cvReleaseLatentSvmDetector(CvLatentSvmDetectorCascade** detector);
 // INPUT
-// detector             - CvLatentSvmDetectorCaskade structure to be released
+// detector             - CvLatentSvmDetectorCascade structure to be released
 // OUTPUT
 */
-void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector)
+void cvReleaseLatentSvmDetectorCascade(CvLatentSvmDetectorCascade** detector)
 {
     free((*detector)->b);
     free((*detector)->num_part_filters);
@@ -127,7 +127,7 @@ void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector)
 //
 // API
 // CvSeq* cvLatentSvmDetectObjects(const IplImage* image,
-//                                  CvLatentSvmDetectorCaskade* detector,
+//                                  CvLatentSvmDetectorCascade* detector,
 //                                  CvMemStorage* storage,
 //                                  float overlap_threshold = 0.5f);
 // INPUT
@@ -139,13 +139,13 @@ void cvReleaseLatentSvmDetectorCaskade(CvLatentSvmDetectorCaskade** detector)
 // OUTPUT
 // sequence of detected objects (bounding boxes and confidence levels stored in CvObjectDetection structures)
 */
-CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
-                                CvLatentSvmDetectorCaskade* detector,
+CvSeq* cvLatentSvmDetectObjectsCascade(IplImage* image,
+                                CvLatentSvmDetectorCascade* detector,
                                 CvMemStorage* storage,
                                 float overlap_threshold)
 {
-    CvLSVMFeaturePyramidCaskade *H = 0;
-	CvLSVMFeaturePyramidCaskade *H_PCA = 0;
+    CvLSVMFeaturePyramidCascade *H = 0;
+	CvLSVMFeaturePyramidCascade *H_PCA = 0;
     CvPoint *points = 0, *oppPoints = 0;
     int kPoints = 0;
     float *score = 0;
@@ -161,18 +161,18 @@ CvSeq* cvLatentSvmDetectObjectsCaskade(IplImage* image,
         cvCvtColor(image, image, CV_BGR2RGB);
 
     // Getting maximum filter dimensions
-    getMaxFilterDims((const CvLSVMFilterObjectCaskade**)(detector->filters), detector->num_components,
+    getMaxFilterDims((const CvLSVMFilterObjectCascade**)(detector->filters), detector->num_components,
                      detector->num_part_filters, &maxXBorder, &maxYBorder);
     // Create feature pyramid with nullable border
     H = createFeaturePyramidWithBorder(image, maxXBorder, maxYBorder);
 	
-	// Create PSA feature pyramid
+	// Create PCA feature pyramid
     H_PCA = createPCA_FeaturePyramid(H, detector, maxXBorder, maxYBorder);
     
     FeaturePyramid32(H, maxXBorder, maxYBorder);
 	
     // Search object
-    error = searchObjectThresholdSomeComponents(H, H_PCA,(const CvLSVMFilterObjectCaskade**)(detector->filters),
+    error = searchObjectThresholdSomeComponents(H, H_PCA,(const CvLSVMFilterObjectCascade**)(detector->filters),
         detector->num_components, detector->num_part_filters, detector->b, detector->score_threshold,
         &points, &oppPoints, &score, &kPoints);
     if (error != LATENT_SVM_OK)
@@ -226,7 +226,7 @@ public:
     size_t getClassCount() const;
 
 private:
-    std::vector<CvLatentSvmDetectorCaskade*> detectors;
+    std::vector<CvLatentSvmDetectorCascade*> detectors;
     std::vector<std::string> classNames;
 };
 
@@ -250,7 +250,7 @@ LSVMDetectorImpl::LSVMDetectorImpl( const std::vector<std::string>& filenames, c
         if( filename.length() < 5 || filename.substr(filename.length()-4, 4) != ".xml" )
             continue;
 
-        CvLatentSvmDetectorCaskade* detector = cvLoadLatentSvmDetectorCaskade( filename.c_str() );
+        CvLatentSvmDetectorCascade* detector = cvLoadLatentSvmDetectorCascade( filename.c_str() );
         if( detector )
         {
             detectors.push_back( detector );
@@ -267,7 +267,7 @@ LSVMDetectorImpl::LSVMDetectorImpl( const std::vector<std::string>& filenames, c
 LSVMDetectorImpl::~LSVMDetectorImpl()
 {
     for(size_t i = 0; i < detectors.size(); i++)
-      cv::lsvm::cvReleaseLatentSvmDetectorCaskade(&detectors[i]);
+      cv::lsvm::cvReleaseLatentSvmDetectorCascade(&detectors[i]);
 }
 
 bool LSVMDetectorImpl::isEmpty() const
@@ -313,7 +313,7 @@ void LSVMDetectorImpl::detect( cv::Mat const &image,
     {
         IplImage image_ipl = image;
         CvMemStorage* storage = cvCreateMemStorage(0);
-        CvSeq* detections = cv::lsvm::cvLatentSvmDetectObjectsCaskade( &image_ipl, (CvLatentSvmDetectorCaskade*)(detectors[classID]), storage, overlapThreshold);
+        CvSeq* detections = cv::lsvm::cvLatentSvmDetectObjectsCascade( &image_ipl, (CvLatentSvmDetectorCascade*)(detectors[classID]), storage, overlapThreshold);
 
         // convert results
         objectDetections.reserve( objectDetections.size() + detections->total );

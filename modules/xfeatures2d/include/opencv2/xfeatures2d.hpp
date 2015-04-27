@@ -64,7 +64,7 @@ namespace xfeatures2d
 //! @addtogroup xfeatures2d_experiment
 //! @{
 
-/** @brief Class implementing the FREAK (*Fast Retina Keypoint*) keypoint descriptor, described in @cite AOV12.
+/** @brief Class implementing the FREAK (*Fast Retina Keypoint*) keypoint descriptor, described in @cite AOV12 .
 
 The algorithm propose a novel keypoint descriptor inspired by the human visual system and more
 precisely the retina, coined Fast Retina Key- point (FREAK). A cascade of binary strings is
@@ -116,7 +116,7 @@ public:
  * BRIEF Descriptor
  */
 
-/** @brief Class for computing BRIEF descriptors described in @cite calon2010
+/** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
 @note
    -   A complete BRIEF extractor sample can be found at
@@ -128,7 +128,71 @@ class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
 public:
     static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
-    
+
+/** @overload */
+CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
+                      int threshold, bool nonmaxSuppression=true );
+
+/** @brief Detects corners using the AGAST algorithm
+
+@param image grayscale image where keypoints (corners) are detected.
+@param keypoints keypoints detected on the image.
+@param threshold threshold on difference between intensity of the central pixel and pixels of a
+circle around this pixel.
+@param nonmaxSuppression if true, non-maximum suppression is applied to detected corners
+(keypoints).
+@param type one of the four neighborhoods as defined in the paper:
+AgastFeatureDetector::AGAST_5_8, AgastFeatureDetector::AGAST_7_12d,
+AgastFeatureDetector::AGAST_7_12s, AgastFeatureDetector::OAST_9_16
+
+Detects corners using the AGAST algorithm by @cite mair2010_agast .
+
+ */
+CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
+                      int threshold, bool nonmaxSuppression, int type );
+
+/** @brief Wrapping class for feature detection using the AGAST method. :
+ */
+class CV_EXPORTS_W AgastFeatureDetector : public Feature2D
+{
+public:
+    enum
+    {
+        AGAST_5_8 = 0, AGAST_7_12d = 1, AGAST_7_12s = 2, OAST_9_16 = 3,
+        THRESHOLD = 10000, NONMAX_SUPPRESSION = 10001,
+    };
+
+    CV_WRAP static Ptr<AgastFeatureDetector> create( int threshold=10,
+                                                     bool nonmaxSuppression=true,
+                                                     int type=AgastFeatureDetector::OAST_9_16 );
+
+    CV_WRAP virtual void setThreshold(int threshold) = 0;
+    CV_WRAP virtual int getThreshold() const = 0;
+
+    CV_WRAP virtual void setNonmaxSuppression(bool f) = 0;
+    CV_WRAP virtual bool getNonmaxSuppression() const = 0;
+
+    CV_WRAP virtual void setType(int type) = 0;
+    CV_WRAP virtual int getType() const = 0;
+};
+
+/** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
+
+An image descriptor that can be computed very fast, while being
+about as robust as, for example, SURF or BRIEF.
+ */
+class CV_EXPORTS LUCID : public DescriptorExtractor
+{
+public:
+    /**
+     * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+     */
+    static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+};
+
+
+
 //! @}
 
 }

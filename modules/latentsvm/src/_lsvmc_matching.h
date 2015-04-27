@@ -85,7 +85,7 @@ int computeBorderSize(int maxXBorder, int maxYBorder, int *bx, int *by);
 // RESULT
 // Error status
 */
-int addNullableBorder(CvLSVMFeatureMapCaskade *map, int bx, int by);
+int addNullableBorder(CvLSVMFeatureMapCascade *map, int bx, int by);
 
 /*
 // Perform non-maximum suppression algorithm (described in original paper)
@@ -117,12 +117,12 @@ int nonMaximumSuppression(int numBoxes, const CvPoint *points,
                           float overlapThreshold, 
                           int *numBoxesOut, CvPoint **pointsOut, 
                           CvPoint **oppositePointsOut, float **scoreOut);
-int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
                      const int *kPartFilters, 
                      unsigned int *maxXBorder, unsigned int *maxYBorder);
 //}
 
-int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
                      const int *kPartFilters, 
                      unsigned int *maxXBorder, unsigned int *maxYBorder);
 }

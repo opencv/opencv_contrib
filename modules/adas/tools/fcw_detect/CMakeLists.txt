@@ -13,7 +13,7 @@ endif()
 project(${the_target})
 
 ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
-ocv_include_modules(${OPENCV_${the_target}_DEPS})
+ocv_include_modules_recurse(${OPENCV_${the_target}_DEPS})
 
 file(GLOB ${the_target}_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 

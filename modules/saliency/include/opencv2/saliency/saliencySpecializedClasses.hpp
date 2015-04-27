@@ -76,8 +76,22 @@ public:
   void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
-  CV_IMPL_PROPERTY(int, ImageWidth, resImWidth)
-  CV_IMPL_PROPERTY(int, ImageHeight, resImHeight)
+  int getImageWidth() const
+  {
+    return resImWidth;
+  }
+  inline void setImageWidth(int val)
+  {
+    resImWidth = val;
+  }
+  int getImageHeight() const
+  {
+    return resImHeight;
+  }
+  void setImageHeight(int val)
+  {
+    resImHeight = val;
+  }
 
 protected:
   bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
@@ -114,8 +128,22 @@ public:
   */
   bool init();
 
-  CV_IMPL_PROPERTY(int, ImageWidth, imageWidth)
-  CV_IMPL_PROPERTY(int, ImageHeight, imageHeight)
+  int getImageWidth() const
+  {
+    return imageWidth;
+  }
+  inline void setImageWidth(int val)
+  {
+    imageWidth = val;
+  }
+  int getImageHeight() const
+  {
+    return imageHeight;
+  }
+  void setImageHeight(int val)
+  {
+    imageHeight = val;
+  }
 
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the accomplishment of the
@@ -205,9 +233,30 @@ public:
      */
   void setBBResDir( std::string resultsDir );
 
-  CV_IMPL_PROPERTY(double, Base, _base)
-  CV_IMPL_PROPERTY(int, NSS, _NSS)
-  CV_IMPL_PROPERTY(int, W, _W)
+  double getBase() const
+  {
+    return _base;
+  }
+  inline void setBase(double val)
+  {
+    _base = val;
+  }
+  int getNSS() const
+  {
+    return _NSS;
+  }
+  void setNSS(int val)
+  {
+    _NSS = val;
+  }
+  int getW() const
+  {
+    return _W;
+  }
+  void setW(int val)
+  {
+    _W = val;
+  }
 
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the
