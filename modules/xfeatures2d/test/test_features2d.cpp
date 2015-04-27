@@ -994,12 +994,6 @@ TEST( Features2d_Detector_STAR, regression )
     test.safe_run();
 }
 
-TEST( Features2d_Detector_Brisk, regression )
-{
-    CV_FeatureDetectorTest test( "detector-brisk", Brisk::create() );
-    test.safe_run();
-}
-
 /*
  * Descriptors
  */
@@ -1038,15 +1032,6 @@ TEST( Features2d_DescriptorExtractor_LUCID, regression )
                                              LUCID::create(1, 2) );
     test.safe_run();
 }
-
-TEST( Features2d_DescriptorExtractor_Brisk, regression )
-{
-    CV_DescriptorExtractorTest<Hamming> test( "descriptor-brisk",  1,
-                                             Brisk::create() );
-    test.safe_run();
-}
-
-
 
 /*#if CV_SSE2
 TEST( Features2d_DescriptorExtractor_Calonder_uchar, regression )
