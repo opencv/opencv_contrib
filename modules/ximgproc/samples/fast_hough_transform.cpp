@@ -114,24 +114,13 @@ static bool fht(const Mat &src, Mat &dst,
          int dstDepth, int angleRange, int op, int skew)
 {
     clock_t clocks = clock();
-    //for (int i = 0; i < 100; ++i)
-    //{
-      FastHoughTransform(src, dst, dstDepth, angleRange, op, skew);
-    //}
+
+    FastHoughTransform(src, dst, dstDepth, angleRange, op, skew);
+
     clocks = clock() - clocks;
     double secs = (double)clocks / CLOCKS_PER_SEC;
     cout << std::setprecision(2) << "FastHoughTransform finished in " << secs
          << " seconds" << endl;
-
-    //clocks = clock();
-    //for (int i = 0; i < 100; ++i)
-    //{
-    //    vector<Vec2f> s_lines;
-    //    HoughLines(src, s_lines, 1, CV_PI/360, 100, 0, 0);
-    //}
-    //clocks = clock() - clocks;
-    //secs = (double)clocks / CLOCKS_PER_SEC;
-    //std::cout << std::setprecision(2) << "HoughLines finished in " << secs << " seconds" << std::endl;
 
     return true;
 }
