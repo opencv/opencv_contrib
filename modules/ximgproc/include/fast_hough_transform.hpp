@@ -123,7 +123,7 @@ typedef enum {
 * @param   dst         The destination image, result of transformation.
 * @param   src         The source (input) image.
 * @param   dstMatDepth The depth of destination image
-* @param   operation   The operation to be applied, see cv::HoughOp
+* @param   op          The operation to be applied, see cv::HoughOp
 * @param   angleRange  The part of Hough space to calculate, see cv::AngleRangeOption
 * @param   makeSkew    Specifies to do or not to do image skewing, see cv::HoughDeskewOption
 *
