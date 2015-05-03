@@ -11,7 +11,7 @@
  **
  ** Maintainers : Listic lab (code author current affiliation & applications) and Gipsa Lab (original research origins & applications)
  **
- **  Creation - enhancement process 2007-2011
+ **  Creation - enhancement process 2007-2015
  **      Author: Alexandre Benoit (benoit.alexandre.vision@gmail.com), LISTIC lab, Annecy le vieux, France
  **
  ** Theses algorithm have been developped by Alexandre BENOIT since his thesis with Alice Caplier at Gipsa-Lab (www.gipsa-lab.inpg.fr) and the research he pursues at LISTIC Lab (www.listic.univ-savoie.fr).
@@ -30,7 +30,7 @@
  **               For Open Source Computer Vision Library
  **
  ** Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
- ** Copyright (C) 2008-2011, Willow Garage Inc., all rights reserved.
+ ** Copyright (C) 2008-2015, Willow Garage Inc., all rights reserved.
  **
  **               For Human Visual System tools (bioinspired)
  ** Copyright (C) 2007-2011, LISTIC Lab, Annecy le Vieux and GIPSA Lab, Grenoble, France, all rights reserved.
@@ -136,12 +136,12 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
          * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(Retina::RetinaParameters newParameters);
+    void setup(RetinaParameters newParameters);
 
     /**
     * @return the current parameters setup
     */
-    struct Retina::RetinaParameters getParameters();
+    struct RetinaParameters getParameters();
 
     /**
      * parameters setup display method
@@ -336,7 +336,7 @@ void RetinaImpl::setColorSaturation(const bool saturateColors, const float color
     _retinaFilter->setColorSaturation(saturateColors, colorSaturationValue);
 }
 
-struct Retina::RetinaParameters RetinaImpl::getParameters(){return _retinaParameters;}
+struct RetinaParameters RetinaImpl::getParameters(){return _retinaParameters;}
 
 void RetinaImpl::setup(String retinaParameterFile, const bool applyDefaultSetupOnFailure)
 {
@@ -416,10 +416,10 @@ void RetinaImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailur
     printf("%s\n", printSetup().c_str());
 }
 
-void RetinaImpl::setup(Retina::RetinaParameters newConfiguration)
+void RetinaImpl::setup(RetinaParameters newConfiguration)
 {
     // simply copy structures
-    memcpy(&_retinaParameters, &newConfiguration, sizeof(Retina::RetinaParameters));
+    memcpy(&_retinaParameters, &newConfiguration, sizeof(RetinaParameters));
     // apply setup
     setupOPLandIPLParvoChannel(_retinaParameters.OPLandIplParvo.colorMode, _retinaParameters.OPLandIplParvo.normaliseOutput, _retinaParameters.OPLandIplParvo.photoreceptorsLocalAdaptationSensitivity, _retinaParameters.OPLandIplParvo.photoreceptorsTemporalConstant, _retinaParameters.OPLandIplParvo.photoreceptorsSpatialConstant, _retinaParameters.OPLandIplParvo.horizontalCellsGain, _retinaParameters.OPLandIplParvo.hcellsTemporalConstant, _retinaParameters.OPLandIplParvo.hcellsSpatialConstant, _retinaParameters.OPLandIplParvo.ganglionCellsSensitivity);
     setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency,_retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);

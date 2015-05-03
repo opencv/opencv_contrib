@@ -141,7 +141,7 @@ read)* and opencv_bioinspired *(Retina description)* libraries to compile.
 
 @code{.sh}
 // compile
-gcc retina_tutorial.cpp -o Retina_tuto -lopencv_core -lopencv_highgui -lopencv_bioinspired
+gcc retina_tutorial.cpp -o Retina_tuto -lopencv_core -lopencv_highgui -lopencv_bioinspired -lopencv_videoio -lopencv_imgcodecs
 
 // Run commands : add 'log' as a last parameter to apply a spatial log sampling (simulates retina sampling)
 // run on webcam
