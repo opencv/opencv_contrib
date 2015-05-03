@@ -12,6 +12,7 @@
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include <iostream>
+#include <cstring>
 
 // main function
 int main(int argc, char* argv[]) {
@@ -36,12 +37,10 @@ int main(int argc, char* argv[]) {
 	std::cout<<" NOTE : this program generates the default retina parameters file 'RetinaDefaultParameters.xml'"<<std::endl;
 	std::cout<<" => you can use this to fine tune parameters and load them if you save to file 'RetinaSpecificParameters.xml'"<<std::endl;
        
-        if (strcmp(argv[1],  "help"){
+        if (strcmp(argv[1],  "help")==0){
 	    std::cout<<"No help provided for now, please test the retina Demo for a more complete program"<<std::endl;
         }
   }
-
-  bool useLogSampling = !strcmp(argv[argc-1], "log"); // check if user wants retina log sampling processing
 
   std::string inputMediaType=argv[1];
   // declare the retina input buffer.
