@@ -1,3 +1,11 @@
+//============================================================================
+// Name        : retinademo.cpp
+// Author      : Alexandre Benoit, benoit.alexandre.vision@gmail.com
+// Version     : 0.1
+// Copyright   : LISTIC/GIPSA French Labs, May 2015
+// Description : Gipsa/LISTIC Labs quick retina demo in C++, Ansi-style
+//============================================================================
+
 // include bioinspired module and OpenCV core utilities
 #include "opencv2/bioinspired.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -7,6 +15,35 @@
 
 // main function
 int main(int argc, char* argv[]) {
+
+  // basic input arguments checking
+  if (argc>1)
+  {
+        std::cout<<"****************************************************"<<std::endl;
+	std::cout<<"* Retina demonstration : demonstrates the use of is a wrapper class of the Gipsa/Listic Labs retina model."<<std::endl;
+	std::cout<<"* This retina model allows spatio-temporal image processing (applied on a webcam sequences)."<<std::endl;
+	std::cout<<"* As a summary, these are the retina model properties:"<<std::endl;
+	std::cout<<"* => It applies a spectral whithening (mid-frequency details enhancement)"<<std::endl;
+	std::cout<<"* => high frequency spatio-temporal noise reduction"<<std::endl;
+	std::cout<<"* => low frequency luminance to be reduced (luminance range compression)"<<std::endl;
+	std::cout<<"* => local logarithmic luminance compression allows details to be enhanced in low light conditions\n"<<std::endl;
+	std::cout<<"* for more information, reer to the following papers :"<<std::endl;
+	std::cout<<"* Benoit A., Caplier A., Durette B., Herault, J., \"USING HUMAN VISUAL SYSTEM MODELING FOR BIO-INSPIRED LOW LEVEL IMAGE PROCESSING\", Elsevier, Computer Vision and Image Understanding 114 (2010), pp. 758-773, DOI: http://dx.doi.org/10.1016/j.cviu.2010.01.011"<<std::endl;
+	std::cout<<"* Vision: Images, Signals and Neural Networks: Models of Neural Processing in Visual Perception (Progress in Neural Processing),By: Jeanny Herault, ISBN: 9814273686. WAPI (Tower ID): 113266891."<<std::endl;
+	std::cout<<"* => reports comments/remarks at benoit.alexandre.vision@gmail.com"<<std::endl;
+	std::cout<<"* => more informations and papers at : http://sites.google.com/site/benoitalexandrevision/"<<std::endl;
+	std::cout<<"****************************************************"<<std::endl;
+	std::cout<<" NOTE : this program generates the default retina parameters file 'RetinaDefaultParameters.xml'"<<std::endl;
+	std::cout<<" => you can use this to fine tune parameters and load them if you save to file 'RetinaSpecificParameters.xml'"<<std::endl;
+       
+        if (strcmp(argv[1],  "help"){
+	    std::cout<<"No help provided for now, please test the retina Demo for a more complete program"<<std::endl;
+        }
+  }
+
+  bool useLogSampling = !strcmp(argv[argc-1], "log"); // check if user wants retina log sampling processing
+
+  std::string inputMediaType=argv[1];
   // declare the retina input buffer.
   cv::Mat inputFrame;
   // setup webcam reader and grab a first frame to get its size
