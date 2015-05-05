@@ -254,7 +254,7 @@ TWeight GCGraph<TWeight>::maxFlow()
                 minWeight = MIN(minWeight, weight);
                 CV_Assert( minWeight > 0 );
             }
-            weight = abs( TWeight(v->weight) );
+            weight = std::abs( TWeight(v->weight) );
             minWeight = MIN(minWeight, weight);
             CV_Assert( minWeight > 0 );
         }
