@@ -479,7 +479,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
                 /////////////////// REPLACEMENT of backgroundModel template ///////////////////
                 //replace TA with current TK
                 backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-                potentialBackground.at<Vec2f>( i, j )[0] = NAN;
+                potentialBackground.at<Vec2f>( i, j )[0] = (float)NAN;
                 potentialBackground.at<Vec2f>( i, j )[1] = 0;
 
                 break;
@@ -489,7 +489,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
           else
           {
             backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-            potentialBackground.at<Vec2f>( i, j )[0] = NAN;
+            potentialBackground.at<Vec2f>( i, j )[0] = (float)NAN;
             potentialBackground.at<Vec2f>( i, j )[1] = 0;
           }
         }  // close if of EVALUATION
@@ -501,7 +501,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   return true;
 }
 
-bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
+bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
   Mat highResBFMask;
   Mat lowResBFMask;

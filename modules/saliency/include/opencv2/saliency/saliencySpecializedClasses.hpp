@@ -94,7 +94,7 @@ public:
   }
 
 protected:
-  bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
   int resImWidth;
   int resImHeight;
 
@@ -154,7 +154,7 @@ protected:
        The saliency map is given by a single *Mat* (one for each frame of an hypothetical video
         stream).
   */
-  bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap );
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
 
 private:
 
@@ -268,7 +268,7 @@ protected:
     specialized algorithm, the objectnessBoundingBox is a *vector\<Vec4i\>*. Each bounding box is
     represented by a *Vec4i* for (minX, minY, maxX, maxY).
      */
-  bool computeSaliencyImpl( const InputArray image, OutputArray objectnessBoundingBox );
+  bool computeSaliencyImpl( InputArray image, OutputArray objectnessBoundingBox );
 
 private:
 

@@ -1189,6 +1189,60 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
   BOILERPLATE_CODE("TLD",TrackerTLD);
 };
 
+/** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
+ * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).
+ * The original paper of KCF is available at <http://home.isr.uc.pt/~henriques/circulant/index.html>
+ * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
+ * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.
+ */
+class CV_EXPORTS_W TrackerKCF : public Tracker
+{
+ public:
+  /**
+   * \brief Feature type to be used in the tracking grayscale, colornames, compressed color-names
+   * The modes available now:
+    -   "GRAY" -- Use grayscale values as the feature
+    -   "CN" -- Color-names feature
+   */
+  enum MODE {GRAY, CN, CN2};
+
+  struct CV_EXPORTS Params
+  {
+    /**
+     * \brief Constructor
+     */
+    Params();
+
+    /**
+     * \brief Read parameters from file, currently unused
+     */
+    void read( const FileNode& /*fn*/ );
+
+    /**
+     * \brief Read parameters from file, currently unused
+     */
+    void write( FileStorage& /*fs*/ ) const;
+
+    double sigma;                 //!<  gaussian kernel bandwidth
+    double lambda;                //!<  regularization
+    double interp_factor;         //!<  linear interpolation factor for adaptation
+    double output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
+    double pca_learning_rate;     //!<  compression learning rate
+    bool resize;                  //!<  activate the resize feature to improve the processing speed
+    bool split_coeff;             //!<  split the training coefficients into two matrices
+    bool wrap_kernel;             //!<  wrap around the kernel values
+    bool compress_feature;        //!<  activate the pca method to compress the features
+    int max_patch_size;           //!<  threshold for the ROI size
+    int compressed_size;          //!<  feature size after compression
+    MODE descriptor;              //!<  descriptor type
+  };
+
+  /** @brief Constructor
+      @param parameters KCF parameters TrackerKCF::Params
+  */
+  BOILERPLATE_CODE("KCF",TrackerKCF);
+};
+
 //! @}
 
 } /* namespace cv */

@@ -78,7 +78,7 @@ class CV_EXPORTS Saliency : public virtual Algorithm
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
-  bool computeSaliency( const InputArray image, OutputArray saliencyMap );
+  bool computeSaliency( InputArray image, OutputArray saliencyMap );
 
   /**
    * \brief Get the name of the specific saliency type
@@ -88,7 +88,7 @@ class CV_EXPORTS Saliency : public virtual Algorithm
 
  protected:
 
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap ) = 0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) = 0;
   String className;
 };
 
@@ -114,7 +114,7 @@ class CV_EXPORTS StaticSaliency : public virtual Saliency
      */
   bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
  protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
 };
 
@@ -123,7 +123,7 @@ class CV_EXPORTS MotionSaliency : public virtual Saliency
 {
 
  protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
 };
 
@@ -132,7 +132,7 @@ class CV_EXPORTS Objectness : public virtual Saliency
 {
 
  protected:
-  virtual bool computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
 };
 

@@ -1032,6 +1032,13 @@ TEST( Features2d_DescriptorExtractor_LUCID, regression )
     test.safe_run();
 }
 
+TEST( Features2d_DescriptorExtractor_LATCH, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-latch",  1,
+                                             LATCH::create() );
+    test.safe_run();
+}
+
 
 
 /*#if CV_SSE2
@@ -1239,4 +1246,32 @@ TEST(DISABLED_Features2d_SURF_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SURF::create());
     test.safe_run();
+}
+
+TEST( XFeatures2d_DescriptorExtractor, batch )
+{
+    string path = string(cvtest::TS::ptr()->get_data_path() + "detectors_descriptors_evaluation/images_datasets/graf");
+    vector<Mat> imgs, descriptors;
+    vector<vector<KeyPoint> > keypoints;
+    int i, n = 6;
+    Ptr<SIFT> sift = SIFT::create();
+
+    for( i = 0; i < n; i++ )
+    {
+        string imgname = format("%s/img%d.png", path.c_str(), i+1);
+        Mat img = imread(imgname, 0);
+        imgs.push_back(img);
+    }
+
+    sift->detect(imgs, keypoints);
+    sift->compute(imgs, keypoints, descriptors);
+
+    ASSERT_EQ((int)keypoints.size(), n);
+    ASSERT_EQ((int)descriptors.size(), n);
+
+    for( i = 0; i < n; i++ )
+    {
+        EXPECT_GT((int)keypoints[i].size(), 100);
+        EXPECT_GT(descriptors[i].rows, 100);
+    }
 }

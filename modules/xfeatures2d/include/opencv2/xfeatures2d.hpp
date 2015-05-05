@@ -76,7 +76,7 @@ They are competitive alternatives to existing keypoints in particular for embedd
    -   An example on how to use the FREAK descriptor can be found at
         opencv_source_code/samples/cpp/freak_demo.cpp
  */
-class CV_EXPORTS FREAK : public Feature2D
+class CV_EXPORTS_W FREAK : public Feature2D
 {
 public:
 
@@ -92,7 +92,7 @@ public:
     @param nOctaves Number of octaves covered by the detected keypoints.
     @param selectedPairs (Optional) user defined selected pairs indexes,
      */
-    static Ptr<FREAK> create(bool orientationNormalized = true,
+    CV_WRAP static Ptr<FREAK> create(bool orientationNormalized = true,
                              bool scaleNormalized = true,
                              float patternScale = 22.0f,
                              int nOctaves = 4,
@@ -102,11 +102,11 @@ public:
 
 /** @brief The class implements the keypoint detector introduced by @cite Agrawal08, synonym of StarDetector. :
  */
-class CV_EXPORTS StarDetector : public FeatureDetector
+class CV_EXPORTS_W StarDetector : public Feature2D
 {
 public:
     //! the full constructor
-    static Ptr<StarDetector> create(int maxSize=45, int responseThreshold=30,
+    CV_WRAP static Ptr<StarDetector> create(int maxSize=45, int responseThreshold=30,
                          int lineThresholdProjected=10,
                          int lineThresholdBinarized=8,
                          int suppressNonmaxSize=5);
@@ -118,62 +118,14 @@ public:
 
 /** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
-@note
-   -   A complete BRIEF extractor sample can be found at
-        opencv_source_code/samples/cpp/brief_match_test.cpp
+@param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
 
  */
-class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
+class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
-};
-
-/** @overload */
-CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
-                      int threshold, bool nonmaxSuppression=true );
-
-/** @brief Detects corners using the AGAST algorithm
-
-@param image grayscale image where keypoints (corners) are detected.
-@param keypoints keypoints detected on the image.
-@param threshold threshold on difference between intensity of the central pixel and pixels of a
-circle around this pixel.
-@param nonmaxSuppression if true, non-maximum suppression is applied to detected corners
-(keypoints).
-@param type one of the four neighborhoods as defined in the paper:
-AgastFeatureDetector::AGAST_5_8, AgastFeatureDetector::AGAST_7_12d,
-AgastFeatureDetector::AGAST_7_12s, AgastFeatureDetector::OAST_9_16
-
-Detects corners using the AGAST algorithm by @cite mair2010_agast .
-
- */
-CV_EXPORTS void AGAST( InputArray image, CV_OUT std::vector<KeyPoint>& keypoints,
-                      int threshold, bool nonmaxSuppression, int type );
-
-/** @brief Wrapping class for feature detection using the AGAST method. :
- */
-class CV_EXPORTS_W AgastFeatureDetector : public Feature2D
-{
-public:
-    enum
-    {
-        AGAST_5_8 = 0, AGAST_7_12d = 1, AGAST_7_12s = 2, OAST_9_16 = 3,
-        THRESHOLD = 10000, NONMAX_SUPPRESSION = 10001,
-    };
-
-    CV_WRAP static Ptr<AgastFeatureDetector> create( int threshold=10,
-                                                     bool nonmaxSuppression=true,
-                                                     int type=AgastFeatureDetector::OAST_9_16 );
-
-    CV_WRAP virtual void setThreshold(int threshold) = 0;
-    CV_WRAP virtual int getThreshold() const = 0;
-
-    CV_WRAP virtual void setNonmaxSuppression(bool f) = 0;
-    CV_WRAP virtual bool getNonmaxSuppression() const = 0;
-
-    CV_WRAP virtual void setType(int type) = 0;
-    CV_WRAP virtual int getType() const = 0;
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
@@ -181,14 +133,42 @@ public:
 An image descriptor that can be computed very fast, while being
 about as robust as, for example, SURF or BRIEF.
  */
-class CV_EXPORTS LUCID : public DescriptorExtractor
+class CV_EXPORTS_W LUCID : public Feature2D
 {
 public:
     /**
      * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      */
-    static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+    CV_WRAP static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+};
+
+
+/*
+* LATCH Descriptor
+*/
+
+/** latch Class for computing the LATCH descriptor.
+If you find this code useful, please add a reference to the following paper in your work:
+Gil Levi and Tal Hassner, "LATCH: Learned Arrangements of Three Patch Codes", arXiv preprint arXiv:1501.03719, 15 Jan. 2015
+
+LATCH is a binary descriptor based on learned comparisons of triplets of image patches.
+
+* bytes is the size of the descriptor - can be 64, 32, 16, 8, 4, 2 or 1
+* rotationInvariance - whether or not the descriptor should compansate for orientation changes.
+* half_ssd_size - the size of half of the mini-patches size. For example, if we would like to compare triplets of patches of size 7x7x
+    then the half_ssd_size should be (7-1)/2 = 3.
+
+Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then 
+    you will have to use an extractor which estimates the patch orientation (in degrees). Examples for such extractors are ORB and SIFT.
+
+Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures2D/latch_match.cpp
+
+*/
+class CV_EXPORTS LATCH : public DescriptorExtractor
+{
+public:
+	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 

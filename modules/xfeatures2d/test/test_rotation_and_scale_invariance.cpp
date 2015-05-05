@@ -651,6 +651,16 @@ TEST(Features2d_RotationInvariance_Descriptor_SIFT, regression)
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
+{
+    DescriptorRotationInvarianceTest test(SIFT::create(),
+                                          LATCH::create(),
+                                          NORM_HAMMING,
+                                          0.9999f);
+    test.safe_run();
+}
+
+
 /*
  * Detector's scale invariance check
  */
