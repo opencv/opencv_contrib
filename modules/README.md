@@ -51,3 +51,5 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 21. **opencv_xobjdetect**: Integral Channel Features Detector Framework.
 
 22. **opencv_xphoto**: Additional photo processing algorithms: Color balance / Denoising / Inpainting.
+
+23. **opencv_fuzzy**: New module focused on the fuzzy image processing.
