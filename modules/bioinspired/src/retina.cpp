@@ -241,7 +241,7 @@ public:
      * @param saturateColors: boolean that activates color saturation (if true) or desactivate (if false)
      * @param colorSaturationValue: the saturation factor
      */
-    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0);
+    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f);
 
     /**
      * clear all retina buffers (equivalent to opening the eyes after a long period of eye close ;o)

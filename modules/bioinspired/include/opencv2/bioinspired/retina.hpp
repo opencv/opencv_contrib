@@ -398,7 +398,7 @@ public:
     @param colorSaturationValue the saturation factor : a simple factor applied on the chrominance
     buffers
      */
-    CV_WRAP virtual void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0)=0;
+    CV_WRAP virtual void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f)=0;
 
     /** @brief Clears all retina buffers
 
