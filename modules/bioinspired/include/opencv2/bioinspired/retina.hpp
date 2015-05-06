@@ -295,7 +295,7 @@ public:
     output, set a value between 0.6 and 1 for best results, a high value increases more the low
     value sensitivity... and the output saturates faster, recommended value: 0.7
      */
-    CV_WRAP virtual void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7, const float photoreceptorsTemporalConstant=0.5, const float photoreceptorsSpatialConstant=0.53, const float horizontalCellsGain=0, const float HcellsTemporalConstant=1, const float HcellsSpatialConstant=7, const float ganglionCellsSensitivity=0.7)=0;
+    CV_WRAP virtual void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f)=0;
 
     /** @brief Set parameters values for the Inner Plexiform Layer (IPL) magnocellular channel
 
@@ -322,7 +322,7 @@ public:
     @param localAdaptintegration_k specifies the spatial constant of the low pas filter involved
     in the computation of the local "motion mean" for the local adaptation computation
      */
-    CV_WRAP virtual void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0, const float parasolCells_tau=0, const float parasolCells_k=7, const float amacrinCellsTemporalCutFrequency=1.2, const float V0CompressionParameter=0.95, const float localAdaptintegration_tau=0, const float localAdaptintegration_k=7)=0;
+    CV_WRAP virtual void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f)=0;
 
     /** @brief Method which allows retina to be applied on an input image,
 
@@ -444,11 +444,11 @@ underscaled, then a reduction of the output is allowed without precision leak
 @param samplingStrenght only usefull if param useRetinaLogSampling=true, specifies the strenght of
 the log scale that is applied
  */
-CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
 #ifdef HAVE_OPENCV_OCL
 Ptr<Retina> createRetina_OCL(Size inputSize);
-Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 #endif
 
 //! @}
