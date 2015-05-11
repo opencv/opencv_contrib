@@ -212,7 +212,7 @@ void calcMotionGradient( InputArray _mhi, OutputArray _mask,
         float* orient_row = orient.ptr<float>(y);
         uchar* mask_row = mask.ptr<uchar>(y);
 
-        fastAtan2(dY_max_row, dX_min_row, orient_row, size.width, true);
+        hal::fastAtan2(dY_max_row, dX_min_row, orient_row, size.width, true);
 
         // make orientation zero where the gradient is very small
         for( x = 0; x < size.width; x++ )
