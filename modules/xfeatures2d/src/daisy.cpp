@@ -462,7 +462,7 @@ private:
       for( int x=-sz; x<=sz; x++ )
       {
          counter++;
-         fltr[counter] = exp((-(x-mean)*(x-mean))/v);
+         fltr[counter] = exp((-((float)x-mean)*((float)x-mean))/v);
          sum += fltr[counter];
       }
 
@@ -690,8 +690,8 @@ private:
     template<class T> inline
     float l2norm( T y0, T x0, T y1, T x1 )
     {
-      float d0 = x0 - x1;
-      float d1 = y0 - y1;
+      float d0 = (float) (x0 - x1);
+      float d1 = (float) (y0 - y1);
 
       return sqrt( d0*d0 + d1*d1 );
     }
@@ -768,7 +768,7 @@ private:
     template<class T1, class T2> inline
     void divide(T1* arr, int sz, T2 num )
     {
-      float inv_num = 1.0 / num;
+      float inv_num = (float) (1.0 / num);
 
       for( int i=0; i<sz; i++ )
       {
@@ -804,9 +804,9 @@ private:
 #endif
       for( int l=0; l<layer_no; l++ )
       {
-         float angle = 2*l*CV_PI/layer_no;
-         float kos = cos( angle );
-         float zin = sin( angle );
+         float angle = (float) (2*l*CV_PI/layer_no);
+         float kos = (float) cos( angle );
+         float zin = (float) sin( angle );
 
          T* layer_l = layers + l*data_size;
 
@@ -838,12 +838,12 @@ private:
          {
             int ind = yw+x;
             // dx
-            if( x>0 && x<w-1 ) dx[ind] = ((T)im[ind+1]-(T)im[ind-1])/2.0;
+            if( x>0 && x<w-1 ) dx[ind] = (T) (((T)im[ind+1]-(T)im[ind-1])/2.0f);
             if( x==0         ) dx[ind] = ((T)im[ind+1]-(T)im[ind]);
             if( x==w-1       ) dx[ind] = ((T)im[ind  ]-(T)im[ind-1]);
 
             //dy
-            if( y>0 && y<h-1 ) dy[ind] = ((T)im[ind+w]-(T)im[ind-w])/2.0;
+            if( y>0 && y<h-1 ) dy[ind] = (T) (((T)im[ind+w]-(T)im[ind-w])/2.0f);
             if( y==0         ) dy[ind] = ((T)im[ind+w]-(T)im[ind]);
             if( y==h-1       ) dy[ind] = ((T)im[ind]  -(T)im[ind-w]);
          }
@@ -881,9 +881,9 @@ private:
 #endif
       for( int l=0; l<layer_no; l++ )
       {
-         float angle = 2*l*CV_PI/layer_no;
-         float kos = cos( angle );
-         float zin = sin( angle );
+         float angle = (float) (2*l*CV_PI/layer_no);
+         float kos = (float) cos( angle );
+         float zin = (float) sin( angle );
 
          T* layer_l = layers + l*data_size;
 
@@ -997,7 +997,7 @@ void DAISY_Impl::release_auxilary()
 
 void DAISY_Impl::compute_grid_points()
 {
-    double r_step = m_rad / m_rad_q_no;
+    double r_step = m_rad / (double)m_rad_q_no;
     double t_step = 2*CV_PI/ m_th_q_no;
 
     if( m_grid_points )
@@ -1141,7 +1141,7 @@ void DAISY_Impl::initialize()
     layered_gradient( m_image, m_h, m_w, m_hist_th_q_no, gradient_layers );
 
     // assuming a 0.5 image smoothness, we pull this to 1.6 as in sift
-    smooth_layers( gradient_layers, m_h, m_w, m_hist_th_q_no, sqrt(g_sigma_init*g_sigma_init-0.25) );
+    smooth_layers( gradient_layers, m_h, m_w, m_hist_th_q_no, (float)sqrt(g_sigma_init*g_sigma_init-0.25) );
 
 }
 
@@ -1180,8 +1180,8 @@ void DAISY_Impl::update_selected_cubes()
 {
     for( int r=0; r<m_rad_q_no; r++ )
     {
-      double seed_sigma = (r+1)*m_rad/m_rad_q_no/2.0;
-      g_selected_cubes[r] = quantize_radius( seed_sigma );
+      double seed_sigma = ((double)r+1)*m_rad/m_rad_q_no/2.0;
+      g_selected_cubes[r] = quantize_radius( (float)seed_sigma );
     }
 }
 
@@ -1194,7 +1194,7 @@ int DAISY_Impl::quantize_radius( float rad )
     float mindist=FLT_MAX;
     int mini=0;
     for( int c=0; c<g_cube_number; c++ ) {
-      dist = fabs( m_cube_sigmas[c]-rad );
+      dist = (float) fabs( m_cube_sigmas[c]-rad );
       if( dist < mindist ) {
          mindist = dist;
          mini=c;
@@ -1266,7 +1266,7 @@ void DAISY_Impl::compute_smoothed_gradient_layers()
 
       int fsz = filter_size(sigma);
       float* filter = new float[fsz];
-      gaussian_1d(filter, fsz, sigma, 0);
+      gaussian_1d(filter, fsz, (float)sigma, 0);
 
 #if defined _OPENMP
 #pragma omp parallel for
@@ -1315,7 +1315,7 @@ void DAISY_Impl::smooth_histogram(float *hist, int hsz)
     for (i = 0; i < hsz; i++)
     {
       temp = hist[i];
-      hist[i] = (prev + hist[i] + hist[(i + 1 == hsz) ? 0 : i + 1]) / 3.0;
+      hist[i] = (float) ((prev + hist[i] + hist[(i + 1 == hsz) ? 0 : i + 1]) / 3.0);
       prev = temp;
     }
 }
@@ -1330,10 +1330,10 @@ float DAISY_Impl::interpolate_peak(float left, float center, float right)
     }
     CV_Assert(center >= left  &&  center >= right);
 
-    float den = (left - 2.0 * center + right);
+    float den = (float) (left - 2.0 * center + right);
 
     if( den == 0 ) return 0;
-    else           return 0.5*(left -right)/den;
+    else           return (float) (0.5*(left -right)/den);
 }
 
 int DAISY_Impl::filter_size( double sigma )
@@ -1357,7 +1357,7 @@ void DAISY_Impl::compute_scales()
 
     int imsz = m_w * m_h;
 
-    float sigma = pow( g_sigma_step, g_scale_st)*g_sigma_0;
+    float sigma = (float) ( pow( g_sigma_step, g_scale_st)*g_sigma_0 );
 
     float* sim = blur_gaussian_2d<float,float>( m_image, m_h, m_w, sigma, filter_size(sigma), false);
 
@@ -1375,10 +1375,10 @@ void DAISY_Impl::compute_scales()
     float sigma_new;
     float sigma_inc;
 
-    sigma_prev = g_sigma_0;
+    sigma_prev = (float) g_sigma_0;
     for( i=0; i<g_scale_en; i++ )
     {
-      sigma_new  = pow( g_sigma_step, g_scale_st+i  ) * g_sigma_0;
+      sigma_new  = (float) ( pow( g_sigma_step, g_scale_st+i  ) * g_sigma_0 );
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
@@ -1389,11 +1389,11 @@ void DAISY_Impl::compute_scales()
 #endif
       for( int p=0; p<imsz; p++ )
       {
-         float dog = fabs( next_sim[p] - sim[p] );
+         float dog = (float) fabs( next_sim[p] - sim[p] );
          if( dog > max_dog[p] )
          {
             max_dog[p] = dog;
-            m_scale_map[p] = i;
+            m_scale_map[p] = (float) i;
          }
       }
       deallocate( sim );
@@ -1408,7 +1408,7 @@ void DAISY_Impl::compute_scales()
 #endif
     for( int q=0; q<imsz; q++ )
     {
-      m_scale_map[q] = round( m_scale_map[q] );
+      m_scale_map[q] = (float) round( m_scale_map[q] );
     }
 
 //    save( m_scale_map, m_h, m_w, "scales.dat");
@@ -1448,7 +1448,7 @@ void DAISY_Impl::compute_orientations()
 
     for( int scale=0; scale<g_scale_en; scale++ )
     {
-      sigma_new  = pow( g_sigma_step, scale  ) * m_rad/3.0;
+      sigma_new  = (float)( pow( g_sigma_step, scale  ) * m_rad/3.0 );
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
@@ -1492,7 +1492,7 @@ void DAISY_Impl::compute_orientations()
                next -= m_orientation_resolution;
 
             peak = interpolate_peak(hist[prev], hist[max_ind], hist[next]);
-            angle = (max_ind + peak)*360.0/m_orientation_resolution;
+            angle = (float)( ((float)max_ind + peak)*360.0/m_orientation_resolution );
 
             int iangle = int(angle);
 
@@ -1580,10 +1580,10 @@ inline void DAISY_Impl::bi_get_histogram( float* histogram, double y, double x, 
     double alpha = mnx+1-x;
     double beta  = mny+1-y;
 
-    float w0 = alpha*beta;
-    float w1 = beta-w0; // (1-alpha)*beta;
-    float w2 = alpha-w0; // (1-beta)*alpha;
-    float w3 = 1+w0-alpha-beta; // (1-beta)*(1-alpha);
+    float w0 = (float) (alpha*beta);
+    float w1 = (float) (beta-w0); // (1-alpha)*beta;
+    float w2 = (float) (alpha-w0); // (1-beta)*alpha;
+    float w3 = (float) (1+w0-alpha-beta); // (1-beta)*(1-alpha);
 
     int h;
 
@@ -1614,8 +1614,8 @@ inline void DAISY_Impl::ti_get_histogram( float* histogram, double y, double x, 
     bi_get_histogram( thist, y, x, ishift, hcube );
 
     for( int h=0; h<m_hist_th_q_no-1; h++ )
-      histogram[h] = (1-layer_alpha)*thist[h]+layer_alpha*thist[h+1];
-    histogram[m_hist_th_q_no-1] = (1-layer_alpha)*thist[m_hist_th_q_no-1]+layer_alpha*thist[0];
+      histogram[h] = (float) ((1-layer_alpha)*thist[h]+layer_alpha*thist[h+1]);
+    histogram[m_hist_th_q_no-1] = (float) ((1-layer_alpha)*thist[m_hist_th_q_no-1]+layer_alpha*thist[0]);
 }
 
 inline void DAISY_Impl::ni_get_histogram( float* histogram, int y, int x, int shift, float* hcube )
@@ -1771,7 +1771,7 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
 
     point_transform_via_homography( H, x+m_cube_sigmas[g_selected_cubes[0]], y, rx, ry);
     double radius =  l2norm( ry, rx, hy, hx );
-    hradius[0] = quantize_radius( radius );
+    hradius[0] = quantize_radius( (float) radius );
 
     double shift = m_orientation_shift_table[orientation];
     i_get_histogram( descriptor, hy, hx, shift, m_smoothed_gradient_layers+hradius[0]*m_cube_size );
@@ -1794,7 +1794,7 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
          {
             point_transform_via_homography(H, gx+m_cube_sigmas[g_selected_cubes[r]], gy, rx, ry);
             radius = l2norm( ry, rx, hy, hx );
-            hradius[r] = quantize_radius( radius );
+            hradius[r] = quantize_radius( (float) radius );
          }
 
          if( is_outside(hx, 0, m_w-1, hy, 0, m_h-1) ) continue;
@@ -1831,7 +1831,7 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
 
     point_transform_via_homography(H, x+m_cube_sigmas[g_selected_cubes[0]], y, rx, ry);
     radius =  l2norm( ry, rx, hy, hx );
-    hradius[0] = quantize_radius( radius );
+    hradius[0] = quantize_radius( (float) radius );
 
     int ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
     int ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
@@ -1855,7 +1855,7 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
          {
             point_transform_via_homography(H, gx+m_cube_sigmas[g_selected_cubes[r]], gy, rx, ry);
             radius = l2norm( ry, rx, hy, hx );
-            hradius[r] = quantize_radius( radius );
+            hradius[r] = quantize_radius( (float) radius );
          }
 
          ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
@@ -1972,21 +1972,21 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     if ( m_mode == ONLY_KEYS )
     {
         cv::Mat descriptors;
-        _descriptors.create( keypoints.size(), m_descriptor_size, CV_32F );
+        _descriptors.create( (int) keypoints.size(), m_descriptor_size, CV_32F );
         descriptors = _descriptors.getMat();
 
         if ( H.empty() )
-          for (size_t k = 0; k < keypoints.size(); k++)
+          for (int k = 0; k < (int) keypoints.size(); k++)
           {
             get_descriptor( keypoints[k].pt.y, keypoints[k].pt.x,
-                            m_use_orientation ? keypoints[k].angle : 0,
+                            m_use_orientation ? (int) keypoints[k].angle : 0,
                             &descriptors.at<float>( k, 0 ) );
           }
         else
-          for (size_t k = 0; k < keypoints.size(); k++)
+          for (int k = 0; k < (int) keypoints.size(); k++)
           {
             get_descriptor( keypoints[k].pt.y, keypoints[k].pt.x,
-                            m_use_orientation ? keypoints[k].angle : 0,
+                            m_use_orientation ? (int) keypoints[k].angle : 0,
                             &H.at<double>( 0 ), &descriptors.at<float>( k, 0 ) );
           }
 
@@ -2025,10 +2025,11 @@ DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
 
     m_descriptor_memory = false;
     m_workspace_memory = false;
-    m_descriptor_normalization_threshold = 0.154; // sift magical number
 
     m_cube_size = 0;
     m_layer_size = 0;
+
+    m_descriptor_normalization_threshold = 0.154f; // sift magical number
 
 }
 
