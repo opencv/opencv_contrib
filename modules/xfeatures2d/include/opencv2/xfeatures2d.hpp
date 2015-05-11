@@ -144,6 +144,37 @@ public:
     static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
 };
 
+/** @brief Class implementing DAISY descriptor, described in @cite Tola10
+
+@param radius radius of the descriptor at the initial scale
+@param q_radius amount of radial range division quantity
+@param q_theta amount of angular range division quantity
+@param q_hist amount of gradient orientations range division quantity
+@param mode choose computation mode of descriptors where
+DAISY::ONLY_KEYS means to compute descriptors only for keypoints in the list (default) and
+DAISY::COMP_FULL will compute descriptors for all pixels in the given image
+@param norm choose descriptors normalization type, where
+DAISY::NRM_NONE will not do any normalization (default),
+DAISY::NRM_PARTIAL mean that histograms are normalized independently for L2 norm equal to 1.0,
+DAISY::NRM_FULL mean that descriptors are normalized for L2 norm equal to 1.0,
+DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 but no individual one is bigger than 0.154 as in SIFT
+@param H optional 3x3 homography matrix used to warp the grid of daisy but sampling keypoints remains unwarped on image
+@param interpolation switch to disable interpolation for speed improvement at minor quality loss
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
+
+ */
+class CV_EXPORTS DAISY : public DescriptorExtractor
+{
+public:
+    enum
+    {
+        ONLY_KEYS = 0, COMP_FULL = 1,
+        NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
+    };
+    static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
+        int q_hist = 8, int mode = DAISY::ONLY_KEYS, int norm = DAISY::NRM_NONE,
+        InputArray H = noArray() , bool interpolation = true, bool use_orientation = false );
+};
 
 
 //! @}
