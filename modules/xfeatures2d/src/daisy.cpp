@@ -286,7 +286,7 @@ protected:
     void set_normalization( int nrm_type ) { m_nrm_type = nrm_type; }
 
     // applies one of the normalizations (partial,full,sift) to the desciptors.
-    void normalize_descriptors(int nrm_type = DAISY::NRM_NONE);
+    void normalize_descriptors( int nrm_type = DAISY::NRM_NONE );
 
     // normalizes histograms individually
     void normalize_histograms();
@@ -320,7 +320,7 @@ protected:
     // EXPERIMENTAL: DO NOT USE IF YOU ARE NOT ENGIN TOLA: tells to compute the
     // scales for every pixel so that the resulting descriptors are scale
     // invariant.
-    void scale_invariant( bool state=true )
+    void scale_invariant( bool state = true )
     {
          g_scale_en = (int)( (log(g_sigma_2/g_sigma_0)) / log(g_sigma_step) ) - g_scale_st;
          m_scale_invariant = state;
@@ -329,7 +329,7 @@ protected:
     // EXPERIMENTAL: DO NOT USE IF YOU ARE NOT ENGIN TOLA: tells to compute the
     // orientations for every pixel so that the resulting descriptors are
     // rotation invariant. orientation steps are 360/ori_resolution
-    void rotation_invariant(int ori_resolution=36, bool state=true)
+    void rotation_invariant( int ori_resolution = 36, bool state = true )
     {
          m_rotation_invariant = state;
          m_orientation_resolution = ori_resolution;
@@ -365,7 +365,7 @@ protected:
       return (g_cube_number+1)* m_cube_size;
     }
 
-    void normalize_descriptor(float* desc, int nrm_type = DAISY::NRM_NONE)
+    void normalize_descriptor( float* desc, int nrm_type = DAISY::NRM_NONE )
     {
       if( nrm_type == DAISY::NRM_NONE )      nrm_type = m_nrm_type;
       else if( nrm_type == DAISY::NRM_PARTIAL ) normalize_partial(desc);
@@ -391,17 +391,17 @@ private:
     // precomputed operations meaning that you must call compute_descriptors()
     // before calling this function. if you want normalized descriptors, call
     // normalize_descriptors() before calling compute_descriptors()
-    inline void get_descriptor(int y, int x, float* &descriptor);
+    inline void get_descriptor( int y, int x, float* &descriptor );
 
     // computes the descriptor and returns the result in 'descriptor' ( allocate
     // 'descriptor' memory first ie: float descriptor = new
     // float[m_descriptor_size]; -> the descriptor is normalized.
-    inline void get_descriptor(double y, double x, int orientation, float* descriptor );
+    inline void get_descriptor( double y, double x, int orientation, float* descriptor );
 
     // computes the descriptor and returns the result in 'descriptor' ( allocate
     // 'descriptor' memory first ie: float descriptor = new
     // float[m_descriptor_size]; -> the descriptor is NOT normalized.
-    inline void get_unnormalized_descriptor(double y, double x, int orientation, float* descriptor );
+    inline void get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor );
 
     // computes the descriptor at homography-warped grid. (y,x) is not the
     // coordinates of this image but the coordinates of the original grid where
@@ -409,7 +409,7 @@ private:
     // and we warp this grid with H and compute the descriptor on this warped
     // grid; returns null/false if centers falls outside the image; allocate
     // 'descriptor' memory first. descriptor is normalized.
-    inline bool get_descriptor(double y, double x, int orientation, double* H, float* descriptor );
+    inline bool get_descriptor( double y, double x, int orientation, double* H, float* descriptor);
 
     // computes the descriptor at homography-warped grid. (y,x) is not the
     // coordinates of this image but the coordinates of the original grid where
@@ -417,7 +417,7 @@ private:
     // and we warp this grid with H and compute the descriptor on this warped
     // grid; returns null/false if centers falls outside the image; allocate
     // 'descriptor' memory first. descriptor is NOT normalized.
-    inline bool get_unnormalized_descriptor(double y, double x, int orientation, double* H, float* descriptor );
+    inline bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor );
 
     // compute the smoothed gradient layers.
     inline void compute_smoothed_gradient_layers();
@@ -452,7 +452,7 @@ private:
     inline bool ni_get_descriptor( double y, double x, int orientation, double* H, float* descriptor );
 
     // creates a 1D gaussian filter with N(mean,sigma).
-    inline void gaussian_1d(float* fltr, int fsz, float sigma, float mean )
+    inline void gaussian_1d( float* fltr, int fsz, float sigma, float mean )
     {
       CV_Assert(fltr != NULL);
       int sz = (fsz-1)/2;
@@ -476,27 +476,27 @@ private:
     inline void conv_horizontal( float* image, int h, int w, float* kernel, int ksize )
     {
       CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_32FC1, (float*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_32FC1, (float*)kernel );
+      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_32FC1, (float*)kernel);
       cvFilter2D( &cvI, &cvI, &cvK );
     }
     inline void conv_horizontal( double* image, int h, int w, double* kernel, int ksize )
     {
       CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_64FC1, (double*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_64FC1, (double*)kernel );
+      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_64FC1, (double*)kernel);
       cvFilter2D( &cvI, &cvI, &cvK );
     }
 
     inline void conv_vertical( float* image, int h, int w, float* kernel, int ksize )
     {
       CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_32FC1, (float*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_32FC1, (float*)kernel );
+      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_32FC1, (float*)kernel);
       cvFilter2D( &cvI, &cvI, &cvK );
     }
 
     inline void conv_vertical( double* image, int h, int w, double* kernel, int ksize )
     {
       CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_64FC1, (double*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_64FC1, (double*)kernel );
+      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_64FC1, (double*)kernel);
       cvFilter2D( &cvI, &cvI, &cvK );
     }
 
@@ -792,7 +792,7 @@ private:
       T* layers = zeros<T>(layer_no * data_size);
 
       // smooth the data matrix
-      T* bdata = blur_gaussian_2d<T,T>( data, h, w, 0.5, 5, false);
+      T* bdata = blur_gaussian_2d<T,T>( data, h, w, 0.5, 5, false );
 
       T *dx = new T[data_size];
       T *dy = new T[data_size];
@@ -853,23 +853,23 @@ private:
     // be careful, 'data' is destroyed afterwards
     template<class T> inline
     //  original T* workspace=0 was removed
-    void layered_gradient( T* data, int h, int w, int layer_no, T* layers, int lwork=0 )
+    void layered_gradient( T* data, int h, int w, int layer_no, T* layers, int lwork = 0 )
     {
       int data_size = h * w;
       CV_Assert(layers!=NULL);
       memset(layers,0,sizeof(T)*data_size*layer_no);
 
-      bool empty=false;
+      bool was_empty = false;
       T* work=NULL;
       if( lwork < 3*data_size ) {
          work = new T[3*data_size];
-         empty=true;
+         was_empty = true;
       }
 
       // // smooth the data matrix
       // T* bdata = blur_gaussian_2d<T,T>( data, h, w, 0.5, 5, false);
       float kernel[5]; gaussian_1d(kernel, 5, 0.5, 0);
-      memcpy( work, data, sizeof(T)*data_size);
+      memcpy( work, data, sizeof(T)*data_size );
       convolve_sym( work, h, w, kernel, 5 );
 
       T *dx = work+data_size;
@@ -894,7 +894,7 @@ private:
             else            layer_l[index] = 0;
          }
       }
-      if( empty ) delete []work;
+      if( was_empty ) delete []work;
     }
 
     // casts a type T2 array into a type T1 array.
@@ -915,7 +915,7 @@ private:
     // to be an odd number.  if in_place=true, then T1 must be equal
     // to T2 naturally.
     template<class T1, class T2> inline
-    T1* blur_gaussian_2d( T2* array, int rn, int cn, float sigma, int kernel_size=0, bool in_place=false )
+    T1* blur_gaussian_2d( T2* array, int rn, int cn, float sigma, int kernel_size = 0, bool in_place = false )
     {
       T1* out = NULL;
 
@@ -1167,7 +1167,7 @@ void DAISY_Impl::set_cube_gaussians( double* sigma_array, int sz )
     g_cube_number = sz;
 
     if( m_cube_sigmas ) deallocate( m_cube_sigmas );
-    m_cube_sigmas = allocate<double>(g_cube_number);
+    m_cube_sigmas = allocate<double>( g_cube_number );
 
     for( int r=0; r<g_cube_number; r++ )
     {
@@ -1243,7 +1243,7 @@ void DAISY_Impl::normalize_histograms()
          {
             float* hist = dst + (y*m_w+x)*m_hist_th_q_no;
             float norm =  l2norm( hist, m_hist_th_q_no );
-            if( norm != 0.0 ) divide( hist, m_hist_th_q_no, norm);
+            if( norm != 0.0 ) divide( hist, m_hist_th_q_no, norm );
          }
       }
     }
@@ -1284,7 +1284,7 @@ void DAISY_Impl::compute_smoothed_gradient_layers()
 
 void DAISY_Impl::compute_oriented_grid_points()
 {
-    m_oriented_grid_points = allocate<double>(g_grid_orientation_resolution, m_grid_point_number*2 );
+    m_oriented_grid_points = allocate<double>( g_grid_orientation_resolution, m_grid_point_number*2 );
 
     for( int i=0; i<g_grid_orientation_resolution; i++ )
     {
@@ -1631,26 +1631,26 @@ inline void DAISY_Impl::ni_get_histogram( float* histogram, int y, int x, int sh
     }
 }
 
-inline void DAISY_Impl::get_descriptor(int y, int x, float* &descriptor)
+inline void DAISY_Impl::get_descriptor( int y, int x, float* &descriptor )
 {
     CV_Assert( m_dense_descriptors != NULL );
     CV_Assert( y<m_h && x<m_w && y>=0 && x>=0 );
     descriptor = &(m_dense_descriptors[(y*m_w+x)*m_descriptor_size]);
 }
 
-inline void DAISY_Impl::get_descriptor(double y, double x, int orientation, float* descriptor )
+inline void DAISY_Impl::get_descriptor( double y, double x, int orientation, float* descriptor )
 {
     get_unnormalized_descriptor(y, x, orientation, descriptor );
     normalize_descriptor(descriptor, m_nrm_type);
 }
 
-inline void DAISY_Impl::get_unnormalized_descriptor(double y, double x, int orientation, float* descriptor )
+inline void DAISY_Impl::get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor )
 {
     if( m_disable_interpolation ) ni_get_descriptor(y,x,orientation,descriptor);
     else                           i_get_descriptor(y,x,orientation,descriptor);
 }
 
-inline void DAISY_Impl::i_get_descriptor(double y, double x, int orientation, float* descriptor )
+inline void DAISY_Impl::i_get_descriptor( double y, double x, int orientation, float* descriptor )
 {
     // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
     //
@@ -1689,7 +1689,7 @@ inline void DAISY_Impl::i_get_descriptor(double y, double x, int orientation, fl
     }
 }
 
-inline void DAISY_Impl::ni_get_descriptor(double y, double x, int orientation, float* descriptor )
+inline void DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, float* descriptor )
 {
     // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
     //
@@ -1738,20 +1738,20 @@ inline void DAISY_Impl::ni_get_descriptor(double y, double x, int orientation, f
 }
 
 // Warped get_descriptor's
-inline bool DAISY_Impl::get_descriptor(double y, double x, int orientation, double* H, float* descriptor )
+inline bool DAISY_Impl::get_descriptor( double y, double x, int orientation, double* H, float* descriptor )
 {
     bool rval = get_unnormalized_descriptor(y,x,orientation, H, descriptor);
     if( rval ) normalize_descriptor(descriptor, m_nrm_type);
     return rval;
 }
 
-inline bool DAISY_Impl::get_unnormalized_descriptor(double y, double x, int orientation, double* H, float* descriptor )
+inline bool DAISY_Impl::get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor )
 {
     if( m_disable_interpolation ) return ni_get_descriptor(y,x,orientation,H,descriptor);
     else                          return   i_get_descriptor(y,x,orientation,H,descriptor);
 }
 
-inline bool DAISY_Impl::i_get_descriptor(double y, double x, int orientation, double* H, float* descriptor )
+inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, double* H, float* descriptor )
 {
     // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
     //
@@ -1806,7 +1806,7 @@ inline bool DAISY_Impl::i_get_descriptor(double y, double x, int orientation, do
     return true;
 }
 
-inline bool DAISY_Impl::ni_get_descriptor(double y, double x, int orientation, double* H, float* descriptor )
+inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, double* H, float* descriptor )
 {
     // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
     //
