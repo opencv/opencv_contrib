@@ -84,14 +84,15 @@ class DAISY_Impl : public DAISY
 
 public:
     /** Constructor
-     @param radius radius of the descriptor at the initial scale
-     @param q_radius amount of radial range divisions
-     @param q_theta amount of angular range divisions
-     @param q_hist amount of gradient orientations range divisions
-     @param mode computation of descriptors
-     @param norm normalization type
-     @param H optional 3x3 homography matrix used to warp the grid of daisy but sampling keypoints remains unwarped on image
-     @param interpolation switch to disable interpolation at minor costs of quality (default is true)
+     * @param radius radius of the descriptor at the initial scale
+     * @param q_radius amount of radial range divisions
+     * @param q_theta amount of angular range divisions
+     * @param q_hist amount of gradient orientations range divisions
+     * @param mode computation of descriptors
+     * @param norm normalization type
+     * @param H optional 3x3 homography matrix used to warp the grid of daisy but sampling keypoints remains unwarped on image
+     * @param interpolation switch to disable interpolation at minor costs of quality (default is true)
+     * @param use_orientation sample patterns using keypoints orientation, disabled by default.
      */
     explicit DAISY_Impl(float radius=15, int q_radius=3, int q_theta=8, int q_hist=8,
         int mode = DAISY::ONLY_KEYS, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
@@ -138,7 +139,7 @@ protected:
     int m_nrm_type;
 
     // holds optional H matrix
-    InputArray m_h_matrix;
+    Mat m_h_matrix;
 
     // input image.
     float* m_image;
@@ -1880,7 +1881,7 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
         return;
 
     // get homography if supplied
-    Mat H = m_h_matrix.getMat();
+    Mat H = m_h_matrix;
 
     // convert to float if case
     if ( image.depth() != CV_64F )
@@ -1998,7 +1999,7 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
 DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
              int _mode, int _norm, InputArray _H, bool _interpolation, bool _use_orientation )
            : m_mode(_mode), m_rad(_radius), m_rad_q_no(_q_radius), m_th_q_no(_q_theta), m_hist_th_q_no(_q_hist),
-             m_nrm_type(_norm), m_h_matrix(_H), m_disable_interpolation(_interpolation), m_use_orientation(_use_orientation)
+             m_nrm_type(_norm), m_disable_interpolation(_interpolation), m_use_orientation(_use_orientation)
 {
     m_w = 0;
     m_h = 0;
@@ -2031,6 +2032,7 @@ DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
 
     m_descriptor_normalization_threshold = 0.154f; // sift magical number
 
+    m_h_matrix = _H.getMat();
 }
 
 // destructor
