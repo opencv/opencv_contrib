@@ -63,7 +63,7 @@ namespace xfeatures2d
 public:
     enum { PATCH_SIZE = 48 };
 
-	LATCHDescriptorExtractorImpl(int bytes = 32, bool rotationInvariance = true, int ssdSize = 7);
+	LATCHDescriptorExtractorImpl(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3);
 
     virtual void read( const FileNode& );
     virtual void write( FileStorage& ) const;
@@ -81,13 +81,13 @@ protected:
     PixelTestFn test_fn_;
 	int half_ssd_size_;
 	bool rotationInvariance_;
-	std::vector<int> sampling_points_;
+	//std::vector<int> sampling_points_;
 	void setTriplets();
 };
 
-	Ptr<LATCHDescriptorExtractor> LATCHDescriptorExtractor::create(int bytes, bool rotationInvariance, int ssdSize)
+	Ptr<LATCHDescriptorExtractor> LATCHDescriptorExtractor::create(int bytes, bool rotationInvariance, int half_ssd_size)
 {
-	return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, ssdSize);
+	return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size);
 }
 void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
 
@@ -106,15 +106,15 @@ static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 1; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 1; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
 
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -137,15 +137,15 @@ static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 2; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 2; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
 
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -168,15 +168,15 @@ static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 4; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 4; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
 
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -200,14 +200,15 @@ static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 8; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 8; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
+
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -230,14 +231,15 @@ static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keyp
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 16; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 16; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
+
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -259,15 +261,15 @@ static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keyp
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 32; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 32; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
+
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -290,15 +292,15 @@ static void pixelTests64(const Mat& grayImage, const std::vector<KeyPoint>& keyp
 		angle *= (float)(CV_PI / 180.f);
 		float cos_theta = cos(angle);
 		float sin_theta = sin(angle);
-		for (int i = 0; i < 64; i++){
-			desc[i] = 0;
+		for (int ix = 0; ix < 64; ix++){
+			desc[ix] = 0;
 			for (int j = 7; j >= 0; j--){
 
 				int suma = 0;
 				int sumc = 0;
 
 				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[i] += (uchar)((suma < sumc) << j);
+				desc[ix] += (uchar)((suma < sumc) << j);
 
 				count += 6;
 			}
@@ -400,27 +402,9 @@ void CacluateSums(int count, const std::vector<int> &points, bool rotationInvari
 
 
 
-LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int ssdSize) :
-bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_((ssdSize - 1) / 2)
+LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size) :
+bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size)
 {
-
-	/*std::string triplets_file = "D:/Dropbox/BinaryDescriptors/CombinedLearningResultsOLD/CombinedLearnedTripletsOLD_yosemite_harris__crossCorT_0.2_lastMean_0.9448.txt";
-	FILE * fid = fopen(triplets_file.c_str(), "r");
-
-	int ax, ay, bx, by, cx, cy;
-
-	int D = 512;
-	for (int i = 0; i < D; i++)
-	{
-		fscanf(fid, "%d %d %d %d %d %d\n", &ax, &ay, &bx, &by, &cx, &cy);
-		sampling_points_.push_back(ax);
-		sampling_points_.push_back(ay);
-		sampling_points_.push_back(bx);
-		sampling_points_.push_back(by);
-		sampling_points_.push_back(cx);
-		sampling_points_.push_back(cy);
-	}*/
-
 	switch (bytes)
 	{
 	case 1:
@@ -524,10 +508,8 @@ void LATCHDescriptorExtractorImpl::compute(InputArray image,
 	test_fn_(grayImage, keypoints, descriptors, sampling_points_, rotationInvariance_, half_ssd_size_);
 }
 
-void LATCHDescriptorExtractorImpl::setTriplets()
-{
 
-	sampling_points_ = { 13, -6, 19, 19, 23, -4,
+static std::vector<int> sampling_points_  { 13, -6, 19, 19, 23, -4,
 		4, 16, 24, -11, 4, -21,
 		22, -14, -2, -20, 23, 5,
 		17, -10, 2, 10, 14, -18,

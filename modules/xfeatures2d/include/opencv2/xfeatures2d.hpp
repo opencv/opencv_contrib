@@ -156,9 +156,7 @@ Gil Levi and Tal Hassner, "LATCH: Learned Arrangements of Three Patch Codes", ar
 class CV_EXPORTS LATCHDescriptorExtractor : public DescriptorExtractor
 {
 public:
-	static Ptr<LATCHDescriptorExtractor> create(int bytes = 32, bool rotationInvariance = true, int ssdSize=7);
-protected:
-	static int bit_pattern_64_[512 * 6];
+	static Ptr<LATCHDescriptorExtractor> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 
