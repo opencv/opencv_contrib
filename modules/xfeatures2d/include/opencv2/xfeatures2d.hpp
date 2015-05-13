@@ -145,6 +145,23 @@ public:
 };
 
 
+/*
+* LATCH Descriptor
+*/
+
+/** @latch Class for computing the LATCH descriptor.
+If you find this code useful, please add a reference to the following paper in your work:
+Gil Levi and Tal Hassner, "LATCH: Learned Arrangements of Three Patch Codes", arXiv preprint arXiv:1501.03719, 15 Jan. 2015
+*/
+class CV_EXPORTS LATCHDescriptorExtractor : public DescriptorExtractor
+{
+public:
+	static Ptr<LATCHDescriptorExtractor> create(int bytes = 32, bool rotationInvariance = true, int ssdSize=7);
+protected:
+	static int bit_pattern_64_[512 * 6];
+};
+
+
 
 //! @}
 
