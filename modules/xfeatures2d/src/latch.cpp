@@ -75,7 +75,7 @@ public:
     virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
 
 protected:
-	typedef void(*PixelTestFn)(const Mat& input_image, const std::vector<KeyPoint>& keypoints, OutputArray&, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size);
+	typedef void(*PixelTestFn)(const Mat& input_image, const std::vector<KeyPoint>& keypoints, OutputArray, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size);
 
     int bytes_;
 	PixelTestFn test_fn_;
@@ -93,7 +93,7 @@ protected:
 void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
 
 
-static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -124,7 +124,7 @@ static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 }
 
 
-static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -155,7 +155,7 @@ static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 }
 
 
-static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -187,7 +187,7 @@ static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 
 
 
-static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -218,7 +218,7 @@ static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypo
 }
 
 
-static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -249,7 +249,7 @@ static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keyp
 }
 
 
-static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
@@ -279,7 +279,7 @@ static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keyp
 }
 
 
-static void pixelTests64(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+static void pixelTests64(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
 {
 	Mat descriptors = _descriptors.getMat();
 	for (int i = 0; i < (int)keypoints.size(); ++i)
