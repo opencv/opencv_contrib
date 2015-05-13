@@ -78,10 +78,12 @@ protected:
 	typedef void(*PixelTestFn)(const Mat& input_image, const std::vector<KeyPoint>& keypoints, OutputArray&, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size);
 
     int bytes_;
-    PixelTestFn test_fn_;
-	int half_ssd_size_;
 	bool rotationInvariance_;
-	std::vector<int> sampling_points_  { 13, -6, 19, 19, 23, -4,
+	int half_ssd_size_;
+    PixelTestFn test_fn_;
+	
+
+	static std::vector<int> sampling_points_  { 13, -6, 19, 19, 23, -4,
 		4, 16, 24, -11, 4, -21,
 		22, -14, -2, -20, 23, 5,
 		17, -10, 2, 10, 14, -18,
