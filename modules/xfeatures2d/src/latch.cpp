@@ -83,7 +83,356 @@ protected:
 	int half_ssd_size_;
     
 
-	 std::vector<int> sampling_points_  { 13, -6, 19, 19, 23, -4,
+	std::vector<int> sampling_points_ ;
+};
+
+	Ptr<LATCHDescriptorExtractor> LATCHDescriptorExtractor::create(int bytes, bool rotationInvariance, int half_ssd_size)
+{
+	return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size);
+}
+void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
+
+
+static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 1; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 2; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 4; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+
+static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 8; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 16; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 32; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+
+static void pixelTests64(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
+{
+	Mat descriptors = _descriptors.getMat();
+	for (int i = 0; i < (int)keypoints.size(); ++i)
+	{
+		uchar* desc = descriptors.ptr(i);
+		const KeyPoint& pt = keypoints[i];
+		int count = 0;
+
+		//handling keypoint orientation
+		float angle = pt.angle;
+		angle *= (float)(CV_PI / 180.f);
+		float cos_theta = cos(angle);
+		float sin_theta = sin(angle);
+		for (int ix = 0; ix < 64; ix++){
+			desc[ix] = 0;
+			for (int j = 7; j >= 0; j--){
+
+				int suma = 0;
+				int sumc = 0;
+
+				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
+				desc[ix] += (uchar)((suma < sumc) << j);
+
+				count += 6;
+			}
+		}
+	}
+}
+
+void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size)
+
+{
+	int ax = points[count];
+	int ay = points[count + 1];
+
+	int	bx = points[count + 2];
+	int	by = points[count + 3];
+
+	int cx = points[count + 4];
+	int cy = points[count + 5];
+
+	int ax2 = ax;
+	int ay2 = ay;
+	int bx2 = bx;
+	int by2 = by;
+	int cx2 = cx;
+	int cy2 = cy;
+
+	if (rotationInvariance){
+
+
+		ax2 =(int)(((float)ax)*cos_theta - ((float)ay)*sin_theta);
+		ay2 = (int)(((float)ax)*sin_theta + ((float)ay)*cos_theta);
+		bx2 = (int)(((float)bx)*cos_theta - ((float)by)*sin_theta);
+		by2 = (int)(((float)bx)*sin_theta + ((float)by)*cos_theta);
+		cx2 = (int)(((float)cx)*cos_theta - ((float)cy)*sin_theta);
+		cy2 = (int)(((float)cx)*sin_theta + ((float)cy)*cos_theta);
+
+
+		if (ax2 > 24)
+			ax2 = 24;
+		if (ax2<-24)
+			ax2 = -24;
+
+		if (ay2>24)
+			ay2 = 24;
+		if (ay2<-24)
+			ay2 = -24;
+
+		if (bx2>24)
+			bx2 = 24;
+		if (bx2<-24)
+			bx2 = -24;
+
+		if (by2>24)
+			by2 = 24;
+		if (by2<-24)
+			by2 = -24;
+
+		if (cx2>24)
+			cx2 = 24;
+		if (cx2<-24)
+			cx2 = -24;
+
+		if (cy2>24)
+			cy2 = 24;
+		if (cy2 < -24)
+			cy2 = -24;
+
+	}
+
+
+	ax2 += (int)(pt.pt.x + 0.5);
+	ay2 += (int)(pt.pt.y + 0.5);
+
+	bx2 += (int)(pt.pt.x + 0.5);
+	by2 += (int)(pt.pt.y + 0.5);
+
+	cx2 += (int)(pt.pt.x + 0.5);
+	cy2 += (int)(pt.pt.y + 0.5);
+
+
+	int K = half_ssd_size;
+	for (int iy = -K; iy <= K; iy++)
+	{
+		const uchar * Mi_a = grayImage.ptr<uchar>(ay2 + iy);
+		const uchar * Mi_b = grayImage.ptr<uchar>(by2 + iy);
+		const uchar * Mi_c = grayImage.ptr<uchar>(cy2 + iy);
+
+		for (int ix = -K; ix <= K; ix++)
+		{
+			double difa = Mi_a[ax2 + ix] - Mi_b[bx2 + ix];
+			suma += (int)((difa)*(difa));
+
+			double difc = Mi_c[cx2 + ix] - Mi_b[bx2 + ix];
+			sumc += (int)((difc)*(difc));
+		}
+	}
+
+}
+
+
+
+LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size) :
+bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size)
+{
+	switch (bytes)
+	{
+	case 1:
+		test_fn_ = pixelTests1;
+		break;
+	case 2:
+		test_fn_ = pixelTests2;
+		break;
+	case 4:
+		test_fn_ = pixelTests4;
+		break;
+	case 8:
+		test_fn_ = pixelTests8;
+		break;
+	case 16:
+		test_fn_ = pixelTests16;
+		break;
+	case 32:
+		test_fn_ = pixelTests32;
+		break;
+	case 64:
+		test_fn_ = pixelTests64;
+		break;
+	default:
+		CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
+	}
+	int sampling_points_arr[3072]= { 13, -6, 19, 19, 23, -4,
 		4, 16, 24, -11, 4, -21,
 		22, -14, -2, -20, 23, 5,
 		17, -10, 2, 10, 14, -18,
@@ -594,358 +943,9 @@ protected:
 		11, 2, -1, 7, 14, -2,
 		11, 20, -1, -4, -3, -23,
 		-19, 20, -11, -2, -20, -24,
-		11, -12, 5, -21, -2, -13
-	};
-};
+		11, -12, 5, -21, -2, -13};
 
-	Ptr<LATCHDescriptorExtractor> LATCHDescriptorExtractor::create(int bytes, bool rotationInvariance, int half_ssd_size)
-{
-	return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size);
-}
-void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
-
-
-static void pixelTests1(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 1; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-static void pixelTests2(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 2; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-static void pixelTests4(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 4; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-
-static void pixelTests8(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 8; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-static void pixelTests16(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 16; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-static void pixelTests32(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 32; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-
-static void pixelTests64(const Mat& grayImage, const std::vector<KeyPoint>& keypoints, OutputArray& _descriptors, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size)
-{
-	Mat descriptors = _descriptors.getMat();
-	for (int i = 0; i < (int)keypoints.size(); ++i)
-	{
-		uchar* desc = descriptors.ptr(i);
-		const KeyPoint& pt = keypoints[i];
-		int count = 0;
-
-		//handling keypoint orientation
-		float angle = pt.angle;
-		angle *= (float)(CV_PI / 180.f);
-		float cos_theta = cos(angle);
-		float sin_theta = sin(angle);
-		for (int ix = 0; ix < 64; ix++){
-			desc[ix] = 0;
-			for (int j = 7; j >= 0; j--){
-
-				int suma = 0;
-				int sumc = 0;
-
-				CacluateSums(count, points, rotationInvariance, grayImage, pt, suma, sumc, cos_theta, sin_theta, half_ssd_size);
-				desc[ix] += (uchar)((suma < sumc) << j);
-
-				count += 6;
-			}
-		}
-	}
-}
-
-void CacluateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size)
-
-{
-	int ax = points[count];
-	int ay = points[count + 1];
-
-	int	bx = points[count + 2];
-	int	by = points[count + 3];
-
-	int cx = points[count + 4];
-	int cy = points[count + 5];
-
-	int ax2 = ax;
-	int ay2 = ay;
-	int bx2 = bx;
-	int by2 = by;
-	int cx2 = cx;
-	int cy2 = cy;
-
-	if (rotationInvariance){
-
-
-		ax2 =(int)(((float)ax)*cos_theta - ((float)ay)*sin_theta);
-		ay2 = (int)(((float)ax)*sin_theta + ((float)ay)*cos_theta);
-		bx2 = (int)(((float)bx)*cos_theta - ((float)by)*sin_theta);
-		by2 = (int)(((float)bx)*sin_theta + ((float)by)*cos_theta);
-		cx2 = (int)(((float)cx)*cos_theta - ((float)cy)*sin_theta);
-		cy2 = (int)(((float)cx)*sin_theta + ((float)cy)*cos_theta);
-
-
-		if (ax2 > 24)
-			ax2 = 24;
-		if (ax2<-24)
-			ax2 = -24;
-
-		if (ay2>24)
-			ay2 = 24;
-		if (ay2<-24)
-			ay2 = -24;
-
-		if (bx2>24)
-			bx2 = 24;
-		if (bx2<-24)
-			bx2 = -24;
-
-		if (by2>24)
-			by2 = 24;
-		if (by2<-24)
-			by2 = -24;
-
-		if (cx2>24)
-			cx2 = 24;
-		if (cx2<-24)
-			cx2 = -24;
-
-		if (cy2>24)
-			cy2 = 24;
-		if (cy2 < -24)
-			cy2 = -24;
-
-	}
-
-
-	ax2 += (int)(pt.pt.x + 0.5);
-	ay2 += (int)(pt.pt.y + 0.5);
-
-	bx2 += (int)(pt.pt.x + 0.5);
-	by2 += (int)(pt.pt.y + 0.5);
-
-	cx2 += (int)(pt.pt.x + 0.5);
-	cy2 += (int)(pt.pt.y + 0.5);
-
-
-	int K = half_ssd_size;
-	for (int iy = -K; iy <= K; iy++)
-	{
-		const uchar * Mi_a = grayImage.ptr<uchar>(ay2 + iy);
-		const uchar * Mi_b = grayImage.ptr<uchar>(by2 + iy);
-		const uchar * Mi_c = grayImage.ptr<uchar>(cy2 + iy);
-
-		for (int ix = -K; ix <= K; ix++)
-		{
-			double difa = Mi_a[ax2 + ix] - Mi_b[bx2 + ix];
-			suma += (int)((difa)*(difa));
-
-			double difc = Mi_c[cx2 + ix] - Mi_b[bx2 + ix];
-			sumc += (int)((difc)*(difc));
-		}
-	}
-
-}
-
-
-
-LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size) :
-bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size)
-{
-	switch (bytes)
-	{
-	case 1:
-		test_fn_ = pixelTests1;
-		break;
-	case 2:
-		test_fn_ = pixelTests2;
-		break;
-	case 4:
-		test_fn_ = pixelTests4;
-		break;
-	case 8:
-		test_fn_ = pixelTests8;
-		break;
-	case 16:
-		test_fn_ = pixelTests16;
-		break;
-	case 32:
-		test_fn_ = pixelTests32;
-		break;
-	case 64:
-		test_fn_ = pixelTests64;
-		break;
-	default:
-		CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
-	}
-
-	setTriplets();
+		sampling_points_.assign(&sampling_points_arr[0],&sampling_points_arr[0]+3072); 
 }
 
 int LATCHDescriptorExtractorImpl::descriptorSize() const
@@ -1023,5 +1023,4 @@ void LATCHDescriptorExtractorImpl::compute(InputArray image,
 }
 
 
-}
 } // namespace cv
