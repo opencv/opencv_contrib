@@ -127,7 +127,7 @@ namespace rgbd
     /** Constructor
      * @param rows the number of rows of the depth image normals will be computed on
      * @param cols the number of cols of the depth image normals will be computed on
-     * @param depth the depth of the normals (only CV_32F or CV_64F for FALS and SRI, CV_16U for LINEMOD)
+     * @param depth the depth of the normals (only CV_32F or CV_64F)
      * @param K the calibration matrix to use
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
@@ -234,7 +234,7 @@ namespace rgbd
     }
 
     /** Constructor
-     * @param depth the depth of the normals (only CV_32F or CV_64F for FALS and SRI, CV_16U for LINEMOD)
+     * @param depth the depth of the normals (only CV_32F or CV_64F)
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */

@@ -133,6 +133,7 @@ namespace rgbd
       res = -normal_in / norm_vec(normal_in);
     else
       res = normal_in / norm_vec(normal_in);
+      
     normal_out[0] = res[0];
     normal_out[1] = res[1];
     normal_out[2] = res[2];
@@ -432,8 +433,9 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       K_inv(1, 2) = -K(1, 2) / K(1, 1);
 
       Vec3T X1_minus_X, X2_minus_X;
-
+      
       ContainerDepth difference_threshold = 50;
+      normals.setTo(std::numeric_limits<DepthDepth>::quiet_NaN());
       for (int y = r; y < rows_ - r - 1; ++y)
       {
         const DepthDepth * p_line = reinterpret_cast<const DepthDepth*>(depth.ptr(y, r));
@@ -835,7 +837,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     }
 
     // Get the normals
-    normals_out.create(points3d_ori.size(), CV_MAKETYPE(depth_, 3));
+    normals_out.create(points3d_ori.size(), CV_MAKETYPE(depth_, 3));      
     if (points3d_in.empty())
       return;
 
