@@ -149,7 +149,7 @@ public:
 * LATCH Descriptor
 */
 
-/** @latch Class for computing the LATCH descriptor.
+/** latch Class for computing the LATCH descriptor.
 If you find this code useful, please add a reference to the following paper in your work:
 Gil Levi and Tal Hassner, "LATCH: Learned Arrangements of Three Patch Codes", arXiv preprint arXiv:1501.03719, 15 Jan. 2015
 */
