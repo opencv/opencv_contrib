@@ -150,7 +150,6 @@ public:
 @param q_radius amount of radial range division quantity
 @param q_theta amount of angular range division quantity
 @param q_hist amount of gradient orientations range division quantity
-@param mode choose computation mode of descriptors where
 DAISY::ONLY_KEYS means to compute descriptors only for keypoints in the list (default) and
 DAISY::COMP_FULL will compute descriptors for all pixels in the given image
 @param norm choose descriptors normalization type, where
@@ -168,12 +167,73 @@ class CV_EXPORTS DAISY : public DescriptorExtractor
 public:
     enum
     {
-        ONLY_KEYS = 0, COMP_FULL = 1,
         NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
     };
     static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
-        int q_hist = 8, int mode = DAISY::ONLY_KEYS, int norm = DAISY::NRM_NONE,
-        InputArray H = noArray() , bool interpolation = true, bool use_orientation = false );
+                int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                bool interpolation = true, bool use_orientation = false );
+
+    /** @overload
+     * @param image image to extract descriptors
+     * @param keypoints of interest within image
+     * @param descriptors resulted descriptors array
+     */
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
+
+    /** @overload
+     * @param image image to extract descriptors
+     * @param roi region of interest within image
+     * @param descriptors resulted descriptors array for roi image pixels
+     */
+    virtual void compute( InputArray image, Rect roi, OutputArray descriptors ) = 0;
+
+    /**@overload
+     * @param image image to extract descriptors
+     * @param descriptors resulted descriptors array for all image pixels
+     */
+    virtual void compute( InputArray image, OutputArray descriptors ) = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param ori orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void get_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param ori orientation on image (0->360)
+     * @param H homography matrix for warped grid
+     * @param descriptor supplied array for descriptor storage
+     * @param get_descriptor true if descriptor was computed
+     */
+    virtual bool get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param ori orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param ori orientation on image (0->360)
+     * @param H homography matrix for warped grid
+     * @param descriptor supplied array for descriptor storage
+     * @param get_unnormalized_descriptor true if descriptor was computed
+     */
+    virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
+
+    /**
+     * @param image set image as working
+     */
+    virtual void set_image( InputArray image ) = 0;
+
 };
 
 

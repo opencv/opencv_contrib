@@ -654,7 +654,7 @@ TEST(Features2d_RotationInvariance_Descriptor_SIFT, regression)
 TEST(Features2d_RotationInvariance_Descriptor_DAISY, regression)
 {
     DescriptorRotationInvarianceTest test(BRISK::create(),
-                                          DAISY::create(15, 3, 8, 8, DAISY::ONLY_KEYS, DAISY::NRM_NONE, noArray(), true, true),
+                                          DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
                                           NORM_L1,
                                           0.79f);
     test.safe_run();
@@ -721,7 +721,7 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
 TEST(Features2d_ScaleInvariance_Descriptor_DAISY, regression)
 {
     DescriptorScaleInvarianceTest test(BRISK::create(),
-                                       DAISY::create(15, 3, 8, 8, DAISY::ONLY_KEYS, DAISY::NRM_NONE, noArray(), true, true),
+                                       DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
                                        NORM_L1,
                                        0.075f);
     test.safe_run();

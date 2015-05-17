@@ -22,12 +22,12 @@ PERF_TEST_P(daisy, extract, testing::Values(DAISY_IMAGES))
     Mat mask;
     declare.in(frame).time(90);
 
-    // use DAISY in COMP_FULL mode (every pixel, dense baseline mode)
-    Ptr<DAISY> descriptor = DAISY::create(15, 3, 8, 8, DAISY::COMP_FULL, DAISY::NRM_NONE, noArray(), true, false);
+    Ptr<DAISY> descriptor = DAISY::create();
 
     vector<KeyPoint> points;
     vector<float> descriptors;
-    TEST_CYCLE() descriptor->compute(frame, points, descriptors);
+    // compute all daisies in image
+    TEST_CYCLE() descriptor->compute(frame, descriptors);
 
     SANITY_CHECK(descriptors, 1e-4);
 }
