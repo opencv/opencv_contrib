@@ -76,7 +76,7 @@ namespace cv
 
         protected:
             typedef void(*PixelTestFn)(const Mat& input_image, const std::vector<KeyPoint>& keypoints, OutputArray, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size);
-
+            void setSamplingPoints();
             int bytes_;
             PixelTestFn test_fn_;
             bool rotationInvariance_;
@@ -432,7 +432,86 @@ namespace cv
             default:
                 CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
             }
-            int sampling_points_arr[3072]= { 13, -6, 19, 19, 23, -4,
+
+            setSamplingPoints();
+        }
+
+        int LATCHDescriptorExtractorImpl::descriptorSize() const
+        {
+            return bytes_;
+        }
+
+        int LATCHDescriptorExtractorImpl::descriptorType() const
+        {
+            return CV_8UC1;
+        }
+
+        int LATCHDescriptorExtractorImpl::defaultNorm() const
+        {
+            return NORM_HAMMING;
+        }
+
+        void LATCHDescriptorExtractorImpl::read(const FileNode& fn)
+        {
+            int dSize = fn["descriptorSize"];
+            switch (dSize)
+            {
+            case 1:
+                test_fn_ = pixelTests1;
+                break;
+            case 2:
+                test_fn_ = pixelTests2;
+                break;
+            case 4:
+                test_fn_ = pixelTests4;
+                break;
+            case 8:
+                test_fn_ = pixelTests8;
+                break;
+            case 16:
+                test_fn_ = pixelTests16;
+                break;
+            case 32:
+                test_fn_ = pixelTests32;
+                break;
+            case 64:
+                test_fn_ = pixelTests64;
+                break;
+            default:
+                CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
+            }
+            bytes_ = dSize;
+        }
+
+        void LATCHDescriptorExtractorImpl::write(FileStorage& fs) const
+        {
+            fs << "descriptorSize" << bytes_;
+        }
+
+        void LATCHDescriptorExtractorImpl::compute(InputArray image,
+            std::vector<KeyPoint>& keypoints,
+            OutputArray descriptors)
+        {
+
+            Mat grayImage;
+            GaussianBlur(image, grayImage, cv::Size(3, 3), 2, 2);
+
+            if (image.type() != CV_8U) cvtColor(image, grayImage, COLOR_BGR2GRAY);
+
+
+
+            //Remove keypoints very close to the border
+            KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE / 2 + half_ssd_size_);
+
+
+            descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+
+            test_fn_(grayImage, keypoints, descriptors, sampling_points_, rotationInvariance_, half_ssd_size_);
+        }
+
+
+        void LATCHDescriptorExtractorImpl::setSamplingPoints(){
+            int sampling_points_arr[]= { 13, -6, 19, 19, 23, -4,
                 4, 16, 24, -11, 4, -21,
                 22, -14, -2, -20, 23, 5,
                 17, -10, 2, 10, 14, -18,
@@ -945,82 +1024,8 @@ namespace cv
                 -19, 20, -11, -2, -20, -24,
                 11, -12, 5, -21, -2, -13};
 
-            sampling_points_.assign(&sampling_points_arr[0],&sampling_points_arr[0]+3072); 
-        }
+            sampling_points_.assign(&sampling_points_arr[0],&sampling_points_arr[0]+sizeof(sampling_points_arr)/4); }
 
-        int LATCHDescriptorExtractorImpl::descriptorSize() const
-        {
-            return bytes_;
-        }
-
-        int LATCHDescriptorExtractorImpl::descriptorType() const
-        {
-            return CV_8UC1;
-        }
-
-        int LATCHDescriptorExtractorImpl::defaultNorm() const
-        {
-            return NORM_HAMMING;
-        }
-
-        void LATCHDescriptorExtractorImpl::read(const FileNode& fn)
-        {
-            int dSize = fn["descriptorSize"];
-            switch (dSize)
-            {
-            case 1:
-                test_fn_ = pixelTests1;
-                break;
-            case 2:
-                test_fn_ = pixelTests2;
-                break;
-            case 4:
-                test_fn_ = pixelTests4;
-                break;
-            case 8:
-                test_fn_ = pixelTests8;
-                break;
-            case 16:
-                test_fn_ = pixelTests16;
-                break;
-            case 32:
-                test_fn_ = pixelTests32;
-                break;
-            case 64:
-                test_fn_ = pixelTests64;
-                break;
-            default:
-                CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
-            }
-            bytes_ = dSize;
-        }
-
-        void LATCHDescriptorExtractorImpl::write(FileStorage& fs) const
-        {
-            fs << "descriptorSize" << bytes_;
-        }
-
-        void LATCHDescriptorExtractorImpl::compute(InputArray image,
-            std::vector<KeyPoint>& keypoints,
-            OutputArray descriptors)
-        {
-
-            Mat grayImage;
-            GaussianBlur(image, grayImage, cv::Size(3, 3), 2, 2);
-
-            if (image.type() != CV_8U) cvtColor(image, grayImage, COLOR_BGR2GRAY);
-
-
-
-            //Remove keypoints very close to the border
-            KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE / 2 + half_ssd_size_);
-
-
-            descriptors.create((int)keypoints.size(), bytes_, CV_8U);
-
-            test_fn_(grayImage, keypoints, descriptors, sampling_points_, rotationInvariance_, half_ssd_size_);
-        }
     }
-
 
 } // namespace cv
