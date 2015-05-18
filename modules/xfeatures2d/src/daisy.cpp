@@ -497,8 +497,8 @@ static Mat layered_gradient( Mat data, int layer_no = 8 )
 
    Mat cvO;
    // smooth the data matrix
-   filter2D( data, cvO, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-   filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+   filter2D( data, cvO, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+   filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
    Mat dx(1, data_size, CV_32F);
    Mat dy(1, data_size, CV_32F);
@@ -540,8 +540,8 @@ static void layered_gradient( Mat data, int layer_no, Mat layers )
    gaussian_1d(kernel, 5, 0.5f, 0.0f);
    Mat Kernel(1, 5, CV_32F, (float*) kernel);
 
-   filter2D( cvI, cvI, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-   filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+   filter2D( cvI, cvI, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+   filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
    Mat dx(1, data_size, CV_32F);
    Mat dy(1, data_size, CV_32F);
@@ -654,8 +654,8 @@ inline void DAISY_Impl::smooth_layers( Mat layers, int h, int w, int layer_numbe
     float *layer = NULL;
 
     int kernel_size = filter_size( sigma );
-    float kernel[kernel_size];
-    gaussian_1d( kernel, kernel_size, sigma, 0 );
+    std::vector<float> kernel(kernel_size);
+    gaussian_1d( &kernel[0], kernel_size, sigma, 0 );
 
     float* ptr = layers.ptr<float>(0);
 
@@ -669,9 +669,9 @@ inline void DAISY_Impl::smooth_layers( Mat layers, int h, int w, int layer_numbe
 
       Mat cvI( h, w, CV_32FC1, (float*) layer );
 
-      Mat Kernel( 1, kernel_size, CV_32FC1, (float*) kernel );
-      filter2D( cvI, cvI, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-      filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+      Mat Kernel( 1, kernel_size, CV_32FC1, &kernel[0] );
+      filter2D( cvI, cvI, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+      filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
     }
 }
@@ -900,8 +900,8 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
                     - m_cube_sigmas.at<double>(r-1) * m_cube_sigmas.at<double>(r-1) );
 
       int kernel_size = filter_size( sigma );
-      float kernel[kernel_size];
-      gaussian_1d(kernel, kernel_size, (float)sigma, 0);
+      std::vector<float> kernel(kernel_size);
+      gaussian_1d(&kernel[0], kernel_size, (float)sigma, 0);
 
 #if defined _OPENMP
 #pragma omp parallel for
@@ -911,9 +911,9 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
         Mat cvI( m_image.rows, m_image.cols, CV_32FC1, (float*) prev_cube + th*m_layer_size );
         Mat cvO( m_image.rows, m_image.cols, CV_32FC1, (float*) cube + th*m_layer_size );
 
-        Mat Kernel( 1, kernel_size, CV_32FC1, (float*) kernel );
-        filter2D( cvI, cvO, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-        filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+        Mat Kernel( 1, kernel_size, CV_32FC1, &kernel[0] );
+        filter2D( cvI, cvO, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+        filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
       }
       prev_cube = cube;
     }
@@ -1001,15 +1001,15 @@ inline void DAISY_Impl::compute_scales()
     if( kernel_size%2 == 0 ) kernel_size++;   // kernel size must be odd
     if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
 
-    float kernel[kernel_size];
-    gaussian_1d( kernel, kernel_size, sigma, 0 );
-    Mat Kernel( 1, kernel_size, CV_32F, (float*) kernel );
+    std::vector<float> kernel(kernel_size);
+    gaussian_1d( &kernel[0], kernel_size, sigma, 0 );
+    Mat Kernel( 1, kernel_size, CV_32F, &kernel[0] );
 
     Mat sim, next_sim;
 
     // output gaussian image
-    filter2D( m_image, sim, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-    filter2D( sim, sim, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+    filter2D( m_image, sim, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+    filter2D( sim, sim, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
     Mat max_dog( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
     m_scale_map = Mat( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
@@ -1032,13 +1032,13 @@ inline void DAISY_Impl::compute_scales()
       if( kernel_size%2 == 0 ) kernel_size++;  // kernel size must be odd
       if( kernel_size    < 3 ) kernel_size= 3; // kernel size cannot be smaller than 3
 
-      float next_kernel[kernel_size];
-      gaussian_1d( next_kernel, kernel_size, sigma_inc, 0 );
-      Mat NextKernel( 1, kernel_size, CV_32F, (float*) next_kernel );
+      kernel.resize(kernel_size);
+      gaussian_1d( &kernel[0], kernel_size, sigma_inc, 0 );
+      Mat NextKernel( 1, kernel_size, CV_32F, &kernel[0] );
 
       // output gaussian image
-      filter2D( sim, next_sim, CV_32F, NextKernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-      filter2D( next_sim, next_sim, CV_32F, NextKernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+      filter2D( sim, next_sim, CV_32F, NextKernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+      filter2D( next_sim, next_sim, CV_32F, NextKernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
 
 #if defined _OPENMP
@@ -1066,13 +1066,13 @@ inline void DAISY_Impl::compute_scales()
     if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
 
 
-    float filter_kernel[kernel_size];
-    gaussian_1d( filter_kernel, kernel_size, 10.0f, 0 );
-    Mat FilterKernel( 1, kernel_size, CV_32F, (float*) filter_kernel );
+    kernel.resize(kernel_size);
+    gaussian_1d( &kernel[0], kernel_size, 10.0f, 0 );
+    Mat FilterKernel( 1, kernel_size, CV_32F, &kernel[0] );
 
     // output gaussian image
-    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
-    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
+    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
 #if defined _OPENMP
 #pragma omp parallel for
@@ -1174,7 +1174,7 @@ inline void DAISY_Impl::compute_orientations()
             {
                angle = 0;
             }
-            m_orientation_map.at<float>(y,x) = iangle;
+            m_orientation_map.at<float>(y,x) = (float)iangle;
          }
          hist.release();
       }
@@ -1333,7 +1333,7 @@ inline void DAISY_Impl::i_get_descriptor( double y, double x, int orientation, f
          yy = y + grid.at<double>(2*region    );
          xx = x + grid.at<double>(2*region + 1);
 
-         if ( ! Point( xx, yy ).inside(
+         if ( ! Point2f( (float)xx, (float)yy ).inside(
                 Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
             ) continue;
 
@@ -1384,7 +1384,7 @@ inline void DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
          iy = (int)yy; if( yy - iy > 0.5 ) iy++;
          ix = (int)xx; if( xx - ix > 0.5 ) ix++;
 
-         if ( ! Point( xx, yy ).inside(
+         if ( ! Point2f( (float)xx, (float)yy ).inside(
                 Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
             ) continue;
 
@@ -1425,7 +1425,7 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
     double hy, hx, ry, rx;
     point_transform_via_homography( H, x, y, hx, hy );
 
-    if ( ! Point( hx, hy ).inside(
+    if ( ! Point2f( (float)hx, (float)hy ).inside(
                 Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
        ) return false;
 
@@ -1460,7 +1460,7 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
             hradius[r] = quantize_radius( (float) radius );
          }
 
-         if ( ! Point( hx, hy ).inside(
+         if ( ! Point2f( (float)hx, (float)hy ).inside(
                 Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
             ) continue;
 
@@ -1489,7 +1489,7 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
 
     point_transform_via_homography(H, x, y, hx, hy );
 
-    if ( ! Point( hx, hy ).inside(
+    if ( ! Point2f( (float)hx, (float)hy ).inside(
                 Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
        ) return false;
 
