@@ -49,7 +49,7 @@
  */
 
 #include "precomp.hpp"
-#include "opencv2/imgproc/imgproc_c.h"
+
 
 #include <fstream>
 #include <stdlib.h>
@@ -167,20 +167,12 @@ public:
      */
     virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
 
-    /**
-     * @param image set image as working
-     */
-    virtual void set_image( InputArray image );
-
 
 protected:
 
     /*
      * DAISY parameters
      */
-
-    // operation mode
-    int m_mode;
 
     // maximum radius of the descriptor region.
     float m_rad;
@@ -198,71 +190,14 @@ protected:
     // default. change the value using set_normalization() function.
     int m_nrm_type;
 
-    // holds optional H matrix
-    Mat m_h_matrix;
-
-    // input image.
-    float* m_image;
-
-    Mat m_work_image;
-
-    // image height
-    int m_h;
-
-    // image width
-    int m_w;
-
-    // image roi
-    Rect m_roi;
-
-    // stores the descriptors :
-    // its size is [ m_roi.width*m_roi.height*m_descriptor_size ].
-    float* m_dense_descriptors;
-
-    // stores the layered gradients in successively smoothed form: layer[n] =
-    // m_gradient_layers * gaussian( sigma_n ); n>= 1; layer[0] is the layered_gradient
-    float* m_smoothed_gradient_layers;
-
-    // if set to true, descriptors are scale invariant
-    bool m_scale_invariant;
-
-    // if set to true, descriptors are rotation invariant
-    bool m_rotation_invariant;
-
     // number of bins in the histograms while computing orientation
     int m_orientation_resolution;
-
-    // hold the scales of the pixels
-    float* m_scale_map;
-
-    // holds the orientaitons of the pixels
-    int* m_orientation_map;
-
-    // Holds the oriented coordinates (y,x) of the grid points of the region.
-    double** m_oriented_grid_points;
-
-    // holds the gaussian sigmas for radius quantizations for an incremental
-    // application
-    double* m_cube_sigmas;
-
-    bool m_descriptor_memory;
-    bool m_workspace_memory;
 
     // the number of grid locations
     int m_grid_point_number;
 
     // the size of the descriptor vector
     int m_descriptor_size;
-
-    // holds the amount of shift that's required for histogram computation
-    double m_orientation_shift_table[360];
-
-    // if enabled, descriptors are computed with casting non-integer locations
-    // to integer positions otherwise we use interpolation.
-    bool m_disable_interpolation;
-
-    // switch to enable sample by keypoints orientation
-    bool m_use_orientation;
 
     // size of m_hsz layers at a single sigma: m_hsz * m_layer_size
     int m_cube_size;
@@ -271,187 +206,68 @@ protected:
     // m_roi.width*m_roi.height
     int m_layer_size;
 
-    /*
-     * DAISY functions
-     */
-
-    // computes the histogram at yx; the size of histogram is m_hist_th_q_no
-    void compute_histogram( float* hcube, int y, int x, float* histogram );
-
-    // reorganizes the cube data so that histograms are sequential in memory.
-    void compute_histograms();
-
-    // emulates the way sift is normalized.
-    void normalize_sift_way( float* desc ) const;
-
-    // normalizes the descriptor histogram by histogram
-    void normalize_partial( float* desc ) const;
-
-    // normalizes the full descriptor.
-    void normalize_full( float* desc ) const;
-
-    // initializes the class: computes gradient and structure-points
-    void initialize();
-
-    void update_selected_cubes();
-
-    int quantize_radius( float rad ) const;
-
-    int filter_size( double sigma );
-
-    // computes scales for every pixel and scales the structure grid so that the
-    // resulting descriptors are scale invariant.  you must set
-    // m_scale_invariant flag to 1 for the program to call this function
-    void compute_scales();
-
-    // Return a number in the range [-0.5, 0.5] that represents the location of
-    // the peak of a parabola passing through the 3 evenly spaced samples.  The
-    // center value is assumed to be greater than or equal to the other values
-    // if positive, or less than if negative.
-    float interpolate_peak( float left, float center, float right );
-
-    // Smooth a histogram by using a [1/3 1/3 1/3] kernel.  Assume the histogram
-    // is connected in a circular buffer.
-    void smooth_histogram( float *hist, int bins );
-
-    // computes pixel orientations and rotates the structure grid so that
-    // resulting descriptors are rotation invariant. If the scales is also
-    // detected, then orientations are computed at the computed scales. you must
-    // set m_rotation_invariant flag to 1 for the program to call this function
-    void compute_orientations();
-
     // the clipping threshold to use in normalization: values above this value
     // are clipped to this value for normalize_sift_way() function
     float m_descriptor_normalization_threshold;
 
-    // computes the sigma's of layers from descriptor parameters if the user did
-    // not sets it. these define the size of the petals of the descriptor.
-    void compute_cube_sigmas();
+    /*
+     * DAISY switches
+     */
 
-    // Computes the locations of the unscaled unrotated points where the
-    // histograms are going to be computed according to the given parameters.
-    void compute_grid_points();
+    // if set to true, descriptors are scale invariant
+    bool m_scale_invariant;
 
-    // Computes the locations of the unscaled rotated points where the
-    // histograms are going to be computed according to the given parameters.
-    void compute_oriented_grid_points();
+    // if set to true, descriptors are rotation invariant
+    bool m_rotation_invariant;
 
-    // smooths each of the layers by a Gaussian having "sigma" standart
-    // deviation.
-    void smooth_layers( float*layers, int h, int w, int layer_number, float sigma );
+    // if enabled, descriptors are computed with casting non-integer locations
+    // to integer positions otherwise we use interpolation.
+    bool m_disable_interpolation;
+
+    // switch to enable sample by keypoints orientation
+    bool m_use_orientation;
+
+    /*
+     * DAISY arrays
+     */
+
+    // holds optional H matrix
+    Mat m_h_matrix;
+
+    // input image.
+    Mat m_image;
+
+    // image roi
+    Rect m_roi;
+
+    // stores the descriptors :
+    // its size is [ m_roi.width*m_roi.height*m_descriptor_size ].
+    Mat m_dense_descriptors;
+
+    // stores the layered gradients in successively smoothed form :
+    // layer[n] = m_gradient_layers * gaussian( sigma_n );
+    // n>= 1; layer[0] is the layered_gradient
+    Mat m_smoothed_gradient_layers;
+
+    // hold the scales of the pixels
+    Mat m_scale_map;
+
+    // holds the orientaitons of the pixels
+    Mat m_orientation_map;
+
+    // Holds the oriented coordinates (y,x) of the grid points of the region.
+    Mat m_oriented_grid_points;
+
+    // holds the gaussian sigmas for radius quantizations for an incremental
+    // application
+    Mat m_cube_sigmas;
 
     // Holds the coordinates (y,x) of the grid points of the region.
-    double** m_grid_points;
+    Mat m_grid_points;
 
-    int get_hq() { return m_hist_th_q_no; }
-    int get_thq() { return m_th_q_no; }
-    int get_rq() { return m_rad_q_no; }
-    float get_rad() { return m_rad; }
+    // holds the amount of shift that's required for histogram computation
+    double m_orientation_shift_table[360];
 
-    // sets the type of the normalization to apply out of {NRM_PARTIAL,
-    // NRM_FULL, NRM_SIFT}. Call before using get_descriptor() if you want to
-    // change the default normalization type.
-    void set_normalization( int nrm_type ) { m_nrm_type = nrm_type; }
-
-    // applies one of the normalizations (partial,full,sift) to the desciptors.
-    void normalize_descriptors( int nrm_type = DAISY::NRM_NONE );
-
-    // normalizes histograms individually
-    void normalize_histograms();
-
-    // gets the histogram at y,x with 'orientation' from the r'th cube
-    float* get_histogram( int y, int x, int r );
-
-    // if called, I don't use interpolation in the computation of
-    // descriptors.
-    void disable_interpolation() { m_disable_interpolation = true; }
-
-    // returns the region number.
-    int grid_point_number() { return m_grid_point_number; }
-
-    // releases all the used memory; call this if you want to process
-    // multiple images within a loop.
-    void reset();
-
-    // releases unused memory after descriptor computation is completed.
-    void release_auxiliary();
-
-    // computes the descriptors for every pixel in the image.
-    void compute_descriptors();
-
-    // returns all the descriptors.
-    float* get_dense_descriptors();
-
-    // returns oriented grid points. default is 0 orientation.
-    double* get_grid(int o=0);
-
-    // EXPERIMENTAL: DO NOT USE IF YOU ARE NOT ENGIN TOLA: tells to compute the
-    // scales for every pixel so that the resulting descriptors are scale
-    // invariant.
-    void scale_invariant( bool state = true )
-    {
-         g_scale_en = (int)( (log(g_sigma_2/g_sigma_0)) / log(g_sigma_step) ) - g_scale_st;
-         m_scale_invariant = state;
-    }
-
-    // EXPERIMENTAL: DO NOT USE IF YOU ARE NOT ENGIN TOLA: tells to compute the
-    // orientations for every pixel so that the resulting descriptors are
-    // rotation invariant. orientation steps are 360/ori_resolution
-    void rotation_invariant( int ori_resolution = 36, bool state = true )
-    {
-         m_rotation_invariant = state;
-         m_orientation_resolution = ori_resolution;
-    }
-
-    // sets the gaussian variances manually. must be called before
-    // initialize() to be considered. must be exact sigma values -> f
-    // converts to incremental format.
-    void set_cube_gaussians( double* sigma_array, int sz );
-
-    int* get_orientation_map() { return m_orientation_map; }
-
-    // call compute_descriptor_memory to find the amount of memory to allocate
-    void set_descriptor_memory( float* descriptor, long int d_size );
-
-    // call compute_workspace_memory to find the amount of memory to allocate
-    void set_workspace_memory( float* workspace, long int w_size );
-
-    // returns the amount of memory needed for the compute_descriptors()
-    // function. it is basically equal to imagesize x descriptor_size
-    int compute_descriptor_memory() {
-      if( m_h == 0 || m_descriptor_size == 0 ) {
-          CV_Error( Error::StsInternal, "Image and descriptor size is zero" );
-      }
-      return m_roi.width*m_roi.height * m_descriptor_size;
-    }
-
-    // returns the amount of memory needed for workspace. call before initialize()
-    int compute_workspace_memory() {
-      if( m_cube_size == 0 ) {
-          CV_Error( Error::StsInternal, "Cube size is zero" );
-      }
-      return (g_cube_number+1)* m_cube_size;
-    }
-
-    void normalize_descriptor( float* desc, int nrm_type = DAISY::NRM_NONE ) const
-    {
-      if( nrm_type == DAISY::NRM_NONE )      nrm_type = m_nrm_type;
-      else if( nrm_type == DAISY::NRM_PARTIAL ) normalize_partial(desc);
-      else if( nrm_type == DAISY::NRM_FULL    ) normalize_full(desc);
-      else if( nrm_type == DAISY::NRM_SIFT    ) normalize_sift_way(desc);
-      else
-          CV_Error( Error::StsInternal, "No such normalization" );
-    }
-
-    // transform a point via the homography
-    void point_transform_via_homography( double* H, double x, double y, double &u, double &v ) const
-    {
-      double kxp = H[0]*x + H[1]*y + H[2];
-      double kyp = H[3]*x + H[4]*y + H[5];
-      double kp  = H[6]*x + H[7]*y + H[8];
-      u = kxp / kp;
-      v = kyp / kp;
-    }
 
 private:
 
@@ -460,22 +276,99 @@ private:
     // COMP_FULL -> (mode_2) compute all descriptors from image
     enum { ONLY_KEYS = 0, COMP_FULL = 1 };
 
-    // set & precompute parameters
-    inline void set_parameters();
+    /*
+     * DAISY functions
+     */
 
+    // initializes the class: computes gradient and structure-points
+    inline void initialize();
 
     // initializes for get_descriptor(double, double, int) mode: pre-computes
     // convolutions of gradient layers in m_smoothed_gradient_layers
     inline void initialize_single_descriptor_mode();
+
+    // set & precompute parameters
+    inline void set_parameters();
+
+    // image set image as working
+    inline void set_image( InputArray image );
+
+    // releases all the used memory; call this if you want to process
+    // multiple images within a loop.
+    inline void reset();
+
+    // releases unused memory after descriptor computation is completed.
+    inline void release_auxiliary();
+
+    // computes the descriptors for every pixel in the image.
+    inline void compute_descriptors();
+
+    // computes scales for every pixel and scales the structure grid so that the
+    // resulting descriptors are scale invariant.  you must set
+    // m_scale_invariant flag to 1 for the program to call this function
+    inline void compute_scales();
+
+    // compute the smoothed gradient layers.
+    inline void compute_smoothed_gradient_layers();
+
+    // computes pixel orientations and rotates the structure grid so that
+    // resulting descriptors are rotation invariant. If the scales is also
+    // detected, then orientations are computed at the computed scales. you must
+    // set m_rotation_invariant flag to 1 for the program to call this function
+    inline void compute_orientations();
+
+    // computes the histogram at yx; the size of histogram is m_hist_th_q_no
+    inline void compute_histogram( float* hcube, int y, int x, float* histogram );
+
+    // reorganizes the cube data so that histograms are sequential in memory.
+    inline void compute_histograms();
+
+    // computes the sigma's of layers from descriptor parameters if the user did
+    // not sets it. these define the size of the petals of the descriptor.
+    inline void compute_cube_sigmas();
+
+    // Computes the locations of the unscaled unrotated points where the
+    // histograms are going to be computed according to the given parameters.
+    inline void compute_grid_points();
+
+    // Computes the locations of the unscaled rotated points where the
+    // histograms are going to be computed according to the given parameters.
+    inline void compute_oriented_grid_points();
+
+    // normalizes the descriptor
+    inline void normalize_descriptor( float* desc, int nrm_type ) const;
+
+    // applies one of the normalizations (partial,full,sift) to the desciptors.
+    inline void normalize_descriptors( int nrm_type = DAISY::NRM_NONE );
+
+
+    // emulates the way sift is normalized.
+    inline void normalize_sift_way( float* desc ) const;
+
+    // normalizes the descriptor histogram by histogram
+    inline void normalize_partial( float* desc ) const;
+
+    // normalizes the full descriptor.
+    inline void normalize_full( float* desc ) const;
+
+    // normalizes histograms individually
+    inline void normalize_histograms();
+
+    inline void update_selected_cubes();
+
+    // Smooth a histogram by using a [1/3 1/3 1/3] kernel.  Assume the histogram
+    // is connected in a circular buffer.
+    inline void smooth_histogram( Mat hist, int bins );
+
+    // smooths each of the layers by a Gaussian having "sigma" standart
+    // deviation.
+    inline void smooth_layers( Mat layers, int h, int w, int layer_number, float sigma );
 
     // returns the descriptor vector for the point (y, x) !!! use this for
     // precomputed operations meaning that you must call compute_descriptors()
     // before calling this function. if you want normalized descriptors, call
     // normalize_descriptors() before calling compute_descriptors()
     inline void get_descriptor( int y, int x, float* &descriptor );
-
-    // compute the smoothed gradient layers.
-    inline void compute_smoothed_gradient_layers();
 
     // does not use interpolation while computing the histogram.
     inline void ni_get_histogram( float* histogram, int y, int x, int shift, float* hcube ) const;
@@ -506,496 +399,15 @@ private:
     // does not use interpolation. for w/interpolation, call i_get_descriptor. see also get_descriptor
     inline bool ni_get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
 
-    // creates a 1D gaussian filter with N(mean,sigma).
-    inline void gaussian_1d( float* fltr, int fsz, float sigma, float mean )
-    {
-      CV_Assert(fltr != NULL);
-      int sz = (fsz-1)/2;
-      int counter=-1;
-      float sum = 0.0;
-      float v = 2*sigma*sigma;
-      for( int x=-sz; x<=sz; x++ )
-      {
-         counter++;
-         fltr[counter] = exp((-((float)x-mean)*((float)x-mean))/v);
-         sum += fltr[counter];
-      }
-
-      if( sum != 0 )
-      {
-         for( int x=0; x<fsz; x++ )
-            fltr[x] /= sum;
-      }
-    }
-
-    inline void conv_horizontal( float* image, int h, int w, float* kernel, int ksize )
-    {
-      CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_32FC1, (float*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_32FC1, (float*)kernel);
-      cvFilter2D( &cvI, &cvI, &cvK );
-    }
-    inline void conv_horizontal( double* image, int h, int w, double* kernel, int ksize )
-    {
-      CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_64FC1, (double*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, 1, ksize, CV_64FC1, (double*)kernel);
-      cvFilter2D( &cvI, &cvI, &cvK );
-    }
-
-    inline void conv_vertical( float* image, int h, int w, float* kernel, int ksize )
-    {
-      CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_32FC1, (float*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_32FC1, (float*)kernel);
-      cvFilter2D( &cvI, &cvI, &cvK );
-    }
-
-    inline void conv_vertical( double* image, int h, int w, double* kernel, int ksize )
-    {
-      CvMat cvI; cvInitMatHeader(&cvI, h, w, CV_64FC1, (double*)image);
-      CvMat cvK; cvInitMatHeader(&cvK, ksize, 1, CV_64FC1, (double*)kernel);
-      cvFilter2D( &cvI, &cvI, &cvK );
-    }
-
-    /*
-     * DAISY utilities
-     */
-
-    template<class T>
-    class rectangle
-    {
-    public:
-      T lx, ux, ly, uy;
-      T dx, dy;
-      rectangle(T xl, T xu, T yl, T yu) { lx=xl; ux=xu; ly=yl; uy=yu; dx=ux-lx; dy=uy-ly; };
-      rectangle()                       { lx = ux = ly = uy = dx = dy = 0; };
-    };
-
-    // checks if the number x is between lx - ux interval.
-    // the equality is checked depending on the value of le and ue parameters.
-    // if le=1 => lx<=x is checked else lx<x is checked
-    // if ue=1 => x<=ux is checked else x<ux is checked
-    // by default x is searched inside of [lx,ux)
-    template<class T1, class T2, class T3> inline
-    bool is_inside(T1 x, T2 lx, T3 ux, bool le=true, bool ue=false) const
-    {
-      if( ( ((lx<x)&&(!le)) || ((lx<=x)&&le) ) && ( ((x<ux)&&(!ue)) || ((x<=ux)&&ue) )    )
-      {
-         return true;
-      }
-      else
-      {
-         return false;
-      }
-    }
-
-    // checks if the number x is between lx - ux and/or y is between ly - uy interval.
-    // If the number is inside, then function returns true, else it returns false.
-    // the equality is checked depending on the value of le and ue parameters.
-    // if le=1 => lx<=x is checked else lx<x is checked
-    // if ue=1 => x<=ux is checked else x<ux is checked
-    // by default x is searched inside of [lx,ux).
-    // the same equality check is applied to the y variable as well.
-    // If the 'oper' is set '&' both of the numbers must be within the interval to return true
-    // But if the 'oper' is set to '|' then only one of them being true is sufficient.
-    template<class T1, class T2, class T3> inline
-    bool is_inside(T1 x, T2 lx, T3 ux, T1 y, T2 ly, T3 uy, bool le=true, bool ue=false, char oper='&') const
-    {
-      switch( oper )
-      {
-      case '|':
-         if( is_inside(x,lx,ux,le,ue) || is_inside(y,ly,uy,le,ue) )
-            return true;
-         return false;
-
-      default:
-         if( is_inside(x,lx,ux,le,ue) && is_inside(y,ly,uy,le,ue) )
-            return true;
-         return false;
-      }
-    }
-
-    // checks if the number x is between lx - ux and/or y is between ly - uy interval.
-    // If the number is inside, then function returns true, else it returns false.
-    // the equality is checked depending on the value of le and ue parameters.
-    // if le=1 => lx<=x is checked else lx<x is checked
-    // if ue=1 => x<=ux is checked else x<ux is checked
-    // by default x is searched inside of [lx,ux).
-    // the same equality check is applied to the y variable as well.
-    // If the 'oper' is set '&' both of the numbers must be within the interval to return true
-    // But if the 'oper' is set to '|' then only one of them being true is sufficient.
-    template<class T1, class T2> inline
-    bool is_inside(T1 x, T1 y, rectangle<T2> roi, bool le=true, bool ue=false, char oper='&') const
-    {
-      switch( oper )
-      {
-      case '|':
-         if( is_inside(x,roi.lx,roi.ux,le,ue) || is_inside(y,roi.ly,roi.uy,le,ue) )
-            return true;
-         return false;
-
-      default:
-         if( is_inside(x,roi.lx,roi.ux,le,ue) && is_inside(y,roi.ly,roi.uy,le,ue) )
-            return true;
-         return false;
-      }
-    }
-
-    // checks if the number x is outside lx - ux interval
-    // the equality is checked depending on the value of le and ue parameters.
-    // if le=1 => lx>x is checked else lx>=x is checked
-    // if ue=1 => x>ux is checked else x>=ux is checked
-    // by default is x is searched outside of [lx,ux)
-    template<class T1, class T2, class T3> inline
-    bool is_outside(T1 x, T2 lx, T3 ux, bool le=true, bool ue=false) const
-    {
-      return !(is_inside(x,lx,ux,le,ue));
-    }
-
-    // checks if the numbers x and y is outside their intervals.
-    // The equality is checked depending on the value of le and ue parameters.
-    // If le=1 => lx>x is checked else lx>=x is checked
-    // If ue=1 => x>ux is checked else x>=ux is checked
-    // By default is x is searched outside of [lx,ux) (Similarly for y)
-    // By default, 'oper' is set to OR. If one of them is outside it returns
-    // true otherwise false.
-    template<class T1, class T2, class T3> inline
-    bool is_outside(T1 x, T2 lx, T3 ux, T1 y, T2 ly, T3 uy, bool le=true, bool ue=false, char oper='|') const
-    {
-      switch( oper )
-      {
-      case '&':
-         if( is_outside(x,lx,ux,le,ue) && is_outside(y,ly,uy,le,ue) )
-            return true;
-         return false;
-      default:
-         if( is_outside(x,lx,ux,le,ue) || is_outside(y,ly,uy,le,ue) )
-            return true;
-         return false;
-      }
-    }
-
-    // checks if the numbers x and y is outside their intervals.
-    // The equality is checked depending on the value of le and ue parameters.
-    // If le=1 => lx>x is checked else lx>=x is checked
-    // If ue=1 => x>ux is checked else x>=ux is checked
-    // By default is x is searched outside of [lx,ux) (Similarly for y)
-    // By default, 'oper' is set to OR. If one of them is outside it returns
-    // true otherwise false.
-    template<class T1, class T2> inline
-    bool is_outside(T1 x, T1 y, rectangle<T2> roi, bool le=true, bool ue=false, char oper='|') const
-    {
-      switch( oper )
-      {
-      case '&':
-         if( is_outside(x,roi.lx,roi.ux,le,ue) && is_outside(y,roi.ly,roi.uy,le,ue) )
-            return true;
-         return false;
-      default:
-         if( is_outside(x,roi.lx,roi.ux,le,ue) || is_outside(y,roi.ly,roi.uy,le,ue) )
-            return true;
-         return false;
-      }
-    }
-
-    // computes the square of a number and returns it.
-    template<class T> inline
-    T square(T a) const
-    {
-      return a*a;
-    }
-
-    // computes the square of an array. if in_place is enabled, the
-    // result is returned in the array arr.
-    template<class T> inline
-    T* square(T* arr, int sz, bool in_place=false) const
-    {
-      T* out;
-      if( in_place ) out = arr;
-      else           out = allocate<T>(sz);
-
-      for( int i=0; i<sz; i++ )
-         out[i] = arr[i]*arr[i];
-
-      return out;
-    }
-
-    // computes the l2norm of an array: [ sum_i( [a(i)]^2 ) ]^0.5
-    template<class T> inline
-    float l2norm( T* a, int sz) const
-    {
-      float norm=0;
-      for( int k=0; k<sz; k++ )
-         norm += a[k]*a[k];
-      return sqrt(norm);
-    }
-
-    // computes the l2norm of the difference of two arrays: [ sum_i( [a(i)-b(i)]^2 ) ]^0.5
-    template<class T1, class T2> inline
-    float l2norm( T1* a, T2* b, int sz) const
-    {
-      float norm=0;
-      for( int i=0; i<sz; i++ )
-      {
-         norm += square( (float)a[i] - (float)b[i] );
-      }
-      norm = sqrt( norm );
-
-      return norm;
-    }
-
-    template<class T> inline
-    float l2norm( T y0, T x0, T y1, T x1 ) const
-    {
-      float d0 = (float) (x0 - x1);
-      float d1 = (float) (y0 - y1);
-
-      return sqrt( d0*d0 + d1*d1 );
-    }
-
-    // allocates a memory of size sz and returns a pointer to the array
-    template<class T> inline
-    T* allocate(const int sz)
-    {
-      T* array = new T[sz];
-      return array;
-    }
-
-    // allocates a memory of size ysz x xsz and returns a double pointer to it
-    template<class T> inline
-    T** allocate(const int ysz, const int xsz)
-    {
-      T** mat = new T*[ysz];
-      int i;
-
-      for(i=0; i<ysz; i++ )
-         mat[i] = new T[xsz];
-      // allocate<T>(xsz);
-
-      return mat;
-    }
-
-    // deallocates the memory and sets the pointer to null.
-    template<class T> inline
-    void deallocate(T* &array)
-    {
-      delete[] array;
-      array = NULL;
-    }
-
-    // deallocates the memory and sets the pointer to null.
-    template<class T> inline
-    void deallocate(T** &mat, int ysz)
-    {
-      if( mat == NULL ) return;
-
-      for(int i=0; i<ysz; i++)
-         deallocate(mat[i]);
-
-      delete[] mat;
-      mat = NULL;
-    }
-
-    // Converts the given polar coordinates of a point to cartesian
-    // ones.
-    template<class T1, class T2> inline
-    void polar2cartesian(T1 r, T1 t, T2 &y, T2 &x)
-    {
-      x = (T2)( r * cos( t ) );
-      y = (T2)( r * sin( t ) );
-    }
-
-
-    template<typename T> inline
-    void convolve_sym_( T* image, int h, int w, T* kernel, int ksize )
-    {
-      conv_horizontal( image, h, w, kernel, ksize );
-      conv_vertical  ( image, h, w, kernel, ksize );
-    }
-
-    template<class T>
-    inline void convolve_sym( T* image, int h, int w, T* kernel, int ksize, T* out=NULL )
-    {
-      if( out == NULL ) out = image;
-      else memcpy( out, image, sizeof(T)*h*w );
-      convolve_sym_(out, h, w, kernel, ksize);
-    }
-
-    // divides the elements of the array with num
-    template<class T1, class T2> inline
-    void divide(T1* arr, int sz, T2 num ) const
-    {
-      float inv_num = (float) (1.0 / num);
-
-      for( int i=0; i<sz; i++ )
-      {
-         arr[i] = (T1)(arr[i]*inv_num);
-      }
-    }
-
-    // returns an array filled with zeroes.
-    template<class T> inline
-    T* zeros(int r)
-    {
-      T* data = allocate<T>(r);
-      memset( data, 0, sizeof(T)*r );
-      return data;
-    }
-
-    template<class T> inline
-    T* layered_gradient( T* data, int h, int w, int layer_no=8 )
-    {
-      int data_size = h * w;
-      T* layers = zeros<T>(layer_no * data_size);
-
-      // smooth the data matrix
-      T* bdata = blur_gaussian_2d<T,T>( data, h, w, 0.5, 5, false );
-
-      T *dx = new T[data_size];
-      T *dy = new T[data_size];
-      gradient(bdata, h, w, dy, dx);
-      deallocate( bdata );
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
-      for( int l=0; l<layer_no; l++ )
-      {
-         float angle = (float) (2*l*CV_PI/layer_no);
-         float kos = (float) cos( angle );
-         float zin = (float) sin( angle );
-
-         T* layer_l = layers + l*data_size;
-
-         for( int index=0; index<data_size; index++ )
-         {
-            float value = kos * dx[ index ] + zin * dy[ index ];
-            if( value > 0 ) layer_l[index] = value;
-            else            layer_l[index] = 0;
-         }
-      }
-      deallocate(dy);
-      deallocate(dx);
-
-      return layers;
-    }
-
-    // computes the gradient of an image and returns the result in
-    // pointers to REAL.
-    template <class T> inline
-    void gradient(T* im, int h, int w, T* dy, T* dx)
-    {
-      CV_Assert( dx != NULL );
-      CV_Assert( dy != NULL );
-
-      for( int y=0; y<h; y++ )
-      {
-         int yw = y*w;
-         for( int x=0; x<w; x++ )
-         {
-            int ind = yw+x;
-            // dx
-            if( x>0 && x<w-1 ) dx[ind] = (T) (((T)im[ind+1]-(T)im[ind-1])/2.0f);
-            if( x==0         ) dx[ind] = ((T)im[ind+1]-(T)im[ind]);
-            if( x==w-1       ) dx[ind] = ((T)im[ind  ]-(T)im[ind-1]);
-
-            //dy
-            if( y>0 && y<h-1 ) dy[ind] = (T) (((T)im[ind+w]-(T)im[ind-w])/2.0f);
-            if( y==0         ) dy[ind] = ((T)im[ind+w]-(T)im[ind]);
-            if( y==h-1       ) dy[ind] = ((T)im[ind]  -(T)im[ind-w]);
-         }
-      }
-    }
-
-    // be careful, 'data' is destroyed afterwards
-    template<class T> inline
-    //  original T* workspace=0 was removed
-    void layered_gradient( T* data, int h, int w, int layer_no, T* layers, int lwork = 0 )
-    {
-      int data_size = h * w;
-      CV_Assert(layers!=NULL);
-      memset(layers,0,sizeof(T)*data_size*layer_no);
-
-      bool was_empty = false;
-      T* work=NULL;
-      if( lwork < 3*data_size ) {
-         work = new T[3*data_size];
-         was_empty = true;
-      }
-
-      // // smooth the data matrix
-      // T* bdata = blur_gaussian_2d<T,T>( data, h, w, 0.5, 5, false);
-      float kernel[5]; gaussian_1d(kernel, 5, 0.5, 0);
-      memcpy( work, data, sizeof(T)*data_size );
-      convolve_sym( work, h, w, kernel, 5 );
-
-      T *dx = work+data_size;
-      T *dy = work+2*data_size;
-      gradient( work, h, w, dy, dx );
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
-      for( int l=0; l<layer_no; l++ )
-      {
-         float angle = (float) (2*l*CV_PI/layer_no);
-         float kos = (float) cos( angle );
-         float zin = (float) sin( angle );
-
-         T* layer_l = layers + l*data_size;
-
-         for( int index=0; index<data_size; index++ )
-         {
-            float value = kos * dx[ index ] + zin * dy[ index ];
-            if( value > 0 ) layer_l[index] = value;
-            else            layer_l[index] = 0;
-         }
-      }
-      if( was_empty ) delete []work;
-    }
-
-    // casts a type T2 array into a type T1 array.
-    template<class T1, class T2> inline
-    T1* type_cast(T2* data, int sz)
-    {
-      T1* out = new T1[sz];
-
-      for( int i=0; i<sz; i++ )
-         out[i] = (T1)data[i];
-
-      return out;
-    }
-
-    // Applies a 2d gaussian blur of sigma std to the input array.  if
-    // kernel_size is not set or it is set to 0, then it is taken as
-    // 3*sigma and if it is set to an even number, it is incremented
-    // to be an odd number.  if in_place=true, then T1 must be equal
-    // to T2 naturally.
-    template<class T1, class T2> inline
-    T1* blur_gaussian_2d( T2* array, int rn, int cn, float sigma, int kernel_size = 0, bool in_place = false )
-    {
-      T1* out = NULL;
-
-      if( in_place )
-         out = (T1*)array;
-      else
-         out = type_cast<T1,T2>(array,rn*cn);
-
-      if( kernel_size == 0 )
-         kernel_size = (int)(3*sigma);
-
-      if( kernel_size%2 == 0 ) kernel_size++; // kernel size must be odd
-      if( kernel_size < 3 ) kernel_size= 3;  // kernel size cannot be smaller than 3
-
-      float* kernel = new float[kernel_size];
-      gaussian_1d(kernel, kernel_size, sigma, 0);
-
-      // !! apply the filter separately
-      convolve_sym( out, rn, cn, kernel, kernel_size );
-      // conv_horizontal( out, rn, cn, kernel, kernel_size);
-      // conv_vertical  ( out, rn, cn, kernel, kernel_size);
-
-      deallocate(kernel);
-      return out;
-    }
+    inline int quantize_radius( float rad ) const;
+
+    inline int filter_size( double sigma );
+
+    // Return a number in the range [-0.5, 0.5] that represents the location of
+    // the peak of a parabola passing through the 3 evenly spaced samples.  The
+    // center value is assumed to be greater than or equal to the other values
+    // if positive, or less than if negative.
+    inline float interpolate_peak( float left, float center, float right );
 
 
 }; // END DAISY_Impl CLASS
@@ -1004,70 +416,179 @@ private:
 // -------------------------------------------------
 /* DAISY computation routines */
 
-float* DAISY_Impl::get_histogram( int y, int x, int r )
+inline void DAISY_Impl::reset()
 {
-    CV_Assert( y >= 0 && y < m_h );
-    CV_Assert( x >= 0 && x < m_w );
-    CV_Assert( m_smoothed_gradient_layers );
-    CV_Assert( m_oriented_grid_points );
-    return m_smoothed_gradient_layers+g_selected_cubes[r]*m_cube_size + (y*m_w+x)*m_hist_th_q_no;
-    // i_get_histogram( histogram, y, x, 0, m_smoothed_gradient_layers+g_selected_cubes[r]*m_cube_size );
+    m_image.release();
+
+    m_orientation_map.release();
+    m_scale_map.release();
+
+    m_dense_descriptors.release();
+    m_smoothed_gradient_layers.release();
 }
 
-
-float* DAISY_Impl::get_dense_descriptors()
+inline void DAISY_Impl::release_auxiliary()
 {
-    return m_dense_descriptors;
+    m_orientation_map.release();
+    m_scale_map.release();
+
+    m_smoothed_gradient_layers.release();
+
+    m_grid_points.release();
+    m_oriented_grid_points.release();
+    m_cube_sigmas.release();
+
+    m_image.release();
 }
 
-double* DAISY_Impl::get_grid(int o)
+// creates a 1D gaussian filter with N(mean,sigma).
+static void gaussian_1d( float* fltr, int fsz, float sigma, float mean )
 {
-    CV_Assert( o >= 0 && o < 360 );
-    return m_oriented_grid_points[o];
+    CV_Assert(fltr != NULL);
+
+    int sz = (fsz - 1) / 2;
+    int counter = -1;
+    float sum = 0.0f;
+    float v = 2 * sigma*sigma;
+    for( int x=-sz; x<=sz; x++ )
+    {
+      counter++;
+      fltr[counter] = exp((-((float)x-mean)*((float)x-mean))/v);
+      sum += fltr[counter];
+    }
+
+    if( sum != 0 )
+    for( int x=0; x<fsz; x++ ) fltr[x] /= sum;
 }
 
-void DAISY_Impl::reset()
+// computes the gradient of an image
+static void gradient( Mat im, int h, int w, Mat dy, Mat dx )
 {
-    m_work_image.release();
+    CV_Assert( !dx.empty() );
+    CV_Assert( !dy.empty() );
 
-    if ( m_orientation_map ) deallocate( m_orientation_map );
-    if ( m_scale_map ) deallocate( m_scale_map );
+    for( int y=0; y<h; y++ )
+    {
+      int yw = y*w;
+      for( int x=0; x<w; x++ )
+      {
+        int ind = yw+x;
+        // dx
+        if( x>0 && x<w-1 ) dx.at<float>(ind) = (im.at<float>(ind+1)-im.at<float>(ind-1)) / 2.0f;
+        if( x==0         ) dx.at<float>(ind) =  im.at<float>(ind+1)-im.at<float>(ind  );
+        if( x==w-1       ) dx.at<float>(ind) =  im.at<float>(ind  )-im.at<float>(ind-1);
 
-    if ( !m_descriptor_memory && m_dense_descriptors )
-        deallocate( m_dense_descriptors );
-    if ( !m_workspace_memory && m_smoothed_gradient_layers )
-        deallocate(m_smoothed_gradient_layers);
+        // dy
+        if( y>0 && y<h-1 ) dy.at<float>(ind) = (im.at<float>(ind+w)-im.at<float>(ind-w)) / 2.0f;
+        if( y==0         ) dy.at<float>(ind) =  im.at<float>(ind+w)-im.at<float>(ind  );
+        if( y==h-1       ) dy.at<float>(ind) =  im.at<float>(ind  )-im.at<float>(ind-w);
+      }
+    }
 }
 
-void DAISY_Impl::release_auxiliary()
+static Mat layered_gradient( Mat data, int layer_no = 8 )
 {
-    if ( m_orientation_map ) deallocate( m_orientation_map );
-    if ( m_scale_map ) deallocate( m_scale_map );
+   int data_size = data.rows * data.cols;
+   Mat layers( 1, layer_no*data_size, CV_32F, Scalar(0) );
 
-    if ( !m_workspace_memory && m_smoothed_gradient_layers )
-        deallocate( m_smoothed_gradient_layers );
+   float kernel[5];
+   gaussian_1d(kernel, 5, 0.5f, 0.0f);
+   Mat Kernel(1, 5, CV_32F, (float*) kernel);
 
-    if ( m_grid_points ) deallocate( m_grid_points, m_grid_point_number );
-    if ( m_oriented_grid_points )
-        deallocate( m_oriented_grid_points, g_grid_orientation_resolution );
-    if ( m_cube_sigmas ) deallocate( m_cube_sigmas );
+   Mat cvO;
+   // smooth the data matrix
+   filter2D( data, cvO, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+   filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
 
-    m_work_image.release();
+   Mat dx(1, data_size, CV_32F);
+   Mat dy(1, data_size, CV_32F);
+
+   gradient(cvO, data.rows, data.cols, dy, dx);
+   cvO.release();
+
+#if defined _OPENMP
+#pragma omp parallel for
+#endif
+   for( int l=0; l<layer_no; l++ )
+   {
+      float angle = (float) (2*l*CV_PI/layer_no);
+      float kos = (float) cos( angle );
+      float zin = (float) sin( angle );
+
+      float* layer_l = layers.ptr<float>(0) + l*data_size;
+
+      for( int index=0; index<data_size; index++ )
+      {
+         float value = kos * dx.at<float>(index) + zin * dy.at<float>(index);
+         if( value > 0 ) layer_l[index] = value;
+         else            layer_l[index] = 0;
+      }
+   }
+   return layers;
 }
 
-void DAISY_Impl::compute_grid_points()
+// data is not destroyed afterwards
+static void layered_gradient( Mat data, int layer_no, Mat layers )
+{
+   CV_Assert( !layers.empty() );
+
+   Mat cvI = data.clone();
+   layers.setTo( Scalar(0) );
+   int data_size = data.rows * data.cols;
+
+   float kernel[5];
+   gaussian_1d(kernel, 5, 0.5f, 0.0f);
+   Mat Kernel(1, 5, CV_32F, (float*) kernel);
+
+   filter2D( cvI, cvI, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+   filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+
+   Mat dx(1, data_size, CV_32F);
+   Mat dy(1, data_size, CV_32F);
+   gradient( cvI, data.rows, data.cols, dy, dx );
+
+#if defined _OPENMP
+#pragma omp parallel for
+#endif
+   for( int l=0; l<layer_no; l++ )
+   {
+      float angle = (float) (2*l*CV_PI/layer_no);
+      float kos = (float) cos( angle );
+      float zin = (float) sin( angle );
+
+      float* layer_l = layers.ptr<float>(0) + l*data_size;
+
+      for( int index=0; index<data_size; index++ )
+      {
+         float value = kos * dx.at<float>(index) + zin * dy.at<float>(index);
+         if( value > 0 ) layer_l[index] = value;
+         else            layer_l[index] = 0;
+      }
+   }
+}
+
+// transform a point via the homography
+static void point_transform_via_homography( double* H, double x, double y, double &u, double &v )
+{
+    double kxp = H[0]*x + H[1]*y + H[2];
+    double kyp = H[3]*x + H[4]*y + H[5];
+    double kp  = H[6]*x + H[7]*y + H[8];
+    u = kxp / kp;
+    v = kyp / kp;
+}
+
+inline void DAISY_Impl::compute_grid_points()
 {
     double r_step = m_rad / (double)m_rad_q_no;
     double t_step = 2*CV_PI/ m_th_q_no;
 
-    if( m_grid_points )
-      deallocate( m_grid_points, m_grid_point_number );
+    m_grid_points.release();
+    m_grid_points = Mat( m_grid_point_number, 2, CV_64F );
 
-    m_grid_points = allocate<double>(m_grid_point_number, 2);
     for( int y=0; y<m_grid_point_number; y++ )
     {
-      m_grid_points[y][0] = 0;
-      m_grid_points[y][1] = 0;
+      m_grid_points.at<double>(y,0) = 0;
+      m_grid_points.at<double>(y,1) = 0;
     }
 
     for( int r=0; r<m_rad_q_no; r++ )
@@ -1075,18 +596,26 @@ void DAISY_Impl::compute_grid_points()
       int region = r*m_th_q_no+1;
       for( int t=0; t<m_th_q_no; t++ )
       {
-         double y, x;
-         polar2cartesian( (r+1)*r_step, t*t_step, y, x );
-         m_grid_points[region+t][0] = y;
-         m_grid_points[region+t][1] = x;
+         m_grid_points.at<double>(region+t,0) = (r+1)*r_step * sin( t*t_step );
+         m_grid_points.at<double>(region+t,1) = (r+1)*r_step * cos( t*t_step );
       }
     }
 
     compute_oriented_grid_points();
 }
 
-/// Computes the descriptor by sampling convoluted orientation maps.
-void DAISY_Impl::compute_descriptors()
+inline void DAISY_Impl::normalize_descriptor( float* desc, int nrm_type = DAISY::NRM_NONE ) const
+{
+    if( nrm_type == DAISY::NRM_NONE ) nrm_type = m_nrm_type;
+    else if( nrm_type == DAISY::NRM_PARTIAL ) normalize_partial(desc);
+    else if( nrm_type == DAISY::NRM_FULL    ) normalize_full(desc);
+    else if( nrm_type == DAISY::NRM_SIFT    ) normalize_sift_way(desc);
+    else
+        CV_Error( Error::StsInternal, "No such normalization" );
+}
+
+// Computes the descriptor by sampling convoluted orientation maps.
+inline void DAISY_Impl::compute_descriptors()
 {
 
     int y_off = m_roi.y;
@@ -1094,12 +623,10 @@ void DAISY_Impl::compute_descriptors()
     int y_end = m_roi.y + m_roi.height;
     int x_end = m_roi.x + m_roi.width;
 
-    if( m_scale_invariant    ) compute_scales();
-    if( m_rotation_invariant ) compute_orientations();
-    if( !m_descriptor_memory )
-      m_dense_descriptors = allocate <float>(m_roi.width*m_roi.height * m_descriptor_size);
+//    if( m_scale_invariant    ) compute_scales();
+//    if( m_rotation_invariant ) compute_orientations();
 
-    memset(m_dense_descriptors, 0, sizeof(float)*m_roi.width*m_roi.height * m_descriptor_size);
+    m_dense_descriptors = Mat( m_roi.width*m_roi.height, m_descriptor_size, CV_32F, Scalar(0) );
 
     int y, x, index, orientation;
 #if defined _OPENMP
@@ -1109,63 +636,106 @@ void DAISY_Impl::compute_descriptors()
     {
       for( x=x_off; x<x_end; x++ )
       {
-         index = y*m_w + x;
+         index = y*m_image.cols + x;
          orientation = 0;
-         if( m_orientation_map ) orientation = m_orientation_map[index];
-         if( !( orientation >= 0 && orientation < g_grid_orientation_resolution ) ) orientation = 0;
-         get_unnormalized_descriptor( y, x, orientation, &(m_dense_descriptors[index*m_descriptor_size]) );
+         if( !m_orientation_map.empty() )
+             orientation = (int) m_orientation_map.at<ushort>( x, y );
+         if( !( orientation >= 0 && orientation < g_grid_orientation_resolution ) )
+             orientation = 0;
+         get_unnormalized_descriptor( y, x, orientation, m_dense_descriptors.ptr<float>( index ) );
       }
     }
 }
 
-void DAISY_Impl::smooth_layers( float* layers, int h, int w, int layer_number, float sigma )
+inline void DAISY_Impl::smooth_layers( Mat layers, int h, int w, int layer_number, float sigma )
 {
-    int fsz = filter_size(sigma);
-    float* filter = new float[fsz];
-    gaussian_1d(filter, fsz, sigma, 0);
+
     int i;
-    float* layer=0;
+    float *layer = NULL;
+
+    int kernel_size = filter_size( sigma );
+    float kernel[kernel_size];
+    gaussian_1d( kernel, kernel_size, sigma, 0 );
+
+    float* ptr = layers.ptr<float>(0);
+
 #if defined _OPENMP
 #pragma omp parallel for private(i, layer)
 #endif
+
     for( i=0; i<layer_number; i++ )
     {
-      layer = layers + i*h*w;
-      convolve_sym( layer, h, w, filter, fsz );
+      layer = ptr + i * h*w;
+
+      Mat cvI( h, w, CV_32FC1, (float*) layer );
+
+      Mat Kernel( 1, kernel_size, CV_32FC1, (float*) kernel );
+      filter2D( cvI, cvI, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+      filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+
     }
-    deallocate(filter);
 }
 
-void DAISY_Impl::normalize_partial( float* desc ) const
+inline void DAISY_Impl::normalize_partial( float* desc ) const
 {
-    float norm;
+    float norm = 0.0f;
     for( int h=0; h<m_grid_point_number; h++ )
     {
-      norm =  l2norm( &(desc[h*m_hist_th_q_no]), m_hist_th_q_no );
-      if( norm != 0.0 ) divide( desc+h*m_hist_th_q_no, m_hist_th_q_no, norm);
+      // l2 norm
+      for( int i=0; i<m_hist_th_q_no; i++ )
+      {
+          norm += sqrt(desc[h*m_hist_th_q_no + i]
+                     * desc[h*m_hist_th_q_no + i]);
+      }
+      if( norm != 0.0 )
+      // divide with norm
+      for( int i=0; i<m_hist_th_q_no; i++ )
+      {
+          desc[h*m_hist_th_q_no + i] /= norm;
+      }
     }
 }
 
-void DAISY_Impl::normalize_full( float* desc ) const
+inline void DAISY_Impl::normalize_full( float* desc ) const
 {
-    float norm =  l2norm( desc, m_descriptor_size );
-    if( norm != 0.0 ) divide(desc, m_descriptor_size, norm);
+    // l2 norm
+    float norm = 0.0f;
+    for( int i=0; i<m_descriptor_size; i++ )
+    {
+        norm += sqrt(desc[m_descriptor_size + i]
+                   * desc[m_descriptor_size + i]);
+    }
+    if( norm != 0.0 )
+    // divide with norm
+    for( int i=0; i<m_descriptor_size; i++ )
+    {
+        desc[m_descriptor_size + i] /= norm;
+    }
 }
 
-void DAISY_Impl::normalize_sift_way( float* desc ) const
+inline void DAISY_Impl::normalize_sift_way( float* desc ) const
 {
-    bool changed = true;
-    int iter = 0;
-    float norm;
     int h;
+    int iter = 0;
+    bool changed = true;
     while( changed && iter < MAX_NORMALIZATION_ITER )
     {
       iter++;
       changed = false;
 
-      norm = l2norm( desc, m_descriptor_size );
+      float norm = 0.0f;
+      for( int i=0; i<m_descriptor_size; i++ )
+      {
+          norm += sqrt(desc[m_descriptor_size + i]
+                     * desc[m_descriptor_size + i]);
+      }
+
       if( norm > 1e-5 )
-         divide( desc, m_descriptor_size, norm);
+      // divide with norm
+      for( int i=0; i<m_descriptor_size; i++ )
+      {
+          desc[m_descriptor_size + i] /= norm;
+      }
 
       for( h=0; h<m_descriptor_size; h++ )
       {
@@ -1178,89 +748,79 @@ void DAISY_Impl::normalize_sift_way( float* desc ) const
     }
 }
 
-void DAISY_Impl::normalize_descriptors( int nrm_type )
+inline void DAISY_Impl::normalize_descriptors( int nrm_type )
 {
-    int number_of_descriptors =  m_roi.width * m_roi.height;
     int d;
+    int number_of_descriptors =  m_roi.width * m_roi.height;
 
 #if defined _OPENMP
 #pragma omp parallel for private(d)
 #endif
     for( d=0; d<number_of_descriptors; d++ )
-      normalize_descriptor( m_dense_descriptors+d*m_descriptor_size, nrm_type );
+      normalize_descriptor( m_dense_descriptors.ptr<float>( d ), nrm_type );
 }
 
-void DAISY_Impl::initialize()
+inline void DAISY_Impl::initialize()
 {
-    CV_Assert(m_h != 0); // no image ?
-    CV_Assert(m_w != 0);
+    // no image ?
+    CV_Assert(m_image.rows != 0);
+    CV_Assert(m_image.cols != 0);
+
     if( m_layer_size == 0 ) {
-      m_layer_size = m_h*m_w;
-      m_cube_size = m_layer_size*m_hist_th_q_no;
+      m_layer_size = m_image.rows * m_image.cols;
+      m_cube_size = m_layer_size * m_hist_th_q_no;
     }
 
-    int glsz = compute_workspace_memory();
-    if( !m_workspace_memory ) m_smoothed_gradient_layers = new float[glsz];
+    m_smoothed_gradient_layers = Mat( g_cube_number + 1, m_cube_size, CV_32F);
 
-    float* gradient_layers = m_smoothed_gradient_layers;
-
-    layered_gradient( m_image, m_h, m_w, m_hist_th_q_no, gradient_layers );
+    layered_gradient( m_image, m_hist_th_q_no, m_smoothed_gradient_layers );
 
     // assuming a 0.5 image smoothness, we pull this to 1.6 as in sift
-    smooth_layers( gradient_layers, m_h, m_w, m_hist_th_q_no, (float)sqrt(g_sigma_init*g_sigma_init-0.25) );
+    smooth_layers( m_smoothed_gradient_layers, m_image.rows, m_image.cols,
+                   m_hist_th_q_no, (float)sqrt(g_sigma_init*g_sigma_init-0.25) );
 
 }
 
-void DAISY_Impl::compute_cube_sigmas()
+inline void DAISY_Impl::compute_cube_sigmas()
 {
-    if( m_cube_sigmas == NULL )
+    if( m_cube_sigmas.empty() )
     {
-      // user didn't set the sigma's; set them from the descriptor parameters
+      // user didn't set the sigma's;
+      // set them from the descriptor parameters
       g_cube_number = m_rad_q_no;
-      m_cube_sigmas = allocate<double>(g_cube_number);
+
+      m_cube_sigmas = Mat(1, g_cube_number, CV_64F);
 
       double r_step = double(m_rad)/m_rad_q_no;
       for( int r=0; r< m_rad_q_no; r++ )
       {
-         m_cube_sigmas[r] = (r+1)*r_step/2;
+        m_cube_sigmas.at<double>(r) = (r+1) * r_step/2;
       }
     }
     update_selected_cubes();
 }
 
-void DAISY_Impl::set_cube_gaussians( double* sigma_array, int sz )
-{
-    g_cube_number = sz;
-
-    if( m_cube_sigmas ) deallocate( m_cube_sigmas );
-    m_cube_sigmas = allocate<double>( g_cube_number );
-
-    for( int r=0; r<g_cube_number; r++ )
-    {
-      m_cube_sigmas[r] = sigma_array[r];
-    }
-    update_selected_cubes();
-}
-
-void DAISY_Impl::update_selected_cubes()
+inline void DAISY_Impl::update_selected_cubes()
 {
     for( int r=0; r<m_rad_q_no; r++ )
     {
       double seed_sigma = ((double)r+1)*m_rad/m_rad_q_no/2.0;
-      g_selected_cubes[r] = quantize_radius( (float)seed_sigma );
+       g_selected_cubes[r] = quantize_radius( (float)seed_sigma );
     }
 }
 
-int DAISY_Impl::quantize_radius( float rad ) const
+inline int DAISY_Impl::quantize_radius( float rad ) const
 {
-    if( rad <= m_cube_sigmas[0              ] ) return 0;
-    if( rad >= m_cube_sigmas[g_cube_number-1] ) return g_cube_number-1;
+    if( rad <= m_cube_sigmas.at<double>(0) )
+        return 0;
+    if( rad >= m_cube_sigmas.at<double>(g_cube_number-1) )
+        return g_cube_number-1;
 
     float dist;
     float mindist=FLT_MAX;
     int mini=0;
     for( int c=0; c<g_cube_number; c++ ) {
-      dist = (float) fabs( m_cube_sigmas[c]-rad );
+      dist = (float) fabs( m_cube_sigmas.at<double>(c)-rad );
       if( dist < mindist ) {
          mindist = dist;
          mini=c;
@@ -1269,24 +829,25 @@ int DAISY_Impl::quantize_radius( float rad ) const
     return mini;
 }
 
-void DAISY_Impl::compute_histograms()
+inline void DAISY_Impl::compute_histograms()
 {
     int r, y, x, ind;
     float* hist=0;
 
     for( r=0; r<g_cube_number; r++ )
     {
-      float* dst = m_smoothed_gradient_layers+r*m_cube_size;
-      float* src = m_smoothed_gradient_layers+(r+1)*m_cube_size;
+
+      float* dst = m_smoothed_gradient_layers.ptr<float>(0) +  r   * m_cube_size;
+      float* src = m_smoothed_gradient_layers.ptr<float>(0) + (r+1)* m_cube_size;
 
 #if defined _OPENMP
 #pragma omp parallel for private(y,x,ind,hist)
 #endif
-      for( y=0; y<m_h; y++ )
+      for( y=0; y<m_image.rows; y++ )
       {
-         for( x=0; x<m_w; x++ )
+         for( x=0; x<m_image.cols; x++ )
          {
-            ind = y*m_w+x;
+            ind = y*m_image.cols+x;
             hist = dst+ind*m_hist_th_q_no;
             compute_histogram( src, y, x, hist );
          }
@@ -1294,63 +855,75 @@ void DAISY_Impl::compute_histograms()
     }
 }
 
-void DAISY_Impl::normalize_histograms()
+inline void DAISY_Impl::normalize_histograms()
 {
     for( int r=0; r<g_cube_number; r++ )
     {
-      float* dst = m_smoothed_gradient_layers+r*m_cube_size;
+      float* dst = m_smoothed_gradient_layers.ptr<float>(0) + r*m_cube_size;
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-      for( int y=0; y<m_h; y++ )
+      for( int y=0; y<m_image.rows; y++ )
       {
-         for( int x=0; x<m_w; x++ )
-         {
-            float* hist = dst + (y*m_w+x)*m_hist_th_q_no;
-            float norm =  l2norm( hist, m_hist_th_q_no );
-            if( norm != 0.0 ) divide( hist, m_hist_th_q_no, norm );
-         }
-      }
+          for( int x=0; x<m_image.cols; x++ )
+          {
+            float* hist = dst + (y*m_image.cols+x) * m_hist_th_q_no;
+
+            float norm = 0.0f;
+            for( int i=0; i<m_hist_th_q_no; i++ )
+              norm += sqrt( hist[i] * hist[i] );
+            if( norm != 0.0 )
+            for( int i=0; i<m_hist_th_q_no; i++ )
+              hist[i] /= norm;
+          }
+       }
     }
 }
 
-void DAISY_Impl::compute_smoothed_gradient_layers()
+inline void DAISY_Impl::compute_smoothed_gradient_layers()
 {
 
-    float* prev_cube = m_smoothed_gradient_layers;
+    float* prev_cube = m_smoothed_gradient_layers.ptr<float>(0);
     float* cube = NULL;
 
     double sigma;
     for( int r=0; r<g_cube_number; r++ )
     {
-      cube = m_smoothed_gradient_layers + (r+1)*m_cube_size;
+      cube = m_smoothed_gradient_layers.ptr<float>(0) + (r+1)*m_cube_size;
 
       // incremental smoothing
-      if( r == 0 ) sigma = m_cube_sigmas[0];
-      else         sigma = sqrt( m_cube_sigmas[r]*m_cube_sigmas[r] - m_cube_sigmas[r-1]*m_cube_sigmas[r-1] );
+      if( r == 0 )
+        sigma = m_cube_sigmas.at<double>(0);
+      else
+        sigma = sqrt( m_cube_sigmas.at<double>(r  ) * m_cube_sigmas.at<double>(r  )
+                    - m_cube_sigmas.at<double>(r-1) * m_cube_sigmas.at<double>(r-1) );
 
-      int fsz = filter_size(sigma);
-      float* filter = new float[fsz];
-      gaussian_1d(filter, fsz, (float)sigma, 0);
+      int kernel_size = filter_size( sigma );
+      float kernel[kernel_size];
+      gaussian_1d(kernel, kernel_size, (float)sigma, 0);
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
       for( int th=0; th<m_hist_th_q_no; th++ )
       {
-         convolve_sym( prev_cube+th*m_layer_size, m_h, m_w, filter, fsz, cube+th*m_layer_size );
+        Mat cvI( m_image.rows, m_image.cols, CV_32FC1, (float*) prev_cube + th*m_layer_size );
+        Mat cvO( m_image.rows, m_image.cols, CV_32FC1, (float*) cube + th*m_layer_size );
+
+        Mat Kernel( 1, kernel_size, CV_32FC1, (float*) kernel );
+        filter2D( cvI, cvO, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+        filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
       }
-      deallocate(filter);
       prev_cube = cube;
     }
-
     compute_histograms();
 }
 
-void DAISY_Impl::compute_oriented_grid_points()
+inline void DAISY_Impl::compute_oriented_grid_points()
 {
-    m_oriented_grid_points = allocate<double>( g_grid_orientation_resolution, m_grid_point_number*2 );
+    m_oriented_grid_points =
+        Mat( g_grid_orientation_resolution, m_grid_point_number*2, CV_64F );
 
     for( int i=0; i<g_grid_orientation_resolution; i++ )
     {
@@ -1359,34 +932,34 @@ void DAISY_Impl::compute_oriented_grid_points()
       double kos = cos( angle );
       double zin = sin( angle );
 
-      double* point_list = m_oriented_grid_points[ i ];
+      Mat point_list = m_oriented_grid_points.row( i );
 
       for( int k=0; k<m_grid_point_number; k++ )
       {
-         double y = m_grid_points[k][0];
-         double x = m_grid_points[k][1];
+         double y = m_grid_points.at<double>(k,0);
+         double x = m_grid_points.at<double>(k,1);
 
-         point_list[2*k+1] =  x*kos + y*zin; // x
-         point_list[2*k  ] = -x*zin + y*kos; // y
+         point_list.at<double>(2*k+1) =  x*kos + y*zin; // x
+         point_list.at<double>(2*k  ) = -x*zin + y*kos; // y
       }
     }
 }
 
-void DAISY_Impl::smooth_histogram(float *hist, int hsz)
+inline void DAISY_Impl::smooth_histogram(Mat hist, int hsz)
 {
     int i;
     float prev, temp;
 
-    prev = hist[hsz - 1];
+    prev = hist.at<float>(hsz - 1);
     for (i = 0; i < hsz; i++)
     {
-      temp = hist[i];
-      hist[i] = (float) ((prev + hist[i] + hist[(i + 1 == hsz) ? 0 : i + 1]) / 3.0);
+      temp = hist.at<float>(i);
+      hist.at<float>(i) = (prev + hist.at<float>(i) + hist.at<float>( (i + 1 == hsz) ? 0 : i + 1) ) / 3.0f;
       prev = temp;
     }
 }
 
-float DAISY_Impl::interpolate_peak(float left, float center, float right)
+inline float DAISY_Impl::interpolate_peak(float left, float center, float right)
 {
     if( center < 0.0 )
     {
@@ -1402,7 +975,7 @@ float DAISY_Impl::interpolate_peak(float left, float center, float right)
     else           return (float) (0.5*(left -right)/den);
 }
 
-int DAISY_Impl::filter_size( double sigma )
+inline int DAISY_Impl::filter_size( double sigma )
 {
     int fsz = (int)(5*sigma);
 
@@ -1415,26 +988,32 @@ int DAISY_Impl::filter_size( double sigma )
     return fsz;
 }
 
-void DAISY_Impl::compute_scales()
+inline void DAISY_Impl::compute_scales()
 {
     //###############################################################################
     //# scale detection is work-in-progress! do not use it if you're not Engin Tola #
     //###############################################################################
 
-    int imsz = m_w * m_h;
-
+    int kernel_size = 0;
     float sigma = (float) ( pow( g_sigma_step, g_scale_st)*g_sigma_0 );
 
-    float* sim = blur_gaussian_2d<float,float>( m_image, m_h, m_w, sigma, filter_size(sigma), false);
+    if( kernel_size   == 0 ) kernel_size = (int)(3*sigma);
+    if( kernel_size%2 == 0 ) kernel_size++;   // kernel size must be odd
+    if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
 
-    float* next_sim = NULL;
+    float kernel[kernel_size];
+    gaussian_1d( kernel, kernel_size, sigma, 0 );
+    Mat Kernel( 1, kernel_size, CV_32F, (float*) kernel );
 
-    float* max_dog = allocate<float>(imsz);
+    Mat sim, next_sim;
 
-    m_scale_map = allocate<float>(imsz);
+    // output gaussian image
+    filter2D( m_image, sim, CV_32F, Kernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+    filter2D( sim, sim, CV_32F, Kernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
 
-    memset( max_dog, 0, imsz*sizeof(float) );
-    memset( m_scale_map, 0, imsz*sizeof(float) );
+    Mat max_dog( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
+    m_scale_map = Mat( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
+
 
     int i;
     float sigma_prev;
@@ -1448,54 +1027,79 @@ void DAISY_Impl::compute_scales()
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
-      next_sim = blur_gaussian_2d<float,float>( sim, m_h, m_w, sigma_inc, filter_size( sigma_inc ) , false);
+      kernel_size = filter_size( sigma_inc );
+      if( kernel_size   == 0 ) kernel_size = (int)(3 * sigma_inc);
+      if( kernel_size%2 == 0 ) kernel_size++;  // kernel size must be odd
+      if( kernel_size    < 3 ) kernel_size= 3; // kernel size cannot be smaller than 3
+
+      float next_kernel[kernel_size];
+      gaussian_1d( next_kernel, kernel_size, sigma_inc, 0 );
+      Mat NextKernel( 1, kernel_size, CV_32F, (float*) next_kernel );
+
+      // output gaussian image
+      filter2D( sim, next_sim, CV_32F, NextKernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+      filter2D( next_sim, next_sim, CV_32F, NextKernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-      for( int p=0; p<imsz; p++ )
+      for( int r=0; r<m_image.rows; r++ )
       {
-         float dog = (float) fabs( next_sim[p] - sim[p] );
-         if( dog > max_dog[p] )
-         {
-            max_dog[p] = dog;
-            m_scale_map[p] = (float) i;
-         }
+        for( int c=0; c<m_image.cols; c++ )
+        {
+          float dog = (float) fabs( next_sim.at<float>(r,c) - sim.at<float>(r,c) );
+          if( dog > max_dog.at<float>(r,c) )
+          {
+            max_dog.at<float>(r,c) = dog;
+            m_scale_map.at<float>(r,c) = (float) i;
+          }
+        }
       }
-      deallocate( sim );
-
+      sim.release();
       sim = next_sim;
     }
 
-    blur_gaussian_2d<float,float>( m_scale_map, m_h, m_w, 10.0, filter_size(10), true);
+    kernel_size = filter_size( 10.0f );
+    if( kernel_size   == 0 ) kernel_size = (int)(3 * 10.0f);
+    if( kernel_size%2 == 0 ) kernel_size++;   // kernel size must be odd
+    if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
+
+
+    float filter_kernel[kernel_size];
+    gaussian_1d( filter_kernel, kernel_size, 10.0f, 0 );
+    Mat FilterKernel( 1, kernel_size, CV_32F, (float*) filter_kernel );
+
+    // output gaussian image
+    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel, Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
+    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel.t(), Point( -1.0f, -1.0f ), 0, BORDER_REPLICATE );
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-    for( int q=0; q<imsz; q++ )
-    {
-      m_scale_map[q] = (float) round( m_scale_map[q] );
-    }
-
-    //save( m_scale_map, m_h, m_w, "scales.dat");
-
-    deallocate( sim );
-    deallocate( max_dog );
+      for( int r=0; r<m_image.rows; r++ )
+      {
+        for( int c=0; c<m_image.cols; c++ )
+        {
+          m_scale_map.at<float>(r,c) = (float) round( m_scale_map.at<float>(r,c) );
+        }
+      }
+    //save( m_scale_map, m_image.rows, m_image.cols, "scales.dat");
 }
 
-void DAISY_Impl::compute_orientations()
+
+inline void DAISY_Impl::compute_orientations()
 {
     //#####################################################################################
     //# orientation detection is work-in-progress! do not use it if you're not Engin Tola #
     //#####################################################################################
 
-    CV_Assert( m_image != NULL );
+    CV_Assert( !m_image.empty() );
 
-    int data_size = m_w*m_h;
-    float* rotation_layers = layered_gradient( m_image, m_h, m_w, m_orientation_resolution );
+    int data_size = m_image.cols * m_image.rows;
+    Mat rotation_layers = layered_gradient( m_image, m_orientation_resolution );
 
-    m_orientation_map = new int[data_size];
-    memset( m_orientation_map, 0, sizeof(int)*data_size );
+    m_orientation_map = Mat(m_image.cols, m_image.rows, CV_16U, Scalar(0));
 
     int ori, max_ind;
     int ind;
@@ -1506,33 +1110,34 @@ void DAISY_Impl::compute_orientations()
 
     int x, y, kk;
 
-    float* hist=NULL;
+    Mat hist;
 
     float sigma_inc;
-    float sigma_prev = 0;
+    float sigma_prev = 0.0f;
     float sigma_new;
 
     for( int scale=0; scale<g_scale_en; scale++ )
     {
+
       sigma_new  = (float)( pow( g_sigma_step, scale  ) * m_rad/3.0 );
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
-      smooth_layers( rotation_layers, m_h, m_w, m_orientation_resolution, sigma_inc);
+      smooth_layers( rotation_layers, m_image.rows, m_image.cols, m_orientation_resolution, sigma_inc );
 
-      for( y=0; y<m_h; y ++ )
+      for( y=0; y<m_image.rows; y ++ )
       {
-         hist = allocate<float>(m_orientation_resolution);
+         hist = Mat(1, m_orientation_resolution, CV_32F);
 
-         for( x=0; x<m_w; x++ )
+         for( x=0; x<m_image.cols; x++ )
          {
-            ind = y*m_w+x;
+            ind = y*m_image.cols+x;
 
-            if( m_scale_invariant && m_scale_map[ ind ] != scale ) continue;
+            if( m_scale_invariant && m_scale_map.at<float>(y,x) != scale ) continue;
 
             for( ori=0; ori<m_orientation_resolution; ori++ )
             {
-               hist[ ori ] = rotation_layers[ori*data_size+ind];
+               hist.at<float>(ori) = rotation_layers.at<float>(ori*data_size+ind);
             }
 
             for( kk=0; kk<6; kk++ )
@@ -1542,9 +1147,9 @@ void DAISY_Impl::compute_orientations()
             max_ind =  0;
             for( ori=0; ori<m_orientation_resolution; ori++ )
             {
-               if( hist[ori] > max_val )
+               if( hist.at<float>(ori) > max_val )
                {
-                  max_val = hist[ori];
+                  max_val = hist.at<float>(ori);
                   max_ind = ori;
                }
             }
@@ -1557,7 +1162,7 @@ void DAISY_Impl::compute_orientations()
             if( next >= m_orientation_resolution )
                next -= m_orientation_resolution;
 
-            peak = interpolate_peak(hist[prev], hist[max_ind], hist[next]);
+            peak = interpolate_peak(hist.at<float>(prev), hist.at<float>(max_ind), hist.at<float>(next));
             angle = (float)( ((float)max_ind + peak)*360.0/m_orientation_resolution );
 
             int iangle = int(angle);
@@ -1565,54 +1170,26 @@ void DAISY_Impl::compute_orientations()
             if( iangle <    0 ) iangle += 360;
             if( iangle >= 360 ) iangle -= 360;
 
-
             if( !(iangle >= 0.0 && iangle < 360.0) )
             {
                angle = 0;
             }
-
-            m_orientation_map[ ind ] = iangle;
+            m_orientation_map.at<float>(y,x) = iangle;
          }
-         deallocate(hist);
+         hist.release();
       }
     }
-
-    deallocate( rotation_layers );
-
     compute_oriented_grid_points();
 }
 
-void DAISY_Impl::set_descriptor_memory( float* descriptor, long int d_size )
-{
-    CV_Assert( m_descriptor_memory == false );
-    CV_Assert( m_h*m_w != 0 );
-    CV_Assert( m_roi.width*m_roi.height != 0 );
-    CV_Assert( d_size >= compute_descriptor_memory() );
-
-    m_dense_descriptors = descriptor;
-    m_descriptor_memory = true;
-}
-
-void DAISY_Impl::set_workspace_memory( float* workspace, long int w_size )
-{
-    CV_Assert( m_workspace_memory == false );
-    CV_Assert( m_h*m_w != 0 );
-    CV_Assert( m_roi.width*m_roi.height != 0 );
-    CV_Assert( w_size >= compute_workspace_memory() );
-
-    m_smoothed_gradient_layers = workspace;
-    m_workspace_memory = true;
-}
-
-// -------------------------------------------------
-/* DAISY helper routines */
-
 inline void DAISY_Impl::compute_histogram( float* hcube, int y, int x, float* histogram )
 {
-    if( is_outside(x, 0, m_w-1, y, 0, m_h-1) ) return;
+    if ( ! Point( x, y ).inside(
+           Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+       ) return;
 
-    float* spatial_shift = hcube + y * m_w + x;
-    int data_size =  m_w * m_h;
+    float* spatial_shift = hcube + y * m_image.cols + x;
+    int data_size =  m_image.cols * m_image.rows;
 
     for( int h=0; h<m_hist_th_q_no; h++ )
       histogram[h] = *(spatial_shift + h*data_size);
@@ -1631,19 +1208,19 @@ inline void DAISY_Impl::bi_get_histogram( float* histogram, double y, double x, 
     int mnx = int( x );
     int mny = int( y );
 
-    if( mnx >= m_w-2  || mny >= m_h-2 )
+    if( mnx >= m_image.cols-2  || mny >= m_image.rows-2 )
     {
       memset(histogram, 0, sizeof(float)*m_hist_th_q_no);
       return;
     }
 
-    int ind =  mny*m_w+mnx;
+    int ind =  mny*m_image.cols+mnx;
     // A C --> pixel positions
     // B D
     float* A = hcube+ind*m_hist_th_q_no;
-    float* B = A+m_w*m_hist_th_q_no;
+    float* B = A+m_image.cols*m_hist_th_q_no;
     float* C = A+m_hist_th_q_no;
-    float* D = A+(m_w+1)*m_hist_th_q_no;
+    float* D = A+(m_image.cols+1)*m_hist_th_q_no;
 
     double alpha = mnx+1-x;
     double beta  = mny+1-y;
@@ -1688,8 +1265,11 @@ inline void DAISY_Impl::ti_get_histogram( float* histogram, double y, double x, 
 
 inline void DAISY_Impl::ni_get_histogram( float* histogram, int y, int x, int shift, float* hcube ) const
 {
-    if( is_outside(x, 0, m_w-1, y, 0, m_h-1) ) return;
-    float* hptr = hcube + (y*m_w+x)*m_hist_th_q_no;
+    if ( ! Point( x, y ).inside(
+           Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+       ) return;
+
+    float* hptr = hcube + (y*m_image.cols+x)*m_hist_th_q_no;
 
     for( int h=0; h<m_hist_th_q_no; h++ )
     {
@@ -1701,9 +1281,9 @@ inline void DAISY_Impl::ni_get_histogram( float* histogram, int y, int x, int sh
 
 inline void DAISY_Impl::get_descriptor( int y, int x, float* &descriptor )
 {
-    CV_Assert( m_dense_descriptors != NULL );
-    CV_Assert( y<m_h && x<m_w && y>=0 && x>=0 );
-    descriptor = &(m_dense_descriptors[(y*m_w+x)*m_descriptor_size]);
+    CV_Assert( !m_dense_descriptors.empty() );
+    CV_Assert( y<m_image.rows && x<m_image.cols && y>=0 && x>=0 );
+    descriptor = m_dense_descriptors.ptr<float>( y*m_image.cols+x );
 }
 
 inline void DAISY_Impl::get_descriptor( double y, double x, int orientation, float* descriptor ) const
@@ -1725,22 +1305,24 @@ inline void DAISY_Impl::i_get_descriptor( double y, double x, int orientation, f
     // i'm not changing the descriptor[] values if the gridpoint is outside
     // the image. you should memset the descriptor array to 0 if you don't
     // want to have stupid values there.
-    //
-    CV_Assert( y >= 0 && y < m_h );
-    CV_Assert( x >= 0 && x < m_w );
+
+    CV_Assert( y >= 0 && y < m_image.rows );
+    CV_Assert( x >= 0 && x < m_image.cols );
     CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( m_smoothed_gradient_layers );
-    CV_Assert( m_oriented_grid_points );
+    CV_Assert( !m_smoothed_gradient_layers.empty() );
+    CV_Assert( !m_oriented_grid_points.empty() );
     CV_Assert( descriptor != NULL );
 
     double shift = m_orientation_shift_table[orientation];
 
-    i_get_histogram( descriptor, y, x, shift, m_smoothed_gradient_layers+g_selected_cubes[0]*m_cube_size );
+    float *ptr = (float *) m_smoothed_gradient_layers.ptr<float>(0);
+    i_get_histogram( descriptor, y, x, shift, ptr + g_selected_cubes[0]*m_cube_size );
 
     int r, rdt, region;
     double yy, xx;
     float* histogram = 0;
-    double* grid = m_oriented_grid_points[orientation];
+
+    Mat grid = m_oriented_grid_points.row( orientation );
 
     // petals of the flower
     for( r=0; r<m_rad_q_no; r++ )
@@ -1748,11 +1330,15 @@ inline void DAISY_Impl::i_get_descriptor( double y, double x, int orientation, f
       rdt  = r*m_th_q_no+1;
       for( region=rdt; region<rdt+m_th_q_no; region++ )
       {
-         yy = y + grid[2*region  ];
-         xx = x + grid[2*region+1];
-         if( is_outside(xx, 0, m_w-1, yy, 0, m_h-1) ) continue;
+         yy = y + grid.at<double>(2*region    );
+         xx = x + grid.at<double>(2*region + 1);
+
+         if ( ! Point( xx, yy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+            ) continue;
+
          histogram = descriptor+region*m_hist_th_q_no;
-         i_get_histogram( histogram, yy, xx, shift, m_smoothed_gradient_layers+g_selected_cubes[r]*m_cube_size );
+         i_get_histogram( histogram, yy, xx, shift, ptr + g_selected_cubes[r]*m_cube_size );
       }
     }
 }
@@ -1764,12 +1350,12 @@ inline void DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
     // i'm not changing the descriptor[] values if the gridpoint is outside
     // the image. you should memset the descriptor array to 0 if you don't
     // want to have stupid values there.
-    //
-    CV_Assert( y >= 0 && y < m_h );
-    CV_Assert( x >= 0 && x < m_w );
+
+    CV_Assert( y >= 0 && y < m_image.rows );
+    CV_Assert( x >= 0 && x < m_image.cols );
     CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( m_smoothed_gradient_layers );
-    CV_Assert( m_oriented_grid_points );
+    CV_Assert( !m_smoothed_gradient_layers.empty() );
+    CV_Assert( !m_oriented_grid_points.empty() );
     CV_Assert( descriptor != NULL );
 
     double shift = m_orientation_shift_table[orientation];
@@ -1780,27 +1366,30 @@ inline void DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
     int ix = (int)x; if( x - ix > 0.5 ) ix++;
 
     // center
-    ni_get_histogram( descriptor, iy, ix, ishift, m_smoothed_gradient_layers+g_selected_cubes[0]*m_cube_size );
+    float *ptr = (float *) m_smoothed_gradient_layers.ptr<float>(0);
+    ni_get_histogram( descriptor, iy, ix, ishift, ptr + g_selected_cubes[0]*m_cube_size );
 
     double yy, xx;
     float* histogram=0;
     // petals of the flower
     int r, rdt, region;
-    double* grid = m_oriented_grid_points[orientation];
+    Mat grid = m_oriented_grid_points.row( orientation );
     for( r=0; r<m_rad_q_no; r++ )
     {
       rdt = r*m_th_q_no+1;
       for( region=rdt; region<rdt+m_th_q_no; region++ )
       {
-         yy = y + grid[2*region  ];
-         xx = x + grid[2*region+1];
+         yy = y + grid.at<double>(2*region  );
+         xx = x + grid.at<double>(2*region+1);
          iy = (int)yy; if( yy - iy > 0.5 ) iy++;
          ix = (int)xx; if( xx - ix > 0.5 ) ix++;
 
-         if( is_outside(ix, 0, m_w-1, iy, 0, m_h-1) ) continue;
+         if ( ! Point( xx, yy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+            ) continue;
 
          histogram = descriptor+region*m_hist_th_q_no;
-         ni_get_histogram( histogram, iy, ix, ishift, m_smoothed_gradient_layers+g_selected_cubes[r]*m_cube_size );
+         ni_get_histogram( histogram, iy, ix, ishift, ptr + g_selected_cubes[r]*m_cube_size );
       }
     }
 }
@@ -1826,23 +1415,28 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
     // i'm not changing the descriptor[] values if the gridpoint is outside
     // the image. you should memset the descriptor array to 0 if you don't
     // want to have stupid values there.
-    //
+
     CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( m_smoothed_gradient_layers );
+    CV_Assert( !m_smoothed_gradient_layers.empty() );
     CV_Assert( descriptor != NULL );
 
     int hradius[MAX_CUBE_NO];
 
     double hy, hx, ry, rx;
     point_transform_via_homography( H, x, y, hx, hy );
-    if( is_outside( hx, 0, m_w, hy, 0, m_h ) ) return false;
 
-    point_transform_via_homography( H, x+m_cube_sigmas[g_selected_cubes[0]], y, rx, ry);
-    double radius =  l2norm( ry, rx, hy, hx );
+    if ( ! Point( hx, hy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+       ) return false;
+
+    point_transform_via_homography( H, x+m_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
+    double d0 = rx - hx; double d1 = ry - hy;
+    double radius = sqrt( d0*d0 + d1*d1 );
     hradius[0] = quantize_radius( (float) radius );
 
     double shift = m_orientation_shift_table[orientation];
-    i_get_histogram( descriptor, hy, hx, shift, m_smoothed_gradient_layers+hradius[0]*m_cube_size );
+    float *ptr = (float *) m_smoothed_gradient_layers.ptr<float>(0);
+    i_get_histogram( descriptor, hy, hx, shift, ptr + hradius[0]*m_cube_size );
 
     double gy, gx;
     int r, rdt, th, region;
@@ -1854,21 +1448,24 @@ inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, d
       {
          region = rdt + th;
 
-         gy = y + m_grid_points[region][0];
-         gx = x + m_grid_points[region][1];
+         gy = y + m_grid_points.at<double>(region,0);
+         gx = x + m_grid_points.at<double>(region,1);
 
          point_transform_via_homography(H, gx, gy, hx, hy);
          if( th == 0 )
          {
-            point_transform_via_homography(H, gx+m_cube_sigmas[g_selected_cubes[r]], gy, rx, ry);
-            radius = l2norm( ry, rx, hy, hx );
+            point_transform_via_homography(H, gx+m_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
+            d0 = rx - hx; d1 = ry - hy;
+            radius = sqrt( d0*d0 + d1+d1 );
             hradius[r] = quantize_radius( (float) radius );
          }
 
-         if( is_outside(hx, 0, m_w-1, hy, 0, m_h-1) ) continue;
+         if ( ! Point( hx, hy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+            ) continue;
 
          histogram = descriptor+region*m_hist_th_q_no;
-         i_get_histogram( histogram, hy, hx, shift, m_smoothed_gradient_layers+hradius[r]*m_cube_size );
+         i_get_histogram( histogram, hy, hx, shift, ptr + hradius[r]*m_cube_size );
       }
     }
     return true;
@@ -1881,24 +1478,27 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
     // i'm not changing the descriptor[] values if the gridpoint is outside
     // the image. you should memset the descriptor array to 0 if you don't
     // want to have stupid values there.
-    //
+
     CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( m_smoothed_gradient_layers );
+    CV_Assert( !m_smoothed_gradient_layers.empty() );
     CV_Assert( descriptor != NULL );
 
     int hradius[MAX_CUBE_NO];
-    double radius;
 
     double hy, hx, ry, rx;
 
     point_transform_via_homography(H, x, y, hx, hy );
-    if( is_outside( hx, 0, m_w, hy, 0, m_h ) ) return false;
+
+    if ( ! Point( hx, hy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+       ) return false;
 
     double shift = m_orientation_shift_table[orientation];
     int  ishift = (int)shift; if( shift - ishift > 0.5  ) ishift++;
 
-    point_transform_via_homography(H, x+m_cube_sigmas[g_selected_cubes[0]], y, rx, ry);
-    radius =  l2norm( ry, rx, hy, hx );
+    point_transform_via_homography(H, x+m_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
+    double d0 = rx - hx; double d1 = ry - hy;
+    double radius = sqrt( d0*d0 + d1*d1 );
     hradius[0] = quantize_radius( (float) radius );
 
     int ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
@@ -1907,7 +1507,8 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
     int r, rdt, th, region;
     double gy, gx;
     float* histogram=0;
-    ni_get_histogram( descriptor, ihy, ihx, ishift, m_smoothed_gradient_layers+hradius[0]*m_cube_size );
+    float *ptr = (float *) m_smoothed_gradient_layers.ptr<float>(0);
+    ni_get_histogram( descriptor, ihy, ihx, ishift, ptr + hradius[0]*m_cube_size );
     for( r=0; r<m_rad_q_no; r++)
     {
       rdt = r*m_th_q_no + 1;
@@ -1915,35 +1516,39 @@ inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, 
       {
          region = rdt + th;
 
-         gy = y + m_grid_points[region][0];
-         gx = x + m_grid_points[region][1];
+         gy = y + m_grid_points.at<double>(region,0);
+         gx = x + m_grid_points.at<double>(region,1);
 
          point_transform_via_homography(H, gx, gy, hx, hy);
          if( th == 0 )
          {
-            point_transform_via_homography(H, gx+m_cube_sigmas[g_selected_cubes[r]], gy, rx, ry);
-            radius = l2norm( ry, rx, hy, hx );
+            point_transform_via_homography(H, gx+m_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
+            d0 = rx - hx; d1 = ry - hy;
+            radius = sqrt( d0*d0 + d1*d1 );
             hradius[r] = quantize_radius( (float) radius );
          }
 
          ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
          ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
 
-         if( is_outside(ihx, 0, m_w-1, ihy, 0, m_h-1) ) continue;
+         if ( ! Point( ihx, ihy ).inside(
+                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
+            ) continue;
+
          histogram = descriptor+region*m_hist_th_q_no;
-         ni_get_histogram( histogram, ihy, ihx, ishift, m_smoothed_gradient_layers+hradius[r]*m_cube_size );
+         ni_get_histogram( histogram, ihy, ihx, ishift, ptr + hradius[r]*m_cube_size );
       }
     }
     return true;
 }
 
-void DAISY_Impl::initialize_single_descriptor_mode( )
+inline void DAISY_Impl::initialize_single_descriptor_mode( )
 {
     initialize();
     compute_smoothed_gradient_layers();
 }
 
-void DAISY_Impl::set_parameters( )
+inline void DAISY_Impl::set_parameters( )
 {
     m_grid_point_number = m_rad_q_no * m_th_q_no + 1; // +1 is for center pixel
     m_descriptor_size = m_grid_point_number * m_hist_th_q_no;
@@ -1952,7 +1557,7 @@ void DAISY_Impl::set_parameters( )
     {
       m_orientation_shift_table[i] = i/360.0 * m_hist_th_q_no;
     }
-    m_layer_size = m_h*m_w;
+    m_layer_size = m_image.rows*m_image.cols;
     m_cube_size = m_layer_size*m_hist_th_q_no;
 
     compute_cube_sigmas();
@@ -1961,48 +1566,29 @@ void DAISY_Impl::set_parameters( )
 
 // set/convert image array for daisy internal routines
 // daisy internals use CV_32F image with norm to 1.0f
-void DAISY_Impl::set_image( InputArray _image )
+inline void DAISY_Impl::set_image( InputArray _image )
 {
     // release previous image
-    // and previous daisies workspace
+    // and previous workspace
     reset();
-
     // fetch new image
     Mat image = _image.getMat();
-
     // image cannot be empty
     CV_Assert( ! image.empty() );
-
-    // base size
-    m_h = image.rows;
-    m_w = image.cols;
-
     // clone image for conversion
     if ( image.depth() != CV_32F ) {
 
-      m_work_image = image.clone();
-
+      m_image = image.clone();
       // convert to gray inplace
-      if( m_work_image.channels() > 1 )
-          cvtColor( m_work_image, m_work_image, COLOR_BGR2GRAY );
-
-      // convert to float if it is necessary
-      if ( m_work_image.depth() != CV_32F )
-      {
-          // convert and normalize
-          m_work_image.convertTo( m_work_image, CV_32F );
-          m_work_image /= 255.0f;
-      } else
-          CV_Error( Error::StsUnsupportedFormat, "" );
-
-      // use cloned work image
-      m_image = m_work_image.ptr<float>(0);
-
+      if( m_image.channels() > 1 )
+          cvtColor( m_image, m_image, COLOR_BGR2GRAY );
+      // convert and normalize
+      m_image.convertTo( m_image, CV_32F );
+      m_image /= 255.0f;
     } else
       // use original user supplied CV_32F image
       // should be a normalized one (cannot check)
-      m_image = image.ptr<float>(0);
-
+      m_image = image;
 }
 
 
@@ -2019,7 +1605,7 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     set_image( _image );
 
     // whole image
-    m_roi = Rect( 0, 0, m_w, m_h );
+    m_roi = Rect( 0, 0, m_image.cols, m_image.rows );
 
     // get homography
     Mat H = m_h_matrix;
@@ -2080,8 +1666,7 @@ void DAISY_Impl::compute( InputArray _image, Rect roi, OutputArray _descriptors 
     normalize_descriptors();
 
     Mat descriptors = _descriptors.getMat();
-    descriptors = Mat( m_roi.width * m_roi.height, m_descriptor_size,
-                       CV_32F, &m_dense_descriptors[0] );
+    descriptors = m_dense_descriptors;
 
     release_auxiliary();
 }
@@ -2099,7 +1684,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
     set_image( _image );
 
     // whole image
-    m_roi = Rect( 0, 0, m_w, m_h );
+    m_roi = Rect( 0, 0, m_image.cols, m_image.rows );
 
     set_parameters();
     initialize_single_descriptor_mode();
@@ -2109,8 +1694,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
     normalize_descriptors();
 
     Mat descriptors = _descriptors.getMat();
-    descriptors = Mat( m_h * m_w, m_descriptor_size,
-                       CV_32F, &m_dense_descriptors[0] );
+    descriptors = m_dense_descriptors;
 
     release_auxiliary();
 }
@@ -2121,31 +1705,25 @@ DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
            : m_rad(_radius), m_rad_q_no(_q_radius), m_th_q_no(_q_theta), m_hist_th_q_no(_q_hist),
              m_nrm_type(_norm), m_disable_interpolation(_interpolation), m_use_orientation(_use_orientation)
 {
-    m_w = 0;
-    m_h = 0;
 
     m_image = 0;
 
-    m_grid_point_number = 0;
     m_descriptor_size = 0;
-    m_smoothed_gradient_layers = NULL;
-    m_dense_descriptors = NULL;
-    m_grid_points = NULL;
-    m_oriented_grid_points = NULL;
+    m_grid_point_number = 0;
+
+    m_grid_points.release();
+    m_dense_descriptors.release();
+    m_smoothed_gradient_layers.release();
+    m_oriented_grid_points.release();
 
     m_scale_invariant = false;
     m_rotation_invariant = false;
 
-    m_scale_map = NULL;
-    m_orientation_map = NULL;
+    m_scale_map.release();
+    m_orientation_map.release();
     m_orientation_resolution = 36;
-    m_scale_map = NULL;
 
-    m_cube_sigmas = NULL;
-
-    // unused features
-    m_descriptor_memory = false;
-    m_workspace_memory = false;
+    m_cube_sigmas.release();
 
     m_cube_size = 0;
     m_layer_size = 0;
@@ -2158,12 +1736,11 @@ DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
 // destructor
 DAISY_Impl::~DAISY_Impl()
 {
-    if ( !m_workspace_memory ) deallocate( m_smoothed_gradient_layers );
-    deallocate( m_grid_points, m_grid_point_number );
-    deallocate( m_oriented_grid_points, g_grid_orientation_resolution );
-    deallocate( m_orientation_map );
-    deallocate( m_scale_map );
-    deallocate( m_cube_sigmas );
+    m_scale_map.release();
+    m_grid_points.release();
+    m_orientation_map.release();
+    m_oriented_grid_points.release();
+    m_smoothed_gradient_layers.release();
 }
 
 Ptr<DAISY> DAISY::create( float radius, int q_radius, int q_theta, int q_hist,

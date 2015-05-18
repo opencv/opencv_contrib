@@ -196,7 +196,7 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
     virtual void get_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
@@ -204,7 +204,7 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param H homography matrix for warped grid
      * @param descriptor supplied array for descriptor storage
      * @param get_descriptor true if descriptor was computed
@@ -214,7 +214,7 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
     virtual void get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
@@ -222,17 +222,12 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param H homography matrix for warped grid
      * @param descriptor supplied array for descriptor storage
      * @param get_unnormalized_descriptor true if descriptor was computed
      */
     virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
-
-    /**
-     * @param image set image as working
-     */
-    virtual void set_image( InputArray image ) = 0;
 
 };
 
