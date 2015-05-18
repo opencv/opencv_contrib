@@ -207,7 +207,6 @@ public:
      * @param orientation orientation on image (0->360)
      * @param H homography matrix for warped grid
      * @param descriptor supplied array for descriptor storage
-     * @param get_descriptor true if descriptor was computed
      */
     virtual bool get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
 
@@ -225,7 +224,6 @@ public:
      * @param orientation orientation on image (0->360)
      * @param H homography matrix for warped grid
      * @param descriptor supplied array for descriptor storage
-     * @param get_unnormalized_descriptor true if descriptor was computed
      */
     virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
 
