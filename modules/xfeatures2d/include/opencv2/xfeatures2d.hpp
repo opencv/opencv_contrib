@@ -76,7 +76,7 @@ They are competitive alternatives to existing keypoints in particular for embedd
    -   An example on how to use the FREAK descriptor can be found at
         opencv_source_code/samples/cpp/freak_demo.cpp
  */
-class CV_EXPORTS FREAK : public Feature2D
+class CV_EXPORTS_W FREAK : public Feature2D
 {
 public:
 
@@ -92,7 +92,7 @@ public:
     @param nOctaves Number of octaves covered by the detected keypoints.
     @param selectedPairs (Optional) user defined selected pairs indexes,
      */
-    static Ptr<FREAK> create(bool orientationNormalized = true,
+    CV_WRAP static Ptr<FREAK> create(bool orientationNormalized = true,
                              bool scaleNormalized = true,
                              float patternScale = 22.0f,
                              int nOctaves = 4,
@@ -102,11 +102,11 @@ public:
 
 /** @brief The class implements the keypoint detector introduced by @cite Agrawal08, synonym of StarDetector. :
  */
-class CV_EXPORTS StarDetector : public FeatureDetector
+class CV_EXPORTS_W StarDetector : public Feature2D
 {
 public:
     //! the full constructor
-    static Ptr<StarDetector> create(int maxSize=45, int responseThreshold=30,
+    CV_WRAP static Ptr<StarDetector> create(int maxSize=45, int responseThreshold=30,
                          int lineThresholdProjected=10,
                          int lineThresholdBinarized=8,
                          int suppressNonmaxSize=5);
@@ -123,10 +123,10 @@ public:
         opencv_source_code/samples/cpp/brief_match_test.cpp
 
  */
-class CV_EXPORTS BriefDescriptorExtractor : public DescriptorExtractor
+class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
+    CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
@@ -134,14 +134,14 @@ public:
 An image descriptor that can be computed very fast, while being
 about as robust as, for example, SURF or BRIEF.
  */
-class CV_EXPORTS LUCID : public DescriptorExtractor
+class CV_EXPORTS_W LUCID : public Feature2D
 {
 public:
     /**
      * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      */
-    static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+    CV_WRAP static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
 };
 
 
