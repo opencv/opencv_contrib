@@ -1189,6 +1189,38 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
   BOILERPLATE_CODE("TLD",TrackerTLD);
 };
 
+/** @brief KCF is a novel tracking framework that explicitly decomposes the long-term tracking task into
+tracking, learning and detection.
+
+The tracker follows the object from frame to frame. The detector localizes all appearances that
+have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
+errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
+
+The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this
+implementation, following authors. Tracker is supposed to be able to handle rapid motions, partial
+occlusions, object absence etc.
+ */
+class CV_EXPORTS_W TrackerKCF : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+    
+    double sigma;			// gaussian kernel bandwidth
+    double lambda;			// regularization
+    double interp_factor;		// linear interpolation factor for adaptation
+    double output_sigma_factor;	// spatial bandwidth (proportional to target)
+  };
+
+  /** @brief Constructor
+    @param parameters KCF parameters TrackerKCF::Params
+     */
+  BOILERPLATE_CODE("KCF",TrackerKCF);
+};
+
 //! @}
 
 } /* namespace cv */
