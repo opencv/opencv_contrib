@@ -58,7 +58,7 @@ namespace cv
         /*
         * LATCH Descriptor
         */
-        class LATCHDescriptorExtractorImpl : public LATCHDescriptorExtractor
+        class LATCHDescriptorExtractorImpl : public LATCH
         {
         public:
             enum { PATCH_SIZE = 48 };
@@ -86,7 +86,7 @@ namespace cv
             std::vector<int> sampling_points_ ;
         };
 
-        Ptr<LATCHDescriptorExtractor> LATCHDescriptorExtractor::create(int bytes, bool rotationInvariance, int half_ssd_size)
+        Ptr<LATCH> LATCH::create(int bytes, bool rotationInvariance, int half_ssd_size)
         {
             return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size);
         }
@@ -488,10 +488,18 @@ namespace cv
             fs << "descriptorSize" << bytes_;
         }
 
-        void LATCHDescriptorExtractorImpl::compute(InputArray image,
+        void LATCHDescriptorExtractorImpl::compute(InputArray _image,
             std::vector<KeyPoint>& keypoints,
-            OutputArray descriptors)
+            OutputArray _descriptors)
         {
+            Mat image = _image.getMat();
+
+            if ( image.empty() )
+                return;
+
+            if ( keypoints.empty() )
+                return;
+
 
             Mat grayImage;
             GaussianBlur(image, grayImage, cv::Size(3, 3), 2, 2);
@@ -502,9 +510,26 @@ namespace cv
 
             //Remove keypoints very close to the border
             KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE / 2 + half_ssd_size_);
+            
+            bool _1d = false;
+            Mat descriptors;
 
+            _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_8U;
+            if( _1d )
+            {
+                _descriptors.create((int)keypoints.size()*bytes_, 1, CV_8U);
+                descriptors = _descriptors.getMat().reshape(1, (int)keypoints.size());
+            }
+            else
+            {
+                _descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+                descriptors = _descriptors.getMat();
+            }
 
-            descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+            //_descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+            // prepare descriptors as mat
+            //Mat descriptors = _descriptors.getMat();
+
 
             test_fn_(grayImage, keypoints, descriptors, sampling_points_, rotationInvariance_, half_ssd_size_);
         }

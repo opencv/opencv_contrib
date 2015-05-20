@@ -166,10 +166,10 @@ Note: the descriptor can be coupled with any keypoint extractor. The only demand
 Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures2D/latch_match.cpp
 
 */
-class CV_EXPORTS LATCHDescriptorExtractor : public DescriptorExtractor
+class CV_EXPORTS LATCH : public DescriptorExtractor
 {
 public:
-	static Ptr<LATCHDescriptorExtractor> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 
