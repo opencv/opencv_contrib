@@ -73,7 +73,7 @@ void StaticSaliencySpectralResidual::write( cv::FileStorage& /*fs*/) const
   //params.write( fs );
 }
 
-bool StaticSaliencySpectralResidual::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
+bool StaticSaliencySpectralResidual::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
   Mat grayTemp, grayDown;
   std::vector<Mat> mv;

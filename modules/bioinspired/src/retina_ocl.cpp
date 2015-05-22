@@ -351,7 +351,7 @@ void RetinaOCLImpl::setupIPLMagnoChannel(const bool normaliseOutput, const float
     _retinaParameters.IplMagno.localAdaptintegration_k = localAdaptintegration_k;
 }
 
-void RetinaOCLImpl::run(const InputArray input)
+void RetinaOCLImpl::run(InputArray input)
 {
     oclMat &inputMatToConvert = getOclMatRef(input);
     bool colorMode = convertToColorPlanes(inputMatToConvert, _inputBuffer);
