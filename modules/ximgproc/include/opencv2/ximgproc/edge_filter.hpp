@@ -318,6 +318,17 @@ void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int
 
 //! @}
 
+class CV_EXPORTS_W WeightedLeastSquaresFilter : public Algorithm
+{
+public:
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst) = 0;
+    virtual ~WeightedLeastSquaresFilter();
+};
+
+CV_EXPORTS_W Ptr<WeightedLeastSquaresFilter> createWeightedLeastSquaresFilter(InputArray guide, double lambda, double sigma_color, int num_iter=3);
+
+CV_EXPORTS_W void weightedLeastSquaresFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, int num_iter=3);
+
 }
 }
 #endif
