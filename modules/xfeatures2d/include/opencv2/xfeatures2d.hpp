@@ -178,8 +178,6 @@ public:
 @param q_radius amount of radial range division quantity
 @param q_theta amount of angular range division quantity
 @param q_hist amount of gradient orientations range division quantity
-DAISY::ONLY_KEYS means to compute descriptors only for keypoints in the list (default) and
-DAISY::COMP_FULL will compute descriptors for all pixels in the given image
 @param norm choose descriptors normalization type, where
 DAISY::NRM_NONE will not do any normalization (default),
 DAISY::NRM_PARTIAL mean that histograms are normalized independently for L2 norm equal to 1.0,

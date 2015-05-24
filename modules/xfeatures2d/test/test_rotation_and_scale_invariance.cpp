@@ -660,6 +660,15 @@ TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_DAISY, regression)
+{
+    DescriptorRotationInvarianceTest test(BRISK::create(),
+                                          DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
+                                          NORM_L1,
+                                          0.79f);
+    test.safe_run();
+}
+
 
 /*
  * Detector's scale invariance check
