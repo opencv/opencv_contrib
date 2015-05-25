@@ -47,19 +47,35 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 
 
+#include <iostream>
+
+
 namespace cv { namespace aruco {
+
+
 
 
     /**
      * @brief Dictionary/Set of markers. It contains the inner codification
      * 
      */
-class Dictionary {
+class CV_EXPORTS Dictionary {
 
 public:  
     
-    //std::vector<BitString> codes; // binary codes of markers
-    int size; // number of markers in use
+    Dictionary() { };
+    Dictionary(const char *quartets, int _markerSize, int _dictsize, int _maxcorr)  {
+        markerSize = _markerSize;
+        maxCorrectionBits = _maxcorr;
+        int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
+        codes = cv::Mat(_dictsize, nquartets, CV_8UC1);
+        for(int i=0; i<_dictsize; i++) {
+            for(int j=0; j<nquartets; j++) codes.at<unsigned char>(i,j) = quartets[i*nquartets+j];
+        }
+    };
+
+    cv::Mat codes;
+    int markerSize;
     int maxCorrectionBits; // maximum number of bits that can be corrected
     // float borderSize; // black border size respect to inner bits size
 
@@ -82,11 +98,24 @@ public:
      * @return void
      */
     void drawMarker(InputOutputArray img, int id);
+
+
+
+private:
+
+    cv::Mat _getQuartet(cv::Mat bits);
+    cv::Mat _getDistances(cv::Mat quartets);
+
 };
 
 
+extern const char quartets_distances[16][16][4];
+extern const char dict_hrm_4x4_quartets[][4] = {{ 1, 2, 3, 4 }, { 1, 2, 3, 4 }, { 1, 2, 3, 4 }, { 1, 2, 3, 4 }, { 1, 2, 3, 4 }};
+extern const Dictionary DICT_HRM_4X4 (&(dict_hrm_4x4_quartets[0][0]), 4, 5, 4);
+//const Dictionary DICT_HRM_4X4;
+
 // predefined marker dictionaries
-const Dictionary DICT_HRM_4X4, DICT_HRM_5X5, DICT_HRM_6X6, DICT_ARUCO, DICT_ARTAG; // ...;
+//const Dictionary DICT_HRM_4X4, DICT_HRM_5X5, DICT_HRM_6X6, DICT_ARUCO, DICT_ARTAG; // ...;
 
 
 
@@ -96,7 +125,7 @@ const Dictionary DICT_HRM_4X4, DICT_HRM_5X5, DICT_HRM_6X6, DICT_ARUCO, DICT_ARTA
  * @brief Board of markers containing the layout of the markers
  * 
  */
-class Board {
+class CV_EXPORTS Board {
 
 public:
     
@@ -150,9 +179,9 @@ public:
  *                  respect to the largest image dimension
  * @return void
  */
-void detectArucoSingle(InputArray image, InputArray cameraMatrix, InputArray distCoeffs, 
+CV_EXPORTS void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                        float markersize, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArray rvec=NoArray(), OutputArray tvec=NoArray(),
+                       OutputArray ids, OutputArray rvec=noArray(), OutputArray tvec=noArray(),
                        int threshParam=21,float minLenght=0.03);
 
 
@@ -174,7 +203,7 @@ void detectArucoSingle(InputArray image, InputArray cameraMatrix, InputArray dis
  *                  respect to the largest image dimension
  * @return void
  */
-void detectArucoBoard(InputArray image, InputArray cameraMatrix, InputArray distCoeffs, 
+CV_EXPORTS void detectBoardMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                       Board board, OutputArrayOfArrays imgPoints, OutputArray ids,
                       OutputArray rvec, OutputArray tvec, int threshParam=21, float minLenght=0.03);
 
@@ -190,12 +219,26 @@ void detectArucoBoard(InputArray image, InputArray cameraMatrix, InputArray dist
  * @param ids marker ids
  * @return void
  */
-void drawArucoDetectedMarkers(InputArray image, InputArrayOfArrays markers, InputArray ids);
+CV_EXPORTS void drawDetectedMarkers(InputArray image, InputArrayOfArrays markers, InputArray ids);
+
+
+/**
+ * @brief Draw colored axis in image
+ *
+ * @param image
+ * @param cameraMatrix
+ * @param distCoeffs
+ * @param rvec
+ * @param tvec
+ * @param lenght axis lenght in meters
+ * @return void
+ */
+CV_EXPORTS void drawAxis(InputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
 
 
 
 
-//void calibrateCameraAruco(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
+//CV_EXPORTS void calibrateCamera(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
 
 
 
