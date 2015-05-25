@@ -128,9 +128,11 @@ void SetConfigsForTesting(map<string,config>& cfgs)
 	stereobm_matcher->setTextureThreshold(0); 
 	stereobm_matcher->setUniquenessRatio(0);
 
+	Ptr<DisparityMapFilter> wls_filter = createDisparityMapFilter(WLS);
 	Ptr<DisparityMapFilter> dt_filter = createDisparityMapFilter(DTF);
 	Ptr<DisparityMapFilter> guided_filter = createDisparityMapFilter(GF);
 
+	cfgs["stereobm_wls"] = config(stereobm_matcher,wls_filter);
 	cfgs["stereobm_dtf"] = config(stereobm_matcher,dt_filter);
 	cfgs["stereobm_gf"]  = config(stereobm_matcher,guided_filter);
 }
