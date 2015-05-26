@@ -9,7 +9,7 @@
 #ifndef __OPENCV_PERF_PRECOMP_HPP__
 #define __OPENCV_PERF_PRECOMP_HPP__
 
-#include "cvconfig.h"
+#include "opencv2/cvconfig.h"
 
 #include "opencv2/ts.hpp"
 #include "opencv2/xfeatures2d.hpp"

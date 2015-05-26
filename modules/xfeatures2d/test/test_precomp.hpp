@@ -19,7 +19,7 @@
 #include "opencv2/ts/cuda_test.hpp"
 
 #include "opencv2/opencv_modules.hpp"
-#include "cvconfig.h"
+#include "opencv2/cvconfig.h"
 
 #ifdef HAVE_OPENCV_OCL
 #  include "opencv2/ocl.hpp"
