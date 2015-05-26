@@ -44,25 +44,48 @@ namespace cv
 {
 namespace ximgproc
 {
-	enum DisparityFiltersList
-	{
-		WLS,
-		DTF,
-		GF,
-		WLS_custom_confidence,
-		DTF_custom_confidence,
-		GF_custom_confidence
-	};
+    class CV_EXPORTS_W DisparityFilter : public Algorithm
+    {
+    public:
+        CV_WRAP virtual void filter(InputArray disparity_map, InputArray left_view, OutputArray filtered_disparity_map,Rect ROI) = 0;
+    };
 
-	class CV_EXPORTS_W DisparityMapFilter : public Algorithm
-	{
-	public:
-		CV_WRAP virtual void filter(InputArray disparity_map, InputArray left_view, OutputArray filtered_disparity_map,Rect ROI) = 0;
-	};
+    /////////////////////////////////////////////////////////////////////////////////////////////////
 
-	CV_EXPORTS_W
-	Ptr<DisparityMapFilter> createDisparityMapFilter(int mode);
+    class DisparityDTFilter : public DisparityFilter
+    {
+    public:
+        virtual double getSigmaSpatial() = 0;
+        virtual void setSigmaSpatial(double _sigmaSpatial) = 0;
+        virtual double getSigmaColor() = 0;
+        virtual void setSigmaColor(double _sigmaColor) = 0;
+    };
 
+    CV_EXPORTS_W
+    Ptr<DisparityDTFilter> createDisparityDTFilter();
+
+    class DisparityGuidedFilter : public DisparityFilter
+    {
+    public:
+        virtual double getEps() = 0;
+        virtual void setEps(double _eps) = 0;
+        virtual int getRadius() = 0;
+        virtual void setRadius(int _radius) = 0;
+    };
+
+    CV_EXPORTS_W
+    Ptr<DisparityGuidedFilter> createDisparityGuidedFilter();
+
+    class DisparityWLSFilter : public DisparityFilter
+    {
+        virtual double getLambda() = 0;
+        virtual void setLambda(double _lambda) = 0;
+        virtual double getSigmaColor() = 0;
+        virtual void setSigmaColor(double _sigma_color) = 0;
+    };
+
+    CV_EXPORTS_W
+    Ptr<DisparityWLSFilter> createDisparityWLSFilter();
 }
 }
 #endif
