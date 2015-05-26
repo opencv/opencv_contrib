@@ -45,7 +45,7 @@
 #include <string>
 
 #ifdef HAVE_CVCONFIG_H
-#include "cvconfig.h"
+#include "opencv2/cvconfig.h"
 #endif
 
 #ifdef HAVE_TBB
