@@ -109,6 +109,8 @@ namespace cv{
     Mat z, new_z;
     Mat response; // detection result
     
+    bool resizeImage; // resize the image whenever needed and the patch size is large
+    
     int frame;
   };
     
@@ -122,6 +124,7 @@ namespace cv{
       params( parameters )
   {
     isInit = false;
+    resizeImage = false;
   }
   
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -147,6 +150,15 @@ namespace cv{
     //calclulate output sigma
     output_sigma=sqrt(roi.width*roi.height)*params.output_sigma_factor;
     output_sigma=-0.5/(output_sigma*output_sigma);
+    
+    //resize the ROI whenever needed
+    if(params.resize && roi.width*roi.height>80*80){
+      resizeImage=true;
+      roi.x/=2.0;
+      roi.y/=2.0;
+      roi.width/=2.0;
+      roi.height/=2.0;
+    }    
     
     // add padding to the roi
     roi.x-=roi.width/2;
@@ -191,6 +203,9 @@ namespace cv{
       cvtColor(image,img, CV_BGR2GRAY);
     }else img=image;
     
+    // resize the image whenever needed
+    if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
+    
     // extract and pre-process the patch
     getSubWindow(img,roi, x);
     
@@ -202,8 +217,8 @@ namespace cv{
        roi.x+=(maxLoc.x-roi.width/2+1);roi.y+=(maxLoc.y-roi.height/2+1);
        
        // update the bounding box
-       boundingBox.x=roi.x+boundingBox.width/2;
-       boundingBox.y=roi.y+boundingBox.height/2;
+       boundingBox.x=(resizeImage?roi.x*2:roi.x)+boundingBox.width/2;
+       boundingBox.y=(resizeImage?roi.y*2:roi.y)+boundingBox.height/2;
     }
     
     // extract the patch for learning purpose
@@ -459,6 +474,7 @@ namespace cv{
       lambda=0.01;
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
+      resize=true;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& fn ){
