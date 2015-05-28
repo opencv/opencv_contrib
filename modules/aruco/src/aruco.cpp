@@ -48,31 +48,12 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include "predefined_dictionaries.cpp"
+
 
 namespace cv{ namespace aruco{
 
 using namespace std;
-
-
-const char quartets_distances[16][16][4] =
-{
-    { {0,0,0,0},{1,1,1,1},{1,1,1,1},{2,2,2,2},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{2,2,2,2},{3,3,3,3},{3,3,3,3},{4,4,4,4}, },
-    { {1,1,1,1},{0,2,2,2},{2,0,2,2},{1,1,3,3},{2,2,0,2},{1,3,1,3},{3,1,1,3},{2,2,2,4},{2,2,2,0},{1,3,3,1},{3,1,3,1},{2,2,4,2},{3,3,1,1},{2,4,2,2},{4,2,2,2},{3,3,3,3}, },
-    { {1,1,1,1},{2,2,2,0},{0,2,2,2},{1,3,3,1},{2,0,2,2},{3,1,3,1},{1,1,3,3},{2,2,4,2},{2,2,0,2},{3,3,1,1},{1,3,1,3},{2,4,2,2},{3,1,1,3},{4,2,2,2},{2,2,2,4},{3,3,3,3}, },
-    { {2,2,2,2},{1,3,3,1},{1,1,3,3},{0,2,4,2},{3,1,1,3},{2,2,2,2},{2,0,2,4},{1,1,3,3},{3,3,1,1},{2,4,2,0},{2,2,2,2},{1,3,3,1},{4,2,0,2},{3,3,1,1},{3,1,1,3},{2,2,2,2}, },
-    { {1,1,1,1},{2,2,0,2},{2,2,2,0},{3,3,1,1},{0,2,2,2},{1,3,1,3},{1,3,3,1},{2,4,2,2},{2,0,2,2},{3,1,1,3},{3,1,3,1},{4,2,2,2},{1,1,3,3},{2,2,2,4},{2,2,4,2},{3,3,3,3}, },
-    { {2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{1,3,1,3},{0,4,0,4},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{4,0,4,0},{3,1,3,1},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2}, },
-    { {2,2,2,2},{3,3,1,1},{1,3,3,1},{2,4,2,0},{1,1,3,3},{2,2,2,2},{0,2,4,2},{1,3,3,1},{3,1,1,3},{4,2,0,2},{2,2,2,2},{3,3,1,1},{2,0,2,4},{3,1,1,3},{1,1,3,3},{2,2,2,2}, },
-    { {3,3,3,3},{2,4,2,2},{2,2,4,2},{1,3,3,1},{2,2,2,4},{1,3,1,3},{1,1,3,3},{0,2,2,2},{4,2,2,2},{3,3,1,1},{3,1,3,1},{2,2,2,0},{3,1,1,3},{2,2,0,2},{2,0,2,2},{1,1,1,1}, },
-    { {1,1,1,1},{2,0,2,2},{2,2,0,2},{3,1,1,3},{2,2,2,0},{3,1,3,1},{3,3,1,1},{4,2,2,2},{0,2,2,2},{1,1,3,3},{1,3,1,3},{2,2,2,4},{1,3,3,1},{2,2,4,2},{2,4,2,2},{3,3,3,3}, },
-    { {2,2,2,2},{1,1,3,3},{3,1,1,3},{2,0,2,4},{3,3,1,1},{2,2,2,2},{4,2,0,2},{3,1,1,3},{1,3,3,1},{0,2,4,2},{2,2,2,2},{1,1,3,3},{2,4,2,0},{1,3,3,1},{3,3,1,1},{2,2,2,2}, },
-    { {2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{3,1,3,1},{4,0,4,0},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{0,4,0,4},{1,3,1,3},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2}, },
-    { {3,3,3,3},{2,2,4,2},{2,2,2,4},{1,1,3,3},{4,2,2,2},{3,1,3,1},{3,1,1,3},{2,0,2,2},{2,4,2,2},{1,3,3,1},{1,3,1,3},{0,2,2,2},{3,3,1,1},{2,2,2,0},{2,2,0,2},{1,1,1,1}, },
-    { {2,2,2,2},{3,1,1,3},{3,3,1,1},{4,2,0,2},{1,3,3,1},{2,2,2,2},{2,4,2,0},{3,3,1,1},{1,1,3,3},{2,0,2,4},{2,2,2,2},{3,1,1,3},{0,2,4,2},{1,1,3,3},{1,3,3,1},{2,2,2,2}, },
-    { {3,3,3,3},{2,2,2,4},{4,2,2,2},{3,1,1,3},{2,4,2,2},{1,3,1,3},{3,3,1,1},{2,2,0,2},{2,2,4,2},{1,1,3,3},{3,1,3,1},{2,0,2,2},{1,3,3,1},{0,2,2,2},{2,2,2,0},{1,1,1,1}, },
-    { {3,3,3,3},{4,2,2,2},{2,4,2,2},{3,3,1,1},{2,2,4,2},{3,1,3,1},{1,3,3,1},{2,2,2,0},{2,2,2,4},{3,1,1,3},{1,3,1,3},{2,2,0,2},{1,1,3,3},{2,0,2,2},{0,2,2,2},{1,1,1,1}, },
-    { {4,4,4,4},{3,3,3,3},{3,3,3,3},{2,2,2,2},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{2,2,2,2},{1,1,1,1},{1,1,1,1},{0,0,0,0}, },
-};
 
 
 /**
@@ -193,49 +174,9 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
     }
 
 
-//    //find all rectangles in the thresholdes image
-//    vector<MarkerCandidate > MarkerCanditates;
-//    detectRectangles ( thres,MarkerCanditates );
-//    //if the image has been downsampled, then calcualte the location of the corners in the original image
-//    if ( pyrdown_level!=0 )
-//    {
-//        float red_den=pow ( 2.0f,pyrdown_level );
-//        float offInc= ( ( pyrdown_level/2. )-0.5 );
-//        for ( unsigned int i=0;i<MarkerCanditates.size();i++ ) {
-//            for ( int c=0;c<4;c++ )
-//            {
-//                MarkerCanditates[i][c].x=MarkerCanditates[i][c].x*red_den+offInc;
-//                MarkerCanditates[i][c].y=MarkerCanditates[i][c].y*red_den+offInc;
-//            }
-//            //do the same with the the contour points
-//            for ( int c=0;c<MarkerCanditates[i].contour.size();c++ )
-//            {
-//                MarkerCanditates[i].contour[c].x=MarkerCanditates[i].contour[c].x*red_den+offInc;
-//                MarkerCanditates[i].contour[c].y=MarkerCanditates[i].contour[c].y*red_den+offInc;
-//            }
-//        }
-//    }
 
 
 
-
-//    ///refine the corner location if desired
-//    if ( detectedMarkers.size() >0 && _cornerMethod!=NONE && _cornerMethod!=LINES )
-//    {
-//        vector<Point2f> Corners;
-//        for ( unsigned int i=0;i<detectedMarkers.size();i++ )
-//            for ( int c=0;c<4;c++ )
-//                Corners.push_back ( detectedMarkers[i][c] );
-
-//        if ( _cornerMethod==HARRIS )
-//            findBestCornerInRegion_harris ( grey, Corners,7 );
-//        else if ( _cornerMethod==SUBPIX )
-//            cornerSubPix ( grey, Corners,cvSize ( 5,5 ), cvSize ( -1,-1 )   ,cvTermCriteria ( CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,3,0.05 ) );
-
-//        //copy back
-//        for ( unsigned int i=0;i<detectedMarkers.size();i++ )
-//            for ( int c=0;c<4;c++ )     detectedMarkers[i][c]=Corners[i*4+c];
-//    }
 //    //sort by id
 //    std::sort ( detectedMarkers.begin(),detectedMarkers.end() );
 //    //there might be still the case that a marker is detected twice because of the double border indicated earlier,
@@ -378,6 +319,26 @@ void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays 
 }
 
 
+/**
+  */
+const Dictionary& getPredefinedDictionary(PREDEFINED_DICTIONARIES name) {
+    switch(name) {
+        case DICT_ARUCO:
+        return _dict_aruco;
+    }
+    return Dictionary();
+}
+
+
+/**
+  */
+void detectMarkers(InputArray image, PREDEFINED_DICTIONARIES dictionary, OutputArrayOfArrays imgPoints,
+                       OutputArray ids, int threshParam,float minLenght) {
+
+    detectMarkers(image, getPredefinedDictionary(dictionary), imgPoints, ids, threshParam, minLenght);
+}
+
+
 
 
 
@@ -467,161 +428,6 @@ void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCo
     cv::line(image, imagePoints[0], imagePoints[3], cv::Scalar(255,0,0), 3);
 
 }
-
-
-/**
-  */
-bool Dictionary::_isBorderValid(cv::Mat bits) {
-    int sizeWithBorders = markerSize+2;
-    int totalErrors = 0;
-    for(int y=0; y<sizeWithBorders; y++) {
-        if(bits.ptr<unsigned char>(y)[0]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(y)[sizeWithBorders-1]!=0) totalErrors++;
-    }
-    for(int x=1; x<sizeWithBorders-1; x++) {
-        if(bits.ptr<unsigned char>(0)[x]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(sizeWithBorders-1)[x]!=0) totalErrors++;
-    }
-    if(totalErrors > 1) return false; // markersize is a good value for check border errors
-    else return true;
-}
-
-
-
-/**
- */
-bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx) {
-    // get bits
-    cv::Mat candidateBits = _extractBits(image, imgPoints);
-    if(!_isBorderValid(candidateBits)) return false; // not really necessary
-    cv::Mat onlyBits = candidateBits.rowRange(1,candidateBits.rows-1).colRange(1,candidateBits.rows-1);
-    // get quartets
-    cv::Mat candidateQuartets = _getQuartet(onlyBits);
-
-
-    // search closest marker in dict
-    int closestId=-1;
-    unsigned int rotation=0;
-    unsigned int closestDistance=markerSize*markerSize+1;
-    cv::Mat candidateDistances = _getDistances(candidateQuartets);
-    for(int i=0; i<codes.rows; i++) {
-        if(candidateDistances.ptr<int>(i)[0] < closestDistance) {
-            closestDistance = candidateDistances.ptr<int>(i)[0];
-            closestId = i;
-            rotation = candidateDistances.ptr<int>(i)[1];
-        }
-    }
-
-    // return closest id
-    if(closestId!=-1 && closestDistance<=maxCorrectionBits) {
-        idx = closestId;
-        // correct imgPoints positions
-        if(rotation!=0) {
-            cv::Mat copyPoints = imgPoints.getMat().clone();
-            for(int j=0; j<4; j++) imgPoints.getMat().ptr<cv::Point2f>(0)[j] = copyPoints.ptr<cv::Point2f>(0)[(j+4-rotation)%4];
-        }
-        return true;
-    }
-    else {
-        idx = -1;
-        return false;
-    }
-}
-
-
-/**
-  */
-cv::Mat Dictionary::_extractBits(InputArray image, InputOutputArray imgPoints) {
-
-    CV_Assert(image.getMat().channels()==1);
-
-    cv::Mat resultImg; // marker image after removing perspective
-    int squareSizePixels = 8;
-    int resultImgSize = (markerSize+2)*squareSizePixels;
-    cv::Mat resultImgCorners(4,1,CV_32FC2);
-    resultImgCorners.ptr<cv::Point2f>(0)[0]= Point2f ( 0,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[1]= Point2f ( resultImgSize-1,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[2]= Point2f ( resultImgSize-1,resultImgSize-1 );
-    resultImgCorners.ptr<cv::Point2f>(0)[3]= Point2f ( 0,resultImgSize-1 );
-
-    // remove perspective
-    cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
-    cv::warpPerspective(image, resultImg, transformation, cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
-
-    // now extract code
-    cv::Mat bits(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
-    cv::threshold(resultImg, resultImg,125, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
-    for (unsigned int y=0; y<markerSize+2; y++)  {
-        for (unsigned int x=0; x<markerSize+2;x++) {
-            int Xstart=x*(squareSizePixels)+1;
-            int Ystart=y*(squareSizePixels)+1;
-            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels-2,squareSizePixels-2));
-            int nZ=countNonZero(square);
-            if (nZ> square.total()/2)  bits.at<unsigned char>(y,x)=1;
-        }
-     }
-
-    return bits;
-}
-
-
-
-/**
- */
-void Dictionary::drawMarker(InputOutputArray img, int id) {
-    /// TODO
-}
-
-
-/**
-  */
-cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
-
-    int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
-    cv::Mat candidateQuartets(1, nquartets, CV_8UC1);
-    int currentQuartet=0;
-    for(int row=0; row<markerSize/2; row++)
-    {
-        for(int col=row; col<markerSize-row-1; col++) {
-            unsigned char bit3 = bits.at<unsigned char>(row,col);
-            unsigned char bit2 = bits.at<unsigned char>(col,markerSize-1-row);
-            unsigned char bit1 = bits.at<unsigned char>(markerSize-1-row,markerSize-1-col);
-            unsigned char bit0 = bits.at<unsigned char>(markerSize-1-col,row);
-            unsigned char quartet = 8*bit3 + 4*bit2 + 2*bit1 + bit0;
-            candidateQuartets.ptr<unsigned char>()[currentQuartet] = quartet;
-            currentQuartet++;
-        }
-    }
-    if((markerSize*markerSize)%4 == 1) { // middle bit
-        unsigned char middleBit = 15*bits.at<unsigned char>(markerSize/2,markerSize/2);
-        candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
-    }
-    return candidateQuartets;
-
-}
-
-
-/**
-  */
-cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
-
-    cv::Mat res(codes.rows, 2, CV_32SC1);
-    for(unsigned int m=0; m<codes.rows; m++) {
-        res.ptr<int>(m)[0]=10e8;
-        for(unsigned int r=0; r<4; r++) {
-            int currentHamming=0;
-            for(unsigned int q=0; q<quartets.total(); q++) {
-                currentHamming += (int)quartets_distances[ (codes.ptr<unsigned char>(m)[q]) ][ (quartets.ptr<unsigned char>(0)[q]) ][r];
-            }
-            if(currentHamming < res.ptr<int>(m)[0]) {
-                res.ptr<int>(m)[0]=currentHamming;
-                res.ptr<int>(m)[1]=r;
-            }
-        }
-    }
-    return res;
-}
-
 
 
 /**
