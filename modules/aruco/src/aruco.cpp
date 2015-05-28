@@ -48,9 +48,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <vector>
-
-#include <opencv2/highgui.hpp>
 
 namespace cv{ namespace aruco{
 
@@ -355,14 +352,10 @@ void getSingleMarkerObjectPoints(float markerSize, OutputArray _objPnts) {
 }
 
 
-
-
 /**
- */
-void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                        float markersize, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                        OutputArray ids, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
-                        int threshParam, float minLenght) {
+  */
+void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
+                       OutputArray ids, int threshParam,float minLenght) {
 
     cv::Mat grey;
     if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
@@ -376,58 +369,45 @@ void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray d
     _identifyCandidates(grey, candidates, dictionary, imgPoints, ids);
 
     /// STEP 3: Clean candidates
-	
-    // prepare data
-    cv::Mat markerObjPoints;
-    if(rvecs.needed() && tvecs.needed()) {
-        getSingleMarkerObjectPoints(markersize, markerObjPoints);
-        rvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
-        tvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
-    }
 
     for(int i=0; i<imgPoints.total(); i++) {
         /// STEP 4: Corner refinement
         cv::cornerSubPix ( grey, imgPoints.getMat(i), cvSize ( 5,5 ), cvSize ( -1,-1 ),cvTermCriteria ( CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,30,0.1 ) );
-
-        /// STEP 5: Pose Estimation
-        rvecs.create(3,1,CV_64FC1, i, true);
-        tvecs.create(3,1,CV_64FC1, i, true);
-        if(rvecs.needed() && tvecs.needed()) cv::solvePnP(markerObjPoints, imgPoints.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i), tvecs.getMat(i));
-
     }
 
 }
+
+
 
 
 
 /**
- */
-void detectBoardMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                       Board board, OutputArrayOfArrays imgPoints, OutputArray ids,
-                       OutputArray rvec, OutputArray tvec, int threshParam, float minLenght) {
+  */
+void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize, InputArray cameraMatrix,
+                                          InputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs) {
 
+    cv::Mat markerObjPoints;
+    getSingleMarkerObjectPoints(markersize, markerObjPoints);
+    rvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
+    tvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
 
-    detectSingleMarkers(image, cameraMatrix, distCoeffs, 1, board.dictionary, imgPoints, ids, cv::noArray(), cv::noArray(), threshParam, minLenght);
-
-    // STEP 1: Detect marker candidates
- /*   std::vector<std::vector<cv::Point2f> > candidates;
-    _detectArucoCandidates(image,candidates,threshParam1,threshParam2,minLenght,maxLenght);
-
-    // STEP 2: Check candidate codification (identify markers)
-    std::vector<std::vector<cv::Point2f> > accepted;
-    std::vector< int > ids;
-    _identifyArucoCandidates(candidates, dictionary, accepted, ids);
-
-    // STEP 3: Corner refinement
-    for(int i=0; i<accepted.size; i++) {
-        
-        cv::cornerSubpix...
-
+    for(int i=0; i<imgPoints.total(); i++) {
+        rvecs.create(3,1,CV_64FC1, i, true);
+        tvecs.create(3,1,CV_64FC1, i, true);
+        cv::solvePnP(markerObjPoints, imgPoints.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i), tvecs.getMat(i));
     }
 
-    // STEP 4: Pose Estimation
-*/
 }
+
+
+/**
+  */
+void estimatePoseBoard(InputArrayOfArrays imgPoints, Board board, InputArray cameraMatrix,
+                                          InputArray distCoeffs, OutputArrayOfArrays rvec, OutputArray tvec) {
+
+}
+
+
 
 
 /**
@@ -640,8 +620,7 @@ void Board::drawBoard(InputOutputArray img) {
 
 /**
  */
-Board Board::createPlanarBoard(int width, int height, float markerSize, 
-				float markerSeparation, Dictionary dictionary) {
+Board Board::createPlanarBoard(int width, int height, float markerSize, float markerSeparation) {
     /// TODO
     return Board();
 }

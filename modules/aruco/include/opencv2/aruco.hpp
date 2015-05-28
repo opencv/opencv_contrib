@@ -41,13 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_ARUCO_HPP__
 
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-
 #include <vector>
-
-
-#include <iostream>
 
 
 namespace cv { namespace aruco {
@@ -302,7 +296,6 @@ class CV_EXPORTS Board {
 
 public:
     
-    Dictionary dictionary;
     std::vector< std::vector<cv::Point3f> > objPoints; // each marker include its 4 corners, i.e. for M marker, Mx4
 
     
@@ -326,60 +319,60 @@ public:
      * @param dictionary
      * @return cv::aruco::Board
      */
-    static Board createPlanarBoard(int width, int height, float markerSize, 
-				   float markerSeparation, Dictionary dictionary);
+    static Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation);
     
 };
 
 
 
 
-
 /**
  * @brief Detect single markers of the specific dictionary in an image
- * 
+ *
  * @param image input image
- * @param cameraMatrix 
- * @param distCoeffs
- * @param markersize size of marker side in meters
  * @param dictionary markers are identified based on this dictionary
  * @param imgPoints returns detected markers corner positions
  * @param ids returns detected markers ids
- * @param Rvec returns rvec for each marker. If NoArray, then pose is not calculated
- * @param Tvec same as Tvec
  * @param threshParam window size for adaptative thresholding
- * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio 
+ * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio
  *                  respect to the largest image dimension
  * @return void
  */
-CV_EXPORTS void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                       float markersize, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArrayOfArrays rvecs=noArray(), OutputArrayOfArrays tvecs=noArray(),
-                       int threshParam=21,float minLenght=0.03);
+CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
+                       OutputArray ids, int threshParam=21,float minLenght=0.03);
+
 
 
 
 
 /**
- * @brief Detect an Aruco Board
- * 
- * @param image input image
+ * @brief Estimate single poses of list of markers
+ *
+ * @param imgPoints List of markers corners
+ * @param markersize size of marker side in meters
  * @param cameraMatrix
  * @param distCoeffs
- * @param board board configuration including the layout and dictionary
- * @param imgPoints returns detected markers corner positions
- * @param ids returns detected markers ids
- * @param rvec ...
- * @param tvec ...
- * @param threshParam window size for adaptative thresholding
- * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio 
- *                  respect to the largest image dimension
+ * @param rvecs returns rvec for each marker
+ * @param tvecs same as Tvec
  * @return void
  */
-CV_EXPORTS void detectBoardMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                      Board board, OutputArrayOfArrays imgPoints, OutputArray ids,
-                      OutputArray rvec, OutputArray tvec, int threshParam=21, float minLenght=0.03);
+CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize, InputArray cameraMatrix,
+                                          InputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
+
+/**
+ * @brief Estimate pose of marker board
+ *
+ * @param imgPoints List of markers corners
+ * @param board board layout
+ * @param cameraMatrix
+ * @param distCoeffs
+ * @param rvec board rotation vector
+ * @param tvec board translation vector
+ * @return void
+ */
+CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, Board board, InputArray cameraMatrix,
+                                          InputArray distCoeffs, OutputArrayOfArrays rvec, OutputArray tvec);
 
 
 
