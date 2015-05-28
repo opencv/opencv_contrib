@@ -1356,10 +1356,10 @@ inline void DAISY_Impl::compute_orientations()
          {
             if( m_scale_invariant && m_scale_map.at<float>(y,x) != scale ) continue;
 
-			for (ori = 0; ori < m_orientation_resolution; ori++)
-			{
-				hist.at<float>(ori) = rotation_layers.at<float>(ori, y, x);
-			}
+            for (ori = 0; ori < m_orientation_resolution; ori++)
+            {
+              hist.at<float>(ori) = rotation_layers.at<float>(ori, y, x);
+            }
             for( kk=0; kk<6; kk++ )
                smooth_histogram( &hist, m_orientation_resolution );
 
