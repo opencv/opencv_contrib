@@ -50,12 +50,32 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <vector>
 
+#include <opencv2/highgui.hpp>
+
 namespace cv{ namespace aruco{
 
 using namespace std;
 
 
-extern const char quartets_distances[16][16][4];
+const char quartets_distances[16][16][4] =
+{
+    { {0,0,0,0},{1,1,1,1},{1,1,1,1},{2,2,2,2},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{2,2,2,2},{3,3,3,3},{3,3,3,3},{4,4,4,4}, },
+    { {1,1,1,1},{0,2,2,2},{2,0,2,2},{1,1,3,3},{2,2,0,2},{1,3,1,3},{3,1,1,3},{2,2,2,4},{2,2,2,0},{1,3,3,1},{3,1,3,1},{2,2,4,2},{3,3,1,1},{2,4,2,2},{4,2,2,2},{3,3,3,3}, },
+    { {1,1,1,1},{2,2,2,0},{0,2,2,2},{1,3,3,1},{2,0,2,2},{3,1,3,1},{1,1,3,3},{2,2,4,2},{2,2,0,2},{3,3,1,1},{1,3,1,3},{2,4,2,2},{3,1,1,3},{4,2,2,2},{2,2,2,4},{3,3,3,3}, },
+    { {2,2,2,2},{1,3,3,1},{1,1,3,3},{0,2,4,2},{3,1,1,3},{2,2,2,2},{2,0,2,4},{1,1,3,3},{3,3,1,1},{2,4,2,0},{2,2,2,2},{1,3,3,1},{4,2,0,2},{3,3,1,1},{3,1,1,3},{2,2,2,2}, },
+    { {1,1,1,1},{2,2,0,2},{2,2,2,0},{3,3,1,1},{0,2,2,2},{1,3,1,3},{1,3,3,1},{2,4,2,2},{2,0,2,2},{3,1,1,3},{3,1,3,1},{4,2,2,2},{1,1,3,3},{2,2,2,4},{2,2,4,2},{3,3,3,3}, },
+    { {2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{1,3,1,3},{0,4,0,4},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{4,0,4,0},{3,1,3,1},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2}, },
+    { {2,2,2,2},{3,3,1,1},{1,3,3,1},{2,4,2,0},{1,1,3,3},{2,2,2,2},{0,2,4,2},{1,3,3,1},{3,1,1,3},{4,2,0,2},{2,2,2,2},{3,3,1,1},{2,0,2,4},{3,1,1,3},{1,1,3,3},{2,2,2,2}, },
+    { {3,3,3,3},{2,4,2,2},{2,2,4,2},{1,3,3,1},{2,2,2,4},{1,3,1,3},{1,1,3,3},{0,2,2,2},{4,2,2,2},{3,3,1,1},{3,1,3,1},{2,2,2,0},{3,1,1,3},{2,2,0,2},{2,0,2,2},{1,1,1,1}, },
+    { {1,1,1,1},{2,0,2,2},{2,2,0,2},{3,1,1,3},{2,2,2,0},{3,1,3,1},{3,3,1,1},{4,2,2,2},{0,2,2,2},{1,1,3,3},{1,3,1,3},{2,2,2,4},{1,3,3,1},{2,2,4,2},{2,4,2,2},{3,3,3,3}, },
+    { {2,2,2,2},{1,1,3,3},{3,1,1,3},{2,0,2,4},{3,3,1,1},{2,2,2,2},{4,2,0,2},{3,1,1,3},{1,3,3,1},{0,2,4,2},{2,2,2,2},{1,1,3,3},{2,4,2,0},{1,3,3,1},{3,3,1,1},{2,2,2,2}, },
+    { {2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{3,1,3,1},{4,0,4,0},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{0,4,0,4},{1,3,1,3},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2}, },
+    { {3,3,3,3},{2,2,4,2},{2,2,2,4},{1,1,3,3},{4,2,2,2},{3,1,3,1},{3,1,1,3},{2,0,2,2},{2,4,2,2},{1,3,3,1},{1,3,1,3},{0,2,2,2},{3,3,1,1},{2,2,2,0},{2,2,0,2},{1,1,1,1}, },
+    { {2,2,2,2},{3,1,1,3},{3,3,1,1},{4,2,0,2},{1,3,3,1},{2,2,2,2},{2,4,2,0},{3,3,1,1},{1,1,3,3},{2,0,2,4},{2,2,2,2},{3,1,1,3},{0,2,4,2},{1,1,3,3},{1,3,3,1},{2,2,2,2}, },
+    { {3,3,3,3},{2,2,2,4},{4,2,2,2},{3,1,1,3},{2,4,2,2},{1,3,1,3},{3,3,1,1},{2,2,0,2},{2,2,4,2},{1,1,3,3},{3,1,3,1},{2,0,2,2},{1,3,3,1},{0,2,2,2},{2,2,2,0},{1,1,1,1}, },
+    { {3,3,3,3},{4,2,2,2},{2,4,2,2},{3,3,1,1},{2,2,4,2},{3,1,3,1},{1,3,3,1},{2,2,2,0},{2,2,2,4},{3,1,1,3},{1,3,1,3},{2,2,0,2},{1,1,3,3},{2,0,2,2},{0,2,2,2},{1,1,1,1}, },
+    { {4,4,4,4},{3,3,3,3},{3,3,3,3},{2,2,2,2},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{2,2,2,2},{1,1,1,1},{1,1,1,1},{0,0,0,0}, },
+};
 
 
 /**
@@ -200,36 +220,6 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 //    }
 
 
-//    ///identify the markers
-//    vector<vector<Marker> >markers_omp(omp_get_max_threads());
-//    vector<vector < std::vector<cv::Point2f> > >candidates_omp(omp_get_max_threads());
-//    #pragma omp parallel for
-//    for ( unsigned int i=0;i<MarkerCanditates.size();i++ )
-//    {
-//        //Find proyective homography
-//        Mat canonicalMarker;
-//        bool resW=false;
-//        resW=warp ( grey,canonicalMarker,Size ( _markerWarpSize,_markerWarpSize ),MarkerCanditates[i] );
-//        if (resW) {
-//             int nRotations;
-//            int id= ( *markerIdDetector_ptrfunc ) ( canonicalMarker,nRotations );
-//            if ( id!=-1 )
-//            {
-//        if(_cornerMethod==LINES) // make LINES refinement before lose contour points
-//          refineCandidateLines( MarkerCanditates[i], camMatrix, distCoeff );
-//                markers_omp[omp_get_thread_num()].push_back ( MarkerCanditates[i] );
-//                markers_omp[omp_get_thread_num()].back().id=id;
-//                //sort the points so that they are always in the same order no matter the camera orientation
-//                std::rotate ( markers_omp[omp_get_thread_num()].back().begin(),markers_omp[omp_get_thread_num()].back().begin() +4-nRotations,markers_omp[omp_get_thread_num()].back().end() );
-//            }
-//            else candidates_omp[omp_get_thread_num()].push_back ( MarkerCanditates[i] );
-//        }
-
-//    }
-//    //unify parallel data
-//    joinVectors(markers_omp,detectedMarkers,true);
-//    joinVectors(candidates_omp,_candidates,true);
-
 
 
 //    ///refine the corner location if desired
@@ -328,6 +318,9 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
         accepted[i].copyTo(m);
     }
 
+    _ids.create((int)ids.size(), 1, CV_32SC1);
+    for(unsigned int i=0; i<ids.size(); i++) _ids.getMat().ptr<int>(0)[i] = ids[i];
+
     if(_rejected.needed()) {
         _rejected.create((int)rejected.size(), 1, CV_32FC2);
         for(unsigned int i=0; i<rejected.size(); i++) {
@@ -377,8 +370,7 @@ void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray d
 
     // STEP 2: Check candidate codification (identify markers)
     std::vector< std::vector<cv::Point2f> > accepted;
-    _identifyCandidates(image, candidates, dictionary, accepted, ids);
-
+    _identifyCandidates(image, candidates, dictionary, imgPoints, ids);
     // STEP 3: Clean candidates
 	
 
@@ -423,7 +415,7 @@ void detectBoardMarkers(InputArray image, InputArray cameraMatrix, InputArray di
 
 /**
  */
-void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays markers, InputArray ids) {
+void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays markers, InputArray ids, bool drawId) {
 
     for(int i=0; i<markers.total(); i++) {
         cv::Mat currentMarker = markers.getMat(i);
@@ -431,9 +423,20 @@ void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays markers, Inp
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
             p1 = currentMarker.ptr<cv::Point2f>(0)[(j+1)%4];
-            cv::line(image, p0, p1, cv::Scalar(255,0,0),2);
+            cv::line(image, p0, p1, cv::Scalar(0,255,0),2);
+        }
+        cv::rectangle( image, currentMarker.ptr<cv::Point2f>(0)[0]-Point2f(3,3),currentMarker.ptr<cv::Point2f>(0)[0]+Point2f(3,3),Scalar(255,0,0),2,cv::LINE_AA);
+        if(drawId) {
+            Point2f cent(0,0);
+            for(int p=0; p<4; p++) cent += currentMarker.ptr<cv::Point2f>(0)[p];
+            cent = cent/4.;
+            stringstream s;
+            s << "id=" << ids.getMat().ptr<int>(0)[i] ;
+            putText(image, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,255), 2);
         }
     }
+
+
 
 }
 
@@ -473,18 +476,20 @@ bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx
     // get quartets
     cv::Mat candidateQuartets = _getQuartet(onlyBits);
 
+
     // search closest marker in dict
     int closestId=-1;
     unsigned int rotation=0;
     unsigned int closestDistance=markerSize*markerSize+1;
     cv::Mat candidateDistances = _getDistances(candidateQuartets);
     for(int i=0; i<codes.rows; i++) {
-        if(candidateDistances.ptr<int>(0)[i] > closestDistance) {
+        if(candidateDistances.ptr<int>(0)[i] < closestDistance) {
             closestDistance = candidateDistances.ptr<int>(i)[0];
             closestId = i;
             rotation = candidateDistances.ptr<int>(i)[1];
         }
     }
+
     // return closest id
     if(closestId!=-1 && closestDistance<=maxCorrectionBits) {
         idx = closestId;
@@ -557,16 +562,16 @@ cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
     {
         for(int col=row; col<markerSize-row-1; col++) {
             unsigned char bit3 = bits.at<unsigned char>(row,col);
-            unsigned char bit2 = bits.at<unsigned char>(col,markerSize-row);
-            unsigned char bit1 = bits.at<unsigned char>(markerSize-row,markerSize-col);
-            unsigned char bit0 = bits.at<unsigned char>(markerSize-col,row);
+            unsigned char bit2 = bits.at<unsigned char>(col,markerSize-1-row);
+            unsigned char bit1 = bits.at<unsigned char>(markerSize-1-row,markerSize-1-col);
+            unsigned char bit0 = bits.at<unsigned char>(markerSize-1-col,row);
             unsigned char quartet = 8*bit3 + 4*bit2 + 2*bit1 + bit0;
             candidateQuartets.ptr<unsigned char>()[currentQuartet] = quartet;
             currentQuartet++;
         }
     }
     if((markerSize*markerSize)%4 == 1) { // middle bit
-        unsigned char middleBit = bits.at<unsigned char>(markerSize/2+1,markerSize/2+1);
+        unsigned char middleBit = 15*bits.at<unsigned char>(markerSize/2,markerSize/2);
         candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
     }
     return candidateQuartets;
@@ -577,15 +582,16 @@ cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
 /**
   */
 cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
-    cv::Mat res(codes.size(), 2, CV_32SC1);
+
+    cv::Mat res(codes.rows, 2, CV_32SC1);
     for(unsigned int m=0; m<codes.rows; m++) {
-        res.ptr<int>(m)[0]=10e25;
+        res.ptr<int>(m)[0]=10e8;
         for(unsigned int r=0; r<4; r++) {
             int currentHamming=0;
             for(unsigned int q=0; q<quartets.total(); q++) {
-                currentHamming += quartets_distances[ (codes.ptr<unsigned char>(m)[q]) ][ (quartets.ptr<unsigned char>(0)[q]) ][r];
+                currentHamming += (int)quartets_distances[ (codes.ptr<unsigned char>(m)[q]) ][ (quartets.ptr<unsigned char>(0)[q]) ][r];
             }
-            if(currentHamming<res.ptr<int>(m)[0]) {
+            if(currentHamming < res.ptr<int>(m)[0]) {
                 res.ptr<int>(m)[0]=currentHamming;
                 res.ptr<int>(m)[1]=r;
             }
