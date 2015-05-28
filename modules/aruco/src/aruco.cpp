@@ -361,25 +361,39 @@ void getSingleMarkerObjectPoints(float markerSize, OutputArray _objPnts) {
  */
 void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                         float markersize, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                        OutputArray ids, OutputArray Rvec, OutputArray Tvec,
+                        OutputArray ids, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
                         int threshParam, float minLenght) {
 
-    // STEP 1: Detect marker candidates
-    std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(image,candidates,threshParam,minLenght);
+    cv::Mat grey;
+    if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
+    else grey=image.getMat();
 
-    // STEP 2: Check candidate codification (identify markers)
-    std::vector< std::vector<cv::Point2f> > accepted;
-    _identifyCandidates(image, candidates, dictionary, imgPoints, ids);
-    // STEP 3: Clean candidates
+    /// STEP 1: Detect marker candidates
+    std::vector<std::vector<cv::Point2f> > candidates;
+    _detectCandidates(grey,candidates,threshParam,minLenght);
+
+    /// STEP 2: Check candidate codification (identify markers)
+    _identifyCandidates(grey, candidates, dictionary, imgPoints, ids);
+
+    /// STEP 3: Clean candidates
 	
+    // prepare data
+    cv::Mat markerObjPoints;
+    if(rvecs.needed() && tvecs.needed()) {
+        getSingleMarkerObjectPoints(markersize, markerObjPoints);
+        rvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
+        tvecs.create( (int)imgPoints.total(), 1, CV_32FC1);
+    }
 
     for(int i=0; i<imgPoints.total(); i++) {
-        // STEP 4: Corner refinement
-        //cv::cornerSubpix...
+        /// STEP 4: Corner refinement
+        cv::cornerSubPix ( grey, imgPoints.getMat(i), cvSize ( 5,5 ), cvSize ( -1,-1 ),cvTermCriteria ( CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,30,0.1 ) );
 
-        // STEP 5: Pose Estimation
-        
+        /// STEP 5: Pose Estimation
+        rvecs.create(3,1,CV_64FC1, i, true);
+        tvecs.create(3,1,CV_64FC1, i, true);
+        if(rvecs.needed() && tvecs.needed()) cv::solvePnP(markerObjPoints, imgPoints.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i), tvecs.getMat(i));
+
     }
 
 }
@@ -391,6 +405,9 @@ void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray d
 void detectBoardMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                        Board board, OutputArrayOfArrays imgPoints, OutputArray ids,
                        OutputArray rvec, OutputArray tvec, int threshParam, float minLenght) {
+
+
+    detectSingleMarkers(image, cameraMatrix, distCoeffs, 1, board.dictionary, imgPoints, ids, cv::noArray(), cv::noArray(), threshParam, minLenght);
 
     // STEP 1: Detect marker candidates
  /*   std::vector<std::vector<cv::Point2f> > candidates;
@@ -443,24 +460,36 @@ void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays markers, Inp
 
 /**
  */
-void drawAxis(InputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght) {
-    /// TODO
+void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght) {
+    std::vector<cv::Point3f> axisPoints;
+    axisPoints.push_back(cv::Point3f(0,0,0));
+    axisPoints.push_back(cv::Point3f(lenght,0,0));
+    axisPoints.push_back(cv::Point3f(0,lenght,0));
+    axisPoints.push_back(cv::Point3f(0,0,lenght));
+    std::vector<cv::Point2f> imagePoints;
+    cv::projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
+
+    cv::line(image, imagePoints[0], imagePoints[1], cv::Scalar(0,0,255), 3);
+    cv::line(image, imagePoints[0], imagePoints[2], cv::Scalar(0,255,0), 3);
+    cv::line(image, imagePoints[0], imagePoints[3], cv::Scalar(255,0,0), 3);
+
 }
 
 
 /**
   */
 bool Dictionary::_isBorderValid(cv::Mat bits) {
+    int sizeWithBorders = markerSize+2;
     int totalErrors = 0;
-    for(int y=0; y<markerSize; y++) {
+    for(int y=0; y<sizeWithBorders; y++) {
         if(bits.ptr<unsigned char>(y)[0]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(y)[markerSize-1]!=0) totalErrors++;
+        if(bits.ptr<unsigned char>(y)[sizeWithBorders-1]!=0) totalErrors++;
     }
-    for(int x=1; x<markerSize-1; x++) {
+    for(int x=1; x<sizeWithBorders-1; x++) {
         if(bits.ptr<unsigned char>(0)[x]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(markerSize-1)[x]!=0) totalErrors++;
+        if(bits.ptr<unsigned char>(sizeWithBorders-1)[x]!=0) totalErrors++;
     }
-    if(totalErrors > markerSize*markerSize / 2) return false;
+    if(totalErrors > 1) return false; // markersize is a good value for check border errors
     else return true;
 }
 
@@ -471,7 +500,7 @@ bool Dictionary::_isBorderValid(cv::Mat bits) {
 bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx) {
     // get bits
     cv::Mat candidateBits = _extractBits(image, imgPoints);
-    //if(!_isBorderValid(candidateBits)) return false; // not really necessary
+    if(!_isBorderValid(candidateBits)) return false; // not really necessary
     cv::Mat onlyBits = candidateBits.rowRange(1,candidateBits.rows-1).colRange(1,candidateBits.rows-1);
     // get quartets
     cv::Mat candidateQuartets = _getQuartet(onlyBits);
@@ -483,7 +512,7 @@ bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx
     unsigned int closestDistance=markerSize*markerSize+1;
     cv::Mat candidateDistances = _getDistances(candidateQuartets);
     for(int i=0; i<codes.rows; i++) {
-        if(candidateDistances.ptr<int>(0)[i] < closestDistance) {
+        if(candidateDistances.ptr<int>(i)[0] < closestDistance) {
             closestDistance = candidateDistances.ptr<int>(i)[0];
             closestId = i;
             rotation = candidateDistances.ptr<int>(i)[1];
@@ -531,11 +560,11 @@ cv::Mat Dictionary::_extractBits(InputArray image, InputOutputArray imgPoints) {
     cv::threshold(resultImg, resultImg,125, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
     for (unsigned int y=0; y<markerSize+2; y++)  {
         for (unsigned int x=0; x<markerSize+2;x++) {
-            int Xstart=x*(squareSizePixels);
-            int Ystart=y*(squareSizePixels);
-            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels,squareSizePixels));
+            int Xstart=x*(squareSizePixels)+1;
+            int Ystart=y*(squareSizePixels)+1;
+            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels-2,squareSizePixels-2));
             int nZ=countNonZero(square);
-            if (nZ> (squareSizePixels*squareSizePixels) /2)  bits.at<unsigned char>(y,x)=1;
+            if (nZ> square.total()/2)  bits.at<unsigned char>(y,x)=1;
         }
      }
 

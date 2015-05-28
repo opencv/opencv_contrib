@@ -284,7 +284,7 @@ extern const char dict_aruco_quartets[][7] = {
     {2,9,8,14,14,15,15}, {0,11,10,14,14,15,15}, {1,8,8,12,13,13,15}, {3,10,10,12,13,13,15}, {2,8,8,14,13,13,15}, {0,10,10,14,13,13,15},
     {1,8,8,8,15,15,15}, {3,10,10,8,15,15,15}, {2,8,8,10,15,15,15}, {0,10,10,10,15,15,15}
 };
-extern const Dictionary DICT_ARUCO (&(dict_aruco_quartets[0][0]), 5, 1024, 0);
+extern const Dictionary DICT_ARUCO (&(dict_aruco_quartets[0][0]), 5, 1024, 1);
 //const Dictionary DICT_HRM_4X4;
 
 // predefined marker dictionaries
@@ -354,7 +354,7 @@ public:
  */
 CV_EXPORTS void detectSingleMarkers(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                        float markersize, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArray rvec=noArray(), OutputArray tvec=noArray(),
+                       OutputArray ids, OutputArrayOfArrays rvecs=noArray(), OutputArrayOfArrays tvecs=noArray(),
                        int threshParam=21,float minLenght=0.03);
 
 
@@ -406,7 +406,7 @@ CV_EXPORTS void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays m
  * @param lenght axis lenght in meters
  * @return void
  */
-CV_EXPORTS void drawAxis(InputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
+CV_EXPORTS void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
 
 
 
