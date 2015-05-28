@@ -402,9 +402,22 @@ void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize, I
 
 /**
   */
-void estimatePoseBoard(InputArrayOfArrays imgPoints, Board board, InputArray cameraMatrix,
-                                          InputArray distCoeffs, OutputArrayOfArrays rvec, OutputArray tvec) {
+void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board, InputArray cameraMatrix,
+                                          InputArray distCoeffs, OutputArray rvec, OutputArray tvec) {
 
+    cv::Mat imagePointsConcatenation(imgPoints.total()*4, 1, CV_32FC2);
+    for(int i=0; i<imgPoints.total(); i++) {
+        for(int j=0; j<4; j++) {
+            imagePointsConcatenation.ptr<cv::Point2f>(0)[i*4+j] = imgPoints.getMat(i).ptr<cv::Point2f>(0)[j];
+        }
+    }
+
+    cv::Mat objectPointsConcatenation;
+    board.getObjectPointsDetectedMarkers(ids, objectPointsConcatenation);
+
+    rvec.create(3,1,CV_64FC1);
+    tvec.create(3,1,CV_64FC1);
+    cv::solvePnP(objectPointsConcatenation, imagePointsConcatenation, cameraMatrix, distCoeffs, rvec, tvec);
 }
 
 
@@ -615,6 +628,26 @@ cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
  */
 void Board::drawBoard(InputOutputArray img) {
     /// TODO
+}
+
+/**
+  */
+void Board::getObjectPointsDetectedMarkers(InputArray detectedIds, OutputArray objectPoints) {
+    std::vector<cv::Point3f> objPnts;
+    objPnts.reserve(detectedIds.total());
+
+    for(int i=0; i<detectedIds.getMat().rows; i++) {
+        int currentId = detectedIds.getMat().ptr<int>(0)[i];
+        for(int j=0; j<ids.size(); j++) {
+            if(currentId == ids[j]) {
+                for(int p=0; p<4; p++) objPnts.push_back( objPoints[j][p] );
+            }
+        }
+    }
+
+    objectPoints.create(objPnts.size(), 1, CV_32FC3);
+    for(int i=0; objPnts.size(); i++) objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
+
 }
 
 

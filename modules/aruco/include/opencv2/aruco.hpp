@@ -297,6 +297,7 @@ class CV_EXPORTS Board {
 public:
     
     std::vector< std::vector<cv::Point3f> > objPoints; // each marker include its 4 corners, i.e. for M marker, Mx4
+    std::vector< int > ids; // ids of each marker in the board (same size than objPoints)
 
     
     /**
@@ -308,6 +309,16 @@ public:
     void drawBoard(InputOutputArray image);
 
     
+
+    /**
+     * @brief get list of object points for the detected markers
+     *
+     * @param detectedIds
+     * @param objectPoints
+     * @return void
+     */
+    void getObjectPointsDetectedMarkers(InputArray detectedIds, OutputArray objectPoints);
+
     
     /**
      * @brief Fast creation of a planar Board object
@@ -371,8 +382,8 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float ma
  * @param tvec board translation vector
  * @return void
  */
-CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, Board board, InputArray cameraMatrix,
-                                          InputArray distCoeffs, OutputArrayOfArrays rvec, OutputArray tvec);
+CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
+                                          InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
 
 
 
