@@ -52,36 +52,36 @@ namespace ximgproc
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class DisparityDTFilter : public DisparityFilter
+    class CV_EXPORTS_W DisparityDTFilter : public DisparityFilter
     {
     public:
-        virtual double getSigmaSpatial() = 0;
-        virtual void setSigmaSpatial(double _sigmaSpatial) = 0;
-        virtual double getSigmaColor() = 0;
-        virtual void setSigmaColor(double _sigmaColor) = 0;
+        CV_WRAP virtual double getSigmaSpatial() = 0;
+        CV_WRAP virtual void setSigmaSpatial(double _sigmaSpatial) = 0;
+        CV_WRAP virtual double getSigmaColor() = 0;
+        CV_WRAP virtual void setSigmaColor(double _sigmaColor) = 0;
     };
 
     CV_EXPORTS_W
     Ptr<DisparityDTFilter> createDisparityDTFilter();
 
-    class DisparityGuidedFilter : public DisparityFilter
+    class CV_EXPORTS_W DisparityGuidedFilter : public DisparityFilter
     {
     public:
-        virtual double getEps() = 0;
-        virtual void setEps(double _eps) = 0;
-        virtual int getRadius() = 0;
-        virtual void setRadius(int _radius) = 0;
+        CV_WRAP virtual double getEps() = 0;
+        CV_WRAP virtual void setEps(double _eps) = 0;
+        CV_WRAP virtual int getRadius() = 0;
+        CV_WRAP virtual void setRadius(int _radius) = 0;
     };
 
     CV_EXPORTS_W
     Ptr<DisparityGuidedFilter> createDisparityGuidedFilter();
 
-    class DisparityWLSFilter : public DisparityFilter
+    class CV_EXPORTS_W DisparityWLSFilter : public DisparityFilter
     {
-        virtual double getLambda() = 0;
-        virtual void setLambda(double _lambda) = 0;
-        virtual double getSigmaColor() = 0;
-        virtual void setSigmaColor(double _sigma_color) = 0;
+        CV_WRAP virtual double getLambda() = 0;
+        CV_WRAP virtual void setLambda(double _lambda) = 0;
+        CV_WRAP virtual double getSigmaColor() = 0;
+        CV_WRAP virtual void setSigmaColor(double _sigma_color) = 0;
     };
 
     CV_EXPORTS_W

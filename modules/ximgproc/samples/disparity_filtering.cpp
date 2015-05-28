@@ -20,7 +20,7 @@ using namespace cv::ximgproc;
 using namespace std;
 
 #define UNKNOWN_DISPARITY 16320
-
+ 
 static void print_help()
 {
     printf("\nDemo for disparity filtering, evaluating speed and performance of different filters\n");
@@ -47,6 +47,112 @@ struct dataset_entry
             }
     }
 };
+
+struct config
+{
+    Ptr<StereoMatcher> matcher_instance;
+    Ptr<DisparityFilter> filter_instance;
+    config(Ptr<StereoMatcher> _matcher_instance,Ptr<DisparityFilter> _filter_instance)
+    {
+        matcher_instance = _matcher_instance;
+        filter_instance = _filter_instance;
+    }
+    config() {}
+};
+
+void operator>>(const FileNode& node,dataset_entry& entry);
+double computeMSE(Mat& GT, Mat& src, Rect ROI);
+double computeBadPixelPercent(Mat& GT, Mat& src, Rect ROI, int thresh=24/*1.5 pixels*/);
+void getDisparityVis(Mat& disparity_map,Mat& dst);
+Rect computeROI(Size2i src_sz, Ptr<StereoMatcher> matcher_instance);
+void setConfigsForTesting(map<string,config>& cfgs);
+void CreateDir(string path);
+
+int main(int argc, char** argv)
+{
+    if(argc < 3)
+    {
+        print_help();
+        return 0;
+    }
+    string dataset_folder(argv[1]);
+    string res_folder(argv[2]);
+
+    map<string,config> configs_for_testing;
+    setConfigsForTesting(configs_for_testing);
+    CreateDir(res_folder);
+
+    for (map<string,config>::iterator cfg = configs_for_testing.begin(); cfg != configs_for_testing.end(); cfg++)
+    {
+        string vis_folder = res_folder+"/vis_"+cfg->first;
+        CreateDir(vis_folder);
+
+        string cfg_file_name = res_folder+"/"+cfg->first+"_res.csv";
+        FILE* cur_cfg_res_file = fopen(cfg_file_name.c_str(),"w");
+        fprintf(cur_cfg_res_file,"Name,MSE,MSE after postfiltering,Percent bad,Percent bad after postfiltering,Matcher Execution Time(s),Filter Execution Time(s)\n");
+
+        printf("Processing configuration: %s\n",cfg->first.c_str());
+
+        FileStorage fs(dataset_folder + "/_dataset.xml", FileStorage::READ);
+        FileNode n = fs["data_set"];
+        double MSE_pre,percent_pre,MSE_post,percent_post,matching_time,filtering_time;
+        double average_MSE_pre=0,average_percent_pre=0,average_MSE_post=0,
+            average_percent_post=0,average_matching_time=0,average_filtering_time=0;
+        int cnt = 0;
+        for (FileNodeIterator it = n.begin(); it != n.end(); it++)
+        {
+            dataset_entry entry(dataset_folder);
+            (*it)>>entry;
+            printf("%s ",entry.name.c_str());
+            Mat left,right,GT;
+            entry.readEntry(left,right,GT);
+            Mat raw_disp;
+            Mat left_gray; cvtColor(left, left_gray, COLOR_BGR2GRAY );
+            Mat right_gray; cvtColor(right, right_gray, COLOR_BGR2GRAY );
+            matching_time = (double)getTickCount();
+            cfg->second.matcher_instance->compute(left_gray,right_gray,raw_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+
+            Rect ROI = computeROI(left.size(),cfg->second.matcher_instance);
+            Mat filtered_disp;
+            filtering_time = (double)getTickCount();
+            cfg->second.filter_instance->filter(raw_disp,left,filtered_disp,ROI);
+            filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+
+
+            MSE_pre = computeMSE(GT,raw_disp,ROI);
+            percent_pre = computeBadPixelPercent(GT,raw_disp,ROI);
+            MSE_post = computeMSE(GT,filtered_disp,ROI);
+            percent_post = computeBadPixelPercent(GT,filtered_disp,ROI);
+
+            fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n",entry.name.c_str(),MSE_pre,MSE_post,
+                percent_pre,percent_post,matching_time,filtering_time);
+
+            average_matching_time+=matching_time; average_filtering_time+=filtering_time;
+            average_MSE_pre+=MSE_pre; average_percent_pre+=percent_pre;
+            average_MSE_post+=MSE_post; average_percent_post+=percent_post;
+            cnt++;
+
+            // dump visualizations:
+            imwrite(vis_folder + "/" + entry.name + "_left.png",left);
+            Mat GT_vis,raw_disp_vis,filtered_disp_vis;
+            getDisparityVis(GT,GT_vis);
+            getDisparityVis(raw_disp,raw_disp_vis);
+            getDisparityVis(filtered_disp,filtered_disp_vis);
+            imwrite(vis_folder + "/" + entry.name + "_disparity_GT.png",GT_vis);
+            imwrite(vis_folder + "/" + entry.name + "_disparity_raw.png",raw_disp_vis);
+            imwrite(vis_folder + "/" + entry.name + "_disparity_filtered.png",filtered_disp_vis);
+
+            printf("- Done\n");
+
+        }
+        fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n","average",average_MSE_pre/cnt,
+            average_MSE_post/cnt,average_percent_pre/cnt,average_percent_post/cnt,
+            average_matching_time/cnt,average_filtering_time/cnt);
+        fclose(cur_cfg_res_file);
+    }
+    return 0;
+}
 
 void operator>>(const FileNode& node,dataset_entry& entry) 
 {
@@ -75,7 +181,7 @@ double computeMSE(Mat& GT, Mat& src, Rect ROI)
     return res;
 }
 
-double computeBadPixelPercent(Mat& GT, Mat& src, Rect ROI, int thresh=24/*1.5 pixels*/)
+double computeBadPixelPercent(Mat& GT, Mat& src, Rect ROI, int thresh)
 {
     int bad_pixel_num = 0;
     Mat GT_ROI(GT,ROI);
@@ -127,18 +233,6 @@ Rect computeROI(Size2i src_sz, Ptr<StereoMatcher> matcher_instance)
     return r;
 }
 
-struct config
-{
-    Ptr<StereoMatcher> matcher_instance;
-    Ptr<DisparityFilter> filter_instance;
-    config(Ptr<StereoMatcher> _matcher_instance,Ptr<DisparityFilter> _filter_instance)
-    {
-        matcher_instance = _matcher_instance;
-        filter_instance = _filter_instance;
-    }
-    config() {}
-};
-
 void setConfigsForTesting(map<string,config>& cfgs)
 {
     Ptr<StereoBM> stereobm_matcher = StereoBM::create(128,21); 
@@ -153,6 +247,7 @@ void setConfigsForTesting(map<string,config>& cfgs)
     cfgs["stereobm_dtf"] = config(stereobm_matcher,dt_filter);
     cfgs["stereobm_gf"]  = config(stereobm_matcher,guided_filter);
 }
+
 void CreateDir(string path)
 {
 #if defined(_WIN32)
@@ -160,90 +255,4 @@ void CreateDir(string path)
 #else 
     mkdir(path.c_str(), 0777);
 #endif
-}
-
-int main(int argc, char** argv)
-{
-    if(argc < 3)
-    {
-        print_help();
-        return 0;
-    }
-    string dataset_folder(argv[1]);
-    string res_folder(argv[2]);
-
-    map<string,config> configs_for_testing;
-    setConfigsForTesting(configs_for_testing);
-    CreateDir(res_folder);
-
-    for (auto cfg = configs_for_testing.begin(); cfg != configs_for_testing.end(); cfg++)
-    {
-        string vis_folder = res_folder+"/vis_"+cfg->first;
-        CreateDir(vis_folder);
-        
-        string cfg_file_name = res_folder+"/"+cfg->first+"_res.csv";
-        FILE* cur_cfg_res_file = fopen(cfg_file_name.c_str(),"w");
-        fprintf(cur_cfg_res_file,"Name,MSE,MSE after postfiltering,Percent bad,Percent bad after postfiltering,Matcher Execution Time(s),Filter Execution Time(s)\n");
-
-        printf("Processing configuration: %s\n",cfg->first.c_str());
-
-        FileStorage fs(dataset_folder + "/_dataset.xml", FileStorage::READ);
-        FileNode n = fs["data_set"];
-        double MSE_pre,percent_pre,MSE_post,percent_post,matching_time,filtering_time;
-        double average_MSE_pre=0,average_percent_pre=0,average_MSE_post=0,
-               average_percent_post=0,average_matching_time=0,average_filtering_time=0;
-        int cnt = 0;
-        for (FileNodeIterator it = n.begin(); it != n.end(); it++)
-        {
-            dataset_entry entry(dataset_folder);
-            (*it)>>entry;
-            printf("%s ",entry.name.c_str());
-            Mat left,right,GT;
-            entry.readEntry(left,right,GT);
-            Mat raw_disp;
-            Mat left_gray; cvtColor(left, left_gray, COLOR_BGR2GRAY );
-            Mat right_gray; cvtColor(right, right_gray, COLOR_BGR2GRAY );
-            matching_time = (double)getTickCount();
-            cfg->second.matcher_instance->compute(left_gray,right_gray,raw_disp);
-            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
-            
-            Rect ROI = computeROI(left.size(),cfg->second.matcher_instance);
-            Mat filtered_disp;
-            filtering_time = (double)getTickCount();
-            cfg->second.filter_instance->filter(raw_disp,left,filtered_disp,ROI);
-            filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
-
-            
-            MSE_pre = computeMSE(GT,raw_disp,ROI);
-            percent_pre = computeBadPixelPercent(GT,raw_disp,ROI);
-            MSE_post = computeMSE(GT,filtered_disp,ROI);
-            percent_post = computeBadPixelPercent(GT,filtered_disp,ROI);
-
-            fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n",entry.name.c_str(),MSE_pre,MSE_post,
-                percent_pre,percent_post,matching_time,filtering_time);
-
-            average_matching_time+=matching_time; average_filtering_time+=filtering_time;
-            average_MSE_pre+=MSE_pre; average_percent_pre+=percent_pre;
-            average_MSE_post+=MSE_post; average_percent_post+=percent_post;
-            cnt++;
-
-            // dump visualizations:
-            imwrite(vis_folder + "/" + entry.name + "_left.png",left);
-            Mat GT_vis,raw_disp_vis,filtered_disp_vis;
-            getDisparityVis(GT,GT_vis);
-            getDisparityVis(raw_disp,raw_disp_vis);
-            getDisparityVis(filtered_disp,filtered_disp_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_GT.png",GT_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_raw.png",raw_disp_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_filtered.png",filtered_disp_vis);
-
-            printf("- Done\n");
-
-        }
-        fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n","average",average_MSE_pre/cnt,
-            average_MSE_post/cnt,average_percent_pre/cnt,average_percent_post/cnt,
-            average_matching_time/cnt,average_filtering_time/cnt);
-        fclose(cur_cfg_res_file);
-    }
-    return 0;
 }
