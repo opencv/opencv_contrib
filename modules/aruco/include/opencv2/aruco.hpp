@@ -78,7 +78,7 @@ public:
      * @param objectPoints
      * @return void
      */
-    void getObjectPointsDetectedMarkers(InputArray detectedIds, OutputArray objectPoints);
+    void getObjectAndImagePoints(InputArray detectedIds, InputArrayOfArrays detectedImagePoints, OutputArray imagePoints, OutputArray objectPoints);
 
     
     /**

@@ -50,6 +50,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "predefined_dictionaries.cpp"
 
+#include <iostream>
+
 
 namespace cv{ namespace aruco{
 
@@ -366,15 +368,8 @@ void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize, I
 void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board, InputArray cameraMatrix,
                                           InputArray distCoeffs, OutputArray rvec, OutputArray tvec) {
 
-    cv::Mat imagePointsConcatenation(imgPoints.total()*4, 1, CV_32FC2);
-    for(int i=0; i<imgPoints.total(); i++) {
-        for(int j=0; j<4; j++) {
-            imagePointsConcatenation.ptr<cv::Point2f>(0)[i*4+j] = imgPoints.getMat(i).ptr<cv::Point2f>(0)[j];
-        }
-    }
-
-    cv::Mat objectPointsConcatenation;
-    board.getObjectPointsDetectedMarkers(ids, objectPointsConcatenation);
+    cv::Mat objectPointsConcatenation,imagePointsConcatenation;
+    board.getObjectAndImagePoints(ids, imgPoints, imagePointsConcatenation, objectPointsConcatenation);
 
     rvec.create(3,1,CV_64FC1);
     tvec.create(3,1,CV_64FC1);
@@ -438,30 +433,54 @@ void Board::drawBoard(InputOutputArray img) {
 
 /**
   */
-void Board::getObjectPointsDetectedMarkers(InputArray detectedIds, OutputArray objectPoints) {
+void Board::getObjectAndImagePoints(InputArray detectedIds, InputArrayOfArrays detectedImagePoints, OutputArray imagePoints, OutputArray objectPoints) {
     std::vector<cv::Point3f> objPnts;
     objPnts.reserve(detectedIds.total());
 
-    for(int i=0; i<detectedIds.getMat().rows; i++) {
+    std::vector<cv::Point2f> imgPnts;
+    imgPnts.reserve(detectedIds.total());
+
+    for(int i=0; i<detectedIds.getMat().total(); i++) {
         int currentId = detectedIds.getMat().ptr<int>(0)[i];
         for(int j=0; j<ids.size(); j++) {
             if(currentId == ids[j]) {
-                for(int p=0; p<4; p++) objPnts.push_back( objPoints[j][p] );
+                for(int p=0; p<4; p++) {
+                    objPnts.push_back( objPoints[j][p] );
+                    imgPnts.push_back( detectedImagePoints.getMat(i).ptr<cv::Point2f>(0)[p] );
+                }
             }
         }
     }
+    objectPoints.create((int)objPnts.size(), 1, CV_32FC3);
+    for(int i=0; i<objPnts.size(); i++) objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
 
-    objectPoints.create(objPnts.size(), 1, CV_32FC3);
-    for(int i=0; objPnts.size(); i++) objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
-
+    imagePoints.create((int)objPnts.size(), 1, CV_32FC2);
+    for(int i=0; i<imgPnts.size(); i++) imagePoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
 }
 
 
 /**
  */
 Board Board::createPlanarBoard(int width, int height, float markerSize, float markerSeparation) {
-    /// TODO
-    return Board();
+    Board res;
+    int totalMarkers = width*height;
+    res.ids.resize(totalMarkers);
+    res.objPoints.reserve(totalMarkers);
+    for(int i=0; i<totalMarkers; i++) res.ids[i] = i;
+
+    float maxY = height*markerSize + (height-1)*markerSeparation;
+    for(int y=0; y<height; y++) {
+        for(int x=0; x<width; x++) {
+            std::vector<cv::Point3f> corners;
+            corners.resize(4);
+            corners[0] = cv::Point3f(x*(markerSize+markerSeparation), maxY-y*(markerSize+markerSeparation) , 0);
+            corners[1] = corners[0]+cv::Point3f(markerSize,0,0);
+            corners[2] = corners[0]+cv::Point3f(markerSize,-markerSize,0);
+            corners[3] = corners[0]+cv::Point3f(0,-markerSize,0);
+            res.objPoints.push_back(corners);
+        }
+    }
+    return res;
 }
 
 

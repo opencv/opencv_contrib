@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);   
     
     // draw results
-    cv::aruco::drawDetectedMarkers(image, imgPoints, ids);  
+    if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imgPoints, ids);  
     
     cv::imshow("out", image);
     char key = cv::waitKey(0);

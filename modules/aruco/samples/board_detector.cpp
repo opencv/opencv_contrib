@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 {
   
   if(argc<2) {
-    std::cerr << "Use: marker_detector_pose video" << std::endl;
+    std::cerr << "Use: board_detector video" << std::endl;
     return 0;
   }
 
@@ -33,7 +33,36 @@ int main(int argc, char* argv[])
   distCoeffs.ptr<double>(0)[2] = 0.00754589;
   distCoeffs.ptr<double>(0)[3] = 0.00336531;
   
-  float markerSize = 0.04; //meters
+  cv::aruco::Board b =  cv::aruco::Board::createPlanarBoard(4, 6, 0.04, 0.008);
+  b.ids.clear();
+  b.ids.push_back(985);
+  b.ids.push_back(838);
+  b.ids.push_back(908);
+  b.ids.push_back(299);
+  b.ids.push_back(428);
+  b.ids.push_back(177);
+  
+  b.ids.push_back(64);
+  b.ids.push_back(341);
+  b.ids.push_back(760);
+  b.ids.push_back(882);
+  b.ids.push_back(982);
+  b.ids.push_back(977);
+  
+  b.ids.push_back(477);
+  b.ids.push_back(125);
+  b.ids.push_back(717);
+  b.ids.push_back(791);
+  b.ids.push_back(618);
+  b.ids.push_back(76);
+  
+  b.ids.push_back(181);
+  b.ids.push_back(1005);
+  b.ids.push_back(175);
+  b.ids.push_back(684);
+  b.ids.push_back(233);
+  b.ids.push_back(461);  
+
   
   while( input.grab() ) {
     cv::Mat image;
@@ -41,16 +70,16 @@ int main(int argc, char* argv[])
 
     std::vector< int > ids;
     std::vector< std::vector<cv::Point2f> > imgPoints;
-    std::vector<cv::Mat > rvecs, tvecs;
+    cv::Mat rvec, tvec;
     
     // detect markers and estimate pose
-    cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);   
-    if(ids.size()>0) cv::aruco::estimatePoseSingleMarkers(imgPoints, markerSize, camMatrix, distCoeffs, rvecs, tvecs);
+    cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);
+    if(ids.size()>0) cv::aruco::estimatePoseBoard(imgPoints, ids, b, camMatrix, distCoeffs, rvec, tvec);
     
     // draw results
     if(ids.size()>0) {
         cv::aruco::drawDetectedMarkers(image, imgPoints, ids);
-        for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(image, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
+        cv::aruco::drawAxis(image, camMatrix, distCoeffs, rvec, tvec, 0.1);    
     }
     
     cv::imshow("out", image);
