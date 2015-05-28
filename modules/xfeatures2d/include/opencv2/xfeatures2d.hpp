@@ -222,36 +222,36 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param orientation orientation on image (0->360)
+     * @param ori orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual void get_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
+    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
 
     /**
      * @param y position y on image
      * @param x position x on image
      * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
      * @param H homography matrix for warped grid
+     */
+    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param ori orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual bool get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
+    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
 
     /**
      * @param y position y on image
      * @param x position x on image
      * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
-     */
-    virtual void get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor ) const = 0;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
      * @param H homography matrix for warped grid
-     * @param descriptor supplied array for descriptor storage
      */
-    virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const = 0;
+    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor , double *H ) const = 0;
 
 };
 

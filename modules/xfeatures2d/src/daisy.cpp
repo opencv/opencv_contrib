@@ -72,7 +72,6 @@ const static int g_grid_orientation_resolution = 360;
 static const int MAX_CUBE_NO = 64;
 static const int MAX_NORMALIZATION_ITER = 5;
 
-int g_cube_number;
 int g_selected_cubes[MAX_CUBE_NO]; // m_rad_q_no < MAX_CUBE_NO
 
 /*
@@ -136,17 +135,16 @@ public:
      * @param ori orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual void get_descriptor( double y, double x, int orientation, float* descriptor ) const;
+    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const;
 
     /**
      * @param y position y on image
      * @param x position x on image
      * @param ori orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
      * @param H homography matrix for warped grid
-     * @param descriptor supplied array for descriptor storage
-     * @param get_descriptor true if descriptor was computed
      */
-    virtual bool get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
+    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
 
     /**
      * @param y position y on image
@@ -154,18 +152,16 @@ public:
      * @param ori orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual void get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor ) const;
+    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const;
 
     /**
      * @param y position y on image
      * @param x position x on image
      * @param ori orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
      * @param H homography matrix for warped grid
-     * @param descriptor supplied array for descriptor storage
-     * @param get_unnormalized_descriptor true if descriptor was computed
      */
-    virtual bool get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
-
+    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
 
 protected:
 
@@ -189,25 +185,15 @@ protected:
     // default. change the value using set_normalization() function.
     int m_nrm_type;
 
-    // number of bins in the histograms while computing orientation
-    int m_orientation_resolution;
+    // the size of the descriptor vector
+    int m_descriptor_size;
 
     // the number of grid locations
     int m_grid_point_number;
 
-    // the size of the descriptor vector
-    int m_descriptor_size;
+    // number of bins in the histograms while computing orientation
+    int m_orientation_resolution;
 
-    // size of m_hsz layers at a single sigma: m_hsz * m_layer_size
-    int m_cube_size;
-
-    // size of the layer :
-    // m_roi.width*m_roi.height
-    int m_layer_size;
-
-    // the clipping threshold to use in normalization: values above this value
-    // are clipped to this value for normalize_sift_way() function
-    float m_descriptor_normalization_threshold;
 
     /*
      * DAISY switches
@@ -221,7 +207,7 @@ protected:
 
     // if enabled, descriptors are computed with casting non-integer locations
     // to integer positions otherwise we use interpolation.
-    bool m_disable_interpolation;
+    bool m_enable_interpolation;
 
     // switch to enable sample by keypoints orientation
     bool m_use_orientation;
@@ -233,20 +219,16 @@ protected:
     // holds optional H matrix
     Mat m_h_matrix;
 
-    // input image.
+    // internal float image.
     Mat m_image;
 
     // image roi
     Rect m_roi;
 
-    // stores the descriptors :
-    // its size is [ m_roi.width*m_roi.height*m_descriptor_size ].
-    Mat m_dense_descriptors;
-
     // stores the layered gradients in successively smoothed form :
     // layer[n] = m_gradient_layers * gaussian( sigma_n );
     // n>= 1; layer[0] is the layered_gradient
-    Mat m_smoothed_gradient_layers;
+    std::vector<Mat> m_smoothed_gradient_layers;
 
     // hold the scales of the pixels
     Mat m_scale_map;
@@ -269,11 +251,6 @@ protected:
 
 
 private:
-
-    // two possible computational mode
-    // ONLY_KEYS -> (mode_1) compute descriptors on demand
-    // COMP_FULL -> (mode_2) compute all descriptors from image
-    enum { ONLY_KEYS = 0, COMP_FULL = 1 };
 
     /*
      * DAISY functions
@@ -300,7 +277,7 @@ private:
     inline void release_auxiliary();
 
     // computes the descriptors for every pixel in the image.
-    inline void compute_descriptors();
+    inline void compute_descriptors( Mat* m_dense_descriptors );
 
     // computes scales for every pixel and scales the structure grid so that the
     // resulting descriptors are scale invariant.  you must set
@@ -334,78 +311,10 @@ private:
     // histograms are going to be computed according to the given parameters.
     inline void compute_oriented_grid_points();
 
-    // normalizes the descriptor
-    inline void normalize_descriptor( float* desc, int nrm_type ) const;
-
     // applies one of the normalizations (partial,full,sift) to the desciptors.
-    inline void normalize_descriptors( int nrm_type = DAISY::NRM_NONE );
-
-
-    // emulates the way sift is normalized.
-    inline void normalize_sift_way( float* desc ) const;
-
-    // normalizes the descriptor histogram by histogram
-    inline void normalize_partial( float* desc ) const;
-
-    // normalizes the full descriptor.
-    inline void normalize_full( float* desc ) const;
-
-    // normalizes histograms individually
-    inline void normalize_histograms();
+    inline void normalize_descriptors( Mat* m_dense_descriptors );
 
     inline void update_selected_cubes();
-
-    // Smooth a histogram by using a [1/3 1/3 1/3] kernel.  Assume the histogram
-    // is connected in a circular buffer.
-    inline void smooth_histogram( Mat hist, int bins );
-
-    // smooths each of the layers by a Gaussian having "sigma" standart
-    // deviation.
-    inline void smooth_layers( Mat layers, int h, int w, int layer_number, float sigma );
-
-    // returns the descriptor vector for the point (y, x) !!! use this for
-    // precomputed operations meaning that you must call compute_descriptors()
-    // before calling this function. if you want normalized descriptors, call
-    // normalize_descriptors() before calling compute_descriptors()
-    inline void get_descriptor( int y, int x, float* &descriptor );
-
-    // does not use interpolation while computing the histogram.
-    inline void ni_get_histogram( float* histogram, int y, int x, int shift, const float* hcube ) const;
-
-    // returns the interpolated histogram: picks either bi_get_histogram or
-    // ti_get_histogram depending on 'shift'
-    inline void i_get_histogram( float* histogram, double y, double x, double shift, const float* cube ) const;
-
-    // records the histogram that is computed by bilinear interpolation
-    // regarding the shift in the spatial coordinates. hcube is the
-    // histogram cube for a constant smoothness level.
-    inline void bi_get_histogram( float* descriptor, double y, double x, int shift, const float* hcube ) const;
-
-    // records the histogram that is computed by trilinear interpolation
-    // regarding the shift in layers and spatial coordinates. hcube is the
-    // histogram cube for a constant smoothness level.
-    inline void ti_get_histogram( float* descriptor, double y, double x, double shift, const float* hcube ) const;
-
-    // uses interpolation, for no interpolation call ni_get_descriptor. see also get_descriptor
-    inline void i_get_descriptor( double y, double x, int orientation, float* descriptor ) const;
-
-    // does not use interpolation. for w/interpolation, call i_get_descriptor. see also get_descriptor
-    inline void ni_get_descriptor( double y, double x, int orientation, float* descriptor ) const;
-
-    // uses interpolation for no interpolation call ni_get_descriptor. see also get_descriptor
-    inline bool i_get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
-
-    // does not use interpolation. for w/interpolation, call i_get_descriptor. see also get_descriptor
-    inline bool ni_get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const;
-
-    inline int quantize_radius( float rad ) const;
-
-    // Return a number in the range [-0.5, 0.5] that represents the location of
-    // the peak of a parabola passing through the 3 evenly spaced samples.  The
-    // center value is assumed to be greater than or equal to the other values
-    // if positive, or less than if negative.
-    inline float interpolate_peak( float left, float center, float right );
-
 
 }; // END DAISY_Impl CLASS
 
@@ -417,144 +326,629 @@ inline void DAISY_Impl::reset()
 {
     m_image.release();
 
-    m_orientation_map.release();
     m_scale_map.release();
+    m_orientation_map.release();
 
-    m_dense_descriptors.release();
-    m_smoothed_gradient_layers.release();
+    for (size_t i=0; i<m_smoothed_gradient_layers.size(); i++)
+      m_smoothed_gradient_layers[i].release();
+    m_smoothed_gradient_layers.clear();
 }
 
 inline void DAISY_Impl::release_auxiliary()
 {
-    m_orientation_map.release();
-    m_scale_map.release();
+    reset();
 
-    m_smoothed_gradient_layers.release();
-
+    m_cube_sigmas.release();
     m_grid_points.release();
     m_oriented_grid_points.release();
-    m_cube_sigmas.release();
-
-    m_image.release();
 }
 
-// creates a 1D gaussian filter with N(mean,sigma).
-static void gaussian_1d( float* fltr, int fsz, float sigma, float mean )
+static int filter_size( double sigma, double factor )
 {
-    CV_Assert(fltr != NULL);
-
-    int sz = (fsz - 1) / 2;
-    int counter = -1;
-    float sum = 0.0f;
-    float v = 2 * sigma*sigma;
-    for( int x=-sz; x<=sz; x++ )
-    {
-      counter++;
-      fltr[counter] = exp((-((float)x-mean)*((float)x-mean))/v);
-      sum += fltr[counter];
-    }
-
-    if( sum != 0 )
-    for( int x=0; x<fsz; x++ ) fltr[x] /= sum;
-}
-
-// computes the gradient of an image
-static void gradient( Mat im, int h, int w, Mat dy, Mat dx )
-{
-    CV_Assert( !dx.empty() );
-    CV_Assert( !dy.empty() );
-
-    for( int y=0; y<h; y++ )
-    {
-      int yw = y*w;
-      for( int x=0; x<w; x++ )
-      {
-        int ind = yw+x;
-        // dx
-        if( x>0 && x<w-1 ) dx.at<float>(ind) = (im.at<float>(ind+1)-im.at<float>(ind-1)) / 2.0f;
-        if( x==0         ) dx.at<float>(ind) =  im.at<float>(ind+1)-im.at<float>(ind  );
-        if( x==w-1       ) dx.at<float>(ind) =  im.at<float>(ind  )-im.at<float>(ind-1);
-
-        // dy
-        if( y>0 && y<h-1 ) dy.at<float>(ind) = (im.at<float>(ind+w)-im.at<float>(ind-w)) / 2.0f;
-        if( y==0         ) dy.at<float>(ind) =  im.at<float>(ind+w)-im.at<float>(ind  );
-        if( y==h-1       ) dy.at<float>(ind) =  im.at<float>(ind  )-im.at<float>(ind-w);
-      }
-    }
-}
-
-// data is not destroyed afterwards
-static void layered_gradient( Mat data, Mat& layers )
-{
-    CV_Assert( !layers.empty() );
-    CV_Assert( layers.dims == 4 );
-    CV_Assert( data.rows == layers.size[2] );
-    CV_Assert( data.cols == layers.size[3] );
-
-    int layer_no = layers.size[1];
-
-    Mat cvI;
-    layers.setTo( Scalar(0) );
-    int data_size = data.rows * data.cols;
-
-    float kernel[5];
-    gaussian_1d(kernel, 5, 0.5f, 0.0f);
-    Mat Kernel(1, 5, CV_32F, (float*) kernel);
-
-    filter2D( data, cvI, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-    filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
-
-    Mat dx(1, data_size, CV_32F);
-    Mat dy(1, data_size, CV_32F);
-    gradient( cvI, data.rows, data.cols, dy, dx );
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
-   for( int l=0; l<layer_no; l++ )
-   {
-      float angle = (float) (2*l*CV_PI/layer_no);
-      float kos = (float) cos( angle );
-      float zin = (float) sin( angle );
-
-      float* layer_l = layers.ptr<float>(0, l);
-
-      for( int i=0; i<data_size; i++ )
-      {
-         float value = kos * dx.at<float>(i) + zin * dy.at<float>(i);
-         if( value > 0 ) layer_l[i] = value;
-         else            layer_l[i] = 0;
-      }
-   }
-}
-
-// transform a point via the homography
-static void point_transform_via_homography( double* H, double x, double y, double &u, double &v )
-{
-    double kxp = H[0]*x + H[1]*y + H[2];
-    double kyp = H[3]*x + H[4]*y + H[5];
-    double kp  = H[6]*x + H[7]*y + H[8];
-    u = kxp / kp;
-    v = kyp / kp;
-}
-
-static int filter_size( double sigma )
-{
-    int fsz = (int)(5*sigma);
-
+    int fsz = (int)( factor * sigma );
     // kernel size must be odd
     if( fsz%2 == 0 ) fsz++;
-
     // kernel size cannot be smaller than 3
     if( fsz < 3 ) fsz = 3;
 
     return fsz;
 }
 
+// transform a point via the homography
+static void pt_H( double* H, double x, double y, double &u, double &v )
+{
+    double kxp = H[0]*x + H[1]*y + H[2];
+    double kyp = H[3]*x + H[4]*y + H[5];
+    double kp  = H[6]*x + H[7]*y + H[8];
+    u = kxp / kp; v = kyp / kp;
+}
+
+
+static float interpolate_peak( float left, float center, float right )
+{
+    if( center < 0.0 )
+    {
+      left = -left;
+      center = -center;
+      right = -right;
+    }
+    CV_Assert(center >= left  &&  center >= right);
+
+    float den = (float) (left - 2.0 * center + right);
+
+    if( den == 0 ) return 0;
+    else           return (float) (0.5*(left -right)/den);
+}
+
+static void smooth_histogram( Mat* hist, int hsz )
+{
+    int i;
+    float prev, temp;
+
+    prev = hist->at<float>(hsz - 1);
+    for (i = 0; i < hsz; i++)
+    {
+      temp = hist->at<float>(i);
+      hist->at<float>(i) = (prev + hist->at<float>(i) + hist->at<float>( (i + 1 == hsz) ? 0 : i + 1) ) / 3.0f;
+      prev = temp;
+    }
+}
+
+struct LayeredGradientInvoker : ParallelLoopBody
+{
+    LayeredGradientInvoker( Mat* _layers, Mat& _dy, Mat& _dx )
+    {
+      dy = _dy;
+      dx = _dx;
+      layers = _layers;
+      layer_no = layers->size[0];
+    }
+
+    void operator ()(const cv::Range& range) const
+    {
+      for (int l = range.start; l < range.end; ++l)
+      {
+        double angle = l * 2*CV_PI / layer_no;
+        Mat layer( dx.rows, dx.cols, CV_32F, layers->ptr<float>(l,0,0) );
+        addWeighted( dx, cos( angle ), dy, sin( angle ), 0.0f, layer, CV_32F );
+        max( layer, 0.0f, layer );
+      }
+    }
+
+    Mat dy, dx;
+    Mat *layers;
+    int layer_no;
+};
+
+static void layered_gradient( Mat& data, Mat* layers )
+{
+    Mat cvO, dx, dy;
+    int layer_no = layers->size[0];
+
+    GaussianBlur( data, cvO, Size(5, 5), 0.5f, 0.5f, BORDER_REPLICATE );
+    Sobel( cvO, dx, CV_32F, 1, 0, 1, 0.5f, 0.0f, BORDER_REPLICATE );
+    Sobel( cvO, dy, CV_32F, 0, 1, 1, 0.5f, 0.0f, BORDER_REPLICATE );
+
+    parallel_for_( Range(0, layer_no), LayeredGradientInvoker( layers, dy, dx ) );
+}
+
+struct SmoothLayersInvoker : ParallelLoopBody
+{
+    SmoothLayersInvoker( Mat* _layers, const float _sigma )
+    {
+      layers = _layers;
+      sigma = _sigma;
+
+      h = layers->size[1];
+      w = layers->size[2];
+      ks = filter_size( sigma, 5.0f );
+    }
+
+    void operator ()(const cv::Range& range) const
+    {
+      for (int l = range.start; l < range.end; ++l)
+      {
+        Mat layer( h, w, CV_32FC1, layers->ptr<float>(l,0,0) );
+        GaussianBlur( layer, layer, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
+      }
+    }
+
+    float sigma;
+    int ks, h, w;
+    Mat *layers;
+};
+
+static void smooth_layers( Mat* layers, float sigma )
+{
+    int layer_no = layers->size[0];
+    parallel_for_( Range(0, layer_no), SmoothLayersInvoker( layers, sigma ) );
+}
+
+static int quantize_radius( float rad, const int _rad_q_no, const Mat& _cube_sigmas )
+{
+    if( rad <= _cube_sigmas.at<double>(0) )
+        return 0;
+    if( rad >= _cube_sigmas.at<double>(_rad_q_no-1) )
+        return _rad_q_no-1;
+
+    int idx_min[2];
+    minMaxIdx( abs( _cube_sigmas - rad ), NULL, NULL, idx_min );
+
+    return idx_min[1];
+}
+
+static void normalize_partial( float* desc, const int _grid_point_number, const int _hist_th_q_no )
+{
+    float norm = 0.0f;
+    for( int h=0; h<_grid_point_number; h++ )
+    {
+      // l2 norm
+      for( int i=0; i<_hist_th_q_no; i++ )
+      {
+          norm += sqrt(desc[h*_hist_th_q_no + i]
+                     * desc[h*_hist_th_q_no + i]);
+      }
+      if( norm != 0.0 )
+      // divide with norm
+      for( int i=0; i<_hist_th_q_no; i++ )
+      {
+          desc[h*_hist_th_q_no + i] /= norm;
+      }
+    }
+}
+
+static void normalize_sift_way( float* desc, const int _descriptor_size )
+{
+    int h;
+    int iter = 0;
+    bool changed = true;
+    while( changed && iter < MAX_NORMALIZATION_ITER )
+    {
+      iter++;
+      changed = false;
+
+      float norm = 0.0f;
+      for( int i=0; i<_descriptor_size; i++ )
+      {
+          norm += sqrt(desc[_descriptor_size + i]
+                     * desc[_descriptor_size + i]);
+      }
+
+      if( norm > 1e-5 )
+      // divide with norm
+      for( int i=0; i<_descriptor_size; i++ )
+      {
+          desc[_descriptor_size + i] /= norm;
+      }
+
+      for( h=0; h<_descriptor_size; h++ )
+      {  // sift magical number
+         if( desc[ h ] > 0.154f )
+         {
+            desc[ h ] = 0.154f;
+            changed = true;
+         }
+      }
+    }
+}
+
+static void normalize_full( float* desc, const int _descriptor_size )
+{
+    // l2 norm
+    float norm = 0.0f;
+    for( int i=0; i<_descriptor_size; i++ )
+    {
+        norm += sqrt(desc[_descriptor_size + i]
+                   * desc[_descriptor_size + i]);
+    }
+    if( norm != 0.0 )
+    // divide with norm
+    for( int i=0; i<_descriptor_size; i++ )
+    {
+        desc[_descriptor_size + i] /= norm;
+    }
+}
+
+static void normalize_descriptor( float* desc, const int nrm_type, const int _grid_point_number,
+                                  const int _hist_th_q_no, const int _descriptor_size  )
+{
+    if( nrm_type == DAISY::NRM_NONE ) return;
+    else if( nrm_type == DAISY::NRM_PARTIAL ) normalize_partial(desc,_grid_point_number,_hist_th_q_no);
+    else if( nrm_type == DAISY::NRM_FULL    ) normalize_full(desc,_descriptor_size);
+    else if( nrm_type == DAISY::NRM_SIFT    ) normalize_sift_way(desc,_descriptor_size);
+    else
+        CV_Error( Error::StsInternal, "No such normalization" );
+}
+
+static void ni_get_histogram( float* histogram, const int y, const int x, const int shift, const Mat* hcube )
+{
+
+    if ( ! Point( x, y ).inside(
+           Rect( 0, 0, hcube->size[2]-1, hcube->size[1]-1 ) )
+       ) return;
+
+    int _hist_th_q_no = hcube->size[0];
+    const float* hptr = hcube->ptr<float>(0,y*_hist_th_q_no,x*_hist_th_q_no);
+    for( int h=0; h<_hist_th_q_no; h++ )
+    {
+      int hi = h+shift;
+      if( hi >= _hist_th_q_no ) hi -= _hist_th_q_no;
+      histogram[h] = hptr[hi];
+    }
+}
+
+static void bi_get_histogram( float* histogram, const double y, const double x, const int shift, const Mat* hcube )
+{
+    int mnx = int( x );
+    int mny = int( y );
+    int _hist_th_q_no = hcube->size[0];
+    if( mnx >= hcube->size[2]-2  || mny >= hcube->size[1]-2 )
+    {
+      memset(histogram, 0, sizeof(float)*_hist_th_q_no);
+      return;
+    }
+
+    // A C --> pixel positions
+    // B D
+    const float* A = hcube->ptr<float>(0,  mny   *_hist_th_q_no,  mnx   *_hist_th_q_no);
+    const float* B = hcube->ptr<float>(0, (mny+1)*_hist_th_q_no,  mnx   *_hist_th_q_no);
+    const float* C = hcube->ptr<float>(0,  mny   *_hist_th_q_no, (mnx+1)*_hist_th_q_no);
+    const float* D = hcube->ptr<float>(0, (mny+1)*_hist_th_q_no, (mnx+1)*_hist_th_q_no);
+
+    double alpha = mnx+1-x;
+    double beta  = mny+1-y;
+
+    float w0 = (float) ( alpha * beta );
+    float w1 = (float) ( beta - w0    );         // (1-alpha)*beta;
+    float w2 = (float) ( alpha - w0   );         // (1-beta)*alpha;
+    float w3 = (float) ( 1 + w0 - alpha - beta); // (1-beta)*(1-alpha);
+
+    int h;
+
+    for( h=0; h<_hist_th_q_no; h++ ) {
+      if( h+shift < _hist_th_q_no ) histogram[h] = w0 * A[h+shift];
+      else                          histogram[h] = w0 * A[h+shift-_hist_th_q_no];
+    }
+    for( h=0; h<_hist_th_q_no; h++ ) {
+      if( h+shift < _hist_th_q_no ) histogram[h] += w1 * C[h+shift];
+      else                          histogram[h] += w1 * C[h+shift-_hist_th_q_no];
+    }
+    for( h=0; h<_hist_th_q_no; h++ ) {
+      if( h+shift < _hist_th_q_no ) histogram[h] += w2 * B[h+shift];
+      else                          histogram[h] += w2 * B[h+shift-_hist_th_q_no];
+    }
+    for( h=0; h<_hist_th_q_no; h++ ) {
+      if( h+shift < _hist_th_q_no ) histogram[h] += w3 * D[h+shift];
+      else                          histogram[h] += w3 * D[h+shift-_hist_th_q_no];
+    }
+}
+
+static void ti_get_histogram( float* histogram, const double y, const double x, const double shift, const Mat* hcube )
+{
+    int ishift = int( shift );
+    double layer_alpha  = shift - ishift;
+
+    float thist[MAX_CUBE_NO];
+    bi_get_histogram( thist, y, x, ishift, hcube );
+
+    int _hist_th_q_no = hcube->size[0];
+    for( int h=0; h<_hist_th_q_no-1; h++ )
+      histogram[h] = (float) ((1-layer_alpha)*thist[h]+layer_alpha*thist[h+1]);
+    histogram[_hist_th_q_no-1] = (float) ((1-layer_alpha)*thist[_hist_th_q_no-1]+layer_alpha*thist[0]);
+}
+
+static void i_get_histogram( float* histogram, const double y, const double x, const double shift, const Mat* hcube )
+{
+    int ishift = (int)shift;
+    double fshift = shift-ishift;
+    if     ( fshift < 0.01 ) bi_get_histogram( histogram, y, x, ishift  , hcube );
+    else if( fshift > 0.99 ) bi_get_histogram( histogram, y, x, ishift+1, hcube );
+    else                     ti_get_histogram( histogram, y, x,  shift  , hcube );
+}
+
+static void ni_get_descriptor( const double y, const double x, const int orientation, float* descriptor, const std::vector<Mat>* layers,
+                               const Mat* _oriented_grid_points, const double* _orientation_shift_table, const int _th_q_no )
+{
+    CV_Assert( y >= 0 && y < layers->at(0).size[1] );
+    CV_Assert( x >= 0 && x < layers->at(0).size[2] );
+    CV_Assert( orientation >= 0 && orientation < 360 );
+    CV_Assert( !layers->empty() );
+    CV_Assert( !_oriented_grid_points->empty() );
+    CV_Assert( descriptor != NULL );
+
+    int _rad_q_no = (int) layers->size() - 1;
+    int _hist_th_q_no = layers->at(0).size[0];
+    double shift = _orientation_shift_table[orientation];
+    int ishift = (int)shift;
+    if( shift - ishift > 0.5  ) ishift++;
+
+    int iy = (int)y; if( y - iy > 0.5 ) iy++;
+    int ix = (int)x; if( x - ix > 0.5 ) ix++;
+
+    // center
+    ni_get_histogram( descriptor, iy, ix, ishift, &layers->at(g_selected_cubes[0]) );
+
+    double yy, xx;
+    float* histogram=0;
+    // petals of the flower
+    int r, rdt, region;
+    Mat grid = _oriented_grid_points->row( orientation );
+    for( r=0; r<_rad_q_no; r++ )
+    {
+      rdt = r*_th_q_no+1;
+      for( region=rdt; region<rdt+_th_q_no; region++ )
+      {
+         yy = y + grid.at<double>(2*region  );
+         xx = x + grid.at<double>(2*region+1);
+         iy = (int)yy; if( yy - iy > 0.5 ) iy++;
+         ix = (int)xx; if( xx - ix > 0.5 ) ix++;
+
+         if ( ! Point2f( (float)xx, (float)yy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+            ) continue;
+
+         histogram = descriptor + region*_hist_th_q_no;
+         ni_get_histogram( histogram, iy, ix, ishift, &layers->at(g_selected_cubes[r]) );
+      }
+    }
+}
+
+static void i_get_descriptor( const double y, const double x, const int orientation, float* descriptor, const std::vector<Mat>* layers,
+                              const Mat* _oriented_grid_points, const double *_orientation_shift_table, const int _th_q_no )
+{
+    CV_Assert( y >= 0 && y < layers->at(0).size[1] );
+    CV_Assert( x >= 0 && x < layers->at(0).size[2] );
+    CV_Assert( orientation >= 0 && orientation < 360 );
+    CV_Assert( !layers->empty() );
+    CV_Assert( !_oriented_grid_points->empty() );
+    CV_Assert( descriptor != NULL );
+
+    int _rad_q_no = (int) layers->size() - 1;
+    int _hist_th_q_no = layers->at(0).size[0];
+    double shift = _orientation_shift_table[orientation];
+
+    i_get_histogram( descriptor, y, x, shift, &layers->at(g_selected_cubes[0]) );
+
+    int r, rdt, region;
+    double yy, xx;
+    float* histogram = 0;
+
+    Mat grid = _oriented_grid_points->row( orientation );
+
+    // petals of the flower
+    for( r=0; r<_rad_q_no; r++ )
+    {
+      rdt  = r*_th_q_no+1;
+      for( region=rdt; region<rdt+_th_q_no; region++ )
+      {
+         yy = y + grid.at<double>(2*region    );
+         xx = x + grid.at<double>(2*region + 1);
+
+         if ( ! Point2f( (float)xx, (float)yy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+            ) continue;
+
+         histogram = descriptor + region*_hist_th_q_no;
+         i_get_histogram( histogram, yy, xx, shift, &layers->at(r) );
+      }
+    }
+}
+
+static bool ni_get_descriptor_h( const double y, const double x, const int orientation, double* H, float* descriptor, const std::vector<Mat>* layers,
+                                 const Mat& _cube_sigmas, const Mat* _grid_points, const double* _orientation_shift_table, const int _th_q_no )
+{
+    CV_Assert( orientation >= 0 && orientation < 360 );
+    CV_Assert( !layers->empty() );
+    CV_Assert( descriptor != NULL );
+
+    int hradius[MAX_CUBE_NO];
+
+    double hy, hx, ry, rx;
+
+    pt_H(H, x, y, hx, hy );
+
+    if ( ! Point2f( (float)hx, (float)hy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+       ) return false;
+
+    int _rad_q_no = (int) layers->size() - 1;
+    int _hist_th_q_no = layers->at(0).size[0];
+    double shift = _orientation_shift_table[orientation];
+    int  ishift = (int)shift; if( shift - ishift > 0.5  ) ishift++;
+
+    pt_H(H, x+_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
+    double d0 = rx - hx; double d1 = ry - hy;
+    double radius = sqrt( d0*d0 + d1*d1 );
+    hradius[0] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
+
+    int ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
+    int ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
+
+    int r, rdt, th, region;
+    double gy, gx;
+    float* histogram=0;
+    ni_get_histogram( descriptor, ihy, ihx, ishift, &layers->at(hradius[0]) );
+    for( r=0; r<_rad_q_no; r++)
+    {
+      rdt = r*_th_q_no + 1;
+      for( th=0; th<_th_q_no; th++ )
+      {
+         region = rdt + th;
+
+         gy = y + _grid_points->at<double>(region,0);
+         gx = x + _grid_points->at<double>(region,1);
+
+         pt_H(H, gx, gy, hx, hy);
+         if( th == 0 )
+         {
+            pt_H(H, gx+_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
+            d0 = rx - hx; d1 = ry - hy;
+            radius = sqrt( d0*d0 + d1*d1 );
+            hradius[r] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
+         }
+
+         ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
+         ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
+
+         if ( ! Point( ihx, ihy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+            ) continue;
+
+         histogram = descriptor + region*_hist_th_q_no;
+         ni_get_histogram( histogram, ihy, ihx, ishift, &layers->at(hradius[r]) );
+      }
+    }
+    return true;
+}
+
+static bool i_get_descriptor_h( const double y, const double x, const int orientation, double* H, float* descriptor, const std::vector<Mat>* layers,
+                                const Mat _cube_sigmas, const Mat* _grid_points, const double* _orientation_shift_table, const int _th_q_no )
+{
+    CV_Assert( orientation >= 0 && orientation < 360 );
+    CV_Assert( !layers->empty() );
+    CV_Assert( descriptor != NULL );
+
+    int hradius[MAX_CUBE_NO];
+
+    double hy, hx, ry, rx;
+    pt_H( H, x, y, hx, hy );
+
+    if ( ! Point2f( (float)hx, (float)hy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+       ) return false;
+
+    int _rad_q_no = (int) layers->size() - 1;
+    int _hist_th_q_no = layers->at(0).size[0];
+    pt_H( H, x+_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
+    double d0 = rx - hx; double d1 = ry - hy;
+    double radius = sqrt( d0*d0 + d1*d1 );
+    hradius[0] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
+
+    double shift = _orientation_shift_table[orientation];
+    i_get_histogram( descriptor, hy, hx, shift, &layers->at(hradius[0]) );
+
+    double gy, gx;
+    int r, rdt, th, region;
+    float* histogram=0;
+    for( r=0; r<_rad_q_no; r++)
+    {
+      rdt = r*_th_q_no + 1;
+      for( th=0; th<_th_q_no; th++ )
+      {
+         region = rdt + th;
+
+         gy = y + _grid_points->at<double>(region,0);
+         gx = x + _grid_points->at<double>(region,1);
+
+         pt_H(H, gx, gy, hx, hy);
+         if( th == 0 )
+         {
+            pt_H(H, gx+_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
+            d0 = rx - hx; d1 = ry - hy;
+            radius = sqrt( d0*d0 + d1*d1 );
+            hradius[r] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
+         }
+
+         if ( ! Point2f( (float)hx, (float)hy ).inside(
+                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+            ) continue;
+
+         histogram = descriptor + region*_hist_th_q_no;
+         i_get_histogram( histogram, hy, hx, shift, &layers->at(hradius[r]) );
+      }
+    }
+    return true;
+}
+
+static void get_unnormalized_descriptor( const double y, const double x, const int orientation, float* descriptor,
+            const std::vector<Mat>* m_smoothed_gradient_layers, const Mat* m_oriented_grid_points,
+            const double* m_orientation_shift_table, const int m_th_q_no, const bool m_enable_interpolation )
+{
+    if( m_enable_interpolation )
+      i_get_descriptor( y, x, orientation, descriptor, m_smoothed_gradient_layers,
+                        m_oriented_grid_points, m_orientation_shift_table, m_th_q_no );
+    else
+     ni_get_descriptor( y, x, orientation, descriptor, m_smoothed_gradient_layers,
+                        m_oriented_grid_points, m_orientation_shift_table, m_th_q_no);
+}
+
+static void get_descriptor( const double y, const double x, const int orientation, float* descriptor,
+            const std::vector<Mat>* m_smoothed_gradient_layers, const Mat* m_oriented_grid_points,
+            const double* m_orientation_shift_table, const int m_th_q_no, const int m_hist_th_q_no,
+            const int m_grid_point_number, const int m_descriptor_size, const bool m_enable_interpolation,
+            const int m_nrm_type )
+{
+    get_unnormalized_descriptor( y, x, orientation, descriptor, m_smoothed_gradient_layers,
+                                 m_oriented_grid_points, m_orientation_shift_table, m_th_q_no, m_enable_interpolation );
+    normalize_descriptor( descriptor, m_nrm_type, m_grid_point_number, m_hist_th_q_no, m_descriptor_size );
+}
+
+static bool get_unnormalized_descriptor_h( const double y, const double x, const int orientation, float* descriptor, double* H,
+            const std::vector<Mat>* m_smoothed_gradient_layers, const Mat& m_cube_sigmas,
+            const Mat* m_grid_points, const double* m_orientation_shift_table, const int m_th_q_no, const bool m_enable_interpolation )
+
+{
+    if( m_enable_interpolation )
+      return  i_get_descriptor_h( y, x, orientation, H, descriptor, m_smoothed_gradient_layers, m_cube_sigmas,
+                                  m_grid_points, m_orientation_shift_table, m_th_q_no );
+    else
+      return ni_get_descriptor_h( y, x, orientation, H, descriptor, m_smoothed_gradient_layers, m_cube_sigmas,
+                                  m_grid_points, m_orientation_shift_table, m_th_q_no );
+}
+
+static bool get_descriptor_h( const double y, const double x, const int orientation, float* descriptor, double* H,
+            const std::vector<Mat>* m_smoothed_gradient_layers, const Mat& m_cube_sigmas,
+            const Mat* m_grid_points, const double* m_orientation_shift_table, const int m_th_q_no,
+            const int m_hist_th_q_no, const int m_grid_point_number, const int m_descriptor_size,
+            const bool m_enable_interpolation, const int m_nrm_type  )
+
+{
+    bool rval =
+      get_unnormalized_descriptor_h( y, x, orientation, descriptor, H, m_smoothed_gradient_layers, m_cube_sigmas,
+                                   m_grid_points, m_orientation_shift_table, m_th_q_no, m_enable_interpolation );
+
+    if( rval )
+      normalize_descriptor( descriptor, m_nrm_type, m_grid_point_number, m_hist_th_q_no, m_descriptor_size );
+
+    return rval;
+}
+
+void DAISY_Impl::GetDescriptor( double y, double x, int orientation, float* descriptor ) const
+{
+    get_descriptor( y, x, orientation, descriptor, &m_smoothed_gradient_layers,
+                    &m_oriented_grid_points, m_orientation_shift_table, m_th_q_no,
+                    m_hist_th_q_no, m_grid_point_number, m_descriptor_size, m_enable_interpolation,
+                    m_nrm_type );
+}
+
+bool DAISY_Impl::GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const
+{
+  return
+  get_descriptor_h( y, x, orientation, descriptor, H, &m_smoothed_gradient_layers,
+                    m_cube_sigmas, &m_grid_points, m_orientation_shift_table, m_th_q_no,
+                    m_hist_th_q_no, m_grid_point_number, m_descriptor_size, m_enable_interpolation,
+                    m_nrm_type );
+}
+
+void DAISY_Impl::GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const
+{
+    get_unnormalized_descriptor( y, x, orientation, descriptor, &m_smoothed_gradient_layers,
+                                 &m_oriented_grid_points, m_orientation_shift_table, m_th_q_no,
+                                 m_enable_interpolation );
+}
+
+bool DAISY_Impl::GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const
+{
+  return
+  get_unnormalized_descriptor_h( y, x, orientation, descriptor, H, &m_smoothed_gradient_layers,
+                                 m_cube_sigmas, &m_grid_points, m_orientation_shift_table, m_th_q_no,
+                                 m_enable_interpolation );
+}
+
 inline void DAISY_Impl::compute_grid_points()
 {
     double r_step = m_rad / (double)m_rad_q_no;
-    double t_step = 2*CV_PI/ m_th_q_no;
+    double t_step = 2*CV_PI / m_th_q_no;
 
     m_grid_points.release();
     m_grid_points = Mat( m_grid_point_number, 2, CV_64F );
@@ -578,155 +972,110 @@ inline void DAISY_Impl::compute_grid_points()
     compute_oriented_grid_points();
 }
 
-inline void DAISY_Impl::normalize_descriptor( float* desc, int nrm_type = DAISY::NRM_NONE ) const
+struct ComputeDescriptorsInvoker : ParallelLoopBody
 {
-    if( nrm_type == DAISY::NRM_NONE ) nrm_type = m_nrm_type;
-    else if( nrm_type == DAISY::NRM_PARTIAL ) normalize_partial(desc);
-    else if( nrm_type == DAISY::NRM_FULL    ) normalize_full(desc);
-    else if( nrm_type == DAISY::NRM_SIFT    ) normalize_sift_way(desc);
-    else
-        CV_Error( Error::StsInternal, "No such normalization" );
-}
+    ComputeDescriptorsInvoker( Mat* _descriptors, Mat* _image, Rect* _roi,
+                               std::vector<Mat>* _layers, Mat* _orientation_map,
+                               Mat* _oriented_grid_points, double* _orientation_shift_table,
+                               int _th_q_no, bool _enable_interpolation )
+    {
+      x_off = _roi->x;
+      x_end = _roi->x + _roi->width;
+      image = _image;
+      layers = _layers;
+      th_q_no = _th_q_no;
+      descriptors = _descriptors;
+      orientation_map = _orientation_map;
+      enable_interpolation = _enable_interpolation;
+      oriented_grid_points = _oriented_grid_points;
+      orientation_shift_table = _orientation_shift_table;
+    }
+
+    void operator ()(const cv::Range& range) const
+    {
+      int index, orientation;
+      for (int y = range.start; y < range.end; ++y)
+      {
+        for( int x = x_off; x < x_end; x++ )
+        {
+          index = y*image->cols + x;
+          orientation = 0;
+          if( !orientation_map->empty() )
+              orientation = (int) orientation_map->at<ushort>( y, x );
+          if( !( orientation >= 0 && orientation < g_grid_orientation_resolution ) )
+              orientation = 0;
+          get_unnormalized_descriptor( y, x, orientation, descriptors->ptr<float>( index ),
+                                       layers, oriented_grid_points, orientation_shift_table,
+                                       th_q_no, enable_interpolation );
+        }
+      }
+    }
+
+    int th_q_no;
+    int x_off, x_end;
+    std::vector<Mat>* layers;
+    Mat *descriptors;
+    Mat *orientation_map;
+    bool enable_interpolation;
+    double* orientation_shift_table;
+    Mat *image, *oriented_grid_points;
+};
 
 // Computes the descriptor by sampling convoluted orientation maps.
-inline void DAISY_Impl::compute_descriptors()
+inline void DAISY_Impl::compute_descriptors( Mat* m_dense_descriptors )
 {
-
     int y_off = m_roi.y;
-    int x_off = m_roi.x;
     int y_end = m_roi.y + m_roi.height;
-    int x_end = m_roi.x + m_roi.width;
 
-//    if( m_scale_invariant    ) compute_scales();
-//    if( m_rotation_invariant ) compute_orientations();
+    if( m_scale_invariant    ) compute_scales();
+    if( m_rotation_invariant ) compute_orientations();
 
-    m_dense_descriptors = Mat( m_roi.width*m_roi.height, m_descriptor_size, CV_32F, Scalar(0) );
+    m_dense_descriptors->setTo( Scalar(0) );
 
-    int y, x, index, orientation;
-#if defined _OPENMP
-#pragma omp parallel for private(y,x,index,orientation)
-#endif
-    for( y=y_off; y<y_end ; y++ )
-    {
-      for( x=x_off; x<x_end; x++ )
-      {
-         index = y*m_image.cols + x;
-         orientation = 0;
-         if( !m_orientation_map.empty() )
-             orientation = (int) m_orientation_map.at<ushort>( x, y );
-         if( !( orientation >= 0 && orientation < g_grid_orientation_resolution ) )
-             orientation = 0;
-         get_unnormalized_descriptor( y, x, orientation, m_dense_descriptors.ptr<float>( index ) );
-      }
-    }
+    parallel_for_( Range(y_off, y_end),
+        ComputeDescriptorsInvoker( m_dense_descriptors, &m_image, &m_roi, &m_smoothed_gradient_layers,
+                                   &m_orientation_map, &m_oriented_grid_points, m_orientation_shift_table,
+                                   m_th_q_no, m_enable_interpolation )
+    );
+
 }
 
-inline void DAISY_Impl::smooth_layers( Mat layers, int h, int w, int layer_number, float sigma )
+struct NormalizeDescriptorsInvoker : ParallelLoopBody
 {
-
-    int i;
-
-    int kernel_size = filter_size( sigma );
-    std::vector<float> kernel(kernel_size);
-    gaussian_1d( &kernel[0], kernel_size, sigma, 0 );
-
-#if defined _OPENMP
-#pragma omp parallel for private(i, layer)
-#endif
-
-    for( i=0; i<layer_number; i++ )
+    NormalizeDescriptorsInvoker( Mat* _descriptors, int _nrm_type, int _grid_point_number,
+                                 int _hist_th_q_no, int _descriptor_size )
     {
-
-      Mat cvI( h, w, CV_32FC1, (float*) layers.ptr<float>(0, i) );
-
-      Mat Kernel( 1, kernel_size, CV_32FC1, &kernel[0] );
-      filter2D( cvI, cvI, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-      filter2D( cvI, cvI, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
+      descriptors = _descriptors;
+      nrm_type = _nrm_type;
+      grid_point_number = _grid_point_number;
+      hist_th_q_no = _hist_th_q_no;
+      descriptor_size = _descriptor_size;
     }
-}
 
-inline void DAISY_Impl::normalize_partial( float* desc ) const
-{
-    float norm = 0.0f;
-    for( int h=0; h<m_grid_point_number; h++ )
+    void operator ()(const cv::Range& range) const
     {
-      // l2 norm
-      for( int i=0; i<m_hist_th_q_no; i++ )
+      for (int d = range.start; d < range.end; ++d)
       {
-          norm += sqrt(desc[h*m_hist_th_q_no + i]
-                     * desc[h*m_hist_th_q_no + i]);
-      }
-      if( norm != 0.0 )
-      // divide with norm
-      for( int i=0; i<m_hist_th_q_no; i++ )
-      {
-          desc[h*m_hist_th_q_no + i] /= norm;
+        normalize_descriptor( descriptors->ptr<float>(d), nrm_type,
+                              grid_point_number, hist_th_q_no, descriptor_size );
       }
     }
-}
 
-inline void DAISY_Impl::normalize_full( float* desc ) const
+    Mat *descriptors;
+    int nrm_type;
+    int grid_point_number;
+    int hist_th_q_no;
+    int descriptor_size;
+};
+
+inline void DAISY_Impl::normalize_descriptors( Mat* m_dense_descriptors )
 {
-    // l2 norm
-    float norm = 0.0f;
-    for( int i=0; i<m_descriptor_size; i++ )
-    {
-        norm += sqrt(desc[m_descriptor_size + i]
-                   * desc[m_descriptor_size + i]);
-    }
-    if( norm != 0.0 )
-    // divide with norm
-    for( int i=0; i<m_descriptor_size; i++ )
-    {
-        desc[m_descriptor_size + i] /= norm;
-    }
-}
-
-inline void DAISY_Impl::normalize_sift_way( float* desc ) const
-{
-    int h;
-    int iter = 0;
-    bool changed = true;
-    while( changed && iter < MAX_NORMALIZATION_ITER )
-    {
-      iter++;
-      changed = false;
-
-      float norm = 0.0f;
-      for( int i=0; i<m_descriptor_size; i++ )
-      {
-          norm += sqrt(desc[m_descriptor_size + i]
-                     * desc[m_descriptor_size + i]);
-      }
-
-      if( norm > 1e-5 )
-      // divide with norm
-      for( int i=0; i<m_descriptor_size; i++ )
-      {
-          desc[m_descriptor_size + i] /= norm;
-      }
-
-      for( h=0; h<m_descriptor_size; h++ )
-      {
-         if( desc[ h ] > m_descriptor_normalization_threshold )
-         {
-            desc[ h ] = m_descriptor_normalization_threshold;
-            changed = true;
-         }
-      }
-    }
-}
-
-inline void DAISY_Impl::normalize_descriptors( int nrm_type )
-{
-    int d;
+    CV_Assert( !m_dense_descriptors->empty() );
     int number_of_descriptors =  m_roi.width * m_roi.height;
 
-#if defined _OPENMP
-#pragma omp parallel for private(d)
-#endif
-    for( d=0; d<number_of_descriptors; d++ )
-      normalize_descriptor( m_dense_descriptors.ptr<float>( d ), nrm_type );
+    parallel_for_( Range(0, number_of_descriptors),
+        NormalizeDescriptorsInvoker( m_dense_descriptors, m_nrm_type, m_grid_point_number, m_hist_th_q_no, m_descriptor_size )
+    );
 }
 
 inline void DAISY_Impl::initialize()
@@ -735,20 +1084,18 @@ inline void DAISY_Impl::initialize()
     CV_Assert(m_image.rows != 0);
     CV_Assert(m_image.cols != 0);
 
-    if( m_layer_size == 0 ) {
-      m_layer_size = m_image.rows * m_image.cols;
-      m_cube_size = m_layer_size * m_hist_th_q_no;
-    }
+    // (m_rad_q_no + 1) matrices
+    // 3 dims matrix (idhist, img_y, img_x);
+    m_smoothed_gradient_layers.resize( m_rad_q_no + 1 );
 
-    // 4 dims matrix (idcube, idhist, img_y, img_x);
-    int dims[4] = { g_cube_number + 1, m_hist_th_q_no, m_image.rows , m_image.cols };
-    m_smoothed_gradient_layers = Mat( 4, dims, CV_32F );
+    int dims[3] = { m_hist_th_q_no, m_image.rows, m_image.cols };
+    for ( int c=0; c<=m_rad_q_no; c++)
+      m_smoothed_gradient_layers[c] = Mat( 3, dims, CV_32F );
 
-    layered_gradient( m_image, m_smoothed_gradient_layers );
+    layered_gradient( m_image, &m_smoothed_gradient_layers[0] );
 
     // assuming a 0.5 image smoothness, we pull this to 1.6 as in sift
-    smooth_layers( m_smoothed_gradient_layers, m_image.rows, m_image.cols,
-                   m_hist_th_q_no, (float)sqrt(g_sigma_init*g_sigma_init-0.25f) );
+    smooth_layers( &m_smoothed_gradient_layers[0], (float)sqrt(g_sigma_init*g_sigma_init-0.25f) );
 
 }
 
@@ -756,11 +1103,8 @@ inline void DAISY_Impl::compute_cube_sigmas()
 {
     if( m_cube_sigmas.empty() )
     {
-      // user didn't set the sigma's;
-      // set them from the descriptor parameters
-      g_cube_number = m_rad_q_no;
 
-      m_cube_sigmas = Mat(1, g_cube_number, CV_64F);
+      m_cube_sigmas = Mat(1, m_rad_q_no, CV_64F);
 
       double r_step = (double)m_rad / m_rad_q_no / 2;
       for( int r=0; r<m_rad_q_no; r++ )
@@ -777,80 +1121,54 @@ inline void DAISY_Impl::update_selected_cubes()
     for( int r=0; r<m_rad_q_no; r++ )
     {
       double seed_sigma = ((double)r+1) * scale;
-      g_selected_cubes[r] = quantize_radius( (float)seed_sigma );
+      g_selected_cubes[r] = quantize_radius( (float)seed_sigma, m_rad_q_no, m_cube_sigmas );
     }
 }
 
-inline int DAISY_Impl::quantize_radius( float rad ) const
+struct ComputeHistogramsInvoker : ParallelLoopBody
 {
-    if( rad <= m_cube_sigmas.at<double>(0) )
-        return 0;
-    if( rad >= m_cube_sigmas.at<double>(g_cube_number-1) )
-        return g_cube_number-1;
-
-    int idx_min[2];
-    minMaxIdx( abs( m_cube_sigmas - rad ), NULL, NULL, idx_min );
-
-    return idx_min[1];
-}
-
-inline void DAISY_Impl::compute_histograms()
-{
-    int r, y, x, ind;
-    float* hist=0;
-
-    for( r=0; r<g_cube_number; r++ )
+    ComputeHistogramsInvoker( std::vector<Mat>* _layers, int _r )
     {
-      float* dst = m_smoothed_gradient_layers.ptr<float>(r  );
-      float* src = m_smoothed_gradient_layers.ptr<float>(r+1);
+      r = _r;
+      layers = _layers;
+      _hist_th_q_no = layers->at(r).size[0];
+    }
 
-#if defined _OPENMP
-#pragma omp parallel for private(y,x,ind,hist)
-#endif
-      for( y=0; y<m_image.rows; y++ )
+    void operator ()(const cv::Range& range) const
+    {
+      for (int y = range.start; y < range.end; ++y)
       {
-        for( x=0; x<m_image.cols; x++ )
+        for( int x = 0; x < layers->at(r).size[2]; x++ )
         {
-            ind = y*m_image.cols+x;
-            hist = dst + m_hist_th_q_no * ind;
-            compute_histogram( src, y, x, hist );
+          if ( ! Point( x, y ).inside(
+               Rect( 0, 0, layers->at(r).size[2]-1, layers->at(r).size[1]-1 ) )
+             ) continue;
+
+          float* hist = layers->at(r).ptr<float>(0,y*_hist_th_q_no,x*_hist_th_q_no);
+
+          for( int h = 0; h < _hist_th_q_no; h++ )
+            hist[h] = layers->at(r+1).at<float>(h,y,x);
         }
       }
     }
-}
 
-inline void DAISY_Impl::normalize_histograms()
+    int r, _hist_th_q_no;
+    std::vector<Mat> *layers;
+};
+
+inline void DAISY_Impl::compute_histograms()
 {
-    for( int r=0; r<g_cube_number; r++ )
+    for( int r=0; r<m_rad_q_no; r++ )
     {
-      float* dst = m_smoothed_gradient_layers.ptr<float>(r);
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
-      for( int y=0; y<m_image.rows; y++ )
-      {
-          for( int x=0; x<m_image.cols; x++ )
-          {
-            float* hist = dst + (y*m_image.cols+x) * m_hist_th_q_no;
-
-            float norm = 0.0f;
-            for( int i=0; i<m_hist_th_q_no; i++ )
-              norm += sqrt( hist[i] * hist[i] );
-            if( norm != 0.0 )
-            for( int i=0; i<m_hist_th_q_no; i++ )
-              hist[i] /= norm;
-          }
-       }
+      parallel_for_( Range(0, m_image.rows), ComputeHistogramsInvoker( &m_smoothed_gradient_layers, r ) );
     }
 }
 
 inline void DAISY_Impl::compute_smoothed_gradient_layers()
 {
     double sigma;
-    for( int r=0; r<g_cube_number; r++ )
+    for( int r=0; r<m_rad_q_no; r++ )
     {
-
       // incremental smoothing
       if( r == 0 )
         sigma = m_cube_sigmas.at<double>(0);
@@ -858,22 +1176,13 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
         sigma = sqrt( m_cube_sigmas.at<double>(r  ) * m_cube_sigmas.at<double>(r  )
                     - m_cube_sigmas.at<double>(r-1) * m_cube_sigmas.at<double>(r-1) );
 
-      int kernel_size = filter_size( sigma );
-      std::vector<float> kernel(kernel_size);
-      gaussian_1d(&kernel[0], kernel_size, (float)sigma, 0);
+      int ks = filter_size( sigma, 5.0f );
 
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
       for( int th=0; th<m_hist_th_q_no; th++ )
       {
-        Mat cvI( m_image.rows, m_image.cols, CV_32FC1, m_smoothed_gradient_layers.ptr<float>(r  , th) );
-        Mat cvO( m_image.rows, m_image.cols, CV_32FC1, m_smoothed_gradient_layers.ptr<float>(r+1, th) );
-
-        Mat Kernel( 1, kernel_size, CV_32FC1, &kernel[0] );
-        filter2D( cvI, cvO, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-        filter2D( cvO, cvO, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
+        Mat cvI( m_image.rows, m_image.cols, CV_32F, m_smoothed_gradient_layers[r  ].ptr<float>(th,0,0) );
+        Mat cvO( m_image.rows, m_image.cols, CV_32F, m_smoothed_gradient_layers[r+1].ptr<float>(th,0,0) );
+        GaussianBlur( cvI, cvO, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
       }
     }
     compute_histograms();
@@ -904,36 +1213,54 @@ inline void DAISY_Impl::compute_oriented_grid_points()
     }
 }
 
-inline void DAISY_Impl::smooth_histogram(Mat hist, int hsz)
+struct MaxDoGInvoker : ParallelLoopBody
 {
-    int i;
-    float prev, temp;
-
-    prev = hist.at<float>(hsz - 1);
-    for (i = 0; i < hsz; i++)
+    MaxDoGInvoker( Mat* _next_sim, Mat* _sim, Mat* _max_dog, Mat* _scale_map, int _i, int _r )
     {
-      temp = hist.at<float>(i);
-      hist.at<float>(i) = (prev + hist.at<float>(i) + hist.at<float>( (i + 1 == hsz) ? 0 : i + 1) ) / 3.0f;
-      prev = temp;
+      i = _i;
+      r = _r;
+      sim = _sim;
+      max_dog = _max_dog;
+      next_sim = _next_sim;
+      scale_map = _scale_map;
     }
-}
 
-inline float DAISY_Impl::interpolate_peak(float left, float center, float right)
+    void operator ()(const cv::Range& range) const
+    {
+      for (int c = range.start; c < range.end; ++c)
+      {
+        float dog = (float) fabs( next_sim->at<float>(r,c) - sim->at<float>(r,c) );
+        if( dog > max_dog->at<float>(r,c) )
+        {
+          max_dog->at<float>(r,c) = dog;
+          scale_map->at<float>(r,c) = (float) i;
+        }
+      }
+    }
+    int i, r;
+    Mat* max_dog;
+    Mat* scale_map;
+    Mat *sim, *next_sim;
+};
+
+struct RoundingInvoker : ParallelLoopBody
 {
-    if( center < 0.0 )
+    RoundingInvoker( Mat* _scale_map, int _r )
     {
-      left = -left;
-      center = -center;
-      right = -right;
+      r = _r;
+      scale_map = _scale_map;
     }
-    CV_Assert(center >= left  &&  center >= right);
 
-    float den = (float) (left - 2.0 * center + right);
-
-    if( den == 0 ) return 0;
-    else           return (float) (0.5*(left -right)/den);
-}
-
+    void operator ()(const cv::Range& range) const
+    {
+      for (int c = range.start; c < range.end; ++c)
+      {
+        scale_map->at<float>(r,c) = (float) round( scale_map->at<float>(r,c) );
+      }
+    }
+    int r;
+    Mat* scale_map;
+};
 
 inline void DAISY_Impl::compute_scales()
 {
@@ -941,97 +1268,46 @@ inline void DAISY_Impl::compute_scales()
     //# scale detection is work-in-progress! do not use it if you're not Engin Tola #
     //###############################################################################
 
-    int kernel_size = 0;
+    Mat sim, next_sim;
     float sigma = (float) ( pow( g_sigma_step, g_scale_st)*g_sigma_0 );
 
-    if( kernel_size   == 0 ) kernel_size = (int)(3*sigma);
-    if( kernel_size%2 == 0 ) kernel_size++;   // kernel size must be odd
-    if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
-
-    std::vector<float> kernel(kernel_size);
-    gaussian_1d( &kernel[0], kernel_size, sigma, 0 );
-    Mat Kernel( 1, kernel_size, CV_32F, &kernel[0] );
-
-    Mat sim, next_sim;
-
-    // output gaussian image
-    filter2D( m_image, sim, CV_32F, Kernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-    filter2D( sim, sim, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
+    int ks = filter_size( sigma, 3.0f );
+    GaussianBlur( m_image, sim, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
 
     Mat max_dog( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
     m_scale_map = Mat( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
 
 
-    int i;
     float sigma_prev;
     float sigma_new;
     float sigma_inc;
 
     sigma_prev = (float) g_sigma_0;
-    for( i=0; i<g_scale_en; i++ )
+    for( int i=0; i<g_scale_en; i++ )
     {
-      sigma_new  = (float) ( pow( g_sigma_step, g_scale_st+i  ) * g_sigma_0 );
+      sigma_new  = (float) ( pow( g_sigma_step, g_scale_st + i  ) * g_sigma_0 );
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
-      kernel_size = filter_size( sigma_inc );
-      if( kernel_size   == 0 ) kernel_size = (int)(3 * sigma_inc);
-      if( kernel_size%2 == 0 ) kernel_size++;  // kernel size must be odd
-      if( kernel_size    < 3 ) kernel_size= 3; // kernel size cannot be smaller than 3
+      ks = filter_size( sigma_inc, 3.0f );
 
-      kernel.resize(kernel_size);
-      gaussian_1d( &kernel[0], kernel_size, sigma_inc, 0 );
-      Mat NextKernel( 1, kernel_size, CV_32F, &kernel[0] );
+      GaussianBlur( sim, next_sim, Size(ks, ks), sigma_inc, sigma_inc, BORDER_REPLICATE );
 
-      // output gaussian image
-      filter2D( sim, next_sim, CV_32F, NextKernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-      filter2D( next_sim, next_sim, CV_32F, NextKernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
-
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
       for( int r=0; r<m_image.rows; r++ )
       {
-        for( int c=0; c<m_image.cols; c++ )
-        {
-          float dog = (float) fabs( next_sim.at<float>(r,c) - sim.at<float>(r,c) );
-          if( dog > max_dog.at<float>(r,c) )
-          {
-            max_dog.at<float>(r,c) = dog;
-            m_scale_map.at<float>(r,c) = (float) i;
-          }
-        }
+        parallel_for_( Range(0, m_image.cols), MaxDoGInvoker( &next_sim, &sim, &max_dog, &m_scale_map, i, r ) );
       }
       sim.release();
       sim = next_sim;
     }
 
-    kernel_size = filter_size( 10.0f );
-    if( kernel_size   == 0 ) kernel_size = (int)(3 * 10.0f);
-    if( kernel_size%2 == 0 ) kernel_size++;   // kernel size must be odd
-    if( kernel_size    < 3 ) kernel_size = 3; // kernel size cannot be smaller than 3
+    ks = filter_size( 10.0f, 3.0f );
+    GaussianBlur( m_scale_map, m_scale_map, Size(ks, ks), 10.0f, 10.0f, BORDER_REPLICATE );
 
-
-    kernel.resize(kernel_size);
-    gaussian_1d( &kernel[0], kernel_size, 10.0f, 0 );
-    Mat FilterKernel( 1, kernel_size, CV_32F, &kernel[0] );
-
-    // output gaussian image
-    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel, Point( -1, -1 ), 0, BORDER_REPLICATE );
-    filter2D( m_scale_map, m_scale_map, CV_32F, FilterKernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
-
-#if defined _OPENMP
-#pragma omp parallel for
-#endif
-      for( int r=0; r<m_image.rows; r++ )
-      {
-        for( int c=0; c<m_image.cols; c++ )
-        {
-          m_scale_map.at<float>(r,c) = (float) round( m_scale_map.at<float>(r,c) );
-        }
-      }
-    //save( m_scale_map, m_image.rows, m_image.cols, "scales.dat");
+    for( int r=0; r<m_image.rows; r++ )
+    {
+      parallel_for_( Range(0, m_image.cols), RoundingInvoker( &m_scale_map, r ) );
+    }
 }
 
 
@@ -1043,12 +1319,11 @@ inline void DAISY_Impl::compute_orientations()
 
     CV_Assert( !m_image.empty() );
 
-    //int data_size = m_image.cols * m_image.rows;
     int dims[4] = { 1, m_orientation_resolution, m_image.rows, m_image.cols };
     Mat rotation_layers(4, dims, CV_32F);
-    layered_gradient( m_image, rotation_layers );
+    layered_gradient( m_image, &rotation_layers );
 
-    m_orientation_map = Mat(m_image.cols, m_image.rows, CV_16U, Scalar(0));
+    m_orientation_map = Mat(m_image.rows, m_image.cols, CV_16U, Scalar(0));
 
     int ori, max_ind;
     float max_val;
@@ -1071,7 +1346,7 @@ inline void DAISY_Impl::compute_orientations()
       sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
-      smooth_layers( rotation_layers, m_image.rows, m_image.cols, m_orientation_resolution, sigma_inc );
+      smooth_layers( &rotation_layers, sigma_inc );
 
       for( y=0; y<m_image.rows; y ++ )
       {
@@ -1079,15 +1354,14 @@ inline void DAISY_Impl::compute_orientations()
 
          for( x=0; x<m_image.cols; x++ )
          {
-            int ind = y*m_image.cols + x;
-
             if( m_scale_invariant && m_scale_map.at<float>(y,x) != scale ) continue;
 
-            //hist.at<float>(ori) = rotation_layers.ptr<float>(0, ori, y, x);
-            //hist.at<float>(ori) = rotation_layers.at<float>(ori*data_size+ind);
-
+			for (ori = 0; ori < m_orientation_resolution; ori++)
+			{
+				hist.at<float>(ori) = rotation_layers.at<float>(ori, y, x);
+			}
             for( kk=0; kk<6; kk++ )
-               smooth_histogram( hist, m_orientation_resolution );
+               smooth_histogram( &hist, m_orientation_resolution );
 
             max_val = -1;
             max_ind =  0;
@@ -1128,361 +1402,6 @@ inline void DAISY_Impl::compute_orientations()
     compute_oriented_grid_points();
 }
 
-inline void DAISY_Impl::compute_histogram( float* hcube, int y, int x, float* histogram )
-{
-    if ( ! Point( x, y ).inside(
-           Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-       ) return;
-
-    float* spatial_shift = hcube + y * m_image.cols + x;
-    int data_size =  m_image.cols * m_image.rows;
-
-    for( int h=0; h<m_hist_th_q_no; h++ )
-      histogram[h] = *(spatial_shift + h*data_size);
-}
-inline void DAISY_Impl::i_get_histogram( float* histogram, double y, double x, double shift, const float* cube ) const
-{
-    int ishift=(int)shift;
-    double fshift=shift-ishift;
-    if     ( fshift < 0.01 ) bi_get_histogram( histogram, y, x, ishift  , cube );
-    else if( fshift > 0.99 ) bi_get_histogram( histogram, y, x, ishift+1, cube );
-    else                     ti_get_histogram( histogram, y, x,  shift  , cube );
-}
-
-inline void DAISY_Impl::bi_get_histogram( float* histogram, double y, double x, int shift, const float* hcube ) const
-{
-    int mnx = int( x );
-    int mny = int( y );
-
-    if( mnx >= m_image.cols-2  || mny >= m_image.rows-2 )
-    {
-      memset(histogram, 0, sizeof(float)*m_hist_th_q_no);
-      return;
-    }
-
-    int ind =  mny*m_image.cols+mnx;
-    // A C --> pixel positions
-    // B D
-    const float* A = hcube + ind*m_hist_th_q_no;
-    const float* B = A + m_image.cols*m_hist_th_q_no;
-    const float* C = A + m_hist_th_q_no;
-    const float* D = A + (m_image.cols+1)*m_hist_th_q_no;
-
-    double alpha = mnx+1-x;
-    double beta  = mny+1-y;
-
-    float w0 = (float) (alpha*beta);
-    float w1 = (float) (beta-w0); // (1-alpha)*beta;
-    float w2 = (float) (alpha-w0); // (1-beta)*alpha;
-    float w3 = (float) (1+w0-alpha-beta); // (1-beta)*(1-alpha);
-
-    int h;
-
-    for( h=0; h<m_hist_th_q_no; h++ ) {
-      if( h+shift < m_hist_th_q_no ) histogram[h] = w0*A[h+shift];
-      else                           histogram[h] = w0*A[h+shift-m_hist_th_q_no];
-    }
-    for( h=0; h<m_hist_th_q_no; h++ ) {
-      if( h+shift < m_hist_th_q_no ) histogram[h] += w1*C[h+shift];
-      else                           histogram[h] += w1*C[h+shift-m_hist_th_q_no];
-    }
-    for( h=0; h<m_hist_th_q_no; h++ ) {
-      if( h+shift < m_hist_th_q_no ) histogram[h] += w2*B[h+shift];
-      else                           histogram[h] += w2*B[h+shift-m_hist_th_q_no];
-    }
-    for( h=0; h<m_hist_th_q_no; h++ ) {
-      if( h+shift < m_hist_th_q_no ) histogram[h] += w3*D[h+shift];
-      else                           histogram[h] += w3*D[h+shift-m_hist_th_q_no];
-    }
-}
-
-inline void DAISY_Impl::ti_get_histogram( float* histogram, double y, double x, double shift, const float* hcube ) const
-{
-    int ishift = int( shift );
-    double layer_alpha  = shift - ishift;
-
-    float thist[MAX_CUBE_NO];
-    bi_get_histogram( thist, y, x, ishift, hcube );
-
-    for( int h=0; h<m_hist_th_q_no-1; h++ )
-      histogram[h] = (float) ((1-layer_alpha)*thist[h]+layer_alpha*thist[h+1]);
-    histogram[m_hist_th_q_no-1] = (float) ((1-layer_alpha)*thist[m_hist_th_q_no-1]+layer_alpha*thist[0]);
-}
-
-inline void DAISY_Impl::ni_get_histogram( float* histogram, int y, int x, int shift, const float* hcube ) const
-{
-    if ( ! Point( x, y ).inside(
-           Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-       ) return;
-
-    const float* hptr = hcube + (y*m_image.cols+x)*m_hist_th_q_no;
-
-    for( int h=0; h<m_hist_th_q_no; h++ )
-    {
-      int hi = h+shift;
-      if( hi >= m_hist_th_q_no ) hi -= m_hist_th_q_no;
-      histogram[h] = hptr[hi];
-    }
-}
-
-inline void DAISY_Impl::get_descriptor( int y, int x, float* &descriptor )
-{
-    CV_Assert( !m_dense_descriptors.empty() );
-    CV_Assert( y<m_image.rows && x<m_image.cols && y>=0 && x>=0 );
-    descriptor = m_dense_descriptors.ptr<float>( y*m_image.cols+x );
-}
-
-inline void DAISY_Impl::get_descriptor( double y, double x, int orientation, float* descriptor ) const
-{
-    get_unnormalized_descriptor(y, x, orientation, descriptor );
-    normalize_descriptor(descriptor, m_nrm_type);
-}
-
-inline void DAISY_Impl::get_unnormalized_descriptor( double y, double x, int orientation, float* descriptor ) const
-{
-    if( m_disable_interpolation ) ni_get_descriptor(y,x,orientation,descriptor);
-    else                           i_get_descriptor(y,x,orientation,descriptor);
-}
-
-inline void DAISY_Impl::i_get_descriptor( double y, double x, int orientation, float* descriptor ) const
-{
-    // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
-    //
-    // i'm not changing the descriptor[] values if the gridpoint is outside
-    // the image. you should memset the descriptor array to 0 if you don't
-    // want to have stupid values there.
-
-    CV_Assert( y >= 0 && y < m_image.rows );
-    CV_Assert( x >= 0 && x < m_image.cols );
-    CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( !m_smoothed_gradient_layers.empty() );
-    CV_Assert( !m_oriented_grid_points.empty() );
-    CV_Assert( descriptor != NULL );
-
-    double shift = m_orientation_shift_table[orientation];
-
-    i_get_histogram( descriptor, y, x, shift, m_smoothed_gradient_layers.ptr<float>( g_selected_cubes[0] ) );
-
-    int r, rdt, region;
-    double yy, xx;
-    float* histogram = 0;
-
-    Mat grid = m_oriented_grid_points.row( orientation );
-
-    // petals of the flower
-    for( r=0; r<m_rad_q_no; r++ )
-    {
-      rdt  = r*m_th_q_no+1;
-      for( region=rdt; region<rdt+m_th_q_no; region++ )
-      {
-         yy = y + grid.at<double>(2*region    );
-         xx = x + grid.at<double>(2*region + 1);
-
-         if ( ! Point2f( (float)xx, (float)yy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-            ) continue;
-
-         histogram = descriptor + region*m_hist_th_q_no;
-         i_get_histogram( histogram, yy, xx, shift, (float *) m_smoothed_gradient_layers.ptr<float>( r ) );
-      }
-    }
-}
-
-inline void DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, float* descriptor ) const
-{
-    // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
-    //
-    // i'm not changing the descriptor[] values if the gridpoint is outside
-    // the image. you should memset the descriptor array to 0 if you don't
-    // want to have stupid values there.
-
-    CV_Assert( y >= 0 && y < m_image.rows );
-    CV_Assert( x >= 0 && x < m_image.cols );
-    CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( !m_smoothed_gradient_layers.empty() );
-    CV_Assert( !m_oriented_grid_points.empty() );
-    CV_Assert( descriptor != NULL );
-
-    double shift = m_orientation_shift_table[orientation];
-    int ishift = (int)shift;
-    if( shift - ishift > 0.5  ) ishift++;
-
-    int iy = (int)y; if( y - iy > 0.5 ) iy++;
-    int ix = (int)x; if( x - ix > 0.5 ) ix++;
-
-    // center
-    ni_get_histogram( descriptor, iy, ix, ishift, m_smoothed_gradient_layers.ptr<float>(g_selected_cubes[0]) );
-
-    double yy, xx;
-    float* histogram=0;
-    // petals of the flower
-    int r, rdt, region;
-    Mat grid = m_oriented_grid_points.row( orientation );
-    for( r=0; r<m_rad_q_no; r++ )
-    {
-      rdt = r*m_th_q_no+1;
-      for( region=rdt; region<rdt+m_th_q_no; region++ )
-      {
-         yy = y + grid.at<double>(2*region  );
-         xx = x + grid.at<double>(2*region+1);
-         iy = (int)yy; if( yy - iy > 0.5 ) iy++;
-         ix = (int)xx; if( xx - ix > 0.5 ) ix++;
-
-         if ( ! Point2f( (float)xx, (float)yy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-            ) continue;
-
-         histogram = descriptor+region*m_hist_th_q_no;
-         ni_get_histogram( histogram, iy, ix, ishift, m_smoothed_gradient_layers.ptr<float>(g_selected_cubes[r]) );
-      }
-    }
-}
-
-// Warped get_descriptor's
-inline bool DAISY_Impl::get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const
-{
-    bool rval = get_unnormalized_descriptor(y,x,orientation, H, descriptor);
-    if( rval ) normalize_descriptor(descriptor, m_nrm_type);
-    return rval;
-}
-
-inline bool DAISY_Impl::get_unnormalized_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const
-{
-    if( m_disable_interpolation ) return ni_get_descriptor(y,x,orientation,H,descriptor);
-    else                          return   i_get_descriptor(y,x,orientation,H,descriptor);
-}
-
-inline bool DAISY_Impl::i_get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const
-{
-    // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
-    //
-    // i'm not changing the descriptor[] values if the gridpoint is outside
-    // the image. you should memset the descriptor array to 0 if you don't
-    // want to have stupid values there.
-
-    CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( !m_smoothed_gradient_layers.empty() );
-    CV_Assert( descriptor != NULL );
-
-    int hradius[MAX_CUBE_NO];
-
-    double hy, hx, ry, rx;
-    point_transform_via_homography( H, x, y, hx, hy );
-
-    if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-       ) return false;
-
-    point_transform_via_homography( H, x+m_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
-    double d0 = rx - hx; double d1 = ry - hy;
-    double radius = sqrt( d0*d0 + d1*d1 );
-    hradius[0] = quantize_radius( (float) radius );
-
-    double shift = m_orientation_shift_table[orientation];
-    i_get_histogram( descriptor, hy, hx, shift, m_smoothed_gradient_layers.ptr<float>(hradius[0]) );
-
-    double gy, gx;
-    int r, rdt, th, region;
-    float* histogram=0;
-    for( r=0; r<m_rad_q_no; r++)
-    {
-      rdt = r*m_th_q_no + 1;
-      for( th=0; th<m_th_q_no; th++ )
-      {
-         region = rdt + th;
-
-         gy = y + m_grid_points.at<double>(region,0);
-         gx = x + m_grid_points.at<double>(region,1);
-
-         point_transform_via_homography(H, gx, gy, hx, hy);
-         if( th == 0 )
-         {
-            point_transform_via_homography(H, gx+m_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
-            d0 = rx - hx; d1 = ry - hy;
-            radius = sqrt( d0*d0 + d1+d1 );
-            hradius[r] = quantize_radius( (float) radius );
-         }
-
-         if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-            ) continue;
-
-         histogram = descriptor+region*m_hist_th_q_no;
-         i_get_histogram( histogram, hy, hx, shift, m_smoothed_gradient_layers.ptr<float>(hradius[r]) );
-      }
-    }
-    return true;
-}
-
-inline bool DAISY_Impl::ni_get_descriptor( double y, double x, int orientation, double* H, float* descriptor ) const
-{
-    // memset( descriptor, 0, sizeof(float)*m_descriptor_size );
-    //
-    // i'm not changing the descriptor[] values if the gridpoint is outside
-    // the image. you should memset the descriptor array to 0 if you don't
-    // want to have stupid values there.
-
-    CV_Assert( orientation >= 0 && orientation < 360 );
-    CV_Assert( !m_smoothed_gradient_layers.empty() );
-    CV_Assert( descriptor != NULL );
-
-    int hradius[MAX_CUBE_NO];
-
-    double hy, hx, ry, rx;
-
-    point_transform_via_homography(H, x, y, hx, hy );
-
-    if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-       ) return false;
-
-    double shift = m_orientation_shift_table[orientation];
-    int  ishift = (int)shift; if( shift - ishift > 0.5  ) ishift++;
-
-    point_transform_via_homography(H, x+m_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
-    double d0 = rx - hx; double d1 = ry - hy;
-    double radius = sqrt( d0*d0 + d1*d1 );
-    hradius[0] = quantize_radius( (float) radius );
-
-    int ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
-    int ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
-
-    int r, rdt, th, region;
-    double gy, gx;
-    float* histogram=0;
-    ni_get_histogram( descriptor, ihy, ihx, ishift, m_smoothed_gradient_layers.ptr<float>(hradius[0]) );
-    for( r=0; r<m_rad_q_no; r++)
-    {
-      rdt = r*m_th_q_no + 1;
-      for( th=0; th<m_th_q_no; th++ )
-      {
-         region = rdt + th;
-
-         gy = y + m_grid_points.at<double>(region,0);
-         gx = x + m_grid_points.at<double>(region,1);
-
-         point_transform_via_homography(H, gx, gy, hx, hy);
-         if( th == 0 )
-         {
-            point_transform_via_homography(H, gx+m_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
-            d0 = rx - hx; d1 = ry - hy;
-            radius = sqrt( d0*d0 + d1*d1 );
-            hradius[r] = quantize_radius( (float) radius );
-         }
-
-         ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
-         ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
-
-         if ( ! Point( ihx, ihy ).inside(
-                Rect( 0, 0, m_image.cols-1, m_image.rows-1 ) )
-            ) continue;
-
-         histogram = descriptor+region*m_hist_th_q_no;
-         ni_get_histogram( histogram, ihy, ihx, ishift, m_smoothed_gradient_layers.ptr<float>(hradius[r]) );
-      }
-    }
-    return true;
-}
 
 inline void DAISY_Impl::initialize_single_descriptor_mode( )
 {
@@ -1499,8 +1418,6 @@ inline void DAISY_Impl::set_parameters( )
     {
       m_orientation_shift_table[i] = i/360.0 * m_hist_th_q_no;
     }
-    m_layer_size = m_image.rows*m_image.cols;
-    m_cube_size = m_layer_size*m_hist_th_q_no;
 
     compute_cube_sigmas();
     compute_grid_points();
@@ -1574,14 +1491,20 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
       {
           get_descriptor( keypoints[k].pt.y, keypoints[k].pt.x,
                           m_use_orientation ? (int) keypoints[k].angle : 0,
-                          &descriptors.at<float>( k, 0 ) );
+                          &descriptors.at<float>( k, 0 ), &m_smoothed_gradient_layers,
+                          &m_oriented_grid_points, m_orientation_shift_table, m_th_q_no,
+                          m_hist_th_q_no, m_grid_point_number, m_descriptor_size, m_enable_interpolation,
+                          m_nrm_type );
       }
     else
       for (int k = 0; k < (int) keypoints.size(); k++)
       {
-          get_descriptor( keypoints[k].pt.y, keypoints[k].pt.x,
+        get_descriptor_h( keypoints[k].pt.y, keypoints[k].pt.x,
                           m_use_orientation ? (int) keypoints[k].angle : 0,
-                          &H.at<double>( 0 ), &descriptors.at<float>( k, 0 ) );
+                          &descriptors.at<float>( k, 0 ), &H.at<double>( 0 ), &m_smoothed_gradient_layers,
+                          m_cube_sigmas, &m_grid_points, m_orientation_shift_table, m_th_q_no,
+                          m_hist_th_q_no, m_grid_point_number, m_descriptor_size, m_enable_interpolation,
+                          m_nrm_type );
       }
 
 }
@@ -1603,12 +1526,13 @@ void DAISY_Impl::compute( InputArray _image, Rect roi, OutputArray _descriptors 
     set_parameters();
     initialize_single_descriptor_mode();
 
-    // compute full desc
-    compute_descriptors();
-    normalize_descriptors();
+    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32F );
 
     Mat descriptors = _descriptors.getMat();
-    descriptors = m_dense_descriptors;
+
+    // compute full desc
+    compute_descriptors( &descriptors );
+    normalize_descriptors( &descriptors );
 
     release_auxiliary();
 }
@@ -1631,12 +1555,13 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
     set_parameters();
     initialize_single_descriptor_mode();
 
-    // compute full desc
-    compute_descriptors();
-    normalize_descriptors();
+    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32F );
 
     Mat descriptors = _descriptors.getMat();
-    descriptors = m_dense_descriptors;
+
+    // compute full desc
+    compute_descriptors( &descriptors );
+    normalize_descriptors( &descriptors );
 
     release_auxiliary();
 }
@@ -1645,7 +1570,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
 DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
              int _norm, InputArray _H, bool _interpolation, bool _use_orientation )
            : m_rad(_radius), m_rad_q_no(_q_radius), m_th_q_no(_q_theta), m_hist_th_q_no(_q_hist),
-             m_nrm_type(_norm), m_disable_interpolation(_interpolation), m_use_orientation(_use_orientation)
+             m_nrm_type(_norm), m_enable_interpolation(_interpolation), m_use_orientation(_use_orientation)
 {
 
     m_descriptor_size = 0;
@@ -1655,22 +1580,13 @@ DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
     m_rotation_invariant = false;
     m_orientation_resolution = 36;
 
-    m_cube_size = 0;
-    m_layer_size = 0;
-
-    m_descriptor_normalization_threshold = 0.154f; // sift magical number
-
     m_h_matrix = _H.getMat();
 }
 
 // destructor
 DAISY_Impl::~DAISY_Impl()
 {
-    m_scale_map.release();
-    m_grid_points.release();
-    m_orientation_map.release();
-    m_oriented_grid_points.release();
-    m_smoothed_gradient_layers.release();
+    release_auxiliary();
 }
 
 Ptr<DAISY> DAISY::create( float radius, int q_radius, int q_theta, int q_hist,
