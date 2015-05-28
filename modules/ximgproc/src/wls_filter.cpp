@@ -56,8 +56,8 @@ namespace ximgproc
         double *interD,*interE,*cur_res;
         void init(InputArray guide,double _lambda,double _sigmaColor,int _num_iter);
         void buildCoefMatrices(Mat& guide);
-        void horizontalPass(double* cur,int w,int h);
-        void verticalPass(double* cur,int w,int h);
+        void horizontalPass(double* cur);
+        void verticalPass(double* cur);
     };
 
     void WeightedLeastSquaresFilterImpl::init(InputArray guide,double _lambda,double _sigmaColor,int _num_iter)
@@ -203,8 +203,8 @@ namespace ximgproc
 
         for(int n=0;n<num_iter;n++)
         {
-            horizontalPass(cur_res,w,h);
-            verticalPass(cur_res,w,h);
+            horizontalPass(cur_res);
+            verticalPass(cur_res);
         }
 
         for(int i=0;i<h;i++)
@@ -218,7 +218,7 @@ namespace ximgproc
         }
     }
 
-    void WeightedLeastSquaresFilterImpl::horizontalPass(double* cur,int w,int h)
+    void WeightedLeastSquaresFilterImpl::horizontalPass(double* cur)
     {
         double denom;
         for(int i=0;i<h;i++)
@@ -240,7 +240,7 @@ namespace ximgproc
         }
     }
 
-    void WeightedLeastSquaresFilterImpl::verticalPass(double* cur,int w,int h)
+    void WeightedLeastSquaresFilterImpl::verticalPass(double* cur)
     {
         double denom;
         //forward pass:

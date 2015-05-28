@@ -43,20 +43,7 @@ namespace cv
 namespace ximgproc
 {
     void setROI(InputArray disparity_map, InputArray left_view, OutputArray filtered_disparity_map,
-                Mat& disp,Mat& src,Mat& dst,Rect ROI)
-    {
-        Mat disp_full_size = disparity_map.getMat();
-        Mat src_full_size = left_view.getMat();
-        CV_Assert( (disp_full_size.depth() == CV_16S) && (disp_full_size.channels() == 1) );
-        CV_Assert( (src_full_size.depth()  == CV_8U)  && (src_full_size.channels()  <= 4) );
-        disp = Mat(disp_full_size,ROI);
-        src  = Mat(src_full_size ,ROI);
-        filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
-        Mat& dst_full_size = filtered_disparity_map.getMatRef();
-        dst = Mat(dst_full_size,ROI);
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
+                Mat& disp,Mat& src,Mat& dst,Rect ROI);
 
     class DisparityDTFilterImpl : public DisparityDTFilter
     {
@@ -177,6 +164,22 @@ namespace ximgproc
     Ptr<DisparityWLSFilter> createDisparityWLSFilter()
     {
         return Ptr<DisparityWLSFilter>(DisparityWLSFilterImpl::create());
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    void setROI(InputArray disparity_map, InputArray left_view, OutputArray filtered_disparity_map,
+        Mat& disp,Mat& src,Mat& dst,Rect ROI)
+    {
+        Mat disp_full_size = disparity_map.getMat();
+        Mat src_full_size = left_view.getMat();
+        CV_Assert( (disp_full_size.depth() == CV_16S) && (disp_full_size.channels() == 1) );
+        CV_Assert( (src_full_size.depth()  == CV_8U)  && (src_full_size.channels()  <= 4) );
+        disp = Mat(disp_full_size,ROI);
+        src  = Mat(src_full_size ,ROI);
+        filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
+        Mat& dst_full_size = filtered_disparity_map.getMatRef();
+        dst = Mat(dst_full_size,ROI);
     }
 
 }

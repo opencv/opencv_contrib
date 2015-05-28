@@ -1,15 +1,19 @@
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/highgui.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/ximgproc/disparity_filter.hpp"
 #include <stdio.h>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <map>
-#include <windows.h>
+
+#if defined(_WIN32)
+#include <direct.h>
+#else 
+#include <sys/stat.h>
+#endif
 
 using namespace cv;
 using namespace cv::ximgproc;
@@ -149,7 +153,14 @@ void setConfigsForTesting(map<string,config>& cfgs)
     cfgs["stereobm_dtf"] = config(stereobm_matcher,dt_filter);
     cfgs["stereobm_gf"]  = config(stereobm_matcher,guided_filter);
 }
-
+void CreateDir(string path)
+{
+#if defined(_WIN32)
+    _mkdir(path.c_str());
+#else 
+    mkdir(path.c_str(), 0777);
+#endif
+}
 
 int main(int argc, char** argv)
 {
@@ -163,19 +174,18 @@ int main(int argc, char** argv)
 
     map<string,config> configs_for_testing;
     setConfigsForTesting(configs_for_testing);
-    CreateDirectory(wstring(res_folder.begin(), res_folder.end()).c_str(),NULL);
+    CreateDir(res_folder);
 
     for (auto cfg = configs_for_testing.begin(); cfg != configs_for_testing.end(); cfg++)
     {
         string vis_folder = res_folder+"/vis_"+cfg->first;
-        CreateDirectory(wstring(vis_folder.begin(),vis_folder.end()).c_str(),NULL);
+        CreateDir(vis_folder);
         
         string cfg_file_name = res_folder+"/"+cfg->first+"_res.csv";
         FILE* cur_cfg_res_file = fopen(cfg_file_name.c_str(),"w");
         fprintf(cur_cfg_res_file,"Name,MSE,MSE after postfiltering,Percent bad,Percent bad after postfiltering,Matcher Execution Time(s),Filter Execution Time(s)\n");
-        string cfg_info_file_name = res_folder+"/"+cfg->first+"_info.txt";
 
-        cout<<"Processing configuration: "<<cfg->first<<endl;
+        printf("Processing configuration: %s\n",cfg->first.c_str());
 
         FileStorage fs(dataset_folder + "/_dataset.xml", FileStorage::READ);
         FileNode n = fs["data_set"];
@@ -187,7 +197,7 @@ int main(int argc, char** argv)
         {
             dataset_entry entry(dataset_folder);
             (*it)>>entry;
-            cout<<entry.name<<" ";
+            printf("%s ",entry.name.c_str());
             Mat left,right,GT;
             entry.readEntry(left,right,GT);
             Mat raw_disp;
@@ -227,7 +237,8 @@ int main(int argc, char** argv)
             imwrite(vis_folder + "/" + entry.name + "_disparity_raw.png",raw_disp_vis);
             imwrite(vis_folder + "/" + entry.name + "_disparity_filtered.png",filtered_disp_vis);
 
-            cout<<"- Done"<<endl;
+            printf("- Done\n");
+
         }
         fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n","average",average_MSE_pre/cnt,
             average_MSE_post/cnt,average_percent_pre/cnt,average_percent_post/cnt,
