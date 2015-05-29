@@ -175,8 +175,13 @@ cv::Mat Dictionary::_extractBits(InputArray image, InputOutputArray imgPoints) {
 
 /**
  */
-void Dictionary::drawMarker(InputOutputArray img, int id) {
-    /// TODO
+void Dictionary::drawMarker(int id, int sidePixels, OutputArray img) {
+    img.create(sidePixels, sidePixels, CV_8UC1);
+    cv::Mat tinyMarker(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
+    cv::Mat innerRegion = tinyMarker.rowRange(1,tinyMarker.rows-1).colRange(1,tinyMarker.cols-1);
+    cv::Mat bits = _getBits( codes.rowRange(id, id+1) );
+    bits.copyTo(innerRegion);
+    cv::resize(tinyMarker, img.getMat(), img.getMat().size(),0,0,cv::INTER_NEAREST);
 }
 
 
@@ -204,6 +209,47 @@ cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
         candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
     }
     return candidateQuartets;
+
+}
+
+/**
+  */
+cv::Mat Dictionary::_getBits(cv::Mat quartets) {
+
+    cv::Mat bits(markerSize, markerSize, CV_8UC1);
+    int currentQuartetIdx=0;
+    for(int row=0; row<markerSize/2; row++)
+    {
+        for(int col=row; col<markerSize-row-1; col++) {
+            unsigned char currentQuartet = quartets.ptr<unsigned char>(0)[currentQuartetIdx];
+            unsigned char bit3 = 0;
+            if(currentQuartet>=8) {
+                bit3 = 1;
+                currentQuartet-=8;
+            }
+            bits.at<unsigned char>(row,col) = bit3*255;
+            unsigned char bit2 = 0;
+            if(currentQuartet>=4) {
+                bit2 = 1;
+                currentQuartet-=4;
+            }
+            bits.at<unsigned char>(col,markerSize-1-row) = bit2*255;
+            unsigned char bit1 = 0;
+            if(currentQuartet>=2) {
+                bit1 = 1;
+                currentQuartet-=2;
+            }
+            bits.at<unsigned char>(markerSize-1-row,markerSize-1-col)= bit1*255;
+            unsigned char bit0 = currentQuartet;
+            bits.at<unsigned char>(markerSize-1-col,row) = bit0*255;
+            currentQuartetIdx++;
+        }
+    }
+    if((markerSize*markerSize)%4 == 1) { // middle bit
+        if(quartets.ptr<unsigned char>()[currentQuartetIdx]==0) bits.at<unsigned char>(markerSize/2,markerSize/2) = 0;
+        else bits.at<unsigned char>(markerSize/2,markerSize/2) = 1;
+    }
+    return bits;
 
 }
 

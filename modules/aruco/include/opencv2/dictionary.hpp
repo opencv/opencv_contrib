@@ -84,18 +84,19 @@ public:
     
     /**
      * @brief Draw a canonical marker image
-     * 
+     *
      * @param img
      * @param id
      * @return void
      */
-    void drawMarker(InputOutputArray img, int id);
+    void drawMarker(int id, int sidePixels, OutputArray img);
 
 
 
 private:
 
     cv::Mat _getQuartet(cv::Mat bits);
+    cv::Mat _getBits(cv::Mat quartets);
     cv::Mat _getDistances(cv::Mat quartets);
     cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints);
     bool _isBorderValid(cv::Mat bits);

@@ -177,6 +177,18 @@ CV_EXPORTS void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputA
 
 
 
+/**
+ * @brief Draw a canonical marker image
+ *
+ * @param dict
+ * @param id
+ * @param sidePixels
+ * @param img
+ * @return void
+ */
+CV_EXPORTS void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray img);
+CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArray img);
+
 
 //CV_EXPORTS void calibrateCamera(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
 

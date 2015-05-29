@@ -425,6 +425,24 @@ void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCo
 }
 
 
+
+
+/**
+ */
+void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray img) {
+    dict.drawMarker(id,sidePixels,img);
+}
+
+
+/**
+ */
+void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArray img) {
+    drawMarker(getPredefinedDictionary(dict), id, sidePixels, img);
+}
+
+
+
+
 /**
  */
 void Board::drawBoard(InputOutputArray img) {
@@ -482,6 +500,9 @@ Board Board::createPlanarBoard(int width, int height, float markerSize, float ma
     }
     return res;
 }
+
+
+
 
 
 }}
