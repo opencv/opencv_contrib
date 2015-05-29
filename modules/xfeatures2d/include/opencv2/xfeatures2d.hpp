@@ -222,7 +222,7 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
     virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
@@ -239,7 +239,7 @@ public:
     /**
      * @param y position y on image
      * @param x position x on image
-     * @param ori orientation on image (0->360)
+     * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
     virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
