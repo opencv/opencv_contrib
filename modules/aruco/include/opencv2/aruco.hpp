@@ -143,6 +143,20 @@ CV_EXPORTS void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray 
 CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArray img);
 
 
+
+/**
+ * @brief Draw a planar board
+ *
+ * @param board
+ * @param dict
+ * @param outSize
+ * @param img
+ * @return void
+ */
+CV_EXPORTS void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray img);
+CV_EXPORTS void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dict, cv::Size outSize, OutputArray img);
+
+
 //CV_EXPORTS void calibrateCamera(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
 
 

@@ -60,16 +60,6 @@ public:
     std::vector< std::vector<cv::Point3f> > objPoints; // each marker include its 4 corners, i.e. for M marker, Mx4
     std::vector< int > ids; // ids of each marker in the board (same size than objPoints)
 
-    
-    /**
-     * @brief Draw board image considering (x,y) coordinates (ignoring Z)
-     * 
-     * @param image 
-     * @return void
-     */
-    void drawBoard(InputOutputArray image);
-
-    
 
     /**
      * @brief get list of object points for the detected markers
@@ -92,6 +82,15 @@ public:
      * @return cv::aruco::Board
      */
     static Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation);
+
+
+    /**
+     * @brief Draw board image considering (x,y) coordinates (ignoring Z)
+     *
+     * @param image
+     * @return void
+     */
+    void drawBoard(Dictionary dict, cv::Size outSize, OutputArray img);
     
 };
 

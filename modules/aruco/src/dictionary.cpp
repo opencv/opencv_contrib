@@ -179,7 +179,7 @@ void Dictionary::drawMarker(int id, int sidePixels, OutputArray img) {
     img.create(sidePixels, sidePixels, CV_8UC1);
     cv::Mat tinyMarker(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
     cv::Mat innerRegion = tinyMarker.rowRange(1,tinyMarker.rows-1).colRange(1,tinyMarker.cols-1);
-    cv::Mat bits = _getBits( codes.rowRange(id, id+1) );
+    cv::Mat bits = 255*_getBits( codes.rowRange(id, id+1) );
     bits.copyTo(innerRegion);
     cv::resize(tinyMarker, img.getMat(), img.getMat().size(),0,0,cv::INTER_NEAREST);
 }
@@ -227,21 +227,21 @@ cv::Mat Dictionary::_getBits(cv::Mat quartets) {
                 bit3 = 1;
                 currentQuartet-=8;
             }
-            bits.at<unsigned char>(row,col) = bit3*255;
+            bits.at<unsigned char>(row,col) = bit3;
             unsigned char bit2 = 0;
             if(currentQuartet>=4) {
                 bit2 = 1;
                 currentQuartet-=4;
             }
-            bits.at<unsigned char>(col,markerSize-1-row) = bit2*255;
+            bits.at<unsigned char>(col,markerSize-1-row) = bit2;
             unsigned char bit1 = 0;
             if(currentQuartet>=2) {
                 bit1 = 1;
                 currentQuartet-=2;
             }
-            bits.at<unsigned char>(markerSize-1-row,markerSize-1-col)= bit1*255;
+            bits.at<unsigned char>(markerSize-1-row,markerSize-1-col)= bit1;
             unsigned char bit0 = currentQuartet;
-            bits.at<unsigned char>(markerSize-1-col,row) = bit0*255;
+            bits.at<unsigned char>(markerSize-1-col,row) = bit0;
             currentQuartetIdx++;
         }
     }

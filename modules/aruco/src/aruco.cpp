@@ -441,6 +441,17 @@ void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArra
 }
 
 
+/**
+ */
+void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray img) {
+    board.drawBoard(dict, outSize, img);
+}
+
+/**
+ */
+void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dict, cv::Size outSize, OutputArray img) {
+    drawPlanarBoard(board, getPredefinedDictionary(dict), outSize, img);
+}
 
 
 
