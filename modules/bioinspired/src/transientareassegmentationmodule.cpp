@@ -12,12 +12,12 @@
  **
  ** Maintainers : Listic lab (code author current affiliation & applications)
  **
- **  Creation - enhancement process 2007-2013
+ **  Creation - enhancement process 2007-2015
  **      Author: Alexandre Benoit (benoit.alexandre.vision@gmail.com), LISTIC lab, Annecy le vieux, France
  **
  ** Theses algorithm have been developped by Alexandre BENOIT since his thesis with Alice Caplier at Gipsa-Lab (www.gipsa-lab.inpg.fr) and the research he pursues at LISTIC Lab (www.listic.univ-savoie.fr).
  ** Refer to the following research paper for more information:
- ** Strat S. T. , Benoit A.Lambert P. , Caplier A., "Retina Enhanced SURF Descriptors for Spatio-Temporal Concept Detection", Multimedia Tools and Applications, 2012 (DOI: 10.1007/s11042-012-1280-0)
+ ** Strat, S.T.; Benoit, A.; Lambert, P., "Retina enhanced bag of words descriptors for video classification," Signal Processing Conference (EUSIPCO), 2014 Proceedings of the 22nd European , vol., no., pp.1307,1311, 1-5 Sept. 2014 (http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6952461&isnumber=6951911)
  ** Benoit A., Caplier A., Durette B., Herault, J., "USING HUMAN VISUAL SYSTEM MODELING FOR BIO-INSPIRED LOW LEVEL IMAGE PROCESSING", Elsevier, Computer Vision and Image Understanding 114 (2010), pp. 758-773, DOI: http://dx.doi.org/10.1016/j.cviu.2010.01.011
  ** This work have been carried out thanks to Jeanny Herault who's research and great discussions are the basis of all this work, please take a look at his book:
  ** Vision: Images, Signals and Neural Networks: Models of Neural Processing in Visual Perception (Progress in Neural Processing),By: Jeanny Herault, ISBN: 9814273686. WAPI (Tower ID): 113266891.
@@ -30,7 +30,7 @@
  ** Copyright (C) 2008-2011, Willow Garage Inc., all rights reserved.
  **
  **               For Human Visual System tools (bioinspired)
- ** Copyright (C) 2007-2011, LISTIC Lab, Annecy le Vieux and GIPSA Lab, Grenoble, France, all rights reserved.
+ ** Copyright (C) 2007-2015, LISTIC Lab, Annecy le Vieux and GIPSA Lab, Grenoble, France, all rights reserved.
  **
  ** Third party copyrights are property of their respective owners.
  **
@@ -132,12 +132,12 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(TransientAreasSegmentationModule::SegmentationParameters newParameters);
+    void setup(SegmentationParameters newParameters);
 
     /**
      * @return the current parameters setup
      */
-    struct TransientAreasSegmentationModule::SegmentationParameters getParameters();
+    struct SegmentationParameters getParameters();
 
     /**
      * parameters setup display method
@@ -203,7 +203,7 @@ protected:
      */
     inline const std::valarray<float> &getMotionContextPicture() const {return _contextMotionEnergy;};
 
-    struct cv::bioinspired::TransientAreasSegmentationModule::SegmentationParameters _segmentationParameters;
+    struct cv::bioinspired::SegmentationParameters _segmentationParameters;
     // template buffers and related acess pointers
     std::valarray<float> _inputToSegment;
     std::valarray<float> _contextMotionEnergy;
@@ -221,7 +221,7 @@ protected:
     void _convertValarrayBuffer2cvMat(const std::valarray<bool> &grayMatrixToConvert, const unsigned int nbRows, const unsigned int nbColumns, OutputArray outBuffer);
     bool _convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray<float> &outputValarrayMatrix);
 	
-	const TransientAreasSegmentationModuleImpl & operator = (const TransientAreasSegmentationModuleImpl &);
+    const TransientAreasSegmentationModuleImpl & operator = (const TransientAreasSegmentationModuleImpl &);
 };
 
 class TransientAreasSegmentationModuleImpl_: public  TransientAreasSegmentationModule
@@ -232,9 +232,9 @@ public:
     inline virtual void write( cv::FileStorage& fs ) const{_segmTool.write(fs);};
     inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure){_segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure);};
     inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure){_segmTool.setup(fs, applyDefaultSetupOnFailure);};
-    inline virtual void setup(TransientAreasSegmentationModule::SegmentationParameters newParameters){_segmTool.setup(newParameters);};
+    inline virtual void setup(SegmentationParameters newParameters){_segmTool.setup(newParameters);};
     inline virtual const String printSetup(){return _segmTool.printSetup();};
-    inline virtual struct TransientAreasSegmentationModule::SegmentationParameters getParameters(){return _segmTool.getParameters();};
+    inline virtual struct SegmentationParameters getParameters(){return _segmTool.getParameters();};
     inline virtual void write( String fs ) const{_segmTool.write(fs);};
     inline virtual void run(InputArray inputToSegment, const int channelIndex){_segmTool.run(inputToSegment, channelIndex);};
     inline virtual void getSegmentationPicture(OutputArray transientAreas){return _segmTool.getSegmentationPicture(transientAreas);};
@@ -286,7 +286,7 @@ void TransientAreasSegmentationModuleImpl::clearAllBuffers()
     _segmentedAreas=0;
 }
 
-struct TransientAreasSegmentationModule::SegmentationParameters TransientAreasSegmentationModuleImpl::getParameters()
+struct SegmentationParameters TransientAreasSegmentationModuleImpl::getParameters()
 {
 	return _segmentationParameters;
 };
@@ -305,7 +305,7 @@ void TransientAreasSegmentationModuleImpl::setup(String segmentationParameterFil
         if (applyDefaultSetupOnFailure)
         {
            printf("Retina::setup: resetting retina with default parameters\n");
-            cv::bioinspired::TransientAreasSegmentationModule::SegmentationParameters defaults;
+            cv::bioinspired::SegmentationParameters defaults;
             setup(defaults);
         }
         else
@@ -344,7 +344,7 @@ void TransientAreasSegmentationModuleImpl::setup(cv::FileStorage &fs, const bool
         std::cout<<"Retina::setup: resetting retina with default parameters"<<std::endl;
         if (applyDefaultSetupOnFailure)
         {
-            struct cv::bioinspired::TransientAreasSegmentationModule::SegmentationParameters defaults;
+            struct cv::bioinspired::SegmentationParameters defaults;
             setup(defaults);
         }
         std::cout<<"SegmentationModule::setup: wrong/unappropriate xml parameter file : error report :`n=>"<<e.what()<<std::endl;
@@ -356,11 +356,11 @@ void TransientAreasSegmentationModuleImpl::setup(cv::FileStorage &fs, const bool
 }
 
 // setup parameters for the 2 filters that allow the segmentation
-void TransientAreasSegmentationModuleImpl::setup(cv::bioinspired::TransientAreasSegmentationModule::SegmentationParameters newParameters)
+void TransientAreasSegmentationModuleImpl::setup(cv::bioinspired::SegmentationParameters newParameters)
 {
 
     // copy structure contents
-    memcpy(&_segmentationParameters, &newParameters, sizeof(cv::bioinspired::TransientAreasSegmentationModule::SegmentationParameters));
+    memcpy(&_segmentationParameters, &newParameters, sizeof(cv::bioinspired::SegmentationParameters));
     // apply setup
     // init local motion energy extraction low pass filter
     BasicRetinaFilter::setLPfilterParameters(0, newParameters.localEnergy_temporalConstant, newParameters.localEnergy_spatialConstant);
