@@ -121,10 +121,6 @@ public:
 @param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
 @param use_orientation sample patterns using keypoints orientation, disabled by default.
 
-@note
-   -   A complete BRIEF extractor sample can be found at
-        opencv_source_code/samples/cpp/brief_match_test.cpp
-
  */
 class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
