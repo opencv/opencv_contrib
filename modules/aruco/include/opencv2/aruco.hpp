@@ -44,57 +44,10 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 
 #include "dictionary.hpp"
+#include "board.hpp"
 
 
 namespace cv { namespace aruco {
-
-
-/**
- * @brief Board of markers containing the layout of the markers
- * 
- */
-class CV_EXPORTS Board {
-
-public:
-    
-    std::vector< std::vector<cv::Point3f> > objPoints; // each marker include its 4 corners, i.e. for M marker, Mx4
-    std::vector< int > ids; // ids of each marker in the board (same size than objPoints)
-
-    
-    /**
-     * @brief Draw board image considering (x,y) coordinates (ignoring Z)
-     * 
-     * @param image 
-     * @return void
-     */
-    void drawBoard(InputOutputArray image);
-
-    
-
-    /**
-     * @brief get list of object points for the detected markers
-     *
-     * @param detectedIds
-     * @param objectPoints
-     * @return void
-     */
-    void getObjectAndImagePoints(InputArray detectedIds, InputArrayOfArrays detectedImagePoints, OutputArray imagePoints, OutputArray objectPoints);
-
-    
-    /**
-     * @brief Fast creation of a planar Board object
-     * 
-     * @param width number of markers in X
-     * @param height number of markers in Y
-     * @param markerSize marker side distance (in meters)
-     * @param markerSeparation consecutive marker separation (in meters)
-     * @param dictionary
-     * @return cv::aruco::Board
-     */
-    static Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation);
-    
-};
-
 
 
 
