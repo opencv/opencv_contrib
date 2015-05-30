@@ -40,6 +40,7 @@
  //M*/
 
 #include "precomp.hpp"
+#include "featureColorName.cpp"
 #include <complex>
 
 /*---------------------------
@@ -54,7 +55,7 @@ namespace cv{
     TrackerKCFModel(TrackerKCF::Params /*params*/){}
     ~TrackerKCFModel(){}
   protected:
-    void modelEstimationImpl( const std::vector<Mat>& responses ){}
+    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
     void modelUpdateImpl(){}
   };
 } /* namespace cv */
@@ -68,7 +69,7 @@ namespace cv{
   /*
  * Prototype
  */
-  class TrackerKCFImpl : public TrackerKCF{
+  class TrackerKCFImpl : public TrackerKCF, public ColorName{
   public:
     TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
     void read( const FileNode& fn );
@@ -89,7 +90,8 @@ namespace cv{
     void createHanningWindow(OutputArray _dst, cv::Size winSize, int type);
     void inline fft2(Mat src, Mat & dest);
     void inline ifft2(Mat src, Mat & dest);  
-    void getSubWindow(Mat img, Rect roi, Mat& patch);
+    bool getSubWindow(Mat img, Rect roi, Mat& patch);
+    void extractCN(Mat _patch, Mat & cnFeatures);
     void denseGaussKernel(double sigma, Mat x, Mat y, Mat & k);
     void calcResponse(Mat alphaf, Mat k, Mat & response);
     
@@ -144,7 +146,6 @@ namespace cv{
    */
   bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
     frame=0;
-    
     roi = boundingBox;
     
     //calclulate output sigma
@@ -152,7 +153,7 @@ namespace cv{
     output_sigma=-0.5/(output_sigma*output_sigma);
     
     //resize the ROI whenever needed
-    if(params.resize && roi.width*roi.height>80*80){
+    if(params.resize && roi.width*roi.height>params.max_patch_size){
       resizeImage=true;
       roi.x/=2.0;
       roi.y/=2.0;
@@ -195,7 +196,7 @@ namespace cv{
   bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
     double minVal, maxVal;	// min-max response
     Point minLoc,maxLoc;	// min-max location
-
+    
     Mat img;
     // check the channels of the input image, grayscale is preferred
     CV_Assert(image.channels() == 1 || image.channels() == 3);
@@ -207,7 +208,7 @@ namespace cv{
     if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
     
     // extract and pre-process the patch
-    getSubWindow(img,roi, x);
+    if(!getSubWindow(img,roi, x))return false;
     
     // detection part
     if(frame>0){
@@ -222,7 +223,7 @@ namespace cv{
     }
     
     // extract the patch for learning purpose
-    getSubWindow(img,roi, x);
+    if(!getSubWindow(img,roi, x))return false;
     
     // Kernel Regularized Least-Squares, calculate alphas
     denseGaussKernel(params.sigma,x,x,k);
@@ -323,12 +324,18 @@ namespace cv{
   
   /*
    * obtain the patch and apply hann window filter to it
-   * TODO: return false if roi is outside the image, now it produce ERROR!
    */
-  void TrackerKCFImpl::getSubWindow(Mat img, Rect roi, Mat& patch){
+  bool TrackerKCFImpl::getSubWindow(Mat img, Rect roi, Mat& patch){
 
     Rect region=roi;
   
+    // return false if roi is outside the image
+    if((roi.x+roi.width<0)
+      ||(roi.y+roi.height<0)
+      ||(roi.x>=img.cols)
+      ||(roi.y>=img.rows)
+    )return false;
+    
     // extract patch inside the image 
     if(roi.x<0){region.x=0;region.width+=roi.x;}
     if(roi.y<0){region.y=0;region.height+=roi.y;}
@@ -352,7 +359,30 @@ namespace cv{
 
     patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
     patch=patch.mul(hann); // hann window filter
-
+    
+    return true;
+    
+  }
+  
+  /* Convert BGR to ColorNames
+   */
+  void TrackerKCFImpl::extractCN(Mat _patch, Mat & cnFeatures){
+    Vec3b & pixel = _patch.at<Vec3b>(0,0);
+    unsigned index;
+    
+    cnFeatures = Mat::zeros(roi.height,roi.width,CV_64FC(10));
+    
+    for(int i=0;i<_patch.rows;i++){
+      for(int j=0;j<_patch.cols;j++){
+	pixel=_patch.at<Vec3b>(i,j);
+	index=floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8);
+	
+	//copy the values
+	for(int k=0;k<10;k++){
+	  cnFeatures.at<Vec<double,10> >(i,j)=cn[index][k];
+	}
+      }
+    }
   }
   
   /*
@@ -381,8 +411,8 @@ namespace cv{
 
     // TODO: check wether we really need thresholding or not
     //threshold(xy,xy,0.0,0.0,THRESH_TOZERO);//max(0, (xx + yy - 2 * xy) / numel(x))
-    for(unsigned i=0;i<xy.rows;i++){
-      for(unsigned j=0;j<xy.cols;j++){
+    for(int i=0;i<xy.rows;i++){
+      for(int j=0;j<xy.cols;j++){
 	if(xy.at<double>(i,j)<0.0)xy.at<double>(i,j)=0.0;
       }
     }
@@ -475,6 +505,7 @@ namespace cv{
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
       resize=true;
+      max_patch_size=80*80;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& fn ){
