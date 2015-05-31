@@ -47,32 +47,14 @@ namespace cv{
   private:
   #define nrows 32768
   #define ncolumns 10
-  protected:
-    double cn[nrows][ncolumns];
   public:
-    ColorName();
-    ~ColorName(){/*free(cn);*/};
+    ColorName(){};
+    ~ColorName(){};
+        
+    static double cn[nrows][ncolumns];
   };
-
-  ColorName::ColorName(){
     
-  //   try{
-  //   cn = (double **)malloc(nrows * sizeof(double *));
-  //   }
-  //   catch(...){
-  //     std::cout<<"out of memory"<<std::endl;
-  //   }
-  //   
-  //   for(int i = 0; i < nrows; i++){
-  //     try{
-  //     cn[i] = (double *)malloc(ncolumns * sizeof(double));
-  //     }
-  //     catch(...){
-  //       std::cout<<"out of memory"<<std::endl;
-  //     }
-  //   }
-    
-    double temp[nrows][ncolumns]={
+  double ColorName::cn[nrows][ncolumns]={
       {0.45975,0.014802,0.044289,-0.028193,0.001151,-0.0050145,0.34522,0.018362,0.23994,0.1689},
       {0.47157,0.021424,0.041444,-0.030215,0.0019002,-0.0029264,0.32875,0.0082059,0.2502,0.17007},
       {0.47098,0.042624,0.025014,-0.033501,0.0028958,-0.001415,0.29519,-0.0072627,0.26919,0.16947},
@@ -32841,12 +32823,6 @@ namespace cv{
       {-0.0053471,-0.018934,0.022291,0.0052498,-0.51692,0.30008,0.0077647,-0.0056879,0.0036189,-0.32227},
       {0.0030858,-0.016151,0.013017,0.0072284,-0.53357,0.30985,0.0041336,-0.012531,0.00142,-0.33842},
       {0.0087778,-0.015645,0.004769,0.011785,-0.54199,0.31505,0.00020476,-0.020282,0.00021236,-0.34675}
-    };
+  };
     
-    for(int i=0;i<nrows;i++){
-      for(int j=0;j<ncolumns;j++){
-	cn[i][j]=temp[i][j];
-      }
-    }
-  }
 }

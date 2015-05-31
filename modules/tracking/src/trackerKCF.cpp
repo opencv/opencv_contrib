@@ -69,11 +69,11 @@ namespace cv{
   /*
  * Prototype
  */
-  class TrackerKCFImpl : public TrackerKCF, public ColorName{
+  class TrackerKCFImpl : public TrackerKCF, public ColorName {
   public:
     TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
       
   protected:
      /*
@@ -87,17 +87,17 @@ namespace cv{
     /*
     * KCF functions and vars
     */
-    void createHanningWindow(OutputArray _dst, cv::Size winSize, int type);
-    void inline fft2(Mat src, Mat & dest);
-    void inline ifft2(Mat src, Mat & dest);  
-    bool getSubWindow(Mat img, Rect roi, Mat& patch);
-    void extractCN(Mat _patch, Mat & cnFeatures);
-    void denseGaussKernel(double sigma, Mat x, Mat y, Mat & k);
-    void calcResponse(Mat alphaf, Mat k, Mat & response);
+    void createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const;
+    void inline fft2(const Mat src, Mat & dest) const;
+    void inline ifft2(const Mat src, Mat & dest) const ;  
+    bool getSubWindow(const Mat img, const Rect roi, Mat& patch) const;
+    void extractCN(Mat _patch, Mat & cnFeatures) const;
+    void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const;
+    void calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const;
     
-    void shiftRows(Mat& mat); 
-    void shiftRows(Mat& mat,int n);
-    void shiftCols(Mat& mat, int n);
+    void shiftRows(Mat& mat) const; 
+    void shiftRows(Mat& mat, int n) const;
+    void shiftCols(Mat& mat, int n) const;
     
   private:
     double output_sigma;
@@ -266,7 +266,7 @@ namespace cv{
   /* 
    * hann window filter
    */
-  void TrackerKCFImpl::createHanningWindow(OutputArray _dst, cv::Size winSize, int type){
+  void TrackerKCFImpl::createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type)const{
       CV_Assert( type == CV_32FC1 || type == CV_64FC1 );
 
       _dst.create(winSize, type);
@@ -309,7 +309,7 @@ namespace cv{
   /*
    * simplification of fourier transoform function in opencv
    */
-  void inline TrackerKCFImpl::fft2(Mat src, Mat & dest){
+  void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest)const {
     Mat planes[] = {Mat_<double>(src), Mat::zeros(src.size(), CV_64F)};
     merge(planes, 2, dest); 
     dft(dest,dest,DFT_COMPLEX_OUTPUT);
@@ -318,29 +318,29 @@ namespace cv{
   /*
    * simplification of inverse fourier transoform function in opencv
    */
-  void inline TrackerKCFImpl::ifft2(Mat src, Mat & dest){
+  void inline TrackerKCFImpl::ifft2(const Mat src, Mat & dest)const {
     idft(src,dest,DFT_SCALE+DFT_REAL_OUTPUT);
   }
   
   /*
    * obtain the patch and apply hann window filter to it
    */
-  bool TrackerKCFImpl::getSubWindow(Mat img, Rect roi, Mat& patch){
+  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& patch) const{
 
-    Rect region=roi;
+    Rect region=_roi;
   
     // return false if roi is outside the image
-    if((roi.x+roi.width<0)
-      ||(roi.y+roi.height<0)
-      ||(roi.x>=img.cols)
-      ||(roi.y>=img.rows)
+    if((_roi.x+_roi.width<0)
+      ||(_roi.y+_roi.height<0)
+      ||(_roi.x>=img.cols)
+      ||(_roi.y>=img.rows)
     )return false;
     
     // extract patch inside the image 
-    if(roi.x<0){region.x=0;region.width+=roi.x;}
-    if(roi.y<0){region.y=0;region.height+=roi.y;}
-    if(roi.x+roi.width>img.cols)region.width=img.cols-roi.x;
-    if(roi.y+roi.height>img.rows)region.height=img.rows-roi.y;
+    if(_roi.x<0){region.x=0;region.width+=_roi.x;}
+    if(_roi.y<0){region.y=0;region.height+=_roi.y;}
+    if(_roi.x+_roi.width>img.cols)region.width=img.cols-_roi.x;
+    if(_roi.y+_roi.height>img.rows)region.height=img.rows-_roi.y;
     if(region.width>img.cols)region.width=img.cols;
     if(region.height>img.rows)region.height=img.rows;
 
@@ -348,10 +348,10 @@ namespace cv{
     
     // add some padding to compensate when the patch is outside image border
     int addTop,addBottom, addLeft, addRight;
-    addTop=region.y-roi.y;
-    addBottom=(roi.height+roi.y>img.rows?roi.height+roi.y-img.rows:0);
-    addLeft=region.x-roi.x;
-    addRight=(roi.width+roi.x>img.cols?roi.width+roi.x-img.cols:0);
+    addTop=region.y-_roi.y;
+    addBottom=(_roi.height+_roi.y>img.rows?_roi.height+_roi.y-img.rows:0);
+    addLeft=region.x-_roi.x;
+    addRight=(_roi.width+_roi.x>img.cols?_roi.width+_roi.x-img.cols:0);
 
     copyMakeBorder(patch,patch,addTop,addBottom,addLeft,addRight,BORDER_REPLICATE);
 
@@ -366,7 +366,7 @@ namespace cv{
   
   /* Convert BGR to ColorNames
    */
-  void TrackerKCFImpl::extractCN(Mat _patch, Mat & cnFeatures){
+  void TrackerKCFImpl::extractCN(Mat _patch, Mat & cnFeatures) const {
     Vec3b & pixel = _patch.at<Vec3b>(0,0);
     unsigned index;
     
@@ -378,8 +378,8 @@ namespace cv{
 	index=floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8);
 	
 	//copy the values
-	for(int k=0;k<10;k++){
-	  cnFeatures.at<Vec<double,10> >(i,j)=cn[index][k];
+	for(int _k=0;_k<10;_k++){
+	  cnFeatures.at<Vec<double,10> >(i,j)[_k]=cn[index][_k];
 	}
       }
     }
@@ -388,25 +388,25 @@ namespace cv{
   /*
    *  dense gauss kernel function
    */
-  void TrackerKCFImpl::denseGaussKernel(double sigma, Mat x, Mat y, Mat & k){
-    Mat xf, yf, xyf,xy;
+  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k)const{
+    Mat _xf, _yf, xyf,xy;
     double normX, normY;
     
-    fft2(x,xf);
-    fft2(y,yf);
-    normX=norm(x);
+    fft2(_x,_xf);
+    fft2(_y,_yf);
+    normX=norm(_x);
     normX*=normX;
-    normY=norm(y);
+    normY=norm(_y);
     normY*=normY;
     
-    mulSpectrums(xf,yf,xyf,0,true);
+    mulSpectrums(_xf,_yf,xyf,0,true);
       
     ifft2(xyf,xyf);
-    shiftRows(xyf, x.rows/2);
-    shiftCols(xyf,x.cols/2);
+    shiftRows(xyf, _x.rows/2);
+    shiftCols(xyf,_x.cols/2);
 
     //(xx + yy - 2 * xy) / numel(x)
-    xy=(normX+normY-2*xyf)/(x.rows*x.cols);
+    xy=(normX+normY-2*xyf)/(_x.rows*_x.cols);
 
 
     // TODO: check wether we really need thresholding or not
@@ -419,7 +419,7 @@ namespace cv{
     
     double sig=-1.0/(sigma*sigma);
     xy=sig*xy;
-    exp(xy,k);
+    exp(xy,_k);
 
   }
   
@@ -427,15 +427,15 @@ namespace cv{
    * http://stackoverflow.com/questions/10420454/shift-like-matlab-function-rows-or-columns-of-a-matrix-in-opencv
    */
   // circular shift one row from up to down
-  void TrackerKCFImpl::shiftRows(Mat& mat) {
+  void TrackerKCFImpl::shiftRows(Mat& mat) const {
 
       Mat temp;
       Mat m;
-      int k = (mat.rows-1);
-      mat.row(k).copyTo(temp);
-      for(; k > 0 ; k-- ) {
-	  m = mat.row(k);
-	  mat.row(k-1).copyTo(m);
+      int _k = (mat.rows-1);
+      mat.row(_k).copyTo(temp);
+      for(; _k > 0 ; _k-- ) {
+	  m = mat.row(_k);
+	  mat.row(_k-1).copyTo(m);
       }
       m = mat.row(0);
       temp.copyTo(m);
@@ -443,20 +443,20 @@ namespace cv{
   }
 
   // circular shift n rows from up to down if n > 0, -n rows from down to up if n < 0
-  void TrackerKCFImpl::shiftRows(Mat& mat,int n) {
+  void TrackerKCFImpl::shiftRows(Mat& mat, int n) const {
 
       if( n < 0 ) {
 
 	  n = -n;
 	  flip(mat,mat,0);
-	  for(int k=0; k < n;k++) {
+	  for(int _k=0; _k < n;_k++) {
 	      shiftRows(mat);
 	  }
 	  flip(mat,mat,0);
 
       } else {
 
-	  for(int k=0; k < n;k++) {
+	  for(int _k=0; _k < n;_k++) {
 	      shiftRows(mat);
 	  }
       }
@@ -464,7 +464,7 @@ namespace cv{
   }
 
   //circular shift n columns from left to right if n > 0, -n columns from right to left if n < 0
-  void TrackerKCFImpl::shiftCols(Mat& mat, int n) {
+  void TrackerKCFImpl::shiftCols(Mat& mat, int n) const {
 
       if(n < 0){
 
@@ -486,13 +486,13 @@ namespace cv{
   /*
    * calculate the detection response
    */
-  void TrackerKCFImpl::calcResponse(Mat alphaf, Mat k, Mat & response){
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _k, Mat & _response)const {
     //alpha f--> 2channels ; k --> 1 channel; 
-    Mat kf;
-    fft2(k,kf);
+    Mat _kf;
+    fft2(_k,_kf);
     Mat spec;
-    mulSpectrums(alphaf,kf,spec,0,false);
-    ifft2(spec,response);
+    mulSpectrums(_alphaf,_kf,spec,0,false);
+    ifft2(spec,_response);
   }
   /*----------------------------------------------------------------------*/
   
@@ -508,11 +508,11 @@ namespace cv{
       max_patch_size=80*80;
   }
 
-  void TrackerKCF::Params::read( const cv::FileNode& fn ){
+  void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){
     
   }
 
-  void TrackerKCF::Params::write( cv::FileStorage& fs ) const{
+  void TrackerKCF::Params::write( cv::FileStorage& /*fs*/ ) const{
     
   }
   
