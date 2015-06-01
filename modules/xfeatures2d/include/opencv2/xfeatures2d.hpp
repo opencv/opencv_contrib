@@ -118,15 +118,14 @@ public:
 
 /** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
-@note
-   -   A complete BRIEF extractor sample can be found at
-        opencv_source_code/samples/cpp/brief_match_test.cpp
+@param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
 
  */
 class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
