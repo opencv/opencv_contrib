@@ -79,7 +79,7 @@ namespace cv{
      /*
     * basic functions and vars
     */
-    bool initImpl( const Mat& image, const Rect2d& boundingBox );
+    bool initImpl( const Mat& /*image*/, const Rect2d& boundingBox );
     bool updateImpl( const Mat& image, Rect2d& boundingBox );
     
     TrackerKCF::Params params;
@@ -144,7 +144,7 @@ namespace cv{
    * - creating a gaussian response for the training ground-truth
    * - perform FFT to the gaussian response
    */
-  bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
+  bool TrackerKCFImpl::initImpl( const Mat& /*image*/, const Rect2d& boundingBox ){
     frame=0;
     roi = boundingBox;
     
