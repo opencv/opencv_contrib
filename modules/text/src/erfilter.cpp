@@ -1701,7 +1701,7 @@ public:
     }
 };
 
-
+#if 0
 /* Functions for the update of the dissimilarity array */
 
 inline static void f_single( double * const b, const double a )
@@ -1844,7 +1844,7 @@ static void NN_chain_core(const int_fast32_t N, double * const D, t_members * co
         }
     }
 }
-
+#endif
 
 /*
    Clustering methods for vector data
