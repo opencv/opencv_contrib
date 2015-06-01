@@ -49,6 +49,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/calib3d.hpp>
 
 
+
 namespace cv{ namespace aruco{
 
 using namespace std;
@@ -94,7 +95,6 @@ bool Dictionary::_isBorderValid(cv::Mat bits) {
 }
 
 
-
 /**
  */
 bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx) {
@@ -102,15 +102,16 @@ bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx
     cv::Mat candidateBits = _extractBits(image, imgPoints);
     if(!_isBorderValid(candidateBits)) return false; // not really necessary
     cv::Mat onlyBits = candidateBits.rowRange(1,candidateBits.rows-1).colRange(1,candidateBits.rows-1);
+
     // get quartets
     cv::Mat candidateQuartets = _getQuartet(onlyBits);
-
 
     // search closest marker in dict
     int closestId=-1;
     unsigned int rotation=0;
     unsigned int closestDistance=markerSize*markerSize+1;
     cv::Mat candidateDistances = _getDistances(candidateQuartets);
+
     for(int i=0; i<codes.rows; i++) {
         if(candidateDistances.ptr<int>(i)[0] < closestDistance) {
             closestDistance = candidateDistances.ptr<int>(i)[0];
@@ -205,7 +206,7 @@ cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
         }
     }
     if((markerSize*markerSize)%4 == 1) { // middle bit
-        unsigned char middleBit = 15*bits.at<unsigned char>(markerSize/2,markerSize/2);
+        unsigned char middleBit = bits.at<unsigned char>(markerSize/2,markerSize/2);
         candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
     }
     return candidateQuartets;
@@ -258,14 +259,19 @@ cv::Mat Dictionary::_getBits(cv::Mat quartets) {
   */
 cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
 
+    bool middleBit = (markerSize%2==1);
+    int ncompleteQuartets = quartets.total() - (middleBit?1:0);
+
     cv::Mat res(codes.rows, 2, CV_32SC1);
     for(unsigned int m=0; m<codes.rows; m++) {
         res.ptr<int>(m)[0]=10e8;
         for(unsigned int r=0; r<4; r++) {
             int currentHamming=0;
-            for(unsigned int q=0; q<quartets.total(); q++) {
+            for(unsigned int q=0; q<ncompleteQuartets; q++) {
                 currentHamming += (int)quartets_distances[ (codes.ptr<unsigned char>(m)[q]) ][ (quartets.ptr<unsigned char>(0)[q]) ][r];
             }
+            if(middleBit && ((codes.ptr<unsigned char>(m)[ncompleteQuartets])!=quartets.ptr<unsigned char>(0)[ncompleteQuartets]))
+                currentHamming++;
             if(currentHamming < res.ptr<int>(m)[0]) {
                 res.ptr<int>(m)[0]=currentHamming;
                 res.ptr<int>(m)[1]=r;
