@@ -40,7 +40,6 @@
  //M*/
 
 #include "precomp.hpp"
-
 #define NUM_OF_BANDS 9
 #define Horizontal  255//if |dx|<|dy|;
 #define Vertical    0//if |dy|<=|dx|;
@@ -1136,9 +1135,9 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
 
         for ( short wID = 0; wID < lengthOfLSP; wID++ )
         {
-          tempCor = (short) round( sCorX );
+          tempCor = (short) (int)( sCorX );
           xCor = ( tempCor < 0 ) ? 0 : ( tempCor > imageWidth ) ? imageWidth : tempCor;
-          tempCor = (short) round( sCorY );
+          tempCor = (short) (int)( sCorY );
           yCor = ( tempCor < 0 ) ? 0 : ( tempCor > imageHeight ) ? imageHeight : tempCor;
 
           /* To achieve rotation invariance, each simple gradient is rotated aligned with

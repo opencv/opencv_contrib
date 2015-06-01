@@ -96,9 +96,10 @@ inline int match( UINT8*P, UINT8*Q, int codelb )
 }
 
 /* splitting function (b <= 64) */
+
 inline void split( UINT64 *chunks, UINT8 *code, int m, int mplus, int b )
 {
-  UINT64 temp = 0x0;
+ /* UINT64 temp = 0x0;
   int nbits = 0;
   int nbyte = 0;
   UINT64 mask = b == 64 ? 0xFFFFFFFFFFFFFFFFLLU : ( ( UINT64_1 << b ) - UINT64_1 );
@@ -117,10 +118,11 @@ inline void split( UINT64 *chunks, UINT8 *code, int m, int mplus, int b )
 
     if( i == mplus - 1 )
     {
-      b--; /* b <= 63 */
+      b--; /* b <= 63 
       mask = ( ( UINT64_1 << b ) - UINT64_1 );
     }
   }
+  */
 }
 
 /* generates the next binary code (in alphabetical order) with the

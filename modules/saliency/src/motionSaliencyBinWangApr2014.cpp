@@ -45,6 +45,8 @@
 
 #define thetaA_VAL 200
 #define thetaL_VAL 250
+#define NAN 12
+
 
 namespace cv
 {
