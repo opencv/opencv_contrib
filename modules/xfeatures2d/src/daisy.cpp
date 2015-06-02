@@ -73,6 +73,13 @@ static const int MAX_NORMALIZATION_ITER = 5;
 
 int g_selected_cubes[MAX_CUBE_NO]; // m_rad_q_no < MAX_CUBE_NO
 
+void DAISY::compute( InputArrayOfArrays images,
+                     std::vector<std::vector<KeyPoint> >& keypoints,
+                     OutputArrayOfArrays descriptors )
+{
+    DescriptorExtractor::compute(images, keypoints, descriptors);
+}
+
 /*
  !DAISY implementation
  */
