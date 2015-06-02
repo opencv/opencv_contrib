@@ -61,7 +61,6 @@ namespace xfeatures2d
 // constants
 const double g_sigma_0 = 1;
 const double g_sigma_1 = sqrt(2.0);
-//const double g_sigma_2 = 8;
 const double g_sigma_step = std::pow(2,1.0/2);
 const int g_scale_st = int( (log(g_sigma_1/g_sigma_0)) / log(g_sigma_step) );
 static int g_scale_en = 1;
@@ -415,7 +414,7 @@ struct LayeredGradientInvoker : ParallelLoopBody
     {
       for (int l = range.start; l < range.end; ++l)
       {
-        double angle = l * 2*CV_PI / layer_no;
+        double angle = l * 2 * (float)CV_PI / layer_no;
         Mat layer( dx.rows, dx.cols, CV_32F, layers->ptr<float>(l,0,0) );
         addWeighted( dx, cos( angle ), dy, sin( angle ), 0.0f, layer, CV_32F );
         max( layer, 0.0f, layer );
@@ -486,15 +485,18 @@ static int quantize_radius( float rad, const int _rad_q_no, const Mat& _cube_sig
 
 static void normalize_partial( float* desc, const int _grid_point_number, const int _hist_th_q_no )
 {
-    float norm = 0.0f;
     for( int h=0; h<_grid_point_number; h++ )
     {
       // l2 norm
+      double sum = 0.0f;
       for( int i=0; i<_hist_th_q_no; i++ )
       {
-          norm += sqrt(desc[h*_hist_th_q_no + i]
-                     * desc[h*_hist_th_q_no + i]);
+          sum += desc[h*_hist_th_q_no + i]
+               * desc[h*_hist_th_q_no + i];
       }
+
+      float norm = (float)sqrt( sum );
+
       if( norm != 0.0 )
       // divide with norm
       for( int i=0; i<_hist_th_q_no; i++ )
@@ -514,12 +516,14 @@ static void normalize_sift_way( float* desc, const int _descriptor_size )
       iter++;
       changed = false;
 
-      float norm = 0.0f;
+      double sum = 0.0f;
       for( int i=0; i<_descriptor_size; i++ )
       {
-          norm += sqrt(desc[_descriptor_size + i]
-                     * desc[_descriptor_size + i]);
+          sum += desc[_descriptor_size + i]
+               * desc[_descriptor_size + i];
       }
+
+      float norm = (float)sqrt( sum );
 
       if( norm > 1e-5 )
       // divide with norm
@@ -542,12 +546,15 @@ static void normalize_sift_way( float* desc, const int _descriptor_size )
 static void normalize_full( float* desc, const int _descriptor_size )
 {
     // l2 norm
-    float norm = 0.0f;
+    double sum = 0.0f;
     for( int i=0; i<_descriptor_size; i++ )
     {
-        norm += sqrt(desc[_descriptor_size + i]
-                   * desc[_descriptor_size + i]);
+        sum += desc[_descriptor_size + i]
+             * desc[_descriptor_size + i];
     }
+
+    float norm = (float)sqrt( sum );
+
     if( norm != 0.0 )
     // divide with norm
     for( int i=0; i<_descriptor_size; i++ )
