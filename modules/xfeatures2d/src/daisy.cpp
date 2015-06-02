@@ -61,7 +61,7 @@ namespace xfeatures2d
 // constants
 const double g_sigma_0 = 1;
 const double g_sigma_1 = sqrt(2.0);
-const double g_sigma_2 = 8;
+//const double g_sigma_2 = 8;
 const double g_sigma_step = std::pow(2,1.0/2);
 const int g_scale_st = int( (log(g_sigma_1/g_sigma_0)) / log(g_sigma_step) );
 static int g_scale_en = 1;
@@ -73,6 +73,13 @@ static const int MAX_CUBE_NO = 64;
 static const int MAX_NORMALIZATION_ITER = 5;
 
 int g_selected_cubes[MAX_CUBE_NO]; // m_rad_q_no < MAX_CUBE_NO
+
+void DAISY::compute( InputArrayOfArrays images,
+                     std::vector<std::vector<KeyPoint> >& keypoints,
+                     OutputArrayOfArrays descriptors )
+{
+    DescriptorExtractor::compute(images, keypoints, descriptors);
+}
 
 /*
  !DAISY implementation

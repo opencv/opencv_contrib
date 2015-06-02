@@ -205,6 +205,10 @@ public:
      */
     virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
 
+    virtual void compute( InputArrayOfArrays images,
+                          std::vector<std::vector<KeyPoint> >& keypoints,
+                          OutputArrayOfArrays descriptors );
+
     /** @overload
      * @param image image to extract descriptors
      * @param roi region of interest within image
