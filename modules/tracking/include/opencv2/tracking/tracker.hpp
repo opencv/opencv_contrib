@@ -1198,6 +1198,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
 class CV_EXPORTS_W TrackerKCF : public Tracker
 {
  public:
+  enum MODE {GRAY, CN, CN2};
   struct CV_EXPORTS Params
   {
     Params();
@@ -1209,7 +1210,8 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     double interp_factor;		// linear interpolation factor for adaptation
     double output_sigma_factor;	// spatial bandwidth (proportional to target)    
     bool resize;			// activate the resize feature to improve the processing speed
-    int max_patch_size;		// threshold for the ROI size
+    int max_patch_size;			// threshold for the ROI size
+    MODE descriptor;			// descriptor type
   };
 
   /** @brief Constructor

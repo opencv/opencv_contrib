@@ -169,6 +169,10 @@ namespace cv{
     
     // initialize the hann window filter
     createHanningWindow(hann, roi.size(), CV_64F);
+    if(params.descriptor==CN){
+      Mat layers[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
+      merge(layers, 10, hann); 
+    }
     
     // create gaussian response
     y=Mat::zeros(roi.height,roi.width,CV_64F);
@@ -197,12 +201,9 @@ namespace cv{
     double minVal, maxVal;	// min-max response
     Point minLoc,maxLoc;	// min-max location
     
-    Mat img;
+    Mat img=image.clone();
     // check the channels of the input image, grayscale is preferred
     CV_Assert(image.channels() == 1 || image.channels() == 3);
-    if(image.channels()>1){
-      cvtColor(image,img, CV_BGR2GRAY);
-    }else img=image;
     
     // resize the image whenever needed
     if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
@@ -355,6 +356,20 @@ namespace cv{
 
     copyMakeBorder(patch,patch,addTop,addBottom,addLeft,addRight,BORDER_REPLICATE);
 
+    // extract the desired descriptors
+    switch(params.descriptor){
+      case GRAY:
+	if(img.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+	break;
+      case CN:
+	CV_Assert(img.channels() == 3);
+	extractCN(patch,patch);
+	break;
+      default:
+	if(patch.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+	break;
+    }
+    
     patch.convertTo(patch,CV_64F);
 
     patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
@@ -370,7 +385,7 @@ namespace cv{
     Vec3b & pixel = _patch.at<Vec3b>(0,0);
     unsigned index;
     
-    cnFeatures = Mat::zeros(roi.height,roi.width,CV_64FC(10));
+    Mat temp = Mat::zeros(_patch.rows,_patch.cols,CV_64FC(10));
     
     for(int i=0;i<_patch.rows;i++){
       for(int j=0;j<_patch.cols;j++){
@@ -379,10 +394,12 @@ namespace cv{
 	
 	//copy the values
 	for(int _k=0;_k<10;_k++){
-	  cnFeatures.at<Vec<double,10> >(i,j)[_k]=cn[index][_k];
+	  temp.at<Vec<double,10> >(i,j)[_k]=cn[index][_k];
 	}
       }
     }
+    
+    cnFeatures=temp.clone();
   }
   
   /*
@@ -506,6 +523,7 @@ namespace cv{
       output_sigma_factor=1.0/16.0;
       resize=true;
       max_patch_size=80*80;
+      descriptor=GRAY;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){
