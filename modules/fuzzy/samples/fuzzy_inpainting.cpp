@@ -1,3 +1,30 @@
+/* Sample - Inpainting
+ * Target is to apply inpainting using F-transform
+ * on the image "input.png". The image is damaged
+ * by various types of corruption:
+ *
+ * input1 = image & mask1
+ * input2 = image & mask2
+ * input3 = image & mask3
+ *
+ * Three algorithms "ft::ONE_STEP", "ft::MULTI_STEP"
+ * and "ft::ITERATIVE" are demonstrated on the
+ * appropriate type of damage.
+ *
+ * ft::ONE_STEP
+ * "output1_inpaint.png": input1, mask1
+ *
+ * ft::MULTI_STEP
+ * "output2_inpaint.png": input2, mask2
+ * "output3_inpaint.png": input3, mask3
+ *
+ * ft::ITERATIVE
+ * "output4_inpaint.png": input3, mask3
+ *
+ * Linear kernel with radius 2 is used for all
+ * samples.
+ */
+
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/fuzzy.hpp"

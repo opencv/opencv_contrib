@@ -42,7 +42,7 @@
 #ifndef __OPENCV_FUZZY_F0_MATH_H__
 #define __OPENCV_FUZZY_F0_MATH_H__
 
-#include "types.hpp"
+#include "opencv2/fuzzy/types.hpp"
 #include "opencv2/core.hpp"
 
 namespace cv
@@ -64,7 +64,7 @@ namespace ft
     @note
         F-transform technique is described in paper @cite Perf:FT.
      */
-    CV_EXPORTS void FT02D_components(cv::InputArray matrix, cv::InputArray kernel, cv::OutputArray components, cv::InputArray mask);
+    CV_EXPORTS void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask);
 
     /** @brief Computes components of the array using direct F0-transform.
     @param matrix Input 1-channel array.
@@ -76,7 +76,7 @@ namespace ft
     @note
         F-transform technique is described in paper @cite Perf:FT.
      */
-    CV_EXPORTS void FT02D_components(cv::InputArray matrix, cv::InputArray kernel, cv::OutputArray components);
+    CV_EXPORTS void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components);
 
     /** @brief Computes inverse F0-transfrom.
     @param components Input 32-bit array for the components.
@@ -88,7 +88,7 @@ namespace ft
     @note
         F-transform technique is described in paper @cite Perf:FT.
      */
-    CV_EXPORTS void FT02D_inverseFT(cv::InputArray components, cv::InputArray kernel, cv::OutputArray output, int width, int height);
+    CV_EXPORTS void FT02D_inverseFT(InputArray components, InputArray kernel, OutputArray output, int width, int height);
 
     /** @brief Computes F0-transfrom and inverse F0-transfrom at once.
     @param image Input image.
@@ -96,9 +96,9 @@ namespace ft
     @param output Output 32-bit array.
     @param mask Mask used for unwanted area marking.
 
-    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **cv::Mat**.
+    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **Mat**.
     */
-    CV_EXPORTS void FT02D_process(const cv::Mat &image, const cv::Mat &kernel, cv::Mat &output, const cv::Mat &mask);
+    CV_EXPORTS void FT02D_process(const Mat &image, const Mat &kernel, Mat &output, const Mat &mask);
 
     /** @brief Computes F0-transfrom and inverse F0-transfrom at once and return state.
     @param image Input image.
@@ -110,7 +110,7 @@ namespace ft
 
     This function computes iteration of F-transfrom and inverse F-transfotm and handle image and mask change. The function is used in *inpaint* function.
     */
-    CV_EXPORTS int FT02D_iteration(const cv::Mat &image, const cv::Mat &kernel, cv::Mat &imageOutput, const cv::Mat &mask, cv::Mat &maskOutput, bool firstStop = true);
+    CV_EXPORTS int FT02D_iteration(const Mat &image, const Mat &kernel, Mat &imageOutput, const Mat &mask, Mat &maskOutput, bool firstStop = true);
 
     //! @}
 }

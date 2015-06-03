@@ -1,3 +1,19 @@
+/* Sample - Filtering
+ * Target is to apply filtering using F-transform
+ * on the image "input.png". Two different kernels
+ * are used, where bigger radius (100 in this case)
+ * means higher level of blurriness.
+ *
+ * Image "output1_filter.png" is created from "input.png"
+ * using "kernel1" with radius 3.
+ *
+ * Image "output2_filter.png" is created from "input.png"
+ * using "kernel2" with radius 100.
+ *
+ * Both kernels are created from linear function, using
+ * linear interpolation (parametr ft:LINEAR).
+ */
+
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/fuzzy.hpp"

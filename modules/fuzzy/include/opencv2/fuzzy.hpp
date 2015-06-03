@@ -42,9 +42,9 @@
 #ifndef __OPENCV_FUZZY_H__
 #define __OPENCV_FUZZY_H__
 
-#include "fuzzy/types.hpp"
-#include "fuzzy/fuzzy_F0_math.hpp"
-#include "fuzzy/fuzzy_image.hpp"
+#include "opencv2/fuzzy/types.hpp"
+#include "opencv2/fuzzy/fuzzy_F0_math.hpp"
+#include "opencv2/fuzzy/fuzzy_image.hpp"
 
 /**
 @defgroup fuzzy Image processing based on fuzzy mathematics
