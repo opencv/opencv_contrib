@@ -23,7 +23,7 @@ namespace dnn
         Blob(const Mat &in);
         Blob(UMat &in);
         Blob(const UMat &in);
-        
+
         int width() const; //cols
         int height() const; //rows
         int channels() const;
@@ -37,7 +37,7 @@ namespace dnn
         struct Value
         {
             int type;
-            
+
             union
             {
                 int i;
@@ -76,7 +76,7 @@ namespace dnn
 
         //TODO: this field must be declared as public if we want support possibility to change these params in runtime
         std::vector<Blob> learnedParams;
-        
+
         virtual ~Layer();
 
         //type of Layer
@@ -96,7 +96,7 @@ namespace dnn
         virtual void forward(std::vector<Blob> &inputs, std::vector<Blob> &outputs);
 
     private:
-        
+
         static std::map<String, Constuctor> registeredLayers;
     };
 
@@ -113,7 +113,7 @@ namespace dnn
         int addLayer(const String &name, const String &type);
 
         void deleteLayer(int layerId);
-        
+
         void setLayerParams(int layerId, LayerParams &params);
 
         //each output of each layer can be labeled by unique string label (as in Caffe)
@@ -126,7 +126,7 @@ namespace dnn
         //or maybe version #2
         inline int getBlobId(int layerId, int inputOutputNumber)
         {
-            return layerId << 16 + inputOutputNumber;
+            return (layerId << 16) + inputOutputNumber;
         }
 
         void addConnection(int outputId, int inputId);
@@ -136,8 +136,8 @@ namespace dnn
     private:
 
         int lastLayerId;
-        std::map<int, Ptr<Layer>> layers;
-        std::map<int, std::vector<String>> layerOutputLabels;
+        std::map< int, Ptr<Layer> > layers;
+        std::map< int, std::vector<String> > layerOutputLabels;
     };
 
 
@@ -147,13 +147,15 @@ namespace dnn
 
         static Ptr<Net> create(Ptr<NetConfiguration> config);
 
+        virtual ~Net();
+
         virtual int getBlobId(int layerId, int outputId);
 
         virtual int getBlobId(const String &blobName);
 
-        virtual void forward(std::vector<int, Ptr<Blob>> &inputBlobs, std::vector<int, Ptr<Blob>> &outputBlobs);
+        virtual void forward(std::vector< int, Ptr<Blob> > &inputBlobs, std::vector<int, Ptr<Blob> > &outputBlobs);
 
-        virtual void forward(int layer, std::vector<Ptr<Blob>> &layerOutputs);
+        virtual void forward(int layer, std::vector<Ptr<Blob> > &layerOutputs);
     };
 
     class Importer
@@ -164,6 +166,8 @@ namespace dnn
 
         virtual ~Importer();
     };
+
+    Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
 
 }
 }
