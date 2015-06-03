@@ -194,9 +194,7 @@ bool getLocalExtr(vector<Vec4i> &lines,
 
     for (size_t i = 0; i < weightedPoints.size(); ++i)
     {
-        Vec4i houghLine(0, 0, 0, 0);
-        HoughPoint2Line(weightedPoints[i].second, src, houghLine);
-        lines.push_back(houghLine);
+        lines.push_back(HoughPoint2Line(weightedPoints[i].second, src));
     }
     return true;
 }

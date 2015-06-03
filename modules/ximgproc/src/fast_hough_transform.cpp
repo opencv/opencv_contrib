@@ -835,12 +835,11 @@ static void crossSegments(Point             &point,
     point.y =  cvRound(line1.u.y + mul * (line1.v.y - line1.u.y));
 }
 
-void HoughPoint2Line(const Point &houghPoint,
-                     InputArray  srcImgInfo,
-                     Vec4i       &line,
-                     int         angleRange,
-                     int         makeSkew,
-                     int         rules)
+Vec4i HoughPoint2Line(const Point &houghPoint,
+                      InputArray  srcImgInfo,
+                      int         angleRange,
+                      int         makeSkew,
+                      int         rules)
 {
     Mat srcImgInfoMat = srcImgInfo.getMat();
 
@@ -907,8 +906,7 @@ void HoughPoint2Line(const Point &houghPoint,
 
     if (!ret)
     {
-        line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
-        return;
+        return Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
     }
 
     if (rules & RO_IGNORE_BORDERS)
@@ -933,8 +931,7 @@ void HoughPoint2Line(const Point &houghPoint,
             break;
         }
 
-        line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
-        return;
+        return Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
     }
 
     Point minIntersectPoint(0, 0);
@@ -1020,7 +1017,7 @@ void HoughPoint2Line(const Point &houghPoint,
         break;
     }
 
-    line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
+    return Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
 }
 
 //-----------------------------------------------------------------------------
