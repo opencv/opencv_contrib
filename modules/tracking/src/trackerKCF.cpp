@@ -69,7 +69,7 @@ namespace cv{
   /*
  * Prototype
  */
-  class TrackerKCFImpl : public TrackerKCF, public ColorName {
+  class TrackerKCFImpl : public TrackerKCF {
   public:
     TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
     void read( const FileNode& /*fn*/ );
@@ -395,7 +395,7 @@ namespace cv{
 	
 	//copy the values
 	for(int _k=0;_k<10;_k++){
-	  temp.at<Vec<double,10> >(i,j)[_k]=cn[index][_k];
+	  temp.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
 	}
       }
     }
