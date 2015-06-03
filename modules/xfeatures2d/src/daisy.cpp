@@ -519,8 +519,7 @@ static void normalize_sift_way( float* desc, const int _descriptor_size )
       double sum = 0.0f;
       for( int i=0; i<_descriptor_size; i++ )
       {
-          sum += desc[_descriptor_size + i]
-               * desc[_descriptor_size + i];
+          sum += desc[i] * desc[i];
       }
 
       float norm = (float)sqrt( sum );
@@ -529,7 +528,7 @@ static void normalize_sift_way( float* desc, const int _descriptor_size )
       // divide with norm
       for( int i=0; i<_descriptor_size; i++ )
       {
-          desc[_descriptor_size + i] /= norm;
+          desc[i] /= norm;
       }
 
       for( h=0; h<_descriptor_size; h++ )
@@ -549,8 +548,7 @@ static void normalize_full( float* desc, const int _descriptor_size )
     double sum = 0.0f;
     for( int i=0; i<_descriptor_size; i++ )
     {
-        sum += desc[_descriptor_size + i]
-             * desc[_descriptor_size + i];
+        sum += desc[i] * desc[i];
     }
 
     float norm = (float)sqrt( sum );
@@ -559,7 +557,7 @@ static void normalize_full( float* desc, const int _descriptor_size )
     // divide with norm
     for( int i=0; i<_descriptor_size; i++ )
     {
-        desc[_descriptor_size + i] /= norm;
+        desc[i] /= norm;
     }
 }
 
@@ -1547,8 +1545,6 @@ void DAISY_Impl::compute( InputArray _image, Rect roi, OutputArray _descriptors 
     // compute full desc
     compute_descriptors( &descriptors );
     normalize_descriptors( &descriptors );
-
-    release_auxiliary();
 }
 
 // full scope
@@ -1576,8 +1572,6 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
     // compute full desc
     compute_descriptors( &descriptors );
     normalize_descriptors( &descriptors );
-
-    release_auxiliary();
 }
 
 // constructor
