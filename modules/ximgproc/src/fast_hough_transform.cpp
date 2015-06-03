@@ -42,7 +42,6 @@
 //M*/
 
 #include "precomp.hpp"
-#include "fast_hough_transform.hpp"
 
 namespace cv { namespace ximgproc {
 
@@ -836,23 +835,25 @@ static void crossSegments(Point             &point,
     point.y =  cvRound(line1.u.y + mul * (line1.v.y - line1.u.y));
 }
 
-void HoughPoint2Line(OutputArray  line,
-                     const Point &houghPoint,
-                     const Mat   &srcImgInfo,
-                     int          angleRange,
-                     int          makeSkew,
-                     int          rules)
+void HoughPoint2Line(const Point &houghPoint,
+                     InputArray  srcImgInfo,
+                     Vec4i       &line,
+                     int         angleRange,
+                     int         makeSkew,
+                     int         rules)
 {
-    int const cols = srcImgInfo.cols;
-    int const rows = srcImgInfo.rows;
+    Mat srcImgInfoMat = srcImgInfo.getMat();
+
+    int const cols = srcImgInfoMat.cols;
+    int const rows = srcImgInfoMat.rows;
 
     CV_Assert(houghPoint.y >= 0);
     CV_Assert(houghPoint.x < cols + rows);
 
     int quad = 0;
     Point rawPoint(0, 0);
-    getRawPoint(rawPoint, quad, houghPoint, srcImgInfo, angleRange, makeSkew);
-    bool ret = checkRawPoint(rawPoint, quad, srcImgInfo);
+    getRawPoint(rawPoint, quad, houghPoint, srcImgInfoMat, angleRange, makeSkew);
+    bool ret = checkRawPoint(rawPoint, quad, srcImgInfoMat);
     if (!(rules & RO_IGNORE_BORDERS))
     {
         CV_Assert(ret);
@@ -906,8 +907,7 @@ void HoughPoint2Line(OutputArray  line,
 
     if (!ret)
     {
-        Vec4i pts(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
-        Mat(pts).copyTo(line);
+        line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
         return;
     }
 
@@ -933,8 +933,7 @@ void HoughPoint2Line(OutputArray  line,
             break;
         }
 
-        Vec4i pts(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
-        Mat(pts).copyTo(line);
+        line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
         return;
     }
 
@@ -1021,8 +1020,7 @@ void HoughPoint2Line(OutputArray  line,
         break;
     }
 
-    Vec4i pts(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
-    Mat(pts).copyTo(line);
+    line = Vec4i(dstLine.v.x, dstLine.v.y, dstLine.u.x, dstLine.u.y);
 }
 
 //-----------------------------------------------------------------------------

@@ -130,7 +130,7 @@ typedef enum {
 * The function calculates the fast Hough transform for full, half or quarter
 * range of angles.
 */
-CV_EXPORTS_W void FastHoughTransform( InputArray src,
+CV_EXPORTS_W void FastHoughTransform( InputArray  src,
                                       OutputArray dst,
                                       int         dstMatDepth,
                                       int         angleRange = ARO_315_135,
@@ -139,9 +139,9 @@ CV_EXPORTS_W void FastHoughTransform( InputArray src,
 
 /**
 * @brief   Calculates coordinates of line segment corresponded by point in Hough space.
-* @param   line       Coordinates of line segment corresponded by point in Hough space.
 * @param   houghPoint  Point in Hough space.
 * @param   srcImgInfo The source (input) image of Hough transform.
+* @param   line       Coordinates of line segment corresponded by point in Hough space.
 * @param   angleRange  The part of Hough space where point is situated, see cv::AngleRangeOption
 * @param   makeSkew    Specifies to do or not to do image skewing, see cv::HoughDeskewOption
 * @param   rules       Specifies strictness of line segment calculating, see cv::RulesOption
@@ -152,12 +152,12 @@ CV_EXPORTS_W void FastHoughTransform( InputArray src,
 *
 * The function calculates coordinates of line segment corresponded by point in Hough space.
 */
-CV_EXPORTS_W void HoughPoint2Line( OutputArray  line,
-                                   const Point &houghPoint,
-                                   const Mat   &srcImgInfo,
-                                   int          angleRange = ARO_315_135,
-                                   int          makeSkew = HDO_DESKEW,
-                                   int          rules = RO_IGNORE_BORDERS );
+CV_EXPORTS_W void HoughPoint2Line( const Point &houghPoint,
+                                   InputArray  srcImgInfo,
+                                   Vec4i       &line,
+                                   int         angleRange = ARO_315_135,
+                                   int         makeSkew = HDO_DESKEW,
+                                   int         rules = RO_IGNORE_BORDERS );
 
 } }// namespace cv::ximgproc
 

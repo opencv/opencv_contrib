@@ -42,7 +42,6 @@
 //M*/
 
 #include "perf_precomp.hpp"
-#include "fast_hough_transform.hpp"
 
 namespace cvtest {
 

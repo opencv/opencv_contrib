@@ -42,7 +42,6 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include "fast_hough_transform.hpp"
 
 namespace cvtest
 {
@@ -288,7 +287,7 @@ int TestFHT::validate_line(Mat const& fht,
         Point fht_max(-1, -1);
         minMaxLoc(fht_channels[ch], 0, 0, 0, &fht_max);
         Vec4i src_line;
-        HoughPoint2Line(src_line, fht_max, src,
+        HoughPoint2Line(fht_max, src, src_line,
                         ARO_315_135, HDO_DESKEW, RO_STRICT);
 
         double const a = src_line[1] - src_line[3];

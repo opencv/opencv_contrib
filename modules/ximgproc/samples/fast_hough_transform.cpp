@@ -47,8 +47,6 @@
 
 #include <opencv2/ximgproc.hpp>
 
-#include "fast_hough_transform.hpp"
-
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
@@ -197,7 +195,7 @@ bool getLocalExtr(vector<Vec4i> &lines,
     for (size_t i = 0; i < weightedPoints.size(); ++i)
     {
         Vec4i houghLine(0, 0, 0, 0);
-        HoughPoint2Line(houghLine, weightedPoints[i].second, src);
+        HoughPoint2Line(weightedPoints[i].second, src, houghLine);
         lines.push_back(houghLine);
     }
     return true;
