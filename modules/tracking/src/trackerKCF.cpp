@@ -173,6 +173,7 @@ namespace cv{
       Mat layers[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
       merge(layers, 10, hann); 
     }
+    if(params.descriptor != GRAY){printf("The choosen descriptor mode is not available! Please use GRAY descriptor, other descriptors will be avaiable soon.\n");return false;}//temporary, will be updated soon
     
     // create gaussian response
     y=Mat::zeros(roi.height,roi.width,CV_64F);
