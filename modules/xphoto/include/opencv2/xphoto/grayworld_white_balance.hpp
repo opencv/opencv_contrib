@@ -11,7 +11,7 @@
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,14 +40,31 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#ifndef __OPENCV_GRAYWORLD_WHITE_BALANCE_HPP__
+#define __OPENCV_GRAYWORLD_WHITE_BALANCE_HPP__
 
-/** @defgroup xphoto Additional photo processing algorithms
+/** @file
+@date Jun 3, 2015
+@author Seon-Wook Park
 */
 
-#include "xphoto/inpainting.hpp"
-#include "xphoto/simple_color_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#include "xphoto/grayworld_white_balance.hpp"
-#endif
+#include <opencv2/core.hpp>
+
+namespace cv { namespace xphoto {
+
+//! @addtogroup xphoto
+//! @{
+
+    /** @brief The function implements a simple grayworld white balance algorithm.
+
+    @param src
+    @param dst
+    @sa balanceWhite
+     */
+    CV_EXPORTS_W void autowbGrayworld(InputArray src, OutputArray dst);
+
+//! @}
+
+}}
+
+#endif // __OPENCV_GRAYWORLD_WHITE_BALANCE_HPP__
