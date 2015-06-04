@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
   input.open(argv[1]);
     
   while( input.grab() ) {
-    cv::Mat image;
+    cv::Mat image,imageCopy;
     input.retrieve(image);
 
     std::vector< int > ids;
@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
     cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);   
     
     // draw results
-    if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imgPoints, ids);  
+    if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);  
     
-    cv::imshow("out", image);
+    cv::imshow("out", imageCopy);
     char key = cv::waitKey(0);
     if(key == 27) break;
   }

@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
   float markerSize = 0.04; //meters
   
   while( input.grab() ) {
-    cv::Mat image;
+    cv::Mat image, imageCopy;
     input.retrieve(image);
 
     std::vector< int > ids;
@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
     
     // draw results
     if(ids.size()>0) {
-        cv::aruco::drawDetectedMarkers(image, imgPoints, ids);
-        for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(image, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
+        cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
+        for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
     }
     
-    cv::imshow("out", image);
+    cv::imshow("out", imageCopy);
     char key = cv::waitKey(0);
     if(key == 27) break;
   }

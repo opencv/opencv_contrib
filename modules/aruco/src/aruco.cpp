@@ -381,24 +381,28 @@ void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board
 
 /**
  */
-void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays markers, InputArray ids, bool drawId) {
+void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays markers, InputArray ids) {
 
+    out.create(in.size(), in.type());
+    cv::Mat outImg = out.getMat();
+    in.getMat().copyTo(outImg);
+  
     for(int i=0; i<markers.total(); i++) {
         cv::Mat currentMarker = markers.getMat(i);
         for(int j=0; j<4; j++) {
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
             p1 = currentMarker.ptr<cv::Point2f>(0)[(j+1)%4];
-            cv::line(image, p0, p1, cv::Scalar(0,255,0),2);
+            cv::line(outImg, p0, p1, cv::Scalar(0,255,0),2);
         }
-        cv::rectangle( image, currentMarker.ptr<cv::Point2f>(0)[0]-Point2f(3,3),currentMarker.ptr<cv::Point2f>(0)[0]+Point2f(3,3),Scalar(255,0,0),2,cv::LINE_AA);
-        if(drawId) {
+        cv::rectangle( outImg, currentMarker.ptr<cv::Point2f>(0)[0]-Point2f(3,3),currentMarker.ptr<cv::Point2f>(0)[0]+Point2f(3,3),Scalar(255,0,0),2,cv::LINE_AA);
+        if(ids.total()!=0) {
             Point2f cent(0,0);
             for(int p=0; p<4; p++) cent += currentMarker.ptr<cv::Point2f>(0)[p];
             cent = cent/4.;
             stringstream s;
             s << "id=" << ids.getMat().ptr<int>(0)[i] ;
-            putText(image, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,255), 2);
+            putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,255), 2);
         }
     }
 
