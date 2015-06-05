@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     // draw results
     if(ids.size()>0) {
         cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
-        for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
+        for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
     }
     
     cv::imshow("out", imageCopy);

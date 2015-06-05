@@ -413,7 +413,12 @@ void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays mark
 
 /**
  */
-void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght) {
+void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght) {
+  
+    out.create(in.size(), in.type());
+    cv::Mat outImg = out.getMat();
+    in.getMat().copyTo(outImg);  
+  
     std::vector<cv::Point3f> axisPoints;
     axisPoints.push_back(cv::Point3f(0,0,0));
     axisPoints.push_back(cv::Point3f(lenght,0,0));
@@ -422,9 +427,9 @@ void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCo
     std::vector<cv::Point2f> imagePoints;
     cv::projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
 
-    cv::line(image, imagePoints[0], imagePoints[1], cv::Scalar(0,0,255), 3);
-    cv::line(image, imagePoints[0], imagePoints[2], cv::Scalar(0,255,0), 3);
-    cv::line(image, imagePoints[0], imagePoints[3], cv::Scalar(255,0,0), 3);
+    cv::line(outImg, imagePoints[0], imagePoints[1], cv::Scalar(0,0,255), 3);
+    cv::line(outImg, imagePoints[0], imagePoints[2], cv::Scalar(0,255,0), 3);
+    cv::line(outImg, imagePoints[0], imagePoints[3], cv::Scalar(255,0,0), 3);
 
 }
 

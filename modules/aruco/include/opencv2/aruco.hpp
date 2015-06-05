@@ -195,6 +195,7 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayO
  * @brief Draw coordinate system axis from pose estimation
  *
  * @param in input image
+ * @param out output image. It will be a copy of in but the axis will be painted on.
  * @param cameraMatrix input 3x3 floating-point camera matrix 
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
@@ -206,7 +207,7 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayO
  * Given the pose estimation of a marker or board, this function draws the axis of the world coordinate system
  * i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
-CV_EXPORTS void drawAxis(InputOutputArray in, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
+CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
 
 
 
