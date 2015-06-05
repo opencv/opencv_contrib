@@ -184,7 +184,7 @@ CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, 
  * @param ids vector of identifiers for markers in markersCorners . Optional, if not provided, ids are not painted.
  * 
  * Given an array of detected marker corners and its corresponding ids, this functions draws the markers in the image.
- * The marker borders are painted and the markers identifiers if provided.
+ * The marker borders are painted and the markers identifiers if provided. Useful for debugging purposes.
  */
 CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayOfArrays markersCorners, InputArray ids=noArray());
 
@@ -192,46 +192,68 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayO
 
 
 /**
- * @brief Draw colored axis in image
+ * @brief Draw coordinate system axis from pose estimation
  *
- * @param image
- * @param cameraMatrix
- * @param distCoeffs
- * @param rvec
- * @param tvec
- * @param lenght axis lenght in meters
+ * @param in input image
+ * @param cameraMatrix input 3x3 floating-point camera matrix 
+ * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
+ * @param distCoeffs vector of distortion coefficients
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param rvec rotation vector of the coordinate system that will be drawn. (@see Rodrigues).
+ * @param tvec translation vector of the coordinate system that will be drawn. (@see Rodrigues).
+ * @param lenght lenght of the painted axis in the same unit than tvec (usually in meters)
  * 
- * 
+ * Given the pose estimation of a marker or board, this function draws the axis of the world coordinate system
+ * i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
-CV_EXPORTS void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
+CV_EXPORTS void drawAxis(InputOutputArray in, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
+
+
 
 
 
 /**
  * @brief Draw a canonical marker image
  *
- * @param dict
- * @param id
- * @param sidePixels
- * @param img
- * @return void
+ * @param dictionary dictionary of markers indicating the type of markers
+ * @param id identifier of the marker that will be returned. It has to be a valid id in the specified dictionary.
+ * @param sidePixels size of the image in pixels
+ * @param img output image with the marker
+ * 
+ * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray img);
-CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArray img);
+CV_EXPORTS void drawMarker(Dictionary dictionary, int id, int sidePixels, OutputArray img);
+/**
+ * @brief Overload drawMarker function for predefined dictionaries
+ **/
+CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dictionary, int id, int sidePixels, OutputArray img);
+
+
 
 
 
 /**
  * @brief Draw a planar board
  *
- * @param board
- * @param dict
- * @param outSize
- * @param img
- * @return void
+ * @param board layout of the board that will be drawn. The board should be planar, z coordinate is ignored 
+ * @param dictionary dictionary of markers indicating the type of markers
+ * @param outSize size of the output image in pixels.
+ * @param img output image with the board. The size of this image will be outSize and the board will be
+ * on the center, keeping the board proportions.
+ * 
+ * This function return the image of a planar board, ready to be printed. It assumes the Board layout specified
+ * is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray img);
-CV_EXPORTS void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dict, cv::Size outSize, OutputArray img);
+CV_EXPORTS void drawPlanarBoard(Board board, Dictionary dictionary, cv::Size outSize, OutputArray img);
+/**
+ * @brief Overload drawPlanarBoard function for predefined dictionaries
+ **/
+CV_EXPORTS void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dictionary, cv::Size outSize, OutputArray img);
+
+
+
+
+
 
 
 //CV_EXPORTS void calibrateCamera(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
