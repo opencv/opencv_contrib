@@ -298,7 +298,7 @@ void getSingleMarkerObjectPoints(float markerSize, OutputArray _objPnts) {
 /**
   */
 void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, int threshParam,float minLenght) {
+                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam,float minLenght) {
 
     cv::Mat grey;
     if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
@@ -309,7 +309,7 @@ void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays 
     _detectCandidates(grey,candidates,threshParam,minLenght);
 
     /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidates, dictionary, imgPoints, ids);
+    _identifyCandidates(grey, candidates, dictionary, imgPoints, ids, rejectedImgPoints);
 
     /// STEP 3: Clean candidates
 
@@ -335,9 +335,9 @@ const Dictionary& getPredefinedDictionary(PREDEFINED_DICTIONARIES name) {
 /**
   */
 void detectMarkers(InputArray image, PREDEFINED_DICTIONARIES dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, int threshParam,float minLenght) {
+                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam, float minLenght) {
 
-    detectMarkers(image, getPredefinedDictionary(dictionary), imgPoints, ids, threshParam, minLenght);
+    detectMarkers(image, getPredefinedDictionary(dictionary), imgPoints, ids, rejectedImgPoints, threshParam, minLenght);
 }
 
 
@@ -381,7 +381,13 @@ void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board
 
 /**
  */
-void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays markers, InputArray ids) {
+void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays markers, InputArray ids, cv::Scalar borderColor) {
+
+    // calculate colors
+    cv::Scalar textColor, cornerColor;
+    textColor = cornerColor = borderColor;
+    swap(textColor.val[0], textColor.val[1]); // text color just sawp G and R
+    swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
 
     out.create(in.size(), in.type());
     cv::Mat outImg = out.getMat();
@@ -393,16 +399,16 @@ void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays mark
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
             p1 = currentMarker.ptr<cv::Point2f>(0)[(j+1)%4];
-            cv::line(outImg, p0, p1, cv::Scalar(0,255,0),2);
+            cv::line(outImg, p0, p1, borderColor,2);
         }
-        cv::rectangle( outImg, currentMarker.ptr<cv::Point2f>(0)[0]-Point2f(3,3),currentMarker.ptr<cv::Point2f>(0)[0]+Point2f(3,3),Scalar(255,0,0),2,cv::LINE_AA);
+        cv::rectangle( outImg, currentMarker.ptr<cv::Point2f>(0)[0]-Point2f(3,3),currentMarker.ptr<cv::Point2f>(0)[0]+Point2f(3,3),cornerColor,2,cv::LINE_AA);
         if(ids.total()!=0) {
             Point2f cent(0,0);
             for(int p=0; p<4; p++) cent += currentMarker.ptr<cv::Point2f>(0)[p];
             cent = cent/4.;
             stringstream s;
             s << "id=" << ids.getMat().ptr<int>(0)[i] ;
-            putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,255), 2);
+            putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
 

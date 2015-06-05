@@ -86,6 +86,8 @@ namespace cv { namespace aruco {
  * @param ids vector of identifiers of the detected markers. The identifier is of type int (e.g. std::vector<int>).
  * For N detected markers, the size of ids is also N. 
  * The identifiers have the same order than the markers in the imgPoints array.
+ * @param rejectedImgPoints contains the imgPoints of those squares whose inner code has not a correct codification
+ * Useful for debugging purposes.
  * @param threshParam window size for adaptative thresholding. A larger param can slow down the detection process.
  * A low param can produce false negatives during the detection.
  * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio
@@ -99,13 +101,13 @@ namespace cv { namespace aruco {
  * 
  */
 CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, int threshParam=21,float minLenght=0.03);
+                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(), int threshParam=21,float minLenght=0.03);
 
 /**
  * @brief Overload detectMarkers function for predefined dictionaries
  **/
 CV_EXPORTS void detectMarkers(InputArray image, PREDEFINED_DICTIONARIES dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, int threshParam=21,float minLenght=0.03);
+                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(), int threshParam=21,float minLenght=0.03);
 
 
 
@@ -182,11 +184,12 @@ CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, 
  * For N detected markers, the dimensions of this array should be Nx4.
  * The order of the corners should be clockwise.
  * @param ids vector of identifiers for markers in markersCorners . Optional, if not provided, ids are not painted.
+ * @param color color of marker borders. Rest of colors (text color and first corner color) are calculated based on this one.
  * 
  * Given an array of detected marker corners and its corresponding ids, this functions draws the markers in the image.
  * The marker borders are painted and the markers identifiers if provided. Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayOfArrays markersCorners, InputArray ids=noArray());
+CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayOfArrays markersCorners, InputArray ids=noArray(), cv::Scalar borderColor=cv::Scalar(0,255,0));
 
 
 

@@ -25,12 +25,14 @@ int main(int argc, char* argv[])
 
     std::vector< int > ids;
     std::vector< std::vector<cv::Point2f> > imgPoints;
+    std::vector< std::vector<cv::Point2f> > rejectedImgPoints;
     
     // detect markers
-    cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);   
-    
+    cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids, rejectedImgPoints);   
+   
     // draw results
-    if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);  
+    if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
+    if(rejectedImgPoints.size()>0) cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedImgPoints,cv::noArray(), cv::Scalar(100,0,255));  
     
     cv::imshow("out", imageCopy);
     char key = cv::waitKey(0);
