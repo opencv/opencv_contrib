@@ -43,8 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <vector>
 
-#include "board.hpp"
-
 
 /**
  * @defgroup aruco ArUco Marker Detection
@@ -145,6 +143,30 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float ma
 
 
 /**
+ * @brief Board of markers
+ *
+ * A board is a set of markers in the 3D space with a common cordinate system.
+ * The common form of a board of marker is a planar (2D) board, however any 3D layout can be employed.
+ * A Board object is composed by:
+ * - The object points of the marker corners, i.e. their coordinates respect to the board coordinate system.
+ * - The identifier of all the markers in the board.
+ */
+class CV_EXPORTS Board {
+
+public:
+
+    // array of object points of all the marker corners in the board
+    // each marker include its 4 corners, i.e. for M markers, the size is Mx4
+    std::vector< std::vector<cv::Point3f> > objPoints;
+
+    // vector of the identifiers of the markers in the board (same size than objPoints)
+    // The identifiers refers to the board dictionary
+    std::vector< int > ids;
+};
+
+
+
+/**
  * @brief Pose estimation for a board of markers
  *
  * @param imgPoints vector of already detected markers corners. For each marker, its four corners are provided,
@@ -167,6 +189,28 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float ma
  */
 CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
                                           InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
+
+
+
+
+
+
+/**
+ * @brief Create a planar Board object
+ *
+ * @param width number of markers in X direction
+ * @param height number of markers in Y direction
+ * @param markerSize marker side length (normally in meters)
+ * @param markerSeparation separation between two markers (same unit than markerSize)
+ * @param dictionary dictionary of markers indicating the type of markers. The first width*height markers
+ * in the dictionary are used.
+ * @return the output Board object
+ *
+ * This functions creates a planar board object given the number of markers in each direction and
+ * the marker size and marker separation.
+ */
+CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation);
+
 
 
 
