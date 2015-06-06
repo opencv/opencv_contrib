@@ -408,7 +408,7 @@ void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board
 
 /**
  */
-Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation) {
+Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation, DICTIONARY dictionary) {
     Board res;
     int totalMarkers = width*height;
     res.ids.resize(totalMarkers);
@@ -427,6 +427,8 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
             res.objPoints.push_back(corners);
         }
     }
+
+    res.dictionary = dictionary;
     return res;
 }
 
@@ -511,7 +513,10 @@ void drawMarker(DICTIONARY dict, int id, int sidePixels, OutputArray img) {
 
 /**
  */
-void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray img) {
+void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
+
+        Dictionary dict = getPredefinedDictionary(board.dictionary);
+
         img.create(outSize, CV_8UC1);
         cv::Mat out = img.getMat();
     //    cv::Mat out(outSize, CV_8UC1, cv::Scalar::all(255));
@@ -600,13 +605,6 @@ void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray
         cv::Mat _img = img.getMat();
         out.copyTo(_img);
 }
-
-/**
- */
-void drawPlanarBoard(Board board, DICTIONARY dict, cv::Size outSize, OutputArray img) {
-    drawPlanarBoard(board, getPredefinedDictionary(dict), outSize, img);
-}
-
 
 
 
