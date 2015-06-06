@@ -7,22 +7,18 @@ namespace cv
 namespace dnn
 {
 
-Blob::Blob(Mat &in) : _InputOutputArray(in)
+Blob::Blob()
 {
 
 }
 
-Blob::Blob(const Mat &in) : _InputOutputArray(in)
+Blob::Blob(InputArray in)
 {
-
+    CV_Assert(in.isMat());
+    m = in.getMat();
 }
 
-Blob::Blob(UMat &in) : _InputOutputArray(in)
-{
-
-}
-
-Blob::Blob(const UMat &in) : _InputOutputArray(in)
+Net::~Net()
 {
 
 }
@@ -34,9 +30,9 @@ Importer::~Importer()
 }
 
 
-Net::~Net()
+Ptr<NetConfiguration> NetConfiguration::create()
 {
-
+    return Ptr<NetConfiguration>(new NetConfiguration());
 }
 
 }

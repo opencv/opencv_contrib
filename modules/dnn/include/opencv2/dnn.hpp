@@ -4,6 +4,7 @@
 #include <opencv2/core.hpp>
 #include <map>
 #include <vector>
+#include "dict.hpp"
 
 namespace cv
 {
@@ -16,13 +17,15 @@ namespace dnn
     class LayerParams;
 
     //wrapper over cv::Mat and cv::UMat
-    class Blob : public _InputOutputArray
+    CV_EXPORTS class Blob
     {
+        Mat m;
+
     public:
-        Blob(Mat &in);
-        Blob(const Mat &in);
-        Blob(UMat &in);
-        Blob(const UMat &in);
+        Blob();
+        Blob(InputArray in);
+
+        bool empty() const;
 
         int width() const; //cols
         int height() const; //rows
@@ -32,34 +35,16 @@ namespace dnn
         Vec4i size() const;
     };
 
-    class LayerParams
+    CV_EXPORTS class LayerParams : public Dict
     {
-        struct Value
-        {
-            int type;
-
-            union
-            {
-                int i;
-                double d;
-                String *s;
-                Mat *m;
-            } data;
-        };
-
-        //TODO: maybe this mechanism was realized somewhere in OpenCV?
-        std::map<String, Value> params;
 
     public:
 
         std::vector<Blob> learnedWeights;
-
-        template<typename T>
-        T get(const String &name);
     };
 
     //this class allows to build new Layers
-    class Layer : public Algorithm
+    CV_EXPORTS class Layer
     {
     public:
         //Layer registration routines
@@ -104,11 +89,11 @@ namespace dnn
     //TODO: maybe eliminate all int ids and replace them by string names
     //Proxy class for different formats
     //Each format importer must populate it
-    class NetConfiguration
+    CV_EXPORTS class NetConfiguration
     {
     public:
 
-        static Ptr<NetConfiguration> create();
+        CV_EXPORTS static Ptr<NetConfiguration> create();
 
         int addLayer(const String &name, const String &type);
 
@@ -141,24 +126,24 @@ namespace dnn
     };
 
 
-    class Net
+    CV_EXPORTS class Net
     {
     public:
 
-        static Ptr<Net> create(Ptr<NetConfiguration> config);
+        CV_EXPORTS static Ptr<Net> create(Ptr<NetConfiguration> config);
 
-        virtual ~Net();
+        virtual ~Net() = 0;
 
-        virtual int getBlobId(int layerId, int outputId);
+        virtual int getBlobId(int layerId, int outputId) = 0;
 
-        virtual int getBlobId(const String &blobName);
+        virtual int getBlobId(const String &blobName) = 0;
 
-        virtual void forward(std::vector< int, Ptr<Blob> > &inputBlobs, std::vector<int, Ptr<Blob> > &outputBlobs);
+        virtual void forward(std::vector< int, Ptr<Blob> > &inputBlobs, std::vector<int, Ptr<Blob> > &outputBlobs) = 0;
 
-        virtual void forward(int layer, std::vector<Ptr<Blob> > &layerOutputs);
+        virtual void forward(int layer, std::vector<Ptr<Blob> > &layerOutputs) = 0;
     };
 
-    class Importer
+    CV_EXPORTS class Importer
     {
     public:
 
@@ -167,7 +152,7 @@ namespace dnn
         virtual ~Importer();
     };
 
-    Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
+    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
 
 }
 }

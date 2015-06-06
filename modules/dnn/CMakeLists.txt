@@ -21,5 +21,10 @@ ocv_add_module(dnn opencv_imgproc opencv_core opencv_highgui WRAP python matlab)
 ocv_glob_module_sources(${PROTO_SRCS} ${PROTO_HDRS})
 ocv_source_group("Src\\protobuf" FILES ${PROTO_SRCS} ${PROTO_HDRS})
 ocv_module_include_directories(${PROTOBUF_INCLUDE_DIR})
+
 ocv_create_module()
+
 target_link_libraries(opencv_dnn ${PROTOBUF_LIBRARIES})
+ocv_add_accuracy_tests()
+ocv_add_perf_tests()
+ocv_add_samples()
