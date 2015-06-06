@@ -106,6 +106,15 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
             minDistSq = std::min(minDistSq,d);
         }
         if(minDistSq<100) continue;
+        // check if it is too near to the image border
+        bool tooNearBorder = false;
+        int maxDistanceToBorder = 3;
+        for(int j=0; j<4; j++) {
+            if ( approxCurve[j].x<maxDistanceToBorder || approxCurve[j].y<maxDistanceToBorder ||
+              approxCurve[j].x>image.cols-1-maxDistanceToBorder || approxCurve[j].y>image.rows-1-maxDistanceToBorder )
+                tooNearBorder=true;
+        }
+        if(tooNearBorder) continue;
         std::vector<cv::Point2f> currentCandidate;
         currentCandidate.resize(4);
         for ( int j=0;j<4;j++ ) {
@@ -113,6 +122,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
         }
         candidates.push_back(currentCandidate);
     }
+
 
 
     /// 4. SORT CORNERS
@@ -194,11 +204,6 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 //        }
 //        //delete if any of the corners is too near image border
 //        for(size_t c=0;c<detectedMarkers[i].size();c++){
-//        if ( detectedMarkers[i][c].x<borderDistThresX ||
-//          detectedMarkers[i][c].y<borderDistThresY ||
-//          detectedMarkers[i][c].x>input.cols-borderDistThresX ||
-//          detectedMarkers[i][c].y>input.rows-borderDistThresY ) toRemove[i]=true;
-
 //    }
 
 
