@@ -43,7 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <vector>
 
-#include "dictionary.hpp"
 #include "board.hpp"
 
 
@@ -75,6 +74,9 @@ namespace cv { namespace aruco {
   
   
 
+enum DICTIONARY { DICT_ARUCO=0 };
+
+
 /**
  * @brief Basic marker detection
  *
@@ -100,13 +102,7 @@ namespace cv { namespace aruco {
  * @see estimatePoseSingleMarkers,  estimatePoseBoard
  * 
  */
-CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(), int threshParam=21,float minLenght=0.03);
-
-/**
- * @brief Overload detectMarkers function for predefined dictionaries
- **/
-CV_EXPORTS void detectMarkers(InputArray image, PREDEFINED_DICTIONARIES dictionary, OutputArrayOfArrays imgPoints,
+CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
                        OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(), int threshParam=21,float minLenght=0.03);
 
 
@@ -226,11 +222,7 @@ CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix
  * 
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS void drawMarker(Dictionary dictionary, int id, int sidePixels, OutputArray img);
-/**
- * @brief Overload drawMarker function for predefined dictionaries
- **/
-CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dictionary, int id, int sidePixels, OutputArray img);
+CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img);
 
 
 
@@ -248,11 +240,7 @@ CV_EXPORTS void drawMarker(PREDEFINED_DICTIONARIES dictionary, int id, int sideP
  * This function return the image of a planar board, ready to be printed. It assumes the Board layout specified
  * is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS void drawPlanarBoard(Board board, Dictionary dictionary, cv::Size outSize, OutputArray img);
-/**
- * @brief Overload drawPlanarBoard function for predefined dictionaries
- **/
-CV_EXPORTS void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dictionary, cv::Size outSize, OutputArray img);
+CV_EXPORTS void drawPlanarBoard(Board board, DICTIONARY dictionary, cv::Size outSize, OutputArray img);
 
 
 

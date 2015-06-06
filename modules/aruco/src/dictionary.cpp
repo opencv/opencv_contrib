@@ -41,7 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #ifdef __cplusplus
 
 #include "precomp.hpp"
-#include "opencv2/dictionary.hpp"
+#include "predefined_dictionaries.cpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/types_c.h>
@@ -53,6 +53,8 @@ the use of this software, even if advised of the possibility of such damage.
 namespace cv{ namespace aruco{
 
 using namespace std;
+
+
 
 
 const char quartets_distances[16][16][4] =
@@ -77,27 +79,41 @@ const char quartets_distances[16][16][4] =
 
 
 
-/**
-  */
-bool Dictionary::_isBorderValid(cv::Mat bits) {
-    int sizeWithBorders = markerSize+2;
-    int totalErrors = 0;
-    for(int y=0; y<sizeWithBorders; y++) {
-        if(bits.ptr<unsigned char>(y)[0]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(y)[sizeWithBorders-1]!=0) totalErrors++;
-    }
-    for(int x=1; x<sizeWithBorders-1; x++) {
-        if(bits.ptr<unsigned char>(0)[x]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(sizeWithBorders-1)[x]!=0) totalErrors++;
-    }
-    if(totalErrors > 1) return false; // markersize is a good value for check border errors
-    else return true;
-}
 
 
 /**
+ * @brief Dictionary/Set of markers. It contains the inner codification
+ *
  */
-bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx) {
+class Dictionary {
+
+public:
+
+Dictionary() { };
+Dictionary(const char *quartets, int _markerSize, int _dictsize, int _maxcorr)  {
+    markerSize = _markerSize;
+    maxCorrectionBits = _maxcorr;
+    int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
+    codes = cv::Mat(_dictsize, nquartets, CV_8UC1);
+    for(int i=0; i<_dictsize; i++) {
+        for(int j=0; j<nquartets; j++) codes.at<unsigned char>(i,j) = quartets[i*nquartets+j];
+    }
+};
+
+cv::Mat codes;
+int markerSize;
+int maxCorrectionBits; // maximum number of bits that can be corrected
+// float borderSize; // black border size respect to inner bits size
+
+/**
+ * @brief Given an image and four corners positions, identify the marker
+ *
+ * @param image
+ * @param imgPoints corner positions
+ * @param idx marker idx if valid
+ * @return true if identification is correct, else false
+ */
+bool identify(InputArray image, InputOutputArray imgPoints, int &idx) {
     // get bits
     cv::Mat candidateBits = _extractBits(image, imgPoints);
     if(!_isBorderValid(candidateBits)) return false; // not really necessary
@@ -138,45 +154,13 @@ bool Dictionary::identify(InputArray image, InputOutputArray imgPoints, int &idx
 
 
 /**
-  */
-cv::Mat Dictionary::_extractBits(InputArray image, InputOutputArray imgPoints) {
-
-    CV_Assert(image.getMat().channels()==1);
-
-    cv::Mat resultImg; // marker image after removing perspective
-    int squareSizePixels = 8;
-    int resultImgSize = (markerSize+2)*squareSizePixels;
-    cv::Mat resultImgCorners(4,1,CV_32FC2);
-    resultImgCorners.ptr<cv::Point2f>(0)[0]= Point2f ( 0,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[1]= Point2f ( resultImgSize-1,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[2]= Point2f ( resultImgSize-1,resultImgSize-1 );
-    resultImgCorners.ptr<cv::Point2f>(0)[3]= Point2f ( 0,resultImgSize-1 );
-
-    // remove perspective
-    cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
-    cv::warpPerspective(image, resultImg, transformation, cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
-
-    // now extract code
-    cv::Mat bits(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
-    cv::threshold(resultImg, resultImg,125, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
-    for (unsigned int y=0; y<markerSize+2; y++)  {
-        for (unsigned int x=0; x<markerSize+2;x++) {
-            int Xstart=x*(squareSizePixels)+1;
-            int Ystart=y*(squareSizePixels)+1;
-            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels-2,squareSizePixels-2));
-            int nZ=countNonZero(square);
-            if (nZ> square.total()/2)  bits.at<unsigned char>(y,x)=1;
-        }
-     }
-
-    return bits;
-}
-
-
-
-/**
+ * @brief Draw a canonical marker image
+ *
+ * @param img
+ * @param id
+ * @return void
  */
-void Dictionary::drawMarker(int id, int sidePixels, OutputArray img) {
+void drawMarker(int id, int sidePixels, OutputArray img) {
     img.create(sidePixels, sidePixels, CV_8UC1);
     cv::Mat tinyMarker(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
     cv::Mat innerRegion = tinyMarker.rowRange(1,tinyMarker.rows-1).colRange(1,tinyMarker.cols-1);
@@ -186,9 +170,9 @@ void Dictionary::drawMarker(int id, int sidePixels, OutputArray img) {
 }
 
 
-/**
-  */
-cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
+private:
+
+cv::Mat _getQuartet(cv::Mat bits) {
 
     int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
     cv::Mat candidateQuartets(1, nquartets, CV_8UC1);
@@ -210,13 +194,9 @@ cv::Mat Dictionary::_getQuartet(cv::Mat bits) {
         candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
     }
     return candidateQuartets;
-
 }
 
-/**
-  */
-cv::Mat Dictionary::_getBits(cv::Mat quartets) {
-
+cv::Mat _getBits(cv::Mat quartets) {
     cv::Mat bits(markerSize, markerSize, CV_8UC1);
     int currentQuartetIdx=0;
     for(int row=0; row<markerSize/2; row++)
@@ -251,13 +231,9 @@ cv::Mat Dictionary::_getBits(cv::Mat quartets) {
         else bits.at<unsigned char>(markerSize/2,markerSize/2) = 1;
     }
     return bits;
-
 }
 
-
-/**
-  */
-cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
+cv::Mat _getDistances(cv::Mat quartets) {
 
     bool middleBit = (markerSize%2==1);
     int ncompleteQuartets = quartets.total() - (middleBit?1:0);
@@ -281,7 +257,60 @@ cv::Mat Dictionary::_getDistances(cv::Mat quartets) {
     return res;
 }
 
+cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints) {
 
+    CV_Assert(image.getMat().channels()==1);
+
+    cv::Mat resultImg; // marker image after removing perspective
+    int squareSizePixels = 8;
+    int resultImgSize = (markerSize+2)*squareSizePixels;
+    cv::Mat resultImgCorners(4,1,CV_32FC2);
+    resultImgCorners.ptr<cv::Point2f>(0)[0]= Point2f ( 0,0 );
+    resultImgCorners.ptr<cv::Point2f>(0)[1]= Point2f ( resultImgSize-1,0 );
+    resultImgCorners.ptr<cv::Point2f>(0)[2]= Point2f ( resultImgSize-1,resultImgSize-1 );
+    resultImgCorners.ptr<cv::Point2f>(0)[3]= Point2f ( 0,resultImgSize-1 );
+
+    // remove perspective
+    cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
+    cv::warpPerspective(image, resultImg, transformation, cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
+
+    // now extract code
+    cv::Mat bits(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
+    cv::threshold(resultImg, resultImg,125, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
+    for (unsigned int y=0; y<markerSize+2; y++)  {
+        for (unsigned int x=0; x<markerSize+2;x++) {
+            int Xstart=x*(squareSizePixels)+1;
+            int Ystart=y*(squareSizePixels)+1;
+            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels-2,squareSizePixels-2));
+            int nZ=countNonZero(square);
+            if (nZ> square.total()/2)  bits.at<unsigned char>(y,x)=1;
+        }
+     }
+
+    return bits;
+}
+
+bool _isBorderValid(cv::Mat bits) {
+    int sizeWithBorders = markerSize+2;
+    int totalErrors = 0;
+    for(int y=0; y<sizeWithBorders; y++) {
+        if(bits.ptr<unsigned char>(y)[0]!=0) totalErrors++;
+        if(bits.ptr<unsigned char>(y)[sizeWithBorders-1]!=0) totalErrors++;
+    }
+    for(int x=1; x<sizeWithBorders-1; x++) {
+        if(bits.ptr<unsigned char>(0)[x]!=0) totalErrors++;
+        if(bits.ptr<unsigned char>(sizeWithBorders-1)[x]!=0) totalErrors++;
+    }
+    if(totalErrors > 1) return false; // markersize is a good value for check border errors
+    else return true;
+}
+
+};
+
+
+
+// PREDEFINED DICTIONARIES
+const Dictionary _dict_aruco = Dictionary (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
 
 
 }}

@@ -40,8 +40,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_ARUCO_PREDEFINED_DICTIONARIES_CPP__
 #ifdef __cplusplus
 
-#include "opencv2/dictionary.hpp"
-
 
 namespace cv{ namespace aruco{
 
@@ -220,7 +218,7 @@ const char _dict_aruco_quartets[][7] = {
     {1,8,8,8,15,15,1}, {3,10,10,8,15,15,1}, {2,8,8,10,15,15,1}, {0,10,10,10,15,15,1}
 };
 
-const Dictionary _dict_aruco = Dictionary (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
+//const Dictionary _dict_aruco = Dictionary (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
 
 
 

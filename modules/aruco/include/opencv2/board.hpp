@@ -43,9 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <vector>
 
-#include "dictionary.hpp"
-
-
 namespace cv { namespace aruco {
 
     
@@ -94,21 +91,7 @@ public:
      */
     void getObjectAndImagePoints(InputArray detectedIds, InputArrayOfArrays detectedImagePoints, OutputArray imagePoints, OutputArray objectPoints);
 
-    
-   /**
-    * @brief Draw the board
-    *
-    * @param dictionary dictionary of markers indicating the type of markers
-    * @param outSize size of the output image in pixels.
-    * @param img output image with the board. The size of this image will be outSize and the board will be
-    * on the center, keeping the board proportions.
-    * 
-    * This function return the image of the planar board, ready to be printed. It assumes the Board layout
-    * is planar by ignoring the z coordinates of the object points.
-    */
-    void drawBoard(Dictionary dictionary, cv::Size outSize, OutputArray img);
-    
-    
+
     
     /**
      * @brief Create a planar Board object

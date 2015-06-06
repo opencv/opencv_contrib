@@ -48,9 +48,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include "predefined_dictionaries.cpp"
-
-#include <iostream>
+#include "dictionary.cpp"
 
 
 namespace cv{ namespace aruco{
@@ -323,7 +321,7 @@ void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays 
 
 /**
   */
-const Dictionary& getPredefinedDictionary(PREDEFINED_DICTIONARIES name) {
+const Dictionary& getPredefinedDictionary(DICTIONARY name) {
     switch(name) {
         case DICT_ARUCO:
         return _dict_aruco;
@@ -334,7 +332,7 @@ const Dictionary& getPredefinedDictionary(PREDEFINED_DICTIONARIES name) {
 
 /**
   */
-void detectMarkers(InputArray image, PREDEFINED_DICTIONARIES dictionary, OutputArrayOfArrays imgPoints,
+void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
                        OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam, float minLenght) {
 
     detectMarkers(image, getPredefinedDictionary(dictionary), imgPoints, ids, rejectedImgPoints, threshParam, minLenght);
@@ -451,7 +449,7 @@ void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray img) {
 
 /**
  */
-void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArray img) {
+void drawMarker(DICTIONARY dict, int id, int sidePixels, OutputArray img) {
     drawMarker(getPredefinedDictionary(dict), id, sidePixels, img);
 }
 
@@ -459,12 +457,98 @@ void drawMarker(PREDEFINED_DICTIONARIES dict, int id, int sidePixels, OutputArra
 /**
  */
 void drawPlanarBoard(Board board, Dictionary dict, cv::Size outSize, OutputArray img) {
-    board.drawBoard(dict, outSize, img);
+        img.create(outSize, CV_8UC1);
+        cv::Mat out = img.getMat();
+    //    cv::Mat out(outSize, CV_8UC1, cv::Scalar::all(255));
+        out.setTo(cv::Scalar::all(255));
+        cv::Mat outNoMargins = out.colRange(2,out.cols-2).rowRange(2,out.rows-2);
+
+
+        // look for XY size
+        CV_Assert(board.objPoints.size()>0);
+        float minX, maxX, minY, maxY;
+        minX = maxX = board.objPoints[0][0].x;
+        minY = maxY = board.objPoints[0][0].y;
+
+        for(int i=0; i<board.objPoints.size(); i++) {
+            for(int j=0; j<4; j++) {
+                minX = min(minX, board.objPoints[i][j].x);
+                maxX = max(maxX, board.objPoints[i][j].x);
+                minY = min(minY, board.objPoints[i][j].y);
+                maxY = max(maxY, board.objPoints[i][j].y);
+            }
+        }
+
+        float sizeX, sizeY;
+        sizeX = maxX-minX;
+        sizeY = maxY-minY;
+
+        float xReduction = sizeX/float(outNoMargins.cols);
+        float yReduction = sizeY/float(outNoMargins.rows);
+
+        // determine the zone where the markers are placed
+        cv::Mat markerZone;
+        if(xReduction > yReduction) {
+            int nRows = sizeY/xReduction;
+            int rowsMargins = (outNoMargins.rows-nRows)/2;
+            markerZone = outNoMargins.rowRange(rowsMargins, outNoMargins.rows-rowsMargins);
+        }
+        else {
+            int nCols = sizeX/yReduction;
+            int colsMargins = (outNoMargins.cols-nCols)/2;
+            markerZone = outNoMargins.colRange(colsMargins, outNoMargins.cols-colsMargins);
+        }
+
+        // now paint each marker
+        for(int m=0; m<board.objPoints.size(); m++) {
+
+            // transform corners to markerZone coordinates
+            std::vector<cv::Point2f> outCorners;
+            outCorners.resize(4);
+            for(int j=0; j<4; j++) {
+                cv::Point2f p0, p1, pf;
+                p0 = cv::Point2f(board.objPoints[m][j].x, board.objPoints[m][j].y);
+                // remove negativity
+                p1.x = p0.x - minX;
+                p1.y = p0.y - minY;
+                pf.x = p1.x*float(markerZone.cols-1)/sizeX;
+                pf.y = float(markerZone.rows-1) - p1.y*float(markerZone.rows-1)/sizeY;
+                outCorners[j] = pf;
+            }
+
+            // get tiny marker
+            int tinyMarkerSize = 10*dict.markerSize+2;
+            cv::Mat tinyMarker;
+            dict.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker);
+
+            // interpolate tiny marker to marker position in markerZone
+            cv::Mat inCorners(4,1,CV_32FC2);
+            inCorners.ptr<cv::Point2f>(0)[0]= Point2f ( 0,0 );
+            inCorners.ptr<cv::Point2f>(0)[1]= Point2f ( tinyMarker.cols,0 );
+            inCorners.ptr<cv::Point2f>(0)[2]= Point2f ( tinyMarker.cols,tinyMarker.rows );
+            inCorners.ptr<cv::Point2f>(0)[3]= Point2f ( 0,tinyMarker.rows );
+
+            // remove perspective
+            cv::Mat transformation = cv::getPerspectiveTransform(inCorners, outCorners);
+            cv::Mat aux;
+            cv::warpPerspective(tinyMarker, aux, transformation, markerZone.size(), cv::INTER_NEAREST, cv::BORDER_CONSTANT, cv::Scalar::all(127));
+
+            // copy only not border pixels
+            for(int y=0; y<aux.rows; y++) {
+                for(int x=0; x<aux.cols; x++) {
+                    if(aux.at<unsigned char>(y,x)==127) continue;
+                    markerZone.at<unsigned char>(y,x) = aux.at<unsigned char>(y,x);
+                }
+            }
+
+        }
+        cv::Mat _img = img.getMat();
+        out.copyTo(_img);
 }
 
 /**
  */
-void drawPlanarBoard(Board board, PREDEFINED_DICTIONARIES dict, cv::Size outSize, OutputArray img) {
+void drawPlanarBoard(Board board, DICTIONARY dict, cv::Size outSize, OutputArray img) {
     drawPlanarBoard(board, getPredefinedDictionary(dict), outSize, img);
 }
 
