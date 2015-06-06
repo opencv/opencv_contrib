@@ -57,21 +57,12 @@ using namespace std;
 
 
 /**
- * @brief detect marker candidates
- * 
- * @param _image input image
- * @param _candidates return candidate corners positions
- * @param _threshParam window size for adaptative thresholding
- * @param _minLenght minimum size of candidates contour lenght. It is indicated as a ratio
- *                  respect to the largest image dimension
- * @param _thresholdedImage if set, returns the thresholded image for debugging purposes.
- * @return void
  */
 void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _threshParam,
                            float _minLenght, OutputArray _thresholdedImage=noArray()) {
 
     cv::Mat image = _image.getMat();
-
+    CV_Assert(image.cols !=0 && image.rows !=0 && (image.channels()==1 || image.channels()==3));
 
     /// 1. CONVERT TO GRAY
     cv::Mat grey;
@@ -87,18 +78,24 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 
 
     /// 3. DETECT RECTANGLES
+    CV_Assert(_minLenght > 0);
     int minSize=_minLenght*std::max(thresh.cols,thresh.rows);
     cv::Mat contoursImg;
     thresh.copyTo ( contoursImg );
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours ( contoursImg , contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE );
-    std::vector< std::vector<cv::Point2f> > candidates;
+    std::vector< std::vector<cv::Point2f> > candidates; // vector of marker candidates
     for ( unsigned int i=0;i<contours.size();i++ )
     {
+        // check perimeter
         if(contours[i].size() < minSize) continue;
+
+        // check is square and is convex
         vector<Point>  approxCurve;
         cv::approxPolyDP (  contours[i], approxCurve, double ( contours[i].size() ) *0.05 , true );
         if(approxCurve.size() != 4 || !cv::isContourConvex(approxCurve) ) continue;
+
+        // check min distance between corners (minimum distance is 10, so minimun square distance is 100)
         float minDistSq = 1e10;
         for ( int j=0;j<4;j++ ) {
             float d= ( float ) ( approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) * ( approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) +
@@ -106,6 +103,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
             minDistSq = std::min(minDistSq,d);
         }
         if(minDistSq<100) continue;
+
         // check if it is too near to the image border
         bool tooNearBorder = false;
         int maxDistanceToBorder = 3;
@@ -115,6 +113,8 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
                 tooNearBorder=true;
         }
         if(tooNearBorder) continue;
+
+        // if it passes all the test, add to candidates vector
         std::vector<cv::Point2f> currentCandidate;
         currentCandidate.resize(4);
         for ( int j=0;j<4;j++ ) {
@@ -131,7 +131,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
         double dy1 = candidates[i][1].y - candidates[i][0].y;
         double dx2 = candidates[i][2].x - candidates[i][0].x;
         double dy2 = candidates[i][2].y - candidates[i][0].y;
-        double o = ( dx1*dy2 )- ( dy1*dx2 );
+        double o = ( dx1*dy2 )- ( dy1*dx2 ); // clockwise direction
 
         if ( o  < 0.0 )	swap ( candidates[i][1],candidates[i][3] );
     }
@@ -146,6 +146,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
                 distSq += ( candidates[i][c].x-candidates[j][c].x ) * ( candidates[i][c].x-candidates[j][c].x )
                         + ( candidates[i][c].y-candidates[j][c].y ) * ( candidates[i][c].y-candidates[j][c].y ) ;
             distSq/=4.;
+            // if mean square distance is lower than 100, remove the smaller one of the two markers (minimum mean distance = 10)
             if(distSq < 100) nearCandidates.push_back( std::pair<int,int> ( i,j ) );
         }
     }
@@ -156,6 +157,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
     for(unsigned int i=0; i<nearCandidates.size(); i++) {
         float perimeterSq1=0, perimeterSq2=0;
         for(unsigned int c=0; c<4; c++) {
+            // check which one is the smaller and remove it
             perimeterSq1 += (candidates[nearCandidates[i].first][c].x-candidates[nearCandidates[i].first][(c+1)%4].x) *
                             (candidates[nearCandidates[i].first][c].x-candidates[nearCandidates[i].first][(c+1)%4].x) +
                             (candidates[nearCandidates[i].first][c].y-candidates[nearCandidates[i].first][(c+1)%4].y) *
@@ -218,15 +220,6 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 
 
 /**
- * @brief identify a vector of marker candidates based on the dictionary codification
- * 
- * @param image input image
- * @param candidates candidate corners positions
- * @param dictionary
- * @param accepted returns vector of accepted marker corners
- * @param ids returns vector of accepted markers ids
- * @param rejected ... if set, return vector of rejected markers
- * @return void
  */
 void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
                              Dictionary dictionary, OutputArrayOfArrays _accepted, OutputArray _ids,
@@ -234,12 +227,12 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
 
 
     int ncandidates = _candidates.total();
-    CV_Assert(ncandidates > 0);
 
     std::vector< cv::Mat > accepted;
     std::vector< cv::Mat > rejected;
     std::vector< int > ids;
 
+    CV_Assert(image.getMat().cols !=0 && image.getMat().rows !=0 && (image.getMat().channels()==1 || image.getMat().channels()==3));
     cv::Mat grey;
     if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
     else grey=image.getMat();
