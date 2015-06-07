@@ -88,8 +88,11 @@ namespace cv{
     * KCF functions and vars
     */
     void createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const;
+    void inline fft2(const Mat src, std::vector<Mat> & dest) const;
     void inline fft2(const Mat src, Mat & dest) const;
-    void inline ifft2(const Mat src, Mat & dest) const ;  
+    void inline ifft2(const Mat src, Mat & dest) const ; 
+    void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
+    void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& patch) const;
     void extractCN(Mat _patch, Mat & cnFeatures) const;
     void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const;
@@ -127,6 +130,8 @@ namespace cv{
   {
     isInit = false;
     resizeImage = false;
+    
+    CV_Assert(params.descriptor == GRAY || params.descriptor == CN /*|| params.descriptor == CN2*/);
   }
   
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -163,7 +168,7 @@ namespace cv{
     
     // add padding to the roi
     roi.x-=roi.width/2;
-    roi.y-=roi.height/2+1;
+    roi.y-=roi.height/2;
     roi.width*=2;
     roi.height*=2;
     
@@ -173,7 +178,6 @@ namespace cv{
       Mat layers[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
       merge(layers, 10, hann); 
     }
-    if(params.descriptor != GRAY){printf("The choosen descriptor mode is not available! Please use GRAY descriptor, other descriptors will be avaiable soon.\n");return false;}//temporary, will be updated soon
     
     // create gaussian response
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_64F);
@@ -229,18 +233,19 @@ namespace cv{
     
     // Kernel Regularized Least-Squares, calculate alphas
     denseGaussKernel(params.sigma,x,x,k);
+    
     fft2(k,kf);
     kf=kf+params.lambda;
     
     /* TODO: optimize this element-wise division
      * new_alphaf=yf./kf
-     * z=[(ax+bd)+i(bc-ad)]/(c^2+d^2)
+     * z=(a+bi)/(c+di)[(ac+bd)+i(bc-ad)]/(c^2+d^2)
      */ 
     new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols); 
     std::complex<double> temp;
     for(int i=0;i<yf.rows;i++){
       for(int j=0;j<yf.cols;j++){
-	temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf.at<Vec2d>(i,j)[0],kf.at<Vec2d>(i,j)[1])/*+complex<float>(0.0000000001,0.0000000001)*/);
+	temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf.at<Vec2d>(i,j)[0],kf.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
 	new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
 	new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
       }
@@ -250,7 +255,7 @@ namespace cv{
     new_z=x.clone();
     if(frame==0){
       alphaf=new_alphaf.clone();
-      z=x;
+      z=x.clone();
     }else{
       alphaf=(1.0-params.interp_factor)*alphaf+params.interp_factor*new_alphaf;
       z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
@@ -309,21 +314,62 @@ namespace cv{
   }
   
   /*
-   * simplification of fourier transoform function in opencv
+   * simplification of fourier transform function in opencv
    */
   void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest)const {
-    Mat planes[] = {Mat_<double>(src), Mat::zeros(src.size(), CV_64F)};
-    merge(planes, 2, dest); 
-    dft(dest,dest,DFT_COMPLEX_OUTPUT);
+    std::vector<Mat> layers(src.channels());
+    std::vector<Mat> outputs(src.channels());
+    
+    split(src, layers);
+    
+    for(int i=0;i<src.channels();i++){
+      dft(layers[i],outputs[i],DFT_COMPLEX_OUTPUT);
+    }
+    
+    merge(outputs,dest);
+  }
+  
+  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & dest) const{
+    std::vector<Mat> layers(src.channels());
+    dest.clear();
+    dest.resize(src.channels());
+    
+    split(src, layers);
+    
+    for(int i=0;i<src.channels();i++){
+      dft(layers[i],dest[i],DFT_COMPLEX_OUTPUT);
+    }
   }
 
   /*
-   * simplification of inverse fourier transoform function in opencv
+   * simplification of inverse fourier transform function in opencv
    */
   void inline TrackerKCFImpl::ifft2(const Mat src, Mat & dest)const {
     idft(src,dest,DFT_SCALE+DFT_REAL_OUTPUT);
   }
   
+  /*
+   * Point-wise multiplication of two Multichannel Mat data
+   */
+  void inline TrackerKCFImpl::pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB) const{
+    dest.clear();
+    dest.resize(src1.size());
+    
+    for(unsigned i=0;i<src1.size();i++){
+      mulSpectrums(src1[i], src2[i], dest[i],flags,conjB);
+    }
+  }
+    
+  /*
+   * Combines all channels in a multi-channels Mat data into a single channel
+   */
+  void inline TrackerKCFImpl::sumChannels(std::vector<Mat> src, Mat & dest) const{
+    dest=src[0].clone();
+    for(unsigned i=1;i<src.size();i++){
+      dest+=src[i];
+    }
+  }
+     
   /*
    * obtain the patch and apply hann window filter to it
    */
@@ -356,24 +402,24 @@ namespace cv{
     addRight=(_roi.width+_roi.x>img.cols?_roi.width+_roi.x-img.cols:0);
 
     copyMakeBorder(patch,patch,addTop,addBottom,addLeft,addRight,BORDER_REPLICATE);
-
+    if(patch.rows==0 || patch.cols==0)return false;
+    
     // extract the desired descriptors
     switch(params.descriptor){
       case GRAY:
 	if(img.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+	patch.convertTo(patch,CV_64F);
+	patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
 	break;
       case CN:
 	CV_Assert(img.channels() == 3);
 	extractCN(patch,patch);
 	break;
-      default:
+      case CN2:
 	if(patch.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
 	break;
     }
-    
-    patch.convertTo(patch,CV_64F);
-
-    patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
+        
     patch=patch.mul(hann); // hann window filter
     
     return true;
@@ -407,25 +453,26 @@ namespace cv{
    *  dense gauss kernel function
    */
   void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k)const{
-    Mat _xf, _yf, xyf,xy;
+    std::vector<Mat> _xf,_yf,xyf_v;
+    Mat xy,xyf;
     double normX, normY;
     
     fft2(_x,_xf);
     fft2(_y,_yf);
+    
     normX=norm(_x);
     normX*=normX;
     normY=norm(_y);
     normY*=normY;
     
-    mulSpectrums(_xf,_yf,xyf,0,true);
-      
+    pixelWiseMult(_xf,_yf,xyf_v,0,true);
+    sumChannels(xyf_v,xyf);
     ifft2(xyf,xyf);
-    shiftRows(xyf, _x.rows/2);
-    shiftCols(xyf,_x.cols/2);
+//     shiftRows(xyf, _x.rows/2);
+//     shiftCols(xyf, _x.cols/2);
 
     //(xx + yy - 2 * xy) / numel(x)
-    xy=(normX+normY-2*xyf)/(_x.rows*_x.cols);
-
+    xy=(normX+normY-2*xyf)/(_x.rows*_x.cols*_x.channels());
 
     // TODO: check wether we really need thresholding or not
     //threshold(xy,xy,0.0,0.0,THRESH_TOZERO);//max(0, (xx + yy - 2 * xy) / numel(x))
@@ -441,7 +488,7 @@ namespace cv{
 
   }
   
-  /* CIRCULAR SHIT Function
+  /* CIRCULAR SHIFT Function
    * http://stackoverflow.com/questions/10420454/shift-like-matlab-function-rows-or-columns-of-a-matrix-in-opencv
    */
   // circular shift one row from up to down
@@ -523,16 +570,12 @@ namespace cv{
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
       resize=true;
-      max_patch_size=80*80;
-      descriptor=GRAY;
+      max_patch_size=100*100;
+      descriptor=CN;
   }
 
-  void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){
-    
-  }
+  void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){}
 
-  void TrackerKCF::Params::write( cv::FileStorage& /*fs*/ ) const{
-    
-  }
+  void TrackerKCF::Params::write( cv::FileStorage& /*fs*/ ) const{}
   
 } /* namespace cv */
