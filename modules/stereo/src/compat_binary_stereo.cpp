@@ -121,3 +121,4 @@ void cvValidateDisparity( CvArr* _disp, const CvArr* _cost, int minDisparity,
     cv::Mat disp = cv::cvarrToMat(_disp), cost = cv::cvarrToMat(_cost);
     cv::validateDisparity( disp, cost, minDisparity, numberOfDisparities, disp12MaxDiff );
 }
+

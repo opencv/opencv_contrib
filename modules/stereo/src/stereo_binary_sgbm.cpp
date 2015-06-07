@@ -51,7 +51,6 @@
  */
 
 #include "precomp.hpp"
-#include "opencv2\core\private.hpp"
 #include <limits.h>
 
 namespace cv
@@ -1201,3 +1200,4 @@ void cv::validateDisparity( InputOutputArray _disp, InputArray _cost, int minDis
         }
     }
 }
+
