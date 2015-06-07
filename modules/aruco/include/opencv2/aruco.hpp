@@ -97,7 +97,7 @@ enum DICTIONARY { DICT_ARUCO=0 };
  * Performs marker detection in the input image. Only markers included in the specific dictionary are searched.
  * For each detected marker, it returns the 2D position of its corner in the image and its corresponding identifier.
  * Note that this function does not perform pose estimation. 
- * @see estimatePoseSingleMarkers,  estimatePoseBoard
+ * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  * 
  */
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
@@ -113,14 +113,14 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
  * @param imgPoints vector of already detected markers corners. For each marker, its four corners are provided,
  * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of this array should be Nx4. 
  * The order of the corners should be clockwise.
- * @see detectMarkers
+ * @sa detectMarkers
  * @param markerSize the lenght of the markers' side. The returning translation vectors will be in the same unit.
  * Normally, unit is meters.
  * @param cameraMatrix input 3x3 floating-point camera matrix 
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvecs array of output rotation vectors (@see Rodrigues) (e.g. std::vector<cv::Mat>>).
+ * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Mat>>).
  * Each element in rvecs corresponds to the specific marker in imgPoints.
  * @param tvecs array of output translation vectors (e.g. std::vector<cv::Mat>>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
@@ -181,7 +181,7 @@ struct CV_EXPORTS Board {
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board (@see Rodrigues).
+ * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
  * 
  * This function receives the detected markers and returns the pose of a marker board composed by those markers.
@@ -246,8 +246,8 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayO
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvec rotation vector of the coordinate system that will be drawn. (@see Rodrigues).
- * @param tvec translation vector of the coordinate system that will be drawn. (@see Rodrigues).
+ * @param rvec rotation vector of the coordinate system that will be drawn. (@sa Rodrigues).
+ * @param tvec translation vector of the coordinate system that will be drawn.
  * @param lenght lenght of the painted axis in the same unit than tvec (usually in meters)
  * 
  * Given the pose estimation of a marker or board, this function draws the axis of the world coordinate system
@@ -295,7 +295,36 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
 
 
 
-//CV_EXPORTS void calibrateCamera(InputArrayOfArrays images, Board board, cv::Mat& cameraMatrix, cv::Mat& distCoeffs, OutputArrayOfArrays imgPoints, OutputArrayOfArrays ids, OutputArray tvecs, OutputArray tvecs, int threshParam, int minLenght)
+/**
+ * @brief Calibrate a camera using aruco markers
+ *
+ * @param imgPoints vector of detected marker corners in each frame.
+ * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
+ * @param ids list of identifiers for each marker in imgPoints
+ * @param imageSize Size of the image used only to initialize the intrinsic camera matrix.
+ * @param cameraMatrix Output 3x3 floating-point camera matrix
+ * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$ . If CV\_CALIB\_USE\_INTRINSIC\_GUESS
+ * and/or CV_CALIB_FIX_ASPECT_RATIO are specified, some or all of fx, fy, cx, cy must be
+ * initialized before calling the function.
+ * @param distCoeffs Output vector of distortion coefficients
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements.
+ * @param rvecs Output vector of rotation vectors (see Rodrigues ) estimated for each board view
+ * (e.g. std::vector<cv::Mat>>). That is, each k-th rotation vector together with the corresponding
+ * k-th translation vector (see the next output parameter description) brings the board pattern
+ * from the model coordinate space (in which object points are specified) to the world coordinate
+ * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
+ * @param tvecs Output vector of translation vectors estimated for each pattern view.
+ * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
+ * @param criteria Termination criteria for the iterative optimization algorithm.
+ *
+ * This function calibrates a camera using an Aruco Board. The function receives a list of detected markers
+ * from several views of the Board. The process is similar to the chessboard calibration in calibrateCamera()
+ * The function returns the final re-projection error.
+ */
+CV_EXPORTS double calibrateCameraAruco(std::vector< std::vector< std::vector<Point2f> > > imgPoints, std::vector<std::vector<int> > ids, Board board, Size imageSize,
+                                InputOutputArray cameraMatrix, InputOutputArray distCoeffs, OutputArrayOfArrays rvecs=noArray(),
+                                OutputArrayOfArrays tvecs=noArray(), int flags=0,
+                                TermCriteria criteria=TermCriteria( TermCriteria::COUNT+TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 

@@ -606,6 +606,29 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
 
 
 
+
+/**
+  */
+double calibrateCameraAruco(std::vector< std::vector< std::vector<cv::Point2f> > > imgPoints, std::vector< std::vector<int> > ids, Board board, Size imageSize,
+                                InputOutputArray cameraMatrix, InputOutputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
+                                int flags, TermCriteria criteria) {
+
+    // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera function
+    std::vector<cv::Mat> processedObjectPoints, processedImagePoints;
+    for(int frame=0; frame<imgPoints.size(); frame++) {
+        cv::Mat currentImgPoints, currentObjPoints;
+        getBoardObjectAndImagePoints(board, ids[frame], imgPoints[frame], currentImgPoints, currentObjPoints);
+        if(currentImgPoints.total()>0 && currentObjPoints.total()>0) {
+            processedImagePoints.push_back(currentImgPoints);
+            processedObjectPoints.push_back(currentObjPoints);
+        }
+    }
+
+    return cv::calibrateCamera(processedObjectPoints, processedImagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags, criteria);
+}
+
+
+
 }}
 
 #endif // cplusplus
