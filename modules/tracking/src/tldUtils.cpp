@@ -39,20 +39,15 @@
  //
  //M*/
 
-#include "precomp.hpp"
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc.hpp"
-#include "time.h"
-#include<algorithm>
-#include<limits.h>
-#include<math.h>
-#include<opencv2/highgui.hpp>
-#include "tld_tracker.hpp"
+#include "tldUtils.hpp"
 
-namespace cv {namespace tld
+
+namespace cv 
+{
+namespace tld
 {
 
-//debug functions and variables
+//Debug functions and variables
 Rect2d etalon(14.0, 110.0, 20.0, 20.0);
 void drawWithRects(const Mat& img, std::vector<Rect2d>& blackOnes, Rect2d whiteOne)
 {
@@ -95,7 +90,6 @@ void myassert(const Mat& img)
     }
     dprintf(("black: %d out of %d (%f)\n", count, img.rows * img.cols, 1.0 * count / img.rows / img.cols));
 }
-
 void printPatch(const Mat_<uchar>& standardPatch)
 {
     for( int i = 0; i < standardPatch.rows; i++ )
@@ -105,7 +99,6 @@ void printPatch(const Mat_<uchar>& standardPatch)
         dprintf(("\n"));
     }
 }
-
 std::string type2str(const Mat& mat)
 {
   int type = mat.type();
@@ -131,7 +124,7 @@ std::string type2str(const Mat& mat)
   return r;
 }
 
-//generic functions
+//Scale & Blur image using scale Indx
 double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blurredImg, Size GaussBlurKernelSize, double scaleStep)
 {
     double dScale = 1.0;
@@ -142,6 +135,8 @@ double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blur
     GaussianBlur(scaledImg, blurredImg, GaussBlurKernelSize, 0.0);
     return dScale;
 }
+
+//Find N-closest BB to the target
 void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<Rect2d>& res)
 {
     if( n >= (int)scanGrid.size() )
@@ -180,6 +175,7 @@ void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<
     }
 }
 
+//Calculate patch variance
 double variance(const Mat& img)
 {
     double p = 0, p2 = 0;
@@ -196,6 +192,7 @@ double variance(const Mat& img)
     return p2 - p * p;
 }
 
+//Normalized Correlation Coefficient
 double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
 {
     CV_Assert( patch1.rows == patch2.rows );
@@ -217,6 +214,7 @@ double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
     double ares = (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
     return ares;
 }
+
 int getMedian(const std::vector<int>& values, int size)
 {
     if( size == -1 )
@@ -229,6 +227,7 @@ int getMedian(const std::vector<int>& values, int size)
         return copy[(size - 1) / 2];
 }
 
+//Overlap between two BB
 double overlap(const Rect2d& r1, const Rect2d& r2)
 {
     double a1 = r1.area(), a2 = r2.area(), a0 = (r1&r2).area();
@@ -251,6 +250,7 @@ void resample(const Mat& img, const RotatedRect& r2, Mat_<uchar>& samples)
     b.copyTo(M.colRange(Range(2, 3)));
     warpAffine(img, samples, M, samples.size());
 }
+
 void resample(const Mat& img, const Rect2d& r2, Mat_<uchar>& samples)
 {
     Mat_<float> M(2, 3);
@@ -259,146 +259,5 @@ void resample(const Mat& img, const Rect2d& r2, Mat_<uchar>& samples)
     warpAffine(img, samples, M, samples.size());
 }
 
-//other stuff
-void TLDEnsembleClassifier::stepPrefSuff(std::vector<Vec4b>& arr, int pos, int len, int gridSize)
-{
-#if 0
-        int step = len / (gridSize - 1), pref = (len - step * (gridSize - 1)) / 2;
-        for( int i = 0; i < (int)(sizeof(x1) / sizeof(x1[0])); i++ )
-            arr[i] = pref + arr[i] * step;
-#else
-        int total = len - gridSize;
-        int quo = total / (gridSize - 1), rem = total % (gridSize - 1);
-        int smallStep = quo, bigStep = quo + 1;
-        int bigOnes = rem, smallOnes = gridSize - bigOnes - 1;
-        int bigOnes_front = bigOnes / 2, bigOnes_back = bigOnes - bigOnes_front;
-        for( int i = 0; i < (int)arr.size(); i++ )
-        {
-            if( arr[i].val[pos] < bigOnes_back )
-            {
-                arr[i].val[pos] = (uchar)(arr[i].val[pos] * bigStep + arr[i].val[pos]);
-                continue;
-            }
-            if( arr[i].val[pos] < (bigOnes_front + smallOnes) )
-            {
-                arr[i].val[pos] = (uchar)(bigOnes_front * bigStep + (arr[i].val[pos] - bigOnes_front) * smallStep + arr[i].val[pos]);
-                continue;
-            }
-            if( arr[i].val[pos] < (bigOnes_front + smallOnes + bigOnes_back) )
-            {
-                arr[i].val[pos] =
-                    (uchar)(bigOnes_front * bigStep + smallOnes * smallStep + 
-                            (arr[i].val[pos] - (bigOnes_front + smallOnes)) * bigStep + arr[i].val[pos]);
-                continue;
-            }
-            arr[i].val[pos] = (uchar)(len - 1);
-        }
-#endif
-}
-void TLDEnsembleClassifier::prepareClassifier(int rowstep)
-{
-    if( lastStep_ != rowstep )
-    {
-        lastStep_ = rowstep;
-        for( int i = 0; i < (int)offset.size(); i++ )
-        {
-            offset[i].x = rowstep * measurements[i].val[2] + measurements[i].val[0];
-            offset[i].y = rowstep * measurements[i].val[3] + measurements[i].val[1];
-        }
-    }
-}
-TLDEnsembleClassifier::TLDEnsembleClassifier(const std::vector<Vec4b>& meas, int beg, int end):lastStep_(-1)
-{
-    int posSize = 1, mpc = end - beg;
-    for( int i = 0; i < mpc; i++ )
-        posSize *= 2;
-    posAndNeg.assign(posSize, Point2i(0, 0));
-    measurements.assign(meas.begin() + beg, meas.begin() + end);
-    offset.assign(mpc, Point2i(0, 0));
-}
-void TLDEnsembleClassifier::integrate(const Mat_<uchar>& patch, bool isPositive)
-{
-    int position = code(patch.data, (int)patch.step[0]);
-    if( isPositive )
-        posAndNeg[position].x++;
-    else
-        posAndNeg[position].y++;
-}
-double TLDEnsembleClassifier::posteriorProbability(const uchar* data, int rowstep) const
-{
-    int position = code(data, rowstep);
-    double posNum = (double)posAndNeg[position].x, negNum = (double)posAndNeg[position].y;
-    if( posNum == 0.0 && negNum == 0.0 )
-        return 0.0;
-    else
-        return posNum / (posNum + negNum);
-}
-double TLDEnsembleClassifier::posteriorProbabilityFast(const uchar* data) const
-{
-    int position = codeFast(data);
-    double posNum = (double)posAndNeg[position].x, negNum = (double)posAndNeg[position].y;
-    if( posNum == 0.0 && negNum == 0.0 )
-        return 0.0;
-    else
-        return posNum / (posNum + negNum);
-}
-int TLDEnsembleClassifier::codeFast(const uchar* data) const
-{
-    int position = 0;
-    for( int i = 0; i < (int)measurements.size(); i++ )
-    {
-        position = position << 1;
-        if( data[offset[i].x] < data[offset[i].y] )
-            position++;
-    }
-    return position;
-}
-int TLDEnsembleClassifier::code(const uchar* data, int rowstep) const
-{
-    int position = 0;
-    for( int i = 0; i < (int)measurements.size(); i++ )
-    {
-        position = position << 1;
-        if( *(data + rowstep * measurements[i].val[2] + measurements[i].val[0]) <
-                *(data + rowstep * measurements[i].val[3] + measurements[i].val[1]) )
-        {
-            position++;
-        }
-    }
-    return position;
-}
-int TLDEnsembleClassifier::makeClassifiers(Size size, int measurePerClassifier, int gridSize,
-        std::vector<TLDEnsembleClassifier>& classifiers)
-{
-
-    std::vector<Vec4b> measurements;
-
-    for( int i = 0; i < gridSize; i++ )
-    {
-        for( int j = 0; j < gridSize; j++ )
-        {
-            for( int k = 0; k < j; k++ )
-            {
-                Vec4b m;
-                m.val[0] = m.val[2] = (uchar)i;
-                m.val[1] = (uchar)j; m.val[3] = (uchar)k;
-                measurements.push_back(m);
-                m.val[1] = m.val[3] = (uchar)i;
-                m.val[0] = (uchar)j; m.val[2] = (uchar)k;
-                measurements.push_back(m);
-            }
-        }
-    }
-    random_shuffle(measurements.begin(), measurements.end());
-
-    stepPrefSuff(measurements, 0, size.width, gridSize);
-    stepPrefSuff(measurements, 1, size.width, gridSize);
-    stepPrefSuff(measurements, 2, size.height, gridSize);
-    stepPrefSuff(measurements, 3, size.height, gridSize);
-
-    for( int i = 0, howMany = (int)measurements.size() / measurePerClassifier; i < howMany; i++ )
-        classifiers.push_back(TLDEnsembleClassifier(measurements, i * measurePerClassifier, (i + 1) * measurePerClassifier));
-    return (int)classifiers.size();
-}
 
 }}
