@@ -14,6 +14,8 @@ else()
   message(FATAL_ERROR "Could not find PROTOBUF Compiler")
 endif()
 
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses)
+
 file(GLOB PROTO_FILES src/*.proto)
 PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
 
