@@ -14,6 +14,8 @@ else()
   message(FATAL_ERROR "Could not find PROTOBUF Compiler")
 endif()
 
+include_directories(src/caffe)
+
 file(GLOB PROTO_FILES src/*.proto)
 PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
 

@@ -108,7 +108,7 @@ namespace dnn
     {
     public:
 
-        CV_EXPORTS static Ptr<NetConfiguration> create();
+        static Ptr<NetConfiguration> create();
 
         int addLayer(const String &name, const String &type);
 
@@ -145,7 +145,7 @@ namespace dnn
     {
     public:
 
-        CV_EXPORTS static Ptr<Net> create(Ptr<NetConfiguration> config);
+        static Ptr<Net> create(Ptr<NetConfiguration> config);
 
         virtual ~Net() = 0;
 

@@ -7,26 +7,23 @@ namespace cv
 {
 namespace dnn
 {
-    inline 
-    Mat& Blob::getMatRef()
+    inline Mat& Blob::getMatRef()
     {
         return m;
     }
 
-    inline
-    const Mat& Blob::getMatRef() const
+    inline const Mat& Blob::getMatRef() const
     {
         return m;
     }
 
-    inline
-    Mat Blob::getMat()
+    inline Mat Blob::getMat()
     {
         return m;
     }
 
 
-    Mat Blob::getMat(int num, int channel)
+    inline Mat Blob::getMat(int num, int channel)
     {
         CV_Assert(false);
         return Mat();
