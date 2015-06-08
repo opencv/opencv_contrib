@@ -222,7 +222,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 /**
  */
 void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
-                             Dictionary dictionary, OutputArrayOfArrays _accepted, OutputArray _ids,
+                             DictionaryData dictionary, OutputArrayOfArrays _accepted, OutputArray _ids,
                              OutputArrayOfArrays _rejected=noArray()) {
 
 
@@ -293,7 +293,19 @@ void getSingleMarkerObjectPoints(float markerSize, OutputArray _objPnts) {
 
 /**
   */
-void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays imgPoints,
+const DictionaryData& getDictionaryData(DICTIONARY name) {
+    switch(name) {
+        case DICT_ARUCO:
+        return _dict_aruco_data;
+    }
+    return DictionaryData();
+}
+
+
+
+/**
+  */
+void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
                        OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam,float minLenght) {
 
     cv::Mat grey;
@@ -305,7 +317,8 @@ void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays 
     _detectCandidates(grey,candidates,threshParam,minLenght);
 
     /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidates, dictionary, imgPoints, ids, rejectedImgPoints);
+    DictionaryData dictionaryData = getDictionaryData(dictionary);
+    _identifyCandidates(grey, candidates, dictionaryData, imgPoints, ids, rejectedImgPoints);
 
     /// STEP 3: Clean candidates
 
@@ -314,26 +327,6 @@ void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays 
         cv::cornerSubPix ( grey, imgPoints.getMat(i), cvSize ( 5,5 ), cvSize ( -1,-1 ),cvTermCriteria ( CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,30,0.1 ) );
     }
 
-}
-
-
-/**
-  */
-const Dictionary& getPredefinedDictionary(DICTIONARY name) {
-    switch(name) {
-        case DICT_ARUCO:
-        return _dict_aruco;
-    }
-    return Dictionary();
-}
-
-
-/**
-  */
-void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam, float minLenght) {
-
-    detectMarkers(image, getPredefinedDictionary(dictionary), imgPoints, ids, rejectedImgPoints, threshParam, minLenght);
 }
 
 
@@ -497,15 +490,9 @@ void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArra
 
 /**
  */
-void drawMarker(Dictionary dict, int id, int sidePixels, OutputArray img) {
-    dict.drawMarker(id,sidePixels,img);
-}
-
-
-/**
- */
-void drawMarker(DICTIONARY dict, int id, int sidePixels, OutputArray img) {
-    drawMarker(getPredefinedDictionary(dict), id, sidePixels, img);
+void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img) {
+    DictionaryData dictionaryData = getDictionaryData(dictionary);
+    dictionaryData.drawMarker(id,sidePixels,img);
 }
 
 
@@ -513,7 +500,7 @@ void drawMarker(DICTIONARY dict, int id, int sidePixels, OutputArray img) {
  */
 void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
 
-        Dictionary dict = getPredefinedDictionary(board.dictionary);
+        DictionaryData dictData = getDictionaryData(board.dictionary);
 
         img.create(outSize, CV_8UC1);
         cv::Mat out = img.getMat();
@@ -575,9 +562,9 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
             }
 
             // get tiny marker
-            int tinyMarkerSize = 10*dict.markerSize+2;
+            int tinyMarkerSize = 10*dictData.markerSize+2;
             cv::Mat tinyMarker;
-            dict.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker);
+            dictData.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker);
 
             // interpolate tiny marker to marker position in markerZone
             cv::Mat inCorners(4,1,CV_32FC2);

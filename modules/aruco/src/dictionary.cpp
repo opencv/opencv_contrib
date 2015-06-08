@@ -85,12 +85,12 @@ const char quartets_distances[16][16][4] =
  * @brief Dictionary/Set of markers. It contains the inner codification
  *
  */
-class Dictionary {
+class DictionaryData {
 
 public:
 
-Dictionary() { };
-Dictionary(const char *quartets, int _markerSize, int _dictsize, int _maxcorr)  {
+DictionaryData() { };
+DictionaryData(const char *quartets, int _markerSize, int _dictsize, int _maxcorr)  {
     markerSize = _markerSize;
     maxCorrectionBits = _maxcorr;
     int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
@@ -310,7 +310,7 @@ bool _isBorderValid(cv::Mat bits) {
 
 
 // PREDEFINED DICTIONARIES
-const Dictionary _dict_aruco = Dictionary (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
+const DictionaryData _dict_aruco_data = DictionaryData (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
 
 
 }}
