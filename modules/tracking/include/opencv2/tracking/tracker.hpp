@@ -1205,13 +1205,13 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
     
-    double sigma;			// gaussian kernel bandwidth
-    double lambda;			// regularization
-    double interp_factor;		// linear interpolation factor for adaptation
-    double output_sigma_factor;	// spatial bandwidth (proportional to target)    
-    bool resize;			// activate the resize feature to improve the processing speed
-    int max_patch_size;			// threshold for the ROI size
-    MODE descriptor;			// descriptor type
+    double sigma;                 // gaussian kernel bandwidth
+    double lambda;                // regularization
+    double interp_factor;         // linear interpolation factor for adaptation
+    double output_sigma_factor;   // spatial bandwidth (proportional to target)    
+    bool resize;                  // activate the resize feature to improve the processing speed
+    int max_patch_size;           // threshold for the ROI size
+    MODE descriptor;              // descriptor type
   };
 
   /** @brief Constructor
