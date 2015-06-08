@@ -14,10 +14,10 @@ else()
   message(FATAL_ERROR "Could not find PROTOBUF Compiler")
 endif()
 
-include_directories(src/caffe)
-
 file(GLOB PROTO_FILES src/*.proto)
 PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
+
+include_directories(include src/caffe)
 
 ocv_add_module(dnn opencv_imgproc opencv_core opencv_highgui WRAP python matlab)
 ocv_glob_module_sources(${PROTO_SRCS} ${PROTO_HDRS})
