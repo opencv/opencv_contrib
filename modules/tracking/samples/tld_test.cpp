@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
 		getchar();
-		return;
+		return 0;
 	}
 
 	//Get the first frame
@@ -186,7 +186,7 @@ int main(int argc, char** argv)
 					if (!tracker->init(frame, boundingBox))
 					{
 						cout << "***Could not initialize tracker...***\n";
-						return;
+						return 0;
 					}
 					initialized = true;
 					rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
