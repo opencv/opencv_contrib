@@ -38,6 +38,7 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+
 #ifndef OPENCV_TLD_TRACKER
 #define OPENCV_TLD_TRACKER
 
