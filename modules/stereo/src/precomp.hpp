@@ -39,7 +39,6 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#pragma once
 #ifndef __OPENCV_STEREO_PRECOMP_H__
 #define __OPENCV_STEREO_PRECOMP_H__
 

@@ -337,7 +337,6 @@ namespace cv
 
 			// initialize sums
 			int tsum = 0;
-#pragma region sume_partiale
 			{
 				for (d = 0; d < ndisp; d++)
 					sad[d] = (int)(hsad0[d - ndisp*dy0] * (wsz2 + 2 - dy0));
@@ -350,9 +349,7 @@ namespace cv
 				for (y = -wsz2 - 1; y < wsz2; y++)
 					tsum += htext[y];
 			}
-#pragma endregion sume_partiale pentru SAD
 			// finally, start the real processing
-#pragma region SAD
 			{
 				for (y = 0; y < height; y++)
 				{
@@ -403,7 +400,6 @@ namespace cv
 			}
 				}
 			}
-#pragma endregion SAD
 		}
 	}
 
