@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <google/protobuf/message.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -20,35 +21,19 @@ using ::google::protobuf::Reflection;
 
 namespace
 {
-
-    void walk(const Descriptor *desc)
-    {
-        if (desc == NULL)
-            return;
-
-        std::cout << "* " << desc->full_name() << std::endl;
-
-        for (int i = 0; i < desc->field_count(); i++)
-        {
-            const FieldDescriptor *fdesc = desc->field(i);
-
-            if (fdesc->message_type())
-                walk(fdesc->message_type());
-            else;
-                //std::cout << "f " << desc->field(i)->full_name() << std::endl;
-        }
-    }
-
     class CaffeImporter : public Importer
     {
         caffe::NetParameter net;
-        cv::dnn::LayerParams params;
-
+        caffe::NetParameter netBinary;
+ 
     public:
 
         CaffeImporter(const char *pototxt, const char *caffeModel)
         {
             ReadNetParamsFromTextFileOrDie(std::string(pototxt), &net);
+
+            if (caffeModel && caffeModel[0])
+                ReadNetParamsFromBinaryFileOrDie(caffeModel, &netBinary);
         }
 
         inline bool skipCaffeLayerParam(const FieldDescriptor *fd)
@@ -144,11 +129,52 @@ namespace
             }
         }
 
+        void blobFromProto(const caffe::BlobProto &protoBlob, cv::dnn::Blob &dstBlob)
+        {
+            AutoBuffer<int, 4> shape;
+
+            if (protoBlob.has_num() || protoBlob.has_channels() || protoBlob.has_height() || protoBlob.has_width())
+            {
+                shape.resize(4);
+                shape[0] = protoBlob.num();
+                shape[1] = protoBlob.channels();
+                shape[2] = protoBlob.height();
+                shape[3] = protoBlob.width();
+            }
+            else if (protoBlob.has_shape())
+            {
+                const caffe::BlobShape &_shape = protoBlob.shape();
+                shape.resize(_shape.dim_size());
+
+                for (int i = 0; i < _shape.dim_size(); i++)
+                    shape[i] = _shape.dim(i);
+            }
+            else
+            {
+                CV_Error(cv::Error::StsAssert, "Unknown shape of input blob");
+            }
+
+            size_t declaredBlobSize = 1;
+            for (int i = 0; i < shape.size(); i++)
+                declaredBlobSize *= shape[i];
+            CV_Assert(declaredBlobSize == protoBlob.data_size());
+            dstBlob.create(shape.size(), shape, CV_32F);
+
+            CV_DbgAssert(protoBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
+            float *dstData = dstBlob.getMatRef().ptr<float>();
+
+            for (size_t i = 0; i < protoBlob.data_size(); i++)
+                dstData[i] = protoBlob.data(i);
+        }
+
         void populateNetConfiguration(Ptr<NetConfiguration> config)
         {
-            const Descriptor *layerDescriptor = caffe::LayerParameter::descriptor();
+            int layersSize = net.layer_size();
 
-            for (int li = 0; li < net.layer_size(); li++)
+            std::vector<String> layersName(layersSize);
+            std::vector<LayerParams> layersParam(layersSize);
+
+            for (int li = 0; li < layersSize; li++)
             {
                 const caffe::LayerParameter layer = net.layer(li);
                 String name = layer.name();
@@ -160,12 +186,37 @@ namespace
 
                 std::cout << std::endl << "LAYER: " << name << std::endl;
 
-                cv::dnn::LayerParams params;
-                extractLayerParams(layer, params);
+                extractLayerParams(layer, layersParam[li]);
+                layersName[li] = name;
 
                 //SetUp
                 //int id = config->addLayer(name, type);
                 //config->setLayerOutputLabels(id, bottoms);
+            }
+
+            for (int li = 0; li < netBinary.layer_size(); li++)
+            {
+                const caffe::LayerParameter layer = netBinary.layer(li);
+                if (layer.blobs_size() == 0)
+                    continue;
+
+                String name = layer.name();
+                int index = std::find(layersName.begin(), layersName.end(), name) - layersName.begin();
+
+                if (index < layersName.size())
+                {
+                    std::vector<Blob> &layerBlobs = layersParam[index].learnedBlobs;
+                    layerBlobs.resize(layer.blobs_size());
+
+                    for (int bi = 0; bi < layer.blobs_size(); bi++)
+                    {
+                        blobFromProto(layer.blobs(bi), layerBlobs[bi]);
+                    }
+                }
+                else
+                {
+                    std::cerr << "Unknown layer name " << name << " into" << std::endl;
+                }
             }
         }
 

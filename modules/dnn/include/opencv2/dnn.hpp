@@ -4,7 +4,7 @@
 #include <opencv2/core.hpp>
 #include <map>
 #include <vector>
-#include "dict.hpp"
+#include "dnn/dict.hpp"
 
 namespace cv
 {
@@ -25,29 +25,37 @@ namespace dnn
         Blob();
         Blob(InputArray in);
 
+        void fill(InputArray in);
+        void fill(int ndims, const int *sizes, int type, void *data, bool deepCopy = true);
+        void create(int ndims, const int *sizes, int type = CV_32F);
+
         bool empty() const;
 
-        int width() const; //cols
-        int height() const; //rows
+        Mat& getMatRef();
+        const Mat& getMatRef() const;
+        Mat getMat();
+        Mat getMat(int num, int channel);
+
+        int cols() const;
+        int rows() const;
+        Size size() const;
+
         int channels() const;
         int num() const;
 
-        Vec4i size() const;
+        Vec4i shape() const;
     };
 
     CV_EXPORTS class LayerParams : public Dict
     {
-
     public:
 
-        std::vector<Blob> learnedWeights;
+        std::vector<Blob> learnedBlobs;
     };
 
-    //this class allows to build new Layers
-    CV_EXPORTS class Layer
+    CV_EXPORTS class LayerRegister
     {
     public:
-        //Layer registration routines
 
         typedef Layer* (*Constuctor)();
 
@@ -57,6 +65,16 @@ namespace dnn
 
         static Ptr<Layer> createLayerInstance(const String &type);
 
+    private:
+        LayerRegister();
+        LayerRegister(const LayerRegister &lr);
+
+        static std::map<String, Constuctor> registeredLayers;
+    };
+
+    //this class allows to build new Layers
+    CV_EXPORTS class Layer
+    {
     public:
 
         //TODO: this field must be declared as public if we want support possibility to change these params in runtime
@@ -79,10 +97,6 @@ namespace dnn
         virtual void adjustShape(const std::vector<Blob> &inputs, std::vector<Blob> &outputs);
 
         virtual void forward(std::vector<Blob> &inputs, std::vector<Blob> &outputs);
-
-    private:
-
-        static std::map<String, Constuctor> registeredLayers;
     };
 
     //TODO: divide NetConfiguration interface and implementation, hide internal data
@@ -156,5 +170,7 @@ namespace dnn
 
 }
 }
+
+#include "dnn/dnn.inl.hpp"
 
 #endif

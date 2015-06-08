@@ -1,25 +1,17 @@
 #ifndef CAFFE_UTIL_IO_H_
 #define CAFFE_UTIL_IO_H_
 
-#include <opencv2/core.hpp>
-#include <iostream>
-#define CHECK(cond) if (!(cond)) std::cerr << #cond 
-#define CHECK_EQ(a, b) if (!((a) == (b))) std::cerr << #a << "!=" << #b 
-#define LOG(WHERE) std::cerr
+//instead of GLOG
+#include "glog_emulator.hpp"
 
 //#include <unistd.h>
 #include <string>
 #include <stdio.h>
 
 #include <google/protobuf/message.h>
-//#include "hdf5.h"
-//#include "hdf5_hl.h"
 
-//#include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe.pb.h"
-
-#define HDF5_NUM_DIMS 4
 
 namespace caffe {
 

@@ -14,18 +14,23 @@ static std::string getOpenCVExtraDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
+static std::string getTestFile(const char *filename)
+{
+    return (getOpenCVExtraDir() + "/dnn/") + filename;
+}
+
 TEST(ReadCaffePrototxt_gtsrb, Accuracy)
 {
-    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/gtsrb.prototxt", "");
+    Ptr<Importer> importer = createCaffeImporter(getTestFile("gtsrb.prototxt"), getTestFile("gtsrb_iter_36000.caffemodel") );
     Ptr<NetConfiguration> config = NetConfiguration::create();
     importer->populateNetConfiguration(config);
 }
 
-TEST(ReadCaffePrototxt_GoogleNet, Accuracy)
-{
-    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/googlenet_deploy.prototxt", "");
-    Ptr<NetConfiguration> config = NetConfiguration::create();
-    importer->populateNetConfiguration(config);
-}
+//TEST(ReadCaffePrototxt_GoogleNet, Accuracy)
+//{
+//    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/googlenet_deploy.prototxt", "");
+//    Ptr<NetConfiguration> config = NetConfiguration::create();
+//    importer->populateNetConfiguration(config);
+//}
 
 }
