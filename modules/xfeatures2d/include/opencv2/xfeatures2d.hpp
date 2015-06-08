@@ -118,15 +118,14 @@ public:
 
 /** @brief Class for computing BRIEF descriptors described in @cite calon2010 .
 
-@note
-   -   A complete BRIEF extractor sample can be found at
-        opencv_source_code/samples/cpp/brief_match_test.cpp
+@param bytes legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
 
  */
 class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32 );
+    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
@@ -172,6 +171,92 @@ public:
 	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
+/** @brief Class implementing DAISY descriptor, described in @cite Tola10
+
+@param radius radius of the descriptor at the initial scale
+@param q_radius amount of radial range division quantity
+@param q_theta amount of angular range division quantity
+@param q_hist amount of gradient orientations range division quantity
+@param norm choose descriptors normalization type, where
+DAISY::NRM_NONE will not do any normalization (default),
+DAISY::NRM_PARTIAL mean that histograms are normalized independently for L2 norm equal to 1.0,
+DAISY::NRM_FULL mean that descriptors are normalized for L2 norm equal to 1.0,
+DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 but no individual one is bigger than 0.154 as in SIFT
+@param H optional 3x3 homography matrix used to warp the grid of daisy but sampling keypoints remains unwarped on image
+@param interpolation switch to disable interpolation for speed improvement at minor quality loss
+@param use_orientation sample patterns using keypoints orientation, disabled by default.
+
+ */
+class CV_EXPORTS DAISY : public DescriptorExtractor
+{
+public:
+    enum
+    {
+        NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
+    };
+    static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
+                int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                bool interpolation = true, bool use_orientation = false );
+
+    /** @overload
+     * @param image image to extract descriptors
+     * @param keypoints of interest within image
+     * @param descriptors resulted descriptors array
+     */
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
+
+    virtual void compute( InputArrayOfArrays images,
+                          std::vector<std::vector<KeyPoint> >& keypoints,
+                          OutputArrayOfArrays descriptors );
+
+    /** @overload
+     * @param image image to extract descriptors
+     * @param roi region of interest within image
+     * @param descriptors resulted descriptors array for roi image pixels
+     */
+    virtual void compute( InputArray image, Rect roi, OutputArray descriptors ) = 0;
+
+    /**@overload
+     * @param image image to extract descriptors
+     * @param descriptors resulted descriptors array for all image pixels
+     */
+    virtual void compute( InputArray image, OutputArray descriptors ) = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     * @param H homography matrix for warped grid
+     */
+    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     * @param H homography matrix for warped grid
+     */
+    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor , double *H ) const = 0;
+
+};
 
 
 //! @}

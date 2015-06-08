@@ -61,7 +61,7 @@ public:
     enum { PATCH_SIZE = 48, KERNEL_SIZE = 9 };
 
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
-    BriefDescriptorExtractorImpl( int bytes = 32 );
+    BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
     virtual void read( const FileNode& );
     virtual void write( FileStorage& ) const;
@@ -73,67 +73,103 @@ public:
     virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
 
 protected:
-    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray);
-    
+    typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation );
+
     int bytes_;
+    bool use_orientation_;
     PixelTestFn test_fn_;
 };
 
-Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes )
+Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool use_orientation )
 {
-    return makePtr<BriefDescriptorExtractorImpl>(bytes);
+    return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation );
 }
 
-inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x)
+inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool use_orientation, Matx21f R)
 {
     static const int HALF_KERNEL = BriefDescriptorExtractorImpl::KERNEL_SIZE / 2;
 
-    int img_y = (int)(pt.pt.y + 0.5) + y;
-    int img_x = (int)(pt.pt.x + 0.5) + x;
+    if ( use_orientation )
+    {
+      int rx = (int)(((float)x)*R(1,0) - ((float)y)*R(0,0));
+      int ry = (int)(((float)x)*R(0,0) + ((float)y)*R(1,0));
+      if (rx > 24) rx = 24; if (rx < -24) rx = -24;
+      if (ry > 24) ry = 24; if (ry < -24) ry = -24;
+      x = rx; y = ry;
+    }
+    const int img_y = (int)(pt.pt.y + 0.5) + y;
+    const int img_x = (int)(pt.pt.x + 0.5) + x;
     return   sum.at<int>(img_y + HALF_KERNEL + 1, img_x + HALF_KERNEL + 1)
            - sum.at<int>(img_y + HALF_KERNEL + 1, img_x - HALF_KERNEL)
            - sum.at<int>(img_y - HALF_KERNEL, img_x + HALF_KERNEL + 1)
            + sum.at<int>(img_y - HALF_KERNEL, img_x - HALF_KERNEL);
 }
 
-static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void pixelTests16(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation )
 {
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
+        if ( use_orientation )
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI/180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
+
 #include "generated_16.i"
     }
 }
 
-static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void pixelTests32(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
+        if ( use_orientation )
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI / 180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
 
 #include "generated_32.i"
     }
 }
 
-static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors)
+static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints, OutputArray _descriptors, bool use_orientation)
 {
+    Matx21f R;
     Mat sum = _sum.getMat(), descriptors = _descriptors.getMat();
-    for (int i = 0; i < (int)keypoints.size(); ++i)
+    for (size_t i = 0; i < keypoints.size(); ++i)
     {
-        uchar* desc = descriptors.ptr(i);
+        uchar* desc = descriptors.ptr(static_cast<int>(i));
         const KeyPoint& pt = keypoints[i];
+        if ( use_orientation )
+        {
+          float angle = pt.angle;
+          angle *= (float)(CV_PI/180.f);
+          R(0,0) = sin(angle);
+          R(1,0) = cos(angle);
+        }
 
 #include "generated_64.i"
     }
 }
 
-BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes) :
+BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation) :
     bytes_(bytes), test_fn_(NULL)
 {
+    use_orientation_ = use_orientation;
+
     switch (bytes)
     {
         case 16:
@@ -212,7 +248,7 @@ void BriefDescriptorExtractorImpl::compute(InputArray image,
 
     descriptors.create((int)keypoints.size(), bytes_, CV_8U);
     descriptors.setTo(Scalar::all(0));
-    test_fn_(sum, keypoints, descriptors);
+    test_fn_(sum, keypoints, descriptors, use_orientation_);
 }
 
 }
