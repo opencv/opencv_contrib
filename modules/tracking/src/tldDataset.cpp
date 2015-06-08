@@ -129,7 +129,7 @@ namespace cv
 			else if (frameNum < 1000) strcat(fullPath, "00");
 			else if (frameNum < 10000) strcat(fullPath, "0");
 
-			_itoa(frameNum, numStr, 10);
+			sprintf(numStr, "%d", frameNum);
 			strcat(fullPath, numStr);
 			if (flagPNG) strcat(fullPath, ".png");
 			else strcat(fullPath, ".jpg");
