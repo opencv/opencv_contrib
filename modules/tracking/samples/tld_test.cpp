@@ -93,7 +93,7 @@ static void onMouse(int event, int x, int y, int, void*)
 	}
 }
 
-void main()
+int main(int argc, char** argv)
 {
 	//
 	//  "MIL", "BOOSTING", "MEDIANFLOW", "TLD"
@@ -224,4 +224,6 @@ void main()
 
 
 	waitKey(0);
+
+	return 0;
 }
