@@ -3,7 +3,7 @@ set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 option(WITH_PROTOBUF "Build with libprotobuf" ON)
 
 if(NOT WITH_PROTOBUF)
-	message(FATAL_ERROR "libprotobuf is required for dnn module")
+  message(FATAL_ERROR "libprotobuf is required for dnn module")
 endif()
 
 find_package( Protobuf REQUIRED )

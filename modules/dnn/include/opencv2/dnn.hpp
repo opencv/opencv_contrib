@@ -17,10 +17,8 @@ namespace dnn
     class LayerParams;
 
     //wrapper over cv::Mat and cv::UMat
-    CV_EXPORTS class Blob
+    class CV_EXPORTS Blob
     {
-        Mat m;
-
     public:
         Blob();
         Blob(InputArray in);
@@ -44,16 +42,19 @@ namespace dnn
         int num() const;
 
         Vec4i shape() const;
+
+    private:
+        Mat m;
     };
 
-    CV_EXPORTS class LayerParams : public Dict
+    class CV_EXPORTS LayerParams : public Dict
     {
     public:
 
         std::vector<Blob> learnedBlobs;
     };
 
-    CV_EXPORTS class LayerRegister
+    class CV_EXPORTS LayerRegister
     {
     public:
 
@@ -73,7 +74,7 @@ namespace dnn
     };
 
     //this class allows to build new Layers
-    CV_EXPORTS class Layer
+    class CV_EXPORTS Layer
     {
     public:
 
@@ -103,7 +104,7 @@ namespace dnn
     //TODO: maybe eliminate all int ids and replace them by string names
     //Proxy class for different formats
     //Each format importer must populate it
-    CV_EXPORTS class NetConfiguration
+    class CV_EXPORTS NetConfiguration
     {
     public:
 
@@ -140,7 +141,7 @@ namespace dnn
     };
 
 
-    CV_EXPORTS class Net
+    class CV_EXPORTS Net
     {
     public:
 
@@ -157,7 +158,7 @@ namespace dnn
         virtual void forward(int layer, std::vector<Ptr<Blob> > &layerOutputs) = 0;
     };
 
-    CV_EXPORTS class Importer
+    class CV_EXPORTS Importer
     {
     public:
 

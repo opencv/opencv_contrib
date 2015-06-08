@@ -35,7 +35,7 @@ struct DictValue
     DictValue &operator=(const DictValue &r);
 
     ~DictValue();
-    
+
 private:
     void release();
 };
@@ -57,14 +57,14 @@ public:
     }
 
     template <typename T>
-    const T &get(const String &name, const T &default) const
+    const T &get(const String &name, const T &default_value) const
     {
         _Dict::const_iterator i = dict.find(name);
 
         if (i != dict.end())
             return i->second.get<T>();
         else
-            return default;
+            return default_value;
     }
 
     template<typename T>
@@ -154,7 +154,7 @@ inline DictValue & DictValue::operator=(const DictValue &r)
 {
     if (&r == this)
         return *this;
-    
+
     release();
 
     //how to copy anonymous union without memcpy?
