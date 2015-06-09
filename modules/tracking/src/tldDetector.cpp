@@ -209,7 +209,7 @@ namespace cv
 
 		// Computes the variance of subimage given by box, with the help of two integral
 		// images intImgP and intImgP2 (sum of squares), which should be also provided.
-		bool TLDDetector::patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariancePtr, Point pt, Size size)
+		bool TLDDetector::patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size)
 		{
 			int x = (pt.x), y = (pt.y), width = (size.width), height = (size.height);
 			CV_Assert(0 <= x && (x + width) < intImgP.cols && (x + width) < intImgP2.cols);
@@ -229,7 +229,7 @@ namespace cv
 			D = intImgP2(y + height, x + width);
 			p2 = (A + D - B - C) / (width * height);
 
-			return ((p2 - p * p) > VARIANCE_THRESHOLD * *originalVariancePtr);
+			return ((p2 - p * p) > VARIANCE_THRESHOLD * *originalVariance);
 		}
 
 	}
