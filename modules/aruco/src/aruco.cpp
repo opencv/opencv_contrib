@@ -56,6 +56,8 @@ namespace cv{ namespace aruco{
 using namespace std;
 
 
+
+
 /**
  */
 void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _threshParam,
@@ -64,16 +66,18 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
     cv::Mat image = _image.getMat();
     CV_Assert(image.cols !=0 && image.rows !=0 && (image.channels()==1 || image.channels()==3));
 
+
     /// 1. CONVERT TO GRAY
     cv::Mat grey;
-    if ( image.type() ==CV_8UC3 )   cv::cvtColor ( image,grey,cv::COLOR_BGR2GRAY );
+    if (image.type() == CV_8UC3) cv::cvtColor(image, grey, cv::COLOR_BGR2GRAY);
     else grey=image;
 
 
     /// 2. THRESHOLD
     CV_Assert(_threshParam >= 3);
     cv::Mat thresh;
-    cv::adaptiveThreshold ( grey,thresh,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,_threshParam,7 );
+    cv::adaptiveThreshold(grey, thresh, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV,
+                          _threshParam, 7);
     if(_thresholdedImage.needed()) thresh.copyTo(_thresholdedImage);
 
 
@@ -84,70 +88,75 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
     thresh.copyTo ( contoursImg );
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours ( contoursImg , contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE );
-    std::vector< std::vector<cv::Point2f> > candidates; // vector of marker candidates
-    for ( unsigned int i=0;i<contours.size();i++ )
-    {
+    std::vector< std::vector<Point2f> > candidates; // vector of marker candidates
+    for ( unsigned int i=0; i<contours.size(); i++ ) {
         // check perimeter
         if(contours[i].size() < minSize) continue;
 
         // check is square and is convex
-        vector<Point>  approxCurve;
-        cv::approxPolyDP (  contours[i], approxCurve, double ( contours[i].size() ) *0.05 , true );
+        vector<Point> approxCurve;
+        cv::approxPolyDP(contours[i], approxCurve, double(contours[i].size())*0.05, true);
         if(approxCurve.size() != 4 || !cv::isContourConvex(approxCurve) ) continue;
 
-        // check min distance between corners (minimum distance is 10, so minimun square distance is 100)
+        // check min distance between corners (minimum distance is 10,
+        // so minimun square distance is 100)
         float minDistSq = 1e10;
-        for ( int j=0;j<4;j++ ) {
-            float d= ( float ) ( approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) * ( approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) +
-                                 ( approxCurve[j].y-approxCurve[ ( j+1 ) %4].y ) * ( approxCurve[j].y-approxCurve[ ( j+1 ) %4].y ) ;
-            minDistSq = std::min(minDistSq,d);
+        for (int j=0; j<4; j++ ) {
+            float d=(float) (approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) *
+                    ( approxCurve[j].x-approxCurve[ ( j+1 ) %4].x ) +
+                    ( approxCurve[j].y-approxCurve[ ( j+1 ) %4].y ) *
+                    ( approxCurve[j].y-approxCurve[ ( j+1 ) %4].y ) ;
+            minDistSq = std::min(minDistSq, d);
         }
-        if(minDistSq<100) continue;
+        if(minDistSq < 100) continue;
 
         // check if it is too near to the image border
         bool tooNearBorder = false;
         int maxDistanceToBorder = 3;
         for(int j=0; j<4; j++) {
             if ( approxCurve[j].x<maxDistanceToBorder || approxCurve[j].y<maxDistanceToBorder ||
-              approxCurve[j].x>image.cols-1-maxDistanceToBorder || approxCurve[j].y>image.rows-1-maxDistanceToBorder )
-                tooNearBorder=true;
+                 approxCurve[j].x>image.cols-1-maxDistanceToBorder ||
+                 approxCurve[j].y>image.rows-1-maxDistanceToBorder )
+                tooNearBorder = true;
         }
         if(tooNearBorder) continue;
 
         // if it passes all the test, add to candidates vector
         std::vector<cv::Point2f> currentCandidate;
         currentCandidate.resize(4);
-        for ( int j=0;j<4;j++ ) {
-            currentCandidate[j] = cv::Point2f ( approxCurve[j].x,approxCurve[j].y );
+        for(int j=0; j<4; j++) {
+            currentCandidate[j] = cv::Point2f(approxCurve[j].x,approxCurve[j].y);
         }
         candidates.push_back(currentCandidate);
     }
 
 
-
     /// 4. SORT CORNERS
-    for ( unsigned int i=0;i<candidates.size(); i++ ) {
+    for(unsigned int i=0; i<candidates.size(); i++) {
         double dx1 = candidates[i][1].x - candidates[i][0].x;
         double dy1 = candidates[i][1].y - candidates[i][0].y;
         double dx2 = candidates[i][2].x - candidates[i][0].x;
         double dy2 = candidates[i][2].y - candidates[i][0].y;
-        double o = ( dx1*dy2 )- ( dy1*dx2 ); // clockwise direction
+        double crossProduct = ( dx1*dy2 ) - ( dy1*dx2 ); // clockwise direction
 
-        if ( o  < 0.0 )	swap ( candidates[i][1],candidates[i][3] );
+        if ( crossProduct < 0.0 ) swap(candidates[i][1], candidates[i][3]);
     }
 
 
     /// 5. FILTER OUT NEAR CANDIDATE PAIRS
-    std::vector< std::pair<int,int>  > nearCandidates;
+    std::vector< std::pair<int,int> > nearCandidates;
     for ( unsigned int i=0;i<candidates.size();i++ ) {
         for ( unsigned int j=i+1;j<candidates.size(); j++ ) {
             float distSq=0;
             for ( int c=0;c<4;c++ )
-                distSq += ( candidates[i][c].x-candidates[j][c].x ) * ( candidates[i][c].x-candidates[j][c].x )
-                        + ( candidates[i][c].y-candidates[j][c].y ) * ( candidates[i][c].y-candidates[j][c].y ) ;
+                distSq += ( candidates[i][c].x-candidates[j][c].x ) *
+                          ( candidates[i][c].x-candidates[j][c].x ) +
+                          ( candidates[i][c].y-candidates[j][c].y ) *
+                          ( candidates[i][c].y-candidates[j][c].y ) ;
             distSq/=4.;
-            // if mean square distance is lower than 100, remove the smaller one of the two markers (minimum mean distance = 10)
-            if(distSq < 100) nearCandidates.push_back( std::pair<int,int> ( i,j ) );
+            // if mean square distance is lower than 100, remove the smaller one of the two markers
+            // (minimum mean distance = 10)
+            if(distSq < 100) nearCandidates.push_back( std::pair<int,int>(i,j) );
         }
     }
 
@@ -158,24 +167,32 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
         float perimeterSq1=0, perimeterSq2=0;
         for(unsigned int c=0; c<4; c++) {
             // check which one is the smaller and remove it
-            perimeterSq1 += (candidates[nearCandidates[i].first][c].x-candidates[nearCandidates[i].first][(c+1)%4].x) *
-                            (candidates[nearCandidates[i].first][c].x-candidates[nearCandidates[i].first][(c+1)%4].x) +
-                            (candidates[nearCandidates[i].first][c].y-candidates[nearCandidates[i].first][(c+1)%4].y) *
-                            (candidates[nearCandidates[i].first][c].y-candidates[nearCandidates[i].first][(c+1)%4].y);
-            perimeterSq2 += (candidates[nearCandidates[i].second][c].x-candidates[nearCandidates[i].second][(c+1)%4].x) *
-                            (candidates[nearCandidates[i].second][c].x-candidates[nearCandidates[i].second][(c+1)%4].x) +
-                            (candidates[nearCandidates[i].second][c].y-candidates[nearCandidates[i].second][(c+1)%4].y) *
-                            (candidates[nearCandidates[i].second][c].y-candidates[nearCandidates[i].second][(c+1)%4].y);
+            perimeterSq1 += (candidates[nearCandidates[i].first][c].x-
+                             candidates[nearCandidates[i].first][(c+1)%4].x) *
+                            (candidates[nearCandidates[i].first][c].x-
+                             candidates[nearCandidates[i].first][(c+1)%4].x) +
+                            (candidates[nearCandidates[i].first][c].y-
+                             candidates[nearCandidates[i].first][(c+1)%4].y) *
+                            (candidates[nearCandidates[i].first][c].y-
+                             candidates[nearCandidates[i].first][(c+1)%4].y);
+            perimeterSq2 += (candidates[nearCandidates[i].second][c].x-
+                             candidates[nearCandidates[i].second][(c+1)%4].x) *
+                            (candidates[nearCandidates[i].second][c].x-
+                             candidates[nearCandidates[i].second][(c+1)%4].x) +
+                            (candidates[nearCandidates[i].second][c].y-
+                             candidates[nearCandidates[i].second][(c+1)%4].y) *
+                            (candidates[nearCandidates[i].second][c].y-
+                             candidates[nearCandidates[i].second][(c+1)%4].y);
             if(perimeterSq1 > perimeterSq2) toRemove[nearCandidates[i].second]=true;
             else toRemove[nearCandidates[i].first]=true;
         }
     }
 
 
-
     /// 7. REMOVE EXTRA CANDIDATES
     int totalRemaining=0;
-    for(unsigned int i=0; i<toRemove.size(); i++) if(!toRemove[i]) totalRemaining++;
+    for(unsigned int i=0; i<toRemove.size(); i++)
+        if(!toRemove[i]) totalRemaining++;
     _candidates.create(totalRemaining, 1, CV_32FC2);
     for(unsigned int i=0, currIdx=0; i<candidates.size(); i++) {
         if(toRemove[i]) continue;
@@ -185,35 +202,6 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
         currIdx++;
     }
 
-
-
-
-
-//    //sort by id
-//    std::sort ( detectedMarkers.begin(),detectedMarkers.end() );
-//    //there might be still the case that a marker is detected twice because of the double border indicated earlier,
-//    //detect and remove these cases
-//    int borderDistThresX=_borderDistThres*float(input.cols);
-//    int borderDistThresY=_borderDistThres*float(input.rows);
-//    vector<bool> toRemove ( detectedMarkers.size(),false );
-//    for ( int i=0;i<int ( detectedMarkers.size() )-1;i++ )
-//    {
-//        if ( detectedMarkers[i].id==detectedMarkers[i+1].id && !toRemove[i+1] )
-//        {
-//            //deletes the one with smaller perimeter
-//            if ( perimeter ( detectedMarkers[i] ) >perimeter ( detectedMarkers[i+1] ) ) toRemove[i+1]=true;
-//            else toRemove[i]=true;
-//        }
-//        //delete if any of the corners is too near image border
-//        for(size_t c=0;c<detectedMarkers[i].size();c++){
-//    }
-
-
-//    }
-//    //remove the markers marker
-//    removeElements ( detectedMarkers, toRemove );
-
-
 }
 
 
@@ -221,10 +209,9 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 
 /**
  */
-void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
-                             DictionaryData dictionary, OutputArrayOfArrays _accepted, OutputArray _ids,
-                             OutputArrayOfArrays _rejected=noArray()) {
-
+void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
+                         DictionaryData _dictionary, OutputArrayOfArrays _accepted,
+                         OutputArray _ids, OutputArrayOfArrays _rejected=noArray()) {
 
     int ncandidates = _candidates.total();
 
@@ -232,15 +219,17 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
     std::vector< cv::Mat > rejected;
     std::vector< int > ids;
 
-    CV_Assert(image.getMat().cols !=0 && image.getMat().rows !=0 && (image.getMat().channels()==1 || image.getMat().channels()==3));
+    CV_Assert(_image.getMat().cols !=0 && _image.getMat().rows !=0 &&
+             (_image.getMat().channels()==1 || _image.getMat().channels()==3));
+
     cv::Mat grey;
-    if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
-    else grey=image.getMat();
+    if(_image.getMat().type()==CV_8UC3) cv::cvtColor(_image.getMat(),grey,cv::COLOR_BGR2GRAY);
+    else grey=_image.getMat();
 
     for(int i=0; i<ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
-        if( dictionary.identify(grey,currentCandidate,currId) ) {
+        if( _dictionary.identify(grey,currentCandidate,currId) ) {
             accepted.push_back(currentCandidate);
             ids.push_back(currId);
         }
@@ -249,7 +238,7 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
 
     _accepted.create((int)accepted.size(), 1, CV_32FC2);
     for(unsigned int i=0; i<accepted.size(); i++) {
-        _accepted.create(4,1,CV_32FC2, i, true);
+        _accepted.create(4, 1, CV_32FC2, i, true);
         Mat m = _accepted.getMat(i);
         accepted[i].copyTo(m);
     }
@@ -260,7 +249,7 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
     if(_rejected.needed()) {
         _rejected.create((int)rejected.size(), 1, CV_32FC2);
         for(unsigned int i=0; i<rejected.size(); i++) {
-            _rejected.create(4,1,CV_32FC2, i, true);
+            _rejected.create(4, 1, CV_32FC2, i, true);
             Mat m = _rejected.getMat(i);
             rejected[i].copyTo(m);
         }
@@ -270,25 +259,23 @@ void _identifyCandidates(InputArray image, InputArrayOfArrays _candidates,
 
 
 
+
 /**
- * @brief Given the marker size, it returns the vector of object points for pose estimation
- * 
- * @param markerSize size of marker in meters
- * @param objPnts vector of 4 3d points
- * @return void
- */
-void getSingleMarkerObjectPoints(float markerSize, OutputArray _objPnts) {
+  */
+void getSingleMarkerObjectPoints(float _markerLength, OutputArray _objPnts) {
 
-    CV_Assert(markerSize > 0);
+    CV_Assert(_markerLength > 0);
 
-     _objPnts.create(4, 1, CV_32FC3);
+    _objPnts.create(4, 1, CV_32FC3);
     cv::Mat objPnts = _objPnts.getMat();
-    objPnts.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerSize/2., markerSize/2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerSize/2., markerSize/2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerSize/2., -markerSize/2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerSize/2., -markerSize/2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-_markerLength/2., _markerLength/2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(_markerLength/2., _markerLength/2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(_markerLength/2., -_markerLength/2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-_markerLength/2., -_markerLength/2., 0);
 
 }
+
+
 
 
 /**
@@ -303,28 +290,29 @@ const DictionaryData& getDictionaryData(DICTIONARY name) {
 
 
 
+
 /**
   */
-void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints, int threshParam,float minLenght) {
+void detectMarkers(InputArray _image, DICTIONARY _dictionary, OutputArrayOfArrays _imgPoints,
+                   OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int _threshParam,
+                   float _minLenght) {
 
     cv::Mat grey;
-    if ( image.getMat().type() ==CV_8UC3 )   cv::cvtColor ( image.getMat(),grey,cv::COLOR_BGR2GRAY );
-    else grey=image.getMat();
+    if (_image.getMat().type()==CV_8UC3) cv::cvtColor(_image.getMat(), grey, cv::COLOR_BGR2GRAY);
+    else grey=_image.getMat();
 
     /// STEP 1: Detect marker candidates
     std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(grey,candidates,threshParam,minLenght);
+    _detectCandidates(grey, candidates, _threshParam, _minLenght);
 
     /// STEP 2: Check candidate codification (identify markers)
-    DictionaryData dictionaryData = getDictionaryData(dictionary);
-    _identifyCandidates(grey, candidates, dictionaryData, imgPoints, ids, rejectedImgPoints);
+    DictionaryData dictionaryData = getDictionaryData(_dictionary);
+    _identifyCandidates(grey, candidates, dictionaryData, _imgPoints, _ids, _rejectedImgPoints);
 
-    /// STEP 3: Clean candidates
-
-    for(int i=0; i<imgPoints.total(); i++) {
-        /// STEP 4: Corner refinement
-        cv::cornerSubPix ( grey, imgPoints.getMat(i), cvSize ( 5,5 ), cvSize ( -1,-1 ),cvTermCriteria ( CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,30,0.1 ) );
+    for(int i=0; i<_imgPoints.total(); i++) {
+        /// STEP 3: Corner refinement
+        cv::cornerSubPix( grey, _imgPoints.getMat(i), cvSize ( 5,5 ), cvSize ( -1,-1 ),
+                          cvTermCriteria (CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 30, 0.1 ) );
     }
 
 }
@@ -332,11 +320,11 @@ void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays 
 
 
 
-
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize, InputArray cameraMatrix,
-                                          InputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs) {
+void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize,
+                               InputArray cameraMatrix,InputArray distCoeffs,
+                               OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs) {
 
     cv::Mat markerObjPoints;
     getSingleMarkerObjectPoints(markersize, markerObjPoints);

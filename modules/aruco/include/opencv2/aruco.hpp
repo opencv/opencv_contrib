@@ -46,7 +46,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 /**
  * @defgroup aruco ArUco Marker Detection
- * This module is dedicated to square fiducial marker (also known as Augmented Reality Markers) detection.
+ * This module is dedicated to square fiducial marker (also known as Augmented Reality Markers)
  * These markers are useful for easy, fast and robust camera pose estimation.
  * The implementation is based on the ArUco Library TODO reference
  * The main functionalities are:
@@ -61,18 +61,21 @@ the use of this software, even if advised of the possibility of such damage.
  * - board_detector.cpp - marker detection and pose estimation of a marker board
  * - charuco_marker_detector.cpp - detection of charuco-based markers and pose estimation.
  * - charuco_calibration.cpp - camera calibration util based on charuco boards
- * - charuco_calibration_online.cpp - online, automatic and incremental calibration using charuco boards
+ * - charuco_calibration_online.cpp - online, automatic calibration using charuco boards
 */
 
 namespace cv { namespace aruco {
 
 
+
 //! @addtogroup aruco
 //! @{
   
-  
 
+
+/**** @TODO add doxygen *******/
 enum DICTIONARY { DICT_ARUCO=0 };
+
 
 
 /**
@@ -80,29 +83,30 @@ enum DICTIONARY { DICT_ARUCO=0 };
  *
  * @param image input image
  * @param dictionary indicates the type of markers that will be searched
- * @param imgPoints vector of detected marker corners. For each marker, its four corners are provided,
- * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of this array is Nx4.   
- * The order of the corners is clockwise.                
- * @param ids vector of identifiers of the detected markers. The identifier is of type int (e.g. std::vector<int>).
- * For N detected markers, the size of ids is also N. 
+ * @param imgPoints vector of detected marker corners. For each marker, its four corners
+ * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
+ * the dimensions of this array is Nx4. The order of the corners is clockwise.
+ * @param ids vector of identifiers of the detected markers. The identifier is of type int
+ * (e.g. std::vector<int>). For N detected markers, the size of ids is also N.
  * The identifiers have the same order than the markers in the imgPoints array.
- * @param rejectedImgPoints contains the imgPoints of those squares whose inner code has not a correct codification
- * Useful for debugging purposes.
- * @param threshParam window size for adaptative thresholding. A larger param can slow down the detection process.
- * A low param can produce false negatives during the detection.
+ * @param rejectedImgPoints contains the imgPoints of those squares whose inner code has not a
+ * correct codification. Useful for debugging purposes.
+ * @param threshParam window size for adaptative thresholding. A larger param can slow down the
+ * detection process. A low param can produce false negatives during the detection.
  * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio
- * respect to the largest dimension of the input image. Markers whose perimeter is lower than the correspoding value
- * wont be detected. A low value can slow down the detection process
+ * respect to the largest dimension of the input image. Markers whose perimeter is lower than the
+ * correspoding value wont be detected. A low value can slow down the detection process
  * 
- * Performs marker detection in the input image. Only markers included in the specific dictionary are searched.
- * For each detected marker, it returns the 2D position of its corner in the image and its corresponding identifier.
+ * Performs marker detection in the input image. Only markers included in the specific dictionary
+ * are searched. For each detected marker, it returns the 2D position of its corner in the image
+ * and its corresponding identifier.
  * Note that this function does not perform pose estimation. 
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  * 
  */
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
-                       OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(), int threshParam=21,float minLenght=0.03);
-
+                              OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(),
+                              int threshParam=21,float minLenght=0.03);
 
 
 
@@ -110,12 +114,12 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
 /**
  * @brief Pose estimation for single markers
  *
- * @param imgPoints vector of already detected markers corners. For each marker, its four corners are provided,
- * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of this array should be Nx4. 
- * The order of the corners should be clockwise.
+ * @param imgPoints vector of already detected markers corners. For each marker, its four corners
+ * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
+ * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @sa detectMarkers
- * @param markerSize the lenght of the markers' side. The returning translation vectors will be in the same unit.
- * Normally, unit is meters.
+ * @param markerSize the lenght of the markers' side. The returning translation vectors will
+ * be in the same unit. Normally, unit is meters.
  * @param cameraMatrix input 3x3 floating-point camera matrix 
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
@@ -125,19 +129,19 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
  * @param tvecs array of output translation vectors (e.g. std::vector<cv::Mat>>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  * 
- * This function receives the detected markers and returns their pose estimation respect to the camera individually.
- * So for each marker, one rotation and translation vector is returned.
- * The returned transformation is the one that transforms points from each marker coordinate system to the camera
- * coordinate system. 
- * The marker corrdinate system is centered on the middle of the marker, with the Z axis perpendicular
- * to the marker plane. 
+ * This function receives the detected markers and returns their pose estimation respect to
+ * the camera individually. So for each marker, one rotation and translation vector is returned.
+ * The returned transformation is the one that transforms points from each marker coordinate system
+ * to the camera coordinate system.
+ * The marker corrdinate system is centered on the middle of the marker, with the Z axis
+ * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
  * (-markerSize/2, markerSize/2, 0), (markerSize/2, markerSize/2, 0), 
  * (markerSize/2, -markerSize/2, 0), (-markerSize/2, -markerSize/2, 0)
  */
-CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markerSize, InputArray cameraMatrix,
-                                          InputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
-
+CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markerSize,
+                                          InputArray cameraMatrix, InputArray distCoeffs,
+                                          OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
 
 
@@ -146,9 +150,9 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float ma
  * @brief Board of markers
  *
  * A board is a set of markers in the 3D space with a common cordinate system.
- * The common form of a board of marker is a planar (2D) board, however any 3D layout can be employed.
+ * The common form of a board of marker is a planar (2D) board, however any 3D layout can be used.
  * A Board object is composed by:
- * - The object points of the marker corners, i.e. their coordinates respect to the board coordinate system.
+ * - The object points of the marker corners, i.e. their coordinates respect to the board system.
  * - The dictionary which indicates the type of markers of the board
  * - The identifier of all the markers in the board.
  */
@@ -169,31 +173,33 @@ struct CV_EXPORTS Board {
 
 
 
+
 /**
  * @brief Pose estimation for a board of markers
  *
- * @param imgPoints vector of already detected markers corners. For each marker, its four corners are provided,
- * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of this array should be Nx4.
- * The order of the corners should be clockwise.* 
- * @param board layout of markers in the board. The layout is composed by the marker identifiers and the positions 
- * of each marker corner in the board reference system.
+ * @param imgPoints vector of already detected markers corners. For each marker, its four corners
+ * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
+ * dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param board layout of markers in the board. The layout is composed by the marker identifiers
+ * and the positions of each marker corner in the board reference system.
  * @param cameraMatrix input 3x3 floating-point camera matrix 
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board (@sa Rodrigues).
+ * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
+ * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
  * 
- * This function receives the detected markers and returns the pose of a marker board composed by those markers.
+ * This function receives the detected markers and returns the pose of a marker board composed
+ * by those markers.
  * A Board of marker has a single world coordinate system which is defined by the board layout.
- * The returned transformation is the one that transforms points from the board coordinate system to the 
- * camera coordinate system.
+ * The returned transformation is the one that transforms points from the board coordinate system
+ * to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
  */
 CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
-                                          InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
-
-
+                                  InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
+                                  OutputArray tvec);
 
 
 
@@ -205,15 +211,15 @@ CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, 
  * @param height number of markers in Y direction
  * @param markerSize marker side length (normally in meters)
  * @param markerSeparation separation between two markers (same unit than markerSize)
- * @param dictionary dictionary of markers indicating the type of markers. The first width*height markers
- * in the dictionary are used.
+ * @param dictionary dictionary of markers indicating the type of markers.
+ * The first width*height markers in the dictionary are used.
  * @return the output Board object
  *
  * This functions creates a planar board object given the number of markers in each direction and
  * the marker size and marker separation.
  */
-CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation, DICTIONARY dictionary);
-
+CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation,
+                                   DICTIONARY dictionary);
 
 
 
@@ -223,16 +229,21 @@ CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, floa
  * 
  * @param in input image
  * @param out output image. It will be a copy of in but the markers will be painted on.
- * @param markersCorners positions of marker corners on input image. (e.g std::vector<std::vector<cv::Point2f> > )
- * For N detected markers, the dimensions of this array should be Nx4.
- * The order of the corners should be clockwise.
- * @param ids vector of identifiers for markers in markersCorners . Optional, if not provided, ids are not painted.
- * @param color color of marker borders. Rest of colors (text color and first corner color) are calculated based on this one.
+ * @param markersCorners positions of marker corners on input image.
+ * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of
+ * this array should be Nx4. The order of the corners should be clockwise.
+ * @param ids vector of identifiers for markers in markersCorners .
+ * Optional, if not provided, ids are not painted.
+ * @param color color of marker borders. Rest of colors (text color and first corner color)
+ * are calculated based on this one.
  * 
- * Given an array of detected marker corners and its corresponding ids, this functions draws the markers in the image.
- * The marker borders are painted and the markers identifiers if provided. Useful for debugging purposes.
+ * Given an array of detected marker corners and its corresponding ids, this functions draws
+ * the markers in the image. The marker borders are painted and the markers identifiers if provided.
+ * Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayOfArrays markersCorners, InputArray ids=noArray(), cv::Scalar borderColor=cv::Scalar(0,255,0));
+CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out,
+                                    InputArrayOfArrays markersCorners, InputArray ids=noArray(),
+                                    cv::Scalar borderColor=cv::Scalar(0,255,0));
 
 
 
@@ -250,11 +261,11 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out, InputArrayO
  * @param tvec translation vector of the coordinate system that will be drawn.
  * @param lenght lenght of the painted axis in the same unit than tvec (usually in meters)
  * 
- * Given the pose estimation of a marker or board, this function draws the axis of the world coordinate system
- * i.e. the system centered on the marker/board. Useful for debugging purposes.
+ * Given the pose estimation of a marker or board, this function draws the axis of the world
+ * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
-CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
-
+CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
+                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
 
 
 
@@ -263,7 +274,8 @@ CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix
  * @brief Draw a canonical marker image
  *
  * @param dictionary dictionary of markers indicating the type of markers
- * @param id identifier of the marker that will be returned. It has to be a valid id in the specified dictionary.
+ * @param id identifier of the marker that will be returned. It has to be a valid id
+ * in the specified dictionary.
  * @param sidePixels size of the image in pixels
  * @param img output image with the marker
  * 
@@ -274,23 +286,20 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
 
 
 
-
 /**
  * @brief Draw a planar board
  *
- * @param board layout of the board that will be drawn. The board should be planar, z coordinate is ignored 
+ * @param board layout of the board that will be drawn. The board should be planar,
+ * z coordinate is ignored
  * @param dictionary dictionary of markers indicating the type of markers
  * @param outSize size of the output image in pixels.
- * @param img output image with the board. The size of this image will be outSize and the board will be
- * on the center, keeping the board proportions.
+ * @param img output image with the board. The size of this image will be outSize
+ * and the board will be on the center, keeping the board proportions.
  * 
- * This function return the image of a planar board, ready to be printed. It assumes the Board layout specified
- * is planar by ignoring the z coordinates of the object points.
+ * This function return the image of a planar board, ready to be printed. It assumes
+ * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
 CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
-
-
-
 
 
 
@@ -307,7 +316,7 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
  * and/or CV_CALIB_FIX_ASPECT_RATIO are specified, some or all of fx, fy, cx, cy must be
  * initialized before calling the function.
  * @param distCoeffs Output vector of distortion coefficients
- * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements.
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvecs Output vector of rotation vectors (see Rodrigues ) estimated for each board view
  * (e.g. std::vector<cv::Mat>>). That is, each k-th rotation vector together with the corresponding
  * k-th translation vector (see the next output parameter description) brings the board pattern
@@ -317,14 +326,19 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
  * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
  * @param criteria Termination criteria for the iterative optimization algorithm.
  *
- * This function calibrates a camera using an Aruco Board. The function receives a list of detected markers
- * from several views of the Board. The process is similar to the chessboard calibration in calibrateCamera()
- * The function returns the final re-projection error.
+ * This function calibrates a camera using an Aruco Board. The function receives a list of
+ * detected markers from several views of the Board. The process is similar to the chessboard
+ * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(std::vector< std::vector< std::vector<Point2f> > > imgPoints, std::vector<std::vector<int> > ids, Board board, Size imageSize,
-                                InputOutputArray cameraMatrix, InputOutputArray distCoeffs, OutputArrayOfArrays rvecs=noArray(),
-                                OutputArrayOfArrays tvecs=noArray(), int flags=0,
-                                TermCriteria criteria=TermCriteria( TermCriteria::COUNT+TermCriteria::EPS, 30, DBL_EPSILON));
+CV_EXPORTS double calibrateCameraAruco(std::vector< std::vector< std::vector<Point2f> > > imgPoints,
+                                       std::vector<std::vector<int> > ids, Board board,
+                                       Size imageSize, InputOutputArray cameraMatrix,
+                                       InputOutputArray distCoeffs,
+                                       OutputArrayOfArrays rvecs=noArray(),
+                                       OutputArrayOfArrays tvecs=noArray(), int flags=0,
+                                       TermCriteria criteria=TermCriteria(TermCriteria::COUNT+
+                                                                          TermCriteria::EPS, 30,
+                                                                          DBL_EPSILON));
 
 
 
