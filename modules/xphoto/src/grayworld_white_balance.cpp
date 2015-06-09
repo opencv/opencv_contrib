@@ -67,7 +67,7 @@ namespace cv { namespace xphoto {
 
         // Calculate sum of pixel values of each channel
         const uchar* src_data = src.ptr<uchar>(0);
-        ulong sum1 = 0, sum2 = 0, sum3 = 0;
+        unsigned long sum1 = 0, sum2 = 0, sum3 = 0;
         int i = 0;
 #if CV_SIMD128
         v_uint8x16 v_inB, v_inG, v_inR;
@@ -165,9 +165,9 @@ namespace cv { namespace xphoto {
         // Scale by maximum
         if ( inv_max > 0 )
         {
-            inv1 /= inv_max;
-            inv2 /= inv_max;
-            inv3 /= inv_max;
+            inv1 = (float)((double)inv1 / inv_max);
+            inv2 = (float)((double)inv2 / inv_max);
+            inv3 = (float)((double)inv3 / inv_max);
         }
 
         // Scale input pixel values
@@ -225,9 +225,9 @@ namespace cv { namespace xphoto {
 #endif
         for ( ; i < N3; i += 3 )
         {
-            dst_data[i + 0] = src_data[i + 0] * inv1;
-            dst_data[i + 1] = src_data[i + 1] * inv2;
-            dst_data[i + 2] = src_data[i + 2] * inv3;
+            dst_data[i + 0] = (uchar)(src_data[i + 0] * inv1);
+            dst_data[i + 1] = (uchar)(src_data[i + 1] * inv2);
+            dst_data[i + 2] = (uchar)(src_data[i + 2] * inv3);
         }
     }
 
