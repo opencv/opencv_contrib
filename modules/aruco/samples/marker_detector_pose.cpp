@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
         cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
         for(int i=0; i<ids.size(); i++) cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], 0.04);    
     }
+    else image.copyTo(imageCopy);
     
     cv::imshow("out", imageCopy);
     char key = cv::waitKey(0);

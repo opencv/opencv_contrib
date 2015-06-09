@@ -48,6 +48,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include <iostream>
+
 
 
 namespace cv{ namespace aruco{
@@ -56,28 +58,18 @@ using namespace std;
 
 
 
-
-const char quartets_distances[16][16][4] =
+const unsigned char hammingWeightLUT[] =
 {
-    { {0,0,0,0},{1,1,1,1},{1,1,1,1},{2,2,2,2},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{1,1,1,1},{2,2,2,2},{2,2,2,2},{3,3,3,3},{2,2,2,2},{3,3,3,3},{3,3,3,3},{4,4,4,4}, },
-    { {1,1,1,1},{0,2,2,2},{2,0,2,2},{1,1,3,3},{2,2,0,2},{1,3,1,3},{3,1,1,3},{2,2,2,4},{2,2,2,0},{1,3,3,1},{3,1,3,1},{2,2,4,2},{3,3,1,1},{2,4,2,2},{4,2,2,2},{3,3,3,3}, },
-    { {1,1,1,1},{2,2,2,0},{0,2,2,2},{1,3,3,1},{2,0,2,2},{3,1,3,1},{1,1,3,3},{2,2,4,2},{2,2,0,2},{3,3,1,1},{1,3,1,3},{2,4,2,2},{3,1,1,3},{4,2,2,2},{2,2,2,4},{3,3,3,3}, },
-    { {2,2,2,2},{1,3,3,1},{1,1,3,3},{0,2,4,2},{3,1,1,3},{2,2,2,2},{2,0,2,4},{1,1,3,3},{3,3,1,1},{2,4,2,0},{2,2,2,2},{1,3,3,1},{4,2,0,2},{3,3,1,1},{3,1,1,3},{2,2,2,2}, },
-    { {1,1,1,1},{2,2,0,2},{2,2,2,0},{3,3,1,1},{0,2,2,2},{1,3,1,3},{1,3,3,1},{2,4,2,2},{2,0,2,2},{3,1,1,3},{3,1,3,1},{4,2,2,2},{1,1,3,3},{2,2,2,4},{2,2,4,2},{3,3,3,3}, },
-    { {2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{1,3,1,3},{0,4,0,4},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2},{4,0,4,0},{3,1,3,1},{2,2,2,2},{1,3,1,3},{3,1,3,1},{2,2,2,2}, },
-    { {2,2,2,2},{3,3,1,1},{1,3,3,1},{2,4,2,0},{1,1,3,3},{2,2,2,2},{0,2,4,2},{1,3,3,1},{3,1,1,3},{4,2,0,2},{2,2,2,2},{3,3,1,1},{2,0,2,4},{3,1,1,3},{1,1,3,3},{2,2,2,2}, },
-    { {3,3,3,3},{2,4,2,2},{2,2,4,2},{1,3,3,1},{2,2,2,4},{1,3,1,3},{1,1,3,3},{0,2,2,2},{4,2,2,2},{3,3,1,1},{3,1,3,1},{2,2,2,0},{3,1,1,3},{2,2,0,2},{2,0,2,2},{1,1,1,1}, },
-    { {1,1,1,1},{2,0,2,2},{2,2,0,2},{3,1,1,3},{2,2,2,0},{3,1,3,1},{3,3,1,1},{4,2,2,2},{0,2,2,2},{1,1,3,3},{1,3,1,3},{2,2,2,4},{1,3,3,1},{2,2,4,2},{2,4,2,2},{3,3,3,3}, },
-    { {2,2,2,2},{1,1,3,3},{3,1,1,3},{2,0,2,4},{3,3,1,1},{2,2,2,2},{4,2,0,2},{3,1,1,3},{1,3,3,1},{0,2,4,2},{2,2,2,2},{1,1,3,3},{2,4,2,0},{1,3,3,1},{3,3,1,1},{2,2,2,2}, },
-    { {2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{3,1,3,1},{4,0,4,0},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2},{0,4,0,4},{1,3,1,3},{2,2,2,2},{3,1,3,1},{1,3,1,3},{2,2,2,2}, },
-    { {3,3,3,3},{2,2,4,2},{2,2,2,4},{1,1,3,3},{4,2,2,2},{3,1,3,1},{3,1,1,3},{2,0,2,2},{2,4,2,2},{1,3,3,1},{1,3,1,3},{0,2,2,2},{3,3,1,1},{2,2,2,0},{2,2,0,2},{1,1,1,1}, },
-    { {2,2,2,2},{3,1,1,3},{3,3,1,1},{4,2,0,2},{1,3,3,1},{2,2,2,2},{2,4,2,0},{3,3,1,1},{1,1,3,3},{2,0,2,4},{2,2,2,2},{3,1,1,3},{0,2,4,2},{1,1,3,3},{1,3,3,1},{2,2,2,2}, },
-    { {3,3,3,3},{2,2,2,4},{4,2,2,2},{3,1,1,3},{2,4,2,2},{1,3,1,3},{3,3,1,1},{2,2,0,2},{2,2,4,2},{1,1,3,3},{3,1,3,1},{2,0,2,2},{1,3,3,1},{0,2,2,2},{2,2,2,0},{1,1,1,1}, },
-    { {3,3,3,3},{4,2,2,2},{2,4,2,2},{3,3,1,1},{2,2,4,2},{3,1,3,1},{1,3,3,1},{2,2,2,0},{2,2,2,4},{3,1,1,3},{1,3,1,3},{2,2,0,2},{1,1,3,3},{2,0,2,2},{0,2,2,2},{1,1,1,1}, },
-    { {4,4,4,4},{3,3,3,3},{3,3,3,3},{2,2,2,2},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{3,3,3,3},{2,2,2,2},{2,2,2,2},{1,1,1,1},{2,2,2,2},{1,1,1,1},{1,1,1,1},{0,0,0,0}, },
+    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,
+    4,5,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,
+    4,5,5,6,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,
+    4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,
+    4,5,5,6,5,6,6,7,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,
+    4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,
+    4,5,5,6,4,5,5,6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,
+    4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
 };
-
-
 
 
 
@@ -89,21 +81,26 @@ class DictionaryData {
 
 public:
 
-DictionaryData() { };
-DictionaryData(const char *quartets, int _markerSize, int _dictsize, int _maxcorr)  {
-    markerSize = _markerSize;
-    maxCorrectionBits = _maxcorr;
-    int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
-    codes = cv::Mat(_dictsize, nquartets, CV_8UC1);
-    for(int i=0; i<_dictsize; i++) {
-        for(int j=0; j<nquartets; j++) codes.at<unsigned char>(i,j) = quartets[i*nquartets+j];
-    }
-};
-
 cv::Mat codes;
 int markerSize;
 int maxCorrectionBits; // maximum number of bits that can be corrected
 // float borderSize; // black border size respect to inner bits size
+
+
+DictionaryData(const char *_bytes=0, int _markerSize=0, int _dictsize=0, int _maxcorr=0)  {
+    markerSize = _markerSize;
+    maxCorrectionBits = _maxcorr;
+    int nbytes = (markerSize*markerSize)/8;
+    if((markerSize*markerSize)%8 != 0) nbytes++;
+    codes = cv::Mat(_dictsize, nbytes, CV_8UC4);
+    for(int i=0; i<_dictsize; i++) {
+        for(int j=0; j<nbytes; j++) {
+            for(int k=0; k<4; k++) codes.at<cv::Vec4b>(i,j)[k] = _bytes[i*(4*nbytes)+k*nbytes+j];
+        }
+    }
+}
+
+
 
 /**
  * @brief Given an image and four corners positions, identify the marker
@@ -119,14 +116,14 @@ bool identify(InputArray image, InputOutputArray imgPoints, int &idx) {
     if(!_isBorderValid(candidateBits)) return false; // not really necessary
     cv::Mat onlyBits = candidateBits.rowRange(1,candidateBits.rows-1).colRange(1,candidateBits.rows-1);
 
-    // get quartets
-    cv::Mat candidateQuartets = _getQuartet(onlyBits);
+    // get as a byte list
+    cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
 
     // search closest marker in dict
     int closestId=-1;
     unsigned int rotation=0;
     unsigned int closestDistance=markerSize*markerSize+1;
-    cv::Mat candidateDistances = _getDistances(candidateQuartets);
+    cv::Mat candidateDistances = _getDistances(candidateBytes);
 
     for(int i=0; i<codes.rows; i++) {
         if(candidateDistances.ptr<int>(i)[0] < closestDistance) {
@@ -164,7 +161,7 @@ void drawMarker(int id, int sidePixels, OutputArray img) {
     img.create(sidePixels, sidePixels, CV_8UC1);
     cv::Mat tinyMarker(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
     cv::Mat innerRegion = tinyMarker.rowRange(1,tinyMarker.rows-1).colRange(1,tinyMarker.cols-1);
-    cv::Mat bits = 255*_getBits( codes.rowRange(id, id+1) );
+    cv::Mat bits = 255*_getBitsFromByteList( codes.rowRange(id, id+1) );
     bits.copyTo(innerRegion);
     cv::resize(tinyMarker, img.getMat(), img.getMat().size(),0,0,cv::INTER_NEAREST);
 }
@@ -172,82 +169,88 @@ void drawMarker(int id, int sidePixels, OutputArray img) {
 
 private:
 
-cv::Mat _getQuartet(cv::Mat bits) {
 
-    int nquartets = (markerSize*markerSize)/4 + (markerSize*markerSize)%4;
-    cv::Mat candidateQuartets(1, nquartets, CV_8UC1);
-    int currentQuartet=0;
-    for(int row=0; row<markerSize/2; row++)
-    {
-        for(int col=row; col<markerSize-row-1; col++) {
-            unsigned char bit3 = bits.at<unsigned char>(row,col);
-            unsigned char bit2 = bits.at<unsigned char>(col,markerSize-1-row);
-            unsigned char bit1 = bits.at<unsigned char>(markerSize-1-row,markerSize-1-col);
-            unsigned char bit0 = bits.at<unsigned char>(markerSize-1-col,row);
-            unsigned char quartet = 8*bit3 + 4*bit2 + 2*bit1 + bit0;
-            candidateQuartets.ptr<unsigned char>()[currentQuartet] = quartet;
-            currentQuartet++;
+
+
+/**
+  */
+cv::Mat _getByteListFromBits(cv::Mat bits) {
+
+    int nbytes = (bits.cols*bits.rows)/8;
+    if((bits.cols*bits.rows)%8 != 0) nbytes++;
+    cv::Mat candidateByteList(1, nbytes, CV_8UC4, cv::Scalar::all(0));
+    unsigned char currentBit=0;
+    int currentByte=0;
+    for(int row=0; row<bits.rows; row++) {
+        for(int col=0; col<bits.cols; col++) {
+            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] << 1;
+            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] << 1;
+            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] << 1;
+            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] << 1;
+            if(bits.at<unsigned char>(row,col)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0]++;
+            if(bits.at<unsigned char>(col,bits.cols-1-row)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1]++;
+            if(bits.at<unsigned char>(bits.rows-1-row,bits.cols-1-col)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2]++;
+            if(bits.at<unsigned char>(bits.rows-1-col,row)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3]++;
+            currentBit++;
+            if(currentBit==8) {
+                currentBit=0;
+                currentByte++;
+            }
         }
     }
-    if((markerSize*markerSize)%4 == 1) { // middle bit
-        unsigned char middleBit = bits.at<unsigned char>(markerSize/2,markerSize/2);
-        candidateQuartets.ptr<unsigned char>()[currentQuartet] = middleBit;
-    }
-    return candidateQuartets;
+    return candidateByteList;
 }
 
-cv::Mat _getBits(cv::Mat quartets) {
-    cv::Mat bits(markerSize, markerSize, CV_8UC1);
-    int currentQuartetIdx=0;
-    for(int row=0; row<markerSize/2; row++)
-    {
-        for(int col=row; col<markerSize-row-1; col++) {
-            unsigned char currentQuartet = quartets.ptr<unsigned char>(0)[currentQuartetIdx];
-            unsigned char bit3 = 0;
-            if(currentQuartet>=8) {
-                bit3 = 1;
-                currentQuartet-=8;
+
+
+
+/**
+  */
+cv::Mat _getBitsFromByteList(cv::Mat byteList) {
+    cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+
+    unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
+    int currentByteIdx = 0;
+    unsigned char currentByte=byteList.ptr<cv::Vec4b>(0)[0][0]; // we only need the bytes in normal rotation
+    int currentBit = 0;
+    for(int row=0; row<bits.rows; row++) {
+        for(int col=0; col<bits.cols; col++) {
+            if(currentByte>=base2List[currentBit]) {
+                bits.at<unsigned char>(row,col) = 1;
+                currentByte-=base2List[currentBit];
             }
-            bits.at<unsigned char>(row,col) = bit3;
-            unsigned char bit2 = 0;
-            if(currentQuartet>=4) {
-                bit2 = 1;
-                currentQuartet-=4;
+            currentBit++;
+            if(currentBit==8) {
+                currentBit=0;
+                currentByteIdx++;
             }
-            bits.at<unsigned char>(col,markerSize-1-row) = bit2;
-            unsigned char bit1 = 0;
-            if(currentQuartet>=2) {
-                bit1 = 1;
-                currentQuartet-=2;
-            }
-            bits.at<unsigned char>(markerSize-1-row,markerSize-1-col)= bit1;
-            unsigned char bit0 = currentQuartet;
-            bits.at<unsigned char>(markerSize-1-col,row) = bit0;
-            currentQuartetIdx++;
         }
-    }
-    if((markerSize*markerSize)%4 == 1) { // middle bit
-        if(quartets.ptr<unsigned char>()[currentQuartetIdx]==0) bits.at<unsigned char>(markerSize/2,markerSize/2) = 0;
-        else bits.at<unsigned char>(markerSize/2,markerSize/2) = 1;
     }
     return bits;
 }
 
-cv::Mat _getDistances(cv::Mat quartets) {
 
-    bool middleBit = (markerSize%2==1);
-    int ncompleteQuartets = quartets.total() - (middleBit?1:0);
+
+
+
+
+
+
+
+/**
+  */
+cv::Mat _getDistances(cv::Mat byteList) {
 
     cv::Mat res(codes.rows, 2, CV_32SC1);
     for(unsigned int m=0; m<codes.rows; m++) {
         res.ptr<int>(m)[0]=10e8;
         for(unsigned int r=0; r<4; r++) {
             int currentHamming=0;
-            for(unsigned int q=0; q<ncompleteQuartets; q++) {
-                currentHamming += (int)quartets_distances[ (codes.ptr<unsigned char>(m)[q]) ][ (quartets.ptr<unsigned char>(0)[q]) ][r];
+            for(int b=0; b<byteList.total(); b++) {
+                unsigned char xorRes = codes.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
+                currentHamming += hammingWeightLUT[xorRes];
             }
-            if(middleBit && ((codes.ptr<unsigned char>(m)[ncompleteQuartets])!=quartets.ptr<unsigned char>(0)[ncompleteQuartets]))
-                currentHamming++;
+
             if(currentHamming < res.ptr<int>(m)[0]) {
                 res.ptr<int>(m)[0]=currentHamming;
                 res.ptr<int>(m)[1]=r;
@@ -256,6 +259,8 @@ cv::Mat _getDistances(cv::Mat quartets) {
     }
     return res;
 }
+
+
 
 cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints) {
 
@@ -310,7 +315,7 @@ bool _isBorderValid(cv::Mat bits) {
 
 
 // PREDEFINED DICTIONARIES
-const DictionaryData _dict_aruco_data = DictionaryData (&(_dict_aruco_quartets[0][0]), 5, 1024, 1);
+const DictionaryData _dict_aruco_data = DictionaryData (&(_dict_aruco_bytes[0][0][0]), 5, 1024, 1);
 
 
 }}

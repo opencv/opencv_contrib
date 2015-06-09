@@ -67,6 +67,7 @@ int main(int argc, char* argv[])
     
     // draw results
     if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids); 
+    else image.copyTo(imageCopy);
 
     cv::imshow("out", imageCopy);
     char key = cv::waitKey(0);

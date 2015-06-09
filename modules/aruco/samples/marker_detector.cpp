@@ -32,6 +32,7 @@ int main(int argc, char* argv[])
    
     // draw results
     if(ids.size()>0) cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
+    else image.copyTo(imageCopy);
     if(rejectedImgPoints.size()>0) cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedImgPoints,cv::noArray(), cv::Scalar(100,0,255));  
     
     cv::imshow("out", imageCopy);
