@@ -61,7 +61,8 @@ namespace cv { namespace xphoto {
     @param dst
     @sa balanceWhite
      */
-    CV_EXPORTS_W void autowbGrayworld(InputArray src, OutputArray dst);
+    CV_EXPORTS_W void autowbGrayworld(InputArray src, OutputArray dst,
+        const float thresh = 0.5f);
 
 //! @}
 

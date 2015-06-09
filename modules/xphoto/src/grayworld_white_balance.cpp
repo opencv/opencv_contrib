@@ -46,7 +46,7 @@ namespace cv { namespace xphoto {
 
     /*!
      */
-    void autowbGrayworld(InputArray _src, OutputArray _dst)
+    void autowbGrayworld(InputArray _src, OutputArray _dst, const float thresh)
     {
 
         Mat src = _src.getMat();
@@ -70,48 +70,81 @@ namespace cv { namespace xphoto {
         ulong sum1 = 0, sum2 = 0, sum3 = 0;
         int i = 0;
 #if CV_SIMD128
-        v_uint8x16 v_in;
+        v_uint8x16 v_inB, v_inG, v_inR;
         v_uint16x8 v_s1, v_s2;
-        v_uint32x4 v_i1, v_i2, v_i3, v_i4,
-                   v_S1 = v_setzero_u32(),
-                   v_S2 = v_setzero_u32(),
-                   v_S3 = v_setzero_u32(),
-                   v_S4 = v_setzero_u32();
+        v_uint32x4 v_iB1, v_iB2, v_iB3, v_iB4,
+                   v_iG1, v_iG2, v_iG3, v_iG4,
+                   v_iR1, v_iR2, v_iR3, v_iR4,
+                   v_SB = v_setzero_u32(),
+                   v_SG = v_setzero_u32(),
+                   v_SR = v_setzero_u32(),
+                   v_m1, v_m2, v_m3, v_m4;
+        v_float32x4 v_thresh = v_setall_f32(thresh),
+                    v_min1, v_min2, v_min3, v_min4,
+                    v_max1, v_max2, v_max3, v_max4,
+                    v_sat1, v_sat2, v_sat3, v_sat4;
 
-        for (; i < N3 - 14; i += 15)
+        for ( ; i < N3 - 47; i += 48 )
         {
-            // Load 16 x 8bit uchars
-            v_in = v_load(&src_data[i]);
+            // NOTE: This block assumes BGR channels in naming variables
 
-            // Split into two vectors of 8 ushorts
-            v_expand(v_in, v_s1, v_s2);
+            // Load 3x uint8x16 and deinterleave into vectors of each channel
+            v_load_deinterleave(&src_data[i], v_inB, v_inG, v_inR);
 
-            // Split into four vectors of 4 uints
-            v_expand(v_s1, v_i1, v_i2);
-            v_expand(v_s2, v_i3, v_i4);
+            // Split into four int vectors per channel
+            v_expand(v_inB, v_s1, v_s2);
+            v_expand(v_s1, v_iB1, v_iB2);
+            v_expand(v_s2, v_iB3, v_iB4);
 
-            // Add to accumulators
-            v_S1 += v_i1;
-            v_S2 += v_i2;
-            v_S3 += v_i3;
-            v_S4 += v_i4;
+            v_expand(v_inG, v_s1, v_s2);
+            v_expand(v_s1, v_iG1, v_iG2);
+            v_expand(v_s2, v_iG3, v_iG4);
+
+            v_expand(v_inR, v_s1, v_s2);
+            v_expand(v_s1, v_iR1, v_iR2);
+            v_expand(v_s2, v_iR3, v_iR4);
+
+            // Get saturation
+            v_min1 = v_cvt_f32(v_reinterpret_as_s32(v_min(v_iB1, v_min(v_iG1, v_iR1))));
+            v_min2 = v_cvt_f32(v_reinterpret_as_s32(v_min(v_iB2, v_min(v_iG2, v_iR2))));
+            v_min3 = v_cvt_f32(v_reinterpret_as_s32(v_min(v_iB3, v_min(v_iG3, v_iR3))));
+            v_min4 = v_cvt_f32(v_reinterpret_as_s32(v_min(v_iB4, v_min(v_iG4, v_iR4))));
+
+            v_max1 = v_cvt_f32(v_reinterpret_as_s32(v_max(v_iB1, v_max(v_iG1, v_iR1))));
+            v_max2 = v_cvt_f32(v_reinterpret_as_s32(v_max(v_iB2, v_max(v_iG2, v_iR2))));
+            v_max3 = v_cvt_f32(v_reinterpret_as_s32(v_max(v_iB3, v_max(v_iG3, v_iR3))));
+            v_max4 = v_cvt_f32(v_reinterpret_as_s32(v_max(v_iB4, v_max(v_iG4, v_iR4))));
+
+            v_sat1 = (v_max1 - v_min1) / v_max1;
+            v_sat2 = (v_max2 - v_min2) / v_max2;
+            v_sat3 = (v_max3 - v_min3) / v_max3;
+            v_sat4 = (v_max4 - v_min4) / v_max4;
+
+            // Calculate masks
+            v_m1 = v_reinterpret_as_u32(v_sat1 <= v_thresh);
+            v_m2 = v_reinterpret_as_u32(v_sat2 <= v_thresh);
+            v_m3 = v_reinterpret_as_u32(v_sat3 <= v_thresh);
+            v_m4 = v_reinterpret_as_u32(v_sat4 <= v_thresh);
+
+            // Apply mask
+            v_SB += (v_iB1 & v_m1) + (v_iB2 & v_m2) + (v_iB3 & v_m3) + (v_iB4 & v_m4);
+            v_SG += (v_iG1 & v_m1) + (v_iG2 & v_m2) + (v_iG3 & v_m3) + (v_iG4 & v_m4);
+            v_SR += (v_iR1 & v_m1) + (v_iR2 & v_m2) + (v_iR3 & v_m3) + (v_iR4 & v_m4);
         }
 
-        // Store accumulated values into memory
-        uint sums[16];
-        v_store(&sums[0],  v_S1);
-        v_store(&sums[4],  v_S2);
-        v_store(&sums[8],  v_S3);
-        v_store(&sums[12], v_S4);
-
         // Perform final reduction
-        sum1 = sums[0] + sums[3] + sums[6] + sums[9]  + sums[12],
-        sum2 = sums[1] + sums[4] + sums[7] + sums[10] + sums[13],
-        sum3 = sums[2] + sums[5] + sums[8] + sums[11] + sums[14];
+        sum1 = v_reduce_sum(v_SB);
+        sum2 = v_reduce_sum(v_SG);
+        sum3 = v_reduce_sum(v_SR);
 #endif
-        for (; i < N3; i += 3)
+        double minRGB, maxRGB, satur;
+        for ( ; i < N3; i += 3 )
         {
-            sum1 += src_data[i + 0];
+            minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
+            maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
+            satur = (maxRGB - minRGB) / maxRGB;
+            if ( satur > thresh ) continue;
+            sum1 += src_data[i];
             sum2 += src_data[i + 1];
             sum3 += src_data[i + 2];
         }
@@ -130,7 +163,7 @@ namespace cv { namespace xphoto {
               inv3 = (float) dinv3;
 
         // Scale by maximum
-        if (inv_max > 0)
+        if ( inv_max > 0 )
         {
             inv1 /= inv_max;
             inv2 /= inv_max;
@@ -141,14 +174,15 @@ namespace cv { namespace xphoto {
         uchar* dst_data = dst.ptr<uchar>(0);
         i = 0;
 #if CV_SIMD128
-        v_uint8x16  v_out;
+        v_uint8x16  v_in, v_out;
+        v_uint32x4  v_i1, v_i2, v_i3, v_i4;
         v_float32x4 v_f1, v_f2, v_f3, v_f4,
                     scal1(inv1, inv2, inv3, inv1),
                     scal2(inv2, inv3, inv1, inv2),
                     scal3(inv3, inv1, inv2, inv3),
                     scal4(inv1, inv2, inv3, 0.f);
 
-        for (; i < N3 - 14; i += 15)
+        for ( ; i < N3 - 14; i += 15 )
         {
             // Load 16 x 8bit uchars
             v_in = v_load(&src_data[i]);
@@ -189,7 +223,7 @@ namespace cv { namespace xphoto {
             v_store(&dst_data[i], v_out);
         }
 #endif
-        for (; i < N3; i += 3)
+        for ( ; i < N3; i += 3 )
         {
             dst_data[i + 0] = src_data[i + 0] * inv1;
             dst_data[i + 1] = src_data[i + 1] * inv2;
