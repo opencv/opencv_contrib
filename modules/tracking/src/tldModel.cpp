@@ -60,7 +60,7 @@ namespace cv
 			detector->negativeExamples = &negativeExamples;
 			detector->timeStampsPositive = &timeStampsPositive;
 			detector->timeStampsNegative = &timeStampsNegative;
-			detector->originalVariance = &originalVariance_;
+			detector->originalVariancePtr = &originalVariance_;
 
 			//Calculate the variance in initial BB
 			originalVariance_ = variance(image(boundingBox));

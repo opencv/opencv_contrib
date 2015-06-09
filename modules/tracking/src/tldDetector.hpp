@@ -79,7 +79,7 @@ namespace cv
 			std::vector<TLDEnsembleClassifier> classifiers;
 			std::vector<Mat_<uchar> > *positiveExamples, *negativeExamples;
 			std::vector<int> *timeStampsPositive, *timeStampsNegative;
-			double *originalVariance;
+			double *originalVariancePtr;
 
 			static void generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
 			struct LabeledPatch
