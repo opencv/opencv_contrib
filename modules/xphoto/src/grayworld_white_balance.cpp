@@ -44,8 +44,6 @@
 
 namespace cv { namespace xphoto {
 
-    /*!
-     */
     void autowbGrayworld(InputArray _src, OutputArray _dst, const float thresh)
     {
 
