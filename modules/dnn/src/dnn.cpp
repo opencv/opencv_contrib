@@ -61,21 +61,38 @@ void Blob::create(int ndims, const int *sizes, int type /*= CV_32F*/)
     m.create(shape.channels, &shape[0], type);
 }
 
-Net::~Net()
+struct Net::Impl
+{
+
+};
+
+Net::Net() : impl(new Net::Impl)
 {
 
 }
 
+Net::~Net()
+{
+
+}
 
 Importer::~Importer()
 {
 
 }
 
-
-Ptr<NetConfiguration> NetConfiguration::create()
+#include <sstream>
+template<typename T>
+String toString(const T &v)
 {
-    return Ptr<NetConfiguration>(new NetConfiguration());
+    std::stringstream ss;
+    ss << v;
+    return ss.str();
+}
+
+cv::String Layer::getInputName(int inputNum)
+{
+    return "input" + toString(inputNum);
 }
 
 }

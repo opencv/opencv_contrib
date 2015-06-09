@@ -59,11 +59,11 @@ namespace dnn
 
         typedef Layer* (*Constuctor)();
 
-        static void registerLayer(const String &type, Constuctor constructor);
+        CV_EXPORTS static void registerLayer(const String &type, Constuctor constructor);
 
-        static void unregisterLayer(const String &type);
+        CV_EXPORTS static void unregisterLayer(const String &type);
 
-        static Ptr<Layer> createLayerInstance(const String &type);
+        CV_EXPORTS static Ptr<Layer> createLayerInstance(const String &type);
 
     private:
         LayerRegister();
@@ -88,80 +88,71 @@ namespace dnn
         //setUp calls once (think that it's constructor)
         virtual void setUp(LayerParams &params);
 
-        //after setUp the following two function must be able to return values
-        virtual int getNumInputs();
-        virtual int getNumOutputs();
-
         //maybe useless function
         //shape of output blobs must be adjusted with respect to shape of input blobs
         virtual void adjustShape(const std::vector<Blob> &inputs, std::vector<Blob> &outputs);
 
         virtual void forward(std::vector<Blob> &inputs, std::vector<Blob> &outputs);
+
+        virtual int getNumInputs();
+        virtual int getNumOutputs();
+        //each input/output can be labeled to easily identify their using "layer_name.output_name"
+        virtual String getInputName(int inputNum);
+        virtual String getOutputName(int outputNum);
     };
-
-    //TODO: divide NetConfiguration interface and implementation, hide internal data
-    //TODO: maybe eliminate all int ids and replace them by string names
-    //Proxy class for different formats
-    //Each format importer must populate it
-    CV_EXPORTS class NetConfiguration
-    {
-    public:
-
-        CV_EXPORTS static Ptr<NetConfiguration> create();
-
-        int addLayer(const String &name, const String &type);
-
-        void deleteLayer(int layerId);
-
-        void setLayerParams(int layerId, LayerParams &params);
-
-        //each output of each layer can be labeled by unique string label (as in Caffe)
-        //if label not specified then %layer_name%:c_%N% will be used
-        void setLayerOutputLabels(int layerId, const std::vector<String> &outputNames);
-
-        //version #1
-        void addConnection(int fromLayer, int fromLayerOutput, int toLayer, int toLayerInput);
-
-        //or maybe version #2
-        inline int getBlobId(int layerId, int inputOutputNumber)
-        {
-            return (layerId << 16) + inputOutputNumber;
-        }
-
-        void addConnection(int outputId, int inputId);
-
-        void addConnections(const std::vector<int> &outputIds, const std::vector<int> &inputIds);
-
-    private:
-
-        int lastLayerId;
-        std::map< int, Ptr<Layer> > layers;
-        std::map< int, std::vector<String> > layerOutputLabels;
-    };
-
+    
+    //containers for String and int
+    typedef DictValue LayerId;
+    typedef DictValue BlobId;
 
     CV_EXPORTS class Net
     {
     public:
 
-        CV_EXPORTS static Ptr<Net> create(Ptr<NetConfiguration> config);
+        CV_EXPORTS Net();
+        CV_EXPORTS ~Net();
 
-        virtual ~Net() = 0;
+        CV_EXPORTS int addLayer(const String &name, const String &type, LayerParams &params = LayerParams());
+        CV_EXPORTS void deleteLayer(LayerId layer);
+        
+        //each output of each layer can be labeled by unique string label (as in Caffe)
+        //if label not specified then %layer_name%.%layer_output_id% can be used
+        void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
 
-        virtual int getBlobId(int layerId, int outputId) = 0;
+        CV_EXPORTS void connect(BlobId input, BlobId output);
+        CV_EXPORTS void connect(const std::vector<BlobId> &outputs, const std::vector<BlobId> &inputs);
+        CV_EXPORTS void connect(const std::vector<BlobId> &outputs, LayerId layer);
 
-        virtual int getBlobId(const String &blobName) = 0;
+        int getOutputId(LayerId layer, int outputNum);
+        int getInputId(LayerId layer, int inputNum);
+        int getLayerId(LayerId layer);
 
-        virtual void forward(std::vector< int, Ptr<Blob> > &inputBlobs, std::vector<int, Ptr<Blob> > &outputBlobs) = 0;
+        void forward();
+        void forward(LayerId toLayer);
+        void forward(LayerId startLayer, LayerId toLayer);
+        void forward(const std::vector<LayerId> &startLayers, const std::vector<LayerId> &toLayers);
 
-        virtual void forward(int layer, std::vector<Ptr<Blob> > &layerOutputs) = 0;
+        //[Wished feature] Optimized smart forward(). Makes forward only for layers which wasn't changed after previous forward().
+        void forwardOpt(LayerId toLayer);
+        void forwardOpt(const std::vector<LayerId> &toLayers);
+
+        void setBlob(BlobId outputName, const Blob &blob);
+        Blob getBlob(BlobId outputName);
+        
+        void setParam(LayerId layer, int numParam, const Blob &blob);
+        void getParam(LayerId layer, int numParam);
+
+    private:
+
+        struct Impl;
+        Ptr<Impl> impl;
     };
 
     CV_EXPORTS class Importer
     {
     public:
 
-        virtual void populateNetConfiguration(Ptr<NetConfiguration> config) = 0;
+        virtual void populateNet(Net net) = 0;
 
         virtual ~Importer();
     };

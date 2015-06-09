@@ -154,11 +154,8 @@ namespace
                 CV_Error(cv::Error::StsAssert, "Unknown shape of input blob");
             }
 
-            size_t declaredBlobSize = 1;
-            for (int i = 0; i < shape.size(); i++)
-                declaredBlobSize *= shape[i];
-            CV_Assert(declaredBlobSize == protoBlob.data_size());
             dstBlob.create(shape.size(), shape, CV_32F);
+            CV_Assert(protoBlob.data_size() == dstBlob.getMatRef().total());
 
             CV_DbgAssert(protoBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
             float *dstData = dstBlob.getMatRef().ptr<float>();
@@ -167,7 +164,7 @@ namespace
                 dstData[i] = protoBlob.data(i);
         }
 
-        void populateNetConfiguration(Ptr<NetConfiguration> config)
+        void populateNet(Net dstNet)
         {
             int layersSize = net.layer_size();
 

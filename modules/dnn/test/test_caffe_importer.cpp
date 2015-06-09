@@ -22,15 +22,15 @@ static std::string getTestFile(const char *filename)
 TEST(ReadCaffePrototxt_gtsrb, Accuracy)
 {
     Ptr<Importer> importer = createCaffeImporter(getTestFile("gtsrb.prototxt"), getTestFile("gtsrb_iter_36000.caffemodel") );
-    Ptr<NetConfiguration> config = NetConfiguration::create();
-    importer->populateNetConfiguration(config);
+    Net net;
+    importer->populateNet(net);
 }
 
-//TEST(ReadCaffePrototxt_GoogleNet, Accuracy)
-//{
-//    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/googlenet_deploy.prototxt", "");
-//    Ptr<NetConfiguration> config = NetConfiguration::create();
-//    importer->populateNetConfiguration(config);
-//}
+TEST(ReadCaffePrototxt_GoogleNet, Accuracy)
+{
+    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/googlenet_deploy.prototxt", "");
+    Net net;
+    importer->populateNet(net);
+}
 
 }
