@@ -97,6 +97,7 @@ namespace cv{
     void extractCN(Mat _patch, Mat & cnFeatures) const;
     void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const;
     void calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const;
+    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response)const;
     
     void shiftRows(Mat& mat) const; 
     void shiftRows(Mat& mat, int n) const;
@@ -110,8 +111,10 @@ namespace cv{
     Mat y,yf; 	// training response and its FFT
     Mat x,xf; 	// observation and its FFT
     Mat k,kf;	// dense gaussian kernel and its FFT
-    Mat new_alphaf, alphaf;	// learning rate
-    Mat z, new_z;
+    Mat kf_lambda; // kf+lambda
+    Mat new_alphaf, alphaf;	// training coefficients
+    Mat new_alphaf_den, alphaf_den; // for splitted training coefficients
+    Mat z, new_z; // model
     Mat response; // detection result
     
     bool resizeImage; // resize the image whenever needed and the patch size is large
@@ -219,7 +222,11 @@ namespace cv{
     // detection part
     if(frame>0){
        denseGaussKernel(params.sigma,x,z,k);
-       calcResponse(alphaf,k,response);
+       if(params.splitCoeff){ 
+	calcResponse(alphaf,alphaf_den,k,response);
+       }else{
+	calcResponse(alphaf,k,response);
+       }
        minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
        roi.x+=(maxLoc.x-roi.width/2+1);roi.y+=(maxLoc.y-roi.height/2+1);
        
@@ -235,7 +242,7 @@ namespace cv{
     denseGaussKernel(params.sigma,x,x,k);
     
     fft2(k,kf);
-    kf=kf+params.lambda;
+    kf_lambda=kf+params.lambda;
     
     /* TODO: optimize this element-wise division
      * new_alphaf=yf./kf
@@ -243,11 +250,17 @@ namespace cv{
      */ 
     new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols); 
     std::complex<double> temp;
-    for(int i=0;i<yf.rows;i++){
-      for(int j=0;j<yf.cols;j++){
-	temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf.at<Vec2d>(i,j)[0],kf.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
-	new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
-	new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
+    
+    if(params.splitCoeff){
+      mulSpectrums(yf,kf,new_alphaf,0);
+      mulSpectrums(kf,kf_lambda,new_alphaf_den,0);
+    }else{
+      for(int i=0;i<yf.rows;i++){
+	for(int j=0;j<yf.cols;j++){
+	  temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf_lambda.at<Vec2d>(i,j)[0],kf_lambda.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
+	  new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
+	  new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
+	}
       }
     }
     
@@ -255,9 +268,11 @@ namespace cv{
     new_z=x.clone();
     if(frame==0){
       alphaf=new_alphaf.clone();
+      if(params.splitCoeff)alphaf_den=new_alphaf_den.clone();
       z=x.clone();
     }else{
       alphaf=(1.0-params.interp_factor)*alphaf+params.interp_factor*new_alphaf;
+      if(params.splitCoeff)alphaf_den=(1.0-params.interp_factor)*alphaf_den+params.interp_factor*new_alphaf_den;
       z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
     }
   
@@ -468,9 +483,12 @@ namespace cv{
     pixelWiseMult(_xf,_yf,xyf_v,0,true);
     sumChannels(xyf_v,xyf);
     ifft2(xyf,xyf);
-//     shiftRows(xyf, _x.rows/2);
-//     shiftCols(xyf, _x.cols/2);
-
+    
+    if(params.wrapKernel){
+      shiftRows(xyf, _x.rows/2);
+      shiftCols(xyf, _x.cols/2);
+    }
+    
     //(xx + yy - 2 * xy) / numel(x)
     xy=(normX+normY-2*xyf)/(_x.rows*_x.cols*_x.channels());
 
@@ -559,6 +577,26 @@ namespace cv{
     mulSpectrums(_alphaf,_kf,spec,0,false);
     ifft2(spec,_response);
   }
+  
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response)const {
+    Mat _kf;
+    fft2(_k,_kf);
+    Mat spec;
+    Mat spec2=Mat_<Vec2d >(_k.rows, _k.cols); 
+    std::complex<double> temp;
+    
+    mulSpectrums(_alphaf,_kf,spec,0,false);
+    
+    for(int i=0;i<_k.rows;i++){
+      for(int j=0;j<_k.cols;j++){
+	temp=std::complex<double>(spec.at<Vec2d>(i,j)[0],spec.at<Vec2d>(i,j)[1])/(std::complex<double>(_alphaf_den.at<Vec2d>(i,j)[0],_alphaf_den.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
+	spec2.at<Vec2d >(i,j)[0]=temp.real();
+	spec2.at<Vec2d >(i,j)[1]=temp.imag();
+      }
+    }
+      
+    ifft2(spec2,_response);
+  }
   /*----------------------------------------------------------------------*/
   
   /*
@@ -570,8 +608,10 @@ namespace cv{
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
       resize=true;
-      max_patch_size=100*100;
+      max_patch_size=80*80;
       descriptor=CN;
+      splitCoeff=true;
+      wrapKernel=false;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){}

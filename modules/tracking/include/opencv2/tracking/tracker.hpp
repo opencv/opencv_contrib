@@ -1210,6 +1210,8 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     double interp_factor;         // linear interpolation factor for adaptation
     double output_sigma_factor;   // spatial bandwidth (proportional to target)    
     bool resize;                  // activate the resize feature to improve the processing speed
+    bool splitCoeff;              // split the training coefficients into two matrices
+    bool wrapKernel;              // wrap around the kernel values
     int max_patch_size;           // threshold for the ROI size
     MODE descriptor;              // descriptor type
   };
