@@ -263,11 +263,11 @@ namespace cv
 			(*proxyN)++;
 		}
 
-		void TrackerTLDModel::printme(FILE*  port)
+		void TrackerTLDModel::printme(FILE* port)
 		{
-			//dfprintf((port, "TrackerTLDModel:\n"));
-			//dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
-			//dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
+			dfprintf((port, "TrackerTLDModel:\n"));
+			dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
+			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
 
 

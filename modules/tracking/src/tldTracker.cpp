@@ -89,9 +89,7 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
         myBoundingBox.width *= scale;
         myBoundingBox.height *= scale;
     }
-    model = Ptr<TrackerTLDModel>(new TrackerTLDModel(params, image_gray, myBoundingBox, data->getMinSize()));
-	TrackerTLDModel* tldModel = ((TrackerTLDModel*)static_cast<TrackerModel*>(model));
-    
+    model = Ptr<TrackerTLDModel>(new TrackerTLDModel(params, image_gray, myBoundingBox, data->getMinSize()));    
 
     data->confident = false;
     data->failedLastTime = false;

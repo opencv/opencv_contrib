@@ -93,7 +93,7 @@ static void onMouse(int event, int x, int y, int, void*)
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 {
 	//
 	//  "MIL", "BOOSTING", "MEDIANFLOW", "TLD"
@@ -152,12 +152,12 @@ int main(int argc, char** argv)
 	int frameCounter = 0;
 
 	//Time measurment
-	float e3 = getTickCount();
+	int64 e3 = getTickCount();
 
 	for (;;)
 	{
 		//Time measurment
-		float e1 = getTickCount();
+		int64 e1 = getTickCount();
 		//Frame num
 		frameCounter++;
 		if (frameCounter == NUM_TEST_FRAMES) break;
@@ -208,18 +208,18 @@ int main(int argc, char** argv)
 
 
 			//Time measurment
-			float e2 = getTickCount();
-			float t1 = (e2 - e1) / getTickFrequency();
-			cout << frameCounter << "\tframe :  " << t1 * 1000 << "ms" << endl;
+			int64 e2 = getTickCount();
+			double t1 = (e2 - e1) / getTickFrequency();
+			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
 
 			//waitKey(0);
 		}
 	}
 
 	//Time measurment
-	float e4 = getTickCount();
-	float t2 = (e4 - e3) / getTickFrequency();
-	cout << "Average Time for Frame:  " << t2 * 1000 / frameCounter << "ms" << endl;
+	int64 e4 = getTickCount();
+	double t2 = (e4 - e3) / getTickFrequency();
+	cout << "Average Time for Frame:  " << t2 * 1000.0 / frameCounter << "ms" << endl;
 	cout << "Average FPS:  " << 1.0 / t2*frameCounter << endl;
 
 

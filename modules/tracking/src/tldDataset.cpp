@@ -49,7 +49,7 @@ namespace cv
 		int frameNum = 0;
 		bool flagPNG = false;
 
-		cv::Rect2d tld_InitDataset(int datasetInd, char* rootPath)
+		cv::Rect2d tld_InitDataset(int datasetInd,const char* rootPath)
 		{
 			char* folderName = "";
 			int x, y, w, h;
