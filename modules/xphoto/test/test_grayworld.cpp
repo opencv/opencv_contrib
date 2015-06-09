@@ -53,9 +53,9 @@ namespace cvtest {
         i = 0;
         for ( ; i < N3; i += 3 )
         {
-            dst_data[i]     = src_data[i]     * inv1;
-            dst_data[i + 1] = src_data[i + 1] * inv2;
-            dst_data[i + 2] = src_data[i + 2] * inv3;
+            dst_data[i]     = (uchar)(src_data[i]     * inv1);
+            dst_data[i + 1] = (uchar)(src_data[i + 1] * inv2);
+            dst_data[i + 2] = (uchar)(src_data[i + 2] * inv3);
         }
     }
 
