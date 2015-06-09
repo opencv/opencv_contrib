@@ -90,9 +90,30 @@ String toString(const T &v)
     return ss.str();
 }
 
+int Layer::getNumInputs()
+{
+    return 1;
+}
+
+int Layer::getNumOutputs()
+{
+    return 1;
+}
+
 cv::String Layer::getInputName(int inputNum)
 {
     return "input" + toString(inputNum);
+}
+
+
+cv::String Layer::getOutputName(int outputNum)
+{
+    return "output" + toString(outputNum);
+}
+
+Layer::~Layer()
+{
+
 }
 
 }

@@ -3,7 +3,7 @@ set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 option(WITH_PROTOBUF "Build with libprotobuf" ON)
 
 if(NOT WITH_PROTOBUF)
-	message(FATAL_ERROR "libprotobuf is required for dnn module")
+  message(FATAL_ERROR "libprotobuf is required for dnn module")
 endif()
 
 find_package( Protobuf REQUIRED )
@@ -14,8 +14,12 @@ else()
   message(FATAL_ERROR "Could not find PROTOBUF Compiler")
 endif()
 
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses)
+
 file(GLOB PROTO_FILES src/*.proto)
 PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
+
+include_directories(include src/caffe)
 
 ocv_add_module(dnn opencv_imgproc opencv_core opencv_highgui WRAP python matlab)
 ocv_glob_module_sources(${PROTO_SRCS} ${PROTO_HDRS})
