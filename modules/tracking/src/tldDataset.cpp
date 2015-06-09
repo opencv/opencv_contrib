@@ -51,61 +51,61 @@ namespace cv
 
 		cv::Rect2d tld_InitDataset(int datasetInd,const char* rootPath)
 		{
-			char* folderName = "";
+			char* folderName = (char *)"";
 			int x, y, w, h;
 			flagPNG = false;
 
 			frameNum = 1;
 
 			if (datasetInd == 1) {
-				folderName = "01_david";
+				folderName = (char *)"01_david";
 				x = 165, y = 83;
 				w = 51; h = 54;
 				frameNum = 100;
 			}
 			if (datasetInd == 2) {
-				folderName = "02_jumping";
+				folderName = (char *)"02_jumping";
 				x = 147, y = 110;
 				w = 33; h = 32;
 			}
 			if (datasetInd == 3) {
-				folderName = "03_pedestrian1";
+				folderName = (char *)"03_pedestrian1";
 				x = 47, y = 51;
 				w = 21; h = 36;
 			}
 			if (datasetInd == 4) {
-				folderName = "04_pedestrian2";
+				folderName = (char *)"04_pedestrian2";
 				x = 130, y = 134;
 				w = 21; h = 53;
 			}
 			if (datasetInd == 5) {
-				folderName = "05_pedestrian3";
+				folderName = (char *)"05_pedestrian3";
 				x = 154, y = 102;
 				w = 24; h = 52;
 			}
 			if (datasetInd == 6) {
-				folderName = "06_car";
+				folderName = (char *)"06_car";
 				x = 142, y = 125;
 				w = 90; h = 39;
 			}
 			if (datasetInd == 7) {
-				folderName = "07_motocross";
+				folderName = (char *)"07_motocross";
 				x = 290, y = 43;
 				w = 23; h = 40;
 				flagPNG = true;
 			}
 			if (datasetInd == 8) {
-				folderName = "08_volkswagen";
+				folderName = (char *)"08_volkswagen";
 				x = 273, y = 77;
 				w = 27; h = 25;
 			}
 			if (datasetInd == 9) {
-				folderName = "09_carchase";
+				folderName = (char *)"09_carchase";
 				x = 145, y = 84;
 				w = 54; h = 37;
 			}
 			if (datasetInd == 10){
-				folderName = "10_panda";
+				folderName = (char *)"10_panda";
 				x = 58, y = 100;
 				w = 27; h = 22;
 			}

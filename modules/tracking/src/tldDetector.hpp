@@ -94,7 +94,7 @@ namespace cv
 
 			friend class MyMouseCallbackDEBUG;
 			void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
-			inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double originalVariance, Point pt, Size size);
+			inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
 		};
 	}
 }

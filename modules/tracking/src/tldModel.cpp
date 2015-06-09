@@ -46,8 +46,8 @@ namespace cv
 	namespace tld
 	{
 		//Constructor
-		TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize) :minSize_(minSize),
-			timeStampPositiveNext(0), timeStampNegativeNext(0), params_(params), boundingBox_(boundingBox)
+		TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize):
+			timeStampPositiveNext(0), timeStampNegativeNext(0), minSize_(minSize), params_(params), boundingBox_(boundingBox)
 		{
 			std::vector<Rect2d> closest, scanGrid;
 			Mat scaledImg, blurredImg, image_blurred;
