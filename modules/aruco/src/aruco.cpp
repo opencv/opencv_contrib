@@ -218,7 +218,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
  * Identify square candidates according to a marker dictionary
  */
 void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
-                         DictionaryData dictionary, OutputArrayOfArrays _accepted,
+                         const DictionaryData &dictionary, OutputArrayOfArrays _accepted,
                          OutputArray _ids, OutputArrayOfArrays _rejected = noArray()) {
 
     int ncandidates = _candidates.total();
@@ -356,7 +356,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markersize,
   * Given a board configuration and a set of detected markers, returns the corresponding
   * image points and object points to call solvePnP
   */
-void _getBoardObjectAndImagePoints(Board board, InputArray _detectedIds,
+void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
                                    InputArrayOfArrays _detectedCorners,
                                    OutputArray _imgPoints, OutputArray _objPoints) {
 
@@ -395,7 +395,7 @@ void _getBoardObjectAndImagePoints(Board board, InputArray _detectedIds,
 
 /**
   */
-void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, Board board,
+void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board &board,
                        InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
                        OutputArray _tvec) {
 
@@ -523,7 +523,7 @@ void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img)
 
 /**
  */
-void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
+void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img) {
 
     DictionaryData dictData = _getDictionaryData(board.dictionary);
 
@@ -619,11 +619,11 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
 
 /**
   */
-double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > > corners,
-                            std::vector<std::vector<int> > ids, Board board, Size imageSize,
-                            InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
-                            OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
-                            TermCriteria criteria) {
+double calibrateCameraAruco(const std::vector<std::vector<std::vector<cv::Point2f> > > &corners,
+                            const std::vector<std::vector<int> > &ids, const Board &board,
+                            Size imageSize, InputOutputArray _cameraMatrix,
+                            InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
+                            OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
 
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function

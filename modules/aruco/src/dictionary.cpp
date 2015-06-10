@@ -112,7 +112,7 @@ class DictionaryData {
      * @brief Given an image and four corners positions, identify the marker.
      * Returns whether if marker is identified or not.
      */
-    bool identify(InputArray _image, InputOutputArray _corners, int &idx) {
+    bool identify(InputArray _image, InputOutputArray _corners, int &idx) const {
         // get bits
         cv::Mat candidateBits = _extractBits(_image, _corners);
         if (_getBorderErrors(candidateBits)>1)
@@ -159,7 +159,7 @@ class DictionaryData {
     /**
      * @brief Draw a canonical marker image
      */
-    void drawMarker(int id, int sidePixels, OutputArray _img) {
+    void drawMarker(int id, int sidePixels, OutputArray _img) const {
         _img.create(sidePixels, sidePixels, CV_8UC1);
 
         // create small marker with 1 pixel per bin
@@ -182,7 +182,7 @@ class DictionaryData {
     /**
       * Transform matrix of bits to list of bytes in the 4 rotations
       */
-    cv::Mat _getByteListFromBits(cv::Mat bits) {
+    cv::Mat _getByteListFromBits(const cv::Mat &bits) const {
 
         int nbytes = (bits.cols * bits.rows) / 8;
         if ((bits.cols * bits.rows) % 8 != 0)
@@ -223,7 +223,7 @@ class DictionaryData {
     /**
       * Transform list of bytes to matrix of bits
       */
-    cv::Mat _getBitsFromByteList(cv::Mat byteList) {
+    cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
         cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
@@ -254,7 +254,7 @@ class DictionaryData {
       * Returned matrix has one row per dictionary marker and two columns
       * Column 0 is the distance to the candidate, Column 1 is the rotation with minimum distance
       */
-    cv::Mat _getDistances(cv::Mat byteList) {
+    cv::Mat _getDistances(const cv::Mat &byteList) const {
 
         cv::Mat res(bytesList.rows, 2, CV_32SC1);
         for (unsigned int m = 0; m < bytesList.rows; m++) {
@@ -283,7 +283,7 @@ class DictionaryData {
       * Given an input image and a candidate corners, extract the bits of the candidate, including
       * the border
       */
-    cv::Mat _extractBits(InputArray _image, InputOutputArray _corners) {
+    cv::Mat _extractBits(InputArray _image, InputOutputArray _corners) const {
 
         CV_Assert(_image.getMat().channels() == 1);
 
@@ -323,7 +323,7 @@ class DictionaryData {
     /**
       * Return number of erroneous bits in border, i.e. number of white bits in border.
       */
-    int _getBorderErrors(cv::Mat bits) {
+    int _getBorderErrors(const cv::Mat &bits) const {
         int sizeWithBorders = markerSize + 2;
         int totalErrors = 0;
         for (int y = 0; y < sizeWithBorders; y++) {

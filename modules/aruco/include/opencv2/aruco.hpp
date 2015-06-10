@@ -194,7 +194,7 @@ struct CV_EXPORTS Board {
  * to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
  */
-CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Board board,
+CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Board &board,
                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                   OutputArray tvec);
 
@@ -291,7 +291,7 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
+CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray img);
 
 
 
@@ -321,10 +321,11 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(std::vector<std::vector<std::vector<Point2f> > > corners,
-                                       std::vector<std::vector<int> > ids, Board board,
-                                       Size imageSize, InputOutputArray cameraMatrix,
-                                       InputOutputArray distCoeffs,
+CV_EXPORTS double calibrateCameraAruco(const
+                                       std::vector<std::vector<std::vector<Point2f> > > &corners,
+                                       const std::vector<std::vector<int> > & ids,
+                                       const Board &board, Size imageSize,
+                                       InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
                                        OutputArrayOfArrays rvecs = noArray(),
                                        OutputArrayOfArrays tvecs = noArray(), int flags = 0,
                                        TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
