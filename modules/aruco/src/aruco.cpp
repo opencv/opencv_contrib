@@ -58,6 +58,7 @@ using namespace std;
 
 
 /**
+ * Detect square candidates in the input image
  */
 void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int threshParam,
                        float minLength, OutputArray _thresholdedImage = noArray()) {
@@ -83,15 +84,16 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
 
     /// 3. DETECT RECTANGLES
     CV_Assert(minLength > 0);
-    int minSize = minLength * std::max(thresh.cols, thresh.rows);
+    int minLengthPixels = minLength * std::max(thresh.cols, thresh.rows);
     cv::Mat contoursImg;
     thresh.copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours(contoursImg, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
     std::vector<std::vector<Point2f> > candidates; // vector of marker candidates
+    // now filter list of contours
     for (unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter
-        if (contours[i].size() < minSize)
+        if (contours[i].size() < minLengthPixels)
             continue;
 
         // check is square and is convex
@@ -213,6 +215,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
 
 
 /**
+ * Identify square candidates according to a marker dictionary
  */
 void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
                          DictionaryData dictionary, OutputArrayOfArrays _accepted,
@@ -233,6 +236,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
     else
         grey = _image.getMat();
 
+    // try to identify each candidate
     for (int i = 0; i < ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
@@ -243,6 +247,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
             rejected.push_back(_candidates.getMat(i));
     }
 
+    // parse output
     _accepted.create((int)accepted.size(), 1, CV_32FC2);
     for (unsigned int i = 0; i < accepted.size(); i++) {
         _accepted.create(4, 1, CV_32FC2, i, true);
@@ -267,17 +272,18 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
 
 
 /**
+  * Return object points for the system centered in a single marker, given the marker length
   */
-void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPnts) {
+void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
 
     CV_Assert(markerLength > 0);
 
-    _objPnts.create(4, 1, CV_32FC3);
-    cv::Mat objPnts = _objPnts.getMat();
-    objPnts.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength / 2., markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength / 2., markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength / 2., -markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength / 2., -markerLength / 2., 0);
+    _objPoints.create(4, 1, CV_32FC3);
+    cv::Mat objPoints = _objPoints.getMat();
+    objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength / 2., markerLength / 2., 0);
+    objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength / 2., markerLength / 2., 0);
+    objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength / 2., -markerLength / 2., 0);
+    objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength / 2., -markerLength / 2., 0);
 }
 
 
@@ -296,7 +302,7 @@ const DictionaryData &_getDictionaryData(DICTIONARY name) {
 
 /**
   */
-void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _imgPoints,
+void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int threshParam,
                    float minLength) {
 
@@ -312,11 +318,11 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
     /// STEP 2: Check candidate codification (identify markers)
     DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    _identifyCandidates(grey, candidates, dictionaryData, _imgPoints, _ids, _rejectedImgPoints);
+    _identifyCandidates(grey, candidates, dictionaryData, _corners, _ids, _rejectedImgPoints);
 
-    for (int i = 0; i < _imgPoints.total(); i++) {
+    for (int i = 0; i < _corners.total(); i++) {
         /// STEP 3: Corner refinement
-        cv::cornerSubPix(grey, _imgPoints.getMat(i), cvSize(5, 5), cvSize(-1, -1),
+        cv::cornerSubPix(grey, _corners.getMat(i), cvSize(5, 5), cvSize(-1, -1),
                          cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 30, 0.1));
     }
 }
@@ -325,19 +331,21 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays _imgPoints, float markersize,
+void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markersize,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
                                OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
 
     cv::Mat markerObjPoints;
     _getSingleMarkerObjectPoints(markersize, markerObjPoints);
-    _rvecs.create((int)_imgPoints.total(), 1, CV_32FC1);
-    _tvecs.create((int)_imgPoints.total(), 1, CV_32FC1);
+    int nMarkers = _corners.total();
+    _rvecs.create(nMarkers, 1, CV_32FC1);
+    _tvecs.create(nMarkers, 1, CV_32FC1);
 
-    for (int i = 0; i < _imgPoints.total(); i++) {
+    // for each marker, calculate its pose
+    for (int i = 0; i < nMarkers; i++) {
         _rvecs.create(3, 1, CV_64FC1, i, true);
         _tvecs.create(3, 1, CV_64FC1, i, true);
-        cv::solvePnP(markerObjPoints, _imgPoints.getMat(i), _cameraMatrix, _distCoeffs,
+        cv::solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs,
                      _rvecs.getMat(i), _tvecs.getMat(i));
     }
 }
@@ -345,52 +353,58 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _imgPoints, float markersize,
 
 
 /**
+  * Given a board configuration and a set of detected markers, returns the corresponding
+  * image points and object points to call solvePnP
   */
 void _getBoardObjectAndImagePoints(Board board, InputArray _detectedIds,
-                                   InputArrayOfArrays _detectedImagePoints,
-                                   OutputArray _imagePoints, OutputArray _objectPoints) {
+                                   InputArrayOfArrays _detectedCorners,
+                                   OutputArray _imgPoints, OutputArray _objPoints) {
+
+    int nDetectedMarkets = _detectedIds.total();
+
     std::vector<cv::Point3f> objPnts;
-    objPnts.reserve(_detectedIds.total());
+    objPnts.reserve(nDetectedMarkets);
 
     std::vector<cv::Point2f> imgPnts;
-    imgPnts.reserve(_detectedIds.total());
+    imgPnts.reserve(nDetectedMarkets);
 
-    for (int i = 0; i < _detectedIds.getMat().total(); i++) {
+    // look for detected markers that belong to the board and get their information
+    for (int i = 0; i < nDetectedMarkets; i++) {
         int currentId = _detectedIds.getMat().ptr<int>(0)[i];
         for (int j = 0; j < board.ids.size(); j++) {
             if (currentId == board.ids[j]) {
                 for (int p = 0; p < 4; p++) {
                     objPnts.push_back(board.objPoints[j][p]);
-                    imgPnts.push_back(_detectedImagePoints.getMat(i).ptr<cv::Point2f>(0)[p]);
+                    imgPnts.push_back(_detectedCorners.getMat(i).ptr<cv::Point2f>(0)[p]);
                 }
             }
         }
     }
-    _objectPoints.create((int)objPnts.size(), 1, CV_32FC3);
-    for (int i = 0; i < objPnts.size(); i++)
-        _objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
 
-    _imagePoints.create((int)objPnts.size(), 1, CV_32FC2);
+    // create output
+    _objPoints.create((int)objPnts.size(), 1, CV_32FC3);
+    for (int i = 0; i < objPnts.size(); i++)
+        _objPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
+
+    _imgPoints.create((int)objPnts.size(), 1, CV_32FC2);
     for (int i = 0; i < imgPnts.size(); i++)
-        _imagePoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
+        _imgPoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
 }
 
 
 
 /**
   */
-void estimatePoseBoard(InputArrayOfArrays _imgPoints, InputArray _ids, Board board,
+void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, Board board,
                        InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
                        OutputArray _tvec) {
 
-    cv::Mat objectPointsConcatenation, imagePointsConcatenation;
-    _getBoardObjectAndImagePoints(board, _ids, _imgPoints, imagePointsConcatenation,
-                                  objectPointsConcatenation);
+    cv::Mat objPoints, imgPoints;
+    _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
 
     _rvec.create(3, 1, CV_64FC1);
     _tvec.create(3, 1, CV_64FC1);
-    cv::solvePnP(objectPointsConcatenation, imagePointsConcatenation, _cameraMatrix, _distCoeffs,
-                 _rvec, _tvec);
+    cv::solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec);
 }
 
 
@@ -403,9 +417,12 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
     int totalMarkers = width * height;
     res.ids.resize(totalMarkers);
     res.objPoints.reserve(totalMarkers);
+
+    // fill ids with first identifiers
     for (int i = 0; i < totalMarkers; i++)
         res.ids[i] = i;
 
+    // calculate Board objPoints
     float maxY = height * markerSize + (height - 1) * markerSeparation;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -428,7 +445,7 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
 
 /**
  */
-void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _markers,
+void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _corners,
                          InputArray _ids, cv::Scalar borderColor) {
 
     // calculate colors
@@ -441,17 +458,22 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _m
     cv::Mat outImg = _out.getMat();
     _in.getMat().copyTo(outImg);
 
-    for (int i = 0; i < _markers.total(); i++) {
-        cv::Mat currentMarker = _markers.getMat(i);
+    int nMarkers = _corners.total();
+    for (int i = 0; i < nMarkers; i++) {
+        cv::Mat currentMarker = _corners.getMat(i);
+
+        // draw marker sides
         for (int j = 0; j < 4; j++) {
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
             p1 = currentMarker.ptr<cv::Point2f>(0)[(j + 1) % 4];
             cv::line(outImg, p0, p1, borderColor, 2);
         }
+        // draw first corner mark
         cv::rectangle(outImg, currentMarker.ptr<cv::Point2f>(0)[0] - Point2f(3, 3),
                       currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 2,
                       cv::LINE_AA);
+        // draw ID
         if (_ids.total() != 0) {
             Point2f cent(0, 0);
             for (int p = 0; p < 4; p++)
@@ -507,11 +529,10 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
 
     _img.create(outSize, CV_8UC1);
     cv::Mat out = _img.getMat();
-    //    cv::Mat out(outSize, CV_8UC1, cv::Scalar::all(255));
     out.setTo(cv::Scalar::all(255));
     cv::Mat outNoMargins = out.colRange(2, out.cols - 2).rowRange(2, out.rows - 2);
 
-    // look for XY size
+    // calculate max and min values in XY plane
     CV_Assert(board.objPoints.size() > 0);
     float minX, maxX, minY, maxY;
     minX = maxX = board.objPoints[0][0].x;
@@ -577,13 +598,14 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
         // remove perspective
         cv::Mat transformation = cv::getPerspectiveTransform(inCorners, outCorners);
         cv::Mat aux;
+        const char borderValue = 127;
         cv::warpPerspective(tinyMarker, aux, transformation, markerZone.size(), cv::INTER_NEAREST,
-                            cv::BORDER_CONSTANT, cv::Scalar::all(127));
+                            cv::BORDER_CONSTANT, cv::Scalar::all(borderValue));
 
-        // copy only not border pixels
+        // copy only not-border pixels
         for (int y = 0; y < aux.rows; y++) {
             for (int x = 0; x < aux.cols; x++) {
-                if (aux.at<unsigned char>(y, x) == 127)
+                if (aux.at<unsigned char>(y, x) == borderValue)
                     continue;
                 markerZone.at<unsigned char>(y, x) = aux.at<unsigned char>(y, x);
             }
@@ -597,7 +619,7 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
 
 /**
   */
-double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > > imgPoints,
+double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > > corners,
                             std::vector<std::vector<int> > ids, Board board, Size imageSize,
                             InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
                             OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
@@ -606,9 +628,10 @@ double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > >
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     std::vector<cv::Mat> processedObjectPoints, processedImagePoints;
-    for (int frame = 0; frame < imgPoints.size(); frame++) {
+    int nFrames = corners.size();
+    for (int frame = 0; frame < nFrames; frame++) {
         cv::Mat currentImgPoints, currentObjPoints;
-        _getBoardObjectAndImagePoints(board, ids[frame], imgPoints[frame], currentImgPoints,
+        _getBoardObjectAndImagePoints(board, ids[frame], corners[frame], currentImgPoints,
                                       currentObjPoints);
         if (currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);

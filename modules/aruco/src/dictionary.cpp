@@ -57,6 +57,9 @@ using namespace std;
 
 
 
+/**
+  * Hamming weight look up table from 0 to 255
+  */
 const unsigned char hammingWeightLUT[] = {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
@@ -76,13 +79,14 @@ const unsigned char hammingWeightLUT[] = {
 class DictionaryData {
 
   public:
-    cv::Mat codes;
+    cv::Mat bytesList;
     int markerSize;
     int maxCorrectionBits; // maximum number of bits that can be corrected
     // float borderSize; // black border size respect to inner bits size
 
 
-
+    /**
+      */
     DictionaryData(const char * bytes = 0, int _markerSize = 0, int dictsize = 0,
                    int _maxcorr = 0) {
         markerSize = _markerSize;
@@ -90,11 +94,14 @@ class DictionaryData {
         int nbytes = (markerSize * markerSize) / 8;
         if ((markerSize * markerSize) % 8 != 0)
             nbytes++;
-        codes = cv::Mat(dictsize, nbytes, CV_8UC4);
+
+        // save bytes in internal format
+        // bytesList.at<cv::Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
+        bytesList = cv::Mat(dictsize, nbytes, CV_8UC4);
         for (int i = 0; i < dictsize; i++) {
             for (int j = 0; j < nbytes; j++) {
                 for (int k = 0; k < 4; k++)
-                    codes.at<cv::Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
+                    bytesList.at<cv::Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
             }
         }
     }
@@ -102,12 +109,13 @@ class DictionaryData {
 
 
     /**
-     * @brief Given an image and four corners positions, identify the marker
+     * @brief Given an image and four corners positions, identify the marker.
+     * Returns whether if marker is identified or not.
      */
-    bool identify(InputArray _image, InputOutputArray _imgPoints, int &idx) {
+    bool identify(InputArray _image, InputOutputArray _corners, int &idx) {
         // get bits
-        cv::Mat candidateBits = _extractBits(_image, _imgPoints);
-        if (!_isBorderValid(candidateBits))
+        cv::Mat candidateBits = _extractBits(_image, _corners);
+        if (_getBorderErrors(candidateBits)>1)
             return false; // not really necessary
         cv::Mat onlyBits =
             candidateBits.rowRange(1, candidateBits.rows - 1).colRange(1, candidateBits.rows - 1);
@@ -121,7 +129,7 @@ class DictionaryData {
         unsigned int closestDistance = markerSize * markerSize + 1;
         cv::Mat candidateDistances = _getDistances(candidateBytes);
 
-        for (int i = 0; i < codes.rows; i++) {
+        for (int i = 0; i < bytesList.rows; i++) {
             if (candidateDistances.ptr<int>(i)[0] < closestDistance) {
                 closestDistance = candidateDistances.ptr<int>(i)[0];
                 closestId = i;
@@ -132,11 +140,11 @@ class DictionaryData {
         // return closest id
         if (closestId != -1 && closestDistance <= maxCorrectionBits) {
             idx = closestId;
-            // correct imgPoints positions
+            // correct corners positions
             if (rotation != 0) {
-                cv::Mat copyPoints = _imgPoints.getMat().clone();
+                cv::Mat copyPoints = _corners.getMat().clone();
                 for (int j = 0; j < 4; j++)
-                    _imgPoints.getMat().ptr<cv::Point2f>(0)[j] =
+                    _corners.getMat().ptr<cv::Point2f>(0)[j] =
                         copyPoints.ptr<cv::Point2f>(0)[(j + 4 - rotation) % 4];
             }
             return true;
@@ -153,11 +161,16 @@ class DictionaryData {
      */
     void drawMarker(int id, int sidePixels, OutputArray _img) {
         _img.create(sidePixels, sidePixels, CV_8UC1);
+
+        // create small marker with 1 pixel per bin
         cv::Mat tinyMarker(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
         cv::Mat innerRegion =
             tinyMarker.rowRange(1, tinyMarker.rows - 1).colRange(1, tinyMarker.cols - 1);
-        cv::Mat bits = 255 * _getBitsFromByteList(codes.rowRange(id, id + 1));
+        // put inner bits
+        cv::Mat bits = 255 * _getBitsFromByteList(bytesList.rowRange(id, id + 1));
         bits.copyTo(innerRegion);
+
+        // resize tiny marker to output size
         cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, cv::INTER_NEAREST);
     }
 
@@ -167,6 +180,7 @@ class DictionaryData {
 
 
     /**
+      * Transform matrix of bits to list of bytes in the 4 rotations
       */
     cv::Mat _getByteListFromBits(cv::Mat bits) {
 
@@ -207,14 +221,15 @@ class DictionaryData {
 
 
     /**
+      * Transform list of bytes to matrix of bits
       */
     cv::Mat _getBitsFromByteList(cv::Mat byteList) {
         cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
         int currentByteIdx = 0;
-        unsigned char currentByte =
-            byteList.ptr<cv::Vec4b>(0)[0][0]; // we only need the bytes in normal rotation
+        // we only need the bytes in normal rotation
+        unsigned char currentByte = byteList.ptr<cv::Vec4b>(0)[0][0];
         int currentBit = 0;
         for (int row = 0; row < bits.rows; row++) {
             for (int col = 0; col < bits.cols; col++) {
@@ -235,17 +250,21 @@ class DictionaryData {
 
 
     /**
+      * Calculate all distances of input byteList to markers in dictionary
+      * Returned matrix has one row per dictionary marker and two columns
+      * Column 0 is the distance to the candidate, Column 1 is the rotation with minimum distance
       */
     cv::Mat _getDistances(cv::Mat byteList) {
 
-        cv::Mat res(codes.rows, 2, CV_32SC1);
-        for (unsigned int m = 0; m < codes.rows; m++) {
+        cv::Mat res(bytesList.rows, 2, CV_32SC1);
+        for (unsigned int m = 0; m < bytesList.rows; m++) {
             res.ptr<int>(m)[0] = 10e8;
             for (unsigned int r = 0; r < 4; r++) {
                 int currentHamming = 0;
+                // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
                 for (int b = 0; b < byteList.total(); b++) {
                     unsigned char xorRes =
-                        codes.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
+                        bytesList.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
                     currentHamming += hammingWeightLUT[xorRes];
                 }
 
@@ -260,7 +279,11 @@ class DictionaryData {
 
 
 
-    cv::Mat _extractBits(InputArray _image, InputOutputArray _imgPoints) {
+    /**
+      * Given an input image and a candidate corners, extract the bits of the candidate, including
+      * the border
+      */
+    cv::Mat _extractBits(InputArray _image, InputOutputArray _corners) {
 
         CV_Assert(_image.getMat().channels() == 1);
 
@@ -274,7 +297,7 @@ class DictionaryData {
         resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
 
         // remove perspective
-        cv::Mat transformation = cv::getPerspectiveTransform(_imgPoints, resultImgCorners);
+        cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
         cv::warpPerspective(_image, resultImg, transformation,
                             cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
 
@@ -297,8 +320,10 @@ class DictionaryData {
     }
 
 
-
-    bool _isBorderValid(cv::Mat bits) {
+    /**
+      * Return number of erroneous bits in border, i.e. number of white bits in border.
+      */
+    int _getBorderErrors(cv::Mat bits) {
         int sizeWithBorders = markerSize + 2;
         int totalErrors = 0;
         for (int y = 0; y < sizeWithBorders; y++) {
@@ -313,16 +338,13 @@ class DictionaryData {
             if (bits.ptr<unsigned char>(sizeWithBorders - 1)[x] != 0)
                 totalErrors++;
         }
-        if (totalErrors > 1)
-            return false; // markersize is a good value for check border errors
-        else
-            return true;
+        return totalErrors;
     }
 };
 
 
 
-// PREDEFINED DICTIONARIES
+// DictionaryData constructors calls
 const DictionaryData DICT_ARUCO_DATA = DictionaryData(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
 
 

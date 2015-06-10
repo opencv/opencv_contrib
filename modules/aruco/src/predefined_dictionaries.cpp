@@ -45,6 +45,18 @@ namespace aruco {
 
 
 
+/**
+  * Dictionaries are stored as a list of bytes in its four rotations
+  * On each rotation, the marker is divided in bytes assuming a row-major order
+  * This format allows a faster marker identification.
+  * For a dictionary composed by M markers of NxN bits, the structure dimensions should be:
+  * const char name[nMarkers][nBytes][4rotations], or more specifically:
+  * const char name[M][ceil(NxN/8)][4]
+  * The element [i][j][k] represents the j-th byte of the i-th marker in the dictionary
+  * in its k-th rotation.
+  * Each rotation implies a 90 degree rotation of the marker in anticlockwise direction.
+  */
+
 const char DICT_ARUCO_BYTES[][4][4] = {
     {
      {132, 33, 8, 0}, {0, 0, 15, 1}, {8, 66, 16, 1}, {248, 0, 0, 0},

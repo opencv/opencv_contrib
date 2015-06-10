@@ -70,7 +70,10 @@ namespace aruco {
 
 
 
-/**** @TODO add doxygen *******/
+/**
+ * @brief Predefined markers dictionaries/sets
+ * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
+ */
 enum DICTIONARY { DICT_ARUCO = 0 };
 
 
@@ -102,7 +105,7 @@ enum DICTIONARY { DICT_ARUCO = 0 };
  *
  */
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
-                              OutputArrayOfArrays imgPoints, OutputArray ids,
+                              OutputArrayOfArrays corners, OutputArray ids,
                               OutputArrayOfArrays rejectedImgPoints = cv::noArray(),
                               int threshParam = 21, float minLength = 0.03);
 
@@ -136,7 +139,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
  * (-markerSize/2, markerSize/2, 0), (markerSize/2, markerSize/2, 0),
  * (markerSize/2, -markerSize/2, 0), (-markerSize/2, -markerSize/2, 0)
  */
-CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markerSize,
+CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerSize,
                                           InputArray cameraMatrix, InputArray distCoeffs,
                                           OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
@@ -191,7 +194,7 @@ struct CV_EXPORTS Board {
  * to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
  */
-CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
+CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Board board,
                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                   OutputArray tvec);
 
@@ -234,7 +237,7 @@ CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, floa
  * Useful for debugging purposes.
  */
 CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
-                                    InputArrayOfArrays markersCorners, InputArray ids = noArray(),
+                                    InputArrayOfArrays corners, InputArray ids = noArray(),
                                     cv::Scalar borderColor = cv::Scalar(0, 255, 0));
 
 
@@ -318,7 +321,7 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(std::vector<std::vector<std::vector<Point2f> > > imgPoints,
+CV_EXPORTS double calibrateCameraAruco(std::vector<std::vector<std::vector<Point2f> > > corners,
                                        std::vector<std::vector<int> > ids, Board board,
                                        Size imageSize, InputOutputArray cameraMatrix,
                                        InputOutputArray distCoeffs,
