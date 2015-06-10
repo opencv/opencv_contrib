@@ -50,26 +50,22 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <iostream>
 
-
-
-namespace cv{ namespace aruco{
+namespace cv {
+namespace aruco {
 
 using namespace std;
 
 
 
-const unsigned char hammingWeightLUT[] =
-{
-    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,
-    4,5,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,
-    4,5,5,6,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,
-    4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,
-    4,5,5,6,5,6,6,7,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,
-    4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,
-    4,5,5,6,4,5,5,6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,
-    4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-    4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
-};
+const unsigned char hammingWeightLUT[] = {
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8};
 
 
 
@@ -79,247 +75,265 @@ const unsigned char hammingWeightLUT[] =
  */
 class DictionaryData {
 
-public:
-
-cv::Mat codes;
-int markerSize;
-int maxCorrectionBits; // maximum number of bits that can be corrected
-// float borderSize; // black border size respect to inner bits size
-
-
-DictionaryData(const char *_bytes=0, int _markerSize=0, int _dictsize=0, int _maxcorr=0)  {
-    markerSize = _markerSize;
-    maxCorrectionBits = _maxcorr;
-    int nbytes = (markerSize*markerSize)/8;
-    if((markerSize*markerSize)%8 != 0) nbytes++;
-    codes = cv::Mat(_dictsize, nbytes, CV_8UC4);
-    for(int i=0; i<_dictsize; i++) {
-        for(int j=0; j<nbytes; j++) {
-            for(int k=0; k<4; k++) codes.at<cv::Vec4b>(i,j)[k] = _bytes[i*(4*nbytes)+k*nbytes+j];
-        }
-    }
-}
+  public:
+    cv::Mat codes;
+    int markerSize;
+    int maxCorrectionBits; // maximum number of bits that can be corrected
+    // float borderSize; // black border size respect to inner bits size
 
 
 
-/**
- * @brief Given an image and four corners positions, identify the marker
- *
- * @param image
- * @param imgPoints corner positions
- * @param idx marker idx if valid
- * @return true if identification is correct, else false
- */
-bool identify(InputArray image, InputOutputArray imgPoints, int &idx) {
-    // get bits
-    cv::Mat candidateBits = _extractBits(image, imgPoints);
-    if(!_isBorderValid(candidateBits)) return false; // not really necessary
-    cv::Mat onlyBits = candidateBits.rowRange(1,candidateBits.rows-1).colRange(1,candidateBits.rows-1);
-
-    // get as a byte list
-    cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
-
-    // search closest marker in dict
-    int closestId=-1;
-    unsigned int rotation=0;
-    unsigned int closestDistance=markerSize*markerSize+1;
-    cv::Mat candidateDistances = _getDistances(candidateBytes);
-
-    for(int i=0; i<codes.rows; i++) {
-        if(candidateDistances.ptr<int>(i)[0] < closestDistance) {
-            closestDistance = candidateDistances.ptr<int>(i)[0];
-            closestId = i;
-            rotation = candidateDistances.ptr<int>(i)[1];
-        }
-    }
-
-    // return closest id
-    if(closestId!=-1 && closestDistance<=maxCorrectionBits) {
-        idx = closestId;
-        // correct imgPoints positions
-        if(rotation!=0) {
-            cv::Mat copyPoints = imgPoints.getMat().clone();
-            for(int j=0; j<4; j++) imgPoints.getMat().ptr<cv::Point2f>(0)[j] = copyPoints.ptr<cv::Point2f>(0)[(j+4-rotation)%4];
-        }
-        return true;
-    }
-    else {
-        idx = -1;
-        return false;
-    }
-}
-
-
-/**
- * @brief Draw a canonical marker image
- *
- * @param img
- * @param id
- * @return void
- */
-void drawMarker(int id, int sidePixels, OutputArray img) {
-    img.create(sidePixels, sidePixels, CV_8UC1);
-    cv::Mat tinyMarker(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
-    cv::Mat innerRegion = tinyMarker.rowRange(1,tinyMarker.rows-1).colRange(1,tinyMarker.cols-1);
-    cv::Mat bits = 255*_getBitsFromByteList( codes.rowRange(id, id+1) );
-    bits.copyTo(innerRegion);
-    cv::resize(tinyMarker, img.getMat(), img.getMat().size(),0,0,cv::INTER_NEAREST);
-}
-
-
-private:
-
-
-
-
-/**
-  */
-cv::Mat _getByteListFromBits(cv::Mat bits) {
-
-    int nbytes = (bits.cols*bits.rows)/8;
-    if((bits.cols*bits.rows)%8 != 0) nbytes++;
-    cv::Mat candidateByteList(1, nbytes, CV_8UC4, cv::Scalar::all(0));
-    unsigned char currentBit=0;
-    int currentByte=0;
-    for(int row=0; row<bits.rows; row++) {
-        for(int col=0; col<bits.cols; col++) {
-            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] << 1;
-            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] << 1;
-            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] << 1;
-            candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] = candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] << 1;
-            if(bits.at<unsigned char>(row,col)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0]++;
-            if(bits.at<unsigned char>(col,bits.cols-1-row)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1]++;
-            if(bits.at<unsigned char>(bits.rows-1-row,bits.cols-1-col)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2]++;
-            if(bits.at<unsigned char>(bits.rows-1-col,row)) candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3]++;
-            currentBit++;
-            if(currentBit==8) {
-                currentBit=0;
-                currentByte++;
+    DictionaryData(const char *_bytes = 0, int _markerSize = 0, int _dictsize = 0,
+                   int _maxcorr = 0) {
+        markerSize = _markerSize;
+        maxCorrectionBits = _maxcorr;
+        int nbytes = (markerSize * markerSize) / 8;
+        if ((markerSize * markerSize) % 8 != 0)
+            nbytes++;
+        codes = cv::Mat(_dictsize, nbytes, CV_8UC4);
+        for (int i = 0; i < _dictsize; i++) {
+            for (int j = 0; j < nbytes; j++) {
+                for (int k = 0; k < 4; k++)
+                    codes.at<cv::Vec4b>(i, j)[k] = _bytes[i * (4 * nbytes) + k * nbytes + j];
             }
         }
     }
-    return candidateByteList;
-}
 
 
 
+    /**
+     * @brief Given an image and four corners positions, identify the marker
+     *
+     * @param image
+     * @param imgPoints corner positions
+     * @param idx marker idx if valid
+     * @return true if identification is correct, else false
+     */
+    bool identify(InputArray image, InputOutputArray imgPoints, int &idx) {
+        // get bits
+        cv::Mat candidateBits = _extractBits(image, imgPoints);
+        if (!_isBorderValid(candidateBits))
+            return false; // not really necessary
+        cv::Mat onlyBits =
+            candidateBits.rowRange(1, candidateBits.rows - 1).colRange(1, candidateBits.rows - 1);
 
-/**
-  */
-cv::Mat _getBitsFromByteList(cv::Mat byteList) {
-    cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+        // get as a byte list
+        cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
 
-    unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
-    int currentByteIdx = 0;
-    unsigned char currentByte=byteList.ptr<cv::Vec4b>(0)[0][0]; // we only need the bytes in normal rotation
-    int currentBit = 0;
-    for(int row=0; row<bits.rows; row++) {
-        for(int col=0; col<bits.cols; col++) {
-            if(currentByte>=base2List[currentBit]) {
-                bits.at<unsigned char>(row,col) = 1;
-                currentByte-=base2List[currentBit];
-            }
-            currentBit++;
-            if(currentBit==8) {
-                currentBit=0;
-                currentByteIdx++;
-            }
-        }
-    }
-    return bits;
-}
+        // search closest marker in dict
+        int closestId = -1;
+        unsigned int rotation = 0;
+        unsigned int closestDistance = markerSize * markerSize + 1;
+        cv::Mat candidateDistances = _getDistances(candidateBytes);
 
-
-
-
-
-
-
-
-
-/**
-  */
-cv::Mat _getDistances(cv::Mat byteList) {
-
-    cv::Mat res(codes.rows, 2, CV_32SC1);
-    for(unsigned int m=0; m<codes.rows; m++) {
-        res.ptr<int>(m)[0]=10e8;
-        for(unsigned int r=0; r<4; r++) {
-            int currentHamming=0;
-            for(int b=0; b<byteList.total(); b++) {
-                unsigned char xorRes = codes.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
-                currentHamming += hammingWeightLUT[xorRes];
-            }
-
-            if(currentHamming < res.ptr<int>(m)[0]) {
-                res.ptr<int>(m)[0]=currentHamming;
-                res.ptr<int>(m)[1]=r;
+        for (int i = 0; i < codes.rows; i++) {
+            if (candidateDistances.ptr<int>(i)[0] < closestDistance) {
+                closestDistance = candidateDistances.ptr<int>(i)[0];
+                closestId = i;
+                rotation = candidateDistances.ptr<int>(i)[1];
             }
         }
-    }
-    return res;
-}
 
-
-
-cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints) {
-
-    CV_Assert(image.getMat().channels()==1);
-
-    cv::Mat resultImg; // marker image after removing perspective
-    int squareSizePixels = 8;
-    int resultImgSize = (markerSize+2)*squareSizePixels;
-    cv::Mat resultImgCorners(4,1,CV_32FC2);
-    resultImgCorners.ptr<cv::Point2f>(0)[0]= Point2f ( 0,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[1]= Point2f ( resultImgSize-1,0 );
-    resultImgCorners.ptr<cv::Point2f>(0)[2]= Point2f ( resultImgSize-1,resultImgSize-1 );
-    resultImgCorners.ptr<cv::Point2f>(0)[3]= Point2f ( 0,resultImgSize-1 );
-
-    // remove perspective
-    cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
-    cv::warpPerspective(image, resultImg, transformation, cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
-
-    // now extract code
-    cv::Mat bits(markerSize+2, markerSize+2, CV_8UC1, cv::Scalar::all(0));
-    cv::threshold(resultImg, resultImg,125, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
-    for (unsigned int y=0; y<markerSize+2; y++)  {
-        for (unsigned int x=0; x<markerSize+2;x++) {
-            int Xstart=x*(squareSizePixels)+1;
-            int Ystart=y*(squareSizePixels)+1;
-            cv::Mat square=resultImg(cv::Rect(Xstart,Ystart,squareSizePixels-2,squareSizePixels-2));
-            int nZ=countNonZero(square);
-            if (nZ> square.total()/2)  bits.at<unsigned char>(y,x)=1;
+        // return closest id
+        if (closestId != -1 && closestDistance <= maxCorrectionBits) {
+            idx = closestId;
+            // correct imgPoints positions
+            if (rotation != 0) {
+                cv::Mat copyPoints = imgPoints.getMat().clone();
+                for (int j = 0; j < 4; j++)
+                    imgPoints.getMat().ptr<cv::Point2f>(0)[j] =
+                        copyPoints.ptr<cv::Point2f>(0)[(j + 4 - rotation) % 4];
+            }
+            return true;
+        } else {
+            idx = -1;
+            return false;
         }
-     }
-
-    return bits;
-}
-
-bool _isBorderValid(cv::Mat bits) {
-    int sizeWithBorders = markerSize+2;
-    int totalErrors = 0;
-    for(int y=0; y<sizeWithBorders; y++) {
-        if(bits.ptr<unsigned char>(y)[0]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(y)[sizeWithBorders-1]!=0) totalErrors++;
     }
-    for(int x=1; x<sizeWithBorders-1; x++) {
-        if(bits.ptr<unsigned char>(0)[x]!=0) totalErrors++;
-        if(bits.ptr<unsigned char>(sizeWithBorders-1)[x]!=0) totalErrors++;
-    }
-    if(totalErrors > 1) return false; // markersize is a good value for check border errors
-    else return true;
-}
 
+
+
+    /**
+     * @brief Draw a canonical marker image
+     *
+     * @param img
+     * @param id
+     * @return void
+     */
+    void drawMarker(int id, int sidePixels, OutputArray img) {
+        img.create(sidePixels, sidePixels, CV_8UC1);
+        cv::Mat tinyMarker(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
+        cv::Mat innerRegion =
+            tinyMarker.rowRange(1, tinyMarker.rows - 1).colRange(1, tinyMarker.cols - 1);
+        cv::Mat bits = 255 * _getBitsFromByteList(codes.rowRange(id, id + 1));
+        bits.copyTo(innerRegion);
+        cv::resize(tinyMarker, img.getMat(), img.getMat().size(), 0, 0, cv::INTER_NEAREST);
+    }
+
+  private:
+    /**
+      */
+    cv::Mat _getByteListFromBits(cv::Mat bits) {
+
+        int nbytes = (bits.cols * bits.rows) / 8;
+        if ((bits.cols * bits.rows) % 8 != 0)
+            nbytes++;
+        cv::Mat candidateByteList(1, nbytes, CV_8UC4, cv::Scalar::all(0));
+        unsigned char currentBit = 0;
+        int currentByte = 0;
+        for (int row = 0; row < bits.rows; row++) {
+            for (int col = 0; col < bits.cols; col++) {
+                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] =
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] << 1;
+                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] =
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] << 1;
+                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] =
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] << 1;
+                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] =
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] << 1;
+                if (bits.at<unsigned char>(row, col))
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0]++;
+                if (bits.at<unsigned char>(col, bits.cols - 1 - row))
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1]++;
+                if (bits.at<unsigned char>(bits.rows - 1 - row, bits.cols - 1 - col))
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2]++;
+                if (bits.at<unsigned char>(bits.rows - 1 - col, row))
+                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3]++;
+                currentBit++;
+                if (currentBit == 8) {
+                    currentBit = 0;
+                    currentByte++;
+                }
+            }
+        }
+        return candidateByteList;
+    }
+
+
+
+    /**
+      */
+    cv::Mat _getBitsFromByteList(cv::Mat byteList) {
+        cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+
+        unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
+        int currentByteIdx = 0;
+        unsigned char currentByte =
+            byteList.ptr<cv::Vec4b>(0)[0][0]; // we only need the bytes in normal rotation
+        int currentBit = 0;
+        for (int row = 0; row < bits.rows; row++) {
+            for (int col = 0; col < bits.cols; col++) {
+                if (currentByte >= base2List[currentBit]) {
+                    bits.at<unsigned char>(row, col) = 1;
+                    currentByte -= base2List[currentBit];
+                }
+                currentBit++;
+                if (currentBit == 8) {
+                    currentBit = 0;
+                    currentByteIdx++;
+                }
+            }
+        }
+        return bits;
+    }
+
+
+
+    /**
+      */
+    cv::Mat _getDistances(cv::Mat byteList) {
+
+        cv::Mat res(codes.rows, 2, CV_32SC1);
+        for (unsigned int m = 0; m < codes.rows; m++) {
+            res.ptr<int>(m)[0] = 10e8;
+            for (unsigned int r = 0; r < 4; r++) {
+                int currentHamming = 0;
+                for (int b = 0; b < byteList.total(); b++) {
+                    unsigned char xorRes =
+                        codes.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
+                    currentHamming += hammingWeightLUT[xorRes];
+                }
+
+                if (currentHamming < res.ptr<int>(m)[0]) {
+                    res.ptr<int>(m)[0] = currentHamming;
+                    res.ptr<int>(m)[1] = r;
+                }
+            }
+        }
+        return res;
+    }
+
+
+
+    cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints) {
+
+        CV_Assert(image.getMat().channels() == 1);
+
+        cv::Mat resultImg; // marker image after removing perspective
+        int squareSizePixels = 8;
+        int resultImgSize = (markerSize + 2) * squareSizePixels;
+        cv::Mat resultImgCorners(4, 1, CV_32FC2);
+        resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
+        resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
+        resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f(resultImgSize - 1, resultImgSize - 1);
+        resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
+
+        // remove perspective
+        cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
+        cv::warpPerspective(image, resultImg, transformation,
+                            cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
+
+        // now extract code
+        cv::Mat bits(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
+        cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        for (unsigned int y = 0; y < markerSize + 2; y++) {
+            for (unsigned int x = 0; x < markerSize + 2; x++) {
+                int Xstart = x * (squareSizePixels)+1;
+                int Ystart = y * (squareSizePixels)+1;
+                cv::Mat square =
+                    resultImg(cv::Rect(Xstart, Ystart, squareSizePixels - 2, squareSizePixels - 2));
+                int nZ = countNonZero(square);
+                if (nZ > square.total() / 2)
+                    bits.at<unsigned char>(y, x) = 1;
+            }
+        }
+
+        return bits;
+    }
+
+
+
+    bool _isBorderValid(cv::Mat bits) {
+        int sizeWithBorders = markerSize + 2;
+        int totalErrors = 0;
+        for (int y = 0; y < sizeWithBorders; y++) {
+            if (bits.ptr<unsigned char>(y)[0] != 0)
+                totalErrors++;
+            if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1] != 0)
+                totalErrors++;
+        }
+        for (int x = 1; x < sizeWithBorders - 1; x++) {
+            if (bits.ptr<unsigned char>(0)[x] != 0)
+                totalErrors++;
+            if (bits.ptr<unsigned char>(sizeWithBorders - 1)[x] != 0)
+                totalErrors++;
+        }
+        if (totalErrors > 1)
+            return false; // markersize is a good value for check border errors
+        else
+            return true;
+    }
 };
 
 
 
 // PREDEFINED DICTIONARIES
-const DictionaryData _dict_aruco_data = DictionaryData (&(_dict_aruco_bytes[0][0][0]), 5, 1024, 1);
+const DictionaryData _dict_aruco_data = DictionaryData(&(_dict_aruco_bytes[0][0][0]), 5, 1024, 1);
 
 
-}}
+
+}
+}
 
 #endif // cplusplus
 #endif // __OPENCV_ARUCO_DICTIONARY_CPP__
-

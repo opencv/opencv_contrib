@@ -36,13 +36,11 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-
 #ifndef __OPENCV_ARUCO_HPP__
 #define __OPENCV_ARUCO_HPP__
 
 #include <opencv2/core.hpp>
 #include <vector>
-
 
 /**
  * @defgroup aruco ArUco Marker Detection
@@ -64,17 +62,16 @@ the use of this software, even if advised of the possibility of such damage.
  * - charuco_calibration_online.cpp - online, automatic calibration using charuco boards
 */
 
-namespace cv { namespace aruco {
-
-
+namespace cv {
+namespace aruco {
 
 //! @addtogroup aruco
 //! @{
-  
+
 
 
 /**** @TODO add doxygen *******/
-enum DICTIONARY { DICT_ARUCO=0 };
+enum DICTIONARY { DICT_ARUCO = 0 };
 
 
 
@@ -96,18 +93,18 @@ enum DICTIONARY { DICT_ARUCO=0 };
  * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio
  * respect to the largest dimension of the input image. Markers whose perimeter is lower than the
  * correspoding value wont be detected. A low value can slow down the detection process
- * 
+ *
  * Performs marker detection in the input image. Only markers included in the specific dictionary
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
  * and its corresponding identifier.
- * Note that this function does not perform pose estimation. 
+ * Note that this function does not perform pose estimation.
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
- * 
+ *
  */
-CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArrayOfArrays imgPoints,
-                              OutputArray ids, OutputArrayOfArrays rejectedImgPoints=cv::noArray(),
-                              int threshParam=21,float minLenght=0.03);
-
+CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
+                              OutputArrayOfArrays imgPoints, OutputArray ids,
+                              OutputArrayOfArrays rejectedImgPoints = cv::noArray(),
+                              int threshParam = 21, float minLenght = 0.03);
 
 
 
@@ -120,7 +117,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
  * @sa detectMarkers
  * @param markerSize the lenght of the markers' side. The returning translation vectors will
  * be in the same unit. Normally, unit is meters.
- * @param cameraMatrix input 3x3 floating-point camera matrix 
+ * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
@@ -128,7 +125,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
  * Each element in rvecs corresponds to the specific marker in imgPoints.
  * @param tvecs array of output translation vectors (e.g. std::vector<cv::Mat>>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
- * 
+ *
  * This function receives the detected markers and returns their pose estimation respect to
  * the camera individually. So for each marker, one rotation and translation vector is returned.
  * The returned transformation is the one that transforms points from each marker coordinate system
@@ -136,13 +133,12 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary, OutputArr
  * The marker corrdinate system is centered on the middle of the marker, with the Z axis
  * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
- * (-markerSize/2, markerSize/2, 0), (markerSize/2, markerSize/2, 0), 
+ * (-markerSize/2, markerSize/2, 0), (markerSize/2, markerSize/2, 0),
  * (markerSize/2, -markerSize/2, 0), (-markerSize/2, -markerSize/2, 0)
  */
 CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markerSize,
                                           InputArray cameraMatrix, InputArray distCoeffs,
                                           OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
-
 
 
 
@@ -160,17 +156,15 @@ struct CV_EXPORTS Board {
 
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
-    std::vector< std::vector<cv::Point3f> > objPoints;
+    std::vector<std::vector<cv::Point3f> > objPoints;
 
     // the dictionary of markers employed for this board
     DICTIONARY dictionary;
 
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
-    std::vector< int > ids;
-
+    std::vector<int> ids;
 };
-
 
 
 
@@ -182,14 +176,14 @@ struct CV_EXPORTS Board {
  * dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @param board layout of markers in the board. The layout is composed by the marker identifiers
  * and the positions of each marker corner in the board reference system.
- * @param cameraMatrix input 3x3 floating-point camera matrix 
+ * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
  * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
- * 
+ *
  * This function receives the detected markers and returns the pose of a marker board composed
  * by those markers.
  * A Board of marker has a single world coordinate system which is defined by the board layout.
@@ -200,7 +194,6 @@ struct CV_EXPORTS Board {
 CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                   OutputArray tvec);
-
 
 
 
@@ -223,10 +216,9 @@ CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, floa
 
 
 
-
 /**
  * @brief Draw detected markers in image
- * 
+ *
  * @param in input image
  * @param out output image. It will be a copy of in but the markers will be painted on.
  * @param markersCorners positions of marker corners on input image.
@@ -236,15 +228,14 @@ CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, floa
  * Optional, if not provided, ids are not painted.
  * @param color color of marker borders. Rest of colors (text color and first corner color)
  * are calculated based on this one.
- * 
+ *
  * Given an array of detected marker corners and its corresponding ids, this functions draws
  * the markers in the image. The marker borders are painted and the markers identifiers if provided.
  * Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out,
-                                    InputArrayOfArrays markersCorners, InputArray ids=noArray(),
-                                    cv::Scalar borderColor=cv::Scalar(0,255,0));
-
+CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
+                                    InputArrayOfArrays markersCorners, InputArray ids = noArray(),
+                                    cv::Scalar borderColor = cv::Scalar(0, 255, 0));
 
 
 
@@ -253,20 +244,19 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in,  OutputArray out,
  *
  * @param in input image
  * @param out output image. It will be a copy of in but the axis will be painted on.
- * @param cameraMatrix input 3x3 floating-point camera matrix 
+ * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec rotation vector of the coordinate system that will be drawn. (@sa Rodrigues).
  * @param tvec translation vector of the coordinate system that will be drawn.
  * @param lenght lenght of the painted axis in the same unit than tvec (usually in meters)
- * 
+ *
  * Given the pose estimation of a marker or board, this function draws the axis of the world
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
 CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
                          InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
-
 
 
 
@@ -278,11 +268,10 @@ CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix
  * in the specified dictionary.
  * @param sidePixels size of the image in pixels
  * @param img output image with the marker
- * 
+ *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
 CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img);
-
 
 
 
@@ -295,12 +284,11 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
  * @param outSize size of the output image in pixels.
  * @param img output image with the board. The size of this image will be outSize
  * and the board will be on the center, keeping the board proportions.
- * 
+ *
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
 CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
-
 
 
 
@@ -330,22 +318,22 @@ CV_EXPORTS void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img);
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(std::vector< std::vector< std::vector<Point2f> > > imgPoints,
+CV_EXPORTS double calibrateCameraAruco(std::vector<std::vector<std::vector<Point2f> > > imgPoints,
                                        std::vector<std::vector<int> > ids, Board board,
                                        Size imageSize, InputOutputArray cameraMatrix,
                                        InputOutputArray distCoeffs,
-                                       OutputArrayOfArrays rvecs=noArray(),
-                                       OutputArrayOfArrays tvecs=noArray(), int flags=0,
-                                       TermCriteria criteria=TermCriteria(TermCriteria::COUNT+
-                                                                          TermCriteria::EPS, 30,
-                                                                          DBL_EPSILON));
-
+                                       OutputArrayOfArrays rvecs = noArray(),
+                                       OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+                                       TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
+                                                                            TermCriteria::EPS,
+                                                                            30, DBL_EPSILON));
 
 
 
 //! @}
 
-}} 
 
+}
+}
 
 #endif
