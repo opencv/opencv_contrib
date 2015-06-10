@@ -83,18 +83,18 @@ class DictionaryData {
 
 
 
-    DictionaryData(const char *_bytes = 0, int _markerSize = 0, int _dictsize = 0,
+    DictionaryData(const char * bytes = 0, int _markerSize = 0, int dictsize = 0,
                    int _maxcorr = 0) {
         markerSize = _markerSize;
         maxCorrectionBits = _maxcorr;
         int nbytes = (markerSize * markerSize) / 8;
         if ((markerSize * markerSize) % 8 != 0)
             nbytes++;
-        codes = cv::Mat(_dictsize, nbytes, CV_8UC4);
-        for (int i = 0; i < _dictsize; i++) {
+        codes = cv::Mat(dictsize, nbytes, CV_8UC4);
+        for (int i = 0; i < dictsize; i++) {
             for (int j = 0; j < nbytes; j++) {
                 for (int k = 0; k < 4; k++)
-                    codes.at<cv::Vec4b>(i, j)[k] = _bytes[i * (4 * nbytes) + k * nbytes + j];
+                    codes.at<cv::Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
             }
         }
     }
@@ -103,15 +103,10 @@ class DictionaryData {
 
     /**
      * @brief Given an image and four corners positions, identify the marker
-     *
-     * @param image
-     * @param imgPoints corner positions
-     * @param idx marker idx if valid
-     * @return true if identification is correct, else false
      */
-    bool identify(InputArray image, InputOutputArray imgPoints, int &idx) {
+    bool identify(InputArray _image, InputOutputArray _imgPoints, int &idx) {
         // get bits
-        cv::Mat candidateBits = _extractBits(image, imgPoints);
+        cv::Mat candidateBits = _extractBits(_image, _imgPoints);
         if (!_isBorderValid(candidateBits))
             return false; // not really necessary
         cv::Mat onlyBits =
@@ -139,9 +134,9 @@ class DictionaryData {
             idx = closestId;
             // correct imgPoints positions
             if (rotation != 0) {
-                cv::Mat copyPoints = imgPoints.getMat().clone();
+                cv::Mat copyPoints = _imgPoints.getMat().clone();
                 for (int j = 0; j < 4; j++)
-                    imgPoints.getMat().ptr<cv::Point2f>(0)[j] =
+                    _imgPoints.getMat().ptr<cv::Point2f>(0)[j] =
                         copyPoints.ptr<cv::Point2f>(0)[(j + 4 - rotation) % 4];
             }
             return true;
@@ -155,22 +150,22 @@ class DictionaryData {
 
     /**
      * @brief Draw a canonical marker image
-     *
-     * @param img
-     * @param id
-     * @return void
      */
-    void drawMarker(int id, int sidePixels, OutputArray img) {
-        img.create(sidePixels, sidePixels, CV_8UC1);
+    void drawMarker(int id, int sidePixels, OutputArray _img) {
+        _img.create(sidePixels, sidePixels, CV_8UC1);
         cv::Mat tinyMarker(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
         cv::Mat innerRegion =
             tinyMarker.rowRange(1, tinyMarker.rows - 1).colRange(1, tinyMarker.cols - 1);
         cv::Mat bits = 255 * _getBitsFromByteList(codes.rowRange(id, id + 1));
         bits.copyTo(innerRegion);
-        cv::resize(tinyMarker, img.getMat(), img.getMat().size(), 0, 0, cv::INTER_NEAREST);
+        cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, cv::INTER_NEAREST);
     }
 
+
+
   private:
+
+
     /**
       */
     cv::Mat _getByteListFromBits(cv::Mat bits) {
@@ -265,9 +260,9 @@ class DictionaryData {
 
 
 
-    cv::Mat _extractBits(InputArray image, InputOutputArray imgPoints) {
+    cv::Mat _extractBits(InputArray _image, InputOutputArray _imgPoints) {
 
-        CV_Assert(image.getMat().channels() == 1);
+        CV_Assert(_image.getMat().channels() == 1);
 
         cv::Mat resultImg; // marker image after removing perspective
         int squareSizePixels = 8;
@@ -279,8 +274,8 @@ class DictionaryData {
         resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
 
         // remove perspective
-        cv::Mat transformation = cv::getPerspectiveTransform(imgPoints, resultImgCorners);
-        cv::warpPerspective(image, resultImg, transformation,
+        cv::Mat transformation = cv::getPerspectiveTransform(_imgPoints, resultImgCorners);
+        cv::warpPerspective(_image, resultImg, transformation,
                             cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
 
         // now extract code
@@ -328,7 +323,7 @@ class DictionaryData {
 
 
 // PREDEFINED DICTIONARIES
-const DictionaryData _dict_aruco_data = DictionaryData(&(_dict_aruco_bytes[0][0][0]), 5, 1024, 1);
+const DictionaryData DICT_ARUCO_DATA = DictionaryData(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
 
 
 

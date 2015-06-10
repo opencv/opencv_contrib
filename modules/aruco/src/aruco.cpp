@@ -59,8 +59,8 @@ using namespace std;
 
 /**
  */
-void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _threshParam,
-                       float _minLenght, OutputArray _thresholdedImage = noArray()) {
+void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int threshParam,
+                       float minLenght, OutputArray _thresholdedImage = noArray()) {
 
     cv::Mat image = _image.getMat();
     CV_Assert(image.cols != 0 && image.rows != 0 &&
@@ -74,16 +74,16 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
         grey = image;
 
     /// 2. THRESHOLD
-    CV_Assert(_threshParam >= 3);
+    CV_Assert(threshParam >= 3);
     cv::Mat thresh;
     cv::adaptiveThreshold(grey, thresh, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV,
-                          _threshParam, 7);
+                          threshParam, 7);
     if (_thresholdedImage.needed())
         thresh.copyTo(_thresholdedImage);
 
     /// 3. DETECT RECTANGLES
-    CV_Assert(_minLenght > 0);
-    int minSize = _minLenght * std::max(thresh.cols, thresh.rows);
+    CV_Assert(minLenght > 0);
+    int minSize = minLenght * std::max(thresh.cols, thresh.rows);
     cv::Mat contoursImg;
     thresh.copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
@@ -215,7 +215,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int _
 /**
  */
 void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
-                         DictionaryData _dictionary, OutputArrayOfArrays _accepted,
+                         DictionaryData dictionary, OutputArrayOfArrays _accepted,
                          OutputArray _ids, OutputArrayOfArrays _rejected = noArray()) {
 
     int ncandidates = _candidates.total();
@@ -236,7 +236,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
     for (int i = 0; i < ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
-        if (_dictionary.identify(grey, currentCandidate, currId)) {
+        if (dictionary.identify(grey, currentCandidate, currId)) {
             accepted.push_back(currentCandidate);
             ids.push_back(currId);
         } else
@@ -268,26 +268,26 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
 
 /**
   */
-void getSingleMarkerObjectPoints(float _markerLength, OutputArray _objPnts) {
+void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPnts) {
 
-    CV_Assert(_markerLength > 0);
+    CV_Assert(markerLength > 0);
 
     _objPnts.create(4, 1, CV_32FC3);
     cv::Mat objPnts = _objPnts.getMat();
-    objPnts.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-_markerLength / 2., _markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(_markerLength / 2., _markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(_markerLength / 2., -_markerLength / 2., 0);
-    objPnts.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-_markerLength / 2., -_markerLength / 2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength / 2., markerLength / 2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength / 2., markerLength / 2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength / 2., -markerLength / 2., 0);
+    objPnts.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength / 2., -markerLength / 2., 0);
 }
 
 
 
 /**
   */
-const DictionaryData &getDictionaryData(DICTIONARY name) {
+const DictionaryData &_getDictionaryData(DICTIONARY name) {
     switch (name) {
     case DICT_ARUCO:
-        return _dict_aruco_data;
+        return DICT_ARUCO_DATA;
     }
     return DictionaryData();
 }
@@ -296,9 +296,9 @@ const DictionaryData &getDictionaryData(DICTIONARY name) {
 
 /**
   */
-void detectMarkers(InputArray _image, DICTIONARY _dictionary, OutputArrayOfArrays _imgPoints,
-                   OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int _threshParam,
-                   float _minLenght) {
+void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _imgPoints,
+                   OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int threshParam,
+                   float minLenght) {
 
     cv::Mat grey;
     if (_image.getMat().type() == CV_8UC3)
@@ -308,10 +308,10 @@ void detectMarkers(InputArray _image, DICTIONARY _dictionary, OutputArrayOfArray
 
     /// STEP 1: Detect marker candidates
     std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(grey, candidates, _threshParam, _minLenght);
+    _detectCandidates(grey, candidates, threshParam, minLenght);
 
     /// STEP 2: Check candidate codification (identify markers)
-    DictionaryData dictionaryData = getDictionaryData(_dictionary);
+    DictionaryData dictionaryData = _getDictionaryData(dictionary);
     _identifyCandidates(grey, candidates, dictionaryData, _imgPoints, _ids, _rejectedImgPoints);
 
     for (int i = 0; i < _imgPoints.total(); i++) {
@@ -325,20 +325,20 @@ void detectMarkers(InputArray _image, DICTIONARY _dictionary, OutputArrayOfArray
 
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize,
-                               InputArray cameraMatrix, InputArray distCoeffs,
-                               OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs) {
+void estimatePoseSingleMarkers(InputArrayOfArrays _imgPoints, float markersize,
+                               InputArray _cameraMatrix, InputArray _distCoeffs,
+                               OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
 
     cv::Mat markerObjPoints;
-    getSingleMarkerObjectPoints(markersize, markerObjPoints);
-    rvecs.create((int)imgPoints.total(), 1, CV_32FC1);
-    tvecs.create((int)imgPoints.total(), 1, CV_32FC1);
+    _getSingleMarkerObjectPoints(markersize, markerObjPoints);
+    _rvecs.create((int)_imgPoints.total(), 1, CV_32FC1);
+    _tvecs.create((int)_imgPoints.total(), 1, CV_32FC1);
 
-    for (int i = 0; i < imgPoints.total(); i++) {
-        rvecs.create(3, 1, CV_64FC1, i, true);
-        tvecs.create(3, 1, CV_64FC1, i, true);
-        cv::solvePnP(markerObjPoints, imgPoints.getMat(i), cameraMatrix, distCoeffs,
-                     rvecs.getMat(i), tvecs.getMat(i));
+    for (int i = 0; i < _imgPoints.total(); i++) {
+        _rvecs.create(3, 1, CV_64FC1, i, true);
+        _tvecs.create(3, 1, CV_64FC1, i, true);
+        cv::solvePnP(markerObjPoints, _imgPoints.getMat(i), _cameraMatrix, _distCoeffs,
+                     _rvecs.getMat(i), _tvecs.getMat(i));
     }
 }
 
@@ -346,51 +346,51 @@ void estimatePoseSingleMarkers(InputArrayOfArrays imgPoints, float markersize,
 
 /**
   */
-void getBoardObjectAndImagePoints(Board board, InputArray detectedIds,
-                                  InputArrayOfArrays detectedImagePoints, OutputArray imagePoints,
-                                  OutputArray objectPoints) {
+void _getBoardObjectAndImagePoints(Board board, InputArray _detectedIds,
+                                   InputArrayOfArrays _detectedImagePoints,
+                                   OutputArray _imagePoints, OutputArray _objectPoints) {
     std::vector<cv::Point3f> objPnts;
-    objPnts.reserve(detectedIds.total());
+    objPnts.reserve(_detectedIds.total());
 
     std::vector<cv::Point2f> imgPnts;
-    imgPnts.reserve(detectedIds.total());
+    imgPnts.reserve(_detectedIds.total());
 
-    for (int i = 0; i < detectedIds.getMat().total(); i++) {
-        int currentId = detectedIds.getMat().ptr<int>(0)[i];
+    for (int i = 0; i < _detectedIds.getMat().total(); i++) {
+        int currentId = _detectedIds.getMat().ptr<int>(0)[i];
         for (int j = 0; j < board.ids.size(); j++) {
             if (currentId == board.ids[j]) {
                 for (int p = 0; p < 4; p++) {
                     objPnts.push_back(board.objPoints[j][p]);
-                    imgPnts.push_back(detectedImagePoints.getMat(i).ptr<cv::Point2f>(0)[p]);
+                    imgPnts.push_back(_detectedImagePoints.getMat(i).ptr<cv::Point2f>(0)[p]);
                 }
             }
         }
     }
-    objectPoints.create((int)objPnts.size(), 1, CV_32FC3);
+    _objectPoints.create((int)objPnts.size(), 1, CV_32FC3);
     for (int i = 0; i < objPnts.size(); i++)
-        objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
+        _objectPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
 
-    imagePoints.create((int)objPnts.size(), 1, CV_32FC2);
+    _imagePoints.create((int)objPnts.size(), 1, CV_32FC2);
     for (int i = 0; i < imgPnts.size(); i++)
-        imagePoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
+        _imagePoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
 }
 
 
 
 /**
   */
-void estimatePoseBoard(InputArrayOfArrays imgPoints, InputArray ids, Board board,
-                       InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                       OutputArray tvec) {
+void estimatePoseBoard(InputArrayOfArrays _imgPoints, InputArray _ids, Board board,
+                       InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
+                       OutputArray _tvec) {
 
     cv::Mat objectPointsConcatenation, imagePointsConcatenation;
-    getBoardObjectAndImagePoints(board, ids, imgPoints, imagePointsConcatenation,
-                                 objectPointsConcatenation);
+    _getBoardObjectAndImagePoints(board, _ids, _imgPoints, imagePointsConcatenation,
+                                  objectPointsConcatenation);
 
-    rvec.create(3, 1, CV_64FC1);
-    tvec.create(3, 1, CV_64FC1);
-    cv::solvePnP(objectPointsConcatenation, imagePointsConcatenation, cameraMatrix, distCoeffs,
-                 rvec, tvec);
+    _rvec.create(3, 1, CV_64FC1);
+    _tvec.create(3, 1, CV_64FC1);
+    cv::solvePnP(objectPointsConcatenation, imagePointsConcatenation, _cameraMatrix, _distCoeffs,
+                 _rvec, _tvec);
 }
 
 
@@ -428,8 +428,8 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
 
 /**
  */
-void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays markers, InputArray ids,
-                         cv::Scalar borderColor) {
+void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _markers,
+                         InputArray _ids, cv::Scalar borderColor) {
 
     // calculate colors
     cv::Scalar textColor, cornerColor;
@@ -437,12 +437,12 @@ void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays mark
     swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
     swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
 
-    out.create(in.size(), in.type());
-    cv::Mat outImg = out.getMat();
-    in.getMat().copyTo(outImg);
+    _out.create(_in.size(), _in.type());
+    cv::Mat outImg = _out.getMat();
+    _in.getMat().copyTo(outImg);
 
-    for (int i = 0; i < markers.total(); i++) {
-        cv::Mat currentMarker = markers.getMat(i);
+    for (int i = 0; i < _markers.total(); i++) {
+        cv::Mat currentMarker = _markers.getMat(i);
         for (int j = 0; j < 4; j++) {
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
@@ -452,13 +452,13 @@ void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays mark
         cv::rectangle(outImg, currentMarker.ptr<cv::Point2f>(0)[0] - Point2f(3, 3),
                       currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 2,
                       cv::LINE_AA);
-        if (ids.total() != 0) {
+        if (_ids.total() != 0) {
             Point2f cent(0, 0);
             for (int p = 0; p < 4; p++)
                 cent += currentMarker.ptr<cv::Point2f>(0)[p];
             cent = cent / 4.;
             stringstream s;
-            s << "id=" << ids.getMat().ptr<int>(0)[i];
+            s << "id=" << _ids.getMat().ptr<int>(0)[i];
             putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
@@ -468,12 +468,12 @@ void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays mark
 
 /**
  */
-void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArray distCoeffs,
-              InputArray rvec, InputArray tvec, float lenght) {
+void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
+              InputArray _rvec, InputArray _tvec, float lenght) {
 
-    out.create(in.size(), in.type());
-    cv::Mat outImg = out.getMat();
-    in.getMat().copyTo(outImg);
+    _out.create(_in.size(), _in.type());
+    cv::Mat outImg = _out.getMat();
+    _in.getMat().copyTo(outImg);
 
     std::vector<cv::Point3f> axisPoints;
     axisPoints.push_back(cv::Point3f(0, 0, 0));
@@ -481,7 +481,7 @@ void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArra
     axisPoints.push_back(cv::Point3f(0, lenght, 0));
     axisPoints.push_back(cv::Point3f(0, 0, lenght));
     std::vector<cv::Point2f> imagePoints;
-    cv::projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
+    cv::projectPoints(axisPoints, _rvec, _tvec, _cameraMatrix, _distCoeffs, imagePoints);
 
     cv::line(outImg, imagePoints[0], imagePoints[1], cv::Scalar(0, 0, 255), 3);
     cv::line(outImg, imagePoints[0], imagePoints[2], cv::Scalar(0, 255, 0), 3);
@@ -492,21 +492,21 @@ void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix, InputArra
 
 /**
  */
-void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img) {
-    DictionaryData dictionaryData = getDictionaryData(dictionary);
-    dictionaryData.drawMarker(id, sidePixels, img);
+void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img) {
+    DictionaryData dictionaryData = _getDictionaryData(dictionary);
+    dictionaryData.drawMarker(id, sidePixels, _img);
 }
 
 
 
 /**
  */
-void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
+void drawPlanarBoard(Board board, cv::Size outSize, OutputArray _img) {
 
-    DictionaryData dictData = getDictionaryData(board.dictionary);
+    DictionaryData dictData = _getDictionaryData(board.dictionary);
 
-    img.create(outSize, CV_8UC1);
-    cv::Mat out = img.getMat();
+    _img.create(outSize, CV_8UC1);
+    cv::Mat out = _img.getMat();
     //    cv::Mat out(outSize, CV_8UC1, cv::Scalar::all(255));
     out.setTo(cv::Scalar::all(255));
     cv::Mat outNoMargins = out.colRange(2, out.cols - 2).rowRange(2, out.rows - 2);
@@ -589,8 +589,8 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
             }
         }
     }
-    cv::Mat _img = img.getMat();
-    out.copyTo(_img);
+    cv::Mat img = _img.getMat();
+    out.copyTo(img);
 }
 
 
@@ -599,8 +599,8 @@ void drawPlanarBoard(Board board, cv::Size outSize, OutputArray img) {
   */
 double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > > imgPoints,
                             std::vector<std::vector<int> > ids, Board board, Size imageSize,
-                            InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-                            OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs, int flags,
+                            InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
+                            OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
                             TermCriteria criteria) {
 
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
@@ -608,16 +608,16 @@ double calibrateCameraAruco(std::vector<std::vector<std::vector<cv::Point2f> > >
     std::vector<cv::Mat> processedObjectPoints, processedImagePoints;
     for (int frame = 0; frame < imgPoints.size(); frame++) {
         cv::Mat currentImgPoints, currentObjPoints;
-        getBoardObjectAndImagePoints(board, ids[frame], imgPoints[frame], currentImgPoints,
-                                     currentObjPoints);
+        _getBoardObjectAndImagePoints(board, ids[frame], imgPoints[frame], currentImgPoints,
+                                      currentObjPoints);
         if (currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);
             processedObjectPoints.push_back(currentObjPoints);
         }
     }
 
-    return cv::calibrateCamera(processedObjectPoints, processedImagePoints, imageSize, cameraMatrix,
-                               distCoeffs, rvecs, tvecs, flags, criteria);
+    return cv::calibrateCamera(processedObjectPoints, processedImagePoints, imageSize,
+                               _cameraMatrix, _distCoeffs, _rvecs, _tvecs, flags, criteria);
 }
 
 

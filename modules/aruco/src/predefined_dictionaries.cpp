@@ -45,7 +45,7 @@ namespace aruco {
 
 
 
-const char _dict_aruco_bytes[][4][4] = {
+const char DICT_ARUCO_BYTES[][4][4] = {
     {
      {132, 33, 8, 0}, {0, 0, 15, 1}, {8, 66, 16, 1}, {248, 0, 0, 0},
     },
@@ -3119,8 +3119,6 @@ const char _dict_aruco_bytes[][4][4] = {
      {115, 156, 231, 0}, {7, 255, 240, 0}, {115, 156, 231, 0}, {7, 255, 240, 0},
     },
 };
-
-
 
 
 
