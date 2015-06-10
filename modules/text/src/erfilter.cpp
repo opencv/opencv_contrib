@@ -287,7 +287,11 @@ void ERFilterNM::er_tree_extract( InputArray image )
     quads[1][3] = (1<<3)|(1<<2)|(1<<1);
     quads[2][0] = (1<<2)|(1<<1);
     quads[2][1] = (1<<3)|(1);
-    quads[2][3] = 255;
+    // quads[2][2] and quads[2][3] are never used so no need to initialize them.
+    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns 
+    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper 
+    // (see in page 4 at the end of first column). 
+    // Q_1 and Q_2 have four patterns, while Q_3 has only two.
 
 
     // masks to know if a pixel is accessible and if it has been already added to some region
