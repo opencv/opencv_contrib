@@ -92,7 +92,7 @@ void cvFindStereoCorrespondenceBinaryBM( const CvArr* leftarr, const CvArr* righ
 
     CV_Assert( state != 0 );
 
-    cv::Ptr<cv::StereoBinaryBM> sm = cv::StereoBinaryBM::create(state->numberOfDisparities,
+	cv::Ptr<cv::stereo::StereoBinaryBM> sm = cv::stereo::StereoBinaryBM::create(state->numberOfDisparities,
                                                        state->SADWindowSize);
     sm->setPreFilterType(state->preFilterType);
     sm->setPreFilterSize(state->preFilterSize);
@@ -108,17 +108,18 @@ void cvFindStereoCorrespondenceBinaryBM( const CvArr* leftarr, const CvArr* righ
     sm->compute(left, right, disp);
 }
 
-CvRect cvGetValidDisparityROI( CvRect roi1, CvRect roi2, int minDisparity,
+CvRect cvStereoBinaryGetValidDisparityROI( CvRect roi1, CvRect roi2, int minDisparity,
                               int numberOfDisparities, int SADWindowSize )
 {
-    return (CvRect)cv::getValidDisparityROI( roi1, roi2, minDisparity,
+	return (CvRect)cv::stereo::getValidDisparityROI( roi1, roi2, minDisparity,
                                             numberOfDisparities, SADWindowSize );
 }
 
-void cvValidateDisparity( CvArr* _disp, const CvArr* _cost, int minDisparity,
+void cvStereoBinaryValidateDisparity( CvArr* _disp, const CvArr* _cost, int minDisparity,
                          int numberOfDisparities, int disp12MaxDiff )
 {
     cv::Mat disp = cv::cvarrToMat(_disp), cost = cv::cvarrToMat(_cost);
-    cv::validateDisparity( disp, cost, minDisparity, numberOfDisparities, disp12MaxDiff );
+    cv::stereo::validateDisparity( disp, cost, minDisparity, numberOfDisparities, disp12MaxDiff );
 }
+
 

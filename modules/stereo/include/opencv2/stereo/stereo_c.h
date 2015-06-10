@@ -52,17 +52,14 @@ extern "C" {
 
 /** @addtogroup stereo_c
   @{
-  */
+  **/
 
-/****************************************************************************************\
-*									 Stereo										         *
-\****************************************************************************************/
-/* stereo correspondence parameters and functions */
+	//! stereo correspondence parameters and functions 
 
 #define CV_STEREO_BM_NORMALIZED_RESPONSE  0
 #define CV_STEREO_BM_XSOBEL               1
 
-/* Block matching algorithm structure */
+//! Block matching algorithm structure 
 typedef struct CvStereoBinaryBMState
 {
     // pre-filtering (normalization of input images)
@@ -109,14 +106,15 @@ CVAPI(void) cvReleaseStereoBinaryBMState( CvStereoBinaryBMState** state );
 CVAPI(void) cvFindStereoCorrespondenceBinaryBM( const CvArr* left, const CvArr* right,
                                           CvArr* disparity, CvStereoBinaryBMState* state );
 
-CVAPI(CvRect) cvGetValidDisparityROI( CvRect roi1, CvRect roi2, int minDisparity,
+CVAPI(CvRect) cvStereoBinaryGetValidDisparityROI( CvRect roi1, CvRect roi2, int minDisparity,
                                       int numberOfDisparities, int SADWindowSize );
 
-CVAPI(void) cvValidateDisparity( CvArr* disparity, const CvArr* cost,
+CVAPI(void) cvStereoBinaryValidateDisparity( CvArr* disparity, const CvArr* cost,
                                  int minDisparity, int numberOfDisparities,
                                  int disp12MaxDiff CV_DEFAULT(1) );
-
+/** @} stereo_c */
 #ifdef __cplusplus
 } // extern "C"
 #endif
 #endif /* __OPENCV_STEREO_C_H__ */
+
