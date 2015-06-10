@@ -306,6 +306,9 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
                    OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int threshParam,
                    float minLength) {
 
+    CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows != 0 &&
+              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
+
     cv::Mat grey;
     if (_image.getMat().type() == CV_8UC3)
         cv::cvtColor(_image.getMat(), grey, cv::COLOR_BGR2GRAY);
@@ -331,12 +334,14 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markersize,
+void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerSize,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
                                OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
 
+    CV_Assert(markerSize>0);
+
     cv::Mat markerObjPoints;
-    _getSingleMarkerObjectPoints(markersize, markerObjPoints);
+    _getSingleMarkerObjectPoints(markerSize, markerObjPoints);
     int nMarkers = _corners.total();
     _rvecs.create(nMarkers, 1, CV_32FC1);
     _tvecs.create(nMarkers, 1, CV_32FC1);
@@ -359,6 +364,9 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markersize,
 void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
                                    InputArrayOfArrays _detectedCorners,
                                    OutputArray _imgPoints, OutputArray _objPoints) {
+
+    CV_Assert(board.ids.size()==board.objPoints.size());
+    CV_Assert(_detectedIds.total() == _detectedCorners.total() );
 
     int nDetectedMarkets = _detectedIds.total();
 
@@ -399,6 +407,8 @@ void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board
                        InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
                        OutputArray _tvec) {
 
+    CV_Assert(_corners.total() == _ids.total() );
+
     cv::Mat objPoints, imgPoints;
     _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
 
@@ -413,6 +423,9 @@ void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board
  */
 Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation,
                         DICTIONARY dictionary) {
+
+    CV_Assert(width>0 && height>0 && markerSize>0 && markerSeparation>0);
+
     Board res;
     int totalMarkers = width * height;
     res.ids.resize(totalMarkers);
@@ -448,6 +461,11 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
 void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _corners,
                          InputArray _ids, cv::Scalar borderColor) {
 
+
+    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
+              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert((_corners.total() == _ids.total()) || _ids.total()==0 );
+
     // calculate colors
     cv::Scalar textColor, cornerColor;
     textColor = cornerColor = borderColor;
@@ -456,11 +474,13 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 
     _out.create(_in.size(), _in.type());
     cv::Mat outImg = _out.getMat();
-    _in.getMat().copyTo(outImg);
+    if(_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
+    else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
 
     int nMarkers = _corners.total();
     for (int i = 0; i < nMarkers; i++) {
         cv::Mat currentMarker = _corners.getMat(i);
+        CV_Assert(currentMarker.total()==4 && currentMarker.type()==CV_32FC2);
 
         // draw marker sides
         for (int j = 0; j < 4; j++) {
@@ -493,6 +513,10 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
               InputArray _rvec, InputArray _tvec, float length) {
 
+    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
+              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert(length > 0);
+
     _out.create(_in.size(), _in.type());
     cv::Mat outImg = _out.getMat();
     _in.getMat().copyTo(outImg);
@@ -524,6 +548,8 @@ void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img)
 /**
  */
 void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img) {
+
+    CV_Assert(outSize.area()>0);
 
     DictionaryData dictData = _getDictionaryData(board.dictionary);
 
@@ -624,6 +650,8 @@ double calibrateCameraAruco(const std::vector<std::vector<std::vector<cv::Point2
                             Size imageSize, InputOutputArray _cameraMatrix,
                             InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
                             OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
+
+    CV_Assert(corners.size()==ids.size());
 
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function

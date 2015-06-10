@@ -113,6 +113,10 @@ class DictionaryData {
      * Returns whether if marker is identified or not.
      */
     bool identify(InputArray _image, InputOutputArray _corners, int &idx) const {
+
+        CV_Assert(_corners.total() == 4);
+        CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows);
+
         // get bits
         cv::Mat candidateBits = _extractBits(_image, _corners);
         if (_getBorderErrors(candidateBits)>1)
@@ -160,6 +164,10 @@ class DictionaryData {
      * @brief Draw a canonical marker image
      */
     void drawMarker(int id, int sidePixels, OutputArray _img) const {
+
+        CV_Assert(sidePixels > markerSize);
+        CV_Assert(id < bytesList.rows);
+
         _img.create(sidePixels, sidePixels, CV_8UC1);
 
         // create small marker with 1 pixel per bin
@@ -224,6 +232,9 @@ class DictionaryData {
       * Transform list of bytes to matrix of bits
       */
     cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
+        CV_Assert(byteList.total() >= markerSize*markerSize/8 &&
+                  byteList.total() <= markerSize*markerSize/8+1);
+
         cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
@@ -256,6 +267,8 @@ class DictionaryData {
       */
     cv::Mat _getDistances(const cv::Mat &byteList) const {
 
+        CV_Assert(bytesList.cols == byteList.total() && byteList.type()== CV_8UC4);
+
         cv::Mat res(bytesList.rows, 2, CV_32SC1);
         for (unsigned int m = 0; m < bytesList.rows; m++) {
             res.ptr<int>(m)[0] = 10e8;
@@ -283,9 +296,10 @@ class DictionaryData {
       * Given an input image and a candidate corners, extract the bits of the candidate, including
       * the border
       */
-    cv::Mat _extractBits(InputArray _image, InputOutputArray _corners) const {
+    cv::Mat _extractBits(InputArray _image, InputArray _corners) const {
 
         CV_Assert(_image.getMat().channels() == 1);
+        CV_Assert(_corners.total() == 4);
 
         cv::Mat resultImg; // marker image after removing perspective
         int squareSizePixels = 8;
@@ -324,6 +338,8 @@ class DictionaryData {
       * Return number of erroneous bits in border, i.e. number of white bits in border.
       */
     int _getBorderErrors(const cv::Mat &bits) const {
+        CV_Assert(markerSize > 0 && bits.cols == markerSize+2 && bits.rows == markerSize+2);
+
         int sizeWithBorders = markerSize + 2;
         int totalErrors = 0;
         for (int y = 0; y < sizeWithBorders; y++) {
