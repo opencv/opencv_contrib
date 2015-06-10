@@ -60,7 +60,7 @@ using namespace std;
 /**
  */
 void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int threshParam,
-                       float minLenght, OutputArray _thresholdedImage = noArray()) {
+                       float minLength, OutputArray _thresholdedImage = noArray()) {
 
     cv::Mat image = _image.getMat();
     CV_Assert(image.cols != 0 && image.rows != 0 &&
@@ -82,8 +82,8 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
         thresh.copyTo(_thresholdedImage);
 
     /// 3. DETECT RECTANGLES
-    CV_Assert(minLenght > 0);
-    int minSize = minLenght * std::max(thresh.cols, thresh.rows);
+    CV_Assert(minLength > 0);
+    int minSize = minLength * std::max(thresh.cols, thresh.rows);
     cv::Mat contoursImg;
     thresh.copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
@@ -298,7 +298,7 @@ const DictionaryData &_getDictionaryData(DICTIONARY name) {
   */
 void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _imgPoints,
                    OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int threshParam,
-                   float minLenght) {
+                   float minLength) {
 
     cv::Mat grey;
     if (_image.getMat().type() == CV_8UC3)
@@ -308,7 +308,7 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
     /// STEP 1: Detect marker candidates
     std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(grey, candidates, threshParam, minLenght);
+    _detectCandidates(grey, candidates, threshParam, minLength);
 
     /// STEP 2: Check candidate codification (identify markers)
     DictionaryData dictionaryData = _getDictionaryData(dictionary);
@@ -469,7 +469,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _m
 /**
  */
 void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
-              InputArray _rvec, InputArray _tvec, float lenght) {
+              InputArray _rvec, InputArray _tvec, float length) {
 
     _out.create(_in.size(), _in.type());
     cv::Mat outImg = _out.getMat();
@@ -477,9 +477,9 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
 
     std::vector<cv::Point3f> axisPoints;
     axisPoints.push_back(cv::Point3f(0, 0, 0));
-    axisPoints.push_back(cv::Point3f(lenght, 0, 0));
-    axisPoints.push_back(cv::Point3f(0, lenght, 0));
-    axisPoints.push_back(cv::Point3f(0, 0, lenght));
+    axisPoints.push_back(cv::Point3f(length, 0, 0));
+    axisPoints.push_back(cv::Point3f(0, length, 0));
+    axisPoints.push_back(cv::Point3f(0, 0, length));
     std::vector<cv::Point2f> imagePoints;
     cv::projectPoints(axisPoints, _rvec, _tvec, _cameraMatrix, _distCoeffs, imagePoints);
 

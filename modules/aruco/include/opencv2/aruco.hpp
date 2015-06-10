@@ -90,7 +90,7 @@ enum DICTIONARY { DICT_ARUCO = 0 };
  * correct codification. Useful for debugging purposes.
  * @param threshParam window size for adaptative thresholding. A larger param can slow down the
  * detection process. A low param can produce false negatives during the detection.
- * @param minLenght minimum size of candidates contour lenght. It is indicated as a ratio
+ * @param minLength minimum size of candidates contour length. It is indicated as a ratio
  * respect to the largest dimension of the input image. Markers whose perimeter is lower than the
  * correspoding value wont be detected. A low value can slow down the detection process
  *
@@ -104,7 +104,7 @@ enum DICTIONARY { DICT_ARUCO = 0 };
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
                               OutputArrayOfArrays imgPoints, OutputArray ids,
                               OutputArrayOfArrays rejectedImgPoints = cv::noArray(),
-                              int threshParam = 21, float minLenght = 0.03);
+                              int threshParam = 21, float minLength = 0.03);
 
 
 
@@ -115,7 +115,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
  * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @sa detectMarkers
- * @param markerSize the lenght of the markers' side. The returning translation vectors will
+ * @param markerSize the length of the markers' side. The returning translation vectors will
  * be in the same unit. Normally, unit is meters.
  * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
@@ -250,13 +250,13 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec rotation vector of the coordinate system that will be drawn. (@sa Rodrigues).
  * @param tvec translation vector of the coordinate system that will be drawn.
- * @param lenght lenght of the painted axis in the same unit than tvec (usually in meters)
+ * @param length length of the painted axis in the same unit than tvec (usually in meters)
  *
  * Given the pose estimation of a marker or board, this function draws the axis of the world
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
 CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
-                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float lenght);
+                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float length);
 
 
 
