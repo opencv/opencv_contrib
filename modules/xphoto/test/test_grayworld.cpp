@@ -4,7 +4,7 @@ namespace cvtest {
 
     using namespace cv;
 
-    void ref_autowbGrayworld(InputArray _src, OutputArray _dst, const float thresh)
+    void ref_autowbGrayworld(InputArray _src, OutputArray _dst, float thresh)
     {
         Mat src = _src.getMat();
 
@@ -20,13 +20,12 @@ namespace cvtest {
         const uchar* src_data = src.ptr<uchar>(0);
         unsigned long sum1 = 0, sum2 = 0, sum3 = 0;
         int i = 0;
-        double minRGB, maxRGB, satur;
+        unsigned int minRGB, maxRGB, thresh255 = round(thresh * 255);
         for ( ; i < N3; i += 3 )
         {
             minRGB = std::min(src_data[i], std::min(src_data[i + 1], src_data[i + 2]));
             maxRGB = std::max(src_data[i], std::max(src_data[i + 1], src_data[i + 2]));
-            satur = (maxRGB - minRGB) / maxRGB;
-            if ( satur > thresh ) continue;
+            if ( (maxRGB - minRGB) * 255 > thresh255 * maxRGB ) continue;
             sum1 += src_data[i];
             sum2 += src_data[i + 1];
             sum3 += src_data[i + 2];
@@ -48,14 +47,19 @@ namespace cvtest {
             inv3 = (double) inv3 / inv_max;
         }
 
+        // Fixed point arithmetic, mul by 2^8 then shift back 8 bits
+        unsigned int i_inv1 = inv1 * (1 << 8),
+                     i_inv2 = inv2 * (1 << 8),
+                     i_inv3 = inv3 * (1 << 8);
+
         // Scale input pixel values
         uchar* dst_data = dst.ptr<uchar>(0);
         i = 0;
         for ( ; i < N3; i += 3 )
         {
-            dst_data[i]     = (uchar)(src_data[i]     * inv1);
-            dst_data[i + 1] = (uchar)(src_data[i + 1] * inv2);
-            dst_data[i + 2] = (uchar)(src_data[i + 2] * inv3);
+            dst_data[i]     = (uchar)((src_data[i]     * i_inv1) >> 8);
+            dst_data[i + 1] = (uchar)((src_data[i + 1] * i_inv2) >> 8);
+            dst_data[i + 2] = (uchar)((src_data[i + 2] * i_inv3) >> 8);
         }
     }
 

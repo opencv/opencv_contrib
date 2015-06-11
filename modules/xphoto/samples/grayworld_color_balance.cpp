@@ -5,6 +5,9 @@
 
 #include "opencv2/core/utility.hpp"
 
+using namespace cv;
+using namespace std;
+
 const char* keys =
 {
     "{i || input image name}"
@@ -14,8 +17,8 @@ const char* keys =
 int main( int argc, const char** argv )
 {
     bool printHelp = ( argc == 1 );
-    printHelp = printHelp || ( argc == 2 && std::string(argv[1]) == "--help" );
-    printHelp = printHelp || ( argc == 2 && std::string(argv[1]) == "-h" );
+    printHelp = printHelp || ( argc == 2 && string(argv[1]) == "--help" );
+    printHelp = printHelp || ( argc == 2 && string(argv[1]) == "-h" );
 
     if ( printHelp )
     {
@@ -25,35 +28,35 @@ int main( int argc, const char** argv )
         return 0;
     }
 
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
     if ( !parser.check() )
     {
         parser.printErrors();
         return -1;
     }
 
-    std::string inFilename = parser.get<std::string>("i");
-    std::string outFilename = parser.get<std::string>("o");
+    string inFilename = parser.get<string>("i");
+    string outFilename = parser.get<string>("o");
 
-    cv::Mat src = cv::imread(inFilename, 1);
+    Mat src = imread(inFilename, 1);
     if ( src.empty() )
     {
         printf("Cannot read image file: %s\n", inFilename.c_str());
         return -1;
     }
 
-    cv::Mat res(src.size(), src.type());
-    cv::xphoto::autowbGrayworld(src, res);
+    Mat res(src.size(), src.type());
+    xphoto::autowbGrayworld(src, res);
 
     if ( outFilename == "" )
     {
-        cv::namedWindow("after white balance", 1);
-        cv::imshow("after white balance", res);
+        namedWindow("after white balance", 1);
+        imshow("after white balance", res);
 
-        cv::waitKey(0);
+        waitKey(0);
     }
     else
-        cv::imwrite(outFilename, res);
+        imwrite(outFilename, res);
 
     return 0;
 }

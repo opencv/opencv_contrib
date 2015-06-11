@@ -9,7 +9,7 @@ typedef perf::TestBaseWithParam<Size_WBThresh_t> Size_WBThresh;
 
 PERF_TEST_P( Size_WBThresh, autowbGrayworld,
     testing::Combine(
-        testing::Values( TYPICAL_MAT_SIZES ),
+        SZ_ALL_HD,
         testing::Values( 0.1, 0.5, 1.0 )
     )
 )
