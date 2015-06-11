@@ -354,22 +354,28 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
 /**
   * @brief Return number of erroneous bits in border, i.e. number of white bits in border.
   */
-int _getBorderErrors(const cv::Mat &bits, int markerSize) {
-    CV_Assert(markerSize > 0 && bits.cols == markerSize+2 && bits.rows == markerSize+2);
+int _getBorderErrors(const cv::Mat &bits, int markerSize, int borderSize) {
 
-    int sizeWithBorders = markerSize + 2;
+    int sizeWithBorders = markerSize + 2*borderSize;
+
+    CV_Assert(markerSize > 0 && bits.cols == sizeWithBorders && bits.rows == sizeWithBorders);
+
     int totalErrors = 0;
     for (int y = 0; y < sizeWithBorders; y++) {
-        if (bits.ptr<unsigned char>(y)[0] != 0)
-            totalErrors++;
-        if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1] != 0)
-            totalErrors++;
+        for(int k = 0; k < borderSize; k++) {
+            if (bits.ptr<unsigned char>(y)[k] != 0)
+                totalErrors++;
+            if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1 - k] != 0)
+                totalErrors++;
+        }
     }
-    for (int x = 1; x < sizeWithBorders - 1; x++) {
-        if (bits.ptr<unsigned char>(0)[x] != 0)
-            totalErrors++;
-        if (bits.ptr<unsigned char>(sizeWithBorders - 1)[x] != 0)
-            totalErrors++;
+    for (int x = borderSize; x < sizeWithBorders - borderSize; x++) {
+        for(int k = 0; k < borderSize; k++) {
+            if (bits.ptr<unsigned char>(k)[x] != 0)
+                totalErrors++;
+            if (bits.ptr<unsigned char>(sizeWithBorders - 1 - k)[x] != 0)
+                totalErrors++;
+        }
     }
     return totalErrors;
 }
@@ -392,11 +398,15 @@ bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOut
                                          params.perspectiveRemoveIgnoredMarginPerCell);
     int maximumErrorsInBorder = dictionary.markerSize * dictionary.markerSize *
                                 params.maxErroneousBitsInBorderRate;
-    if (_getBorderErrors(candidateBits, dictionary.markerSize) > maximumErrorsInBorder)
+    int borderErrors = _getBorderErrors(candidateBits, dictionary.markerSize,
+                                        params.markerBorderBits);
+    if (borderErrors > maximumErrorsInBorder)
         return false; // border is wrong
     cv::Mat onlyBits =
-        candidateBits.rowRange(1, candidateBits.rows - params.markerBorderBits)
-                     .colRange(1, candidateBits.rows - params.markerBorderBits);
+        candidateBits.rowRange(params.markerBorderBits,
+                               candidateBits.rows - params.markerBorderBits)
+                     .colRange(params.markerBorderBits,
+                               candidateBits.rows - params.markerBorderBits);
 
     int rotation;
     if (!dictionary.identify(onlyBits, idx, rotation))
