@@ -109,27 +109,19 @@ class DictionaryData {
 
 
     /**
-     * @brief Given an image and four corners positions, identify the marker.
-     * Returns whether if marker is identified or not.
+     * @brief Given a matrix of bits. Returns whether if marker is identified or not.
+     * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool identify(InputArray _image, InputOutputArray _corners, int &idx) const {
+    bool identify(const cv::Mat &onlyBits, int &idx, int &rotation) const {
 
-        CV_Assert(_corners.total() == 4);
-        CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows);
-
-        // get bits
-        cv::Mat candidateBits = _extractBits(_image, _corners);
-        if (_getBorderErrors(candidateBits)>1)
-            return false; // not really necessary
-        cv::Mat onlyBits =
-            candidateBits.rowRange(1, candidateBits.rows - 1).colRange(1, candidateBits.rows - 1);
+        CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
         // get as a byte list
         cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
 
         // search closest marker in dict
         int closestId = -1;
-        unsigned int rotation = 0;
+        rotation = 0;
         unsigned int closestDistance = markerSize * markerSize + 1;
         cv::Mat candidateDistances = _getDistances(candidateBytes);
 
@@ -144,13 +136,6 @@ class DictionaryData {
         // return closest id
         if (closestId != -1 && closestDistance <= maxCorrectionBits) {
             idx = closestId;
-            // correct corners positions
-            if (rotation != 0) {
-                cv::Mat copyPoints = _corners.getMat().clone();
-                for (int j = 0; j < 4; j++)
-                    _corners.getMat().ptr<cv::Point2f>(0)[j] =
-                        copyPoints.ptr<cv::Point2f>(0)[(j + 4 - rotation) % 4];
-            }
             return true;
         } else {
             idx = -1;
@@ -188,7 +173,7 @@ class DictionaryData {
 
 
     /**
-      * Transform matrix of bits to list of bytes in the 4 rotations
+      * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
     cv::Mat _getByteListFromBits(const cv::Mat &bits) const {
 
@@ -229,7 +214,7 @@ class DictionaryData {
 
 
     /**
-      * Transform list of bytes to matrix of bits
+      * @brief Transform list of bytes to matrix of bits
       */
     cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
         CV_Assert(byteList.total() >= markerSize*markerSize/8 &&
@@ -261,7 +246,7 @@ class DictionaryData {
 
 
     /**
-      * Calculate all distances of input byteList to markers in dictionary
+      * @brief Calculate all distances of input byteList to markers in dictionary
       * Returned matrix has one row per dictionary marker and two columns
       * Column 0 is the distance to the candidate, Column 1 is the rotation with minimum distance
       */
@@ -292,70 +277,6 @@ class DictionaryData {
 
 
 
-    /**
-      * Given an input image and a candidate corners, extract the bits of the candidate, including
-      * the border
-      */
-    cv::Mat _extractBits(InputArray _image, InputArray _corners) const {
-
-        CV_Assert(_image.getMat().channels() == 1);
-        CV_Assert(_corners.total() == 4);
-
-        cv::Mat resultImg; // marker image after removing perspective
-        int squareSizePixels = 8;
-        int resultImgSize = (markerSize + 2) * squareSizePixels;
-        cv::Mat resultImgCorners(4, 1, CV_32FC2);
-        resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
-        resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
-        resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f(resultImgSize - 1, resultImgSize - 1);
-        resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
-
-        // remove perspective
-        cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
-        cv::warpPerspective(_image, resultImg, transformation,
-                            cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
-
-        // now extract code
-        cv::Mat bits(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
-        cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-        for (unsigned int y = 0; y < markerSize + 2; y++) {
-            for (unsigned int x = 0; x < markerSize + 2; x++) {
-                int Xstart = x * (squareSizePixels)+1;
-                int Ystart = y * (squareSizePixels)+1;
-                cv::Mat square =
-                    resultImg(cv::Rect(Xstart, Ystart, squareSizePixels - 2, squareSizePixels - 2));
-                int nZ = countNonZero(square);
-                if (nZ > square.total() / 2)
-                    bits.at<unsigned char>(y, x) = 1;
-            }
-        }
-
-        return bits;
-    }
-
-
-    /**
-      * Return number of erroneous bits in border, i.e. number of white bits in border.
-      */
-    int _getBorderErrors(const cv::Mat &bits) const {
-        CV_Assert(markerSize > 0 && bits.cols == markerSize+2 && bits.rows == markerSize+2);
-
-        int sizeWithBorders = markerSize + 2;
-        int totalErrors = 0;
-        for (int y = 0; y < sizeWithBorders; y++) {
-            if (bits.ptr<unsigned char>(y)[0] != 0)
-                totalErrors++;
-            if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1] != 0)
-                totalErrors++;
-        }
-        for (int x = 1; x < sizeWithBorders - 1; x++) {
-            if (bits.ptr<unsigned char>(0)[x] != 0)
-                totalErrors++;
-            if (bits.ptr<unsigned char>(sizeWithBorders - 1)[x] != 0)
-                totalErrors++;
-        }
-        return totalErrors;
-    }
 };
 
 

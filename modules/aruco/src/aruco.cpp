@@ -57,7 +57,7 @@ using namespace std;
 
 
 /**
-  * Convert input image to gray if it is a 3 channels image
+  * @brief Convert input image to gray if it is a 3 channels image
   */
 void _convertToGrey(InputArray _in, OutputArray _out) {
 
@@ -72,9 +72,9 @@ void _convertToGrey(InputArray _in, OutputArray _out) {
 
 
 /**
-  * Threshold input image using adaptive thresholding
+  * @brief Threshold input image using adaptive thresholding
   */
-void _threshold(InputArray _in, OutputArray _out, int winSize, int constant) {
+void _threshold(InputArray _in, OutputArray _out, int winSize, double constant) {
 
     CV_Assert(winSize >= 3);
 
@@ -84,17 +84,18 @@ void _threshold(InputArray _in, OutputArray _out, int winSize, int constant) {
 
 
 /**
-  * Given a tresholded image, find the contours, calculate their polygonal approximation
+  * @brief Given a tresholded image, find the contours, calculate their polygonal approximation
   * and take those that accomplish some conditions
   */
 void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidates,
-                         float minLengthRate, float accuracyRate, float minCornerDistance,
-                         int maxDistanceToBorder) {
+                         float minPerimeterRate, int maxPerimeterRate, float accuracyRate,
+                         float minCornerDistance, int minDistanceToBorder) {
 
-    CV_Assert(minLengthRate > 0 && accuracyRate > 0 && minCornerDistance > 0 &&
-              maxDistanceToBorder >= 0);
+    CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
+              minCornerDistance > 0 && minDistanceToBorder >= 0);
 
-    int minLengthPixels = minLengthRate * std::max(_in.getMat().cols, _in.getMat().rows);
+    int minPerimeterPixels = minPerimeterRate * std::max(_in.getMat().cols, _in.getMat().rows);
+    int maxPerimeterPixels = maxPerimeterRate * std::max(_in.getMat().cols, _in.getMat().rows);
     cv::Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
@@ -102,7 +103,7 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
     // now filter list of contours
     for (unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter
-        if (contours[i].size() < minLengthPixels)
+        if (contours[i].size() < minPerimeterPixels || contours[i].size() > maxPerimeterPixels)
             continue;
 
         // check is square and is convex
@@ -128,9 +129,9 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
         // check if it is too near to the image border
         bool tooNearBorder = false;
         for (int j = 0; j < 4; j++) {
-            if (approxCurve[j].x < maxDistanceToBorder || approxCurve[j].y < maxDistanceToBorder ||
-                approxCurve[j].x > contoursImg.cols - 1 - maxDistanceToBorder ||
-                approxCurve[j].y > contoursImg.rows - 1 - maxDistanceToBorder)
+            if (approxCurve[j].x < minDistanceToBorder || approxCurve[j].y < minDistanceToBorder ||
+                approxCurve[j].x > contoursImg.cols - 1 - minDistanceToBorder ||
+                approxCurve[j].y > contoursImg.rows - 1 - minDistanceToBorder)
                 tooNearBorder = true;
         }
         if (tooNearBorder)
@@ -148,7 +149,7 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
 
 
 /**
-  * Assure order of candidate corners is clockwise direction
+  * @brief Assure order of candidate corners is clockwise direction
   */
 void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates) {
 
@@ -166,7 +167,7 @@ void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates) {
 
 
 /**
-  * Check candidates that are too close to each other and remove the smaller one
+  * @brief Check candidates that are too close to each other and remove the smaller one
   */
 void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn,
                                std::vector<std::vector<Point2f> > &candidatesOut,
@@ -235,7 +236,7 @@ void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candida
 
 
 /**
- * Detect square candidates in the input image
+ * @brief Detect square candidates in the input image
  */
 void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int threshParam,
                        float minLength, OutputArray _thresholdedImage = noArray()) {
@@ -256,7 +257,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
 
     /// 3. DETECT RECTANGLES
     std::vector<std::vector<Point2f> > candidates;
-    _findMarkerContours(thresh, candidates, minLength, 0.05, 10, 3);
+    _findMarkerContours(thresh, candidates, minLength, 4, 0.05, 10, 3);
 
     /// 4. SORT CORNERS
     _reorderCandidatesCorners(candidates);
@@ -276,9 +277,106 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
 }
 
 
+/**
+  * @brief Given an input image and a candidate corners, extract the bits of the candidate, including
+  * the border
+  */
+cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize) {
+
+    CV_Assert(_image.getMat().channels() == 1);
+    CV_Assert(_corners.total() == 4);
+
+    cv::Mat resultImg; // marker image after removing perspective
+    int squareSizePixels = 8;
+    int resultImgSize = (markerSize + 2) * squareSizePixels;
+    cv::Mat resultImgCorners(4, 1, CV_32FC2);
+    resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
+    resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
+    resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f(resultImgSize - 1, resultImgSize - 1);
+    resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
+
+    // remove perspective
+    cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
+    cv::warpPerspective(_image, resultImg, transformation,
+                        cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
+
+    // now extract code
+    cv::Mat bits(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
+    cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    for (unsigned int y = 0; y < markerSize + 2; y++) {
+        for (unsigned int x = 0; x < markerSize + 2; x++) {
+            int Xstart = x * (squareSizePixels)+1;
+            int Ystart = y * (squareSizePixels)+1;
+            cv::Mat square =
+                resultImg(cv::Rect(Xstart, Ystart, squareSizePixels - 2, squareSizePixels - 2));
+            int nZ = countNonZero(square);
+            if (nZ > square.total() / 2)
+                bits.at<unsigned char>(y, x) = 1;
+        }
+    }
+
+    return bits;
+}
+
 
 /**
- * Identify square candidates according to a marker dictionary
+  * @brief Return number of erroneous bits in border, i.e. number of white bits in border.
+  */
+int _getBorderErrors(const cv::Mat &bits, int markerSize) {
+    CV_Assert(markerSize > 0 && bits.cols == markerSize+2 && bits.rows == markerSize+2);
+
+    int sizeWithBorders = markerSize + 2;
+    int totalErrors = 0;
+    for (int y = 0; y < sizeWithBorders; y++) {
+        if (bits.ptr<unsigned char>(y)[0] != 0)
+            totalErrors++;
+        if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1] != 0)
+            totalErrors++;
+    }
+    for (int x = 1; x < sizeWithBorders - 1; x++) {
+        if (bits.ptr<unsigned char>(0)[x] != 0)
+            totalErrors++;
+        if (bits.ptr<unsigned char>(sizeWithBorders - 1)[x] != 0)
+            totalErrors++;
+    }
+    return totalErrors;
+}
+
+
+/**
+ * @brief Tries to identify one candidate given the dictionary
+ */
+bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputArray _corners,
+                          int &idx) {
+
+    CV_Assert(_corners.total() == 4);
+    CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows);
+
+    // get bits
+    cv::Mat candidateBits = _extractBits(_image, _corners, dictionary.markerSize);
+    if (_getBorderErrors(candidateBits, dictionary.markerSize)>1)
+        return false; // not really necessary
+    cv::Mat onlyBits =
+        candidateBits.rowRange(1, candidateBits.rows - 1).colRange(1, candidateBits.rows - 1);
+
+    int rotation;
+    if (!dictionary.identify(onlyBits, idx, rotation))
+        return false;
+    else {
+        if (rotation != 0) {
+            cv::Mat copyPoints = _corners.getMat().clone();
+            for (int j = 0; j < 4; j++)
+                _corners.getMat().ptr<cv::Point2f>(0)[j] =
+                    copyPoints.ptr<cv::Point2f>(0)[(j + 4 - rotation) % 4];
+        }
+        return true;
+    }
+}
+
+
+
+/**
+ * @brief Identify square candidates according to a marker dictionary
  */
 void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
                          const DictionaryData &dictionary, OutputArrayOfArrays _accepted,
@@ -299,7 +397,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
     for (int i = 0; i < ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
-        if (dictionary.identify(grey, currentCandidate, currId)) {
+        if (identifyOneCandidate(dictionary, grey, currentCandidate, currId)) {
             accepted.push_back(currentCandidate);
             ids.push_back(currId);
         } else
@@ -331,7 +429,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
 
 
 /**
-  * Return object points for the system centered in a single marker, given the marker length
+  * @brief Return object points for the system centered in a single marker, given the marker length
   */
 void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
 
@@ -413,7 +511,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerSize,
 
 
 /**
-  * Given a board configuration and a set of detected markers, returns the corresponding
+  * @brief Given a board configuration and a set of detected markers, returns the corresponding
   * image points and object points to call solvePnP
   */
 void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
