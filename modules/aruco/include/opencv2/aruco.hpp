@@ -79,6 +79,61 @@ enum DICTIONARY { DICT_ARUCO = 0 };
 
 
 /**
+ * @brief Parameters for the detectMarker process:
+ * - adaptiveThreshWinSize: window size for adaptive thresholding before finding contours.
+ *   (default 21)
+ * - adaptiveThreshConstant: constant for adaptive thresholding before finding contours (default 7)
+ * - minMarkerPerimeterRate: determine minimum perimeter for marker contour to be detected. This
+ *   is defined as a rate respect to the maximum dimension of the input image (default 0.03).
+ * - maxMarkerPerimeterRate:  determine maximum perimeter for marker contour to be detected. This
+ *   is defined as a rate respect to the maximum dimension of the input image (default 4.0).
+ * - polygonalApproxAccuracyRate: minimum accuracy during the polygonal approximation process to
+ *   determine which contours are squares.
+ * - minCornerDistance: minimum distance between corners for detected markers (in pixels)
+ *   (default 10)
+ * - minDistanceToBorder: minimum distance of any corner to the image border for detected markers
+ *   (in pixels) (default 3)
+ * - minMarkerDistance: minimum mean distance beetween two marker corners to be considered
+ *   similar, so that the smaller one is removed (in pixels) (default 10).
+ * - cornerRefinementWinSize: window size for the corner refinement process (in pixels) (default 5).
+ * - cornerRefinementMaxIterations: maximum number of iterations for stop criteria of the corner
+ *   refinement process (default 30).
+ * - cornerRefinementMinAccuracy: minimum error for the stop cristeria of the corner refinement
+ *   process (default: 0.1)
+ * - markerBorderBits: number of bits of the marker border, i.e. marker border width (default 1).
+ * - perpectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
+ *   when removing the perspective (default 8).
+ * - perspectiveRemoveIgnoredMarginPerCell: width of the margin of pixels on each cell not
+ *   considered for the determination of the cell bit. Represents the rate respect to the total
+ *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
+ * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
+ *   number of allowed white bits in the border). Represented as a rate respect to the total
+ *   number of bits per marker (default 0.04).
+ */
+struct DetectorParameters {
+
+    CV_EXPORTS DetectorParameters();
+
+    int adaptiveThreshWinSize;
+    double adaptiveThreshConstant;
+    double minMarkerPerimeterRate;
+    double maxMarkerPerimeterRate;
+    double polygonalApproxAccuracyRate;
+    double minCornerDistance;
+    int minDistanceToBorder;
+    double minMarkerDistance;
+    int cornerRefinementWinSize;
+    int cornerRefinementMaxIterations;
+    double cornerRefinementMinAccuracy;
+    int markerBorderBits;
+    int perspectiveRemovePixelPerCell;
+    double perspectiveRemoveIgnoredMarginPerCell;
+    double maxErroneousBitsInBorderRate;
+};
+
+
+
+/**
  * @brief Basic marker detection
  *
  * @param image input image
@@ -106,8 +161,8 @@ enum DICTIONARY { DICT_ARUCO = 0 };
  */
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
                               OutputArrayOfArrays corners, OutputArray ids,
-                              OutputArrayOfArrays rejectedImgPoints = cv::noArray(),
-                              int threshParam = 21, float minLength = 0.03);
+                              DetectorParameters parameters=DetectorParameters(),
+                              OutputArrayOfArrays rejectedImgPoints = cv::noArray());
 
 
 

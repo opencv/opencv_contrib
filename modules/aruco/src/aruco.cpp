@@ -56,6 +56,31 @@ namespace aruco {
 using namespace std;
 
 
+
+
+
+/**
+  *
+  */
+DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
+                                           adaptiveThreshConstant(7),
+                                           minMarkerPerimeterRate(0.03),
+                                           maxMarkerPerimeterRate(4.),
+                                           polygonalApproxAccuracyRate(0.05),
+                                           minCornerDistance(10),
+                                           minDistanceToBorder(3),
+                                           minMarkerDistance(10),
+                                           cornerRefinementWinSize(5),
+                                           cornerRefinementMaxIterations(30),
+                                           cornerRefinementMinAccuracy(0.1),
+                                           markerBorderBits(1),
+                                           perspectiveRemovePixelPerCell(8),
+                                           perspectiveRemoveIgnoredMarginPerCell(0.13),
+                                           maxErroneousBitsInBorderRate(0.04) {
+
+}
+
+
 /**
   * @brief Convert input image to gray if it is a 3 channels image
   */
@@ -172,6 +197,7 @@ void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates) {
 void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn,
                                std::vector<std::vector<Point2f> > &candidatesOut,
                                float minMarkerDistance) {
+    CV_Assert(minMarkerDistance > 0);
 
     std::vector<std::pair<int, int> > nearCandidates;
     for (unsigned int i = 0; i < candidatesIn.size(); i++) {
@@ -238,8 +264,8 @@ void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candida
 /**
  * @brief Detect square candidates in the input image
  */
-void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int threshParam,
-                       float minLength, OutputArray _thresholdedImage = noArray()) {
+void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
+                       DetectorParameters params, OutputArray _thresholdedImage = noArray()) {
 
     cv::Mat image = _image.getMat();
     CV_Assert(image.total() != 0);
@@ -249,22 +275,24 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
     _convertToGrey(image, grey);
 
     /// 2. THRESHOLD
-    CV_Assert(threshParam >= 3);
+    CV_Assert(params.adaptiveThreshWinSize >= 3);
     cv::Mat thresh;
-    _threshold(grey, thresh, threshParam, 7);
+    _threshold(grey, thresh, params.adaptiveThreshWinSize, params.adaptiveThreshConstant);
     if (_thresholdedImage.needed())
         thresh.copyTo(_thresholdedImage);
 
     /// 3. DETECT RECTANGLES
     std::vector<std::vector<Point2f> > candidates;
-    _findMarkerContours(thresh, candidates, minLength, 4, 0.05, 10, 3);
+    _findMarkerContours(thresh, candidates, params.minMarkerPerimeterRate,
+                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
+                        params.minCornerDistance, params.minDistanceToBorder);
 
     /// 4. SORT CORNERS
     _reorderCandidatesCorners(candidates);
 
     /// 5. FILTER OUT NEAR CANDIDATE PAIRS
     std::vector<std::vector<Point2f> > candidatesOut;
-    _filterTooCloseCandidates(candidates, candidatesOut, 10);
+    _filterTooCloseCandidates(candidates, candidatesOut, params.minMarkerDistance);
 
     // parse output
     _candidates.create(candidatesOut.size(), 1, CV_32FC2);
@@ -281,14 +309,17 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, int t
   * @brief Given an input image and a candidate corners, extract the bits of the candidate, including
   * the border
   */
-cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize) {
+cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int markerBorderBits,
+                     int cellSize, double cellMarginRate) {
 
     CV_Assert(_image.getMat().channels() == 1);
     CV_Assert(_corners.total() == 4);
+    CV_Assert(markerBorderBits > 0 && cellSize > 0 && cellMarginRate > 0);
 
+    int cellMarginPixels = cellMarginRate*cellSize;
+    int markerSizeWithBorders = markerSize + 2*markerBorderBits;
     cv::Mat resultImg; // marker image after removing perspective
-    int squareSizePixels = 8;
-    int resultImgSize = (markerSize + 2) * squareSizePixels;
+    int resultImgSize = markerSizeWithBorders * cellSize;
     cv::Mat resultImgCorners(4, 1, CV_32FC2);
     resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
     resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
@@ -301,14 +332,15 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize) {
                         cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
 
     // now extract code
-    cv::Mat bits(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
+    cv::Mat bits(markerSizeWithBorders, markerSizeWithBorders, CV_8UC1, cv::Scalar::all(0));
     cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-    for (unsigned int y = 0; y < markerSize + 2; y++) {
-        for (unsigned int x = 0; x < markerSize + 2; x++) {
-            int Xstart = x * (squareSizePixels)+1;
-            int Ystart = y * (squareSizePixels)+1;
+    for (unsigned int y = 0; y < markerSizeWithBorders; y++) {
+        for (unsigned int x = 0; x < markerSizeWithBorders; x++) {
+            int Xstart = x * (cellSize)+cellMarginPixels;
+            int Ystart = y * (cellSize)+cellMarginPixels;
             cv::Mat square =
-                resultImg(cv::Rect(Xstart, Ystart, squareSizePixels - 2, squareSizePixels - 2));
+                resultImg(cv::Rect(Xstart, Ystart, cellSize - 2*cellMarginPixels,
+                                   cellSize - 2*cellMarginPixels));
             int nZ = countNonZero(square);
             if (nZ > square.total() / 2)
                 bits.at<unsigned char>(y, x) = 1;
@@ -347,17 +379,24 @@ int _getBorderErrors(const cv::Mat &bits, int markerSize) {
  * @brief Tries to identify one candidate given the dictionary
  */
 bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputArray _corners,
-                          int &idx) {
+                          int &idx, DetectorParameters params) {
 
     CV_Assert(_corners.total() == 4);
     CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows);
+    CV_Assert(params.markerBorderBits > 0);
 
     // get bits
-    cv::Mat candidateBits = _extractBits(_image, _corners, dictionary.markerSize);
-    if (_getBorderErrors(candidateBits, dictionary.markerSize)>1)
-        return false; // not really necessary
+    cv::Mat candidateBits = _extractBits(_image, _corners, dictionary.markerSize,
+                                         params.markerBorderBits,
+                                         params.perspectiveRemovePixelPerCell,
+                                         params.perspectiveRemoveIgnoredMarginPerCell);
+    int maximumErrorsInBorder = dictionary.markerSize * dictionary.markerSize *
+                                params.maxErroneousBitsInBorderRate;
+    if (_getBorderErrors(candidateBits, dictionary.markerSize) > maximumErrorsInBorder)
+        return false; // border is wrong
     cv::Mat onlyBits =
-        candidateBits.rowRange(1, candidateBits.rows - 1).colRange(1, candidateBits.rows - 1);
+        candidateBits.rowRange(1, candidateBits.rows - params.markerBorderBits)
+                     .colRange(1, candidateBits.rows - params.markerBorderBits);
 
     int rotation;
     if (!dictionary.identify(onlyBits, idx, rotation))
@@ -380,7 +419,8 @@ bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOut
  */
 void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
                          const DictionaryData &dictionary, OutputArrayOfArrays _accepted,
-                         OutputArray _ids, OutputArrayOfArrays _rejected = noArray()) {
+                         OutputArray _ids, DetectorParameters params,
+                         OutputArrayOfArrays _rejected = noArray()) {
 
     int ncandidates = _candidates.total();
 
@@ -397,7 +437,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
     for (int i = 0; i < ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
-        if (identifyOneCandidate(dictionary, grey, currentCandidate, currId)) {
+        if (identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
             accepted.push_back(currentCandidate);
             ids.push_back(currId);
         } else
@@ -460,8 +500,8 @@ const DictionaryData &_getDictionaryData(DICTIONARY name) {
 /**
   */
 void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _corners,
-                   OutputArray _ids, OutputArrayOfArrays _rejectedImgPoints, int threshParam,
-                   float minLength) {
+                   OutputArray _ids, DetectorParameters params,
+                   OutputArrayOfArrays _rejectedImgPoints) {
 
     CV_Assert(_image.getMat().total() != 0);
 
@@ -470,16 +510,24 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
     /// STEP 1: Detect marker candidates
     std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(grey, candidates, threshParam, minLength);
+    _detectCandidates(grey, candidates, params);
 
     /// STEP 2: Check candidate codification (identify markers)
     DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    _identifyCandidates(grey, candidates, dictionaryData, _corners, _ids, _rejectedImgPoints);
+    _identifyCandidates(grey, candidates, dictionaryData, _corners, _ids, params,
+                        _rejectedImgPoints);
+
+    /// STEP 3: Corner refinement
+    CV_Assert(params.cornerRefinementWinSize > 0 && params.cornerRefinementMaxIterations > 0 &&
+              params.cornerRefinementMinAccuracy > 0);
 
     for (int i = 0; i < _corners.total(); i++) {
-        /// STEP 3: Corner refinement
-        cv::cornerSubPix(grey, _corners.getMat(i), cvSize(5, 5), cvSize(-1, -1),
-                         cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 30, 0.1));
+        cv::cornerSubPix(grey, _corners.getMat(i),
+                         cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
+                         cvSize(-1, -1),
+                         cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                        params.cornerRefinementMaxIterations,
+                                        params.cornerRefinementMinAccuracy));
     }
 }
 

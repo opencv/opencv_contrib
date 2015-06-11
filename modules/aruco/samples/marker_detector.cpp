@@ -64,7 +64,8 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<cv::Point2f> > rejectedImgPoints;
 
         // detect markers
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids, rejectedImgPoints);
+        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids, 
+                                 cv::aruco::DetectorParameters(), rejectedImgPoints);
 
         // draw results
         if (ids.size() > 0)
