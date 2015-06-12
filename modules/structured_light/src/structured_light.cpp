@@ -51,6 +51,10 @@ namespace structured_light
 */   
 bool StructuredLightPattern::generate( OutputArrayOfArrays patternImages, Scalar black, Scalar white )
 {
+     // Disabling warnings for unused parameters
+    (void) patternImages;
+    (void) black;
+    (void) white;
     return false;
 }
 	
@@ -68,7 +72,17 @@ bool StructuredLightPattern::decode( InputArrayOfArrays patternImages,
                                      InputArrayOfArrays lightImages,
                                      int flags) const
 {
-	return false;
+  // Disabling warnings for unused parameters
+  (void) patternImages;
+  (void) camerasMatrix;
+  (void) camerasDistCoeffs;
+  (void) camerasRotationMatrix;
+  (void) camerasTranslationVector;
+  (void) disparityMap;
+  (void) darkImages;
+  (void) lightImages;
+  (void) flags;
+  return false;
 }
 
 
@@ -83,7 +97,17 @@ bool loadCameraCalibrationParameters( const std::string& path,
                                       OutputArray translationVector1, 
                                       OutputArray translationVector2 )
 {
-	return true;
+   // Disabling warnings for unused parameters
+   (void) path;
+   (void) cameraMatrix1;
+   (void) cameraMatrix2;
+   (void) distCoeffs1;
+   (void) distCoeffs2;
+   (void) rotationMatrix1;
+   (void) rotationMatrix2;
+   (void) translationVector1;
+   (void)translationVector2;
+   return true;
 }
         
 //save intrinsics and extrinsics parameters using cv::FileStorage
@@ -97,6 +121,16 @@ bool saveCalibrationParameters( const std::string& path,
                                 InputArray translationVector1, 
                                 InputArray translationVector2 ) 
 {
+  // Disabling warnings for unused parameters
+  (void) path;
+  (void) cameraMatrix1;
+  (void) cameraMatrix2;
+  (void) distCoeffs1;
+  (void) distCoeffs2;
+  (void) rotationMatrix1;
+  (void) rotationMatrix2;
+  (void) translationVector1;
+  (void)translationVector2;
 	return true;
 }
         
@@ -113,6 +147,16 @@ bool camerasProjectorCalibrate( InputArrayOfArrays gridImages,
                                 OutputArray translationVector1, 
                                 OutputArray translationVector2 )
 {
+  // Disabling warnings for unused parameters
+  (void) gridImages;
+  (void) cameraMatrix1;
+  (void) cameraMatrix2;
+  (void) distCoeffs1;
+  (void) distCoeffs2;
+  (void) rotationMatrix1;
+  (void) rotationMatrix2;
+  (void) translationVector1;
+  (void) translationVector2;
 	return true;
 }
 
