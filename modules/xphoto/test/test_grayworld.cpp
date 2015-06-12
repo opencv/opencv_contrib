@@ -20,7 +20,7 @@ namespace cvtest {
         const uchar* src_data = src.ptr<uchar>(0);
         unsigned long sum1 = 0, sum2 = 0, sum3 = 0;
         int i = 0;
-        unsigned int minRGB, maxRGB, thresh255 = round(thresh * 255);
+        unsigned int minRGB, maxRGB, thresh255 = cvRound(thresh * 255);
         for ( ; i < N3; i += 3 )
         {
             minRGB = std::min(src_data[i], std::min(src_data[i + 1], src_data[i + 2]));

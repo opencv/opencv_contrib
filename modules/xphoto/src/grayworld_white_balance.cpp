@@ -67,7 +67,7 @@ namespace cv { namespace xphoto {
         // Calculate sum of pixel values of each channel
         const uchar* src_data = src.ptr<uchar>(0);
         unsigned long sum1 = 0, sum2 = 0, sum3 = 0;
-        unsigned int thresh255 = round(thresh * 255);
+        unsigned int thresh255 = cvRound(thresh * 255);
         int i = 0;
 #if CV_SIMD128
         v_uint8x16 v_inB, v_inG, v_inR;
