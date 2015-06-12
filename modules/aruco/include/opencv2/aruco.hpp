@@ -138,7 +138,7 @@ struct DetectorParameters {
  *
  * @param image input image
  * @param dictionary indicates the type of markers that will be searched
- * @param imgPoints vector of detected marker corners. For each marker, its four corners
+ * @param corners vector of detected marker corners. For each marker, its four corners
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
  * the dimensions of this array is Nx4. The order of the corners is clockwise.
  * @param ids vector of identifiers of the detected markers. The identifier is of type int
@@ -169,7 +169,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
 /**
  * @brief Pose estimation for single markers
  *
- * @param imgPoints vector of already detected markers corners. For each marker, its four corners
+ * @param corners vector of already detected markers corners. For each marker, its four corners
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
  * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @sa detectMarkers
@@ -243,9 +243,9 @@ public:
      * @param markersX number of markers in X direction
      * @param markersY number of markers in Y direction
      * @param markerLenght marker side length (normally in meters)
-     * @param markerSeparation separation between two markers (same unit than markerSize)
+     * @param markerSeparation separation between two markers (same unit than markerLenght)
      * @param dictionary dictionary of markers indicating the type of markers.
-     * The first width*height markers in the dictionary are used.
+     * The first markersX*markersY markers in the dictionary are used.
      * @return the output GridBoard object
      *
      * This functions creates a GridBoard object given the number of markers in each direction and
@@ -293,9 +293,10 @@ private:
 /**
  * @brief Pose estimation for a board of markers
  *
- * @param imgPoints vector of already detected markers corners. For each marker, its four corners
+ * @param corners vector of already detected markers corners. For each marker, its four corners
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
  * dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param ids list of identifiers for each marker in corners
  * @param board layout of markers in the board. The layout is composed by the marker identifiers
  * and the positions of each marker corner in the board reference system.
  * @param cameraMatrix input 3x3 floating-point camera matrix
@@ -324,7 +325,7 @@ CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, co
  *
  * @param in input image
  * @param out output image. It will be a copy of in but the markers will be painted on.
- * @param markersCorners positions of marker corners on input image.
+ * @param corners positions of marker corners on input image.
  * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of
  * this array should be Nx4. The order of the corners should be clockwise.
  * @param ids vector of identifiers for markers in markersCorners .
@@ -385,7 +386,6 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
  *
  * @param board layout of the board that will be drawn. The board should be planar,
  * z coordinate is ignored
- * @param dictionary dictionary of markers indicating the type of markers
  * @param outSize size of the output image in pixels.
  * @param img output image with the board. The size of this image will be outSize
  * and the board will be on the center, keeping the board proportions.
@@ -403,9 +403,10 @@ CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArra
 /**
  * @brief Calibrate a camera using aruco markers
  *
- * @param imgPoints vector of detected marker corners in each frame.
+ * @param corners vector of detected marker corners in each frame.
  * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
- * @param ids list of identifiers for each marker in imgPoints
+ * @param ids list of identifiers for each marker in corners
+ * @param board Marker Board layout
  * @param imageSize Size of the image used only to initialize the intrinsic camera matrix.
  * @param cameraMatrix Output 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$ . If CV\_CALIB\_USE\_INTRINSIC\_GUESS
