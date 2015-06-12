@@ -313,10 +313,12 @@ private:
  * The returned transformation is the one that transforms points from the board coordinate system
  * to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
+ * The function returns the number of markers from the input employed for the board pose estimation.
+ * Note that returning a 0 means the pose has not been estimated.
  */
-CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Board &board,
-                                  InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                  OutputArray tvec);
+CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Board &board,
+                                 InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
+                                 OutputArray tvec);
 
 
 

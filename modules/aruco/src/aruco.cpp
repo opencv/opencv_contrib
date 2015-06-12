@@ -614,18 +614,25 @@ void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
 
 /**
   */
-void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board &board,
-                       InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                       OutputArray _tvec) {
+int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board &board,
+                      InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
+                      OutputArray _tvec) {
 
     CV_Assert(_corners.total() == _ids.total() );
 
     cv::Mat objPoints, imgPoints;
     _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
 
+    CV_Assert(imgPoints.total() == objPoints.total());
+
+    if(objPoints.total() == 0) // 0 of the detected markers in board
+        return 0;
+
     _rvec.create(3, 1, CV_64FC1);
     _tvec.create(3, 1, CV_64FC1);
     cv::solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec);
+
+    return objPoints.total()/4;
 }
 
 
@@ -857,8 +864,7 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
             }
         }
     }
-    cv::Mat img = _img.getMat();
-    out.copyTo(img);
+
 }
 
 

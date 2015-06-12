@@ -109,11 +109,12 @@ int main(int argc, char *argv[]) {
 
         // detect markers and estimate pose
         cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);
+	int markersOfBoardDetected = 0;
         if (ids.size() > 0)
-            cv::aruco::estimatePoseBoard(imgPoints, ids, b, camMatrix, distCoeffs, rvec, tvec);
+            markersOfBoardDetected = cv::aruco::estimatePoseBoard(imgPoints, ids, b, camMatrix, distCoeffs, rvec, tvec);
 
         // draw results
-        if (ids.size() > 0) {
+        if (markersOfBoardDetected > 0) {
             cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
             cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, 0.1);
         } else
