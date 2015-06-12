@@ -176,18 +176,18 @@ GrayCodePattern_Impl::generate(OutputArrayOfArrays pattern,
         {
           Vec3b pixel_color;
 
-          if (flag==0)
-            pixel_color = Vec3b(lightColor[0], lightColor[1], lightColor[2]);
+          if (flag == 0)
+            pixel_color = Vec3b((uchar)lightColor[0], (uchar)lightColor[1], (uchar)lightColor[2]);
           else
-            pixel_color=Vec3b(flag*darkColor[0], flag*darkColor[1], flag*darkColor[2]);
+            pixel_color = Vec3b((uchar)(flag*darkColor[0]), (uchar)(flag*darkColor[1]), (uchar)(flag*darkColor[2]));
 
           pattern_[2*numOfColImgs-2*k-2].at<Vec3b>(i, j) = pixel_color;
 
-          if (pixel_color==Vec3b(darkColor[0], darkColor[1], darkColor[2]))
-          pixel_color = Vec3b(lightColor[0], lightColor[1], lightColor[2]);
+          if (pixel_color == Vec3b((uchar)darkColor[0], (uchar) darkColor[1], (uchar)darkColor[2]))
+          pixel_color = Vec3b((uchar)lightColor[0], (uchar)lightColor[1],(uchar) lightColor[2]);
 
           else
-          pixel_color=Vec3b(darkColor[0], darkColor[1], darkColor[2]);
+          pixel_color=Vec3b((uchar)darkColor[0], (uchar)darkColor[1], (uchar)darkColor[2]);
 
           pattern_[2*numOfColImgs-2*k-1].at<Vec3b>(i, j) = pixel_color;
         }
@@ -209,29 +209,29 @@ GrayCodePattern_Impl::generate(OutputArrayOfArrays pattern,
 
           if ((rem==0 && prevRem==1) || (rem==1 && prevRem==0))
           {
-            flag=1;
+            flag = 1;
           }
           else
           {
-            flag= 0;
+            flag = 0;
           }
 
           for (int j=0; j< params.width; j++)
           {
             cv::Vec3b pixel_color;
 
-            if (flag==0)
-              pixel_color = Vec3b(lightColor[0], lightColor[1], lightColor[2]);
+            if (flag == 0)
+              pixel_color = Vec3b((uchar)lightColor[0], (uchar)lightColor[1], (uchar)lightColor[2]);
             else
-              pixel_color=Vec3b(flag*darkColor[0],flag*darkColor[1],flag*darkColor[2]);
+              pixel_color = Vec3b((uchar)(flag*darkColor[0]),(uchar)(flag*darkColor[1]),(uchar)(flag*darkColor[2]));
 
             pattern_[2*numOfRowImgs-2*k+2*numOfColImgs-2].at<Vec3b>(i, j)= pixel_color;
 
-            if (pixel_color == Vec3b(darkColor[0], darkColor[1], darkColor[2]))
-             pixel_color = Vec3b(lightColor[0], lightColor[1], lightColor[2]);
+            if (pixel_color == Vec3b((uchar)darkColor[0], (uchar)darkColor[1], (uchar)darkColor[2]))
+             pixel_color = Vec3b((uchar)lightColor[0], (uchar)lightColor[1],(uchar) lightColor[2]);
 
             else
-             pixel_color = Vec3b(darkColor[0], darkColor[1], darkColor[2]);
+             pixel_color = Vec3b((uchar)darkColor[0], (uchar)darkColor[1], (uchar)darkColor[2]);
 
             pattern_[2*numOfRowImgs-2*k+2*numOfColImgs-1].at<Vec3b>(i, j) = pixel_color;
           }
