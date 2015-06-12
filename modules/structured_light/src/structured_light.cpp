@@ -45,16 +45,12 @@
 namespace cv
 {
 namespace structured_light
-{
-// Destructor
-StructuredLightPattern::~StructuredLightPattern() {}
-    
+{    
 /* Generates the structured light pattern.
 *  patternImages   The generated pattern.
 */   
-bool StructuredLightPattern::generate( OutputArrayOfArrays patternImages )
+bool StructuredLightPattern::generate( OutputArrayOfArrays patternImages, Scalar black, Scalar white )
 {
-    //valutare CV_Error(Error::StsNotImplemented, "");
     return false;
 }
 	
@@ -62,43 +58,51 @@ bool StructuredLightPattern::generate( OutputArrayOfArrays patternImages )
 * patternImages The pattern to decode.
 * disparityMap The decoding result: a disparity map.
 */    
-bool StructuredLightPattern::decode( InputArrayOfArrays patternImages, 
-	                                 OutputArray disparityMap)
+bool StructuredLightPattern::decode( InputArrayOfArrays patternImages,
+                                     InputArrayOfArrays camerasMatrix,
+                                     InputArrayOfArrays camerasDistCoeffs,
+                                     InputArrayOfArrays camerasRotationMatrix,
+                                     InputArrayOfArrays camerasTranslationVector,
+                                     OutputArray disparityMap,
+                                     InputArrayOfArrays darkImages,
+                                     InputArrayOfArrays lightImages,
+                                     int flags) const
 {
 	return false;
 }
 
-//'load intrinsics and extrinsics parameters'
-bool loadCameraCalibrationParameters(std::string path, 
-                                                  OutputArray cameraMatrix1, 
-                                                  OutputArray cameraMatrix2, 
-                                                  OutputArray distCoeffs1, 
-                                                  OutputArray distCoeffs2, 
-                                                  OutputArray rotationMatrix1,
-                                                  OutputArray rotationMatrix2, 
-                                                  OutputArray translationVector1, 
-                                                  OutputArray translationVector2)
+
+//'load intrinsics and extrinsics parameters
+bool loadCameraCalibrationParameters( const std::string& path, 
+                                      OutputArray cameraMatrix1, 
+                                      OutputArray cameraMatrix2, 
+                                      OutputArray distCoeffs1, 
+                                      OutputArray distCoeffs2, 
+                                      OutputArray rotationMatrix1,
+                                      OutputArray rotationMatrix2, 
+                                      OutputArray translationVector1, 
+                                      OutputArray translationVector2 )
 {
 	return true;
 }
         
-//save intrinsics and extrinsics parameters using cv::FileStorage'
-bool saveCalibrationParameters(std::string path, 
-                                            InputArray cameraMatrix1, 
-                                            InputArray cameraMatrix2, 
-                                            InputArray distCoeffs1, 
-                                            InputArray distCoeffs2,
-                                            InputArray rotationMatrix1, 
-                                            InputArray rotationMatrix2, 
-                                            InputArray translationVector1, 
-                                            InputArray translationVector2)
+//save intrinsics and extrinsics parameters using cv::FileStorage
+bool saveCalibrationParameters( const std::string& path, 
+                                InputArray cameraMatrix1, 
+                                InputArray cameraMatrix2, 
+                                InputArray distCoeffs1, 
+                                InputArray distCoeffs2,
+                                InputArray rotationMatrix1, 
+                                InputArray rotationMatrix2, 
+                                InputArray translationVector1, 
+                                InputArray translationVector2 ) 
 {
 	return true;
 }
         
 /* calibrate the cameras (intrinsics and extrinsics parameters) using the calssical openCV calibration functions'
-   the input is a vector of images or it could also be a list of names'
-   it fills camMatrix, distortion,rotationMatrix, translationVector*/
+   the input is a vector of images
+   it fills camMatrix, distortion,rotationMatrix, translationVector..*/
 bool camerasProjectorCalibrate( InputArrayOfArrays gridImages, 
                                 OutputArray cameraMatrix1, 
                                 OutputArray cameraMatrix2,  
@@ -107,7 +111,7 @@ bool camerasProjectorCalibrate( InputArrayOfArrays gridImages,
                                 OutputArray rotationMatrix1, 
                                 OutputArray rotationMatrix2, 
                                 OutputArray translationVector1, 
-                                OutputArray translationVector2)
+                                OutputArray translationVector2 )
 {
 	return true;
 }
