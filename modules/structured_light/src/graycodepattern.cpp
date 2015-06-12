@@ -252,8 +252,19 @@ GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages,
                               InputArrayOfArrays camerasTranslationVector,
                               OutputArray disparityMap,
                               InputArrayOfArrays darkImages,
-                              InputArrayOfArrays lightImages, int flags ) const
+                              InputArrayOfArrays lightImages,
+                              int flags ) const
 {
+  // Disabling warnings for unused parameters
+  (void) patternImages;
+  (void) camerasMatrix;
+  (void) camerasDistCoeffs;
+  (void) camerasRotationMatrix;
+  (void) camerasTranslationVector;
+  (void) disparityMap;
+  (void) darkImages;
+  (void) lightImages;
+  (void) flags;
   return true;
 }
 
@@ -271,11 +282,18 @@ GrayCodePattern_Impl::computeNumberOfPatternImages()
 void
 GrayCodePattern_Impl::computeShadowMasks(InputArrayOfArrays darkImages, InputArrayOfArrays lightImages, OutputArrayOfArrays shadowMasks) const
 {
+    // Disabling warnings for unused parameters
+    (void) darkImages;
+    (void) lightImages;
+    (void) shadowMasks;
     return;
 }
 
 void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray darkImage, InputOutputArray lightImage ) const
 {
+    // Disabling warnings for unused parameters
+    (void) darkImage;
+    (void) lightImage;
     return;
 }
 
@@ -283,6 +301,11 @@ void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray darkImage, 
 void
 GrayCodePattern_Impl::getProjPixel( InputArrayOfArrays patternImages, int x, int y, cv::Point &p_out ) const
 {
+    // Disabling warnings for unused parameters
+    (void) patternImages;
+    (void) x;
+    (void) y;
+    (void) p_out;
     return;
 }
 
@@ -290,6 +313,8 @@ GrayCodePattern_Impl::getProjPixel( InputArrayOfArrays patternImages, int x, int
 int
 GrayCodePattern_Impl::grayToDec( const std::vector<bool>& gray) const
 {
+    // Disabling warnings for unused parameters
+    (void) gray;
     return 0;
 }
 
