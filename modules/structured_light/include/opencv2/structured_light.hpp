@@ -7,11 +7,12 @@
 //  copy or use the software.
 //
 //
-//                           License Agreement
+//                          License Agreement
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
 // Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,121 +41,14 @@
 //
 //M*/
 
+/*#ifdef __OPENCV_BUILD
+#error this is a compatibility header which should not be used inside the OpenCV library
+#endif*/
 
-#ifndef __OPENCV_STRUCTURED_LIGHT_HPP__
-#define __OPENCV_STRUCTURED_LIGHT_HPP__
+#include "opencv2/structured_light/structured_light.hpp"
 
-#include "opencv2/core.hpp"
+/** @defgroup structured_light Structure Light API
 
-namespace cv
-{
-namespace structured_light
-{
-/** @brief Abstract base class for generating and decoding structured light pattern.
+Structured Light Systems (SLS), formed by the combination of a projector with one or more cameras,
+are simple and effective tools to acquire 3D models.
 */
-class CV_EXPORTS_W StructuredLightPattern : public virtual Algorithm
-{
-public:
-	virtual ~StructuredLightPattern();
-	
-    /** @brief Generates the structured light pattern.
-
-    @param patternImages The generated pattern.
-    */                            
-	CV_WRAP virtual bool generate( OutputArrayOfArrays patternImages );
-	
-	/** @brief Decodes the structured light pattern, generating a disparity map
-
-    @param patternImages The pattern to decode.
-    @param disparityMap The decoding result: a disparity map.
-    */    
-	CV_WRAP virtual bool decode( InputArrayOfArrays patternImages, 
-	                             cv::OutputArray disparityMap);
-};
-
-/** @brief Class implementing the structured light pattern generetor and decoder described in @cite 3D underworld SLS.
- */
-class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
-{
-public:
-	 /** @brief The GrayCodePattern constructor.
-
-    @param proj_width The projector width.
-    @param proj_heigth The projector heigth.
-     */
-    CV_WRAP static Ptr<GrayCodePattern> create( int proj_width, int proj_heigth);
-    
-    /** @brief Generates the structured light pattern.
-
-    @param patternImages The generated pattern.
-    */                            
-	CV_WRAP virtual bool generate( OutputArrayOfArrays patternImages ) =0;
-   
-    /** @brief Sets the value for set the value for white threshold.
-
-    @param value The desired white thershold value.
-     */
-    CV_WRAP virtual void setWhiteThreshold(int value)=0;
-    
-     /** @brief Sets the value for set the value for black threshold.
-
-    @param value The desired black thershold value.
-     */
-    CV_WRAP virtual void setBlackThreshold(int value)=0;
-    
-    /** @brief Decodes the structured light pattern, generating a disparity map
-
-    @param patternImages The pattern to decode.
-    @param disparityMap The decoding result: a disparity map.
-    */    
-	CV_WRAP virtual bool decode( InputArrayOfArrays patternImages, 
-	                             InputArray cameraMatrix1, 
-	                             InputArray cameraMatrix2, 
-	                             InputArray distCoeffs1, 
-	                             InputArray distCoeffs2, 
-	                             InputArray rotationMatrix1, 
-	                             InputArray rotationMatrix2, 
-	                             InputArray translationVector1, 
-	                             InputArray translationVector2,
-	                             cv::OutputArray disparityMap )=0;
-};
-
-
-//'load intrinsics and extrinsics parameters'
-CV_EXPORTS_W bool loadCameraCalibrationParameters(std::string path, 
-                                                  OutputArray cameraMatrix1, 
-                                                  OutputArray cameraMatrix2, 
-                                                  OutputArray distCoeffs1, 
-                                                  OutputArray distCoeffs2, 
-                                                  OutputArray rotationMatrix1,
-                                                  OutputArray rotationMatrix2, 
-                                                  OutputArray translationVector1, 
-                                                  OutputArray translationVector2 );
-        
-//save intrinsics and extrinsics parameters using cv::FileStorage'
-CV_EXPORTS_W bool saveCalibrationParameters( std::string path, 
-                                             InputArray cameraMatrix1, 
-                                             InputArray cameraMatrix2, 
-                                             InputArray distCoeffs1, 
-                                             InputArray distCoeffs2,
-                                             InputArray rotationMatrix1, 
-                                             InputArray rotationMatrix2, 
-                                             InputArray translationVector1, 
-                                             InputArray translationVector2 ); 
-        
-/* calibrate the cameras (intrinsics and extrinsics parameters) using the calssical openCV calibration functions'
-   the input is a vector of images or it could also be a list of names'
-   it fills camMatrix, distortion,rotationMatrix, translationVector*/
-CV_EXPORTS_W bool camerasProjectorCalibrate( InputArrayOfArrays gridImages, 
-                                             OutputArray cameraMatrix1, 
-                                             OutputArray cameraMatrix2,  
-                                             OutputArray distCoeffs1, 
-                                             OutputArray distCoeffs2, 
-                                             OutputArray rotationMatrix1, 
-                                             OutputArray rotationMatrix2, 
-                                             OutputArray translationVector1, 
-                                             OutputArray translationVector2 );
-
-}
-}
-#endif

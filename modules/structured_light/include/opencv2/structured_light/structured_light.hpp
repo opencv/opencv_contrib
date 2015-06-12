@@ -7,12 +7,11 @@
 //  copy or use the software.
 //
 //
-//                          License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
 // Copyright (C) 2009, Willow Garage Inc., all rights reserved.
-// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -41,8 +40,164 @@
 //
 //M*/
 
-#ifdef __OPENCV_BUILD
-#error this is a compatibility header which should not be used inside the OpenCV library
-#endif
 
-#include "opencv2/structured_light.hpp"
+#ifndef __OPENCV_STRUCTURED_LIGHT_HPP__
+#define __OPENCV_STRUCTURED_LIGHT_HPP__
+
+#include "opencv2/core.hpp"
+
+namespace cv
+{
+namespace structured_light
+{
+//! @addtogroup structured_light
+//! @{
+
+//! type of the decoding algorithm
+enum { DECODE_3D_UNDERWORLD = 0 //!< K. Herakleous, C. Poullis. “3DUNDERWORLD-SLS: An Open-Source Structured-Light Scanning System for Rapid Geometry Acquisition”, ICT-TR-2014-01
+       // other algorithms can be implemented
+     };
+
+/** @brief Abstract base class for generating and decoding structured light pattern.
+*/
+class CV_EXPORTS_W StructuredLightPattern : public virtual Algorithm
+{
+public:	
+    /** @brief Generates the structured light pattern.
+
+    @param patternImages The generated pattern: a std::vector<cv::Mat>
+    @param darkColor The dark color of the pattern; default is black.
+    @param lightColor The light color of the pattern; default is white.
+    */                            
+  	CV_WRAP virtual bool generate( OutputArrayOfArrays patternImages,
+  	                               const Scalar darkColor = Scalar(255,255,255),
+  	                               const Scalar lightColor = Scalar(0,0,0) );
+	
+  	/** @brief Decodes the structured light pattern, generating a disparity map
+
+    @param patternImages The pattern to decode.
+    @param camerasMatrix The intrinsics of the cameras.
+    @param camerasDistCoeffs The distortion coefficients of the cameras.
+    @param camerasRotationMatrix The rotation matrix of the cameras.
+    @param camerasTranslationVector The translation vector of the cameras.
+    @param disparityMap The decoding result: a disparity map.
+    @param darkImages The all-dark images needed for shadowMasks computation.
+    @param lightImages The all-light images needed for shadowMasks computation.
+    @param flags Flags setting decoding algorithms.
+    */    
+	  CV_WRAP virtual bool decode( InputArrayOfArrays patternImages,
+	                               InputArrayOfArrays camerasMatrix,
+	                               InputArrayOfArrays camerasDistCoeffs,
+	                               InputArrayOfArrays camerasRotationMatrix,
+	                               InputArrayOfArrays camerasTranslationVector,
+	                               OutputArray disparityMap,
+	                               InputArrayOfArrays darkImages = noArray(),
+	                               InputArrayOfArrays lightImages = noArray(),
+	                               int flags = DECODE_3D_UNDERWORLD ) const;
+};
+
+/** @brief Class implementing the Gray Code Pattern
+ */
+class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
+{
+public:
+
+   struct CV_EXPORTS_W_SIMPLE Params
+   {
+      CV_WRAP Params();
+      CV_PROP_RW int width;
+      CV_PROP_RW int height;
+   };
+
+    /** @brief Constructor
+    @param parameters GrayCodePattern parameters GrayCodePattern::Params
+    */
+    CV_WRAP static Ptr<GrayCodePattern> create( const GrayCodePattern::Params &parameters = GrayCodePattern::Params() );
+   
+    /** @brief Sets the value for set the value for light threshold, needed for decoding.
+
+    @param value The desired light threshold value.
+     */
+    CV_WRAP virtual void setLightThreshold( int value ) = 0;
+    
+     /** @brief Sets the value for dark threshold, needed for decoding.
+
+    @param value The desired dark threshold value.
+     */
+    CV_WRAP virtual void setDarkThreshold( int value ) = 0;
+
+    /** @brief Generates The all-dark and all-light images needed for shadowMasks computation.
+     *  @param darkImage The generated all-dark image.
+     *  @param lightImage The generated all-light image.
+     */
+    CV_WRAP virtual void getImagesForShadowMasks( InputOutputArray darkImage, InputOutputArray lightImage ) const = 0;
+};
+
+/* @brief Load intrinsics and extrinsics parameters.
+*  @param path Location where the parameters are stored.
+*  @param cameraMatrix1 The intrinsics of first camera.
+*  @param cameraMatrix2 The intrinsics of second camera.
+*  @param distCoeffs1 The distortion coefficients of first camera.
+*  @param distCoeffs1 The distortion coefficients of second camera.
+*  @param rotationMatrix1 The rotation matrix of the first camera.
+*  @param rotationMatrix2 The rotation matrix of the second camera.
+*  @param translationVector1 The translation vector of first camera.
+*  @param translationVector2 he translation vector of second camera.
+*/
+CV_EXPORTS_W bool loadCameraCalibrationParameters( const std::string& path, 
+                                                   OutputArray cameraMatrix1, 
+                                                   OutputArray cameraMatrix2, 
+                                                   OutputArray distCoeffs1, 
+                                                   OutputArray distCoeffs2, 
+                                                   OutputArray rotationMatrix1,
+                                                   OutputArray rotationMatrix2, 
+                                                   OutputArray translationVector1, 
+                                                   OutputArray translationVector2 );
+        
+/* @brief Saves cameras intrinsics and extrinsics parameters (using cv::FileStorage).
+*  @param path Location where to save the parameters.
+*  @param cameraMatrix1 The intrinsics of first camera.
+*  @param cameraMatrix2 The intrinsics of second camera.
+*  @param distCoeffs1 The distortion coefficients of first camera.
+*  @param distCoeffs1 The distortion coefficients of second camera.
+*  @param rotationMatrix1 The rotation matrix of the first camera.
+*  @param rotationMatrix2 The rotation matrix of the second camera.
+*  @param translationVector1 The translation vector of first camera.
+*  @param translationVector2 he translation vector of second camera.
+*/
+CV_EXPORTS_W bool saveCalibrationParameters( const std::string& path, 
+                                             InputArray cameraMatrix1, 
+                                             InputArray cameraMatrix2, 
+                                             InputArray distCoeffs1, 
+                                             InputArray distCoeffs2,
+                                             InputArray rotationMatrix1, 
+                                             InputArray rotationMatrix2, 
+                                             InputArray translationVector1, 
+                                             InputArray translationVector2 ); 
+
+/* @brief Calibrates the cameras (intrinsics and extrinsics parameters) using the classical OpenCV calibration functions.
+*  @param gridImages Images of calibration grid acquired with both cameras.
+*  @param cameraMatrix1 The intrinsics of first camera.
+*  @param cameraMatrix2 The intrinsics of second camera.
+*  @param distCoeffs1 The distortion coefficients of first camera.
+*  @param distCoeffs1 The distortion coefficients of second camera.
+*  @param rotationMatrix1 The rotation matrix of the first camera.
+*  @param rotationMatrix2 The rotation matrix of the second camera.
+*  @param translationVector1 The translation vector of first camera.
+*  @param translationVector2 he translation vector of second camera.
+*/
+CV_EXPORTS_W bool camerasProjectorCalibrate( InputArrayOfArrays gridImages, 
+                                             OutputArray cameraMatrix1, 
+                                             OutputArray cameraMatrix2,  
+                                             OutputArray distCoeffs1, 
+                                             OutputArray distCoeffs2, 
+                                             OutputArray rotationMatrix1, 
+                                             OutputArray rotationMatrix2, 
+                                             OutputArray translationVector1, 
+                                             OutputArray translationVector2 );
+
+//! @}
+
+}
+}
+#endif
