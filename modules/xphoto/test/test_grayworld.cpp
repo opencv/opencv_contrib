@@ -29,7 +29,6 @@ namespace cvtest {
             sum1 += src_data[i];
             sum2 += src_data[i + 1];
             sum3 += src_data[i + 2];
-            N_good++;
         }
 
         // Find inverse of averages
