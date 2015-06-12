@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project( IcoSphere )
+find_package( OpenCV REQUIRED )
+add_executable( IcoSphere icosphere.cpp )
+target_link_libraries( IcoSphere  ${OpenCV_LIBS} )
