@@ -29,6 +29,7 @@ namespace cvtest {
             sum1 += src_data[i];
             sum2 += src_data[i + 1];
             sum3 += src_data[i + 2];
+            N_good++;
         }
 
         // Find inverse of averages
@@ -48,9 +49,9 @@ namespace cvtest {
         }
 
         // Fixed point arithmetic, mul by 2^8 then shift back 8 bits
-        unsigned int i_inv1 = inv1 * (1 << 8),
-                     i_inv2 = inv2 * (1 << 8),
-                     i_inv3 = inv3 * (1 << 8);
+        int i_inv1 = cvRound(inv1 * (1 << 8)),
+            i_inv2 = cvRound(inv2 * (1 << 8)),
+            i_inv3 = cvRound(inv3 * (1 << 8));
 
         // Scale input pixel values
         uchar* dst_data = dst.ptr<uchar>(0);

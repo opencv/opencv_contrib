@@ -165,9 +165,9 @@ namespace cv { namespace xphoto {
         }
 
         // Fixed point arithmetic, mul by 2^8 then shift back 8 bits
-        unsigned int i_inv1 = inv1 * (1 << 8),
-                     i_inv2 = inv2 * (1 << 8),
-                     i_inv3 = inv3 * (1 << 8);
+        int i_inv1 = cvRound(inv1 * (1 << 8)),
+            i_inv2 = cvRound(inv2 * (1 << 8)),
+            i_inv3 = cvRound(inv3 * (1 << 8));
 
         // Scale input pixel values
         uchar* dst_data = dst.ptr<uchar>(0);
@@ -175,9 +175,9 @@ namespace cv { namespace xphoto {
 #if CV_SIMD128
         v_uint8x16 v_outB, v_outG, v_outR;
         v_uint16x8 v_sB1, v_sB2, v_sG1, v_sG2, v_sR1, v_sR2,
-                   v_invB = v_setall_u16(i_inv1),
-                   v_invG = v_setall_u16(i_inv2),
-                   v_invR = v_setall_u16(i_inv3);
+                   v_invB = v_setall_u16((unsigned short) i_inv1),
+                   v_invG = v_setall_u16((unsigned short) i_inv2),
+                   v_invR = v_setall_u16((unsigned short) i_inv3);
 
         for ( ; i < N3 - 47; i += 48 )
         {
