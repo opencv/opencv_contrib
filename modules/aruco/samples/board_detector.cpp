@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     distCoeffs.ptr<double>(0)[2] = 0.00754589;
     distCoeffs.ptr<double>(0)[3] = 0.00336531;
 
-    cv::aruco::Board b = cv::aruco::createPlanarBoard(4, 6, 0.04, 0.008, cv::aruco::DICT_ARUCO);
+    cv::aruco::GridBoard b = cv::aruco::GridBoard::create(4, 6, 0.04, 0.008, cv::aruco::DICT_ARUCO);
     b.ids.clear();
     b.ids.push_back(985);
     b.ids.push_back(838);

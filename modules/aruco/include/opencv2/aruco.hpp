@@ -210,7 +210,9 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, float mark
  * - The dictionary which indicates the type of markers of the board
  * - The identifier of all the markers in the board.
  */
-struct CV_EXPORTS Board {
+class CV_EXPORTS Board {
+
+public:
 
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
@@ -222,6 +224,68 @@ struct CV_EXPORTS Board {
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
     std::vector<int> ids;
+};
+
+
+
+/**
+ * @brief Planar board with grid arrangement of markers
+ * More common type of board. All markers are placed in the same plane in a grid arrangment.
+ * The board can be drawn using drawPlanarBoard() function (@sa drawPlanarBoard)
+ */
+class CV_EXPORTS GridBoard : public Board {
+
+public:
+
+    /**
+     * @brief Create a GridBoard object
+     *
+     * @param markersX number of markers in X direction
+     * @param markersY number of markers in Y direction
+     * @param markerLenght marker side length (normally in meters)
+     * @param markerSeparation separation between two markers (same unit than markerSize)
+     * @param dictionary dictionary of markers indicating the type of markers.
+     * The first width*height markers in the dictionary are used.
+     * @return the output GridBoard object
+     *
+     * This functions creates a GridBoard object given the number of markers in each direction and
+     * the marker size and marker separation.
+     */
+    CV_EXPORTS static GridBoard create(int markersX, int markersY, float markerLength,
+                                           float markerSeparation, DICTIONARY dictionary);
+
+    /**
+      *
+      */
+    cv::Size getGridSize() {
+        return cv::Size(_markersX, _markersY);
+    }
+
+    /**
+      *
+      */
+    double getMarkerLength() {
+        return _markerLength;
+    }
+
+    /**
+      *
+      */
+    int getMarkerSeparation() {
+        return _markerSeparation;
+    }
+
+
+private:
+    // number of markers in X and Y directions
+    int _markersX, _markersY;
+
+    // marker side lenght (normally in meters)
+    double _markerLength;
+
+    // separation between markers in the grid
+    double _markerSeparation;
+
 };
 
 
@@ -252,25 +316,6 @@ struct CV_EXPORTS Board {
 CV_EXPORTS void estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Board &board,
                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                   OutputArray tvec);
-
-
-
-/**
- * @brief Create a planar Board object
- *
- * @param width number of markers in X direction
- * @param height number of markers in Y direction
- * @param markerSize marker side length (normally in meters)
- * @param markerSeparation separation between two markers (same unit than markerSize)
- * @param dictionary dictionary of markers indicating the type of markers.
- * The first width*height markers in the dictionary are used.
- * @return the output Board object
- *
- * This functions creates a planar board object given the number of markers in each direction and
- * the marker size and marker separation.
- */
-CV_EXPORTS Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation,
-                                   DICTIONARY dictionary);
 
 
 

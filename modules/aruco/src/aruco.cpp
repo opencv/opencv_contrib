@@ -632,13 +632,20 @@ void estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board
 
 /**
  */
-Board createPlanarBoard(int width, int height, float markerSize, float markerSeparation,
-                        DICTIONARY dictionary) {
+GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
+                            float markerSeparation, DICTIONARY _dictionary) {
 
-    CV_Assert(width>0 && height>0 && markerSize>0 && markerSeparation>0);
+    GridBoard res;
 
-    Board res;
-    int totalMarkers = width * height;
+    CV_Assert(markersX>0 && markersY>0 && markerLength>0 && markerSeparation>0);
+
+    res._markersX = markersX;
+    res._markersY = markersY;
+    res._markerLength = markerLength;
+    res._markerSeparation = markerSeparation;
+    res.dictionary = _dictionary;
+
+    int totalMarkers = markersX * markersY;
     res.ids.resize(totalMarkers);
     res.objPoints.reserve(totalMarkers);
 
@@ -647,21 +654,20 @@ Board createPlanarBoard(int width, int height, float markerSize, float markerSep
         res.ids[i] = i;
 
     // calculate Board objPoints
-    float maxY = height * markerSize + (height - 1) * markerSeparation;
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    float maxY = markersY * markerLength + (markersY - 1) * markerSeparation;
+    for (int y = 0; y < markersY; y++) {
+        for (int x = 0; x < markersX; x++) {
             std::vector<cv::Point3f> corners;
             corners.resize(4);
-            corners[0] = cv::Point3f(x * (markerSize + markerSeparation),
-                                     maxY - y * (markerSize + markerSeparation), 0);
-            corners[1] = corners[0] + cv::Point3f(markerSize, 0, 0);
-            corners[2] = corners[0] + cv::Point3f(markerSize, -markerSize, 0);
-            corners[3] = corners[0] + cv::Point3f(0, -markerSize, 0);
+            corners[0] = cv::Point3f(x * (markerLength + markerSeparation),
+                                     maxY - y * (markerLength + markerSeparation), 0);
+            corners[1] = corners[0] + cv::Point3f(markerLength, 0, 0);
+            corners[2] = corners[0] + cv::Point3f(markerLength, -markerLength, 0);
+            corners[3] = corners[0] + cv::Point3f(0, -markerLength, 0);
             res.objPoints.push_back(corners);
         }
     }
 
-    res.dictionary = dictionary;
     return res;
 }
 
