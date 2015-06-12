@@ -326,10 +326,12 @@ CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix
  * in the specified dictionary.
  * @param sidePixels size of the image in pixels
  * @param img output image with the marker
+ * @param borderBits width of the marker border.
  *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img);
+CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img,
+                           int borderBits = 1);
 
 
 
@@ -342,11 +344,14 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
  * @param outSize size of the output image in pixels.
  * @param img output image with the board. The size of this image will be outSize
  * and the board will be on the center, keeping the board proportions.
+ * @param marginSize minimum margins (in pixels) of the board in the output image
+ * @param borderBits width of the marker borders.
  *
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray img);
+CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray img,
+                                int marginSize = 0, int borderBits = 1);
 
 
 

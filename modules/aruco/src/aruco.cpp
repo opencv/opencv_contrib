@@ -749,25 +749,28 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
 
 /**
  */
-void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img) {
+void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img, int borderBits) {
     DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    dictionaryData.drawMarker(id, sidePixels, _img);
+    dictionaryData.drawMarker(id, sidePixels, _img, borderBits);
 }
 
 
 
 /**
  */
-void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img) {
+void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int marginSize,
+                     int borderBits) {
 
-    CV_Assert(outSize.area()>0);
+    CV_Assert(outSize.area() > 0);
+    CV_Assert(marginSize >= 0);
 
     DictionaryData dictData = _getDictionaryData(board.dictionary);
 
     _img.create(outSize, CV_8UC1);
     cv::Mat out = _img.getMat();
     out.setTo(cv::Scalar::all(255));
-    cv::Mat outNoMargins = out.colRange(2, out.cols - 2).rowRange(2, out.rows - 2);
+    cv::Mat outNoMargins = out.colRange(marginSize, out.cols - marginSize).
+                               rowRange(marginSize, out.rows - marginSize);
 
     // calculate max and min values in XY plane
     CV_Assert(board.objPoints.size() > 0);
@@ -823,7 +826,7 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img) {
         // get tiny marker
         int tinyMarkerSize = 10 * dictData.markerSize + 2;
         cv::Mat tinyMarker;
-        dictData.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker);
+        dictData.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker, borderBits);
 
         // interpolate tiny marker to marker position in markerZone
         cv::Mat inCorners(4, 1, CV_32FC2);

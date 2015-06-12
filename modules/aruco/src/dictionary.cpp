@@ -148,19 +148,23 @@ class DictionaryData {
     /**
      * @brief Draw a canonical marker image
      */
-    void drawMarker(int id, int sidePixels, OutputArray _img) const {
+    void drawMarker(int id, int sidePixels, OutputArray _img, int borderBits = 1) const {
 
         CV_Assert(sidePixels > markerSize);
         CV_Assert(id < bytesList.rows);
+        CV_Assert(borderBits > 0);
 
         _img.create(sidePixels, sidePixels, CV_8UC1);
 
         // create small marker with 1 pixel per bin
-        cv::Mat tinyMarker(markerSize + 2, markerSize + 2, CV_8UC1, cv::Scalar::all(0));
+        cv::Mat tinyMarker(markerSize + 2*borderBits, markerSize + 2*borderBits, CV_8UC1,
+                           cv::Scalar::all(0));
         cv::Mat innerRegion =
-            tinyMarker.rowRange(1, tinyMarker.rows - 1).colRange(1, tinyMarker.cols - 1);
+            tinyMarker.rowRange(borderBits, tinyMarker.rows - borderBits).
+                       colRange(borderBits, tinyMarker.cols - borderBits);
         // put inner bits
         cv::Mat bits = 255 * _getBitsFromByteList(bytesList.rowRange(id, id + 1));
+        CV_Assert(innerRegion.total() == bits.total());
         bits.copyTo(innerRegion);
 
         // resize tiny marker to output size
@@ -217,9 +221,8 @@ class DictionaryData {
       * @brief Transform list of bytes to matrix of bits
       */
     cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
-        CV_Assert(byteList.total() >= markerSize*markerSize/8 &&
+        CV_Assert(byteList.total() > 0 && byteList.total() >= markerSize*markerSize/8 &&
                   byteList.total() <= markerSize*markerSize/8+1);
-
         cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
@@ -235,8 +238,14 @@ class DictionaryData {
                 }
                 currentBit++;
                 if (currentBit == 8) {
-                    currentBit = 0;
                     currentByteIdx++;
+                    currentByte = byteList.ptr<cv::Vec4b>(0)[currentByteIdx][0];
+                    // if not enough bits for one more byte, we are in the end
+                    // update bit position accordingly
+                    if(8 * (currentByteIdx + 1) > bits.total())
+                        currentBit = 8 * (currentByteIdx + 1) - bits.total();
+                    else
+                        currentBit = 0; // ok, bits enough for next byte
                 }
             }
         }
