@@ -93,6 +93,7 @@ void computeBboxStd(Mat pc, float xRange[2], float yRange[2], float zRange[2]);
 void* indexPCFlann(Mat pc);
 void destroyFlann(void* flannIndex);
 void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances);
+void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const int numNeighbors);
 
 /**
  *  Mostly for visualization purposes. Normalizes the point cloud in a Hartley-Zissermann

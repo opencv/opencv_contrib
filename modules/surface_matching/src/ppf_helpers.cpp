@@ -208,9 +208,14 @@ void destroyFlann(void* flannIndex)
 // For speed purposes this function assumes that PC, Indices and Distances are created with continuous structures
 void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances)
 {
+  queryPCFlann(flannIndex, pc, indices, distances, 1);
+}
+
+void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const int numNeighbors)
+{
   Mat obj_32f;
-  pc.colRange(0,3).copyTo(obj_32f);
-  ((FlannIndex*)flannIndex)->knnSearch(obj_32f, indices, distances, 1, cvflann::SearchParams(32) );
+  pc.colRange(0, 3).copyTo(obj_32f);
+  ((FlannIndex*)flannIndex)->knnSearch(obj_32f, indices, distances, numNeighbors, cvflann::SearchParams(32));
 }
 
 // uses a volume instead of an octree
@@ -688,7 +693,7 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
   Mat Indices(2, sizesResult, CV_32S, indices, 0);
   Mat Distances(2, sizesResult, CV_32F, distances, 0);
 
-  queryPCFlann(flannIndex, PCInput, Indices, Distances);
+  queryPCFlann(flannIndex, PCInput, Indices, Distances, NumNeighbors);
   destroyFlann(flannIndex);
   flannIndex = 0;
 
