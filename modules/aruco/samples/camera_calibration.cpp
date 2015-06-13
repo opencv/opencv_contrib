@@ -65,7 +65,7 @@ static void help() {
     std::cout << "-o <outputFile> # Output file with calibrated camera parameters" << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
-    std::cout << "[-dp <detectorParams> # File of marker detector parameters]" << std::endl;
+    std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
     std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
     std::cout << "[-p] # Fix the principal point at the center" << std::endl;
@@ -77,7 +77,7 @@ static void help() {
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
         if (string(argv[i]) == param ) 
-	  return true;
+            return true;
     return false;
 
 }
@@ -89,11 +89,11 @@ string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
         if (string(argv[i]) == param) 
-	  idx = i;
+            idx = i;
     if (idx == -1 || (idx + 1) >= argc)
-      return defvalue;
+        return defvalue;
     else
-      return argv[idx+1] ;
+        return argv[idx+1] ;
 } 
 
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {
         calibrationFlags |= cv::CALIB_FIX_ASPECT_RATIO;
-	aspectRatio = atof( getParam("-a", argc, argv).c_str() );
+        aspectRatio = atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
         calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
@@ -169,17 +169,17 @@ int main(int argc, char *argv[]) {
     
     cv::VideoCapture inputVideo;
     int waitTime;
-    if(isParam("-v", argc, argv)) {
+    if (isParam("-v", argc, argv)) {
         inputVideo.open(getParam("-v", argc, argv));
-	waitTime = 0;
+        waitTime = 0;
     }
     else {
         inputVideo.open(0);
-	waitTime = 10;
+        waitTime = 10;
     }
 
     cv::aruco::GridBoard b = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
-							  markerSeparation, dictionary);
+                                                          markerSeparation, dictionary);
 //     b.ids.clear();
 //     b.ids.push_back(985);
 //     b.ids.push_back(838);
@@ -224,10 +224,9 @@ int main(int argc, char *argv[]) {
         cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids);
 
         // draw results
+	image.copyTo(imageCopy);
         if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(image, imageCopy, corners, ids);
-        else
-            image.copyTo(imageCopy);
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
         char key = cv::waitKey(waitTime);
@@ -251,7 +250,7 @@ int main(int argc, char *argv[]) {
     }
     
     repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, b, imgSize, cameraMatrix, 
-					        distCoeffs, rvecs, tvecs, calibrationFlags);
+                                               distCoeffs, rvecs, tvecs, calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
                      repError );
