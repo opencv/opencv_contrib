@@ -252,7 +252,7 @@ public:
      * the marker size and marker separation.
      */
     CV_EXPORTS static GridBoard create(int markersX, int markersY, double markerLength,
-                                           double markerSeparation, DICTIONARY dictionary);
+                                       double markerSeparation, DICTIONARY dictionary);
 
     /**
       *
