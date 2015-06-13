@@ -38,6 +38,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/highgui.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/aruco.hpp>
 #include <vector>
 #include <iostream>
@@ -45,88 +46,218 @@ the use of this software, even if advised of the possibility of such damage.
 using namespace std;
 using namespace cv;
 
+
+/**
+ */
+static void help() {
+    std::cout << "Calibration using a ArUco Planar Grid board" << std::endl;
+    std::cout << "How to Use:" << std::endl;
+    std::cout << "To capture a frame for calibration, press 'c'," << std::endl;
+    std::cout << "If input comes from video, press any key for next frame" << std::endl;
+    std::cout << "To finish capturing, press 'ESC' key and calibration starts." << std::endl;
+    std::cout << "Parameters: " << std::endl;
+    std::cout << "-w <nmarkers> # Number of markers in X direction" << std::endl;
+    std::cout << "-h <nmarkers> # Number of markers in Y direction" << std::endl;
+    std::cout << "-l <markerLength> # Marker side lenght (in meters)" << std::endl;
+    std::cout << "-s <markerSeparation> # Separation between two consecutive" << 
+                 "markers in the grid (in meters)" << std::endl;
+    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
+    std::cout << "-o <outputFile> # Output file with calibrated camera parameters" << std::endl;
+    std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
+                 << std::endl;
+    std::cout << "[-dp <detectorParams> # File of marker detector parameters]" << std::endl;
+    std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
+    std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
+    std::cout << "[-p] # Fix the principal point at the center" << std::endl;
+}
+
+
+/**
+ */
+bool isParam(string param, int argc, char **argv ) {
+    for (int i=0; i<argc; i++)
+        if (string(argv[i]) == param ) 
+	  return true;
+    return false;
+
+}
+
+
+/**
+ */
+string getParam(string param, int argc, char **argv, string defvalue = "") {
+    int idx=-1;
+    for (int i=0; i<argc && idx==-1; i++)
+        if (string(argv[i]) == param) 
+	  idx = i;
+    if (idx == -1 || (idx + 1) >= argc)
+      return defvalue;
+    else
+      return argv[idx+1] ;
+} 
+
+
+
+/**
+ */
+static void saveCameraParams(const string& filename,
+                             cv::Size imageSize, float aspectRatio, int flags,
+                             const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs,
+                             double totalAvgErr ) {
+    cv::FileStorage fs( filename, cv::FileStorage::WRITE );
+
+    time_t tt;
+    time( &tt );
+    struct tm *t2 = localtime( &tt );
+    char buf[1024];
+    strftime( buf, sizeof(buf)-1, "%c", t2 );
+
+    fs << "calibration_time" << buf;
+
+    fs << "image_width" << imageSize.width;
+    fs << "image_height" << imageSize.height;
+
+    if ( flags & cv::CALIB_FIX_ASPECT_RATIO )
+        fs << "aspectRatio" << aspectRatio;
+
+    if ( flags != 0 ) {
+        sprintf( buf, "flags: %s%s%s%s",
+        flags & cv::CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
+        flags & cv::CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
+        flags & cv::CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
+        flags & cv::CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "" );
+    }
+
+    fs << "flags" << flags;
+
+    fs << "camera_matrix" << cameraMatrix;
+    fs << "distortion_coefficients" << distCoeffs;
+
+    fs << "avg_reprojection_error" << totalAvgErr;
+}
+
+
+
+/**
+ */
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        std::cerr << "Use: board_detector video" << std::endl;
+    if (!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
+        !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv) ) {
+        help();
         return 0;
     }
 
-    cv::VideoCapture input;
-    input.open(argv[1]);
+    int markersX = atoi( getParam("-w", argc, argv).c_str() );
+    int markersY = atoi( getParam("-h", argc, argv).c_str() );
+    float markerLength = atof( getParam("-l", argc, argv).c_str() );
+    float markerSeparation = atof( getParam("-s", argc, argv).c_str() );
+    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
+    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    string outputFile = getParam("-o", argc, argv);
+    
+    int calibrationFlags = 0;
+    float aspectRatio = 1;
+    if (isParam("-a", argc, argv)) {
+        calibrationFlags |= cv::CALIB_FIX_ASPECT_RATIO;
+	aspectRatio = atof( getParam("-a", argc, argv).c_str() );
+    }
+    if (isParam("-zt", argc, argv))
+        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
+    if (isParam("-p", argc, argv))
+        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;      
+    
+    cv::VideoCapture inputVideo;
+    int waitTime;
+    if(isParam("-v", argc, argv)) {
+        inputVideo.open(getParam("-v", argc, argv));
+	waitTime = 0;
+    }
+    else {
+        inputVideo.open(0);
+	waitTime = 10;
+    }
 
-    cv::aruco::GridBoard b = cv::aruco::GridBoard::create(4, 6, 0.04, 0.008, cv::aruco::DICT_ARUCO);
-    b.ids.clear();
-    b.ids.push_back(985);
-    b.ids.push_back(838);
-    b.ids.push_back(908);
-    b.ids.push_back(299);
-    b.ids.push_back(428);
-    b.ids.push_back(177);
+    cv::aruco::GridBoard b = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
+							  markerSeparation, dictionary);
+//     b.ids.clear();
+//     b.ids.push_back(985);
+//     b.ids.push_back(838);
+//     b.ids.push_back(908);
+//     b.ids.push_back(299);
+//     b.ids.push_back(428);
+//     b.ids.push_back(177);
+// 
+//     b.ids.push_back(64);
+//     b.ids.push_back(341);
+//     b.ids.push_back(760);
+//     b.ids.push_back(882);
+//     b.ids.push_back(982);
+//     b.ids.push_back(977);
+// 
+//     b.ids.push_back(477);
+//     b.ids.push_back(125);
+//     b.ids.push_back(717);
+//     b.ids.push_back(791);
+//     b.ids.push_back(618);
+//     b.ids.push_back(76);
+// 
+//     b.ids.push_back(181);
+//     b.ids.push_back(1005);
+//     b.ids.push_back(175);
+//     b.ids.push_back(684);
+//     b.ids.push_back(233);
+//     b.ids.push_back(461);
 
-    b.ids.push_back(64);
-    b.ids.push_back(341);
-    b.ids.push_back(760);
-    b.ids.push_back(882);
-    b.ids.push_back(982);
-    b.ids.push_back(977);
-
-    b.ids.push_back(477);
-    b.ids.push_back(125);
-    b.ids.push_back(717);
-    b.ids.push_back(791);
-    b.ids.push_back(618);
-    b.ids.push_back(76);
-
-    b.ids.push_back(181);
-    b.ids.push_back(1005);
-    b.ids.push_back(175);
-    b.ids.push_back(684);
-    b.ids.push_back(233);
-    b.ids.push_back(461);
-
-    std::vector<std::vector<std::vector<cv::Point2f> > > allImgPoints;
+    std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
     std::vector<std::vector<int> > allIds;
     cv::Size imgSize;
 
-    while (input.grab()) {
+    while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
-        input.retrieve(image);
+        inputVideo.retrieve(image);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > imgPoints;
-        cv::Mat rvec, tvec;
+        std::vector<std::vector<cv::Point2f> > corners;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids);
+        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids);
 
         // draw results
         if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
+            cv::aruco::drawDetectedMarkers(image, imageCopy, corners, ids);
         else
             image.copyTo(imageCopy);
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(0);
+        char key = cv::waitKey(waitTime);
         if (key == 27)
             break;
-        if (key == 'y') {
+        if (key == 'c' && ids.size() > 0) {
             std::cout << "Frame captured" << std::endl;
-            allImgPoints.push_back(imgPoints);
+            allCorners.push_back(corners);
             allIds.push_back(ids);
             imgSize = image.size();
         }
     }
 
     cv::Mat cameraMatrix, distCoeffs;
-    double repError =
-        cv::aruco::calibrateCameraAruco(allImgPoints, allIds, b, imgSize, cameraMatrix, distCoeffs);
+    std::vector<cv::Mat> rvecs, tvecs;
+    double repError;
+    
+    if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
+        cameraMatrix = Mat::eye(3, 3, CV_64F);
+        cameraMatrix.at<double>(0,0) = aspectRatio;  
+    }
+    
+    repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, b, imgSize, cameraMatrix, 
+					        distCoeffs, rvecs, tvecs, calibrationFlags);
 
+    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
+                     repError );
+    
     std::cout << "Rep Error: " << repError << std::endl;
-    std::cout << "cameraMatrix:" << std::endl;
-    std::cout << cameraMatrix << std::endl;
-    std::cout << "distCoeffs:" << std::endl;
-    std::cout << distCoeffs << std::endl;
+    std::cout << "Calibration saved to " << outputFile << std::endl;
 
     return 0;
 }
