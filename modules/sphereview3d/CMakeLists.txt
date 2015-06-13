@@ -1,5 +1,2 @@
-cmake_minimum_required(VERSION 2.8)
-project( IcoSphere )
-find_package( OpenCV REQUIRED )
-add_executable( IcoSphere icosphere.cpp )
-target_link_libraries( IcoSphere  ${OpenCV_LIBS} )
+set(the_description "Sphere View on 3D objects")
+ocv_define_module(sphereview3d opencv_core opencv_imgproc opencv_viz opencv_highgui OPTIONAL WRAP python)
