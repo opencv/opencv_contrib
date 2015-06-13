@@ -113,8 +113,8 @@ void _threshold(InputArray _in, OutputArray _out, int winSize, double constant) 
   * and take those that accomplish some conditions
   */
 void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidates,
-                         float minPerimeterRate, int maxPerimeterRate, float accuracyRate,
-                         float minCornerDistance, int minDistanceToBorder) {
+                         double minPerimeterRate, int maxPerimeterRate, double accuracyRate,
+                         double minCornerDistance, int minDistanceToBorder) {
 
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
               minCornerDistance > 0 && minDistanceToBorder >= 0);
@@ -139,13 +139,13 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
 
         // check min distance between corners (minimum distance is 10,
         // so minimun square distance is 100)
-        float minDistSq = std::max(contoursImg.cols, contoursImg.rows) *
-                          std::max(contoursImg.cols, contoursImg.rows);
+        double minDistSq = std::max(contoursImg.cols, contoursImg.rows) *
+                           std::max(contoursImg.cols, contoursImg.rows);
         for (int j = 0; j < 4; j++) {
-            float d = (float)(approxCurve[j].x - approxCurve[(j + 1) % 4].x) *
-                          (approxCurve[j].x - approxCurve[(j + 1) % 4].x) +
-                      (approxCurve[j].y - approxCurve[(j + 1) % 4].y) *
-                          (approxCurve[j].y - approxCurve[(j + 1) % 4].y);
+            double d = (double)(approxCurve[j].x - approxCurve[(j + 1) % 4].x) *
+                       (double)(approxCurve[j].x - approxCurve[(j + 1) % 4].x) +
+                       (double)(approxCurve[j].y - approxCurve[(j + 1) % 4].y) *
+                       (double)(approxCurve[j].y - approxCurve[(j + 1) % 4].y);
             minDistSq = std::min(minDistSq, d);
         }
         if (minDistSq < minCornerDistance * minCornerDistance)
@@ -196,13 +196,13 @@ void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates) {
   */
 void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn,
                                std::vector<std::vector<Point2f> > &candidatesOut,
-                               float minMarkerDistance) {
+                               double minMarkerDistance) {
     CV_Assert(minMarkerDistance > 0);
 
     std::vector<std::pair<int, int> > nearCandidates;
     for (unsigned int i = 0; i < candidatesIn.size(); i++) {
         for (unsigned int j = i + 1; j < candidatesIn.size(); j++) {
-            float distSq = 0;
+            double distSq = 0;
             for (int c = 0; c < 4; c++)
                 distSq += (candidatesIn[i][c].x - candidatesIn[j][c].x) *
                               (candidatesIn[i][c].x - candidatesIn[j][c].x) +
@@ -219,7 +219,7 @@ void _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candida
     // mark smaller one in pairs to remove
     std::vector<bool> toRemove(candidatesIn.size(), false);
     for (unsigned int i = 0; i < nearCandidates.size(); i++) {
-        float perimeterSq1 = 0, perimeterSq2 = 0;
+        double perimeterSq1 = 0, perimeterSq2 = 0;
         for (unsigned int c = 0; c < 4; c++) {
             // check which one is the smaller and remove it
             perimeterSq1 += (candidatesIn[nearCandidates[i].first][c].x -
@@ -481,7 +481,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
 /**
   * @brief Return object points for the system centered in a single marker, given the marker length
   */
-void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
+void _getSingleMarkerObjectPoints(double markerLength, OutputArray _objPoints) {
 
     CV_Assert(markerLength > 0);
 
@@ -545,14 +545,14 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerSize,
+void estimatePoseSingleMarkers(InputArrayOfArrays _corners, double markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
                                OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
 
-    CV_Assert(markerSize>0);
+    CV_Assert(markerLength > 0);
 
     cv::Mat markerObjPoints;
-    _getSingleMarkerObjectPoints(markerSize, markerObjPoints);
+    _getSingleMarkerObjectPoints(markerLength, markerObjPoints);
     int nMarkers = _corners.total();
     _rvecs.create(nMarkers, 1, CV_32FC1);
     _tvecs.create(nMarkers, 1, CV_32FC1);
@@ -639,8 +639,8 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board 
 
 /**
  */
-GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
-                            float markerSeparation, DICTIONARY _dictionary) {
+GridBoard GridBoard::create(int markersX, int markersY, double markerLength,
+                            double markerSeparation, DICTIONARY _dictionary) {
 
     GridBoard res;
 
@@ -661,7 +661,7 @@ GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
         res.ids[i] = i;
 
     // calculate Board objPoints
-    float maxY = markersY * markerLength + (markersY - 1) * markerSeparation;
+    double maxY = markersY * markerLength + (markersY - 1) * markerSeparation;
     for (int y = 0; y < markersY; y++) {
         for (int x = 0; x < markersX; x++) {
             std::vector<cv::Point3f> corners;
@@ -735,7 +735,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 /**
  */
 void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
-              InputArray _rvec, InputArray _tvec, float length) {
+              InputArray _rvec, InputArray _tvec, double length) {
 
     CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
               (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
@@ -800,12 +800,12 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
         }
     }
 
-    float sizeX, sizeY;
+    double sizeX, sizeY;
     sizeX = maxX - minX;
     sizeY = maxY - minY;
 
-    float xReduction = sizeX / float(outNoMargins.cols);
-    float yReduction = sizeY / float(outNoMargins.rows);
+    double xReduction = sizeX / double(outNoMargins.cols);
+    double yReduction = sizeY / double(outNoMargins.rows);
 
     // determine the zone where the markers are placed
     cv::Mat markerZone;
@@ -831,8 +831,8 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
             // remove negativity
             p1.x = p0.x - minX;
             p1.y = p0.y - minY;
-            pf.x = p1.x * float(markerZone.cols - 1) / sizeX;
-            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows - 1) / sizeY;
+            pf.x = p1.x * double(markerZone.cols - 1) / sizeX;
+            pf.y = double(markerZone.rows - 1) - p1.y * double(markerZone.rows - 1) / sizeY;
             outCorners[j] = pf;
         }
 

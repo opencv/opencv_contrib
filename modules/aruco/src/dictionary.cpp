@@ -82,7 +82,6 @@ class DictionaryData {
     cv::Mat bytesList;
     int markerSize;
     int maxCorrectionBits; // maximum number of bits that can be corrected
-    // float borderSize; // black border size respect to inner bits size
 
 
     /**

@@ -173,7 +173,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
  * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @sa detectMarkers
- * @param markerSize the length of the markers' side. The returning translation vectors will
+ * @param markerLength the length of the markers' side. The returning translation vectors will
  * be in the same unit. Normally, unit is meters.
  * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
@@ -191,10 +191,10 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
  * The marker corrdinate system is centered on the middle of the marker, with the Z axis
  * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
- * (-markerSize/2, markerSize/2, 0), (markerSize/2, markerSize/2, 0),
- * (markerSize/2, -markerSize/2, 0), (-markerSize/2, -markerSize/2, 0)
+ * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
+ * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
  */
-CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerSize,
+CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, double markerLength,
                                           InputArray cameraMatrix, InputArray distCoeffs,
                                           OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
@@ -251,8 +251,8 @@ public:
      * This functions creates a GridBoard object given the number of markers in each direction and
      * the marker size and marker separation.
      */
-    CV_EXPORTS static GridBoard create(int markersX, int markersY, float markerLength,
-                                           float markerSeparation, DICTIONARY dictionary);
+    CV_EXPORTS static GridBoard create(int markersX, int markersY, double markerLength,
+                                           double markerSeparation, DICTIONARY dictionary);
 
     /**
       *
@@ -362,7 +362,7 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
 CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
-                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float length);
+                         InputArray distCoeffs, InputArray rvec, InputArray tvec, double length);
 
 
 

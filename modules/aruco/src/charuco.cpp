@@ -125,8 +125,8 @@ void CharucoBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int 
 
 /**
  */
-CharucoBoard CharucoBoard::create(int squaresX, int squaresY, float squareLength,
-                                  float markerLength, DICTIONARY dictionary) {
+CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLength,
+                                  double markerLength, DICTIONARY dictionary) {
 
     CV_Assert(squaresX > 1 && squaresY > 1 && markerLength > 0 && squareLength > markerLength);
     CharucoBoard res;
