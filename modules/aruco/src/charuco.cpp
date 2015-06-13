@@ -41,7 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #ifdef __cplusplus
 
 #include "precomp.hpp"
-#include "opencv2/charuco.hpp"
+#include "opencv2/aruco/charuco.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/types_c.h>
@@ -104,7 +104,7 @@ void CharucoBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int 
     for (int y = 0; y < _squaresY; y++) {
         for (int x = 0; x < _squaresX; x++) {
 
-            if(y % 2 != x % 2)
+            if (y % 2 != x % 2)
                 continue; // white corner, dont do anything
 
             double startX, startY;
@@ -143,7 +143,7 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLengt
     for (int y = squaresY-1; y >= 0; y--) {
         for (int x = 0; x < squaresX; x++) {
 
-            if(y % 2 == x % 2)
+            if (y % 2 == x % 2)
                 continue; // black corner, no marker here
 
             std::vector<cv::Point3f> corners;

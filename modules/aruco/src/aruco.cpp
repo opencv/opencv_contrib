@@ -362,7 +362,7 @@ int _getBorderErrors(const cv::Mat &bits, int markerSize, int borderSize) {
 
     int totalErrors = 0;
     for (int y = 0; y < sizeWithBorders; y++) {
-        for(int k = 0; k < borderSize; k++) {
+        for (int k = 0; k < borderSize; k++) {
             if (bits.ptr<unsigned char>(y)[k] != 0)
                 totalErrors++;
             if (bits.ptr<unsigned char>(y)[sizeWithBorders - 1 - k] != 0)
@@ -370,7 +370,7 @@ int _getBorderErrors(const cv::Mat &bits, int markerSize, int borderSize) {
         }
     }
     for (int x = borderSize; x < sizeWithBorders - borderSize; x++) {
-        for(int k = 0; k < borderSize; k++) {
+        for (int k = 0; k < borderSize; k++) {
             if (bits.ptr<unsigned char>(k)[x] != 0)
                 totalErrors++;
             if (bits.ptr<unsigned char>(sizeWithBorders - 1 - k)[x] != 0)
@@ -625,7 +625,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board 
 
     CV_Assert(imgPoints.total() == objPoints.total());
 
-    if(objPoints.total() == 0) // 0 of the detected markers in board
+    if (objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
     _rvec.create(3, 1, CV_64FC1);
@@ -698,7 +698,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 
     _out.create(_in.size(), _in.type());
     cv::Mat outImg = _out.getMat();
-    if(_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
+    if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
     else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
 
     int nMarkers = _corners.total();
