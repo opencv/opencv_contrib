@@ -98,6 +98,30 @@ string getParam(string param, int argc, char **argv, string defvalue = "") {
 
 
 
+
+/**
+ */
+void readDetectorParameters(string filename, cv::aruco::DetectorParameters &params) {
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    fs["adaptiveThreshWinSize"] >> params.adaptiveThreshWinSize;
+    fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
+    fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
+    fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
+    fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
+    fs["minCornerDistance"] >> params.minCornerDistance;
+    fs["minDistanceToBorder"] >> params.minDistanceToBorder;
+    fs["minMarkerDistance"] >> params.minMarkerDistance;
+    fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
+    fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
+    fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
+    fs["markerBorderBits"] >> params.markerBorderBits;
+    fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
+    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
+    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate; 
+}
+
+
+
 /**
  */
 static void saveCameraParams(const string& filename,
@@ -167,6 +191,11 @@ int main(int argc, char *argv[]) {
     if (isParam("-p", argc, argv))
         calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;      
     
+    cv::aruco::DetectorParameters detectorParams;
+    if (isParam("-dp", argc, argv)) {
+      readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+    }        
+    
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -178,36 +207,36 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    cv::aruco::GridBoard b = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
-                                                          markerSeparation, dictionary);
-//     b.ids.clear();
-//     b.ids.push_back(985);
-//     b.ids.push_back(838);
-//     b.ids.push_back(908);
-//     b.ids.push_back(299);
-//     b.ids.push_back(428);
-//     b.ids.push_back(177);
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
+                                                              markerSeparation, dictionary);
+//     board.ids.clear();
+//     board.ids.push_back(985);
+//     board.ids.push_back(838);
+//     board.ids.push_back(908);
+//     board.ids.push_back(299);
+//     board.ids.push_back(428);
+//     board.ids.push_back(177);
 // 
-//     b.ids.push_back(64);
-//     b.ids.push_back(341);
-//     b.ids.push_back(760);
-//     b.ids.push_back(882);
-//     b.ids.push_back(982);
-//     b.ids.push_back(977);
+//     board.ids.push_back(64);
+//     board.ids.push_back(341);
+//     board.ids.push_back(760);
+//     board.ids.push_back(882);
+//     board.ids.push_back(982);
+//     board.ids.push_back(977);
 // 
-//     b.ids.push_back(477);
-//     b.ids.push_back(125);
-//     b.ids.push_back(717);
-//     b.ids.push_back(791);
-//     b.ids.push_back(618);
-//     b.ids.push_back(76);
+//     board.ids.push_back(477);
+//     board.ids.push_back(125);
+//     board.ids.push_back(717);
+//     board.ids.push_back(791);
+//     board.ids.push_back(618);
+//     board.ids.push_back(76);
 // 
-//     b.ids.push_back(181);
-//     b.ids.push_back(1005);
-//     b.ids.push_back(175);
-//     b.ids.push_back(684);
-//     b.ids.push_back(233);
-//     b.ids.push_back(461);
+//     board.ids.push_back(181);
+//     board.ids.push_back(1005);
+//     board.ids.push_back(175);
+//     board.ids.push_back(684);
+//     board.ids.push_back(233);
+//     board.ids.push_back(461);
 
     std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
     std::vector<std::vector<int> > allIds;
@@ -221,7 +250,7 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<cv::Point2f> > corners;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids);
+        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids, detectorParams);
 
         // draw results
 	image.copyTo(imageCopy);
@@ -249,7 +278,7 @@ int main(int argc, char *argv[]) {
         cameraMatrix.at<double>(0,0) = aspectRatio;  
     }
     
-    repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, b, imgSize, cameraMatrix, 
+    repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix,
                                                distCoeffs, rvecs, tvecs, calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
