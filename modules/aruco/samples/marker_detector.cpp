@@ -45,39 +45,129 @@ the use of this software, even if advised of the possibility of such damage.
 using namespace std;
 using namespace cv;
 
+
+/**
+ */
+static void help() {
+    std::cout << "Basic marker detection" << std::endl;
+    std::cout << "Parameters: " << std::endl;
+    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
+    std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
+                 << std::endl;
+    std::cout << "[-c <cameraParams>] # Camera intrinsic parameters. Needed for camera pose"
+              << std::endl;
+    std::cout << "[-l <markerLength>] # Marker side lenght (in meters). Needed for correct" <<
+                 "camera pose, default 0.1" << std::endl;	      
+    std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
+    std::cout << "[-r] # show rejected candidates too" << std::endl;
+}
+
+
+
+/**
+ */
+bool isParam(string param, int argc, char **argv ) {
+    for (int i=0; i<argc; i++)
+        if (string(argv[i]) == param ) 
+            return true;
+    return false;
+
+}
+
+
+/**
+ */
+string getParam(string param, int argc, char **argv, string defvalue = "") {
+    int idx=-1;
+    for (int i=0; i<argc && idx==-1; i++)
+        if (string(argv[i]) == param) 
+            idx = i;
+    if (idx == -1 || (idx + 1) >= argc)
+        return defvalue;
+    else
+        return argv[idx+1] ;
+} 
+
+
+
+/**
+ */
+void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    fs["camera_matrix"] >> camMatrix;
+    fs["distortion_coefficients"] >> distCoeffs;  
+}
+
+
+
+/**
+ */
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        std::cerr << "Use: marker_detector video" << std::endl;
+    if (!isParam("-d", argc, argv)) {
+        help();
         return 0;
     }
+    
+    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
+    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId); 
+    
+    bool showRejected = false;
+    if (isParam("-r", argc, argv))
+      showRejected = true;
+    
+    bool estimatePose = false;
+    cv::Mat camMatrix, distCoeffs;
+    if (isParam("-c", argc, argv)) {
+      readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+      estimatePose = true;
+    }
+    float markerLength = atof( getParam("-l", argc, argv, "0.1").c_str() );
 
-    cv::VideoCapture input;
-    input.open(argv[1]);
+    cv::VideoCapture inputVideo;
+    int waitTime;
+    if (isParam("-v", argc, argv)) {
+        inputVideo.open(getParam("-v", argc, argv));
+        waitTime = 0;
+    }
+    else {
+        inputVideo.open(0);
+        waitTime = 10;
+    }
 
-    while (input.grab()) {
+
+    while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
-        input.retrieve(image);
+        inputVideo.retrieve(image);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > imgPoints;
-        std::vector<std::vector<cv::Point2f> > rejectedImgPoints;
+        std::vector<std::vector<cv::Point2f> > corners, rejected;
+        std::vector<cv::Mat> rvecs, tvecs;
 
-        // detect markers
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, imgPoints, ids, 
-                                 cv::aruco::DetectorParameters(), rejectedImgPoints);
+        // detect markers and estimate pose
+        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids, 
+                                 cv::aruco::DetectorParameters(), rejected);
+        if (estimatePose && ids.size() > 0)
+            cv::aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs,
+                                                 rvecs, tvecs);
 
         // draw results
-        if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(image, imageCopy, imgPoints, ids);
-        else
-            image.copyTo(imageCopy);
-        if (rejectedImgPoints.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedImgPoints, cv::noArray(),
-                                           cv::Scalar(100, 0, 255));
+        image.copyTo(imageCopy);
+        if (ids.size() > 0) {
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            if (showRejected && rejected.size() > 0)
+                cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, 
+                                               cv::noArray(), cv::Scalar(100, 0, 255));
+
+        if (estimatePose) {
+            for (int i = 0; i < ids.size(); i++)
+                    cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], 
+                                        tvecs[i], 0.06);
+            }
+        }            
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(0);
+        char key = cv::waitKey(waitTime);
         if (key == 27)
             break;
     }
