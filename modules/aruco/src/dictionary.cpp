@@ -118,28 +118,40 @@ class DictionaryData {
         // get as a byte list
         cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
 
-        // search closest marker in dict
-        int closestId = -1;
-        rotation = 0;
-        unsigned int closestDistance = markerSize * markerSize + 1;
-        cv::Mat candidateDistances = _getDistances(candidateBytes);
+        idx = -1; // by default, not found
 
-        for (int i = 0; i < bytesList.rows; i++) {
-            if (candidateDistances.ptr<int>(i)[0] < closestDistance) {
-                closestDistance = candidateDistances.ptr<int>(i)[0];
-                closestId = i;
-                rotation = candidateDistances.ptr<int>(i)[1];
+        // search closest marker in dict
+        for (unsigned int m = 0; m < bytesList.rows; m++) {
+            int currentMinDistance = markerSize * markerSize + 1;
+            int currentRotation;
+            for (unsigned int r = 0; r < 4; r++) {
+                int currentHamming = 0;
+                // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
+                for (int b = 0; b < candidateBytes.total(); b++) {
+                    unsigned char xorRes =
+                        bytesList.ptr<cv::Vec4b>(m)[b][r] ^ candidateBytes.ptr<cv::Vec4b>(0)[b][0];
+                    currentHamming += hammingWeightLUT[xorRes];
+                }
+
+                if (currentHamming < currentMinDistance) {
+                    currentMinDistance = currentHamming;
+                    currentRotation = r;
+                }
+            }
+
+            // if maxCorrection is fullfilled, return this one
+            if (currentMinDistance <= maxCorrectionBits ) {
+                idx = m;
+                rotation = currentRotation;
+                break;
             }
         }
 
-        // return closest id
-        if (closestId != -1 && closestDistance <= maxCorrectionBits) {
-            idx = closestId;
+        if (idx != -1)
             return true;
-        } else {
-            idx = -1;
+        else
             return false;
-        }
+
     }
 
 
@@ -241,7 +253,7 @@ class DictionaryData {
                     currentByte = byteList.ptr<cv::Vec4b>(0)[currentByteIdx][0];
                     // if not enough bits for one more byte, we are in the end
                     // update bit position accordingly
-                    if(8 * (currentByteIdx + 1) > bits.total())
+                    if (8 * (currentByteIdx + 1) > bits.total())
                         currentBit = 8 * (currentByteIdx + 1) - bits.total();
                     else
                         currentBit = 0; // ok, bits enough for next byte
@@ -250,39 +262,6 @@ class DictionaryData {
         }
         return bits;
     }
-
-
-
-    /**
-      * @brief Calculate all distances of input byteList to markers in dictionary
-      * Returned matrix has one row per dictionary marker and two columns
-      * Column 0 is the distance to the candidate, Column 1 is the rotation with minimum distance
-      */
-    cv::Mat _getDistances(const cv::Mat &byteList) const {
-
-        CV_Assert(bytesList.cols == byteList.total() && byteList.type()== CV_8UC4);
-
-        cv::Mat res(bytesList.rows, 2, CV_32SC1);
-        for (unsigned int m = 0; m < bytesList.rows; m++) {
-            res.ptr<int>(m)[0] = 10e8;
-            for (unsigned int r = 0; r < 4; r++) {
-                int currentHamming = 0;
-                // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
-                for (int b = 0; b < byteList.total(); b++) {
-                    unsigned char xorRes =
-                        bytesList.ptr<cv::Vec4b>(m)[b][r] ^ byteList.ptr<cv::Vec4b>(0)[b][0];
-                    currentHamming += hammingWeightLUT[xorRes];
-                }
-
-                if (currentHamming < res.ptr<int>(m)[0]) {
-                    res.ptr<int>(m)[0] = currentHamming;
-                    res.ptr<int>(m)[1] = r;
-                }
-            }
-        }
-        return res;
-    }
-
 
 
 };
