@@ -18,7 +18,7 @@ using namespace cv;
 using namespace std;
 namespace cv{ namespace cnn_3dobj{
 
-class IcoSphere {
+class CV_EXPORTS_W IcoSphere {
 
 
 	private:
@@ -33,9 +33,9 @@ class IcoSphere {
 		std::vector<cv::Point3d>* CameraPos = new std::vector<cv::Point3d>;
 		float radius;
 		IcoSphere(float radius_in, int depth_in);
-		void norm(float v[]);
-		void add(float v[]);
-		void subdivide(float v1[], float v2[], float v3[], int depth);
+		CV_WRAP void norm(float v[]);
+		CV_WRAP void add(float v[]);
+		CV_WRAP void subdivide(float v1[], float v2[], float v3[], int depth);
 
 };
 
