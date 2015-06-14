@@ -164,56 +164,62 @@ namespace
                 dstData[i] = protoBlob.data(i);
         }
 
+        void extractBinaryLayerParms(const caffe::LayerParameter& layer, LayerParams& layerParams)
+        {
+            const std::string &name = layer.name();
+
+            int li;
+            for (li = 0; li != netBinary.layer_size(); li++)
+            {
+                if (netBinary.layer(li).name() == name)
+                    break;
+            }
+
+            if (li == netBinary.layer_size() || netBinary.layer(li).blobs_size() == 0)
+                return;
+
+            const caffe::LayerParameter &binLayer = netBinary.layer(li);
+            layerParams.learnedBlobs.resize(binLayer.blobs_size());
+            for (int bi = 0; bi < binLayer.blobs_size(); bi++)
+            {
+                blobFromProto(binLayer.blobs(bi), layerParams.learnedBlobs[bi]);
+            }
+        }
+
         void populateNet(Net dstNet)
         {
             int layersSize = net.layer_size();
 
             std::vector<String> layersName(layersSize);
-            std::vector<LayerParams> layersParam(layersSize);
+            std::vector<int> layersId(layersSize);
+            std::vector<std::vector<String>> bottomsVec(layersSize);
 
             for (int li = 0; li < layersSize; li++)
             {
                 const caffe::LayerParameter layer = net.layer(li);
                 String name = layer.name();
                 String type = layer.type();
+                LayerParams layerParams;
 
-                std::vector<String> bottoms, tops;
-                bottoms.assign(layer.bottom().begin(), layer.bottom().end());
+                std::vector<String> tops;
                 tops.assign(layer.top().begin(), layer.top().end());
+                bottomsVec[li].assign(layer.bottom().begin(), layer.bottom().end());
 
                 std::cout << std::endl << "LAYER: " << name << std::endl;
 
-                extractLayerParams(layer, layersParam[li]);
-                layersName[li] = name;
+                extractLayerParams(layer, layerParams);
+                extractBinaryLayerParms(layer, layerParams);
+                
+                int id = dstNet.addLayer(name, type);
+                dstNet.setOutputNames(id, tops);
 
-                //SetUp
-                //int id = config->addLayer(name, type);
-                //config->setLayerOutputLabels(id, bottoms);
+                layersName[li] = name;
+                layersId[li] = id;
             }
 
-            for (int li = 0; li < netBinary.layer_size(); li++)
+            for (int li = 0; li < layersSize; li++)
             {
-                const caffe::LayerParameter layer = netBinary.layer(li);
-                if (layer.blobs_size() == 0)
-                    continue;
-
-                String name = layer.name();
-                int index = std::find(layersName.begin(), layersName.end(), name) - layersName.begin();
-
-                if (index < layersName.size())
-                {
-                    std::vector<Blob> &layerBlobs = layersParam[index].learnedBlobs;
-                    layerBlobs.resize(layer.blobs_size());
-
-                    for (int bi = 0; bi < layer.blobs_size(); bi++)
-                    {
-                        blobFromProto(layer.blobs(bi), layerBlobs[bi]);
-                    }
-                }
-                else
-                {
-                    std::cerr << "Unknown layer name " << name << " into" << std::endl;
-                }
+                dstNet.setLayerInputs(bottomsVec[li], layersId[li]);
             }
         }
 

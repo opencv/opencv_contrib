@@ -29,46 +29,55 @@ namespace dnn
         return Mat();
     }
 
-    inline
-    int Blob::cols() const
+    inline int Blob::cols() const
     {
         CV_DbgAssert(m.dims > 2);
         return m.size[m.dims-1];
     }
 
-    inline
-    int Blob::rows() const
+    inline int Blob::rows() const
     {
         CV_DbgAssert(m.dims > 2);
         return m.size[m.dims-2];
     }
 
-    inline
-    Size Blob::size() const
+    inline Size Blob::size() const
     {
         return Size(cols(), rows());
     }
     
-    inline
-    int Blob::channels() const
+    inline int Blob::channels() const
     {
         CV_DbgAssert(m.dims >= 3);
         return m.size[m.dims-3];
     }
     
-    inline
-    int Blob::num() const
+    inline int Blob::num() const
     {
         CV_DbgAssert(m.dims == 4);
         return m.size[0];
     }
 
-    inline
-    Vec4i Blob::shape() const
+    inline Vec4i Blob::shape() const
     {
         CV_DbgAssert(m.dims == 4);
         return Vec4i(m.size.p);
     }
+
+
+    inline size_t Blob::total() const
+    {
+        CV_DbgAssert(m.dims == 4);
+        return (size_t) m.size[0] * m.size[1] * m.size[2] * m.size[3];
+    }
+
+    template<typename TFloat>
+    TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0)
+    {
+        CV_Assert(m.type() = cv::DataType<TFloat>::type && m.dims == 4);
+        return (TFloat*) (m.data + num * m.step[0] + cn * m.step[1] + row * m.step[2] + col * m.step[3]);
+    }
+
 }
 }
 

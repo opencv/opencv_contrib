@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __OPENCV_DNN_DICT_HPP__
+#define __OPENCV_DNN_DICT_HPP__
+
 #include <opencv2/core.hpp>
 
 namespace cv
@@ -29,8 +31,8 @@ struct DictValue
     template<typename T>
     T get() const;
 
-    template<typename T>
-    const T &get() const;
+    bool isString() const;
+    bool isInt() const;
 
     DictValue &operator=(const DictValue &r);
 
@@ -47,6 +49,17 @@ class Dict
     _Dict dict;
 
 public:
+
+    bool has(const String &name)
+    {
+        return dict.count(name);
+    }
+
+    DictValue *ptr(const String &name)
+    {
+        _Dict::iterator i = dict.find(name);
+        return (i == dict.end()) ? NULL : &i->second;
+    }
 
     template <typename T>
     const T &get(const String &name) const
@@ -129,7 +142,7 @@ inline bool DictValue::get<bool>() const
 }
 
 template<>
-inline const String &DictValue::get<String>() const
+inline String DictValue::get<String>() const
 {
     CV_Assert(type == cv::ParamType<String>::type);
     return *s;
@@ -174,5 +187,17 @@ inline DictValue::DictValue(const DictValue &r)
     *this = r;
 }
 
+inline bool DictValue::isString() const
+{
+    return (type == cv::Param::STRING);
+}
+
+inline bool DictValue::isInt() const
+{
+    return (type == cv::Param::INT);
+}
+
 }
 }
+
+#endif

@@ -1,13 +1,12 @@
 name: "gtsrb"
-input: "data"
+input: "input"
 input_dim: 1
 input_dim: 3
 input_dim: 48
 input_dim: 48
 
-
 layers {
-  bottom: "data"
+  bottom: "input"
   top: "layer1"
   name: "layer1"
   type: CONVOLUTION

@@ -34,14 +34,17 @@ namespace dnn
         Mat getMat();
         Mat getMat(int num, int channel);
 
+        //shape getters
         int cols() const;
         int rows() const;
         Size size() const;
-
         int channels() const;
         int num() const;
-
         Vec4i shape() const;
+        size_t total() const;
+
+        template<typename TFloat>
+        TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0);
 
     private:
         Mat m;
@@ -58,19 +61,19 @@ namespace dnn
     {
     public:
 
-        typedef Layer* (*Constuctor)();
+        typedef Ptr<Layer> (*Constuctor)(LayerParams &params);
 
         static void registerLayer(const String &type, Constuctor constructor);
 
         static void unregisterLayer(const String &type);
 
-        static Ptr<Layer> createLayerInstance(const String &type);
+        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params = LayerParams());
 
     private:
         LayerRegister();
-        LayerRegister(const LayerRegister &lr);
 
-        static std::map<String, Constuctor> registeredLayers;
+        struct Impl;
+        static Ptr<Impl> impl;
     };
 
     //this class allows to build new Layers
@@ -82,17 +85,10 @@ namespace dnn
 
         virtual ~Layer();
 
-        //type of Layer
-        virtual String type() const = 0;
-
-        //setUp calls once (think that it's constructor)
-        virtual void setUp(LayerParams &params) = 0;
-
-        //maybe useless function
         //shape of output blobs must be adjusted with respect to shape of input blobs
-        virtual void adjustShape(const std::vector<Blob> &inputs, std::vector<Blob> &outputs) = 0;
+        virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
-        virtual void forward(std::vector<Blob> &inputs, std::vector<Blob> &outputs) = 0;
+        virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
         virtual int getNumInputs();
         virtual int getNumOutputs();
@@ -118,10 +114,10 @@ namespace dnn
         //each output of each layer can be labeled by unique string label (as in Caffe)
         //if label not specified then %layer_name%.%layer_output_id% can be used
         void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
+        void setLayerInputs(const std::vector<String> &outputs, LayerId layer);
 
         void connect(BlobId input, BlobId output);
         void connect(const std::vector<BlobId> &outputs, const std::vector<BlobId> &inputs);
-        void connect(const std::vector<BlobId> &outputs, LayerId layer);
 
         int getOutputId(LayerId layer, int outputNum);
         int getInputId(LayerId layer, int inputNum);
@@ -159,6 +155,32 @@ namespace dnn
 
     CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
 
+
+    //allows automatically register created layer on module load time
+    struct _LayerRegisterer
+    {
+        String type;
+
+        _LayerRegisterer(const String &type, LayerRegister::Constuctor constuctor)
+        {
+            this->type = type;
+            LayerRegister::registerLayer(type, constuctor);
+        }
+
+        ~_LayerRegisterer()
+        {
+            LayerRegister::unregisterLayer(type);
+        }
+    };
+
+    //registers layer on module load time
+    #define REGISTER_LAYER(type, constuctorFunc) \
+    static _LayerRegisterer __layerRegisterer_##type(#type, func);
+
+    #define REGISTER_LAYER_CLASS(type, class)                       \
+    Ptr<Layer> __layerRegisterer_func_##type(LayerParams &params)   \
+        { return Ptr<Layer>(new class(params)); }                   \
+    static _LayerRegisterer __layerRegisterer_##type(#type, __layerRegisterer_func_##type);
 }
 }
 
