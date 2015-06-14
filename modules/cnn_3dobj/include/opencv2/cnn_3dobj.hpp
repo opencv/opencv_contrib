@@ -5,8 +5,8 @@
  *      Author: wangyida
  */
 
-#ifndef CNN_3DOBJ_HPP_
-#define CNN_3DOBJ_HPP_
+#ifndef __OPENCV_CNN_3DOBJ_HPP__
+#define __OPENCV_CNN_3DOBJ_HPP__
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
@@ -16,7 +16,10 @@
 #include <iostream>
 using namespace cv;
 using namespace std;
-namespace cv{ namespace cnn_3dobj{
+namespace cv
+{ 
+namespace cnn_3dobj
+{
 
 class CV_EXPORTS_W IcoSphere {
 
