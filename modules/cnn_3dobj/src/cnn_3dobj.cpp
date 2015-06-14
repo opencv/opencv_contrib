@@ -1,4 +1,4 @@
-#include "../include/cnn_3dobj.hpp"
+#include "precomp.hpp"
 using namespace cv;
 using namespace std;
 
