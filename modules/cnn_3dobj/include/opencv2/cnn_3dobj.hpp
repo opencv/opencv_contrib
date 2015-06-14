@@ -5,8 +5,8 @@
  *      Author: wangyida
  */
 
-#ifndef SPHEREVIEW3D_HPP_
-#define SPHEREVIEW3D_HPP_
+#ifndef CNN_3DOBJ_HPP_
+#define CNN_3DOBJ_HPP_
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
@@ -16,7 +16,7 @@
 #include <iostream>
 using namespace cv;
 using namespace std;
-namespace cv{ namespace sphereview3d{
+namespace cv{ namespace cnn_3dobj{
 
 class IcoSphere {
 
@@ -43,4 +43,4 @@ class IcoSphere {
 
 
 
-#endif /* SPHEREVIEW3D_HPP_ */
+#endif /* CNN_3DOBJ_HPP_ */

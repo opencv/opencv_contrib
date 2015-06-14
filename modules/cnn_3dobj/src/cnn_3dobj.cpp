@@ -1,8 +1,8 @@
-#include "../include/sphereview3d.hpp"
+#include "../include/cnn_3dobj.hpp"
 using namespace cv;
 using namespace std;
 
-namespace cv{ namespace sphereview3d{
+namespace cv{ namespace cnn_3dobj{
 
 	IcoSphere::IcoSphere(float radius_in, int depth_in)
 	{

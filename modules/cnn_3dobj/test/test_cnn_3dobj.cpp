@@ -1,10 +1,10 @@
-#include "../include/sphereview3d.hpp"
+#include "../include/cnn_3dobj.hpp"
 using namespace cv;
 using namespace std;
 
 int main(int argc, char *argv[]){
 
-	cv::sphereview3d::IcoSphere ViewSphere(16,0);
+	cv::cnn_3dobj::IcoSphere ViewSphere(16,0);
 	std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	//IcoSphere ViewSphere(16,0);
 	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
