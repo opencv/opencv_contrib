@@ -637,6 +637,15 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board 
 
 
 
+
+/**
+ */
+void GridBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int borderBits) {
+    cv::aruco::drawPlanarBoard((*this), outSize, _img, marginSize, borderBits);
+}
+
+
+
 /**
  */
 GridBoard GridBoard::create(int markersX, int markersY, double markerLength,

@@ -237,6 +237,21 @@ class CV_EXPORTS GridBoard : public Board {
 
 public:
 
+
+    /**
+     * @brief Draw a GridBoard
+     *
+     * @param outSize size of the output image in pixels.
+     * @param img output image with the board. The size of this image will be outSize
+     * and the board will be on the center, keeping the board proportions.
+     * @param marginSize minimum margins (in pixels) of the board in the output image
+     * @param borderBits width of the marker borders.
+     *
+     * This function return the image of the GridBoard, ready to be printed.
+     */
+    CV_EXPORTS void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+
+
     /**
      * @brief Create a GridBoard object
      *
