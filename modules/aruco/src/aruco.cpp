@@ -501,6 +501,8 @@ const DictionaryData &_getDictionaryData(DICTIONARY name) {
     switch (name) {
     case DICT_ARUCO:
         return DICT_ARUCO_DATA;
+    case DICT_6X6_250:
+        return DICT_6X6_250_DATA;
     }
     return DictionaryData();
 }

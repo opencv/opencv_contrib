@@ -74,7 +74,7 @@ namespace aruco {
  * @brief Predefined markers dictionaries/sets
  * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
  */
-enum DICTIONARY { DICT_ARUCO = 0 };
+enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
 
 
 

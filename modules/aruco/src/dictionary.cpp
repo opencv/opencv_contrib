@@ -270,6 +270,7 @@ class DictionaryData {
 
 // DictionaryData constructors calls
 const DictionaryData DICT_ARUCO_DATA = DictionaryData(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
+const DictionaryData DICT_6X6_250_DATA = DictionaryData(&(DICT_6X6_250_BYTES[0][0][0]), 6, 250, 5);
 
 
 
