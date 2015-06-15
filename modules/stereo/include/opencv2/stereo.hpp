@@ -47,8 +47,6 @@
 #include "opencv2/core.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/core/affine.hpp"
-#include "opencv2/core/cvdef.h"
-
 
 /**
 @defgroup stereo Stereo Correspondance Algorithms
