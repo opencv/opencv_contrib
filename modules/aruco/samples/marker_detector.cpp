@@ -173,8 +173,7 @@ int main(int argc, char *argv[]) {
         std::vector<cv::Mat> rvecs, tvecs;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids, 
-                                 detectorParams, rejected);
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
         if (estimatePose && ids.size() > 0)
             cv::aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs,
                                                  rvecs, tvecs);

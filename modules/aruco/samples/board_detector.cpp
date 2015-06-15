@@ -207,8 +207,7 @@ int main(int argc, char *argv[]) {
         cv::Mat rvec, tvec;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids, detectorParams,
-                                 rejected);
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
         int markersOfBoardDetected = 0;
         if (ids.size() > 0)
             markersOfBoardDetected = cv::aruco::estimatePoseBoard(corners, ids, board, camMatrix, 
