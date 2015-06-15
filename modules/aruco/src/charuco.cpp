@@ -160,7 +160,77 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLengt
         }
     }
 
+    // now fill chessboardCorners
+    for (int y = 0; y < squaresY-1; y++) {
+        for (int x = 0; x < squaresX-1; x++) {
+            cv::Point3f corner;
+            corner.x = (x+1)*squareLength;
+            corner.y = (y+1)*squareLength;
+            corner.z = 0;
+            res.chessboardCorners.push_back(corner);
+        }
+    }
+
     return res;
+}
+
+
+
+
+/**
+  */
+void _getChessboardObjectPoints(const CharucoBoard &board, OutputArray chessboardObjPoints) {
+
+}
+
+
+
+/**
+  */
+void estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, InputArray _image,
+                              const CharucoBoard &board, InputArray _cameraMatrix,
+                              InputArray _distCoeffs, OutputArray _rvec, OutputArray _tvec,
+                              OutputArray _chessboardCorners) {
+
+
+    // approximated pose estimation
+    cv::Mat approximatedRvec, approximatedTvec;
+    cv::aruco::estimatePoseBoard(_corners, _ids, board, _cameraMatrix, _distCoeffs,
+                                 approximatedRvec, approximatedTvec);
+
+
+    // project chessboard corners
+    std::vector<cv::Point2f> chessboardImgPoints;
+    cv::projectPoints(board.chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
+                      _distCoeffs, chessboardImgPoints);
+
+    // filter points outside image
+    std::vector<cv::Point2f> filteredChessboardImgPoints;
+    std::vector<cv::Point3f> filteredChessboardObjPoints;
+    cv::Rect innerRect (2, 2, _image.getMat().cols - 4, _image.getMat().rows - 4);
+    for (unsigned int i=0; i<chessboardImgPoints.size(); i++) {
+        if (innerRect.contains(chessboardImgPoints[i]))
+            filteredChessboardImgPoints.push_back(chessboardImgPoints[i]);
+            filteredChessboardObjPoints.push_back(board.chessboardCorners[i]);
+    }
+
+    // corner refinement
+    DetectorParameters params; // use default params for corner refinement
+    cv::cornerSubPix(_image, filteredChessboardImgPoints,
+                     cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
+                     cvSize(-1, -1),
+                     cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                    params.cornerRefinementMaxIterations,
+                                    params.cornerRefinementMinAccuracy));
+
+
+    // final pose estimation
+    cv::solvePnP(filteredChessboardObjPoints, filteredChessboardImgPoints, _cameraMatrix,
+                 _distCoeffs, _rvec, _tvec);
+
+    if(_chessboardCorners.needed())
+        ;//_chessboardCorners = chessboardImgPoints;
+
 }
 
 

@@ -74,6 +74,8 @@ class CV_EXPORTS CharucoBoard : public Board {
 
 public:
 
+    // vector of chessboard 3D corners precalculated
+    std::vector< cv::Point3f > chessboardCorners;
 
     /**
      * @brief Draw a ChArUco board
@@ -143,12 +145,13 @@ private:
 
 
 /**
- * @brief Pose estimation for a board of markers
- *
+ * @brief Pose estimation for a ChArUco board
  * @param corners vector of already detected markers corners. For each marker, its four corners
  * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
  * dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @param ids list of identifiers for each marker in corners
+ * @param image input image necesary for corner refinement. Note that markers are not detected and
+ * should be sent in corners and ids parameters.
  * @param board layout of ChArUco board.
  * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
@@ -157,6 +160,8 @@ private:
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
  * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * @param parameters marker detection parameters
+ * @param chessboardCorners interpolated chessboard corners used for pose estimation
  *
  * This function receives the detected markers and returns the pose of a ChArUco board composed
  * by those markers.
@@ -165,11 +170,11 @@ private:
  * coordinate system to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
  */
-/// @TODO
-//CV_EXPORTS void estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray ids,
-//                                         const CharucoBoard &board, InputArray cameraMatrix,
-//                                         InputArray distCoeffs, OutputArray rvec, OutputArray tvec,
-//                                         OutputArray chessboardCorners = noArray());
+CV_EXPORTS void estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray ids,
+                                         InputArray image, const CharucoBoard &board,
+                                         InputArray cameraMatrix, InputArray distCoeffs,
+                                         OutputArray rvec, OutputArray tvec,
+                                         OutputArray chessboardCorners = noArray());
 
 
 
