@@ -48,6 +48,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include <iostream>
+
 
 namespace cv {
 namespace aruco {
@@ -179,19 +181,12 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLengt
 
 /**
   */
-void _getChessboardObjectPoints(const CharucoBoard &board, OutputArray chessboardObjPoints) {
-
-}
-
-
-
-/**
-  */
-void estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, InputArray _image,
+bool estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, InputArray _image,
                               const CharucoBoard &board, InputArray _cameraMatrix,
                               InputArray _distCoeffs, OutputArray _rvec, OutputArray _tvec,
                               OutputArray _chessboardCorners) {
 
+    CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
 
     // approximated pose estimation
     cv::Mat approximatedRvec, approximatedTvec;
@@ -204,19 +199,27 @@ void estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, Inpu
     cv::projectPoints(board.chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
                       _distCoeffs, chessboardImgPoints);
 
+
     // filter points outside image
     std::vector<cv::Point2f> filteredChessboardImgPoints;
     std::vector<cv::Point3f> filteredChessboardObjPoints;
     cv::Rect innerRect (2, 2, _image.getMat().cols - 4, _image.getMat().rows - 4);
     for (unsigned int i=0; i<chessboardImgPoints.size(); i++) {
-        if (innerRect.contains(chessboardImgPoints[i]))
+        if (innerRect.contains(chessboardImgPoints[i])) {
             filteredChessboardImgPoints.push_back(chessboardImgPoints[i]);
             filteredChessboardObjPoints.push_back(board.chessboardCorners[i]);
+        }
     }
+    if (filteredChessboardImgPoints.size() < 4) return false;
 
     // corner refinement
+    cv::Mat grey;
+    if (_image.getMat().type() == CV_8UC3)
+        cv::cvtColor(_image.getMat(), grey, cv::COLOR_BGR2GRAY);
+    else
+       _image.getMat().copyTo(grey);
     DetectorParameters params; // use default params for corner refinement
-    cv::cornerSubPix(_image, filteredChessboardImgPoints,
+    cv::cornerSubPix(grey, filteredChessboardImgPoints,
                      cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
                      cvSize(-1, -1),
                      cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
@@ -225,12 +228,19 @@ void estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, Inpu
 
 
     // final pose estimation
+
     cv::solvePnP(filteredChessboardObjPoints, filteredChessboardImgPoints, _cameraMatrix,
                  _distCoeffs, _rvec, _tvec);
 
-    if(_chessboardCorners.needed())
-        ;//_chessboardCorners = chessboardImgPoints;
+    if (_chessboardCorners.needed()) {
+        _chessboardCorners.create((int)chessboardImgPoints.size(), 1, CV_32FC2);
+        for (unsigned int i = 0; i < chessboardImgPoints.size(); i++) {
+            _chessboardCorners.getMat().ptr<cv::Point2f>(0)[i] = chessboardImgPoints[i];
+        }
+    }
 
+
+    return true;
 }
 
 

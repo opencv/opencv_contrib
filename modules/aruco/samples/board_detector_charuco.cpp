@@ -39,6 +39,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco/charuco.hpp>
+#include <opencv2/calib3d.hpp>
 #include <vector>
 #include <iostream>
 
@@ -177,15 +178,17 @@ int main(int argc, char *argv[]) {
 
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners, rejected;
+        std::vector<cv::Point2f> chessboardCorners;
         cv::Mat rvec, tvec;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams,
-                                 rejected);
-        int markersOfBoardDetected = 0;
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+ 
+        bool boardDetected = false;
         if (ids.size() > 0)
-            markersOfBoardDetected = cv::aruco::estimatePoseBoard(corners, ids, board, camMatrix, 
-                                                                  distCoeffs, rvec, tvec);
+            boardDetected = cv::aruco::estimatePoseCharucoBoard(corners, ids, image, board, 
+                                                                camMatrix, distCoeffs, 
+                                                                rvec, tvec, chessboardCorners);	
 
         // draw results
         image.copyTo(imageCopy);
@@ -195,10 +198,12 @@ int main(int argc, char *argv[]) {
         
         if (showRejected && rejected.size() > 0)
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, 
-                                               cv::noArray(), cv::Scalar(100, 0, 255));           
+                                           cv::noArray(), cv::Scalar(100, 0, 255));           
         
-        if (markersOfBoardDetected > 0)
+        if (boardDetected) {
             cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
+            cv::drawChessboardCorners(imageCopy, cv::Size(squaresX-1, squaresY-1), chessboardCorners, true);
+        }
 
         cv::imshow("out", imageCopy);
         char key = cv::waitKey(waitTime);

@@ -169,8 +169,9 @@ private:
  * the board layout. The returned transformation is the one that transforms points from the board
  * coordinate system to the camera coordinate system.
  * Input markers that are not included in the board layout are ignored.
+ * It returns true if there was enough chessboard corners for pose estimation
  */
-CV_EXPORTS void estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray ids,
+CV_EXPORTS bool estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray ids,
                                          InputArray image, const CharucoBoard &board,
                                          InputArray cameraMatrix, InputArray distCoeffs,
                                          OutputArray rvec, OutputArray tvec,
