@@ -144,13 +144,9 @@ struct DetectorParameters {
  * @param ids vector of identifiers of the detected markers. The identifier is of type int
  * (e.g. std::vector<int>). For N detected markers, the size of ids is also N.
  * The identifiers have the same order than the markers in the imgPoints array.
+ * @param parameters marker detection parameters
  * @param rejectedImgPoints contains the imgPoints of those squares whose inner code has not a
  * correct codification. Useful for debugging purposes.
- * @param threshParam window size for adaptative thresholding. A larger param can slow down the
- * detection process. A low param can produce false negatives during the detection.
- * @param minLength minimum size of candidates contour length. It is indicated as a ratio
- * respect to the largest dimension of the input image. Markers whose perimeter is lower than the
- * correspoding value wont be detected. A low value can slow down the detection process
  *
  * Performs marker detection in the input image. Only markers included in the specific dictionary
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
