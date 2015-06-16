@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners);
         }
         
         if (showRejected && rejected.size() > 0)
