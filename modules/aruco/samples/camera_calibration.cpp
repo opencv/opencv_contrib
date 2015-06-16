@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<cv::Point2f> > corners;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, cv::aruco::DICT_ARUCO, corners, ids, detectorParams);
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams);
 
         // draw results
 	image.copyTo(imageCopy);
