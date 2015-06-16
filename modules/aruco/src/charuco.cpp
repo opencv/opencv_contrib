@@ -201,6 +201,9 @@ unsigned int _selectAndRefineChessboardCorners(InputOutputArray _allImgCorners, 
         }
     }
 
+    // if none valid, return 0
+    if (filteredChessboardImgPoints.size() == 0) return 0;
+
     // corner refinement
     cv::Mat grey;
     if (_image.getMat().type() == CV_8UC3)
@@ -299,7 +302,8 @@ double calibrateCameraCharuco(const std::vector<std::vector<std::vector<Point2f>
                               TermCriteria criteria) {
 
     CV_Assert(_images.total() > 0);
-    CV_Assert(corners.size() == ids.size() == _images.total());
+    CV_Assert(corners.size() == ids.size());
+    CV_Assert(corners.size() == _images.total());
 
     cv::Size imageSize = _images.getMat(0).size();
 
@@ -321,6 +325,7 @@ double calibrateCameraCharuco(const std::vector<std::vector<std::vector<Point2f>
         _chessboardCorners.create(nFrames, 1, CV_32FC2);
 
     for (int frame = 0; frame < nFrames; frame++) {
+
         cv::Mat currentAllImgCorners;
         cv::Mat currentFilteredImgCorners, currentFilteredObjCorners;
         cv::projectPoints(board.chessboardCorners, approximatedRvecs[frame],
@@ -330,18 +335,23 @@ double calibrateCameraCharuco(const std::vector<std::vector<std::vector<Point2f>
         _selectAndRefineChessboardCorners(currentAllImgCorners, _images.getMat(frame), board,
                                           currentFilteredImgCorners, currentFilteredObjCorners);
 
+        if (_chessboardCorners.needed()) {
+            _chessboardCorners.create(currentAllImgCorners.total(), 1, CV_32FC2, frame, true);
+            cv::Mat cornersMat = _chessboardCorners.getMat(frame);
+            currentAllImgCorners.copyTo(cornersMat);
+        }
+
+        // if none valid, just skip this frame for calibration
+        if(currentFilteredImgCorners.total() == 0) continue;
+
         allImgCorners.push_back(currentFilteredImgCorners);
         allObjCorners.push_back(currentFilteredObjCorners);
-
-        if (_chessboardCorners.needed())
-            currentAllImgCorners.copyTo(_chessboardCorners.getMat(frame));
 
     }
 
     return cv::calibrateCamera(allObjCorners, allImgCorners, imageSize, _cameraMatrix, _distCoeffs,
                                _rvecs, _tvecs, flags, criteria);
 }
-
 
 
 
