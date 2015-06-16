@@ -127,7 +127,7 @@ public:
              int component_level=0)
     {
 
-        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
+        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
 
 #ifdef HAVE_TESSERACT
 
