@@ -722,11 +722,11 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
             cv::Point2f p0, p1;
             p0 = currentMarker.ptr<cv::Point2f>(0)[j];
             p1 = currentMarker.ptr<cv::Point2f>(0)[(j + 1) % 4];
-            cv::line(outImg, p0, p1, borderColor, 2);
+            cv::line(outImg, p0, p1, borderColor, 1);
         }
         // draw first corner mark
         cv::rectangle(outImg, currentMarker.ptr<cv::Point2f>(0)[0] - Point2f(3, 3),
-                      currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 2,
+                      currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 1,
                       cv::LINE_AA);
         // draw ID
         if (_ids.total() != 0) {
