@@ -174,34 +174,6 @@ int main(int argc, char *argv[]) {
 
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
                                                               markerSeparation, dictionary);
-//     board.ids.clear();
-//     board.ids.push_back(985);
-//     board.ids.push_back(838);
-//     board.ids.push_back(908);
-//     board.ids.push_back(299);
-//     board.ids.push_back(428);
-//     board.ids.push_back(177);
-// 
-//     board.ids.push_back(64);
-//     board.ids.push_back(341);
-//     board.ids.push_back(760);
-//     board.ids.push_back(882);
-//     board.ids.push_back(982);
-//     board.ids.push_back(977);
-// 
-//     board.ids.push_back(477);
-//     board.ids.push_back(125);
-//     board.ids.push_back(717);
-//     board.ids.push_back(791);
-//     board.ids.push_back(618);
-//     board.ids.push_back(76);
-// 
-//     board.ids.push_back(181);
-//     board.ids.push_back(1005);
-//     board.ids.push_back(175);
-//     board.ids.push_back(684);
-//     board.ids.push_back(233);
-//     board.ids.push_back(461);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;

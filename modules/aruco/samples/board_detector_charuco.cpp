@@ -53,7 +53,6 @@ static void help() {
     std::cout << "Pose estimation using a ChArUco board" << std::endl;
     std::cout << "Parameters: " << std::endl;
     std::cout << "-w <nmarkers> # Number of markers in X direction" << std::endl;
-    std::cout << "-w <nsquares> # Number of squares in X direction" << std::endl;
     std::cout << "-h <nsquares> # Number of squares in Y direction" << std::endl;
     std::cout << "-sl <squareLength> # Square side lenght (in meters)" << std::endl;
     std::cout << "-ml <markerLength> # Marker side lenght (in meters)" << std::endl;
