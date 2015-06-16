@@ -179,6 +179,52 @@ CV_EXPORTS bool estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray 
 
 
 
+/**
+ * @brief Calibrate a camera using a charuco board
+ *
+ * @param corners vector of detected marker corners in each frame.
+ * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
+ * @param ids list of identifiers for each marker in corners
+ * @param images input list of image necesary for corner refinement. Note that markers are not
+ * detected and should be sent in corners and ids parameters.
+ * @param board Marker Board layout
+ * @param cameraMatrix Output 3x3 floating-point camera matrix
+ * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$ . If CV\_CALIB\_USE\_INTRINSIC\_GUESS
+ * and/or CV_CALIB_FIX_ASPECT_RATIO are specified, some or all of fx, fy, cx, cy must be
+ * initialized before calling the function.
+ * @param distCoeffs Output vector of distortion coefficients
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param rvecs Output vector of rotation vectors (see Rodrigues ) estimated for each board view
+ * (e.g. std::vector<cv::Mat>>). That is, each k-th rotation vector together with the corresponding
+ * k-th translation vector (see the next output parameter description) brings the board pattern
+ * from the model coordinate space (in which object points are specified) to the world coordinate
+ * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
+ * @param chessboardCorners interpolated chessboard corners on each image
+ * @param tvecs Output vector of translation vectors estimated for each pattern view.
+ * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
+ * @param criteria Termination criteria for the iterative optimization algorithm.
+ *
+ * This function calibrates a camera using an Charuco Board. The function receives a list of
+ * detected markers from several views of the Board. The function requires the input images to
+ * perform subpixel refinement after chessboard corners interpolation. After that, the process is
+ * similar to the chessboard calibration in calibrateCamera(). The function returns the final
+ * re-projection error.
+ */
+CV_EXPORTS double calibrateCameraCharuco(const
+                                         std::vector<std::vector<std::vector<Point2f> > > &corners,
+                                         const std::vector<std::vector<int> > & ids,
+                                         InputArrayOfArrays images, const CharucoBoard &board,
+                                         InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+                                         OutputArrayOfArrays rvecs = noArray(),
+                                         OutputArrayOfArrays tvecs = noArray(),
+                                         OutputArrayOfArrays chessboardCorners = noArray(),
+                                         int flags = 0,
+                                         TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
+                                                                              TermCriteria::EPS,
+                                                                              30, DBL_EPSILON));
+
+
+
 //! @}
 
 
