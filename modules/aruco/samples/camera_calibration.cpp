@@ -65,6 +65,8 @@ static void help() {
     std::cout << "-o <outputFile> # Output file with calibrated camera parameters" << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
+    std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
+                 << std::endl;                 
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
     std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
@@ -203,7 +205,10 @@ int main(int argc, char *argv[]) {
         waitTime = 0;
     }
     else {
-        inputVideo.open(0);
+        int camId = 0;
+        if (isParam("-ci", argc, argv)) 
+            camId = atoi( getParam("-ci", argc, argv).c_str() );
+        inputVideo.open(camId);
         waitTime = 10;
     }
 

@@ -54,6 +54,8 @@ static void help() {
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
+    std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
+                 << std::endl;
     std::cout << "[-c <cameraParams>] # Camera intrinsic parameters. Needed for camera pose"
               << std::endl;
     std::cout << "[-l <markerLength>] # Marker side lenght (in meters). Needed for correct" <<
@@ -159,7 +161,10 @@ int main(int argc, char *argv[]) {
         waitTime = 0;
     }
     else {
-        inputVideo.open(0);
+        int camId = 0;
+        if (isParam("-ci", argc, argv)) 
+            camId = atoi( getParam("-ci", argc, argv).c_str() );
+        inputVideo.open(camId);
         waitTime = 10;
     }
 

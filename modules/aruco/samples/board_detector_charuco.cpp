@@ -62,6 +62,8 @@ static void help() {
               << std::endl;    
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
+    std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
+                 << std::endl;                 
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-r] # show rejected candidates too" << std::endl;    
 }
@@ -161,7 +163,10 @@ int main(int argc, char *argv[]) {
         waitTime = 0;
     }
     else {
-        inputVideo.open(1);
+        int camId = 0;
+        if (isParam("-ci", argc, argv)) 
+            camId = atoi( getParam("-ci", argc, argv).c_str() );
+        inputVideo.open(camId);
         waitTime = 10;
     }
     
