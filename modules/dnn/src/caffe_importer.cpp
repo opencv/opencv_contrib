@@ -188,6 +188,14 @@ namespace
 
         void populateNet(Net dstNet)
         {
+            //setup input layer names
+            {
+                std::vector<String> netInputs(net.input_size());
+                for (int ii = 0; ii < net.input_size(); ii++)
+                    netInputs[ii] = net.input(ii);
+                dstNet.setNetInputs(netInputs);
+            }
+
             int layersSize = net.layer_size();
 
             std::vector<String> layersName(layersSize);
@@ -210,7 +218,7 @@ namespace
                 extractLayerParams(layer, layerParams);
                 extractBinaryLayerParms(layer, layerParams);
                 
-                int id = dstNet.addLayer(name, type);
+                int id = dstNet.addLayer(name, type, layerParams);
                 dstNet.setOutputNames(id, tops);
 
                 layersName[li] = name;

@@ -22,11 +22,10 @@ namespace dnn
         return m;
     }
 
-
     inline Mat Blob::getMat(int num, int channel)
     {
-        CV_Assert(false);
-        return Mat();
+        CV_Assert(0 <= num && num < this->num() && 0 <= channel && channel < this->channels());
+        return Mat(rows(), cols(), m.type(), this->rawPtr(num, channel));
     }
 
     inline int Blob::cols() const
@@ -64,18 +63,23 @@ namespace dnn
         return Vec4i(m.size.p);
     }
 
-
     inline size_t Blob::total() const
     {
         CV_DbgAssert(m.dims == 4);
         return (size_t) m.size[0] * m.size[1] * m.size[2] * m.size[3];
     }
 
-    template<typename TFloat>
-    TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0)
+    inline uchar* Blob::rawPtr(int num, int cn, int row, int col)
     {
-        CV_Assert(m.type() = cv::DataType<TFloat>::type && m.dims == 4);
-        return (TFloat*) (m.data + num * m.step[0] + cn * m.step[1] + row * m.step[2] + col * m.step[3]);
+        CV_DbgAssert(m.dims == 4);
+        return m.data + num * m.step[0] + cn * m.step[1] + row * m.step[2] + col * m.step[3];
+    }
+
+    template<typename TFloat>
+    TFloat *Blob::ptr(int num, int cn, int row, int col)
+    {
+        CV_Assert(m.type() == cv::DataType<TFloat>::type && m.dims == 4);
+        return (TFloat*) rawPtr(num, cn, row, col);
     }
 
 }

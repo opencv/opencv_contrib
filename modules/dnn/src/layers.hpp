@@ -17,30 +17,49 @@ namespace dnn
 
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
         {
-            CV_Assert(inputs.size() == 1);
-            outputs[0] = *inputs[0];
+            outputs.resize(inputs.size());
+            for (size_t i = 0; i < inputs.size(); i++)
+                outputs[i] = *inputs[i];
         }
 
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
         {
-            CV_Assert(inputs.size() == 1 && outputs.size() == 1);
-            CV_Assert(inputs[0]->getMatRef().data == outputs[0].getMatRef().data);
+            CV_Assert(inputs.size() == outputs.size());
 
-            float *data = outputs[0].getMatRef().ptr<float>();
+            for (size_t i = 0; i < inputs.size(); i++)
+            {
+                CV_Assert(inputs[i]->ptr<float>() == outputs[i].ptr<float>());
+                float *data = outputs[i].ptr<float>();
+                size_t size = outputs[i].total();
 
-            //Vec4i shape = outputs[0].shape();
-            //CV_Assert(pitch[i] == shape[i] * sizeof(float) );
+                //Vec4i shape = outputs[0].shape();
+                //CV_Assert(pitch[i] == shape[i] * sizeof(float) );
 
-            for (size_t i = 0; i < outputs[0].total(); i++)
-                data[i] = func(data[i]);
+                for (size_t j = 0; j < size; j++)
+                    data[j] = func(data[j]);
+            }
         }
     };
 
     class PoolingLayer : public Layer
     {
+        enum 
+        {
+            MAX,
+            AVE,
+            STOCHASTIC
+        };
+
         int type;
+        int padH, padW;
         int strideH, strideW;
-        int sizeH, sizeW;
+        int kernelH, kernelW;
+
+        int inH, inW;
+        int pooledH, pooledW;
+
+        void computeOutputShape(int inH, int inW);
+        void maxPooling(Blob &input, Blob &output);
 
     public:
         PoolingLayer(LayerParams &params);
@@ -50,9 +69,18 @@ namespace dnn
 
     class ConvolutionLayer : public Layer
     {
-        int groups;
+        bool bias;
+        int numOutput, group;
+        int padH, padW;
         int strideH, strideW;
-        int sizeH, sizeW;
+        int kernelH, kernelW;
+
+        int inH, inW, inCn, colCn;
+        int outH, outW;
+
+        Mat imColsMat, biasOnesMat;
+
+        void computeOutputShape(int inH, int inW);
 
     public:
         ConvolutionLayer(LayerParams &params);
@@ -62,7 +90,11 @@ namespace dnn
 
     class FullyConnectedLayer : public Layer
     {
+        bool bias;
         int numOutputs;
+
+        int inC, inH, inW;
+        size_t inSize;
 
     public:
         FullyConnectedLayer(LayerParams &params);

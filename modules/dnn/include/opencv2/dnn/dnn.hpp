@@ -1,9 +1,11 @@
 #ifndef __OPENCV_DNN_DNN_HPP__
 #define __OPENCV_DNN_DNN_HPP__
 
-#include <opencv2/core.hpp>
 #include <map>
 #include <vector>
+#include <iostream>
+
+#include <opencv2/core.hpp>
 #include <opencv2/dnn/dict.hpp>
 
 namespace cv
@@ -20,12 +22,15 @@ namespace dnn
     class CV_EXPORTS Blob
     {
     public:
-        Blob();
-        Blob(InputArray in);
+        explicit Blob();
+        explicit Blob(InputArray in);
+
+        void create(int ndims, const int *sizes, int type = CV_32F);
+        void create(Vec4i shape, int type = CV_32F);
+        void create(int num, int cn, int rows, int cols, int type = CV_32F);
 
         void fill(InputArray in);
         void fill(int ndims, const int *sizes, int type, void *data, bool deepCopy = true);
-        void create(int ndims, const int *sizes, int type = CV_32F);
 
         bool empty() const;
 
@@ -42,6 +47,8 @@ namespace dnn
         int num() const;
         Vec4i shape() const;
         size_t total() const;
+
+        uchar *rawPtr(int num = 0, int cn = 0, int row = 0, int col = 0);
 
         template<typename TFloat>
         TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0);
@@ -109,19 +116,17 @@ namespace dnn
         ~Net();
 
         int addLayer(const String &name, const String &type, LayerParams &params = LayerParams());
+        int getLayerId(LayerId layer);
         void deleteLayer(LayerId layer);
         
         //each output of each layer can be labeled by unique string label (as in Caffe)
         //if label not specified then %layer_name%.%layer_output_id% can be used
         void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
         void setLayerInputs(const std::vector<String> &outputs, LayerId layer);
+        void setNetInputs(const std::vector<String> &inputBlobNames);
 
         void connect(BlobId input, BlobId output);
         void connect(const std::vector<BlobId> &outputs, const std::vector<BlobId> &inputs);
-
-        int getOutputId(LayerId layer, int outputNum);
-        int getInputId(LayerId layer, int inputNum);
-        int getLayerId(LayerId layer);
 
         void forward();
         void forward(LayerId toLayer);

@@ -2,6 +2,7 @@
 #define __OPENCV_DNN_DICT_HPP__
 
 #include <opencv2/core.hpp>
+#include <map>
 
 namespace cv
 {
@@ -14,8 +15,7 @@ struct DictValue
 
     union
     {
-        int i;
-        unsigned u;
+        int64 i;
         double d;
         bool b;
         String *s;
@@ -23,10 +23,11 @@ struct DictValue
 
     DictValue(const DictValue &r);
     DictValue(int p = 0)        : type(cv::Param::INT), i(p) {}
-    DictValue(unsigned p)       : type(cv::Param::UNSIGNED_INT), u(p) {}
+    DictValue(unsigned p)       : type(cv::Param::INT), i(p) {}
     DictValue(double p)         : type(cv::Param::REAL), d(p) {}
     DictValue(bool p)           : type(cv::Param::BOOLEAN), b(p) {}
     DictValue(const String &p)  : type(cv::Param::STRING), s(new String(p)) {}
+    DictValue(const char *str)  : type(cv::Param::STRING), s(new String(str)) {}
 
     template<typename T>
     T get() const;
@@ -62,15 +63,16 @@ public:
     }
 
     template <typename T>
-    const T &get(const String &name) const
+    T get(const String &name) const
     {
         _Dict::const_iterator i = dict.find(name);
-        CV_Assert(i != dict.end());
+        if (i == dict.end())
+            CV_Error(cv::Error::StsBadArg, "Required argument \"" + name + "\" not found into dictionary");
         return i->second.get<T>();
     }
 
     template <typename T>
-    const T &get(const String &name, const T &default_value) const
+    T get(const String &name, const T &default_value) const
     {
         _Dict::const_iterator i = dict.find(name);
 
@@ -92,51 +94,73 @@ public:
 
         return value;
     }
+
+    inline void print()
+    {
+        for (_Dict::const_iterator i = dict.begin(); i != dict.end(); i++)
+        {
+            std::cout << i->first << std::endl;
+        }
+    }
 };
 
 
 template<>
 inline int DictValue::get<int>() const
 {
-    CV_Assert(type == cv::ParamType<int>::type || type == cv::ParamType<unsigned>::type && (int)u >= 0);
-    return i;
+    CV_Assert(type == cv::Param::INT);
+    return (int)i;
 }
 
 template<>
 inline unsigned DictValue::get<unsigned>() const
 {
-    CV_Assert(type == cv::ParamType<unsigned>::type || type == cv::ParamType<int>::type && i >= 0);
-    return u;
+    CV_Assert(type == cv::Param::INT);
+    return (unsigned)i;
 }
 
 template<>
 inline double DictValue::get<double>() const
 {
-    CV_Assert(type == cv::ParamType<double>::type);
-    return d;
+    if (type == cv::Param::FLOAT)
+        return d;
+    else if (type == cv::Param::INT)
+        return i;
+    else
+    {
+        CV_Assert(type == cv::Param::FLOAT || type == cv::Param::INT);
+        return 0;
+    }
 }
 
 template<>
 inline float DictValue::get<float>() const
 {
-    CV_Assert(type == cv::ParamType<double>::type);
-    return (float)d;
+    if (type == cv::Param::FLOAT)
+        return (float)d;
+    else if (type == cv::Param::INT)
+        return (float)i;
+    else
+    {
+        CV_Assert(type == cv::Param::FLOAT || type == cv::Param::INT);
+        return (float)0;
+    }
 }
 
 template<>
 inline bool DictValue::get<bool>() const
 {
-    if (type == cv::ParamType<bool>::type)
+    if (type == cv::Param::BOOLEAN)
     {
         return b;
     }
-    else if (type == cv::ParamType<int>::type || type == cv::ParamType<unsigned>::type)
+    else if (type == cv::Param::INT)
     {
         return i;
     }
     else
     {
-        CV_Assert(type == cv::ParamType<bool>::type || type == cv::ParamType<int>::type || type == cv::ParamType<unsigned>::type);
+        CV_Assert(type == cv::Param::BOOLEAN || type == cv::Param::INT);
         return 0;
     }
 }
@@ -144,7 +168,7 @@ inline bool DictValue::get<bool>() const
 template<>
 inline String DictValue::get<String>() const
 {
-    CV_Assert(type == cv::ParamType<String>::type);
+    CV_Assert(type == cv::Param::STRING);
     return *s;
 }
 

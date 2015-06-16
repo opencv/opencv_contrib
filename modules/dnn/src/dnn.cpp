@@ -24,8 +24,45 @@ Blob::Blob()
 
 Blob::Blob(InputArray in)
 {
-    CV_Assert(in.isMat());
-    m = in.getMat();
+    CV_Assert(in.isMat() || in.isUMat());
+
+    if (in.isMat())
+    {
+        Mat mat = in.getMat();
+
+        CV_Assert(mat.dims == 2);
+        int rows = mat.rows;
+        int cols = mat.cols;
+        int cn = mat.channels();
+        int type = mat.type();
+        int dstType = CV_MAKE_TYPE(CV_MAT_DEPTH(type), 1);
+
+        int size[3] = { cn, rows, cols };
+        this->create(3, size, dstType);
+        uchar *data = m.data;
+        int step = rows * cols * CV_ELEM_SIZE(dstType);
+
+        if (cn == 1)
+        {
+            Mat wrapper2D(rows, cols, dstType, m.data);
+            mat.copyTo(wrapper2D);
+        }
+        else
+        {
+            std::vector<Mat> wrappers(cn);
+            for (int i = 0; i < cn; i++)
+            {
+                wrappers[i] = Mat(rows, cols, dstType, data);
+                data += step;
+            }
+
+            cv::split(mat, wrappers);
+        }
+    }
+    else
+    {
+        CV_Error(cv::Error::StsNotImplemented, "Not Implemented");
+    }
 }
 
 static Vec4i blobNormalizeShape(int ndims, const int *sizes)
@@ -62,12 +99,27 @@ void Blob::fill(int ndims, const int *sizes, int type, void *data, bool deepCopy
 void Blob::fill(InputArray in)
 {
     CV_Assert(in.isMat() || in.isMatVector());
+
+    //TODO
+    *this = Blob(in);
 }
 
-void Blob::create(int ndims, const int *sizes, int type /*= CV_32F*/)
+void Blob::create(int ndims, const int *sizes, int type)
 {
+    CV_Assert(type == CV_32F || type == CV_64F);
     Vec4i shape = blobNormalizeShape(ndims, sizes);
     m.create(shape.channels, &shape[0], type);
+}
+
+void Blob::create(Vec4i shape, int type)
+{
+    m.create(shape.channels, &shape[0], type);
+}
+
+void Blob::create(int num, int cn, int rows, int cols, int type)
+{
+    Vec4i shape(num, cn, rows, cols);
+    create(4, &shape[0], type);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -129,12 +181,8 @@ struct Net::Impl
     {
         layers.insert(make_pair(0, LayerData("_input", "_input")));
         lastLayerId = 1;
-
-        netInputAliases.push_back("input");
-        netInputAliases.push_back("data");
+        netWasAllocated = false;
     }
-
-    std::vector<String> netInputAliases;
 
     std::vector<int> netOutputs;
 
@@ -144,6 +192,20 @@ struct Net::Impl
     std::map<String, int> layerNameToId;
 
     int lastLayerId;
+
+    bool netWasAllocated;
+
+    void setUpNet()
+    {
+        if (!netWasAllocated)
+        {
+            connectInputs();
+            allocateLayers();
+            computeNetOutputs();
+
+            netWasAllocated = true;
+        }
+    }
 
     int getLayerId(const String &layerName)
     {
@@ -169,7 +231,7 @@ struct Net::Impl
         return it->second;
     }
 
-    int findOutputsByName(const String &name, LayerOutId *found, int maxCount)
+    int findOutputsByName(const String &name, LayerOutId *found, int maxCount = 1)
     {
         int count = 0;
 
@@ -237,32 +299,14 @@ struct Net::Impl
                 }
                 else if (foundCount == 0)
                 {
-                    if (std::find(netInputAliases.begin(), netInputAliases.end(), tgtName) == netInputAliases.end())
-                    {
-                        CV_Error(cv::Error::StsBadArg, "Can't find specified input blob \"" + tgtName + "\" for layer \"" + ld.name + "\"");
-                        continue;
-                    }
-
-                    LayerData &inputLayer = layers[0];
-                    int outIndex = std::find(inputLayer.outputNames.begin(), inputLayer.outputNames.end(), tgtName) - inputLayer.outputNames.begin();
-
-                    if (outIndex < inputLayer.outputNames.size())
-                    {
-                        out = LayerOutId(0, outIndex);
-                    }
-                    else
-                    {
-                        inputLayer.outputNames.push_back(tgtName);
-                        inputLayer.outputBlobs.resize(inputLayer.outputNames.size());
-                        out = LayerOutId(0, (int)inputLayer.outputNames.size() - 1);
-                    }
+                    CV_Error(cv::Error::StsBadArg, "Can't find specified input blob \"" + tgtName + "\" for layer \"" + ld.name + "\"");
+                    continue;
                 }
                 else
                 {
                     out = foundOutputs[0];
                 }
 
-                ld.inputBlobs[ii] = &layers[out.lid].outputBlobs[out.oid];
                 ld.inputBlobsId[ii] = out;
                 ld.inputLayersId.insert(out.lid);
                 layers[out.lid].requiredOutputs.insert(out.oid);
@@ -312,12 +356,15 @@ struct Net::Impl
 
     void allocateLayers()
     {
+        allocateOutputBlobs();
+
         MapIdToLayerData::iterator it;
         for (it = layers.begin(); it != layers.end(); it++)
         {
             int lid = it->first;
             LayerData &ld = it->second;
 
+            //create instance
             if (ld.layerInstance == NULL && lid != 0)
             {
                 ld.layerInstance = LayerRegister::createLayerInstance(ld.type, ld.params);
@@ -326,6 +373,19 @@ struct Net::Impl
                     std::cerr << "Can't create layer \"" << ld.name << "\" of type \"" << ld.type << "\"" << std::endl;
                 }
             }
+
+            //bind inputs
+            ld.inputBlobs.resize(ld.inputBlobsId.size());
+            for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
+            {
+                int srcLId = ld.inputBlobsId[i].lid;
+                int srcOId = ld.inputBlobsId[i].oid;
+                ld.inputBlobs[i] = &layers[srcLId].outputBlobs[srcOId];
+            }
+
+            //allocate layer
+            if (ld.layerInstance)
+                ld.layerInstance->allocate(ld.inputBlobs, ld.outputBlobs);
         }
     }
 
@@ -408,17 +468,43 @@ void Net::setLayerInputs(const std::vector<String> &outputs, LayerId layer)
 
 void Net::forward()
 {
-    impl->allocateOutputBlobs();
-    impl->connectInputs();
-    impl->computeNetOutputs();
-    impl->allocateLayers();
-
+    impl->setUpNet();
     impl->forwardAll();
 }
 
 void Net::forward(LayerId toLayer)
 {
+    impl->setUpNet();
     impl->forwardLayer(impl->getLayerId(toLayer));
+}
+
+void Net::setNetInputs(const std::vector<String> &inputBlobNames)
+{
+    setOutputNames(0, inputBlobNames);
+}
+
+void Net::setBlob(BlobId outputName, const Blob &blob)
+{
+    String name = outputName.get<String>();
+    LayerOutId found;
+
+    if (!impl->findOutputsByName(name, &found, 1))
+        CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
+
+    impl->allocateOutputBlobs();
+    impl->layers[found.lid].outputBlobs[found.oid] = blob;
+}
+
+Blob Net::getBlob(BlobId outputName)
+{
+    String name = outputName.get<String>();
+    LayerOutId found;
+
+    if (!impl->findOutputsByName(name, &found, 1))
+        CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
+
+    impl->allocateOutputBlobs();
+    return impl->layers[found.lid].outputBlobs[found.oid];
 }
 
 Importer::~Importer()
