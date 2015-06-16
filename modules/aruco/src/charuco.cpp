@@ -187,11 +187,17 @@ bool estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, Inpu
                               OutputArray _chessboardCorners) {
 
     CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
+    CV_Assert(_corners.total() == _ids.total() && _ids.total() > 0);
 
     // approximated pose estimation
     cv::Mat approximatedRvec, approximatedTvec;
-    cv::aruco::estimatePoseBoard(_corners, _ids, board, _cameraMatrix, _distCoeffs,
-                                 approximatedRvec, approximatedTvec);
+    int detectedBoardMarkers;
+    detectedBoardMarkers = cv::aruco::estimatePoseBoard(_corners, _ids, board, _cameraMatrix,
+                                                        _distCoeffs, approximatedRvec,
+                                                        approximatedTvec);
+
+    if(detectedBoardMarkers == 0)
+        return false;
 
 
     // project chessboard corners
@@ -228,11 +234,17 @@ bool estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, Inpu
 
 
     // final pose estimation
-
     cv::solvePnP(filteredChessboardObjPoints, filteredChessboardImgPoints, _cameraMatrix,
                  _distCoeffs, _rvec, _tvec);
 
     if (_chessboardCorners.needed()) {
+        unsigned int idx = 0;
+        for (unsigned int i=0; i<chessboardImgPoints.size(); i++) {
+            if (innerRect.contains(chessboardImgPoints[i])) {
+                chessboardImgPoints[i] = filteredChessboardImgPoints[idx];
+                idx++;
+            }
+        }
         _chessboardCorners.create((int)chessboardImgPoints.size(), 1, CV_32FC2);
         for (unsigned int i = 0; i < chessboardImgPoints.size(); i++) {
             _chessboardCorners.getMat().ptr<cv::Point2f>(0)[i] = chessboardImgPoints[i];
