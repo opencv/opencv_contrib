@@ -76,7 +76,7 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
                                            markerBorderBits(1),
                                            perspectiveRemovePixelPerCell(8),
                                            perspectiveRemoveIgnoredMarginPerCell(0.13),
-                                           maxErroneousBitsInBorderRate(0.04) {
+                                           maxErroneousBitsInBorderRate(0.5) {
 
 }
 

@@ -108,7 +108,7 @@ enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
  *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
- *   number of bits per marker (default 0.04).
+ *   number of bits per marker (default 0.5).
  */
 struct DetectorParameters {
 
