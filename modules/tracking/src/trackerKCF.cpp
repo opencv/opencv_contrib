@@ -93,11 +93,13 @@ namespace cv{
     void inline ifft2(const Mat src, Mat & dest) const ; 
     void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
     void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
+    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx,double pca_rate, int compressed_sz) const;
+    void inline compress(const Mat _proj_mtx, const Mat src, Mat & dest) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& patch) const;
     void extractCN(Mat _patch, Mat & cnFeatures) const;
     void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const;
     void calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const;
-    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response)const;
+    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response) const;
     
     void shiftRows(Mat& mat) const; 
     void shiftRows(Mat& mat, int n) const;
@@ -116,6 +118,7 @@ namespace cv{
     Mat new_alphaf_den, alphaf_den; // for splitted training coefficients
     Mat z, new_z; // model
     Mat response; // detection result
+    Mat old_cov_mtx, proj_mtx; // for feature compression
     
     bool resizeImage; // resize the image whenever needed and the patch size is large
     
@@ -208,6 +211,7 @@ namespace cv{
   bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
     double minVal, maxVal;	// min-max response
     Point minLoc,maxLoc;	// min-max location
+    Mat zc;
     
     Mat img=image.clone();
     // check the channels of the input image, grayscale is preferred
@@ -221,14 +225,26 @@ namespace cv{
     
     // detection part
     if(frame>0){
-       denseGaussKernel(params.sigma,x,z,k);
+       //compute the gaussian kernel
+       if(params.compressFeature){
+	 compress(proj_mtx,x,x);
+	 compress(proj_mtx,z,zc);
+	 denseGaussKernel(params.sigma,x,zc,k);
+       }else{
+	 denseGaussKernel(params.sigma,x,z,k);
+       }
+              
+       // calculate filter response
        if(params.splitCoeff){ 
 	calcResponse(alphaf,alphaf_den,k,response);
        }else{
 	calcResponse(alphaf,k,response);
        }
+       
+       // extract the maximum response
        minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
-       roi.x+=(maxLoc.x-roi.width/2+1);roi.y+=(maxLoc.y-roi.height/2+1);
+       roi.x+=(maxLoc.x-roi.width/2+1);
+       roi.y+=(maxLoc.y-roi.height/2+1);
        
        // update the bounding box
        boundingBox.x=(resizeImage?roi.x*2:roi.x)+boundingBox.width/2;
@@ -237,6 +253,20 @@ namespace cv{
     
     // extract the patch for learning purpose
     if(!getSubWindow(img,roi, x))return false;
+    
+    //update the training data
+    new_z=x.clone();
+    if(frame==0){
+      z=x.clone();
+    }else{
+      z=(1.0-params.interp_factor)*z+params.interp_factor*new_z; 
+    }
+    
+    if(params.compressFeature){
+      // feature compression
+      updateProjectionMatrix(z,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size);
+      compress(proj_mtx,x,x);
+    }
     
     // Kernel Regularized Least-Squares, calculate alphas
     denseGaussKernel(params.sigma,x,x,k);
@@ -264,16 +294,13 @@ namespace cv{
       }
     }
     
-    // update the learning model
-    new_z=x.clone();
+    // update the RLS model
     if(frame==0){
       alphaf=new_alphaf.clone();
       if(params.splitCoeff)alphaf_den=new_alphaf_den.clone();
-      z=x.clone();
     }else{
       alphaf=(1.0-params.interp_factor)*alphaf+params.interp_factor*new_alphaf;
       if(params.splitCoeff)alphaf_den=(1.0-params.interp_factor)*alphaf_den+params.interp_factor*new_alphaf_den;
-      z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
     }
   
     frame++;
@@ -383,6 +410,54 @@ namespace cv{
     for(unsigned i=1;i<src.size();i++){
       dest+=src[i];
     }
+  }
+  
+  /*
+   * obtains the projection matrix using PCA
+   */
+  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz)const{
+    CV_Assert(compressed_sz<=src.channels());
+    
+    // compute average
+    std::vector<Mat> layers(src.channels());
+    std::vector<Scalar> average(src.channels());
+    split(src,layers);
+    
+    for (int i=0;i<src.channels();i++){
+      average[i]=mean(layers[i]);
+      layers[i]-=average[i];
+    }
+
+    // calc covariance matrix
+    Mat data,new_cov;
+    merge(layers,data);
+    data=data.reshape(1,src.rows*src.cols);
+    
+    new_cov=1.0/(double)(src.rows*src.cols-1)*(data.t()*data);
+    if(old_cov.rows==0)old_cov=new_cov.clone();
+    
+    // calc PCA
+    Mat w, u, vt;
+    SVD::compute((1.0-pca_rate)*old_cov+pca_rate*new_cov, w, u, vt);
+    
+    // extract the projection matrix
+    _proj_mtx=u(Rect(0,0,compressed_sz,src.channels())).clone();    
+    Mat proj_vars=Mat::eye(compressed_sz,compressed_sz,_proj_mtx.type());
+    for(int i=0;i<compressed_sz;i++){
+      proj_vars.at<double>(i,i)=w.at<double>(i);
+    } 
+        
+    // update the covariance matrix
+    old_cov=(1.0-pca_rate)*old_cov+pca_rate*_proj_mtx*proj_vars*_proj_mtx.t();
+  }
+  
+  /*
+   * compress the features
+   */
+  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest)const{
+    Mat data=src.reshape(1,src.rows*src.cols);
+    Mat compressed=data*_proj_mtx;
+    dest=compressed.reshape(_proj_mtx.cols,src.rows).clone();
   }
      
   /*
@@ -578,6 +653,9 @@ namespace cv{
     ifft2(spec,_response);
   }
   
+  /*
+   * calculate the detection response for splitted form
+   */
   void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response)const {
     Mat _kf;
     fft2(_k,_kf);
@@ -612,6 +690,11 @@ namespace cv{
       descriptor=CN;
       splitCoeff=true;
       wrapKernel=false;
+      
+      //feature compression
+      compressFeature=true;
+      compressed_size=2;
+      pca_learning_rate=0.15;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){}

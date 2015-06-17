@@ -1208,11 +1208,14 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     double sigma;                 // gaussian kernel bandwidth
     double lambda;                // regularization
     double interp_factor;         // linear interpolation factor for adaptation
-    double output_sigma_factor;   // spatial bandwidth (proportional to target)    
+    double output_sigma_factor;   // spatial bandwidth (proportional to target) 
+    double pca_learning_rate;     // compression learning rate
     bool resize;                  // activate the resize feature to improve the processing speed
     bool splitCoeff;              // split the training coefficients into two matrices
     bool wrapKernel;              // wrap around the kernel values
+    bool compressFeature;         // activate pca method to compress the features
     int max_patch_size;           // threshold for the ROI size
+    int compressed_size;          // feature size after compression
     MODE descriptor;              // descriptor type
   };
 
