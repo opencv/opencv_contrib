@@ -225,30 +225,28 @@ namespace cv{
     
     // detection part
     if(frame>0){
-       //compute the gaussian kernel
-       if(params.compressFeature){
-	 compress(proj_mtx,x,x);
-	 compress(proj_mtx,z,zc);
-	 denseGaussKernel(params.sigma,x,zc,k);
-       }else{
-	 denseGaussKernel(params.sigma,x,z,k);
-       }
-              
-       // calculate filter response
-       if(params.splitCoeff){ 
+      //compute the gaussian kernel
+      if(params.compressFeature){
+	compress(proj_mtx,x,x);
+	compress(proj_mtx,z,zc);
+	denseGaussKernel(params.sigma,x,zc,k);
+      }else
+	denseGaussKernel(params.sigma,x,z,k);
+      
+      // calculate filter response
+      if(params.splitCoeff)
 	calcResponse(alphaf,alphaf_den,k,response);
-       }else{
+      else
 	calcResponse(alphaf,k,response);
-       }
-       
-       // extract the maximum response
-       minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
-       roi.x+=(maxLoc.x-roi.width/2+1);
-       roi.y+=(maxLoc.y-roi.height/2+1);
-       
-       // update the bounding box
-       boundingBox.x=(resizeImage?roi.x*2:roi.x)+boundingBox.width/2;
-       boundingBox.y=(resizeImage?roi.y*2:roi.y)+boundingBox.height/2;
+      
+      // extract the maximum response
+      minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
+      roi.x+=(maxLoc.x-roi.width/2+1);
+      roi.y+=(maxLoc.y-roi.height/2+1);
+      
+      // update the bounding box
+      boundingBox.x=(resizeImage?roi.x*2:roi.x)+boundingBox.width/2;
+      boundingBox.y=(resizeImage?roi.y*2:roi.y)+boundingBox.height/2;
     }
     
     // extract the patch for learning purpose
@@ -256,11 +254,10 @@ namespace cv{
     
     //update the training data
     new_z=x.clone();
-    if(frame==0){
+    if(frame==0)
       z=x.clone();
-    }else{
+    else
       z=(1.0-params.interp_factor)*z+params.interp_factor*new_z; 
-    }
     
     if(params.compressFeature){
       // feature compression
