@@ -227,17 +227,17 @@ namespace cv{
     if(frame>0){
       //compute the gaussian kernel
       if(params.compressFeature){
-	compress(proj_mtx,x,x);
-	compress(proj_mtx,z,zc);
-	denseGaussKernel(params.sigma,x,zc,k);
+        compress(proj_mtx,x,x);
+        compress(proj_mtx,z,zc);
+        denseGaussKernel(params.sigma,x,zc,k);
       }else
-	denseGaussKernel(params.sigma,x,z,k);
+        denseGaussKernel(params.sigma,x,z,k);
       
       // calculate filter response
       if(params.splitCoeff)
-	calcResponse(alphaf,alphaf_den,k,response);
+        calcResponse(alphaf,alphaf_den,k,response);
       else
-	calcResponse(alphaf,k,response);
+        calcResponse(alphaf,k,response);
       
       // extract the maximum response
       minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
