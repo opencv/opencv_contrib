@@ -1267,7 +1267,7 @@ struct RoundingInvoker : ParallelLoopBody
     {
       for (int c = range.start; c < range.end; ++c)
       {
-        scale_map->at<float>(r,c) = (float) round( scale_map->at<float>(r,c) );
+        scale_map->at<float>(r,c) = (float) cvRound( scale_map->at<float>(r,c) );
       }
     }
     int r;
