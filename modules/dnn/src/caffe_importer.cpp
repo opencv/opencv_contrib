@@ -1,4 +1,8 @@
-#include "opencv2/dnn.hpp"
+#include "precomp.hpp"
+using namespace cv;
+using namespace cv::dnn;
+
+#if HAVE_PROTOBUF
 #include "caffe.pb.h"
 
 #include <iostream>
@@ -8,9 +12,6 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "caffe/util/upgrade_proto.hpp"
-
-using namespace cv;
-using namespace cv::dnn;
 
 using ::google::protobuf::RepeatedField;
 using ::google::protobuf::RepeatedPtrField;
@@ -243,3 +244,13 @@ Ptr<Importer> cv::dnn::createCaffeImporter(const String &prototxt, const String 
 {
     return Ptr<Importer>(new CaffeImporter(prototxt.c_str(), caffeModel.c_str()));
 }
+
+#else //HAVE_PROTOBUF
+
+Ptr<Importer> cv::dnn::createCaffeImporter(const String &prototxt, const String &caffeModel)
+{
+    CV_Error(cv::Error::StsNotImplemented, "libprotobuf required to import data from Caffe models");
+    return Ptr<Importer>();
+}
+
+#endif //HAVE_PROTOBUF
