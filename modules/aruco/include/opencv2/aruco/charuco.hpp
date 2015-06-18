@@ -144,6 +144,50 @@ private:
 
 
 
+
+
+
+//CV_EXPORTS int interpolateCornersCharucoApproxCalib(InputArrayOfArrays markerCorners,
+//                                                    InputArray markerIds,
+//                                                    InputArray image, const CharucoBoard &board,
+//                                                    InputArray cameraMatrix, InputArray distCoeffs,
+//                                                    OutputArray charucoCorners,
+//                                                    OutputArray charucoIds );
+
+
+
+
+//CV_EXPORTS int interpolateCornersCharucoGlobalHom(InputArrayOfArrays markerCorners,
+//                                                  InputArray markerIds,
+//                                                  InputArray image, const CharucoBoard &board,
+//                                                  OutputArray charucoCorners,
+//                                                  OutputArray charucoIds );
+
+
+
+
+//CV_EXPORTS int interpolateCornersCharucoLocalHom(InputArrayOfArrays markerCorners,
+//                                                 InputArray markerIds,
+//                                                 InputArray image, const CharucoBoard &board,
+//                                                 OutputArray charucoCorners,
+//                                                 OutputArray charucoIds );
+
+
+
+
+//CV_EXPORTS void estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
+//                                         CharucoBoard &board, InputArray cameraMatrix,
+//                                         InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
+
+
+//CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
+//                                           InputArray charucoCorners,
+//                                           InputArray charucoIds = noArray(),
+//                                           cv::Scalar cornerColor = cv::Scalar(0, 255, 0));
+
+
+
+
 /**
  * @brief Pose estimation for a ChArUco board
  * @param corners vector of already detected markers corners. For each marker, its four corners
