@@ -10,7 +10,7 @@ if(${PROTOBUF_FOUND} AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
   PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
   set(HAVE_PROTOBUF ON)
 else()
-  message(WARNING "PROTOBUF not found. Caffe import function will be disabled.")
+  message(STATUS "PROTOBUF not found. Caffe import function will be disabled.")
   set(HAVE_PROTOBUF OFF)
 endif()
 
