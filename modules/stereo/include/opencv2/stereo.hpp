@@ -75,20 +75,6 @@ namespace cv
 		account when specifying this parameter value.
 		@param buf The optional temporary buffer to avoid memory allocation within the function.
 		*/
-		 void filterSpeckles( InputOutputArray img, double newVal,
-			int maxSpeckleSize, double maxDiff,
-			InputOutputArray buf = noArray() );
-
-		//! computes valid disparity ROI from the valid ROIs of the rectified images (that are returned by cv::stereoRectify())
-		 Rect getValidDisparityROI( Rect roi1, Rect roi2,
-			int minDisparity, int numberOfDisparities,
-			int SADWindowSize );
-
-		//! validates disparity using the left-right check. The matrix "cost" should be computed by the stereo correspondence algorithm
-		 void validateDisparity( InputOutputArray disparity, InputArray cost,
-			int minDisparity, int numberOfDisparities,
-			int disp12MaxDisp = 1 );
-
 		/** @brief The base class for stereo correspondence algorithms.
 		*/
 		class StereoMatcher : public Algorithm
@@ -265,7 +251,7 @@ namespace cv
 				int mode = StereoBinarySGBM::MODE_SGBM);
 		};
 		//! @}
-	}//sterep
+	}//stereo
 } // cv
 
 #ifndef DISABLE_OPENCV_24_COMPATIBILITY

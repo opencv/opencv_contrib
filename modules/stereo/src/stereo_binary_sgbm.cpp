@@ -939,7 +939,6 @@ namespace cv
 
 		const char* StereoBinarySGBMImpl::name_ = "StereoMatcher.SGBM";
 
-
 		Ptr<StereoBinarySGBM> StereoBinarySGBM::create(int minDisparity, int numDisparities, int SADWindowSize,
 			int P1, int P2, int disp12MaxDiff,
 			int preFilterCap, int uniquenessRatio,
@@ -952,24 +951,6 @@ namespace cv
 				preFilterCap, uniquenessRatio,
 				speckleWindowSize, speckleRange,
 				mode));
-		}
-
-		Rect getValidDisparityROI( Rect roi1, Rect roi2,
-			int minDisparity,
-			int numberOfDisparities,
-			int SADWindowSize )
-		{
-			int SW2 = SADWindowSize/2;
-			int minD = minDisparity, maxD = minDisparity + numberOfDisparities - 1;
-
-			int xmin = std::max(roi1.x, roi2.x + maxD) + SW2;
-			int xmax = std::min(roi1.x + roi1.width, roi2.x + roi2.width - minD) - SW2;
-			int ymin = std::max(roi1.y, roi2.y) + SW2;
-			int ymax = std::min(roi1.y + roi1.height, roi2.y + roi2.height) - SW2;
-
-			Rect r(xmin, ymin, xmax - xmin, ymax - ymin);
-
-			return r.width > 0 && r.height > 0 ? r : Rect();
 		}
 
 		typedef cv::Point_<short> Point2s;
@@ -1072,133 +1053,3 @@ namespace cv
 		}
 	}
 }
-
-void cv::stereo::filterSpeckles( InputOutputArray _img, double _newval, int maxSpeckleSize,
-								double _maxDiff, InputOutputArray __buf )
-{
-	Mat img = _img.getMat();
-	int type = img.type();
-	Mat temp, &_buf = __buf.needed() ? __buf.getMatRef() : temp;
-	CV_Assert( type == CV_8UC1 || type == CV_16SC1 );
-
-	int newVal = cvRound(_newval), maxDiff = cvRound(_maxDiff);
-
-#if IPP_VERSION_X100 >= 801
-	CV_IPP_CHECK()
-	{
-		Ipp32s bufsize = 0;
-		IppiSize roisize = { img.cols, img.rows };
-		IppDataType datatype = type == CV_8UC1 ? ipp8u : ipp16s;
-
-		if (!__buf.needed() && (type == CV_8UC1 || type == CV_16SC1))
-		{
-			IppStatus status = ippiMarkSpecklesGetBufferSize(roisize, datatype, CV_MAT_CN(type), &bufsize);
-			Ipp8u * buffer = ippsMalloc_8u(bufsize);
-
-			if ((int)status >= 0)
-			{
-				if (type == CV_8UC1)
-					status = ippiMarkSpeckles_8u_C1IR(img.ptr<Ipp8u>(), (int)img.step, roisize,
-					(Ipp8u)newVal, maxSpeckleSize, (Ipp8u)maxDiff, ippiNormL1, buffer);
-				else
-					status = ippiMarkSpeckles_16s_C1IR(img.ptr<Ipp16s>(), (int)img.step, roisize,
-					(Ipp16s)newVal, maxSpeckleSize, (Ipp16s)maxDiff, ippiNormL1, buffer);
-			}
-
-			if (status >= 0)
-			{
-				CV_IMPL_ADD(CV_IMPL_IPP);
-				return;
-			}
-			setIppErrorStatus();
-		}
-	}
-#endif
-
-	if (type == CV_8UC1)
-		filterSpecklesImpl<uchar>(img, newVal, maxSpeckleSize, maxDiff, _buf);
-	else
-		filterSpecklesImpl<short>(img, newVal, maxSpeckleSize, maxDiff, _buf);
-}
-
-void cv::stereo::validateDisparity( InputOutputArray _disp, InputArray _cost, int minDisparity,
-								   int numberOfDisparities, int disp12MaxDiff )
-{
-	Mat disp = _disp.getMat(), cost = _cost.getMat();
-	int cols = disp.cols, rows = disp.rows;
-	int minD = minDisparity, maxD = minDisparity + numberOfDisparities;
-	int x, minX1 = std::max(maxD, 0), maxX1 = cols + std::min(minD, 0);
-	AutoBuffer<int> _disp2buf(cols*2);
-	int* disp2buf = _disp2buf;
-	int* disp2cost = disp2buf + cols;
-	const int DISP_SHIFT = 4, DISP_SCALE = 1 << DISP_SHIFT;
-	int INVALID_DISP = minD - 1, INVALID_DISP_SCALED = INVALID_DISP*DISP_SCALE;
-	int costType = cost.type();
-
-	disp12MaxDiff *= DISP_SCALE;
-
-	CV_Assert( numberOfDisparities > 0 && disp.type() == CV_16S &&
-		(costType == CV_16S || costType == CV_32S) &&
-		disp.size() == cost.size() );
-
-	for( int y = 0; y < rows; y++ )
-	{
-		short* dptr = disp.ptr<short>(y);
-
-		for( x = 0; x < cols; x++ )
-		{
-			disp2buf[x] = INVALID_DISP_SCALED;
-			disp2cost[x] = INT_MAX;
-		}
-
-		if( costType == CV_16S )
-		{
-			const short* cptr = cost.ptr<short>(y);
-
-			for( x = minX1; x < maxX1; x++ )
-			{
-				int d = dptr[x], c = cptr[x];
-				int x2 = x - ((d + DISP_SCALE/2) >> DISP_SHIFT);
-
-				if( disp2cost[x2] > c )
-				{
-					disp2cost[x2] = c;
-					disp2buf[x2] = d;
-				}
-			}
-		}
-		else
-		{
-			const int* cptr = cost.ptr<int>(y);
-
-			for( x = minX1; x < maxX1; x++ )
-			{
-				int d = dptr[x], c = cptr[x];
-				int x2 = x - ((d + DISP_SCALE/2) >> DISP_SHIFT);
-
-				if( disp2cost[x2] < c )
-				{
-					disp2cost[x2] = c;
-					disp2buf[x2] = d;
-				}
-			}
-		}
-
-		for( x = minX1; x < maxX1; x++ )
-		{
-			// we round the computed disparity both towards -inf and +inf and check
-			// if either of the corresponding disparities in disp2 is consistent.
-			// This is to give the computed disparity a chance to look valid if it is.
-			int d = dptr[x];
-			if( d == INVALID_DISP_SCALED )
-				continue;
-			int d0 = d >> DISP_SHIFT;
-			int d1 = (d + DISP_SCALE-1) >> DISP_SHIFT;
-			int x0 = x - d0, x1 = x - d1;
-			if( (0 <= x0 && x0 < cols && disp2buf[x0] > INVALID_DISP_SCALED && std::abs(disp2buf[x0] - d) > disp12MaxDiff) &&
-				(0 <= x1 && x1 < cols && disp2buf[x1] > INVALID_DISP_SCALED && std::abs(disp2buf[x1] - d) > disp12MaxDiff) )
-				dptr[x] = (short)INVALID_DISP_SCALED;
-		}
-	}
-}
-
