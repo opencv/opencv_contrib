@@ -952,7 +952,7 @@ namespace cv
 				speckleWindowSize, speckleRange,
 				mode));
 		}
-
+		
 		typedef cv::Point_<short> Point2s;
 	}
 }
