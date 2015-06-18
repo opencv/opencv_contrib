@@ -11,23 +11,22 @@ int main(int argc, char *argv[]){
 	bool camera_pov = (true);
 	/// Create a window
 	viz::Viz3d myWindow("Coordinate Frame");
-
 	/// Add coordinate axes
 	myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
 
 	/// Let's assume camera has the following properties
 	Point3d cam_pos(3.0f,0.0f,0.0f), cam_focal_point(0.0f,0.0f,0.0f), cam_y_dir(-0.0f,-0.0f,-1.0f);
-	for(int pose = 0; pose < campos->size(); pose++){
+	for(int pose = 0; pose < campos->size()-1; pose++){
 		/// We can get the pose of the cam using makeCameraPose
-		Affine3f cam_pose = viz::makeCameraPose(campos->at(pose), cam_focal_point, cam_y_dir);
-
+		Affine3f cam_pose = viz::makeCameraPose(campos->at(pose)*23, cam_focal_point, cam_y_dir);
+		//Affine3f cam_pose = viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
 		/// We can get the transformation matrix from camera coordinate system to global using
 		/// - makeTransformToGlobal. We need the axes of the camera
 		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos->at(pose));
 
 		/// Create a cloud widget.
 
-		viz::Mesh objmesh = viz::Mesh::load("./ape.ply");
+		viz::Mesh objmesh = viz::Mesh::load("/home/wangyida/workspaceEclipse/VizRender_src/Debug/ape.ply");
 		viz::WMesh mesh_widget(objmesh);
 
 		/// Pose of the widget in camera frame
@@ -57,3 +56,4 @@ int main(int argc, char *argv[]){
 	myWindow.spin();
 	return 1;
 };
+
