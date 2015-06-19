@@ -144,7 +144,7 @@ namespace cv{
     params.read( fn );
   }
 
-  void TrackerKCFImpl::write( cv::FileStorage& fs ) const{
+  void TrackerKCFImpl::write( cv::FileStorage& fs ) const {
     params.write( fs );
   }
   
@@ -189,7 +189,7 @@ namespace cv{
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_64F);
     for(unsigned i=0;i<roi.height;i++){
       for(unsigned j=0;j<roi.width;j++){
-	y.at<double>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
+        y.at<double>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
       }
     }
     
@@ -283,11 +283,11 @@ namespace cv{
       mulSpectrums(kf,kf_lambda,new_alphaf_den,0);
     }else{
       for(int i=0;i<yf.rows;i++){
-	for(int j=0;j<yf.cols;j++){
-	  temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf_lambda.at<Vec2d>(i,j)[0],kf_lambda.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
-	  new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
-	  new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
-	}
+        for(int j=0;j<yf.cols;j++){
+          temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf_lambda.at<Vec2d>(i,j)[0],kf_lambda.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
+          new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
+          new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
+        }
       }
     }
     
@@ -312,7 +312,7 @@ namespace cv{
   /* 
    * hann window filter
    */
-  void TrackerKCFImpl::createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type)const{
+  void TrackerKCFImpl::createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const {
       CV_Assert( type == CV_32FC1 || type == CV_64FC1 );
 
       _dst.create(winSize, type);
@@ -325,27 +325,22 @@ namespace cv{
 
       double coeff0 = 2.0 * CV_PI / (double)(cols - 1), coeff1 = 2.0f * CV_PI / (double)(rows - 1);
       for(int j = 0; j < cols; j++)
-	  wc[j] = 0.5 * (1.0 - cos(coeff0 * j));
+        wc[j] = 0.5 * (1.0 - cos(coeff0 * j));
 
-      if(dst.depth() == CV_32F)
-      {
-	  for(int i = 0; i < rows; i++)
-	  {
-	      float* dstData = dst.ptr<float>(i);
-	      double wr = 0.5 * (1.0 - cos(coeff1 * i));
-	      for(int j = 0; j < cols; j++)
-		  dstData[j] = (float)(wr * wc[j]);
-	  }
-      }
-      else
-      {
-	  for(int i = 0; i < rows; i++)
-	  {
-	      double* dstData = dst.ptr<double>(i);
-	      double wr = 0.5 * (1.0 - cos(coeff1 * i));
-	      for(int j = 0; j < cols; j++)
-		  dstData[j] = wr * wc[j];
-	  }
+      if(dst.depth() == CV_32F){
+        for(int i = 0; i < rows; i++){
+          float* dstData = dst.ptr<float>(i);
+          double wr = 0.5 * (1.0 - cos(coeff1 * i));
+          for(int j = 0; j < cols; j++)
+            dstData[j] = (float)(wr * wc[j]);
+        }
+      }else{
+        for(int i = 0; i < rows; i++){
+          double* dstData = dst.ptr<double>(i);
+          double wr = 0.5 * (1.0 - cos(coeff1 * i));
+          for(int j = 0; j < cols; j++)
+            dstData[j] = wr * wc[j];
+        }
       }
 
       // perform batch sqrt for SSE performance gains
@@ -355,7 +350,7 @@ namespace cv{
   /*
    * simplification of fourier transform function in opencv
    */
-  void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest)const {
+  void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest) const {
     std::vector<Mat> layers(src.channels());
     std::vector<Mat> outputs(src.channels());
     
@@ -368,7 +363,7 @@ namespace cv{
     merge(outputs,dest);
   }
   
-  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & dest) const{
+  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & dest) const {
     std::vector<Mat> layers(src.channels());
     dest.clear();
     dest.resize(src.channels());
@@ -383,14 +378,14 @@ namespace cv{
   /*
    * simplification of inverse fourier transform function in opencv
    */
-  void inline TrackerKCFImpl::ifft2(const Mat src, Mat & dest)const {
+  void inline TrackerKCFImpl::ifft2(const Mat src, Mat & dest) const {
     idft(src,dest,DFT_SCALE+DFT_REAL_OUTPUT);
   }
   
   /*
    * Point-wise multiplication of two Multichannel Mat data
    */
-  void inline TrackerKCFImpl::pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB) const{
+  void inline TrackerKCFImpl::pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB) const {
     dest.clear();
     dest.resize(src1.size());
     
@@ -402,7 +397,7 @@ namespace cv{
   /*
    * Combines all channels in a multi-channels Mat data into a single channel
    */
-  void inline TrackerKCFImpl::sumChannels(std::vector<Mat> src, Mat & dest) const{
+  void inline TrackerKCFImpl::sumChannels(std::vector<Mat> src, Mat & dest) const {
     dest=src[0].clone();
     for(unsigned i=1;i<src.size();i++){
       dest+=src[i];
@@ -412,7 +407,7 @@ namespace cv{
   /*
    * obtains the projection matrix using PCA
    */
-  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz)const{
+  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz) const {
     CV_Assert(compressed_sz<=src.channels());
     
     // compute average
@@ -451,7 +446,7 @@ namespace cv{
   /*
    * compress the features
    */
-  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest)const{
+  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest) const {
     Mat data=src.reshape(1,src.rows*src.cols);
     Mat compressed=data*_proj_mtx;
     dest=compressed.reshape(_proj_mtx.cols,src.rows).clone();
@@ -460,7 +455,7 @@ namespace cv{
   /*
    * obtain the patch and apply hann window filter to it
    */
-  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& patch) const{
+  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& patch) const {
 
     Rect region=_roi;
   
@@ -494,17 +489,17 @@ namespace cv{
     // extract the desired descriptors
     switch(params.descriptor){
       case GRAY:
-	if(img.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
-	patch.convertTo(patch,CV_64F);
-	patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
-	break;
+        if(img.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+        patch.convertTo(patch,CV_64F);
+        patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
+        break;
       case CN:
-	CV_Assert(img.channels() == 3);
-	extractCN(patch,patch);
-	break;
+        CV_Assert(img.channels() == 3);
+        extractCN(patch,patch);
+        break;
       case CN2:
-	if(patch.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
-	break;
+        if(patch.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+        break;
     }
         
     patch=patch.mul(hann); // hann window filter
@@ -523,13 +518,13 @@ namespace cv{
     
     for(int i=0;i<_patch.rows;i++){
       for(int j=0;j<_patch.cols;j++){
-	pixel=_patch.at<Vec3b>(i,j);
-	index=(unsigned)(floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8));
-	
-	//copy the values
-	for(int _k=0;_k<10;_k++){
-	  temp.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
-	}
+        pixel=_patch.at<Vec3b>(i,j);
+        index=(unsigned)(floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8));
+
+        //copy the values
+        for(int _k=0;_k<10;_k++){
+          temp.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
+        }
       }
     }
     
@@ -539,7 +534,7 @@ namespace cv{
   /*
    *  dense gauss kernel function
    */
-  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k)const{
+  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const {
     std::vector<Mat> _xf,_yf,xyf_v;
     Mat xy,xyf;
     double normX, normY;
@@ -641,7 +636,7 @@ namespace cv{
   /*
    * calculate the detection response
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _k, Mat & _response)const {
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const {
     //alpha f--> 2channels ; k --> 1 channel; 
     Mat _kf;
     fft2(_k,_kf);
@@ -653,7 +648,7 @@ namespace cv{
   /*
    * calculate the detection response for splitted form
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response)const {
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response) const {
     Mat _kf;
     fft2(_k,_kf);
     Mat spec;
