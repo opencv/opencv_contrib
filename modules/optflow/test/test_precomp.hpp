@@ -13,6 +13,7 @@
 #include "opencv2/ts.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/optflow.hpp"
+#include "opencv2/optflow/nonfree.hpp"
 #include "opencv2/imgcodecs.hpp"
 
 #endif
