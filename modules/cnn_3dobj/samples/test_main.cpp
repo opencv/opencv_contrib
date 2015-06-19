@@ -1,4 +1,7 @@
-#include "opencv2/cnn_3dobj.hpp"
+#include <opencv2/cnn_3dobj.hpp>
+#include <iostream>
+#include <string>
+#include <fstream>
 using namespace cv;
 using namespace std;
 
@@ -7,7 +10,7 @@ int main(int argc, char *argv[]){
 	cv::cnn_3dobj::IcoSphere ViewSphere(10,0);
 	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
 	std::fstream imglabel;
-	imglabel.open("./images/shot_ape_1.txt");
+	imglabel.open("/home/wangyida/Desktop/opencv_contrib/modules/cnn_3dobj/images/shot_ape_1.txt");
 	//IcoSphere ViewSphere(16,0);
 	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	bool camera_pov = (true);
@@ -30,7 +33,7 @@ int main(int argc, char *argv[]){
 		/// - makeTransformToGlobal. We need the axes of the camera
 		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos.at(pose));
 		/// Create a cloud widget.
-		viz::Mesh objmesh = viz::Mesh::load("./src/ape.ply");
+		viz::Mesh objmesh = viz::Mesh::load("/home/wangyida/Desktop/opencv_contrib/modules/cnn_3dobj/src/ape.ply");
 		viz::WMesh mesh_widget(objmesh);
 		/// Pose of the widget in camera frame
 		Affine3f cloud_pose = Affine3f().translate(Vec3f(3.0f,3.0f,3.0f));
@@ -59,7 +62,7 @@ int main(int argc, char *argv[]){
 		char* temp;
 		sprintf (temp,"%d",pose);
 		string filename = temp;
-		filename = "./images/" + filename;
+		filename = "/home/wangyida/Desktop/opencv_contrib/modules/cnn_3dobj/images/" + filename;
 		filename += ".png";
 		myWindow.saveScreenshot(filename);
 	}
