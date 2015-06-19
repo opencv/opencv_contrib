@@ -1,3 +1,4 @@
+#ifdef HAVE_PROTOBUF
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
@@ -938,3 +939,4 @@ void ReadNetParamsFromBinaryFileOrDie(const string& param_file,
 }
 
 }  // namespace caffe
+#endif

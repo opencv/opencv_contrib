@@ -1,3 +1,4 @@
+#ifdef HAVE_PROTOBUF
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
@@ -65,3 +66,4 @@ bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
 //}
 
 }  // namespace caffe
+#endif
