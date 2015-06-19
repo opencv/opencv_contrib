@@ -74,7 +74,7 @@ namespace dnn
 
         static void unregisterLayer(const String &type);
 
-        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params = LayerParams());
+        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params);
 
     private:
         LayerRegister();
@@ -115,7 +115,7 @@ namespace dnn
         Net();
         ~Net();
 
-        int addLayer(const String &name, const String &type, LayerParams &params = LayerParams());
+        int addLayer(const String &name, const String &type, LayerParams &params);
         int getLayerId(LayerId layer);
         void deleteLayer(LayerId layer);
         
