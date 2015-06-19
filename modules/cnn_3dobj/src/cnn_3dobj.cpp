@@ -37,9 +37,9 @@ namespace cv{ namespace cnn_3dobj{
 		}
 		cout << "View points in total: " << CameraPos.size() << endl;
 		cout << "The coordinate of view point: " << endl;
-		for(int i=0; i < CameraPos->size(); i++)
+		for(int i=0; i < (int)CameraPos.size(); i++)
 		   {
-				   cout << CameraPos->at(i).x  << endl;
+				   cout << CameraPos.at(i).x  << endl;
 		   }
 
 	}
@@ -64,12 +64,12 @@ namespace cv{ namespace cnn_3dobj{
 		Point3f temp_Campos;
 		std::vector<float>* temp = new std::vector<float>;
 		for (int k = 0; k < 3; ++k) {
-			vertexList->push_back(v[k]);
-			vertexNormalsList->push_back(v[k]);
+			vertexList.push_back(v[k]);
+			vertexNormalsList.push_back(v[k]);
 			temp->push_back(v[k]);
 		}
 		temp_Campos.x = temp->at(0);temp_Campos.y = temp->at(1);temp_Campos.z = temp->at(2);
-		CameraPos->push_back(temp_Campos);
+		CameraPos.push_back(temp_Campos);
 	}
 
 	void IcoSphere::subdivide(float v1[], float v2[], float v3[], int depth)
