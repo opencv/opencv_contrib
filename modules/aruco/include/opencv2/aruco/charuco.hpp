@@ -146,17 +146,57 @@ private:
 
 
 
+/**
+ * @brief Interpolate position of ChArUco board corners
+ * @param markerCorners vector of already detected markers corners. For each marker, its four
+ * corners are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
+ * dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param markerIds list of identifiers for each marker in corners
+ * @param image input image necesary for corner refinement. Note that markers are not detected and
+ * should be sent in corners and ids parameters.
+ * @param board layout of ChArUco board.
+ * @param cameraMatrix input 3x3 floating-point camera matrix
+ * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
+ * @param distCoeffs vector of distortion coefficients
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param charucoCorners interpolated chessboard corners
+ * @param charucoIds interpolated chessboard corners identifiers
+ *
+ * This function receives the detected markers and returns the 2D position of the chessboard corners
+ * from a ChArUco board. The process is based in an approximated pose estimation using
+ * the detected Aruco markers.
+ * Only those the visible corners are returned. For each corner, its corresponding identifier is
+ * also returned in charucoIds.
+ * The function returns the number of interpolated corners.
+ */
+CV_EXPORTS int interpolateCornersCharucoApproxCalib(InputArrayOfArrays markerCorners,
+                                                    InputArray markerIds,
+                                                    InputArray image, const CharucoBoard &board,
+                                                    InputArray cameraMatrix, InputArray distCoeffs,
+                                                    OutputArray charucoCorners,
+                                                    OutputArray charucoIds );
 
-//CV_EXPORTS int interpolateCornersCharucoApproxCalib(InputArrayOfArrays markerCorners,
-//                                                    InputArray markerIds,
-//                                                    InputArray image, const CharucoBoard &board,
-//                                                    InputArray cameraMatrix, InputArray distCoeffs,
-//                                                    OutputArray charucoCorners,
-//                                                    OutputArray charucoIds );
 
 
 
-
+/**
+ * @brief Interpolate position of ChArUco board corners
+ * @param markerCorners vector of already detected markers corners. For each marker, its four
+ * corners are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
+ * dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param markerIds list of identifiers for each marker in corners
+ * @param image input image necesary for corner refinement. Note that markers are not detected and
+ * should be sent in corners and ids parameters.
+ * @param board layout of ChArUco board.
+ * @param charucoCorners interpolated chessboard corners
+ * @param charucoIds interpolated chessboard corners identifiers
+ *
+ * This function receives the detected markers and returns the 2D position of the chessboard corners
+ * from a ChArUco board. The process is based in an global homography process.
+ * Only those the visible corners are returned. For each corner, its corresponding identifier is
+ * also returned in charucoIds.
+ * The function returns the number of interpolated corners.
+ */
 //CV_EXPORTS int interpolateCornersCharucoGlobalHom(InputArrayOfArrays markerCorners,
 //                                                  InputArray markerIds,
 //                                                  InputArray image, const CharucoBoard &board,
@@ -166,6 +206,25 @@ private:
 
 
 
+/**
+ * @brief Interpolate position of ChArUco board corners
+ * @param markerCorners vector of already detected markers corners. For each marker, its four
+ * corners are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
+ * dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param markerIds list of identifiers for each marker in corners
+ * @param image input image necesary for corner refinement. Note that markers are not detected and
+ * should be sent in corners and ids parameters.
+ * @param board layout of ChArUco board.
+ * @param charucoCorners interpolated chessboard corners
+ * @param charucoIds interpolated chessboard corners identifiers
+ *
+ * This function receives the detected markers and returns the 2D position of the chessboard corners
+ * from a ChArUco board. The process is based in an local homography process (one homography
+ * per marker).
+ * Only those the visible corners are returned. For each corner, its corresponding identifier is
+ * also returned in charucoIds.
+ * The function returns the number of interpolated corners.
+ */
 //CV_EXPORTS int interpolateCornersCharucoLocalHom(InputArrayOfArrays markerCorners,
 //                                                 InputArray markerIds,
 //                                                 InputArray image, const CharucoBoard &board,
@@ -175,27 +234,11 @@ private:
 
 
 
-//CV_EXPORTS void estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
-//                                         CharucoBoard &board, InputArray cameraMatrix,
-//                                         InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
-
-
-//CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
-//                                           InputArray charucoCorners,
-//                                           InputArray charucoIds = noArray(),
-//                                           cv::Scalar cornerColor = cv::Scalar(0, 255, 0));
-
-
-
 
 /**
- * @brief Pose estimation for a ChArUco board
- * @param corners vector of already detected markers corners. For each marker, its four corners
- * are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
- * dimensions of this array should be Nx4. The order of the corners should be clockwise.
- * @param ids list of identifiers for each marker in corners
- * @param image input image necesary for corner refinement. Note that markers are not detected and
- * should be sent in corners and ids parameters.
+ * @brief Pose estimation for a ChArUco board given some of their corners
+ * @param charucoCorners vector of detected charuco corners
+ * @param charucoIds list of identifiers for each corner in charucoCorners
  * @param board layout of ChArUco board.
  * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
@@ -204,34 +247,43 @@ private:
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
  * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
- * @param parameters marker detection parameters
- * @param chessboardCorners interpolated chessboard corners used for pose estimation
  *
- * This function receives the detected markers and returns the pose of a ChArUco board composed
- * by those markers.
- * A ChArUco board, as any marker board, has a single world coordinate system which is defined by
- * the board layout. The returned transformation is the one that transforms points from the board
- * coordinate system to the camera coordinate system.
- * Input markers that are not included in the board layout are ignored.
- * It returns true if there was enough chessboard corners for pose estimation
+ * This function estimates a Charuco board pose from some detected corners.
+ * The function checks if the input corners are enough and valid to perform pose estimation.
+ * If pose estimation is valid, returns true, else returns false.
  */
-CV_EXPORTS bool estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray ids,
-                                         InputArray image, const CharucoBoard &board,
-                                         InputArray cameraMatrix, InputArray distCoeffs,
-                                         OutputArray rvec, OutputArray tvec,
-                                         OutputArray chessboardCorners = noArray());
+CV_EXPORTS bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
+                                         CharucoBoard &board, InputArray cameraMatrix,
+                                         InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
+
 
 
 
 /**
- * @brief Calibrate a camera using a charuco board
+ * @brief Draws a set of Charuco corners
+ * @param in input image
+ * @param out output image
+ * @param charucoCorners vector of detected charuco corners
+ * @param charucoIds list of identifiers for each corner in charucoCorners
+ * @param cornerColor color of the square surrounding each corner
  *
- * @param corners vector of detected marker corners in each frame.
- * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
- * @param ids list of identifiers for each marker in corners
- * @param images input list of image necesary for corner refinement. Note that markers are not
- * detected and should be sent in corners and ids parameters.
+ * This function draws a set of detected Charuco corners. If identifiers vector is provided, it also
+ * draws the id of each corner.
+ */
+CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
+                                           InputArray charucoCorners,
+                                           InputArray charucoIds = noArray(),
+                                           cv::Scalar cornerColor = cv::Scalar(255, 0, 0));
+
+
+
+/**
+ * @brief Calibrate a camera using Charuco corners
+ *
+ * @param charucoCorners vector of detected charuco corners per frame
+ * @param charucoIds list of identifiers for each corner in charucoCorners per frame
  * @param board Marker Board layout
+ * @param imageSize input image size
  * @param cameraMatrix Output 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$ . If CV\_CALIB\_USE\_INTRINSIC\_GUESS
  * and/or CV_CALIB_FIX_ASPECT_RATIO are specified, some or all of fx, fy, cx, cy must be
@@ -243,29 +295,27 @@ CV_EXPORTS bool estimatePoseCharucoBoard(InputArrayOfArrays corners, InputArray 
  * k-th translation vector (see the next output parameter description) brings the board pattern
  * from the model coordinate space (in which object points are specified) to the world coordinate
  * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
- * @param chessboardCorners interpolated chessboard corners on each image
  * @param tvecs Output vector of translation vectors estimated for each pattern view.
  * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
  * @param criteria Termination criteria for the iterative optimization algorithm.
  *
- * This function calibrates a camera using an Charuco Board. The function receives a list of
- * detected markers from several views of the Board. The function requires the input images to
- * perform subpixel refinement after chessboard corners interpolation. After that, the process is
- * similar to the chessboard calibration in calibrateCamera(). The function returns the final
- * re-projection error.
+ * This function calibrates a camera using a set of corners of a  Charuco Board. The function
+ * receives a list of detected corners and its identifiers from several views of the Board.
+ * The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraCharuco(const
-                                         std::vector<std::vector<std::vector<Point2f> > > &corners,
-                                         const std::vector<std::vector<int> > & ids,
-                                         InputArrayOfArrays images, const CharucoBoard &board,
-                                         InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
+                                         InputArrayOfArrays charucoIds, const CharucoBoard &board,
+                                         cv::Size imageSize, InputOutputArray cameraMatrix,
+                                         InputOutputArray distCoeffs,
                                          OutputArrayOfArrays rvecs = noArray(),
                                          OutputArrayOfArrays tvecs = noArray(),
-                                         OutputArrayOfArrays chessboardCorners = noArray(),
                                          int flags = 0,
                                          TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
                                                                               TermCriteria::EPS,
                                                                               30, DBL_EPSILON));
+
+
+
 
 
 

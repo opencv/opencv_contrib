@@ -180,34 +180,47 @@ int main(int argc, char *argv[]) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners, rejected;
-        std::vector<cv::Point2f> chessboardCorners;
+        std::vector<int> markerIds, charucoIds;
+        std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers;
+        std::vector<cv::Point2f> charucoCorners;
         cv::Mat rvec, tvec;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams, 
+                                 rejectedMarkers);
  
-        bool boardDetected = false;
-        if (ids.size() > 0)
-            boardDetected = cv::aruco::estimatePoseCharucoBoard(corners, ids, image, board, 
-                                                                camMatrix, distCoeffs, 
-                                                                rvec, tvec, chessboardCorners);	
+        
+        int interpolatedCorners = 0;
+        if (markerIds.size() > 0)
+            interpolatedCorners = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners, 
+                                                                                  markerIds, image,
+                                                                                  board, camMatrix,
+                                                                                  distCoeffs, 
+                                                                                  charucoCorners,
+                                                                                  charucoIds);
+
+        bool validPose;
+        validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, 
+                                                        camMatrix, distCoeffs, rvec, tvec);
+   
 
         // draw results
         image.copyTo(imageCopy);
-        if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners);
+        if (markerIds.size() > 0) {
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, markerCorners);
         }
         
-        if (showRejected && rejected.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, 
+        if (showRejected && rejectedMarkers.size() > 0)
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers, 
                                            cv::noArray(), cv::Scalar(100, 0, 255));           
         
-        if (boardDetected) {
-            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
-            cv::drawChessboardCorners(imageCopy, cv::Size(squaresX-1, squaresY-1), chessboardCorners, true);
+        if (interpolatedCorners > 0) {
+            cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds);
         }
+        
+        if (validPose) 
+            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, 
+                                axisLength);        
 
         cv::imshow("out", imageCopy);
         char key = cv::waitKey(waitTime);

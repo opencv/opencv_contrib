@@ -253,34 +253,62 @@ int main(int argc, char *argv[]) {
 
     cv::Mat cameraMatrix, distCoeffs;
     std::vector<cv::Mat> rvecs, tvecs;
-    std::vector<cv::Mat> allChessboardCorners;
     double repError;
     
     if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
         cameraMatrix = Mat::eye(3, 3, CV_64F);
         cameraMatrix.at<double>(0,0) = aspectRatio;  
     }
+    
+    float arucoRepErr;
+    arucoRepErr = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix, 
+                                                  distCoeffs, cv::noArray(), cv::noArray(), 
+                                                  calibrationFlags); 
+    
+    int nFrames = allCorners.size();
+    std::vector<cv::Mat> allCharucoCorners;
+    std::vector<cv::Mat> allCharucoIds;
+    std::vector<cv::Mat> filteredImages;
+    allCharucoCorners.reserve(nFrames);
+    allCharucoIds.reserve(nFrames);
+    
+    for (int i=0; i<nFrames; i++) {
+        cv::Mat currentCharucoCorners, currentCharucoIds;
+        cv::aruco::interpolateCornersCharucoApproxCalib(allCorners[i], allIds[i], allImgs[i], 
+                                                        board, cameraMatrix, distCoeffs, 
+                                                        currentCharucoCorners, currentCharucoIds);
+        bool validPose;
+        cv::Mat currentRvec, currentTvec;
+        validPose = cv::aruco::estimatePoseCharucoBoard(currentCharucoCorners, currentCharucoIds, 
+                                                        board, cameraMatrix, distCoeffs, 
+                                                        currentRvec, currentTvec);
+        if(validPose) {
+            allCharucoCorners.push_back(currentCharucoCorners);
+            allCharucoIds.push_back(currentCharucoIds);
+            filteredImages.push_back(allImgs[i]);
+        }
+    }
         
-    repError = cv::aruco::calibrateCameraCharuco(allCorners, allIds, allImgs, board, cameraMatrix,
-                                                 distCoeffs, rvecs, tvecs, allChessboardCorners, 
+    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, 
+                                                 cameraMatrix, distCoeffs, rvecs, tvecs, 
                                                  calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
                      repError );
     
     std::cout << "Rep Error: " << repError << std::endl;
+    std::cout << "Rep Error Aruco: " << arucoRepErr << std::endl;
     std::cout << "Calibration saved to " << outputFile << std::endl;
     
     if (showChessboardCorners) {
         for (unsigned int frame = 0; frame < allImgs.size(); frame++) {
-            cv::Mat imageCopy = allImgs[frame].clone();
-            if (allIds[frame].size() > 0) {
-                
-                cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, allCorners[frame]);            
+            cv::Mat imageCopy = filteredImages[frame].clone();
+            if (allIds[frame].size() > 0) {          
 
-                if (allChessboardCorners[frame].total() > 0) { 
-                    cv::drawChessboardCorners(imageCopy, cv::Size(squaresX-1, squaresY-1), 
-                                            allChessboardCorners[frame], true);                
+                if (allCharucoCorners[frame].total() > 0) { 
+                    cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, 
+                                                          allCharucoCorners[frame], 
+                                                          allCharucoIds[frame]);        
                 }
             }
             

@@ -178,26 +178,26 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLengt
 
 
 
+
 /**
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
-  * refinement. Correspondent object points are also returned. Returns number of valid corners.
+  * refinement. Returns number of valid corners.
   */
-unsigned int _selectAndRefineChessboardCorners(InputOutputArray _allImgCorners, InputArray _image,
-                                               const CharucoBoard &board,
-                                               OutputArray _selectedImgCorners,
-                                               OutputArray _selectedObjCorners) {
+unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
+                                               OutputArray _selectedCorners,
+                                               OutputArray _selectedIds) {
 
     // filter points outside image
     int minDistToBorder = 2;
     std::vector<cv::Point2f> filteredChessboardImgPoints;
-    std::vector<cv::Point3f> filteredChessboardObjPoints;
+    std::vector<int> filteredIds;
     cv::Rect innerRect (minDistToBorder, minDistToBorder,
                         _image.getMat().cols - 2 * minDistToBorder,
                         _image.getMat().rows - 2 * minDistToBorder);
-    for (unsigned int i=0; i<_allImgCorners.getMat().total(); i++) {
-        if (innerRect.contains(_allImgCorners.getMat().ptr<cv::Point2f>(0)[i])) {
-            filteredChessboardImgPoints.push_back(_allImgCorners.getMat().ptr<cv::Point2f>(0)[i]);
-            filteredChessboardObjPoints.push_back(board.chessboardCorners[i]);
+    for (unsigned int i=0; i<_allCorners.getMat().total(); i++) {
+        if (innerRect.contains(_allCorners.getMat().ptr<cv::Point2f>(0)[i])) {
+            filteredChessboardImgPoints.push_back(_allCorners.getMat().ptr<cv::Point2f>(0)[i]);
+            filteredIds.push_back(i);
         }
     }
 
@@ -210,6 +210,7 @@ unsigned int _selectAndRefineChessboardCorners(InputOutputArray _allImgCorners, 
         cv::cvtColor(_image.getMat(), grey, cv::COLOR_BGR2GRAY);
     else
        _image.getMat().copyTo(grey);
+
     DetectorParameters params; // use default params for corner refinement
     cv::cornerSubPix(grey, filteredChessboardImgPoints,
                      cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
@@ -218,140 +219,207 @@ unsigned int _selectAndRefineChessboardCorners(InputOutputArray _allImgCorners, 
                                     params.cornerRefinementMaxIterations,
                                     params.cornerRefinementMinAccuracy));
 
-    // update refinement in input _allImgCorners
-    unsigned int idx = 0;
-    for (unsigned int i=0; i<_allImgCorners.getMat().total(); i++) {
-        if (innerRect.contains(_allImgCorners.getMat().ptr<cv::Point2f>(0)[i])) {
-            _allImgCorners.getMat().ptr<cv::Point2f>(0)[i] = filteredChessboardImgPoints[idx];
-            idx++;
-        }
-    }
-
     // parse output
-    _selectedImgCorners.create((int)filteredChessboardImgPoints.size(), 1, CV_32FC2);
+    _selectedCorners.create((int)filteredChessboardImgPoints.size(), 1, CV_32FC2);
     for (unsigned int i = 0; i < filteredChessboardImgPoints.size(); i++) {
-        _selectedImgCorners.getMat().ptr<cv::Point2f>(0)[i] = filteredChessboardImgPoints[i];
+        _selectedCorners.getMat().ptr<cv::Point2f>(0)[i] = filteredChessboardImgPoints[i];
     }
 
-    _selectedObjCorners.create((int)filteredChessboardObjPoints.size(), 1, CV_32FC3);
-    for (unsigned int i = 0; i < filteredChessboardObjPoints.size(); i++) {
-        _selectedObjCorners.getMat().ptr<cv::Point3f>(0)[i] = filteredChessboardObjPoints[i];
+    _selectedIds.create((int)filteredIds.size(), 1, CV_32SC1);
+    for (unsigned int i = 0; i < filteredIds.size(); i++) {
+        _selectedIds.getMat().ptr<int>(0)[i] = filteredIds[i];
     }
 
     return filteredChessboardImgPoints.size();
+
 }
+
 
 
 
 /**
   */
-bool estimatePoseCharucoBoard(InputArrayOfArrays _corners, InputArray _ids, InputArray _image,
-                              const CharucoBoard &board, InputArray _cameraMatrix,
-                              InputArray _distCoeffs, OutputArray _rvec, OutputArray _tvec,
-                              OutputArray _chessboardCorners) {
+int interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                                         InputArray _image, const CharucoBoard &board,
+                                         InputArray _cameraMatrix, InputArray _distCoeffs,
+                                         OutputArray _charucoCorners, OutputArray _charucoIds ) {
 
     CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
-    CV_Assert(_corners.total() == _ids.total() && _ids.total() > 0);
+    CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
+              _markerIds.getMat().total() > 0);
 
     // approximated pose estimation
     cv::Mat approximatedRvec, approximatedTvec;
     int detectedBoardMarkers;
-    detectedBoardMarkers = cv::aruco::estimatePoseBoard(_corners, _ids, board, _cameraMatrix,
-                                                        _distCoeffs, approximatedRvec,
-                                                        approximatedTvec);
+    detectedBoardMarkers = cv::aruco::estimatePoseBoard(_markerCorners, _markerIds, board,
+                                                        _cameraMatrix, _distCoeffs,
+                                                        approximatedRvec, approximatedTvec);
 
     if(detectedBoardMarkers == 0)
-        return false;
+        return 0;
 
 
     // project chessboard corners
-    cv::Mat allChessboardImgPoints, filteredChessboardImgPoints, filteredChessboardObjPoints;
+    cv::Mat allChessboardImgPoints;
     cv::projectPoints(board.chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
                       _distCoeffs, allChessboardImgPoints);
 
-
     unsigned int nRefinedCorners;
-    nRefinedCorners = _selectAndRefineChessboardCorners(allChessboardImgPoints, _image, board,
-                                                        filteredChessboardImgPoints,
-                                                        filteredChessboardObjPoints);
-
-    if (nRefinedCorners < 4) return false;
-
-
-    // final pose estimation
-    cv::solvePnP(filteredChessboardObjPoints, filteredChessboardImgPoints, _cameraMatrix,
-                 _distCoeffs, _rvec, _tvec);
-
-    if (_chessboardCorners.needed())
-        allChessboardImgPoints.copyTo(_chessboardCorners);
+    nRefinedCorners = _selectAndRefineChessboardCorners(allChessboardImgPoints, _image,
+                                                        _charucoCorners,
+                                                        _charucoIds);
+    return nRefinedCorners;
 
 
-    return true;
 }
 
 
 
 /**
   */
-double calibrateCameraCharuco(const std::vector<std::vector<std::vector<Point2f> > > &corners,
-                              const std::vector<std::vector<int> > & ids,
-                              InputArrayOfArrays _images, const CharucoBoard &board,
+void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _charucoCorners,
+                                InputArray _charucoIds, cv::Scalar cornerColor) {
+
+    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
+              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()) ||
+              _charucoIds.getMat().total()==0 );
+
+    // calculate colors
+    cv::Scalar textColor;
+    textColor = cornerColor;
+    swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
+
+    _out.create(_in.size(), _in.type());
+    cv::Mat outImg = _out.getMat();
+    if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
+    else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
+
+    int nCorners = _charucoCorners.getMat().total();
+    for (int i = 0; i < nCorners; i++) {
+        cv::Point2f corner = _charucoCorners.getMat().ptr<cv::Point2f>(0)[i];
+
+        // draw first corner mark
+        cv::rectangle(outImg, corner - Point2f(3, 3), corner + Point2f(3, 3), cornerColor, 1,
+                      cv::LINE_AA);
+
+        // draw ID
+        if (_charucoIds.total() != 0) {
+            int id = _charucoIds.getMat().ptr<int>(0)[i];
+            stringstream s;
+            s << "id=" << id;
+            putText(outImg, s.str(), corner + Point2f(5,-5), cv::FONT_HERSHEY_SIMPLEX, 0.5,
+                    textColor, 2);
+        }
+    }
+
+}
+
+
+/**
+  * Check if a set of 3d points are enough for calibration. Z coordinate is ignored.
+  * Only axis paralel lines are considered
+  */
+bool _arePointsEnoughForPoseEstimation(const std::vector<cv::Point3f> &points) {
+
+    if (points.size() < 4) return false;
+
+    std::vector<double> sameXValue; // different x values in points
+    std::vector<int> sameXCounter; // number of points with the x value in sameXValue
+    for (unsigned int i=0; i<points.size(); i++) {
+        bool found = false;
+        for (unsigned int j=0; j<sameXValue.size(); j++) {
+            if (sameXValue[j] == points[i].x) {
+                found = true;
+                sameXCounter[j] ++;
+            }
+        }
+        if (!found) {
+            sameXValue.push_back(points[i].x);
+            sameXCounter.push_back(1);
+        }
+    }
+
+    // count how many x values has more than 2 points
+    int moreThan2 = 0;
+    for (unsigned int i=0; i<sameXCounter.size(); i++) {
+        if(sameXCounter[i] >= 2)
+            moreThan2 ++;
+    }
+
+    // if we have more than 1 two xvalues with more than 2 points, calibration is ok
+    if (moreThan2 > 1)
+        return true;
+    else
+        return false;
+
+}
+
+
+/**
+  */
+bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds,
+                              CharucoBoard &board, InputArray _cameraMatrix, InputArray _distCoeffs,
+                              OutputArray _rvec, OutputArray _tvec) {
+
+    CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()));
+
+    // need, at least, 4 corners
+    if (_charucoIds.getMat().total() < 4) return false;
+
+    std::vector<cv::Point3f> objPoints;
+    objPoints.reserve(_charucoIds.getMat().total());
+    for(int i=0; i < _charucoIds.getMat().total(); i++) {
+        int currId = _charucoIds.getMat().ptr<int>(0)[i];
+        CV_Assert(currId >= 0 && currId < board.chessboardCorners.size());
+        objPoints.push_back(board.chessboardCorners[currId]);
+    }
+
+    // points need to be in different lines
+    if (!_arePointsEnoughForPoseEstimation(objPoints))
+        return false;
+
+    cv::solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec);
+
+    return true;
+
+}
+
+
+
+
+
+/**
+  */
+double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
+                              const CharucoBoard &board, cv::Size imageSize,
                               InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
-                              OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs,
-                              OutputArrayOfArrays _chessboardCorners, int flags,
+                              OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
                               TermCriteria criteria) {
 
-    CV_Assert(_images.total() > 0);
-    CV_Assert(corners.size() == ids.size());
-    CV_Assert(corners.size() == _images.total());
 
-    cv::Size imageSize = _images.getMat(0).size();
+    CV_Assert(_charucoIds.total() > 0 && (_charucoIds.total() == _charucoCorners.total()));
 
-    // calibrate using aruco markers
-    cv::Mat approximatedCameraMatrix, approximatedDistCoeffs;
-    std::vector<cv::Mat> approximatedRvecs, approximatedTvecs;
-    cv::aruco::calibrateCameraAruco(corners, ids, board, imageSize, approximatedCameraMatrix,
-                                    approximatedDistCoeffs, approximatedRvecs, approximatedTvecs,
-                                    flags, criteria);
+    std::vector< std::vector<cv::Point3f> > allObjPoints;
+    allObjPoints.resize(_charucoIds.total());
+    for (unsigned int i=0; i<_charucoIds.total(); i++) {
+        int nCorners = _charucoIds.getMat(i).total();
+        CV_Assert(nCorners > 0 && nCorners == _charucoCorners.getMat(i).total());
+        allObjPoints[i].reserve(nCorners);
 
-
-    std::vector<cv::Mat> allImgCorners, allObjCorners;
-
-
-
-    int nFrames = corners.size();
-
-    if (_chessboardCorners.needed())
-        _chessboardCorners.create(nFrames, 1, CV_32FC2);
-
-    for (int frame = 0; frame < nFrames; frame++) {
-
-        cv::Mat currentAllImgCorners;
-        cv::Mat currentFilteredImgCorners, currentFilteredObjCorners;
-        cv::projectPoints(board.chessboardCorners, approximatedRvecs[frame],
-                          approximatedTvecs[frame], approximatedCameraMatrix,
-                          approximatedDistCoeffs, currentAllImgCorners);
-
-        _selectAndRefineChessboardCorners(currentAllImgCorners, _images.getMat(frame), board,
-                                          currentFilteredImgCorners, currentFilteredObjCorners);
-
-        if (_chessboardCorners.needed()) {
-            _chessboardCorners.create(currentAllImgCorners.total(), 1, CV_32FC2, frame, true);
-            cv::Mat cornersMat = _chessboardCorners.getMat(frame);
-            currentAllImgCorners.copyTo(cornersMat);
+        for (unsigned int j=0; j<nCorners; j++) {
+            int pointId = _charucoIds.getMat(i).ptr<int>(0)[j];
+            CV_Assert(pointId >= 0 && pointId < board.chessboardCorners.size());
+            allObjPoints[i].push_back(board.chessboardCorners[pointId]);
         }
-
-        // if none valid, just skip this frame for calibration
-        if(currentFilteredImgCorners.total() == 0) continue;
-
-        allImgCorners.push_back(currentFilteredImgCorners);
-        allObjCorners.push_back(currentFilteredObjCorners);
 
     }
 
-    return cv::calibrateCamera(allObjCorners, allImgCorners, imageSize, _cameraMatrix, _distCoeffs,
+    return cv::calibrateCamera(allObjPoints, _charucoCorners, imageSize, _cameraMatrix, _distCoeffs,
                                _rvecs, _tvecs, flags, criteria);
+
 }
+
 
 
 
