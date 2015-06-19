@@ -563,7 +563,7 @@ namespace cv{
     //threshold(xy,xy,0.0,0.0,THRESH_TOZERO);//max(0, (xx + yy - 2 * xy) / numel(x))
     for(int i=0;i<xy.rows;i++){
       for(int j=0;j<xy.cols;j++){
-	if(xy.at<double>(i,j)<0.0)xy.at<double>(i,j)=0.0;
+        if(xy.at<double>(i,j)<0.0)xy.at<double>(i,j)=0.0;
       }
     }
     
@@ -584,8 +584,8 @@ namespace cv{
       int _k = (mat.rows-1);
       mat.row(_k).copyTo(temp);
       for(; _k > 0 ; _k-- ) {
-	  m = mat.row(_k);
-	  mat.row(_k-1).copyTo(m);
+        m = mat.row(_k);
+        mat.row(_k-1).copyTo(m);
       }
       m = mat.row(0);
       temp.copyTo(m);
@@ -594,42 +594,33 @@ namespace cv{
 
   // circular shift n rows from up to down if n > 0, -n rows from down to up if n < 0
   void TrackerKCFImpl::shiftRows(Mat& mat, int n) const {
-
       if( n < 0 ) {
-
-	  n = -n;
-	  flip(mat,mat,0);
-	  for(int _k=0; _k < n;_k++) {
-	      shiftRows(mat);
-	  }
-	  flip(mat,mat,0);
-
-      } else {
-
-	  for(int _k=0; _k < n;_k++) {
-	      shiftRows(mat);
-	  }
+        n = -n;
+        flip(mat,mat,0);
+        for(int _k=0; _k < n;_k++) {
+          shiftRows(mat);
+        }
+        flip(mat,mat,0);
+      }else{ 
+        for(int _k=0; _k < n;_k++) {
+          shiftRows(mat);
+        }
       }
-
   }
 
   //circular shift n columns from left to right if n > 0, -n columns from right to left if n < 0
   void TrackerKCFImpl::shiftCols(Mat& mat, int n) const {
-
       if(n < 0){
-
-	  n = -n;
-	  flip(mat,mat,1);
-	  transpose(mat,mat);
-	  shiftRows(mat,n);
-	  transpose(mat,mat);
-	  flip(mat,mat,1);
-
-      } else {
-
-	  transpose(mat,mat);
-	  shiftRows(mat,n);
-	  transpose(mat,mat);
+        n = -n;
+        flip(mat,mat,1);
+        transpose(mat,mat);
+        shiftRows(mat,n);
+        transpose(mat,mat);
+        flip(mat,mat,1);
+      }else{
+        transpose(mat,mat);
+        shiftRows(mat,n);
+        transpose(mat,mat);
       }
   }
 
@@ -659,9 +650,9 @@ namespace cv{
     
     for(int i=0;i<_k.rows;i++){
       for(int j=0;j<_k.cols;j++){
-	temp=std::complex<double>(spec.at<Vec2d>(i,j)[0],spec.at<Vec2d>(i,j)[1])/(std::complex<double>(_alphaf_den.at<Vec2d>(i,j)[0],_alphaf_den.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
-	spec2.at<Vec2d >(i,j)[0]=temp.real();
-	spec2.at<Vec2d >(i,j)[1]=temp.imag();
+        temp=std::complex<double>(spec.at<Vec2d>(i,j)[0],spec.at<Vec2d>(i,j)[1])/(std::complex<double>(_alphaf_den.at<Vec2d>(i,j)[0],_alphaf_den.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
+        spec2.at<Vec2d >(i,j)[0]=temp.real();
+        spec2.at<Vec2d >(i,j)[1]=temp.imag();
       }
     }
       
