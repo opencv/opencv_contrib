@@ -1,11 +1,13 @@
-#include "../include/cnn_3dobj.hpp"
+#include "opencv2/cnn_3dobj.hpp"
 using namespace cv;
 using namespace std;
 
 int main(int argc, char *argv[]){
 
-	cv::cnn_3dobj::IcoSphere ViewSphere(16,0);
-	std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
+	cv::cnn_3dobj::IcoSphere ViewSphere(10,0);
+	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
+	std::fstream imglabel;
+	imglabel.open("/home/wangyida/workspaceEclipse/IcoSphere/images/shot_ape_1.txt");
 	//IcoSphere ViewSphere(16,0);
 	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	bool camera_pov = (true);
@@ -13,31 +15,30 @@ int main(int argc, char *argv[]){
 	viz::Viz3d myWindow("Coordinate Frame");
 	/// Add coordinate axes
 	myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
+	myWindow.setBackgroundColor(viz::Color::gray());
 
+	/// Set background color
 	/// Let's assume camera has the following properties
-	Point3d cam_pos(3.0f,0.0f,0.0f), cam_focal_point(0.0f,0.0f,0.0f), cam_y_dir(-0.0f,-0.0f,-1.0f);
-	for(int pose = 0; pose < campos->size()-1; pose++){
-		/// We can get the pose of the cam using makeCameraPose
-		Affine3f cam_pose = viz::makeCameraPose(campos->at(pose)*23, cam_focal_point, cam_y_dir);
+	Point3d cam_focal_point(0.0f,0.0f,0.0f), cam_y_dir(-0.0f,-0.0f,-1.0f);
+	for(int pose = 0; pose < (int)campos.size(); pose++){
+		imglabel << campos.at(pose).x << ' ' << campos.at(pose).y << ' ' << campos.at(pose).z << endl;
+		/// We can get the pose of the cam using makeCameraPoses
+		Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*350, cam_focal_point, cam_y_dir);
 		//Affine3f cam_pose = viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
 		/// We can get the transformation matrix from camera coordinate system to global using
 		/// - makeTransformToGlobal. We need the axes of the camera
-		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos->at(pose));
-
+		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos.at(pose));
 		/// Create a cloud widget.
-
 		viz::Mesh objmesh = viz::Mesh::load("/home/wangyida/workspaceEclipse/VizRender_src/Debug/ape.ply");
 		viz::WMesh mesh_widget(objmesh);
-
 		/// Pose of the widget in camera frame
 		Affine3f cloud_pose = Affine3f().translate(Vec3f(3.0f,3.0f,3.0f));
 		/// Pose of the widget in global frame
 		Affine3f cloud_pose_global = transform * cloud_pose;
-
 		/// Visualize camera frame
 		if (!camera_pov)
 		{
-			viz::WCameraPosition cpw(0.5); // Coordinate axes
+			viz::WCameraPosition cpw(1); // Coordinate axes
 			viz::WCameraPosition cpw_frustum(Vec2f(0.889484, 0.523599)); // Camera frustum
 			myWindow.showWidget("CPW", cpw, cam_pose);
 			myWindow.showWidget("CPW_FRUSTUM", cpw_frustum, cam_pose);
@@ -45,15 +46,19 @@ int main(int argc, char *argv[]){
 
 		/// Visualize widget
 		mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
-		myWindow.showWidget("bunny", mesh_widget, transform);
+		myWindow.showWidget("ape", mesh_widget, cloud_pose_global);
+
+	    /*viz::WLine axis(cam_focal_point, campos->at(pose)*23);
+	    axis.setRenderingProperty(viz::LINE_WIDTH, 4.0);
+	    myWindow.showWidget("Line Widget", axis);*/
 
 		/// Set the viewer pose to that of camera
 		if (camera_pov)
 			myWindow.setViewerPose(cam_pose);
+		myWindow.spin();
+		const string filename = "/home/wangyida/workspaceEclipse/IcoSphere/images/shot_ape_1.png";
+		myWindow.saveScreenshot(filename);
 	}
-
-	/// Start event loop.
-	myWindow.spin();
 	return 1;
 };
 

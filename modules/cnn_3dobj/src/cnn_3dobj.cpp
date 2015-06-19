@@ -55,7 +55,7 @@ namespace cv{ namespace cnn_3dobj{
 		len = sqrt(len);
 
 		for (int i = 0; i < 3; ++i) {
-			v[i] /= ((float)len/(float)IcoSphere::radius);
+			v[i] /= ((float)len);
 		}
 	}
 
@@ -75,6 +75,9 @@ namespace cv{ namespace cnn_3dobj{
 	void IcoSphere::subdivide(float v1[], float v2[], float v3[], int depth)
 	{
 
+		norm(v1);
+		norm(v2);
+		norm(v3);
 		if (depth == 0) {
 			add(v1);
 			add(v2);

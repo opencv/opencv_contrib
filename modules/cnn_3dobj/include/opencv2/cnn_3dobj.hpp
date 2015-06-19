@@ -40,9 +40,9 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_CNN_3DOBJ_HPP__
 #define __OPENCV_CNN_3DOBJ_HPP__
 
-#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/viz/vizcore.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <vector>
 #include <iostream>
@@ -74,9 +74,9 @@ class CV_EXPORTS_W IcoSphere
 	public:
 
 
-		std::vector<float>* vertexNormalsList = new std::vector<float>;
-		std::vector<float>* vertexList = new std::vector<float>;
-		std::vector<cv::Point3d>* CameraPos = new std::vector<cv::Point3d>;
+		std::vector<float> vertexNormalsList;
+		std::vector<float> vertexList;
+		std::vector<cv::Point3d> CameraPos;
 		float radius;
 		IcoSphere(float radius_in, int depth_in);
 		/** @brief Make all view points having the some distance from the focal point used by the camera view.
