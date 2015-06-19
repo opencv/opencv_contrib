@@ -52,4 +52,4 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 
 22. **opencv_xphoto**: Additional photo processing algorithms: Color balance / Denoising / Inpainting.
 
-23. **opencv_sphereview3d**: 3D view on a sphere towards an objects.
+23. **opencv_cnn_3dobj**: 3D view on a sphere towards an objects.
