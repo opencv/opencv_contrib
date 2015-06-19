@@ -7,7 +7,7 @@ int main(int argc, char *argv[]){
 	cv::cnn_3dobj::IcoSphere ViewSphere(10,0);
 	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
 	std::fstream imglabel;
-	imglabel.open("/home/wangyida/workspaceEclipse/IcoSphere/images/shot_ape_1.txt");
+	imglabel.open("./images/shot_ape_1.txt");
 	//IcoSphere ViewSphere(16,0);
 	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	bool camera_pov = (true);
@@ -17,6 +17,7 @@ int main(int argc, char *argv[]){
 	myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
 	myWindow.setBackgroundColor(viz::Color::gray());
 
+	myWindow.spin();
 	/// Set background color
 	/// Let's assume camera has the following properties
 	Point3d cam_focal_point(0.0f,0.0f,0.0f), cam_y_dir(-0.0f,-0.0f,-1.0f);
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]){
 		/// - makeTransformToGlobal. We need the axes of the camera
 		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos.at(pose));
 		/// Create a cloud widget.
-		viz::Mesh objmesh = viz::Mesh::load("/home/wangyida/workspaceEclipse/VizRender_src/Debug/ape.ply");
+		viz::Mesh objmesh = viz::Mesh::load("./src/ape.ply");
 		viz::WMesh mesh_widget(objmesh);
 		/// Pose of the widget in camera frame
 		Affine3f cloud_pose = Affine3f().translate(Vec3f(3.0f,3.0f,3.0f));
@@ -55,8 +56,11 @@ int main(int argc, char *argv[]){
 		/// Set the viewer pose to that of camera
 		if (camera_pov)
 			myWindow.setViewerPose(cam_pose);
-		myWindow.spin();
-		const string filename = "/home/wangyida/workspaceEclipse/IcoSphere/images/shot_ape_1.png";
+		char* temp;
+		sprintf (temp,"%d",pose);
+		string filename = temp;
+		filename = "./images/" + filename;
+		filename += ".png";
 		myWindow.saveScreenshot(filename);
 	}
 	return 1;

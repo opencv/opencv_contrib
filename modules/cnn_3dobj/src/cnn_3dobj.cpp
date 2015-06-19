@@ -35,7 +35,7 @@ namespace cv{ namespace cnn_3dobj{
 			subdivide(vdata[tindices[i][1]], vdata[tindices[i][2]],
 					vdata[tindices[i][3]], depth);
 		}
-		cout << "View points in total: " << CameraPos->size() << endl;
+		cout << "View points in total: " << CameraPos.size() << endl;
 		cout << "The coordinate of view point: " << endl;
 		for(int i=0; i < CameraPos->size(); i++)
 		   {
