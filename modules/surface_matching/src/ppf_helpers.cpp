@@ -716,7 +716,25 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
     meanCovLocalPCInd(dataset, indLocal, 3, NumNeighbors, C, mu);
 
     // eigenvectors of covariance matrix
-    eigenLowest33(C, nr);
+    Mat cov(3, 3, CV_64F), eigVect, eigVal;
+    double* covData = (double*)cov.data;
+    covData[0] = C[0][0];
+    covData[1] = C[0][1];
+    covData[2] = C[0][2];
+    covData[3] = C[1][0];
+    covData[4] = C[1][1];
+    covData[5] = C[1][2];
+    covData[6] = C[2][0];
+    covData[7] = C[2][1];
+    covData[8] = C[2][2];
+    eigen(cov, eigVal, eigVect);
+    Mat lowestEigVec;
+    //the eigenvector for the lowest eigenvalue is in the last row
+    eigVect.row(eigVect.rows - 1).copyTo(lowestEigVec);
+    double* eigData = (double*)lowestEigVec.data;
+    nr[0] = eigData[0];
+    nr[1] = eigData[1];
+    nr[2] = eigData[2];
 
     pcr[0] = pci[0];
     pcr[1] = pci[1];
