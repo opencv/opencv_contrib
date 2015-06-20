@@ -504,17 +504,21 @@ Mat transformPCPose(Mat pc, double Pose[16])
       pcDataT[2] = (float)(p2[2]/p2[3]);
     }
 
-    // Rotate the normals, too
-    double n[3] = {(double)n1[0], (double)n1[1], (double)n1[2]}, n2[3];
-
-    matrixProduct331(R, n, n2);
-    double nNorm = sqrt(n2[0]*n2[0]+n2[1]*n2[1]+n2[2]*n2[2]);
-
-    if (nNorm>EPS)
+    // If the point cloud has normals,
+    // then rotate them as well
+    if (pc.cols == 6)
     {
-      nT[0]=(float)(n2[0]/nNorm);
-      nT[1]=(float)(n2[1]/nNorm);
-      nT[2]=(float)(n2[2]/nNorm);
+      double n[3] = { (double)n1[0], (double)n1[1], (double)n1[2] }, n2[3];
+
+      matrixProduct331(R, n, n2);
+      double nNorm = sqrt(n2[0]*n2[0]+n2[1]*n2[1]+n2[2]*n2[2]);
+
+      if (nNorm>EPS)
+      {
+        nT[0]=(float)(n2[0]/nNorm);
+        nT[1]=(float)(n2[1]/nNorm);
+        nT[2]=(float)(n2[2]/nNorm);
+      }
     }
   }
 
