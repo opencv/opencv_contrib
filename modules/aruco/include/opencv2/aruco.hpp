@@ -268,21 +268,21 @@ public:
     /**
       *
       */
-    cv::Size getGridSize() {
+    cv::Size getGridSize() const {
         return cv::Size(_markersX, _markersY);
     }
 
     /**
       *
       */
-    double getMarkerLength() {
+    double getMarkerLength() const {
         return _markerLength;
     }
 
     /**
       *
       */
-    int getMarkerSeparation() {
+    int getMarkerSeparation() const {
         return _markerSeparation;
     }
 
