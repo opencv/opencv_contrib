@@ -43,7 +43,7 @@ private:
     void release();
 };
 
-class Dict
+class CV_EXPORTS Dict
 {
     //TODO: maybe this mechanism was realized somewhere in OpenCV?
     typedef std::map<String, DictValue> _Dict;

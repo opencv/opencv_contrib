@@ -145,9 +145,8 @@ struct LayerOutId
 struct LayerData
 {
     LayerData() {}
-    LayerData(const String &_name, const String &_type, LayerParams &_params = LayerParams())
-        : name(_name), type(_type), params(_params)
-    {}
+    LayerData(const String &_name, const String &_type, LayerParams &_params)
+        : name(_name), type(_type), params(_params) {}
 
     String name;
     String type;
@@ -179,7 +178,8 @@ struct Net::Impl
 {
     Impl()
     {
-        layers.insert(make_pair(0, LayerData("_input", "_input")));
+        LayerParams paramsEmpty;
+        layers.insert(make_pair(0, LayerData("_input", "_noType", paramsEmpty)));
         lastLayerId = 1;
         netWasAllocated = false;
     }
@@ -218,9 +218,12 @@ struct Net::Impl
         if (v.isString())
             return getLayerId(v.get<String>());
         else if (v.isInt())
-            int id = v.get<int>();
+            return v.get<int>();
         else
+        {
             CV_Assert(v.isString() || v.isInt());
+            return -1;
+        }
     }
 
     LayerData& getLayerData(const DictValue &v)
