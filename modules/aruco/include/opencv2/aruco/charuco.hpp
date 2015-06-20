@@ -197,11 +197,11 @@ CV_EXPORTS int interpolateCornersCharucoApproxCalib(InputArrayOfArrays markerCor
  * also returned in charucoIds.
  * The function returns the number of interpolated corners.
  */
-//CV_EXPORTS int interpolateCornersCharucoGlobalHom(InputArrayOfArrays markerCorners,
-//                                                  InputArray markerIds,
-//                                                  InputArray image, const CharucoBoard &board,
-//                                                  OutputArray charucoCorners,
-//                                                  OutputArray charucoIds );
+CV_EXPORTS int interpolateCornersCharucoGlobalHom(InputArrayOfArrays markerCorners,
+                                                  InputArray markerIds,
+                                                  InputArray image, const CharucoBoard &board,
+                                                  OutputArray charucoCorners,
+                                                  OutputArray charucoIds );
 
 
 
@@ -225,11 +225,11 @@ CV_EXPORTS int interpolateCornersCharucoApproxCalib(InputArrayOfArrays markerCor
  * also returned in charucoIds.
  * The function returns the number of interpolated corners.
  */
-//CV_EXPORTS int interpolateCornersCharucoLocalHom(InputArrayOfArrays markerCorners,
-//                                                 InputArray markerIds,
-//                                                 InputArray image, const CharucoBoard &board,
-//                                                 OutputArray charucoCorners,
-//                                                 OutputArray charucoIds );
+CV_EXPORTS int interpolateCornersCharucoLocalHom(InputArrayOfArrays markerCorners,
+                                                 InputArray markerIds,
+                                                 InputArray image, const CharucoBoard &board,
+                                                 OutputArray charucoCorners,
+                                                 OutputArray charucoIds );
 
 
 

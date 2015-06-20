@@ -176,6 +176,8 @@ int main(int argc, char *argv[]) {
                                                                     squareLength, markerLength,
                                                                     dictionary);
 
+    int interpolationMethod = 0;
+    
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -191,7 +193,7 @@ int main(int argc, char *argv[]) {
  
         
         int interpolatedCorners = 0;
-        if (markerIds.size() > 0)
+        if (markerIds.size() > 0 && interpolationMethod == 0)
             interpolatedCorners = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners, 
                                                                                   markerIds, image,
                                                                                   board, camMatrix,
@@ -199,6 +201,22 @@ int main(int argc, char *argv[]) {
                                                                                   charucoCorners,
                                                                                   charucoIds);
 
+            
+        if (markerIds.size() > 0 && interpolationMethod == 1)            
+            interpolatedCorners = cv::aruco::interpolateCornersCharucoGlobalHom(markerCorners, 
+                                                                                markerIds, image,
+                                                                                board,
+                                                                                charucoCorners,
+                                                                                charucoIds);
+            
+        if (markerIds.size() > 0 && interpolationMethod == 2)            
+            interpolatedCorners = cv::aruco::interpolateCornersCharucoLocalHom(markerCorners, 
+                                                                               markerIds, image,
+                                                                               board,
+                                                                               charucoCorners,
+                                                                               charucoIds);            
+            
+            
         bool validPose;
         validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, 
                                                         camMatrix, distCoeffs, rvec, tvec);
@@ -226,6 +244,10 @@ int main(int argc, char *argv[]) {
         char key = cv::waitKey(waitTime);
         if (key == 27)
             break;
+        if (key == 'i') {
+            interpolationMethod = (interpolationMethod+1)%2;
+            std::cout << "Interpolation method: " << interpolationMethod << std::endl;
+        }
     }
 
     return 0;

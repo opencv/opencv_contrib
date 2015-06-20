@@ -277,6 +277,106 @@ int interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorners, Inpu
 
 /**
   */
+int interpolateCornersCharucoGlobalHom(InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                                       InputArray _image, const CharucoBoard &board,
+                                       OutputArray _charucoCorners, OutputArray _charucoIds ) {
+
+    CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
+    CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
+              _markerIds.getMat().total() > 0);
+
+
+    // calculate homography
+    std::vector<cv::Point2f> markerCornersAllObj2D, markerCornersAll;
+    markerCornersAllObj2D.reserve(_markerCorners.total()*4);
+    markerCornersAll.reserve(markerCornersAllObj2D.size());
+    for (unsigned int i=0; i<_markerCorners.total(); i++) {
+        // find id in board marker 3d corners
+        int markerId = _markerIds.getMat().ptr<int>(0)[i];
+        int boardIdx = std::distance(board.ids.begin(),
+                                     find(board.ids.begin(), board.ids.end (), markerId));
+        for (unsigned int j=0; j<4; j++) {
+            markerCornersAllObj2D.push_back( cv::Point2f(board.objPoints[boardIdx][j].x,
+                                                         board.objPoints[boardIdx][j].y) );
+            markerCornersAll.push_back( _markerCorners.getMat(i).ptr<cv::Point2f>(0)[j] );
+        }
+    }
+    cv::Mat transformation = cv::findHomography(markerCornersAllObj2D, markerCornersAll);
+
+
+    // apply homography
+    cv::Mat allChessboardImgPoints;
+    std::vector<cv::Point2f> allChessboardObjPoints2D;
+    allChessboardObjPoints2D.resize(board.chessboardCorners.size());
+    for (unsigned int i=0; i < board.chessboardCorners.size(); i++) {
+        allChessboardObjPoints2D[i] = cv::Point2f(board.chessboardCorners[i].x,
+                                                  board.chessboardCorners[i].y);
+    }
+    cv::perspectiveTransform(allChessboardObjPoints2D, allChessboardImgPoints, transformation);
+
+    // refine corners
+    unsigned int nRefinedCorners;
+    nRefinedCorners = _selectAndRefineChessboardCorners(allChessboardImgPoints, _image,
+                                                        _charucoCorners,
+                                                        _charucoIds);
+    return nRefinedCorners;
+
+}
+
+
+
+/**
+  */
+int interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                                      InputArray _image, const CharucoBoard &board,
+                                      OutputArray _charucoCorners, OutputArray _charucoIds ) {
+
+    CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
+    CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
+              _markerIds.getMat().total() > 0);
+
+
+//    // calculate homography
+//    std::vector<cv::Point2f> markerCornersAllObj2D, markerCornersAll;
+//    markerCornersAllObj2D.reserve(_markerCorners.total()*4);
+//    markerCornersAll.reserve(markerCornersAllObj2D.size());
+//    for (unsigned int i=0; i<_markerCorners.total(); i++) {
+//        // find id in board marker 3d corners
+//        int markerId = _markerIds.getMat().ptr<int>(0)[i];
+//        int boardIdx = std::distance(board.ids.begin(),
+//                                     find(board.ids.begin(), board.ids.end (), markerId));
+//        for (unsigned int j=0; j<4; j++) {
+//            markerCornersAllObj2D.push_back( cv::Point2f(board.objPoints[boardIdx][j].x,
+//                                                         board.objPoints[boardIdx][j].y) );
+//            markerCornersAll.push_back( _markerCorners.getMat(i).ptr<cv::Point2f>(0)[j] );
+//        }
+//    }
+//    cv::Mat transformation = cv::findHomography(markerCornersAllObj2D, markerCornersAll);
+
+
+    // apply homography
+    cv::Mat allChessboardImgPoints;
+//    std::vector<cv::Point2f> allChessboardObjPoints2D;
+//    allChessboardObjPoints2D.resize(board.chessboardCorners.size());
+//    for (unsigned int i=0; i < board.chessboardCorners.size(); i++) {
+//        allChessboardObjPoints2D[i] = cv::Point2f(board.chessboardCorners[i].x,
+//                                                  board.chessboardCorners[i].y);
+//    }
+//    cv::perspectiveTransform(allChessboardObjPoints2D, allChessboardImgPoints, transformation);
+
+    // refine corners
+    unsigned int nRefinedCorners;
+    nRefinedCorners = _selectAndRefineChessboardCorners(allChessboardImgPoints, _image,
+                                                        _charucoCorners,
+                                                        _charucoIds);
+    return nRefinedCorners;
+
+}
+
+
+
+/**
+  */
 void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _charucoCorners,
                                 InputArray _charucoIds, cv::Scalar cornerColor) {
 
@@ -419,6 +519,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
                                _rvecs, _tvecs, flags, criteria);
 
 }
+
 
 
 
