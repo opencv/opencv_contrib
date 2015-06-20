@@ -405,8 +405,9 @@ int interpolateCornersCharucoGlobalHom(InputArrayOfArrays _markerCorners, InputA
     for (unsigned int i=0; i<_markerCorners.total(); i++) {
         // find id in board marker 3d corners
         int markerId = _markerIds.getMat().ptr<int>(0)[i];
-        int boardIdx = std::distance(board.ids.begin(),
-                                     find(board.ids.begin(), board.ids.end (), markerId));
+        std::vector<int>::const_iterator it = find(board.ids.begin(), board.ids.end (), markerId);
+        if(it == board.ids.end()) continue;
+        int boardIdx = std::distance(board.ids.begin(), it);
         for (unsigned int j=0; j<4; j++) {
             markerCornersAllObj2D.push_back( cv::Point2f(board.objPoints[boardIdx][j].x,
                                                          board.objPoints[boardIdx][j].y) );
@@ -454,8 +455,9 @@ int interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputAr
     for (unsigned int i=0; i<nMarkers; i++) {
         std::vector<cv::Point2f> markerObjPoints2D;
         int markerId = _markerIds.getMat().ptr<int>(0)[i];
-        int boardIdx = std::distance(board.ids.begin(),
-                                     find(board.ids.begin(), board.ids.end (), markerId));
+        std::vector<int>::const_iterator it = find(board.ids.begin(), board.ids.end (), markerId);
+        if(it == board.ids.end()) continue;
+        int boardIdx = std::distance(board.ids.begin(), it);
         markerObjPoints2D.resize(4);
         for(unsigned int j=0; j<4; j++)
             markerObjPoints2D[j] = cv::Point2f(board.objPoints[boardIdx][j].x,
@@ -509,6 +511,7 @@ int interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputAr
     nRefinedCorners = _selectAndRefineChessboardCorners(allChessboardImgPoints, _image,
                                                         _charucoCorners,
                                                         _charucoIds);
+
     return nRefinedCorners;
 
 }
