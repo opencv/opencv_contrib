@@ -178,6 +178,118 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, double squareLengt
 
 
 
+/**
+  */
+void _getNearestMarkerCorners(const CharucoBoard &board,
+                              std::vector< std::vector<int> > &nearestMarkerIds,
+                              std::vector< std::vector<int> > &nearestMarkerCorners ) {
+
+    nearestMarkerIds.resize(board.chessboardCorners.size());
+    nearestMarkerCorners.resize(board.chessboardCorners.size());
+
+    std::vector< std::vector<int> > nearestMarkerIdsIdx;
+    nearestMarkerIdsIdx.resize(board.chessboardCorners.size());
+
+    unsigned int nMarkers = board.ids.size();
+    unsigned int nCharucoCorners = board.chessboardCorners.size();
+    for (unsigned int i=0; i<nCharucoCorners; i++) {
+        double minDist=-1;
+        cv::Point3f charucoCorner = board.chessboardCorners[i];
+        for(unsigned int j=0; j<nMarkers; j++) {
+            cv::Point3f center = cv::Point3f(0,0,0);
+            for(unsigned int k=0; k<4; k++)
+                center += board.objPoints[j][k];
+            center /= 4.;
+            double sqDistance;
+            cv::Point3f distVector = charucoCorner - center;
+            sqDistance = distVector.x*distVector.x + distVector.y*distVector.y;
+            if(j==0 || fabs(sqDistance - minDist)<0.0001) {
+                nearestMarkerIds[i].push_back( board.ids[j] );
+                nearestMarkerIdsIdx[i].push_back(j);
+                minDist = sqDistance;
+            }
+            else if(sqDistance < minDist) {
+                nearestMarkerIds[i].clear();
+                nearestMarkerIds[i].push_back( board.ids[j] );
+                nearestMarkerIdsIdx[i].clear();
+                nearestMarkerIdsIdx[i].push_back(j);
+                minDist = sqDistance;
+            }
+        }
+
+        for(unsigned int j=0; j<nearestMarkerIds[i].size(); j++) {
+            nearestMarkerCorners[i].resize(nearestMarkerIds[i].size());
+            double minDist=-1;
+            for(unsigned int k=0; k<4; k++) {
+                double sqDistance;
+                cv::Point3f distVector = charucoCorner -
+                                         board.objPoints[nearestMarkerIdsIdx[i][j]][k];
+                sqDistance = distVector.x*distVector.x + distVector.y*distVector.y;
+                if (k==0 || sqDistance < minDist) {
+                    minDist = sqDistance;
+                    nearestMarkerCorners[i][j] = k;
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+//    int evenRowMarkers = board.getChessboardSize().width/2;
+//    int oddRowMarkers = board.getChessboardSize().width - evenRowMarkers;
+
+//    for (unsigned int y=0; y<board.getChessboardSize().height - 1; y++) {
+
+//        int prevRowStartMarkerIdx = int(y/2)*oddRowMarkers + (y-int(y/2))*evenRowMarkers;
+//        int nextRowStartMarkerIdx = int((y+1)/2)*oddRowMarkers +
+//                                    (y+1-int((y+1)/2))*evenRowMarkers;
+
+//        for (unsigned int x=0; x<board.getChessboardSize().width - 1; x++) {
+//            int charucoIdx = y*(board.getChessboardSize().width-1) + x;
+
+
+
+//            int markerIdx1, markerIdx2;
+//            int cornerIdx1, cornerIdx2;
+//            if (y%2==0 && x%2==0) {
+//                markerIdx1 = prevRowStartMarkerIdx + int(x/2);
+//                cornerIdx1 = 0;
+//                markerIdx2 = nextRowStartMarkerIdx + int(x/2);
+//                cornerIdx2 = 2;
+//            }
+//            else if(y%2==0 && x%2!=0) {
+//                markerIdx1 = prevRowStartMarkerIdx + int((x-1)/2);
+//                cornerIdx1 = 1;
+//                markerIdx2 = nextRowStartMarkerIdx + int((x+1)/2);
+//                cornerIdx2 = 3;
+//            }
+//            else if((y%2!=0 && x%2==0)) {
+//                markerIdx1 = prevRowStartMarkerIdx + int(x/2);
+//                cornerIdx1 = 1;
+//                markerIdx2 = nextRowStartMarkerIdx + int(x/2);
+//                cornerIdx2 = 3;
+//            }
+//            else {
+//                markerIdx1 = prevRowStartMarkerIdx + int((x+1)/2);
+//                cornerIdx1 = 0;
+//                markerIdx2 = nextRowStartMarkerIdx + int((x-1)/2);
+//                cornerIdx2 = 2;
+//            }
+
+//            nearestMarkerIds[charucoIdx].push_back(board.ids[markerIdx1]);
+//            nearestMarkerIds[charucoIdx].push_back(board.ids[markerIdx2]);
+
+//            nearestMarkerCorners[charucoIdx].push_back(cornerIdx1);
+//            nearestMarkerCorners[charucoIdx].push_back(cornerIdx2);
+
+//        }
+//    }
+
+}
+
 
 /**
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
@@ -336,33 +448,61 @@ int interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputAr
               _markerIds.getMat().total() > 0);
 
 
-//    // calculate homography
-//    std::vector<cv::Point2f> markerCornersAllObj2D, markerCornersAll;
-//    markerCornersAllObj2D.reserve(_markerCorners.total()*4);
-//    markerCornersAll.reserve(markerCornersAllObj2D.size());
-//    for (unsigned int i=0; i<_markerCorners.total(); i++) {
-//        // find id in board marker 3d corners
-//        int markerId = _markerIds.getMat().ptr<int>(0)[i];
-//        int boardIdx = std::distance(board.ids.begin(),
-//                                     find(board.ids.begin(), board.ids.end (), markerId));
-//        for (unsigned int j=0; j<4; j++) {
-//            markerCornersAllObj2D.push_back( cv::Point2f(board.objPoints[boardIdx][j].x,
-//                                                         board.objPoints[boardIdx][j].y) );
-//            markerCornersAll.push_back( _markerCorners.getMat(i).ptr<cv::Point2f>(0)[j] );
-//        }
-//    }
-//    cv::Mat transformation = cv::findHomography(markerCornersAllObj2D, markerCornersAll);
+    unsigned int nMarkers = _markerIds.getMat().total();
+    std::vector<cv::Mat> transformations;
+    transformations.resize(nMarkers);
+    for (unsigned int i=0; i<nMarkers; i++) {
+        std::vector<cv::Point2f> markerObjPoints2D;
+        int markerId = _markerIds.getMat().ptr<int>(0)[i];
+        int boardIdx = std::distance(board.ids.begin(),
+                                     find(board.ids.begin(), board.ids.end (), markerId));
+        markerObjPoints2D.resize(4);
+        for(unsigned int j=0; j<4; j++)
+            markerObjPoints2D[j] = cv::Point2f(board.objPoints[boardIdx][j].x,
+                                               board.objPoints[boardIdx][j].y );
+
+        transformations[i] = cv::getPerspectiveTransform(markerObjPoints2D,
+                                                         _markerCorners.getMat(i));
+    }
+
+    int nCharucoCorners = board.chessboardCorners.size();
+    std::vector<cv::Point2f> allChessboardImgPoints(nCharucoCorners, cv::Point2f(-1, -1));
+
+    std::vector<std::vector<int> > nearestMarkers, nearestCorners;
+    _getNearestMarkerCorners(board, nearestMarkers, nearestCorners);
 
 
-    // apply homography
-    cv::Mat allChessboardImgPoints;
-//    std::vector<cv::Point2f> allChessboardObjPoints2D;
-//    allChessboardObjPoints2D.resize(board.chessboardCorners.size());
-//    for (unsigned int i=0; i < board.chessboardCorners.size(); i++) {
-//        allChessboardObjPoints2D[i] = cv::Point2f(board.chessboardCorners[i].x,
-//                                                  board.chessboardCorners[i].y);
-//    }
-//    cv::perspectiveTransform(allChessboardObjPoints2D, allChessboardImgPoints, transformation);
+    for(unsigned int i = 0; i< nCharucoCorners; i++) {
+        cv::Point2f objPoint2D = cv::Point2f(board.chessboardCorners[i].x,
+                                             board.chessboardCorners[i].y);
+
+        std::vector<cv::Point2f> interpolatedPositions;
+
+        for (unsigned int j=0; j<nearestMarkers[i].size(); j++) {
+            int markerId = nearestMarkers[i][j];
+            int markerIdx = -1;
+            for(unsigned int k=0; k<_markerIds.getMat().total(); k++) {
+                if(_markerIds.getMat().ptr<int>(0)[k] == markerId) {
+                    markerIdx = k;
+                    break;
+                }
+            }
+            if (markerIdx != -1) {
+                std::vector<cv::Point2f> in, out;
+                in.push_back(objPoint2D);
+                perspectiveTransform(in, out, transformations[markerIdx]);
+                interpolatedPositions.push_back(out[0]);
+            }
+        }
+
+        if (interpolatedPositions.size() == 0) continue;
+
+        if(interpolatedPositions.size() > 1) {
+            allChessboardImgPoints[i] = (interpolatedPositions[0] + interpolatedPositions[1] )/2.;
+        }
+        else
+            allChessboardImgPoints[i] = interpolatedPositions[0];
+    }
 
     // refine corners
     unsigned int nRefinedCorners;

@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
         if (key == 27)
             break;
         if (key == 'i') {
-            interpolationMethod = (interpolationMethod+1)%2;
+            interpolationMethod = (interpolationMethod+1)%3;
             std::cout << "Interpolation method: " << interpolationMethod << std::endl;
         }
     }

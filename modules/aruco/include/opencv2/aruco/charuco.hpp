@@ -111,21 +111,21 @@ public:
     /**
       *
       */
-    cv::Size getChessboardSize() {
+    cv::Size getChessboardSize() const {
         return cv::Size(_squaresX, _squaresY);
     }
 
     /**
       *
       */
-    int getSquareLength() {
+    int getSquareLength() const {
         return _squareLength;
     }
 
     /**
       *
       */
-    double getMarkerLength() {
+    double getMarkerLength() const {
         return _markerLength;
     }
 
