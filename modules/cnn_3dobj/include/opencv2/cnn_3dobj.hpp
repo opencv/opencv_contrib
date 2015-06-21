@@ -1,6 +1,6 @@
 /*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
+By downloading, copying, installing or using the software you agree to this license.
+If you do not agree to this license, do not download, install,
 copy or use the software.
 
 
@@ -8,7 +8,12 @@ copy or use the software.
                For Open Source Computer Vision Library
                        (3-clause BSD License)
 
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+Copyright (C) 2000-2015, Intel Corporation, all rights reserved.
+Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
+Copyright (C) 2009-2015, NVIDIA Corporation, all rights reserved.
+Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+Copyright (C) 2015, OpenCV Foundation, all rights reserved.
+Copyright (C) 2015, Itseez Inc., all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -27,9 +32,9 @@ are permitted provided that the following conditions are met:
 
 This software is provided by the copyright holders and contributors "as is" and
 any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
+warranties of merchantability and fitness for a particular purpose are disclaimed.
+In no event shall copyright holders or contributors be liable for any direct,
+indirect, incidental, special, exemplary, or consequential damages
 (including, but not limited to, procurement of substitute goods or services;
 loss of use, data, or profits; or business interruption) however caused
 and on any theory of liability, whether in contract, strict liability,
@@ -39,20 +44,19 @@ the use of this software, even if advised of the possibility of such damage.
 
 #ifndef __OPENCV_CNN_3DOBJ_HPP__
 #define __OPENCV_CNN_3DOBJ_HPP__
+#ifdef __cplusplus
 
-#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <iostream>
+#include <opencv2/highgui.hpp>
+#include <fstream>
 #include <vector>
 #include <iostream>
-using namespace cv;
-using namespace std;
 
 /** @defgroup cnn_3dobj CNN based on Caffe aimming at 3D object recognition and pose estimation
 */
 namespace cv
-{ 
+{
 namespace cnn_3dobj
 {
 
@@ -63,7 +67,7 @@ namespace cnn_3dobj
 
 The class create some sphere views of camera towards a 3D object meshed from .ply files @cite hinterstoisser2008panter .
  */
-class CV_EXPORTS_W IcoSphere 
+class CV_EXPORTS_W IcoSphere
 {
 
 
@@ -74,9 +78,9 @@ class CV_EXPORTS_W IcoSphere
 	public:
 
 
-		std::vector<float>* vertexNormalsList = new std::vector<float>;
-		std::vector<float>* vertexList = new std::vector<float>;
-		std::vector<cv::Point3d>* CameraPos = new std::vector<cv::Point3d>;
+		std::vector<float> vertexNormalsList;
+		std::vector<float> vertexList;
+		std::vector<cv::Point3d> CameraPos;
 		float radius;
 		IcoSphere(float radius_in, int depth_in);
 		/** @brief Make all view points having the some distance from the focal point used by the camera view.
@@ -97,3 +101,5 @@ class CV_EXPORTS_W IcoSphere
 
 
 #endif /* CNN_3DOBJ_HPP_ */
+#endif
+
