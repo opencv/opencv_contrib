@@ -144,11 +144,11 @@ public:
 //	function to allocate buffer for the messages
 //------------------------------------------------------------------------------------------------
 template <class T1, class T2>
-size_t allocateBuffer(T1*& pBuffer, size_t factor, T2*& ptrData, const int* pWinSize)
+size_t allocateBuffer(T1*& pBuffer, size_t area, size_t factor, T2*& ptrData, const int* pWinSize)
 {
-    pBuffer = new T1[Area*factor];
+    pBuffer = new T1[area*factor];
     size_t totalElements = 0;
-    for (ptrdiff_t i = 0; i<Area; i++)
+    for (ptrdiff_t i = 0; i < area; i++)
     {
         totalElements += pWinSize[i] * 2 + 1;
         for (ptrdiff_t j = 0; j<factor; j++)
@@ -160,7 +160,7 @@ size_t allocateBuffer(T1*& pBuffer, size_t factor, T2*& ptrData, const int* pWin
 
     T2* ptrDynamic = ptrData;
     size_t total = 0;
-    for (ptrdiff_t i = 0; i<Area*factor; i++)
+    for (ptrdiff_t i = 0; i<area*factor; i++)
     {
         pBuffer[i].data() = ptrDynamic;
         ptrDynamic += pBuffer[i].nElements();
@@ -170,11 +170,11 @@ size_t allocateBuffer(T1*& pBuffer, size_t factor, T2*& ptrData, const int* pWin
 }
 
 template<class T1, class T2>
-size_t allocateBuffer(T1*& pBuffer, T2*& ptrData, const int* pWinSize1, const int* pWinSize2)
+size_t allocateBuffer(T1*& pBuffer, T2*& ptrData, size_t area, const int* pWinSize1, const int* pWinSize2)
 {
-    pBuffer = new T1[Area];
+    pBuffer = new T1[area];
     size_t totalElements = 0;
-    for (ptrdiff_t i = 0; i<Area; i++)
+    for (ptrdiff_t i = 0; i<area; i++)
     {
         totalElements += (pWinSize1[i] * 2 + 1)*(pWinSize2[i] * 2 + 1);
         pBuffer[i].allocate(pWinSize1[i] * 2 + 1, pWinSize2[i] * 2 + 1);
@@ -184,7 +184,7 @@ size_t allocateBuffer(T1*& pBuffer, T2*& ptrData, const int* pWinSize1, const in
 
     T2* ptrDynamic = ptrData;
     size_t total = 0;
-    for (ptrdiff_t i = 0; i<Area; i++)
+    for (ptrdiff_t i = 0; i < area; i++)
     {
         pBuffer[i].data() = ptrDynamic;
         ptrDynamic += pBuffer[i].nElements();
@@ -282,6 +282,10 @@ private:
     void trw_s(int count);
     void updateSpatialMessage(int x, int y, int plane, int direction);
     void updateDualMessage(int x, int y, int plane);
+    void computeBelief();
+    void findOptimalSolution();
+    void computeVelocity(Mat& flow);
+    double getEnergy();
     std::vector<Mat> buildPyramid(const Mat& src);
 };
 
@@ -290,9 +294,24 @@ OpticalFlowSiftFlow::OpticalFlowSiftFlow()
     
 }
 
-void OpticalFlowSiftFlow::calc(InputArray I0, InputArray I1, InputOutputArray flow)
+void OpticalFlowSiftFlow::calc(InputArray _I0, InputArray _I1, InputOutputArray _flow)
 {
-    int x = 1;
+    // Get images
+    Mat I0 = _I0.getMat();
+    Mat I1 = _I1.getMat();
+    CV_Assert(I0.size() == I1.size());
+    CV_Assert(I0.type() == I1.type());
+    CV_Assert(I0.channels() == 1);
+    // TODO: currently only grayscale - data term could be computed in color version as well...
+
+    // Create flow
+    _flow.create(I0.size(), CV_32FC2);
+    Mat W = _flow.getMat(); // if any data present - will be discarded
+
+    calcOneLevel(I0, I1, W);
+
+    // Output flow
+    W.copyTo(_flow);
 }
 
 void OpticalFlowSiftFlow::collectGarbage()
@@ -320,18 +339,38 @@ Ptr<DenseOpticalFlow> createOptFlow_SiftFlow()
 
 std::vector<Mat> OpticalFlowSiftFlow::buildPyramid(const Mat& src)
 {
+    std::vector<Mat> pyramid;
+    pyramid.push_back(src);
+    Mat tmp;
+    int w, h;
 
+    // For each pyramid level starting from level 1
+    for (size_t i = 1; i < levels; ++i)
+    {
+        // Apply gaussian filter
+        GaussianBlur(pyramid[i - 1], tmp, Size(5, 5), 0.67, 0, BORDER_REPLICATE);
+
+        // Resize image using bicubic interpolation
+        w = (int)ceil(pyramid[i - 1].cols / 2.0f);
+        h = (int)ceil(pyramid[i - 1].rows / 2.0f);
+        resize(tmp, pyramid[i], Size(w, h), 0, 0, INTER_CUBIC);
+    }
+
+    return pyramid;
 }
 
 void OpticalFlowSiftFlow::calcOneLevel(const Mat I0, const Mat I1, Mat W)
 {
-
+    computeDataTerm();
+    computeRangeTerm(gamma);
+    messagePassing(iterations, 2);
+    computeVelocity(W);
 }
 
 void OpticalFlowSiftFlow::computeDataTerm()
 {
     // allocate the buffer for data term
-    nTotalMatches = allocateBuffer<PixelBuffer2D<T_message>, T_message>(pDataTerm, ptrDataTerm, pWinSize[0], pWinSize[1]);
+    nTotalMatches = allocateBuffer<PixelBuffer2D<T_message>, T_message>(pDataTerm, ptrDataTerm, Area, pWinSize[0], pWinSize[1]);
 
     T_message HistMin, HistMax;
     double HistInterval;
@@ -459,7 +498,7 @@ void OpticalFlowSiftFlow::computeRangeTerm(double _gamma)
     {
         release1DBuffer(pRangeTerm[i]);
         release1DBuffer(ptrRangeTerm[i]);
-        allocateBuffer(pRangeTerm[i], 1, ptrRangeTerm[i], pWinSize[i]);
+        allocateBuffer(pRangeTerm[i], Area, 1, ptrRangeTerm[i], pWinSize[i]);
     }
     for (ptrdiff_t offset = 0; offset<Area; offset++)
     {
@@ -487,9 +526,9 @@ void OpticalFlowSiftFlow::allocateMessage()
     // allocate the buffers for the messages
     for (int i = 0; i<2; i++)
     {
-        nTotalSpatialElements[i] = allocateBuffer(pSpatialMessage[i], nNeighbors, ptrSpatialMessage[i], pWinSize[i]);
-        nTotalDualElements[i] = allocateBuffer(pDualMessage[i], 1, ptrDualMessage[i], pWinSize[i]);
-        nTotalBelifElements[i] = allocateBuffer(pBelief[i], 1, ptrBelief[i], pWinSize[i]);
+        nTotalSpatialElements[i] = allocateBuffer(pSpatialMessage[i], Area, nNeighbors, ptrSpatialMessage[i], pWinSize[i]);
+        nTotalDualElements[i] = allocateBuffer(pDualMessage[i], Area, 1, ptrDualMessage[i], pWinSize[i]);
+        nTotalBelifElements[i] = allocateBuffer(pBelief[i], Area, 1, ptrBelief[i], pWinSize[i]);
     }
 }
 
@@ -516,14 +555,17 @@ double OpticalFlowSiftFlow::messagePassing(int _iterations, int _hierarchy)
         //TRW_S(count);
 
         //FindOptimalSolutionSequential();
-        ComputeBelief();
-        FindOptimalSolution();
+        computeBelief();
+        findOptimalSolution();
 
-        energy = GetEnergy();
+        energy = getEnergy();
+
+        /*
         if (IsDisplay)
             printf("No. %d energy: %f...\n", count, energy);
         if (pEnergyList != NULL)
-            pEnergyList[count] = energy;
+            pEnergyList[count] = energy
+        */
     }
     return energy;
 }
@@ -876,6 +918,100 @@ void OpticalFlowSiftFlow::updateDualMessage(int x, int y, int plane)
         message[l] -= Min;
 
     delete message_org;
+}
+
+void OpticalFlowSiftFlow::computeBelief()
+{
+    for (size_t plane = 0; plane<2; plane++)
+    {
+        memset(ptrBelief[plane], 0, sizeof(T_message)*nTotalBelifElements[plane]);
+        for (size_t i = 0; i<Height; i++)
+            for (size_t j = 0; j<Width; j++)
+            {
+                size_t offset = i*Width + j;
+                T_message* belief = pBelief[plane][offset].data();
+                int nStates = pWinSize[plane][offset] * 2 + 1;
+                // add range term
+                add2Message(belief, pRangeTerm[plane][offset].data(), nStates);
+                // add message from the dual layer
+                add2Message(belief, pDualMessage[plane][offset].data(), nStates);
+                if (j>0)
+                    add2Message(belief, pSpatialMessage[plane][offset*nNeighbors].data(), nStates);
+                if (j<Width - 1)
+                    add2Message(belief, pSpatialMessage[plane][offset*nNeighbors + 1].data(), nStates);
+                if (i>0)
+                    add2Message(belief, pSpatialMessage[plane][offset*nNeighbors + 2].data(), nStates);
+                if (i<Height - 1)
+                    add2Message(belief, pSpatialMessage[plane][offset*nNeighbors + 3].data(), nStates);
+            }
+    }
+}
+
+void OpticalFlowSiftFlow::findOptimalSolution()
+{
+    for (size_t plane = 0; plane<2; plane++)
+        for (size_t i = 0; i<Area; i++)
+        {
+            int nStates = pWinSize[plane][i] * 2 + 1;
+            double Min;
+            int index = 0;
+            T_message* belief = pBelief[plane][i].data();
+            Min = belief[0];
+            for (int l = 1; l<nStates; l++)
+                if (Min>belief[l])
+                {
+                    Min = belief[l];
+                    index = l;
+                }
+            pX[i * 2 + plane] = index;
+        }
+}
+
+void OpticalFlowSiftFlow::computeVelocity(Mat& flow)
+{
+    //mFlow.allocate(Width, Height, 2);
+    float* flow_data = (float*)flow.data;
+    for (int i = 0; i<Area; i++)
+    {
+        flow_data[i * 2] = pX[i * 2] + pOffset[0][i] - pWinSize[0][i];
+        flow_data[i * 2 + 1] = pX[i * 2 + 1] + pOffset[1][i] - pWinSize[1][i];
+    }
+}
+
+double OpticalFlowSiftFlow::getEnergy()
+{
+    double energy = 0;
+    for (size_t i = 0; i<Height; i++)
+        for (size_t j = 0; j<Width; j++)
+        {
+            size_t offset = i*Width + j;
+            for (size_t k = 0; k<2; k++)
+            {
+                if (j<Width - 1)
+                {
+                    ls = ((double*)im_s.data)[offset * 2 + k];
+                    ld = ((double*)im_d.data)[offset * 2 + k];
+                    //s=m_s;
+                    //d=m_d;
+                    energy += __min((double)abs(pX[offset * 2 + k] - pWinSize[k][offset] + pOffset[k][offset] - pX[(offset + 1) * 2 + k] + pWinSize[k][offset + 1] - pOffset[k][offset + 1])*ls, ld);
+                }
+                if (i<Height - 1)
+                {
+                    ls = ((double*)im_s.data)[offset * 2 + k];
+                    ld = ((double*)im_d.data)[offset * 2 + k];
+                    //s=m_s;
+                    //d=m_d;
+                    energy += __min((double)abs(pX[offset * 2 + k] - pWinSize[k][offset] + pOffset[k][offset] - pX[(offset + Width) * 2 + k] + pWinSize[k][offset + Width] - pOffset[k][offset + Width])*ls, ld);
+                }
+            }
+            int vx = pX[offset * 2];
+            int vy = pX[offset * 2 + 1];
+            int nStates = pWinSize[0][offset] * 2 + 1;
+            energy += pDataTerm[offset].data()[vy*nStates + vx];
+            for (size_t k = 0; k<2; k++)
+                energy += pRangeTerm[k][offset].data()[pX[offset * 2 + k]];
+        }
+    return energy;
 }
 
 }//optflow
