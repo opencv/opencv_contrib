@@ -56,7 +56,16 @@ namespace cv
 			detector = Ptr<TLDDetector>(new TLDDetector());
 
 			//Propagate data to Detector
-			detector->positiveExamples = &positiveExamples;
+			posNum = 0;
+			negNum = 0;
+			posExp = Mat(Size(225, 500), CV_8UC1);
+			negExp = Mat(Size(225, 500), CV_8UC1);
+			detector->posNum = &posNum;
+			detector->negNum = &negNum;
+			detector->posExp = &posExp;
+			detector->negExp = &negExp;
+
+			detector->positiveExamples = &positiveExamples;			
 			detector->negativeExamples = &negativeExamples;
 			detector->timeStampsPositive = &timeStampsPositive;
 			detector->timeStampsNegative = &timeStampsNegative;
@@ -77,6 +86,7 @@ namespace cv
 
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
+			
 			for (int i = 0; i < (int)closest.size(); i++)
 			{
 				for (int j = 0; j < 20; j++)
@@ -238,12 +248,30 @@ namespace cv
 			std::vector<int>* proxyT;
 			if (positive)
 			{
+				if (posNum < 500)
+				{
+					uchar *patchPtr = example.data;
+					uchar *modelPtr = posExp.data;
+					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
+						modelPtr[posNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					posNum++;
+				}
+
 				proxyV = &positiveExamples;
 				proxyN = &timeStampPositiveNext;
 				proxyT = &timeStampsPositive;
 			}
 			else
 			{
+				if (negNum < 500)
+				{
+					uchar *patchPtr = example.data;
+					uchar *modelPtr = negExp.data;
+					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
+						modelPtr[negNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					negNum++;
+				}
+
 				proxyV = &negativeExamples;
 				proxyN = &timeStampNegativeNext;
 				proxyT = &timeStampsNegative;

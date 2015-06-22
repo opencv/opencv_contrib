@@ -66,6 +66,8 @@ namespace cv
 			Ptr<TLDDetector> detector;
 
 			std::vector<Mat_<uchar> > positiveExamples, negativeExamples;
+			Mat posExp, negExp;
+			int posNum, negNum;
 			std::vector<int> timeStampsPositive, timeStampsNegative;
 			int timeStampPositiveNext, timeStampNegativeNext;
 			double originalVariance_;

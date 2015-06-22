@@ -65,11 +65,119 @@ namespace cv
 		// Calculate Relative similarity of the patch (NN-Model)
 		double TLDDetector::Sr(const Mat_<uchar>& patch)
 		{
+			/*
+			int64 e1, e2;
+			float t;
+			e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 			for (int i = 0; i < (int)(*positiveExamples).size(); i++)
 				splus = std::max(splus, 0.5 * (NCC((*positiveExamples)[i], patch) + 1.0));
 			for (int i = 0; i < (int)(*negativeExamples).size(); i++)
 				sminus = std::max(sminus, 0.5 * (NCC((*negativeExamples)[i], patch) + 1.0));
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			printf("Sr: %f\n", t);
+			if (splus + sminus == 0.0)
+				return 0.0;
+			return splus / (sminus + splus);
+			*/
+			int64 e1, e2;
+			float t;
+			e1 = getTickCount();
+			double splus = 0.0, sminus = 0.0;
+			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			for (int i = 0; i < *posNum; i++)
+			{
+				modelSample.data = &(posExp->data[i * 225]);
+				splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+			}
+			for (int i = 0; i < *negNum; i++)
+			{
+				modelSample.data = &(negExp->data[i * 225]);
+				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
+			}
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			printf("Sr CPU: %f\n", t);
+			if (splus + sminus == 0.0)
+				return 0.0;
+			return splus / (sminus + splus);
+		}
+
+		double TLDDetector::ocl_Sr(const Mat_<uchar>& patch)
+		{
+			int64 e1, e2, e3, e4;
+			float t;
+			e1 = getTickCount();
+			double splus = 0.0, sminus = 0.0;
+			
+			e3 = getTickCount();
+
+			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2*MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+
+			
+			ocl::Kernel k;
+			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
+			String error;
+			ocl::Program prog(src, NULL, error);
+			k.create("NCC", prog);
+			if (k.empty())
+				printf("Kernel create failed!!!\n");
+			k.args(
+				ocl::KernelArg::PtrReadOnly(devPatch),
+				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
+				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
+				ocl::KernelArg::PtrWriteOnly(devNCC),
+				(int)posNum,
+				(int)negNum);
+
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Mem Cpy GPU: %f\n", t);
+
+			size_t globSize = 1000;
+			size_t localSize = 128;		
+			e3 = getTickCount();
+			if (!k.run(1, &globSize, &localSize, true))
+				printf("Kernel Run Error!!!");
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Kernel Run GPU: %f\n", t);
+
+			e3 = getTickCount();
+			Mat resNCC = devNCC.getMat(ACCESS_READ);
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Read Mem GPU: %f\n", t);
+			
+			////Compare
+			//Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			//for (int i = 0; i < 200; i+=17)
+			//{
+			//	modelSample.data = &(posExp->data[i * 225]);
+			//	printf("%f\t%f\n\n", resNCC.at<float>(i), NCC(modelSample, patch));
+			//}
+
+			//for (int i = 0; i < 200; i+=23)
+			//{
+			//	modelSample.data = &(negExp->data[i * 225]);
+			//	printf("%f\t%f\n", resNCC.at<float>(500+i), NCC(modelSample, patch));
+			//}
+
+			
+			for (int i = 0; i < *posNum; i++)
+				splus = std::max(splus, 0.5 * (resNCC.at<float>(i) + 1.0));
+
+			for (int i = 0; i < *negNum; i++)
+				sminus = std::max(sminus, 0.5 * (resNCC.at<float>(i+500) +1.0));
+
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//printf("Sr GPU: %f\n\n", t);
+
 			if (splus + sminus == 0.0)
 				return 0.0;
 			return splus / (sminus + splus);
@@ -78,6 +186,10 @@ namespace cv
 		// Calculate Conservative similarity of the patch (NN-Model)
 		double TLDDetector::Sc(const Mat_<uchar>& patch)
 		{
+			/*
+			int64 e1, e2;
+			float t;
+			e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 			int med = getMedian((*timeStampsPositive));
 			for (int i = 0; i < (int)(*positiveExamples).size(); i++)
@@ -87,6 +199,118 @@ namespace cv
 			}
 			for (int i = 0; i < (int)(*negativeExamples).size(); i++)
 				sminus = std::max(sminus, 0.5 * (NCC((*negativeExamples)[i], patch) + 1.0));
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			printf("Sc: %f\n", t);
+			if (splus + sminus == 0.0)
+				return 0.0;
+			
+			return splus / (sminus + splus);
+			*/
+
+			int64 e1, e2;
+			float t;
+			e1 = getTickCount();
+			double splus = 0.0, sminus = 0.0;
+			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			int med = getMedian((*timeStampsPositive));
+			for (int i = 0; i < *posNum; i++)
+			{
+				if ((int)(*timeStampsPositive)[i] <= med)
+				{
+					modelSample.data = &(posExp->data[i * 225]);
+					splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+				}
+			}
+			for (int i = 0; i < *negNum; i++)
+			{
+				modelSample.data = &(negExp->data[i * 225]);
+				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
+			}
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			printf("Sc: %f\n", t);
+			if (splus + sminus == 0.0)
+				return 0.0;
+
+			return splus / (sminus + splus);
+		}
+
+		double TLDDetector::ocl_Sc(const Mat_<uchar>& patch)
+		{
+			int64 e1, e2, e3, e4;
+			float t;
+			e1 = getTickCount();
+			double splus = 0.0, sminus = 0.0;
+
+			e3 = getTickCount();
+
+			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2 * MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+
+
+			ocl::Kernel k;
+			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
+			String error;
+			ocl::Program prog(src, NULL, error);
+			k.create("NCC", prog);
+			if (k.empty())
+				printf("Kernel create failed!!!\n");
+			k.args(
+				ocl::KernelArg::PtrReadOnly(devPatch),
+				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
+				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
+				ocl::KernelArg::PtrWriteOnly(devNCC),
+				(int)posNum,
+				(int)negNum);
+
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Mem Cpy GPU: %f\n", t);
+
+			size_t globSize = 1000;
+			size_t localSize = 128;
+			e3 = getTickCount();
+			if (!k.run(1, &globSize, &localSize, true))
+				printf("Kernel Run Error!!!");
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Kernel Run GPU: %f\n", t);
+
+			e3 = getTickCount();
+			Mat resNCC = devNCC.getMat(ACCESS_READ);
+			e4 = getTickCount();
+			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//printf("Read Mem GPU: %f\n", t);
+
+			////Compare
+			//Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			//for (int i = 0; i < 200; i+=17)
+			//{
+			//	modelSample.data = &(posExp->data[i * 225]);
+			//	printf("%f\t%f\n\n", resNCC.at<float>(i), NCC(modelSample, patch));
+			//}
+
+			//for (int i = 0; i < 200; i+=23)
+			//{
+			//	modelSample.data = &(negExp->data[i * 225]);
+			//	printf("%f\t%f\n", resNCC.at<float>(500+i), NCC(modelSample, patch));
+			//}
+
+			int med = getMedian((*timeStampsPositive));
+			for (int i = 0; i < *posNum; i++)
+				if ((int)(*timeStampsPositive)[i] <= med)
+					splus = std::max(splus, 0.5 * (resNCC.at<float>(i) +1.0));
+
+			for (int i = 0; i < *negNum; i++)
+				sminus = std::max(sminus, 0.5 * (resNCC.at<float>(i + 500) + 1.0));
+
+			e2 = getTickCount();
+			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//printf("Sc GPU: %f\n\n", t);
+
 			if (splus + sminus == 0.0)
 				return 0.0;
 			return splus / (sminus + splus);
@@ -166,7 +390,8 @@ namespace cv
 
 						labPatch.rect = Rect2d(dx * i * scale, dy * j * scale, initSize.width * scale, initSize.height * scale);
 						resample(resized_img, Rect2d(Point(dx * i, dy * j), initSize), standardPatch);
-						tmp = Sr(standardPatch);
+						
+						tmp = ocl_Sr(standardPatch);
 
 						////To fix: Check the paper, probably this cause wrong learning
 						//
@@ -184,7 +409,7 @@ namespace cv
 						{
 							npos++;
 						}
-						tmp = Sc(standardPatch);
+						tmp = ocl_Sc(standardPatch);
 						if (tmp > maxSc)
 						{
 							maxSc = tmp;
