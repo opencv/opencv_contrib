@@ -331,9 +331,24 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
     cv::warpPerspective(_image, resultImg, transformation,
                         cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
 
-    // now extract code
     cv::Mat bits(markerSizeWithBorders, markerSizeWithBorders, CV_8UC1, cv::Scalar::all(0));
+
+    cv::Mat innerRegion = resultImg.colRange(cellSize/2, resultImg.cols-cellSize/2).
+                                     rowRange(cellSize/2, resultImg.rows-cellSize/2);
+    cv::Mat mean, stddev;
+    cv::meanStdDev(innerRegion, mean, stddev);
+    if (stddev.ptr<double>(0)[0] < 5) {
+        // all black or all white, anyway it is invalid, return all 0
+        if (mean.ptr<double>(0)[0] > 127)
+            bits.setTo(1);
+        else
+            bits.setTo(0);
+        return bits;
+    }
+
+    // now extract code
     cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
     for (unsigned int y = 0; y < markerSizeWithBorders; y++) {
         for (unsigned int x = 0; x < markerSizeWithBorders; x++) {
             int Xstart = x * (cellSize)+cellMarginPixels;
