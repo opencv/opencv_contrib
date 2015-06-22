@@ -112,7 +112,7 @@ int main(int argc, char** argv)
          (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;
 
     //check results size from match call above
-    ulong results_size = results.size();
+    size_t results_size = results.size();
     cout << "Number of matching poses: " << results_size;
     if (results_size == 0) {
         cout << endl << "No matching poses found. Exiting." << endl;
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
     }
 
     // Get only first N results - but adjust to results size if num of results are less than that specified by N
-    ulong N = 2;
+    size_t N = 2;
     if (results_size < N) {
         cout << endl << "Reducing matching poses to be reported (as specified in code): "
              << N << " to the number of matches found: " << results_size << endl;
