@@ -122,13 +122,13 @@ inline unsigned DictValue::get<unsigned>() const
 template<>
 inline double DictValue::get<double>() const
 {
-    if (type == cv::Param::FLOAT)
+    if (type == cv::Param::REAL)
         return d;
     else if (type == cv::Param::INT)
         return i;
     else
     {
-        CV_Assert(type == cv::Param::FLOAT || type == cv::Param::INT);
+        CV_Assert(type == cv::Param::REAL || type == cv::Param::INT);
         return 0;
     }
 }

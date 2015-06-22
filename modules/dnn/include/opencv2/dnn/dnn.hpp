@@ -32,8 +32,6 @@ namespace dnn
         void fill(InputArray in);
         void fill(int ndims, const int *sizes, int type, void *data, bool deepCopy = true);
 
-        bool empty() const;
-
         Mat& getMatRef();
         const Mat& getMatRef() const;
         Mat getMat();
@@ -42,18 +40,26 @@ namespace dnn
         //shape getters
         int cols() const;
         int rows() const;
-        Size size() const;
         int channels() const;
         int num() const;
+        Size size2() const;
         Vec4i shape() const;
-        size_t total() const;
+        int size(int index) const;
+        size_t total(int startAxis = 0, int endAxis = -1) const;
 
         uchar *rawPtr(int num = 0, int cn = 0, int row = 0, int col = 0);
 
         template<typename TFloat>
         TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0);
 
+        int type() const;
+        bool isFloat() const;
+        bool isDouble() const;
+
     private:
+        const int *sizes() const;
+        int dims() const;
+
         Mat m;
     };
 
@@ -179,8 +185,8 @@ namespace dnn
     };
 
     //registers layer on module load time
-    #define REGISTER_LAYER(type, constuctorFunc) \
-    static _LayerRegisterer __layerRegisterer_##type(#type, func);
+    #define REGISTER_LAYER_FUNC(type, constuctorFunc) \
+    static _LayerRegisterer __layerRegisterer_##type(#type, constuctorFunc);
 
     #define REGISTER_LAYER_CLASS(type, class)                       \
     Ptr<Layer> __layerRegisterer_func_##type(LayerParams &params)   \

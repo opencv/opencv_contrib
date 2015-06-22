@@ -133,13 +133,6 @@ struct LayerOutId
     LayerOutId() {}
     LayerOutId(int layerId, int outputId, const String &outputName = String()) 
         : lid(layerId), oid(outputId), name(outputName) {}
-
-    struct UnaryMatchName
-    {   
-        const String &name;
-        UnaryMatchName(const String &_name) : name(_name) {}
-        bool operator()(const String &other) { return name == other; }
-    };
 };
 
 struct LayerData
@@ -247,7 +240,7 @@ struct Net::Impl
             for (size_t oi = 0; oi < ld.outputNames.size() && count < maxCount; oi++)
             {
                 if (ld.outputNames[oi] == name)
-                    found[count++] = LayerOutId(lid, oi);
+                    found[count++] = LayerOutId(lid, (int)oi);
             }
         }
 
@@ -261,7 +254,6 @@ struct Net::Impl
         MapIdToLayerData::iterator it;
         for (it = layers.begin(); it != layers.end(); it++)
         {
-            int lid = it->first;
             LayerData &ld = it->second;
 
             ld.inputBlobs.resize(ld.inputNames.size());
@@ -402,6 +394,8 @@ struct Net::Impl
         }
 
         LayerData &ld = layers[layerId];
+
+        //forward parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
         {
             LayerData &ild = layers[*i];
@@ -410,8 +404,16 @@ struct Net::Impl
             {
                 if (ild.layerInstance)
                     ild.layerInstance->forward(ild.inputBlobs, ild.outputBlobs);
-                ild.flag = true;
+                ild.flag = 1;
             }
+        }
+
+        //forward itself
+        if (!ld.flag)
+        {
+            if (ld.layerInstance)
+                ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
+            ld.flag = 1;
         }
     }
 

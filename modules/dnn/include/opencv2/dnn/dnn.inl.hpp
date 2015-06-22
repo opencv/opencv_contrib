@@ -40,7 +40,7 @@ namespace dnn
         return m.size[m.dims-2];
     }
 
-    inline Size Blob::size() const
+    inline Size Blob::size2() const
     {
         return Size(cols(), rows());
     }
@@ -63,10 +63,24 @@ namespace dnn
         return Vec4i(m.size.p);
     }
 
-    inline size_t Blob::total() const
+    inline int Blob::size(int index) const
     {
-        CV_DbgAssert(m.dims == 4);
-        return (size_t) m.size[0] * m.size[1] * m.size[2] * m.size[3];
+        CV_Assert(index >= 0 && index < dims());
+        return sizes()[index];
+    }
+
+    inline size_t Blob::total(int startAxis, int endAxis) const
+    {
+        if (endAxis == -1)
+            endAxis = dims();
+
+        CV_Assert(0 <= startAxis && startAxis <= endAxis && endAxis <= dims());
+
+        size_t size = 1; //assume that blob isn't empty
+        for (int i = startAxis; i < endAxis; i++)
+            size *= (size_t) sizes()[i];
+
+        return size;
     }
 
     inline uchar* Blob::rawPtr(int num, int cn, int row, int col)
@@ -81,6 +95,33 @@ namespace dnn
         CV_Assert(m.type() == cv::DataType<TFloat>::type && m.dims == 4);
         return (TFloat*) rawPtr(num, cn, row, col);
     }
+
+    inline int Blob::type() const
+    {
+        return m.depth();
+    }
+
+    inline bool Blob::isFloat() const
+    {
+        return (type() == CV_32F);
+    }
+
+    inline bool Blob::isDouble() const
+    {
+        return (type() == CV_32F);
+    }
+
+    inline const int * Blob::sizes() const
+    {
+        return &m.size[0];
+    }
+
+    inline int Blob::dims() const
+    {
+        return m.dims;
+    }
+
+
 
 }
 }
