@@ -109,6 +109,11 @@ enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
  *   number of bits per marker (default 0.5).
+ * - minOtsuStdDev: minimun standard deviation in pixels values during the decodification step to
+ *   apply Otsu thresholding (otherwise, all the bits are set to 0 or 1 depending on mean higher
+ *   than 128 or not) (default 5.0)
+ * - errorCorrectionRate error correction rate respect to the maximun error correction capability
+ *   for each dictionary. (default 0.6).
  */
 struct DetectorParameters {
 
@@ -129,6 +134,8 @@ struct DetectorParameters {
     int perspectiveRemovePixelPerCell;
     double perspectiveRemoveIgnoredMarginPerCell;
     double maxErroneousBitsInBorderRate;
+    double minOtsuStdDev;
+    double errorCorrectionRate;
 };
 
 

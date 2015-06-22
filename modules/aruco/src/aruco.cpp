@@ -76,7 +76,9 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
                                            markerBorderBits(1),
                                            perspectiveRemovePixelPerCell(8),
                                            perspectiveRemoveIgnoredMarginPerCell(0.13),
-                                           maxErroneousBitsInBorderRate(0.5) {
+                                           maxErroneousBitsInBorderRate(0.5),
+                                           minOtsuStdDev(5.0),
+                                           errorCorrectionRate(0.6) {
 
 }
 
@@ -310,7 +312,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
   * the border
   */
 cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int markerBorderBits,
-                     int cellSize, double cellMarginRate) {
+                     int cellSize, double cellMarginRate, double minStdDevOtsu) {
 
     CV_Assert(_image.getMat().channels() == 1);
     CV_Assert(_corners.total() == 4);
@@ -333,11 +335,14 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
 
     cv::Mat bits(markerSizeWithBorders, markerSizeWithBorders, CV_8UC1, cv::Scalar::all(0));
 
+    // check if standard deviation is enough to apply Otsu
+    // if not enough, it probably means all bits are the same color (black or white)
+    cv::Mat mean, stddev;
+    // Remove some border just to avoid border noise from perspective transformation
     cv::Mat innerRegion = resultImg.colRange(cellSize/2, resultImg.cols-cellSize/2).
                                      rowRange(cellSize/2, resultImg.rows-cellSize/2);
-    cv::Mat mean, stddev;
     cv::meanStdDev(innerRegion, mean, stddev);
-    if (stddev.ptr<double>(0)[0] < 5) {
+    if (stddev.ptr<double>(0)[0] < minStdDevOtsu) {
         // all black or all white, anyway it is invalid, return all 0
         if (mean.ptr<double>(0)[0] > 127)
             bits.setTo(1);
@@ -410,7 +415,8 @@ bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOut
     cv::Mat candidateBits = _extractBits(_image, _corners, dictionary.markerSize,
                                          params.markerBorderBits,
                                          params.perspectiveRemovePixelPerCell,
-                                         params.perspectiveRemoveIgnoredMarginPerCell);
+                                         params.perspectiveRemoveIgnoredMarginPerCell,
+                                         params.minOtsuStdDev);
     int maximumErrorsInBorder = dictionary.markerSize * dictionary.markerSize *
                                 params.maxErroneousBitsInBorderRate;
     int borderErrors = _getBorderErrors(candidateBits, dictionary.markerSize,
@@ -424,7 +430,7 @@ bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOut
                                candidateBits.rows - params.markerBorderBits);
 
     int rotation;
-    if (!dictionary.identify(onlyBits, idx, rotation))
+    if (!dictionary.identify(onlyBits, idx, rotation, params.errorCorrectionRate))
         return false;
     else {
         if (rotation != 0) {

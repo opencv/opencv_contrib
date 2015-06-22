@@ -111,9 +111,11 @@ class DictionaryData {
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
      * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool identify(const cv::Mat &onlyBits, int &idx, int &rotation) const {
+    bool identify(const cv::Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
 
         CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
+
+        int maxCorrectionRecalculed = maxCorrectionBits * maxCorrectionRate;
 
         // get as a byte list
         cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
@@ -140,7 +142,7 @@ class DictionaryData {
             }
 
             // if maxCorrection is fullfilled, return this one
-            if (currentMinDistance <= maxCorrectionBits ) {
+            if (currentMinDistance <= maxCorrectionRecalculed ) {
                 idx = m;
                 rotation = currentRotation;
                 break;
