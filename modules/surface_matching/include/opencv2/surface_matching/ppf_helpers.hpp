@@ -70,6 +70,14 @@ CV_EXPORTS Mat loadPLYSimple(const char* fileName, int withNormals);
 */
 CV_EXPORTS void writePLY(Mat PC, const char* fileName);
 
+/**
+*  @brief Used for debbuging pruposes, writes a point cloud to a PLY file with the tip
+*  of the normal vectors as visible red points
+*  @param [in] PC Input point cloud
+*  @param [in] fileName The PLY model file to write
+*/
+CV_EXPORTS void writePLYVisibleNormals(Mat PC, const char* fileName);
+
 Mat samplePCUniform(Mat PC, int sampleStep);
 Mat samplePCUniformInd(Mat PC, int sampleStep, std::vector<int>& indices);
 

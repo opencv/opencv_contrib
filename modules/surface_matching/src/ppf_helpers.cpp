@@ -163,6 +163,62 @@ void writePLY(Mat PC, const char* FileName)
   return;
 }
 
+void writePLYVisibleNormals(Mat PC, const char* FileName)
+{
+  std::ofstream outFile(FileName);
+
+  if (!outFile)
+  {
+    //cerr << "Error opening output file: " << FileName << "!" << endl;
+    printf("Error opening output file: %s!\n", FileName);
+    exit(1);
+  }
+
+  ////
+  // Header
+  ////
+
+  const int pointNum = (int)PC.rows;
+  const int vertNum = (int)PC.cols;
+  const bool hasNormals = vertNum == 6;
+
+  outFile << "ply" << std::endl;
+  outFile << "format ascii 1.0" << std::endl;
+  outFile << "element vertex " << (hasNormals? 2*pointNum:pointNum) << std::endl;
+  outFile << "property float x" << std::endl;
+  outFile << "property float y" << std::endl;
+  outFile << "property float z" << std::endl;
+  if (hasNormals)
+  {
+    outFile << "property uchar red" << std::endl;
+    outFile << "property uchar green" << std::endl;
+    outFile << "property uchar blue" << std::endl;
+  }
+  outFile << "end_header" << std::endl;
+
+  ////
+  // Points
+  ////
+
+  for (int pi = 0; pi < pointNum; ++pi)
+  {
+    const float* point = (float*)(&PC.data[pi*PC.step]);
+
+    outFile << point[0] << " " << point[1] << " " << point[2];
+
+    if (hasNormals)
+    {
+      outFile << " 127 127 127" << std::endl;
+      outFile << point[0]+point[3] << " " << point[1]+point[4] << " " << point[2]+point[5];
+      outFile << " 255 0 0";
+    }
+
+    outFile << std::endl;
+  }
+
+  return;
+}
+
 Mat samplePCUniform(Mat PC, int sampleStep)
 {
   int numRows = PC.rows/sampleStep;
