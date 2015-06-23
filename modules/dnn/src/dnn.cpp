@@ -339,48 +339,57 @@ struct Net::Impl
             std::cout << layers[netOutputs[i]].name << std::endl;
     }
 
-    void allocateOutputBlobs()
+    void allocateLayer(int lid)
     {
-        MapIdToLayerData::iterator it;
-        for (it = layers.begin(); it != layers.end(); it++)
+        LayerData &ld = layers[lid];
+
+        //already allocated
+        if (ld.flag)
+            return;
+        
+        //allocate parents
+        for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
+            allocateLayer(*i);
+
+        //create instance
+        if (ld.layerInstance == NULL && lid != 0)
         {
-            LayerData &ld = it->second;
-            ld.outputBlobs.resize(ld.outputNames.size());
+            ld.layerInstance = LayerRegister::createLayerInstance(ld.type, ld.params);
+            if (ld.layerInstance == NULL)
+            {
+                std::cerr << "Can't create layer \"" << ld.name << "\" of type \"" << ld.type << "\"" << std::endl;
+            }
         }
+
+        //bind inputs
+        ld.inputBlobs.resize(ld.inputBlobsId.size());
+        for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
+        {
+            int srcLId = ld.inputBlobsId[i].lid;
+            int srcOId = ld.inputBlobsId[i].oid;
+            ld.inputBlobs[i] = &layers[srcLId].outputBlobs[srcOId];
+        }
+
+        //allocate layer
+        ld.outputBlobs.resize(ld.outputNames.size());
+        if (ld.layerInstance)
+            ld.layerInstance->allocate(ld.inputBlobs, ld.outputBlobs);
+
+        //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape() << std::endl;
+
+        ld.flag = 1;
     }
 
     void allocateLayers()
     {
-        allocateOutputBlobs();
-
         MapIdToLayerData::iterator it;
+        for (it = layers.begin(); it != layers.end(); it++)
+            it->second.flag = 0;
+
         for (it = layers.begin(); it != layers.end(); it++)
         {
             int lid = it->first;
-            LayerData &ld = it->second;
-
-            //create instance
-            if (ld.layerInstance == NULL && lid != 0)
-            {
-                ld.layerInstance = LayerRegister::createLayerInstance(ld.type, ld.params);
-                if (ld.layerInstance == NULL)
-                {
-                    std::cerr << "Can't create layer \"" << ld.name << "\" of type \"" << ld.type << "\"" << std::endl;
-                }
-            }
-
-            //bind inputs
-            ld.inputBlobs.resize(ld.inputBlobsId.size());
-            for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
-            {
-                int srcLId = ld.inputBlobsId[i].lid;
-                int srcOId = ld.inputBlobsId[i].oid;
-                ld.inputBlobs[i] = &layers[srcLId].outputBlobs[srcOId];
-            }
-
-            //allocate layer
-            if (ld.layerInstance)
-                ld.layerInstance->allocate(ld.inputBlobs, ld.outputBlobs);
+            allocateLayer(lid);
         }
     }
 
@@ -395,26 +404,23 @@ struct Net::Impl
 
         LayerData &ld = layers[layerId];
 
+        //already was forwarded
+        if (ld.flag)
+            return;
+
         //forward parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
         {
-            LayerData &ild = layers[*i];
-
-            if (!ild.flag)
-            {
-                if (ild.layerInstance)
-                    ild.layerInstance->forward(ild.inputBlobs, ild.outputBlobs);
-                ild.flag = 1;
-            }
+            forwardLayer(*i, false);
         }
 
         //forward itself
-        if (!ld.flag)
-        {
-            if (ld.layerInstance)
-                ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
-            ld.flag = 1;
-        }
+        if (ld.layerInstance && layerId != 0)
+            ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
+
+        //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape() << std::endl;
+
+        ld.flag = 1;
     }
 
     void forwardAll()
@@ -496,8 +502,9 @@ void Net::setBlob(BlobId outputName, const Blob &blob)
     if (!impl->findOutputsByName(name, &found, 1))
         CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
 
-    impl->allocateOutputBlobs();
-    impl->layers[found.lid].outputBlobs[found.oid] = blob;
+    LayerData &ld = impl->layers[found.lid];
+    ld.outputBlobs.resize(ld.outputNames.size());
+    ld.outputBlobs[found.oid] = blob;
 }
 
 Blob Net::getBlob(BlobId outputName)
@@ -508,8 +515,8 @@ Blob Net::getBlob(BlobId outputName)
     if (!impl->findOutputsByName(name, &found, 1))
         CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
 
-    impl->allocateOutputBlobs();
-    return impl->layers[found.lid].outputBlobs[found.oid];
+    LayerData &ld = impl->layers[found.lid];
+    return ld.outputBlobs[found.oid];
 }
 
 Importer::~Importer()

@@ -28,14 +28,14 @@ TEST(ReadCaffePrototxt_gtsrb, Accuracy)
 
     Mat img = imread(getTestFile("sign_50.ppm"));
     CV_Assert(!img.empty());
-    img.convertTo(img, CV_32F, 1.0/255);
+    img.convertTo(img, CV_32F, 1.0 / 255);
     resize(img, img, cv::Size(48, 48));
     Blob imgBlob(img);
 
     net.setBlob("input", imgBlob);
     net.forward();
 
-    Blob res = net.getBlob("layer8");
+    Blob res = net.getBlob("loss");
     for (int n = 0; n < 1; n++)
     {
         Mat slice = Mat(res.channels() * res.rows(), res.cols(), CV_32F, res.ptr<float>(n));
@@ -44,7 +44,8 @@ TEST(ReadCaffePrototxt_gtsrb, Accuracy)
         std::vector<int> maxIdx;
         minMaxLoc(slice, NULL, &maxv, NULL, &maxIdx);
 
-        std::cout << "Best class: #" << maxIdx[0] << std::endl;
+        int bestClass = maxIdx[0];
+        std::cout << "Best class: #" <<  bestClass << std::endl;
 
         //imwrite(getTestFile("vis.png"), slice*(255.0 / maxv));
     }

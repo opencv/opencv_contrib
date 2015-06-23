@@ -96,7 +96,7 @@ namespace dnn
 
             for (int cn = 0; cn < channels; cn++)
             {
-                cv::accumulateSquare(srcBlob.getMat(), accum);
+                cv::accumulateSquare(srcBlob.getMat(n, cn), accum);
             }
 
             accum.convertTo(accum, accum.type(), alpha/channels, 1);

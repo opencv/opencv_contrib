@@ -61,7 +61,7 @@ namespace dnn
         Blob &weightBlob = learnedParams[0];
 
         inCn = inputs[0]->channels();
-        CV_Assert(inCn % group == 0 && weightBlob.channels() == inCn);
+        CV_Assert(inCn % group == 0 && weightBlob.channels() == inCn/group);
 
         inH = inputs[0]->rows();
         inW = inputs[0]->cols();

@@ -110,7 +110,7 @@ namespace
                 const FieldDescriptor *fd = msgDesc->field(fieldId);
 
                 bool hasData =  fd->is_required() || 
-                               (fd->is_optional() && (msgRefl->HasField(msg, fd) || fd->has_default_value())) ||
+                               (fd->is_optional() && (msgRefl->HasField(msg, fd) /*|| fd->has_default_value()*/)) ||
                                (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
 
                 if ( !hasData || skipCaffeLayerParam(fd) )
