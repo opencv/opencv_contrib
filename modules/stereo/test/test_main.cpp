@@ -40,13 +40,6 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#include "test_precomp.hpp"
 
-/** @defgroup xphoto Additional photo processing algorithms
-*/
-
-#include "xphoto/inpainting.hpp"
-#include "xphoto/white_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#endif
+CV_TEST_MAIN("cv")
