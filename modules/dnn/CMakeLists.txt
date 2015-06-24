@@ -42,7 +42,7 @@ _dnn_find_protobuf()
 find_package( OpenCV 3.0 REQUIRED )
 
 file(GLOB_RECURSE MODULE_SOURCES "src/*.cpp")
-file(GLOB_RECURSE MODULE_HEADERS "src/*.hpp" "src/*.h")
+file(GLOB_RECURSE MODULE_HEADERS "src/*.hpp" "src/*.h" "include/*.h*")
 file(GLOB_RECURSE MODULE_TEST_SOURCES "test/*.cpp" "test/*.hpp" "test/*.h")
 
 include_directories(include ${OpenCV_INCLUDE_DIRS})
