@@ -109,7 +109,7 @@ namespace dnn
         virtual String getInputName(int inputNum);
         virtual String getOutputName(int outputNum);
     };
-    
+
     //containers for String and int
     typedef DictValue LayerId;
     typedef DictValue BlobId;
@@ -124,7 +124,7 @@ namespace dnn
         int addLayer(const String &name, const String &type, LayerParams &params);
         int getLayerId(LayerId layer);
         void deleteLayer(LayerId layer);
-        
+
         //each output of each layer can be labeled by unique string label (as in Caffe)
         //if label not specified then %layer_name%.%layer_output_id% can be used
         void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
@@ -145,7 +145,7 @@ namespace dnn
 
         void setBlob(BlobId outputName, const Blob &blob);
         Blob getBlob(BlobId outputName);
-        
+
         void setParam(LayerId layer, int numParam, const Blob &blob);
         void getParam(LayerId layer, int numParam);
 

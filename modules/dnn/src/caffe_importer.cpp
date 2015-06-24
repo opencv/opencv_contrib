@@ -26,7 +26,7 @@ namespace
     {
         caffe::NetParameter net;
         caffe::NetParameter netBinary;
- 
+
     public:
 
         CaffeImporter(const char *pototxt, const char *caffeModel)
@@ -69,7 +69,7 @@ namespace
             const std::string &name = field->name();
 
             std::cout << field->type_name() << " " << name << ":";
-            
+
             #define GET_FIRST(Type) (isRepeated ? msgRefl->GetRepeated##Type(msg, field, 0) : msgRefl->Get##Type(msg, field))
 
             switch (type)
@@ -97,7 +97,7 @@ namespace
                 break;
             }
 
-            std::cout << std::endl; 
+            std::cout << std::endl;
         }
 
         void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params)
@@ -109,7 +109,7 @@ namespace
             {
                 const FieldDescriptor *fd = msgDesc->field(fieldId);
 
-                bool hasData =  fd->is_required() || 
+                bool hasData =  fd->is_required() ||
                                (fd->is_optional() && (msgRefl->HasField(msg, fd) /*|| fd->has_default_value()*/)) ||
                                (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
 
@@ -119,7 +119,7 @@ namespace
                 if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE)
                 {
                     if (fd->is_repeated()) //Extract only first item!
-                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params); 
+                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params);
                     else
                         extractLayerParams(msgRefl->GetMessage(msg, fd), params);
                 }
@@ -218,7 +218,7 @@ namespace
 
                 extractLayerParams(layer, layerParams);
                 extractBinaryLayerParms(layer, layerParams);
-                
+
                 int id = dstNet.addLayer(name, type, layerParams);
                 dstNet.setOutputNames(id, tops);
 

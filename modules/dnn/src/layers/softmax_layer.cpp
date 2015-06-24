@@ -32,7 +32,7 @@ namespace dnn
     void SoftMaxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
         CV_Assert(inputs.size() == 1);
-        
+
         Vec4i shape = inputs[0]->shape();
         outputs.resize(1);
         outputs[0].create(shape);
@@ -91,7 +91,7 @@ namespace dnn
         {
             size_t srcOffset = outerDim * outerStep;
             size_t bufOffset = outerDim * cnStep;
-            
+
             //sum exp along axis
             for (size_t i = 0; i < innerSize; i++)
                 bufPtr[bufOffset + i] = 0.f;

@@ -131,7 +131,7 @@ struct LayerOutId
     String name;
 
     LayerOutId() {}
-    LayerOutId(int layerId, int outputId, const String &outputName = String()) 
+    LayerOutId(int layerId, int outputId, const String &outputName = String())
         : lid(layerId), oid(outputId), name(outputName) {}
 };
 
@@ -323,7 +323,7 @@ struct Net::Impl
     void computeNetOutputs()
     {
         netOutputs.clear();
-        
+
         MapIdToLayerData::iterator it;
         for (it = layers.begin(); it != layers.end(); it++)
         {
@@ -346,7 +346,7 @@ struct Net::Impl
         //already allocated
         if (ld.flag)
             return;
-        
+
         //allocate parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
             allocateLayer(*i);
@@ -461,7 +461,7 @@ int Net::addLayer(const String &name, const String &type, LayerParams &params)
 
 void Net::connect(BlobId input, BlobId output)
 {
-    
+
 }
 
 void Net::setOutputNames(LayerId layer, const std::vector<String> &outputNames)

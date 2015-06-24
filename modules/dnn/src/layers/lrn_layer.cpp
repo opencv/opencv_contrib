@@ -24,7 +24,7 @@ namespace dnn
         void spatialNormalization(Blob &src, Blob &dst);
 
     public:
-        
+
         LRNLayer(LayerParams &params);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
@@ -101,7 +101,7 @@ namespace dnn
 
             accum.convertTo(accum, accum.type(), alpha/channels, 1);
             cv::pow(accum, beta, accum);
-            
+
             for (int cn = channels - 1; cn >= 0; cn--)
             {
                 cv::divide(srcBlob.getMat(n, cn), accum, dstBlob.getMat(n, cn));

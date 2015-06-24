@@ -44,13 +44,13 @@ namespace dnn
     {
         return Size(cols(), rows());
     }
-    
+
     inline int Blob::channels() const
     {
         CV_DbgAssert(m.dims >= 3);
         return m.size[m.dims-3];
     }
-    
+
     inline int Blob::num() const
     {
         CV_DbgAssert(m.dims == 4);

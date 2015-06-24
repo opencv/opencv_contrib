@@ -10,7 +10,7 @@ namespace dnn
 {
     class PoolingLayer : public Layer
     {
-        enum 
+        enum
         {
             MAX,
             AVE,

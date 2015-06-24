@@ -27,12 +27,12 @@ class GLogWrapper
 
 public:
 
-    GLogWrapper(const char *_file, const char *_func, int _line, 
-                const char *_type, 
+    GLogWrapper(const char *_file, const char *_func, int _line,
+                const char *_type,
                 const char *_cond_str = NULL, bool _cond_status = true
                ) :
-               stream(selectStream(_type)), 
-               file(_file), func(_func), line(_line), 
+               stream(selectStream(_type)),
+               file(_file), func(_func), line(_line),
                type(_type), cond_str(_cond_str), cond_staus(_cond_status) {}
 
     template<typename T>

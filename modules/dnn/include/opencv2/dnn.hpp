@@ -9,5 +9,3 @@
 
 
 #endif /* __OPENCV_DNN_HPP__ */
-
-

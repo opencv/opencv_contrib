@@ -61,7 +61,7 @@ int main(void)
 
     Blob probBlob = net.getBlob("prob");
     ClassProb bc = getMaxClass(probBlob);
-    
+
     initClassesNames();
     std::string className = (bc.first < (int)CLASES_NAMES.size()) ? CLASES_NAMES[bc.first] : "unnamed";
 
@@ -71,6 +71,6 @@ int main(void)
     std::cout << " \"" + className << "\"";
     std::cout <<  std::endl;
     std::cout << "Prob: " << bc.second * 100 << "%" << std::endl;
-    
+
     return 0;
 }
