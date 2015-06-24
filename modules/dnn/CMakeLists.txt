@@ -49,7 +49,7 @@ include_directories(include ${OpenCV_INCLUDE_DIRS})
 add_library(_opencv_dnn SHARED ${MODULE_SOURCES} ${MODULE_HEADERS} ${PROTO_FILES} ${PROTO_HDRS})
 add_executable(_opencv_test_dnn ${MODULE_TEST_SOURCES})
 target_link_libraries(_opencv_dnn ${OpenCV_LIBS} ${PROTOBUF_LIBRARIES})
-target_link_libraries(_opencv_test_dnn ${OpenCV_LIBS})
+target_link_libraries(_opencv_test_dnn _opencv_dnn opencv_ts)
 target_include_directories(_opencv_dnn PRIVATE src src/caffe ${PROTOBUF_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 endif()
