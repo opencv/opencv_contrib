@@ -168,10 +168,14 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
+    double totalTime = 0;
+    int totalIterations = 0;
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
+        
+        double tick = (double)cv::getTickCount();
 
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners, rejected;
@@ -183,15 +187,23 @@ int main(int argc, char *argv[]) {
             cv::aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs,
                                                  rvecs, tvecs);
 
+        double currentTime = ((double)cv::getTickCount()-tick)/cv::getTickFrequency();
+        totalTime += currentTime;
+        totalIterations++;
+        if(totalIterations%30 == 0) {
+            std::cout << "Detection Time = " << currentTime*1000 << " ms " <<
+                         "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << std::endl;            
+        }
+            
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
-        if (estimatePose) {
-            for (int i = 0; i < ids.size(); i++)
-                    cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], 
-                                        tvecs[i], markerLength*0.5);
+            if (estimatePose) {
+                for (int i = 0; i < ids.size(); i++)
+                        cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], 
+                                            tvecs[i], markerLength*0.5);
             }
         }            
 
