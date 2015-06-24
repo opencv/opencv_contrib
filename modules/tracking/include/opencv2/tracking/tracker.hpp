@@ -1191,6 +1191,16 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
 
 //! @}
 
+class CV_EXPORTS_W MultiTracker
+{
+ public:
+  bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
+  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
+ protected:
+  std::vector< Ptr<Tracker> > trackerList;
+  std::vector<Rect2d> objects;
+};
+
 } /* namespace cv */
 
 #endif
