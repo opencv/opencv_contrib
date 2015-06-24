@@ -1191,8 +1191,8 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
  * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).
- * The original paper of KCF is available at <http://home.isr.uc.pt/~henriques/circulant/index.html> 
- * as well as the matlab implementation. For more information about KCF with color-names features, please refer to 
+ * The original paper of KCF is available at <http://home.isr.uc.pt/~henriques/circulant/index.html>
+ * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
  * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.
  */
 class CV_EXPORTS_W TrackerKCF : public Tracker
@@ -1202,21 +1202,21 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
   struct CV_EXPORTS Params
   {
     Params();
-    
+
     /**
      * \brief Read parameters from file, currently unused
      */
     void read( const FileNode& /*fn*/ );
-    
+
     /**
      * \brief Read parameters from file, currently unused
      */
     void write( FileStorage& /*fs*/ ) const;
-    
+
     double sigma;                 //!<  gaussian kernel bandwidth
     double lambda;                //!<  regularization
     double interp_factor;         //!<  linear interpolation factor for adaptation
-    double output_sigma_factor;   //!<  spatial bandwidth (proportional to target) 
+    double output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
     double pca_learning_rate;     //!<  compression learning rate
     bool resize;                  //!<  activate the resize feature to improve the processing speed
     bool splitCoeff;              //!<  split the training coefficients into two matrices
