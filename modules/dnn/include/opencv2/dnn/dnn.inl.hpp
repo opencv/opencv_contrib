@@ -90,10 +90,11 @@ namespace dnn
     }
 
     template<typename TFloat>
-    TFloat *Blob::ptr(int num, int cn, int row, int col)
+    TFloat *Blob::ptr(int n, int cn, int row, int col)
     {
-        CV_Assert(m.type() == cv::DataType<TFloat>::type && m.dims == 4);
-        return (TFloat*) rawPtr(num, cn, row, col);
+        CV_Assert(m.type() == cv::DataType<TFloat>::type);
+        CV_Assert(0 <= n && n < num() && 0 <= cn && cn < channels() && 0 <= row && row < rows() && 0 <= col && col < cols());
+        return (TFloat*) rawPtr(n, cn, row, col);
     }
 
     inline int Blob::type() const

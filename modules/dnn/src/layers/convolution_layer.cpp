@@ -5,7 +5,6 @@ namespace cv
 {
 namespace dnn
 {
-    //TODO: implement group parameter
     //TODO: simultaneously convolution and bias addition for cache optimization
     class ConvolutionLayer : public Layer
     {
@@ -15,10 +14,11 @@ namespace dnn
         int strideH, strideW;
         int kernelH, kernelW;
 
-        int inH, inW, inCn, colCn;
+        int inH, inW, inCn, kerSize;
         int outH, outW;
+        int groupCn, groupCnOut;
 
-        Mat imColsMat, biasOnesMat;
+        Mat srcColsMat, biasOnesMat;
 
         void computeOutputShape(int inH, int inW);
 
@@ -61,7 +61,9 @@ namespace dnn
         Blob &weightBlob = learnedParams[0];
 
         inCn = inputs[0]->channels();
-        CV_Assert(inCn % group == 0 && weightBlob.channels() == inCn/group);
+        CV_Assert(inCn % group == 0 && numOutput % group == 0 && weightBlob.channels() == inCn/group);
+        groupCnOut = numOutput / group;
+        groupCn = inCn / group;
 
         inH = inputs[0]->rows();
         inW = inputs[0]->cols();
@@ -76,8 +78,8 @@ namespace dnn
             outputs[i].create(num, numOutput, outH, outW);
         }
 
-        colCn = kernelH * kernelW * inCn;
-        imColsMat.create(colCn, outH * outW, CV_32F);
+        kerSize = kernelH * kernelW * groupCn;
+        srcColsMat.create(kerSize, outH * outW, CV_32F);
 
         if (bias)
         {
@@ -117,32 +119,35 @@ namespace dnn
     {
         CV_Assert(inputs.size() == outputs.size());
 
-        float *colPtr = imColsMat.ptr<float>();
-        float *weigtsPtr = learnedParams[0].ptr<float>();
-        float *biasPtr = (bias) ? learnedParams[1].ptr<float>() : NULL;
-
-        CV_Assert(group == 1);
+        float *srcColPtr = srcColsMat.ptr<float>();
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
-            int num = inputs[ii]->num();
+            Blob &input = *inputs[ii];
+            Blob &output = outputs[ii];
+            int num = input.num();
 
             for (int n = 0; n < num; n++)
             {
-                float *srcImPtr = inputs[ii]->ptr<float>(n);
-                float *dstImPtr = outputs[ii].ptr<float>(n);
-
-                im2col_cpu(srcImPtr, inCn, inH, inW, kernelH, kernelW, padH, padW, strideH, strideW, colPtr);
-
-                Mat weightsMat(numOutput, colCn, CV_32F, weigtsPtr);
-                Mat dstIm(numOutput, outH*outW, CV_32F, dstImPtr);
-
-                cv::gemm(weightsMat, imColsMat, 1, noArray(), 0, dstIm);
-
-                if (bias)
+                for (int g = 0; g < group; g++)
                 {
-                    Mat biasMat(numOutput, 1, CV_32F, biasPtr);
-                    cv::gemm(biasMat, biasOnesMat, 1, dstIm, 1, dstIm);
+                    float *srcPtr = input.ptr<float>(n, g*groupCn);
+                    im2col_cpu(srcPtr, groupCn, inH, inW, kernelH, kernelW, padH, padW, strideH, strideW, srcColPtr);
+
+                    float *kerPtr = learnedParams[0].ptr<float>(g*groupCnOut);
+                    float *dstPtr = output.ptr<float>(n, g*groupCnOut);
+
+                    Mat kerMat(groupCnOut, kerSize, CV_32F, kerPtr);
+                    Mat dstMat(groupCnOut, outH*outW, CV_32F, dstPtr);
+
+                    cv::gemm(kerMat, srcColsMat, 1, noArray(), 0, dstMat);
+
+                    if (bias)
+                    {
+                        float *biasPtr = learnedParams[1].ptr<float>() + g*groupCnOut;
+                        Mat biasMat(groupCnOut, 1, CV_32F, biasPtr);
+                        cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
+                    }
                 }
             }
         }
