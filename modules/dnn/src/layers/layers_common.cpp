@@ -41,7 +41,7 @@ void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH,
         strideH = strideW = params.get<int>("stride", 1);
     }
 
-    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 & strideW > 0);
+    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0);
 }
 
 }

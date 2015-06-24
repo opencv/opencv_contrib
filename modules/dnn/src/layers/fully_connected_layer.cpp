@@ -12,7 +12,7 @@ namespace dnn
         int numOutputs;
 
         int inC, inH, inW;
-        size_t inSize;
+        int inSize;
 
     public:
         FullyConnectedLayer(LayerParams &params);

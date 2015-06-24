@@ -53,7 +53,7 @@ public:
 
     bool has(const String &name)
     {
-        return dict.count(name);
+        return dict.count(name) != 0;
     }
 
     DictValue *ptr(const String &name)
@@ -125,7 +125,7 @@ inline double DictValue::get<double>() const
     if (type == cv::Param::REAL)
         return d;
     else if (type == cv::Param::INT)
-        return i;
+        return (double)i;
     else
     {
         CV_Assert(type == cv::Param::REAL || type == cv::Param::INT);
@@ -156,7 +156,7 @@ inline bool DictValue::get<bool>() const
     }
     else if (type == cv::Param::INT)
     {
-        return i;
+        return i != 0;
     }
     else
     {

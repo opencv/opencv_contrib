@@ -59,7 +59,7 @@ namespace dnn
 
     struct TanHFunctor
     {
-        TanHFunctor(LayerParams &params) {}
+        TanHFunctor(LayerParams&) {}
 
         inline float operator()(float x)
         {

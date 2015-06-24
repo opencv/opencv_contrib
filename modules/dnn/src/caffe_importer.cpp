@@ -156,12 +156,12 @@ namespace
             }
 
             dstBlob.create(shape.size(), shape, CV_32F);
-            CV_Assert(protoBlob.data_size() == dstBlob.getMatRef().total());
+            CV_Assert(protoBlob.data_size() == (int)dstBlob.getMatRef().total());
 
             CV_DbgAssert(protoBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
             float *dstData = dstBlob.getMatRef().ptr<float>();
 
-            for (size_t i = 0; i < protoBlob.data_size(); i++)
+            for (int i = 0; i < protoBlob.data_size(); i++)
                 dstData[i] = protoBlob.data(i);
         }
 
@@ -201,7 +201,7 @@ namespace
 
             std::vector<String> layersName(layersSize);
             std::vector<int> layersId(layersSize);
-            std::vector<std::vector<String>> bottomsVec(layersSize);
+            std::vector<std::vector<String> > bottomsVec(layersSize);
 
             for (int li = 0; li < layersSize; li++)
             {
@@ -247,7 +247,7 @@ Ptr<Importer> cv::dnn::createCaffeImporter(const String &prototxt, const String 
 
 #else //HAVE_PROTOBUF
 
-Ptr<Importer> cv::dnn::createCaffeImporter(const String &prototxt, const String &caffeModel)
+Ptr<Importer> cv::dnn::createCaffeImporter(const String&, const String&)
 {
     CV_Error(cv::Error::StsNotImplemented, "libprotobuf required to import data from Caffe models");
     return Ptr<Importer>();

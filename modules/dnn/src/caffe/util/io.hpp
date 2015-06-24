@@ -2,7 +2,7 @@
 #define CAFFE_UTIL_IO_H_
 
 //instead of GLOG
-#include "glog_emulator.hpp"
+#include "../glog_emulator.hpp"
 
 //#include <unistd.h>
 #include <string>

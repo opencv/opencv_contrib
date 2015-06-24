@@ -9,7 +9,7 @@ namespace dnn
     {
     public:
 
-        BlankLayer(LayerParams &params)
+        BlankLayer(LayerParams&)
         {
 
         }

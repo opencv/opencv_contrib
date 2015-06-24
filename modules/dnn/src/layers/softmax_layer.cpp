@@ -50,7 +50,6 @@ namespace dnn
         float *dstPtr = dst.ptr<float>();
         float *bufPtr = maxAggregator.ptr<float>();
 
-        size_t totalSize = src.total();
         size_t outerSize = src.total(0, axis);
         size_t channels = src.size(axis);
         size_t innerSize = src.total(axis + 1, -1);

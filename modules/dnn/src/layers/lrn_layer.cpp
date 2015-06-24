@@ -129,7 +129,7 @@ namespace dnn
                 cv::pow(dst, beta, dst);
                 cv::divide(src, dst, dst);
 
-                CV_DbgAssert(dataDst0 == dst.data);
+                CV_Assert(dataDst0 == dst.data); //debug
             }
         }
     }
