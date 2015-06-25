@@ -70,7 +70,6 @@ namespace cv
 		public:
 			TLDDetector(){}
 			~TLDDetector(){}
-			
 			inline double ensembleClassifierNum(const uchar* data);
 			inline void prepareClassifiers(int rowstep);
 			double Sr(const Mat_<uchar>& patch);
@@ -89,8 +88,8 @@ namespace cv
 			};
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 		protected:
-			
-			
+
+
 
 			friend class MyMouseCallbackDEBUG;
 			void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }

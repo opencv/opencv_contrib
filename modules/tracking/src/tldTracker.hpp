@@ -49,7 +49,7 @@
 #include<algorithm>
 #include<limits.h>
 
-namespace cv 
+namespace cv
 {
 
 TrackerTLD::Params::Params(){}
@@ -60,7 +60,6 @@ void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 namespace tld
 {
-		
 
 class TrackerProxy
 {

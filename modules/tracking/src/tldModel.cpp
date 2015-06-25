@@ -64,13 +64,12 @@ namespace cv
 
 			//Calculate the variance in initial BB
 			originalVariance_ = variance(image(boundingBox));
-			
 			//Find the scale
 			double scale = scaleAndBlur(image, cvRound(log(1.0 * boundingBox.width / (minSize.width)) / log(SCALE_STEP)),
 				scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
 			GaussianBlur(image, image_blurred, GaussBlurKernelSize, 0.0);
 			TLDDetector::generateScanGrid(image.rows, image.cols, minSize_, scanGrid);
-			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale, 
+			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale,
 				boundingBox.height / scale), 10, closest);
 
 			Mat_<uchar> blurredPatch(minSize);
@@ -271,7 +270,7 @@ namespace cv
 		}
 
 
-		
+
 
 	}
 }
