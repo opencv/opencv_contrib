@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -34,25 +34,48 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#ifndef __OPENCV_XIMGPROC_HPP__
-#define __OPENCV_XIMGPROC_HPP__
+#include "perf_precomp.hpp"
 
-#include "ximgproc/edge_filter.hpp"
-#include "ximgproc/disparity_filter.hpp"
-#include "ximgproc/structured_edge_detection.hpp"
-#include "ximgproc/seeds.hpp"
+namespace cvtest
+{
 
-/** @defgroup ximgproc Extended Image Processing
-  @{
-    @defgroup ximgproc_edge Structured forests for fast edge detection
+using std::tr1::tuple;
+using std::tr1::get;
+using namespace perf;
+using namespace testing;
+using namespace cv;
+using namespace cv::ximgproc;
 
-This module contains implementations of modern structured edge detection algorithms, i.e. algorithms
-which somehow takes into account pixel affinities in natural images.
+CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3);
+CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_16SC1, CV_16SC3, CV_32FC1, CV_32FC3);
+typedef tuple<GuideTypes, SrcTypes, Size> FGSParams;
 
-    @defgroup ximgproc_filters Filters
+typedef TestBaseWithParam<FGSParams> FGSFilterPerfTest;
 
-    @defgroup ximgproc_superpixel Superpixels
-  @}
-*/
+PERF_TEST_P( FGSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz720p)) )
+{
+    RNG rng(0);
 
-#endif
+    FGSParams params = GetParam();
+    int guideType   = get<0>(params);
+    int srcType     = get<1>(params);
+    Size sz         = get<2>(params);
+
+    Mat guide(sz, guideType);
+    Mat src(sz, srcType);
+    Mat dst(sz, srcType);
+
+    declare.in(guide, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+
+    cv::setNumThreads(cv::getNumberOfCPUs());
+    TEST_CYCLE_N(10)
+    {
+        double lambda = rng.uniform(500.0, 10000.0);
+        double sigma  = rng.uniform(1.0, 100.0);
+        fastGlobalSmootherFilter(guide,src,dst,lambda,sigma);
+    }
+
+    SANITY_CHECK(dst);
+}
+
+}
