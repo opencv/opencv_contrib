@@ -79,6 +79,7 @@ public:
     // Sets the value for set the value for white threshold
     void setLightThreshold(int val);
 
+    // Generates the images needed for shadowMasks computation
     void getImagesForShadowMasks(InputOutputArray darkImage, InputOutputArray lightImage) const;
 
 private:
@@ -257,6 +258,10 @@ GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages,
                               InputArrayOfArrays lightImages,
                               int flags ) const
 {
+    // Computing shadows mask
+    std::vector<Mat> shadowMasks;
+    computeShadowMasks(darkImages, lightImages, shadowMasks);
+
     // To avoid unused parameters warnings
     (void) patternImages;
     (void) camerasMatrix;
@@ -284,16 +289,62 @@ GrayCodePattern_Impl::computeNumberOfPatternImages()
 void
 GrayCodePattern_Impl::computeShadowMasks(InputArrayOfArrays darkImages, InputArrayOfArrays lightImages, OutputArrayOfArrays shadowMasks) const
 {
-    (void) darkImages;
-    (void) lightImages;
-    (void) shadowMasks;
-    return;
+    std::vector<Mat>& lightImages_ = *(std::vector<Mat>*) lightImages.getObj();
+    std::vector<Mat>& darkImages_ = *(std::vector<Mat>*) darkImages.getObj();
+    std::vector<Mat>& shadowMasks_ = *(std::vector<Mat>*) shadowMasks.getObj();
+
+    shadowMasks_.resize(lightImages_.size());
+
+    int cam_width = lightImages_[0].cols;
+    int cam_height = lightImages_[0].rows;
+
+    for (int k = 0; k < (int) shadowMasks_.size(); k++)
+    {
+          shadowMasks_[k] = Mat(cam_height, cam_width, CV_8U);
+          for(int i=0; i < cam_width; i++)
+          {
+                for(int j=0; j < cam_height; j++)
+                {
+                  // if we read the images as color
+                  //Vec3b lightColor = lightImages_[k].at<Vec3b>(Point(i,j));
+                  //Vec3b darkColor = darkImages_[k].at<Vec3b>(Point(i,j));
+
+                  uchar lightColor = lightImages_[k].at<uchar>(Point(i,j));
+                  uchar darkColor = darkImages_[k].at<uchar>(Point(i,j));
+
+                  //Vec3b ciao = lightColor - darkColor;//if(ciao[0] > darkThreshold)//
+                  if(lightColor - darkColor > darkThreshold)// this works if I read the images as grayscale
+                  {
+                     shadowMasks_[k].at<uchar>(Point(i,j)) =(uchar)1;
+                  }
+                  else
+                  {
+                    shadowMasks_[k].at<uchar>(Point(i,j)) =(uchar)0;
+                  }
+                }
+           }
+
+       // Only for debug purpose
+       cv::Size ns = cv::Size(640, 480);
+       std::ostringstream  name;
+       name << "shadows cam" << k ;
+       cv::Mat tmp;
+       resize(shadowMasks_[k], tmp, ns);
+       imshow(name.str(), 255*tmp);
+
+     }
+
 }
 
-void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray darkImage, InputOutputArray lightImage ) const
+// Generates the images needed for shadowMasks computation
+void
+GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray darkImage, InputOutputArray lightImage ) const
 {
-      (void) darkImage;
-      (void) lightImage;
+    Mat& darkImage_ = *(Mat*)darkImage.getObj();
+    Mat& lightImage_ = *(Mat*)lightImage.getObj();
+
+    darkImage_ = Mat(params.height, params.width, CV_8UC3, _darkColor);
+    lightImage_= Mat(params.height, params.width, CV_8UC3, _lightColor);
 }
 
 // For a (x,y) pixel of the camera returns the corresponding projector pixel'
