@@ -77,6 +77,10 @@ public:
     // vector of chessboard 3D corners precalculated
     std::vector< cv::Point3f > chessboardCorners;
 
+    // for each charuco corner, nearest marker id and nearest marker corner id of each marker
+    std::vector< std::vector<int> > nearestMarkerIds;
+    std::vector< std::vector<int> > nearestMarkerCorners;
+
     /**
      * @brief Draw a ChArUco board
      *
@@ -131,6 +135,8 @@ public:
 
 private:
 
+    void _getNearestMarkerCorners();
+
     // number of markers in X and Y directions
     int _squaresX, _squaresY;
 
@@ -139,6 +145,8 @@ private:
 
     // marker side lenght (normally in meters)
     double _markerLength;
+
+
 
 };
 
