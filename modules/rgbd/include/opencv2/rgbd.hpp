@@ -1006,7 +1006,7 @@ namespace rgbd
   warpFrame(const Mat& image, const Mat& depth, const Mat& mask, const Mat& Rt, const Mat& cameraMatrix,
             const Mat& distCoeff, Mat& warpedImage, Mat* warpedDepth = 0, Mat* warpedMask = 0);
 
-  /** Store point
+  /** Store information of a single point
    */
   struct RgbdPoint
   {
@@ -1017,37 +1017,82 @@ namespace rgbd
     Point2f texture_uv;
   };
 
+  /** A cluster of a depth map. It can be used as both an image and a point cloud.
+   */
   class RgbdCluster
   {
   public:
+    /* mask of the depth image */
     Mat mask;
-    Mat depth; // original depth image
-    Mat points3d; // original 3d points
-    Mat normals; // original normal map
-    Mat pointsIndex; // image to vector point map
+    /* original depth image */
+    Mat depth;
+    /* original 3d points */
+    Mat points3d;
+    /* original normal map */
+    Mat normals;
+    /* image to vector point map */
+    Mat pointsIndex;
+    /* vector of points */
     std::vector<RgbdPoint> points;
-    std::vector<int> faceIndices; // face indices
+    /* indices. Each set of three points forms a triangle. */
+    std::vector<int> faceIndices;
     bool bPlane;
     bool bPointsUpdated;
     bool bFaceIndicesUpdated;
 
+    /** Constructor.
+     */
     RgbdCluster() : bPlane(false), bPointsUpdated(false), bFaceIndicesUpdated(false)
     {
     }
 
+    /** Return the number of valid points.
+     */
     int getNumPoints();
+
+    /** Update `points`. Must be called after `mask` or `depth` is updated.
+     */
     void calculatePoints();
 
-    /** Method
-     * @param depthDiff
+    /** Update `faceIndices`. Must be called after `points` is updated.
+     * @param depthDiff Form a face when depth difference between vertices is less than the value.
      */
     void calculateFaceIndices(float depthDiff = 0.05f);
+
+    /** Update texture coordinates in `points` based on the LSCM algorithm.
+     */
     void unwrapTexCoord();
+
+    /** Save the current mesh to an .obj file.
+     * @param path Output filename.
+     */
     void save(std::string &path);
   };
+
+  /** Delete small clusters.
+   * @param clusters Input clusters.
+   * @param minPoints Delete a cluster with points less than or equal to minPoints.
+   */
   void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints);
+
+  /** Delete empty clusters.
+   * @param clusters Input clusters.
+   */
   void deleteEmptyClusters(std::vector<RgbdCluster>& clusters);
+
+  /** Segment planes and return them with residual cluster.
+   * @param mainCluster Input cluster.
+   * @param clusters Output clusters.
+   * @param maxPlaneNum The maximum number of clusters to extract.
+   * @param minArea Only planes with points more than or equal to this value are extracted (TODO).
+   */
   void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum = 3, int minArea = 400);
+
+  /** Split clusters from a mask image.
+   * @param mainCluster Input cluster.
+   * @param clusters Output clusters.
+   * @param minArea Only clusters with points more than or equal to this value are extracted.
+   */
   void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea = 400);
 
 // TODO Depth interpolation
