@@ -53,6 +53,7 @@ int main(void)
     CV_Assert(!img.empty());
     cvtColor(img, img, COLOR_BGR2RGB);
     img.convertTo(img, CV_32F);
+    resize(img, img, Size(227, 227));
     subtract(img, cv::mean(img), img);
     Blob imgBlob(img);
 

@@ -50,7 +50,7 @@ namespace dnn
         if (bias)
         {
             Blob &biasBlob = learnedParams[1];
-            CV_Assert(biasBlob.total() == numOutput);
+            CV_Assert(biasBlob.total() == (size_t)numOutput);
         }
     }
 

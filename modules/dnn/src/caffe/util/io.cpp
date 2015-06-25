@@ -1,4 +1,5 @@
-#ifdef HAVE_PROTOBUF
+#if HAVE_PROTOBUF
+#include "io.hpp"
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
@@ -29,7 +30,7 @@ using google::protobuf::Message;
 
 bool ReadProtoFromTextFile(const char* filename, Message* proto) {
     std::ifstream fs(filename, std::ifstream::in);
-    CV_Assert(fs.is_open());
+    CHECK(fs.is_open()) << "Can't open \"" << filename << "\"";
     IstreamInputStream input(&fs);
     bool success = google::protobuf::TextFormat::Parse(&input, proto);
     fs.close();
@@ -47,7 +48,7 @@ bool ReadProtoFromTextFile(const char* filename, Message* proto) {
 //
 bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
     std::ifstream fs(filename, std::ifstream::in | std::ifstream::binary);
-    CV_Assert(fs.is_open());
+    CHECK(fs.is_open()) << "Can't open \"" << filename << "\"";
     ZeroCopyInputStream* raw_input = new IstreamInputStream(&fs);
     CodedInputStream* coded_input = new CodedInputStream(raw_input);
     coded_input->SetTotalBytesLimit(kProtoReadBytesLimit, 536870912);

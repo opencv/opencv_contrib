@@ -30,7 +30,7 @@ namespace dnn
         bias = params.get<bool>("bias_term", true);
 
         CV_Assert(params.learnedBlobs.size() >= 1);
-        CV_Assert(!bias || (params.learnedBlobs.size() >= 2 && params.learnedBlobs[1].total() == numOutputs));
+        CV_Assert(!bias || (params.learnedBlobs.size() >= 2 && (int)params.learnedBlobs[1].total() == numOutputs));
 
         learnedParams.resize(bias ? 2 : 1);
         learnedParams[0] = params.learnedBlobs[0];
@@ -49,7 +49,7 @@ namespace dnn
         inW = inputs[0]->cols();
         inSize = inC * inH * inW;
 
-        CV_Assert(inSize * numOutputs == learnedParams[0].total());
+        CV_Assert((size_t)inSize * (size_t)numOutputs == learnedParams[0].total());
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)

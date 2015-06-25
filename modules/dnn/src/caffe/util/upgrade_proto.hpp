@@ -1,5 +1,6 @@
 #ifndef CAFFE_UTIL_UPGRADE_PROTO_H_
 #define CAFFE_UTIL_UPGRADE_PROTO_H_
+#if HAVE_PROTOBUF
 
 #include <string>
 #include "caffe/common.hpp"
@@ -61,4 +62,5 @@ void ReadNetParamsFromBinaryFileOrDie(const string& param_file,
 
 }  // namespace caffe
 
+#endif
 #endif   // CAFFE_UTIL_UPGRADE_PROTO_H_

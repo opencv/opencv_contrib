@@ -335,7 +335,7 @@ struct Net::Impl
         }
 
         std::cout << "\nNet Outputs(" << netOutputs.size() << "):\n";
-        for (int i = 0; i < netOutputs.size(); i++)
+        for (size_t i = 0; i < netOutputs.size(); i++)
             std::cout << layers[netOutputs[i]].name << std::endl;
     }
 
@@ -459,10 +459,10 @@ int Net::addLayer(const String &name, const String &type, LayerParams &params)
     return id;
 }
 
-void Net::connect(BlobId input, BlobId output)
-{
+//void Net::connect(BlobId input, BlobId output)
+//{
 
-}
+//}
 
 void Net::setOutputNames(LayerId layer, const std::vector<String> &outputNames)
 {

@@ -1,5 +1,6 @@
 #ifndef CAFFE_UTIL_IO_H_
 #define CAFFE_UTIL_IO_H_
+#if HAVE_PROTOBUF
 
 //instead of GLOG
 #include "../glog_emulator.hpp"
@@ -141,4 +142,5 @@ void CVMatToDatum(const cv::Mat& cv_img, Datum* datum);
 
 }  // namespace caffe
 
+#endif
 #endif   // CAFFE_UTIL_IO_H_

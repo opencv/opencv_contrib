@@ -5,6 +5,13 @@
 // We are free to change headers layout in dnn subfolder, so please include
 // this header for future compartibility
 
+
+/** @defgroup dnn Deep Neural Network module
+  @{
+    This module contain tools to load artifical neural network models and to make forward test passes.
+  @}
+*/
+
 #include <opencv2/dnn/dnn.hpp>
 
 
