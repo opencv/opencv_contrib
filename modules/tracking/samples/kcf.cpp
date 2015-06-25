@@ -144,8 +144,7 @@ Rect2d BoxExtractor::extract(const std::string& windowName, Mat img){
     // draw the selected object
     rectangle(
       params.image,
-      Point(params.box.x, params.box.y),
-      Point(params.box.x+params.box.width,params.box.y+params.box.height),
+      params.box,
       Scalar(255,0,0),2,1
     );
 
