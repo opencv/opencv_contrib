@@ -1006,6 +1006,50 @@ namespace rgbd
   warpFrame(const Mat& image, const Mat& depth, const Mat& mask, const Mat& Rt, const Mat& cameraMatrix,
             const Mat& distCoeff, Mat& warpedImage, Mat* warpedDepth = 0, Mat* warpedMask = 0);
 
+  /** Store point
+   */
+  struct RgbdPoint
+  {
+  public:
+    Point3f world_xyz;
+    Point3f bgr;
+    Point2i image_xy;
+    Point2f texture_uv;
+  };
+
+  class RgbdCluster
+  {
+  public:
+    Mat mask;
+    Mat depth; // original depth image
+    Mat points3d; // original 3d points
+    Mat normals; // original normal map
+    Mat pointsIndex; // image to vector point map
+    std::vector<RgbdPoint> points;
+    std::vector<int> faceIndices; // face indices
+    bool bPlane;
+    bool bPointsUpdated;
+    bool bFaceIndicesUpdated;
+
+    RgbdCluster() : bPlane(false), bPointsUpdated(false), bFaceIndicesUpdated(false)
+    {
+    }
+
+    int getNumPoints();
+    void calculatePoints();
+
+    /** Method
+     * @param depthDiff
+     */
+    void calculateFaceIndices(float depthDiff = 0.05f);
+    void unwrapTexCoord();
+    void save(std::string &path);
+  };
+  void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints);
+  void deleteEmptyClusters(std::vector<RgbdCluster>& clusters);
+  void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum = 3, int minArea = 400);
+  void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea = 400);
+
 // TODO Depth interpolation
 // Curvature
 // Get rescaleDepth return dubles if asked for
