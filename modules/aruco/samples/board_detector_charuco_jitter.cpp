@@ -135,19 +135,27 @@ double getMeanJitter(const std::vector<cv::Point2f> &measures, const cv::Point2f
 }
 
 
-double getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures, 
-                          const std::vector< cv::Point2f> &sums) {
+void getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
+                        const std::vector< cv::Point2f> &sums, double &mean, double &stddev) {
     
-    double stdDev = 0;
-    int totalMeasures = 0;
+    mean = 0;
+    std::vector<double> errors;
     for(int k=0; k<measures.size(); k++) {
-        cv::Point2f mean = sums[k] / double(measures[k].size());
+        cv::Point2f meanPnt = sums[k] / double(measures[k].size());
         for(int i=0; i<measures[k].size(); i++) {
-            stdDev += cv::norm(measures[k][i] - mean);
-            totalMeasures ++;
+            double currentError = cv::norm(measures[k][i] - meanPnt);
+            mean += currentError;
+            errors.push_back(currentError);
         }        
     }
-    return stdDev / double(totalMeasures);
+    mean = mean / double(errors.size());
+
+    stddev = 0;
+    for(unsigned int i=0; i<errors.size(); i++) {
+        stddev += pow(mean-errors[i], 2);
+    }
+    stddev = sqrt( stddev / double(errors.size()) );
+
 }
 
 
@@ -181,7 +189,8 @@ int main(int argc, char *argv[]) {
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
-    }      
+    }
+    detectorParams.cornerRefinementWinSize = 1;
 
     cv::VideoCapture inputVideo;
     int waitTime;
@@ -216,6 +225,7 @@ int main(int argc, char *argv[]) {
         cornersHistoryTotal[k].resize(board.chessboardCorners.size(), cv::Point2f(0,0));
     
      double meanJitter[3] = {0,0,0};
+     double stddevJitter[3] = {0,0,0};
         
     int iter = 0;
     while (inputVideo.grab()) {
@@ -223,7 +233,7 @@ int main(int argc, char *argv[]) {
         iter ++;
         
         cv::Mat image, imageCopy;
-        inputVideo.retrieve(image);     
+        inputVideo.retrieve(image);
         
         std::vector<int> markerIds, charucoIds[3];
         std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers;
@@ -268,7 +278,8 @@ int main(int argc, char *argv[]) {
                 }
             }
             if (iter%30 == 0) {
-                meanJitter[k] = getMeanJitterTotal(cornersHistory[k], cornersHistoryTotal[k]);
+                getMeanJitterTotal(cornersHistory[k], cornersHistoryTotal[k], meanJitter[k],
+                                   stddevJitter[k]);
 //                 std::cout << k << " " << meanJitter[k] << std::endl;
             }        
         }
@@ -303,17 +314,17 @@ int main(int argc, char *argv[]) {
         for(int k=0; k<3; k++) {
             stringstream s;
             if (k == 0) {
-                s << "Approximated Calibration = " << meanJitter[k];
+                s << "Approximated Calibration = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6,
                             color1[k], 2);    
             }
             else if (k == 1) { 
-                s << "Global Homography = " << meanJitter[k];
+                s << "Global Homography = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6,
                             color1[k], 2);                       
             }
             else {
-                s << "Local Homography = " << meanJitter[k];
+                s << "Local Homography = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 80), cv::FONT_HERSHEY_SIMPLEX, 0.6,
                             color1[k], 2);    
             }            
