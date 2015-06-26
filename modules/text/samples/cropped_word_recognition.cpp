@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     vector<float>  confidences;
     ocr->run(image, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
 
-    cout << "OCR output = \"" << output << "\". Decoded in " 
+    cout << "OCR output = \"" << output << "\". Decoded in "
          << ((double)getTickCount() - t_r)*1000/getTickFrequency() << " ms." << endl << endl;
 
     return 0;
