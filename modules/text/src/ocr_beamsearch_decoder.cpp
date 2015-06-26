@@ -195,7 +195,7 @@ public:
             update_beam( beam, childs, recognition_probabilities);
         //cout << "beam size " << beam.size() << " best score " << beam[0].first<< endl;
 
-        int generated_chids = childs.size();
+        int generated_chids = (int)childs.size();
         while (generated_chids != 0)
         {
             generated_chids = 0;
@@ -206,7 +206,7 @@ public:
                 childs = generate_childs(old_beam[i].second,oversegmentation, visited_nodes);
                 if (!childs.empty())
                     update_beam( beam, childs, recognition_probabilities);
-                generated_chids += childs.size();
+                generated_chids += (int)childs.size();
             }
             //cout << "beam size " << beam.size() << " best score " << beam[0].first << endl;
         }
@@ -248,7 +248,7 @@ private:
                 unsigned long long int key = 0;
                 for (size_t j=0; j<child.size(); j++)
                 {
-                    key += pow(2,oversegmentation.size()-(oversegmentation.end()-find(oversegmentation.begin(), oversegmentation.end(), child[j])));
+                    key += (unsigned long long int)pow(2,oversegmentation.size()-(oversegmentation.end()-find(oversegmentation.begin(), oversegmentation.end(), child[j])));
                 }
                 //if (!visited_nodes[key])
                 if (visited_nodes.find(key) == visited_nodes.end())
@@ -530,7 +530,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
         for (int i=0; i<9; i++)
         {
             Mat pool = Mat(data_pool[i]);
-            pool = pool.reshape(0,data_pool[i].size()/kernels.cols);
+            pool = pool.reshape(0,(int)data_pool[i].size()/kernels.cols);
             for (int p=0; p<pool.rows; p++)
             {
                 for (int f=0; f<kernels.rows; f++)
