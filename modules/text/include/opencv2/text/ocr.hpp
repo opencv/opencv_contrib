@@ -270,10 +270,10 @@ public:
         /** @brief The character classifier must return a (ranked list of) class(es) id('s)
 
         @param image Input image CV_8UC1 or CV_8UC3 with a single letter.
-        @param out_class The classifier returns the character class categorical label, or list of
-        class labels, to which the input image corresponds.
-        @param out_confidence The classifier returns the probability of the input image
-        corresponding to each classes in out_class.
+        @param recognition_probabilities For each of the N characters found the classifier returns a list with
+        class probabilities for each class.
+        @param oversegmentation The classifier returns a list of N+1 character locations' x-coordinates,
+        including 0 as start-sequence location.
          */
         virtual void eval( InputArray image, std::vector< std::vector<double> >& recognition_probabilities, std::vector<int>& oversegmentation );
     };
@@ -319,6 +319,8 @@ public:
 
     @param mode HMM Decoding algorithm. Only OCR_DECODER_VITERBI is available for the moment
     (<http://en.wikipedia.org/wiki/Viterbi_algorithm>).
+
+    @param beam_size Size of the beam in Beam Search algorithm.
      */
     static Ptr<OCRBeamSearchDecoder> create(const Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
                                      const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
