@@ -192,15 +192,18 @@ inline DictValue & DictValue::operator=(const DictValue &r)
     if (&r == this)
         return *this;
 
-    release();
-
-    //how to copy anonymous union without memcpy?
-    for (size_t i = 0; i < sizeof(*this); i++)
-        ((uchar*)this)[i] = ((uchar*)&r)[i];
-
     if (r.type == cv::Param::STRING)
     {
-        s = new String(*r.s);
+        String *_s = new String(*r.s);
+        release();
+        s = _s;
+        type = r.type;
+    }
+    else //flat structure
+    {
+        //how to copy anonymous union without memcpy?
+        for (size_t i = 0; i < sizeof(*this); i++)
+            ((uchar*)this)[i] = ((uchar*)&r)[i];
     }
 
     return *this;

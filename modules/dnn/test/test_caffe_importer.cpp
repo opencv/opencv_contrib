@@ -20,43 +20,46 @@ static std::string getTestFile(TStr filename)
     return (getOpenCVExtraDir() + "/dnn/") + filename;
 }
 
-TEST(ReadCaffePrototxt_gtsrb, Accuracy)
+TEST(ReadCaffe_GTSRB, Accuracy)
 {
-    Ptr<Importer> importer = createCaffeImporter(getTestFile("gtsrb.prototxt"), getTestFile("gtsrb_iter_36000.caffemodel"));
     Net net;
-    importer->populateNet(net);
-
-    Mat img = imread(getTestFile("sign_50.ppm"));
-    CV_Assert(!img.empty());
-    img.convertTo(img, CV_32F, 1.0 / 255);
-    resize(img, img, cv::Size(48, 48));
-    Blob imgBlob(img);
-
-    net.setBlob("input", imgBlob);
-    net.forward();
-
-    Blob res = net.getBlob("loss");
-    for (int n = 0; n < 1; n++)
     {
-        Mat slice = Mat(res.channels() * res.rows(), res.cols(), CV_32F, res.ptr<float>(n));
-
-        double maxv;
-        std::vector<int> maxIdx;
-        minMaxLoc(slice, NULL, &maxv, NULL, &maxIdx);
-
-        int bestClass = maxIdx[0];
-        std::cout << "Best class: #" <<  bestClass << std::endl;
-
-        //imwrite(getTestFile("vis.png"), slice*(255.0 / maxv));
+        Ptr<Importer> importer = createCaffeImporter(getTestFile("gtsrb.prototxt"), "");
+        importer->populateNet(net);
     }
+
+//    Mat img = imread(getTestFile("sign_50.ppm"));
+//    CV_Assert(!img.empty());
+//    img.convertTo(img, CV_32F, 1.0 / 255);
+//    resize(img, img, cv::Size(48, 48));
+//    Blob imgBlob(img);
+
+//    net.setBlob("input", imgBlob);
+//    net.forward();
+
+//    Blob res = net.getBlob("loss");
+//    for (int n = 0; n < 1; n++)
+//    {
+//        Mat slice = Mat(res.channels() * res.rows(), res.cols(), CV_32F, res.ptr<float>(n));
+
+//        double maxv;
+//        std::vector<int> maxIdx;
+//        minMaxLoc(slice, NULL, &maxv, NULL, &maxIdx);
+
+//        int bestClass = maxIdx[0];
+//        std::cout << "Best class: #" <<  bestClass << std::endl;
+
+//        //imwrite(getTestFile("vis.png"), slice*(255.0 / maxv));
+//    }
 }
 
-//TEST(ReadCaffePrototxt_GoogleNet, Accuracy)
-//{
-//    Ptr<Importer> importer = createCaffeImporter(getOpenCVExtraDir() + "/dnn/googlenet_deploy.prototxt", "");
-//    Net net;
-//    importer->populateNet(net);
-//    net.forward();
-//}
+TEST(ReadCaffe_GoogleNet, Accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createCaffeImporter(getTestFile("googlenet_deploy.prototxt"), "");
+        importer->populateNet(net);
+    }
+}
 
 }

@@ -86,7 +86,7 @@ void Blob::fill(int ndims, const int *sizes, int type, void *data, bool deepCopy
 
     if (deepCopy)
     {
-        m.create(3, &shape[0], type);
+        m.create(4, &shape[0], type);
         size_t dataSize = m.total() * m.elemSize();
         memcpy(m.data, data, dataSize);
     }
