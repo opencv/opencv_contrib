@@ -43,7 +43,7 @@ namespace rgbd
     int RgbdCluster::getNumPoints()
     {
         if(bPointsUpdated)
-            return points.size();
+            return static_cast<int>(points.size());
         else return -1;
     }
 
@@ -51,9 +51,9 @@ namespace rgbd
     {
         pointsIndex = Mat_<int>::eye(mask.rows, mask.cols) * -1;
         points.clear();
-        for (int i = 0; i < mask.rows; i++)
+        for(int i = 0; i < mask.rows; i++)
         {
-            for (int j = 0; j < mask.cols; j++)
+            for(int j = 0; j < mask.cols; j++)
             {
                 if(mask.at<uchar>(i, j) > 0)
                 {
@@ -64,7 +64,7 @@ namespace rgbd
                         point.image_xy = Point2i(j, i);
                         point.texture_uv = Point2f((float)j / mask.cols, (float)i / mask.rows); // TODO
 
-                        pointsIndex.at<int>(i, j) = points.size();
+                        pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
                         points.push_back(point);
                     }
                     else
@@ -83,9 +83,9 @@ namespace rgbd
         {
             calculatePoints();
         }
-        for (int i = 0; i < mask.rows; i++)
+        for(int i = 0; i < mask.rows; i++)
         {
-            for (int j = 0; j < mask.cols; j++)
+            for(int j = 0; j < mask.cols; j++)
             {
                 if(mask.at<uchar>(i, j) == 0)
                 {
@@ -128,27 +128,27 @@ namespace rgbd
     {
     }
 
-    void RgbdCluster::save(std::string &path)
+    void RgbdCluster::save(const std::string &path)
     {
         if(!bFaceIndicesUpdated)
         {
             calculateFaceIndices();
         }
-        std::ofstream fs;
-        fs.open(path);
-        for(int i = 0; i < points.size(); i++)
+        std::ofstream fs(path.c_str(), std::ofstream::out);
+        for(std::size_t i = 0; i < points.size(); i++)
         {
             Point3f & v = points.at(i).world_xyz;
             Point2f & vt = points.at(i).texture_uv;
             // negate xy for Unity compatibility
-            fs << "v " << std::to_string(-v.x) << " " << std::to_string(-v.y) << " " << std::to_string(v.z) << std::endl;
-            fs << "vt " << std::to_string(vt.x) << " " << std::to_string(vt.y) << std::endl;
+            std::stringstream ss;
+            fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
+            fs << "vt " << vt.x << " " << vt.y << std::endl;
         }
-        for(int i = 0; i < faceIndices.size(); i+=3)
+        for(std::size_t i = 0; i < faceIndices.size(); i+=3)
         {
-            fs << "f " << std::to_string(faceIndices.at(i)+1) << "/" << std::to_string(faceIndices.at(i)+1)
-                << "/ " << std::to_string(faceIndices.at(i+1)+1) << "/" << std::to_string(faceIndices.at(i+1)+1)
-                << "/ " << std::to_string(faceIndices.at(i+2)+1) << "/" << std::to_string(faceIndices.at(i+2)+1)
+            fs << "f " << faceIndices.at(i)+1 << "/" << faceIndices.at(i)+1
+                << "/ " << faceIndices.at(i+1)+1 << "/" << faceIndices.at(i+1)+1
+                << "/ " << faceIndices.at(i+2)+1 << "/" << faceIndices.at(i+2)+1
                 << "/" << std::endl;
         }
         fs.close();
@@ -157,7 +157,7 @@ namespace rgbd
 
     void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints)
     {
-        for(int i = 0; i < clusters.size(); )
+        for(std::size_t i = 0; i < clusters.size(); )
         {
             if(clusters.at(i).getNumPoints() >= 0 && clusters.at(i).getNumPoints() <= minPoints)
             {
@@ -186,7 +186,6 @@ namespace rgbd
         //(*plane)(points3d, frame->normals, mask, coeffs);
         (*plane)(mainCluster.points3d, mask, coeffs);
 
-        int curLabel = 0;
         Mat colorLabels = Mat_<Vec3f>(mask.rows, mask.cols);
         for(int label = 0; label < maxPlaneNum + 1; label++)
         {

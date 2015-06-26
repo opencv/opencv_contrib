@@ -1066,7 +1066,7 @@ namespace rgbd
     /** Save the current mesh to an .obj file.
      * @param path Output filename.
      */
-    void save(std::string &path);
+    void save(const std::string &path);
   };
 
   /** Delete small clusters.

@@ -93,7 +93,7 @@ int main( int argc, char** argv )
     planarSegmentation(mainCluster, clusters);
     deleteEmptyClusters(clusters);
 
-    for(int i = 0; i < clusters.size(); i++) {
+    for(std::size_t i = 0; i < clusters.size(); i++) {
         imshow(to_string(i), clusters.at(i).mask * 255);
 
         Mat labels;
@@ -107,7 +107,7 @@ int main( int argc, char** argv )
         vector<RgbdCluster> smallClusters;
         euclideanClustering(clusters.at(i), smallClusters);
         //deleteEmptyClusters(smallClusters);
-        for(int j = 0; j < smallClusters.size(); j++) {
+        for(std::size_t j = 0; j < smallClusters.size(); j++) {
             imshow(to_string(i) + to_string(j), smallClusters.at(j).mask * 255);
             smallClusters.at(j).unwrapTexCoord();
             smallClusters.at(j).save(to_string(i) + to_string(j) + "mesh.obj");
