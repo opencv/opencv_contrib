@@ -62,7 +62,6 @@ namespace rgbd
                         RgbdPoint point;
                         point.world_xyz = points3d.at<Point3f>(i, j);
                         point.image_xy = Point2i(j, i);
-                        point.texture_uv = Point2f((float)j / mask.cols, (float)i / mask.rows); // TODO
 
                         pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
                         points.push_back(point);
@@ -126,6 +125,17 @@ namespace rgbd
 
     void RgbdCluster::unwrapTexCoord()
     {
+        if(!bPointsUpdated)
+        {
+            calculatePoints();
+        }
+        // TODO: implement LSCM
+        for(std::size_t i = 0; i < points.size(); i++) {
+            RgbdPoint & point = points.at(i);
+            point.texture_uv = Point2f((float)point.image_xy.x / mask.cols, (float)point.image_xy.y / mask.rows);
+        }
+
+        return;
     }
 
     void RgbdCluster::save(const std::string &path)
