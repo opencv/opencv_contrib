@@ -51,7 +51,6 @@ namespace cv
 	namespace tld
 	{
 
-		
 
 
 		class TrackerTLDModel : public TrackerModel
@@ -75,14 +74,13 @@ namespace cv
 
 		protected:
 			Size minSize_;
-			
 			TrackerTLD::Params params_;
 			void pushIntoModel(const Mat_<uchar>& example, bool positive);
 			void modelEstimationImpl(const std::vector<Mat>& /*responses*/){}
 			void modelUpdateImpl(){}
-			Rect2d boundingBox_;			
+			Rect2d boundingBox_;
 			RNG rng;
-			
+
 		};
 
 	}
