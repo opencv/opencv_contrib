@@ -53,7 +53,7 @@ namespace cv
 		}
 
 		// Calculate posterior probability, that the patch belongs to the current EC model
- 		double TLDDetector::ensembleClassifierNum(const uchar* data)
+		double TLDDetector::ensembleClassifierNum(const uchar* data)
 		{
 			double p = 0;
 			for (int k = 0; k < (int)classifiers.size(); k++)
@@ -146,7 +146,6 @@ namespace cv
 			Rect2d maxScRect;
 
 			//Detection part
-			//To fix: use precalculated BB 
 			do
 			{
 				Mat_<double> intImgP, intImgP2;

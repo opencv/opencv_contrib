@@ -118,7 +118,7 @@ int main()
 	//  VideoCapture cap(0);
 	//  if( !cap.isOpened() )
 	//  {
-	// cout << "Video stream error";	
+	// cout << "Video stream error";
 	//    return;
 	//  }
 	//cap >> frame;
