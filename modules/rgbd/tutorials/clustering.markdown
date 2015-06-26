@@ -84,8 +84,11 @@ The last element of the clusters, which is non-planar objects, can be further sp
 This function wraps connectedcomponents(...) to simply separate the blobs.
 
 @code{.cpp}
+            stringstream ss;
+            ss << "mesh_" << i << "_" << j;
+            imshow(ss.str(), smallClusters.at(j).mask * 255);
             smallClusters.at(j).unwrapTexCoord();
-            smallClusters.at(j).save(to_string(i) + to_string(j) + "mesh.obj");
+            smallClusters.at(j).save(ss.str() + ".obj");
 @endcode
 
 Each point in the cluster is assigned a (u, v) value, which is a texture coordinate. The LSCM

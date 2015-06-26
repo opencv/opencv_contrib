@@ -94,7 +94,11 @@ int main( int argc, char** argv )
     deleteEmptyClusters(clusters);
 
     for(std::size_t i = 0; i < clusters.size(); i++) {
-        imshow(to_string(i), clusters.at(i).mask * 255);
+        {
+            stringstream ss;
+            ss << "cluster " << i;
+            imshow(ss.str(), clusters.at(i).mask * 255);
+        }
 
         Mat labels;
         Mat stats;
@@ -108,9 +112,11 @@ int main( int argc, char** argv )
         euclideanClustering(clusters.at(i), smallClusters);
         //deleteEmptyClusters(smallClusters);
         for(std::size_t j = 0; j < smallClusters.size(); j++) {
-            imshow(to_string(i) + to_string(j), smallClusters.at(j).mask * 255);
+            stringstream ss;
+            ss << "mesh_" << i << "_" << j;
+            imshow(ss.str(), smallClusters.at(j).mask * 255);
             smallClusters.at(j).unwrapTexCoord();
-            smallClusters.at(j).save(to_string(i) + to_string(j) + "mesh.obj");
+            smallClusters.at(j).save(ss.str() + ".obj");
         }
     }
 
