@@ -552,8 +552,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
                     (feature_max.at<double>(0,k)-feature_min.at<double>(0,k));
         }
 
-        double probabilities[nr_class];
-        double *p = &probabilities[0];
+        double *p = new double[nr_class];
         double predict_label = eval_feature(feature,p);
         //cout << " Prediction: " << vocabulary[predict_label] << " with probability " << p[0] << endl;
         if (predict_label < 0) // TODO use cvError
@@ -562,7 +561,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
 
         seg_points++;
         oversegmentation.push_back(seg_points);
-        vector<double> recognition_p(probabilities, probabilities+sizeof(probabilities)/sizeof(double));
+        vector<double> recognition_p(p, p+nr_class*sizeof(double));
         recognition_probabilities.push_back(recognition_p);
 
     }
