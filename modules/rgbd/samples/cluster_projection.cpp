@@ -51,7 +51,7 @@ int main( int argc, char** argv )
     float pixelSize, refDistance;
     // read depth data from libfreenect
     cv::FileStorage file("rgbd.txt", cv::FileStorage::READ);
-    
+
     file["depth"] >> depth;
     file["zeroPlanePixelSize"] >> pixelSize;
     file["zeroPlaneDistance"] >> refDistance;
@@ -100,7 +100,7 @@ int main( int argc, char** argv )
         if(clusters.at(i).bPlane) {
             continue;
         }
-        
+
         vector<RgbdCluster> smallClusters;
         euclideanClustering(clusters.at(i), smallClusters);
         //deleteEmptyClusters(smallClusters);

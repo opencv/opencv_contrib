@@ -49,7 +49,7 @@ The code starts with importing data,
 @code{.cpp}
     // read depth data from libfreenect
     cv::FileStorage file("rgbd.txt", cv::FileStorage::READ);
-    
+
     file["depth"] >> depth;
     file["zeroPlanePixelSize"] >> pixelSize;
     file["zeroPlaneDistance"] >> refDistance;

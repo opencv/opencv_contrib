@@ -39,7 +39,7 @@
 namespace cv
 {
 namespace rgbd
-{    
+{
     int RgbdCluster::getNumPoints()
     {
         if(bPointsUpdated)
