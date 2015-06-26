@@ -48,8 +48,52 @@ namespace cv
 {
 namespace optflow
 {
+    /** Scale maps implementation using scale propagation.
+        References:
+        M. Tau and T. Hassner, "Dense Correspondences Across Scenes and
+        Scales," arXiv preprint arXiv:1406.6323, 24 Jun. 2014. Please see
+        project webpage for information on more recent versions:
+        http://www.openu.ac.il/home/hassner/scalemaps
+    */
+    class CV_EXPORTS_W ScaleMap : public Algorithm
+    {
+    public:
+        /** 
+            @param exponential Set weight function to either linear (false) or exponential (true).
+            linearWeights = 1 + (1 / var) * (weights - mean) * (image(i, j) - mean)
+            expWeights = exp(-(weights - image(i, j)) .^ 2 / (0.6 * var))
+        */
+        static Ptr<ScaleMap> create(bool exponential = false);
+ 
+        /** Executes the scale map algorithm.
+            @param image Grayscales floating point image in the range [0 1]
+            @param keypoints Sparse features to seed from
+            @param scalemap Output the scale for each pixel
+        */
+        virtual void compute(InputArray image,
+            const std::vector<KeyPoint>& keypoints, Mat& scalemap) = 0;
+    };
+
+    /** @brief Abstract base class for 2D image feature detectors and descriptor extractors
+    */
+    class CV_EXPORTS_W SiftImageExtractor : public Algorithm
+    {
+    public:
+        enum
+        {
+            SCALE_UNIFORM = 100, SCALE_LINEAR = 101, SCALE_EXP = 102
+        };
+        static Ptr<SiftImageExtractor> create(
+            int scale_format = SiftImageExtractor::SCALE_UNIFORM);
+
+        //! Create a sift image from per pixel sift descriptors
+        virtual void compute(const Mat& img, Mat& siftImg) = 0;
+
+        virtual void compute(const Mat& img0, const Mat& img1, Mat& siftImg0, Mat& siftImg1) = 0;
+    };   
+
     //! Interface to the SIFT-Flow's algorithm
-    CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SiftFlow();
+    CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SiftFlow(); 
 
 } // namespace optflow
 } // namespace cv
