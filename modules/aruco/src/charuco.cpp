@@ -616,7 +616,7 @@ void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _ch
     textColor = cornerColor;
     swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
 
-    _out.create(_in.size(), _in.type());
+    _out.create(_in.size(), CV_8UC3);
     cv::Mat outImg = _out.getMat();
     if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
     else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);

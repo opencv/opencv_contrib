@@ -731,7 +731,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
     swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
     swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
 
-    _out.create(_in.size(), _in.type());
+    _out.create(_in.size(), CV_8UC3);
     cv::Mat outImg = _out.getMat();
     if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
     else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
@@ -763,6 +763,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
             putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
+
 }
 
 
@@ -776,9 +777,10 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
               (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
     CV_Assert(length > 0);
 
-    _out.create(_in.size(), _in.type());
+    _out.create(_in.size(), CV_8UC3);
     cv::Mat outImg = _out.getMat();
-    _in.getMat().copyTo(outImg);
+    if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
+    else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
 
     std::vector<cv::Point3f> axisPoints;
     axisPoints.push_back(cv::Point3f(0, 0, 0));
