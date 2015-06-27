@@ -290,7 +290,7 @@ public:
     /**
       *
       */
-    int getMarkerSeparation() const {
+    double getMarkerSeparation() const {
         return _markerSeparation;
     }
 
