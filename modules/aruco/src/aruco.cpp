@@ -70,6 +70,7 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
                                            minCornerDistance(10),
                                            minDistanceToBorder(3),
                                            minMarkerDistance(10),
+                                           doCornerRefinement(true),
                                            cornerRefinementWinSize(5),
                                            cornerRefinementMaxIterations(30),
                                            cornerRefinementMinAccuracy(0.1),
@@ -554,13 +555,15 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
     CV_Assert(params.cornerRefinementWinSize > 0 && params.cornerRefinementMaxIterations > 0 &&
               params.cornerRefinementMinAccuracy > 0);
 
-    for (int i = 0; i < _corners.total(); i++) {
-        cv::cornerSubPix(grey, _corners.getMat(i),
-                         cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
-                         cvSize(-1, -1),
-                         cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                        params.cornerRefinementMaxIterations,
-                                        params.cornerRefinementMinAccuracy));
+    if(params.doCornerRefinement) {
+        for (int i = 0; i < _corners.total(); i++) {
+            cv::cornerSubPix(grey, _corners.getMat(i),
+                             cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
+                             cvSize(-1, -1),
+                             cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                            params.cornerRefinementMaxIterations,
+                                            params.cornerRefinementMinAccuracy));
+        }
     }
 }
 

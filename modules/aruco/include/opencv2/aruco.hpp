@@ -96,6 +96,7 @@ enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
  *   (in pixels) (default 3)
  * - minMarkerDistance: minimum mean distance beetween two marker corners to be considered
  *   similar, so that the smaller one is removed (in pixels) (default 10).
+ * - doCornerRefinement: do subpixel refinement or not
  * - cornerRefinementWinSize: window size for the corner refinement process (in pixels) (default 5).
  * - cornerRefinementMaxIterations: maximum number of iterations for stop criteria of the corner
  *   refinement process (default 30).
@@ -128,6 +129,7 @@ struct DetectorParameters {
     double minCornerDistance;
     int minDistanceToBorder;
     double minMarkerDistance;
+    bool doCornerRefinement;
     int cornerRefinementWinSize;
     int cornerRefinementMaxIterations;
     double cornerRefinementMinAccuracy;

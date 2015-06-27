@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
-    detectorParams.cornerRefinementWinSize = 1; // no corner refinement in markers
+    detectorParams.doCornerRefinement=false; // no corner refinement in markers
 
     cv::VideoCapture inputVideo;
     int waitTime;
