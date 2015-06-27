@@ -52,8 +52,14 @@ int main( int argc, char** argv )
 {
     Mat image, depth;
     float pixelSize, refDistance;
+
+    if(argc != 2) {
+        // bad arguments
+        exit(1);
+    }
+
     // read depth data from libfreenect
-    cv::FileStorage file("rgbd.txt", cv::FileStorage::READ);
+    cv::FileStorage file(string(argv[1]), cv::FileStorage::READ);
 
     file["depth"] >> depth;
     file["zeroPlanePixelSize"] >> pixelSize;

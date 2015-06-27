@@ -213,6 +213,9 @@ namespace rgbd
                 compare(mask, label, cluster.mask, CMP_GE); // residual
             }
             cluster.calculatePoints();
+            if(cluster.getNumPoints() < minArea) {
+                // discard;
+            }
         }
     }
 

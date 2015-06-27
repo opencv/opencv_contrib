@@ -1008,7 +1008,7 @@ namespace rgbd
 
   /** Store information of a single point
    */
-  struct RgbdPoint
+  struct CV_EXPORTS RgbdPoint
   {
   public:
     Point3f world_xyz;
@@ -1019,7 +1019,7 @@ namespace rgbd
 
   /** A cluster of a depth map. It can be used as both an image and a point cloud.
    */
-  class RgbdCluster
+  class CV_EXPORTS RgbdCluster
   {
   public:
     /* mask of the depth image */
@@ -1073,12 +1073,12 @@ namespace rgbd
    * @param clusters Input clusters.
    * @param minPoints Delete a cluster with points less than or equal to minPoints.
    */
-  void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints);
+  CV_EXPORTS void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints);
 
   /** Delete empty clusters.
    * @param clusters Input clusters.
    */
-  void deleteEmptyClusters(std::vector<RgbdCluster>& clusters);
+  CV_EXPORTS void deleteEmptyClusters(std::vector<RgbdCluster>& clusters);
 
   /** Segment planes and return them with residual cluster.
    * @param mainCluster Input cluster.
@@ -1086,14 +1086,14 @@ namespace rgbd
    * @param maxPlaneNum The maximum number of clusters to extract.
    * @param minArea Only planes with points more than or equal to this value are extracted (TODO).
    */
-  void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum = 3, int minArea = 400);
+  CV_EXPORTS void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum = 3, int minArea = 400);
 
   /** Split clusters from a mask image.
    * @param mainCluster Input cluster.
    * @param clusters Output clusters.
    * @param minArea Only clusters with points more than or equal to this value are extracted.
    */
-  void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea = 400);
+   CV_EXPORTS void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea = 400);
 
 // TODO Depth interpolation
 // Curvature
