@@ -52,17 +52,6 @@ namespace aruco {
 
 
 /**
- * @defgroup charuco ChArUco detection based on ArUco markers and chessboards.
- * This module is dedicated to square fiducial marker (also known as Augmented Reality Markers)
- * The ChArUco board combines the versatility of the ArUco markers with the high corner precision
- * of chessboards.
- * The two main ChArUco tools are:
- * - ChArUco boards for versatil calibration with high precision.
- * - ChArUco markers for accurate pose estimation.
-*/
-
-
-/**
  * @brief ChArUco board
  * Specific class for ChArUco boards. A ChArUco board is a planar board where the markers are placed
  * inside the white squares of a chessboard. The benefits of ChArUco boards is that they provide

@@ -44,22 +44,23 @@ the use of this software, even if advised of the possibility of such damage.
 
 /**
  * @defgroup aruco ArUco Marker Detection
- * This module is dedicated to square fiducial marker (also known as Augmented Reality Markers)
+ * This module is dedicated to square fiducial markers (also known as Augmented Reality Markers)
  * These markers are useful for easy, fast and robust camera pose estimation.
- * The implementation is based on the ArUco Library TODO reference
  * The main functionalities are:
  * - Detection of markers in a image
  * - Pose estimation from a single marker or from a board/set of markers
  * - Detection of ChArUco board for high subpixel accuracy
  * - Camera calibration from both, ArUco boards and ChArUco boards.
  * - Detection of ChArUco-based markers
- * The samples directory includes easy examples of how to use the module:
- * - marker_detector.cpp - simple marker detection
- * - marker_detector_pose.cpp - marker detection and pose estimation of each marker individually
- * - board_detector.cpp - marker detection and pose estimation of a marker board
- * - charuco_marker_detector.cpp - detection of charuco-based markers and pose estimation.
- * - charuco_calibration.cpp - camera calibration util based on charuco boards
- * - charuco_calibration_online.cpp - online, automatic calibration using charuco boards
+ * The samples directory includes easy examples of how to use the module.
+ *
+ * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado.
+ *
+ * @sa S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
+ * "Automatic generation and detection of highly reliable fiducial markers under occlusion".
+ * Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
+ *
+ * @sa http://www.uco.es/investiga/grupos/ava/node/26
 */
 
 namespace cv {
