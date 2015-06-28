@@ -71,13 +71,14 @@ namespace cv
 		public:
 			TLDDetector(){}
 			~TLDDetector(){}
-			
+
 			inline double ensembleClassifierNum(const uchar* data);
 			inline void prepareClassifiers(int rowstep);
 			double Sr(const Mat_<uchar>& patch);
 			double ocl_Sr(const Mat_<uchar>& patch);
 			double Sc(const Mat_<uchar>& patch);
 			double ocl_Sc(const Mat_<uchar>& patch);
+			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 
 			std::vector<TLDEnsembleClassifier> classifiers;
 			Mat *posExp, *negExp;
@@ -95,8 +96,8 @@ namespace cv
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 		protected:
-			
-			
+
+
 
 			friend class MyMouseCallbackDEBUG;
 			void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }

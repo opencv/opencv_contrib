@@ -42,7 +42,7 @@
 #include "tldUtils.hpp"
 
 
-namespace cv 
+namespace cv
 {
 namespace tld
 {
