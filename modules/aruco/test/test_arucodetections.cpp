@@ -37,8 +37,6 @@ the use of this software, even if advised of the possibility of such damage.
 */
 
 
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include "test_precomp.hpp"
 #include <opencv2/highgui.hpp>
 #include <string>
@@ -131,10 +129,11 @@ void CV_ArucoDetectionSimple::run(int) {
 }
 
 
+const double PI = 3.141592653589793238463;
 
 
 double deg2rad(double deg) {
-    return deg*M_PI/180.;
+    return deg*PI/180.;
 }
 
 
@@ -148,10 +147,10 @@ void getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv
     cv::Mat rotZ(3,1,CV_64FC1);
     rotZ.ptr<double>(0)[0] = 0;
     rotZ.ptr<double>(0)[1] = 0;
-    rotZ.ptr<double>(0)[2] = -0.5*M_PI;
+    rotZ.ptr<double>(0)[2] = -0.5*PI;
 
     cv::Mat rotX(3,1,CV_64FC1);
-    rotX.ptr<double>(0)[0] = 0.5*M_PI;
+    rotX.ptr<double>(0)[0] = 0.5*PI;
     rotX.ptr<double>(0)[1] = 0;
     rotX.ptr<double>(0)[2] = 0;
 
