@@ -107,6 +107,7 @@ void CV_ArucoDetectionSimple::run(int) {
                 }
             }
             if(idx == -1) {
+                ts->printf( cvtest::TS::LOG, "Marker not detected" );
                 ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                 return;
             }
@@ -114,6 +115,7 @@ void CV_ArucoDetectionSimple::run(int) {
             for(int c=0; c<4; c++) {
                 double dist = cv::norm( groundTruthCorners[m][c] - corners[idx][c] );
                 if(dist > 0.001) {
+                    ts->printf( cvtest::TS::LOG, "Incorrect marker corners position" );
                     ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
                     return;
                 }
@@ -178,13 +180,13 @@ void getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv
 
 
 cv::Mat projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMatrix, double yaw,
-                      double pitch, double distance, cv::Size imageSize,
+                      double pitch, double distance, cv::Size imageSize, int markerBorder,
                       std::vector<cv::Point2f> &corners) {
 
 
     cv::Mat markerImg;
     const int markerSizePixels = 100;
-    cv::aruco::drawMarker(dictionary, id, markerSizePixels, markerImg);
+    cv::aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
 
     cv::Mat rvec, tvec;
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
@@ -256,11 +258,12 @@ void CV_ArucoDetectionPerspective::run(int) {
         for(int yaw = 0; yaw < 360; yaw+=20) {
             for(int pitch = 30; pitch <=90; pitch+=20) {
                 int currentId = iter % 250;
+                int markerBorder = iter%2+1;
                 iter ++;
                 std::vector<cv::Point2f> groundTruthCorners;
                 cv::Mat img = projectMarker(cv::aruco::DICT_6X6_250, currentId, cameraMatrix,
                                             deg2rad(pitch), deg2rad(yaw), distance, imgSize,
-                                            groundTruthCorners);
+                                            markerBorder, groundTruthCorners);
 
 
                 std::vector< std::vector<cv::Point2f> > corners;
@@ -268,18 +271,21 @@ void CV_ArucoDetectionPerspective::run(int) {
                 cv::aruco::DetectorParameters params;
                 params.minDistanceToBorder = 1;
                 params.doCornerRefinement = false;
-                params.minMarkerDistance = 100;
+                params.markerBorderBits = markerBorder;
                 cv::aruco::detectMarkers(img, cv::aruco::DICT_6X6_250, corners, ids, params);
 
-
-
                 if(ids.size()!=1 || (ids.size()==1 && ids[0]!=currentId)) {
+                    if(ids.size() != 1)
+                        ts->printf( cvtest::TS::LOG, "Incorrect number of detected markers" );
+                    else
+                        ts->printf( cvtest::TS::LOG, "Incorrect marker id" );
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                     return;
                 }
                 for(int c=0; c<4; c++) {
                     double dist = cv::norm( groundTruthCorners[c] - corners[0][c] );
                     if(dist > 5) {
+                        ts->printf( cvtest::TS::LOG, "Incorrect marker corners position" );
                         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
                         return;
                     }
