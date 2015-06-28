@@ -499,6 +499,86 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
 }
 
 
+/**
+  * @brief Final filter of markers after its identification
+  */
+void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _inIds,
+                            OutputArrayOfArrays _outCorners, OutputArray _outIds) {
+
+    CV_Assert(_inCorners.total() == _inIds.total());
+
+    std::vector<bool> toRemove(_inCorners.total(), false);
+    bool atLeastOneRemove = false;
+
+    for (unsigned int i=0; i<_inCorners.total()-1; i++) {
+        for(unsigned int j=i+1; j<_inCorners.total(); j++) {
+            if ( _inIds.getMat().ptr<int>(0)[i] != _inIds.getMat().ptr<int>(0)[j] )
+                continue;
+
+            // check if first marker is inside second
+            bool inside = true;
+            for(unsigned int p=0; p<4; p++) {
+                cv::Point2f point = _inCorners.getMat(j).ptr<cv::Point2f>(0)[p];
+                if (pointPolygonTest(_inCorners.getMat(i), point, false) < 0 ) {
+                    inside = false;
+                    break;
+                }
+            }
+            if(inside) {
+                toRemove[j] = true;
+                atLeastOneRemove = true;
+                continue;
+            }
+
+            // check the second marker
+            inside = true;
+            for(unsigned int p=0; p<4; p++) {
+                cv::Point2f point = _inCorners.getMat(i).ptr<cv::Point2f>(0)[p];
+                if (pointPolygonTest(_inCorners.getMat(j), point, false) < 0 ) {
+                    inside = false;
+                    break;
+                }
+            }
+            if(inside) {
+                toRemove[i] = true;
+                atLeastOneRemove = true;
+                continue;
+            }
+
+
+        }
+    }
+
+    // parse output
+    if (atLeastOneRemove) {
+        std::vector<cv::Mat> filteredCorners;
+        std::vector<int> filteredIds;
+
+        for(unsigned int i=0; i<toRemove.size(); i++) {
+            if(!toRemove[i]) {
+                filteredCorners.push_back( _inCorners.getMat(i).clone() );
+                filteredIds.push_back( _inIds.getMat().ptr<int>(0)[i] );
+            }
+        }
+
+        _outIds.create((int)filteredIds.size(), 1, CV_32SC1);
+        for (unsigned int i = 0; i < filteredIds.size(); i++)
+            _outIds.getMat().ptr<int>(0)[i] = filteredIds[i];
+
+        _outCorners.create((int)filteredCorners.size(), 1, CV_32FC2);
+        for (unsigned int i = 0; i < filteredCorners.size(); i++) {
+            _outCorners.create(4, 1, CV_32FC2, i, true);
+            filteredCorners[i].copyTo(_outCorners.getMat(i));
+        }
+
+    }
+
+
+
+
+}
+
+
 
 /**
   * @brief Return object points for the system centered in a single marker, given the marker length
@@ -551,7 +631,10 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
     _identifyCandidates(grey, candidates, dictionaryData, _corners, _ids, params,
                         _rejectedImgPoints);
 
-    /// STEP 3: Corner refinement
+    /// STEP 3: Filter detected markers;
+    _filterDetectedMarkers(_corners, _ids, _corners, _ids);
+
+    /// STEP 4: Corner refinement
     CV_Assert(params.cornerRefinementWinSize > 0 && params.cornerRefinementMaxIterations > 0 &&
               params.cornerRefinementMinAccuracy > 0);
 
