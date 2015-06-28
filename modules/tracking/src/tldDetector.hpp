@@ -77,6 +77,7 @@ namespace cv
 			double ocl_Sr(const Mat_<uchar>& patch);
 			double Sc(const Mat_<uchar>& patch);
 			double ocl_Sc(const Mat_<uchar>& patch);
+			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 
 			std::vector<TLDEnsembleClassifier> classifiers;
 			Mat *posExp, *negExp;

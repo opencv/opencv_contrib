@@ -120,7 +120,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     {
         Rect2d tmpCandid = boundingBox;
         if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) ||
-			((i == 1) && (tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize()))))
+			((i == 1) && (tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize()))))
         {
             candidates.push_back(tmpCandid);
             if( i == 0 )
