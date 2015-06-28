@@ -36,6 +36,9 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
+
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "test_precomp.hpp"
 #include <opencv2/highgui.hpp>
 #include <string>
