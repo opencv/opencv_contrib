@@ -42,6 +42,7 @@
 //
 //M*/
 
+
 #include "precomp.hpp"
 #include <fstream>
 
@@ -49,14 +50,14 @@ namespace cv
 {
 namespace rgbd
 {
-    int RgbdCluster::getNumPoints()
+    int RgbdClusterMesh::getNumPoints()
     {
         if(bPointsUpdated)
             return static_cast<int>(points.size());
         else return -1;
     }
 
-    void RgbdCluster::calculatePoints()
+    void RgbdClusterMesh::calculatePoints()
     {
         pointsIndex = Mat_<int>::eye(mask.rows, mask.cols) * -1;
         points.clear();
@@ -85,7 +86,7 @@ namespace rgbd
         bPointsUpdated = true;
     }
 
-    void RgbdCluster::calculateFaceIndices(float depthDiff)
+    void RgbdClusterMesh::calculateFaceIndices(float depthDiff)
     {
         if(!bPointsUpdated)
         {
@@ -132,7 +133,7 @@ namespace rgbd
 
     }
 
-    void RgbdCluster::unwrapTexCoord()
+    void RgbdClusterMesh::unwrapTexCoord()
     {
         if(!bPointsUpdated)
         {
@@ -147,7 +148,7 @@ namespace rgbd
         return;
     }
 
-    void RgbdCluster::save(const std::string &path)
+    void RgbdClusterMesh::save(const std::string &path)
     {
         if(!bFaceIndicesUpdated)
         {
@@ -173,77 +174,5 @@ namespace rgbd
         fs.close();
     }
 
-
-    void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints)
-    {
-        for(std::size_t i = 0; i < clusters.size(); )
-        {
-            if(clusters.at(i).getNumPoints() >= 0 && clusters.at(i).getNumPoints() <= minPoints)
-            {
-                clusters.erase(clusters.begin() + i);
-            }
-            else
-            {
-                i++;
-            }
-        }
-    }
-
-    void deleteEmptyClusters(std::vector<RgbdCluster>& clusters)
-    {
-        eliminateSmallClusters(clusters, 0);
-    }
-
-    void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum, int minArea)
-    {
-        // assert frame size == points3d size
-
-        Ptr<RgbdPlane> plane = makePtr<RgbdPlane>();
-        plane->setThreshold(0.025f);
-        Mat mask;
-        std::vector<Vec4f> coeffs;
-        //(*plane)(points3d, frame->normals, mask, coeffs);
-        (*plane)(mainCluster.points3d, mask, coeffs);
-
-        Mat colorLabels = Mat_<Vec3f>(mask.rows, mask.cols);
-        for(int label = 0; label < maxPlaneNum + 1; label++)
-        {
-            clusters.push_back(RgbdCluster());
-            RgbdCluster& cluster = clusters.back();
-            mainCluster.depth.copyTo(cluster.depth);
-            mainCluster.points3d.copyTo(cluster.points3d);
-            if(label < maxPlaneNum)
-            {
-                compare(mask, label, cluster.mask, CMP_EQ);
-                cluster.bPlane = true;
-            }
-            else
-            {
-                compare(mask, label, cluster.mask, CMP_GE); // residual
-            }
-            cluster.calculatePoints();
-            if(cluster.getNumPoints() < minArea) {
-                // discard;
-            }
-        }
-    }
-
-    void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea)
-    {
-        Mat labels, stats, centroids;
-        connectedComponentsWithStats(mainCluster.mask, labels, stats, centroids, 8);
-        for(int label = 1; label < stats.rows; label++)
-        { // 0: background label
-            if(stats.at<int>(label, CC_STAT_AREA) >= minArea)
-            {
-                clusters.push_back(RgbdCluster());
-                RgbdCluster& cluster = clusters.back();
-                mainCluster.depth.copyTo(cluster.depth);
-                mainCluster.points3d.copyTo(cluster.points3d);
-                compare(labels, label, cluster.mask, CMP_EQ);
-                cluster.calculatePoints();
-            }
-        }
-    }
 }
 }

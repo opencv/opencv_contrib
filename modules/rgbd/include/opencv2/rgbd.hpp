@@ -1019,7 +1019,7 @@ namespace rgbd
 
   /** A cluster of a depth map. It can be used as both an image and a point cloud.
    */
-  class CV_EXPORTS RgbdCluster
+  class CV_EXPORTS RgbdCluster : public RgbdFrame
   {
   public:
     /* mask of the depth image */
@@ -1040,7 +1040,7 @@ namespace rgbd
     bool bPointsUpdated;
     bool bFaceIndicesUpdated;
 
-    /** Constructor.
+    /** Constructor. 
      */
     RgbdCluster() : bPlane(false), bPointsUpdated(false), bFaceIndicesUpdated(false)
     {
@@ -1067,6 +1067,36 @@ namespace rgbd
      * @param path Output filename.
      */
     void save(const std::string &path);
+  };
+
+  class CV_EXPORTS RgbdClusterMesh : public RgbdCluster {
+      /** Constructor.
+      */
+      RgbdClusterMesh()
+      {
+      }
+
+      /** Return the number of valid points.
+      */
+      int getNumPoints();
+
+      /** Update `points`. Must be called after `mask` or `depth` is updated.
+      */
+      void calculatePoints();
+
+      /** Update `faceIndices`. Must be called after `points` is updated.
+      * @param depthDiff Form a face when depth difference between vertices is less than the value.
+      */
+      void calculateFaceIndices(float depthDiff = 0.05f);
+
+      /** Update texture coordinates in `points` based on the LSCM algorithm.
+      */
+      void unwrapTexCoord();
+
+      /** Save the current mesh to an .obj file.
+      * @param path Output filename.
+      */
+      void save(const std::string &path);
   };
 
   /** Delete small clusters.
