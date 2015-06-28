@@ -255,7 +255,7 @@ public:
      *
      * This function return the image of the GridBoard, ready to be printed.
      */
-    CV_EXPORTS void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -272,8 +272,8 @@ public:
      * This functions creates a GridBoard object given the number of markers in each direction and
      * the marker size and marker separation.
      */
-    CV_EXPORTS static GridBoard create(int markersX, int markersY, double markerLength,
-                                       double markerSeparation, DICTIONARY dictionary);
+    static GridBoard create(int markersX, int markersY, double markerLength,
+                            double markerSeparation, DICTIONARY dictionary);
 
     /**
       *

@@ -81,7 +81,7 @@ public:
      *
      * This function return the image of the ChArUco board, ready to be printed.
      */
-    CV_EXPORTS void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -98,8 +98,8 @@ public:
      * This functions creates a CharucoBoard object given the number of squares in each direction
      * and the size of the markers and chessboard squares.
      */
-    CV_EXPORTS static CharucoBoard create(int squaresX, int squaresY, double squareLength,
-                                          double markerLength, DICTIONARY dictionary);
+    static CharucoBoard create(int squaresX, int squaresY, double squareLength,
+                               double markerLength, DICTIONARY dictionary);
 
     /**
       *
