@@ -85,100 +85,7 @@ namespace rgbd
         bPointsUpdated = true;
     }
 
-    void RgbdCluster::calculateFaceIndices(float depthDiff)
-    {
-        if(!bPointsUpdated)
-        {
-            calculatePoints();
-        }
-        for(int i = 0; i < mask.rows; i++)
-        {
-            for(int j = 0; j < mask.cols; j++)
-            {
-                if(mask.at<uchar>(i, j) == 0)
-                {
-                    continue;
-                }
-                if(i + 1 == mask.rows || j + 1 == mask.cols)
-                {
-                    continue;
-                }
-                if(mask.at<uchar>(i + 1, j) > 0 &&
-                    mask.at<uchar>(i, j + 1) > 0 &&
-                    mask.at<uchar>(i + 1, j + 1) > 0)
-                {
-                    //depth comparison not working?
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i + 1, j)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i, j + 1)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i + 1, j + 1)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    faceIndices.push_back(pointsIndex.at<int>(i, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i+1, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i, j+1));
-                    faceIndices.push_back(pointsIndex.at<int>(i, j+1));
-                    faceIndices.push_back(pointsIndex.at<int>(i+1, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i+1, j+1));
-                }
-            }
-        }
-
-    }
-
-    void RgbdCluster::unwrapTexCoord()
-    {
-        if(!bPointsUpdated)
-        {
-            calculatePoints();
-        }
-        // TODO: implement LSCM
-        for(std::size_t i = 0; i < points.size(); i++) {
-            RgbdPoint & point = points.at(i);
-            point.texture_uv = Point2f((float)point.image_xy.x / mask.cols, (float)point.image_xy.y / mask.rows);
-        }
-
-        return;
-    }
-
-    void RgbdCluster::save(const std::string &path)
-    {
-        if(!bFaceIndicesUpdated)
-        {
-            calculateFaceIndices();
-        }
-        std::ofstream fs(path.c_str(), std::ofstream::out);
-        for(std::size_t i = 0; i < points.size(); i++)
-        {
-            Point3f & v = points.at(i).world_xyz;
-            // negate xy for Unity compatibility
-            std::stringstream ss;
-            fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
-        }
-        for(std::size_t i = 0; i < points.size(); i++)
-        {
-            Point2f & vt = points.at(i).texture_uv;
-            std::stringstream ss;
-            fs << "vt " << vt.x << " " << vt.y << std::endl;
-        }
-        for(std::size_t i = 0; i < faceIndices.size(); i += 3)
-        {
-            fs << "f " << faceIndices.at(i)+1 << "/" << faceIndices.at(i)+1
-                << "/ " << faceIndices.at(i+1)+1 << "/" << faceIndices.at(i+1)+1
-                << "/ " << faceIndices.at(i+2)+1 << "/" << faceIndices.at(i+2)+1
-                << "/" << std::endl;
-        }
-        fs.close();
-    }
-
-
-    void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints)
+    template<typename T> void eliminateSmallClusters(std::vector<T>& clusters, int minPoints)
     {
         for(std::size_t i = 0; i < clusters.size(); )
         {
@@ -192,13 +99,17 @@ namespace rgbd
             }
         }
     }
+    template CV_EXPORTS void eliminateSmallClusters<RgbdCluster>(std::vector<RgbdCluster>& clusters, int minPoints);
+    template CV_EXPORTS void eliminateSmallClusters<RgbdClusterMesh>(std::vector<RgbdClusterMesh>& clusters, int minPoints);
 
-    void deleteEmptyClusters(std::vector<RgbdCluster>& clusters)
+    template<typename T> void deleteEmptyClusters(std::vector<T>& clusters)
     {
         eliminateSmallClusters(clusters, 0);
     }
+    template CV_EXPORTS void deleteEmptyClusters<RgbdCluster>(std::vector<RgbdCluster>& clusters);
+    template CV_EXPORTS void deleteEmptyClusters<RgbdClusterMesh>(std::vector<RgbdClusterMesh>& clusters);
 
-    void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum, int minArea)
+    template<typename T1, typename T2> void planarSegmentation(T1& mainCluster, std::vector<T2>& clusters, int maxPlaneNum, int minArea)
     {
         // assert frame size == points3d size
 
@@ -212,8 +123,8 @@ namespace rgbd
         Mat colorLabels = Mat_<Vec3f>(mask.rows, mask.cols);
         for(int label = 0; label < maxPlaneNum + 1; label++)
         {
-            clusters.push_back(RgbdCluster());
-            RgbdCluster& cluster = clusters.back();
+            clusters.push_back(T2());
+            T2& cluster = clusters.back();
             mainCluster.depth.copyTo(cluster.depth);
             mainCluster.points3d.copyTo(cluster.points3d);
             if(label < maxPlaneNum)
@@ -231,8 +142,11 @@ namespace rgbd
             }
         }
     }
+    template CV_EXPORTS void planarSegmentation<RgbdCluster, RgbdCluster>(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum, int minArea);
+    template CV_EXPORTS void planarSegmentation<RgbdClusterMesh, RgbdClusterMesh>(RgbdClusterMesh& mainCluster, std::vector<RgbdClusterMesh>& clusters, int maxPlaneNum, int minArea);
+    template CV_EXPORTS void planarSegmentation<RgbdCluster, RgbdClusterMesh>(RgbdCluster& mainCluster, std::vector<RgbdClusterMesh>& clusters, int maxPlaneNum, int minArea);
 
-    void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea)
+    template<typename T1, typename T2> void euclideanClustering(T1& mainCluster, std::vector<T2>& clusters, int minArea)
     {
         Mat labels, stats, centroids;
         connectedComponentsWithStats(mainCluster.mask, labels, stats, centroids, 8);
@@ -240,8 +154,8 @@ namespace rgbd
         { // 0: background label
             if(stats.at<int>(label, CC_STAT_AREA) >= minArea)
             {
-                clusters.push_back(RgbdCluster());
-                RgbdCluster& cluster = clusters.back();
+                clusters.push_back(T2());
+                T2& cluster = clusters.back();
                 mainCluster.depth.copyTo(cluster.depth);
                 mainCluster.points3d.copyTo(cluster.points3d);
                 compare(labels, label, cluster.mask, CMP_EQ);
@@ -249,5 +163,8 @@ namespace rgbd
             }
         }
     }
+    template CV_EXPORTS void euclideanClustering<RgbdCluster, RgbdCluster>(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea);
+    template CV_EXPORTS void euclideanClustering<RgbdClusterMesh, RgbdClusterMesh>(RgbdClusterMesh& mainCluster, std::vector<RgbdClusterMesh>& clusters, int minArea);
+    template CV_EXPORTS void euclideanClustering<RgbdCluster, RgbdClusterMesh>(RgbdCluster& mainCluster, std::vector<RgbdClusterMesh>& clusters, int minArea);
 }
 }

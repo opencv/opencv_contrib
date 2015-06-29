@@ -1022,21 +1022,20 @@ namespace rgbd
   class CV_EXPORTS RgbdCluster : public RgbdFrame
   {
   public:
+    /* silhouette of the cluster. RgbdFrame::mask should be used to indicate valid depth points */
+    Mat silhouette;
     /* original 3d points */
     Mat points3d;
     /* image to vector point map */
     Mat pointsIndex;
     /* vector of points */
     std::vector<RgbdPoint> points;
-    /* indices. Each set of three points forms a triangle. */
-    std::vector<int> faceIndices;
     bool bPlane;
     bool bPointsUpdated;
-    bool bFaceIndicesUpdated;
 
     /** Constructor.
      */
-    RgbdCluster() : bPlane(false), bPointsUpdated(false), bFaceIndicesUpdated(false)
+    RgbdCluster() : bPlane(false), bPointsUpdated(false)
     {
     }
 
@@ -1044,9 +1043,22 @@ namespace rgbd
      */
     int getNumPoints();
 
-    /** Update `points`. Must be called after `mask` or `depth` is updated.
+    /** Update `points`. Must be called after `silhouette` or `depth` is updated.
      */
     void calculatePoints();
+  };
+
+  class CV_EXPORTS RgbdClusterMesh : public RgbdCluster {
+  public:
+    /* indices. Each set of three points forms a triangle. */
+    std::vector<int> faceIndices;
+    bool bFaceIndicesUpdated;
+
+    /** Constructor.
+     */
+    RgbdClusterMesh()
+    {
+    }
 
     /** Update `faceIndices`. Must be called after `points` is updated.
      * @param depthDiff Form a face when depth difference between vertices is less than the value.
@@ -1063,46 +1075,16 @@ namespace rgbd
     void save(const std::string &path);
   };
 
-  class CV_EXPORTS RgbdClusterMesh : public RgbdCluster {
-      /** Constructor.
-      */
-      RgbdClusterMesh()
-      {
-      }
-
-      /** Return the number of valid points.
-      */
-      int getNumPoints();
-
-      /** Update `points`. Must be called after `mask` or `depth` is updated.
-      */
-      void calculatePoints();
-
-      /** Update `faceIndices`. Must be called after `points` is updated.
-      * @param depthDiff Form a face when depth difference between vertices is less than the value.
-      */
-      void calculateFaceIndices(float depthDiff = 0.05f);
-
-      /** Update texture coordinates in `points` based on the LSCM algorithm.
-      */
-      void unwrapTexCoord();
-
-      /** Save the current mesh to an .obj file.
-      * @param path Output filename.
-      */
-      void save(const std::string &path);
-  };
-
   /** Delete small clusters.
    * @param clusters Input clusters.
    * @param minPoints Delete a cluster with points less than or equal to minPoints.
    */
-  CV_EXPORTS void eliminateSmallClusters(std::vector<RgbdCluster>& clusters, int minPoints);
+  template<typename T> void eliminateSmallClusters(std::vector<T>& clusters, int minPoints);
 
   /** Delete empty clusters.
    * @param clusters Input clusters.
    */
-  CV_EXPORTS void deleteEmptyClusters(std::vector<RgbdCluster>& clusters);
+  template<typename T> void deleteEmptyClusters(std::vector<T>& clusters);
 
   /** Segment planes and return them with residual cluster.
    * @param mainCluster Input cluster.
@@ -1110,14 +1092,14 @@ namespace rgbd
    * @param maxPlaneNum The maximum number of clusters to extract.
    * @param minArea Only planes with points more than or equal to this value are extracted (TODO).
    */
-  CV_EXPORTS void planarSegmentation(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum = 3, int minArea = 400);
+  template<typename T1, typename T2> void planarSegmentation(T1& mainCluster, std::vector<T2>& clusters, int maxPlaneNum = 3, int minArea = 400);
 
-  /** Split clusters from a mask image.
+  /** Split clusters from a silhouette image.
    * @param mainCluster Input cluster.
    * @param clusters Output clusters.
    * @param minArea Only clusters with points more than or equal to this value are extracted.
    */
-   CV_EXPORTS void euclideanClustering(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int minArea = 400);
+  template<typename T1, typename T2> void euclideanClustering(T1& mainCluster, std::vector<T2>& clusters, int minArea = 400);;
 
 // TODO Depth interpolation
 // Curvature

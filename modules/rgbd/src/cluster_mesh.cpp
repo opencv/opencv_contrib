@@ -50,42 +50,6 @@ namespace cv
 {
 namespace rgbd
 {
-    int RgbdClusterMesh::getNumPoints()
-    {
-        if(bPointsUpdated)
-            return static_cast<int>(points.size());
-        else return -1;
-    }
-
-    void RgbdClusterMesh::calculatePoints()
-    {
-        pointsIndex = Mat_<int>::eye(mask.rows, mask.cols) * -1;
-        points.clear();
-        for(int i = 0; i < mask.rows; i++)
-        {
-            for(int j = 0; j < mask.cols; j++)
-            {
-                if(mask.at<uchar>(i, j) > 0)
-                {
-                    if(depth.at<float>(i, j) > 0)
-                    {
-                        RgbdPoint point;
-                        point.world_xyz = points3d.at<Point3f>(i, j);
-                        point.image_xy = Point2i(j, i);
-
-                        pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
-                        points.push_back(point);
-                    }
-                    else
-                    {
-                        mask.at<uchar>(i, j) = 0;
-                    }
-                }
-            }
-        }
-        bPointsUpdated = true;
-    }
-
     void RgbdClusterMesh::calculateFaceIndices(float depthDiff)
     {
         if(!bPointsUpdated)

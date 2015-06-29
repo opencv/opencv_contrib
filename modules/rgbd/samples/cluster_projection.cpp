@@ -101,10 +101,10 @@ int main( int argc, char** argv )
     depthTo3d(frame->depth, cameraMatrix, points3d);
     //(*normals)(frame->depth, frame->normals);
 
-    RgbdCluster mainCluster;
+    RgbdClusterMesh mainCluster;
     mainCluster.points3d = points3d;
     mainCluster.depth = frame->depth;
-    vector<RgbdCluster> clusters;
+    vector<RgbdClusterMesh> clusters;
     planarSegmentation(mainCluster, clusters);
     deleteEmptyClusters(clusters);
 
@@ -123,7 +123,7 @@ int main( int argc, char** argv )
             continue;
         }
 
-        vector<RgbdCluster> smallClusters;
+        vector<RgbdClusterMesh> smallClusters;
         euclideanClustering(clusters.at(i), smallClusters);
         //deleteEmptyClusters(smallClusters);
         for(std::size_t j = 0; j < smallClusters.size(); j++) {
