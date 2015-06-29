@@ -126,7 +126,8 @@ int main(int argc, char *argv[]) {
     imageSize.height = squaresY * squareLength + 2 * margins;
     
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY, 
-                                                                    squareLength, markerLength,
+                                                                    (float)squareLength,
+                                                                    (float)markerLength,
                                                                     dictionary);
 
     cv::Mat boardImage;

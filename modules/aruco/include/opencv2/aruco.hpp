@@ -200,7 +200,7 @@ CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
  * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
  * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
  */
-CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, double markerLength,
+CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                           InputArray cameraMatrix, InputArray distCoeffs,
                                           OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
@@ -272,8 +272,8 @@ public:
      * This functions creates a GridBoard object given the number of markers in each direction and
      * the marker size and marker separation.
      */
-    static GridBoard create(int markersX, int markersY, double markerLength,
-                            double markerSeparation, DICTIONARY dictionary);
+    static GridBoard create(int markersX, int markersY, float markerLength,
+                            float markerSeparation, DICTIONARY dictionary);
 
     /**
       *
@@ -285,14 +285,14 @@ public:
     /**
       *
       */
-    double getMarkerLength() const {
+    float getMarkerLength() const {
         return _markerLength;
     }
 
     /**
       *
       */
-    double getMarkerSeparation() const {
+    float getMarkerSeparation() const {
         return _markerSeparation;
     }
 
@@ -302,10 +302,10 @@ private:
     int _markersX, _markersY;
 
     // marker side lenght (normally in meters)
-    double _markerLength;
+    float _markerLength;
 
     // separation between markers in the grid
-    double _markerSeparation;
+    float _markerSeparation;
 
 };
 
@@ -383,7 +383,7 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
 CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
-                         InputArray distCoeffs, InputArray rvec, InputArray tvec, double length);
+                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float length);
 
 
 

@@ -136,8 +136,8 @@ int main(int argc, char *argv[]) {
 
     int markersX = atoi( getParam("-w", argc, argv).c_str() );
     int markersY = atoi( getParam("-h", argc, argv).c_str() );
-    float markerLength = atof( getParam("-l", argc, argv).c_str() );
-    float markerSeparation = atof( getParam("-s", argc, argv).c_str() );
+    float markerLength = (float)atof( getParam("-l", argc, argv).c_str() );
+    float markerSeparation = (float)atof( getParam("-s", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(waitTime);
+        int key = cv::waitKey(waitTime);
         if (key == 27)
             break;
     }

@@ -172,8 +172,8 @@ int main(int argc, char *argv[]) {
 
     int squaresX = atoi( getParam("-w", argc, argv).c_str() );
     int squaresY = atoi( getParam("-h", argc, argv).c_str() );
-    float squareLength = atof( getParam("-sl", argc, argv).c_str() );
-    float markerLength = atof( getParam("-ml", argc, argv).c_str() );
+    float squareLength = (float)atof( getParam("-sl", argc, argv).c_str() );
+    float markerLength = (float)atof( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     
@@ -341,7 +341,7 @@ int main(int argc, char *argv[]) {
                                 axisLength);      */  
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(waitTime);
+        int key = cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'i') {

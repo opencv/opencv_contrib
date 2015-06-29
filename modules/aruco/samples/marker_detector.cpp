@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
       readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
       estimatePose = true;
     }
-    float markerLength = atof( getParam("-l", argc, argv, "0.1").c_str() );
+    float markerLength = (float)atof( getParam("-l", argc, argv, "0.1").c_str() );
 
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
                                                cv::noArray(), cv::Scalar(100, 0, 255));        
         
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(waitTime);
+        int key = cv::waitKey(waitTime);
         if (key == 27)
             break;
     }

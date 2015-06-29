@@ -81,7 +81,7 @@ void CharucoBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int 
     // determine the zone where the chessboard is placed
     cv::Mat chessboardZoneImg;
     if (xReduction > yReduction) {
-        int nRows = totalLengthY / xReduction;
+        int nRows = int(totalLengthY / xReduction);
         int rowsMargins = (noMarginsImg.rows - nRows) / 2;
         chessboardZoneImg = noMarginsImg.rowRange(rowsMargins, noMarginsImg.rows - rowsMargins);
     } else {
@@ -142,7 +142,7 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, float squareLength
     res._markerLength = markerLength;
     res.dictionary = dictionary;
 
-    double diffSquareMarkerLength = (squareLength - markerLength) / 2;
+    float diffSquareMarkerLength = (squareLength - markerLength) / 2;
 
     // calculate Board objPoints
     for (int y = squaresY-1; y >= 0; y--) {

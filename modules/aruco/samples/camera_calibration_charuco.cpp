@@ -177,8 +177,8 @@ int main(int argc, char *argv[]) {
 
     int squaresX = atoi( getParam("-w", argc, argv).c_str() );
     int squaresY = atoi( getParam("-h", argc, argv).c_str() );
-    float squareLength = atof( getParam("-sl", argc, argv).c_str() );
-    float markerLength = atof( getParam("-ml", argc, argv).c_str() );
+    float squareLength = (float)atof( getParam("-sl", argc, argv).c_str() );
+    float markerLength = (float)atof( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     string outputFile = getParam("-o", argc, argv);
@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {
         calibrationFlags |= cv::CALIB_FIX_ASPECT_RATIO;
-        aspectRatio = atof( getParam("-a", argc, argv).c_str() );
+        aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
         calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(waitTime);
+        int key = cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'c' && ids.size() > 0) {
@@ -262,12 +262,12 @@ int main(int argc, char *argv[]) {
         cameraMatrix.at<double>(0,0) = aspectRatio;  
     }
     
-    float arucoRepErr;
+    double arucoRepErr;
     arucoRepErr = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix, 
                                                   distCoeffs, cv::noArray(), cv::noArray(), 
                                                   calibrationFlags); 
     
-    int nFrames = allCorners.size();
+    int nFrames = (int)allCorners.size();
     std::vector<cv::Mat> allCharucoCorners;
     std::vector<cv::Mat> allCharucoIds;
     std::vector<cv::Mat> filteredImages;
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
             }
             
             cv::imshow("out", imageCopy);
-            char key = cv::waitKey(0);
+            int key = cv::waitKey(0);
             if (key == 27) 
                 break;
         }

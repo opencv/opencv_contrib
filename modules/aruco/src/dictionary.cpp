@@ -125,7 +125,7 @@ class DictionaryData {
         // search closest marker in dict
         for (int m = 0; m < bytesList.rows; m++) {
             int currentMinDistance = markerSize * markerSize + 1;
-            int currentRotation;
+            int currentRotation = -1;
             for (unsigned int r = 0; r < 4; r++) {
                 int currentHamming = 0;
                 // for each byte, calculate XOR result and then sum the Hamming weight from the LUT

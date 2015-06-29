@@ -111,14 +111,14 @@ public:
     /**
       *
       */
-    double getSquareLength() const {
+    float getSquareLength() const {
         return _squareLength;
     }
 
     /**
       *
       */
-    double getMarkerLength() const {
+    float getMarkerLength() const {
         return _markerLength;
     }
 
@@ -130,10 +130,10 @@ private:
     int _squaresX, _squaresY;
 
     // size of chessboard squares side (normally in meters)
-    double _squareLength;
+    float _squareLength;
 
     // marker side lenght (normally in meters)
-    double _markerLength;
+    float _markerLength;
 
 
 

@@ -74,9 +74,10 @@ void CV_ArucoDetectionSimple::run(int) {
                 cv::Mat marker;
                 int id = i*4 + y*2 + x;
                 cv::aruco::drawMarker(cv::aruco::DICT_6X6_250, id, markerSidePixels, marker);
-                cv::Point2f firstCorner = cv::Point2f(markerSidePixels/2 + x*(1.5*markerSidePixels),
-                                                      markerSidePixels/2 + y*(1.5*markerSidePixels)
-                                                      );
+                cv::Point2f firstCorner = cv::Point2f(markerSidePixels/2.f +
+                                                      x*(1.5f*markerSidePixels),
+                                                      markerSidePixels/2.f +
+                                                      y*(1.5f*markerSidePixels) );
                 cv::Mat aux = img.colRange(firstCorner.x, firstCorner.x+markerSidePixels)
                                  .rowRange(firstCorner.y, firstCorner.y+markerSidePixels);
                 marker.copyTo(aux);
@@ -193,7 +194,7 @@ cv::Mat projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMa
     cv::Mat rvec, tvec;
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
-    const double markerLength = 0.05;
+    const float markerLength = 0.05;
     std::vector<cv::Point3f> markerObjPoints;
     markerObjPoints.push_back( cv::Point3f(-markerLength/2., +markerLength/2., 0) );
     markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(markerLength, 0, 0) );
@@ -206,9 +207,9 @@ cv::Mat projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMa
 
     std::vector<cv::Point2f> originalCorners;
     originalCorners.push_back( cv::Point2f(0, 0) );
-    originalCorners.push_back( cv::Point2f(markerSizePixels, 0) );
-    originalCorners.push_back( cv::Point2f(markerSizePixels, markerSizePixels) );
-    originalCorners.push_back( cv::Point2f(0, markerSizePixels) );
+    originalCorners.push_back( cv::Point2f((float)markerSizePixels, 0) );
+    originalCorners.push_back( cv::Point2f((float)markerSizePixels, (float)markerSizePixels) );
+    originalCorners.push_back( cv::Point2f(0, (float)markerSizePixels) );
 
     cv::Mat transformation = cv::getPerspectiveTransform(originalCorners, corners);
 

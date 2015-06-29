@@ -171,7 +171,7 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
         std::vector<cv::Point2f> currentCandidate;
         currentCandidate.resize(4);
         for (int j = 0; j < 4; j++) {
-            currentCandidate[j] = cv::Point2f(approxCurve[j].x, approxCurve[j].y);
+            currentCandidate[j] = cv::Point2f((float)approxCurve[j].x, (float)approxCurve[j].y);
         }
         candidates.push_back(currentCandidate);
     }
@@ -300,8 +300,8 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
     _filterTooCloseCandidates(candidates, candidatesOut, params.minMarkerDistance);
 
     // parse output
-    _candidates.create(candidatesOut.size(), 1, CV_32FC2);
-    for (size_t i = 0; i < candidatesOut.size(); i++) {
+    _candidates.create((int)candidatesOut.size(), 1, CV_32FC2);
+    for (int i = 0; i < (int)candidatesOut.size(); i++) {
         _candidates.create(4, 1, CV_32FC2, i, true);
         Mat m = _candidates.getMat(i);
         for (int j = 0; j < 4; j++)
@@ -321,10 +321,10 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
     CV_Assert(_corners.total() == 4);
     CV_Assert(markerBorderBits > 0 && cellSize > 0 && cellMarginRate > 0);
 
-    int cellMarginPixels = cellMarginRate*cellSize;
+    int cellMarginPixels = int(cellMarginRate*cellSize);
     int markerSizeWithBorders = markerSize + 2*markerBorderBits;
     cv::Mat resultImg; // marker image after removing perspective
-    int resultImgSize = markerSizeWithBorders * cellSize;
+    float resultImgSize = markerSizeWithBorders * cellSize;
     cv::Mat resultImgCorners(4, 1, CV_32FC2);
     resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
     resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
@@ -420,8 +420,8 @@ bool identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOut
                                          params.perspectiveRemovePixelPerCell,
                                          params.perspectiveRemoveIgnoredMarginPerCell,
                                          params.minOtsuStdDev);
-    int maximumErrorsInBorder = dictionary.markerSize * dictionary.markerSize *
-                                params.maxErroneousBitsInBorderRate;
+    int maximumErrorsInBorder = int( dictionary.markerSize * dictionary.markerSize *
+                                params.maxErroneousBitsInBorderRate );
     int borderErrors = _getBorderErrors(candidateBits, dictionary.markerSize,
                                         params.markerBorderBits);
     if (borderErrors > maximumErrorsInBorder)
@@ -456,7 +456,7 @@ void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
                          OutputArray _ids, DetectorParameters params,
                          OutputArrayOfArrays _rejected = noArray()) {
 
-    int ncandidates = _candidates.total();
+    int ncandidates = (int)_candidates.total();
 
     std::vector<cv::Mat> accepted;
     std::vector<cv::Mat> rejected;
@@ -587,7 +587,7 @@ void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _inIds,
 /**
   * @brief Return object points for the system centered in a single marker, given the marker length
   */
-void _getSingleMarkerObjectPoints(double markerLength, OutputArray _objPoints) {
+void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
 
     CV_Assert(markerLength > 0);
 
@@ -658,7 +658,7 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
 /**
   */
-void estimatePoseSingleMarkers(InputArrayOfArrays _corners, double markerLength,
+void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
                                OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
 
@@ -666,7 +666,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, double markerLength,
 
     cv::Mat markerObjPoints;
     _getSingleMarkerObjectPoints(markerLength, markerObjPoints);
-    int nMarkers = _corners.total();
+    int nMarkers = (int)_corners.total();
     _rvecs.create(nMarkers, 1, CV_32FC1);
     _tvecs.create(nMarkers, 1, CV_32FC1);
 
@@ -692,7 +692,7 @@ void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
     CV_Assert(board.ids.size()==board.objPoints.size());
     CV_Assert(_detectedIds.total() == _detectedCorners.total() );
 
-    int nDetectedMarkets = _detectedIds.total();
+    int nDetectedMarkets = (int)_detectedIds.total();
 
     std::vector<cv::Point3f> objPnts;
     objPnts.reserve(nDetectedMarkets);
@@ -745,7 +745,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Board 
     _tvec.create(3, 1, CV_64FC1);
     cv::solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec);
 
-    return objPoints.total()/4;
+    return (int)objPoints.total()/4;
 }
 
 
@@ -761,8 +761,8 @@ void GridBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int bor
 
 /**
  */
-GridBoard GridBoard::create(int markersX, int markersY, double markerLength,
-                            double markerSeparation, DICTIONARY _dictionary) {
+GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
+                            float markerSeparation, DICTIONARY _dictionary) {
 
     GridBoard res;
 
@@ -823,7 +823,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
     if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
     else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
 
-    int nMarkers = _corners.total();
+    int nMarkers = (int)_corners.total();
     for (int i = 0; i < nMarkers; i++) {
         cv::Mat currentMarker = _corners.getMat(i);
         CV_Assert(currentMarker.total()==4 && currentMarker.type()==CV_32FC2);
@@ -858,7 +858,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 /**
  */
 void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
-              InputArray _rvec, InputArray _tvec, double length) {
+              InputArray _rvec, InputArray _tvec, float length) {
 
     CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
               (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
@@ -924,21 +924,21 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
         }
     }
 
-    double sizeX, sizeY;
+    float sizeX, sizeY;
     sizeX = maxX - minX;
     sizeY = maxY - minY;
 
-    double xReduction = sizeX / double(outNoMargins.cols);
-    double yReduction = sizeY / double(outNoMargins.rows);
+    float xReduction = sizeX / float(outNoMargins.cols);
+    float yReduction = sizeY / float(outNoMargins.rows);
 
     // determine the zone where the markers are placed
     cv::Mat markerZone;
     if (xReduction > yReduction) {
-        int nRows = sizeY / xReduction;
+        int nRows = int( sizeY / xReduction);
         int rowsMargins = (outNoMargins.rows - nRows) / 2;
         markerZone = outNoMargins.rowRange(rowsMargins, outNoMargins.rows - rowsMargins);
     } else {
-        int nCols = sizeX / yReduction;
+        int nCols = int( sizeX / yReduction);
         int colsMargins = (outNoMargins.cols - nCols) / 2;
         markerZone = outNoMargins.colRange(colsMargins, outNoMargins.cols - colsMargins);
     }
@@ -955,8 +955,8 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
             // remove negativity
             p1.x = p0.x - minX;
             p1.y = p0.y - minY;
-            pf.x = p1.x * double(markerZone.cols - 1) / sizeX;
-            pf.y = double(markerZone.rows - 1) - p1.y * double(markerZone.rows - 1) / sizeY;
+            pf.x = p1.x * float(markerZone.cols - 1) / sizeX;
+            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows - 1) / sizeY;
             outCorners[j] = pf;
         }
 
@@ -968,9 +968,9 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
         // interpolate tiny marker to marker position in markerZone
         cv::Mat inCorners(4, 1, CV_32FC2);
         inCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
-        inCorners.ptr<cv::Point2f>(0)[1] = Point2f(tinyMarker.cols, 0);
-        inCorners.ptr<cv::Point2f>(0)[2] = Point2f(tinyMarker.cols, tinyMarker.rows);
-        inCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, tinyMarker.rows);
+        inCorners.ptr<cv::Point2f>(0)[1] = Point2f((float)tinyMarker.cols, 0);
+        inCorners.ptr<cv::Point2f>(0)[2] = Point2f((float)tinyMarker.cols, (float)tinyMarker.rows);
+        inCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, (float)tinyMarker.rows);
 
         // remove perspective
         cv::Mat transformation = cv::getPerspectiveTransform(inCorners, outCorners);
@@ -1006,7 +1006,7 @@ double calibrateCameraAruco(const std::vector<std::vector<std::vector<cv::Point2
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     std::vector<cv::Mat> processedObjectPoints, processedImagePoints;
-    int nFrames = corners.size();
+    int nFrames = (int)corners.size();
     for (int frame = 0; frame < nFrames; frame++) {
         cv::Mat currentImgPoints, currentObjPoints;
         _getBoardObjectAndImagePoints(board, ids[frame], corners[frame], currentImgPoints,

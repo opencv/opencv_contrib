@@ -177,8 +177,8 @@ int main(int argc, char *argv[]) {
 
     int markersX = atoi( getParam("-w", argc, argv).c_str() );
     int markersY = atoi( getParam("-h", argc, argv).c_str() );
-    float markerLength = atof( getParam("-l", argc, argv).c_str() );
-    float markerSeparation = atof( getParam("-s", argc, argv).c_str() );
+    float markerLength = (float)atof( getParam("-l", argc, argv).c_str() );
+    float markerSeparation = (float)atof( getParam("-s", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     string outputFile = getParam("-o", argc, argv);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {
         calibrationFlags |= cv::CALIB_FIX_ASPECT_RATIO;
-        aspectRatio = atof( getParam("-a", argc, argv).c_str() );
+        aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
         calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
@@ -215,34 +215,6 @@ int main(int argc, char *argv[]) {
 
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
                                                               markerSeparation, dictionary);
-//     board.ids.clear();
-//     board.ids.push_back(985);
-//     board.ids.push_back(838);
-//     board.ids.push_back(908);
-//     board.ids.push_back(299);
-//     board.ids.push_back(428);
-//     board.ids.push_back(177);
-// 
-//     board.ids.push_back(64);
-//     board.ids.push_back(341);
-//     board.ids.push_back(760);
-//     board.ids.push_back(882);
-//     board.ids.push_back(982);
-//     board.ids.push_back(977);
-// 
-//     board.ids.push_back(477);
-//     board.ids.push_back(125);
-//     board.ids.push_back(717);
-//     board.ids.push_back(791);
-//     board.ids.push_back(618);
-//     board.ids.push_back(76);
-// 
-//     board.ids.push_back(181);
-//     board.ids.push_back(1005);
-//     board.ids.push_back(175);
-//     board.ids.push_back(684);
-//     board.ids.push_back(233);
-//     board.ids.push_back(461);
 
     std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
     std::vector<std::vector<int> > allIds;
@@ -264,7 +236,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
-        char key = cv::waitKey(waitTime);
+        int key = cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'c' && ids.size() > 0) {
