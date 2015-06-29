@@ -1022,14 +1022,8 @@ namespace rgbd
   class CV_EXPORTS RgbdCluster : public RgbdFrame
   {
   public:
-    /* mask of the depth image */
-    Mat mask;
-    /* original depth image */
-    Mat depth;
     /* original 3d points */
     Mat points3d;
-    /* original normal map */
-    Mat normals;
     /* image to vector point map */
     Mat pointsIndex;
     /* vector of points */
@@ -1040,7 +1034,7 @@ namespace rgbd
     bool bPointsUpdated;
     bool bFaceIndicesUpdated;
 
-    /** Constructor. 
+    /** Constructor.
      */
     RgbdCluster() : bPlane(false), bPointsUpdated(false), bFaceIndicesUpdated(false)
     {

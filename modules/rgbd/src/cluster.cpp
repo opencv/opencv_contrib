@@ -157,13 +157,17 @@ namespace rgbd
         for(std::size_t i = 0; i < points.size(); i++)
         {
             Point3f & v = points.at(i).world_xyz;
-            Point2f & vt = points.at(i).texture_uv;
             // negate xy for Unity compatibility
             std::stringstream ss;
             fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
+        }
+        for(std::size_t i = 0; i < points.size(); i++)
+        {
+            Point2f & vt = points.at(i).texture_uv;
+            std::stringstream ss;
             fs << "vt " << vt.x << " " << vt.y << std::endl;
         }
-        for(std::size_t i = 0; i < faceIndices.size(); i+=3)
+        for(std::size_t i = 0; i < faceIndices.size(); i += 3)
         {
             fs << "f " << faceIndices.at(i)+1 << "/" << faceIndices.at(i)+1
                 << "/ " << faceIndices.at(i+1)+1 << "/" << faceIndices.at(i+1)+1
