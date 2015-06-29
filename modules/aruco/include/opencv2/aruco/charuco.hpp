@@ -98,8 +98,8 @@ public:
      * This functions creates a CharucoBoard object given the number of squares in each direction
      * and the size of the markers and chessboard squares.
      */
-    static CharucoBoard create(int squaresX, int squaresY, double squareLength,
-                               double markerLength, DICTIONARY dictionary);
+    static CharucoBoard create(int squaresX, int squaresY, float squareLength,
+                               float markerLength, DICTIONARY dictionary);
 
     /**
       *

@@ -86,7 +86,7 @@ class DictionaryData {
 
     /**
       */
-    DictionaryData(const char * bytes = 0, int _markerSize = 0, int dictsize = 0,
+    DictionaryData(const unsigned char * bytes = 0, int _markerSize = 0, int dictsize = 0,
                    int _maxcorr = 0) {
         markerSize = _markerSize;
         maxCorrectionBits = _maxcorr;

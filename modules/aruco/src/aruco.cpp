@@ -122,9 +122,9 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
               minCornerDistance > 0 && minDistanceToBorder >= 0);
 
-    unsigned int minPerimeterPixels = unsigned int( minPerimeterRate * std::max(_in.getMat().cols,
+    unsigned int minPerimeterPixels = (unsigned int)(minPerimeterRate * std::max(_in.getMat().cols,
                                                                                 _in.getMat().rows));
-    unsigned int maxPerimeterPixels = unsigned int( maxPerimeterRate * std::max(_in.getMat().cols,
+    unsigned int maxPerimeterPixels = (unsigned int)(maxPerimeterRate * std::max(_in.getMat().cols,
                                                                                 _in.getMat().rows));
     cv::Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
@@ -508,6 +508,8 @@ void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _inIds,
                             OutputArrayOfArrays _outCorners, OutputArray _outIds) {
 
     CV_Assert(_inCorners.total() == _inIds.total());
+    if(_inCorners.total() == 0)
+        return;
 
     std::vector<bool> toRemove(_inCorners.total(), false);
     bool atLeastOneRemove = false;
