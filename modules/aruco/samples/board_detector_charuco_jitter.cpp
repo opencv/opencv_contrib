@@ -59,13 +59,13 @@ static void help() {
     std::cout << "-ml <markerLength> # Marker side lenght (in meters)" << std::endl;
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
     std::cout << "-c <cameraParams> # Camera intrinsic parameters file"
-              << std::endl;    
+              << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << std::endl;                 
+                 << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
-    std::cout << "[-r] # show rejected candidates too" << std::endl;    
+    std::cout << "[-r] # show rejected candidates too" << std::endl;
 }
 
 
@@ -73,7 +73,7 @@ static void help() {
  */
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param ) 
+        if (string(argv[i]) == param )
             return true;
     return false;
 
@@ -85,13 +85,13 @@ bool isParam(string param, int argc, char **argv ) {
 string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param) 
+        if (string(argv[i]) == param)
             idx = i;
     if (idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
-} 
+        return argv[idx+1];
+}
 
 
 /**
@@ -99,7 +99,7 @@ string getParam(string param, int argc, char **argv, string defvalue = "") {
 void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
     cv::FileStorage fs(filename, cv::FileStorage::READ);
     fs["camera_matrix"] >> camMatrix;
-    fs["distortion_coefficients"] >> distCoeffs;  
+    fs["distortion_coefficients"] >> distCoeffs;
 }
 
 
@@ -121,7 +121,7 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
     fs["markerBorderBits"] >> params.markerBorderBits;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate; 
+    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
 }
 
 
@@ -137,7 +137,7 @@ double getMeanJitter(const std::vector<cv::Point2f> &measures, const cv::Point2f
 
 void getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
                         const std::vector< cv::Point2f> &sums, double &mean, double &stddev) {
-    
+
     mean = 0;
     std::vector<double> errors;
     for (unsigned int k=0; k<measures.size(); k++) {
@@ -146,7 +146,7 @@ void getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
             double currentError = cv::norm(measures[k][i] - meanPnt);
             mean += currentError;
             errors.push_back(currentError);
-        }        
+        }
     }
     mean = mean / double(errors.size());
 
@@ -176,16 +176,16 @@ int main(int argc, char *argv[]) {
     float markerLength = (float)atof( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
-    
+
     bool showRejected = false;
     if (isParam("-r", argc, argv))
-      showRejected = true;    
-    
+      showRejected = true;
+
     cv::Mat camMatrix, distCoeffs;
     if (isParam("-c", argc, argv)) {
       readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
-    }   
-    
+    }
+
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
@@ -205,70 +205,70 @@ int main(int argc, char *argv[]) {
         inputVideo.open(camId);
         waitTime = 10;
     }
-    
 
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY, 
+
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY,
                                                                     squareLength, markerLength,
                                                                     dictionary);
-   
-    
+
+
     int interpolationMethod = 0;
-    
+
     std::vector< std::vector<cv::Point2f> > cornersHistory[3];
     for(int k=0; k<3; k++)
         cornersHistory[k].resize(board.chessboardCorners.size());
-    
+
     std::vector<cv::Point2f> cornersHistoryTotal[3];
-    for(int k=0; k<3; k++)    
+    for(int k=0; k<3; k++)
         cornersHistoryTotal[k].resize(board.chessboardCorners.size(), cv::Point2f(0,0));
-    
+
      double meanJitter[3] = {0,0,0};
      double stddevJitter[3] = {0,0,0};
-        
+
     int iter = 0;
     while (inputVideo.grab()) {
-        
+
         iter ++;
-        
+
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
-        
+
         std::vector<int> markerIds, charucoIds[3];
         std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers;
         std::vector<cv::Point2f> charucoCorners[3];
         cv::Mat rvec, tvec;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams, 
+        cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
                                  rejectedMarkers);
- 
-        
+
+
         int interpolatedCorners[3] = {0,0,0};
         if (markerIds.size() > 0)
-            interpolatedCorners[0] = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners, 
+            interpolatedCorners[0] = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners,
                                                                                   markerIds, image,
                                                                                   board, camMatrix,
-                                                                                  distCoeffs, 
+                                                                                  distCoeffs,
                                                                                   charucoCorners[0],
                                                                                   charucoIds[0]);
 
-            
-        if (markerIds.size() > 0)            
-            interpolatedCorners[1] = cv::aruco::interpolateCornersCharucoGlobalHom(markerCorners, 
+
+        if (markerIds.size() > 0)
+            interpolatedCorners[1] = cv::aruco::interpolateCornersCharucoGlobalHom(markerCorners,
                                                                                 markerIds, image,
                                                                                 board,
                                                                                 charucoCorners[1],
                                                                                 charucoIds[1]);
-            
-        if (markerIds.size() > 0)            
-            interpolatedCorners[2] = cv::aruco::interpolateCornersCharucoLocalHom(markerCorners, 
+
+        if (markerIds.size() > 0)
+            interpolatedCorners[2] = cv::aruco::interpolateCornersCharucoLocalHom(markerCorners,
                                                                                markerIds, image,
                                                                                board,
                                                                                charucoCorners[2],
-                                                                               charucoIds[2]);            
-            
-        
-        for(int k=0; k<3; k++) {    
+                                                                               charucoIds[2]);
+
+
+        for(int k=0; k<3; k++) {
             if(iter%10 == 0) {
                 for(unsigned int i=0; i<charucoIds[k].size(); i++) {
                     cornersHistory[k][charucoIds[k][i]].push_back(charucoCorners[k][i]);
@@ -279,27 +279,27 @@ int main(int argc, char *argv[]) {
                 getMeanJitterTotal(cornersHistory[k], cornersHistoryTotal[k], meanJitter[k],
                                    stddevJitter[k]);
 //                 std::cout << k << " " << meanJitter[k] << std::endl;
-            }        
+            }
         }
-            
+
 //         bool validPose;
-//         validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, 
+//         validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
 //                                                         camMatrix, distCoeffs, rvec, tvec);
-           
-        
-        
+
+
+
         // draw results
         image.copyTo(imageCopy);
         if (markerIds.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, markerCorners);
         }
-        
+
         if (showRejected && rejectedMarkers.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers, 
-                                           cv::noArray(), cv::Scalar(100, 0, 255));           
-        
-            
-        
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers,
+                                           cv::noArray(), cv::Scalar(100, 0, 255));
+
+
+
         cv::Scalar color1[3], color2[3];
         color1[0] = cv::Scalar(0, 0, 255);
         color1[1] = cv::Scalar(0, 255, 0);
@@ -307,49 +307,48 @@ int main(int argc, char *argv[]) {
         color2[0] = cv::Scalar(0, 0, 255);
         color2[1] = cv::Scalar(255, 0, 0);
         color2[2] = cv::Scalar(0, 255, 0);
-          
-        
+
+
         for(int k=0; k<3; k++) {
             stringstream s;
             if (k == 0) {
                 s << "Approximated Calibration = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);    
+                            color1[k], 2);
             }
-            else if (k == 1) { 
+            else if (k == 1) {
                 s << "Global Homography = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);                       
+                            color1[k], 2);
             }
             else {
                 s << "Local Homography = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 80), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);    
-            }            
+                            color1[k], 2);
+            }
         }
-         
-        
-        if (interpolatedCorners[interpolationMethod] > 0) {          
-            cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, 
-                                                  charucoCorners[interpolationMethod], 
+
+
+        if (interpolatedCorners[interpolationMethod] > 0) {
+            cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy,
+                                                  charucoCorners[interpolationMethod],
                                                   charucoIds[interpolationMethod],
                                                   color2[interpolationMethod]);
         }
-        
-/*        if (validPose) 
-            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, 
-                                axisLength);      */  
+
+/*        if (validPose)
+            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec,
+                                axisLength);      */
 
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'i') {
-            interpolationMethod = (interpolationMethod+1)%3;  
+            interpolationMethod = (interpolationMethod+1)%3;
             std::cout << "Interpolation method: " << interpolationMethod << std::endl;
         }
     }
 
     return 0;
 }
- 

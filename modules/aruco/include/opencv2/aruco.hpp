@@ -263,7 +263,7 @@ public:
      *
      * @param markersX number of markers in X direction
      * @param markersY number of markers in Y direction
-     * @param markerLenght marker side length (normally in meters)
+     * @param markerLength marker side length (normally in meters)
      * @param markerSeparation separation between two markers (same unit than markerLenght)
      * @param dictionary dictionary of markers indicating the type of markers.
      * The first markersX*markersY markers in the dictionary are used.
@@ -353,7 +353,7 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * this array should be Nx4. The order of the corners should be clockwise.
  * @param ids vector of identifiers for markers in markersCorners .
  * Optional, if not provided, ids are not painted.
- * @param color color of marker borders. Rest of colors (text color and first corner color)
+ * @param borderColor color of marker borders. Rest of colors (text color and first corner color)
  * are calculated based on this one.
  *
  * Given an array of detected marker corners and its corresponding ids, this functions draws

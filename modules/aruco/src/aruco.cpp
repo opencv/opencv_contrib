@@ -324,12 +324,13 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
     int cellMarginPixels = int(cellMarginRate*cellSize);
     int markerSizeWithBorders = markerSize + 2*markerBorderBits;
     cv::Mat resultImg; // marker image after removing perspective
-    float resultImgSize = markerSizeWithBorders * cellSize;
+    int resultImgSize = markerSizeWithBorders * cellSize;
     cv::Mat resultImgCorners(4, 1, CV_32FC2);
     resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
-    resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f(resultImgSize - 1, 0);
-    resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f(resultImgSize - 1, resultImgSize - 1);
-    resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, resultImgSize - 1);
+    resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f((float)resultImgSize - 1, 0);
+    resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f((float)resultImgSize - 1,
+                                                      (float)resultImgSize - 1);
+    resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, (float)resultImgSize - 1);
 
     // remove perspective
     cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
@@ -593,10 +594,10 @@ void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
 
     _objPoints.create(4, 1, CV_32FC3);
     cv::Mat objPoints = _objPoints.getMat();
-    objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength / 2., markerLength / 2., 0);
-    objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength / 2., markerLength / 2., 0);
-    objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength / 2., -markerLength / 2., 0);
-    objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength / 2., -markerLength / 2., 0);
+    objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength / 2.f, markerLength / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength / 2.f, markerLength / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength / 2.f, -markerLength / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength / 2.f, -markerLength / 2.f, 0);
 }
 
 
@@ -783,7 +784,7 @@ GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
         res.ids[i] = i;
 
     // calculate Board objPoints
-    double maxY = markersY * markerLength + (markersY - 1) * markerSeparation;
+    float maxY = (float)markersY * markerLength + (markersY - 1) * markerSeparation;
     for (int y = 0; y < markersY; y++) {
         for (int x = 0; x < markersX; x++) {
             std::vector<cv::Point3f> corners;

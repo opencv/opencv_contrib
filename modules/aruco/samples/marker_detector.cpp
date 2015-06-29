@@ -70,7 +70,7 @@ static void help() {
  */
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param ) 
+        if (string(argv[i]) == param )
             return true;
     return false;
 
@@ -82,13 +82,13 @@ bool isParam(string param, int argc, char **argv ) {
 string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param) 
+        if (string(argv[i]) == param)
             idx = i;
     if (idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
-} 
+        return argv[idx+1];
+}
 
 
 
@@ -97,7 +97,7 @@ string getParam(string param, int argc, char **argv, string defvalue = "") {
 void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
     cv::FileStorage fs(filename, cv::FileStorage::READ);
     fs["camera_matrix"] >> camMatrix;
-    fs["distortion_coefficients"] >> distCoeffs;  
+    fs["distortion_coefficients"] >> distCoeffs;
 }
 
 
@@ -120,7 +120,7 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
     fs["markerBorderBits"] >> params.markerBorderBits;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate; 
+    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
 }
 
 
@@ -133,14 +133,14 @@ int main(int argc, char *argv[]) {
         help();
         return 0;
     }
-    
+
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId); 
-    
+    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+
     bool showRejected = false;
     if (isParam("-r", argc, argv))
       showRejected = true;
-    
+
     bool estimatePose = false;
     cv::Mat camMatrix, distCoeffs;
     if (isParam("-c", argc, argv)) {
@@ -152,8 +152,8 @@ int main(int argc, char *argv[]) {
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
-    }    
-    
+    }
+
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     }
     else {
         int camId = 0;
-        if (isParam("-ci", argc, argv)) 
+        if (isParam("-ci", argc, argv))
             camId = atoi( getParam("-ci", argc, argv).c_str() );
         inputVideo.open(camId);
         waitTime = 10;
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
-        
+
         double tick = (double)cv::getTickCount();
 
         std::vector<int> ids;
@@ -192,9 +192,9 @@ int main(int argc, char *argv[]) {
         totalIterations++;
         if(totalIterations%30 == 0) {
             std::cout << "Detection Time = " << currentTime*1000 << " ms " <<
-                         "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << std::endl;            
+                         "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << std::endl;
         }
-            
+
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0) {
@@ -202,15 +202,15 @@ int main(int argc, char *argv[]) {
 
             if (estimatePose) {
                 for (unsigned int i = 0; i < ids.size(); i++)
-                        cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], 
-                                            tvecs[i], markerLength*0.5);
+                        cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i],
+                                            tvecs[i], markerLength*0.5f);
             }
-        }            
+        }
 
         if (showRejected && rejected.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, 
-                                               cv::noArray(), cv::Scalar(100, 0, 255));        
-        
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected,
+                                               cv::noArray(), cv::Scalar(100, 0, 255));
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)

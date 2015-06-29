@@ -57,11 +57,11 @@ static void help() {
     std::cout << "-sl <squareLength> # Square side lenght (in pixels)" << std::endl;
     std::cout << "-ml <markerLength> # Marker side lenght (in pixels)" << std::endl;
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "[-m <marginSize>] # Margins size (in pixels)" << 
+    std::cout << "[-m <marginSize>] # Margins size (in pixels)" <<
                  "Default is (squareLength-markerLength)" << std::endl;
     std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
-                  << std::endl;  
-    std::cout << "[-si] # show generate image" << std::endl;    
+                  << std::endl;
+    std::cout << "[-si] # show generate image" << std::endl;
 }
 
 
@@ -69,7 +69,7 @@ static void help() {
  */
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param ) 
+        if (string(argv[i]) == param )
             return true;
     return false;
 
@@ -81,13 +81,13 @@ bool isParam(string param, int argc, char **argv ) {
 string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param) 
+        if (string(argv[i]) == param)
             idx = i;
     if (idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
-} 
+        return argv[idx+1];
+}
 
 
 /**
@@ -106,41 +106,39 @@ int main(int argc, char *argv[]) {
     int markerLength = atoi( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
-    
+
     int margins = squareLength - markerLength;
     if (isParam("-m", argc, argv)) {
       margins = atoi( getParam("-m", argc, argv).c_str() );
-    }  
+    }
 
     int borderBits = 1;
     if (isParam("-bb", argc, argv)) {
       borderBits = atoi( getParam("-bb", argc, argv).c_str() );
-    }      
-    
+    }
+
     bool showImage = false;
     if (isParam("-si", argc, argv))
-      showImage = true;    
-    
+      showImage = true;
+
     cv::Size imageSize;
     imageSize.width = squaresX * squareLength + 2 * margins;
     imageSize.height = squaresY * squareLength + 2 * margins;
-    
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY, 
+
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY,
                                                                     (float)squareLength,
                                                                     (float)markerLength,
                                                                     dictionary);
 
     cv::Mat boardImage;
     board.draw(imageSize, boardImage, margins, borderBits);
-    
+
     if (showImage) {
       cv::imshow("board", boardImage);
       cv::waitKey(0);
-    } 
-    
+    }
+
     cv::imwrite( getParam("-o", argc, argv), boardImage);
-    
+
     return 0;
 }
- 
- 

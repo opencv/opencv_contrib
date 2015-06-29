@@ -90,7 +90,7 @@ public:
      * @param squaresX number of chessboard squares in X direction
      * @param squaresY number of chessboard squares in Y direction
      * @param squareLength chessboard square side length (normally in meters)
-     * @param markerLenght marker side length (same unit than squareLength)
+     * @param markerLength marker side length (same unit than squareLength)
      * @param dictionary dictionary of markers indicating the type of markers.
      * The first markers in the dictionary are used to fill the white chessboard squares.
      * @return the output CharucoBoard object

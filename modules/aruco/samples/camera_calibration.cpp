@@ -60,14 +60,14 @@ static void help() {
     std::cout << "-w <nmarkers> # Number of markers in X direction" << std::endl;
     std::cout << "-h <nmarkers> # Number of markers in Y direction" << std::endl;
     std::cout << "-l <markerLength> # Marker side lenght (in meters)" << std::endl;
-    std::cout << "-s <markerSeparation> # Separation between two consecutive" << 
+    std::cout << "-s <markerSeparation> # Separation between two consecutive" <<
                  "markers in the grid (in meters)" << std::endl;
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
     std::cout << "-o <outputFile> # Output file with calibrated camera parameters" << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << std::endl;                 
+                 << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
     std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
@@ -79,7 +79,7 @@ static void help() {
  */
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param ) 
+        if (string(argv[i]) == param )
             return true;
     return false;
 
@@ -91,13 +91,13 @@ bool isParam(string param, int argc, char **argv ) {
 string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param) 
+        if (string(argv[i]) == param)
             idx = i;
     if (idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
-} 
+        return argv[idx+1];
+}
 
 
 
@@ -120,7 +120,7 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
     fs["markerBorderBits"] >> params.markerBorderBits;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate; 
+    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
 }
 
 
@@ -190,15 +190,15 @@ int main(int argc, char *argv[]) {
         aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
-        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
+        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;
     if (isParam("-p", argc, argv))
-        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;      
-    
+        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
-    }        
-    
+    }
+
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -207,13 +207,13 @@ int main(int argc, char *argv[]) {
     }
     else {
         int camId = 0;
-        if (isParam("-ci", argc, argv)) 
+        if (isParam("-ci", argc, argv))
             camId = atoi( getParam("-ci", argc, argv).c_str() );
         inputVideo.open(camId);
         waitTime = 10;
     }
 
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength, 
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength,
                                                               markerSeparation, dictionary);
 
     std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
@@ -250,18 +250,18 @@ int main(int argc, char *argv[]) {
     cv::Mat cameraMatrix, distCoeffs;
     std::vector<cv::Mat> rvecs, tvecs;
     double repError;
-    
+
     if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
         cameraMatrix = Mat::eye(3, 3, CV_64F);
-        cameraMatrix.at<double>(0,0) = aspectRatio;  
+        cameraMatrix.at<double>(0,0) = aspectRatio;
     }
-    
+
     repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix,
                                                distCoeffs, rvecs, tvecs, calibrationFlags);
 
-    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
+    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,
                      repError );
-    
+
     std::cout << "Rep Error: " << repError << std::endl;
     std::cout << "Calibration saved to " << outputFile << std::endl;
 

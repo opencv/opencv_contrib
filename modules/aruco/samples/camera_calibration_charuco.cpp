@@ -66,12 +66,12 @@ static void help() {
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << std::endl;                 
+                 << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
     std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
     std::cout << "[-p] # Fix the principal point at the center" << std::endl;
-    std::cout << "[-sc] # Show detected chessboard corners after calibration" << std::endl;    
+    std::cout << "[-sc] # Show detected chessboard corners after calibration" << std::endl;
 }
 
 
@@ -79,7 +79,7 @@ static void help() {
  */
 bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param ) 
+        if (string(argv[i]) == param )
             return true;
     return false;
 
@@ -91,13 +91,13 @@ bool isParam(string param, int argc, char **argv ) {
 string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param) 
+        if (string(argv[i]) == param)
             idx = i;
     if (idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
-} 
+        return argv[idx+1];
+}
 
 
 
@@ -120,7 +120,7 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
     fs["markerBorderBits"] >> params.markerBorderBits;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate; 
+    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
 }
 
 
@@ -182,9 +182,9 @@ int main(int argc, char *argv[]) {
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     string outputFile = getParam("-o", argc, argv);
-    
+
     bool showChessboardCorners = isParam("-sc", argc, argv);
-    
+
     int calibrationFlags = 0;
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {
@@ -192,16 +192,16 @@ int main(int argc, char *argv[]) {
         aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
-        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;    
+        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;
     if (isParam("-p", argc, argv))
-        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;      
-    
+        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
     detectorParams.doCornerRefinement=false; // no corner refinement in markers
-    
+
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -210,20 +210,20 @@ int main(int argc, char *argv[]) {
     }
     else {
         int camId = 0;
-        if (isParam("-ci", argc, argv)) 
+        if (isParam("-ci", argc, argv))
             camId = atoi( getParam("-ci", argc, argv).c_str() );
         inputVideo.open(camId);
         waitTime = 10;
     }
 
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY, 
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY,
                                                                     squareLength, markerLength,
                                                                     dictionary);
 
     std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
     std::vector<std::vector<int> > allIds;
     std::vector<cv::Mat> allImgs;
-    cv::Size imgSize;    
+    cv::Size imgSize;
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -249,40 +249,40 @@ int main(int argc, char *argv[]) {
             allCorners.push_back(corners);
             allIds.push_back(ids);
             allImgs.push_back(image);
-            imgSize = image.size();            
+            imgSize = image.size();
         }
     }
 
     cv::Mat cameraMatrix, distCoeffs;
     std::vector<cv::Mat> rvecs, tvecs;
     double repError;
-    
+
     if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
         cameraMatrix = Mat::eye(3, 3, CV_64F);
-        cameraMatrix.at<double>(0,0) = aspectRatio;  
+        cameraMatrix.at<double>(0,0) = aspectRatio;
     }
-    
+
     double arucoRepErr;
-    arucoRepErr = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix, 
-                                                  distCoeffs, cv::noArray(), cv::noArray(), 
-                                                  calibrationFlags); 
-    
+    arucoRepErr = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix,
+                                                  distCoeffs, cv::noArray(), cv::noArray(),
+                                                  calibrationFlags);
+
     int nFrames = (int)allCorners.size();
     std::vector<cv::Mat> allCharucoCorners;
     std::vector<cv::Mat> allCharucoIds;
     std::vector<cv::Mat> filteredImages;
     allCharucoCorners.reserve(nFrames);
     allCharucoIds.reserve(nFrames);
-    
+
     for (int i=0; i<nFrames; i++) {
         cv::Mat currentCharucoCorners, currentCharucoIds;
-        cv::aruco::interpolateCornersCharucoApproxCalib(allCorners[i], allIds[i], allImgs[i], 
-                                                        board, cameraMatrix, distCoeffs, 
+        cv::aruco::interpolateCornersCharucoApproxCalib(allCorners[i], allIds[i], allImgs[i],
+                                                        board, cameraMatrix, distCoeffs,
                                                         currentCharucoCorners, currentCharucoIds);
         bool validPose;
         cv::Mat currentRvec, currentTvec;
-        validPose = cv::aruco::estimatePoseCharucoBoard(currentCharucoCorners, currentCharucoIds, 
-                                                        board, cameraMatrix, distCoeffs, 
+        validPose = cv::aruco::estimatePoseCharucoBoard(currentCharucoCorners, currentCharucoIds,
+                                                        board, cameraMatrix, distCoeffs,
                                                         currentRvec, currentTvec);
         if(validPose) {
             allCharucoCorners.push_back(currentCharucoCorners);
@@ -290,37 +290,36 @@ int main(int argc, char *argv[]) {
             filteredImages.push_back(allImgs[i]);
         }
     }
-        
-    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, 
-                                                 cameraMatrix, distCoeffs, rvecs, tvecs, 
+
+    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize,
+                                                 cameraMatrix, distCoeffs, rvecs, tvecs,
                                                  calibrationFlags);
 
-    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs, 
+    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,
                      repError );
-    
+
     std::cout << "Rep Error: " << repError << std::endl;
     std::cout << "Rep Error Aruco: " << arucoRepErr << std::endl;
     std::cout << "Calibration saved to " << outputFile << std::endl;
-    
+
     if (showChessboardCorners) {
         for (unsigned int frame = 0; frame < allImgs.size(); frame++) {
             cv::Mat imageCopy = filteredImages[frame].clone();
-            if (allIds[frame].size() > 0) {          
+            if (allIds[frame].size() > 0) {
 
-                if (allCharucoCorners[frame].total() > 0) { 
-                    cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, 
-                                                          allCharucoCorners[frame], 
-                                                          allCharucoIds[frame]);        
+                if (allCharucoCorners[frame].total() > 0) {
+                    cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy,
+                                                          allCharucoCorners[frame],
+                                                          allCharucoIds[frame]);
                 }
             }
-            
+
             cv::imshow("out", imageCopy);
             char key = (char) cv::waitKey(waitTime);
-            if (key == 27) 
+            if (key == 27)
                 break;
         }
     }
 
     return 0;
 }
- 

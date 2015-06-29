@@ -78,8 +78,8 @@ void CV_ArucoDetectionSimple::run(int) {
                                                       x*(1.5f*markerSidePixels),
                                                       markerSidePixels/2.f +
                                                       y*(1.5f*markerSidePixels) );
-                cv::Mat aux = img.colRange(firstCorner.x, firstCorner.x+markerSidePixels)
-                                 .rowRange(firstCorner.y, firstCorner.y+markerSidePixels);
+                cv::Mat aux = img.colRange((int)firstCorner.x, (int)firstCorner.x+markerSidePixels)
+                                 .rowRange((int)firstCorner.y, (int)firstCorner.y+markerSidePixels);
                 marker.copyTo(aux);
                 groundTruthIds.push_back(id);
                 groundTruthCorners.push_back( std::vector<cv::Point2f>() );
@@ -194,9 +194,9 @@ cv::Mat projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMa
     cv::Mat rvec, tvec;
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
-    const float markerLength = 0.05;
+    const float markerLength = 0.05f;
     std::vector<cv::Point3f> markerObjPoints;
-    markerObjPoints.push_back( cv::Point3f(-markerLength/2., +markerLength/2., 0) );
+    markerObjPoints.push_back( cv::Point3f(-markerLength/2.f, +markerLength/2.f, 0) );
     markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(markerLength, 0, 0) );
     markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(markerLength, -markerLength, 0) );
     markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(0, -markerLength, 0) );
@@ -315,10 +315,3 @@ TEST(Aruco_MarkerDetectionPerspective, algorithmic) {
     CV_ArucoDetectionPerspective test;
     test.safe_run();
 }
-
-
-
-
-
-
-
