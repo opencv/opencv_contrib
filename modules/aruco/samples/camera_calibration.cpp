@@ -231,12 +231,12 @@ int main(int argc, char *argv[]) {
         cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams);
 
         // draw results
-	image.copyTo(imageCopy);
+        image.copyTo(imageCopy);
         if (ids.size() > 0)
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
-        int key = cv::waitKey(waitTime);
+        char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'c' && ids.size() > 0) {

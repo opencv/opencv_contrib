@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
-        int key = cv::waitKey(waitTime);
+        char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'c' && ids.size() > 0) {
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
             }
             
             cv::imshow("out", imageCopy);
-            int key = cv::waitKey(0);
+            char key = (char) cv::waitKey(waitTime);
             if (key == 27) 
                 break;
         }

@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
                                                cv::noArray(), cv::Scalar(100, 0, 255));        
         
         cv::imshow("out", imageCopy);
-        int key = cv::waitKey(waitTime);
+        char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
     }

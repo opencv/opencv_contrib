@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         cv::imshow("out", imageCopy);
-        int key = cv::waitKey(waitTime);
+        char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
     }
