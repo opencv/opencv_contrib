@@ -9,6 +9,7 @@ namespace cv{
         public:
             TrackingFunctionPF(const Mat& chosenRect);
             void update(const Mat& image);
+            int getDims() const { return 4; }
             double calc(const double* x) const;
             void correctParams(double* pt)const;
         private:

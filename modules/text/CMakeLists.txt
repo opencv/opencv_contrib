@@ -18,7 +18,7 @@ include_directories(${Tesseract_INCLUDE_DIR})
 endif()
 
 set(the_description "Text Detection and Recognition")
-ocv_define_module(text opencv_ml opencv_highgui opencv_imgproc opencv_core opencv_features2d)
+ocv_define_module(text opencv_ml opencv_highgui opencv_imgproc opencv_core opencv_features2d WRAP python)
 
 if(${Tesseract_FOUND})
   target_link_libraries(opencv_text ${Tesseract_LIBS})

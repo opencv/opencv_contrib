@@ -58,17 +58,17 @@ namespace lsvm
 int estimateBoxes(CvPoint *points, int *levels, int kPoints,
                   int sizeX, int sizeY, CvPoint **oppositePoints);
 
-int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
-                          const CvLSVMFeaturePyramidCaskade *H_PCA,
-                          const CvLSVMFilterObjectCaskade **all_F, int n,
+int searchObjectThreshold(const CvLSVMFeaturePyramidCascade *H,
+                          const CvLSVMFeaturePyramidCascade *H_PCA,
+                          const CvLSVMFilterObjectCascade **all_F, int n,
                           float b,
                           int maxXBorder, int maxYBorder,
                           float scoreThreshold,
                           CvPoint **points, int **levels, int *kPoints,
                           float **score, CvPoint ***partsDisplacement);
 
-void FeaturePyramid32(CvLSVMFeaturePyramidCaskade* H, int maxX, int maxY){
-    CvLSVMFeatureMapCaskade *H32; 
+void FeaturePyramid32(CvLSVMFeaturePyramidCascade* H, int maxX, int maxY){
+    CvLSVMFeatureMapCascade *H32; 
     int i, j, k, l;
     int p  = H->pyramid[0]->numFeatures;
 
@@ -92,8 +92,8 @@ void FeaturePyramid32(CvLSVMFeaturePyramidCaskade* H, int maxX, int maxY){
     }
 }
 
-CvLSVMFeaturePyramidCaskade* createPCA_FeaturePyramid(CvLSVMFeaturePyramidCaskade* H, CvLatentSvmDetectorCaskade* detector, int maxX, int maxY){
-    CvLSVMFeaturePyramidCaskade *H_PCA; 
+CvLSVMFeaturePyramidCascade* createPCA_FeaturePyramid(CvLSVMFeaturePyramidCascade* H, CvLatentSvmDetectorCascade* detector, int maxX, int maxY){
+    CvLSVMFeaturePyramidCascade *H_PCA; 
     int i, j, k, l;
     int max_l = detector->pca_size;
     int p = H->pyramid[0]->numFeatures;
@@ -239,13 +239,13 @@ int clippingBoxes(int width, int height,
 // RESULT
 // Feature pyramid with nullable border
 */
-CvLSVMFeaturePyramidCaskade* createFeaturePyramidWithBorder(IplImage *image,
+CvLSVMFeaturePyramidCascade* createFeaturePyramidWithBorder(IplImage *image,
                                                int maxXBorder, int maxYBorder)
 {
     int opResult;
     int bx, by;
     int level;
-    CvLSVMFeaturePyramidCaskade *H;
+    CvLSVMFeaturePyramidCascade *H;
 
     // Obtaining feature pyramid
     opResult = getFeaturePyramid(image, &H);
@@ -303,7 +303,7 @@ int estimateBoxes(CvPoint *points, int *levels, int kPoints,
 //
 // API
 // int searchObjectThreshold(const featurePyramid *H, 
-                             const CvLSVMFilterObjectCaskade **all_F, int n,
+                             const CvLSVMFilterObjectCascade **all_F, int n,
                              float b, 
                              int maxXBorder, int maxYBorder, 
                              float scoreThreshold,
@@ -329,9 +329,9 @@ int estimateBoxes(CvPoint *points, int *levels, int kPoints,
 // RESULT
 // Error status
 */
-int searchObjectThreshold(const CvLSVMFeaturePyramidCaskade *H,
-                          const CvLSVMFeaturePyramidCaskade *H_PCA,
-                          const CvLSVMFilterObjectCaskade **all_F, int n,
+int searchObjectThreshold(const CvLSVMFeaturePyramidCascade *H,
+                          const CvLSVMFeaturePyramidCascade *H_PCA,
+                          const CvLSVMFilterObjectCascade **all_F, int n,
                           float b, 
                           int maxXBorder, int maxYBorder, 
                           float scoreThreshold,
@@ -630,7 +630,7 @@ int getOppositePoint(CvPoint point,
 //
 // API
 // int showRootFilterBoxes(const IplImage *image,
-                           const CvLSVMFilterObjectCaskade *filter, 
+                           const CvLSVMFilterObjectCascade *filter, 
                            CvPoint *points, int *levels, int kPoints,
                            CvScalar color, int thickness, 
                            int line_type, int shift);
@@ -650,7 +650,7 @@ int getOppositePoint(CvPoint point,
 // Error status
 */
 int showRootFilterBoxes(IplImage *image,
-                        const CvLSVMFilterObjectCaskade *filter, 
+                        const CvLSVMFilterObjectCascade *filter, 
                         CvPoint *points, int *levels, int kPoints,
                         CvScalar color, int thickness, 
                         int line_type, int shift)
@@ -679,7 +679,7 @@ int showRootFilterBoxes(IplImage *image,
 //
 // API
 // int showPartFilterBoxes(const IplImage *image,
-                           const CvLSVMFilterObjectCaskade *filter, 
+                           const CvLSVMFilterObjectCascade *filter, 
                            CvPoint *points, int *levels, int kPoints,
                            CvScalar color, int thickness, 
                            int line_type, int shift);
@@ -700,7 +700,7 @@ int showRootFilterBoxes(IplImage *image,
 // Error status
 */
 int showPartFilterBoxes(IplImage *image,
-                        const CvLSVMFilterObjectCaskade **filters,
+                        const CvLSVMFilterObjectCascade **filters,
                         int n, CvPoint **partsDisplacement, 
                         int *levels, int kPoints,
                         CvScalar color, int thickness, 
@@ -770,7 +770,7 @@ int showBoxes(IplImage *img,
 //// Computation maximum filter size for each dimension
 ////
 //// API
-//// int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+//// int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
 //                        const int *kPartFilters, 
 //                        unsigned int *maxXBorder, unsigned int *maxYBorder);
 //// INPUT
@@ -784,7 +784,7 @@ int showBoxes(IplImage *img,
 //// RESULT
 //// Error status
 //*/
-//int getMaxFilterDims(const CvLSVMFilterObjectCaskade **filters, int kComponents,
+//int getMaxFilterDims(const CvLSVMFilterObjectCascade **filters, int kComponents,
 //                     const int *kPartFilters, 
 //                     unsigned int *maxXBorder, unsigned int *maxYBorder)
 //{
@@ -812,9 +812,9 @@ int showBoxes(IplImage *img,
 
 class PathOfModel :public ParallelLoopBody{
     int *componentIndex;
-    const CvLSVMFeaturePyramidCaskade *H;
-    const CvLSVMFeaturePyramidCaskade *H_PCA;
-    const CvLSVMFilterObjectCaskade **filters;
+    const CvLSVMFeaturePyramidCascade *H;
+    const CvLSVMFeaturePyramidCascade *H_PCA;
+    const CvLSVMFilterObjectCascade **filters;
     const int *kPartFilters;
     const float *b;
     unsigned int maxXBorder, maxYBorder;
@@ -826,9 +826,9 @@ class PathOfModel :public ParallelLoopBody{
 public:
     PathOfModel(
       int *_componentIndex,
-    const CvLSVMFeaturePyramidCaskade *_H,
-    const CvLSVMFeaturePyramidCaskade *_H_PCA,
-    const CvLSVMFilterObjectCaskade **_filters,
+    const CvLSVMFeaturePyramidCascade *_H,
+    const CvLSVMFeaturePyramidCascade *_H_PCA,
+    const CvLSVMFilterObjectCascade **_filters,
     const int *_kPartFilters,
     const float *_b,
     unsigned int _maxXBorder, unsigned int _maxYBorder,
@@ -878,7 +878,7 @@ public:
 //
 // API
 // int searchObjectThresholdSomeComponents(const featurePyramid *H,
-                                           const CvLSVMFilterObjectCaskade **filters, 
+                                           const CvLSVMFilterObjectCascade **filters, 
                                            int kComponents, const int *kPartFilters,
                                            const float *b, float scoreThreshold,
                                            CvPoint **points, CvPoint **oppPoints,
@@ -898,9 +898,9 @@ public:
 // RESULT
 // Error status
 */
-int searchObjectThresholdSomeComponents(const CvLSVMFeaturePyramidCaskade *H,
-                                        const CvLSVMFeaturePyramidCaskade *H_PCA,
-                                        const CvLSVMFilterObjectCaskade **filters, 
+int searchObjectThresholdSomeComponents(const CvLSVMFeaturePyramidCascade *H,
+                                        const CvLSVMFeaturePyramidCascade *H_PCA,
+                                        const CvLSVMFilterObjectCascade **filters, 
                                         int kComponents, const int *kPartFilters,
                                         const float *b, float scoreThreshold,
                                         CvPoint **points, CvPoint **oppPoints,

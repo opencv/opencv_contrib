@@ -116,7 +116,7 @@ namespace lsvm
               const char *modelPath,// model path
              
               // output parametrs
-              CvLSVMFilterObjectCaskade ***filters,
+              CvLSVMFilterObjectCascade ***filters,
               int *kFilters, 
               int *kComponents, 
               int **kPartFilters, 

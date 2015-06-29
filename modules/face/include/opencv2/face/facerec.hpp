@@ -20,13 +20,19 @@ namespace cv { namespace face {
 class CV_EXPORTS_W BasicFaceRecognizer : public FaceRecognizer
 {
 public:
-    CV_PURE_PROPERTY(int, NumComponents)
-    CV_PURE_PROPERTY(double, Threshold)
-    CV_PURE_PROPERTY_RO(std::vector<cv::Mat>, Projections)
-    CV_PURE_PROPERTY_RO(cv::Mat, Labels)
-    CV_PURE_PROPERTY_RO(cv::Mat, EigenValues)
-    CV_PURE_PROPERTY_RO(cv::Mat, EigenVectors)
-    CV_PURE_PROPERTY_RO(cv::Mat, Mean)
+    /** @see setNumComponents */
+    CV_WRAP virtual int getNumComponents() const = 0;
+    /** @copybrief getNumComponents @see getNumComponents */
+    CV_WRAP virtual void setNumComponents(int val) = 0;
+    /** @see setThreshold */
+    CV_WRAP virtual double getThreshold() const = 0;
+    /** @copybrief getThreshold @see getThreshold */
+    CV_WRAP virtual void setThreshold(double val) = 0;
+    CV_WRAP virtual std::vector<cv::Mat> getProjections() const = 0;
+    CV_WRAP virtual cv::Mat getLabels() const = 0;
+    CV_WRAP virtual cv::Mat getEigenValues() const = 0;
+    CV_WRAP virtual cv::Mat getEigenVectors() const = 0;
+    CV_WRAP virtual cv::Mat getMean() const = 0;
 };
 
 /**
@@ -95,13 +101,28 @@ CV_EXPORTS_W Ptr<BasicFaceRecognizer> createFisherFaceRecognizer(int num_compone
 class CV_EXPORTS_W LBPHFaceRecognizer : public FaceRecognizer
 {
 public:
-    CV_PURE_PROPERTY(int, GridX)
-    CV_PURE_PROPERTY(int, GridY)
-    CV_PURE_PROPERTY(int, Radius)
-    CV_PURE_PROPERTY(int, Neighbors)
-    CV_PURE_PROPERTY(double, Threshold)
-    CV_PURE_PROPERTY_RO(std::vector<cv::Mat>, Histograms)
-    CV_PURE_PROPERTY_RO(cv::Mat, Labels)
+    /** @see setGridX */
+    CV_WRAP virtual int getGridX() const = 0;
+    /** @copybrief getGridX @see getGridX */
+    CV_WRAP virtual void setGridX(int val) = 0;
+    /** @see setGridY */
+    CV_WRAP virtual int getGridY() const = 0;
+    /** @copybrief getGridY @see getGridY */
+    CV_WRAP virtual void setGridY(int val) = 0;
+    /** @see setRadius */
+    CV_WRAP virtual int getRadius() const = 0;
+    /** @copybrief getRadius @see getRadius */
+    CV_WRAP virtual void setRadius(int val) = 0;
+    /** @see setNeighbors */
+    CV_WRAP virtual int getNeighbors() const = 0;
+    /** @copybrief getNeighbors @see getNeighbors */
+    CV_WRAP virtual void setNeighbors(int val) = 0;
+    /** @see setThreshold */
+    CV_WRAP virtual double getThreshold() const = 0;
+    /** @copybrief getThreshold @see getThreshold */
+    CV_WRAP virtual void setThreshold(double val) = 0;
+    CV_WRAP virtual std::vector<cv::Mat> getHistograms() const = 0;
+    CV_WRAP virtual cv::Mat getLabels() const = 0;
 };
 
 /**

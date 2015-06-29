@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -61,7 +61,7 @@ enum EdgeAwareFiltersList
 
 /** @brief Interface for realizations of Domain Transform filter.
 
-For more details about this filter see @cite Gastal11.
+For more details about this filter see @cite Gastal11 .
  */
 class CV_EXPORTS_W DTFilter : public Algorithm
 {
@@ -125,7 +125,7 @@ void dtFilter(InputArray guide, InputArray src, OutputArray dst, double sigmaSpa
 
 /** @brief Interface for realizations of Guided Filter.
 
-For more details about this filter see @cite Kaiming10.
+For more details about this filter see @cite Kaiming10 .
  */
 class CV_EXPORTS_W GuidedFilter : public Algorithm
 {
@@ -153,7 +153,7 @@ channels then only first 3 channels will be used.
 @param eps regularization term of Guided Filter. \f${eps}^2\f$ is similar to the sigma in the color
 space into bilateralFilter.
 
-For more details about Guided Filter parameters, see the original article @cite Kaiming10.
+For more details about Guided Filter parameters, see the original article @cite Kaiming10 .
  */
 CV_EXPORTS_W Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps);
 
@@ -217,12 +217,30 @@ public:
 
     CV_WRAP static Ptr<AdaptiveManifoldFilter> create();
 
-    CV_PURE_PROPERTY(double, SigmaS)
-    CV_PURE_PROPERTY(double, SigmaR)
-    CV_PURE_PROPERTY(int, TreeHeight)
-    CV_PURE_PROPERTY(int, PCAIterations)
-    CV_PURE_PROPERTY(bool, AdjustOutliers)
-    CV_PURE_PROPERTY(bool, UseRNG)
+    /** @see setSigmaS */
+    virtual double getSigmaS() const = 0;
+    /** @copybrief getSigmaS @see getSigmaS */
+    virtual void setSigmaS(double val) = 0;
+    /** @see setSigmaR */
+    virtual double getSigmaR() const = 0;
+    /** @copybrief getSigmaR @see getSigmaR */
+    virtual void setSigmaR(double val) = 0;
+    /** @see setTreeHeight */
+    virtual int getTreeHeight() const = 0;
+    /** @copybrief getTreeHeight @see getTreeHeight */
+    virtual void setTreeHeight(int val) = 0;
+    /** @see setPCAIterations */
+    virtual int getPCAIterations() const = 0;
+    /** @copybrief getPCAIterations @see getPCAIterations */
+    virtual void setPCAIterations(int val) = 0;
+    /** @see setAdjustOutliers */
+    virtual bool getAdjustOutliers() const = 0;
+    /** @copybrief getAdjustOutliers @see getAdjustOutliers */
+    virtual void setAdjustOutliers(bool val) = 0;
+    /** @see setUseRNG */
+    virtual bool getUseRNG() const = 0;
+    /** @copybrief getUseRNG @see getUseRNG */
+    virtual void setUseRNG(bool val) = 0;
 };
 
 /** @brief Factory method, create instance of AdaptiveManifoldFilter and produce some initialization routines.
@@ -235,7 +253,7 @@ bilateralFilter.
 @param adjust_outliers optional, specify perform outliers adjust operation or not, (Eq. 9) in the
 original paper.
 
-For more details about Adaptive Manifold Filter parameters, see the original article @cite Gastal12.
+For more details about Adaptive Manifold Filter parameters, see the original article @cite Gastal12 .
 
 @note Joint images with CV_8U and CV_16U depth converted to images with CV_32F depth and [0; 1]
 color range before processing. Hence color space sigma sigma_r must be in [0; 1] range, unlike same
@@ -298,8 +316,69 @@ proportional to sigmaSpace .
 CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
-//! @}
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
+
+/** @brief Interface for implementations of Fast Global Smoother filter.
+
+For more details about this filter see @cite Min2014 and @cite Farbman2008 .
+*/
+class CV_EXPORTS_W FastGlobalSmootherFilter : public Algorithm
+{
+public:
+    /** @brief Apply smoothing operation to the source image.
+
+    @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
+
+    @param dst destination image.
+    */
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst) = 0;
+};
+
+/** @brief Factory method, create instance of FastGlobalSmootherFilter and execute the initialization routines.
+
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
+
+@param lambda parameter defining the amount of regularization
+
+@param sigma_color parameter, that is similar to color space sigma in bilateralFilter.
+
+@param lambda_attenuation internal parameter, defining how much lambda decreases after each iteration. Normally,
+it should be 0.25. Setting it to 1.0 may lead to streaking artifacts.
+
+@param num_iter number of iterations used for filtering, 3 is usually enough.
+
+For more details about Fast Global Smoother parameters, see the original paper @cite Min2014. However, please note that
+there are several differences. Lambda attenuation described in the paper is implemented a bit differently so do not
+expect the results to be identical to those from the paper; sigma_color values from the paper should be multiplied by 255.0 to
+achieve the same effect. Also, in case of image filtering where source and guide image are the same, authors
+propose to dynamically update the guide image after each iteration. To maximize the performance this feature
+was not implemented here.
+*/
+CV_EXPORTS_W Ptr<FastGlobalSmootherFilter> createFastGlobalSmootherFilter(InputArray guide, double lambda, double sigma_color, double lambda_attenuation=0.25, int num_iter=3);
+
+/** @brief Simple one-line Fast Global Smoother filter call. If you have multiple images to filter with the same
+guide then use FastGlobalSmootherFilter interface to avoid extra computations.
+
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
+
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
+
+@param dst destination image.
+
+@param lambda parameter defining the amount of regularization
+
+@param sigma_color parameter, that is similar to color space sigma in bilateralFilter.
+
+@param lambda_attenuation internal parameter, defining how much lambda decreases after each iteration. Normally,
+it should be 0.25. Setting it to 1.0 may lead to streaking artifacts.
+
+@param num_iter number of iterations used for filtering, 3 is usually enough.
+*/
+CV_EXPORTS_W void fastGlobalSmootherFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, double lambda_attenuation=0.25, int num_iter=3);
+
+//! @}
 }
 }
 #endif

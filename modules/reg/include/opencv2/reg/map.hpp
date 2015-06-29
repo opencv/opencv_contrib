@@ -45,7 +45,7 @@
 The Registration module implements parametric image registration. The implemented method is direct
 alignment, that is, it uses directly the pixel values for calculating the registration between a
 pair of images, as opposed to feature-based registration. The implementation follows essentially the
-corresponding part of @cite Szeliski06.
+corresponding part of @cite Szeliski06 .
 
 Feature based methods have some advantages over pixel based methods when we are trying to register
 pictures that have been shoot under different lighting conditions or exposition times, or when the
