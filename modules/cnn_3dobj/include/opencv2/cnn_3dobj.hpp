@@ -76,13 +76,12 @@ class CV_EXPORTS_W IcoSphere
 		float Z;
 
 	public:
-
-
 		std::vector<float> vertexNormalsList;
 		std::vector<float> vertexList;
 		std::vector<cv::Point3d> CameraPos;
 		std::vector<cv::Point3d> CameraPos_temp;
 		float radius;
+		float diff;
 		IcoSphere(float radius_in, int depth_in);
 		/** @brief Make all view points having the some distance from the focal point used by the camera view.
 		*/

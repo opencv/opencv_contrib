@@ -12,7 +12,8 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make
-$ ./sphereview_test 350 2 ../ape.ply
+$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
 ==============================================
-Then press 'q' to run the demo for images generation, parameter '350' represent the radius of the sphere and '2' stand for the depth of the sphere building iteration and '../ape.ply' represent the .ply model
+demo :$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
+Then press 'q' to run the demo for images generation when you see the gray background and a coordinate.
 ==============================================

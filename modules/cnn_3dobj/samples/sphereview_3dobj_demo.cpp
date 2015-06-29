@@ -42,13 +42,29 @@ using namespace cv;
 using namespace std;
 using namespace cv::cnn_3dobj;
 int main(int argc, char *argv[]){
-	float radius = atof(argv[1]);
-	int ite_depth = argv[2][0] - '0';
+	const String keys = "{help | | demo :$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+			     "{radius | 350 | Distanse from camera to object, used for adjust view for the reason that differet scale of .ply model.}"
+			     "{ite_depth | 1 | Iteration of sphere generation, we add points on the middle of lines of sphere and adjust the radius suit for the original radius.}"
+			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
+			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
+			     "{labeldir | ../data/label_ape.txt | path of the generated images for one particular .ply model. }";
+	cv::CommandLineParser parser(argc, argv, keys);
+	parser.about("Demo for Sphere View data generation");
+	if (parser.has("help"))
+	{
+		parser.printMessage();
+		return 0;	
+	}
+	float radius = parser.get<float>("radius");
+	int ite_depth = parser.get<int>("ite_depth");
+	string plymodel = parser.get<string>("plymodel");
+	string imagedir = parser.get<string>("imagedir");
+	string labeldir = parser.get<string>("labeldir");
 	cv::cnn_3dobj::IcoSphere ViewSphere(10,ite_depth);
 	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
 	std::fstream imglabel;
-	std::string plymodel = argv[3];
-	imglabel.open("../data/label_ape.txt");
+	char* p=(char*)labeldir.data();
+	imglabel.open(p);
 	//IcoSphere ViewSphere(16,0);
 	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	bool camera_pov = (true);
@@ -100,7 +116,7 @@ int main(int argc, char *argv[]){
 		char* temp = new char;
 		sprintf (temp,"%d",pose);
 		string filename = temp;
-		filename = "../data/images_ape/" + filename;
+		filename = imagedir + filename;
 		filename += ".png";
 		myWindow.saveScreenshot(filename);
 	}

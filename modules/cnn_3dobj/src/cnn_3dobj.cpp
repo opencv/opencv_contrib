@@ -13,7 +13,7 @@ namespace cv{ namespace cnn_3dobj{
 		int depth = depth_in;
 		X *= radius;
 		Z *= radius;
-
+		diff = 0.00000005964;
 		float vdata[12][3] = { { -X, 0.0f, Z }, { X, 0.0f, Z },
 				{ -X, 0.0f, -Z }, { X, 0.0f, -Z }, { 0.0f, Z, X }, { 0.0f, Z, -X },
 				{ 0.0f, -Z, X }, { 0.0f, -Z, -X }, { Z, X, 0.0f }, { -Z, X, 0.0f },
@@ -32,15 +32,15 @@ namespace cv{ namespace cnn_3dobj{
 		// Iterate over points
 		for (int i = 0; i < 20; ++i) {
 
-			subdivide(vdata[tindices[i][1]], vdata[tindices[i][2]],
-					vdata[tindices[i][3]], depth);
+			subdivide(vdata[tindices[i][0]], vdata[tindices[i][1]],
+					vdata[tindices[i][2]], depth);
 		}
 		CameraPos_temp.push_back(CameraPos[0]);
 		for (int j = 1; j<int(CameraPos.size()); j++)
 			{
 				for (int k = 0; k<j; k++)
 				{
-					if (CameraPos.at(k).x==CameraPos.at(j).x && CameraPos.at(k).y==CameraPos.at(j).y && CameraPos.at(k).z==CameraPos.at(j).z)
+					if (CameraPos.at(k).x-CameraPos.at(j).x<diff && CameraPos.at(k).y-CameraPos.at(j).y<diff && CameraPos.at(k).z-CameraPos.at(j).z<diff)
 						break;
 					if(k == j-1)
 						CameraPos_temp.push_back(CameraPos[j]);
@@ -114,6 +114,4 @@ namespace cv{ namespace cnn_3dobj{
 		subdivide(v3, v31, v23, depth - 1);
 		subdivide(v12, v23, v31, depth - 1);
 	}
-
-
 }}
