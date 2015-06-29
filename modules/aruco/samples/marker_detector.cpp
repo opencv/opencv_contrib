@@ -59,7 +59,7 @@ static void help() {
     std::cout << "[-c <cameraParams>] # Camera intrinsic parameters. Needed for camera pose"
               << std::endl;
     std::cout << "[-l <markerLength>] # Marker side lenght (in meters). Needed for correct" <<
-                 "scale in camera pose, default 0.1" << std::endl;	      
+                 "scale in camera pose, default 0.1" << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
     std::cout << "[-r] # show rejected candidates too" << std::endl;
 }
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             if (estimatePose) {
-                for (int i = 0; i < ids.size(); i++)
+                for (unsigned int i = 0; i < ids.size(); i++)
                         cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], 
                                             tvecs[i], markerLength*0.5);
             }

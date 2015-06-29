@@ -122,8 +122,10 @@ void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &can
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
               minCornerDistance > 0 && minDistanceToBorder >= 0);
 
-    int minPerimeterPixels = minPerimeterRate * std::max(_in.getMat().cols, _in.getMat().rows);
-    int maxPerimeterPixels = maxPerimeterRate * std::max(_in.getMat().cols, _in.getMat().rows);
+    unsigned int minPerimeterPixels = minPerimeterRate * std::max(_in.getMat().cols,
+                                                                  _in.getMat().rows);
+    unsigned int maxPerimeterPixels = maxPerimeterRate * std::max(_in.getMat().cols,
+                                                                  _in.getMat().rows);
     cv::Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
@@ -355,14 +357,14 @@ cv::Mat _extractBits(InputArray _image, InputArray _corners, int markerSize, int
     // now extract code
     cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
-    for (unsigned int y = 0; y < markerSizeWithBorders; y++) {
-        for (unsigned int x = 0; x < markerSizeWithBorders; x++) {
+    for (int y = 0; y < markerSizeWithBorders; y++) {
+        for (int x = 0; x < markerSizeWithBorders; x++) {
             int Xstart = x * (cellSize)+cellMarginPixels;
             int Ystart = y * (cellSize)+cellMarginPixels;
             cv::Mat square =
                 resultImg(cv::Rect(Xstart, Ystart, cellSize - 2*cellMarginPixels,
                                    cellSize - 2*cellMarginPixels));
-            int nZ = countNonZero(square);
+            unsigned int nZ = countNonZero(square);
             if (nZ > square.total() / 2)
                 bits.at<unsigned char>(y, x) = 1;
         }
@@ -606,7 +608,7 @@ const DictionaryData &_getDictionaryData(DICTIONARY name) {
     case DICT_6X6_250:
         return DICT_6X6_250_DATA;
     }
-    return DictionaryData();
+    return DICT_ARUCO_DATA;
 }
 
 
@@ -639,7 +641,7 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
               params.cornerRefinementMinAccuracy > 0);
 
     if(params.doCornerRefinement) {
-        for (int i = 0; i < _corners.total(); i++) {
+        for (unsigned int i = 0; i < _corners.total(); i++) {
             cv::cornerSubPix(grey, _corners.getMat(i),
                              cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
                              cvSize(-1, -1),
@@ -699,7 +701,7 @@ void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
     // look for detected markers that belong to the board and get their information
     for (int i = 0; i < nDetectedMarkets; i++) {
         int currentId = _detectedIds.getMat().ptr<int>(0)[i];
-        for (int j = 0; j < board.ids.size(); j++) {
+        for (unsigned int j = 0; j < board.ids.size(); j++) {
             if (currentId == board.ids[j]) {
                 for (int p = 0; p < 4; p++) {
                     objPnts.push_back(board.objPoints[j][p]);
@@ -711,11 +713,11 @@ void _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
 
     // create output
     _objPoints.create((int)objPnts.size(), 1, CV_32FC3);
-    for (int i = 0; i < objPnts.size(); i++)
+    for (unsigned int i = 0; i < objPnts.size(); i++)
         _objPoints.getMat().ptr<cv::Point3f>(0)[i] = objPnts[i];
 
     _imgPoints.create((int)objPnts.size(), 1, CV_32FC2);
-    for (int i = 0; i < imgPnts.size(); i++)
+    for (unsigned int i = 0; i < imgPnts.size(); i++)
         _imgPoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
 }
 
@@ -911,7 +913,7 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
     minX = maxX = board.objPoints[0][0].x;
     minY = maxY = board.objPoints[0][0].y;
 
-    for (int i = 0; i < board.objPoints.size(); i++) {
+    for (unsigned int i = 0; i < board.objPoints.size(); i++) {
         for (int j = 0; j < 4; j++) {
             minX = min(minX, board.objPoints[i][j].x);
             maxX = max(maxX, board.objPoints[i][j].x);
@@ -940,7 +942,7 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
     }
 
     // now paint each marker
-    for (int m = 0; m < board.objPoints.size(); m++) {
+    for (unsigned int m = 0; m < board.objPoints.size(); m++) {
 
         // transform corners to markerZone coordinates
         std::vector<cv::Point2f> outCorners;

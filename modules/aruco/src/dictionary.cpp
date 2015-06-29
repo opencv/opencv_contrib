@@ -123,13 +123,13 @@ class DictionaryData {
         idx = -1; // by default, not found
 
         // search closest marker in dict
-        for (unsigned int m = 0; m < bytesList.rows; m++) {
+        for (int m = 0; m < bytesList.rows; m++) {
             int currentMinDistance = markerSize * markerSize + 1;
             int currentRotation;
             for (unsigned int r = 0; r < 4; r++) {
                 int currentHamming = 0;
                 // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
-                for (int b = 0; b < candidateBytes.total(); b++) {
+                for (unsigned int b = 0; b < candidateBytes.total(); b++) {
                     unsigned char xorRes =
                         bytesList.ptr<cv::Vec4b>(m)[b][r] ^ candidateBytes.ptr<cv::Vec4b>(0)[b][0];
                     currentHamming += hammingWeightLUT[xorRes];
@@ -234,8 +234,8 @@ class DictionaryData {
       * @brief Transform list of bytes to matrix of bits
       */
     cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
-        CV_Assert(byteList.total() > 0 && byteList.total() >= markerSize*markerSize/8 &&
-                  byteList.total() <= markerSize*markerSize/8+1);
+        CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
+                  && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
         cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
@@ -255,7 +255,7 @@ class DictionaryData {
                     currentByte = byteList.ptr<cv::Vec4b>(0)[currentByteIdx][0];
                     // if not enough bits for one more byte, we are in the end
                     // update bit position accordingly
-                    if (8 * (currentByteIdx + 1) > bits.total())
+                    if (8 * (currentByteIdx + 1) > (int)bits.total())
                         currentBit = 8 * (currentByteIdx + 1) - bits.total();
                     else
                         currentBit = 0; // ok, bits enough for next byte

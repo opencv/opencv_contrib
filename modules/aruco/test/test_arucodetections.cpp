@@ -99,11 +99,11 @@ void CV_ArucoDetectionSimple::run(int) {
         cv::aruco::DetectorParameters params;
         params.doCornerRefinement = false;
         cv::aruco::detectMarkers(img, cv::aruco::DICT_6X6_250, corners, ids, params);
-        for (int m=0; m<groundTruthIds.size(); m++) {
+        for (unsigned int m=0; m<groundTruthIds.size(); m++) {
             int idx = -1;
-            for(int k=0; k<ids.size(); k++) {
+            for(unsigned int k=0; k<ids.size(); k++) {
                 if(groundTruthIds[m] == ids[k]) {
-                    idx = k;
+                    idx = (int)k;
                     break;
                 }
             }

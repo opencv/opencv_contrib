@@ -128,7 +128,7 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
 double getMeanJitter(const std::vector<cv::Point2f> &measures, const cv::Point2f &sum) {
     cv::Point2f mean = sum / double(measures.size());
     double stdDev = 0;
-    for(int i=0; i<measures.size(); i++) {
+    for (unsigned int i=0; i<measures.size(); i++) {
         stdDev += cv::norm(measures[i] - mean);
     }
     return stdDev / double(measures.size());
@@ -140,9 +140,9 @@ void getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
     
     mean = 0;
     std::vector<double> errors;
-    for(int k=0; k<measures.size(); k++) {
+    for (unsigned int k=0; k<measures.size(); k++) {
         cv::Point2f meanPnt = sums[k] / double(measures[k].size());
-        for(int i=0; i<measures[k].size(); i++) {
+        for (unsigned int i=0; i<measures[k].size(); i++) {
             double currentError = cv::norm(measures[k][i] - meanPnt);
             mean += currentError;
             errors.push_back(currentError);
@@ -206,8 +206,6 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
     
-    double axisLength = 0.5*(std::min(squaresX, squaresY) * (squareLength));
-
 
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY, 
                                                                     squareLength, markerLength,

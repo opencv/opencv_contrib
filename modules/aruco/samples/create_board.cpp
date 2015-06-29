@@ -58,7 +58,7 @@ static void help() {
     std::cout << "-s <markerSeparation> # Separation between two consecutive" << 
                  "markers in the grid (in pixels)" << std::endl;
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "[-m <marginSize>] # Margins size (in pixels)" << 
+    std::cout << "[-m <marginSize>] # Margins size (in pixels)" <<
                  "Default is marker separation" << std::endl;
     std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
                   << std::endl;  

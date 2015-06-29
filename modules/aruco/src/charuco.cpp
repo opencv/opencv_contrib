@@ -219,14 +219,14 @@ void CharucoBoard::_getNearestMarkerCorners() {
 
         for(unsigned int j=0; j<nearestMarkerIds[i].size(); j++) {
             nearestMarkerCorners[i].resize(nearestMarkerIds[i].size());
-            double minDist=-1;
+            double minDistCorner=-1;
             for(unsigned int k=0; k<4; k++) {
                 double sqDistance;
                 cv::Point3f distVector = charucoCorner -
                                          objPoints[nearestMarkerIdsIdx[i][j]][k];
                 sqDistance = distVector.x*distVector.x + distVector.y*distVector.y;
-                if (k==0 || sqDistance < minDist) {
-                    minDist = sqDistance;
+                if (k==0 || sqDistance < minDistCorner) {
+                    minDistCorner = sqDistance;
                     nearestMarkerCorners[i][j] = k;
                 }
             }
@@ -363,7 +363,7 @@ void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners,
                                   const std::vector< std::vector<int> > &nearestCorner,
                                   std::vector< cv::Size> &sizes) {
 
-    int nCharucoCorners = charucoCorners.getMat().total();
+    unsigned int nCharucoCorners = charucoCorners.getMat().total();
     sizes.resize(nCharucoCorners, cv::Size(-1,-1));
 
     for (unsigned int i=0; i<nCharucoCorners; i++) {
@@ -545,7 +545,7 @@ int interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputAr
                                                          _markerCorners.getMat(i));
     }
 
-    int nCharucoCorners = board.chessboardCorners.size();
+    unsigned int nCharucoCorners = board.chessboardCorners.size();
     std::vector<cv::Point2f> allChessboardImgPoints(nCharucoCorners, cv::Point2f(-1, -1));
 
     for(unsigned int i = 0; i< nCharucoCorners; i++) {
@@ -695,9 +695,9 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
 
     std::vector<cv::Point3f> objPoints;
     objPoints.reserve(_charucoIds.getMat().total());
-    for(int i=0; i < _charucoIds.getMat().total(); i++) {
+    for (unsigned int i=0; i < _charucoIds.getMat().total(); i++) {
         int currId = _charucoIds.getMat().ptr<int>(0)[i];
-        CV_Assert(currId >= 0 && currId < board.chessboardCorners.size());
+        CV_Assert(currId >= 0 && currId < (int)board.chessboardCorners.size());
         objPoints.push_back(board.chessboardCorners[currId]);
     }
 
@@ -729,13 +729,13 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
     std::vector< std::vector<cv::Point3f> > allObjPoints;
     allObjPoints.resize(_charucoIds.total());
     for (unsigned int i=0; i<_charucoIds.total(); i++) {
-        int nCorners = _charucoIds.getMat(i).total();
+        unsigned int nCorners = _charucoIds.getMat(i).total();
         CV_Assert(nCorners > 0 && nCorners == _charucoCorners.getMat(i).total());
         allObjPoints[i].reserve(nCorners);
 
         for (unsigned int j=0; j<nCorners; j++) {
             int pointId = _charucoIds.getMat(i).ptr<int>(0)[j];
-            CV_Assert(pointId >= 0 && pointId < board.chessboardCorners.size());
+            CV_Assert(pointId >= 0 && pointId < (int)board.chessboardCorners.size());
             allObjPoints[i].push_back(board.chessboardCorners[pointId]);
         }
 
