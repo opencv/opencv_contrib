@@ -116,16 +116,16 @@ void _threshold(InputArray _in, OutputArray _out, int winSize, double constant) 
   * and take those that accomplish some conditions
   */
 void _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidates,
-                         double minPerimeterRate, int maxPerimeterRate, double accuracyRate,
+                         double minPerimeterRate, double maxPerimeterRate, double accuracyRate,
                          double minCornerDistance, int minDistanceToBorder) {
 
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
               minCornerDistance > 0 && minDistanceToBorder >= 0);
 
-    unsigned int minPerimeterPixels = minPerimeterRate * std::max(_in.getMat().cols,
-                                                                  _in.getMat().rows);
-    unsigned int maxPerimeterPixels = maxPerimeterRate * std::max(_in.getMat().cols,
-                                                                  _in.getMat().rows);
+    unsigned int minPerimeterPixels = unsigned int( minPerimeterRate * std::max(_in.getMat().cols,
+                                                                                _in.getMat().rows));
+    unsigned int maxPerimeterPixels = unsigned int( maxPerimeterRate * std::max(_in.getMat().cols,
+                                                                                _in.getMat().rows));
     cv::Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
@@ -301,7 +301,7 @@ void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
 
     // parse output
     _candidates.create(candidatesOut.size(), 1, CV_32FC2);
-    for (unsigned int i = 0; i < candidatesOut.size(); i++) {
+    for (size_t i = 0; i < candidatesOut.size(); i++) {
         _candidates.create(4, 1, CV_32FC2, i, true);
         Mat m = _candidates.getMat(i);
         for (int j = 0; j < 4; j++)

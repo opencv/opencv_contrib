@@ -111,7 +111,7 @@ public:
     /**
       *
       */
-    int getSquareLength() const {
+    double getSquareLength() const {
         return _squareLength;
     }
 

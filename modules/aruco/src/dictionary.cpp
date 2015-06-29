@@ -115,7 +115,7 @@ class DictionaryData {
 
         CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
-        int maxCorrectionRecalculed = maxCorrectionBits * maxCorrectionRate;
+        int maxCorrectionRecalculed = int( double(maxCorrectionBits) * maxCorrectionRate );
 
         // get as a byte list
         cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
@@ -256,7 +256,7 @@ class DictionaryData {
                     // if not enough bits for one more byte, we are in the end
                     // update bit position accordingly
                     if (8 * (currentByteIdx + 1) > (int)bits.total())
-                        currentBit = 8 * (currentByteIdx + 1) - bits.total();
+                        currentBit = 8 * (currentByteIdx + 1) - (int)bits.total();
                     else
                         currentBit = 0; // ok, bits enough for next byte
                 }

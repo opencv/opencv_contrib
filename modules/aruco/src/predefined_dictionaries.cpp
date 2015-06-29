@@ -57,7 +57,7 @@ namespace aruco {
   * Each rotation implies a 90 degree rotation of the marker in anticlockwise direction.
   */
 
-const char DICT_ARUCO_BYTES[][4][4] = {
+const unsigned char DICT_ARUCO_BYTES[][4][4] = {
     {
      {132, 33, 8, 0},
      {0, 0, 15, 1},
@@ -6205,7 +6205,7 @@ const char DICT_ARUCO_BYTES[][4][4] = {
 };
 
 
-const char DICT_6X6_250_BYTES[][4][5] = {
+const unsigned char DICT_6X6_250_BYTES[][4][5] = {
     {
      {175, 190, 73, 176, 0},
      {243, 0, 190, 99, 10},
