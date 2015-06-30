@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
             }
             else if (interpolationMethod == 1) {
                 color1 = cv::Scalar(0, 255, 0);
-                color2 = cv::Scalar(255, 0, 0);   
+                color2 = cv::Scalar(255, 0, 0);
                 s << "Global Homography";
             }
             else {

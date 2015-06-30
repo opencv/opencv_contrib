@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
     cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
     string outputFile = getParam("-o", argc, argv);
-    
+
     int calibrationFlags = 0;
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {

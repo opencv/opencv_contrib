@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
     }
     else {
         int camId = 0;
-        if (isParam("-ci", argc, argv)) 
+        if (isParam("-ci", argc, argv))
             camId = atoi( getParam("-ci", argc, argv).c_str() );
         inputVideo.open(camId);
         waitTime = 10;

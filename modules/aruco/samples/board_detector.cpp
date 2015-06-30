@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
 
     double totalTime = 0;
     int totalIterations = 0;
-    
+
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
