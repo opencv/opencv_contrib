@@ -50,8 +50,42 @@
 namespace cv
 {
 
-/* @defgroup calib3d_omnidir Omnidirectional camera model
+/* @defgroup calib3d_omnidir Omnidirectional camera model\
 
+    Here is a brief description of implenmented omnidirectional camera model. This model can be
+    used for both catadioptric and fisheye cameras. Especially, catadioptric cameras have very
+    large field of view (FOV), i.e., a 360 degrees of horizontal FOV, means the scene around the
+    camera can be all taken in a singel photo. Compared with perspective cameras, omnidirectional
+    cameras get more information in a single shot and avoid things like image stitching.
+
+    The large FOV of omnidirectional cameras also introduces large distortion, so that it is
+    not vivid for human's eye. Rectification that removes distortion is also included in this module.
+
+    For a 3D point Xw in world coordinate, it is first transformed to camera coordinate:
+
+    \f[X_c = R X_w + T \f]
+
+    where R and T are rotation and translation matrix. Then \f$ X_c \f$ is then projected to unit sphere:
+
+    \f[ X_s = \frac{Xc}{||Xc||}  \f]
+
+    Let \f$ X_s = (x, y, z) \f$, then \f$ X_s \f$ is projected to normalized plane:
+
+    \f[ (x_u, y_u, 1) = (\frac{x}{z + \xi}, \frac{y}{z + \xi}, 1) \f]
+
+    where \f$ \xi \f$ is a parameter of camera. So far the point contains no distortion, add distortion by
+
+    \f[ x_d = (1 + k_1 r^2 + k_2 r^4 )*x_u + 2p_1 x_u y_u + p_2(r^2 + 2x_u^2 )  \\
+        y_d = (1 + k_1 r^2 + k_2 r^4 )*y_u + p_1 (r^2 + 2y_u^2) + 2p_2 x_u y_u \f]
+
+    where \f$ r^2 = x_u^2 + y_u^2\f$ and \f$(k_1, k_2, p_1, p_2)\f$ are distortion coefficients.
+
+    At last, convert to pixel coordinates:
+
+    \f[ u = f_x x_d + s y_d + c_x \\
+        v = f_y y_d + c_y \f]
+
+    where \f$ s\f$ is the skew coefficient and \f$ (cx, cy\f$ are image centers.
 */
 /** @brief The methods in this namespace is to calibrate omnidirectional cameras.
     This module was accepted as a GSoC 2015 project for OpenCV, authored by
