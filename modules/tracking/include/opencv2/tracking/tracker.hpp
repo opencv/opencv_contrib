@@ -1200,6 +1200,9 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
  public:
   /**
    * \brief Feature type to be used in the tracking grayscale, colornames, compressed color-names
+   * The modes available now:
+    -   "GRAY" -- Use grayscale values as the feature
+    -   "CN" -- Color-names feature
    */
   enum MODE {GRAY, CN, CN2};
 
@@ -1207,22 +1210,6 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
   {
     /**
      * \brief Constructor
-     * \param sigma bandwidth of the gaussian kernel
-     * \param lambda regularization coefficient
-     * \param interp_factor inear interpolation factor for model updating
-     * \param output_sigma_factor spatial bandwidth (proportional to target)
-     * \param pca_learning_rate learning rate of the compression method
-     * \param resize activate the resize feature to improve the processing speed
-     * \param split_coeff split the training coefficients into two matrices
-     * \param wrap_kernel wrap around the kernel values
-     * \param compressFeature activate pca method to compress the features
-     * \param max_patch_size threshold for the ROI size
-     * \param compressed_size feature size after compression
-     * \param descriptor descriptor type
-     * The modes available now:
-    -   "GRAY" -- Use grayscale values as the feature
-    -   "CN" -- Color-names feature
-    -   "CN2" -- Compressed color-names feature
      */
     Params();
 
@@ -1244,7 +1231,7 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     bool resize;                  //!<  activate the resize feature to improve the processing speed
     bool split_coeff;             //!<  split the training coefficients into two matrices
     bool wrap_kernel;             //!<  wrap around the kernel values
-    bool compress_feature;         //!<  activate pca method to compress the features
+    bool compress_feature;        //!<  activate the pca method to compress the features
     int max_patch_size;           //!<  threshold for the ROI size
     int compressed_size;          //!<  feature size after compression
     MODE descriptor;              //!<  descriptor type
