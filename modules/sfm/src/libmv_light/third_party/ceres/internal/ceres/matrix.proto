@@ -1,0 +1,143 @@
+// Ceres Solver - A fast non-linear least squares minimizer
+// Copyright 2010, 2011, 2012 Google Inc. All rights reserved.
+// http://code.google.com/p/ceres-solver/
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Google Inc. nor the names of its contributors may be
+//   used to endorse or promote products derived from this software without
+//   specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+// Author: keir@google.com (Keir Mierle)
+
+syntax = "proto2";
+
+package ceres.internal;
+
+message BlockProto {
+  // The span of the block.
+  optional int32 size = 1;
+
+  // Position along the row or column (depending on storage orientation).
+  optional int32 position = 2;
+}
+
+message CellProto {
+  // Column or row block id as appropriate.
+  optional int32 block_id = 1;
+
+  // Position in the values array the cell is located. Each cell is stored as a
+  // row-major chunk inside the values array.
+  optional int32 position = 2;
+}
+
+// A single row or column, depending on the matrix type.
+message CompressedRowProto {
+  optional BlockProto block = 2;
+  repeated CellProto cells = 1;
+}
+
+message BlockStructureProto {
+  repeated BlockProto cols = 1;
+  repeated CompressedRowProto rows = 2;
+}
+
+// A block sparse matrix, either in column major or row major format.
+message BlockSparseMatrixProto {
+  optional int64 num_rows = 2;
+  optional int64 num_cols = 3;
+  optional int64 num_nonzeros = 4;
+  repeated double values = 1 [packed=true];
+
+  optional BlockStructureProto block_structure = 5;
+}
+
+message TripletSparseMatrixProto {
+  optional int64 num_rows = 4;
+  optional int64 num_cols = 5;
+  optional int64 num_nonzeros = 6;
+
+  // The data is stored as three arrays. For each i, values(i) is stored at the
+  // location (rows(i), cols(i)). If the there are multiple entries with the
+  // same (rows(i), cols(i)), the values entries corresponding to them are
+  // summed up.
+  repeated int64 rows = 1 [packed=true];
+  repeated int64 cols = 2 [packed=true];
+  repeated double values = 3 [packed=true];
+}
+
+message CompressedRowSparseMatrixProto {
+  optional int64 num_rows = 4;
+  optional int64 num_cols = 5;
+
+  repeated int64 rows = 1 [packed=true];
+  repeated int64 cols = 2 [packed=true];
+  repeated double values = 3 [packed=true];
+}
+
+message DenseSparseMatrixProto {
+  optional int64 num_rows = 1;
+  optional int64 num_cols = 2;
+
+  // Entries are stored in row-major order.
+  repeated double values = 3 [packed=true];
+}
+
+// A sparse matrix. It is a union; only one field is permitted. If new sparse
+// implementations are added, update this proto accordingly.
+message SparseMatrixProto {
+  optional TripletSparseMatrixProto triplet_matrix = 1;
+  optional BlockSparseMatrixProto block_matrix = 2;
+  optional CompressedRowSparseMatrixProto compressed_row_matrix = 3;
+  optional DenseSparseMatrixProto dense_matrix = 4;
+}
+
+// A linear least squares problem.
+//
+// Given a matrix A, an optional diagonal matrix D as a vector, and a vector b,
+// the proto represents the following linear least squares problem.
+//
+//   | A | x = | b |
+//   | D |     | 0 |
+//
+// If D is empty, then the problem is considered to be
+//
+//   A x = b
+//
+// The desired solution for the problem is the vector x that solves the
+// following optimization problem:
+//
+//   arg min_x ||Ax - b||^2 + ||Dx||^2
+//
+// If x is present, then it is the expected solution to the
+// problem. The dimensions of A, b, x, and D should be consistent.
+message LinearLeastSquaresProblemProto {
+  optional SparseMatrixProto a = 1;
+  repeated double b = 2 [packed=true];
+  repeated double d = 3 [packed=true];
+  repeated double x = 4 [packed=true];
+  // If the problem is of SfM type, i.e it has a generalized
+  // bi-partite structure, then num_eliminate_blocks is the number of
+  // column blocks that are to eliminated in the formation of the
+  // Schur complement. For more details see
+  // explicit_schur_complement_solver.h.
+  optional int32 num_eliminate_blocks = 5;
+}

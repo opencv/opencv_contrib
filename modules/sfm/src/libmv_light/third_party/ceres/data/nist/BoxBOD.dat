@@ -1,0 +1,66 @@
+NIST/ITL StRD
+Dataset Name:  BoxBOD            (BoxBOD.dat)
+
+File Format:   ASCII
+               Starting Values   (lines 41 to 42)
+               Certified Values  (lines 41 to 47)
+               Data              (lines 61 to 66)
+
+Procedure:     Nonlinear Least Squares Regression
+
+Description:   These data are described in detail in Box, Hunter and
+               Hunter (1978).  The response variable is biochemical
+               oxygen demand (BOD) in mg/l, and the predictor
+               variable is incubation time in days.
+
+
+Reference:     Box, G. P., W. G. Hunter, and J. S. Hunter (1978).
+               Statistics for Experimenters.
+               New York, NY: Wiley, pp. 483-487.
+
+
+
+
+
+Data:          1 Response  (y = biochemical oxygen demand)
+               1 Predictor (x = incubation time)
+               6 Observations
+               Higher Level of Difficulty
+               Observed Data
+
+Model:         Exponential Class
+               2 Parameters (b1 and b2)
+
+               y = b1*(1-exp[-b2*x])  +  e
+
+
+
+          Starting values                  Certified Values
+
+        Start 1     Start 2           Parameter     Standard Deviation
+  b1 =   1           100           2.1380940889E+02  1.2354515176E+01
+  b2 =   1             0.75        5.4723748542E-01  1.0455993237E-01
+
+Residual Sum of Squares:                    1.1680088766E+03
+Residual Standard Deviation:                1.7088072423E+01
+Degrees of Freedom:                                4
+Number of Observations:                            6
+
+
+
+
+
+
+
+
+
+
+
+
+Data:   y             x
+      109             1
+      149             2
+      149             3
+      191             5
+      213             7
+      224            10

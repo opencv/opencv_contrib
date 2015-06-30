@@ -1,0 +1,31 @@
+#ifndef EIGEN_SKYLINE_MODULE_H
+#define EIGEN_SKYLINE_MODULE_H
+
+
+#include "Eigen/Core"
+
+#include "Eigen/src/Core/util/DisableStupidWarnings.h"
+
+#include <map>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+
+/** \ingroup Unsupported_modules
+ *  \defgroup Skyline_Module Skyline module
+ *
+ *
+ *
+ *
+ */
+
+#include "src/Skyline/SkylineUtil.h"
+#include "src/Skyline/SkylineMatrixBase.h"
+#include "src/Skyline/SkylineStorage.h"
+#include "src/Skyline/SkylineMatrix.h"
+#include "src/Skyline/SkylineInplaceLU.h"
+#include "src/Skyline/SkylineProduct.h"
+
+#include "Eigen/src/Core/util/ReenableStupidWarnings.h"
+
+#endif // EIGEN_SKYLINE_MODULE_H

@@ -1,0 +1,8 @@
+Project: UFconfig
+URL: http://www.cise.ufl.edu/research/sparse/UFconfig/
+License: LGPL2.1
+Upstream version: 3.4.0
+
+Local modifications:
+
+  * Deleted everything except the include file and README.txt.
