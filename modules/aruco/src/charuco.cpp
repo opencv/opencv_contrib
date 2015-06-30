@@ -242,11 +242,12 @@ void CharucoBoard::_getNearestMarkerCorners() {
 
 /**
   */
-unsigned int _filterCornersWithoutMinMarkers(const CharucoBoard &board,
-                                             InputArray _allCharucoCorners,
-                                             InputArray _allCharucoIds, InputArray _allArucoIds,
-                                             int minMarkers, OutputArray _filteredCharucoCorners,
-                                             OutputArray _filteredCharucoIds) {
+static unsigned int
+_filterCornersWithoutMinMarkers(const CharucoBoard &board,
+                                InputArray _allCharucoCorners,
+                                InputArray _allCharucoIds, InputArray _allArucoIds,
+                                int minMarkers, OutputArray _filteredCharucoCorners,
+                                OutputArray _filteredCharucoIds) {
 
     std::vector<cv::Point2f> filteredCharucoCorners;
     std::vector<int> filteredCharucoIds;
@@ -292,10 +293,11 @@ unsigned int _filterCornersWithoutMinMarkers(const CharucoBoard &board,
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
   * refinement. Returns number of valid corners.
   */
-unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
-                                               OutputArray _selectedCorners,
-                                               OutputArray _selectedIds,
-                                               const std::vector<cv::Size> &winSizes) {
+static unsigned int
+_selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
+                                  OutputArray _selectedCorners,
+                                  OutputArray _selectedIds,
+                                  const std::vector<cv::Size> &winSizes) {
 
     // filter points outside image
     int minDistToBorder = 2;
@@ -359,12 +361,13 @@ unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArra
 
 /**
   */
-void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners,
-                                  InputArray markerIds,
-                                  InputArray charucoCorners,
-                                  const std::vector< std::vector<int> > &nearestMarkers,
-                                  const std::vector< std::vector<int> > &nearestCorner,
-                                  std::vector< cv::Size> &sizes) {
+static void
+_getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners,
+                             InputArray markerIds,
+                             InputArray charucoCorners,
+                             const std::vector< std::vector<int> > &nearestMarkers,
+                             const std::vector< std::vector<int> > &nearestCorner,
+                             std::vector< cv::Size> &sizes) {
 
     unsigned int nCharucoCorners = (unsigned int)charucoCorners.getMat().total();
     sizes.resize(nCharucoCorners, cv::Size(-1,-1));
@@ -649,7 +652,7 @@ void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _ch
   * Check if a set of 3d points are enough for calibration. Z coordinate is ignored.
   * Only axis paralel lines are considered
   */
-bool _arePointsEnoughForPoseEstimation(const std::vector<cv::Point3f> &points) {
+static bool _arePointsEnoughForPoseEstimation(const std::vector<cv::Point3f> &points) {
 
     if (points.size() < 4) return false;
 

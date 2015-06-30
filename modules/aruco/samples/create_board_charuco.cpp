@@ -67,7 +67,7 @@ static void help() {
 
 /**
  */
-bool isParam(string param, int argc, char **argv ) {
+static bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
         if (string(argv[i]) == param )
             return true;
@@ -78,7 +78,7 @@ bool isParam(string param, int argc, char **argv ) {
 
 /**
  */
-string getParam(string param, int argc, char **argv, string defvalue = "") {
+static string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
         if (string(argv[i]) == param)

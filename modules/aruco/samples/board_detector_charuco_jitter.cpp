@@ -71,7 +71,7 @@ static void help() {
 
 /**
  */
-bool isParam(string param, int argc, char **argv ) {
+static bool isParam(string param, int argc, char **argv ) {
     for (int i=0; i<argc; i++)
         if (string(argv[i]) == param )
             return true;
@@ -82,7 +82,7 @@ bool isParam(string param, int argc, char **argv ) {
 
 /**
  */
-string getParam(string param, int argc, char **argv, string defvalue = "") {
+static string getParam(string param, int argc, char **argv, string defvalue = "") {
     int idx=-1;
     for (int i=0; i<argc && idx==-1; i++)
         if (string(argv[i]) == param)
@@ -96,7 +96,7 @@ string getParam(string param, int argc, char **argv, string defvalue = "") {
 
 /**
  */
-void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
+static void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
     cv::FileStorage fs(filename, cv::FileStorage::READ);
     fs["camera_matrix"] >> camMatrix;
     fs["distortion_coefficients"] >> distCoeffs;
@@ -105,7 +105,7 @@ void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoef
 
 /**
  */
-void readDetectorParameters(string filename, cv::aruco::DetectorParameters &params) {
+static void readDetectorParameters(string filename, cv::aruco::DetectorParameters &params) {
     cv::FileStorage fs(filename, cv::FileStorage::READ);
     fs["adaptiveThreshWinSize"] >> params.adaptiveThreshWinSize;
     fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
@@ -125,18 +125,19 @@ void readDetectorParameters(string filename, cv::aruco::DetectorParameters &para
 }
 
 
-double getMeanJitter(const std::vector<cv::Point2f> &measures, const cv::Point2f &sum) {
-    cv::Point2f mean = sum / double(measures.size());
-    double stdDev = 0;
-    for (unsigned int i=0; i<measures.size(); i++) {
-        stdDev += cv::norm(measures[i] - mean);
-    }
-    return stdDev / double(measures.size());
-}
+//static double getMeanJitter(const std::vector<cv::Point2f> &measures, const cv::Point2f &sum) {
+//    cv::Point2f mean = sum / double(measures.size());
+//    double stdDev = 0;
+//    for (unsigned int i=0; i<measures.size(); i++) {
+//        stdDev += cv::norm(measures[i] - mean);
+//    }
+//    return stdDev / double(measures.size());
+//}
 
 
-void getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
-                        const std::vector< cv::Point2f> &sums, double &mean, double &stddev) {
+static void
+getMeanJitterTotal(const std::vector< std::vector<cv::Point2f> > &measures,
+                   const std::vector< cv::Point2f> &sums, double &mean, double &stddev) {
 
     mean = 0;
     std::vector<double> errors;
