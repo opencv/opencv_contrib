@@ -165,16 +165,16 @@ Rect2d BoxExtractor::extract(const std::string& windowName, Mat img, bool showCr
       // horizontal line
       line(
         params.image,
-        Point(params.box.x,params.box.y+(int)(0.5*params.box.height)),
-        Point(params.box.x+params.box.width,params.box.y+(int)(0.5*params.box.height)),
+        Point(params.box.x,params.box.y+(int)(params.box.height/2)),
+        Point(params.box.x+params.box.width,params.box.y+(int)(params.box.height/2)),
         Scalar(255,0,0),2,1
       );
 
       // vertical line
       line(
         params.image,
-        Point(params.box.x+(int)(0.5*params.box.width),params.box.y),
-        Point(params.box.x+(int)(0.5*params.box.width),params.box.y+params.box.height),
+        Point(params.box.x+(int)(params.box.width/2),params.box.y),
+        Point(params.box.x+(int)(params.box.width/2),params.box.y+params.box.height),
         Scalar(255,0,0),2,1
       );
     }
