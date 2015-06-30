@@ -65,7 +65,7 @@ namespace cv
 			detector->posExp = &posExp;
 			detector->negExp = &negExp;
 
-			detector->positiveExamples = &positiveExamples;			
+			detector->positiveExamples = &positiveExamples;
 			detector->negativeExamples = &negativeExamples;
 			detector->timeStampsPositive = &timeStampsPositive;
 			detector->timeStampsNegative = &timeStampsNegative;
@@ -73,21 +73,18 @@ namespace cv
 
 			//Calculate the variance in initial BB
 			originalVariance_ = variance(image(boundingBox));
-			
 			//Find the scale
 			double scale = scaleAndBlur(image, cvRound(log(1.0 * boundingBox.width / (minSize.width)) / log(SCALE_STEP)),
 				scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
 			GaussianBlur(image, image_blurred, GaussBlurKernelSize, 0.0);
 			TLDDetector::generateScanGrid(image.rows, image.cols, minSize_, scanGrid);
-			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale, 
-				boundingBox.height / scale), 10, closest);
-
+			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale, boundingBox.height / scale), 10, closest);
 			Mat_<uchar> blurredPatch(minSize);
 			TLDEnsembleClassifier::makeClassifiers(minSize, MEASURES_PER_CLASSIFIER, GRIDSIZE, detector->classifiers);
 
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
-			
+
 			for (int i = 0; i < (int)closest.size(); i++)
 			{
 				for (int j = 0; j < 20; j++)
@@ -297,9 +294,5 @@ namespace cv
 			dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
 			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
-
-
-		
-
 	}
 }
