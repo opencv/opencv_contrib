@@ -66,21 +66,6 @@ namespace cv
   triangulatePoints(InputArrayOfArrays points2d, InputArrayOfArrays projection_matrices,
                     OutputArray points3d);
 
-//   /** @brief Triangulates the 3d position of 2d correspondences between several images
-//    * @param points2d a vector of vectors of 2d points (the inner vector is per image)
-//    * @param K The 3x3 calibration matrix
-//    * @param R The 3x3 rotation matrix
-//    * @param t The 3x1 translation vector
-//    * @param points3d the 3d points
-//    * @param has_outliers if true, the correspondences are not trusted
-//    */
-//   CV_EXPORTS
-//   void
-//   triangulatePoints(InputArrayOfArrays points2d, InputArrayOfArrays K,
-//                     InputArrayOfArrays R, InputArrayOfArrays t,
-//                     OutputArray points3d, int method = CV_TRIANG_BY_PLANE);
-
-
   /** @brief Reconstruct 3d points from 2d correspondences without performing autocalibration.
    * @param points2d a vector of vectors of 2d points (the inner vector is per image)
    * @param projection_matrices The 3 x 4 projections matrices of each image
