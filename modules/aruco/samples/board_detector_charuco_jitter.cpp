@@ -215,16 +215,16 @@ int main(int argc, char *argv[]) {
 
     int interpolationMethod = 0;
 
-    std::vector< std::vector<cv::Point2f> > cornersHistory[3];
-    for(int k=0; k<3; k++)
+    std::vector< std::vector<cv::Point2f> > cornersHistory[2];
+    for(int k=0; k<2; k++)
         cornersHistory[k].resize(board.chessboardCorners.size());
 
-    std::vector<cv::Point2f> cornersHistoryTotal[3];
-    for(int k=0; k<3; k++)
+    std::vector<cv::Point2f> cornersHistoryTotal[2];
+    for(int k=0; k<2; k++)
         cornersHistoryTotal[k].resize(board.chessboardCorners.size(), cv::Point2f(0,0));
 
-     double meanJitter[3] = {0,0,0};
-     double stddevJitter[3] = {0,0,0};
+     double meanJitter[2] = {0,0};
+     double stddevJitter[2] = {0,0};
 
     int iter = 0;
     while (inputVideo.grab()) {
@@ -234,42 +234,36 @@ int main(int argc, char *argv[]) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        std::vector<int> markerIds, charucoIds[3];
+        std::vector<int> markerIds, charucoIds[2];
         std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers;
-        std::vector<cv::Point2f> charucoCorners[3];
-        cv::Mat rvec, tvec;
+        std::vector<cv::Point2f> charucoCorners[2];
 
         // detect markers and estimate pose
         cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
                                  rejectedMarkers);
 
 
-        int interpolatedCorners[3] = {0,0,0};
-        if (markerIds.size() > 0)
-            interpolatedCorners[0] = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners,
-                                                                                  markerIds, image,
-                                                                                  board, camMatrix,
-                                                                                  distCoeffs,
-                                                                                  charucoCorners[0],
-                                                                                  charucoIds[0]);
+        int interpolatedCorners[2] = {0,0};
+        if (markerIds.size() > 0) {
+            // approximated calibration
+            interpolatedCorners[0] = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds,
+                                                                          image, board,
+                                                                          charucoCorners[0],
+                                                                          charucoIds[0], camMatrix,
+                                                                          distCoeffs);
+
+            // local homography
+            interpolatedCorners[1] = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds,
+                                                                          image, board,
+                                                                          charucoCorners[1],
+                                                                          charucoIds[1]);
+
+        }
 
 
-        if (markerIds.size() > 0)
-            interpolatedCorners[1] = cv::aruco::interpolateCornersCharucoGlobalHom(markerCorners,
-                                                                                markerIds, image,
-                                                                                board,
-                                                                                charucoCorners[1],
-                                                                                charucoIds[1]);
-
-        if (markerIds.size() > 0)
-            interpolatedCorners[2] = cv::aruco::interpolateCornersCharucoLocalHom(markerCorners,
-                                                                               markerIds, image,
-                                                                               board,
-                                                                               charucoCorners[2],
-                                                                               charucoIds[2]);
 
 
-        for(int k=0; k<3; k++) {
+        for(int k=0; k<2; k++) {
             if(iter%10 == 0) {
                 for(unsigned int i=0; i<charucoIds[k].size(); i++) {
                     cornersHistory[k][charucoIds[k][i]].push_back(charucoCorners[k][i]);
@@ -282,11 +276,6 @@ int main(int argc, char *argv[]) {
 //                 std::cout << k << " " << meanJitter[k] << std::endl;
             }
         }
-
-//         bool validPose;
-//         validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
-//                                                         camMatrix, distCoeffs, rvec, tvec);
-
 
 
         // draw results
@@ -301,16 +290,14 @@ int main(int argc, char *argv[]) {
 
 
 
-        cv::Scalar color1[3], color2[3];
+        cv::Scalar color1[2], color2[2];
         color1[0] = cv::Scalar(0, 0, 255);
         color1[1] = cv::Scalar(0, 255, 0);
-        color1[2] = cv::Scalar(255, 0, 0);
         color2[0] = cv::Scalar(0, 0, 255);
         color2[1] = cv::Scalar(255, 0, 0);
-        color2[2] = cv::Scalar(0, 255, 0);
 
 
-        for(int k=0; k<3; k++) {
+        for(int k=0; k<2; k++) {
             stringstream s;
             if (k == 0) {
                 s << "Approximated Calibration = " << meanJitter[k] << " / " << stddevJitter[k];
@@ -318,13 +305,8 @@ int main(int argc, char *argv[]) {
                             color1[k], 2);
             }
             else if (k == 1) {
-                s << "Global Homography = " << meanJitter[k] << " / " << stddevJitter[k];
-                cv::putText(imageCopy, s.str(), Point2f(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);
-            }
-            else {
                 s << "Local Homography = " << meanJitter[k] << " / " << stddevJitter[k];
-                cv::putText(imageCopy, s.str(), Point2f(5, 80), cv::FONT_HERSHEY_SIMPLEX, 0.6,
+                cv::putText(imageCopy, s.str(), Point2f(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6,
                             color1[k], 2);
             }
         }
@@ -337,9 +319,6 @@ int main(int argc, char *argv[]) {
                                                   color2[interpolationMethod]);
         }
 
-/*        if (validPose)
-            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec,
-                                axisLength);      */
 
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);

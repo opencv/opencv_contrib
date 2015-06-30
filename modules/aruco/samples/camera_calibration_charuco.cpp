@@ -235,10 +235,20 @@ int main(int argc, char *argv[]) {
         // detect markers and estimate pose
         cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams);
 
+        cv::Mat currentCharucoCorners, currentCharucoIds;
+        if (ids.size() > 0)
+            cv::aruco::interpolateCornersCharuco(corners, ids, image, board, currentCharucoCorners,
+                                                 currentCharucoIds);
+
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners);
+
+        if (currentCharucoCorners.total() > 0) {
+            cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, currentCharucoCorners,
+                                                  currentCharucoIds);
+        }
 
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
@@ -276,9 +286,9 @@ int main(int argc, char *argv[]) {
 
     for (int i=0; i<nFrames; i++) {
         cv::Mat currentCharucoCorners, currentCharucoIds;
-        cv::aruco::interpolateCornersCharucoApproxCalib(allCorners[i], allIds[i], allImgs[i],
-                                                        board, cameraMatrix, distCoeffs,
-                                                        currentCharucoCorners, currentCharucoIds);
+        cv::aruco::interpolateCornersCharuco(allCorners[i], allIds[i], allImgs[i], board,
+                                             currentCharucoCorners, currentCharucoIds,
+                                             cameraMatrix, distCoeffs);
         bool validPose;
         cv::Mat currentRvec, currentTvec;
         validPose = cv::aruco::estimatePoseCharucoBoard(currentCharucoCorners, currentCharucoIds,
@@ -303,7 +313,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Calibration saved to " << outputFile << std::endl;
 
     if (showChessboardCorners) {
-        for (unsigned int frame = 0; frame < allImgs.size(); frame++) {
+        for (unsigned int frame = 0; frame < filteredImages.size(); frame++) {
             cv::Mat imageCopy = filteredImages[frame].clone();
             if (allIds[frame].size() > 0) {
 
@@ -315,7 +325,7 @@ int main(int argc, char *argv[]) {
             }
 
             cv::imshow("out", imageCopy);
-            char key = (char) cv::waitKey(waitTime);
+            char key = (char) cv::waitKey(0);
             if (key == 27)
                 break;
         }

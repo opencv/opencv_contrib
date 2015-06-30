@@ -58,7 +58,7 @@ static void help() {
     std::cout << "-sl <squareLength> # Square side lenght (in meters)" << std::endl;
     std::cout << "-ml <markerLength> # Marker side lenght (in meters)" << std::endl;
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "-c <cameraParams> # Camera intrinsic parameters file"
+    std::cout << "[-c <cameraParams>] # Camera intrinsic parameters file"
               << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
@@ -130,7 +130,7 @@ static void readDetectorParameters(string filename, cv::aruco::DetectorParameter
 int main(int argc, char *argv[]) {
 
     if (!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-sl", argc, argv) ||
-        !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) || !isParam("-c", argc, argv) ) {
+        !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) ) {
         help();
         return 0;
     }
@@ -181,8 +181,6 @@ int main(int argc, char *argv[]) {
     double totalTime = 0;
     int totalIterations = 0;
 
-    int interpolationMethod = 0;
-
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -200,33 +198,17 @@ int main(int argc, char *argv[]) {
 
 
         int interpolatedCorners = 0;
-        if (markerIds.size() > 0 && interpolationMethod == 0)
-            interpolatedCorners = cv::aruco::interpolateCornersCharucoApproxCalib(markerCorners,
-                                                                                  markerIds, image,
-                                                                                  board, camMatrix,
-                                                                                  distCoeffs,
-                                                                                  charucoCorners,
-                                                                                  charucoIds);
+        if (markerIds.size() > 0)
+            interpolatedCorners = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds,
+                                                                       image, board, charucoCorners,
+                                                                       charucoIds, camMatrix,
+                                                                       distCoeffs);
 
 
-        if (markerIds.size() > 0 && interpolationMethod == 1)
-            interpolatedCorners = cv::aruco::interpolateCornersCharucoGlobalHom(markerCorners,
-                                                                                markerIds, image,
-                                                                                board,
-                                                                                charucoCorners,
-                                                                                charucoIds);
-
-        if (markerIds.size() > 0 && interpolationMethod == 2)
-            interpolatedCorners = cv::aruco::interpolateCornersCharucoLocalHom(markerCorners,
-                                                                               markerIds, image,
-                                                                               board,
-                                                                               charucoCorners,
-                                                                               charucoIds);
-
-
-        bool validPose;
-        validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
-                                                        camMatrix, distCoeffs, rvec, tvec);
+        bool validPose = false;
+        if(camMatrix.total() != 0)
+            validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
+                                                            camMatrix, distCoeffs, rvec, tvec);
 
 
 
@@ -251,27 +233,10 @@ int main(int argc, char *argv[]) {
                                            cv::noArray(), cv::Scalar(100, 0, 255));
 
         if (interpolatedCorners > 0) {
-            cv::Scalar color1, color2;
-            stringstream s;
-            if (interpolationMethod == 0) {
-                color1 = cv::Scalar(0, 0, 255);
-                color2 = color1;
-                s << "Approximated Calibration";
-            }
-            else if (interpolationMethod == 1) {
-                color1 = cv::Scalar(0, 255, 0);
-                color2 = cv::Scalar(255, 0, 0);
-                s << "Global Homography";
-            }
-            else {
-                color1 = cv::Scalar(255, 0, 0);
-                color2 = cv::Scalar(0, 255, 0);
-                s << "Local Homography";
-            }
-            cv::putText(imageCopy, s.str(), Point2f(5, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                    color1, 2);
+            cv::Scalar color;
+            color = cv::Scalar(0, 0, 255);
             cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds,
-                                                  color2);
+                                                  color);
         }
 
         if (validPose)
@@ -282,12 +247,7 @@ int main(int argc, char *argv[]) {
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
             break;
-        if (key == 'i') {
-            interpolationMethod = (interpolationMethod+1)%3;
-            totalTime = 0;
-            totalIterations = 0;
-            std::cout << "Interpolation method: " << interpolationMethod << std::endl;
-        }
+
     }
 
     return 0;
