@@ -81,9 +81,9 @@ namespace cv
 				return 0.0;
 			return splus / (sminus + splus);
 			*/
-			int64 e1, e2;
-			float t;
-			e1 = getTickCount();
+			//int64 e1, e2;
+			//float t;
+			//e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
 			for (int i = 0; i < *posNum; i++)
@@ -96,8 +96,8 @@ namespace cv
 				modelSample.data = &(negExp->data[i * 225]);
 				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sr CPU: %f\n", t);
 			if (splus + sminus == 0.0)
 				return 0.0;
@@ -107,7 +107,7 @@ namespace cv
 		double TLDDetector::ocl_Sr(const Mat_<uchar>& patch)
 		{
 			int64 e1, e2, e3, e4;
-			float t;
+			double t;
 			e1 = getTickCount();
 			e3 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
@@ -131,8 +131,8 @@ namespace cv
 				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
 				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
 				ocl::KernelArg::PtrWriteOnly(devNCC),
-				(int)posNum,
-				(int)negNum);
+				posNum,
+				negNum);
 
 			e4 = getTickCount();
 			t = (e4 - e3) / getTickFrequency()*1000.0;
@@ -186,7 +186,7 @@ namespace cv
 		void TLDDetector::ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches)
 		{
 			int64 e1, e2, e3, e4;
-			float t;
+			double t;
 			e1 = getTickCount();
 			e3 = getTickCount();
 
@@ -235,28 +235,28 @@ namespace cv
 			//printf("Read Mem GPU: %f\n", t);
 
 			//Calculate Srs
-			for (int k = 0; k < numOfPatches; k++)
+			for (int id = 0; id < numOfPatches; id++)
 			{
 				double spr = 0.0, smr = 0.0, spc = 0.0, smc = 0;
 				int med = getMedian((*timeStampsPositive));
 				for (int i = 0; i < *posNum; i++)
 				{
-					spr = std::max(spr, 0.5 * (posNCC.at<float>(k * 500 + i) + 1.0));
+					spr = std::max(spr, 0.5 * (posNCC.at<float>(id * 500 + i) + 1.0));
 					if ((int)(*timeStampsPositive)[i] <= med)
-						spc = std::max(spr, 0.5 * (posNCC.at<float>(k * 500 + i) + 1.0));
+						spc = std::max(spr, 0.5 * (posNCC.at<float>(id * 500 + i) + 1.0));
 				}
 				for (int i = 0; i < *negNum; i++)
-					smc = smr = std::max(smr, 0.5 * (negNCC.at<float>(k * 500 + i) + 1.0));
+					smc = smr = std::max(smr, 0.5 * (negNCC.at<float>(id * 500 + i) + 1.0));
 
 				if (spr + smr == 0.0)
-					resultSr[k] = 0.0;
+					resultSr[id] = 0.0;
 				else
-					resultSr[k] = spr / (smr + spr);
+					resultSr[id] = spr / (smr + spr);
 
 				if (spc + smc == 0.0)
-					resultSc[k] = 0.0;
+					resultSc[id] = 0.0;
 				else
-					resultSc[k] = spc / (smc + spc);
+					resultSc[id] = spc / (smc + spc);
 			}
 
 			////Compare positive NCCs
@@ -367,8 +367,8 @@ namespace cv
 				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
 				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
 				ocl::KernelArg::PtrWriteOnly(devNCC),
-				(int)posNum,
-				(int)negNum);
+				posNum,
+				negNum);
 
 			e4 = getTickCount();
 			t = (e4 - e3) / getTickFrequency()*1000.0;
@@ -466,7 +466,6 @@ namespace cv
 			int dx = initSize.width / 10, dy = initSize.height / 10;
 			Size2d size = img.size();
 			double scale = 1.0;
-			int total = 0, pass = 0;
 			int npos = 0, nneg = 0;
 			double maxSc = -5.0;
 			Rect2d maxScRect;
@@ -477,7 +476,7 @@ namespace cv
 			int64 e1, e2;
 			double t;
 
-			e1 = cvGetTickCount();
+			e1 = getTickCount();
 			//Detection part
 <<<<<<< HEAD
 =======
@@ -514,8 +513,8 @@ namespace cv
 			//printf("Variance: %d\t%f\n", varBuffer.size(), t);
 
 			//Encsemble classification
-			e1 = cvGetTickCount();
-			for (int i = 0; i < varBuffer.size(); i++)
+			e1 = getTickCount();
+			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
 				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= ENSEMBLE_THRESHOLD)
@@ -529,7 +528,7 @@ namespace cv
 
 			//NN classification
 			e1 = getTickCount();
-			for (int i = 0; i < ensBuffer.size(); i++)
+			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
 				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
@@ -580,7 +579,6 @@ namespace cv
 			int dx = initSize.width / 10, dy = initSize.height / 10;
 			Size2d size = img.size();
 			double scale = 1.0;
-			int total = 0, pass = 0;
 			int npos = 0, nneg = 0;
 			double maxSc = -5.0;
 			Rect2d maxScRect;
@@ -591,7 +589,7 @@ namespace cv
 			int64 e1, e2;
 			double t;
 
-			e1 = cvGetTickCount();
+			e1 = getTickCount();
 			//Detection part
 			//Generate windows and filter by variance
 			scaleID = 0;
@@ -625,8 +623,8 @@ namespace cv
 			//printf("Variance: %d\t%f\n", varBuffer.size(), t);
 
 			//Encsemble classification
-			e1 = cvGetTickCount();
-			for (int i = 0; i < varBuffer.size(); i++)
+			e1 = getTickCount();
+			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
 				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= ENSEMBLE_THRESHOLD)
@@ -647,7 +645,7 @@ namespace cv
 			double *resultSc = new double[numOfPatches];
 
 			uchar *patchesData = stdPatches.data;
-			for (int i = 0; i < ensBuffer.size(); i++)
+			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				resample(resized_imgs[ensScaleIDs[i]], Rect2d(ensBuffer[i], initSize), standardPatch);
 				uchar *stdPatchData = standardPatch.data;
@@ -658,7 +656,7 @@ namespace cv
 			ocl_batchSrSc(stdPatches, resultSr, resultSc, numOfPatches);
 
 
-			for (int i = 0; i < ensBuffer.size(); i++)
+			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
 				standardPatch.data = &stdPatches.data[225 * i];
