@@ -85,7 +85,8 @@ protected:
     {
             try
             {
-                RgbdCluster rgbdCluster;
+                Ptr<RgbdFrame> rgbdFrame;
+                RgbdCluster rgbdCluster(rgbdFrame);
 
                 // load test data
 

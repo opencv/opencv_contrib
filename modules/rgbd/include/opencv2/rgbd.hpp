@@ -454,6 +454,7 @@ namespace rgbd
       Mat depth;
       Mat mask;
       Mat normals;
+      Mat points3d;
   };
 
   /** Object that contains a frame data that is possibly needed for the Odometry.
@@ -1019,25 +1020,22 @@ namespace rgbd
 
   /** A cluster of a depth map. It can be used as both an image and a point cloud.
    */
-  class CV_EXPORTS RgbdCluster : public RgbdFrame
+  class CV_EXPORTS RgbdCluster
   {
   public:
+    Ptr<RgbdFrame> rgbdFrame;
     /* silhouette of the cluster. RgbdFrame::mask should be used to indicate valid depth points */
     Mat silhouette;
-    /* original 3d points */
-    Mat points3d;
     /* image to vector point map */
     Mat pointsIndex;
     /* vector of points */
     std::vector<RgbdPoint> points;
     bool bPlane;
-    bool bPointsUpdated;
+    bool bVectorPointsUpdated;
 
     /** Constructor.
      */
-    RgbdCluster() : bPlane(false), bPointsUpdated(false)
-    {
-    }
+    RgbdCluster(Ptr<RgbdFrame> _rgbdFrame);
 
     /** Return the number of valid points.
      */
@@ -1056,9 +1054,7 @@ namespace rgbd
 
     /** Constructor.
      */
-    RgbdClusterMesh()
-    {
-    }
+    RgbdClusterMesh(Ptr<RgbdFrame> _rgbdFrame);
 
     /** Update `faceIndices`. Must be called after `points` is updated.
      * @param depthDiff Form a face when depth difference between vertices is less than the value.

@@ -50,38 +50,42 @@ namespace cv
 {
 namespace rgbd
 {
+    RgbdClusterMesh::RgbdClusterMesh(Ptr<RgbdFrame> _rgbdFrame) : RgbdCluster(_rgbdFrame), bFaceIndicesUpdated(false)
+    {
+    }
+
     void RgbdClusterMesh::calculateFaceIndices(float depthDiff)
     {
-        if(!bPointsUpdated)
+        if(!bVectorPointsUpdated)
         {
             calculatePoints();
         }
-        for(int i = 0; i < mask.rows; i++)
+        for(int i = 0; i < silhouette.rows; i++)
         {
-            for(int j = 0; j < mask.cols; j++)
+            for(int j = 0; j < silhouette.cols; j++)
             {
-                if(mask.at<uchar>(i, j) == 0)
+                if(silhouette.at<uchar>(i, j) == 0)
                 {
                     continue;
                 }
-                if(i + 1 == mask.rows || j + 1 == mask.cols)
+                if(i + 1 == silhouette.rows || j + 1 == silhouette.cols)
                 {
                     continue;
                 }
-                if(mask.at<uchar>(i + 1, j) > 0 &&
-                    mask.at<uchar>(i, j + 1) > 0 &&
-                    mask.at<uchar>(i + 1, j + 1) > 0)
+                if(silhouette.at<uchar>(i + 1, j) > 0 &&
+                    silhouette.at<uchar>(i, j + 1) > 0 &&
+                    silhouette.at<uchar>(i + 1, j + 1) > 0)
                 {
                     //depth comparison not working?
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i + 1, j)) > depthDiff)
+                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i + 1, j)) > depthDiff)
                     {
                         continue;
                     }
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i, j + 1)) > depthDiff)
+                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i, j + 1)) > depthDiff)
                     {
                         continue;
                     }
-                    if(abs(depth.at<float>(i, j) - depth.at<float>(i + 1, j + 1)) > depthDiff)
+                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i + 1, j + 1)) > depthDiff)
                     {
                         continue;
                     }
@@ -99,14 +103,14 @@ namespace rgbd
 
     void RgbdClusterMesh::unwrapTexCoord()
     {
-        if(!bPointsUpdated)
+        if(!bVectorPointsUpdated)
         {
             calculatePoints();
         }
         // TODO: implement LSCM
         for(std::size_t i = 0; i < points.size(); i++) {
             RgbdPoint & point = points.at(i);
-            point.texture_uv = Point2f((float)point.image_xy.x / mask.cols, (float)point.image_xy.y / mask.rows);
+            point.texture_uv = Point2f((float)point.image_xy.x / silhouette.cols, (float)point.image_xy.y / silhouette.rows);
         }
 
         return;
@@ -122,13 +126,17 @@ namespace rgbd
         for(std::size_t i = 0; i < points.size(); i++)
         {
             Point3f & v = points.at(i).world_xyz;
-            Point2f & vt = points.at(i).texture_uv;
             // negate xy for Unity compatibility
             std::stringstream ss;
             fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
+        }
+        for(std::size_t i = 0; i < points.size(); i++)
+        {
+            Point2f & vt = points.at(i).texture_uv;
+            std::stringstream ss;
             fs << "vt " << vt.x << " " << vt.y << std::endl;
         }
-        for(std::size_t i = 0; i < faceIndices.size(); i+=3)
+        for(std::size_t i = 0; i < faceIndices.size(); i += 3)
         {
             fs << "f " << faceIndices.at(i)+1 << "/" << faceIndices.at(i)+1
                 << "/ " << faceIndices.at(i+1)+1 << "/" << faceIndices.at(i+1)+1

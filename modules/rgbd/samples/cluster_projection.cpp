@@ -98,12 +98,10 @@ int main( int argc, char** argv )
 
     //auto normals = makePtr<RgbdNormals>(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, 5, RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD);
     Mat points3d;
-    depthTo3d(frame->depth, cameraMatrix, points3d);
+    depthTo3d(frame->depth, cameraMatrix, frame->points3d);
     //(*normals)(frame->depth, frame->normals);
 
-    RgbdClusterMesh mainCluster;
-    mainCluster.points3d = points3d;
-    mainCluster.depth = frame->depth;
+    RgbdClusterMesh mainCluster(frame);
     vector<RgbdClusterMesh> clusters;
     planarSegmentation(mainCluster, clusters);
     deleteEmptyClusters(clusters);
@@ -112,7 +110,7 @@ int main( int argc, char** argv )
         {
             stringstream ss;
             ss << "cluster " << i;
-            imshow(ss.str(), clusters.at(i).mask * 255);
+            imshow(ss.str(), clusters.at(i).silhouette * 255);
         }
 
         Mat labels;
@@ -129,7 +127,7 @@ int main( int argc, char** argv )
         for(std::size_t j = 0; j < smallClusters.size(); j++) {
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
-            imshow(ss.str(), smallClusters.at(j).mask * 255);
+            imshow(ss.str(), smallClusters.at(j).silhouette * 255);
             smallClusters.at(j).unwrapTexCoord();
             smallClusters.at(j).save(ss.str() + ".obj");
         }

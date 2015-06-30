@@ -49,27 +49,41 @@ namespace cv
 {
 namespace rgbd
 {
+    RgbdCluster::RgbdCluster(Ptr<RgbdFrame> _rgbdFrame) : bPlane(false), bVectorPointsUpdated(false), rgbdFrame(_rgbdFrame)
+    {
+        CV_Assert(!rgbdFrame->depth.empty());
+
+        if(rgbdFrame->mask.data != NULL)
+        {
+            silhouette = Mat_<uchar>::zeros(rgbdFrame->depth.rows, rgbdFrame->depth.cols);
+        }
+        else
+        {
+            silhouette = rgbdFrame->mask;
+        }
+    }
+
     int RgbdCluster::getNumPoints()
     {
-        if(bPointsUpdated)
+        if(bVectorPointsUpdated)
             return static_cast<int>(points.size());
         else return -1;
     }
 
     void RgbdCluster::calculatePoints()
     {
-        pointsIndex = Mat_<int>::eye(mask.rows, mask.cols) * -1;
+        pointsIndex = Mat_<int>::eye(silhouette.rows, silhouette.cols) * -1;
         points.clear();
-        for(int i = 0; i < mask.rows; i++)
+        for(int i = 0; i < silhouette.rows; i++)
         {
-            for(int j = 0; j < mask.cols; j++)
+            for(int j = 0; j < silhouette.cols; j++)
             {
-                if(mask.at<uchar>(i, j) > 0)
+                if(silhouette.at<uchar>(i, j) > 0)
                 {
-                    if(depth.at<float>(i, j) > 0)
+                    if(rgbdFrame->depth.at<float>(i, j) > 0)
                     {
                         RgbdPoint point;
-                        point.world_xyz = points3d.at<Point3f>(i, j);
+                        point.world_xyz = rgbdFrame->points3d.at<Point3f>(i, j);
                         point.image_xy = Point2i(j, i);
 
                         pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
@@ -77,12 +91,12 @@ namespace rgbd
                     }
                     else
                     {
-                        mask.at<uchar>(i, j) = 0;
+                        silhouette.at<uchar>(i, j) = 0;
                     }
                 }
             }
         }
-        bPointsUpdated = true;
+        bVectorPointsUpdated = true;
     }
 
     template<typename T> void eliminateSmallClusters(std::vector<T>& clusters, int minPoints)
@@ -117,24 +131,22 @@ namespace rgbd
         plane->setThreshold(0.025f);
         Mat mask;
         std::vector<Vec4f> coeffs;
-        //(*plane)(points3d, frame->normals, mask, coeffs);
-        (*plane)(mainCluster.points3d, mask, coeffs);
+        //(*plane)(points3d, rgbdFrame->normals, mask, coeffs);
+        (*plane)(mainCluster.rgbdFrame->points3d, mask, coeffs);
 
         Mat colorLabels = Mat_<Vec3f>(mask.rows, mask.cols);
         for(int label = 0; label < maxPlaneNum + 1; label++)
         {
-            clusters.push_back(T2());
+            clusters.push_back(T2(mainCluster.rgbdFrame));
             T2& cluster = clusters.back();
-            mainCluster.depth.copyTo(cluster.depth);
-            mainCluster.points3d.copyTo(cluster.points3d);
             if(label < maxPlaneNum)
             {
-                compare(mask, label, cluster.mask, CMP_EQ);
+                compare(mask, label, cluster.silhouette, CMP_EQ);
                 cluster.bPlane = true;
             }
             else
             {
-                compare(mask, label, cluster.mask, CMP_GE); // residual
+                compare(mask, label, cluster.silhouette, CMP_GE); // residual
             }
             cluster.calculatePoints();
             if(cluster.getNumPoints() < minArea) {
@@ -149,16 +161,14 @@ namespace rgbd
     template<typename T1, typename T2> void euclideanClustering(T1& mainCluster, std::vector<T2>& clusters, int minArea)
     {
         Mat labels, stats, centroids;
-        connectedComponentsWithStats(mainCluster.mask, labels, stats, centroids, 8);
+        connectedComponentsWithStats(mainCluster.silhouette, labels, stats, centroids, 8);
         for(int label = 1; label < stats.rows; label++)
         { // 0: background label
             if(stats.at<int>(label, CC_STAT_AREA) >= minArea)
             {
-                clusters.push_back(T2());
+                clusters.push_back(T2(mainCluster.rgbdFrame));
                 T2& cluster = clusters.back();
-                mainCluster.depth.copyTo(cluster.depth);
-                mainCluster.points3d.copyTo(cluster.points3d);
-                compare(labels, label, cluster.mask, CMP_EQ);
+                compare(labels, label, cluster.silhouette, CMP_EQ);
                 cluster.calculatePoints();
             }
         }
