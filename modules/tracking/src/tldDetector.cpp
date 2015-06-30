@@ -342,12 +342,12 @@ namespace cv
 
 		double TLDDetector::ocl_Sc(const Mat_<uchar>& patch)
 		{
-			int64 e1, e2, e3, e4;
-			float t;
-			e1 = getTickCount();
+			//int64 e1, e2, e3, e4;
+			//float t;
+			//e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 
-			e3 = getTickCount();
+			//e3 = getTickCount();
 
 			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
@@ -370,23 +370,23 @@ namespace cv
 				posNum,
 				negNum);
 
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			size_t globSize = 1000;
 			size_t localSize = 128;
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			if (!k.run(1, &globSize, &localSize, true))
 				printf("Kernel Run Error!!!");
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Kernel Run GPU: %f\n", t);
 
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			Mat resNCC = devNCC.getMat(ACCESS_READ);
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Read Mem GPU: %f\n", t);
 
 			////Compare
@@ -411,8 +411,8 @@ namespace cv
 			for (int i = 0; i < *negNum; i++)
 				sminus = std::max(sminus, 0.5 * (resNCC.at<float>(i + 500) + 1.0));
 
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sc GPU: %f\n\n", t);
 
 			if (splus + sminus == 0.0)
