@@ -1,0 +1,27 @@
+Project: Ceres Solver
+URL: https://ceres-solver.googlesource.com/ceres-solver
+Upstream version 1.5.0
+
+Local modifications:
+
+- Replaced IF (NOT EXISTS XXX) for GLOG and GLAGS with IF (NOT XXX),
+  so we could specify librareis from our own third_party to be used by
+  Ceres. We don't need full path to this libarries to build Ceres.
+  Actually this should be quite safe for upstream as well.
+
+- Added EXIST check around uninstall tagret specification, we don't have
+  such specification in libmv, yet.
+
+- Renamed Ceres's gtest library to gmock_gtest, so there's no conflict in
+  library names. Not sure it'll give issues in the future (didn't check on
+  whether our gtest and Ceres's gtest provides the same symbols), will
+  figure this out later.
+
+- Added "ceres" prefix to ceres tests targets, otherwise there was a
+  conflict bewteen libmv's jet test and ceres's jet test. Change their
+  path to ${LIBMV_TESTS_OUTPUT_DIR}/ceres. Alsotweaked path to data
+  files.
+
+- Do not modify cache's CMAKE_CXX_FLAGS_RELEASE and only update it
+  for Ceres subfolder. Otherwise you'll have infinite appending of
+  Ceres-specific flags on every saving of any CmakeLists.txt.

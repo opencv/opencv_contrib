@@ -1,0 +1,84 @@
+NIST/ITL StRD
+Dataset Name:  Lanczos1          (Lanczos1.dat)
+
+File Format:   ASCII
+               Starting Values   (lines 41 to 46)
+               Certified Values  (lines 41 to 51)
+               Data              (lines 61 to 84)
+
+Procedure:     Nonlinear Least Squares Regression
+
+Description:   These data are taken from an example discussed in
+               Lanczos (1956).  The data were generated to 14-digits
+               of accuracy using
+               f(x) = 0.0951*exp(-x) + 0.8607*exp(-3*x)
+                                     + 1.5576*exp(-5*x).
+
+
+Reference:     Lanczos, C. (1956).
+               Applied Analysis.
+               Englewood Cliffs, NJ:  Prentice Hall, pp. 272-280.
+
+
+
+
+Data:          1 Response  (y)
+               1 Predictor (x)
+               24 Observations
+               Average Level of Difficulty
+               Generated Data
+
+Model:         Exponential Class
+               6 Parameters (b1 to b6)
+
+               y = b1*exp(-b2*x) + b3*exp(-b4*x) + b5*exp(-b6*x)  +  e
+
+
+
+          Starting values                  Certified Values
+
+        Start 1     Start 2           Parameter     Standard Deviation
+  b1 =   1.2         0.5           9.5100000027E-02  5.3347304234E-11
+  b2 =   0.3         0.7           1.0000000001E+00  2.7473038179E-10
+  b3 =   5.6         3.6           8.6070000013E-01  1.3576062225E-10
+  b4 =   5.5         4.2           3.0000000002E+00  3.3308253069E-10
+  b5 =   6.5         4             1.5575999998E+00  1.8815731448E-10
+  b6 =   7.6         6.3           5.0000000001E+00  1.1057500538E-10
+
+Residual Sum of Squares:                    1.4307867721E-25
+Residual Standard Deviation:                8.9156129349E-14
+Degrees of Freedom:                                18
+Number of Observations:                            24
+
+
+
+
+
+
+
+
+Data:   y                   x
+       2.513400000000E+00  0.000000000000E+00
+       2.044333373291E+00  5.000000000000E-02
+       1.668404436564E+00  1.000000000000E-01
+       1.366418021208E+00  1.500000000000E-01
+       1.123232487372E+00  2.000000000000E-01
+       9.268897180037E-01  2.500000000000E-01
+       7.679338563728E-01  3.000000000000E-01
+       6.388775523106E-01  3.500000000000E-01
+       5.337835317402E-01  4.000000000000E-01
+       4.479363617347E-01  4.500000000000E-01
+       3.775847884350E-01  5.000000000000E-01
+       3.197393199326E-01  5.500000000000E-01
+       2.720130773746E-01  6.000000000000E-01
+       2.324965529032E-01  6.500000000000E-01
+       1.996589546065E-01  7.000000000000E-01
+       1.722704126914E-01  7.500000000000E-01
+       1.493405660168E-01  8.000000000000E-01
+       1.300700206922E-01  8.500000000000E-01
+       1.138119324644E-01  9.000000000000E-01
+       1.000415587559E-01  9.500000000000E-01
+       8.833209084540E-02  1.000000000000E+00
+       7.833544019350E-02  1.050000000000E+00
+       6.976693743449E-02  1.100000000000E+00
+       6.239312536719E-02  1.150000000000E+00

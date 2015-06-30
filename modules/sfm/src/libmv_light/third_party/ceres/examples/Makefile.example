@@ -1,0 +1,82 @@
+# Ceres Solver - A fast non-linear least squares minimizer
+# Copyright 2012 Google Inc. All rights reserved.
+# http://code.google.com/p/ceres-solver/
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice,
+#   this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of Google Inc. nor the names of its contributors may be
+#   used to endorse or promote products derived from this software without
+#   specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Author: keir@google.com (Keir Mierle)
+#
+# This is an example Makefile for using Ceres. In practice, the Ceres authors
+# suggest using CMake instead, but if Make is needed for some reason, this
+# example serves to make it easy to do so.
+
+# This should point to place where you unpacked or cloned Ceres.
+CERES_SRC_DIR := /home/keir/wrk/ceres-extra
+
+# This should point to the place where you built Ceres. If you got Ceres by
+# installing it, then this will likely be /usr/local/lib.
+CERES_BIN_DIR := /home/keir/wrk/ceres-extra-bin
+
+# The place you unpacked or cloned Eigen. If Eigen was installed from packages,
+# this will likely be /usr/local/include.
+EIGEN_SRC_DIR := /home/keir/src/eigen-3.0.5
+
+INCLUDES := -I$(CERES_SRC_DIR)/include \
+            -I$(EIGEN_SRC_DIR)
+
+CERES_LIBRARY := -lceres
+CERES_LIBRARY_PATH := -L$(CERES_BIN_DIR)/lib
+CERES_LIBRARY_DEPENDENCIES = -lgflags -lglog
+
+# If Ceres was built with Suitesparse:
+CERES_LIBRARY_DEPENDENCIES += -llapack -lcamd -lamd -lccolamd -lcolamd -lcholmod
+
+# If Ceres was built with CXSparse:
+CERES_LIBRARY_DEPENDENCIES += -lcxsparse
+
+# If Ceres was built with OpenMP:
+CERES_LIBRARY_DEPENDENCIES += -fopenmp -lpthread -lgomp -lm
+
+# The set of object files for your application.
+APPLICATION_OBJS := simple_bundle_adjuster.o
+
+all: simple_bundle_adjuster
+
+simple_bundle_adjuster: $(APPLICATION_OBJS)
+	g++ \
+		$(APPLICATION_OBJS) \
+		$(CERES_LIBRARY_PATH) \
+		$(CERES_LIBRARY) \
+		$(CERES_LIBRARY_DEPENDENCIES) \
+		-o simple_bundle_adjuster
+
+# Disabling debug asserts via -DNDEBUG helps make Eigen faster, at the cost of
+# not getting handy assert failures when there are issues in your code.
+CFLAGS := -O2 -DNDEBUG
+
+# If you have files ending in .cpp instead of .cc, fix the next line
+# appropriately.
+%.o: %.cc $(DEPS)
+	g++ -c -o $@ $< $(CFLAGS) $(INCLUDES)

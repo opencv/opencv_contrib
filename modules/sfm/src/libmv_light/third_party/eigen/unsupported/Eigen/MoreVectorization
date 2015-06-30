@@ -1,0 +1,16 @@
+#ifndef EIGEN_MOREVECTORIZATION_MODULE_H
+#define EIGEN_MOREVECTORIZATION_MODULE_H
+
+#include <Eigen/Core>
+
+namespace Eigen {
+
+/** \ingroup Unsupported_modules
+  * \defgroup MoreVectorization More vectorization module
+  */
+
+}
+
+#include "src/MoreVectorization/MathFunctions.h"
+
+#endif // EIGEN_MOREVECTORIZATION_MODULE_H

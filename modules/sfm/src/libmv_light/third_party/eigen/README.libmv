@@ -1,0 +1,11 @@
+Project: Eigen
+URL: http://eigen.tuxfamily.org/
+License: LGPL3 or GPL2
+Upstream version: 3.1.2, released November 5, 2012
+
+Local modifications:
+
+  * Keep only the following folders: Eigen/* and unsupported/Eigen/*
+  * The CMake build system for Eigen is not included because we only
+    need the headers.
+  * TODO(julien) add unit tests?

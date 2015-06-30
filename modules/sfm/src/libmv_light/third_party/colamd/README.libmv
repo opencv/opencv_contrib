@@ -1,0 +1,8 @@
+Project: COLAMD
+URL: http://www.cise.ufl.edu/research/sparse/colamd/
+License: LGPL2.1
+Upstream version: 2.7.1 (despite the ChangeLog saying 2.7.0)
+
+Local modifications:
+
+  * Deleted everything except core library files, license, README, ChangeLog.
