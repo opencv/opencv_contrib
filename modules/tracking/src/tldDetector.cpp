@@ -106,10 +106,10 @@ namespace cv
 
 		double TLDDetector::ocl_Sr(const Mat_<uchar>& patch)
 		{
-			int64 e1, e2, e3, e4;
-			double t;
-			e1 = getTickCount();
-			e3 = getTickCount();
+			//int64 e1, e2, e3, e4;
+			//double t;
+			//e1 = getTickCount();
+			//e3 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 
 
@@ -134,23 +134,23 @@ namespace cv
 				posNum,
 				negNum);
 
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			size_t globSize = 1000;
 			size_t localSize = 128;
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			if (!k.run(1, &globSize, &localSize, true))
 				printf("Kernel Run Error!!!");
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Kernel Run GPU: %f\n", t);
 
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			Mat resNCC = devNCC.getMat(ACCESS_READ);
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Read Mem GPU: %f\n", t);
 
 			////Compare
@@ -174,8 +174,8 @@ namespace cv
 			for (int i = 0; i < *negNum; i++)
 				sminus = std::max(sminus, 0.5 * (resNCC.at<float>(i+500) +1.0));
 
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sr GPU: %f\n\n", t);
 
 			if (splus + sminus == 0.0)
@@ -185,10 +185,10 @@ namespace cv
 
 		void TLDDetector::ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches)
 		{
-			int64 e1, e2, e3, e4;
-			double t;
-			e1 = getTickCount();
-			e3 = getTickCount();
+			//int64 e1, e2, e3, e4;
+			//double t;
+			//e1 = getTickCount();
+			//e3 = getTickCount();
 
 			UMat devPatches = patches.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
@@ -213,25 +213,25 @@ namespace cv
 				negNum,
 				numOfPatches);
 
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			// 2 -> Pos&Neg
 			size_t globSize = 2 * numOfPatches*MAX_EXAMPLES_IN_MODEL;
 			size_t localSize = 1024;
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			if (!k.run(1, &globSize, &localSize, true))
 				printf("Kernel Run Error!!!");
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Kernel Run GPU: %f\n", t);
 
-			e3 = getTickCount();
+			//e3 = getTickCount();
 			Mat posNCC = devPosNCC.getMat(ACCESS_READ);
 			Mat negNCC = devNegNCC.getMat(ACCESS_READ);
-			e4 = getTickCount();
-			t = (e4 - e3) / getTickFrequency()*1000.0;
+			//e4 = getTickCount();
+			//t = (e4 - e3) / getTickFrequency()*1000.0;
 			//printf("Read Mem GPU: %f\n", t);
 
 			//Calculate Srs
@@ -281,8 +281,8 @@ namespace cv
 
 
 
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sr GPU: %f\n\n", t);
 		}
 
@@ -312,9 +312,9 @@ namespace cv
 			return splus / (sminus + splus);
 			*/
 
-			int64 e1, e2;
-			float t;
-			e1 = getTickCount();
+			//int64 e1, e2;
+			//double t;
+			//e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
 			int med = getMedian((*timeStampsPositive));
@@ -331,8 +331,8 @@ namespace cv
 				modelSample.data = &(negExp->data[i * 225]);
 				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sc: %f\n", t);
 			if (splus + sminus == 0.0)
 				return 0.0;
@@ -473,18 +473,16 @@ namespace cv
 			std::vector <Mat> resized_imgs, blurred_imgs;
 			std::vector <Point> varBuffer, ensBuffer;
 			std::vector <double> varScaleIDs, ensScaleIDs;
-			int64 e1, e2;
-			double t;
+			//int64 e1, e2;
+			//double t;
 
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			//Detection part
-<<<<<<< HEAD
-=======
+
 			//Generate windows and filter by variance
 			scaleID = 0;
 			resized_imgs.push_back(img);
 			blurred_imgs.push_back(imgBlurred);
->>>>>>> 2-nd level of parallelization + detector remake
 			do
 			{
 				Mat_<double> intImgP, intImgP2;
@@ -508,12 +506,12 @@ namespace cv
 				GaussianBlur(resized_imgs[scaleID], tmp, GaussBlurKernelSize, 0.0f);
 				blurred_imgs.push_back(tmp);
 			} while (size.width >= initSize.width && size.height >= initSize.height);
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Variance: %d\t%f\n", varBuffer.size(), t);
 
 			//Encsemble classification
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
@@ -522,12 +520,12 @@ namespace cv
 				ensBuffer.push_back(varBuffer[i]);
 				ensScaleIDs.push_back(varScaleIDs[i]);
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Ensemble: %d\t%f\n", ensBuffer.size(), t);
 
 			//NN classification
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
@@ -561,8 +559,8 @@ namespace cv
 					maxScRect = labPatch.rect;
 				}
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("NN: %d\t%f\n", patches.size(), t);
 
 			if (maxSc < 0)
@@ -586,10 +584,10 @@ namespace cv
 			std::vector <Mat> resized_imgs, blurred_imgs;
 			std::vector <Point> varBuffer, ensBuffer;
 			std::vector <double> varScaleIDs, ensScaleIDs;
-			int64 e1, e2;
-			double t;
+			//int64 e1, e2;
+			//double t;
 
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			//Detection part
 			//Generate windows and filter by variance
 			scaleID = 0;
@@ -618,12 +616,12 @@ namespace cv
 				GaussianBlur(resized_imgs[scaleID], tmp, GaussBlurKernelSize, 0.0f);
 				blurred_imgs.push_back(tmp);
 			} while (size.width >= initSize.width && size.height >= initSize.height);
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Variance: %d\t%f\n", varBuffer.size(), t);
 
 			//Encsemble classification
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
@@ -632,12 +630,12 @@ namespace cv
 				ensBuffer.push_back(varBuffer[i]);
 				ensScaleIDs.push_back(varScaleIDs[i]);
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Ensemble: %d\t%f\n", ensBuffer.size(), t);
 
 			//NN classification
-			e1 = getTickCount();
+			//e1 = getTickCount();
 			//Prepare batch of patches
 			int numOfPatches = ensBuffer.size();
 			Mat_<uchar> stdPatches(numOfPatches, 225);
@@ -693,8 +691,8 @@ namespace cv
 					maxScRect = labPatch.rect;
 				}
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency()*1000.0;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("NN: %d\t%f\n", patches.size(), t);
 
 			if (maxSc < 0)

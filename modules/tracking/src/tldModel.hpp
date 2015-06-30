@@ -50,9 +50,6 @@ namespace cv
 {
 	namespace tld
 	{
-
-
-
 		class TrackerTLDModel : public TrackerModel
 		{
 		public:
@@ -82,7 +79,10 @@ namespace cv
 			void modelUpdateImpl(){}
 			Rect2d boundingBox_;
 			RNG rng;
+<<<<<<< HEAD
 
+=======
+>>>>>>> Fixing Warnings #2
 		};
 
 	}
