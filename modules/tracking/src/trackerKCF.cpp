@@ -226,7 +226,7 @@ namespace cv{
     // detection part
     if(frame>0){
       //compute the gaussian kernel
-      if(params.compressFeature){
+      if(params.compress_feature){
         compress(proj_mtx,x,x);
         compress(proj_mtx,z,zc);
         denseGaussKernel(params.sigma,x,zc,k);
@@ -234,7 +234,7 @@ namespace cv{
         denseGaussKernel(params.sigma,x,z,k);
 
       // calculate filter response
-      if(params.splitCoeff)
+      if(params.split_coeff)
         calcResponse(alphaf,alphaf_den,k,response);
       else
         calcResponse(alphaf,k,response);
@@ -259,7 +259,7 @@ namespace cv{
     else
       z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
 
-    if(params.compressFeature){
+    if(params.compress_feature){
       // feature compression
       updateProjectionMatrix(z,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size);
       compress(proj_mtx,x,x);
@@ -278,7 +278,7 @@ namespace cv{
     new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols);
     std::complex<double> temp;
 
-    if(params.splitCoeff){
+    if(params.split_coeff){
       mulSpectrums(yf,kf,new_alphaf,0);
       mulSpectrums(kf,kf_lambda,new_alphaf_den,0);
     }else{
@@ -294,10 +294,10 @@ namespace cv{
     // update the RLS model
     if(frame==0){
       alphaf=new_alphaf.clone();
-      if(params.splitCoeff)alphaf_den=new_alphaf_den.clone();
+      if(params.split_coeff)alphaf_den=new_alphaf_den.clone();
     }else{
       alphaf=(1.0-params.interp_factor)*alphaf+params.interp_factor*new_alphaf;
-      if(params.splitCoeff)alphaf_den=(1.0-params.interp_factor)*alphaf_den+params.interp_factor*new_alphaf_den;
+      if(params.split_coeff)alphaf_den=(1.0-params.interp_factor)*alphaf_den+params.interp_factor*new_alphaf_den;
     }
 
     frame++;
@@ -551,7 +551,7 @@ namespace cv{
     sumChannels(xyf_v,xyf);
     ifft2(xyf,xyf);
 
-    if(params.wrapKernel){
+    if(params.wrap_kernel){
       shiftRows(xyf, _x.rows/2);
       shiftCols(xyf, _x.cols/2);
     }
@@ -671,11 +671,11 @@ namespace cv{
       resize=true;
       max_patch_size=80*80;
       descriptor=CN;
-      splitCoeff=true;
-      wrapKernel=false;
+      split_coeff=true;
+      wrap_kernel=false;
 
       //feature compression
-      compressFeature=true;
+      compress_feature=true;
       compressed_size=2;
       pca_learning_rate=0.15;
   }

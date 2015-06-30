@@ -1,6 +1,6 @@
 /*----------------------------------------------
  * Usage:
- * example_tracking_kcf <video path>
+ * example_tracking_kcf <video_name>
  *
  * example:
  * example_tracking_kcf Bolt/img/%04.jpg
@@ -13,7 +13,6 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <cstring>
-#include <algorithm>
 
 using namespace std;
 using namespace cv;
@@ -21,7 +20,7 @@ using namespace cv;
 class BoxExtractor {
 public:
   Rect2d extract(Mat img);
-  Rect2d extract(const std::string& windowName, Mat img);
+  Rect2d extract(const std::string& windowName, Mat img, bool showCrossair = true);
 
   struct handlerT{
     bool isDrawing;
@@ -37,25 +36,37 @@ private:
   void opencv_mouse_callback( int event, int x, int y, int , void *param );
 };
 
-int main( int , char** argv ){
+int main( int argc, char** argv ){
+  // show help
+  if(argc<2){
+    cout<<
+      " Usage: example_tracking_kcf <video_name>\n"
+      " examples:\n"
+      " example_tracking_kcf Bolt/img/%04.jpg\n"
+      " example_tracking_kcf faceocc2.webm\n"
+      << endl;
+    return 0;
+  }
+
+  // ROI selector
   BoxExtractor box;
 
   // create the tracker
   Ptr<Tracker> tracker = Tracker::create( "KCF" );
 
-  Rect2d roi;
-  int start_frame = 0;
+  // set input video
   std::string video = argv[1];
-
-  VideoCapture cap;
-  cap.open( video );
-  cap.set( CAP_PROP_POS_FRAMES, start_frame );
+  VideoCapture cap(video);
 
   Mat frame;
 
   // get bounding box
   cap >> frame;
-  roi=box.extract("tracker",frame);
+  Rect2d roi=box.extract("tracker",frame);
+
+  //quit if ROI was not selected
+  if(roi.width==0 || roi.height==0)
+    return 0;
 
   // initialize the tracker
   tracker->init(frame,roi);
@@ -126,7 +137,7 @@ Rect2d BoxExtractor::extract(Mat img){
   return extract("Bounding Box Extractor", img);
 }
 
-Rect2d BoxExtractor::extract(const std::string& windowName, Mat img){
+Rect2d BoxExtractor::extract(const std::string& windowName, Mat img, bool showCrossair){
 
   int key=0;
 
@@ -140,6 +151,7 @@ Rect2d BoxExtractor::extract(const std::string& windowName, Mat img){
   // select the object
   setMouseCallback( windowName, mouseHandler, (void *)&params );
 
+  // end selection process on SPACE (32) BACKSPACE (27) or ENTER (13)
   while(!(key==32 || key==27 || key==13)){
     // draw the selected object
     rectangle(
@@ -147,6 +159,25 @@ Rect2d BoxExtractor::extract(const std::string& windowName, Mat img){
       params.box,
       Scalar(255,0,0),2,1
     );
+
+    // draw cross air in the middle of bounding box
+    if(showCrossair){
+      // horizontal line
+      line(
+        params.image,
+        Point(params.box.x,params.box.y+0.5*params.box.height),
+        Point(params.box.x+params.box.width,params.box.y+0.5*params.box.height),
+        Scalar(255,0,0),2,1
+      );
+
+      // vertical line
+      line(
+        params.image,
+        Point(params.box.x+0.5*params.box.width,params.box.y),
+        Point(params.box.x+0.5*params.box.width,params.box.y+params.box.height),
+        Scalar(255,0,0),2,1
+      );
+    }
 
     // show the image bouding box
     imshow(windowName,params.image);
