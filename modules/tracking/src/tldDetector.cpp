@@ -513,7 +513,7 @@ namespace cv
 			//e1 = getTickCount();
 			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
-				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
+				prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[i]].step[0]));
 				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= ENSEMBLE_THRESHOLD)
 					continue;
 				ensBuffer.push_back(varBuffer[i]);
@@ -582,7 +582,7 @@ namespace cv
 			int scaleID;
 			std::vector <Mat> resized_imgs, blurred_imgs;
 			std::vector <Point> varBuffer, ensBuffer;
-			std::vector <double> varScaleIDs, ensScaleIDs;
+			std::vector <int> varScaleIDs, ensScaleIDs;
 			//int64 e1, e2;
 			//double t;
 
@@ -636,7 +636,7 @@ namespace cv
 			//NN classification
 			//e1 = getTickCount();
 			//Prepare batch of patches
-			int numOfPatches = ensBuffer.size();
+			int numOfPatches = (int)ensBuffer.size();
 			Mat_<uchar> stdPatches(numOfPatches, 225);
 			double *resultSr = new double[numOfPatches];
 			double *resultSc = new double[numOfPatches];
