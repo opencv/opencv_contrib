@@ -65,6 +65,5 @@ namespace cv
 			int lastStep_;
 		};
 
-	
 	}
 }

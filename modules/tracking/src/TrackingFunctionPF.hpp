@@ -24,7 +24,6 @@ namespace cv{
                 Mat_<double> HShist, Vhist;
             };
             TrackingHistogram _origHist;
-			
 			const TrackingFunctionPF & operator = (const TrackingFunctionPF &);
     };
 

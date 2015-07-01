@@ -89,7 +89,7 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
         myBoundingBox.width *= scale;
         myBoundingBox.height *= scale;
     }
-    model = Ptr<TrackerTLDModel>(new TrackerTLDModel(params, image_gray, myBoundingBox, data->getMinSize()));    
+    model = Ptr<TrackerTLDModel>(new TrackerTLDModel(params, image_gray, myBoundingBox, data->getMinSize()));
 
     data->confident = false;
     data->failedLastTime = false;
@@ -119,7 +119,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     for( int i = 0; i < 2; i++ )
     {
         Rect2d tmpCandid = boundingBox;
-        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || 
+        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) ||
 			((i == 1) && (tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize()))))
         {
             candidates.push_back(tmpCandid);
@@ -292,6 +292,6 @@ void Data::printme(FILE*  port)
     dfprintf((port, "\tminSize = %dx%d\n", minSize.width, minSize.height));
 }
 
-} 
+}
 
-} 
+}
