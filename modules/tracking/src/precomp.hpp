@@ -46,5 +46,9 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/ocl.hpp"
 
+namespace cv
+{
+	extern const double ColorNames[][10];
+}
 
 #endif
