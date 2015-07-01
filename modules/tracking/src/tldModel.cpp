@@ -294,12 +294,5 @@ namespace cv
 			dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
 			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> Fixing Warnings #2
 	}
 }

@@ -79,10 +79,6 @@ namespace cv
 			void modelUpdateImpl(){}
 			Rect2d boundingBox_;
 			RNG rng;
-<<<<<<< HEAD
-
-=======
->>>>>>> Fixing Warnings #2
 		};
 
 	}
