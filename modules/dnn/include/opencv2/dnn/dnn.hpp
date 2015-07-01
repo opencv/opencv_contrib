@@ -147,7 +147,7 @@ namespace dnn
         Blob getBlob(BlobId outputName);
 
         void setParam(LayerId layer, int numParam, const Blob &blob);
-        void getParam(LayerId layer, int numParam);
+        Blob getParam(LayerId layer, int numParam = 0);
 
     private:
 

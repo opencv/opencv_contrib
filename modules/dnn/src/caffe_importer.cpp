@@ -68,32 +68,30 @@ namespace
             bool isRepeated = field->is_repeated();
             const std::string &name = field->name();
 
-            std::cout << field->type_name() << " " << name << ":";
-
             #define GET_FIRST(Type) (isRepeated ? msgRefl->GetRepeated##Type(msg, field, 0) : msgRefl->Get##Type(msg, field))
 
             switch (type)
             {
             case FieldDescriptor::CPPTYPE_INT32:
-                std::cout << params.set(name, GET_FIRST(Int32));
+                params.set(name, GET_FIRST(Int32));
                 break;
             case FieldDescriptor::CPPTYPE_UINT32:
-                std::cout << params.set(name, GET_FIRST(UInt32));
+                params.set(name, GET_FIRST(UInt32));
                 break;
             case FieldDescriptor::CPPTYPE_DOUBLE:
-                std::cout << params.set(name, GET_FIRST(Double));
+                params.set(name, GET_FIRST(Double));
                 break;
             case FieldDescriptor::CPPTYPE_FLOAT:
-                std::cout << params.set(name, GET_FIRST(Float));
+                params.set(name, GET_FIRST(Float));
                 break;
             case FieldDescriptor::CPPTYPE_ENUM:
-                std::cout << params.set(name, GET_FIRST(Enum)->name());
+                params.set(name, GET_FIRST(Enum)->name());
                 break;
             case FieldDescriptor::CPPTYPE_BOOL:
-                std::cout << params.set(name, GET_FIRST(Bool));
+                params.set(name, GET_FIRST(Bool));
                 break;
             default:
-                std::cout << "unknown";
+                CV_Error(cv::Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
                 break;
             }
 
@@ -213,8 +211,6 @@ namespace
                 std::vector<String> tops;
                 tops.assign(layer.top().begin(), layer.top().end());
                 bottomsVec[li].assign(layer.bottom().begin(), layer.bottom().end());
-
-                std::cout << std::endl << "LAYER: " << name << std::endl;
 
                 extractLayerParams(layer, layerParams);
                 extractBinaryLayerParms(layer, layerParams);

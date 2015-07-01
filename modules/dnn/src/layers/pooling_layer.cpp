@@ -64,8 +64,8 @@ namespace dnn
     {
         CV_Assert(inputs.size() > 0);
 
-        inH = inputs[0]->cols();
-        inW = inputs[0]->rows();
+        inW = inputs[0]->cols();
+        inH = inputs[0]->rows();
         computeOutputShape(inH, inW);
 
         outputs.resize(inputs.size());

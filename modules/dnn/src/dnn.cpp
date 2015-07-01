@@ -312,10 +312,13 @@ struct Net::Impl
         {
             LayerData& ld = it->second;
 
-            std::cout << ld.name << std::endl;
-            std::cout << "Connected:" << std::endl;
-            for (std::set<int>::iterator j = ld.inputLayersId.begin(); j != ld.inputLayersId.end(); j++)
-                std::cout << layers[*j].name << std::endl;
+            std::cout << "Layer \"" << ld.name << "\"" << std::endl;
+            if (ld.inputBlobsId.size() > 0)
+            {
+                std::cout << "Connected to:" << std::endl;
+                for (std::set<int>::iterator j = ld.inputLayersId.begin(); j != ld.inputLayersId.end(); j++)
+                    std::cout << layers[*j].name << std::endl;
+            }
             std::cout << std::endl;
         }
     }
@@ -517,6 +520,15 @@ Blob Net::getBlob(BlobId outputName)
 
     LayerData &ld = impl->layers[found.lid];
     return ld.outputBlobs[found.oid];
+}
+
+Blob Net::getParam(LayerId layer, int numParam)
+{
+    LayerData &ld = impl->getLayerData(layer);
+
+    std::vector<Blob> &layerBlobs = ld.layerInstance->learnedParams;
+    CV_Assert(numParam < (int)layerBlobs.size());
+    return layerBlobs[numParam];
 }
 
 Importer::~Importer()

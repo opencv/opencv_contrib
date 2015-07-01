@@ -1,6 +1,6 @@
 #include "test_precomp.hpp"
 #include <iostream>
-#include "cnpy.h"
+#include "npy_blob.hpp"
 
 namespace cvtest
 {
@@ -32,21 +32,10 @@ bool isEqual(const cv::Vec<T, n> &l, const cv::Vec<T, n> &r)
     return true;
 }
 
-Blob loadNpyBlob(String name)
-{
-    cnpy::NpyArray npyBlob = cnpy::npy_load(getTestFile(name));
-
-    Blob blob;
-    blob.fill((int)npyBlob.shape.size(), (int*)&npyBlob.shape[0], CV_32F, npyBlob.data);
-
-    npyBlob.destruct();
-    return blob;
-}
-
 static void testLayer(String proto, String caffemodel = String())
 {
-    Blob inp = loadNpyBlob("blob.npy");
-    Blob ref = loadNpyBlob(proto + ".caffe.npy");
+    Blob inp = blobFromNPY(getTestFile("blob.npy"));
+    Blob ref = blobFromNPY(getTestFile(proto + ".caffe.npy"));
 
     Net net;
     {
