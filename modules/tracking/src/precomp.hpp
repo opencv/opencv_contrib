@@ -45,4 +45,9 @@
 #include "opencv2/tracking.hpp"
 #include "opencv2/core/utility.hpp"
 
+namespace cv
+{
+    extern const double ColorNames[][10];
+}
+
 #endif

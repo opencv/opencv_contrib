@@ -40,7 +40,6 @@
  //M*/
 
 #include "precomp.hpp"
-#include "featureColorName.cpp"
 #include <complex>
 
 /*---------------------------
