@@ -385,7 +385,7 @@ TrackerSamplerPF::Params::Params(){
     iterationNum=20;
     particlesNum=100;
     alpha=0.9;
-    std=(Mat_<double>(1,4)<<15.0,15.0,15.0,15.0); 
+    std=(Mat_<double>(1,4)<<15.0,15.0,15.0,15.0);
 }
 TrackerSamplerPF::TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters):
     params( parameters ),_function(new TrackingFunctionPF(chosenRect)){
