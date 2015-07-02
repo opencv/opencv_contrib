@@ -12,8 +12,8 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make
-$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
+$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
 ==============================================
-demo :$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
+demo :$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
 Then press 'q' to run the demo for images generation when you see the gray background and a coordinate.
 ==============================================

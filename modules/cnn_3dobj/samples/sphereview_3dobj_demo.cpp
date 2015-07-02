@@ -41,9 +41,32 @@
 using namespace cv;
 using namespace std;
 using namespace cv::cnn_3dobj;
+Point3d getCenter(string plymodel)
+{
+	char* path_model=(char*)plymodel.data();
+	int numPoint = 5841;
+	ifstream ifs(path_model);
+	string str;
+	for(size_t i = 0; i < 15; ++i)
+		getline(ifs, str);
+	float temp_x, temp_y, temp_z;
+	Point3f data;
+	float dummy1, dummy2, dummy3, dummy4, dummy5, dummy6;
+	for(int i = 0; i < numPoint; ++i)
+	{
+		ifs >> temp_x >> temp_y >> temp_z >> dummy1 >> dummy2 >> dummy3 >> dummy4 >> dummy5 >> dummy6;
+		data.x += temp_x;
+		data.y += temp_y;
+		data.z += temp_z;
+	}
+	data.x = data.x/numPoint;
+	data.y = data.y/numPoint;
+	data.z = data.z/numPoint;
+	return data;
+};
 int main(int argc, char *argv[]){
-	const String keys = "{help | | demo :$ ./sphereview_test -radius=350 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-			     "{radius | 350 | Distanse from camera to object, used for adjust view for the reason that differet scale of .ply model.}"
+	const String keys = "{help | | demo :$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+			     "{radius | 250 | Distanse from camera to object, used for adjust view for the reason that differet scale of .ply model.}"
 			     "{ite_depth | 1 | Iteration of sphere generation, we add points on the middle of lines of sphere and adjust the radius suit for the original radius.}"
 			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
 			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
@@ -53,7 +76,7 @@ int main(int argc, char *argv[]){
 	if (parser.has("help"))
 	{
 		parser.printMessage();
-		return 0;	
+		return 0;
 	}
 	float radius = parser.get<float>("radius");
 	int ite_depth = parser.get<int>("ite_depth");
@@ -73,11 +96,11 @@ int main(int argc, char *argv[]){
 	/// Add coordinate axes
 	myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
 	myWindow.setBackgroundColor(viz::Color::gray());
-
 	myWindow.spin();
 	/// Set background color
 	/// Let's assume camera has the following properties
-	Point3d cam_focal_point(0.0f,0.0f,0.0f), cam_y_dir(-0.0f,-0.0f,-1.0f);
+	Point3d cam_focal_point = getCenter(plymodel);
+	Point3d cam_y_dir(0.0f,0.0f,1.0f);
 	for(int pose = 0; pose < (int)campos.size(); pose++){
 		imglabel << campos.at(pose).x << ' ' << campos.at(pose).y << ' ' << campos.at(pose).z << endl;
 		/// We can get the pose of the cam using makeCameraPoses
@@ -85,19 +108,19 @@ int main(int argc, char *argv[]){
 		//Affine3f cam_pose = viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
 		/// We can get the transformation matrix from camera coordinate system to global using
 		/// - makeTransformToGlobal. We need the axes of the camera
-		Affine3f transform = viz::makeTransformToGlobal(Vec3f(0.0f,-1.0f,0.0f), Vec3f(-1.0f,0.0f,0.0f), Vec3f(0.0f,0.0f,-1.0f), campos.at(pose));
+		Affine3f transform = viz::makeTransformToGlobal(Vec3f(1.0f,0.0f,0.0f), Vec3f(0.0f,1.0f,0.0f), Vec3f(0.0f,0.0f,1.0f), campos.at(pose));
 		/// Create a cloud widget.
 		viz::Mesh objmesh = viz::Mesh::load(plymodel);
 		viz::WMesh mesh_widget(objmesh);
 		/// Pose of the widget in camera frame
-		Affine3f cloud_pose = Affine3f().translate(Vec3f(3.0f,3.0f,3.0f));
+		Affine3f cloud_pose = Affine3f().translate(Vec3f(1.0f,1.0f,1.0f));
 		/// Pose of the widget in global frame
 		Affine3f cloud_pose_global = transform * cloud_pose;
 		/// Visualize camera frame
 		if (!camera_pov)
 		{
 			viz::WCameraPosition cpw(1); // Coordinate axes
-			viz::WCameraPosition cpw_frustum(Vec2f(0.889484, 0.523599)); // Camera frustum
+			viz::WCameraPosition cpw_frustum(Vec2f(0.5, 0.5)); // Camera frustum
 			myWindow.showWidget("CPW", cpw, cam_pose);
 			myWindow.showWidget("CPW_FRUSTUM", cpw_frustum, cam_pose);
 		}
