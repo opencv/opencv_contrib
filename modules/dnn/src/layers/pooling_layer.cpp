@@ -27,6 +27,7 @@ namespace dnn
 
         void computeOutputShape(int inH, int inW);
         void maxPooling(Blob &input, Blob &output);
+        void avePooling(Blob &input, Blob &output);
 
     public:
         PoolingLayer(LayerParams &params);
@@ -85,6 +86,9 @@ namespace dnn
             case MAX:
                 maxPooling(*inputs[ii], outputs[ii]);
                 break;
+            case AVE:
+                avePooling(*inputs[ii], outputs[ii]);
+                break;
             default:
                 CV_Error(cv::Error::StsNotImplemented, "Not implemented");
                 break;
@@ -128,6 +132,42 @@ namespace dnn
                     }
                 }
             }
+        }
+    }
+
+    void PoolingLayer::avePooling(Blob &input, Blob &output)
+    {
+        for (int n = 0; n < input.num(); ++n)
+        {
+            for (int c = 0; c < input.channels(); ++c)
+            {
+                float *srcData = input.ptr<float>(n, c);
+                float *dstData = output.ptr<float>(n, c);
+
+                for (int ph = 0; ph < pooledH; ++ph)
+                {
+                    for (int pw = 0; pw < pooledW; ++pw)
+                    {
+                        int hstart = ph * strideH - padH;
+                        int wstart = pw * strideH - padH;
+                        int hend = min(hstart + kernelH, inW + padH);
+                        int wend = min(wstart + kernelW, inH + padW);
+                        int pool_size = (hend - hstart) * (wend - wstart);
+                        hstart = max(hstart, 0);
+                        wstart = max(wstart, 0);
+                        hend = min(hend, inH);
+                        wend = min(wend, inW);
+
+                        dstData[ph * pooledH + pw] = 0.f;
+
+                        for (int h = hstart; h < hend; ++h)
+                            for (int w = wstart; w < wend; ++w)
+                                dstData[ph * pooledH + pw] += srcData[h * inW + w];
+
+                        dstData[ph * pooledH + pw] /= pool_size;
+                    }
+                }
+          }
         }
     }
 

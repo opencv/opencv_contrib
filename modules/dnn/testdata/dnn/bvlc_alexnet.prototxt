@@ -75,12 +75,12 @@ layer {
   name: "relu2"
   type: "ReLU"
   bottom: "conv2"
-  top: "conv2"
+  top: "relu2"
 }
 layer {
   name: "norm2"
   type: "LRN"
-  bottom: "conv2"
+  bottom: "relu2"
   top: "norm2"
   lrn_param {
     local_size: 5

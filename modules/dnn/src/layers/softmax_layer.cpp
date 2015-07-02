@@ -8,6 +8,7 @@ namespace cv
 {
 namespace dnn
 {
+    //TODO: set default axis number to 1, and add custom shape length in FullyConnected
     class SoftMaxLayer : public Layer
     {
         int axis;
@@ -25,7 +26,8 @@ namespace dnn
 
     SoftMaxLayer::SoftMaxLayer(LayerParams &params)
     {
-        axis = params.get<int>("axis", 1);
+        //hotfix!!!
+        axis = params.get<int>("axis", 3);
         CV_Assert(0 <= axis && axis < 4);
     }
 

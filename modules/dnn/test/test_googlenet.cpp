@@ -34,29 +34,29 @@ inline void normAssert(Blob ref, Blob test, const char *comment = "")
     normAssert(ref.getMatRef(), test.getMatRef(), comment);
 }
 
-TEST(Reproducibility_AlexNet, Accuracy)
+TEST(Reproducibility_GoogLeNet, Accuracy)
 {
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(getTestFile("bvlc_alexnet.prototxt"), getTestFile("bvlc_alexnet.caffemodel"));
+        Ptr<Importer> importer = createCaffeImporter(getTestFile("bvlc_googlenet.prototxt"), getTestFile("bvlc_googlenet.caffemodel"));
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
 
     std::vector<Mat> inpMats(2);
-    inpMats[0] = imread(getTestFile("alexnet_0.png"));
-    inpMats[1] = imread(getTestFile("alexnet_1.png"));
+    inpMats[0] = imread(getTestFile("googlenet_0.png"));
+    inpMats[1] = imread(getTestFile("googlenet_1.png"));
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
     inpMats[0].convertTo(inpMats[0], CV_32F);
     Blob inp(inpMats[0]);
 
     net.setBlob("data", inp);
-
     net.forward();
+
     Blob out = net.getBlob("prob");
-    Blob ref = blobFromNPY(getTestFile("alexnet_prob.npy"));
-    normAssert(out, ref, "prob");
+    Blob ref = blobFromNPY(getTestFile("googlenet.npy"));
+    normAssert(out, ref);
 }
 
 }
