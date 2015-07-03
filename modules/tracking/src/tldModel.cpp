@@ -260,7 +260,6 @@ namespace cv
 			Mat_<uchar> stdPatches(numOfPatches, 225);
 			double *resultSr = new double[numOfPatches];
 			double *resultSc = new double[numOfPatches];
-			
 			uchar *patchesData = stdPatches.data;
 			for (int i = 0; i < numOfPatches; i++)
 			{
