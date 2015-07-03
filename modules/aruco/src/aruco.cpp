@@ -36,9 +36,6 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#ifndef __OPENCV_ARUCO_CPP__
-#define __OPENCV_ARUCO_CPP__
-
 #include "precomp.hpp"
 #include "opencv2/aruco.hpp"
 
@@ -1032,6 +1029,3 @@ double calibrateCameraAruco(const std::vector<std::vector<std::vector<cv::Point2
 
 }
 }
-
-
-#endif // __OPENCV_ARUCO_CPP__

@@ -36,9 +36,6 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#ifndef __OPENCV_ARUCO_PREDEFINED_DICTIONARIES_CPP__
-#define __OPENCV_ARUCO_PREDEFINED_DICTIONARIES_CPP__
-
 namespace cv {
 namespace aruco {
 
@@ -7708,5 +7705,3 @@ const unsigned char DICT_6X6_250_BYTES[][4][5] = {
 };
 }
 }
-
-#endif // __OPENCV_ARUCO_PREDEFINED_DICTIONARIES_CPP__
