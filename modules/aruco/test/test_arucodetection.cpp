@@ -39,6 +39,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "test_precomp.hpp"
 #include <opencv2/highgui.hpp>
+#include <opencv2/aruco.hpp>
 #include <string>
 
 using namespace std;
@@ -133,12 +134,13 @@ void CV_ArucoDetectionSimple::run(int) {
 const double PI = 3.141592653589793238463;
 
 
-double deg2rad(double deg) {
+static double deg2rad(double deg) {
     return deg*PI/180.;
 }
 
 
-void getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv::Mat &tvec) {
+static void
+getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv::Mat &tvec) {
 
     rvec = cv::Mat(3,1,CV_64FC1);
     tvec = cv::Mat(3,1,CV_64FC1);
@@ -182,9 +184,10 @@ void getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv
 }
 
 
-cv::Mat projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMatrix, double yaw,
-                      double pitch, double distance, cv::Size imageSize, int markerBorder,
-                      std::vector<cv::Point2f> &corners) {
+static cv::Mat
+projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMatrix, double yaw,
+              double pitch, double distance, cv::Size imageSize, int markerBorder,
+              std::vector<cv::Point2f> &corners) {
 
 
     cv::Mat markerImg;
@@ -258,14 +261,14 @@ void CV_ArucoDetectionPerspective::run(int) {
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
     for(double distance = 0.1; distance <= 0.5; distance += 0.1) {
-        for(int yaw = 0; yaw < 360; yaw+=20) {
-            for(int pitch = 30; pitch <=90; pitch+=20) {
+        for(int pitch = 0; pitch < 360; pitch+=20) {
+            for(int yaw = 30; yaw <=90; yaw+=20) {
                 int currentId = iter % 250;
                 int markerBorder = iter%2+1;
                 iter ++;
                 std::vector<cv::Point2f> groundTruthCorners;
                 cv::Mat img = projectMarker(cv::aruco::DICT_6X6_250, currentId, cameraMatrix,
-                                            deg2rad(pitch), deg2rad(yaw), distance, imgSize,
+                                            deg2rad(yaw), deg2rad(pitch), distance, imgSize,
                                             markerBorder, groundTruthCorners);
 
 
@@ -306,12 +309,12 @@ void CV_ArucoDetectionPerspective::run(int) {
 
 
 
-TEST(Aruco_MarkerDetectionSimple, algorithmic) {
+TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;
     test.safe_run();
 }
 
-TEST(Aruco_MarkerDetectionPerspective, algorithmic) {
+TEST(CV_ArucoDetectionPerspective, algorithmic) {
     CV_ArucoDetectionPerspective test;
     test.safe_run();
 }
