@@ -145,7 +145,7 @@ static cv::Mat projectBoard(cv::aruco::GridBoard board, cv::Mat cameraMatrix,
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
     cv::Mat img = cv::Mat(imageSize, CV_8UC1, cv::Scalar::all(255));
-    for(int m=0; m<board.ids.size(); m++) {
+    for(unsigned int m=0; m<board.ids.size(); m++) {
         projectMarker(img, board.dictionary, board.ids[m], board.objPoints[m], cameraMatrix,
                       rvec, tvec, markerBorder);
     }

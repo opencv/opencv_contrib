@@ -185,7 +185,7 @@ static cv::Mat projectCharucoBoard(cv::aruco::CharucoBoard board, cv::Mat camera
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
     cv::Mat img = cv::Mat(imageSize, CV_8UC1, cv::Scalar::all(255));
-    for(int m=0; m<board.ids.size(); m++) {
+    for(unsigned int m=0; m<board.ids.size(); m++) {
         projectMarker(img, board.dictionary, board.ids[m], board.objPoints[m], cameraMatrix,
                       rvec, tvec, markerBorder);
     }
@@ -283,7 +283,7 @@ void CV_CharucoDetection::run(int) {
 
                     int currentId = charucoIds[i];
 
-                    if(currentId >= board.chessboardCorners.size() ) {
+                    if(currentId >= (int)board.chessboardCorners.size() ) {
                         ts->printf(cvtest::TS::LOG, "Invalid Charuco corner id" );
                         ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                         return;
@@ -393,7 +393,7 @@ void CV_CharucoPoseEstimation::run(int) {
 
                     int currentId = charucoIds[i];
 
-                    if(currentId >= board.chessboardCorners.size() ) {
+                    if(currentId >= (int)board.chessboardCorners.size() ) {
                         ts->printf(cvtest::TS::LOG, "Invalid Charuco corner id" );
                         ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                         return;
