@@ -202,10 +202,10 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
         //dprintf(("%d relabeled by nExpert\n", negRelabeled));
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
+        tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
         examplesForModel.clear(); examplesForEnsemble.clear();
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
+        tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
     }
     else
     {
