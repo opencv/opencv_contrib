@@ -583,11 +583,6 @@ void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _ch
     CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()) ||
               _charucoIds.getMat().total()==0 );
 
-    // calculate colors
-    cv::Scalar textColor;
-    textColor = cornerColor;
-    swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
-
     _out.create(_in.size(), CV_8UC3);
     cv::Mat outImg = _out.getMat();
     if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
@@ -607,7 +602,7 @@ void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _ch
             stringstream s;
             s << "id=" << id;
             putText(outImg, s.str(), corner + Point2f(5,-5), cv::FONT_HERSHEY_SIMPLEX, 0.5,
-                    textColor, 2);
+                    cornerColor, 2);
         }
     }
 

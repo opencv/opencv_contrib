@@ -293,11 +293,9 @@ int main(int argc, char *argv[]) {
 
 
 
-        cv::Scalar color1[2], color2[2];
-        color1[0] = cv::Scalar(0, 0, 255);
-        color1[1] = cv::Scalar(0, 255, 0);
-        color2[0] = cv::Scalar(0, 0, 255);
-        color2[1] = cv::Scalar(255, 0, 0);
+        cv::Scalar color[2];
+        color[0] = cv::Scalar(0, 0, 255);
+        color[1] = cv::Scalar(0, 255, 0);
 
 
         for(int k=0; k<2; k++) {
@@ -305,12 +303,12 @@ int main(int argc, char *argv[]) {
             if (k == 0) {
                 s << "Approximated Calibration = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);
+                            color[k], 2);
             }
             else if (k == 1) {
                 s << "Local Homography = " << meanJitter[k] << " / " << stddevJitter[k];
                 cv::putText(imageCopy, s.str(), Point2f(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                            color1[k], 2);
+                            color[k], 2);
             }
         }
 
@@ -319,7 +317,7 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy,
                                                   charucoCorners[interpolationMethod],
                                                   charucoIds[interpolationMethod],
-                                                  color2[interpolationMethod]);
+                                                  color[interpolationMethod]);
         }
 
 
@@ -328,7 +326,7 @@ int main(int argc, char *argv[]) {
         if (key == 27)
             break;
         if (key == 'i') {
-            interpolationMethod = (interpolationMethod+1)%3;
+            interpolationMethod = (interpolationMethod+1)%2;
             std::cout << "Interpolation method: " << interpolationMethod << std::endl;
         }
     }
