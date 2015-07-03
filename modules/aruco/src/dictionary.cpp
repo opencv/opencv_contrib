@@ -38,7 +38,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 #ifndef __OPENCV_ARUCO_DICTIONARY_CPP__
 #define __OPENCV_ARUCO_DICTIONARY_CPP__
-#ifdef __cplusplus
 
 #include "precomp.hpp"
 #include "predefined_dictionaries.cpp"
@@ -279,5 +278,4 @@ const DictionaryData DICT_6X6_250_DATA = DictionaryData(&(DICT_6X6_250_BYTES[0][
 }
 }
 
-#endif // cplusplus
 #endif // __OPENCV_ARUCO_DICTIONARY_CPP__

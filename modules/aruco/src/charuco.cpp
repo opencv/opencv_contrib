@@ -38,7 +38,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 #ifndef __OPENCV_CHARUCO_CPP__
 #define __OPENCV_CHARUCO_CPP__
-#ifdef __cplusplus
 
 #include "precomp.hpp"
 #include "opencv2/aruco/charuco.hpp"
@@ -720,5 +719,4 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 }
 }
 
-#endif // cplusplus
 #endif // __OPENCV_CHARUCO_CPP__
