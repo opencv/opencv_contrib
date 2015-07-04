@@ -136,7 +136,7 @@ static void projectMarker(cv::Mat &img, cv::aruco::DICTIONARY dictionary, int id
 }
 
 
-static cv::Mat projectChessboard(int squaresX, int squaresY, double squareSize,
+static cv::Mat projectChessboard(int squaresX, int squaresY, float squareSize,
                                  cv::Size imageSize, cv::Mat cameraMatrix,
                                  cv::Mat rvec, cv::Mat tvec) {
 
@@ -144,10 +144,10 @@ static cv::Mat projectChessboard(int squaresX, int squaresY, double squareSize,
     cv::Mat distCoeffs(5, 0, CV_64FC1, cv::Scalar::all(0));
 
     for(int y=0; y<squaresY; y++) {
-        double startY = double(y)*squareSize;
+        float startY = float(y)*squareSize;
         for(int x=0; x<squaresX; x++) {
             if(y%2 != x%2) continue;
-            double startX = double(x)*squareSize;
+            double startX = float(x)*squareSize;
 
             std::vector<cv::Point3f> squareCorners;
             squareCorners.push_back(cv::Point3f(startX, startY, 0));
@@ -164,8 +164,8 @@ static cv::Mat projectChessboard(int squaresX, int squaresY, double squareSize,
             projectedCornersInt.push_back( std::vector<cv::Point>() );
 
             for(int k=0; k<4; k++)
-                projectedCornersInt[0].push_back(cv::Point(projectedCorners[0][k].x,
-                                                           projectedCorners[0][k].y));
+                projectedCornersInt[0].push_back(cv::Point((int)projectedCorners[0][k].x,
+                                                           (int)projectedCorners[0][k].y));
 
             cv::fillPoly(img, projectedCornersInt, cv::Scalar::all(0));
 
@@ -227,7 +227,7 @@ void CV_CharucoDetection::run(int) {
     int iter = 0;
     cv::Mat cameraMatrix = cv::Mat::eye(3,3, CV_64FC1);
     cv::Size imgSize(500,500);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(4, 4, 0.03, 0.015,
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f,
                                                                     cv::aruco::DICT_6X6_250);
 
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
@@ -331,7 +331,7 @@ void CV_CharucoPoseEstimation::run(int) {
     int iter = 0;
     cv::Mat cameraMatrix = cv::Mat::eye(3,3, CV_64FC1);
     cv::Size imgSize(500,500);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(4, 4, 0.03, 0.015,
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f,
                                                                     cv::aruco::DICT_6X6_250);
 
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;

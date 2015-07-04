@@ -176,7 +176,7 @@ void CV_ArucoBoardPose::run(int) {
     int iter = 0;
     cv::Mat cameraMatrix = cv::Mat::eye(3,3, CV_64FC1);
     cv::Size imgSize(500,500);
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(3, 3, 0.02, 0.005,
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(3, 3, 0.02f, 0.005f,
                                                               cv::aruco::DICT_6X6_250);
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
