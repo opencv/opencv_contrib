@@ -35,7 +35,7 @@ namespace dnn
     {
         CV_Assert(inputs.size() == 1);
 
-        Vec4i shape = inputs[0]->shape();
+        Vec4i shape = inputs[0]->shape4();
         outputs.resize(1);
         outputs[0].create(shape);
 
@@ -48,9 +48,9 @@ namespace dnn
         Blob &src = *inputs[0];
         Blob &dst = outputs[0];
 
-        float *srcPtr = src.ptr<float>();
-        float *dstPtr = dst.ptr<float>();
-        float *bufPtr = maxAggregator.ptr<float>();
+        float *srcPtr = src.ptrf();
+        float *dstPtr = dst.ptrf();
+        float *bufPtr = maxAggregator.ptrf();
 
         size_t outerSize = src.total(0, axis);
         size_t channels = src.size(axis);

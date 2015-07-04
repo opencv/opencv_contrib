@@ -16,114 +16,6 @@ namespace cv
 namespace dnn
 {
 
-Blob::Blob()
-{
-    int zeros[4] = {0, 0, 0, 0};
-    m = Mat(4, zeros, CV_32F, NULL);
-}
-
-Blob::Blob(InputArray in)
-{
-    CV_Assert(in.isMat() || in.isUMat());
-
-    if (in.isMat())
-    {
-        Mat mat = in.getMat();
-
-        CV_Assert(mat.dims == 2);
-        int rows = mat.rows;
-        int cols = mat.cols;
-        int cn = mat.channels();
-        int type = mat.type();
-        int dstType = CV_MAKE_TYPE(CV_MAT_DEPTH(type), 1);
-
-        int size[3] = { cn, rows, cols };
-        this->create(3, size, dstType);
-        uchar *data = m.data;
-        int step = rows * cols * CV_ELEM_SIZE(dstType);
-
-        if (cn == 1)
-        {
-            Mat wrapper2D(rows, cols, dstType, m.data);
-            mat.copyTo(wrapper2D);
-        }
-        else
-        {
-            std::vector<Mat> wrappers(cn);
-            for (int i = 0; i < cn; i++)
-            {
-                wrappers[i] = Mat(rows, cols, dstType, data);
-                data += step;
-            }
-
-            cv::split(mat, wrappers);
-        }
-    }
-    else
-    {
-        CV_Error(cv::Error::StsNotImplemented, "Not Implemented");
-    }
-}
-
-static Vec4i blobNormalizeShape(int ndims, const int *sizes)
-{
-    Vec4i shape = Vec4i::all(1);
-
-    for (int i = 0; i < std::min(3, ndims); i++)
-        shape[3 - i] = sizes[ndims-1 - i];
-
-    for (int i = 3; i < ndims; i++)
-        shape[0] *= sizes[ndims-1 - i];
-
-    return shape;
-}
-
-void Blob::fill(int ndims, const int *sizes, int type, void *data, bool deepCopy)
-{
-    CV_Assert(type == CV_32F || type == CV_64F);
-
-    Vec4i shape = blobNormalizeShape(ndims, sizes);
-
-    if (deepCopy)
-    {
-        m.create(4, &shape[0], type);
-        size_t dataSize = m.total() * m.elemSize();
-        memcpy(m.data, data, dataSize);
-    }
-    else
-    {
-        m = Mat(shape.channels, &shape[0], type, data);
-    }
-}
-
-void Blob::fill(InputArray in)
-{
-    CV_Assert(in.isMat() || in.isMatVector());
-
-    //TODO
-    *this = Blob(in);
-}
-
-void Blob::create(int ndims, const int *sizes, int type)
-{
-    CV_Assert(type == CV_32F || type == CV_64F);
-    Vec4i shape = blobNormalizeShape(ndims, sizes);
-    m.create(shape.channels, &shape[0], type);
-}
-
-void Blob::create(Vec4i shape, int type)
-{
-    m.create(shape.channels, &shape[0], type);
-}
-
-void Blob::create(int num, int cn, int rows, int cols, int type)
-{
-    Vec4i shape(num, cn, rows, cols);
-    create(4, &shape[0], type);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 struct LayerOutId
 {
     int lid;
@@ -377,8 +269,6 @@ struct Net::Impl
         ld.outputBlobs.resize(ld.outputNames.size());
         if (ld.layerInstance)
             ld.layerInstance->allocate(ld.inputBlobs, ld.outputBlobs);
-
-        //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape() << std::endl;
 
         ld.flag = 1;
     }

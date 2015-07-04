@@ -104,8 +104,8 @@ namespace dnn
         {
             for (int c = 0; c < input.channels(); ++c)
             {
-                float *srcData = input.ptr<float>(n, c);
-                float *dstData = output.ptr<float>(n, c);
+                float *srcData = input.ptrf(n, c);
+                float *dstData = output.ptrf(n, c);
 
                 for (int ph = 0; ph < pooledH; ++ph)
                 {
@@ -141,8 +141,8 @@ namespace dnn
         {
             for (int c = 0; c < input.channels(); ++c)
             {
-                float *srcData = input.ptr<float>(n, c);
-                float *dstData = output.ptr<float>(n, c);
+                float *srcData = input.ptrf(n, c);
+                float *dstData = output.ptrf(n, c);
 
                 for (int ph = 0; ph < pooledH; ++ph)
                 {

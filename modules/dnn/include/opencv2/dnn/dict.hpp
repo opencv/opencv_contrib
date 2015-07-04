@@ -1,5 +1,5 @@
-#ifndef __OPENCV_DNN_DICT_HPP__
-#define __OPENCV_DNN_DICT_HPP__
+#ifndef __OPENCV_DNN_DNN_DICT_HPP__
+#define __OPENCV_DNN_DNN_DICT_HPP__
 
 #include <opencv2/core.hpp>
 #include <map>

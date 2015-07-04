@@ -28,8 +28,8 @@ namespace dnn
 
             for (size_t i = 0; i < inputs.size(); i++)
             {
-                CV_Assert(inputs[i]->ptr<float>() == outputs[i].ptr<float>());
-                float *data = outputs[i].ptr<float>();
+                CV_Assert(inputs[i]->ptrf() == outputs[i].ptrf());
+                float *data = outputs[i].ptrf();
                 size_t size = outputs[i].total();
 
                 for (size_t j = 0; j < size; j++)

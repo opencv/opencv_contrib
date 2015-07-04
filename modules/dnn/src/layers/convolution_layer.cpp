@@ -131,11 +131,11 @@ namespace dnn
             {
                 for (int g = 0; g < group; g++)
                 {
-                    float *srcPtr = input.ptr<float>(n, g*groupCn);
+                    float *srcPtr = input.ptrf(n, g*groupCn);
                     im2col_cpu(srcPtr, groupCn, inH, inW, kernelH, kernelW, padH, padW, strideH, strideW, srcColPtr);
 
-                    float *kerPtr = learnedParams[0].ptr<float>(g*groupCnOut);
-                    float *dstPtr = output.ptr<float>(n, g*groupCnOut);
+                    float *kerPtr = learnedParams[0].ptrf(g*groupCnOut);
+                    float *dstPtr = output.ptrf(n, g*groupCnOut);
 
                     Mat kerMat(groupCnOut, kerSize, CV_32F, kerPtr);
                     Mat dstMat(groupCnOut, outH*outW, CV_32F, dstPtr);
@@ -144,7 +144,7 @@ namespace dnn
 
                     if (bias)
                     {
-                        float *biasPtr = learnedParams[1].ptr<float>() + g*groupCnOut;
+                        float *biasPtr = learnedParams[1].ptrf() + g*groupCnOut;
                         Mat biasMat(groupCnOut, 1, CV_32F, biasPtr);
                         cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
                     }

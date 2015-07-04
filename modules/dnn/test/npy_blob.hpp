@@ -26,7 +26,7 @@ inline cv::dnn::Blob blobFromNPY(const cv::String &path)
 
 inline void saveBlobToNPY(cv::dnn::Blob &blob, const cv::String &path)
 {
-    cv::Vec4i shape = blob.shape();
+    cv::Vec4i shape = blob.shape4();
     cnpy::npy_save(path.c_str(), blob.ptr<float>(), (unsigned*)&shape[0], 4);
 }
 

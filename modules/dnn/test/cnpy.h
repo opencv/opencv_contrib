@@ -13,7 +13,7 @@
 #include<typeinfo>
 #include<iostream>
 #include<cassert>
-#include<zlib.h>
+//#include<zlib.h>
 #include<map>
 
 namespace cnpy {

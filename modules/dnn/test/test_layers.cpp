@@ -48,7 +48,7 @@ static void testLayer(String proto, String caffemodel = String())
     net.forward();
     Blob out = net.getBlob("output");
 
-    EXPECT_TRUE(isEqual(ref.shape(), out.shape()));
+    EXPECT_TRUE(isEqual(ref.shape4(), out.shape4()));
 
     Mat &mRef = ref.getMatRef();
     Mat &mOut = out.getMatRef();

@@ -58,7 +58,7 @@ namespace dnn
         CV_Assert(inputs.size() == 1);
         outputs.resize(1);
 
-        Vec4i shape = inputs[0]->shape();
+        Vec4i shape = inputs[0]->shape4();
         outputs[0].create(shape);
 
         shape[0] = 1; //maybe make shape[0] = 1 too
@@ -86,7 +86,7 @@ namespace dnn
 
     void LRNLayer::channelNoramlization(Blob &srcBlob, Blob &dstBlob)
     {
-        CV_DbgAssert(srcBlob.rawPtr() != dstBlob.rawPtr());
+        CV_DbgAssert(srcBlob.ptrRaw() != dstBlob.ptrRaw());
 
         int num = srcBlob.num();
         int channels = srcBlob.channels();

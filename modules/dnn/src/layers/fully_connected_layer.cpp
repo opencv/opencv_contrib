@@ -64,7 +64,7 @@ namespace dnn
 
     void FullyConnectedLayer::reshape(const Blob &inp, Blob &out)
     {
-        Vec4i inpShape = inp.shape();
+        Vec4i inpShape = inp.shape4();
         Vec4i outShape = Vec4i::all(1);
 
         for (int a = 0; a < axis; a++)
@@ -82,9 +82,9 @@ namespace dnn
             int N = numOutputs;
             int K = innerSize;
 
-            Mat srcMat(M, K, CV_32F, inputs[i]->ptr<float>());
-            Mat weights(N, K, CV_32F, learnedParams[0].ptr<float>());
-            Mat dstMat(M, N, CV_32F, outputs[i].ptr<float>());
+            Mat srcMat(M, K, CV_32F, inputs[i]->ptrf());
+            Mat weights(N, K, CV_32F, learnedParams[0].ptrf());
+            Mat dstMat(M, N, CV_32F, outputs[i].ptrf());
 
             //important: Caffe stores weights as transposed array
             cv::gemm(srcMat, weights, 1, noArray(), 0, dstMat, GEMM_2_T);
@@ -92,7 +92,7 @@ namespace dnn
             if (bias)
             {
                 Mat biasOnesMat = Mat::ones(M, 1, CV_32F);
-                Mat biasMat(1, N, CV_32F, learnedParams[1].ptr<float>());
+                Mat biasMat(1, N, CV_32F, learnedParams[1].ptrf());
                 cv::gemm(biasOnesMat, biasMat, 1, dstMat, 1, dstMat);
             }
         }
