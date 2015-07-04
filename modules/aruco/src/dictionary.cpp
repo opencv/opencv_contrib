@@ -160,9 +160,9 @@ class DictionaryData {
         CV_Assert(id >= 0 && id < bytesList.rows);
 
         cv::Mat candidateBytes = _getByteListFromBits(bits.getMat());
-        int nRotations = 4;
+        unsigned int nRotations = 4;
         if(!allRotations) nRotations = 1;
-        int currentMinDistance = bits.total() * bits.total();
+        int currentMinDistance = int(bits.total() * bits.total());
         for (unsigned int r = 0; r < nRotations; r++) {
             int currentHamming = 0;
             for (unsigned int b = 0; b < candidateBytes.total(); b++) {

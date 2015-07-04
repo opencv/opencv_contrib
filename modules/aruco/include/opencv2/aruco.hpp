@@ -350,7 +350,7 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * @param image input image
  * @param board layout of markers in the board.
  * @param detectedCorners vector of already detected marker corners.
- * @param ids vector of already detected marker identifiers.
+ * @param detectedIds vector of already detected marker identifiers.
  * @param rejectedCorners vector of rejected candidates during the marker detection process.
  * @param cameraMatrix optional input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
