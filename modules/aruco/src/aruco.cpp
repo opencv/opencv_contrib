@@ -43,6 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core/types_c.h>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "dictionary.cpp"
 
@@ -643,10 +644,9 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
     _filterDetectedMarkers(_corners, _ids, _corners, _ids);
 
     /// STEP 4: Corner refinement
-    CV_Assert(params.cornerRefinementWinSize > 0 && params.cornerRefinementMaxIterations > 0 &&
-              params.cornerRefinementMinAccuracy > 0);
-
     if(params.doCornerRefinement) {
+        CV_Assert(params.cornerRefinementWinSize > 0 && params.cornerRefinementMaxIterations > 0 &&
+                  params.cornerRefinementMinAccuracy > 0);
         for (unsigned int i = 0; i < _corners.total(); i++) {
             cv::cornerSubPix(grey, _corners.getMat(i),
                              cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
@@ -727,6 +727,304 @@ _getBoardObjectAndImagePoints(const Board &board, InputArray _detectedIds,
     for (unsigned int i = 0; i < imgPnts.size(); i++)
         _imgPoints.getMat().ptr<cv::Point2f>(0)[i] = imgPnts[i];
 }
+
+
+
+/**
+  * Estimate pose and project board markers that are not included in the list of detected markers
+  */
+static void
+_projectUndetectedMarkers(const Board &board, InputOutputArrayOfArrays _detectedCorners,
+                          InputOutputArray _detectedIds,
+                          InputArray _cameraMatrix, InputArray _distCoeffs,
+                          OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                          OutputArray _undetectedMarkersIds) {
+
+    cv::Mat rvec, tvec;
+    int boardDetectedMarkers;
+    boardDetectedMarkers = cv::aruco::estimatePoseBoard(_detectedCorners, _detectedIds, board,
+                                                        _cameraMatrix, _distCoeffs, rvec, tvec);
+
+    // at least one marker from board so rvec and tvec are valids
+    if (boardDetectedMarkers == 0)
+        return;
+
+    std::vector< std::vector<cv::Point2f> > undetectedCorners;
+    std::vector< int > undetectedIds;
+    for(unsigned int i=0; i<board.ids.size(); i++) {
+        int foundIdx = -1;
+        for(unsigned int j=0; j<_detectedIds.total(); j++) {
+            if(board.ids[i] == _detectedIds.getMat().ptr<int>()[j]) {
+                foundIdx = j;
+                break;
+            }
+        }
+
+        // not detected
+        if(foundIdx == -1) {
+            undetectedCorners.push_back( std::vector<cv::Point2f>() );
+            undetectedIds.push_back(board.ids[i]);
+            cv::projectPoints(board.objPoints[i], rvec, tvec, _cameraMatrix, _distCoeffs,
+                              undetectedCorners.back());
+        }
+
+    }
+
+
+    // parse output
+    _undetectedMarkersIds.create((int)undetectedIds.size(), 1, CV_32SC1);
+    for (unsigned int i = 0; i < undetectedIds.size(); i++)
+        _undetectedMarkersIds.getMat().ptr<int>(0)[i] = undetectedIds[i];
+
+    _undetectedMarkersProjectedCorners.create((int)undetectedCorners.size(), 1, CV_32FC2);
+    for (unsigned int i = 0; i < undetectedCorners.size(); i++) {
+        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
+        for(int j=0; j<4; j++) {
+            _undetectedMarkersProjectedCorners.getMat(i).ptr<cv::Point2f>()[j] =
+                    undetectedCorners[i][j];
+
+        }
+
+    }
+
+}
+
+
+
+/**
+  * Interpolate board markers that are not included in the list of detected markers using
+  * global homography
+  */
+static void
+_projectUndetectedMarkers(const Board &board, InputOutputArrayOfArrays _detectedCorners,
+                          InputOutputArray _detectedIds,
+                          OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                          OutputArray _undetectedMarkersIds) {
+
+
+    // check board points are in the same plane, if not, global homography cannot be applied
+    CV_Assert(board.objPoints.size() > 0);
+    CV_Assert(board.objPoints[0].size() > 0);
+    float boardZ = board.objPoints[0][0].z;
+    for(unsigned int i=0; i<board.objPoints.size(); i++) {
+        for(unsigned int j=0; j<board.objPoints[i].size(); j++) {
+            CV_Assert(boardZ == board.objPoints[i][j].z);
+        }
+    }
+
+    // find markers included in board, and missing markers from board
+    std::vector<cv::Point2f> markerCornersAllObj2D, markerCornersAll;
+    std::vector< std::vector<cv::Point2f> > undetectedMarkersObj2D;
+    std::vector< int > undetectedMarkersIds;
+    for(unsigned int j=0; j<board.ids.size(); j++) {
+        bool found = false;
+        for(unsigned int i=0; i<_detectedIds.total(); i++) {
+            if(_detectedIds.getMat().ptr<int>()[i] == board.ids[j]) {
+                for(int c=0; c<4; c++) {
+                    markerCornersAll.push_back(_detectedCorners.getMat(i).ptr<cv::Point2f>()[c]);
+                    markerCornersAllObj2D.push_back( cv::Point2f(board.objPoints[j][c].x,
+                                                                 board.objPoints[j][c].y));
+                }
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            undetectedMarkersObj2D.push_back( std::vector<cv::Point2f>() );
+            for(int c=0; c<4; c++) {
+                undetectedMarkersObj2D.back().push_back( cv::Point2f(board.objPoints[j][c].x,
+                                                                     board.objPoints[j][c].y));
+            }
+            undetectedMarkersIds.push_back(board.ids[j]);
+        }
+    }
+    if(markerCornersAll.size() == 0)
+        return;
+
+    cv::Mat transformation = cv::findHomography(markerCornersAllObj2D, markerCornersAll);
+
+    _undetectedMarkersProjectedCorners.create((int)undetectedMarkersIds.size(), 1, CV_32FC2);
+
+    // for each undetected marker, apply transformation
+    for(unsigned int i=0; i<undetectedMarkersObj2D.size(); i++) {
+        cv::Mat projectedMarker;
+        cv::perspectiveTransform(undetectedMarkersObj2D[i], projectedMarker, transformation);
+
+        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
+        projectedMarker.copyTo(_undetectedMarkersProjectedCorners.getMat(i));
+
+    }
+
+    _undetectedMarkersIds.create((int)undetectedMarkersIds.size(), 1, CV_32SC1);
+    for (unsigned int i = 0; i < undetectedMarkersIds.size(); i++)
+        _undetectedMarkersIds.getMat().ptr<int>(0)[i] = undetectedMarkersIds[i];
+
+}
+
+
+
+/**
+  */
+void refineDetectedMarkers(InputArray _image, const Board &board,
+                           InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
+                           InputOutputArray _rejectedCorners, InputArray _cameraMatrix,
+                           InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
+                           DetectorParameters params) {
+
+    if(_detectedIds.total() == 0)
+        return;
+
+    std::vector< std::vector<cv::Point2f> > undetectedMarkersCorners;
+    std::vector<int> undetectedMarkersIds;
+    if(_cameraMatrix.total() != 0) {
+        // reproject based on camera projection model
+        _projectUndetectedMarkers(board, _detectedCorners, _detectedIds, _cameraMatrix, _distCoeffs,
+                                  undetectedMarkersCorners, undetectedMarkersIds);
+
+    }
+    else {
+        // reproject based on global homography
+        _projectUndetectedMarkers(board, _detectedCorners, _detectedIds,
+                                  undetectedMarkersCorners, undetectedMarkersIds);
+
+    }
+
+    std::vector<bool> alreadyIdentified(_rejectedCorners.total(), false);
+
+    DictionaryData dictionaryData = _getDictionaryData(board.dictionary);
+    int maxCorrectionRecalculed = int( double(dictionaryData.maxCorrectionBits) *
+                                       errorCorrectionRate );
+    cv::Mat grey;
+    _convertToGrey(_image, grey);
+
+    std::vector<cv::Mat> finalAcceptedCorners;
+    std::vector<int> finalAcceptedIds;
+    finalAcceptedCorners.resize(_detectedCorners.total());
+    finalAcceptedIds.resize(_detectedIds.total());
+    for(unsigned int i=0; i<_detectedIds.total(); i++) {
+        finalAcceptedCorners[i] = _detectedCorners.getMat(i).clone();
+        finalAcceptedIds[i] = _detectedIds.getMat().ptr<int>()[i];
+    }
+
+    for (unsigned int i=0; i < undetectedMarkersIds.size(); i++) {
+        for(unsigned int j=0; j<_rejectedCorners.total(); j++) {
+            if (alreadyIdentified[j])
+                continue;
+
+            // check distance
+            double minDistance = minRepDistance + 1;
+            bool valid = false;
+            int validRot = 0;
+            for(int c=0; c<4; c++) { // first corner in rejected candidates
+                double currentMaxDistance = 0;
+                for(int k=0; k<4; k++) {
+                    cv::Point2f rejCorner = _rejectedCorners.getMat(j).ptr<cv::Point2f>()[(c+k)%4];
+                    double cornerDist = cv::norm(undetectedMarkersCorners[i][k] - rejCorner);
+                    currentMaxDistance = std::max(currentMaxDistance, cornerDist);
+                }
+                if(currentMaxDistance < minRepDistance && currentMaxDistance < minDistance ) {
+                    valid = true;
+                    validRot = c;
+                    minDistance = currentMaxDistance;
+                }
+            }
+
+            if(!valid)
+                continue;
+
+            // apply rotation before extract bits
+            cv::Mat rotatedMarker = cv::Mat(4, 1, CV_32FC2);
+            for (int c=0; c < 4; c++)
+                rotatedMarker.ptr<cv::Point2f>()[c] =
+                        _rejectedCorners.getMat(j).ptr<cv::Point2f>()[(c + 4 + validRot) % 4];
+
+            // extract bits
+            cv::Mat bits = _extractBits(grey, rotatedMarker, dictionaryData.markerSize,
+                                        params.markerBorderBits,
+                                        params.perspectiveRemovePixelPerCell,
+                                        params.perspectiveRemoveIgnoredMarginPerCell,
+                                        params.minOtsuStdDev);
+
+            cv::Mat onlyBits =
+                bits.rowRange(params.markerBorderBits, bits.rows - params.markerBorderBits)
+                    .colRange(params.markerBorderBits, bits.rows - params.markerBorderBits);
+
+            int codeDistance = dictionaryData.getDistanceToId(onlyBits, undetectedMarkersIds[i],
+                                                              false);
+
+            if(codeDistance <= maxCorrectionRecalculed) {
+                // subpixel refinement
+                if(params.doCornerRefinement) {
+                    CV_Assert(params.cornerRefinementWinSize > 0 &&
+                              params.cornerRefinementMaxIterations > 0 &&
+                              params.cornerRefinementMinAccuracy > 0);
+                    cv::cornerSubPix(grey, rotatedMarker,
+                                     cvSize(params.cornerRefinementWinSize,
+                                            params.cornerRefinementWinSize),
+                                     cvSize(-1, -1),
+                                     cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                                    params.cornerRefinementMaxIterations,
+                                                    params.cornerRefinementMinAccuracy));
+                }
+
+                // remove from rejected
+                alreadyIdentified[j] = true;
+
+                // add to detected
+                finalAcceptedCorners.push_back(rotatedMarker);
+                finalAcceptedIds.push_back(undetectedMarkersIds[i]);
+
+            }
+
+        }
+    }
+
+
+
+    // parse output
+    if(finalAcceptedIds.size() != _detectedIds.total()) {
+        _detectedCorners.clear();
+        _detectedIds.clear();
+
+        // parse output
+        _detectedIds.create((int)finalAcceptedIds.size(), 1, CV_32SC1);
+        for (unsigned int i = 0; i < finalAcceptedIds.size(); i++)
+            _detectedIds.getMat().ptr<int>(0)[i] = finalAcceptedIds[i];
+
+        _detectedCorners.create((int)finalAcceptedCorners.size(), 1, CV_32FC2);
+        for (unsigned int i = 0; i < finalAcceptedCorners.size(); i++) {
+            _detectedCorners.create(4, 1, CV_32FC2, i, true);
+            for(int j=0; j<4; j++) {
+                _detectedCorners.getMat(i).ptr<cv::Point2f>()[j] =
+                        finalAcceptedCorners[i].ptr<cv::Point2f>()[j];
+
+            }
+        }
+
+        // recalculate _rejectedCorners based on alreadyIdentified
+        std::vector<cv::Mat> finalRejected;
+        for(unsigned int i=0; i < alreadyIdentified.size(); i++) {
+            if(!alreadyIdentified[i]) {
+                finalRejected.push_back(_rejectedCorners.getMat(i).clone());
+            }
+        }
+
+        _rejectedCorners.clear();
+        _rejectedCorners.create((int)finalRejected.size(), 1, CV_32FC2);
+        for (unsigned int i = 0; i < finalRejected.size(); i++) {
+            _rejectedCorners.create(4, 1, CV_32FC2, i, true);
+            for(int j=0; j<4; j++) {
+                _rejectedCorners.getMat(i).ptr<cv::Point2f>()[j] =
+                        finalRejected[i].ptr<cv::Point2f>()[j];
+
+            }
+        }
+
+    }
+
+}
+
+
 
 
 

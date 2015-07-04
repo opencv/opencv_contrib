@@ -64,6 +64,7 @@ static void help() {
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
               << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
+    std::cout << "[-rs] # Apply refind strategy" << std::endl;
     std::cout << "[-r] # show rejected candidates too" << std::endl;
 }
 
@@ -159,6 +160,10 @@ int main(int argc, char *argv[]) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
 
+    bool refindStrategy = false;
+    if (isParam("-rs", argc, argv))
+        refindStrategy = true;
+
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -194,6 +199,12 @@ int main(int argc, char *argv[]) {
 
         // detect markers and estimate pose
         cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+
+        // refind strategy to detect more markers
+        if (refindStrategy)
+            cv::aruco::refineDetectedMarkers(image, board, corners, ids, rejected, camMatrix,
+                                             distCoeffs);
+
         int markersOfBoardDetected = 0;
         if (ids.size() > 0)
             markersOfBoardDetected = cv::aruco::estimatePoseBoard(corners, ids, board, camMatrix,
@@ -212,6 +223,7 @@ int main(int argc, char *argv[]) {
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
         }
+
 
         if (showRejected && rejected.size() > 0)
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected,

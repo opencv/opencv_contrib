@@ -68,6 +68,7 @@ static void help() {
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
                  << std::endl;
     std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
+    std::cout << "[-rs] # Apply refind strategy" << std::endl;
     std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
     std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
     std::cout << "[-p] # Fix the principal point at the center" << std::endl;
@@ -205,6 +206,10 @@ int main(int argc, char *argv[]) {
     }
     detectorParams.doCornerRefinement=false; // no corner refinement in markers
 
+    bool refindStrategy = false;
+    if (isParam("-rs", argc, argv))
+        refindStrategy = true;
+
     cv::VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
@@ -233,10 +238,14 @@ int main(int argc, char *argv[]) {
         inputVideo.retrieve(image);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
+        std::vector<std::vector<cv::Point2f> > corners, rejected;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams);
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+
+        // refind strategy to detect more markers
+        if (refindStrategy)
+            cv::aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
 
         cv::Mat currentCharucoCorners, currentCharucoIds;
         if (ids.size() > 0)

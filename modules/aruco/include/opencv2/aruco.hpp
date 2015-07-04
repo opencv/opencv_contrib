@@ -343,6 +343,45 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
 
 
 
+
+/**
+ * @brief Refind not detected markers based on the already detected and the board layout
+ *
+ * @param image input image
+ * @param board layout of markers in the board.
+ * @param detectedCorners vector of already detected marker corners.
+ * @param ids vector of already detected marker identifiers.
+ * @param rejectedCorners vector of rejected candidates during the marker detection process.
+ * @param cameraMatrix optional input 3x3 floating-point camera matrix
+ * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
+ * @param distCoeffs optional vector of distortion coefficients
+ * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param minRepDistance minimum distance between the corners of the rejected candidate and the
+ * reprojected marker in order to consider it as a correspondence.
+ * @param errorCorrectionRate rate of allowed erroneous bits respect to the error correction
+ * capability of the used dictionary.
+ * @param parameters marker detection parameters
+ *
+ * This function tries to find markers that were not detected in the basic detecMarkers function.
+ * First, based on the current detected marker and the board layout, the function interpolates
+ * the position of the missing markers. Then it tries to find correspondence between the reprojected
+ * markers and the rejected candidates based on the minRepDistance and errorCorrectionRate
+ * parameters.
+ * If camera parameters and distortion coefficients are provided, missing markers are reprojected
+ * using projectPoint function. If not, missing marker projections are interpolated using global
+ * homography, and all the marker corners in the board must have the same Z coordinate.
+ */
+CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
+                                      InputOutputArrayOfArrays detectedCorners,
+                                      InputOutputArray detectedIds,
+                                      InputOutputArray rejectedCorners,
+                                      InputArray cameraMatrix = noArray(),
+                                      InputArray distCoeffs = noArray(),
+                                      float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
+                                      DetectorParameters parameters = DetectorParameters());
+
+
+
 /**
  * @brief Draw detected markers in image
  *

@@ -153,6 +153,32 @@ class DictionaryData {
     }
 
 
+    /**
+      * Returns the distance of the input bits to the specific id.
+      */
+    int getDistanceToId(InputArray bits, int id, bool allRotations = true) {
+        CV_Assert(id >= 0 && id < bytesList.rows);
+
+        cv::Mat candidateBytes = _getByteListFromBits(bits.getMat());
+        int nRotations = 4;
+        if(!allRotations) nRotations = 1;
+        int currentMinDistance = bits.total() * bits.total();
+        for (unsigned int r = 0; r < nRotations; r++) {
+            int currentHamming = 0;
+            for (unsigned int b = 0; b < candidateBytes.total(); b++) {
+                unsigned char xorRes =
+                    bytesList.ptr<cv::Vec4b>(id)[b][r] ^ candidateBytes.ptr<cv::Vec4b>(0)[b][0];
+                currentHamming += hammingWeightLUT[xorRes];
+            }
+
+            if (currentHamming < currentMinDistance) {
+                currentMinDistance = currentHamming;
+            }
+        }
+        return currentMinDistance;
+    }
+
+
 
     /**
      * @brief Draw a canonical marker image
