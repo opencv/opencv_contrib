@@ -147,7 +147,7 @@ static cv::Mat projectChessboard(int squaresX, int squaresY, float squareSize,
         float startY = float(y)*squareSize;
         for(int x=0; x<squaresX; x++) {
             if(y%2 != x%2) continue;
-            double startX = float(x)*squareSize;
+            float startX = float(x)*squareSize;
 
             std::vector<cv::Point3f> squareCorners;
             squareCorners.push_back(cv::Point3f(startX, startY, 0));
