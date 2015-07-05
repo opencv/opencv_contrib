@@ -233,7 +233,7 @@ namespace cv
 			}
 			e2 = getTickCount();
 			t = (e2 - e1) / getTickFrequency() * 1000;
-			printf("Integrate Additional: %fms\n", t);
+			//printf("Integrate Additional: %fms\n", t);
 			/*
 			if( negativeIntoModel > 0 )
 			dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));
@@ -303,7 +303,7 @@ namespace cv
 			}
 			e2 = getTickCount();
 			t = (e2 - e1) / getTickFrequency() * 1000;
-			printf("Integrate Additional OCL: %fms\n", t);
+			//printf("Integrate Additional OCL: %fms\n", t);
 			/*
 			if( negativeIntoModel > 0 )
 			dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));

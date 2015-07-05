@@ -139,9 +139,8 @@ namespace cv
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			size_t globSize = 1000;
-			size_t localSize = 128;
 			//e3 = getTickCount();
-			if (!k.run(1, &globSize, &localSize, true))
+			if (!k.run(1, &globSize, NULL, false))
 				printf("Kernel Run Error!!!");
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;
@@ -219,9 +218,8 @@ namespace cv
 
 			// 2 -> Pos&Neg
 			size_t globSize = 2 * numOfPatches*MAX_EXAMPLES_IN_MODEL;
-			size_t localSize = 1024;
 			//e3 = getTickCount();
-			if (!k.run(1, &globSize, &localSize, true))
+			if (!k.run(1, &globSize, NULL, false))
 				printf("Kernel Run Error!!!");
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;
@@ -374,9 +372,8 @@ namespace cv
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			size_t globSize = 1000;
-			size_t localSize = 128;
 			//e3 = getTickCount();
-			if (!k.run(1, &globSize, &localSize, true))
+			if (!k.run(1, &globSize, NULL, false))
 				printf("Kernel Run Error!!!");
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;
