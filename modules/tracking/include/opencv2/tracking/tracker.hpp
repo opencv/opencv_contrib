@@ -1245,14 +1245,81 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 
 //! @}
 
+/************************************ MultiTracker Class ************************************/
+/** @brief This class is used to track multiple objects using the specified tracker algorithm.
+ * The MultiTracker is naive implementation of multiple object tracking.
+ * It process the tracked objects independently without any optimization accross the tracked objects.
+ */
 class CV_EXPORTS_W MultiTracker
 {
  public:
+
+  /**
+  * \brief Constructor.
+  * In the case of trackerType is given, it will be set as the default algorithm for all trackers.
+  * @param trackerType the name of the tracker algorithm to be used
+  */
+  MultiTracker(const String& trackerType = "" );
+
+  /**
+   * \brief Destructor
+   */
+  ~MultiTracker();
+
+  /**
+  * \brief Add a new object to be tracked.
+  * The defaultAlgorithm will be used the newly added tracker.
+  * @param image input image
+  * @param boundingBox a rectangle represents ROI of the tracked object
+  */
+   bool add( const Mat& image, const Rect2d& boundingBox );
+
+  /**
+  * \brief Add a new object to be tracked.
+  * @param trackerType the name of the tracker algorithm to be used
+  * @param image input image
+  * @param boundingBox a rectangle represents ROI of the tracked object
+  */
   bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
-  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
- protected:
-  std::vector< Ptr<Tracker> > trackerList;
+
+  /**
+  * \brief Add a set of objects to be tracked.
+  * @param trackerType the name of the tracker algorithm to be used
+  * @param image input image
+  * @param boundingBox list of the tracked objects
+  */
+  bool add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox);
+
+  /**
+  * \brief Add a set of objects to be tracked using the defaultAlgorithm tracker.
+  * @param image input image
+  * @param boundingBox list of the tracked objects
+  */
+  bool add(const Mat& image, std::vector<Rect2d> boundingBox);
+
+  /**
+  * \brief Update the current tracking status.
+  * The result will be saved in the internal storage.
+  * @param image input image
+  */
+  bool update( const Mat& image);
+
+  //!<  storage for the tracked objects, each object corresponds to one tracker algorithm.
   std::vector<Rect2d> objects;
+
+  /**
+  * \brief Update the current tracking status.
+  * @param image input image
+  * @param boundingBox the tracking result, represent a list of ROIs of the tracked objects.
+  */
+  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
+
+ protected:
+  //!<  storage for the tracker algorithms.
+  std::vector< Ptr<Tracker> > trackerList;
+
+  //!<  default algorithm for the tracking method.
+  String defaultAlgorithm;
 };
 
 } /* namespace cv */
