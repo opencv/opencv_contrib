@@ -10,7 +10,7 @@ namespace dnn
     {
         bool bias;
         int numOutputs;
-        int axis;
+        int axis_, axis;
 
         int innerSize;
 
@@ -30,9 +30,8 @@ namespace dnn
     {
         numOutputs = params.get<int>("num_output");
         bias = params.get<bool>("bias_term", true);
-        axis = params.get<int>("axis", 1);
+        axis_ = params.get<int>("axis", 1);
 
-        CV_Assert(0 <= axis && axis < 4);
         CV_Assert(params.learnedBlobs.size() >= 1);
         CV_Assert(!bias || (params.learnedBlobs.size() >= 2 && (int)params.learnedBlobs[1].total() == numOutputs));
 
@@ -48,7 +47,9 @@ namespace dnn
     {
         CV_Assert(inputs.size() > 0);
 
+        axis = inputs[0]->canonicalAxis(axis_);
         innerSize = (int)inputs[0]->total(axis);
+
         CV_Assert((size_t)innerSize * (size_t)numOutputs == learnedParams[0].total());
         CV_Assert(learnedParams[0].rows() == numOutputs && learnedParams[0].cols() == innerSize);
 
@@ -56,7 +57,7 @@ namespace dnn
         for (size_t i = 0; i < inputs.size(); i++)
         {
             if (i != 0)
-                CV_Assert(inputs[i]->total(axis) == (size_t)innerSize);
+                CV_Assert(inputs[i]->equalShape(*inputs[0]));
 
             this->reshape(*inputs[i], outputs[i]);
         }
@@ -64,12 +65,9 @@ namespace dnn
 
     void FullyConnectedLayer::reshape(const Blob &inp, Blob &out)
     {
-        Vec4i inpShape = inp.shape4();
-        Vec4i outShape = Vec4i::all(1);
-
-        for (int a = 0; a < axis; a++)
-            outShape[a] = inpShape[a];
-        outShape[3] = numOutputs;
+        BlobShape inpShape = inp.shape();
+        BlobShape outShape(axis+1, inpShape.ptr());
+        outShape[axis] = numOutputs;
 
         out.create(outShape, inp.type());
     }
@@ -82,12 +80,12 @@ namespace dnn
             int N = numOutputs;
             int K = innerSize;
 
-            Mat srcMat(M, K, CV_32F, inputs[i]->ptrf());
-            Mat weights(N, K, CV_32F, learnedParams[0].ptrf());
-            Mat dstMat(M, N, CV_32F, outputs[i].ptrf());
+            Mat srcMat(M, K, inputs[i]->type(), inputs[i]->ptrf());
+            Mat weight(N, K, learnedParams[0].type(), learnedParams[0].ptrf());
+            Mat dstMat(M, N, outputs[i].type(), outputs[i].ptrf());
 
             //important: Caffe stores weights as transposed array
-            cv::gemm(srcMat, weights, 1, noArray(), 0, dstMat, GEMM_2_T);
+            cv::gemm(srcMat, weight, 1, noArray(), 0, dstMat, GEMM_2_T);
 
             if (bias)
             {

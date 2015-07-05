@@ -26,8 +26,7 @@ namespace dnn
             int type = mat.type();
             int dstType = CV_MAKE_TYPE(CV_MAT_DEPTH(type), 1);
 
-            int size[3] = { cn, rows, cols };
-            this->create(3, size, dstType);
+            this->create(BlobShape(1, cn, rows, cols), dstType);
             uchar *data = m.data;
             int step = rows * cols * CV_ELEM_SIZE(dstType);
 
@@ -54,7 +53,36 @@ namespace dnn
         }
     }
 
-    inline void squeezeShape_(const int srcDims, const int *srcSizes, const int dstDims, int *dstSizes)
+    void Blob::fill(const BlobShape &shape, int type, void *data, bool deepCopy)
+    {
+        CV_Assert(type == CV_32F || type == CV_64F);
+
+        if (deepCopy)
+        {
+            m.create(shape.dims(), shape.ptr(), type);
+            memcpy(m.data, data, m.total() * m.elemSize());
+        }
+        else
+        {
+            m = Mat(shape.dims(), shape.ptr(), type, data);
+        }
+    }
+
+    void Blob::fill(InputArray in)
+    {
+        CV_Assert(in.isMat() || in.isMatVector());
+
+        //TODO
+        *this = Blob(in);
+    }
+
+    void Blob::create(const BlobShape &shape, int type)
+    {
+        CV_Assert(type == CV_32F || type == CV_64F);
+        m.create(shape.dims(), shape.ptr(), type);
+    }
+
+    inline void squeezeShape(const int srcDims, const int *srcSizes, const int dstDims, int *dstSizes)
     {
         const int m = std::min(dstDims, srcDims);
 
@@ -71,62 +99,21 @@ namespace dnn
             dstSizes[dstDims - 1 - i] = 1;
     }
 
-    static Vec4i squeezeShape4(const int ndims, const int *sizes)
-    {
-        Vec4i res;
-        squeezeShape_(ndims, sizes, 4, &res[0]);
-        return res;
-    }
-
-    void Blob::fill(int ndims, const int *sizes, int type, void *data, bool deepCopy)
-    {
-        CV_Assert(type == CV_32F || type == CV_64F);
-
-        Vec4i shape = squeezeShape4(ndims, sizes);
-
-        if (deepCopy)
-        {
-            m.create(4, &shape[0], type);
-            size_t dataSize = m.total() * m.elemSize();
-            memcpy(m.data, data, dataSize);
-        }
-        else
-        {
-            m = Mat(shape.channels, &shape[0], type, data);
-        }
-    }
-
-    void Blob::fill(InputArray in)
-    {
-        CV_Assert(in.isMat() || in.isMatVector());
-
-        //TODO
-        *this = Blob(in);
-    }
-
-    void Blob::create(int ndims, const int *sizes, int type)
-    {
-        CV_Assert(type == CV_32F || type == CV_64F);
-        Vec4i shape = squeezeShape4(ndims, sizes);
-        m.create(shape.channels, &shape[0], type);
-    }
-
-    void Blob::create(Vec4i shape, int type)
-    {
-        m.create(shape.channels, &shape[0], type);
-    }
-
-    void Blob::create(int num, int cn, int rows, int cols, int type)
-    {
-        Vec4i shape(num, cn, rows, cols);
-        create(4, &shape[0], type);
-    }
-
     Vec4i Blob::shape4() const
     {
-        return squeezeShape4(dims(), sizes());
+        return Vec4i(num(), channels(), rows(), cols());
     }
 
+    std::ostream &operator<< (std::ostream &stream, const BlobShape &shape)
+    {
+        stream << "[";
 
+        for (int i = 0; i < shape.dims() - 1; i++)
+            stream << shape[i] << ", ";
+        if (shape.dims() > 0)
+            stream << shape[-1];
+
+        return stream << "]";
+    }
 }
 }

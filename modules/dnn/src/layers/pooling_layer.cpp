@@ -73,7 +73,7 @@ namespace dnn
         for (size_t i = 0; i < inputs.size(); i++)
         {
             CV_Assert(inputs[i]->rows() == inH && inputs[i]->cols() == inW);
-            outputs[i].create(inputs[i]->num(), inputs[i]->channels(), pooledH, pooledW);
+            outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), pooledH, pooledW));
         }
     }
 

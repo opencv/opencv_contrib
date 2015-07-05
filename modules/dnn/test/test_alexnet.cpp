@@ -29,8 +29,9 @@ inline void normAssert(InputArray ref, InputArray get, const char *comment = "")
     EXPECT_LE(normInf, 0.001) << comment;
 }
 
-inline void normAssert(Blob ref, Blob test, const char *comment = "")
+inline void normAssert(Blob &ref, Blob &test, const char *comment = "")
 {
+    EXPECT_EQ(ref.shape(), test.shape());
     normAssert(ref.getMatRef(), test.getMatRef(), comment);
 }
 

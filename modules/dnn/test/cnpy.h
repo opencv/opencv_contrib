@@ -13,8 +13,10 @@
 #include<typeinfo>
 #include<iostream>
 #include<cassert>
-//#include<zlib.h>
 #include<map>
+#if defined(HAVE_ZLIB) && HAVE_ZLIB
+#include<zlib.h>
+#endif
 
 namespace cnpy {
 
@@ -57,7 +59,7 @@ namespace cnpy {
     template<> std::vector<char>& operator+=(std::vector<char>& lhs, const char* rhs); 
 
 
-    template<typename T> std::string tostring(T i, int pad = 0, char padval = ' ') {
+    template<typename T> std::string tostring(T i, int = 0, char = ' ') {
         std::stringstream s;
         s << i;
         return s.str();
@@ -152,8 +154,12 @@ namespace cnpy {
         int nbytes = nels*sizeof(T) + npy_header.size();
 
         //get the CRC of the data to be added
+        #if defined(HAVE_ZLIB) && HAVE_ZLIB
         unsigned int crc = crc32(0L,(unsigned char*)&npy_header[0],npy_header.size());
         crc = crc32(crc,(unsigned char*)data,nels*sizeof(T));
+        #else
+        unsigned int crc = 0;
+        #endif
 
         //build the local header
         std::vector<char> local_header;
@@ -204,7 +210,7 @@ namespace cnpy {
         fclose(fp);
     }
 
-    template<typename T> std::vector<char> create_npy_header(const T* data, const unsigned int* shape, const unsigned int ndims) {  
+    template<typename T> std::vector<char> create_npy_header(const T*, const unsigned int* shape, const unsigned int ndims) {
 
         std::vector<char> dict;
         dict += "{'descr': '";

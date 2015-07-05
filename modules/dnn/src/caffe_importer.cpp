@@ -128,39 +128,41 @@ namespace
             }
         }
 
-        void blobFromProto(const caffe::BlobProto &protoBlob, cv::dnn::Blob &dstBlob)
+        BlobShape blobShapeFromProto(const caffe::BlobProto &pbBlob)
         {
-            AutoBuffer<int, 4> shape;
-
-            if (protoBlob.has_num() || protoBlob.has_channels() || protoBlob.has_height() || protoBlob.has_width())
+            if (pbBlob.has_num() || pbBlob.has_channels() || pbBlob.has_height() || pbBlob.has_width())
             {
-                shape.resize(4);
-                shape[0] = protoBlob.num();
-                shape[1] = protoBlob.channels();
-                shape[2] = protoBlob.height();
-                shape[3] = protoBlob.width();
+                return BlobShape(pbBlob.num(), pbBlob.channels(), pbBlob.height(), pbBlob.width());
             }
-            else if (protoBlob.has_shape())
+            else if (pbBlob.has_shape())
             {
-                const caffe::BlobShape &_shape = protoBlob.shape();
-                shape.resize(_shape.dim_size());
+                const caffe::BlobShape &_shape = pbBlob.shape();
+                BlobShape shape(_shape.dim_size());
 
                 for (int i = 0; i < _shape.dim_size(); i++)
                     shape[i] = _shape.dim(i);
+
+                return shape;
             }
             else
             {
                 CV_Error(cv::Error::StsAssert, "Unknown shape of input blob");
+                return BlobShape(-1);
             }
+        }
 
-            dstBlob.create(shape.size(), shape, CV_32F);
-            CV_Assert(protoBlob.data_size() == (int)dstBlob.getMatRef().total());
+        void blobFromProto(const caffe::BlobProto &pbBlob, cv::dnn::Blob &dstBlob)
+        {
+            BlobShape shape = blobShapeFromProto(pbBlob);
 
-            CV_DbgAssert(protoBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
+            dstBlob.create(shape, CV_32F);
+            CV_Assert(pbBlob.data_size() == (int)dstBlob.getMatRef().total());
+
+            CV_DbgAssert(pbBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
             float *dstData = dstBlob.getMatRef().ptr<float>();
 
-            for (int i = 0; i < protoBlob.data_size(); i++)
-                dstData[i] = protoBlob.data(i);
+            for (int i = 0; i < pbBlob.data_size(); i++)
+                dstData[i] = pbBlob.data(i);
         }
 
         void extractBinaryLayerParms(const caffe::LayerParameter& layer, LayerParams& layerParams)

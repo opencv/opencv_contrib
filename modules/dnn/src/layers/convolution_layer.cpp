@@ -73,9 +73,7 @@ namespace dnn
         for (size_t i = 0; i < inputs.size(); i++)
         {
             CV_Assert(inputs[i]->rows() == inH && inputs[i]->cols() == inW && inputs[i]->channels() == inCn);
-            int num = inputs[i]->num();
-
-            outputs[i].create(num, numOutput, outH, outW);
+            outputs[i].create(BlobShape(inputs[i]->num(), numOutput, outH, outW));
         }
 
         kerSize = kernelH * kernelW * groupCn;

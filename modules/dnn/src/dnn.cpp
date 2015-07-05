@@ -309,9 +309,10 @@ struct Net::Impl
 
         //forward itself
         if (ld.layerInstance && layerId != 0)
+        {
+            //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape4() << std::endl;
             ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
-
-        //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape() << std::endl;
+        }
 
         ld.flag = 1;
     }
