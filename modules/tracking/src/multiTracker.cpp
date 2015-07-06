@@ -78,7 +78,7 @@ namespace cv {
   // add a set of objects to be tracked
   bool MultiTracker::add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox){
     // status of the tracker addition
-    bool stat;
+    bool stat=false;
 
     // add tracker for all input objects
     for(unsigned i =0;i<boundingBox.size();i++){
