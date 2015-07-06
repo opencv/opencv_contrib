@@ -11,45 +11,106 @@ namespace dnn
         m = Mat(4, zeros, CV_32F, NULL);
     }
 
-    Blob::Blob(InputArray in)
+    static inline int getMatChannels(const Mat &mat)
     {
-        CV_Assert(in.isMat() || in.isUMat());
+       return (mat.dims <= 2) ? mat.channels() : mat.size[0];
+    }
 
-        if (in.isMat())
+    static BlobShape getBlobShpae(std::vector<Mat> &vmat, int requestedCn = -1)
+    {
+        BlobShape shape(4);
+        int cnSum = 0, matCn;
+
+        CV_Assert(vmat.size() > 0);
+
+        for (size_t i = 0; i < vmat.size(); i++)
         {
-            Mat mat = in.getMat();
+            Mat &mat = vmat[i];
+            CV_Assert(!mat.empty());
+            CV_Assert((mat.dims == 3 && mat.channels() == 1) || mat.dims <= 2);
 
-            CV_Assert(mat.dims == 2);
-            int rows = mat.rows;
-            int cols = mat.cols;
-            int cn = mat.channels();
-            int type = mat.type();
-            int dstType = CV_MAKE_TYPE(CV_MAT_DEPTH(type), 1);
+            matCn = getMatChannels(mat);
+            cnSum += getMatChannels(mat);
 
-            this->create(BlobShape(1, cn, rows, cols), dstType);
-            uchar *data = m.data;
-            int step = rows * cols * CV_ELEM_SIZE(dstType);
-
-            if (cn == 1)
+            if (i == 0)
             {
-                Mat wrapper2D(rows, cols, dstType, m.data);
-                mat.copyTo(wrapper2D);
+                shape[-1] = mat.cols;
+                shape[-2] = mat.rows;
+                shape[-3] = (requestedCn <= 0) ? matCn : requestedCn;
             }
             else
             {
-                std::vector<Mat> wrappers(cn);
-                for (int i = 0; i < cn; i++)
-                {
-                    wrappers[i] = Mat(rows, cols, dstType, data);
-                    data += step;
-                }
+                if (mat.cols != shape[-1] || mat.rows != shape[-2])
+                    CV_Error(Error::StsError, "Each Mat.size() must be equal");
 
-                cv::split(mat, wrappers);
+                if (requestedCn <= 0 && matCn != shape[-3])
+                    CV_Error(Error::StsError, "Each Mat.chnannels() (or number of planes) must be equal");
             }
+        }
+
+        if (cnSum % shape[-3] != 0)
+            CV_Error(Error::StsError, "Total number of channels in vector is not a multiple of requsted channel number");
+
+        shape[0] = cnSum / shape[-3];
+        return shape;
+    }
+
+    static std::vector<Mat> extractMatVector(InputArray in)
+    {
+        if (in.isMat() || in.isUMat())
+        {
+            return std::vector<Mat>(1, in.getMat());
+        }
+        else if (in.isMatVector())
+        {
+            return *static_cast<const std::vector<Mat>*>(in.getObj());
+        }
+        else if (in.isUMatVector())
+        {
+            std::vector<Mat> vmat;
+            in.getMatVector(vmat);
+            return vmat;
         }
         else
         {
-            CV_Error(cv::Error::StsNotImplemented, "Not Implemented");
+            CV_Assert(in.isMat() || in.isMatVector() || in.isUMat() || in.isUMatVector());
+            return std::vector<Mat>();
+        }
+    }
+
+    Blob::Blob(InputArray in, int dstCn)
+    {
+        CV_Assert(dstCn == -1 || dstCn > 0);
+        std::vector<Mat> inMats = extractMatVector(in);
+        BlobShape dstShape = getBlobShpae(inMats, dstCn);
+
+        m.create(dstShape.dims(), dstShape.ptr(), CV_32F);
+
+        std::vector<Mat> wrapBuf(dstShape[-3]);
+        int elemSize = m.elemSize();
+        uchar *ptr = this->ptrRaw();
+        for (size_t i = 0; i < inMats.size(); i++)
+        {
+            Mat inMat = inMats[i];
+
+            if (inMat.dims <= 2)
+            {
+                inMat.convertTo(inMat, m.type());
+
+                wrapBuf.resize(0);
+                for (int cn = 0; cn < inMat.channels(); cn++)
+                {
+                    wrapBuf.push_back(Mat(inMat.rows, inMat.cols, m.type(), ptr));
+                    ptr += elemSize * inMat.total();
+                }
+
+                cv::split(inMat, wrapBuf);
+            }
+            else
+            {
+                inMat.convertTo(Mat(inMat.dims, inMat.size, m.type(), ptr), m.type());
+                ptr += elemSize * inMat.total();
+            }
         }
     }
 

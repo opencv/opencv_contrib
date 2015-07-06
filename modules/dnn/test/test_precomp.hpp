@@ -16,5 +16,6 @@
 #include "opencv2/ts.hpp"
 #include <opencv2/ts/ts_perf.hpp>
 #include <opencv2/core/utility.hpp>
+#include "test_common.hpp"
 
 #endif

@@ -20,11 +20,10 @@ struct LayerOutId
 {
     int lid;
     int oid;
-    String name;
 
     LayerOutId() {}
-    LayerOutId(int layerId, int outputId, const String &outputName = String())
-        : lid(layerId), oid(outputId), name(outputName) {}
+    LayerOutId(int layerId, int outputId)
+        : lid(layerId), oid(outputId) {}
 };
 
 struct LayerData

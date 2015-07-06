@@ -50,7 +50,11 @@ namespace dnn
     {
     public:
         explicit Blob();
-        explicit Blob(InputArray in);
+        /** @brief constucts 4-dimensional blob from input
+         *  @param in 2-dimensional or 3-dimensional single-channel image (or vector from them)
+         *  @param dstCn if specified force size of ouptut blob channel-dimension
+        */
+        explicit Blob(InputArray in, int dstCn = -1);
 
         void create(const BlobShape &shape, int type = CV_32F);
 
@@ -110,6 +114,15 @@ namespace dnn
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         template<typename TFloat>
         TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+
+        /** @brief share data with other blob and returns *this
+        @returns *this
+        */
+        Blob &shareFrom(const Blob &blob);
+        /** @brief adjust blob shape to required (data reallocated if needed)
+        @returns *this
+        */
+        Blob &reshape(const BlobShape &shape);
 
         int type() const;
         bool isFloat() const;

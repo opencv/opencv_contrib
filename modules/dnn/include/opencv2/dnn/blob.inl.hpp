@@ -254,6 +254,19 @@ inline const int * Blob::sizes() const
     return &m.size[0];
 }
 
+
+inline Blob &Blob::shareFrom(const Blob &blob)
+{
+    this->m = blob.m;
+    return *this;
+}
+
+inline Blob &Blob::reshape(const BlobShape &shape)
+{
+    m.reshape(1, shape.dims(), shape.ptr());
+    return *this;
+}
+
 }
 }
 
