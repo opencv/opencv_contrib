@@ -198,9 +198,9 @@ namespace cv
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
 			if ((int)eForModel.size() == 0) return;
 
-			int64 e1, e2;
-			double t;
-			e1 = getTickCount();
+			//int64 e1, e2;
+			//double t;
+			//e1 = getTickCount();
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
 				double sr = detector->Sr(eForModel[k]);
@@ -231,8 +231,8 @@ namespace cv
 						detector->classifiers[i].integrate(eForEnsemble[k], isPositive);
 				}
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency() * 1000;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency() * 1000;
 			//printf("Integrate Additional: %fms\n", t);
 			/*
 			if( negativeIntoModel > 0 )
@@ -251,9 +251,9 @@ namespace cv
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
 			if ((int)eForModel.size() == 0) return;
 
-			int64 e1, e2;
-			double t;
-			e1 = getTickCount();
+			//int64 e1, e2;
+			//double t;
+			//e1 = getTickCount();
 
 			//Prepare batch of patches
 			int numOfPatches = (int)eForModel.size();
@@ -301,8 +301,8 @@ namespace cv
 						detector->classifiers[i].integrate(eForEnsemble[k], isPositive);
 				}
 			}
-			e2 = getTickCount();
-			t = (e2 - e1) / getTickFrequency() * 1000;
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency() * 1000;
 			//printf("Integrate Additional OCL: %fms\n", t);
 			/*
 			if( negativeIntoModel > 0 )
