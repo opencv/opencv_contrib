@@ -41,71 +41,91 @@
 //the use of this software, even if advised of the possibility of such damage.
 
 /*****************************************************************************************************************\
-*   The interface contains the main descriptors that will be implemented in the descriptor class                  *
+*   The file contains the implemented descriptors                                                                  *
 \******************************************************************************************************************/
 #include "descriptor.hpp"
 
 using namespace cv;
 using namespace stereo;
 
-Descriptor::Descriptor()
+void cv::stereo::applyCensusOnImage(const cv::Mat &img, int kernelSize, cv::Mat &dist, const int type)
 {
-}
-//!Implementation for computing the Census transform on the given image
-void Descriptor::applyCensusOnImage(const cv::Mat &img, int kernelSize, cv::Mat &dist, const int type)
-{
+    CV_Assert(img.type() == CV_8UC1);
+    CV_Assert(kernelSize <= 5);
+    CV_Assert(type < 2 && type >= 0);
     int n2 = (kernelSize - 1) / 2;
     parallel_for_(cv::Range(n2, img.rows - n2), singleImageCensus(img.data, img.cols, img.rows, n2, (int *)dist.data, type));
 }
-/**
-Two variations of census applied on input images
-Implementation of a census transform which is taking into account just the some pixels from the census kernel thus allowing for larger block sizes
-**/
-void Descriptor::applyCensusOnImages(const cv::Mat &im1, cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
+void cv::stereo::applyCensusOnImages(const cv::Mat &im1,const cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
 {
+    CV_Assert(im1.size() == im2.size());
+    CV_Assert(im1.type() == CV_8UC1 && im2.type() == CV_8UC1);
+    CV_Assert(type < 2 && type >= 0);
+    CV_Assert(kernelSize <= (type == 0 ? 5 : 10));
     int n2 = (kernelSize - 1) / 2;
-    parallel_for_(cv::Range(n2, im1.rows - n2), parallelCensus(im1.data, im2.data, im1.cols, im2.rows, n2, (int *)dist.data, (int *)dist2.data, type));
-}
-/**
-STANDARD_MCT - Modified census which is memorizing for each pixel 2 bits and includes a tolerance to the pixel comparison
-MCT_MEAN_VARIATION - Implementation of a modified census transform which is also taking into account the variation to the mean of the window not just the center pixel
-**/
-void Descriptor::applyMCTOnImages(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, int t, cv::Mat &dist, cv::Mat &dist2, const int type)
-{
-    int n2 = (kernelSize - 1) >> 1;
-    parallel_for_(cv::Range(n2, img1.rows - n2), parallelMctDescriptor(img1.data, img2.data, img1.cols, img2.rows, n2,t, (int *)dist.data, (int *)dist2.data, type));
-}
-/**The classical center symetric census
-A modified version of cs census which is comparing a pixel with its correspondent after the center
-**/
-void Descriptor::applySimetricCensus(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
-{
-    int n2 = (kernelSize - 1) >> 1;
-    parallel_for_(cv::Range(n2, img1.rows - n2), parallelSymetricCensus(img1.data, img2.data, img1.cols, img2.rows, n2, (int *)dist.data, (int *)dist2.data, type));
-}
-//!brief binary descriptor used in stereo correspondence
-void Descriptor::applyBrifeDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
-{
-    //TO DO
-    //marked the variables in order to avoid warnings
-    (void)image1;
-    (void)image2;
-    (void)dist;
-    (void)dist2;
-    (void)kernelSize;
-}
-//The classical Rank Transform
-void  Descriptor::applyRTDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
-{
-    //TO DO
-    //marked the variables in order to avoid warnings
-    (void)image1;
-    (void)image2;
-    (void)dist;
-    (void)dist2;
-    (void)kernelSize;
-}
+    if(type == Dense_Census)
+    {
+        parallel_for_(cv::Range(n2, im1.rows - n2),
+            CombinedDescriptor<1,1,1,CensusKernel>(im1.cols, im1.rows,n2,(int *)dist.data,(int *)dist2.data,CensusKernel(im1.data, im2.data),n2));
+    }
+    else if(type == Sparse_Census)
+    {
+        parallel_for_(cv::Range(n2, im1.rows - n2),
+            CombinedDescriptor<2,2,1,CensusKernel>(im1.cols, im1.rows,n2,(int *)dist.data,(int *)dist2.data,CensusKernel(im1.data, im2.data),n2));
+    }
 
-Descriptor::~Descriptor(void)
+}
+void cv::stereo::applyMCTOnImages(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, int t, cv::Mat &dist, cv::Mat &dist2, const int type)
 {
+    CV_Assert(img1.size() == img2.size());
+    CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
+    CV_Assert(type < 2 && type >= 0);
+    CV_Assert(kernelSize <= 9);
+    int n2 = (kernelSize - 1) >> 1;
+    if(type == StandardMct)
+    {
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<2,3,2,MCTKernel>(img1.cols, img1.rows,n2,(int *)dist.data,(int *)dist2.data,MCTKernel(img1.data, img2.data,t),n2));
+    }
+    else
+    {
+        //MV
+    }
+}
+void cv::stereo::applySimetricCensus(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
+{
+    CV_Assert(img1.size() ==  img2.size());
+    CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
+    CV_Assert(type < 2 && type >= 0);
+    CV_Assert(kernelSize <= 7);
+    int n2 = (kernelSize - 1) >> 1;
+    if(type == ClassicCenterSymetricCensus)
+    {
+        parallel_for_(cv::Range(n2, img1.rows - n2), parallelSymetricCensus(img1.data, img2.data, img1.cols, img2.rows, n2, (int *)dist.data, (int *)dist2.data, type));
+    }
+    else if(type == ModifiedCenterSymetricCensus)
+    {
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<1,1,1,ModifiedCsCensus>(img1.cols, img1.rows,n2,(int *)dist.data,(int *)dist2.data,ModifiedCsCensus(img1.data, img2.data,n2),1));
+    }
+}
+void cv::stereo::applyBrifeDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
+{
+    //TO DO
+    //marked the variables in order to avoid warnings
+    (void)image1;
+    (void)image2;
+    (void)dist;
+    (void)dist2;
+    (void)kernelSize;
+}
+void  cv::stereo::applyRTDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
+{
+    //TO DO
+    //marked the variables in order to avoid warnings
+    (void)image1;
+    (void)image2;
+    (void)dist;
+    (void)dist2;
+    (void)kernelSize;
 }
