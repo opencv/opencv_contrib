@@ -165,10 +165,10 @@ Note: the descriptor can be coupled with any keypoint extractor. The only demand
 Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures2D/latch_match.cpp
 
 */
-class CV_EXPORTS LATCH : public DescriptorExtractor
+class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
-	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+	CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
@@ -187,14 +187,14 @@ DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 bu
 @param use_orientation sample patterns using keypoints orientation, disabled by default.
 
  */
-class CV_EXPORTS DAISY : public DescriptorExtractor
+class CV_EXPORTS_W DAISY : public Feature2D
 {
 public:
     enum
     {
         NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
     };
-    static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
+    CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
                 int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
                 bool interpolation = true, bool use_orientation = false );
 
