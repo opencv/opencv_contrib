@@ -7,9 +7,9 @@ input_dim: 75
 input_dim: 113
 
 layer {
-  name: "Softmax"
   type: "Softmax"
 
+  name: "output"
   bottom: "input"
   top: "output"
 }

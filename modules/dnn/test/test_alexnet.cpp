@@ -29,7 +29,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     inpMats.push_back( imread(getTestFile("alexnet_1.png")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob("data", Blob(inpMats));
+    net.setBlob(".data", Blob(inpMats));
     net.forward();
 
     Blob out = net.getBlob("prob");

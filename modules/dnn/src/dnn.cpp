@@ -2,6 +2,7 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 using namespace cv;
 using namespace cv::dnn;
@@ -16,38 +17,45 @@ namespace cv
 namespace dnn
 {
 
-struct LayerOutId
+template<typename T>
+String toString(const T &v)
+{
+    std::ostringstream ss;
+    ss << v;
+    return ss.str();
+}
+
+struct LayerPin
 {
     int lid;
     int oid;
 
-    LayerOutId() {}
-    LayerOutId(int layerId, int outputId)
+    LayerPin(int layerId = -1, int outputId = -1)
         : lid(layerId), oid(outputId) {}
+    
+    bool valid() const
+    {
+        return (lid >= 0 && oid >= 0);
+    }
+
+    bool equal(const LayerPin &r) const
+    {
+        return (lid == r.lid && oid == r.oid);
+    }
 };
 
 struct LayerData
 {
     LayerData() {}
-    LayerData(const String &_name, const String &_type, LayerParams &_params)
-        : name(_name), type(_type), params(_params) {}
+    LayerData(int _id, const String &_name, const String &_type, LayerParams &_params)
+        : id(_id), name(_name), type(_type), params(_params) {}
 
+    int id;
     String name;
     String type;
     LayerParams params;
 
-    std::vector<String> outputNames;
-    std::vector<String> inputNames;
-    bool hasNamedOutput(const String &name)
-    {
-        return std::find(outputNames.begin(), outputNames.end(), name) != outputNames.end();
-    }
-    bool hasNemedInput(const String &name)
-    {
-        return std::find(inputNames.begin(), inputNames.end(), name) != inputNames.end();
-    }
-
-    std::vector<LayerOutId> inputBlobsId;
+    std::vector<LayerPin> inputBlobsId;
     std::set<int> inputLayersId;
     std::set<int> requiredOutputs;
 
@@ -56,23 +64,64 @@ struct LayerData
     std::vector<Blob*> inputBlobs;
 
     int flag;
+
+    Ptr<Layer> getLayerInstance()
+    {
+        if (layerInstance)
+            return layerInstance;
+
+        layerInstance = LayerRegister::createLayerInstance(type, params);
+        if (!layerInstance)
+        {
+            CV_Error(Error::StsError, "Can't create layer \"" + name + "\" of type \"" + type + "\"");
+        }
+
+        return layerInstance;
+    }
+};
+
+//fake layer containing network input blobs
+struct NetInputLayer : public Layer
+{
+    void allocate(const std::vector<Blob*>&, std::vector<Blob>&) {}
+    void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
+
+    int outputNameToIndex(String tgtName)
+    {
+        int idx = (int)(std::find(outNames.begin(), outNames.end(), tgtName) - outNames.begin());
+        return (idx < (int)outNames.size()) ? idx : -1;
+    }
+
+    void setNames(const std::vector<String> &names)
+    {
+        outNames.assign(names.begin(), names.end());
+    }
+
+private:
+    std::vector<String> outNames;
 };
 
 struct Net::Impl
 {
     Impl()
-    {
-        LayerParams paramsEmpty;
-        layers.insert(make_pair(0, LayerData("_input", "_noType", paramsEmpty)));
+    {   
+        //allocate fake net input layer
+        netInputLayer = Ptr<NetInputLayer>(new NetInputLayer());
+        LayerData &inpl = layers.insert( make_pair(0, LayerData()) ).first->second;
+        inpl.id = 0;
+        inpl.name = "_input";
+        inpl.type = "__NetInputLayer__";
+        inpl.layerInstance = netInputLayer;
+
         lastLayerId = 1;
         netWasAllocated = false;
     }
 
+    Ptr<NetInputLayer> netInputLayer;
     std::vector<int> netOutputs;
 
     typedef std::map<int, LayerData> MapIdToLayerData;
     std::map<int, LayerData> layers;
-
     std::map<String, int> layerNameToId;
 
     int lastLayerId;
@@ -83,9 +132,8 @@ struct Net::Impl
     {
         if (!netWasAllocated)
         {
-            connectInputs();
             allocateLayers();
-            computeNetOutputs();
+            computeNetOutputLayers();
 
             netWasAllocated = true;
         }
@@ -97,124 +145,130 @@ struct Net::Impl
         return (it != layerNameToId.end()) ? it->second : -1;
     }
 
-    int getLayerId(const DictValue &v)
+    int getLayerId(int id)
     {
-        if (v.isString())
-            return getLayerId(v.get<String>());
-        else if (v.isInt())
-            return v.get<int>();
-        else
-        {
-            CV_Assert(v.isString() || v.isInt());
-            return -1;
-        }
+        MapIdToLayerData::iterator it = layers.find(id);
+        return (it != layers.end()) ? id : -1;
     }
 
-    LayerData& getLayerData(const DictValue &v)
+    int getLayerId(DictValue &layerDesc)
     {
-        int id = getLayerId(v);
-        std::map<int, LayerData>::iterator it = layers.find(id);
-        CV_Assert(id >= 0 && it != layers.end());
+        if (layerDesc.isInt())
+            return getLayerId(layerDesc.get<int>());
+        else if (layerDesc.isString())
+            return getLayerId(layerDesc.get<String>());
+
+        CV_Assert(layerDesc.isInt() || layerDesc.isString());
+        return -1;
+    }
+
+    String getLayerName(int id)
+    {
+        MapIdToLayerData::iterator it = layers.find(id);
+        return (it != layers.end()) ? it->second.name : "(unknown layer)";
+    }
+
+    LayerData& getLayerData(int id)
+    {
+        MapIdToLayerData::iterator it = layers.find(id);
+        
+        if (it == layers.end())
+            CV_Error(Error::StsError, "Layer with requested id=" + toString(id) + " not found");
+
         return it->second;
     }
 
-    int findOutputsByName(const String &name, LayerOutId *found, int maxCount = 1)
+    LayerData& getLayerData(const String &layerName)
     {
-        int count = 0;
+        int id = getLayerId(layerName);
 
-        MapIdToLayerData::iterator it;
-        for (it = layers.begin(); it != layers.end() && count < maxCount; it++)
-        {
-            int lid = it->first;
-            LayerData &ld = it->second;
+        if (id < 0)
+            CV_Error(Error::StsError, "Requsted layer \"" + layerName + "\" not found");
 
-            for (size_t oi = 0; oi < ld.outputNames.size() && count < maxCount; oi++)
-            {
-                if (ld.outputNames[oi] == name)
-                    found[count++] = LayerOutId(lid, (int)oi);
-            }
-        }
-
-        return count;
+        return getLayerData(id);
     }
 
-    void connectInputs()
+    LayerData& getLayerData(const DictValue &layerDesc)
     {
-        LayerOutId foundOutputs[3], out;
+        if (layerDesc.isInt())
+            return getLayerData(layerDesc.get<int>());
+        else if (layerDesc.isString())
+            return getLayerData(layerDesc.get<String>());
 
-        MapIdToLayerData::iterator it;
-        for (it = layers.begin(); it != layers.end(); it++)
-        {
-            LayerData &ld = it->second;
-
-            ld.inputBlobs.resize(ld.inputNames.size());
-            ld.inputBlobsId.resize(ld.inputNames.size());
-            ld.inputLayersId.clear();
-
-            for (size_t ii = 0; ii < ld.inputNames.size(); ii++)
-            {
-                const String &tgtName = ld.inputNames[ii];
-
-                int foundCount = findOutputsByName(tgtName, foundOutputs, 3);
-
-                if (foundCount > 2)
-                {
-                    CV_Error(cv::Error::StsNotImplemented, "Two or more non-inplace blobs have the same name \"" + tgtName + "\"");
-                }
-                else if (foundCount == 2)
-                {
-                    bool inPlace[2];
-                    inPlace[0] = layers[ foundOutputs[0].lid ].hasNemedInput(tgtName);
-                    inPlace[1] = layers[ foundOutputs[1].lid ].hasNemedInput(tgtName);
-
-                    if (!inPlace[0] && !inPlace[1])
-                    {
-                        CV_Error(cv::Error::StsNotImplemented, "Two or more non-inplace blobs have the same name \"" + tgtName + "\"");
-                    }
-                    else if (inPlace[0] && inPlace[1])
-                    {
-                        CV_Error(cv::Error::StsNotImplemented, "Two or more blobs has same in-place blob \"" + tgtName + "\"");
-                    }
-                    else
-                    {
-                        if (ld.hasNamedOutput(tgtName))
-                            out = (inPlace[0]) ? foundOutputs[1] : foundOutputs[0];
-                        else
-                            out = (inPlace[0]) ? foundOutputs[0] : foundOutputs[1];
-                    }
-                }
-                else if (foundCount == 0)
-                {
-                    CV_Error(cv::Error::StsBadArg, "Can't find specified input blob \"" + tgtName + "\" for layer \"" + ld.name + "\"");
-                    continue;
-                }
-                else
-                {
-                    out = foundOutputs[0];
-                }
-
-                ld.inputBlobsId[ii] = out;
-                ld.inputLayersId.insert(out.lid);
-                layers[out.lid].requiredOutputs.insert(out.oid);
-            }
-        }
-
-        for (it = layers.begin(); it != layers.end(); it++)
-        {
-            LayerData& ld = it->second;
-
-            std::cout << "Layer \"" << ld.name << "\"" << std::endl;
-            if (ld.inputBlobsId.size() > 0)
-            {
-                std::cout << "Connected to:" << std::endl;
-                for (std::set<int>::iterator j = ld.inputLayersId.begin(); j != ld.inputLayersId.end(); j++)
-                    std::cout << layers[*j].name << std::endl;
-            }
-            std::cout << std::endl;
-        }
+        CV_Assert(layerDesc.isInt() || layerDesc.isString());
+        return *((LayerData*)NULL);
     }
 
-    void computeNetOutputs()
+    static void addLayerInput(LayerData &ld, int inNum, LayerPin from)
+    {
+        if ((int)ld.inputBlobsId.size() <= inNum)
+        {
+            ld.inputBlobsId.resize(inNum + 1);
+        }
+        else
+        {
+            LayerPin storedFrom = ld.inputBlobsId[inNum];
+            if (storedFrom.valid() && !storedFrom.equal(from))
+                CV_Error(Error::StsError, "Input #" + toString(inNum) + "of layer \"" + ld.name + "\" already was connected");
+        }
+
+        ld.inputBlobsId[inNum] = from;
+    }
+
+    static void splitPin(const String &pinAlias, String &layerName, String &outName)
+    {
+        size_t delimPos = pinAlias.find('.');
+        layerName = pinAlias.substr(0, delimPos);
+        outName = (delimPos == String::npos) ? String() : pinAlias.substr(delimPos + 1);
+    }
+
+    int resolvePinOutputName(LayerData &ld, const String &outName, bool isOutPin)
+    {
+        if (outName.empty())
+            return 0;
+
+        if (std::isdigit(outName[0]))
+        {
+            char *lastChar;
+            long inum = std::strtol(outName.c_str(), &lastChar, 10);
+
+            if (*lastChar == 0)
+            {
+                CV_Assert(inum == (int)inum);
+                return (int)inum;
+            }
+        }
+
+        if (isOutPin)
+            return ld.getLayerInstance()->outputNameToIndex(outName);
+        else
+            return ld.getLayerInstance()->inputNameToIndex(outName);
+    }
+
+    LayerPin getPinByAlias(const String &pinAlias, bool isOutPin = true)
+    {
+        LayerPin pin;
+        String layerName, outName;
+        splitPin(pinAlias, layerName, outName);
+
+        pin.lid = (layerName.empty()) ? 0 : getLayerId(layerName);
+
+        if (pin.lid >= 0)
+            pin.oid = resolvePinOutputName(getLayerData(pin.lid), outName, isOutPin);
+
+        return pin;
+    }
+
+    void connect(int outLayerId, int outNum, int inLayerId, int inNum)
+    {
+        LayerData &ldOut = getLayerData(outLayerId);
+        LayerData &ldInp = getLayerData(inLayerId);
+
+        addLayerInput(ldInp, inNum, LayerPin(outLayerId, outNum));
+        ldOut.requiredOutputs.insert(outNum);
+    }
+
+    void computeNetOutputLayers()
     {
         netOutputs.clear();
 
@@ -245,29 +299,18 @@ struct Net::Impl
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
             allocateLayer(*i);
 
-        //create instance
-        if (ld.layerInstance == NULL && lid != 0)
-        {
-            ld.layerInstance = LayerRegister::createLayerInstance(ld.type, ld.params);
-            if (ld.layerInstance == NULL)
-            {
-                std::cerr << "Can't create layer \"" << ld.name << "\" of type \"" << ld.type << "\"" << std::endl;
-            }
-        }
-
         //bind inputs
         ld.inputBlobs.resize(ld.inputBlobsId.size());
         for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
         {
-            int srcLId = ld.inputBlobsId[i].lid;
-            int srcOId = ld.inputBlobsId[i].oid;
-            ld.inputBlobs[i] = &layers[srcLId].outputBlobs[srcOId];
+            LayerPin from = ld.inputBlobsId[i];
+            CV_Assert(from.valid());
+            ld.inputBlobs[i] = &layers[from.lid].outputBlobs[from.oid];
         }
 
         //allocate layer
-        ld.outputBlobs.resize(ld.outputNames.size());
-        if (ld.layerInstance)
-            ld.layerInstance->allocate(ld.inputBlobs, ld.outputBlobs);
+        ld.outputBlobs.resize(ld.requiredOutputs.size());
+        ld.getLayerInstance()->allocate(ld.inputBlobs, ld.outputBlobs);
 
         ld.flag = 1;
     }
@@ -285,7 +328,7 @@ struct Net::Impl
         }
     }
 
-    void forwardLayer(int layerId, bool clearFlags = true)
+    void forwardLayer(LayerData &ld, bool clearFlags = true)
     {
         if (clearFlags)
         {
@@ -294,8 +337,6 @@ struct Net::Impl
                 it->second.flag = 0;
         }
 
-        LayerData &ld = layers[layerId];
-
         //already was forwarded
         if (ld.flag)
             return;
@@ -303,15 +344,11 @@ struct Net::Impl
         //forward parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
         {
-            forwardLayer(*i, false);
+            forwardLayer(layers[*i], false);
         }
 
         //forward itself
-        if (ld.layerInstance && layerId != 0)
-        {
-            //std::cout << ld.name << " shape:" << ld.outputBlobs[0].shape4() << std::endl;
-            ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
-        }
+        ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
 
         ld.flag = 1;
     }
@@ -323,7 +360,7 @@ struct Net::Impl
             it->second.flag = 0;
 
         for (it = layers.begin(); it != layers.end(); it++)
-            forwardLayer(it->first, false);
+            forwardLayer(it->second, false);
     }
 };
 
@@ -339,35 +376,38 @@ Net::~Net()
 
 int Net::addLayer(const String &name, const String &type, LayerParams &params)
 {
+    if (name.find('.') != String::npos)
+    {
+        CV_Error(Error::StsBadArg, "Added layer name \"" + name + "\" should not contain dot symbol");
+        return -1;
+    }
+
     if (impl->getLayerId(name) >= 0)
     {
-        CV_Error(cv::Error::StsBadArg, "Layer \"" + name + "\" already into net");
+        CV_Error(Error::StsBadArg, "Layer \"" + name + "\" already into net");
         return -1;
     }
 
     int id = ++impl->lastLayerId;
     impl->layerNameToId.insert(std::make_pair(name, id));
-    impl->layers.insert(std::make_pair(id, LayerData(name, type, params)));
+    impl->layers.insert(std::make_pair(id, LayerData(id, name, type, params)));
 
     return id;
 }
 
-//void Net::connect(BlobId input, BlobId output)
-//{
-
-//}
-
-void Net::setOutputNames(LayerId layer, const std::vector<String> &outputNames)
+void Net::connect(int outLayerId, int outNum, int inLayerId, int inNum)
 {
-    LayerData &ld = impl->getLayerData(layer);
-    CV_Assert(ld.outputNames.size() == 0);
-    ld.outputNames.assign(outputNames.begin(), outputNames.end());
+    impl->connect(outLayerId, outNum, inLayerId, inNum);
 }
 
-void Net::setLayerInputs(const std::vector<String> &outputs, LayerId layer)
+void Net::connect(String _outPin, String _inPin)
 {
-    LayerData &ld = impl->getLayerData(layer);
-    ld.inputNames.assign(outputs.begin(), outputs.end());
+    LayerPin outPin = impl->getPinByAlias(_outPin);
+    LayerPin inpPin = impl->getPinByAlias(_inPin);
+
+    CV_Assert(outPin.valid() && inpPin.valid());
+
+    impl->connect(outPin.lid, outPin.oid, inpPin.lid, inpPin.oid);
 }
 
 void Net::forward()
@@ -379,37 +419,34 @@ void Net::forward()
 void Net::forward(LayerId toLayer)
 {
     impl->setUpNet();
-    impl->forwardLayer(impl->getLayerId(toLayer));
+    impl->forwardLayer(impl->getLayerData(toLayer));
 }
 
 void Net::setNetInputs(const std::vector<String> &inputBlobNames)
 {
-    setOutputNames(0, inputBlobNames);
+    impl->netInputLayer->setNames(inputBlobNames);
 }
 
-void Net::setBlob(BlobId outputName, const Blob &blob)
+void Net::setBlob(String outputName, const Blob &blob)
 {
-    String name = outputName.get<String>();
-    LayerOutId found;
+    LayerPin pin = impl->getPinByAlias(outputName);
+    if (!pin.valid())
+        CV_Error(Error::StsObjectNotFound, "Request blob \"" + outputName + "\" not found");
 
-    if (!impl->findOutputsByName(name, &found, 1))
-        CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
-
-    LayerData &ld = impl->layers[found.lid];
-    ld.outputBlobs.resize(ld.outputNames.size());
-    ld.outputBlobs[found.oid] = blob;
+    LayerData &ld = impl->layers[pin.lid];
+    ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
+    ld.outputBlobs[pin.oid] = blob;
 }
 
-Blob Net::getBlob(BlobId outputName)
+Blob Net::getBlob(String outputName)
 {
-    String name = outputName.get<String>();
-    LayerOutId found;
+    LayerPin pin = impl->getPinByAlias(outputName);
+    if (!pin.valid())
+        CV_Error(Error::StsObjectNotFound, "Request blob \"" + outputName + "\" not found");
 
-    if (!impl->findOutputsByName(name, &found, 1))
-        CV_Error(cv::Error::StsObjectNotFound, "Request blob \"" + name + "\" not found");
-
-    LayerData &ld = impl->layers[found.lid];
-    return ld.outputBlobs[found.oid];
+    LayerData &ld = impl->layers[pin.lid];
+    CV_Assert(pin.oid < (int)ld.outputBlobs.size());
+    return ld.outputBlobs[pin.oid];
 }
 
 Blob Net::getParam(LayerId layer, int numParam)
@@ -426,36 +463,14 @@ Importer::~Importer()
 
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-#include <sstream>
-template<typename T>
-String toString(const T &v)
+int Layer::inputNameToIndex(String inputName)
 {
-    std::stringstream ss;
-    ss << v;
-    return ss.str();
+    return -1;
 }
 
-int Layer::getNumInputs()
+int Layer::outputNameToIndex(String outputName)
 {
-    return 1;
-}
-
-int Layer::getNumOutputs()
-{
-    return 1;
-}
-
-cv::String Layer::getInputName(int inputNum)
-{
-    return "input" + toString(inputNum);
-}
-
-
-cv::String Layer::getOutputName(int outputNum)
-{
-    return "output" + toString(outputNum);
+    return -1;
 }
 
 Layer::~Layer()

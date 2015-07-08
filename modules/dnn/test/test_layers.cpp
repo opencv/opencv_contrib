@@ -44,17 +44,16 @@ static void testLayer(String proto, String caffemodel = String())
         importer->populateNet(net);
     }
 
-    net.setBlob("input", inp);
+    net.setBlob(".input", inp);
     net.forward();
     Blob out = net.getBlob("output");
 
-    EXPECT_TRUE(isEqual(ref.shape4(), out.shape4()));
+    EXPECT_EQ(ref.shape(), out.shape());
 
     Mat &mRef = ref.getMatRef();
     Mat &mOut = out.getMatRef();
-    size_t N = ref.total();
 
-    double normL1 = cvtest::norm(mRef, mOut, NORM_L1)/N;
+    double normL1 = cvtest::norm(mRef, mOut, NORM_L1) / ref.total();
     EXPECT_LE(normL1, 0.0001);
 
     double normInf = cvtest::norm(mRef, mOut, NORM_INF);

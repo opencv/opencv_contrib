@@ -30,7 +30,7 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
     Blob inp(inpMats);
-    net.setBlob("data", inp);
+    net.setBlob(".data", inp);
     net.forward();
 
     Blob out = net.getBlob("prob");

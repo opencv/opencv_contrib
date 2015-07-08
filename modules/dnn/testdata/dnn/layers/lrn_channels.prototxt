@@ -7,7 +7,6 @@ input_dim: 75
 input_dim: 113
 
 layer {
-  name: "norm1"
   type: "LRN"
   lrn_param {
   	norm_region: ACROSS_CHANNELS;
@@ -16,6 +15,7 @@ layer {
     beta: 0.75
   }
 
+  name: "output"
   bottom: "input"
   top: "output"
 }

@@ -24,7 +24,7 @@ namespace dnn
     class CV_EXPORTS Layer
     {
     public:
-        //TODO: this field must be declared as public if we want support possibility to change these params in runtime
+        //learned params of layer must be stored here to allow externally read them
         std::vector<Blob> learnedParams;
 
         virtual ~Layer();
@@ -34,11 +34,9 @@ namespace dnn
 
         virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
-        virtual int getNumInputs();
-        virtual int getNumOutputs();
         //each input/output can be labeled to easily identify their using "layer_name.output_name"
-        virtual String getInputName(int inputNum);
-        virtual String getOutputName(int outputNum);
+        virtual int inputNameToIndex(String inputName);
+        virtual int outputNameToIndex(String outputName);
     };
 
     //containers for String and int
@@ -56,14 +54,10 @@ namespace dnn
         int getLayerId(LayerId layer);
         void deleteLayer(LayerId layer);
 
-        //each output of each layer can be labeled by unique string label (as in Caffe)
-        //if label not specified then %layer_name%.%layer_output_id% can be used
-        void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
-        void setLayerInputs(const std::vector<String> &outputs, LayerId layer);
         void setNetInputs(const std::vector<String> &inputBlobNames);
 
-        void connect(BlobId input, BlobId output);
-        void connect(const std::vector<BlobId> &outputs, const std::vector<BlobId> &inputs);
+        void connect(String outPin, String inpPin);
+        void connect(int outLayerId, int outNum, int inLayerId, int inNum);
 
         void forward();
         void forward(LayerId toLayer);
@@ -74,8 +68,8 @@ namespace dnn
         void forwardOpt(LayerId toLayer);
         void forwardOpt(const std::vector<LayerId> &toLayers);
 
-        void setBlob(BlobId outputName, const Blob &blob);
-        Blob getBlob(BlobId outputName);
+        void setBlob(String outputName, const Blob &blob);
+        Blob getBlob(String outputName);
 
         void setParam(LayerId layer, int numParam, const Blob &blob);
         Blob getParam(LayerId layer, int numParam = 0);

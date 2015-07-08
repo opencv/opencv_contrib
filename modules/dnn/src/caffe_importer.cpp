@@ -91,11 +91,9 @@ namespace
                 params.set(name, GET_FIRST(Bool));
                 break;
             default:
-                CV_Error(cv::Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
+                CV_Error(Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
                 break;
             }
-
-            std::cout << std::endl;
         }
 
         void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params)
@@ -146,7 +144,7 @@ namespace
             }
             else
             {
-                CV_Error(cv::Error::StsAssert, "Unknown shape of input blob");
+                CV_Error(Error::StsError, "Unknown shape of input blob");
                 return BlobShape(-1);
             }
         }
@@ -187,53 +185,100 @@ namespace
             }
         }
 
+        struct BlobNote
+        {
+            BlobNote(const std::string &_name, int _layerId, int _outNum) : 
+                name(_name), layerId(_layerId), outNum(_outNum) {}
+
+            const std::string &name;
+            int layerId, outNum;
+        };
+
         void populateNet(Net dstNet)
         {
+            int layersSize = net.layer_size();
+            std::vector<BlobNote> addedBlobs;
+            addedBlobs.reserve(layersSize + 1);
+
             //setup input layer names
             {
                 std::vector<String> netInputs(net.input_size());
-                for (int ii = 0; ii < net.input_size(); ii++)
-                    netInputs[ii] = net.input(ii);
+                for (int inNum = 0; inNum < net.input_size(); inNum++)
+                {
+                    addedBlobs.push_back(BlobNote(net.input(inNum), 0, inNum));
+                    netInputs[inNum] = net.input(inNum);
+                }
                 dstNet.setNetInputs(netInputs);
             }
 
-            int layersSize = net.layer_size();
-
-            std::vector<String> layersName(layersSize);
-            std::vector<int> layersId(layersSize);
-            std::vector<std::vector<String> > bottomsVec(layersSize);
-
             for (int li = 0; li < layersSize; li++)
             {
-                const caffe::LayerParameter layer = net.layer(li);
+                const caffe::LayerParameter &layer = net.layer(li);
                 String name = layer.name();
                 String type = layer.type();
                 LayerParams layerParams;
-
-                std::vector<String> tops;
-                tops.assign(layer.top().begin(), layer.top().end());
-                bottomsVec[li].assign(layer.bottom().begin(), layer.bottom().end());
 
                 extractLayerParams(layer, layerParams);
                 extractBinaryLayerParms(layer, layerParams);
 
                 int id = dstNet.addLayer(name, type, layerParams);
-                dstNet.setOutputNames(id, tops);
+                
+                for (int inNum = 0; inNum < layer.bottom_size(); inNum++)
+                    addInput(layer.bottom(inNum), id, inNum, dstNet, addedBlobs);
 
-                layersName[li] = name;
-                layersId[li] = id;
+                for (int outNum = 0; outNum < layer.top_size(); outNum++)
+                    addOutput(layer, id, outNum, dstNet, addedBlobs);
             }
+        }
 
-            for (int li = 0; li < layersSize; li++)
+        void addOutput(const caffe::LayerParameter &layer, int layerId, int outNum, Net &dstNet, std::vector<BlobNote> &addedBlobs)
+        {
+            const std::string &name = layer.top(outNum);
+            
+            bool haveDups = false;
+            for (int idx = (int)addedBlobs.size() - 1; idx >= 0; idx--)
             {
-                dstNet.setLayerInputs(bottomsVec[li], layersId[li]);
+                if (addedBlobs[idx].name == name)
+                {
+                    haveDups = true;
+                    break;
+                }
             }
+
+            if (haveDups)
+            {
+                bool isInplace = layer.bottom_size() > outNum && layer.bottom(outNum) == name;
+                if (!isInplace)
+                    CV_Error(Error::StsBadArg, "Duplicate blobs produced by multiple sources");
+            }
+
+            addedBlobs.push_back(BlobNote(name, layerId, outNum));
+        }
+
+        void addInput(const std::string &name, int layerId, int inNum, Net &dstNet, std::vector<BlobNote> &addedBlobs)
+        {
+            int idx;
+            for (idx = (int)addedBlobs.size() - 1; idx >= 0; idx--)
+            {
+                if (addedBlobs[idx].name == name)
+                    break;
+            }
+
+            if (idx < 0)
+            {
+                CV_Error(Error::StsError, "Can't found output blob \"" + name + "\"");
+                return;
+            }
+
+            dstNet.connect(addedBlobs[idx].layerId, addedBlobs[idx].outNum, layerId, inNum);
         }
 
         ~CaffeImporter()
         {
 
         }
+
+
     };
 
 }
