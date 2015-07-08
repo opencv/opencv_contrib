@@ -65,7 +65,7 @@ void cnpy::parse_npy_header(FILE* fp, unsigned int& word_size, unsigned int*& sh
     std::string header = fgets(buffer,256,fp);
     assert(header[header.size()-1] == '\n');
 
-    int loc1, loc2;
+    size_t loc1, loc2;
 
     //fortran order
     loc1 = header.find("fortran_order")+16;
@@ -76,7 +76,7 @@ void cnpy::parse_npy_header(FILE* fp, unsigned int& word_size, unsigned int*& sh
     loc2 = header.find(")");
     std::string str_shape = header.substr(loc1+1,loc2-loc1-1);
     if(str_shape[str_shape.size()-1] == ',') ndims = 1;
-    else ndims = std::count(str_shape.begin(),str_shape.end(),',')+1;
+    else ndims = (unsigned)std::count(str_shape.begin(),str_shape.end(),',')+1;
     shape = new unsigned int[ndims];
     for(unsigned int i = 0;i < ndims;i++) {
         loc1 = str_shape.find(",");
