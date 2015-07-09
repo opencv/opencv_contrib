@@ -627,7 +627,7 @@ void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, O
 
     Mat transitions = _transitions.getMat();
     transitions = Scalar(0);
-    Mat count_pairs = Mat::zeros(1, vocabulary.size(), CV_64F);
+    Mat count_pairs = Mat::zeros(1, (int)vocabulary.size(), CV_64F);
 
     for (size_t w=0; w<lexicon.size(); w++)
     {
@@ -639,8 +639,8 @@ void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, O
         {
            CV_Error(Error::StsBadArg, "Found a non-vocabulary char in lexicon!");
         }
-        transitions.at<double>(idx_i,idx_j) += 1;
-        count_pairs.at<double>(0,idx_i) += 1;
+        transitions.at<double>((int)idx_i,(int)idx_j) += 1;
+        count_pairs.at<double>(0,(int)idx_i) += 1;
       }
     }
 
