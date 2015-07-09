@@ -375,7 +375,7 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, 
 #pragma omp parallel for
 #endif
     // uses weighting by the number of votes
-    for (size_t i=0; i<poseClusters.size(); i++)
+    for (int i=0; i<static_cast<int>(poseClusters.size()); i++)
     {
       // We could only average the quaternions. So I will make use of them here
       double qAvg[4]={0}, tAvg[3]={0};
@@ -426,7 +426,7 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-    for (size_t i=0; i<poseClusters.size(); i++)
+    for (int i=0; i<static_cast<int>(poseClusters.size()); i++)
     {
       // We could only average the quaternions. So I will make use of them here
       double qAvg[4]={0}, tAvg[3]={0};

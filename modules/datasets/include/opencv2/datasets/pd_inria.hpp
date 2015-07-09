@@ -10,8 +10,7 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2015, Itseez Inc, all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -30,7 +29,7 @@
 // This software is provided by the copyright holders and contributors "as is" and
 // any express or implied warranties, including, but not limited to, the implied
 // warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
+// In no event shall the Itseez Inc or contributors be liable for any direct,
 // indirect, incidental, special, exemplary, or consequential damages
 // (including, but not limited to, procurement of substitute goods or services;
 // loss of use, data, or profits; or business interruption) however caused
@@ -40,54 +39,58 @@
 //
 //M*/
 
-#ifndef __OPENCV_SIMPLE_COLOR_BALANCE_HPP__
-#define __OPENCV_SIMPLE_COLOR_BALANCE_HPP__
+#ifndef OPENCV_DATASETS_PD_INRIA_HPP
+#define OPENCV_DATASETS_PD_INRIA_HPP
 
-/** @file
-@date Jun 26, 2014
-@author Yury Gitman
-*/
+#include <string>
+#include <vector>
+
+#include "opencv2/datasets/dataset.hpp"
 
 #include <opencv2/core.hpp>
 
 namespace cv
 {
-namespace xphoto
+namespace datasets
 {
 
-//! @addtogroup xphoto
+//! @addtogroup datasets_pd
 //! @{
 
-    //! various white balance algorithms
-    enum WhitebalanceTypes
-    {
-        /** perform smart histogram adjustments (ignoring 4% pixels with minimal and maximal
-        values) for each channel */
-        WHITE_BALANCE_SIMPLE = 0,
-        WHITE_BALANCE_GRAYWORLD = 1
-    };
+enum sampleType 
+{
+    POS = 0,
+    NEG = 1
+};
 
-    /** @brief The function implements different algorithm of automatic white balance,
+struct PD_inriaObj : public Object
+{
+    // image file name
+    std::string filename;
+    
+    // positive or negative
+    sampleType sType;
 
-    i.e. it tries to map image's white color to perceptual white (this can be violated due to
-    specific illumination or camera settings).
+    // image size
+    int width;
+    int height;
+    int depth;
 
-    @param src
-    @param dst
-    @param algorithmType see xphoto::WhitebalanceTypes
-    @param inputMin minimum value in the input image
-    @param inputMax maximum value in the input image
-    @param outputMin minimum value in the output image
-    @param outputMax maximum value in the output image
-    @sa cvtColor, equalizeHist
-     */
-    CV_EXPORTS_W void balanceWhite(const Mat &src, Mat &dst, const int algorithmType,
-        const float inputMin  = 0.0f, const float inputMax  = 255.0f,
-        const float outputMin = 0.0f, const float outputMax = 255.0f);
+    // bounding boxes
+    std::vector< Rect > bndboxes;
+};
+
+class CV_EXPORTS PD_inria : public Dataset
+{
+public:
+    virtual void load(const std::string &path) = 0;
+
+    static Ptr<PD_inria> create();
+};
 
 //! @}
 
 }
 }
 
-#endif // __OPENCV_SIMPLE_COLOR_BALANCE_HPP__
+#endif

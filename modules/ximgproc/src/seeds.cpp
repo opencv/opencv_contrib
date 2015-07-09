@@ -273,8 +273,8 @@ void SuperpixelSEEDSImpl::initialize(int num_superpixels, int num_levels)
     parent_pre_init.resize(seeds_nr_levels);
     nr_wh.resize(2 * seeds_nr_levels);
     int level = 0;
-    int nr_seeds_w = (int)floor(width / seeds_w);
-    int nr_seeds_h = (int)floor(height / seeds_h);
+    int nr_seeds_w = (width / seeds_w);
+    int nr_seeds_h = (height / seeds_h);
     nr_wh[2 * level] = nr_seeds_w;
     nr_wh[2 * level + 1] = nr_seeds_h;
     parent_mat.push_back(Mat(nr_seeds_h, nr_seeds_w, CV_32SC1));
