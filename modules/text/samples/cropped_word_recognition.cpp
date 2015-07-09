@@ -1,11 +1,10 @@
 /*
- * textdetection.cpp
+ * cropped_word_recognition.cpp
  *
- * A demo program of End-to-end Scene Text Detection and Recognition:
- * Shows the use of the Tesseract OCR API with the Extremal Region Filter algorithm described in:
- * Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
+ * A demo program of text recognition in a given cropped word.
+ * Shows the use of the OCRBeamSearchDecoder class API using the provided default classifier.
  *
- * Created on: Jul 31, 2014
+ * Created on: Jul 9, 2015
  *     Author: Lluis Gomez i Bigorda <lgomez AT cvc.uab.es>
  */
 
@@ -20,9 +19,9 @@ using namespace std;
 using namespace cv;
 using namespace cv::text;
 
-//Perform text recognition in a given cropped word
 int main(int argc, char* argv[])
 {
+
     cout << endl << argv[0] << endl << endl;
     cout << "A demo program of Scene Text cropped word Recognition: " << endl;
     cout << "Shows the use of the OCRBeamSearchDecoder class using the Single Layer CNN character classifier described in:" << endl;
@@ -37,19 +36,34 @@ int main(int argc, char* argv[])
         return(0);
     }
 
+    string vocabulary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyx0123456789"; // must have the same order as the clasifier output classes
+    vector<string> lexicon;  // a list of words expected to be found on the input image
+    lexicon.push_back(string("abb"));
+    lexicon.push_back(string("patata"));
+    lexicon.push_back(string("CHINA"));
+    lexicon.push_back(string("HERE"));
+    lexicon.push_back(string("President"));
+    lexicon.push_back(string("smash"));
+    lexicon.push_back(string("KUALA"));
+    lexicon.push_back(string("NINTENDO"));
+
+    // Create tailored language model a small given lexicon
     Mat transition_p;
-    string filename = "OCRHMM_transitions_table.xml"; // TODO this table was done with a different vocabulary order?
-                                                      // TODO add a new function in ocr.cpp to create transition tab
-                                                      // for a given lexicon
+    createOCRHMMTransitionsTable(vocabulary,lexicon,transition_p);
+
+    // An alternative would be to load the default generic language model
+    //    (created from ispell 42869 english words list)
+    /*Mat transition_p;
+    string filename = "OCRHMM_transitions_table.xml"; // TODO use same order for voc
     FileStorage fs(filename, FileStorage::READ);
     fs["transition_probabilities"] >> transition_p;
-    fs.release();
+    fs.release();*/
+
     Mat emission_p = Mat::eye(62,62,CV_64FC1);
-    string voc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyx0123456789";
 
     Ptr<OCRBeamSearchDecoder> ocr = OCRBeamSearchDecoder::create(
                 loadOCRBeamSearchClassifierCNN("OCRBeamSearch_CNN_model_data.xml.gz"),
-                voc, transition_p, emission_p);
+                vocabulary, transition_p, emission_p);
 
     double t_r = (double)getTickCount();
     string output;
