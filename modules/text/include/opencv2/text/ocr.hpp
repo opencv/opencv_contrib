@@ -240,6 +240,21 @@ types.
  */
 CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string& filename);
 
+/** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
+
+@param vocabulary The language vocabulary (chars when ascii english text).
+
+@param lexicon The list of words that are expected to be found in a particular image.
+
+@param transition_probabilities_table Output table with transition probabilities between character pairs. cols == rows == vocabulary.size().
+
+The function calculate frequency statistics of character pairs from the given lexicon and fills the output transition_probabilities_table with them. The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
+@note
+   -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
+        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+ */
+CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vector<std::string>& lexicon, OutputArray transition_probabilities_table);
+
 
 /* OCR BeamSearch Decoder */
 

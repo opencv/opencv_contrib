@@ -113,7 +113,7 @@ public:
               vector<float>* component_confidences,
               int component_level)
     {
-    
+
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
         CV_Assert( (image.cols > 0) && (image.rows > 0) );
         CV_Assert( component_level == OCR_LEVEL_WORD );
@@ -159,14 +159,14 @@ public:
             {
                 if (vector_w.at<float>(0,s) == 0)
                    s_init = s+1;
-                else 
+                else
                   break;
             }
             for (int s=vector_w.cols-1; s>=0; s--)
             {
                 if (vector_w.at<float>(0,s) == 0)
                    s_end = s;
-                else 
+                else
                   break;
             }
 
@@ -594,6 +594,62 @@ Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string&
 
 {
     return makePtr<OCRHMMClassifierKNN>(filename);
+}
+
+/** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
+
+@param vocabulary The language vocabulary (chars when ascii english text).
+
+@param lexicon The list of words that are expected to be found in a particular image.
+
+@param transition_probabilities_table Output table with transition probabilities between character pairs. cols == rows == vocabulary.size().
+
+The function calculate frequency statistics of character pairs from the given lexicon and fills
+the output transition_probabilities_table with them.
+The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
+@note
+   -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
+        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+ */
+void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, OutputArray _transitions)
+{
+
+
+    CV_Assert( vocabulary.size() > 0 );
+    CV_Assert( lexicon.size() > 0 );
+
+    if ( (_transitions.getMat().cols != (int)vocabulary.size()) ||
+         (_transitions.getMat().rows != (int)vocabulary.size()) ||
+         (_transitions.getMat().type() != CV_64F) )
+    {
+      _transitions.create((int)vocabulary.size(), (int)vocabulary.size(), CV_64F);
+    }
+
+    Mat transitions = _transitions.getMat();
+    transitions = Scalar(0);
+    Mat count_pairs = Mat::zeros(1, vocabulary.size(), CV_64F);
+
+    for (size_t w=0; w<lexicon.size(); w++)
+    {
+      for (size_t i=0,j=1; i<lexicon[w].size()-1; i++,j++)
+      {
+        size_t idx_i = vocabulary.find(lexicon[w][i]);
+        size_t idx_j = vocabulary.find(lexicon[w][j]);
+        if ((idx_i == string::npos) || (idx_j == string::npos))
+        {
+           CV_Error(Error::StsBadArg, "Found a non-vocabulary char in lexicon!");
+        }
+        transitions.at<double>(idx_i,idx_j) += 1;
+        count_pairs.at<double>(0,idx_i) += 1;
+      }
+    }
+
+    for (int i=0; i<transitions.rows; i++)
+    {
+      transitions.row(i) = transitions.row(i) / count_pairs.at<double>(0,i); //normalize
+    }
+
+    return;
 }
 
 }
