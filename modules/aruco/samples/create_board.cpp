@@ -62,7 +62,7 @@ static void help() {
                  "Default is marker separation" << std::endl;
     std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
                   << std::endl;
-    std::cout << "[-si] # show generate image" << std::endl;
+    std::cout << "[-si] # show generated image" << std::endl;
 }
 
 

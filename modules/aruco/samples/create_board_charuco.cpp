@@ -49,7 +49,7 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Create an ChArUco board image" << std::endl;
+    std::cout << "Create a ChArUco board image" << std::endl;
     std::cout << "Parameters: " << std::endl;
     std::cout << "-o <image> # Output image" << std::endl;
     std::cout << "-w <nsquares> # Number of squares in X direction" << std::endl;
@@ -61,7 +61,7 @@ static void help() {
                  "Default is (squareLength-markerLength)" << std::endl;
     std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
                   << std::endl;
-    std::cout << "[-si] # show generate image" << std::endl;
+    std::cout << "[-si] # show generated image" << std::endl;
 }
 
 
