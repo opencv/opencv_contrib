@@ -19,7 +19,8 @@ endif()
 
 endmacro(_dnn_find_protobuf)
 
-if(BUILD_opencv_core)#build as OpenCV module
+if(${CMAKE_PROJECT_NAME} STREQUAL "OpenCV")#build as OpenCV module
+
 set(the_description "Deep neural network module. It allows to load models and to make forward pass")
 set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 _dnn_find_protobuf()
@@ -37,6 +38,7 @@ ocv_add_perf_tests()
 ocv_add_samples()
 
 else()#build as standalone module (for development purposes)
+
 project(dnn_standalone)
 
 _dnn_find_protobuf()
