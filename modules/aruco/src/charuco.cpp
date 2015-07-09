@@ -711,6 +711,29 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 
 
 
+/**
+  */
+void drawCharucoMarker(DICTIONARY dictionary, Vec4i ids, int squareLength, int markerLength,
+                       OutputArray img, int marginSize, int borderBits) {
+
+    CV_Assert(squareLength > 0 && markerLength > 0 && squareLength > markerLength);
+    CV_Assert(marginSize >= 0 && borderBits > 0);
+
+    // create a charuco board similar to a charuco marker and print it
+    CharucoBoard board = CharucoBoard::create(3, 3, squareLength, markerLength, dictionary);
+
+    // assign the charuco marker ids, change the order to make them in clockwise direction
+    board.ids[0] = ids[0];
+    board.ids[1] = ids[3];
+    board.ids[2] = ids[1];
+    board.ids[3] = ids[2];
+
+    cv::Size outSize(3*squareLength + 2*marginSize, 3*squareLength + 2*marginSize);
+    board.draw(outSize, img, marginSize, borderBits);
+
+
+}
+
 
 
 }

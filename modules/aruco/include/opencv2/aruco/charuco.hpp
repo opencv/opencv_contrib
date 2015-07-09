@@ -257,6 +257,24 @@ CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
 
 
 
+/**
+ * @brief Draw a ChArUco marker
+ *
+ * @param dictionary dictionary of markers indicating the type of markers.
+ * @param ids list of 4 ids for each ArUco marker in the ChArUco marker.
+ * @param squareLength size of the chessboard squares in pixels.
+ * @param markerLength size of the markers in pixels.
+ * @param img output image with the marker. The size of this image will be
+ * 3*squareLength + 2*marginSize,.
+ * @param marginSize minimum margins (in pixels) of the marker in the output image
+ * @param borderBits width of the marker borders.
+ *
+ * This function return the image of a ChArUco marker, ready to be printed.
+ */
+CV_EXPORTS void drawCharucoMarker(DICTIONARY dictionary, Vec4i ids, int squareLength,
+                                  int markerLength, OutputArray img, int marginSize = 0,
+                                  int borderBits = 1);
+
 
 
 
