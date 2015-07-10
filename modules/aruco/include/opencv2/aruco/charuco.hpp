@@ -67,7 +67,8 @@ public:
     std::vector< cv::Point3f > chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
-    std::vector< std::vector<int> > nearestMarkerIds;
+//    std::vector< std::vector<int> > nearestMarkerIds;
+    std::vector< std::vector<int> > nearestMarkerIdx;
     std::vector< std::vector<int> > nearestMarkerCorners;
 
     /**
@@ -254,6 +255,21 @@ CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
                                          TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
                                                                               TermCriteria::EPS,
                                                                               30, DBL_EPSILON));
+
+
+
+
+/**
+ */
+CV_EXPORTS void detectCharucoMarkers(InputArray image, InputArrayOfArrays markerCorners,
+                                     InputArray markerIds, float squareLength, float markerLength,
+                                     OutputArrayOfArrays charucoCorners, OutputArray charucoIds,
+                                     float minRepDistance = 5.f,
+                                     InputArray cameraMatrix = noArray(),
+                                     InputArray distCoeffs = noArray(),
+                                     InputArrayOfArrays rejected = noArray(),
+                                     int minForRejected = 2);
+
 
 
 
