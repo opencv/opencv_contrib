@@ -48,84 +48,188 @@
 using namespace cv;
 using namespace stereo;
 
-void cv::stereo::applyCensusOnImage(const cv::Mat &img, int kernelSize, cv::Mat &dist, const int type)
+//function that performs the census transform on two images.
+//Two variants of census are offered a sparse version whcih takes every second pixel as well as dense version
+void cv::stereo::censusTransform(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type)
 {
-    CV_Assert(img.type() == CV_8UC1);
-    CV_Assert(kernelSize <= 5);
+    CV_Assert(image1.size() == image2.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(image1.type() == CV_8UC1 && image2.type() == CV_8UC1);
     CV_Assert(type < 2 && type >= 0);
-    int n2 = (kernelSize - 1) / 2;
-    parallel_for_(cv::Range(n2, img.rows - n2), singleImageCensus(img.data, img.cols, img.rows, n2, (int *)dist.data, type));
+    CV_Assert(kernelSize <= ((type == 0) ? 5 : 11));
+    int n2 = (kernelSize) / 2;
+    uint8_t *images[] = {image1.data, image2.data};
+    int *costs[] = {(int *)dist1.data,(int *)dist2.data};
+    int stride = (int)image1.step;
+    if(type == CV_DENSE_CENSUS)
+    {
+        parallel_for_(cv::Range(n2, image1.rows - n2),
+            CombinedDescriptor<1,1,1,2,CensusKernel>(image1.cols, image1.rows,stride,n2,costs,CensusKernel(images, 2),n2));
+    }
+    else if(type == CV_SPARSE_CENSUS)
+    {
+        parallel_for_(cv::Range(n2, image1.rows - n2),
+            CombinedDescriptor<2,2,1,2,CensusKernel>(image1.cols, image1.rows, stride,n2,costs,CensusKernel(images, 2),n2));
+    }
 }
-void cv::stereo::applyCensusOnImages(const cv::Mat &im1,const cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
+//function that performs census on one image
+void cv::stereo::censusTransform(const cv::Mat &image1, int kernelSize, cv::Mat &dist1, const int type)
 {
-    CV_Assert(im1.size() == im2.size());
-    CV_Assert(im1.type() == CV_8UC1 && im2.type() == CV_8UC1);
+    CV_Assert(image1.size() == dist1.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(image1.type() == CV_8UC1);
     CV_Assert(type < 2 && type >= 0);
-    CV_Assert(kernelSize <= (type == 0 ? 5 : 10));
-    int n2 = (kernelSize - 1) / 2;
-    if(type == Dense_Census)
+    CV_Assert(kernelSize <= ((type == 0) ? 5 : 11));
+    int n2 = (kernelSize) / 2;
+    uint8_t *images[] = {image1.data};
+    int *costs[] = {(int *)dist1.data};
+    int stride = (int)image1.step;
+    if(type == CV_DENSE_CENSUS)
     {
-        parallel_for_(cv::Range(n2, im1.rows - n2),
-            CombinedDescriptor<1,1,1,CensusKernel>(im1.cols, im1.rows,n2,(int *)dist.data,(int *)dist2.data,CensusKernel(im1.data, im2.data),n2));
+        parallel_for_(cv::Range(n2, image1.rows - n2),
+            CombinedDescriptor<1,1,1,1,CensusKernel>(image1.cols, image1.rows,stride,n2,costs,CensusKernel(images, 1),n2));
     }
-    else if(type == Sparse_Census)
+    else if(type == CV_SPARSE_CENSUS)
     {
-        parallel_for_(cv::Range(n2, im1.rows - n2),
-            CombinedDescriptor<2,2,1,CensusKernel>(im1.cols, im1.rows,n2,(int *)dist.data,(int *)dist2.data,CensusKernel(im1.data, im2.data),n2));
+        parallel_for_(cv::Range(n2, image1.rows - n2),
+            CombinedDescriptor<2,2,1,1,CensusKernel>(image1.cols, image1.rows,stride,n2,costs,CensusKernel(images, 1),n2));
     }
-
 }
-void cv::stereo::applyMCTOnImages(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, int t, cv::Mat &dist, cv::Mat &dist2, const int type)
+//in a 9x9 kernel only certain positions are choosen for comparison
+void cv::stereo::starCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2)
 {
     CV_Assert(img1.size() == img2.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
+    CV_Assert(kernelSize >= 7);
+    int n2 = (kernelSize) >> 1;
+    Mat images[] = {img1, img2};
+    int *date[] = { (int *)dist1.data, (int *)dist2.data};
+    parallel_for_(cv::Range(n2, img1.rows - n2), StarKernelCensus(images, n2,date,2));
+}
+//single version of star census
+void cv::stereo::starCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist)
+{
+    CV_Assert(img1.size() == dist.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(img1.type() == CV_8UC1);
+    CV_Assert(kernelSize >= 7);
+    int n2 = (kernelSize) >> 1;
+    Mat images[] = {img1};
+    int *date[] = { (int *)dist.data};
+    parallel_for_(cv::Range(n2, img1.rows - n2), StarKernelCensus(images, n2,date,2));
+}
+//Modified census transforms
+//the first one deals with small illumination changes
+//the sencond modified census transform is invariant to noise; i.e.
+//if the current pixel with whom we are dooing the comparison is a noise, this descriptor will provide a better result by comparing with the mean of the window
+//otherwise if the pixel is not noise the information is strengthend
+void cv::stereo::modifiedCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2, const int type, int t, const cv::Mat &IntegralImage1, const cv::Mat &IntegralImage2 )
+{
+    CV_Assert(img1.size() == img2.size());
+    CV_Assert(kernelSize % 2 != 0);
     CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
     CV_Assert(type < 2 && type >= 0);
     CV_Assert(kernelSize <= 9);
     int n2 = (kernelSize - 1) >> 1;
-    if(type == StandardMct)
+    uint8_t *images[] = {img1.data, img2.data};
+    int *date[] = { (int *)dist1.data, (int *)dist2.data};
+    int stride = (int)img1.step;
+    if(type == CV_MODIFIED_CENSUS_TRANSFORM)
     {
+        //MCT
         parallel_for_(cv::Range(n2, img1.rows - n2),
-            CombinedDescriptor<2,3,2,MCTKernel>(img1.cols, img1.rows,n2,(int *)dist.data,(int *)dist2.data,MCTKernel(img1.data, img2.data,t),n2));
+            CombinedDescriptor<2,4,2, 2,MCTKernel>(img1.cols, img1.rows,stride,n2,date,MCTKernel(images,t,2),n2));
     }
-    else
+    else if(type == CV_MEAN_VARIATION)
     {
         //MV
+        int *integral[] = { (int *)IntegralImage1.data, (int *)IntegralImage2.data };
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<2,3,2,2, MVKernel>(img1.cols, img1.rows,stride,n2,date,MVKernel(images,integral,2),n2));
     }
 }
-void cv::stereo::applySimetricCensus(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type)
+void cv::stereo::modifiedCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist, const int type, int t , cv::Mat const &IntegralImage)
+{
+    CV_Assert(img1.size() == dist.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(img1.type() == CV_8UC1);
+    CV_Assert(type < 2 && type >= 0);
+    CV_Assert(kernelSize <= 9);
+    int n2 = (kernelSize - 1) >> 1;
+    uint8_t *images[] = {img1.data};
+    int *date[] = { (int *)dist.data};
+    int stride = (int)img1.step;
+    if(type == CV_MODIFIED_CENSUS_TRANSFORM)
+    {
+        //MCT
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<2,3,2, 1,MCTKernel>(img1.cols, img1.rows,stride,n2,date,MCTKernel(images,t,1),n2));
+    }
+    else if(type == CV_MEAN_VARIATION)
+    {
+        //MV
+        int *integral[] = { (int *)IntegralImage.data};
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<2,3,2,1, MVKernel>(img1.cols, img1.rows,stride,n2,date,MVKernel(images,integral,1),n2));
+    }
+}
+//different versions of simetric census
+//These variants since they do not compare with the center they are invariant to noise
+void cv::stereo::symetricCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type)
 {
     CV_Assert(img1.size() ==  img2.size());
+    CV_Assert(kernelSize % 2 != 0);
     CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
     CV_Assert(type < 2 && type >= 0);
     CV_Assert(kernelSize <= 7);
-    int n2 = (kernelSize - 1) >> 1;
-    if(type == ClassicCenterSymetricCensus)
+    int n2 = kernelSize >> 1;
+    uint8_t *images[] = {img1.data, img2.data};
+    Mat imag[] = {img1, img2};
+    int *date[] = { (int *)dist1.data, (int *)dist2.data};
+    int stride = (int)img1.step;
+    if(type == CV_CS_CENSUS)
     {
-        parallel_for_(cv::Range(n2, img1.rows - n2), parallelSymetricCensus(img1.data, img2.data, img1.cols, img2.rows, n2, (int *)dist.data, (int *)dist2.data, type));
+        parallel_for_(cv::Range(n2, img1.rows - n2), SymetricCensus(imag, n2,2,date));
     }
-    else if(type == ModifiedCenterSymetricCensus)
+    else if(type == CV_MODIFIED_CS_CENSUS)
     {
         parallel_for_(cv::Range(n2, img1.rows - n2),
-            CombinedDescriptor<1,1,1,ModifiedCsCensus>(img1.cols, img1.rows,n2,(int *)dist.data,(int *)dist2.data,ModifiedCsCensus(img1.data, img2.data,n2),1));
+            CombinedDescriptor<1,1,1,2,ModifiedCsCensus>(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus(images,n2,2),1));
     }
 }
-void cv::stereo::applyBrifeDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
+void cv::stereo::symetricCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist1, const int type)
 {
-    //TO DO
-    //marked the variables in order to avoid warnings
-    (void)image1;
-    (void)image2;
-    (void)dist;
-    (void)dist2;
-    (void)kernelSize;
+    CV_Assert(img1.size() ==  dist1.size());
+    CV_Assert(kernelSize % 2 != 0);
+    CV_Assert(img1.type() == CV_8UC1);
+    CV_Assert(type < 2 && type >= 0);
+    CV_Assert(kernelSize <= 7);
+    int n2 = kernelSize >> 1;
+    uint8_t *images[] = {img1.data};
+    Mat imag[] = {img1};
+    int *date[] = { (int *)dist1.data};
+    int stride = (int)img1.step;
+    if(type == CV_CS_CENSUS)
+    {
+        parallel_for_(cv::Range(n2, img1.rows - n2), SymetricCensus(imag, n2,1,date));
+    }
+    else if(type == CV_MODIFIED_CS_CENSUS)
+    {
+        parallel_for_(cv::Range(n2, img1.rows - n2),
+            CombinedDescriptor<1,1,1,1,ModifiedCsCensus>(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus(images,n2,1),1));
+    }
 }
-void  cv::stereo::applyRTDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2)
+//integral image computation used in the Mean Variation Census Transform
+void cv::stereo::imageMeanKernelSize(const cv::Mat &image, int windowSize, cv::Mat &cost)
 {
-    //TO DO
-    //marked the variables in order to avoid warnings
-    (void)image1;
-    (void)image2;
-    (void)dist;
-    (void)dist2;
-    (void)kernelSize;
+    CV_Assert(image.size > 0);
+    CV_Assert(cost.size > 0);
+    CV_Assert(windowSize % 2 != 0);
+    int win = windowSize / 2;
+    float scalling = ((float) 1) / (windowSize * windowSize);
+    int height = image.rows;
+    cost.setTo(0);
+    int *c = (int *)cost.data;
+    parallel_for_(cv::Range(win + 1, height - win - 1),MeanKernelIntegralImage(image,win,scalling,c));
 }

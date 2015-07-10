@@ -42,7 +42,7 @@
 
 /*****************************************************************************************************************\
 *   The interface contains the main descriptors that will be implemented in the descriptor class                  *
-\******************************************************************************************************************/
+\*****************************************************************************************************************/
 
 #include "precomp.hpp"
 #include <stdint.h>
@@ -54,73 +54,82 @@ namespace cv
 {
     namespace stereo
     {
-        enum { Dense_Census, Sparse_Census, StarCensus};
-        enum {ClassicCenterSymetricCensus, ModifiedCenterSymetricCensus};
-        enum {StandardMct,MeanVariation};
-        enum {SSE, NonSSE};
-        //!Mean Variation is a robust kernel that compares a pixel
+        //types of supported kernels
+        enum { CV_DENSE_CENSUS, CV_SPARSE_CENSUS, CV_STAR_CENSUS};
+        enum {CV_CS_CENSUS, CV_MODIFIED_CS_CENSUS};
+        enum {CV_MODIFIED_CENSUS_TRANSFORM, CV_MEAN_VARIATION};
+       //!Mean Variation is a robust kernel that compares a pixel
         //!not just with the center but also with the mean of the window
         struct MVKernel
         {
-            uint8_t *image1;
-            uint8_t *image2;
-            uint8_t *integralLeft;
-            uint8_t *integralRight;
-            MVKernel(uint8_t *img, uint8_t *img2, uint8_t *integralL, uint8_t *integralR): image1(img),image2(img2),integralLeft(integralL), integralRight(integralR){}
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int &c, int &c2) const
+            uint8_t *image[20];
+            int *integralImage[20];
+            int stop;
+            MVKernel(){}
+            MVKernel(uint8_t **images, int **integral, int numImag = 2)
             {
-
+                for(int i = 0; i < numImag; i++)
+                {
+                    image[i] = images[i];
+                    integralImage[i] = integral[i];
+                }
+                stop = numImag;
             }
-        };
-        //!kernel that takes the pixels from certain positions from a patch
-        //!offers verry good results
-        struct StarKernel
-        {
-            uint8_t *image1;
-            uint8_t *image2;
-            StarKernel(uint8_t *img, uint8_t *img2): image1(img),image2(img2){}
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int &c, int &c2) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
             {
-
+                (void)w2;
+                for(int i = 0; i < stop; i++)
+                {
+                    if (image[i][rrWidth + jj] > image[i][rWidth + j])
+                    {
+                        c[i] = c[i] + 1;
+                    }
+                    c[i] = c[i] << 1;
+                    if (integralImage[i][rrWidth + jj] > image[i][rWidth + j])
+                    {
+                        c[i] = c[i] + 1;
+                    }
+                    c[i] = c[i] << 1;
+                }
             }
         };
         //!Compares pixels from a patch giving high weights to pixels in which
         //!the intensity is higher. The other pixels receive a lower weight
         struct MCTKernel
         {
-            uint8_t *image1;
-            uint8_t *image2;
-            int t;
-            MCTKernel(uint8_t * img,uint8_t *img2, int threshold) : image1(img),image2(img2), t(threshold) {}
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int &c, int &c2) const
+            uint8_t *image[20];
+            int t,imageStop;
+            MCTKernel(){}
+            MCTKernel(uint8_t ** images, int threshold,const int numberImages = 2)
             {
-                if (image1[rrWidth + jj] > image1[rWidth + j] - t)
+                for(int i = 0; i < numberImages; i++)
                 {
-                    c <<= 2;
-                    c |= 0x3;
+                    image[i] = images[i];
                 }
-                else if (image1[rWidth + j] - t < image1[rrWidth + jj] && image1[rWidth + j] + t >= image1[rrWidth + jj])
+                imageStop = numberImages;
+                t = threshold;
+            }
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
+            {
+                (void)w2;
+                for(int i = 0; i < imageStop; i++)
                 {
-                    c <<= 2;
-                    c = c + 1;
-                }
-                else
-                {
-                    c <<= 2;
-                }
-                if (image2[rrWidth + jj] > image2[rWidth + j] - t)
-                {
-                    c2 <<= 2;
-                    c2 |= 0x3;
-                }
-                else if (image2[rWidth + j] - t < image2[rrWidth + jj] && image2[rWidth + j] + t >= image2[rrWidth + jj])
-                {
-                    c2 <<= 2;
-                    c2 = c2 + 1;
-                }
-                else
-                {
-                    c2 <<= 2;
+                    if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
+                    {
+                        c[i] = c[i] << 1;
+                        c[i] = c[i] + 1;
+                        c[i] = c[i] << 1;
+                        c[i] = c[i] + 1;
+                    }
+                    else if (image[i][rWidth + j] - t < image[i][rrWidth + jj] && image[i][rWidth + j] + t >= image[i][rrWidth + jj])
+                    {
+                        c[i] = c[i] << 2;
+                        c[i] = c[i] + 1;
+                    }
+                    else
+                    {
+                        c[i] <<= 2;
+                    }
                 }
             }
         };
@@ -128,120 +137,171 @@ namespace cv
         //!from the center
         struct ModifiedCsCensus
         {
-            uint8_t *image1;
-            uint8_t *image2;
+            uint8_t *image[20];
             int n2;
-            ModifiedCsCensus(uint8_t *im1, uint8_t *im2, int ker):image1(im1),image2(im2),n2(ker){}
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int &c, int &c2) const
+            int imageStop;
+            ModifiedCsCensus(){}
+            ModifiedCsCensus(uint8_t **images, int ker, int numberOfImages = 2)
             {
-                if (image1[(rrWidth + jj)] > image1[(w2 + (jj + n2))])
+                for(int i = 0; i < numberOfImages; i++)
+                    image[i] = images[i];
+                imageStop = numberOfImages;
+                n2 = ker;
+            }
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
+            {
+                (void)j;
+                (void)rWidth;
+                for(int i = 0; i < imageStop; i++)
                 {
-                    c = c + 1;
+                    if (image[i][(rrWidth + jj)] > image[i][(w2 + (jj + n2))])
+                    {
+                        c[i] = c[i] + 1;
+                    }
+                    c[i] = c[i] * 2;
                 }
-                c = c * 2;
-                if (image2[(rrWidth + jj)] > image2[(w2 + (jj + n2))])
-                {
-                    c2 = c2 + 1;
-                }
-                c2 = c2 * 2;
             }
         };
         //!A kernel in which a pixel is compared with the center of the window
         struct CensusKernel
         {
-            uint8_t *image1;
-            uint8_t *image2;
-            CensusKernel(uint8_t *im1, uint8_t *im2):image1(im1),image2(im2){}
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int &c, int &c2) const
+            uint8_t *image[20];
+            int imageStop;
+            CensusKernel(){}
+            CensusKernel(uint8_t **images, int numberOfImages = 2)
             {
-                //compare a pixel with the center from the kernel
-                if (image1[rrWidth + jj] > image1[rWidth + j])
+                for(int i = 0; i < numberOfImages; i++)
+                    image[i] = images[i];
+                imageStop = numberOfImages;
+            }
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
+            {
+                (void)w2;
+                for(int i = 0; i < imageStop; i++)
                 {
-                    c = c + 1;
+                    ////compare a pixel with the center from the kernel
+                    if (image[i][rrWidth + jj] > image[i][rWidth + j])
+                    {
+                        c[i] += 1;
+                    }
+                    c[i] <<= 1;
                 }
-                c = c * 2;
-                //compare pixel with center for image 2
-                if (image2[rrWidth + jj] > image2[rWidth + j])
-                {
-                    c2 = c2 + 1;
-                }
-                c2 = c2 * 2;
             }
         };
-
         //template clas which efficiently combines the descriptors
-        template <int step_start, int step_end, int step_inc, typename Kernel>
+        template <int step_start, int step_end, int step_inc,int nr_img, typename Kernel>
         class CombinedDescriptor:public ParallelLoopBody
         {
         private:
-            uint8_t *image1, *image2;
-            int *dst1, *dst2;
-            int n2 , width, height;
-            int n2_stop;
+            int width, height,n2;
+            int stride_;
+            int *dst[nr_img];
             Kernel kernel_;
+            int n2_stop;
         public:
-            CombinedDescriptor(int w, int h, int k2, int * distance1, int * distance2, Kernel kernel,int k2Stop) :
-                width(w), height(h), n2(k2),dst1(distance1), dst2(distance2), kernel_(kernel), n2_stop(k2Stop){}
+            CombinedDescriptor(int w, int h,int stride, int k2, int **distance, Kernel kernel,int k2Stop)
+            {
+                width = w;
+                height = h;
+                n2 = k2;
+                stride_ = stride;
+                for(int i = 0; i < nr_img; i++)
+                    dst[i] = distance[i];
+                kernel_ = kernel;
+                n2_stop = k2Stop;
+            }
+
             void operator()(const cv::Range &r) const {
                 for (int i = r.start; i <= r.end ; i++)
                 {
-                    int rWidth = i * width;
+                    int rWidth = i * stride_;
                     for (int j = n2 + 2; j <= width - n2 - 2; j++)
                     {
-                        int c = 0;
-                        int c2 = 0;
+                        int c[nr_img];
+                        memset(c,0,nr_img);
                         for(int step = step_start; step <= step_end; step += step_inc)
                         {
                             for (int ii = - n2; ii <= + n2_stop; ii += step)
                             {
-                                int rrWidth = (ii + i) * width;
-                                int rrWidthC = (ii + i + n2) * width;
+                                int rrWidth = (ii + i) * stride_;
+                                int rrWidthC = (ii + i + n2) * stride_;
                                 for (int jj = j - n2; jj <= j + n2; jj += step)
                                 {
                                     if (ii != i || jj != j)
                                     {
-                                        kernel_(rrWidth,rrWidthC, rWidth, jj, j, c,c2);
+                                        kernel_(rrWidth,rrWidthC, rWidth, jj, j,c);
                                     }
                                 }
                             }
                         }
-                        dst1[rWidth + j] = c;
-                        dst2[rWidth + j] = c2;
+                        for(int l = 0; l < nr_img; l++)
+                            dst[l][rWidth + j] = c[l];
                     }
                 }
             }
         };
-        //!class that implemented the census descriptor on single images
-        class singleImageCensus : public ParallelLoopBody
+        //!calculate the mean of every windowSizexWindwoSize block from the integral Image
+        //!this is a preprocessing for MV kernel
+        class MeanKernelIntegralImage : public ParallelLoopBody
         {
         private:
-            uint8_t *image;
-            int *dst;
-            int n2, width, height, type;
+            int *img;
+            int windowSize,width;
+            float scalling;
+            int *c;
         public:
-            singleImageCensus(uint8_t * img1, int w, int h, int k2, int * distance1,const int t) :
-                image(img1), dst(distance1), n2(k2), width(w), height(h), type(t){}
+            MeanKernelIntegralImage(const cv::Mat &image, int window,float scale, int *cost):
+                img((int *)image.data),windowSize(window) ,width(image.cols) ,scalling(scale) , c(cost){};
+            void operator()(const cv::Range &r) const{
+                for(int i = r.start; i <= r.end; i++)
+                {
+                    int iw = i * width;
+                    for (int j = windowSize + 1; j <= width - windowSize - 1; j++)
+                    {
+                        c[iw + j] = (int)((img[(i + windowSize ) * width + j + windowSize ] + img[(i - windowSize ) * width + j - windowSize ]
+                        - img[(i + windowSize ) * width + j - windowSize ] - img[(i - windowSize ) * width + j + windowSize ]) * scalling);
+                    }
+                }
+            }
+        };
+        //!implementation for the star kernel descriptor
+        class StarKernelCensus:public ParallelLoopBody
+        {
+        private:
+            uint8_t *image[20];
+            int *dst[20];
+            int n2, width, height, im_num,stride_;
+        public:
+            StarKernelCensus(const cv::Mat *img, int k2, int **distance,const int number_of_images)
+            {
+                for(int i = 0; i < number_of_images; i++)
+                {
+                    image[i] = img[i].data;
+                    dst[i] = distance[i];
+                }
+                n2 = k2;
+                width = img[0].cols;
+                height = img[0].rows;
+                im_num = number_of_images;
+                stride_ = (int)img[0].step;
+            }
             void operator()(const cv::Range &r) const {
                 for (int i = r.start; i <= r.end ; i++)
                 {
-                    int rWidth = i * width;
+                    int rWidth = i * stride_;
                     for (int j = n2; j <= width - n2; j++)
                     {
-                        if (type == SSE)
-                        {
-                            //to do
-                        }
-                        else
+                        for(int d = 0 ; d < im_num; d++)
                         {
                             int c = 0;
-                            for (int ii = i - n2; ii <= i + n2; ii++)
+                            for(int step = 4; step > 0; step--)
                             {
-                                int rrWidth = ii * width;
-                                for (int jj = j - n2; jj <= j + n2; jj++)
+                                for (int ii = i - step; ii <= i + step; ii += step)
                                 {
-                                    if (ii != i || jj != j)
+                                    int rrWidth = ii * stride_;
+                                    for (int jj = j - step; jj <= j + step; jj += step)
                                     {
-                                        if (image[(rrWidth + jj)] > image[(rWidth + j)])
+                                        if (image[d][rrWidth + jj] > image[d][rWidth + j])
                                         {
                                             c = c + 1;
                                         }
@@ -249,89 +309,136 @@ namespace cv
                                     }
                                 }
                             }
-                            dst[(rWidth + j)] = c;
+                            for (int ii = -1; ii <= +1; ii++)
+                            {
+                                int rrWidth = (ii + i) * stride_;
+                                if (i == -1)
+                                {
+                                    if (ii + i != i)
+                                    {
+                                        if (image[d][rrWidth + j] > image[d][rWidth + j])
+                                        {
+                                            c = c + 1;
+                                        }
+                                        c = c * 2;
+                                    }
+                                }
+                                else if (i == 0)
+                                {
+                                    for (int j2 = -1; j2 <= 1; j2 += 2)
+                                    {
+                                        if (ii + i != i)
+                                        {
+                                            if (image[d][rrWidth + j + j2] > image[d][rWidth + j])
+                                            {
+                                                c = c + 1;
+                                            }
+                                            c = c * 2;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (ii + i != i)
+                                    {
+                                        if (image[d][rrWidth + j] > image[d][rWidth + j])
+                                        {
+                                            c = c + 1;
+                                        }
+                                        c = c * 2;
+                                    }
+                                }
+                            }
+                            dst[d][rWidth + j] = c;
                         }
                     }
                 }
             }
         };
         //!paralel implementation of the center symetric census
-        class parallelSymetricCensus:public ParallelLoopBody
+        class SymetricCensus:public ParallelLoopBody
         {
         private:
-            uint8_t *image1, *image2;
-            int *dst1, *dst2;
-            int n2, width, height, type;
+            uint8_t *image[20];
+            int *dst[20];
+            int n2, width, height, im_num,stride_;
         public:
-            parallelSymetricCensus(uint8_t * img1, uint8_t * img2, int w, int h, int k2, int * distance1, int * distance2,const int t) :
-                image1(img1), image2(img2), dst1(distance1), dst2(distance2), n2(k2), width(w), height(h), type(t){}
+            SymetricCensus(const cv::Mat *img, int k2,int number_of_images, int **distance)
+            {
+                for(int i = 0; i < number_of_images; i++)
+                {
+                    image[i] = img[i].data;
+                    dst[i] = distance[i];
+                }
+                n2 = k2;
+                width = img[0].cols;
+                height = img[0].rows;
+                im_num = number_of_images;
+                stride_ = (int)img[0].step;
+            }
             void operator()(const cv::Range &r) const {
                 for (int i = r.start; i <= r.end ; i++)
                 {
-                    int distV = (i)* width;
+                    int distV = i*stride_;
                     for (int j = n2; j <= width - n2; j++)
                     {
-                        int c = 0;
-                        int c2 = 0;
-                        //the classic center symetric census which compares the curent pixel with its symetric not its center.
-                        for (int ii = -n2; ii < 0; ii++)
+                        for(int d = 0; d < im_num; d++)
                         {
-                            int rrWidth = (ii + i) * width;
-                            for (int jj = -n2; jj <= +n2; jj++)
+                            int c = 0;
+                            //the classic center symetric census which compares the curent pixel with its symetric not its center.
+                            for (int ii = -n2; ii <= 0; ii++)
                             {
-                                if (image1[(rrWidth + (jj + j))] > image1[((ii * (-1) + i) * width + (-1 * jj) + j)])
+                                int rrWidth = (ii + i) * stride_;
+                                for (int jj = -n2; jj <= +n2; jj++)
                                 {
-                                    c = c + 1;
+                                    if (image[d][(rrWidth + (jj + j))] > image[d][((ii * (-1) + i) * width + (-1 * jj) + j)])
+                                    {
+                                        c = c + 1;
+                                    }
+                                    c = c * 2;
+                                    if(ii == 0 && jj < 0)
+                                    {
+                                        if (image[d][(i * width + (jj + j))] > image[d][(i * width + (-1 * jj) + j)])
+                                        {
+                                            c = c + 1;
+                                        }
+                                        c = c * 2;
+                                    }
                                 }
-                                c = c * 2;
-
-                                if (image2[(rrWidth + (jj + j))] > image2[((ii * (-1) + i) * width + (-1 * jj) + j)])
-                                {
-                                    c2 = c2 + 1;
-                                }
-                                c2 = c2 * 2;
                             }
+                            dst[d][(distV + j)] = c;
                         }
-                        for (int jj = -n2; jj < 0; jj++)
-                        {
-                            if (image1[(i * width + (jj + j))] > image1[(i * width + (-1 * jj) + j)])
-                            {
-                                c = c + 1;
-                            }
-                            c = c * 2;
-                            if (image2[(i * width + (jj + j))] > image2[(i * width + (-1 * jj) + j)])
-                            {
-                                c2 = c2 + 1;
-                            }
-                            c2 = c2 * 2;
-                        }//a modified version of cs census which compares each pixel with its correspondent from
-                        //the same distance from the center
-                        dst1[(distV + j)] = c;
-                        dst2[(distV + j)] = c2;
                     }
                 }
             }
         };
-        //!Implementation for computing the Census transform on the given image
-        void applyCensusOnImage(const cv::Mat &img, int kernelSize, cv::Mat &dist, const int type);
         /**
         Two variations of census applied on input images
         Implementation of a census transform which is taking into account just the some pixels from the census kernel thus allowing for larger block sizes
         **/
-        void applyCensusOnImages(const cv::Mat &im1,const cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type);
+        //void applyCensusOnImages(const cv::Mat &im1,const cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type);
+        void censusTransform(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
+        //single image census transform
+        void censusTransform(const cv::Mat &image1, int kernelSize, cv::Mat &dist1, const int type);
         /**
         STANDARD_MCT - Modified census which is memorizing for each pixel 2 bits and includes a tolerance to the pixel comparison
         MCT_MEAN_VARIATION - Implementation of a modified census transform which is also taking into account the variation to the mean of the window not just the center pixel
         **/
-        void applyMCTOnImages(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, int t, cv::Mat &dist, cv::Mat &dist2, const int type);
+        void modifiedCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2, const int type, int t = 0 , const cv::Mat &IntegralImage1 = cv::Mat::zeros(100,100,CV_8UC1), const cv::Mat &IntegralImage2 = cv::Mat::zeros(100,100,CV_8UC1));
+        //single version of modified census transform descriptor
+        void modifiedCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist, const int type, int t = 0 ,const cv::Mat &IntegralImage = cv::Mat::zeros(100,100,CV_8UC1));
         /**The classical center symetric census
         A modified version of cs census which is comparing a pixel with its correspondent after the center
         **/
-        void applySimetricCensus(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type);
-        //!brief binary descriptor used in stereo correspondence
-        void applyBrifeDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2);
-        //The classical Rank Transform
-        void  applyRTDescriptor(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist, cv::Mat &dist2);
+        void symetricCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
+        //single version of census transform
+        void symetricCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist1, const int type);
+        //in a 9x9 kernel only certain positions are choosen
+        void starCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2);
+        //single image version of star kernel
+        void starCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist);
+        //integral image computation used in the Mean Variation Census Transform
+        void imageMeanKernelSize(const cv::Mat &img, int windowSize, cv::Mat &c);
     }
 }
 #endif
