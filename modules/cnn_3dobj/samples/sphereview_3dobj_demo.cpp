@@ -41,6 +41,10 @@
 using namespace cv;
 using namespace std;
 using namespace cv::cnn_3dobj;
+uint32_t swap_endian(uint32_t val) {
+    val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+    return (val << 16) | (val >> 16);
+}
 Point3d getCenter(string plymodel)
 {
 	char* path_model=(char*)plymodel.data();
@@ -79,13 +83,17 @@ void createHeader(int num_item, int rows, int cols, const char* headerPath)
 	std::ofstream headerImg(headerPathimg, ios::out|ios::binary);
 	std::ofstream headerLabel(headerPathlab, ios::out|ios::binary);
 	int headerimg[4] = {2051,num_item,rows,cols};
+	for (int i=0; i<4; i++)
+		headerimg[i] = swap_endian(headerimg[i]);
 	int headerlabel[2] = {2049,num_item};
+	for (int i=0; i<2; i++)
+		headerlabel[i] = swap_endian(headerlabel[i]);
 	headerImg.write(reinterpret_cast<const char*>(headerimg), sizeof(int)*4);
 	headerImg.close();
 	headerLabel.write(reinterpret_cast<const char*>(headerlabel), sizeof(int)*2);
 	headerLabel.close();
 };
-void writeBinaryfile(string filename, const char* binaryPath, const char* headerPath, int num_item)
+void writeBinaryfile(string filename, const char* binaryPath, const char* headerPath, int num_item, int label_class)
 {
 	int isrgb = 0;
 	cv::Mat ImgforBin = cv::imread(filename, isrgb);
@@ -122,7 +130,7 @@ void writeBinaryfile(string filename, const char* binaryPath, const char* header
 		  {
 			img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
 		  }
-		unsigned char templab = 0;
+		unsigned char templab = (unsigned char)label_class;
 		lab_file << templab;
 	}
 	else
@@ -136,19 +144,21 @@ void writeBinaryfile(string filename, const char* binaryPath, const char* header
 		  {
 			img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
 		  }
-		unsigned char templab = 0;
+		unsigned char templab = (unsigned char)label_class;
 		lab_file << templab;
 	}
 	img_file.close();
 	lab_file.close();
 };
 int main(int argc, char *argv[]){
-	const String keys = "{help | | demo :$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+	const String keys = "{help | | demo :$ ./sphereview_test -radius=250 -ite_depth=2 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=2 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
 			     "{radius | 250 | Distanse from camera to object, used for adjust view for the reason that differet scale of .ply model.}"
 			     "{ite_depth | 1 | Iteration of sphere generation, we add points on the middle of lines of sphere and adjust the radius suit for the original radius.}"
 			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
 			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
-			     "{labeldir | ../data/label_ape.txt | path of the generated images for one particular .ply model. }";
+			     "{labeldir | ../data/label_ape.txt | path of the generated images for one particular .ply model. }"
+			     "{num_class | 2 | total number of classes of models}"
+			     "{label_class | 0 | class label of current .ply model}";
 	cv::CommandLineParser parser(argc, argv, keys);
 	parser.about("Demo for Sphere View data generation");
 	if (parser.has("help"))
@@ -161,6 +171,8 @@ int main(int argc, char *argv[]){
 	string plymodel = parser.get<string>("plymodel");
 	string imagedir = parser.get<string>("imagedir");
 	string labeldir = parser.get<string>("labeldir");
+	int num_class = parser.get<int>("num_class");
+	int label_class = parser.get<int>("label_class");
 	cv::cnn_3dobj::IcoSphere ViewSphere(10,ite_depth);
 	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
 	std::fstream imglabel;
@@ -180,7 +192,6 @@ int main(int argc, char *argv[]){
 	/// Let's assume camera has the following properties
 	Point3d cam_focal_point = getCenter(plymodel);
 	Point3d cam_y_dir(0.0f,0.0f,1.0f);
-	int num_obj = 1;
 	const char* headerPath = "./header_for_";
 	const char* binaryPath = "./binary_";
 	createHeader((int)campos.size(), 250, 250, headerPath);
@@ -225,7 +236,7 @@ int main(int argc, char *argv[]){
 		filename = imagedir + filename;
 		filename += ".png";
 		myWindow.saveScreenshot(filename);
-		writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_obj);
+		writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);
 	}
 	return 1;
 };
