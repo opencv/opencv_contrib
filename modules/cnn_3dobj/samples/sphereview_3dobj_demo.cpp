@@ -38,6 +38,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 using namespace cv;
 using namespace std;
 using namespace cv::cnn_3dobj;
@@ -45,28 +46,39 @@ uint32_t swap_endian(uint32_t val) {
     val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
     return (val << 16) | (val >> 16);
 }
-Point3d getCenter(string plymodel)
+Point3d getCenter(cv::Mat cloud)
 {
-	char* path_model=(char*)plymodel.data();
-	int numPoint = 5841;
-	ifstream ifs(path_model);
-	string str;
-	for(size_t i = 0; i < 15; ++i)
-		getline(ifs, str);
-	float temp_x, temp_y, temp_z;
-	Point3f data;
-	float dummy1, dummy2, dummy3, dummy4, dummy5, dummy6;
-	for(int i = 0; i < numPoint; ++i)
-	{
-		ifs >> temp_x >> temp_y >> temp_z >> dummy1 >> dummy2 >> dummy3 >> dummy4 >> dummy5 >> dummy6;
-		data.x += temp_x;
-		data.y += temp_y;
-		data.z += temp_z;
-	}
-	data.x = data.x/numPoint;
-	data.y = data.y/numPoint;
-	data.z = data.z/numPoint;
-	return data;
+	Point3f* data = cloud.ptr<cv::Point3f>();
+	Point3d dataout;
+	for(int i = 0; i < cloud.cols; ++i)
+	    {
+	        dataout.x += data[i].x;
+	        dataout.y += data[i].y;
+	        dataout.z += data[i].z;
+	    }
+	dataout.x = dataout.x/cloud.cols;
+	dataout.y = dataout.y/cloud.cols;
+	dataout.z = dataout.z/cloud.cols;
+	return dataout;
+};
+float getRadius(cv::Mat cloud, Point3d center)
+{
+	float radius = 0;
+	Point3f* data = cloud.ptr<cv::Point3f>();
+	Point3d datatemp;
+	for(int i = 0; i < cloud.cols; ++i)
+	    {
+	        datatemp.x = data[i].x - (float)center.x;
+	        datatemp.y = data[i].y - (float)center.y;
+	        datatemp.z = data[i].z - (float)center.z;
+		float Radius = sqrt(pow(datatemp.x,2)+pow(datatemp.y,2)+pow(datatemp.z,2));
+		if(Radius > radius)
+		{
+			radius = Radius;
+		}
+	    }
+	radius = radius*3;
+	return radius;
 };
 void createHeader(int num_item, int rows, int cols, const char* headerPath)
 {
@@ -151,9 +163,8 @@ void writeBinaryfile(string filename, const char* binaryPath, const char* header
 	lab_file.close();
 };
 int main(int argc, char *argv[]){
-	const String keys = "{help | | demo :$ ./sphereview_test -radius=250 -ite_depth=2 -plymodel=../ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=2 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-			     "{radius | 250 | Distanse from camera to object, used for adjust view for the reason that differet scale of .ply model.}"
-			     "{ite_depth | 1 | Iteration of sphere generation, we add points on the middle of lines of sphere and adjust the radius suit for the original radius.}"
+	const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=2 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+			     "{ite_depth | 1 | Iteration of sphere generation.}"
 			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
 			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
 			     "{labeldir | ../data/label_ape.txt | path of the generated images for one particular .ply model. }"
@@ -166,7 +177,6 @@ int main(int argc, char *argv[]){
 		parser.printMessage();
 		return 0;
 	}
-	float radius = parser.get<float>("radius");
 	int ite_depth = parser.get<int>("ite_depth");
 	string plymodel = parser.get<string>("plymodel");
 	string imagedir = parser.get<string>("imagedir");
@@ -178,8 +188,6 @@ int main(int argc, char *argv[]){
 	std::fstream imglabel;
 	char* p=(char*)labeldir.data();
 	imglabel.open(p);
-	//IcoSphere ViewSphere(16,0);
-	//std::vector<cv::Point3d>* campos = ViewSphere.CameraPos;
 	bool camera_pov = (true);
 	/// Create a window
 	viz::Viz3d myWindow("Coordinate Frame");
@@ -190,7 +198,10 @@ int main(int argc, char *argv[]){
 	myWindow.spin();
 	/// Set background color
 	/// Let's assume camera has the following properties
-	Point3d cam_focal_point = getCenter(plymodel);
+	/// Create a cloud widget.
+	viz::Mesh objmesh = viz::Mesh::load(plymodel);
+	Point3d cam_focal_point = getCenter(objmesh.cloud);
+	float radius = getRadius(objmesh.cloud, cam_focal_point);
 	Point3d cam_y_dir(0.0f,0.0f,1.0f);
 	const char* headerPath = "./header_for_";
 	const char* binaryPath = "./binary_";
@@ -198,13 +209,10 @@ int main(int argc, char *argv[]){
 	for(int pose = 0; pose < (int)campos.size(); pose++){
 		imglabel << campos.at(pose).x << ' ' << campos.at(pose).y << ' ' << campos.at(pose).z << endl;
 		/// We can get the pose of the cam using makeCameraPoses
-		Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*radius, cam_focal_point, cam_y_dir);
-		//Affine3f cam_pose = viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
+		Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*radius+cam_focal_point, cam_focal_point, cam_y_dir*radius+cam_focal_point);
 		/// We can get the transformation matrix from camera coordinate system to global using
 		/// - makeTransformToGlobal. We need the axes of the camera
 		Affine3f transform = viz::makeTransformToGlobal(Vec3f(1.0f,0.0f,0.0f), Vec3f(0.0f,1.0f,0.0f), Vec3f(0.0f,0.0f,1.0f), campos.at(pose));
-		/// Create a cloud widget.
-		viz::Mesh objmesh = viz::Mesh::load(plymodel);
 		viz::WMesh mesh_widget(objmesh);
 		/// Pose of the widget in camera frame
 		Affine3f cloud_pose = Affine3f().translate(Vec3f(1.0f,1.0f,1.0f));
@@ -222,10 +230,6 @@ int main(int argc, char *argv[]){
 		/// Visualize widget
 		mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
 		myWindow.showWidget("ape", mesh_widget, cloud_pose_global);
-
-	    /*viz::WLine axis(cam_focal_point, campos->at(pose)*23);
-	    axis.setRenderingProperty(viz::LINE_WIDTH, 4.0);
-	    myWindow.showWidget("Line Widget", axis);*/
 
 		/// Set the viewer pose to that of camera
 		if (camera_pov)
