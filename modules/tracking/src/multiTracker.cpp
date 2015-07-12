@@ -118,4 +118,3 @@ namespace cv {
   };
 
 } /* namespace cv */
-
