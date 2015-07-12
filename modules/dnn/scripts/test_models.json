@@ -1,0 +1,7 @@
+{
+  "googlenet": {
+    "file": "dnn/bvlc_googlenet.caffemodel",
+    "url": "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel",
+    "sha1": "d41971236422c20b1d7d92769670f3642ef4611a"
+  }
+}
