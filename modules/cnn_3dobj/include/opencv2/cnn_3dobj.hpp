@@ -49,10 +49,12 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <opencv2/highgui.hpp>
+#include <string>
 #include <fstream>
 #include <vector>
+#include <stdio.h>
 #include <iostream>
-
+using std::string;
 /** @defgroup cnn_3dobj CNN based on Caffe aimming at 3D object recognition and pose estimation
 */
 namespace cv
@@ -92,6 +94,23 @@ class CV_EXPORTS_W IcoSphere
 		/** @brief Generating new view points from all triangles.
 		*/
 		CV_WRAP void subdivide(float v1[], float v2[], float v3[], int depth);
+		/** @brief Make all view points having the some distance from the focal point used by the camera view.
+		*/
+		CV_WRAP static uint32_t swap_endian(uint32_t val);
+		/** @brief Suit the position of bytes in 4 byte data structure for particular system.
+		*/
+		CV_WRAP cv::Point3d getCenter(cv::Mat cloud);
+		/** @brief Get the center of points on surface in .ply model.
+		*/
+		CV_WRAP float getRadius(cv::Mat cloud, cv::Point3d center);
+		/** @brief Get the proper camera radius from the view point to the center of model.
+		*/
+		CV_WRAP static void createHeader(int num_item, int rows, int cols, const char* headerPath);
+		/** @brief Create header in binary files collecting the image data and label.
+		*/
+		CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class);
+		/** @brief Write binary files used for training in other open source project.
+		*/
 
 };
 //! @}

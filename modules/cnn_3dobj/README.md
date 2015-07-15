@@ -12,8 +12,10 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make
-$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
+$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0
+$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ant.ply -imagedir=../data/images_ant/ -labeldir=../data/label_ant.txt -num_class=4 -label_class=1
+$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/cow.ply -imagedir=../data/images_cow/ -labeldir=../data/label_cow.txt -num_class=4 -label_class=2
+$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/plane.ply -imagedir=../data/images_plane/ -labeldir=../data/label_plane.txt -num_class=4 -label_class=3
 ==============================================
-demo :$ ./sphereview_test -radius=250 -ite_depth=1 -plymodel=../ape.ply -imagedir=../data/images_ape/
 Then press 'q' to run the demo for images generation when you see the gray background and a coordinate.
 ==============================================

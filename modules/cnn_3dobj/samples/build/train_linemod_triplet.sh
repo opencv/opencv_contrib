@@ -8,18 +8,15 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/local ..
 make -j4
 make test
-make install
+sudo make install
 cd ..
 cmake ..
 make -j4
 
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=2 -label_class=0
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ant.ply -imagedir=../data/images_ant/ -labeldir=../data/label_ant.txt -num_class=2 -label_class=1
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/apple.ply -imagedir=../data/images_apple/ -labeldir=../data/label_apple.txt -num_class=2 -label_class=2
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/lamp.ply -imagedir=../data/images_lamp/ -labeldir=../data/label_lamp.txt -num_class=2 -label_class=3
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/cow.ply -imagedir=../data/images_cow/ -labeldir=../data/label_cow.txt -num_class=2 -label_class=4
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/plane.ply -imagedir=../data/images_plane/ -labeldir=../data/label_plane.txt -num_class=2 -label_class=5
-./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/porsche.ply -imagedir=../data/images_porsche/ -labeldir=../data/label_porsche.txt -num_class=2 -label_class=6
+./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0
+./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ant.ply -imagedir=../data/images_ant/ -labeldir=../data/label_ant.txt -num_class=4 -label_class=1
+./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/cow.ply -imagedir=../data/images_cow/ -labeldir=../data/label_cow.txt -num_class=4 -label_class=2
+./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/plane.ply -imagedir=../data/images_plane/ -labeldir=../data/label_plane.txt -num_class=4 -label_class=3
 
 echo "Creating leveldb..."
 

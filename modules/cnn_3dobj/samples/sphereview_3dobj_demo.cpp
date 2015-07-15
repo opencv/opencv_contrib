@@ -35,135 +35,12 @@
 #include <opencv2/cnn_3dobj.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <iostream>
-#include <string>
-#include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 using namespace cv;
 using namespace std;
 using namespace cv::cnn_3dobj;
-uint32_t swap_endian(uint32_t val) {
-    val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
-    return (val << 16) | (val >> 16);
-}
-Point3d getCenter(cv::Mat cloud)
-{
-	Point3f* data = cloud.ptr<cv::Point3f>();
-	Point3d dataout;
-	for(int i = 0; i < cloud.cols; ++i)
-	    {
-	        dataout.x += data[i].x;
-	        dataout.y += data[i].y;
-	        dataout.z += data[i].z;
-	    }
-	dataout.x = dataout.x/cloud.cols;
-	dataout.y = dataout.y/cloud.cols;
-	dataout.z = dataout.z/cloud.cols;
-	return dataout;
-};
-float getRadius(cv::Mat cloud, Point3d center)
-{
-	float radius = 0;
-	Point3f* data = cloud.ptr<cv::Point3f>();
-	Point3d datatemp;
-	for(int i = 0; i < cloud.cols; ++i)
-	    {
-	        datatemp.x = data[i].x - (float)center.x;
-	        datatemp.y = data[i].y - (float)center.y;
-	        datatemp.z = data[i].z - (float)center.z;
-		float Radius = sqrt(pow(datatemp.x,2)+pow(datatemp.y,2)+pow(datatemp.z,2));
-		if(Radius > radius)
-		{
-			radius = Radius;
-		}
-	    }
-	radius = radius*3;
-	return radius;
-};
-void createHeader(int num_item, int rows, int cols, const char* headerPath)
-{
-	char* a0 = new char;
-	strcpy(a0, headerPath);
-	char a1[] = "image";
-	char a2[] = "label";
-	char* headerPathimg = new char;
-	strcpy(headerPathimg, a0);
-	strcat(headerPathimg, a1);
-	char* headerPathlab = new char;
-	strcpy(headerPathlab, a0);
-	strcat(headerPathlab, a2);
-	std::ofstream headerImg(headerPathimg, ios::out|ios::binary);
-	std::ofstream headerLabel(headerPathlab, ios::out|ios::binary);
-	int headerimg[4] = {2051,num_item,rows,cols};
-	for (int i=0; i<4; i++)
-		headerimg[i] = swap_endian(headerimg[i]);
-	int headerlabel[2] = {2049,num_item};
-	for (int i=0; i<2; i++)
-		headerlabel[i] = swap_endian(headerlabel[i]);
-	headerImg.write(reinterpret_cast<const char*>(headerimg), sizeof(int)*4);
-	headerImg.close();
-	headerLabel.write(reinterpret_cast<const char*>(headerlabel), sizeof(int)*2);
-	headerLabel.close();
-};
-void writeBinaryfile(string filename, const char* binaryPath, const char* headerPath, int num_item, int label_class)
-{
-	int isrgb = 0;
-	cv::Mat ImgforBin = cv::imread(filename, isrgb);
-	char* A0 = new char;
-	strcpy(A0, binaryPath);
-	char A1[] = "image";
-	char A2[] = "label";
-	char* binPathimg = new char;
-	strcpy(binPathimg, A0);
-	strcat(binPathimg, A1);
-	char* binPathlab = new char;
-	strcpy(binPathlab, A0);
-	strcat(binPathlab, A2);
-	fstream img_file, lab_file;
-	img_file.open(binPathimg,ios::in);
-	lab_file.open(binPathlab,ios::in);
-	if(!img_file)
-	{
-		cout << "Creating the training data at: " << binaryPath << ". " << endl;
-		char* a0 = new char;
-		strcpy(a0, headerPath);
-		char a1[] = "image";
-		char a2[] = "label";
-		char* headerPathimg = new char;
-		strcpy(headerPathimg, a0);
-		strcat(headerPathimg,a1);
-		char* headerPathlab = new char;
-		strcpy(headerPathlab, a0);
-		strcat(headerPathlab,a2);
-		createHeader(num_item, 250, 250, binaryPath);
-		ofstream img_file(binPathimg,ios::out|ios::binary|ios::app);
-		ofstream lab_file(binPathlab,ios::out|ios::binary|ios::app);
-		for (int r = 0; r < ImgforBin.rows; r++)
-		  {
-			img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
-		  }
-		unsigned char templab = (unsigned char)label_class;
-		lab_file << templab;
-	}
-	else
-	{
-		img_file.close();
-		lab_file.close();
-		img_file.open(binPathimg,ios::out|ios::binary|ios::app);
-		lab_file.open(binPathlab,ios::out|ios::binary|ios::app);
-		cout <<"Concatenating the training data at: " << binaryPath << ". " << endl;
-		for (int r = 0; r < ImgforBin.rows; r++)
-		  {
-			img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
-		  }
-		unsigned char templab = (unsigned char)label_class;
-		lab_file << templab;
-	}
-	img_file.close();
-	lab_file.close();
-};
 int main(int argc, char *argv[]){
-	const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=2 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+	const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
 			     "{ite_depth | 1 | Iteration of sphere generation.}"
 			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
 			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
@@ -191,7 +68,7 @@ int main(int argc, char *argv[]){
 	bool camera_pov = (true);
 	/// Create a window
 	viz::Viz3d myWindow("Coordinate Frame");
-	myWindow.setWindowSize(Size(250,250));
+	myWindow.setWindowSize(Size(64,64));
 	/// Add coordinate axes
 	myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
 	myWindow.setBackgroundColor(viz::Color::gray());
@@ -200,12 +77,12 @@ int main(int argc, char *argv[]){
 	/// Let's assume camera has the following properties
 	/// Create a cloud widget.
 	viz::Mesh objmesh = viz::Mesh::load(plymodel);
-	Point3d cam_focal_point = getCenter(objmesh.cloud);
-	float radius = getRadius(objmesh.cloud, cam_focal_point);
+	Point3d cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
+	float radius = ViewSphere.getRadius(objmesh.cloud, cam_focal_point);
 	Point3d cam_y_dir(0.0f,0.0f,1.0f);
 	const char* headerPath = "./header_for_";
 	const char* binaryPath = "./binary_";
-	createHeader((int)campos.size(), 250, 250, headerPath);
+	ViewSphere.createHeader((int)campos.size(), 64, 64, headerPath);
 	for(int pose = 0; pose < (int)campos.size(); pose++){
 		imglabel << campos.at(pose).x << ' ' << campos.at(pose).y << ' ' << campos.at(pose).z << endl;
 		/// We can get the pose of the cam using makeCameraPoses
@@ -240,7 +117,7 @@ int main(int argc, char *argv[]){
 		filename = imagedir + filename;
 		filename += ".png";
 		myWindow.saveScreenshot(filename);
-		writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);
+		ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);
 	}
 	return 1;
 };

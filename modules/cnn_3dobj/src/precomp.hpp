@@ -48,6 +48,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <vector>
+#include <string>
+#include <stdio.h>
 #include <iostream>
+#include <math.h>
 
 #endif
