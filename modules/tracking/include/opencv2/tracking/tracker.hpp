@@ -1272,7 +1272,7 @@ class CV_EXPORTS_W MultiTracker
   * @param image input image
   * @param boundingBox a rectangle represents ROI of the tracked object
   */
-   bool add( const Mat& image, const Rect2d& boundingBox );
+  bool add( const Mat& image, const Rect2d& boundingBox );
 
   /**
   * \brief Add a new object to be tracked.
