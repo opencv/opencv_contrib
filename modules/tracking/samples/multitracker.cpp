@@ -1,6 +1,6 @@
 /*----------------------------------------------
  * Usage:
- * example_tracking_multitracker <video_name> [algorithm
+ * example_tracking_multitracker <video_name> [algorithm]
  *
  * example:
  * example_tracking_multitracker Bolt/img/%04.jpg
@@ -167,7 +167,7 @@ void BoxExtractor::opencv_mouse_callback( int event, int x, int y, int , void *p
       case EVENT_LBUTTONDOWN:
         data->isDrawing = true;
         data->box = cvRect( x, y, 0, 0 );
-        data->center = Point2f(x,y);
+        data->center = Point2f((float)x,(float)y);
       break;
 
       // cleaning up the selected bounding box
