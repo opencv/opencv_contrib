@@ -231,7 +231,7 @@ namespace cnpy {
         dict.back() = '\n';
 
         std::vector<char> header;
-        header += (char) 0x93;
+        header += (unsigned char) 0x93;
         header += "NUMPY";
         header += (char) 0x01; //major version of numpy format
         header += (char) 0x00; //minor version of numpy format

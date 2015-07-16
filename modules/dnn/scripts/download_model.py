@@ -13,18 +13,25 @@ def reporthook(count, block_size, total_size):
     From http://blog.moleculea.com/2012/10/04/urlretrieve-progres-indicator/
     """
     global start_time
+    global prev_duration
     if count == 0:
         start_time = time.time()
+        prev_duration = -1
         return
-    duration = time.time() - start_time
+    duration = max(1, time.time() - start_time)
+    if int(duration) == int(prev_duration):
+        return
+    
     progress_size = int(count * block_size)
     speed = int(progress_size / (1024 * duration))
     percent = int(count * block_size * 100 / total_size)
-    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
-                    (percent, progress_size / (1024 * 1024), speed, duration))
+    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" % 
+                     (percent, progress_size / (1024 * 1024), speed, duration))
     sys.stdout.flush()
+    prev_duration = duration
+    
 
-# Closure-d function for checking SHA1.
+# Function for checking SHA1.
 def model_checks_out(filename, sha1):
     with open(filename, 'r') as f:
         return hashlib.sha1(f.read()).hexdigest() == sha1
@@ -37,7 +44,8 @@ def model_download(filename, url, sha1):
     
     # Download and verify model.
     urllib.urlretrieve(url, filename, reporthook)
-    if not model_checks_out():
+    print model_checks_out(filename, sha1)
+    if not model_checks_out(filename, sha1):
         print("ERROR: model {} did not download correctly!".format(url))
         sys.exit(1)
     

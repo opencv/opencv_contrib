@@ -1,7 +1,8 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
+using std::memcpy;
 
 namespace cv
 {
@@ -32,21 +33,23 @@ namespace dnn
         CV_Assert(inputs.size() > 0);
 
         int axisSum = 0;
+        BlobShape refShape = inputs[0]->shape();
+
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            Vec4i refShape = inputs[0]->shape4();
-            Vec4i curShape = inputs[i]->shape4();
+            BlobShape curShape = inputs[i]->shape();
 
-            for (int axisId = 0; axisId < 4; axisId++)
+            CV_Assert(curShape.dims() > axis && curShape.dims() == refShape.dims());
+            for (int axisId = 0; axisId < refShape.dims(); axisId++)
             {
                 if (axisId != axis && refShape[axisId] != curShape[axisId])
-                    CV_Error(cv::Error::StsBadArg, "Inconsitent shape for ConcatLayer");
+                    CV_Error(Error::StsBadArg, "Inconsitent shape for ConcatLayer");
             }
 
             axisSum += curShape[axis];
         }
 
-        Vec4i shape = inputs[0]->shape4();
+        BlobShape shape = refShape;
         shape[axis] = axisSum;
         outputs.resize(1);
         outputs[0].create(shape);
