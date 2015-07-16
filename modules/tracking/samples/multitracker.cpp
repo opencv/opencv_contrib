@@ -11,6 +11,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/flann.hpp>
 #include <iostream>
 #include <cstring>
 #include <ctime>
@@ -66,7 +67,7 @@ int main( int argc, char** argv ){
   }
 
   // timer
-  clock_t timer;
+  cvflann::StartStopTimer timer;
 
   // for showing the speed
   double fps;
@@ -116,18 +117,23 @@ int main( int argc, char** argv ){
     if(frame.rows==0 || frame.cols==0)
       break;
 
-    // update the tracking result
-    timer=clock();
+    // start the timer
+    timer.start();
+
+    //update the tracking result
     trackers.update(frame);
-    timer=clock()-timer;
-    fps=(double)CLOCKS_PER_SEC/(double)timer;
+
+    // calculate the processing speed
+    timer.stop();
+    fps=1.0/timer.value;
+    timer.reset();
 
     // draw the tracked object
     for(unsigned i=0;i<trackers.objects.size();i++)
     rectangle( frame, trackers.objects[i], Scalar( 255, 0, 0 ), 2, 1 );
 
     // draw the processing speed
-    sprintf (buffer, "speed: %.02f fps", fps);
+    sprintf (buffer, "speed: %.0f fps", fps);
     text = buffer;
     putText(frame, text, Point(20,20), FONT_HERSHEY_PLAIN, 1, Scalar(255,255,255));
 
