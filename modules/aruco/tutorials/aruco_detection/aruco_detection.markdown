@@ -432,8 +432,14 @@ Before analyzing the binary code itself, the bits need to be extracted. To do so
 distortion is removed and the resulting image is thresholding using Otsu threshold to separate
 black and white pixels. 
 
+This is a example of the image obtained after removing the perspective distortion of a marker:
+
+![Perspective removing](images/removeperspective.png)
+
 Then, the image is divided in a grid with the same cells than the number of bits in the marker. 
-On each cell, the number of black and white pixels are counted to decide the cell bit (the majority value).
+On each cell, the number of black and white pixels are counted to decide the cell bit (the majority value):
+
+![Marker cells](images/bitsextraction1.png)
 
 There are several parameters that can customize this process:
 
@@ -458,7 +464,7 @@ Default value: 5.0
  - *int perpectiveRemovePixelPerCell*:
 
 This parameter determines the number of pixels (per cell) in the result image after removing perspective
-distortion (including the border).
+distortion (including the border). This is the size of the red squares in the image above.
 
 For instance, lets assume we are dealing with markers of 5x5 bits and border size of 1 bit
 (see *markerBorderBits*). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
@@ -481,6 +487,15 @@ margin of the cells.
 The reason of this is that, after removing the perspective distortion, the cells color is, in general, not 
 perfpectly separated and white cells can invade some pixels of black cells (and viceversa). Thus, it is
 better to ignore some pixels just to avoid counting erroneous pixels.
+
+For instance, in the following image:
+
+![Marker cell margins](images/bitsextraction2.png)
+
+only the pixels inside the green squares are considered. It can be seen in the right image that
+the resulting pixels contain a lower amount of noise from neighbour cells.
+The *perspectiveRemoveIgnoredMarginPerCell* parameter indicates the difference between the red and
+the green squares.
 
 This parameter is relative to the total size of the cell. For instance if the cell size is 40 pixels and the 
 value of this parameter is 0.1, a margin of 40*0.1=4 pixels is ignored in the cells. This means that the total 
