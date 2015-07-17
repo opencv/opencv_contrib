@@ -181,6 +181,9 @@ Finally, this a full example of Charuco detection (without using calibration par
 
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
 
+    DetectorParameters params;
+    params.doCornerRefinement = false;
+
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -188,7 +191,7 @@ Finally, this a full example of Charuco detection (without using calibration par
     
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
-        cv::aruco::detectMarkers(image, dictionary, corners, ids);
+        cv::aruco::detectMarkers(image, dictionary, corners, ids, params);
     
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
