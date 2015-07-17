@@ -87,7 +87,10 @@ void CharucoBoard::draw(cv::Size outSize, OutputArray _img, int marginSize, int 
     }
 
     // determine the margins to draw only the markers
-    double squareSizePixels = double(chessboardZoneImg.cols) / double(_squaresX);
+    // take the minimum just to be sure
+    double squareSizePixels = std::min( double(chessboardZoneImg.cols) / double(_squaresX),
+                                        double(chessboardZoneImg.rows) / double(_squaresY) );
+
     double diffSquareMarkerLength = (_squareLength - _markerLength) / 2;
     int diffSquareMarkerLengthPixels = int(diffSquareMarkerLength *
                                            squareSizePixels / _squareLength);
