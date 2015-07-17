@@ -112,9 +112,12 @@ int main(int argc, char *argv[]){
 		if (camera_pov)
 			myWindow.setViewerPose(cam_pose);
 		char* temp = new char;
-		sprintf (temp,"%d",pose);
+		sprintf (temp,"%d",label_class);
 		string filename = temp;
+		filename += "_";
 		filename = imagedir + filename;
+		sprintf (temp,"%d",pose);
+		filename += temp;
 		filename += ".png";
 		myWindow.saveScreenshot(filename);
 		ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);

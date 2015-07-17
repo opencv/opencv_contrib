@@ -6,7 +6,6 @@ namespace cv
 {
 namespace cnn_3dobj
 {
-
 	IcoSphere::IcoSphere(float radius_in, int depth_in)
 	{
 
@@ -50,7 +49,7 @@ namespace cnn_3dobj
 		for(int i=0; i < (int)CameraPos.size(); i++) {
 			cout << CameraPos.at(i).x <<' '<< CameraPos.at(i).y << ' ' << CameraPos.at(i).z << endl;
 		}
-	}
+	};
 	void IcoSphere::norm(float v[])
 	{
 
@@ -65,7 +64,7 @@ namespace cnn_3dobj
 		for (int i = 0; i < 3; ++i) {
 			v[i] /= ((float)len);
 		}
-	}
+	};
 
 	void IcoSphere::add(float v[])
 	{
@@ -78,7 +77,7 @@ namespace cnn_3dobj
 		}
 		temp_Campos.x = temp->at(0);temp_Campos.y = temp->at(1);temp_Campos.z = temp->at(2);
 		CameraPos.push_back(temp_Campos);
-	}
+	};
 
 	void IcoSphere::subdivide(float v1[], float v2[], float v3[], int depth)
 	{
@@ -111,13 +110,13 @@ namespace cnn_3dobj
 		subdivide(v2, v23, v12, depth - 1);
 		subdivide(v3, v31, v23, depth - 1);
 		subdivide(v12, v23, v31, depth - 1);
-	}
+	};
 
 	uint32_t IcoSphere::swap_endian(uint32_t val)
 	{
     		val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
     		return (val << 16) | (val >> 16);
-	}
+	};
 
 	cv::Point3d IcoSphere::getCenter(cv::Mat cloud)
 	{
@@ -133,7 +132,7 @@ namespace cnn_3dobj
 		dataout.y = dataout.y/cloud.cols;
 		dataout.z = dataout.z/cloud.cols;
 		return dataout;
-	}
+	};
 
 	float IcoSphere::getRadius(cv::Mat cloud, cv::Point3d center)
 	{

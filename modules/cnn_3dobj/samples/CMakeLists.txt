@@ -7,3 +7,7 @@ set(SOURCES sphereview_3dobj_demo.cpp)
 include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(sphereview_test ${SOURCES})
 target_link_libraries(sphereview_test ${OpenCV_LIBS})
+
+set(SOURCES2 images2db_demo.cpp)
+add_executable(images2db_test ${SOURCES2})
+target_link_libraries(images2db_test ${OpenCV_LIBS})

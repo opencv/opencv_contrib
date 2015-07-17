@@ -45,15 +45,24 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_CNN_3DOBJ_HPP__
 #define __OPENCV_CNN_3DOBJ_HPP__
 #ifdef __cplusplus
-
+#include <glog/logging.h>
+#include <leveldb/db.h>
+#include <caffe/proto/caffe.pb.h>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
+//#include <opencv2/imgproc/imgproc.hpp>
 #include <string>
 #include <fstream>
 #include <vector>
 #include <stdio.h>
 #include <iostream>
+#include <string>
+#include <set>
+#include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
 using std::string;
 /** @defgroup cnn_3dobj CNN based on Caffe aimming at 3D object recognition and pose estimation
 */
@@ -113,8 +122,21 @@ class CV_EXPORTS_W IcoSphere
 		*/
 
 };
-//! @}
 
+class CV_EXPORTS_W DataTrans
+{
+	private:
+		std::set<string> all_class_name;
+		std::map<string,int> class2id;
+	public:
+		DataTrans();
+		CV_WRAP void list_dir(const char *path,std::vector<string>& files,bool r);
+		CV_WRAP string get_classname(string path);
+		CV_WRAP int get_labelid(string fileName);
+		CV_WRAP void loadimg(string path,char* buffer,bool is_color);
+		CV_WRAP void convert(string imgdir,string outputdb,string attachdir,int channel,int width,int height);	
+};
+//! @}
 }}
 
 
