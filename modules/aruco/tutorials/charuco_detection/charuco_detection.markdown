@@ -122,7 +122,9 @@ are optional. A similar example without these parameter would be:
     ...
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners;
-    detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
+    DetectorParameters params;
+    params.doCornerRefinement = false;
+    detectMarkers(inputImage, board.dictionary, markerCorners, markerIds, params);
 
     if(markerIds.size() > 0) {
         std::vector<cv::Point2f> charucoCorners;
@@ -138,6 +140,11 @@ corresponding homography between the Charuco plane and the Charuco image project
 
 The main problem of using homography is that the interpolation is more sensible to image distortion. Actually, the homography is only performed
 using the closest markers of each Charuco corner to reduce the effect of distortion.
+
+In this case it is also recommended to disable the corner refinement of markers. The reason of this
+is that, due to the proximity of the chessboard squares, the subpixel process can produce important
+variations in the corner positions and these variations are propagated to the Charuco corner interpolation,
+producing poor results.
 
 Furthermore, only those corners whose two surrounding markers have be found are returned. If any of the two surrouding markers have 
 not been detected usually means that there is some occlusion in that zone or the image quality is not good in that zone. In any case, it is 
