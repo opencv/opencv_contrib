@@ -87,7 +87,7 @@ namespace dnn
         m.create(dstShape.dims(), dstShape.ptr(), CV_32F);
 
         std::vector<Mat> wrapBuf(dstShape[-3]);
-        int elemSize = m.elemSize();
+        int elemSize = (int)m.elemSize();
         uchar *ptr = this->ptrRaw();
         for (size_t i = 0; i < inMats.size(); i++)
         {

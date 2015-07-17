@@ -138,7 +138,7 @@ namespace
                 BlobShape shape(_shape.dim_size());
 
                 for (int i = 0; i < _shape.dim_size(); i++)
-                    shape[i] = _shape.dim(i);
+                    shape[i] = (int)_shape.dim(i);
 
                 return shape;
             }
@@ -192,6 +192,9 @@ namespace
 
             const std::string &name;
             int layerId, outNum;
+
+        private:
+            void operator=(const BlobNote&) {} //supress warning
         };
 
         void populateNet(Net dstNet)

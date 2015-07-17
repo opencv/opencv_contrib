@@ -11,41 +11,41 @@ namespace dnn
 
 struct DictValue
 {
-    int type;
-
-    union
-    {
-        int64 i;
-        double d;
-        bool b;
-        String *s;
-    };
-
     DictValue(const DictValue &r);
-    DictValue(int p = 0)        : type(cv::Param::INT), i(p) {}
-    DictValue(unsigned p)       : type(cv::Param::INT), i(p) {}
-    DictValue(double p)         : type(cv::Param::REAL), d(p) {}
-    DictValue(bool p)           : type(cv::Param::BOOLEAN), b(p) {}
-    DictValue(const String &p)  : type(cv::Param::STRING), s(new String(p)) {}
-    DictValue(const char *str)  : type(cv::Param::STRING), s(new String(str)) {}
+    DictValue(int p = 0)        : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }
+    DictValue(unsigned p)       : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }
+    DictValue(double p)         : type(Param::REAL), pd(new AutoBuffer<double,1>) { (*pd)[0] = p; }
+    DictValue(const String &p)  : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = p; }
 
     template<typename T>
-    T get() const;
+    T get(int idx = -1) const;
 
-    bool isString() const;
+    int size() const;
+
     bool isInt() const;
+    bool isString() const;
+    bool isReal() const;    
 
     DictValue &operator=(const DictValue &r);
 
     ~DictValue();
 
-private:
+protected:
+
+    int type;
+
+    union
+    {
+        AutoBuffer<int64, 1> *pi;
+        AutoBuffer<double, 1> *pd;
+        AutoBuffer<String, 1> *ps;
+    };
+
     void release();
 };
 
 class CV_EXPORTS Dict
 {
-    //TODO: maybe this mechanism was realized somewhere in OpenCV?
     typedef std::map<String, DictValue> _Dict;
     _Dict dict;
 
@@ -94,92 +94,89 @@ public:
 
         return value;
     }
-
-    inline void print()
-    {
-        for (_Dict::const_iterator i = dict.begin(); i != dict.end(); i++)
-        {
-            std::cout << i->first << std::endl;
-        }
-    }
 };
 
-
 template<>
-inline int DictValue::get<int>() const
+inline DictValue DictValue::get<DictValue>(int idx) const
 {
-    CV_Assert(type == cv::Param::INT);
-    return (int)i;
+    CV_Assert(idx == -1);
+    return *this;
 }
 
 template<>
-inline unsigned DictValue::get<unsigned>() const
+inline int64 DictValue::get<int64>(int idx) const
 {
-    CV_Assert(type == cv::Param::INT);
-    return (unsigned)i;
+    CV_Assert(type == Param::INT);
+    CV_Assert(idx == -1 && pi->size() == 1 || idx >= 0 && idx < (int)pi->size());
+    return (*pi)[(idx == -1) ? 0 : idx];
 }
 
 template<>
-inline double DictValue::get<double>() const
+inline int DictValue::get<int>(int idx) const
 {
-    if (type == cv::Param::REAL)
-        return d;
-    else if (type == cv::Param::INT)
-        return (double)i;
+    return (int)get<int64>(idx);
+}
+
+template<>
+inline unsigned DictValue::get<unsigned>(int idx) const
+{
+    return (unsigned)get<int64>(idx);
+}
+
+template<>
+inline bool DictValue::get<bool>(int idx) const
+{
+    return (get<int64>(idx) != 0);
+}
+
+template<>
+inline double DictValue::get<double>(int idx) const
+{
+    if (type == Param::REAL)
+    {
+        CV_Assert(idx == -1 && pd->size() == 1 || idx >= 0 && idx < (int)pd->size());
+        return (*pd)[0];
+    }
+    else if (type == Param::INT)
+    {
+        CV_Assert(idx == -1 && pi->size() == 1 || idx >= 0 && idx < (int)pi->size());
+        return (double)(*pi)[0];;
+    }
     else
     {
-        CV_Assert(type == cv::Param::REAL || type == cv::Param::INT);
+        CV_Assert(type == Param::REAL || type == Param::INT);
         return 0;
     }
 }
 
 template<>
-inline float DictValue::get<float>() const
+inline float DictValue::get<float>(int idx) const
 {
-    if (type == cv::Param::FLOAT)
-        return (float)d;
-    else if (type == cv::Param::INT)
-        return (float)i;
-    else
-    {
-        CV_Assert(type == cv::Param::FLOAT || type == cv::Param::INT);
-        return (float)0;
-    }
+    return (float)get<double>(idx);
 }
 
 template<>
-inline bool DictValue::get<bool>() const
+inline String DictValue::get<String>(int idx) const
 {
-    if (type == cv::Param::BOOLEAN)
-    {
-        return b;
-    }
-    else if (type == cv::Param::INT)
-    {
-        return i != 0;
-    }
-    else
-    {
-        CV_Assert(type == cv::Param::BOOLEAN || type == cv::Param::INT);
-        return 0;
-    }
-}
-
-template<>
-inline String DictValue::get<String>() const
-{
-    CV_Assert(type == cv::Param::STRING);
-    return *s;
+    CV_Assert(type == Param::STRING);
+    CV_Assert(idx == -1 && ps->size() == 1 || idx >= 0 && idx < (int)ps->size());
+    return (*ps)[(idx == -1) ? 0 : idx];
 }
 
 inline void DictValue::release()
 {
-    if (type == cv::Param::STRING && s != NULL)
+    switch (type)
     {
-        delete s;
-        s = NULL;
+    case Param::INT:
+        delete pi;
+        break;
+    case Param::STRING:
+        delete ps;
+        break;
+    case Param::REAL:
+        delete pd;
+        break;
     }
-
 }
 
 inline DictValue::~DictValue()
@@ -192,19 +189,26 @@ inline DictValue & DictValue::operator=(const DictValue &r)
     if (&r == this)
         return *this;
 
-    if (r.type == cv::Param::STRING)
+    if (r.type == Param::INT)
     {
-        String *_s = new String(*r.s);
+        AutoBuffer<int64, 1> *tmp = new AutoBuffer<int64, 1>(*r.pi);
         release();
-        s = _s;
-        type = r.type;
+        pi = tmp;
     }
-    else //flat structure
+    else if (r.type == Param::STRING)
     {
-        //how to copy anonymous union without memcpy?
-        for (size_t i = 0; i < sizeof(*this); i++)
-            ((uchar*)this)[i] = ((uchar*)&r)[i];
+        AutoBuffer<String, 1> *tmp = new AutoBuffer<String, 1>(*r.ps);
+        release();
+        ps = tmp;
     }
+    else if (r.type == Param::REAL)
+    {
+        AutoBuffer<double, 1> *tmp = new AutoBuffer<double, 1>(*r.pd);
+        release();
+        pd = tmp;
+    }
+
+    type = r.type;
 
     return *this;
 }
@@ -216,12 +220,35 @@ inline DictValue::DictValue(const DictValue &r)
 
 inline bool DictValue::isString() const
 {
-    return (type == cv::Param::STRING);
+    return (type == Param::STRING);
 }
 
 inline bool DictValue::isInt() const
 {
-    return (type == cv::Param::INT);
+    return (type == Param::INT);
+}
+
+bool DictValue::isReal() const
+{
+    return (type == Param::REAL);
+}
+
+int DictValue::size() const
+{
+    switch (type)
+    {
+    case Param::INT:
+        return (int)pi->size();
+        break;
+    case Param::STRING:
+        return (int)ps->size();
+        break;
+    case Param::REAL:
+        return (int)pd->size();
+        break;
+    default:
+        return -1;
+    }
 }
 
 }

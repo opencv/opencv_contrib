@@ -76,7 +76,7 @@ namespace dnn
     {
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            int M = inputs[i]->total(0, axis);
+            int M = (int)inputs[i]->total(0, axis);
             int N = numOutputs;
             int K = innerSize;
 
