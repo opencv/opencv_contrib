@@ -11,7 +11,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/flann.hpp>
+#include <opencv2/flann/timer.h>
 #include <iostream>
 #include <cstring>
 #include <ctime>
