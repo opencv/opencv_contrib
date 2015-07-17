@@ -159,7 +159,7 @@ CharucoBoard CharucoBoard::create(int squaresX, int squaresY, float squareLength
             corners[3] = corners[0] + cv::Point3f(0, -markerLength, 0);
             res.objPoints.push_back(corners);
             // first ids in dictionary
-            int nextId = (int)res.ids.size()+1;
+            int nextId = (int)res.ids.size();
             res.ids.push_back(nextId);
         }
     }
