@@ -63,32 +63,57 @@ namespace
 
         void addParam(const Message &msg, const FieldDescriptor *field, cv::dnn::LayerParams &params)
         {
-            const Reflection *msgRefl = msg.GetReflection();
+            const Reflection *refl = msg.GetReflection();
             int type = field->cpp_type();
             bool isRepeated = field->is_repeated();
             const std::string &name = field->name();
 
-            #define GET_FIRST(Type) (isRepeated ? msgRefl->GetRepeated##Type(msg, field, 0) : msgRefl->Get##Type(msg, field))
+            #define SET_UP_FILED(getter, arrayConstr, gtype)                                    \
+                if (isRepeated) {                                                               \
+                    const RepeatedField<gtype> &v = refl->GetRepeatedField<gtype>(msg, field);  \
+                    params.set(name, ##arrayConstr(v.begin(), (int)v.size()));                  \
+                }                                                                               \
+                else {                                                                          \
+                    params.set(name, refl->##getter(msg, field));                               \
+                }
 
             switch (type)
             {
             case FieldDescriptor::CPPTYPE_INT32:
-                params.set(name, GET_FIRST(Int32));
+                SET_UP_FILED(GetInt32, DictValue::arrayInt, ::google::protobuf::int32);
                 break;
             case FieldDescriptor::CPPTYPE_UINT32:
-                params.set(name, GET_FIRST(UInt32));
-                break;
-            case FieldDescriptor::CPPTYPE_DOUBLE:
-                params.set(name, GET_FIRST(Double));
-                break;
-            case FieldDescriptor::CPPTYPE_FLOAT:
-                params.set(name, GET_FIRST(Float));
-                break;
-            case FieldDescriptor::CPPTYPE_ENUM:
-                params.set(name, GET_FIRST(Enum)->name());
+                SET_UP_FILED(GetUInt32, DictValue::arrayInt, ::google::protobuf::uint32);
                 break;
             case FieldDescriptor::CPPTYPE_BOOL:
-                params.set(name, GET_FIRST(Bool));
+                SET_UP_FILED(GetBool, DictValue::arrayInt, bool);
+                break;
+            case FieldDescriptor::CPPTYPE_DOUBLE:
+                SET_UP_FILED(GetDouble, DictValue::arrayReal, double);
+                break;
+            case FieldDescriptor::CPPTYPE_FLOAT:
+                SET_UP_FILED(GetFloat, DictValue::arrayReal, float);
+                break;
+            case FieldDescriptor::CPPTYPE_STRING:
+                if (isRepeated) {
+                    const RepeatedPtrField<std::string> &v = refl->GetRepeatedPtrField<std::string>(msg, field);
+                    params.set(name, DictValue::arrayString(v.begin(), (int)v.size()));
+                }
+                else {
+                    params.set(name, refl->GetString(msg, field));
+                }
+                break;
+            case FieldDescriptor::CPPTYPE_ENUM:
+                if (isRepeated) {
+                    int size = refl->FieldSize(msg, field);
+                    std::vector<cv::String> buf(size);
+                    for (int i = 0; i < size; i++)
+                        buf[i] = refl->GetRepeatedEnum(msg, field, i)->name();
+                    params.set(name, DictValue::arrayString(buf.begin(), size));
+                }
+                else {
+                    params.set(name, refl->GetEnum(msg, field)->name());
+                }
                 break;
             default:
                 CV_Error(Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
@@ -230,11 +255,11 @@ namespace
                     addInput(layer.bottom(inNum), id, inNum, dstNet, addedBlobs);
 
                 for (int outNum = 0; outNum < layer.top_size(); outNum++)
-                    addOutput(layer, id, outNum, dstNet, addedBlobs);
+                    addOutput(layer, id, outNum, addedBlobs);
             }
         }
 
-        void addOutput(const caffe::LayerParameter &layer, int layerId, int outNum, Net &dstNet, std::vector<BlobNote> &addedBlobs)
+        void addOutput(const caffe::LayerParameter &layer, int layerId, int outNum, std::vector<BlobNote> &addedBlobs)
         {
             const std::string &name = layer.top(outNum);
             

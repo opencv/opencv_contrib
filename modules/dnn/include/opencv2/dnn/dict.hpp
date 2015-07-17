@@ -16,6 +16,13 @@ struct DictValue
     DictValue(unsigned p)       : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }
     DictValue(double p)         : type(Param::REAL), pd(new AutoBuffer<double,1>) { (*pd)[0] = p; }
     DictValue(const String &p)  : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = p; }
+    
+    template<typename TypeIter>
+    static DictValue arrayInt(TypeIter begin, int size);
+    template<typename TypeIter>
+    static DictValue arrayReal(TypeIter begin, int size);
+    template<typename TypeIter>
+    static DictValue arrayString(TypeIter begin, int size);
 
     template<typename T>
     T get(int idx = -1) const;
@@ -24,7 +31,7 @@ struct DictValue
 
     bool isInt() const;
     bool isString() const;
-    bool isReal() const;    
+    bool isReal() const;
 
     DictValue &operator=(const DictValue &r);
 
@@ -39,10 +46,39 @@ protected:
         AutoBuffer<int64, 1> *pi;
         AutoBuffer<double, 1> *pd;
         AutoBuffer<String, 1> *ps;
+        void *p;
     };
 
+    DictValue(int _type, void *_p) : type(_type), p(_p) {}
     void release();
 };
+
+template<typename TypeIter>
+DictValue DictValue::arrayInt(TypeIter begin, int size)
+{
+    DictValue res(Param::INT, new AutoBuffer<int64, 1>(size));
+    for (int j = 0; j < size; begin++, j++)
+        (*res.pi)[j] = *begin;
+    return res;
+}
+
+template<typename TypeIter>
+DictValue DictValue::arrayReal(TypeIter begin, int size)
+{
+    DictValue res(Param::REAL, new AutoBuffer<double, 1>(size));
+    for (int j = 0; j < size; begin++, j++)
+        (*res.pd)[j] = *begin;
+    return res;
+}
+
+template<typename TypeIter>
+DictValue DictValue::arrayString(TypeIter begin, int size)
+{
+    DictValue res(Param::STRING, new AutoBuffer<String, 1>(size));
+    for (int j = 0; j < size; begin++, j++)
+        (*res.ps)[j] = *begin;
+    return res;
+}
 
 class CV_EXPORTS Dict
 {
@@ -62,13 +98,18 @@ public:
         return (i == dict.end()) ? NULL : &i->second;
     }
 
-    template <typename T>
-    T get(const String &name) const
+    const DictValue &get(const String &name) const
     {
         _Dict::const_iterator i = dict.find(name);
         if (i == dict.end())
-            CV_Error(cv::Error::StsBadArg, "Required argument \"" + name + "\" not found into dictionary");
-        return i->second.get<T>();
+            CV_Error(Error::StsBadArg, "Required argument \"" + name + "\" not found into dictionary");
+        return i->second;
+    }
+
+    template <typename T>
+    T get(const String &name) const
+    {
+        return this->get(name).get<T>();
     }
 
     template <typename T>
@@ -106,7 +147,7 @@ inline DictValue DictValue::get<DictValue>(int idx) const
 template<>
 inline int64 DictValue::get<int64>(int idx) const
 {
-    CV_Assert(type == Param::INT);
+    CV_Assert(isInt());
     CV_Assert(idx == -1 && pi->size() == 1 || idx >= 0 && idx < (int)pi->size());
     return (*pi)[(idx == -1) ? 0 : idx];
 }
@@ -144,7 +185,7 @@ inline double DictValue::get<double>(int idx) const
     }
     else
     {
-        CV_Assert(type == Param::REAL || type == Param::INT);
+        CV_Assert(isReal());
         return 0;
     }
 }
@@ -158,7 +199,7 @@ inline float DictValue::get<float>(int idx) const
 template<>
 inline String DictValue::get<String>(int idx) const
 {
-    CV_Assert(type == Param::STRING);
+    CV_Assert(isString());
     CV_Assert(idx == -1 && ps->size() == 1 || idx >= 0 && idx < (int)ps->size());
     return (*ps)[(idx == -1) ? 0 : idx];
 }
@@ -228,9 +269,9 @@ inline bool DictValue::isInt() const
     return (type == Param::INT);
 }
 
-bool DictValue::isReal() const
+inline bool DictValue::isReal() const
 {
-    return (type == Param::REAL);
+    return (type == Param::REAL || type == Param::INT);
 }
 
 int DictValue::size() const
