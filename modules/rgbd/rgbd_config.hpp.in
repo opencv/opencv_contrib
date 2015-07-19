@@ -1,0 +1,7 @@
+#ifndef __OPENCV_RGBD_CONFIG_HPP__
+#define __OPENCV_RGBD_CONFIG_HPP__
+
+// HAVE OpenNL
+#cmakedefine HAVE_OPENNL
+
+#endif
