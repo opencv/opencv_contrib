@@ -53,4 +53,10 @@
 #include <set>
 #include <limits>
 
+#include "rgbd_config.hpp"
+
+#ifdef HAVE_OPENNL
+#include <NL/nl.h>
+#endif
+
 #endif

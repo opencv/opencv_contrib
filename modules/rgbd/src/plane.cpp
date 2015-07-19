@@ -537,6 +537,12 @@ private:
   }
 
   void
+  RgbdPlane::operator()(RgbdFrame& rgbdFrame, OutputArray mask_out, OutputArray plane_coefficients)
+  {
+    this->operator()(rgbdFrame.points3d, rgbdFrame.normals, mask_out, plane_coefficients);
+  }
+
+  void
   RgbdPlane::operator()(InputArray points3d_in, InputArray normals_in, OutputArray mask_out,
                         OutputArray plane_coefficients_out)
   {

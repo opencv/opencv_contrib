@@ -47,6 +47,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
+//#include <opencv2/videoio.hpp>
 #include <opencv2/core/utility.hpp>
 
 #include <iostream>
@@ -60,46 +61,85 @@ using namespace std;
 int main( int argc, char** argv )
 {
     Mat image, depth;
-    float pixelSize, refDistance;
+    float focalLength;
 
     if(argc != 2) {
         // bad arguments
         exit(1);
     }
 
-    // read depth data from libfreenect
-    cv::FileStorage file(string(argv[1]), cv::FileStorage::READ);
+    if(string(argv[1]) == "OPENNI")
+    {
+        VideoCapture capture(CAP_OPENNI2);
 
-    file["depth"] >> depth;
-    file["zeroPlanePixelSize"] >> pixelSize;
-    file["zeroPlaneDistance"] >> refDistance;
+        if (!capture.isOpened())
+        {
+            cout << "OpenNI2 device unavailable" << endl;
+            return -1;
+        }
+
+        // set registeration on
+        capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
+
+        focalLength = static_cast<float>(capture.get(CAP_PROP_OPENNI_FOCAL_LENGTH));
+
+        while(true)
+        {
+            capture.grab();
+
+            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+            imshow("Color", image);
+
+            capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
+            imshow("Depth", depth * 8);
+
+            if (waitKey(30) >= 0)
+                break;
+        }
+
+        depth.convertTo(depth, CV_32F);
+    }
+    else
+    {
+        // read depth data from libfreenect
+        cv::FileStorage file(string(argv[1]), cv::FileStorage::READ);
+
+        float pixelSize, refDistance;
+        file["depth"] >> depth;
+        file["zeroPlanePixelSize"] >> pixelSize;
+        file["zeroPlaneDistance"] >> refDistance;
+
+        focalLength = refDistance * 0.5f / pixelSize;
+    }
+
     depth = depth * 0.001f; // libfreenect is in [mm]
 
     // kinect parameter to focal length
     // https://github.com/OpenKinect/libfreenect/blob/master/src/registration.c#L317
-    float fx = refDistance * 0.5f / pixelSize,
-        fy = refDistance * 0.5f / pixelSize,
+    float fx = focalLength,
+        fy = focalLength,
         cx = 319.5f,
         cy = 239.5f;
 
-    Mat cameraMatrix = Mat::eye(3,3,CV_32FC1);
+    Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
+
+    frame->cameraMatrix = Mat::eye(3, 3, CV_32FC1);
     {
-        cameraMatrix.at<float>(0,0) = fx;
-        cameraMatrix.at<float>(1,1) = fy;
-        cameraMatrix.at<float>(0,2) = cx;
-        cameraMatrix.at<float>(1,2) = cy;
+        frame->cameraMatrix.at<float>(0, 0) = fx;
+        frame->cameraMatrix.at<float>(1, 1) = fy;
+        frame->cameraMatrix.at<float>(0, 2) = cx;
+        frame->cameraMatrix.at<float>(1, 2) = cy;
     }
 
-    Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
     Ptr<DepthCleaner> cleaner = makePtr<DepthCleaner>(CV_32F, 5);
     Mat tmp;
     (*cleaner)(frame->depth, tmp);
     frame->depth = tmp;
 
-    //auto normals = makePtr<RgbdNormals>(frame->depth.rows, frame->depth.cols, frame->depth.depth(), cameraMatrix, 5, RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD);
-    Mat points3d;
-    depthTo3d(frame->depth, cameraMatrix, frame->points3d);
-    //(*normals)(frame->depth, frame->normals);
+    depthTo3d(*frame);
+
+    // generate valid point mask for clusters
+    compare(frame->depth, 0, frame->mask, CMP_GT);
 
     RgbdClusterMesh mainCluster(frame);
     vector<RgbdClusterMesh> clusters;
@@ -118,6 +158,13 @@ int main( int argc, char** argv )
         Mat centroids;
 
         if(clusters.at(i).bPlane) {
+            stringstream ss;
+            ss << "cluster" << i;
+            clusters.at(i).increment_step = 2;
+            clusters.at(i).calculatePoints();
+            clusters.at(i).unwrapTexCoord();
+            clusters.at(i).save(ss.str() + ".obj");
+            clusters.at(i).save(ss.str() + ".ply");
             continue;
         }
 
@@ -128,8 +175,13 @@ int main( int argc, char** argv )
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
             imshow(ss.str(), smallClusters.at(j).silhouette * 255);
+
+            // downsample by 0.5x
+            smallClusters.at(j).increment_step = 2;
+            smallClusters.at(j).calculatePoints();
             smallClusters.at(j).unwrapTexCoord();
             smallClusters.at(j).save(ss.str() + ".obj");
+            smallClusters.at(j).save(ss.str() + ".ply");
         }
     }
 

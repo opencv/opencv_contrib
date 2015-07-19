@@ -259,5 +259,9 @@ namespace rgbd
         depthTo3dNoMask<float>(depth, K_new, points3d);
     }
   }
+  void depthTo3d(RgbdFrame& rgbdFrame)
+  {
+    depthTo3d(rgbdFrame.depth, rgbdFrame.cameraMatrix, rgbdFrame.points3d);
+  }
 }
 }

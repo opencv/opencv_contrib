@@ -49,34 +49,37 @@ namespace cv
 {
 namespace rgbd
 {
-    RgbdCluster::RgbdCluster(Ptr<RgbdFrame> _rgbdFrame) : bPlane(false), bVectorPointsUpdated(false), rgbdFrame(_rgbdFrame)
+    RgbdCluster::RgbdCluster(Ptr<RgbdFrame> _rgbdFrame) : bPlane(false), bVectorPointsUpdated(false), increment_step(1), rgbdFrame(_rgbdFrame)
     {
         CV_Assert(!rgbdFrame->depth.empty());
+        CV_Assert(!rgbdFrame->mask.empty());
 
-        if(rgbdFrame->mask.data != NULL)
-        {
-            silhouette = Mat_<uchar>::zeros(rgbdFrame->depth.rows, rgbdFrame->depth.cols);
-        }
-        else
-        {
-            silhouette = rgbdFrame->mask;
-        }
+        (rgbdFrame->mask).copyTo(silhouette);
+
+        roi.x = 0;
+        roi.y = 0;
+        roi.width = rgbdFrame->depth.cols;
+        roi.height = rgbdFrame->depth.rows;
     }
 
     int RgbdCluster::getNumPoints()
     {
         if(bVectorPointsUpdated)
             return static_cast<int>(points.size());
-        else return -1;
+        else
+        {
+            // assuming elements of silhouette are 0 or 1
+            return static_cast<int>(sum(silhouette)[0]);
+        }
     }
 
     void RgbdCluster::calculatePoints()
     {
         pointsIndex = Mat_<int>::eye(silhouette.rows, silhouette.cols) * -1;
         points.clear();
-        for(int i = 0; i < silhouette.rows; i++)
+        for(int i = roi.y; i < silhouette.rows && i < roi.y + roi.height; i += increment_step)
         {
-            for(int j = 0; j < silhouette.cols; j++)
+            for(int j = roi.x; j < silhouette.cols && j < roi.x + roi.width; j += increment_step)
             {
                 if(silhouette.at<uchar>(i, j) > 0)
                 {
@@ -131,10 +134,13 @@ namespace rgbd
         plane->setThreshold(0.025f);
         Mat mask;
         std::vector<Vec4f> coeffs;
-        //(*plane)(points3d, rgbdFrame->normals, mask, coeffs);
-        (*plane)(mainCluster.rgbdFrame->points3d, mask, coeffs);
+        (*plane)(*(mainCluster.rgbdFrame), mask, coeffs);
 
-        Mat colorLabels = Mat_<Vec3f>(mask.rows, mask.cols);
+        if(coeffs.size() < maxPlaneNum)
+        {
+            maxPlaneNum = coeffs.size();
+        }
+
         for(int label = 0; label < maxPlaneNum + 1; label++)
         {
             clusters.push_back(T2(mainCluster.rgbdFrame));
@@ -143,14 +149,14 @@ namespace rgbd
             {
                 compare(mask, label, cluster.silhouette, CMP_EQ);
                 cluster.bPlane = true;
+                cluster.calculatePoints();
+                if (cluster.getNumPoints() < minArea) {
+                    clusters.pop_back();
+                }
             }
             else
             {
                 compare(mask, label, cluster.silhouette, CMP_GE); // residual
-            }
-            cluster.calculatePoints();
-            if(cluster.getNumPoints() < minArea) {
-                // discard;
             }
         }
     }
@@ -169,6 +175,8 @@ namespace rgbd
                 clusters.push_back(T2(mainCluster.rgbdFrame));
                 T2& cluster = clusters.back();
                 compare(labels, label, cluster.silhouette, CMP_EQ);
+                cluster.roi = Rect(stats.at<int>(label, CC_STAT_LEFT), stats.at<int>(label, CC_STAT_TOP),
+                    stats.at<int>(label, CC_STAT_WIDTH), stats.at<int>(label, CC_STAT_HEIGHT));
                 cluster.calculatePoints();
             }
         }
