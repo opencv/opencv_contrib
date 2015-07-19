@@ -45,25 +45,39 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_CNN_3DOBJ_HPP__
 #define __OPENCV_CNN_3DOBJ_HPP__
 #ifdef __cplusplus
-#include <glog/logging.h>
-#include <leveldb/db.h>
-#include <caffe/proto/caffe.pb.h>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/viz/vizcore.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/highgui/highgui_c.h>
-//#include <opencv2/imgproc/imgproc.hpp>
+
+#include <opencv/cv.h>
+#include <opencv/cxcore.h>
 #include <string>
 #include <fstream>
 #include <vector>
 #include <stdio.h>
+#include <math.h>
 #include <iostream>
-#include <string>
 #include <set>
 #include <string.h>
 #include <stdlib.h>
+#include <tr1/memory>
 #include <dirent.h>
+#include <glog/logging.h>
+#include <google/protobuf/text_format.h>
+#include <leveldb/db.h>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/viz/vizcore.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
+#define CPU_ONLY
+#include <caffe/blob.hpp>
+#include <caffe/common.hpp>
+#include <caffe/net.hpp>
+#include <caffe/proto/caffe.pb.h>
+#include <caffe/util/io.hpp>
+#include <caffe/vision_layers.hpp>
 using std::string;
+using caffe::Blob;
+using caffe::Caffe;
+using caffe::Datum;
+using caffe::Net;
 /** @defgroup cnn_3dobj CNN based on Caffe aimming at 3D object recognition and pose estimation
 */
 namespace cv
@@ -131,10 +145,24 @@ class CV_EXPORTS_W DataTrans
 	public:
 		DataTrans();
 		CV_WRAP void list_dir(const char *path,std::vector<string>& files,bool r);
+		/** @brief Use directory of the file including images starting with an int label as the name of each image.
+		*/
 		CV_WRAP string get_classname(string path);
+		/** @brief
+		*/
 		CV_WRAP int get_labelid(string fileName);
+		/** @brief Get the label of each image.
+		*/
 		CV_WRAP void loadimg(string path,char* buffer,bool is_color);
-		CV_WRAP void convert(string imgdir,string outputdb,string attachdir,int channel,int width,int height);	
+		/** @brief Load images.
+		*/
+		CV_WRAP void convert(string imgdir,string outputdb,string attachdir,int channel,int width,int height);
+		/** @brief Convert a set of images as a leveldb database for CNN training.
+		*/
+		template<typename Dtype>
+		CV_WRAP std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id);
+		/** @brief Extract feature into a binary file and vector<cv::Mat> for classification, the model proto and network proto are needed, All images in the file root will be used for feature extraction.
+		*/
 };
 //! @}
 }}

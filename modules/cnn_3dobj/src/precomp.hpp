@@ -43,14 +43,37 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_CNN_3DOBJ_PRECOMP_HPP__
 
 #include <opencv2/cnn_3dobj.hpp>
+#include <opencv/cv.h>
+#include <opencv/cxcore.h>
+#include <string>
+#include <fstream>
+#include <vector>
+#include <stdio.h>
+#include <math.h>
+#include <iostream>
+#include <set>
+#include <string.h>
+#include <stdlib.h>
+#include <tr1/memory>
+#include <dirent.h>
+#include <glog/logging.h>
+#include <google/protobuf/text_format.h>
+#include <leveldb/db.h>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <opencv2/highgui.hpp>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <stdio.h>
-#include <iostream>
-#include <math.h>
+#include <opencv2/highgui/highgui_c.h>
+#define CPU_ONLY
+#include <caffe/blob.hpp>
+#include <caffe/common.hpp>
+#include <caffe/net.hpp>
+#include <caffe/proto/caffe.pb.h>
+#include <caffe/util/io.hpp>
+#include <caffe/vision_layers.hpp>
+using std::string;
+using caffe::Blob;
+using caffe::Caffe;
+using caffe::Datum;
+using caffe::Net;
 
 #endif

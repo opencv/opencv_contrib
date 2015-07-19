@@ -147,4 +147,92 @@ namespace cnn_3dobj
 	  writefile.close();
 
 	};
+
+	template<typename Dtype>
+	std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id) {
+	  if (strcmp(device.c_str(), "GPU") == 0) {
+	    LOG(ERROR)<< "Using GPU";
+	    int device_id = 0;
+	    if (strcmp(device.c_str(), "GPU") == 0) {
+	      device_id = dev_id;
+	      CHECK_GE(device_id, 0);
+	    }
+	    LOG(ERROR) << "Using Device_id=" << device_id;
+	    Caffe::SetDevice(device_id);
+	    Caffe::set_mode(Caffe::GPU);
+	  } else {
+	    LOG(ERROR) << "Using CPU";
+	    Caffe::set_mode(Caffe::CPU);
+	  }
+	  boost::shared_ptr<Net<Dtype> > feature_extraction_net(
+	      new Net<Dtype>(feature_extraction_proto, caffe::TEST));
+	  feature_extraction_net->CopyTrainedLayersFrom(pretrained_binary_proto);
+	  std::vector<std::string> blob_names;
+	  blob_names.push_back(extract_feature_blob_names);
+	  std::vector<std::string> dataset_names;
+	  dataset_names.push_back(save_feature_dataset_names);
+	  CHECK_EQ(blob_names.size(), dataset_names.size()) <<
+	      " the number of blob names and dataset names must be equal";
+	  size_t num_features = blob_names.size();
+
+	  for (size_t i = 0; i < num_features; i++) {
+	    CHECK(feature_extraction_net->has_blob(blob_names[i]))
+		<< "Unknown feature blob name " << blob_names[i]
+		<< " in the network " << feature_extraction_proto;
+	  }
+	  std::vector<FILE*> files;
+	  for (size_t i = 0; i < num_features; ++i)
+	  {
+		  LOG(INFO) << "Opening file " << dataset_names[i];
+		  FILE * temp = fopen(dataset_names[i].c_str(), "wb");
+		  files.push_back(temp);
+	  }
+
+
+	  LOG(ERROR)<< "Extacting Features";
+
+	  Datum datum;
+	  std::vector<cv::Mat> featureVec;
+	  std::vector<Blob<float>*> input_vec;
+	  std::vector<int> image_indices(num_features, 0);
+	  for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+	    feature_extraction_net->Forward(input_vec);
+	    for (int i = 0; i < num_features; ++i) {
+			const boost::shared_ptr<Blob<Dtype> > feature_blob = feature_extraction_net
+		  ->blob_by_name(blob_names[i]);
+	      int batch_size = feature_blob->num();
+	      int dim_features = feature_blob->count() / batch_size;
+		  if (batch_index == 0)
+		  {
+			  int fea_num = batch_size*num_mini_batches;
+			  fwrite(&dim_features, sizeof(int), 1, files[i]);
+			  fwrite(&fea_num, sizeof(int), 1, files[i]);
+		  }
+	      const Dtype* feature_blob_data;
+	      for (int n = 0; n < batch_size; ++n) {
+
+		feature_blob_data = feature_blob->cpu_data() +
+		    feature_blob->offset(n);
+			fwrite(feature_blob_data, sizeof(Dtype), dim_features, files[i]);
+			for (int dim = 0; dim < dim_features; dim++) {
+				cv::Mat tempfeat = cv::Mat(1, dim_features, CV_32FC1);
+				tempfeat.at<Dtype>(0,dim) = *(feature_blob_data++);
+				featureVec.push_back(tempfeat);
+			}
+		++image_indices[i];
+		if (image_indices[i] % 1000 == 0) {
+		  LOG(ERROR)<< "Extracted features of " << image_indices[i] <<
+		      " query images for feature blob " << blob_names[i];
+		}
+	      }  // for (int n = 0; n < batch_size; ++n)
+	    }  // for (int i = 0; i < num_features; ++i)
+	  }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+	  // write the last batch
+	  for (int i = 0; i < num_features; ++i) {
+		  fclose(files[i]);
+	  }
+
+	  LOG(ERROR)<< "Successfully extracted the features!";
+	  return featureVec;
+	};
 }}
