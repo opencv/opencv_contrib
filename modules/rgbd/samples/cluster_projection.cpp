@@ -160,7 +160,7 @@ int main( int argc, char** argv )
         if(clusters.at(i).bPlane) {
             stringstream ss;
             ss << "cluster" << i;
-            clusters.at(i).increment_step = 2;
+            clusters.at(i).increment_step = 4;
             clusters.at(i).calculatePoints();
             clusters.at(i).unwrapTexCoord();
             clusters.at(i).save(ss.str() + ".obj");

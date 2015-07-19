@@ -126,11 +126,55 @@ namespace rgbd
         {
             calculatePoints();
         }
+
+        CV_Assert(points.size() > 0);
+
         if (!bFaceIndicesUpdated)
         {
             calculateFaceIndices();
         }
 
+        if (bPlane)
+        {
+            Vec3f center = points.at(0).world_xyz;
+            Vec3f planeNormal(plane_coefficients[0], plane_coefficients[1], plane_coefficients[2]);
+
+            Vec3f tangent, bitangent;
+            Vec3f arb(0, 1, 0);
+            tangent = arb.cross(planeNormal);
+            normalize(tangent);
+            bitangent = planeNormal.cross(tangent);
+            normalize(bitangent);
+
+            for (int i = 0; i < getNumPoints(); i++) {
+                RgbdPoint & point = points.at(i);
+
+                float x = point.world_xyz.dot(tangent) * 0.001f;
+                // normalize to 0-1
+                x = x - (long)x;
+                if (x < 0) x += 1;
+                float y = point.world_xyz.dot(bitangent) * 0.001f;
+                // normalize to 0-1
+                y = y - (long)y;
+                if (y < 0) y += 1;
+
+                point.texture_uv = Point2f(x, y);
+            }
+
+            return;
+        }
+        else
+        {
+            // TODO: implement LSCM
+            for (std::size_t i = 0; i < points.size(); i++) {
+                RgbdPoint & point = points.at(i);
+                point.texture_uv = Point2f((float)point.image_xy.x / silhouette.cols, (float)point.image_xy.y / silhouette.rows);
+            }
+        }
+
+        return;
+
+#if 0
         nlNewContext();
         nlSolverParameteri(NL_SOLVER, NL_CG);
         nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
@@ -227,6 +271,7 @@ namespace rgbd
         nlDeleteContext(nlGetCurrent());
 
         return;
+#endif
     }
 
     void RgbdClusterMesh::save(const std::string &path)

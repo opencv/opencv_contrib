@@ -136,9 +136,9 @@ namespace rgbd
         std::vector<Vec4f> coeffs;
         (*plane)(*(mainCluster.rgbdFrame), mask, coeffs);
 
-        if(coeffs.size() < maxPlaneNum)
+        if(static_cast<int>(coeffs.size()) < maxPlaneNum)
         {
-            maxPlaneNum = coeffs.size();
+            maxPlaneNum = static_cast<int>(coeffs.size());
         }
 
         for(int label = 0; label < maxPlaneNum + 1; label++)
@@ -150,7 +150,9 @@ namespace rgbd
                 compare(mask, label, cluster.silhouette, CMP_EQ);
                 cluster.bPlane = true;
                 cluster.calculatePoints();
+                cluster.plane_coefficients = coeffs.at(label);
                 if (cluster.getNumPoints() < minArea) {
+                    // TODO: isn't this should be added to the residual cluster?
                     clusters.pop_back();
                 }
             }

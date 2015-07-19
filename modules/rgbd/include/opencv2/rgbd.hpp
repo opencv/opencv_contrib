@@ -1048,6 +1048,8 @@ namespace rgbd
     Mat pointsIndex;
     /* vector of points */
     std::vector<RgbdPoint> points;
+    /* plane coefficients (if the cluster is a plane) */
+    Vec4f plane_coefficients;
     bool bPlane;
     bool bVectorPointsUpdated;
     Rect roi;
