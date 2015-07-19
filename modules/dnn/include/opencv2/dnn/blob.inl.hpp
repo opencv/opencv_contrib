@@ -79,6 +79,17 @@ inline int &BlobShape::operator[] (int axis)
     return sz[(axis < 0) ? axis + dims() : axis];
 }
 
+inline ptrdiff_t BlobShape::total()
+{
+    CV_Assert(dims() >= 1);
+
+    ptrdiff_t res = 1;
+    for (int i = 0; i < dims(); i++)
+        res *= sz[i];
+    return res;
+}
+
+
 inline const int *BlobShape::ptr() const
 {
     return sz;

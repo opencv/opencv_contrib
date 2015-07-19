@@ -37,30 +37,6 @@ namespace
                 ReadNetParamsFromBinaryFileOrDie(caffeModel, &netBinary);
         }
 
-        inline bool skipCaffeLayerParam(const FieldDescriptor *fd)
-        {
-            const std::string &name = fd->name();
-
-            if (fd->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE)
-            {
-                static const char *SKIP_FIELDS[] = { "type", "name", "top", "bottom", NULL };
-
-                for (int i = 0; SKIP_FIELDS[i]; i++)
-                {
-                    if (name == SKIP_FIELDS[i])
-                        return true;
-                }
-
-                return false;
-            }
-            else
-            {
-                static const std::string _param("_param");
-                bool endsWith_param = (name.size() >= _param.size()) && name.compare(name.size() - _param.size(), _param.size(), _param) == 0;
-                return !endsWith_param;
-            }
-        }
-
         void addParam(const Message &msg, const FieldDescriptor *field, cv::dnn::LayerParams &params)
         {
             const Reflection *refl = msg.GetReflection();
@@ -84,6 +60,12 @@ namespace
                 break;
             case FieldDescriptor::CPPTYPE_UINT32:
                 SET_UP_FILED(GetUInt32, DictValue::arrayInt, ::google::protobuf::uint32);
+                break;
+            case FieldDescriptor::CPPTYPE_INT64:
+                SET_UP_FILED(GetInt32, DictValue::arrayInt, ::google::protobuf::int64);
+                break;
+            case FieldDescriptor::CPPTYPE_UINT64:
+                SET_UP_FILED(GetUInt32, DictValue::arrayInt, ::google::protobuf::uint64);
                 break;
             case FieldDescriptor::CPPTYPE_BOOL:
                 SET_UP_FILED(GetBool, DictValue::arrayInt, bool);
@@ -121,7 +103,13 @@ namespace
             }
         }
 
-        void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params)
+        inline static bool ends_with_param(const std::string &str)
+        {
+            static const std::string _param("_param");
+            return (str.size() >= _param.size()) && str.compare(str.size() - _param.size(), _param.size(), _param) == 0;
+        }
+
+        void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params, bool isInternal = false)
         {
             const Descriptor *msgDesc = msg.GetDescriptor();
             const Reflection *msgRefl = msg.GetReflection();
@@ -130,19 +118,21 @@ namespace
             {
                 const FieldDescriptor *fd = msgDesc->field(fieldId);
 
-                bool hasData =  fd->is_required() ||
-                               (fd->is_optional() && (msgRefl->HasField(msg, fd) /*|| fd->has_default_value()*/)) ||
-                               (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
+                if (!isInternal && !ends_with_param(fd->name()))
+                    continue;
 
-                if ( !hasData || skipCaffeLayerParam(fd) )
+                bool hasData =  fd->is_required() ||
+                               (fd->is_optional() && msgRefl->HasField(msg, fd)) ||
+                               (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
+                if (!hasData)
                     continue;
 
                 if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE)
                 {
                     if (fd->is_repeated()) //Extract only first item!
-                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params);
+                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params, true);
                     else
-                        extractLayerParams(msgRefl->GetMessage(msg, fd), params);
+                        extractLayerParams(msgRefl->GetMessage(msg, fd), params, true);
                 }
                 else
                 {

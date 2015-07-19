@@ -132,7 +132,7 @@ namespace dnn
         template<typename TFloat>
         inline TFloat operator()(TFloat x)
         {
-            return log((TFloat)1 + exp(x));
+            return log((TFloat)1 + exp(-abs(x)));
         }
     };
 

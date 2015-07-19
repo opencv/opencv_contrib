@@ -274,7 +274,7 @@ inline bool DictValue::isReal() const
     return (type == Param::REAL || type == Param::INT);
 }
 
-int DictValue::size() const
+inline int DictValue::size() const
 {
     switch (type)
     {

@@ -10,7 +10,7 @@ namespace dnn
 {
     struct BlobShape
     {
-        explicit BlobShape(int ndims, int fill = 1);
+        explicit BlobShape(int ndims = 4, int fill = 1);
         BlobShape(int num, int cn, int rows, int cols);
         BlobShape(int ndims, const int *sizes);
         BlobShape(const std::vector<int> &sizes);
@@ -25,15 +25,16 @@ namespace dnn
         int operator[](int axis) const;
         int &operator[](int axis);
 
+        //same as size(), but size of non-existing dimensions equal to 1
         int xsize(int axis) const;
+
+        ptrdiff_t total();
 
         const int *ptr() const;
 
         bool equal(const BlobShape &other) const;
 
     private:
-
-        BlobShape();
         cv::AutoBuffer<int,4> sz;
     };
 
