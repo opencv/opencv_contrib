@@ -65,8 +65,7 @@ int main(int argc, char** argv)
     Mat image, depth;
     float focalLength;
 
-//    VideoCapture capture(CAP_OPENNI2);
-    VideoCapture capture(0);
+    VideoCapture capture(CAP_OPENNI2);
 
     if (!capture.isOpened())
     {
@@ -117,20 +116,16 @@ int main(int argc, char** argv)
     for (size_t i = 0; i < patternImages.size(); i++) {
         imshow(window, patternImages.at(i));
 
-        while (true)
-        {
-            capture.grab();
+        waitKey(500);
 
-            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
-            capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
+        capture.grab();
 
-            //if (the color image is good)
-            {
-                break;
-            }
-        }
+        capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+        capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
 
-        cameraImages.push_back(image);
+        Mat gray;
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+        cameraImages.push_back(gray);
         depth.convertTo(depth, CV_32F);
         depth = depth * 0.001f; // openni is in [mm]; there is a util function in rgbd though...
         if (depthAvg.empty())
@@ -154,7 +149,7 @@ int main(int argc, char** argv)
         cx = 319.5f,
         cy = 239.5f;
 
-    Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
+    Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depthAvg);
 
     frame->cameraMatrix = Mat::eye(3, 3, CV_32FC1);
     {
@@ -172,20 +167,20 @@ int main(int argc, char** argv)
     // decode
     vector<Point3f> objectPoints;
     vector<Point2f> imagePoints;
-    for (int y = 0; y < image.cols; y++)
+    for (int y = 0; y < image.rows; y++)
     {
-        for (int x = 0; x < image.rows; x++)
+        for (int x = 0; x < image.cols; x++)
         {
-            if (frame->mask.at<uchar>(x, y) == 0)
+            if (frame->mask.at<uchar>(y, x) == 0)
             {
                 continue;
             }
 
             Point point;
-            if (pattern->getProjPixel(patternImages, x, y, point))
+            if (pattern->getProjPixel(cameraImages, x, y, point))
             {
-                objectPoints.push_back(frame->points3d.at<Point3f>(x, y));
-                imagePoints.push_back(Point2f(x, y));
+                objectPoints.push_back(frame->points3d.at<Point3f>(y, x));
+                imagePoints.push_back(Point2f(point.x, point.y));
             }
         }
     }
@@ -197,15 +192,29 @@ int main(int argc, char** argv)
         frame->cameraMatrix.at<float>(0, 2) = params.width * 0.5f - 0.5f;
         frame->cameraMatrix.at<float>(1, 2) = params.height * 0.5f - 0.5f;
     }
-    // distCoeffs null
+    // distCoeffs zero unless calibrated beforehand
     Mat distCoeffs = Mat::zeros(4, 1, CV_32FC1);
     Mat rvec, tvec;
     // TODO: replace with calibrateCamera
     solvePnP(objectPoints, imagePoints, projectorMatrix, distCoeffs, rvec, tvec);
 
+    cout << rvec << endl;
+    cout << tvec << endl;
     // Rodrigues to form extrinsic matrix
+    Mat rotation;
+    Rodrigues(rvec, rotation);
+    Mat extrinsics = Mat::eye(4, 4, CV_32FC1);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            extrinsics.at<float>(i, j) = static_cast<float>(rotation.at<double>(i, j));
+        }
+        extrinsics.at<float>(i, 3) = static_cast<float>(tvec.at<double>(i));
+    }
 
     // file output
+    cout << extrinsics << endl;
 
     waitKey(0);
     return 0;
