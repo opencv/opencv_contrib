@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     Ptr<GrayCodePattern> pattern = GrayCodePattern::create(params);
 
     vector<Mat> patternImages;
-    pattern->generate(patternImages);
+    pattern->generate(patternImages, Scalar(0, 0, 0), Scalar(100, 100, 100));
 
     string window = "pattern";
     namedWindow(window, WINDOW_NORMAL);
@@ -177,9 +177,12 @@ int main(int argc, char** argv)
             }
 
             Point point;
-            if (pattern->getProjPixel(cameraImages, x, y, point))
+            if (pattern->getProjPixel(cameraImages, x, y, point) != true)
             {
-                objectPoints.push_back(frame->points3d.at<Point3f>(y, x));
+                Point3f p3d = frame->points3d.at<Point3f>(y, x);
+                // Is OpenCV camera coordinate's y-axis flipped?
+                p3d.y *= -1;
+                objectPoints.push_back(p3d);
                 imagePoints.push_back(Point2f(point.x, point.y));
             }
         }
@@ -187,19 +190,35 @@ int main(int argc, char** argv)
 
     Mat projectorMatrix = Mat::eye(3, 3, CV_32FC1);
     {
-        frame->cameraMatrix.at<float>(0, 0) = 1500;
-        frame->cameraMatrix.at<float>(1, 1) = 1500;
-        frame->cameraMatrix.at<float>(0, 2) = params.width * 0.5f - 0.5f;
-        frame->cameraMatrix.at<float>(1, 2) = params.height * 0.5f - 0.5f;
+        projectorMatrix.at<float>(0, 0) = 1500;
+        projectorMatrix.at<float>(1, 1) = 1500;
+        projectorMatrix.at<float>(0, 2) = params.width * 0.5f - 0.5f;
+        projectorMatrix.at<float>(1, 2) = params.height * 1.1f - 0.5f; // vertical lens shift
     }
     // distCoeffs zero unless calibrated beforehand
     Mat distCoeffs = Mat::zeros(4, 1, CV_32FC1);
     Mat rvec, tvec;
     // TODO: replace with calibrateCamera
+#if 1
     solvePnP(objectPoints, imagePoints, projectorMatrix, distCoeffs, rvec, tvec);
+#else
+    vector<vector<Point3f> > objectPointsArray;
+    vector<vector<Point2f> > imagePointsArray;
+    objectPointsArray.push_back(objectPoints);
+    imagePointsArray.push_back(imagePoints);
+    vector<Mat> rvecs, tvecs;
+    int flags = CALIB_USE_INTRINSIC_GUESS | CALIB_FIX_PRINCIPAL_POINT | CALIB_FIX_ASPECT_RATIO | CALIB_ZERO_TANGENT_DIST
+        | CALIB_FIX_K1 | CALIB_FIX_K2 | CALIB_FIX_K3 | CALIB_FIX_K4;
+    calibrateCamera(objectPointsArray, imagePointsArray, Size(params.width, params.height * 2), projectorMatrix, distCoeffs, rvecs, tvecs, flags);
+    rvec = rvecs.at(0);
+    tvec = tvecs.at(0);
+#endif
 
+    cout << projectorMatrix << endl;
     cout << rvec << endl;
     cout << tvec << endl;
+    cout << objectPoints.size() << endl;
+    cout << imagePoints.size() << endl;
     // Rodrigues to form extrinsic matrix
     Mat rotation;
     Rodrigues(rvec, rotation);
