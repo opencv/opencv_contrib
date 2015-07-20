@@ -132,6 +132,10 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    */
   CV_WRAP
   virtual void getImagesForShadowMasks(InputOutputArray darkImage, InputOutputArray lightImage) const = 0;
+
+  // For a (x,y) pixel of the camera returns the corresponding projector pixel
+  CV_WRAP
+  virtual bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &p_out) const = 0;
 };
 
 /* @brief Load intrinsics and extrinsics parameters.

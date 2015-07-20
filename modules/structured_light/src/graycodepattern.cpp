@@ -77,6 +77,9 @@ class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
   // Generates the images needed for shadowMasks computation
   void getImagesForShadowMasks(InputOutputArray darkImage, InputOutputArray lightImage) const;
 
+  // For a (x,y) pixel of the camera returns the corresponding projector pixel
+  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &p_out) const;
+
  private:
   // Parameters
   Params params;
@@ -110,9 +113,6 @@ class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
 
   // Converts a gray code sequence to a decimal number
   int grayToDec(const std::vector<uchar>& gray) const;
-
-  // For a (x,y) pixel of the camera returns the corresponding projector pixel
-  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &p_out) const;
 };
 
 /*
