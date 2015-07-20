@@ -123,6 +123,9 @@ int main(int argc, char** argv)
         capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
         capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
 
+        flip(image, image, 1);
+        flip(depth, depth, 1);
+
         Mat gray;
         cvtColor(image, gray, COLOR_BGR2GRAY);
         cameraImages.push_back(gray);
@@ -180,20 +183,18 @@ int main(int argc, char** argv)
             if (pattern->getProjPixel(cameraImages, x, y, point) != true)
             {
                 Point3f p3d = frame->points3d.at<Point3f>(y, x);
-                // Is OpenCV camera coordinate's y-axis flipped?
-                p3d.y *= -1;
                 objectPoints.push_back(p3d);
                 imagePoints.push_back(Point2f(point.x, point.y));
             }
         }
     }
 
-    Mat projectorMatrix = Mat::eye(3, 3, CV_32FC1);
+    Mat projectorMatrix = Mat::eye(3, 3, CV_64FC1);
     {
-        projectorMatrix.at<float>(0, 0) = 1500;
-        projectorMatrix.at<float>(1, 1) = 1500;
-        projectorMatrix.at<float>(0, 2) = params.width * 0.5f - 0.5f;
-        projectorMatrix.at<float>(1, 2) = params.height * 1.1f - 0.5f; // vertical lens shift
+        projectorMatrix.at<double>(0, 0) = 1500;
+        projectorMatrix.at<double>(1, 1) = 1500;
+        projectorMatrix.at<double>(0, 2) = params.width * 0.5f - 0.5f;
+        projectorMatrix.at<double>(1, 2) = params.height * 1.1f - 0.5f; // vertical lens shift
     }
     // distCoeffs zero unless calibrated beforehand
     Mat distCoeffs = Mat::zeros(4, 1, CV_32FC1);
@@ -222,18 +223,94 @@ int main(int argc, char** argv)
     // Rodrigues to form extrinsic matrix
     Mat rotation;
     Rodrigues(rvec, rotation);
-    Mat extrinsics = Mat::eye(4, 4, CV_32FC1);
+    Mat extrinsics = Mat::eye(4, 4, CV_64FC1);
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            extrinsics.at<float>(i, j) = static_cast<float>(rotation.at<double>(i, j));
+            extrinsics.at<double>(i, j) = rotation.at<double>(i, j);
         }
-        extrinsics.at<float>(i, 3) = static_cast<float>(tvec.at<double>(i));
+        extrinsics.at<double>(i, 3) = tvec.at<double>(i);
     }
 
     // file output
     cout << extrinsics << endl;
+
+    FileStorage fs("calibration.xml", FileStorage::WRITE);
+    fs << "ProjectorCameraEnsemble";
+    fs << "{";
+    {
+        fs << "name" << "OpenCV calibration";
+        fs << "projectors";
+        fs << "{";
+        {
+            fs << "Projector";
+            fs << "{";
+            {
+                fs << "name" << 0;
+                fs << "hostNameOrAddress" << "localhost";
+                fs << "displayIndex" << 0;
+                fs << "width" << params.width;
+                fs << "height" << params.height;
+                fs << "cameraMatrix";
+                fs << "{";
+                {
+                    fs << "ValuesByColumn";
+                    fs << "{";
+                    for (int j = 0; j < 3; j++)
+                    {
+                        fs << "ArrayOfDouble";
+                        fs << "{";
+                        for (int i = 0; i < 3; i++)
+                        {
+                            fs << "double" << projectorMatrix.at<double>(i, j);
+                        }
+                        fs << "}";
+                    }
+                    fs << "}";
+                }
+                fs << "}";
+                fs << "lensDistortion";
+                fs << "{";
+                {
+                    fs << "ValuesByColumn";
+                    fs << "{";
+                    {
+                        fs << "ArrayOfDouble";
+                        fs << "{";
+                        for (int i = 0; i < 2; i++)
+                        {
+                            fs << "double" << 0;
+                        }
+                        fs << "}";
+                    }
+                    fs << "}";
+                }
+                fs << "}";
+                fs << "pose";
+                fs << "{";
+                {
+                    fs << "ValuesByColumn";
+                    fs << "{";
+                    for (int j = 0; j < 4; j++)
+                    {
+                        fs << "ArrayOfDouble";
+                        fs << "{";
+                        for (int i = 0; i < 4; i++)
+                        {
+                            fs << "double" << extrinsics.at<double>(i, j);
+                        }
+                        fs << "}";
+                    }
+                    fs << "}";
+                }
+                fs << "}";
+            }
+            fs << "}";
+        }
+        fs << "}";
+    }
+    fs << "}";
 
     waitKey(0);
     return 0;

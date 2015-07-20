@@ -81,6 +81,9 @@ int main( int argc, char** argv )
         // set registeration on
         capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
 
+        // disable mirroring not working??
+        // capture.set(CAP_PROP_OPENNI2_MIRROR, 0.0);
+
         focalLength = static_cast<float>(capture.get(CAP_PROP_OPENNI_FOCAL_LENGTH));
 
         while(true)
@@ -96,6 +99,9 @@ int main( int argc, char** argv )
             if (waitKey(30) >= 0)
                 break;
         }
+
+        flip(image, image, 1);
+        flip(depth, depth, 1);
 
         depth.convertTo(depth, CV_32F);
     }
