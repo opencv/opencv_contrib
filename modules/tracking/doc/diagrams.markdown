@@ -237,7 +237,7 @@ MultiTracker diagram
 @enduml
 
 @startuml{multi_tracker_uml.png}
-  package "MultiTracker package" #DDDDDD {
+  package "MultiTracker class" #DDDDDD {
 
   class MultiTracker{
     MultiTracker(const String& trackerType = "" );

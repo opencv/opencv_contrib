@@ -11,7 +11,11 @@
  * to enable the high precission of fps computation
  *--------------------------------------------------*/
 
-#define HAVE_OPENCV
+/* after the OpenCV libary is installed
+ * please uncomment the the line below and re-compile this code
+ * to enable high precission of fps computation
+ */
+//#define HAVE_OPENCV
 
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
