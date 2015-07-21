@@ -83,10 +83,10 @@ TEST(DisparityWLSFilterTest, ReferenceAccuracy)
     cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res;
 
-    Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilter(true);
+    Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilterGeneric(true);
     wls_filter->setLambda(8000.0);
     wls_filter->setSigmaColor(0.5);
-    wls_filter->filter(left_disp,left,res,ROI,right_disp);
+    wls_filter->filter(left_disp,left,res,right_disp,ROI);
 
     double MSE = computeMSE(GT,res,ROI);
     double BadPercent = computeBadPixelPercent(GT,res,ROI);
@@ -134,17 +134,17 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
         double lambda = rng.uniform(100.0, 10000.0);
         double sigma  = rng.uniform(1.0, 100.0);
 
-        Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilter(use_conf);
+        Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilterGeneric(use_conf);
         wls_filter->setLambda(lambda);
         wls_filter->setSigmaColor(sigma);
 
         cv::setNumThreads(cv::getNumberOfCPUs());
         Mat resMultiThread;
-        wls_filter->filter(left_disp,left,resMultiThread,ROI,right_disp);
+        wls_filter->filter(left_disp,left,resMultiThread,right_disp,ROI);
 
         cv::setNumThreads(1);
         Mat resSingleThread;
-        wls_filter->filter(left_disp,left,resSingleThread,ROI,right_disp);
+        wls_filter->filter(left_disp,left,resSingleThread,right_disp,ROI);
 
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_INF), MAX_DIF);
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1), MAX_MEAN_DIF*left.total());

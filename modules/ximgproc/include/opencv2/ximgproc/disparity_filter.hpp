@@ -39,6 +39,7 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
 
 namespace cv {
 namespace ximgproc {
@@ -63,15 +64,15 @@ public:
 
     @param filtered_disparity_map output disparity map.
 
-    @param ROI region of the disparity map to filter.
-
     @param disparity_map_right optional argument, some implementations might also use the disparity map
     of the right view to compute confidence maps, for instance.
+
+    @param ROI region of the disparity map to filter. Optional, usually it should be set automatically.
 
     @param right_view optional argument, some implementations might also use the right view of the original
     stereo-pair.
      */
-    CV_WRAP virtual void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, Rect ROI, InputArray disparity_map_right = Mat(), InputArray right_view = Mat()) = 0;
+    CV_WRAP virtual void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right = Mat(), Rect ROI = Rect(), InputArray right_view = Mat()) = 0;
 };
 
 /** @brief Disparity map filter based on Weighted Least Squares filter (in form of Fast Global Smoother that
@@ -106,8 +107,7 @@ public:
     /** @see getLRCthresh */
     CV_WRAP virtual void setLRCthresh(int _LRC_thresh) = 0;
     /** @brief DepthDiscontinuityRadius is a parameter used in confidence computation. It defines the size of
-    low-confidence regions around depth discontinuities. For typical window sizes used in stereo matching the
-    optimal value is around 5.
+    low-confidence regions around depth discontinuities.
      */
     CV_WRAP virtual int getDepthDiscontinuityRadius() = 0;
     /** @see getDepthDiscontinuityRadius */
@@ -117,16 +117,36 @@ public:
     correct disparity values with a high degree of confidence).
      */
     CV_WRAP virtual Mat getConfidenceMap() = 0;
-
+    /** @brief Get the ROI used in the last filter call
+     */
+    CV_WRAP virtual Rect getROI() = 0;
 };
 
-/** @brief Factory method, create instance of DisparityWLSFilter and execute the initialization routines.
+/** @brief Convenience factory method that creates an instance of DisparityWLSFilter and sets up all the relevant
+filter parameters automatically based on the matcher instance. Currently supports only StereoBM and StereoSGBM.
+
+@param matcher_left stereo matcher instance that will be used with the filter
+*/
+CV_EXPORTS_W
+Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left);
+
+/** @brief Convenience method to set up the matcher for computing the right-view disparity map
+that is required in case of filtering with confidence.
+
+@param matcher_left main stereo matcher instance that will be used with the filter
+*/
+CV_EXPORTS_W
+Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left);
+
+/** @brief More generic factory method, create instance of DisparityWLSFilter and execute basic
+initialization routines. When using this method you will need to set-up the ROI, matchers and
+other parameters by yourself.
 
 @param use_confidence filtering with confidence requires two disparity maps (for the left and right views) and is
 approximately two times slower. However, quality is typically significantly better.
 */
 CV_EXPORTS_W
-Ptr<DisparityWLSFilter> createDisparityWLSFilter(bool use_confidence);
+Ptr<DisparityWLSFilter> createDisparityWLSFilterGeneric(bool use_confidence);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
