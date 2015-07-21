@@ -309,7 +309,7 @@ struct Net::Impl
         }
 
         //allocate layer
-        ld.outputBlobs.resize(ld.requiredOutputs.size());
+        ld.outputBlobs.resize(std::max((size_t)1, ld.requiredOutputs.size())); //layer produce at least one output blob
         ld.getLayerInstance()->allocate(ld.inputBlobs, ld.outputBlobs);
 
         ld.flag = 1;
@@ -431,7 +431,7 @@ void Net::setBlob(String outputName, const Blob &blob)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
-        CV_Error(Error::StsObjectNotFound, "Request blob \"" + outputName + "\" not found");
+        CV_Error(Error::StsObjectNotFound, "Requested blob \"" + outputName + "\" not found");
 
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
@@ -442,10 +442,14 @@ Blob Net::getBlob(String outputName)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
-        CV_Error(Error::StsObjectNotFound, "Request blob \"" + outputName + "\" not found");
+        CV_Error(Error::StsObjectNotFound, "Requested blob \"" + outputName + "\" not found");
 
     LayerData &ld = impl->layers[pin.lid];
-    CV_Assert(pin.oid < (int)ld.outputBlobs.size());
+    if ((size_t)pin.oid >= ld.outputBlobs.size())
+    {
+        CV_Error(Error::StsOutOfRange, "Layer \"" + ld.name + "\" produce only " + toString(ld.outputBlobs.size()) +
+                                       " outputs, the #" + toString(pin.oid) + " was requsted");
+    }
     return ld.outputBlobs[pin.oid];
 }
 

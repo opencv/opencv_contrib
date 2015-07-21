@@ -75,4 +75,29 @@ TEST(Layer_LRN_channels_Test, Accuracy)
      testLayer("lrn_channels.prototxt");
 }
 
+TEST(Layer_Reshape_Split_Slice_Test, Accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createCaffeImporter(getTestFile("reshape_and_slice_routines.prototxt"));
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    BlobShape shape = BlobShape(Vec2i(6, 12));
+
+    Mat1f inputMat(shape[0], shape[1]);
+    RNG rng(0);
+    rng.fill(inputMat, RNG::UNIFORM, -1, 1);
+
+    Blob input(inputMat);
+    input.reshape(shape);
+    net.setBlob(".input", input);
+    net.forward();
+    Blob output = net.getBlob("output");
+    
+    input.fill(shape, CV_32F, inputMat.data);
+    normAssert(input, output);
+}
+
 }

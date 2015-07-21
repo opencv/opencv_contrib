@@ -1,6 +1,5 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include <stdlib.h>
 
 namespace cv
 {
@@ -83,15 +82,20 @@ void SliceLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &o
 void SliceLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     Blob &inpBlob = *inputs[0];
-    const uchar *inpPtr = inpBlob.ptrRaw();
-    const size_t elemSize = CV_ELEM_SIZE(inpBlob.type());
+    const int axis = inpBlob.canonicalAxis(inAxis);
+    const Mat& inpMat = inpBlob.getMatRef();
 
+    std::vector<Range> ranges(inpBlob.dims(), Range::all());
+    int sizeStart = 0;
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        uchar *outPtr = outputs[i].ptrRaw();
-        size_t size = outputs[i].total() * elemSize;
-        memcpy(outPtr, inpPtr, size);
-        inpPtr += size;
+        int sizeEnd = sizeStart + outputs[i].size(axis);
+        ranges[axis] = Range(sizeStart, sizeEnd);
+
+        Mat inpSubMat = inpMat(&ranges[0]);
+        inpSubMat.copyTo(outputs[i].getMatRef());
+
+        sizeStart = sizeEnd;
     }
 }
 

@@ -274,7 +274,7 @@ inline Blob &Blob::shareFrom(const Blob &blob)
 
 inline Blob &Blob::reshape(const BlobShape &shape)
 {
-    m.reshape(1, shape.dims(), shape.ptr());
+    m = m.reshape(1, shape.dims(), shape.ptr());
     return *this;
 }
 

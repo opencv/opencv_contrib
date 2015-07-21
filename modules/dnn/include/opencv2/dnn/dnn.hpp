@@ -89,7 +89,7 @@ namespace dnn
         virtual ~Importer();
     };
 
-    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
+    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
 
     //Layer factory allows to create instances of registered layers.
     class CV_EXPORTS LayerRegister
