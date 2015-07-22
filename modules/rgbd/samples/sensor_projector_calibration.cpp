@@ -46,7 +46,7 @@
 // Daniel Moreno and Gabriel Taubin. Simple, Accurate, and Robust Projector-Camera Calibration.
 // 3D Imaging, Modeling, Processing, 2012 Second International Conference on Visualization and Transmission (3DIMPVT). IEEE, 2012.
 
-//#define USE_OPENNI2
+#define USE_OPENNI2
 
 #include <opencv2/rgbd.hpp>
 
@@ -72,7 +72,6 @@ int main(int argc, char** argv)
     VideoCapture capture(CAP_OPENNI2);
     // set registeration on
     capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
-    VideoCapture capture(CAP_OPENNI2);
 #else
     VideoCapture capture(2);
     capture.set(CAP_PROP_FRAME_WIDTH, 1280); 
@@ -94,14 +93,14 @@ int main(int argc, char** argv)
     Calibration camera, projector;
 
     // number of checkerboard poses to capture
-    const int numSequences = 3;
+    const int numSequences = 10;
 
     Mat image;
 
     // initialize checkerboard parameters
     vector<vector<Point3f> > objectPoints;
     cv::Size chessSize(9, 6);
-    float chessDimension = 20; // [mm]
+    float chessDimension = 22; // [mm]
     {
         vector<Point3f> chessPoints;
         for (int i = 0; i < chessSize.height; i++)
@@ -173,7 +172,7 @@ int main(int argc, char** argv)
             imshow("camera", image);
 
             // if space key is pressed, proceed
-            if (waitKey(30) == ' ')
+            if (waitKey(30) == ' ' && patternWasFound)
             {
                 break;
             }
@@ -303,6 +302,14 @@ int main(int argc, char** argv)
         extrinsics.at<double>(i, 3) = T.at<double>(i);
     }
 
+    // correct left handed to right handed
+    for (int i = 0; i < 4; i++)
+    {
+        extrinsics.at<double>(1, i) *= -1;
+        extrinsics.at<double>(i, 1) *= -1;
+    }
+
+    
     // file output
     cout << extrinsics << endl;
 
