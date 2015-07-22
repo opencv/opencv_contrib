@@ -213,37 +213,26 @@ int main(int argc, char** argv)
         // we care only the points within checkerboard
         Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
         vector<Point2d> homographyPointsCamera, homographyPointsProjector;
-        Point2d p0 = imagePointsCamera.at(0);
-        Point2d p1 = imagePointsCamera.at(chessSize.width - 1);
-        Point2d p2 = imagePointsCamera.at(chessSize.width * (chessSize.height - 1));
-        Point2d p3 = imagePointsCamera.back();
-        if (p0.x > p1.x)
+        for (size_t i = 0; i < imagePointsCamera.size(); i++)
         {
-            p3 = imagePointsCamera.at(0);
-            p2 = imagePointsCamera.at(chessSize.width - 1);
-            p1 = imagePointsCamera.at(chessSize.width * (chessSize.height - 1));
-            p0 = imagePointsCamera.back();
-        }
-        for (int y = std::max(p0.y, p1.y); y < std::min(p2.y, p3.y); y++)
-        {
-            for (int x = std::max(p0.x, p2.x); x < std::min(p1.x, p3.x); x++)
+            Point point;
+
+            int x = static_cast<int>(imagePointsCamera.at(i).x);
+            int y = static_cast<int>(imagePointsCamera.at(i).y);
+
+            const bool error = true;
+            if (pattern->getProjPixel(cameraImages, x, y, point) == error)
             {
-                Point point;
-
-                const bool error = true;
-                if (pattern->getProjPixel(cameraImages, x, y, point) == error)
-                {
-                    //continue;
-                }
-
-                Range xr(x, x + 1);
-                Range yr(y, y + 1);
-                correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
-
-                Point2d p(x, y);
-                homographyPointsCamera.push_back(p);
-                homographyPointsProjector.push_back(point);
+                //continue;
             }
+
+            Range xr(x, x + 1);
+            Range yr(y, y + 1);
+            correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
+
+            Point2d p(x, y);
+            homographyPointsCamera.push_back(p);
+            homographyPointsProjector.push_back(point);
         }
 
         imshow("correspondence", correspondenceMap);
@@ -296,8 +285,8 @@ int main(int argc, char** argv)
     int flags = 0;
     Size imageSize = Size(params.width, params.height);
     Mat R, T, E, F;
-    stereoCalibrate(objectPoints, camera.imagePoints, projector.imagePoints, camera.cameraMatrix, camera.distCoeffs,
-        projector.cameraMatrix, projector.distCoeffs, imageSize, R, T, E, F, flags);
+    stereoCalibrate(objectPoints, projector.imagePoints, camera.imagePoints, projector.cameraMatrix, projector.distCoeffs,
+        camera.cameraMatrix, camera.distCoeffs, imageSize, R, T, E, F, flags);
 
     cout << projector.cameraMatrix << endl;
     cout << projector.distCoeffs << endl;
@@ -322,6 +311,55 @@ int main(int argc, char** argv)
     fs << "{";
     {
         fs << "name" << "OpenCV calibration";
+        fs << "cameras";
+        fs << "{";
+        {
+            fs << "Camera";
+            fs << "{";
+            {
+                fs << "name" << 0;
+                fs << "hostNameOrAddress" << "localhost";
+                fs << "width" << static_cast<int>(capture.get(CAP_PROP_FRAME_WIDTH));
+                fs << "height" << static_cast<int>(capture.get(CAP_PROP_FRAME_HEIGHT));
+                fs << "cameraMatrix";
+                fs << "{";
+                {
+                    fs << "ValuesByColumn";
+                    fs << "{";
+                    for (int j = 0; j < 3; j++)
+                    {
+                        fs << "ArrayOfDouble";
+                        fs << "{";
+                        for (int i = 0; i < 3; i++)
+                        {
+                            fs << "double" << camera.cameraMatrix.at<double>(i, j);
+                        }
+                        fs << "}";
+                    }
+                    fs << "}";
+                }
+                fs << "}";
+                fs << "lensDistortion";
+                fs << "{";
+                {
+                    fs << "ValuesByColumn";
+                    fs << "{";
+                    {
+                        fs << "ArrayOfDouble";
+                        fs << "{";
+                        for (int i = 0; i < 2; i++)
+                        {
+                            fs << "double" << camera.distCoeffs.at<double>(i);
+                        }
+                        fs << "}";
+                    }
+                    fs << "}";
+                }
+                fs << "}";
+            }
+            fs << "}";
+        }
+        fs << "}";
         fs << "projectors";
         fs << "{";
         {
@@ -361,7 +399,7 @@ int main(int argc, char** argv)
                         fs << "{";
                         for (int i = 0; i < 2; i++)
                         {
-                            fs << "double" << 0;
+                            fs << "double" << projector.distCoeffs.at<double>(i);
                         }
                         fs << "}";
                     }
