@@ -60,6 +60,7 @@ void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 namespace tld
 {
+
 class TrackerProxy
 {
 public:
