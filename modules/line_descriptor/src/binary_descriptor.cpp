@@ -42,7 +42,7 @@
 #include "precomp.hpp"
 
 #ifdef _MSC_VER
-    #if (__cplusplus <= 199711L)
+    #if (_MSC_VER <= 1700)
         /* This function rounds x to the nearest integer, but rounds halfway cases away from zero. */
         static inline double round(double x)
         {
