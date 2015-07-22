@@ -56,6 +56,15 @@ namespace cv
 			detector = Ptr<TLDDetector>(new TLDDetector());
 
 			//Propagate data to Detector
+			posNum = 0;
+			negNum = 0;
+			posExp = Mat(Size(225, 500), CV_8UC1);
+			negExp = Mat(Size(225, 500), CV_8UC1);
+			detector->posNum = &posNum;
+			detector->negNum = &negNum;
+			detector->posExp = &posExp;
+			detector->negExp = &negExp;
+
 			detector->positiveExamples = &positiveExamples;
 			detector->negativeExamples = &negativeExamples;
 			detector->timeStampsPositive = &timeStampsPositive;
@@ -69,14 +78,13 @@ namespace cv
 				scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
 			GaussianBlur(image, image_blurred, GaussBlurKernelSize, 0.0);
 			TLDDetector::generateScanGrid(image.rows, image.cols, minSize_, scanGrid);
-			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale,
-				boundingBox.height / scale), 10, closest);
-
+			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale, boundingBox.height / scale), 10, closest);
 			Mat_<uchar> blurredPatch(minSize);
 			TLDEnsembleClassifier::makeClassifiers(minSize, MEASURES_PER_CLASSIFIER, GRIDSIZE, detector->classifiers);
 
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
+
 			for (int i = 0; i < (int)closest.size(); i++)
 			{
 				for (int j = 0; j < 20; j++)
@@ -188,6 +196,11 @@ namespace cv
 		void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
 		{
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
+			if ((int)eForModel.size() == 0) return;
+
+			//int64 e1, e2;
+			//double t;
+			//e1 = getTickCount();
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
 				double sr = detector->Sr(eForModel[k]);
@@ -218,6 +231,79 @@ namespace cv
 						detector->classifiers[i].integrate(eForEnsemble[k], isPositive);
 				}
 			}
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency() * 1000;
+			//printf("Integrate Additional: %fms\n", t);
+			/*
+			if( negativeIntoModel > 0 )
+			dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));
+			if( positiveIntoModel > 0 )
+			dfprintf((stdout, "positiveIntoModel = %d ", positiveIntoModel));
+			if( negativeIntoEnsemble > 0 )
+			dfprintf((stdout, "negativeIntoEnsemble = %d ", negativeIntoEnsemble));
+			if( positiveIntoEnsemble > 0 )
+			dfprintf((stdout, "positiveIntoEnsemble = %d ", positiveIntoEnsemble));
+			dfprintf((stdout, "\n"));*/
+		}
+
+		void TrackerTLDModel::ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
+		{
+			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
+			if ((int)eForModel.size() == 0) return;
+
+			//int64 e1, e2;
+			//double t;
+			//e1 = getTickCount();
+
+			//Prepare batch of patches
+			int numOfPatches = (int)eForModel.size();
+			Mat_<uchar> stdPatches(numOfPatches, 225);
+			double *resultSr = new double[numOfPatches];
+			double *resultSc = new double[numOfPatches];
+			uchar *patchesData = stdPatches.data;
+			for (int i = 0; i < numOfPatches; i++)
+			{
+				uchar *stdPatchData = eForModel[i].data;
+				for (int j = 0; j < 225; j++)
+					patchesData[225 * i + j] = stdPatchData[j];
+			}
+
+			//Calculate Sr and Sc batches
+			detector->ocl_batchSrSc(stdPatches, resultSr, resultSc, numOfPatches);
+
+			for (int k = 0; k < (int)eForModel.size(); k++)
+			{
+				double sr = resultSr[k];
+				if ((sr > THETA_NN) != isPositive)
+				{
+					if (isPositive)
+					{
+						positiveIntoModel++;
+						pushIntoModel(eForModel[k], true);
+					}
+					else
+					{
+						negativeIntoModel++;
+						pushIntoModel(eForModel[k], false);
+					}
+				}
+				double p = 0;
+				for (int i = 0; i < (int)detector->classifiers.size(); i++)
+					p += detector->classifiers[i].posteriorProbability(eForEnsemble[k].data, (int)eForEnsemble[k].step[0]);
+				p /= detector->classifiers.size();
+				if ((p > ENSEMBLE_THRESHOLD) != isPositive)
+				{
+					if (isPositive)
+						positiveIntoEnsemble++;
+					else
+						negativeIntoEnsemble++;
+					for (int i = 0; i < (int)detector->classifiers.size(); i++)
+						detector->classifiers[i].integrate(eForEnsemble[k], isPositive);
+				}
+			}
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency() * 1000;
+			//printf("Integrate Additional OCL: %fms\n", t);
 			/*
 			if( negativeIntoModel > 0 )
 			dfprintf((stdout, "negativeIntoModel = %d ", negativeIntoModel));
@@ -238,12 +324,30 @@ namespace cv
 			std::vector<int>* proxyT;
 			if (positive)
 			{
+				if (posNum < 500)
+				{
+					uchar *patchPtr = example.data;
+					uchar *modelPtr = posExp.data;
+					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
+						modelPtr[posNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					posNum++;
+				}
+
 				proxyV = &positiveExamples;
 				proxyN = &timeStampPositiveNext;
 				proxyT = &timeStampsPositive;
 			}
 			else
 			{
+				if (negNum < 500)
+				{
+					uchar *patchPtr = example.data;
+					uchar *modelPtr = negExp.data;
+					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
+						modelPtr[negNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					negNum++;
+				}
+
 				proxyV = &negativeExamples;
 				proxyN = &timeStampNegativeNext;
 				proxyT = &timeStampsNegative;
@@ -268,9 +372,5 @@ namespace cv
 			dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
 			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
-
-
-
-
 	}
 }

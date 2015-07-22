@@ -48,8 +48,8 @@
 using namespace std;
 using namespace cv;
 
-#define NUM_TEST_FRAMES 500
-#define TEST_VIDEO_INDEX 1		//TLD Dataset Video Index from 1-10
+#define NUM_TEST_FRAMES 100
+#define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
 //#define RECORD_VIDEO_FLG
 
 static Mat image;
