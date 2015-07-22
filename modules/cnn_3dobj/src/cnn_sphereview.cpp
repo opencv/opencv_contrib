@@ -114,8 +114,8 @@ namespace cnn_3dobj
 
 	uint32_t IcoSphere::swap_endian(uint32_t val)
 	{
-    		val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
-    		return (val << 16) | (val >> 16);
+		val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+		return (val << 16) | (val >> 16);
 	};
 
 	cv::Point3d IcoSphere::getCenter(cv::Mat cloud)

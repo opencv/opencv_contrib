@@ -38,10 +38,10 @@ using namespace std;
 using namespace cv::cnn_3dobj;
 int main(int argc, char* argv[])
 {
-	const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-		     "{src_dir | | Source direction of the images ready for being converted to leveldb dataset.}"
-		     "{src_dst | | Aim direction of the converted to leveldb dataset. }"
-		     "{attach_dir |  | Path for saving additional files which describe the transmission results. }"
+	const String keys = "{help | | this demo will convert a set of images in a particular path into leveldb database for feature extraction using Caffe.}"
+		     "{src_dir | ../data/images_all | Source direction of the images ready for being converted to leveldb dataset.}"
+		     "{src_dst | ../data/dbfile | Aim direction of the converted to leveldb dataset. }"
+		     "{attach_dir | ../data/dbfile | Path for saving additional files which describe the transmission results. }"
 		     "{channel | 1 | Channel of the images. }"
 		     "{width | 64 | Width of images}"
 		     "{height | 64 | Height of images}";
@@ -58,6 +58,6 @@ int main(int argc, char* argv[])
 	int channel = parser.get<int>("channel");
 	int width = parser.get<int>("width");
 	int height = parser.get<int>("height");
-	cv::cnn_3dobj::DataTrans transTemp();
-	transTemp.convert(src_dir,src_dst,attach_dir,channel,width,height);
+	cv::cnn_3dobj::DataTrans Trans;
+	Trans.convert(src_dir,src_dst,attach_dir,channel,width,height);
 }

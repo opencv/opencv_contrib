@@ -46,8 +46,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_CNN_3DOBJ_HPP__
 #ifdef __cplusplus
 
-#include <opencv/cv.h>
-#include <opencv/cxcore.h>
 #include <string>
 #include <fstream>
 #include <vector>
@@ -62,7 +60,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 #include <leveldb/db.h>
-#include <opencv2/calib3d.hpp>
+//#include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/highgui/highgui_c.h>
@@ -159,7 +157,6 @@ class CV_EXPORTS_W DataTrans
 		CV_WRAP void convert(string imgdir,string outputdb,string attachdir,int channel,int width,int height);
 		/** @brief Convert a set of images as a leveldb database for CNN training.
 		*/
-		template<typename Dtype>
 		CV_WRAP std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id);
 		/** @brief Extract feature into a binary file and vector<cv::Mat> for classification, the model proto and network proto are needed, All images in the file root will be used for feature extraction.
 		*/

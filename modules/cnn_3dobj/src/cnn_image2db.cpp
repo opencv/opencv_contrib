@@ -28,7 +28,7 @@ namespace cnn_3dobj
 	      if(r)
 	      {
 		sprintf(childpath, "%s/%s", path, ent->d_name);
-		list_dir(childpath,files,false);
+		DataTrans::list_dir(childpath,files,false);
 	      }
 	    }
 	    else
@@ -148,8 +148,7 @@ namespace cnn_3dobj
 
 	};
 
-	template<typename Dtype>
-	std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id) {
+	std::vector<cv::Mat> DataTrans::feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id) {
 	  if (strcmp(device.c_str(), "GPU") == 0) {
 	    LOG(ERROR)<< "Using GPU";
 	    int device_id = 0;
@@ -164,8 +163,8 @@ namespace cnn_3dobj
 	    LOG(ERROR) << "Using CPU";
 	    Caffe::set_mode(Caffe::CPU);
 	  }
-	  boost::shared_ptr<Net<Dtype> > feature_extraction_net(
-	      new Net<Dtype>(feature_extraction_proto, caffe::TEST));
+	  boost::shared_ptr<Net<float> > feature_extraction_net(
+	      new Net<float>(feature_extraction_proto, caffe::TEST));
 	  feature_extraction_net->CopyTrainedLayersFrom(pretrained_binary_proto);
 	  std::vector<std::string> blob_names;
 	  blob_names.push_back(extract_feature_blob_names);
@@ -197,8 +196,8 @@ namespace cnn_3dobj
 	  std::vector<int> image_indices(num_features, 0);
 	  for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
 	    feature_extraction_net->Forward(input_vec);
-	    for (int i = 0; i < num_features; ++i) {
-			const boost::shared_ptr<Blob<Dtype> > feature_blob = feature_extraction_net
+	    for (size_t i = 0; i < num_features; ++i) {
+			const boost::shared_ptr<Blob<float> > feature_blob = feature_extraction_net
 		  ->blob_by_name(blob_names[i]);
 	      int batch_size = feature_blob->num();
 	      int dim_features = feature_blob->count() / batch_size;
@@ -208,15 +207,15 @@ namespace cnn_3dobj
 			  fwrite(&dim_features, sizeof(int), 1, files[i]);
 			  fwrite(&fea_num, sizeof(int), 1, files[i]);
 		  }
-	      const Dtype* feature_blob_data;
+	      const float* feature_blob_data;
 	      for (int n = 0; n < batch_size; ++n) {
 
 		feature_blob_data = feature_blob->cpu_data() +
 		    feature_blob->offset(n);
-			fwrite(feature_blob_data, sizeof(Dtype), dim_features, files[i]);
+			fwrite(feature_blob_data, sizeof(float), dim_features, files[i]);
 			for (int dim = 0; dim < dim_features; dim++) {
 				cv::Mat tempfeat = cv::Mat(1, dim_features, CV_32FC1);
-				tempfeat.at<Dtype>(0,dim) = *(feature_blob_data++);
+				tempfeat.at<float>(0,dim) = *(feature_blob_data++);
 				featureVec.push_back(tempfeat);
 			}
 		++image_indices[i];
@@ -228,7 +227,7 @@ namespace cnn_3dobj
 	    }  // for (int i = 0; i < num_features; ++i)
 	  }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
 	  // write the last batch
-	  for (int i = 0; i < num_features; ++i) {
+	  for (size_t i = 0; i < num_features; ++i) {
 		  fclose(files[i]);
 	  }
 

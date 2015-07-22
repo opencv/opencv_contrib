@@ -43,8 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_CNN_3DOBJ_PRECOMP_HPP__
 
 #include <opencv2/cnn_3dobj.hpp>
-#include <opencv/cv.h>
-#include <opencv/cxcore.h>
 #include <string>
 #include <fstream>
 #include <vector>
@@ -59,7 +57,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 #include <leveldb/db.h>
-#include <opencv2/calib3d.hpp>
+//#include <opencv2/opencv.hpp>
+//#include <opencv2/core/core.hpp>
+//#include <opencv2/calib3d.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/highgui/highgui_c.h>

@@ -11,3 +11,7 @@ target_link_libraries(sphereview_test ${OpenCV_LIBS})
 set(SOURCES2 images2db_demo.cpp)
 add_executable(images2db_test ${SOURCES2})
 target_link_libraries(images2db_test ${OpenCV_LIBS})
+
+set(SOURCES3 feature_extract_demo.cpp)
+add_executable(feature_extract_test ${SOURCES3})
+target_link_libraries(feature_extract_test ${OpenCV_LIBS})
