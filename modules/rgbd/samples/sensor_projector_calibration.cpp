@@ -42,6 +42,12 @@
 //
 //M*/
 
+// Camera-projector calibration using checkerboard and structured light based on
+// Daniel Moreno and Gabriel Taubin. Simple, Accurate, and Robust Projector-Camera Calibration.
+// 3D Imaging, Modeling, Processing, 2012 Second International Conference on Visualization and Transmission (3DIMPVT). IEEE, 2012.
+
+//#define USE_OPENNI2
+
 #include <opencv2/rgbd.hpp>
 
 #include <opencv2/highgui.hpp>
@@ -62,19 +68,54 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    Mat image, depth;
-    float focalLength;
-
+#ifdef USE_OPENNI2
     VideoCapture capture(CAP_OPENNI2);
+    // set registeration on
+    capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
+    VideoCapture capture(CAP_OPENNI2);
+#else
+    VideoCapture capture(2);
+    capture.set(CAP_PROP_FRAME_WIDTH, 1280); 
+    capture.set(CAP_PROP_FRAME_HEIGHT, 720);
+#endif
 
     if (!capture.isOpened())
     {
-        cout << "OpenNI2 device unavailable" << endl;
+        cout << "Camera unavailable" << endl;
         return -1;
     }
 
-    // set registeration on
-    capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
+    // storage for calibration input/output
+    struct Calibration {
+        Mat cameraMatrix;
+        Mat distCoeffs;
+        vector<vector<Point2f> > imagePoints;
+    };
+    Calibration camera, projector;
+
+    // number of checkerboard poses to capture
+    const int numSequences = 3;
+
+    Mat image;
+
+    // initialize checkerboard parameters
+    vector<vector<Point3f> > objectPoints;
+    cv::Size chessSize(9, 6);
+    float chessDimension = 20; // [mm]
+    {
+        vector<Point3f> chessPoints;
+        for (int i = 0; i < chessSize.height; i++)
+        {
+            for (int j = 0; j < chessSize.width; j++)
+            {
+                chessPoints.push_back(Point3f(j, i, 0) * chessDimension);
+            }
+        }
+        for (int sequence = 0; sequence < numSequences; sequence++)
+        {
+            objectPoints.push_back(chessPoints);
+        }
+    }
 
     // initialize gray coding
     GrayCodePattern::Params params;
@@ -88,7 +129,7 @@ int main(int argc, char** argv)
     string window = "pattern";
     namedWindow(window, WINDOW_NORMAL);
     moveWindow(window, 0, 0);
-    imshow(window, patternImages.at(0));
+    imshow(window, Mat::zeros(params.height, params.width, CV_8U));
 
     // window placement; wait for user
     while (true)
@@ -109,147 +150,168 @@ int main(int argc, char** argv)
         }
     }
 
-    // capture
-    vector<Mat> cameraImages;
-    Mat depthAvg;
-
-    for (size_t i = 0; i < patternImages.size(); i++) {
-        imshow(window, patternImages.at(i));
-
-        waitKey(500);
-
-        capture.grab();
-
-        capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
-        capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
-
-        flip(image, image, 1);
-        flip(depth, depth, 1);
-
-        Mat gray;
-        cvtColor(image, gray, COLOR_BGR2GRAY);
-        cameraImages.push_back(gray);
-        depth.convertTo(depth, CV_32F);
-        depth = depth * 0.001f; // openni is in [mm]; there is a util function in rgbd though...
-        if (depthAvg.empty())
-        {
-            depthAvg = depth;
-        }
-        else
-        {
-            depthAvg += depth;
-        }
-    }
-    depthAvg *= 1.0f / static_cast<float>(patternImages.size());
-
-    // prepare depth points
-    focalLength = static_cast<float>(capture.get(CAP_PROP_OPENNI_FOCAL_LENGTH));
-
-    // kinect parameter to focal length
-    // https://github.com/OpenKinect/libfreenect/blob/master/src/registration.c#L317
-    float fx = focalLength,
-        fy = focalLength,
-        cx = 319.5f,
-        cy = 239.5f;
-
-    Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depthAvg);
-
-    frame->cameraMatrix = Mat::eye(3, 3, CV_32FC1);
+    // run structured light sequences for different checkerboard poses
+    for (int sequence = 0; sequence < numSequences;)
     {
-        frame->cameraMatrix.at<float>(0, 0) = fx;
-        frame->cameraMatrix.at<float>(1, 1) = fy;
-        frame->cameraMatrix.at<float>(0, 2) = cx;
-        frame->cameraMatrix.at<float>(1, 2) = cy;
-    }
+        vector<Mat> cameraImages;
+        vector<Point2f> imagePointsCamera, imagePointsProjector;
 
-    depthTo3d(*frame);
-
-    // generate valid point mask for clusters
-    compare(frame->depth, 0, frame->mask, CMP_GT);
-
-    // decode
-    vector<Point3d> objectPoints;
-    vector<Point2d> imagePoints;
-    Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
-    for (int y = 0; y < image.rows; y++)
-    {
-        for (int x = 0; x < image.cols; x++)
+        // detect checkerboard corners
+        while (true)
         {
-            if (frame->mask.at<uchar>(y, x) == 0)
+            capture.grab();
+#ifdef USE_OPENNI2
+            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+            flip(image, image, 1);
+#else
+            capture.retrieve(image);
+#endif
+            bool patternWasFound;
+            patternWasFound = findChessboardCorners(image, chessSize, imagePointsCamera);
+            drawChessboardCorners(image, chessSize, imagePointsCamera, patternWasFound);
+
+            imshow("camera", image);
+
+            // if space key is pressed, proceed
+            if (waitKey(30) == ' ')
             {
-                continue;
+                break;
+            }
+        }
+
+        // start structured lighting
+        for (size_t i = 0; i < patternImages.size(); i++)
+        {
+            waitKey(50);
+
+            imshow(window, patternImages.at(i));
+
+            waitKey(50);
+
+            for (int t = 0; t < 5; t++)
+            {
+                waitKey(50);
+                capture.grab();
+
+#ifdef USE_OPENNI2
+                capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+                flip(image, image, 1);
+#else
+                capture.retrieve(image);
+#endif
             }
 
-            Point point;
-            if (pattern->getProjPixel(cameraImages, x, y, point) != true)
+            Mat gray;
+            cvtColor(image, gray, COLOR_BGR2GRAY);
+            imshow("camera", gray);
+            cameraImages.push_back(gray);
+
+            waitKey(50);
+        }
+
+        // decode
+        // we care only the points within checkerboard
+        Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
+        vector<Point2d> homographyPointsCamera, homographyPointsProjector;
+        Point2d p0 = imagePointsCamera.at(0);
+        Point2d p1 = imagePointsCamera.at(chessSize.width - 1);
+        Point2d p2 = imagePointsCamera.at(chessSize.width * (chessSize.height - 1));
+        Point2d p3 = imagePointsCamera.back();
+        if (p0.x > p1.x)
+        {
+            p3 = imagePointsCamera.at(0);
+            p2 = imagePointsCamera.at(chessSize.width - 1);
+            p1 = imagePointsCamera.at(chessSize.width * (chessSize.height - 1));
+            p0 = imagePointsCamera.back();
+        }
+        for (int y = std::max(p0.y, p1.y); y < std::min(p2.y, p3.y); y++)
+        {
+            for (int x = std::max(p0.x, p2.x); x < std::min(p1.x, p3.x); x++)
             {
-                Point3f p3d = frame->points3d.at<Point3f>(y, x);
-                objectPoints.push_back(Point3d(p3d.x, p3d.y, p3d.z));
-                imagePoints.push_back(Point2d(point.x, point.y));
+                Point point;
+
+                const bool error = true;
+                if (pattern->getProjPixel(cameraImages, x, y, point) == error)
+                {
+                    //continue;
+                }
+
                 Range xr(x, x + 1);
                 Range yr(y, y + 1);
                 correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
+
+                Point2d p(x, y);
+                homographyPointsCamera.push_back(p);
+                homographyPointsProjector.push_back(point);
             }
         }
-    }
-    imshow("correspondence", correspondenceMap);
 
-    Mat projectorMatrix = Mat::eye(3, 3, CV_64FC1);
-    {
-        projectorMatrix.at<double>(0, 0) = 1500;
-        projectorMatrix.at<double>(1, 1) = 1500;
-        projectorMatrix.at<double>(0, 2) = params.width * 0.5f - 0.5f;
-        projectorMatrix.at<double>(1, 2) = params.height * 1.2f - 0.5f; // vertical lens shift
-    }
-    // distCoeffs zero unless calibrated beforehand
-    Mat distCoeffs = Mat::zeros(4, 1, CV_64FC1);
-    Mat rvec, tvec;
-    Rodrigues(Mat::eye(3, 3, CV_64FC1), rvec);
-    tvec = Mat::zeros(3, 1, CV_64FC1);
-    // TODO: replace with calibrateCamera
-#if 1
-    vector<int> inliers;
-    solvePnPRansac(objectPoints, imagePoints, projectorMatrix, distCoeffs, rvec, tvec, true, 100000, 5, 0.999999999, inliers);
-    vector<Point2d> repPoints;
-    projectPoints(objectPoints, rvec, tvec, projectorMatrix, distCoeffs, repPoints);
-    for(size_t i = 0; i < repPoints.size(); i++)
-    {
-        cout << norm(repPoints.at(i) - imagePoints.at(i)) << " ";
-    }
-    cout << endl;
-    for(size_t i = 0; i < inliers.size(); i++)
-    {
-        cout << norm(repPoints.at(inliers.at(i)) - imagePoints.at(inliers.at(i))) << " ";
-    }
-#else
-    vector<vector<Point3f> > objectPointsArray;
-    vector<vector<Point2f> > imagePointsArray;
-    objectPointsArray.push_back(objectPoints);
-    imagePointsArray.push_back(imagePoints);
-    vector<Mat> rvecs, tvecs;
-    int flags = CALIB_USE_INTRINSIC_GUESS | CALIB_FIX_PRINCIPAL_POINT | CALIB_FIX_ASPECT_RATIO | CALIB_ZERO_TANGENT_DIST
-        | CALIB_FIX_K1 | CALIB_FIX_K2 | CALIB_FIX_K3 | CALIB_FIX_K4;
-    cout << calibrateCamera(objectPointsArray, imagePointsArray, Size(params.width, params.height * 2), projectorMatrix, distCoeffs, rvecs, tvecs, flags) << endl;
-    rvec = rvecs.at(0);
-    tvec = tvecs.at(0);
-#endif
+        imshow("correspondence", correspondenceMap);
 
-    cout << projectorMatrix << endl;
-    cout << rvec << endl;
-    cout << tvec << endl;
+        // warp checkerboard corners to projector image plane
+        Mat H = findHomography(homographyPointsCamera, homographyPointsProjector, RANSAC);
+        for (int i = 0; i < imagePointsCamera.size(); i++)
+        {
+            Mat p = Mat(3, 1, CV_64F);
+            p.at<double>(0) = imagePointsCamera.at(i).x;
+            p.at<double>(1) = imagePointsCamera.at(i).y;
+            p.at<double>(2) = 1;
+            p = H * p;
+            p *= (1.0f / p.at<double>(2));
+            imagePointsProjector.push_back(Point2d(p.at<double>(0), p.at<double>(1)));
+        }
+
+        camera.imagePoints.push_back(imagePointsCamera);
+        projector.imagePoints.push_back(imagePointsProjector);
+
+        Mat warpedImagePoints = Mat::zeros(params.height, params.width, CV_8UC3);
+        drawChessboardCorners(warpedImagePoints, chessSize, imagePointsProjector, true);
+        imshow(window, warpedImagePoints);
+
+        while (true)
+        {
+            int key = waitKey(30);
+            if (key == ' ')
+            {
+                // proceed to next pose
+                sequence++;
+                break;
+            }
+            else if (key == 'c')
+            {
+                // discard and recapture
+                break;
+            }
+        }
+
+        imshow(window, Mat::zeros(params.height, params.width, CV_8U));
+    }
+
+/*    FileStorage tempfs("calibrationTemp.yml", FileStorage::WRITE);
+    tempfs << "objectPoints" << Mat(objectPoints);
+    tempfs << "imagePointsCamera" << Mat(camera.imagePoints);
+    tempfs << "imagePointsProjector" << Mat(projector.imagePoints);
+*/
+
+    int flags = 0;
+    Size imageSize = Size(params.width, params.height);
+    Mat R, T, E, F;
+    stereoCalibrate(objectPoints, camera.imagePoints, projector.imagePoints, camera.cameraMatrix, camera.distCoeffs,
+        projector.cameraMatrix, projector.distCoeffs, imageSize, R, T, E, F, flags);
+
+    cout << projector.cameraMatrix << endl;
+    cout << projector.distCoeffs << endl;
+    cout << R << endl;
+    cout << T << endl;
     cout << objectPoints.size() << endl;
-    cout << imagePoints.size() << endl;
-    // Rodrigues to form extrinsic matrix
-    Mat rotation;
-    Rodrigues(rvec, rotation);
     Mat extrinsics = Mat::eye(4, 4, CV_64FC1);
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            extrinsics.at<double>(i, j) = rotation.at<double>(i, j);
+            extrinsics.at<double>(i, j) = R.at<double>(i, j);
         }
-        extrinsics.at<double>(i, 3) = tvec.at<double>(i);
+        extrinsics.at<double>(i, 3) = T.at<double>(i);
     }
 
     // file output
@@ -282,7 +344,7 @@ int main(int argc, char** argv)
                         fs << "{";
                         for (int i = 0; i < 3; i++)
                         {
-                            fs << "double" << projectorMatrix.at<double>(i, j);
+                            fs << "double" << projector.cameraMatrix.at<double>(i, j);
                         }
                         fs << "}";
                     }
