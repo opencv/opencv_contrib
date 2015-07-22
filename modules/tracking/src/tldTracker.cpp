@@ -116,11 +116,20 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit = false;
+	bool DETECT_FLG = false;
     for( int i = 0; i < 2; i++ )
     {
         Rect2d tmpCandid = boundingBox;
-        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) ||
-			((i == 1) && (tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize()))))
+
+		if (i == 1)
+		{
+			if (ocl::haveOpenCL())
+				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+			else
+				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+		}
+
+        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
         {
             candidates.push_back(tmpCandid);
             if( i == 0 )
@@ -202,10 +211,17 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
         //dprintf(("%d relabeled by nExpert\n", negRelabeled));
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
+		if (ocl::haveOpenCL())
+			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
+		else
+			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
         examplesForModel.clear(); examplesForEnsemble.clear();
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
+
+		if (ocl::haveOpenCL())
+			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
+		else
+			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
     }
     else
     {
