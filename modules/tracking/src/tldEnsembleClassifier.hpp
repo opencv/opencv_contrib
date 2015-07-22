@@ -64,5 +64,6 @@ namespace cv
 			std::vector<Point2i> offset;
 			int lastStep_;
 		};
+
 	}
 }

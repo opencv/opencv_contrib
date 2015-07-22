@@ -43,7 +43,6 @@
 #define OPENCV_TLD_DETECTOR
 
 #include "precomp.hpp"
-#include "opencl_kernels_tracking.hpp"
 #include "tldEnsembleClassifier.hpp"
 #include "tldUtils.hpp"
 
@@ -74,14 +73,9 @@ namespace cv
 			inline double ensembleClassifierNum(const uchar* data);
 			inline void prepareClassifiers(int rowstep);
 			double Sr(const Mat_<uchar>& patch);
-			double ocl_Sr(const Mat_<uchar>& patch);
 			double Sc(const Mat_<uchar>& patch);
-			double ocl_Sc(const Mat_<uchar>& patch);
-			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 
 			std::vector<TLDEnsembleClassifier> classifiers;
-			Mat *posExp, *negExp;
-			int *posNum, *negNum;
 			std::vector<Mat_<uchar> > *positiveExamples, *negativeExamples;
 			std::vector<int> *timeStampsPositive, *timeStampsNegative;
 			double *originalVariancePtr;
@@ -93,7 +87,6 @@ namespace cv
 				bool isObject, shouldBeIntegrated;
 			};
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
-			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 		protected:
 
 
