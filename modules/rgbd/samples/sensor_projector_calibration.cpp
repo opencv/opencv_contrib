@@ -168,8 +168,9 @@ int main(int argc, char** argv)
     compare(frame->depth, 0, frame->mask, CMP_GT);
 
     // decode
-    vector<Point3f> objectPoints;
-    vector<Point2f> imagePoints;
+    vector<Point3d> objectPoints;
+    vector<Point2d> imagePoints;
+    Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
     for (int y = 0; y < image.rows; y++)
     {
         for (int x = 0; x < image.cols; x++)
@@ -183,25 +184,43 @@ int main(int argc, char** argv)
             if (pattern->getProjPixel(cameraImages, x, y, point) != true)
             {
                 Point3f p3d = frame->points3d.at<Point3f>(y, x);
-                objectPoints.push_back(p3d);
-                imagePoints.push_back(Point2f(point.x, point.y));
+                objectPoints.push_back(Point3d(p3d.x, p3d.y, p3d.z));
+                imagePoints.push_back(Point2d(point.x, point.y));
+                Range xr(x, x + 1);
+                Range yr(y, y + 1);
+                correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
             }
         }
     }
+    imshow("correspondence", correspondenceMap);
 
     Mat projectorMatrix = Mat::eye(3, 3, CV_64FC1);
     {
         projectorMatrix.at<double>(0, 0) = 1500;
         projectorMatrix.at<double>(1, 1) = 1500;
         projectorMatrix.at<double>(0, 2) = params.width * 0.5f - 0.5f;
-        projectorMatrix.at<double>(1, 2) = params.height * 1.1f - 0.5f; // vertical lens shift
+        projectorMatrix.at<double>(1, 2) = params.height * 1.2f - 0.5f; // vertical lens shift
     }
     // distCoeffs zero unless calibrated beforehand
-    Mat distCoeffs = Mat::zeros(4, 1, CV_32FC1);
+    Mat distCoeffs = Mat::zeros(4, 1, CV_64FC1);
     Mat rvec, tvec;
+    Rodrigues(Mat::eye(3, 3, CV_64FC1), rvec);
+    tvec = Mat::zeros(3, 1, CV_64FC1);
     // TODO: replace with calibrateCamera
 #if 1
-    solvePnP(objectPoints, imagePoints, projectorMatrix, distCoeffs, rvec, tvec);
+    vector<int> inliers;
+    solvePnPRansac(objectPoints, imagePoints, projectorMatrix, distCoeffs, rvec, tvec, true, 100000, 5, 0.999999999, inliers);
+    vector<Point2d> repPoints;
+    projectPoints(objectPoints, rvec, tvec, projectorMatrix, distCoeffs, repPoints);
+    for(size_t i = 0; i < repPoints.size(); i++)
+    {
+        cout << norm(repPoints.at(i) - imagePoints.at(i)) << " ";
+    }
+    cout << endl;
+    for(size_t i = 0; i < inliers.size(); i++)
+    {
+        cout << norm(repPoints.at(inliers.at(i)) - imagePoints.at(inliers.at(i))) << " ";
+    }
 #else
     vector<vector<Point3f> > objectPointsArray;
     vector<vector<Point2f> > imagePointsArray;
@@ -210,7 +229,7 @@ int main(int argc, char** argv)
     vector<Mat> rvecs, tvecs;
     int flags = CALIB_USE_INTRINSIC_GUESS | CALIB_FIX_PRINCIPAL_POINT | CALIB_FIX_ASPECT_RATIO | CALIB_ZERO_TANGENT_DIST
         | CALIB_FIX_K1 | CALIB_FIX_K2 | CALIB_FIX_K3 | CALIB_FIX_K4;
-    calibrateCamera(objectPointsArray, imagePointsArray, Size(params.width, params.height * 2), projectorMatrix, distCoeffs, rvecs, tvecs, flags);
+    cout << calibrateCamera(objectPointsArray, imagePointsArray, Size(params.width, params.height * 2), projectorMatrix, distCoeffs, rvecs, tvecs, flags) << endl;
     rvec = rvecs.at(0);
     tvec = tvecs.at(0);
 #endif
