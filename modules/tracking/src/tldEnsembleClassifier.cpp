@@ -58,11 +58,11 @@ namespace cv
 		// Calculate measure locations from 15x15 grid on minSize patches
 		void TLDEnsembleClassifier::stepPrefSuff(std::vector<Vec4b>& arr, int pos, int len, int gridSize)
 		{
-		#if 0
+#if 0
 			int step = len / (gridSize - 1), pref = (len - step * (gridSize - 1)) / 2;
 			for (int i = 0; i < (int)(sizeof(x1) / sizeof(x1[0])); i++)
 				arr[i] = pref + arr[i] * step;
-		#else
+#else
 			int total = len - gridSize;
 			int quo = total / (gridSize - 1), rem = total % (gridSize - 1);
 			int smallStep = quo, bigStep = quo + 1;
