@@ -103,6 +103,8 @@ enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
  * - cornerRefinementMinAccuracy: minimum error for the stop cristeria of the corner refinement
  *   process (default: 0.1)
  * - markerBorderBits: number of bits of the marker border, i.e. marker border width (default 1).
+ * - perspectiveRemoveDistortion: employ routine to remove perspective taking into account the image
+*    distortion in the marker contour (default false).
  * - perpectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
  *   when removing the perspective (default 8).
  * - perspectiveRemoveIgnoredMarginPerCell: width of the margin of pixels on each cell not
@@ -134,6 +136,7 @@ struct DetectorParameters {
     int cornerRefinementMaxIterations;
     double cornerRefinementMinAccuracy;
     int markerBorderBits;
+    bool perspectiveRemoveDistortion;
     int perspectiveRemovePixelPerCell;
     double perspectiveRemoveIgnoredMarginPerCell;
     double maxErroneousBitsInBorderRate;

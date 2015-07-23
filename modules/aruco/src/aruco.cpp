@@ -72,6 +72,7 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
                                            cornerRefinementMaxIterations(30),
                                            cornerRefinementMinAccuracy(0.1),
                                            markerBorderBits(1),
+                                           perspectiveRemoveDistortion(false),
                                            perspectiveRemovePixelPerCell(8),
                                            perspectiveRemoveIgnoredMarginPerCell(0.13),
                                            maxErroneousBitsInBorderRate(0.5),
@@ -114,6 +115,7 @@ static void _threshold(InputArray _in, OutputArray _out, int winSize, double con
   */
 static void
 _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidates,
+                    std::vector<std::vector<Point> > &contoursOut,
                     double minPerimeterRate, double maxPerimeterRate, double accuracyRate,
                     double minCornerDistance, int minDistanceToBorder) {
 
@@ -172,6 +174,7 @@ _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidat
             currentCandidate[j] = cv::Point2f((float)approxCurve[j].x, (float)approxCurve[j].y);
         }
         candidates.push_back(currentCandidate);
+        contoursOut.push_back(contours[i]);
     }
 }
 
@@ -179,7 +182,8 @@ _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidat
 /**
   * @brief Assure order of candidate corners is clockwise direction
   */
-static void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates) {
+static void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candidates,
+                                      std::vector<std::vector<Point> > &contours) {
 
     for (unsigned int i = 0; i < candidates.size(); i++) {
         double dx1 = candidates[i][1].x - candidates[i][0].x;
@@ -188,8 +192,10 @@ static void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candid
         double dy2 = candidates[i][2].y - candidates[i][0].y;
         double crossProduct = (dx1 * dy2) - (dy1 * dx2); // clockwise direction
 
-        if (crossProduct < 0.0)
+        if (crossProduct < 0.0) {
             swap(candidates[i][1], candidates[i][3]);
+//            std::reverse(contours.begin(), contours.end());
+        }
     }
 }
 
@@ -200,6 +206,8 @@ static void _reorderCandidatesCorners(std::vector<std::vector<Point2f> > &candid
 static void
 _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn,
                           std::vector<std::vector<Point2f> > &candidatesOut,
+                          const std::vector<std::vector<Point> > &contoursIn,
+                          std::vector<std::vector<Point> > &contoursOut,
                           double minMarkerDistance) {
 
     CV_Assert(minMarkerDistance > 0);
@@ -257,10 +265,12 @@ _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn
         if (!toRemove[i])
             totalRemaining++;
     candidatesOut.resize(totalRemaining);
+    contoursOut.resize(totalRemaining);
     for (unsigned int i = 0, currIdx = 0; i < candidatesIn.size(); i++) {
         if (toRemove[i])
             continue;
         candidatesOut[currIdx] = candidatesIn[i];
+        contoursOut[currIdx] = contoursIn[i];
         currIdx++;
     }
 }
@@ -270,7 +280,7 @@ _filterTooCloseCandidates(const std::vector<std::vector<Point2f> > &candidatesIn
  * @brief Detect square candidates in the input image
  */
 static void
-_detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
+_detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArrayOfArrays _contours,
                   DetectorParameters params, OutputArray _thresholdedImage = noArray()) {
 
     cv::Mat image = _image.getMat();
@@ -289,25 +299,37 @@ _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
 
     /// 3. DETECT RECTANGLES
     std::vector<std::vector<Point2f> > candidates;
-    _findMarkerContours(thresh, candidates, params.minMarkerPerimeterRate,
+    std::vector<std::vector<Point> > contours;
+    _findMarkerContours(thresh, candidates, contours, params.minMarkerPerimeterRate,
                         params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
                         params.minCornerDistance, params.minDistanceToBorder);
 
     /// 4. SORT CORNERS
-    _reorderCandidatesCorners(candidates);
+    _reorderCandidatesCorners(candidates, contours);
 
     /// 5. FILTER OUT NEAR CANDIDATE PAIRS
     std::vector<std::vector<Point2f> > candidatesOut;
-    _filterTooCloseCandidates(candidates, candidatesOut, params.minMarkerDistance);
+    std::vector<std::vector<Point> > contoursOut;
+    _filterTooCloseCandidates(candidates, candidatesOut, contours, contoursOut,
+                              params.minMarkerDistance);
+
 
     // parse output
     _candidates.create((int)candidatesOut.size(), 1, CV_32FC2);
+    _contours.create((int)contoursOut.size(), 1, CV_32SC2);
     for (int i = 0; i < (int)candidatesOut.size(); i++) {
         _candidates.create(4, 1, CV_32FC2, i, true);
         Mat m = _candidates.getMat(i);
         for (int j = 0; j < 4; j++)
             m.ptr<cv::Vec2f>(0)[j] = candidatesOut[i][j];
+
+        _contours.create(contoursOut[i].size(), 1, CV_32SC2, i, true);
+        Mat c = _contours.getMat(i);
+        for (int j = 0; j < contoursOut[i].size(); j++)
+            c.ptr<cv::Point2i>()[j] = contoursOut[i][j];
+
     }
+
 }
 
 
@@ -338,6 +360,8 @@ _extractBits(InputArray _image, InputArray _corners, int markerSize, int markerB
     cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
     cv::warpPerspective(_image, resultImg, transformation,
                         cv::Size(resultImgSize, resultImgSize), cv::INTER_NEAREST);
+
+//    cv::imshow("pp", resultImg); cv::waitKey(0);
 
     cv::Mat bits(markerSizeWithBorders, markerSizeWithBorders, CV_8UC1, cv::Scalar::all(0));
 
@@ -377,6 +401,242 @@ _extractBits(InputArray _image, InputArray _corners, int markerSize, int markerB
 }
 
 
+
+/**
+  * @brief Given an input image and a candidate corners, extract the bits of the candidate, including
+  * the border
+  * This function version consider marker contour to try a better bits extraction in the presence
+  * of distortion.
+  * @note TO BE TESTED
+  */
+static cv::Mat
+_extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _contour, int markerSize,
+                       int markerBorderBits, int cellSize, double cellMarginRate,
+                       double minStdDevOtsu) {
+
+    CV_Assert(_image.getMat().channels() == 1);
+    CV_Assert(_corners.total() == 4);
+    CV_Assert(markerBorderBits > 0 && cellSize > 0 && cellMarginRate > 0);
+
+
+
+    // Find marker corners in contour
+    // Transform corners to Point2i to find them easily
+    cv::Point cornersInt[4];
+    for(int c=0; c<4; c++)
+        cornersInt[c] = cv::Point(_corners.getMat().ptr<Point2f>()[c].x,
+                                  _corners.getMat().ptr<Point2f>()[c].y);
+
+    // This stores the indexes of each corner in the contour vector
+    int cornerInContourIdxs[4];
+    for(int c=0; c<4; c++)
+        cornerInContourIdxs[c] = -1; // default -1
+
+    // look for each corner and store position in cornerInContourIdxs
+    for(int i=0; i<_contour.total(); i++) {
+        for(int c=0; c<4; c++) {
+            if(cornerInContourIdxs[c]==-1 && _contour.getMat().ptr<Point>()[i] == cornersInt[c]) {
+                cornerInContourIdxs[c] = i;
+                break;
+            }
+
+        }
+    }
+
+    // Are contour in clockwise or anticlockwise direction ?
+    // corners are in clockwise for sure, so check direction of each step of found corners
+    int dirFreq[2];
+    dirFreq[0] = dirFreq[1] = 0;
+    for(int i=0; i<4; i++) {
+        if(cornerInContourIdxs[i] < cornerInContourIdxs[(i+1)%4])
+            dirFreq[0]++;
+        else
+            dirFreq[1]++;
+    }
+
+    // if more steps in clockwise, direction is clockwise (+1), elsewere is anticlockwise (-1)
+    int incr = +1;
+    if(dirFreq[1] > dirFreq[0]) incr = -1;
+
+    // calculate perspective transformation from four corners
+    int markerSizeWithBorders = markerSize + 2*markerBorderBits;
+    cv::Mat resultImgCorners(4, 1, CV_32FC2);
+    resultImgCorners.ptr<cv::Point2f>(0)[0] = Point2f(0, 0);
+    resultImgCorners.ptr<cv::Point2f>(0)[1] = Point2f((float)markerSizeWithBorders, 0);
+    resultImgCorners.ptr<cv::Point2f>(0)[2] = Point2f((float)markerSizeWithBorders,
+                                                      (float)markerSizeWithBorders);
+    resultImgCorners.ptr<cv::Point2f>(0)[3] = Point2f(0, (float)markerSizeWithBorders);
+    cv::Mat transformation = cv::getPerspectiveTransform(_corners, resultImgCorners);
+
+    // Transform contour
+    cv::Mat contour2f;
+    _contour.getMat().convertTo(contour2f, CV_32F);
+    std::vector<cv::Point2f> tContour;
+    cv::perspectiveTransform(contour2f, tContour, transformation);
+
+    // calculate error of each side (top, right, bottom and left) for each bit transition
+    // error is separation of contour from ideal rect line of perspective transformation
+    std::vector<double> fErr[4];
+    for(int k=0; k<4; k++) {
+        fErr[k].resize(markerSizeWithBorders+1, 0); // error on each bit transition
+        // on the corners, the error is 0
+        fErr[k][0] = 0.;
+        fErr[k][markerSizeWithBorders] = 0;
+        int currBit = 1; // current bit transition
+        // indexes of corners in contours vector
+        int startIdx = cornerInContourIdxs[k];
+        int endIdx = cornerInContourIdxs[(k+1)%4];
+        float lastValueErr = 0;
+        // while doing this side of contour
+        for(int i=startIdx; i!=endIdx; i=(i+tContour.size()+incr)%tContour.size()) {
+            // valueError is the error respect to the rectLine
+            // valueInterval is the other corrdinate
+            float valueInterval, valueErr;
+            if(k==0 || k==2) { // top and bottom
+                valueInterval = tContour[i].x;
+                if(k==0)
+                    valueErr = tContour[i].y;
+                else
+                    valueErr = tContour[i].y - markerSizeWithBorders;
+            }
+            else { // right and left
+                valueInterval = tContour[i].y;
+                if(k==3)
+                    valueErr = tContour[i].x;
+                else
+                    valueErr = tContour[i].x - markerSizeWithBorders;
+            }
+            // if there is a bit transition jump, we have a new value to store
+            if(valueInterval > currBit) {
+                // error is mean between this and last error
+                fErr[k][currBit] = valueErr*0.5 + lastValueErr*0.5;
+                currBit++; // increase, now look for next bit transition
+                if(currBit == (markerSizeWithBorders+1)) // if no more bits, finish this side
+                    break;
+            }
+            lastValueErr = valueErr; // store last error
+
+        }
+    }
+
+   // corrPnts is a vector of each of the grid points corrected with the values of fErr
+   std::vector<Point2f> corrPnts;
+   corrPnts.resize((markerSizeWithBorders+1)*(markerSizeWithBorders+1));
+   for(int i=0; i<markerSizeWithBorders+1; i++) {
+       // this is the increment on each direction
+       float incrX = (fErr[1][i] - fErr[3][i])/float(markerSizeWithBorders);
+       float incrY = (fErr[2][i] - fErr[0][i])/float(markerSizeWithBorders);
+
+       // correct x values
+       for(int x=0; x<markerSizeWithBorders+1; x++) {
+           int idx = i*(markerSizeWithBorders+1) + x;
+           corrPnts[idx].x = float(x) + fErr[3][i] + float(x)*(incrX);
+       }
+
+       // correct y values
+       for(int y=0; y<markerSizeWithBorders+1; y++) {
+           int idx = y*(markerSizeWithBorders+1) + i;
+           corrPnts[idx].y = float(y) + fErr[0][i] + float(y)*(incrY);
+       }
+
+   }
+
+   // convert corrected points to original image in corrPntsOrig
+   std::vector<Point2f> corrPntsOrig;
+   cv::perspectiveTransform(corrPnts, corrPntsOrig, transformation.inv());
+
+
+//   // show grid in original image
+//   cv::Mat bb = _image.getMat().clone();
+//   cv::Mat aa;
+//   cv::cvtColor(bb,aa,cv::COLOR_GRAY2BGR);
+//   for(int y=0; y<markerSizeWithBorders+1; y++) {
+//       for(int x=0; x<markerSizeWithBorders; x++) {
+//           int idx = (markerSizeWithBorders+1)*y + x;
+//           cv::line(aa, corrPntsOrig[idx], corrPntsOrig[idx+1], cv::Scalar(255,x*40,0), 1);
+//       }
+//   }
+//   for(int x=0; x<markerSizeWithBorders+1; x++) {
+//        for(int y=0; y<markerSizeWithBorders; y++) {
+//           int idx1 = (markerSizeWithBorders+1)*y + x;
+//           int idx2 = (markerSizeWithBorders+1)*(y+1) + x;
+//           cv::line(aa, corrPntsOrig[idx1], corrPntsOrig[idx2], cv::Scalar(255,0,y*40), 1);
+//       }
+//   }
+//   cv::imshow("aaa", aa); cv::waitKey(0);
+
+
+   // create final image with corrected grid
+   cv::Mat resultImg(markerSizeWithBorders*cellSize, markerSizeWithBorders*cellSize, CV_8UC1,
+                    cv::Scalar::all(0));
+
+   // for each cell, calculate transformation and include it in resultImg
+    std::vector<cv::Point2f> pointsOut(4);
+    pointsOut[0] = cv::Point2f(0,0);
+    pointsOut[1] = cv::Point2f(cellSize,0);
+    pointsOut[2] = cv::Point2f(cellSize,cellSize);
+    pointsOut[3] = cv::Point2f(0,cellSize);
+    for(int y=0; y<markerSizeWithBorders; y++) {
+        for(int x=0; x<markerSizeWithBorders; x++) {
+            std::vector<cv::Point2f> pointsIn(4);
+            pointsIn[0] = corrPntsOrig[y*(markerSizeWithBorders+1) + x];
+            pointsIn[1] = corrPntsOrig[y*(markerSizeWithBorders+1) + x+1];
+            pointsIn[2] = corrPntsOrig[(y+1)*(markerSizeWithBorders+1) + x+1];
+            pointsIn[3] = corrPntsOrig[(y+1)*(markerSizeWithBorders+1) + x];
+            cv::Mat t = cv::getPerspectiveTransform(pointsIn, pointsOut);
+            cv::Mat outImg;
+            cv::warpPerspective(_image, outImg, t, cv::Size(cellSize, cellSize), cv::INTER_NEAREST);
+            cv::Mat crop = resultImg.rowRange(y*cellSize, (y+1)*cellSize).
+                                     colRange(x*cellSize, (x+1)*cellSize);
+
+            outImg.copyTo(crop);
+
+        }
+    }
+
+    // now, calculate bits
+    cv::Mat bits(markerSizeWithBorders, markerSizeWithBorders, CV_8UC1, cv::Scalar::all(0));
+    int cellMarginPixels = int(cellMarginRate*cellSize);
+
+        // check if standard deviation is enough to apply Otsu
+        // if not enough, it probably means all bits are the same color (black or white)
+        cv::Mat mean, stddev;
+        // Remove some border just to avoid border noise from perspective transformation
+        cv::Mat innerRegion = resultImg.colRange(cellSize/2, resultImg.cols-cellSize/2).
+                                         rowRange(cellSize/2, resultImg.rows-cellSize/2);
+        cv::meanStdDev(innerRegion, mean, stddev);
+        if (stddev.ptr<double>(0)[0] < minStdDevOtsu) {
+            // all black or all white, anyway it is invalid, return all 0
+            if (mean.ptr<double>(0)[0] > 127)
+                bits.setTo(1);
+            else
+                bits.setTo(0);
+            return bits;
+        }
+
+        // now extract code
+        cv::threshold(resultImg, resultImg, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+        for (int y = 0; y < markerSizeWithBorders; y++) {
+            for (int x = 0; x < markerSizeWithBorders; x++) {
+                int Xstart = x * (cellSize)+cellMarginPixels;
+                int Ystart = y * (cellSize)+cellMarginPixels;
+                cv::Mat square =
+                    resultImg(cv::Rect(Xstart, Ystart, cellSize - 2*cellMarginPixels,
+                                       cellSize - 2*cellMarginPixels));
+                unsigned int nZ = countNonZero(square);
+                if (nZ > square.total() / 2)
+                    bits.at<unsigned char>(y, x) = 1;
+            }
+        }
+
+
+    return bits;
+
+}
+
+
+
 /**
   * @brief Return number of erroneous bits in border, i.e. number of white bits in border.
   */
@@ -412,18 +672,30 @@ static int _getBorderErrors(const cv::Mat &bits, int markerSize, int borderSize)
  */
 static bool
 _identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputArray _corners,
-                      int &idx, DetectorParameters params) {
+                      InputArray _contour, int &idx, DetectorParameters params) {
 
     CV_Assert(_corners.total() == 4);
     CV_Assert(_image.getMat().cols != 0 && _image.getMat().rows);
     CV_Assert(params.markerBorderBits > 0);
 
     // get bits
-    cv::Mat candidateBits = _extractBits(_image, _corners, dictionary.markerSize,
-                                         params.markerBorderBits,
-                                         params.perspectiveRemovePixelPerCell,
-                                         params.perspectiveRemoveIgnoredMarginPerCell,
-                                         params.minOtsuStdDev);
+    cv::Mat candidateBits;
+    if(!params.perspectiveRemoveDistortion) {
+        candidateBits = _extractBits(_image, _corners, dictionary.markerSize,
+                                     params.markerBorderBits,
+                                     params.perspectiveRemovePixelPerCell,
+                                     params.perspectiveRemoveIgnoredMarginPerCell,
+                                     params.minOtsuStdDev);
+    }
+    else {
+        candidateBits = _extractBitsDistortion(_image, _corners, _contour,
+                                               dictionary.markerSize,
+                                               params.markerBorderBits,
+                                               params.perspectiveRemovePixelPerCell,
+                                               params.perspectiveRemoveIgnoredMarginPerCell,
+                                               params.minOtsuStdDev);
+    }
+
     int maximumErrorsInBorder = int( dictionary.markerSize * dictionary.markerSize *
                                 params.maxErroneousBitsInBorderRate );
     int borderErrors = _getBorderErrors(candidateBits, dictionary.markerSize,
@@ -456,7 +728,7 @@ _identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputA
  * @brief Identify square candidates according to a marker dictionary
  */
 static void
-_identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
+_identifyCandidates(InputArray _image, InputArrayOfArrays _candidates, InputArrayOfArrays _contours,
                     const DictionaryData &dictionary, OutputArrayOfArrays _accepted,
                     OutputArray _ids, DetectorParameters params,
                     OutputArrayOfArrays _rejected = noArray()) {
@@ -476,7 +748,9 @@ _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
     for (int i = 0; i < ncandidates; i++) {
         int currId;
         cv::Mat currentCandidate = _candidates.getMat(i);
-        if (_identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
+        cv::Mat currentContour = _contours.getMat(i);
+        if (_identifyOneCandidate(dictionary, grey, currentCandidate, currentContour, currId,
+                                  params)) {
             accepted.push_back(currentCandidate);
             ids.push_back(currId);
         } else
@@ -633,11 +907,12 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
 
     /// STEP 1: Detect marker candidates
     std::vector<std::vector<cv::Point2f> > candidates;
-    _detectCandidates(grey, candidates, params);
+    std::vector<std::vector<cv::Point> > contours;
+    _detectCandidates(grey, candidates, contours, params);
 
     /// STEP 2: Check candidate codification (identify markers)
     DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    _identifyCandidates(grey, candidates, dictionaryData, _corners, _ids, params,
+    _identifyCandidates(grey, candidates, contours, dictionaryData, _corners, _ids, params,
                         _rejectedImgPoints);
 
     /// STEP 3: Filter detected markers;

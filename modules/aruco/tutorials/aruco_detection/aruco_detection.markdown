@@ -503,6 +503,14 @@ amount of pixels that would be analyzed on each cell would actually be 32x32, in
 
 Default value: 0.13
 
+- *bool perspectiveRemoveDistortion*
+
+This parameter enables a alternative process for bits extraction specially designed for markers with distortion. 
+Markers with high distortion usually fails during the identification step due to an incorrect bits extraction. This process tries a different alternative that handle this problem (although it does not always works).
+This process reduces the performance considerably and it should only be activated if you are sure it is useful for your application.
+
+Default value: false
+
 
 #### Marker identification
 
