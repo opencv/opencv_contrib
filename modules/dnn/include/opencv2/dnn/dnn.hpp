@@ -41,7 +41,6 @@ namespace dnn
 
     //containers for String and int
     typedef DictValue LayerId;
-    typedef DictValue BlobId;
 
     class CV_EXPORTS Net
     {

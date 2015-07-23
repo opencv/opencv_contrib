@@ -47,34 +47,34 @@ namespace
             #define SET_UP_FILED(getter, arrayConstr, gtype)                                    \
                 if (isRepeated) {                                                               \
                     const RepeatedField<gtype> &v = refl->GetRepeatedField<gtype>(msg, field);  \
-                    params.set(name, ##arrayConstr(v.begin(), (int)v.size()));                  \
+                    params.set(name, DictValue::arrayConstr(v.begin(), (int)v.size()));                  \
                 }                                                                               \
                 else {                                                                          \
-                    params.set(name, refl->##getter(msg, field));                               \
+                    params.set(name, refl->getter(msg, field));                               \
                 }
 
             switch (type)
             {
             case FieldDescriptor::CPPTYPE_INT32:
-                SET_UP_FILED(GetInt32, DictValue::arrayInt, ::google::protobuf::int32);
+                SET_UP_FILED(GetInt32, arrayInt, ::google::protobuf::int32);
                 break;
             case FieldDescriptor::CPPTYPE_UINT32:
-                SET_UP_FILED(GetUInt32, DictValue::arrayInt, ::google::protobuf::uint32);
+                SET_UP_FILED(GetUInt32, arrayInt, ::google::protobuf::uint32);
                 break;
             case FieldDescriptor::CPPTYPE_INT64:
-                SET_UP_FILED(GetInt32, DictValue::arrayInt, ::google::protobuf::int64);
+                SET_UP_FILED(GetInt32, arrayInt, ::google::protobuf::int64);
                 break;
             case FieldDescriptor::CPPTYPE_UINT64:
-                SET_UP_FILED(GetUInt32, DictValue::arrayInt, ::google::protobuf::uint64);
+                SET_UP_FILED(GetUInt32, arrayInt, ::google::protobuf::uint64);
                 break;
             case FieldDescriptor::CPPTYPE_BOOL:
-                SET_UP_FILED(GetBool, DictValue::arrayInt, bool);
+                SET_UP_FILED(GetBool, arrayInt, bool);
                 break;
             case FieldDescriptor::CPPTYPE_DOUBLE:
-                SET_UP_FILED(GetDouble, DictValue::arrayReal, double);
+                SET_UP_FILED(GetDouble, arrayReal, double);
                 break;
             case FieldDescriptor::CPPTYPE_FLOAT:
-                SET_UP_FILED(GetFloat, DictValue::arrayReal, float);
+                SET_UP_FILED(GetFloat, arrayReal, float);
                 break;
             case FieldDescriptor::CPPTYPE_STRING:
                 if (isRepeated) {
@@ -203,13 +203,10 @@ namespace
         struct BlobNote
         {
             BlobNote(const std::string &_name, int _layerId, int _outNum) : 
-                name(_name), layerId(_layerId), outNum(_outNum) {}
+                name(_name.c_str()), layerId(_layerId), outNum(_outNum) {}
 
-            const std::string &name;
+            const char *name;
             int layerId, outNum;
-
-        private:
-            void operator=(const BlobNote&) {} //supress warning
         };
 
         void populateNet(Net dstNet)
@@ -284,7 +281,7 @@ namespace
 
             if (idx < 0)
             {
-                CV_Error(Error::StsError, "Can't found output blob \"" + name + "\"");
+                CV_Error(Error::StsObjectNotFound, "Can't found output blob \"" + name + "\"");
                 return;
             }
 

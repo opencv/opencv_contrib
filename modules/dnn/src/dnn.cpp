@@ -467,12 +467,12 @@ Importer::~Importer()
 
 }
 
-int Layer::inputNameToIndex(String inputName)
+int Layer::inputNameToIndex(String)
 {
     return -1;
 }
 
-int Layer::outputNameToIndex(String outputName)
+int Layer::outputNameToIndex(String)
 {
     return -1;
 }
