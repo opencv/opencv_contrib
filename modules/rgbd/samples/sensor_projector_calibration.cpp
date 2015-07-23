@@ -233,43 +233,52 @@ int main(int argc, char** argv)
         // decode
         // we care only the points within checkerboard
         Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
-        vector<Point2d> homographyPointsCamera, homographyPointsProjector;
-        for (size_t i = 0; i < imagePointsCamera.size(); i++)
+        vector<Point2f>::iterator cornerPoint;
+        for (cornerPoint = imagePointsCamera.begin(); cornerPoint != imagePointsCamera.end(); cornerPoint++)
         {
-            Point point;
+            vector<Point2d> homographyPointsCamera, homographyPointsProjector;
 
-            int x = static_cast<int>(imagePointsCamera.at(i).x);
-            int y = static_cast<int>(imagePointsCamera.at(i).y);
+            for (int i = -3; i < 3; i++) {
+                for (int j = -3; j < 3; j++){
+                    Point point;
 
-            const bool error = true;
-            if (pattern->getProjPixel(cameraImages, x, y, point) == error)
-            {
-                //continue;
+                    int x = static_cast<int>(cornerPoint->x) + i;
+                    int y = static_cast<int>(cornerPoint->y) + j;
+
+                    if (x < 0 || params.width <= x) continue;
+                    if (y < 0 || params.height <= y) continue;
+
+                    const bool error = true;
+                    if (pattern->getProjPixel(cameraImages, x, y, point) == error)
+                    {
+                        //continue;
+                    }
+
+                    Range xr(x, x + 1);
+                    Range yr(y, y + 1);
+                    correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
+
+                    Point2d p(x, y);
+                    homographyPointsCamera.push_back(p);
+                    homographyPointsProjector.push_back(point);
+                }
             }
 
-            Range xr(x, x + 1);
-            Range yr(y, y + 1);
-            correspondenceMap(yr, xr) = Scalar(point.x * 255 / params.width, point.y * 255 / params.height, 0);
-
-            Point2d p(x, y);
-            homographyPointsCamera.push_back(p);
-            homographyPointsProjector.push_back(point);
+            // compute local homography
+            // to warp a checkerboard corner to projector image plane
+            Mat H = findHomography(homographyPointsCamera, homographyPointsProjector, RANSAC);
+            {
+                Mat p = Mat(3, 1, CV_64F);
+                p.at<double>(0) = cornerPoint->x;
+                p.at<double>(1) = cornerPoint->y;
+                p.at<double>(2) = 1;
+                p = H * p;
+                p *= (1.0f / p.at<double>(2));
+                imagePointsProjector.push_back(Point2d(p.at<double>(0), p.at<double>(1)));
+            }
         }
 
-        imshow("correspondence", correspondenceMap);
-
-        // warp checkerboard corners to projector image plane
-        Mat H = findHomography(homographyPointsCamera, homographyPointsProjector, RANSAC);
-        for (int i = 0; i < imagePointsCamera.size(); i++)
-        {
-            Mat p = Mat(3, 1, CV_64F);
-            p.at<double>(0) = imagePointsCamera.at(i).x;
-            p.at<double>(1) = imagePointsCamera.at(i).y;
-            p.at<double>(2) = 1;
-            p = H * p;
-            p *= (1.0f / p.at<double>(2));
-            imagePointsProjector.push_back(Point2d(p.at<double>(0), p.at<double>(1)));
-        }
+        //imshow("correspondence", correspondenceMap);
 
         camera.imagePoints.push_back(imagePointsCamera);
         projector.imagePoints.push_back(imagePointsProjector);
