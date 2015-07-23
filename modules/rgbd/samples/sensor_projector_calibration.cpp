@@ -99,8 +99,9 @@ int main(int argc, char** argv)
 
     // initialize checkerboard parameters
     vector<vector<Point3f> > objectPoints;
-    cv::Size chessSize(9, 6);
-    float chessDimension = 22; // [mm]
+    cv::Size chessSize(5, 4);
+    vector<Point2f> chessCorners;
+    float chessDimension = 36.3333; // [mm]
     {
         vector<Point3f> chessPoints;
         for (int i = 0; i < chessSize.height; i++)
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
             for (int j = 0; j < chessSize.width; j++)
             {
                 chessPoints.push_back(Point3f(j, i, 0) * chessDimension);
+                chessCorners.push_back(Point2f(j, i) * chessDimension);
             }
         }
         for (int sequence = 0; sequence < numSequences; sequence++)
@@ -166,7 +168,27 @@ int main(int argc, char** argv)
             capture.retrieve(image);
 #endif
             bool patternWasFound;
-            patternWasFound = findChessboardCorners(image, chessSize, imagePointsCamera);
+            patternWasFound = findChessboardCorners(image, chessSize, imagePointsCamera, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FILTER_QUADS | CALIB_CB_NORMALIZE_IMAGE);
+#ifdef USE_OPENNI2
+            // Since depth sensor's color camera is low-resolution,
+            // we further optimize the result by aligning it to a orthogonal grid by homography.
+            // Usually the alignment has to be done after lens distortion correction,
+            // but fortunately, depth camera has negligible distortion (or you can calibrate it separately).
+            if (patternWasFound)
+            {
+                Mat H = findHomography(chessCorners, imagePointsCamera);
+                for (size_t i = 0; i < imagePointsCamera.size(); i++)
+                {
+                    Mat p = Mat(3, 1, CV_64F);
+                    p.at<double>(0) = chessCorners.at(i).x;
+                    p.at<double>(1) = chessCorners.at(i).y;
+                    p.at<double>(2) = 1;
+                    p = H * p;
+                    p *= (1.0f / p.at<double>(2));
+                    imagePointsCamera.at(i) = Point2d(p.at<double>(0), p.at<double>(1));
+                }
+            }
+#endif
             drawChessboardCorners(image, chessSize, imagePointsCamera, patternWasFound);
 
             imshow("camera", image);
