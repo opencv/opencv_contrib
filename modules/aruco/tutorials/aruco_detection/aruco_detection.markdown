@@ -3,16 +3,22 @@ Detection of ArUco Markers {#tutorial_aruco_detection}
 
 Pose estimation is of great importance in many computer vision applications: robot navigation,
 augmented reality, and many more. This process is based on finding correspondences between points in
-the real enviroment and their 2d image projection. This is usually a difficult step, and thus it is
-common the use of synthetic or fiducials markers to make it easier.
+the real environment and their 2d image projection. This is usually a difficult step, and thus it is
+common the use of synthetic or fiducial markers to make it easier.
 
-One of the most popular approach is the use of binary square fidicual markers. The main benefit
+One of the most popular approach is the use of binary square fiducial markers. The main benefit
 of these markers is that a single marker provides enough correspondences (its four corners)
-to obtain the camera pose. Also, the inner binary codification make them specially robust, allowing
-the posibility of applying error detection and correction techniques.
+to obtain the camera pose. Also, the inner binary codification makes them specially robust, allowing
+the possibility of applying error detection and correction techniques.
 
-The aruco module is based on the ArUco library, a popular library for detection of square fiducial
-markers developed by Rafael Muñoz and Sergio Garrido.
+The aruco module is based on the [ArUco library](http://www.uco.es/investiga/grupos/ava/node/26), 
+a popular library for detection of square fiducial markers developed by Rafael Muñoz and Sergio Garrido:
+
+> S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
+> "Automatic generation and detection of highly reliable fiducial markers under occlusion".
+> Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
+
+
 
 
 Markers and Dictionaries
@@ -28,7 +34,7 @@ Some examples of ArUco markers:
 
 ![Example of markers images](images/markers.jpg)
 
-It must be noted that a marker can be found rotated in the enviroment, however, the detection
+It must be noted that a marker can be found rotated in the environment, however, the detection
 process need to be able to determine its original rotation, so that each corner is identified
 unequivocally. This is also done based on the binary codification.
 
@@ -44,7 +50,7 @@ distance.
 determines the error detection and correction capabilities of the dictionary.
 
 In general, lower dictionary sizes and higher marker sizes increases the inter-marker distance and
-viceversa. However, the detection of markers with higher sizes is more complex, due to the higher
+vice-versa. However, the detection of markers with higher sizes is more complex, due to the higher
 amount of bits that need to be extracted from the image.
 
 The aruco module includes some predefined dictionaries covering a range of different dictionary
@@ -61,15 +67,15 @@ dictionary has the ids: 0, 1, 2, 3 and 4.
 Marker Creation
 ------
 
-Before their detection, markers need to be printed in order to be placed in the enviroment.
+Before their detection, markers need to be printed in order to be placed in the environment.
 Marker images can be generated using the drawMarker() function.
 
 For example, lets analyze the following call:
 
-
+``` c++
     cv::Mat markerImage;
     drawMarker(DICT_6X6_250, 23, 200, markerImage, 1);
-
+```
 
 - The first parameter is one of the predefined dictionary in the aruco module. Concretely, this
 dictionary is composed by 250 markers and a marker size of 6x6 bits.
@@ -97,7 +103,7 @@ The generated image is:
 Marker Detection
 ------
 
-Given an image where some ArUco markers are visible, the dection process has to returns a list of
+Given an image where some ArUco markers are visible, the detection process has to returns a list of
 detected markers. Each detected marker includes:
 
 - The position of its four corners in the image (in its original order).
@@ -106,19 +112,19 @@ detected markers. Each detected marker includes:
 The marker detection process is comprised by two main steps:
 
 1. Detection of marker candidates. In this step the image is analyzed in order to find square shapes
-that are candidates to be markers. It beings with an adaptative thresholding to segment the markers,
-then contours are extracted from the treholded image and those that are not convex or do not
+that are candidates to be markers. It beings with an adaptive thresholding to segment the markers,
+then contours are extracted from the thresholded image and those that are not convex or do not
 approximate to a square shape are discarded. Some extra filtering are also performed (removing
 too small or too big contours, removing contours too close to each other, etc).
 
-2. After the candidate detection, it is necesary to determine if they are actually markers by
+2. After the candidate detection, it is necessary to determine if they are actually markers by
 analyzing their inner codification. This step starts by extracting the marker bits of each marker.
 First, perspective transformation is applied to obtain the marker in its canonical form. Then, the
-canonical image is threholded using Otsu to separate white and black bits. The image is divided in
+canonical image is thresholded using Otsu to separate white and black bits. The image is divided in
 different cells according to the marker size and the border size and the amount of black or white
 pixels on each cell is counted to determine if it is a white or a black bit. Finally, the bits
 are analyzed to determine if the marker belongs to the specific dictionary and error correction
-techniques are employed when necesary.
+techniques are employed when necessary.
 
 
 Consider the following image:
@@ -162,11 +168,11 @@ detail in the next section.
 - The final parameter, rejectedCandidates, is a returned list of marker candidates, i.e. those
 squares that have been found but they do not present a valid codification. Each candidate is also
 defined by its for corners, and its format is the same than the markerCorners parameter. This
-parameter can be omitted and is only useful for debugging purposes and for refind strategies (see
+parameter can be omitted and is only useful for debugging purposes and for 'refind' strategies (see
 refineDetectedMarkers() or ChArUco Diamond detection).
 
 
-The next thing you propably want to do after detectMarkers() is checking that your markers are
+The next thing you probably want to do after detectMarkers() is checking that your markers are
 being correctly detected. Fortunately, the aruco module provide a function to draw the detected
 markers in the input image, this function is drawDetectedMarkers(). For example:
 
@@ -183,7 +189,7 @@ provided by the detectMarkers() function.
 
 ![Image with detected markers](images/singlemarkersdetection.png)
 
-Note that this function is only provided for visualization and its call can be perfectly ommited.
+Note that this function is only provided for visualization and its call can be perfectly omitted.
 
 With these two function we can create a basic marker detection loop to detect markers from our
 camera (see marker_detection.cpp for a more detailed example):
@@ -234,7 +240,7 @@ If you want to estimate one pose from a set of markers, what you want to use is 
 Boards tutorial).
 
 The camera pose respect to a marker is the 3d transformation from the marker coordinate system to the 
-camera coordinate system. It is specified by a rotation and a traslation vector (see solvePnP for more
+camera coordinate system. It is specified by a rotation and a translation vector (see solvePnP for more
 information).
 
 The aruco module provides a function to estimate the poses of all detected markers:
@@ -246,9 +252,9 @@ The aruco module provides a function to estimate the poses of all detected marke
 
 - The corners parameter is the vector of marker corners returned by the detectMarkers() function.
 - The second parameter is the size of marker side in meters or in any other unit. Note that the 
-traslation vectors of the estimated posed will be in the same unit
+translation vectors of the estimated posed will be in the same unit
 - cameraMatrix and distCoeffs are the camera calibration parameters that need to be known a priori.
-- rvecs and tvecs are the vector of rotation and traslation vectors respectively, for each of the markers
+- rvecs and tvecs are the vector of rotation and translation vectors respectively, for each of the markers
 in corners.
 
 The marker coordinate system that is assumed by this function is placed at the center of the marker
@@ -314,7 +320,7 @@ the process they are involved:
 
 One of the first step to perform marker detection is an adaptive thresholding of the input image.
 
-For instance, the thresholded imge for the sample image used above is:
+For instance, the thresholded image for the sample image used above is:
 
 ![Thresholded image](images/singlemarkersthresh.png)
 
@@ -322,7 +328,7 @@ This thresholding can be customized in two parameters:
 
 - *int adaptiveThreshWinSize, double adaptiveThreshConstant*
 
-The adaptiveThreshWinSize parameter is the window size (in pixels) of the adaptive threholding and
+The adaptiveThreshWinSize parameter is the window size (in pixels) of the adaptive thresholding and
 the adaptiveThreshConstant is the constant value added in the thresholding condition (see OpenCV
 threshold() function for more details).
 
@@ -334,7 +340,7 @@ it would not be detected, like in the following image:
 On the other hand, too high values can reduce the performance
 considerably and the the process would tend to a global thresholding, losing the adaptive benefits.
 
-In general, it is necesary a balanced value depending on the marker size and the required
+In general, it is necessary a balanced value depending on the marker size and the required
 performance.
 The adaptiveThreshConstant does not affect to the performance.
 
@@ -351,7 +357,7 @@ this filtering process.
 
 It must be noted that in most cases it is a question of balance between detection capacity
 and performance. All the considered contours will be processed in the following stages, which usually have
-a higher computational cost. So, it is prefered to discard wrong candidates in this stage than in the later stages.
+a higher computational cost. So, it is preferred to discard wrong candidates in this stage than in the later stages.
 
 On the other hand, if the filtering conditions are too strict, the real marker contours could be discarded and,
 hence, not detected. 
@@ -368,7 +374,7 @@ image. The same applies for the maxMarkerPerimeterRate parameter.
 
 If the *maxMarkerPerimeterRate* is too low, it can penalize considerably the detection performance since
 many more contours would be considered for future stages.
-This penalization is not so noticiable for the *maxMarkerPerimeterRate parameter*, since there are
+This penalization is not so noticeable for the *maxMarkerPerimeterRate parameter*, since there are
 usually many more small contours than big contours.
 A minMarkerPerimeterRate value of 0 and a maxMarkerPerimeterRate value of 4 (or more) will be
 equivalent to consider all the contours in the image, however this is not recommended for
@@ -384,7 +390,7 @@ Default values:
 
 - *double polygonalApproxAccuracyRate*
 
-A poligonal approximation is applied to each candidate and only those that approximate to a square
+A polygonal approximation is applied to each candidate and only those that approximate to a square
 shape are accepted. This values determine the maximum error that the polygonal approximation can
 produce (see approxPolyDP() function for more information).
 
@@ -392,7 +398,7 @@ This parameter is relative to the candidate length (in pixels). So if the candid
 a perimeter of 100 pixels and the value of *polygonalApproxAccuracyRate* is 0.04, the maximum error
 would be 100x0.04=5.4 pixels.
 
-In most cases, the default value works fine, but higher error values could be necesary for high
+In most cases, the default value works fine, but higher error values could be necessary for high
 distorted images.
 
 Default value: 0.05
@@ -418,7 +424,7 @@ by the image border can be correctly detected if the occlusion is small. However
 is occluded, the returned corner is usually near the image border and its position is wrong.
 
 If the position of marker corners is important, for instance if you want to do pose estimation, it is 
-better to discard markers whose any of its corner is too close to the border. Elsewhere, it is not necesary.
+better to discard markers whose any of its corner is too close to the border. Elsewhere, it is not necessary.
 
 Default value: 3
 
@@ -456,7 +462,7 @@ Default value: 1
 
 This value determines the minimum standard deviation on the pixels values to perform Otsu
 thresholding. If the deviation is low, it probably means that all the square is black (or white)
-and applyng Otsu does not make real sense. If this is the case, all the bits are set to 0 (or 1)
+and applying Otsu does not make real sense. If this is the case, all the bits are set to 0 (or 1)
 depending on the mean value is higher or lower than 128.
 
 Default value: 5.0
@@ -485,7 +491,7 @@ not recommended to consider all the cell pixels. Instead it is better to ignore 
 margin of the cells.
 
 The reason of this is that, after removing the perspective distortion, the cells color is, in general, not 
-perfpectly separated and white cells can invade some pixels of black cells (and viceversa). Thus, it is
+perfectly separated and white cells can invade some pixels of black cells (and viceversa). Thus, it is
 better to ignore some pixels just to avoid counting erroneous pixels.
 
 For instance, in the following image:
@@ -493,7 +499,7 @@ For instance, in the following image:
 ![Marker cell margins](images/bitsextraction2.png)
 
 only the pixels inside the green squares are considered. It can be seen in the right image that
-the resulting pixels contain a lower amount of noise from neighbour cells.
+the resulting pixels contain a lower amount of noise from neighbor cells.
 The *perspectiveRemoveIgnoredMarginPerCell* parameter indicates the difference between the red and
 the green squares.
 
@@ -515,11 +521,11 @@ Default value: false
 #### Marker identification
 
 After the bits have been extracted, the next step is check if the extracted code belongs to the marker
-dictionary and, if necesary, error correction can be performed.
+dictionary and, if necessary, error correction can be performed.
 
 - *double maxErroneousBitsInBorderRate*
 
-The bits of the marker border should be black. This parameter specifiies the number of erroneous 
+The bits of the marker border should be black. This parameter specifies the number of erroneous 
 bits in the border allowed, i.e. the maximum number of white bits in the border. It is represented 
 relative to the total number of bits in the marker.
 
@@ -528,7 +534,7 @@ Default value: 0.5
 
 - *double errorCorrectionRate*
 
-Each marker dictionary has a theorical maximum number of bits that can be corrected. However, this value
+Each marker dictionary has a theoretical maximum number of bits that can be corrected. However, this value
 can be modified by the *errorCorrectionRate* parameter.
 
 For instance, if the allowed number of correction for a dictionary is 6 and the value of errorCorrectionRate is
@@ -550,7 +556,7 @@ be accurate, for instance for pose estimation. It is usually an time consuming s
 - *bool doCornerRefinement*
 
 This parameter determines if the corner subpixel process is performed or not. It can be disable
-if accurate corners are not necesary.
+if accurate corners are not necessary.
 
 Default value: true.
 
@@ -569,7 +575,7 @@ Default value: 5
 
 These two parameters determine the stop criterion of the subpixel refinement process. The 
 *cornerRefinementMaxIterations* indicates the maximum number of iterations and
-*cornerRefinementMinAccuracy* the minimum error value before stoping the process.
+*cornerRefinementMinAccuracy* the minimum error value before stopping the process.
 
 If the number of iterations is too high, it can affect the performance. On the other hand, if it is 
 too low, it can produce a poor subpixel refinement.

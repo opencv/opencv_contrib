@@ -1,13 +1,13 @@
 Detection of ChArUco Corners {#tutorial_charuco_detection}
 ==============================
 
-ArUco markers and boards are very useful due to their useful and fast detection and their versatiliy.
+ArUco markers and boards are very useful due to their useful and fast detection and their versatility.
 However, one of the problems of ArUco markers is that the accurate of their corner position is not too high,
 even after applying subpixel refinement. 
 
 On the contrary, the corners of chessboard patterns can be refined more accurately since the corner is
 composed by two squares. However, finding a chessboard pattern is not as versatile as finding an ArUco board:
-it has to be completely visible, occlusions are not permited.
+it has to be completely visible, occlusions are not permitted.
 
 A ChArUco board tries to combines the benefits of these two approaches:
 
@@ -17,14 +17,14 @@ The ArUco are used to interpolate the position of the chessboard corners, so tha
 boards, since it allows occlusions or partial views. Moreover, since the interpolated corners belong to a chessboard,
 they are very accurate in terms of subpixel accuracy.
 
-When high precision is necesary, such as in camera calibration, Charuco boards is a better option than standard
+When high precision is necessary, such as in camera calibration, Charuco boards is a better option than standard
 Aruco boards.
 
 
 ChArUco Board Creation
 ------
 
-The aruco module provides the CharucoBoard class that represents a Charuco Board and which inherents from the Board class. 
+The aruco module provides the CharucoBoard class that represents a Charuco Board and which inherits from the Board class. 
 
 This class, as the rest of Charuco functionalities, are defined in:
 
@@ -50,7 +50,7 @@ in any unit, having in mind that the estimated pose for this board would be meas
 - Finally, the dictionary of the markers is provided.
 
 The ids of each of the markers are assigned in numerical order by default, like in GridBoard::create(). 
-This can be easily customized by accesing to the ids vector througth board.ids, like in the Board parent class.
+This can be easily customized by accessing to the ids vector through board.ids, like in the Board parent class.
 
 Once we have our CharucoBoard object, we can create the image of it for printing. This can be done with the 
 CharucoBoard::draw() method:
@@ -107,7 +107,7 @@ The function that detect the Charuco corners is cv::aruco::interpolateCornersCha
 
 The parameters of the interpolateCornersCharuco() are:
 - markerCorners and markerIds: the detected markers from detectMarkers() function.
-- inputImage: the original image where the markers were detected. The image is necesary to perform subpixel refinement
+- inputImage: the original image where the markers were detected. The image is necessary to perform subpixel refinement
 in the Charuco corners.
 - board: the CharucoBoard object
 - charucoCorners and CharucoIds: the output interpolated Charuco corners
@@ -146,7 +146,7 @@ is that, due to the proximity of the chessboard squares, the subpixel process ca
 variations in the corner positions and these variations are propagated to the Charuco corner interpolation,
 producing poor results.
 
-Furthermore, only those corners whose two surrounding markers have be found are returned. If any of the two surrouding markers have 
+Furthermore, only those corners whose two surrounding markers have be found are returned. If any of the two surrounding markers have 
 not been detected usually means that there is some occlusion in that zone or the image quality is not good in that zone. In any case, it is 
 preferable not to consider that corner, since what we want is to be sure that the interpolated Charuco corners are very accurate.
 
@@ -226,7 +226,7 @@ The function is estimatePoseCharucoBoard():
 - The charucoCorners and charucoIds parameters are the detected charuco corners from the interpolateCornersCharuco()
 function.
 - The third parameter is the CharucoBoard object.
-The cameraMatrix and distCoeffs are the camera calibration parameters which are necesary for pose estimation.
+The cameraMatrix and distCoeffs are the camera calibration parameters which are necessary for pose estimation.
 - Finally, the rvec and tvec parameters are the output pose of the Charuco Board.
 - The function returns true if the pose was correctly estimated and false otherwise. The main reason of failing is that there are
 not enough corners for pose estimation or they are in the same line.

@@ -2,14 +2,14 @@ ArUco marker detection (aruco module) {#tutorial_table_of_content_aruco}
 ==========================================================
 
 ArUco markers are binary square fiducial markers that can be used for camera pose estimation.
-Their main benefits is that their detection is robust, fast and simple.
+Their main benefit is that their detection is robust, fast and simple.
 
 The aruco module includes the detection of these types of markers and the tools to employ them
 for pose estimation and camera calibration.
 
 Also, the ChArUco functionalities combine ArUco markers with traditional chessboards to allow
 an easy and versatile corner detection. The module also includes the functions to detect
-ChArUco corners and used them for pose estimation and camera calibration.
+ChArUco corners and use them for pose estimation and camera calibration.
 
 -   @subpage tutorial_aruco_detection
 

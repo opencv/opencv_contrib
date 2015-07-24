@@ -15,11 +15,11 @@ the marker in the Board is known a priori. This allow that the corners of all th
 estimate the pose of the camera respect to the Board.
 
 When you use a set of independent markers, you can estimate the pose for each marker individually,
-since you dont know the relative position of the markers in the enviroment.
+since you dont know the relative position of the markers in the environment.
 
 The main benefits of using Boards are:
 
-- The pose estimation is much more versatile. Only some markers are necesary to perform pose estimation.
+- The pose estimation is much more versatile. Only some markers are necessary to perform pose estimation.
 Thus, the pose can be calculated even in the presence of occlusion or partial views.
 - The obtained pose is usually more accurate since a higher amount of point correspondences (marker 
 corners) are employed.
@@ -69,7 +69,7 @@ The parameters of estimatePoseBoard are:
 
 - markerCorners and markerIds: structures of detected markers from detectMarkers() function.
 - board: the Board object that defines the board layout and its ids
-- cameraMatrix and distCoeffs: camera calibration parameters necesary for pose estimation.
+- cameraMatrix and distCoeffs: camera calibration parameters necessary for pose estimation.
 - rvec and tvec: estimated pose of the Board.
 - The function returns the total number of markers employed for estimate the board pose. Note that not all the
  markers provided in markerCorners and markerIds should be used, since only the markers whose ids are
@@ -88,14 +88,14 @@ As it can be observed, although some markers have not been detected, the Board p
 Grid Board
 -----
 
-Creating the Board object require specifying the position the corners of each marker in the enviroment.
+Creating the Board object require specifying the position the corners of each marker in the environment.
 However, in many cases, the board will be just a set of markers in the same plane and in a grid layout,
 so it can be easily printed and used.
 
 Fortunately, the aruco module provide the basic functionality to create and print this type of markers 
 easily. 
 
-The GridBoard class is a specialized class that inherents from the Board class and which represents a Board
+The GridBoard class is a specialized class that inherits from the Board class and which represents a Board
 with all the markers in the same plane and in a grid layout, as in the following image:
 
 ![Imagw with aruco board](images/gboriginal.png)
@@ -125,8 +125,8 @@ in any unit, having in mind that the estimated pose for this board would be meas
 - Finally, the dictionary of the markers is provided.
 
 So, this board will be composed by 5x7=35 markers. The ids of each of the markers are assigned in numerical
-order by default, so they will be 0, 1, 2, ..., 34. This can be easily customized by accesing to the ids vector
-througth board.ids, like in the Board parent class.
+order by default, so they will be 0, 1, 2, ..., 34. This can be easily customized by accessing to the ids vector
+through board.ids, like in the Board parent class.
 
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
 of a GridBoard is provided in cv::aruco::GridBoard::draw(). For example:
