@@ -118,6 +118,7 @@ static void readDetectorParameters(string filename, cv::aruco::DetectorParameter
     fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
     fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
     fs["markerBorderBits"] >> params.markerBorderBits;
+    fs["perspectiveRemoveDistortion"] >> params.perspectiveRemoveDistortion;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
     fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
