@@ -269,7 +269,20 @@ int main(int argc, char *argv[]) {
         cameraMatrix.at<double>(0,0) = aspectRatio;
     }
 
-    repError = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix,
+
+    std::vector<std::vector<cv::Point2f> > allCornersConcatenated;
+    std::vector<int> allIdsConcatenated;
+    std::vector<int> markerCounterPerFrame;
+    markerCounterPerFrame.reserve(allCorners.size());
+    for(int i=0; i<allCorners.size(); i++) {
+        markerCounterPerFrame.push_back(allCorners[i].size());
+        for(int j=0; j<allCorners[i].size(); j++) {
+            allCornersConcatenated.push_back(allCorners[i][j]);
+            allIdsConcatenated.push_back(allIds[i][j]);
+        }
+    }
+    repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
+                                               markerCounterPerFrame, board, imgSize, cameraMatrix,
                                                distCoeffs, rvecs, tvecs, calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,

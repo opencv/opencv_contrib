@@ -285,10 +285,23 @@ int main(int argc, char *argv[]) {
         cameraMatrix.at<double>(0,0) = aspectRatio;
     }
 
+
+    std::vector<std::vector<cv::Point2f> > allCornersConcatenated;
+    std::vector<int> allIdsConcatenated;
+    std::vector<int> markerCounterPerFrame;
+    markerCounterPerFrame.reserve(allCorners.size());
+    for(int i=0; i<allCorners.size(); i++) {
+        markerCounterPerFrame.push_back(allCorners[i].size());
+        for(int j=0; j<allCorners[i].size(); j++) {
+            allCornersConcatenated.push_back(allCorners[i][j]);
+            allIdsConcatenated.push_back(allIds[i][j]);
+        }
+    }
     double arucoRepErr;
-    arucoRepErr = cv::aruco::calibrateCameraAruco(allCorners, allIds, board, imgSize, cameraMatrix,
-                                                  distCoeffs, cv::noArray(), cv::noArray(),
-                                                  calibrationFlags);
+    arucoRepErr = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
+                                                  markerCounterPerFrame, board, imgSize,
+                                                  cameraMatrix, distCoeffs, cv::noArray(),
+                                                  cv::noArray(), calibrationFlags);
 
     int nFrames = (int)allCorners.size();
     std::vector<cv::Mat> allCharucoCorners;

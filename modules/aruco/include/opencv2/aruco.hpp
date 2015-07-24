@@ -468,9 +468,10 @@ CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArra
 /**
  * @brief Calibrate a camera using aruco markers
  *
- * @param corners vector of detected marker corners in each frame.
+ * @param corners vector of detected marker corners in all frames.
  * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
  * @param ids list of identifiers for each marker in corners
+ * @param counter number of markers in each frame so that corners and ids can be split
  * @param board Marker Board layout
  * @param imageSize Size of the image used only to initialize the intrinsic camera matrix.
  * @param cameraMatrix Output 3x3 floating-point camera matrix
@@ -492,10 +493,8 @@ CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArra
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(const
-                                       std::vector<std::vector<std::vector<Point2f> > > &corners,
-                                       const std::vector<std::vector<int> > & ids,
-                                       const Board &board, Size imageSize,
+CV_EXPORTS double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids,
+                                       InputArray counter, const Board &board, Size imageSize,
                                        InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
                                        OutputArrayOfArrays rvecs = noArray(),
                                        OutputArrayOfArrays tvecs = noArray(), int flags = 0,

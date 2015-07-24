@@ -1573,21 +1573,29 @@ void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray _img, int
 
 /**
   */
-double calibrateCameraAruco(const std::vector<std::vector<std::vector<cv::Point2f> > > &corners,
-                            const std::vector<std::vector<int> > &ids, const Board &board,
-                            Size imageSize, InputOutputArray _cameraMatrix,
+double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter,
+                            const Board &board, Size imageSize, InputOutputArray _cameraMatrix,
                             InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
                             OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
-
-    CV_Assert(corners.size()==ids.size());
 
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     std::vector<cv::Mat> processedObjectPoints, processedImagePoints;
-    int nFrames = (int)corners.size();
+    int nFrames = _counter.total();
+    int markerCounter = 0;
     for (int frame = 0; frame < nFrames; frame++) {
+        int nMarkersInThisFrame = _counter.getMat().ptr<int>()[frame];
+        std::vector<Mat> thisFrameCorners;
+        std::vector<int> thisFrameIds;
+        thisFrameCorners.reserve(nMarkersInThisFrame);
+        thisFrameIds.reserve(nMarkersInThisFrame);
+        for(int j=markerCounter; j<markerCounter+nMarkersInThisFrame; j++) {
+            thisFrameCorners.push_back(_corners.getMat(j));
+            thisFrameIds.push_back( _ids.getMat().ptr<int>()[j] );
+        }
+        markerCounter += nMarkersInThisFrame;
         cv::Mat currentImgPoints, currentObjPoints;
-        _getBoardObjectAndImagePoints(board, ids[frame], corners[frame], currentImgPoints,
+        _getBoardObjectAndImagePoints(board, thisFrameIds, thisFrameCorners, currentImgPoints,
                                       currentObjPoints);
         if (currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);
