@@ -26,12 +26,14 @@ corners) are employed.
 
 The aruco module allows the use of Boards. The main class is the Board class which defines the Board layout:
 
+``` c++
     class  Board {
     public:
         std::vector<std::vector<cv::Point3f> > objPoints;
         DICTIONARY dictionary;
         std::vector<int> ids;
     };
+```
 
 A object of type Board has three parameters:
 - The objPoints structure is the list of corner position in the 3d Board reference system, i.e. its layout. 
@@ -50,6 +52,7 @@ In fact, to use marker boards, a standard marker detection should be done before
 
 The aruco module provides a specific function, estimatePoseBoard(), to perform pose estimation for boards:
 
+``` c++
     cv::Mat inputImage;
     // camera parameters are read from somewhere
     cv::Mat cameraMatrix, distCoeffs;
@@ -64,6 +67,7 @@ The aruco module provides a specific function, estimatePoseBoard(), to perform p
         cv::Mat rvec, tvec;
         int valid = estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
     }
+```
 
 The parameters of estimatePoseBoard are:
 
@@ -116,8 +120,9 @@ A GridBoard object can be defined using the following parameters:
 
 This object can be easily created from this parameters using the cv::aruco::GridBoard::create() static function:
 
-
+``` c++
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
+```
 
 - The first and second parameters are the number of markers in the X and Y direction respectively.
 - The third and fourth parameters are marker length and the marker separation respectively. They can be provided
@@ -131,9 +136,11 @@ through board.ids, like in the Board parent class.
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
 of a GridBoard is provided in cv::aruco::GridBoard::draw(). For example:
 
+``` c++
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
     cv::Mat boardImage;
     board.draw( cv::Size(600, 500), boardImage, 10, 1 );
+```
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
 to the board dimensions, it will be centered on the image.
@@ -148,6 +155,7 @@ The output image will be something like this:
 
 Finally, a full example of board detection  (see board_detection.cpp for a more detailed example):
 
+``` c++
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
@@ -181,6 +189,7 @@ Finally, a full example of board detection  (see board_detection.cpp for a more 
         if (key == 27)
             break;
     }
+```
 
 
     

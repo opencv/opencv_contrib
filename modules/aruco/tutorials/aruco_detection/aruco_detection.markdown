@@ -145,13 +145,14 @@ previous detected markers returned by detectMarkers().
 
 An example of marker detection:
 
+``` c++
     cv::Mat inputImage;
     ...
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners, rejectedCandidates;
     DetectorParameters parameters;
     detectMarkers(inputImage, DICT_6X6_250, markerCorners, markerIds, parameters, rejectedCandidates);
-
+```
 
 - The first parameter is the image where the markers are going to be detected.
 - DICT_6X6_250 is one of the predefined dictionaries in the module. This dictionary is composed by
@@ -176,10 +177,10 @@ The next thing you probably want to do after detectMarkers() is checking that yo
 being correctly detected. Fortunately, the aruco module provide a function to draw the detected
 markers in the input image, this function is drawDetectedMarkers(). For example:
 
-
+``` c++
     cv::Mat outputImage
     drawDetectedMarkers(inputImage, outputImage, markerCorners, markerIds);
-
+```
 
 - inputImage should be the same image where the markers where detected (or at least it should have
 the same size).
@@ -194,6 +195,7 @@ Note that this function is only provided for visualization and its call can be p
 With these two function we can create a basic marker detection loop to detect markers from our
 camera (see marker_detection.cpp for a more detailed example):
 
+``` c++
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
     while (inputVideo.grab()) {
@@ -213,7 +215,7 @@ camera (see marker_detection.cpp for a more detailed example):
         if (key == 27)
             break;
     }
-
+```
 
 Note that some of optional parameters have been omitted, like the detection parameters or the
 output vector of rejected candidates.
@@ -245,10 +247,12 @@ information).
 
 The aruco module provides a function to estimate the poses of all detected markers:
 
+``` c++
     Mat cameraMatrix, distCoeffs;
     ...
     vector< Mat > rvecs, tvecs;
     estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+```
 
 - The corners parameter is the vector of marker corners returned by the detectMarkers() function.
 - The second parameter is the size of marker side in meters or in any other unit. Note that the 
@@ -265,7 +269,9 @@ with the Z axis pointing out, as in the following image. Axis-color corresponden
 The aruco module provides a function to draw axis as in the image above, so pose estimation can be
 checked:
 
+``` c++
     drawAxis(inputImage, outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+```
 
 - The inputImage is the input image where the axis will be drawn.
 - outputImage will be a copy of inputImage with the axis drawn.
@@ -275,6 +281,7 @@ checked:
 
 A basic full example for pose estimation from single markers :
 
+``` c++
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
@@ -305,6 +312,7 @@ A basic full example for pose estimation from single markers :
         if (key == 27)
             break;
     }
+```
 
 
 Detector Parameter
