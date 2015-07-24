@@ -444,12 +444,14 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
     if (tmp.cols>tmp.rows)
     {
         int height = image_width*tmp.rows/tmp.cols;
+        if(height == 0) height = 1;
         resize(tmp,tmp,Size(image_width,height));
         tmp.copyTo(mask(Rect(0,(image_height-height)/2,image_width,height)));
     }
     else
     {
         int width = image_height*tmp.cols/tmp.rows;
+        if(width == 0) width = 1;
         resize(tmp,tmp,Size(width,image_height));
         tmp.copyTo(mask(Rect((image_width-width)/2,0,width,image_height)));
     }
