@@ -46,7 +46,7 @@
 // Daniel Moreno and Gabriel Taubin. Simple, Accurate, and Robust Projector-Camera Calibration.
 // 3D Imaging, Modeling, Processing, 2012 Second International Conference on Visualization and Transmission (3DIMPVT). IEEE, 2012.
 
-#define USE_OPENNI2
+//#define USE_OPENNI2
 
 #include <opencv2/rgbd.hpp>
 
@@ -99,9 +99,9 @@ int main(int argc, char** argv)
 
     // initialize checkerboard parameters
     vector<vector<Point3f> > objectPoints;
-    cv::Size chessSize(5, 4);
+    cv::Size chessSize(9, 6);
     vector<Point2f> chessCorners;
-    float chessDimension = 36.3333; // [mm]
+    float chessDimension = 22; // [mm]
     {
         vector<Point3f> chessPoints;
         for (int i = 0; i < chessSize.height; i++)
@@ -154,6 +154,8 @@ int main(int argc, char** argv)
     // run structured light sequences for different checkerboard poses
     for (int sequence = 0; sequence < numSequences;)
     {
+        cout << "Sequence #" << sequence << endl;
+
         vector<Mat> cameraImages;
         vector<Point2f> imagePointsCamera, imagePointsProjector;
 
@@ -234,6 +236,7 @@ int main(int argc, char** argv)
         // we care only the points within checkerboard
         Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
         vector<Point2f>::iterator cornerPoint;
+        bool success = true;
         for (cornerPoint = imagePointsCamera.begin(); cornerPoint != imagePointsCamera.end(); cornerPoint++)
         {
             vector<Point2d> homographyPointsCamera, homographyPointsProjector;
@@ -244,9 +247,6 @@ int main(int argc, char** argv)
 
                     int x = static_cast<int>(cornerPoint->x) + i;
                     int y = static_cast<int>(cornerPoint->y) + j;
-
-                    if (x < 0 || params.width <= x) continue;
-                    if (y < 0 || params.height <= y) continue;
 
                     const bool error = true;
                     if (pattern->getProjPixel(cameraImages, x, y, point) == error)
@@ -266,6 +266,10 @@ int main(int argc, char** argv)
 
             // compute local homography
             // to warp a checkerboard corner to projector image plane
+            if (homographyPointsCamera.size() < 5) {
+                success = false;
+                break;
+            }
             Mat H = findHomography(homographyPointsCamera, homographyPointsProjector, RANSAC);
             {
                 Mat p = Mat(3, 1, CV_64F);
@@ -277,11 +281,12 @@ int main(int argc, char** argv)
                 imagePointsProjector.push_back(Point2d(p.at<double>(0), p.at<double>(1)));
             }
         }
+        if (success == false) {
+            cout << "Homography transformation failed! Continue" << endl;
+            continue;
+        }
 
         //imshow("correspondence", correspondenceMap);
-
-        camera.imagePoints.push_back(imagePointsCamera);
-        projector.imagePoints.push_back(imagePointsProjector);
 
         Mat warpedImagePoints = Mat::zeros(params.height, params.width, CV_8UC3);
         drawChessboardCorners(warpedImagePoints, chessSize, imagePointsProjector, true);
@@ -293,6 +298,9 @@ int main(int argc, char** argv)
             if (key == ' ')
             {
                 // proceed to next pose
+                camera.imagePoints.push_back(imagePointsCamera);
+                projector.imagePoints.push_back(imagePointsProjector);
+
                 sequence++;
                 break;
             }
@@ -343,6 +351,13 @@ int main(int argc, char** argv)
     
     // file output
     cout << extrinsics << endl;
+
+    FileStorage yfs("calibration.yml", FileStorage::WRITE);
+    yfs << "cameraIntrinsics" << camera.cameraMatrix;
+    yfs << "projectorIntrinsics" << projector.cameraMatrix;
+    yfs << "cameraDistCoeffs" << camera.distCoeffs;
+    yfs << "projectorDistCoeffs" << projector.distCoeffs;
+    yfs << "projectorExtrinsics" << extrinsics;
 
     FileStorage fs("calibration.xml", FileStorage::WRITE);
     fs << "ProjectorCameraEnsemble";
