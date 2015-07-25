@@ -132,8 +132,8 @@ int main(int argc, char *argv[]) {
       showImage = true;
 
     cv::Mat markerImg;
-    cv::aruco::drawCharucoMarker(dictionary, ids, squareLength, markerLength, markerImg, margins,
-                                 borderBits);
+    cv::aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
+                                  borderBits);
 
     if (showImage) {
       cv::imshow("board", markerImg);

@@ -260,21 +260,66 @@ CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
 
 
 /**
+ * @brief Detect ChArUco Diamond markers
+ *
+ * @param image input image necessary for corner subpixel.
+ * @param markerCorners list of detected marker corners from detectMarkers function.
+ * @param markerIds list of marker ids in markerCorners.
+ * @param squareMarkerLengthRate rate between square and marker length:
+ * squareMarkerLengthRate = squareLength/markerLength. The real units are not necessary.
+ * @param diamondCorners output list of detected diamond corners (4 corners per diamond). The order
+ * is the same than in marker corners: top left, top right, bottom right and bottom left. Similar
+ * format than the corners returned by detectMarkers (e.g std::vector<std::vector<cv::Point2f> > ).
+ * @param diamondIds ids of the diamonds in diamondCorners. The id of each diamond is in fact of
+ * type Vec4i, so each diamond has 4 ids, which are the ids of the aruco markers composing the
+ * diamond.
+ * @param minRepDistance minimum reprojection distance error when trying to find the diamond
+ * structure among the set of detected markers.
+ * @param cameraMatrix Optional camera calibration matrix.
+ * @param distCoeffs Optional camera distortion coefficients.
+ *
+ * This function detects Diamond markers from the previous detected ArUco markers. The diamonds
+ * are returned in the diamondCorners and diamondIds parameters. If camera calibration parameters
+ * are provided, the diamond search is based on reprojection. If not, diamond search is based on
+ * homography. Homography is faster than reprojection but can slightly reduce the detection rate.
  */
-CV_EXPORTS void detectCharucoMarkers(InputArray image, InputArrayOfArrays markerCorners,
-                                     InputArray markerIds, float squareLength, float markerLength,
-                                     OutputArrayOfArrays charucoCorners, OutputArray charucoIds,
-                                     float minRepDistance = 5.f,
+CV_EXPORTS void detectCharucoDiamond(InputArray image, InputArrayOfArrays markerCorners,
+                                     InputArray markerIds, float squareMarkerLengthRate,
+                                     OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
+                                     float minRepDistance = 20.f,
                                      InputArray cameraMatrix = noArray(),
-                                     InputArray distCoeffs = noArray(),
-                                     InputArrayOfArrays rejected = noArray(),
-                                     int minForRejected = 2);
+                                     InputArray distCoeffs = noArray());
+
+
+
+/**
+ * @brief Draw a set of detected ChArUco Diamond markers
+ *
+ * @param in input image
+ * @param out output image. It will be a copy of in but the markers will be painted on.
+ * @param diamondCorners positions of diamond corners in the same format returned by
+ * detectCharucoDiamond(). (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
+ * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
+ * @param diamondIds vector of identifiers for diamonds in diamondCorners, in the same format
+ * returned by detectCharucoDiamond() (e.g. std::vector<Vec4i>).
+ * Optional, if not provided, ids are not painted.
+ * @param borderColor color of marker borders. Rest of colors (text color and first corner color)
+ * are calculated based on this one.
+ *
+ * Given an array of detected diamonds, this functions draws them in the image. The marker borders
+ * are painted and the markers identifiers if provided.
+ * Useful for debugging purposes.
+ */
+CV_EXPORTS void drawDetectedDiamonds(InputArray in, OutputArray out,
+                                     InputArrayOfArrays diamondCorners,
+                                     InputArray diamondIds = noArray(),
+                                     cv::Scalar borderColor = cv::Scalar(0, 0, 255));
 
 
 
 
 /**
- * @brief Draw a ChArUco marker
+ * @brief Draw a ChArUco Diamond marker
  *
  * @param dictionary dictionary of markers indicating the type of markers.
  * @param ids list of 4 ids for each ArUco marker in the ChArUco marker.
@@ -287,9 +332,12 @@ CV_EXPORTS void detectCharucoMarkers(InputArray image, InputArrayOfArrays marker
  *
  * This function return the image of a ChArUco marker, ready to be printed.
  */
-CV_EXPORTS void drawCharucoMarker(DICTIONARY dictionary, Vec4i ids, int squareLength,
-                                  int markerLength, OutputArray img, int marginSize = 0,
-                                  int borderBits = 1);
+CV_EXPORTS void drawCharucoDiamond(DICTIONARY dictionary, Vec4i ids, int squareLength,
+                                   int markerLength, OutputArray img, int marginSize = 0,
+                                   int borderBits = 1);
+
+
+
 
 
 

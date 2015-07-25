@@ -1144,7 +1144,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                            InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
                            InputOutputArray _rejectedCorners, InputArray _cameraMatrix,
                            InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
-                           DetectorParameters params) {
+                           OutputArray _recoveredIdxs, DetectorParameters params) {
 
     if(_detectedIds.total() == 0)
         return;
@@ -1181,6 +1181,8 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
         finalAcceptedIds[i] = _detectedIds.getMat().ptr<int>()[i];
     }
 
+    std::vector<int> recoveredIdxs; // origin ids of accepted markers in _rejectedCorners
+
     for (unsigned int i=0; i < undetectedMarkersIds.size(); i++) {
         for(unsigned int j=0; j<_rejectedCorners.total(); j++) {
             if (alreadyIdentified[j])
@@ -1190,7 +1192,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
             double minDistance = minRepDistance + 1;
             bool valid = false;
             int validRot = 0;
-            for(int c=0; c<4; c++) { // first corner in rejected candidates
+            for(int c=0; c<4; c++) { // first corner in rejected candidate
                 double currentMaxDistance = 0;
                 for(int k=0; k<4; k++) {
                     cv::Point2f rejCorner = _rejectedCorners.getMat(j).ptr<cv::Point2f>()[(c+k)%4];
@@ -1213,21 +1215,27 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                 rotatedMarker.ptr<cv::Point2f>()[c] =
                         _rejectedCorners.getMat(j).ptr<cv::Point2f>()[(c + 4 + validRot) % 4];
 
-            // extract bits
-            cv::Mat bits = _extractBits(grey, rotatedMarker, dictionaryData.markerSize,
-                                        params.markerBorderBits,
-                                        params.perspectiveRemovePixelPerCell,
-                                        params.perspectiveRemoveIgnoredMarginPerCell,
-                                        params.minOtsuStdDev);
 
-            cv::Mat onlyBits =
-                bits.rowRange(params.markerBorderBits, bits.rows - params.markerBorderBits)
-                    .colRange(params.markerBorderBits, bits.rows - params.markerBorderBits);
 
-            int codeDistance = dictionaryData.getDistanceToId(onlyBits, undetectedMarkersIds[i],
+            int codeDistance=0;
+            if(errorCorrectionRate >=0 ) {
+
+                // extract bits
+                cv::Mat bits = _extractBits(grey, rotatedMarker, dictionaryData.markerSize,
+                                            params.markerBorderBits,
+                                            params.perspectiveRemovePixelPerCell,
+                                            params.perspectiveRemoveIgnoredMarginPerCell,
+                                            params.minOtsuStdDev);
+
+                cv::Mat onlyBits =
+                    bits.rowRange(params.markerBorderBits, bits.rows - params.markerBorderBits)
+                        .colRange(params.markerBorderBits, bits.rows - params.markerBorderBits);
+
+                codeDistance = dictionaryData.getDistanceToId(onlyBits, undetectedMarkersIds[i],
                                                               false);
+            }
 
-            if(codeDistance <= maxCorrectionRecalculed) {
+            if(errorCorrectionRate<0 || codeDistance <= maxCorrectionRecalculed) {
                 // subpixel refinement
                 if(params.doCornerRefinement) {
                     CV_Assert(params.cornerRefinementWinSize > 0 &&
@@ -1248,6 +1256,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                 // add to detected
                 finalAcceptedCorners.push_back(rotatedMarker);
                 finalAcceptedIds.push_back(undetectedMarkersIds[i]);
+                recoveredIdxs.push_back(j);
 
             }
 
@@ -1292,6 +1301,13 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                 _rejectedCorners.getMat(i).ptr<cv::Point2f>()[j] =
                         finalRejected[i].ptr<cv::Point2f>()[j];
 
+            }
+        }
+
+        if (_recoveredIdxs.needed()) {
+            _recoveredIdxs.create((int)recoveredIdxs.size(), 1, CV_32SC1 );
+            for (unsigned int i=0; i< recoveredIdxs.size(); i++) {
+                _recoveredIdxs.getMat().ptr<int>()[i] = recoveredIdxs[i];
             }
         }
 
@@ -1417,6 +1433,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
         cv::rectangle(outImg, currentMarker.ptr<cv::Point2f>(0)[0] - Point2f(3, 3),
                       currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 1,
                       cv::LINE_AA);
+
         // draw ID
         if (_ids.total() != 0) {
             Point2f cent(0, 0);

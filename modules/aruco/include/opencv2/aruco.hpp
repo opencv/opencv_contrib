@@ -362,7 +362,9 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * @param minRepDistance minimum distance between the corners of the rejected candidate and the
  * reprojected marker in order to consider it as a correspondence.
  * @param errorCorrectionRate rate of allowed erroneous bits respect to the error correction
- * capability of the used dictionary.
+ * capability of the used dictionary. -1 ignores the error correction step.
+ * @param recoveredIdx Optional array to returns the indexes of the recovered candidates in the
+ * original rejectedCorners array.
  * @param parameters marker detection parameters
  *
  * This function tries to find markers that were not detected in the basic detecMarkers function.
@@ -381,6 +383,7 @@ CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
                                       InputArray cameraMatrix = noArray(),
                                       InputArray distCoeffs = noArray(),
                                       float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
+                                      OutputArray recoveredIdxs = cv::noArray(),
                                       DetectorParameters parameters = DetectorParameters());
 
 

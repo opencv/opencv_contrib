@@ -706,30 +706,27 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 
 /**
  */
-void detectCharucoMarkers(InputArray _image, InputArrayOfArrays _markerCorners,
-                          InputArray _markerIds, float squareLength, float markerLength,
-                          OutputArrayOfArrays _charucoCorners, OutputArray _charucoIds,
-                          float minRepDistance, InputArray _cameraMatrix, InputArray _distCoeffs,
-                          InputArrayOfArrays _rejected, int minForRejected) {
+void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
+                          InputArray _markerIds, float squareMarkerLengthRate,
+                          OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
+                          float minRepDistance, InputArray _cameraMatrix, InputArray _distCoeffs) {
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
-    CV_Assert(squareLength > markerLength && markerLength > 0);
+    CV_Assert(squareMarkerLengthRate > 1.0);
 
-    CharucoBoard charucoMarkerLayout;
-    charucoMarkerLayout = CharucoBoard::create(3, 3, squareLength, markerLength, DICT_ARUCO);
+    CharucoBoard charucoDiamondLayout;
+    charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., DICT_ARUCO);
 
-    std::vector< std::vector<Point2f> > charucoCorners;
-    std::vector< Vec4i > charucoIds;
-
-    std::vector<Mat> rejectedCopy(_rejected.total());
-    for(unsigned int i=0; i<_rejected.total(); i++)
-        rejectedCopy[i] = _rejected.getMat(i);
+    std::vector< std::vector<Point2f> > diamondCorners;
+    std::vector< Vec4i > diamondIds;
 
     std::vector<bool> assigned(_markerIds.total(), false);
     if(_markerIds.total() < 4)
         return;
 
     for (unsigned int i=0; i<_markerIds.total()-3; i++) {
+        if(assigned[i])
+            continue;
 
         int currentId = _markerIds.getMat().ptr<int>()[i];
 
@@ -741,54 +738,58 @@ void detectCharucoMarkers(InputArray _image, InputArrayOfArrays _markerCorners,
             currentMarkerId.push_back(currentId);
 
             std::vector< Mat > candidates;
-            for(unsigned int j=i+1; j<assigned.size(); j++) {
-                if(!assigned[j])
-                    candidates.push_back(_markerCorners.getMat(j));
+            std::vector< int > candidatesIdxs;
+            for(unsigned int k=i+1; k<assigned.size(); k++) {
+                if(!assigned[k])
+                    candidates.push_back(_markerCorners.getMat(k));
+                    candidatesIdxs.push_back(k);
             }
 
             for(int k=0; k<4; k++)
-                charucoMarkerLayout.ids[k] = currentId+1+k;
-            charucoMarkerLayout.ids[j] = currentId;
+                charucoDiamondLayout.ids[k] = currentId+1+k;
+            charucoDiamondLayout.ids[j] = currentId;
 
-            cv::aruco::refineDetectedMarkers(_image, charucoMarkerLayout, currentMarker,
+            std::vector<int> acceptedIdxs;
+            cv::aruco::refineDetectedMarkers(_image, charucoDiamondLayout, currentMarker,
                                              currentMarkerId, candidates, _cameraMatrix,
-                                             _distCoeffs, minRepDistance, -1);
-
-            if(currentMarker.size() < 4 && currentMarker.size() >= minForRejected) {
-                // try to find on rejected
-                cv::aruco::refineDetectedMarkers(_image, charucoMarkerLayout, currentMarker,
-                                                 currentMarkerId, rejectedCopy, _cameraMatrix,
-                                                 _distCoeffs, minRepDistance, -1);
-            }
-
+                                             _distCoeffs, minRepDistance, -1, acceptedIdxs);
 
             if(currentMarker.size() == 4) {
 
                 cv::Vec4i markerId;
-                for(int k=0; k<4; k++) {
-                    for(unsigned int l=0; l<_markerCorners.total(); l++) {
-                        if(assigned[l])
-                            continue;
-                        bool equal = true;
-                        for(int m=0; m<4; m++)
-                            equal = equal && (_markerCorners.getMat(l).ptr<Point2f>()[m] ==
-                                              currentMarker[k].ptr<Point2f>()[m] );
-                        if(equal) {
-                            markerId[k] = _markerIds.getMat().ptr<int>()[l];
-                            assigned[l] = true;
-                        }
-                    }
+                markerId[j] = currentId;
+                for(int k=0, idx=0; k<4; k++) {
+                    if(k==j) continue;
+                    markerId[k] = _markerIds.getMat().ptr<int>()[candidatesIdxs[acceptedIdxs[idx]]];
+                    assigned[ candidatesIdxs[acceptedIdxs[idx]] ] = true;
+                    idx++;
                 }
+
 
                 std::vector< cv::Point2f > currentMarkerCorners;
                 cv::Mat aux;
                 interpolateCornersCharuco(currentMarker, currentMarkerId, _image,
-                                          charucoMarkerLayout, currentMarkerCorners, aux,
+                                          charucoDiamondLayout, currentMarkerCorners, aux,
                                           _cameraMatrix, _distCoeffs);
 
                 if(currentMarkerCorners.size() > 0) {
-                    charucoCorners.push_back(currentMarkerCorners);
-                    charucoIds.push_back(markerId);
+                    // reorder corners
+                    cv::Point2f aux;
+                    std::vector< cv::Point2f > currentMarkerCornersReorder;
+                    currentMarkerCornersReorder.resize(4);
+                    currentMarkerCornersReorder[0] = currentMarkerCorners[2];
+                    currentMarkerCornersReorder[1] = currentMarkerCorners[3];
+                    currentMarkerCornersReorder[2] = currentMarkerCorners[1];
+                    currentMarkerCornersReorder[3] = currentMarkerCorners[0];
+
+                    cv::Vec4i markerIdReorder;
+                    markerIdReorder.val[0] = markerId.val[0];
+                    markerIdReorder.val[1] = markerId.val[2];
+                    markerIdReorder.val[2] = markerId.val[3];
+                    markerIdReorder.val[3] = markerId.val[1];
+
+                    diamondCorners.push_back(currentMarkerCornersReorder);
+                    diamondIds.push_back(markerIdReorder);
                 }
                 break;
             }
@@ -798,19 +799,19 @@ void detectCharucoMarkers(InputArray _image, InputArrayOfArrays _markerCorners,
 
     }
 
-    if(charucoIds.size() > 0) {
+    if(diamondIds.size() > 0) {
 
     // parse output
-    _charucoIds.create((int)charucoIds.size(), 1, CV_32SC4);
-    for (unsigned int i = 0; i < charucoIds.size(); i++)
-        _charucoIds.getMat().ptr<Vec4i>(0)[i] = charucoIds[i];
+    _diamondIds.create((int)diamondIds.size(), 1, CV_32SC4);
+    for (unsigned int i = 0; i < diamondIds.size(); i++)
+        _diamondIds.getMat().ptr<Vec4i>(0)[i] = diamondIds[i];
 
-        _charucoCorners.create((int)charucoCorners.size(), 1, CV_32FC2);
-        for (unsigned int i = 0; i < charucoCorners.size(); i++) {
-            _charucoCorners.create(4, 1, CV_32FC2, i, true);
+        _diamondCorners.create((int)diamondCorners.size(), 1, CV_32FC2);
+        for (unsigned int i = 0; i < diamondCorners.size(); i++) {
+            _diamondCorners.create(4, 1, CV_32FC2, i, true);
             for(int j=0; j<4; j++) {
-                _charucoCorners.getMat(i).ptr<cv::Point2f>()[j] =
-                        charucoCorners[i][j];
+                _diamondCorners.getMat(i).ptr<cv::Point2f>()[j] =
+                        diamondCorners[i][j];
 
             }
         }
@@ -824,8 +825,8 @@ void detectCharucoMarkers(InputArray _image, InputArrayOfArrays _markerCorners,
 
 /**
   */
-void drawCharucoMarker(DICTIONARY dictionary, Vec4i ids, int squareLength, int markerLength,
-                       OutputArray _img, int marginSize, int borderBits) {
+void drawCharucoDiamond(DICTIONARY dictionary, Vec4i ids, int squareLength, int markerLength,
+                        OutputArray _img, int marginSize, int borderBits) {
 
     CV_Assert(squareLength > 0 && markerLength > 0 && squareLength > markerLength);
     CV_Assert(marginSize >= 0 && borderBits > 0);
@@ -842,6 +843,60 @@ void drawCharucoMarker(DICTIONARY dictionary, Vec4i ids, int squareLength, int m
     cv::Size outSize(3*squareLength + 2*marginSize, 3*squareLength + 2*marginSize);
     board.draw(outSize, _img, marginSize, borderBits);
 
+
+}
+
+
+/**
+ */
+void drawDetectedDiamonds(InputArray _in, OutputArray _out, InputArrayOfArrays _corners,
+                         InputArray _ids, cv::Scalar borderColor) {
+
+
+    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
+              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert((_corners.total() == _ids.total()) || _ids.total()==0 );
+
+    // calculate colors
+    cv::Scalar textColor, cornerColor;
+    textColor = cornerColor = borderColor;
+    swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
+    swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
+
+    _out.create(_in.size(), CV_8UC3);
+    cv::Mat outImg = _out.getMat();
+    if (_in.getMat().channels()==3) _in.getMat().copyTo(outImg);
+    else cv::cvtColor(_in.getMat(), outImg, cv::COLOR_GRAY2BGR);
+
+    int nMarkers = (int)_corners.total();
+    for (int i = 0; i < nMarkers; i++) {
+        cv::Mat currentMarker = _corners.getMat(i);
+        CV_Assert(currentMarker.total()==4 && currentMarker.type()==CV_32FC2);
+
+        // draw marker sides
+        for (int j = 0; j < 4; j++) {
+            cv::Point2f p0, p1;
+            p0 = currentMarker.ptr<cv::Point2f>(0)[j];
+            p1 = currentMarker.ptr<cv::Point2f>(0)[(j + 1) % 4];
+            cv::line(outImg, p0, p1, borderColor, 1);
+        }
+
+        // draw first corner mark
+        cv::rectangle(outImg, currentMarker.ptr<cv::Point2f>(0)[0] - Point2f(3, 3),
+                      currentMarker.ptr<cv::Point2f>(0)[0] + Point2f(3, 3), cornerColor, 1,
+                      cv::LINE_AA);
+
+        // draw ID
+        if (_ids.total() != 0) {
+            Point2f cent(0, 0);
+            for (int p = 0; p < 4; p++)
+                cent += currentMarker.ptr<cv::Point2f>(0)[p];
+            cent = cent / 4.;
+            stringstream s;
+            s << "id=" << _ids.getMat().ptr<Vec4i>(0)[i];
+            putText(outImg, s.str(), cent, cv::FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
+        }
+    }
 
 }
 

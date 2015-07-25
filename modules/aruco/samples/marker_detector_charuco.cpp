@@ -145,9 +145,11 @@ int main(int argc, char *argv[]) {
     if (isParam("-r", argc, argv))
       showRejected = true;
 
+    bool estimatePose = false;
     cv::Mat camMatrix, distCoeffs;
     if (isParam("-c", argc, argv)) {
       readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+      estimatePose = true;
     }
 
     cv::aruco::DetectorParameters detectorParams;
@@ -182,34 +184,24 @@ int main(int argc, char *argv[]) {
         double tick = (double)cv::getTickCount();
 
         std::vector<int> markerIds;
-        std::vector<Vec4i> charucoIds;
-        std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers, charucoCorners;
-        cv::Mat rvec, tvec;
+        std::vector<Vec4i> diamondIds;
+        std::vector<std::vector<cv::Point2f> > markerCorners, rejectedMarkers, diamondCorners;
+        std::vector<cv::Mat> rvecs, tvecs;
 
         // detect markers and estimate pose
         cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
                                  rejectedMarkers);
 
 
-//        int interpolatedCorners = 0;
-//        if (markerIds.size() > 0)
-//            interpolatedCorners = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds,
-//                                                                       image, board, charucoCorners,
-//                                                                       charucoIds, camMatrix,
-//                                                                       distCoeffs);
-
 
         if(markerIds.size() > 0)
-            cv::aruco::detectCharucoMarkers(image, markerCorners, markerIds, squareLength,
-                                            markerLength, charucoCorners, charucoIds, 20.f,
-                                            camMatrix, distCoeffs, rejectedMarkers);
+            cv::aruco::detectCharucoDiamond(image, markerCorners, markerIds,
+                                            squareLength/markerLength, diamondCorners, diamondIds,
+                                            40.f, camMatrix, distCoeffs);
 
-
-//        bool validPose = false;
-//        if(camMatrix.total() != 0)
-//            validPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
-//                                                            camMatrix, distCoeffs, rvec, tvec);
-
+        if (estimatePose && diamondIds.size() > 0)
+            cv::aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix,
+                                                 distCoeffs, rvecs, tvecs);
 
 
         double currentTime = ((double)cv::getTickCount()-tick)/cv::getTickFrequency();
@@ -219,7 +211,6 @@ int main(int argc, char *argv[]) {
             std::cout << "Detection Time = " << currentTime*1000 << " ms " <<
                          "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << std::endl;
         }
-
 
 
         // draw results
@@ -232,21 +223,16 @@ int main(int argc, char *argv[]) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers,
                                            cv::noArray(), cv::Scalar(100, 0, 255));
 
-        if (charucoIds.size() > 0) {
-//            std::cout << charucoCorners[0] << std::endl;
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, charucoCorners);
+        if (diamondIds.size() > 0) {
+            cv::aruco::drawDetectedDiamonds(imageCopy, imageCopy, diamondCorners, diamondIds);
+
+            if (estimatePose) {
+                for (unsigned int i = 0; i < diamondIds.size(); i++)
+                    cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i],
+                                        tvecs[i], squareLength*0.5f);
+            }
+
         }
-
-//        if (interpolatedCorners > 0) {
-//            cv::Scalar color;
-//            color = cv::Scalar(0, 0, 255);
-//            cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds,
-//                                                  color);
-//        }
-
-//        if (validPose)
-//            cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec,
-//                                axisLength);
 
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
