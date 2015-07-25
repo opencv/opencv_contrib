@@ -740,10 +740,13 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
             std::vector< Mat > candidates;
             std::vector< int > candidatesIdxs;
             for(unsigned int k=i+1; k<assigned.size(); k++) {
-                if(!assigned[k])
+                if(!assigned[k]) {
                     candidates.push_back(_markerCorners.getMat(k));
                     candidatesIdxs.push_back(k);
+                }
             }
+            if(candidates.size()<3)
+                break;
 
             for(int k=0; k<4; k++)
                 charucoDiamondLayout.ids[k] = currentId+1+k;
@@ -756,15 +759,17 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
             if(currentMarker.size() == 4) {
 
+                assigned[i] = true;
+
                 cv::Vec4i markerId;
                 markerId[j] = currentId;
                 for(int k=0, idx=0; k<4; k++) {
                     if(k==j) continue;
-                    markerId[k] = _markerIds.getMat().ptr<int>()[candidatesIdxs[acceptedIdxs[idx]]];
-                    assigned[ candidatesIdxs[acceptedIdxs[idx]] ] = true;
+                    int currentMarkerIdx = candidatesIdxs[ acceptedIdxs[idx] ];
+                    markerId[k] = _markerIds.getMat().ptr<int>()[currentMarkerIdx];
+                    assigned[ currentMarkerIdx ] = true;
                     idx++;
                 }
-
 
                 std::vector< cv::Point2f > currentMarkerCorners;
                 cv::Mat aux;
