@@ -16,7 +16,7 @@ struct DictValue
     DictValue(unsigned p)       : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }
     DictValue(double p)         : type(Param::REAL), pd(new AutoBuffer<double,1>) { (*pd)[0] = p; }
     DictValue(const String &p)  : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = p; }
-    
+
     template<typename TypeIter>
     static DictValue arrayInt(TypeIter begin, int size);
     template<typename TypeIter>

@@ -84,7 +84,7 @@ namespace dnn
             return tanh(x);
         }
     };
-    
+
     struct SigmoidFunctor
     {
         SigmoidFunctor(LayerParams&) {}

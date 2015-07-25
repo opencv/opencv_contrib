@@ -8,7 +8,7 @@ namespace dnn
 
 //TODO: Extend cv::Mat::reshape method
 class ReshapeLayer : public Layer
-{   
+{
 public:
     ReshapeLayer(LayerParams &params);
 
@@ -121,7 +121,7 @@ void ReshapeLayer::computeOutputShape(int startAxis, int endAxis, BlobShape &inp
 Ptr<Layer> createFlattenLayer(LayerParams&)
 {
     LayerParams params;
-    
+
     int shapeDesc[] = {0, -1};
     params.set("dim", DictValue::arrayInt(shapeDesc, 2));
 

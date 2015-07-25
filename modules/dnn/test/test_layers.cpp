@@ -95,7 +95,7 @@ TEST(Layer_Reshape_Split_Slice_Test, Accuracy)
     net.setBlob(".input", input);
     net.forward();
     Blob output = net.getBlob("output");
-    
+
     input.fill(shape, CV_32F, inputMat.data);
     normAssert(input, output);
 }

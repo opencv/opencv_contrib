@@ -45,7 +45,7 @@ void SliceLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &o
     int axis = inpBlob.canonicalAxis(inAxis);
     int axisSize = inpBlob.size(axis);
     BlobShape inpShape = inpBlob.shape();
-    
+
     if (slicePoints.size()) //divide blob with respect to passed parameters
     {
         std::vector<int> outAxisSize;

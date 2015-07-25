@@ -197,7 +197,7 @@ namespace dnn
                 for (int g = 0; g < group; g++)
                 {
                     Mat dstMat(inpGroupCn, inpH*inpW, decnBlob.type(), decnBlob.ptrRaw(n, g*inpGroupCn));
-                    
+
                     if (is1x1())
                         colMat = dstMat;
 

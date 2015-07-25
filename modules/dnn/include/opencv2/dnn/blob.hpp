@@ -83,7 +83,7 @@ namespace dnn
         @note Unlike ::xsize, if \p axis points to non-existing dimension then an error will be generated.
         */
         int size(int axis) const;
-        
+
         /** @brief returns number of elements
         @param startAxis starting axis (inverse indexing can be used)
         @param endAxis ending (excluded) axis

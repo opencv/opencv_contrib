@@ -28,7 +28,7 @@ namespace dnn
     void ConcatLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
     {
         CV_Assert(inputs.size() > 0);
-        
+
         int refType = inputs[0]->type();
         BlobShape refShape = inputs[0]->shape();
         CV_Assert(axis < refShape.dims());

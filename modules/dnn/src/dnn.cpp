@@ -32,7 +32,7 @@ struct LayerPin
 
     LayerPin(int layerId = -1, int outputId = -1)
         : lid(layerId), oid(outputId) {}
-    
+
     bool valid() const
     {
         return (lid >= 0 && oid >= 0);
@@ -104,7 +104,7 @@ private:
 struct Net::Impl
 {
     Impl()
-    {   
+    {
         //allocate fake net input layer
         netInputLayer = Ptr<NetInputLayer>(new NetInputLayer());
         LayerData &inpl = layers.insert( make_pair(0, LayerData()) ).first->second;
@@ -171,7 +171,7 @@ struct Net::Impl
     LayerData& getLayerData(int id)
     {
         MapIdToLayerData::iterator it = layers.find(id);
-        
+
         if (it == layers.end())
             CV_Error(Error::StsError, "Layer with requested id=" + toString(id) + " not found");
 

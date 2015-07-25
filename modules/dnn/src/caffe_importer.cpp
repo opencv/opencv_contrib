@@ -202,7 +202,7 @@ namespace
 
         struct BlobNote
         {
-            BlobNote(const std::string &_name, int _layerId, int _outNum) : 
+            BlobNote(const std::string &_name, int _layerId, int _outNum) :
                 name(_name.c_str()), layerId(_layerId), outNum(_outNum) {}
 
             const char *name;
@@ -237,7 +237,7 @@ namespace
                 extractBinaryLayerParms(layer, layerParams);
 
                 int id = dstNet.addLayer(name, type, layerParams);
-                
+
                 for (int inNum = 0; inNum < layer.bottom_size(); inNum++)
                     addInput(layer.bottom(inNum), id, inNum, dstNet, addedBlobs);
 
@@ -249,7 +249,7 @@ namespace
         void addOutput(const caffe::LayerParameter &layer, int layerId, int outNum, std::vector<BlobNote> &addedBlobs)
         {
             const std::string &name = layer.top(outNum);
-            
+
             bool haveDups = false;
             for (int idx = (int)addedBlobs.size() - 1; idx >= 0; idx--)
             {
