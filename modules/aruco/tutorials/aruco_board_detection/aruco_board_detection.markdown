@@ -24,7 +24,7 @@ Thus, the pose can be calculated even in the presence of occlusions or partial v
 - The obtained pose is usually more accurate since a higher amount of point correspondences (marker 
 corners) are employed.
 
-The aruco module allows the use of Boards. The main class is the cv::aruco::Board class which defines the Board layout:
+The aruco module allows the use of Boards. The main class is the ```cv::aruco::Board``` class which defines the Board layout:
 
 ``` c++
     class  Board {
@@ -35,13 +35,13 @@ The aruco module allows the use of Boards. The main class is the cv::aruco::Boar
     };
 ```
 
-A object of type Board has three parameters:
-- The objPoints structure is the list of corner positions in the 3d Board reference system, i.e. its layout. 
+A object of type ```Board``` has three parameters:
+- The ```objPoints``` structure is the list of corner positions in the 3d Board reference system, i.e. its layout. 
 For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting 
 with the top left corner.
-- The dictionary parameter indicates to which marker dictionary the Board markers belong to.
-- Finally, the ids structure indicates the identifiers of each of the markers in objPoints respect to the specified
-dictionary.
+- The ```dictionary``` parameter indicates to which marker dictionary the Board markers belong to.
+- Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified
+```dictionary```.
 
 
 Board Detection
@@ -50,7 +50,7 @@ Board Detection
 A Board detection is similar to the standard marker detection. The only difference is in the pose estimation step.
 In fact, to use marker boards, a standard marker detection should be done before estimating the Board pose.
 
-The aruco module provides a specific function, estimatePoseBoard(), to perform pose estimation for boards:
+The aruco module provides a specific function, ```estimatePoseBoard()```, to perform pose estimation for boards:
 
 ``` c++
     cv::Mat inputImage;
@@ -63,6 +63,7 @@ The aruco module provides a specific function, estimatePoseBoard(), to perform p
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
+    // if at least one marker detected
     if(markerIds.size() > 0) {
         cv::Mat rvec, tvec;
         int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
@@ -71,15 +72,15 @@ The aruco module provides a specific function, estimatePoseBoard(), to perform p
 
 The parameters of estimatePoseBoard are:
 
-- markerCorners and markerIds: structures of detected markers from detectMarkers() function.
-- board: the Board object that defines the board layout and its ids
-- cameraMatrix and distCoeffs: camera calibration parameters necessary for pose estimation.
-- rvec and tvec: estimated pose of the Board.
+- ```markerCorners``` and ```markerIds```: structures of detected markers from ```detectMarkers()``` function.
+- ```board```: the ```Board``` object that defines the board layout and its ids
+- ```cameraMatrix``` and ```distCoeffs```: camera calibration parameters necessary for pose estimation.
+- ```rvec``` and ```tvec```: estimated pose of the Board.
 - The function returns the total number of markers employed for estimating the board pose. Note that not all the
- markers provided in markerCorners and markerIds should be used, since only the markers whose ids are
-listed in the Board::ids structure are considered.
+ markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
+listed in the ```Board::ids``` structure are considered.
 
-The drawAxis() function can be used to check the obtained pose. For instance:
+The ```drawAxis()``` function can be used to check the obtained pose. For instance:
 
 ![Board with axis](images/gbmarkersaxis.png)
 
@@ -92,14 +93,14 @@ As it can be observed, although some markers have not been detected, the Board p
 Grid Board
 -----
 
-Creating the Board object requires specifying the corner positions for each marker in the environment.
+Creating the ```Board``` object requires specifying the corner positions for each marker in the environment.
 However, in many cases, the board will be just a set of markers in the same plane and in a grid layout,
 so it can be easily printed and used.
 
 Fortunately, the aruco module provides the basic functionality to create and print these types of markers 
 easily. 
 
-The GridBoard class is a specialized class that inherits from the Board class and which represents a Board
+The ```GridBoard``` class is a specialized class that inherits from the ```Board``` class and which represents a Board
 with all the markers in the same plane and in a grid layout, as in the following image:
 
 ![Imagw with aruco board](images/gboriginal.png)
@@ -109,7 +110,7 @@ corner of the board and with the Z pointing out, like in the following image (X:
 
 ![Board with axis](images/gbaxis.png)
 
-A GridBoard object can be defined using the following parameters:
+A ```GridBoard``` object can be defined using the following parameters:
 
 - Number of markers in the X direction.
 - Number of markers in the Y direction.
@@ -118,7 +119,7 @@ A GridBoard object can be defined using the following parameters:
 - The dictionary of the markers.
 - Ids of all the markers (X*Y markers).
 
-This object can be easily created from these parameters using the cv::aruco::GridBoard::create() static function:
+This object can be easily created from these parameters using the ```cv::aruco::GridBoard::create()``` static function:
 
 ``` c++
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
@@ -131,10 +132,10 @@ in any unit, having in mind that the estimated pose for this board will be measu
 
 So, this board will be composed by 5x7=35 markers. The ids of each of the markers are assigned, by default, in ascending
 order starting on 0, so they will be 0, 1, 2, ..., 34. This can be easily customized by accessing to the ids vector
-through board.ids, like in the Board parent class.
+through ```board.ids```, like in the ```Board``` parent class.
 
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
-of a GridBoard is provided in cv::aruco::GridBoard::draw(). For example:
+of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::draw()```. For example:
 
 ``` c++
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
@@ -144,10 +145,10 @@ of a GridBoard is provided in cv::aruco::GridBoard::draw(). For example:
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
 to the board dimensions, it will be centered on the image.
-- boardImage: the output image with the board.
+- ```boardImage```: the output image with the board.
 - The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
-- Finally, the size of the marker border, similarly to drawMarker() function. The default value is 1.
+- Finally, the size of the marker border, similarly to ```drawMarker()``` function. The default value is 1.
 
 The output image will be something like this:
 
@@ -174,12 +175,14 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
     
+        // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             cv::Mat rvec, tvec;
             int valid = estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
+            // if at least one board marker detected
             if(valid > 0)
                 cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }

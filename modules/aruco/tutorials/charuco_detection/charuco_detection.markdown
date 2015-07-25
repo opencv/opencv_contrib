@@ -24,7 +24,7 @@ Aruco boards.
 ChArUco Board Creation
 ------
 
-The aruco module provides the cv::aruco::CharucoBoard class that represents a Charuco Board and which inherits from the Board class. 
+The aruco module provides the ```cv::aruco::CharucoBoard``` class that represents a Charuco Board and which inherits from the ```Board``` class. 
 
 This class, as the rest of Charuco functionalities, are defined in:
 
@@ -32,7 +32,7 @@ This class, as the rest of Charuco functionalities, are defined in:
     #include <opencv2/aruco/charuco.hpp>
 ```
 
-To define a CharucoBoard, it is necesary:
+To define a ```CharucoBoard```, it is necesary:
 
 - Number of chessboard squares in X direction.
 - Number of chessboard squares in Y direction.
@@ -41,8 +41,8 @@ To define a CharucoBoard, it is necesary:
 - The dictionary of the markers.
 - Ids of all the markers.
 
-As for the GridBoard objects, the aruco module provides a function to create CharucoBoards easily. This function
-is the static function cv::aruco::CharucoBoard::create() :
+As for the ```GridBoard``` objects, the aruco module provides a function to create ```CharucoBoards``` easily. This function
+is the static function ```cv::aruco::CharucoBoard::create()``` :
 
 ``` c++
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
@@ -53,11 +53,11 @@ is the static function cv::aruco::CharucoBoard::create() :
 in any unit, having in mind that the estimated pose for this board would be measured in the same units (usually meters are used).
 - Finally, the dictionary of the markers is provided.
 
-The ids of each of the markers are assigned by default in ascending and starting on 0, like in GridBoard::create(). 
-This can be easily customized by accessing to the ids vector through board.ids, like in the Board parent class.
+The ids of each of the markers are assigned by default in ascending and starting on 0, like in ```GridBoard::create()```. 
+This can be easily customized by accessing to the ids vector through ```board.ids```, like in the ```Board``` parent class.
 
-Once we have our CharucoBoard object, we can create an image to print it. This can be done with the 
-CharucoBoard::draw() method:
+Once we have our ```CharucoBoard``` object, we can create an image to print it. This can be done with the 
+```CharucoBoard::draw()``` method:
 
 ``` c++
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
@@ -67,10 +67,10 @@ CharucoBoard::draw() method:
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
 to the board dimensions, it will be centered on the image.
-- boardImage: the output image with the board.
+- ```boardImage```: the output image with the board.
 - The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
-- Finally, the size of the marker border, similarly to drawMarker() function. The default value is 1.
+- Finally, the size of the marker border, similarly to ```drawMarker()``` function. The default value is 1.
 
 The output image will be something like this:
 
@@ -87,13 +87,13 @@ in the board.
 
 So, a detected ChArUco board consists in:
 
-- vector<Point2f> charucoCorners : list of image positions of the detected corners.
-- vector <int> charucoIds : ids for each of the detected corners in charucoCorners.
+- ```vector<Point2f> charucoCorners``` : list of image positions of the detected corners.
+- ```vector <int> charucoIds``` : ids for each of the detected corners in ```charucoCorners```.
 
 The detection of the Charuco corners is based on the previous detected markers. So that, first markers are detected, and then
 Charuco corners are interpolated from markers.
 
-The function that detect the Charuco corners is cv::aruco::interpolateCornersCharuco() . This example shows the whole process. First, markers and detected, and then the charuco corners are interpolated from these markers.
+The function that detect the Charuco corners is ```cv::aruco::interpolateCornersCharuco()``` . This example shows the whole process. First, markers are detected, and then the charuco corners are interpolated from these markers.
 
 ``` c++
     cv::Mat inputImage;
@@ -106,23 +106,24 @@ The function that detect the Charuco corners is cv::aruco::interpolateCornersCha
     vector< vector<Point2f> > markerCorners;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
 
+    // if at least one marker detected
     if(markerIds.size() > 0) {
         std::vector<cv::Point2f> charucoCorners;
         std::vector<int> charucoIds;
-        int valid = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds, cameraMatrix, distCoeffs);
+        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds, cameraMatrix, distCoeffs);
     }
 ```
 
-The parameters of the interpolateCornersCharuco() are:
-- markerCorners and markerIds: the detected markers from detectMarkers() function.
-- inputImage: the original image where the markers were detected. The image is necessary to perform subpixel refinement
+The parameters of the ```interpolateCornersCharuco()``` are:
+- ```markerCorners``` and ```markerIds```: the detected markers from ```detectMarkers()``` function.
+- ```inputImage```: the original image where the markers were detected. The image is necessary to perform subpixel refinement
 in the Charuco corners.
-- board: the CharucoBoard object
-- charucoCorners and CharucoIds: the output interpolated Charuco corners
-- cameraMatrix and distCoeffs: the optional camera calibration parameters
+- ```board```: the ```CharucoBoard``` object
+- ```charucoCorners``` and ```charucoIds```: the output interpolated Charuco corners
+- ```cameraMatrix``` and ```distCoeffs```: the optional camera calibration parameters
 - The function returns the number of Charuco corners interpolated.
 
-In this case, we have call the interpolateCornersCharuco() providing the camera calibration parameters. However these parameters
+In this case, we have call the ```interpolateCornersCharuco()``` providing the camera calibration parameters. However these parameters
 are optional. A similar example without these parameters would be:
 
 ``` c++
@@ -135,10 +136,11 @@ are optional. A similar example without these parameters would be:
     params.doCornerRefinement = false;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds, params);
 
+    // if at least one marker detected
     if(markerIds.size() > 0) {
         std::vector<cv::Point2f> charucoCorners;
         std::vector<int> charucoIds;
-        int valid = cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds);
+        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds);
     }
 ```
 
@@ -163,16 +165,16 @@ preferable not to consider that corner, since what we want is to be sure that th
 After the Charuco corners have been interpolated, a subpixel refinement is performed.
 
 Once we have interpolated the Charuco corners, we would probably want to draw them to see if their detections are correct. 
-This can be easily done using the drawDetectedCornersCharuco() function:
+This can be easily done using the ```drawDetectedCornersCharuco()``` function:
 
 ``` c++
     cv::aruco::drawDetectedCornersCharuco(inputImage, outputImage, charucoCorners, charucoIds, color);
 ```
 
-- The inputImage is the image where the corners have been detected.
-- The outputImage will be a clone of inputImage with the corners drawn.
-- charucoCorners and charucoIds are the detected Charuco corners from the interpolateCornersCharuco() function.
-- Finally, the last parameter is the (optional) color we want to draw the corners with, of type cv::Scalar.
+- The ```inputImage``` is the image where the corners have been detected.
+- The ```outputImage``` will be a clone of ```inputImage``` with the corners drawn.
+- ```charucoCorners``` and ```charucoIds``` are the detected Charuco corners from the ```interpolateCornersCharuco()``` function.
+- Finally, the last parameter is the (optional) color we want to draw the corners with, of type ```cv::Scalar```.
 
 For this image:
 
@@ -206,12 +208,14 @@ Finally, this is a full example of Charuco detection (without using calibration 
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids, params);
     
+        // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             std::vector<cv::Point2f> charucoCorners;
             std::vector<int> charucoIds;
             cv::aruco::interpolateCornersCharuco(corners, ids, image, board, charucoCorners, charucoIds);
+            // if at least one charuco corner detected
             if(charucoIds.size() > 0) 
                 cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
         }
@@ -230,24 +234,24 @@ ChArUco Pose Estimation
 
 The final goal of the Charuco boards is finding corners very accurately for a high precision calibration or pose estimation.
 
-The aruco module provides a function to perform Charuco pose estimation easily. As in the GridBoard, the coordinate system
-of the CharucoBoard is placed in the board plane with the Z axis pointing out, and centered in the bottom left corner of the board.
+The aruco module provides a function to perform Charuco pose estimation easily. As in the ```GridBoard```, the coordinate system
+of the ```CharucoBoard``` is placed in the board plane with the Z axis pointing out, and centered in the bottom left corner of the board.
 
-The function for pose estimation is estimatePoseCharucoBoard():
+The function for pose estimation is ```estimatePoseCharucoBoard()```:
 
 ``` c++
     cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
 ```
 
-- The charucoCorners and charucoIds parameters are the detected charuco corners from the interpolateCornersCharuco()
+- The ```charucoCorners``` and ```charucoIds``` parameters are the detected charuco corners from the ```interpolateCornersCharuco()```
 function.
-- The third parameter is the CharucoBoard object.
-The cameraMatrix and distCoeffs are the camera calibration parameters which are necessary for pose estimation.
-- Finally, the rvec and tvec parameters are the output pose of the Charuco Board.
+- The third parameter is the ```CharucoBoard``` object.
+- The ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters which are necessary for pose estimation.
+- Finally, the ```rvec``` and ```tvec``` parameters are the output pose of the Charuco Board.
 - The function returns true if the pose was correctly estimated and false otherwise. The main reason of failing is that there are
 not enough corners for pose estimation or they are in the same line.
 
-The axis can be drawn using drawAxis() to check the pose is correctly estimated. The result would be: (X:red, Y:green, Z:blue)
+The axis can be drawn using ```drawAxis()``` to check the pose is correctly estimated. The result would be: (X:red, Y:green, Z:blue)
 
 ![Charuco Board Axis](images/chaxis.png)
 
@@ -272,14 +276,17 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
     
+        // if at least one marker detected
         if (ids.size() > 0) {
             std::vector<cv::Point2f> charucoCorners;
             std::vector<int> charucoIds;
             cv::aruco::interpolateCornersCharuco(corners, ids, image, board, charucoCorners, charucoIds, cameraMatrix, distCoeffs);
+            // if at least one charuco corner detected
             if(charucoIds.size() > 0) {
                 cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
                 cv::Mat rvec, tvec;
                 bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+                // if charuco pose is valid
                 if(valid)
                     cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
             }

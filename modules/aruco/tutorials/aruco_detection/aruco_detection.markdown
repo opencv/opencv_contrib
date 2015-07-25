@@ -206,6 +206,7 @@ camera (see marker_detector.cpp for a more detailed example):
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
+        // if at least one marker detected
         if (ids.size() > 0)
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
     
@@ -297,11 +298,13 @@ A basic full example for pose estimation from single markers  (see marker_detect
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
     
-        if (ids.size() > 0) {
+        // if at least one marker detected
+        if (ids.size() > 0) { 
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             vector< Mat > rvecs, tvecs;
             cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+            // draw axis for each marker
             for(int i=0; i<ids.size(); i++)
                 cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
         }
@@ -457,6 +460,7 @@ On each cell, the number of black and white pixels are counted to decide the bit
 There are several parameters that can customize this process:
 
 - ```int markerBorderBits```
+
 This parameter indicates the width of the marker border. It is relative to the size of each bit. So, a
 value of 2 indicates the border has the width of two internal bits.
 
