@@ -62,13 +62,14 @@ int main( int argc, char** argv )
 {
     Mat image, depth;
     float focalLength;
+    Mat cameraMatrix = Mat::eye(3, 3, CV_32FC1);
 
-    if(argc != 2) {
+    if (argc != 2) {
         // bad arguments
         exit(1);
     }
 
-    if(string(argv[1]) == "OPENNI")
+    if (string(argv[1]) == "OPENNI")
     {
         VideoCapture capture(CAP_OPENNI2);
 
@@ -86,7 +87,7 @@ int main( int argc, char** argv )
 
         focalLength = static_cast<float>(capture.get(CAP_PROP_OPENNI_FOCAL_LENGTH));
 
-        while(true)
+        while (true)
         {
             capture.grab();
 
@@ -104,6 +105,19 @@ int main( int argc, char** argv )
         flip(depth, depth, 1);
 
         depth.convertTo(depth, CV_32F);
+        depth = depth * 0.001f; // [mm] to [m]
+
+        // kinect parameter to focal length
+        // https://github.com/OpenKinect/libfreenect/blob/master/src/registration.c#L317
+        float fx = focalLength,
+            fy = focalLength,
+            cx = 319.5f,
+            cy = 239.5f;
+
+        cameraMatrix.at<float>(0, 0) = fx;
+        cameraMatrix.at<float>(1, 1) = fy;
+        cameraMatrix.at<float>(0, 2) = cx;
+        cameraMatrix.at<float>(1, 2) = cy;
     }
     else
     {
@@ -112,30 +126,12 @@ int main( int argc, char** argv )
 
         float pixelSize, refDistance;
         file["depth"] >> depth;
-        file["zeroPlanePixelSize"] >> pixelSize;
-        file["zeroPlaneDistance"] >> refDistance;
-
-        focalLength = refDistance * 0.5f / pixelSize;
+        file["cameraMatrix"] >> cameraMatrix;
+        depth.convertTo(depth, CV_32F);
     }
-
-    depth = depth * 0.001f; // libfreenect is in [mm]
-
-    // kinect parameter to focal length
-    // https://github.com/OpenKinect/libfreenect/blob/master/src/registration.c#L317
-    float fx = focalLength,
-        fy = focalLength,
-        cx = 319.5f,
-        cy = 239.5f;
 
     Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
-
-    frame->cameraMatrix = Mat::eye(3, 3, CV_32FC1);
-    {
-        frame->cameraMatrix.at<float>(0, 0) = fx;
-        frame->cameraMatrix.at<float>(1, 1) = fy;
-        frame->cameraMatrix.at<float>(0, 2) = cx;
-        frame->cameraMatrix.at<float>(1, 2) = cy;
-    }
+    frame->cameraMatrix = cameraMatrix;
 
     Ptr<DepthCleaner> cleaner = makePtr<DepthCleaner>(CV_32F, 5);
     Mat tmp;
@@ -144,15 +140,22 @@ int main( int argc, char** argv )
 
     depthTo3d(*frame);
 
+    imshow("depth", frame->points3d);
+    waitKey(0);
+
     // generate valid point mask for clusters
     compare(frame->depth, 0, frame->mask, CMP_GT);
 
     RgbdClusterMesh mainCluster(frame);
+    mainCluster.increment_step = 2;
+    mainCluster.calculatePoints();
+    mainCluster.calculateFaceIndices();
+    mainCluster.save("main.obj");
     vector<RgbdClusterMesh> clusters;
     planarSegmentation(mainCluster, clusters);
     deleteEmptyClusters(clusters);
 
-    for(std::size_t i = 0; i < clusters.size(); i++) {
+    for (std::size_t i = 0; i < clusters.size(); i++) {
         {
             stringstream ss;
             ss << "cluster " << i;
@@ -163,7 +166,7 @@ int main( int argc, char** argv )
         Mat stats;
         Mat centroids;
 
-        if(clusters.at(i).bPlane) {
+        if (clusters.at(i).bPlane) {
             stringstream ss;
             ss << "cluster" << i;
             clusters.at(i).increment_step = 4;
@@ -177,7 +180,7 @@ int main( int argc, char** argv )
         vector<RgbdClusterMesh> smallClusters;
         euclideanClustering(clusters.at(i), smallClusters);
         //deleteEmptyClusters(smallClusters);
-        for(std::size_t j = 0; j < smallClusters.size(); j++) {
+        for (std::size_t j = 0; j < smallClusters.size(); j++) {
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
             imshow(ss.str(), smallClusters.at(j).silhouette * 255);

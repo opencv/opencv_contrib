@@ -181,8 +181,8 @@ int main(int argc, char** argv)
     Mat kPro = projector.cameraMatrix * extrinsics(Rect(0, 0, 4, 3));
     cout << kCam << endl;
     cout << kPro << endl;
-    for (int y = 0; y < image.rows; y+=4) {
-        for (int x = 0; x < image.cols; x+=4) {
+    for (int y = 0; y < image.rows; y+=2) {
+        for (int x = 0; x < image.cols; x+=2) {
             Point point;
 
             const bool error = true;
@@ -265,6 +265,20 @@ int main(int argc, char** argv)
     imshow("pointcloud", camera.pointcloud);
     imshow(window, depthMapP);
     imshow("depth_camera", depthMapC);
+
+    // save depth map
+    cv::FileStorage file("rgbd_projector.txt", cv::FileStorage::WRITE);
+    file << "depth" << projector.depth;
+    file << "cameraMatrix" << projector.cameraMatrix;
+    //file << "points3d" << projector.pointcloud;
+    file.release();
+
+    file.open("rgbd_camera.txt", cv::FileStorage::WRITE);
+    file << "depth" << camera.depth;
+    file << "cameraMatrix" << camera.cameraMatrix;
+    //file << "points3d" << camera.pointcloud;
+    file.release();
+
     waitKey(0);
     return 0;
 }
