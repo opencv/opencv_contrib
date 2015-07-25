@@ -58,6 +58,10 @@ static void help() {
     std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
     std::cout << "[-c <cameraParams>] # Camera intrinsic parameters file"
               << std::endl;
+    std::cout << "[-as <float>] # Automatic scale. The provided number is multiplied by the last "
+              << "diamond id becoming an indicator of the square length. In this case, the -sl and "
+              << "-ml are only used to know the relative length relation between "
+              << "squares and markers" << std::endl;
     std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
                  << std::endl;
     std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
@@ -152,6 +156,13 @@ int main(int argc, char *argv[]) {
       estimatePose = true;
     }
 
+    bool autoScale = false;
+    float autoScaleFactor = 1.;
+    if (isParam("-as", argc, argv)) {
+      autoScaleFactor = atof( getParam("-as", argc, argv).c_str() );
+      autoScale = true;
+    }
+
     cv::aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
@@ -199,9 +210,25 @@ int main(int argc, char *argv[]) {
                                             squareLength/markerLength, diamondCorners, diamondIds,
                                             40.f, camMatrix, distCoeffs);
 
-        if (estimatePose && diamondIds.size() > 0)
-            cv::aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix,
-                                                 distCoeffs, rvecs, tvecs);
+        if (estimatePose && diamondIds.size() > 0) {
+            if(!autoScale) {
+                cv::aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix,
+                                                     distCoeffs, rvecs, tvecs);
+            }
+            else {
+                for(unsigned int i=0; i<diamondCorners.size(); i++) {
+                    float autoSquareLength = autoScaleFactor * float(diamondIds[i].val[3]);
+                    std::vector<std::vector<cv::Point2f> > currentCorners;
+                    std::vector<cv::Mat> currentRvec, currentTvec;
+                    currentCorners.push_back(diamondCorners[i]);
+                    cv::aruco::estimatePoseSingleMarkers(currentCorners, autoSquareLength,
+                                                         camMatrix, distCoeffs, currentRvec,
+                                                         currentTvec);
+                    rvecs.push_back(currentRvec[0]);
+                    tvecs.push_back(currentTvec[0]);
+                }
+            }
+        }
 
 
         double currentTime = ((double)cv::getTickCount()-tick)/cv::getTickFrequency();
