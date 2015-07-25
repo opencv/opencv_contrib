@@ -256,7 +256,14 @@ inline DictValue & DictValue::operator=(const DictValue &r)
 
 inline DictValue::DictValue(const DictValue &r)
 {
-    *this = r;
+    type = r.type;
+
+    if (r.type == Param::INT)
+        pi = new AutoBuffer<int64, 1>(*r.pi);
+    else if (r.type == Param::STRING)
+        ps = new AutoBuffer<String, 1>(*r.ps);
+    else if (r.type == Param::REAL)
+        pd = new AutoBuffer<double, 1>(*r.pd);
 }
 
 inline bool DictValue::isString() const

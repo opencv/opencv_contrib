@@ -25,8 +25,8 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     }
 
     std::vector<Mat> inpMats;
-    inpMats.push_back( imread(getTestFile("googlenet_0.png")) );
-    inpMats.push_back( imread(getTestFile("googlenet_1.png")) );
+    inpMats.push_back( imread(getTestFile("googlenet_0.jpg")) );
+    inpMats.push_back( imread(getTestFile("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
     Blob inp(inpMats);
@@ -34,7 +34,7 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     net.forward();
 
     Blob out = net.getBlob("prob");
-    Blob ref = blobFromNPY(getTestFile("googlenet.npy"));
+    Blob ref = blobFromNPY(getTestFile("googlenet_prob.npy"));
     normAssert(out, ref);
 }
 

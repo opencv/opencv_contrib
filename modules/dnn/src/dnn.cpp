@@ -525,5 +525,11 @@ Ptr<Layer> LayerRegister::createLayerInstance(const String &_type, LayerParams& 
     }
 }
 
+int Net::getLayerId(LayerId)
+{
+    CV_Error(Error::StsNotImplemented, "");
+    return -1;
+}
+
 }
 }
