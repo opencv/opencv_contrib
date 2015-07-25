@@ -1,18 +1,18 @@
 Detection of ArUco Boards {#tutorial_aruco_board_detection}
 ==============================
 
-A Board of markers is a set of markers that acts like a single marker in the sense that they provide a 
+A Board of markers is a set of markers that acts like a single marker in the sense that it provides a 
 single pose for the camera.
 
-The most popular board is the one with all the markers in the same plane, since they can be easily printed:
+The most popular board is the one with all the markers in the same plane, since it can be easily printed:
 
 ![](images/gboriginal.png)
 
 However, boards are not limited to this arrangement and can represent any 2d or 3d layout.
 
 The difference between a Board and a set of independent markers is that the relative position between
-the marker in the Board is known a priori. This allow that the corners of all the markers can be used for
-estimate the pose of the camera respect to the Board.
+the markers in the Board is known a priori. This allows that the corners of all the markers can be used for
+estimating the pose of the camera respect to the whole Board.
 
 When you use a set of independent markers, you can estimate the pose for each marker individually,
 since you dont know the relative position of the markers in the environment.
@@ -20,27 +20,27 @@ since you dont know the relative position of the markers in the environment.
 The main benefits of using Boards are:
 
 - The pose estimation is much more versatile. Only some markers are necessary to perform pose estimation.
-Thus, the pose can be calculated even in the presence of occlusion or partial views.
+Thus, the pose can be calculated even in the presence of occlusions or partial views.
 - The obtained pose is usually more accurate since a higher amount of point correspondences (marker 
 corners) are employed.
 
-The aruco module allows the use of Boards. The main class is the Board class which defines the Board layout:
+The aruco module allows the use of Boards. The main class is the cv::aruco::Board class which defines the Board layout:
 
 ``` c++
     class  Board {
     public:
         std::vector<std::vector<cv::Point3f> > objPoints;
-        DICTIONARY dictionary;
+        cv::aruco::DICTIONARY dictionary;
         std::vector<int> ids;
     };
 ```
 
 A object of type Board has three parameters:
-- The objPoints structure is the list of corner position in the 3d Board reference system, i.e. its layout. 
+- The objPoints structure is the list of corner positions in the 3d Board reference system, i.e. its layout. 
 For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting 
 with the top left corner.
 - The dictionary parameter indicates to which marker dictionary the Board markers belong to.
-- Finally, the ids structure indicates the identifier of each of the marker in objPoints respect to the specified
+- Finally, the ids structure indicates the identifiers of each of the markers in objPoints respect to the specified
 dictionary.
 
 
@@ -48,7 +48,7 @@ Board Detection
 -----
 
 A Board detection is similar to the standard marker detection. The only difference is in the pose estimation step.
-In fact, to use marker boards, a standard marker detection should be done before estimate the Board pose.
+In fact, to use marker boards, a standard marker detection should be done before estimating the Board pose.
 
 The aruco module provides a specific function, estimatePoseBoard(), to perform pose estimation for boards:
 
@@ -62,10 +62,10 @@ The aruco module provides a specific function, estimatePoseBoard(), to perform p
     ...
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners;
-    detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
+    cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
     if(markerIds.size() > 0) {
         cv::Mat rvec, tvec;
-        int valid = estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+        int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
     }
 ```
 
@@ -75,7 +75,7 @@ The parameters of estimatePoseBoard are:
 - board: the Board object that defines the board layout and its ids
 - cameraMatrix and distCoeffs: camera calibration parameters necessary for pose estimation.
 - rvec and tvec: estimated pose of the Board.
-- The function returns the total number of markers employed for estimate the board pose. Note that not all the
+- The function returns the total number of markers employed for estimating the board pose. Note that not all the
  markers provided in markerCorners and markerIds should be used, since only the markers whose ids are
 listed in the Board::ids structure are considered.
 
@@ -83,7 +83,7 @@ The drawAxis() function can be used to check the obtained pose. For instance:
 
 ![Board with axis](images/gbmarkersaxis.png)
 
-This is another example with the board partially occluded:
+And this is another example with the board partially occluded:
 
 ![Board with occlusions](images/gbocclusion.png)
 
@@ -92,11 +92,11 @@ As it can be observed, although some markers have not been detected, the Board p
 Grid Board
 -----
 
-Creating the Board object require specifying the position the corners of each marker in the environment.
+Creating the Board object requires specifying the corner positions for each marker in the environment.
 However, in many cases, the board will be just a set of markers in the same plane and in a grid layout,
 so it can be easily printed and used.
 
-Fortunately, the aruco module provide the basic functionality to create and print this type of markers 
+Fortunately, the aruco module provides the basic functionality to create and print these types of markers 
 easily. 
 
 The GridBoard class is a specialized class that inherits from the Board class and which represents a Board
@@ -118,19 +118,19 @@ A GridBoard object can be defined using the following parameters:
 - The dictionary of the markers.
 - Ids of all the markers (X*Y markers).
 
-This object can be easily created from this parameters using the cv::aruco::GridBoard::create() static function:
+This object can be easily created from these parameters using the cv::aruco::GridBoard::create() static function:
 
 ``` c++
     cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
 ```
 
 - The first and second parameters are the number of markers in the X and Y direction respectively.
-- The third and fourth parameters are marker length and the marker separation respectively. They can be provided
-in any unit, having in mind that the estimated pose for this board would be measured in the same units (usually in meters).
+- The third and fourth parameters are the marker length and the marker separation respectively. They can be provided
+in any unit, having in mind that the estimated pose for this board will be measured in the same units (in general, meters are used).
 - Finally, the dictionary of the markers is provided.
 
-So, this board will be composed by 5x7=35 markers. The ids of each of the markers are assigned in numerical
-order by default, so they will be 0, 1, 2, ..., 34. This can be easily customized by accessing to the ids vector
+So, this board will be composed by 5x7=35 markers. The ids of each of the markers are assigned, by default, in ascending
+order starting on 0, so they will be 0, 1, 2, ..., 34. This can be easily customized by accessing to the ids vector
 through board.ids, like in the Board parent class.
 
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
@@ -145,7 +145,7 @@ of a GridBoard is provided in cv::aruco::GridBoard::draw(). For example:
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
 to the board dimensions, it will be centered on the image.
 - boardImage: the output image with the board.
-- The third parameter is the (optional) margin in pixels, so none of the marker boards is touching the image border.
+- The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
 - Finally, the size of the marker border, similarly to drawMarker() function. The default value is 1.
 
@@ -153,7 +153,7 @@ The output image will be something like this:
 
 ![](images/board.jpg)
 
-Finally, a full example of board detection  (see board_detection.cpp for a more detailed example):
+Finally, a full example of board detection  (see board_detector.cpp for a more detailed example):
 
 ``` c++
     cv::VideoCapture inputVideo;
