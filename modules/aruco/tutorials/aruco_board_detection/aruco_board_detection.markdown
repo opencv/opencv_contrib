@@ -40,8 +40,7 @@ A object of type ```Board``` has three parameters:
 For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting 
 with the top left corner.
 - The ```dictionary``` parameter indicates to which marker dictionary the Board markers belong to.
-- Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified
-```dictionary```.
+- Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified  ```dictionary```.
 
 
 Board Detection
