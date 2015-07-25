@@ -86,6 +86,9 @@ int main(int argc, char** argv)
         Mat distCoeffs;
         vector<vector<Point2f> > imagePoints;
         Size size;
+        Mat correspondenceMap;
+        Mat pointcloud;
+        Mat depth;
     };
     Calibration camera, projector;
     camera.size = Size(capture.get(CAP_PROP_FRAME_WIDTH), capture.get(CAP_PROP_FRAME_HEIGHT));
@@ -167,27 +170,37 @@ int main(int argc, char** argv)
     }
 
     // decode
-    Mat correspondenceMap = Mat::zeros(camera.size, CV_8UC3);
-    Mat pointcloud = Mat::zeros(camera.size, CV_64FC3);
-    Mat depth = Mat::zeros(camera.size, CV_64F);
-    float depthMax = 0;
+    camera.correspondenceMap = Mat::zeros(camera.size, CV_8UC3);
+    projector.correspondenceMap = Mat::zeros(projector.size, CV_8UC3);
+    camera.pointcloud = Mat::zeros(camera.size, CV_64FC3);
+    camera.depth = Mat::zeros(camera.size, CV_64F);
+    projector.depth = Mat::zeros(projector.size, CV_64F);
+    Mat udepthP = Mat::zeros(projector.size, CV_8U);
+    Mat udepthC = Mat::zeros(camera.size, CV_8U);
     Mat kCam = camera.cameraMatrix * Mat_<double>::eye(3, 4);
     Mat kPro = projector.cameraMatrix * extrinsics(Rect(0, 0, 4, 3));
     cout << kCam << endl;
     cout << kPro << endl;
-    for (int y = 0; y < image.rows; y++) {
-        for (int x = 0; x < image.cols; x++) {
+    for (int y = 0; y < image.rows; y+=4) {
+        for (int x = 0; x < image.cols; x+=4) {
             Point point;
 
             const bool error = true;
-            if (pattern->getProjPixel(cameraImages, x, y, point) == error)
+            pattern->getProjPixel(cameraImages, x, y, point); 
+            // error detection in getProjPixel is too strict
+            //if (pattern->getProjPixel(cameraImages, x, y, point) == error)
+            if (0 > point.x || point.x >= projector.size.width || 0 > point.y || point.y >= projector.size.height)
             {
-                //continue;
+                continue;
             }
 
             Range xr(x, x + 1);
             Range yr(y, y + 1);
-            correspondenceMap(yr, xr) = Scalar(point.x * 255 / projector.size.width, point.y * 255 / projector.size.height, 0);
+            camera.correspondenceMap(yr, xr) = Scalar(point.x * 255 / projector.size.width, point.y * 255 / projector.size.height, 0);
+
+            xr = Range(point.x, point.x + 1);
+            yr = Range(point.y, point.y + 1);
+            projector.correspondenceMap(yr, xr) = Scalar(x * 255 / camera.size.width, y * 255 / camera.size.height, 0);
 
             Point3d p;
             Mat m = Mat(4, 4, CV_64F);
@@ -215,7 +228,7 @@ int main(int argc, char** argv)
             m.at<double>(3, 1) = uPro.at<double>(1) * kPro.at<double>(2, 1) - uPro.at<double>(2) * kPro.at<double>(1, 1);
             m.at<double>(3, 2) = uPro.at<double>(1) * kPro.at<double>(2, 2) - uPro.at<double>(2) * kPro.at<double>(1, 2);
             m.at<double>(3, 3) = uPro.at<double>(1) * kPro.at<double>(2, 3) - uPro.at<double>(2) * kPro.at<double>(1, 3);
-            
+
             SVD svd;
             Mat w, u, vt;
             svd.compute(m, w, u, vt, SVD::Flags::FULL_UV);
@@ -226,17 +239,32 @@ int main(int argc, char** argv)
             nullVector.at<double>(3) = vt.at<double>(3, 3);
             p.x = nullVector.at<double>(0) / nullVector.at<double>(3);
             p.y = nullVector.at<double>(1) / nullVector.at<double>(3);
-            p.z = -nullVector.at<double>(2) / nullVector.at<double>(3);
+            p.z = nullVector.at<double>(2) / nullVector.at<double>(3);
 
-            pointcloud.at<Point3d>(y, x) = p;
-            depth.at<double>(y, x) = p.z;
-            if (p.z > depthMax) depthMax = p.z;
+            if (p.z < 0) p *= -1;
+
+            camera.pointcloud.at<Point3d>(y, x) = p * 0.001;
+            camera.depth.at<double>(y, x) = p.z * 0.001;
+            udepthC.at<uchar>(y, x) = p.z * 0.1;
+
+            Mat pPro = (Mat_<double>(4, 1) << p.x, p.y, p.z, 1);
+            pPro = extrinsics * pPro;
+            pPro *= 1.0 / pPro.at<double>(3);
+
+            if (pPro.at<double>(2) < 0) pPro *= -1;
+
+            projector.depth.at<double>(point.y, point.x) = pPro.at<double>(2) * 0.001;
+            udepthP.at<uchar>(point.y, point.x) = pPro.at<double>(2) * 0.1;
         }
     }
-
-    imshow("correspondence", correspondenceMap);
-    imshow("pointcloud", pointcloud);
-    imshow("depth2", depth / 5000);
+    Mat depthMapC, depthMapP;
+    applyColorMap(udepthC, depthMapC, COLORMAP_HOT);
+    applyColorMap(udepthP, depthMapP, COLORMAP_HOT);
+    imshow("correspondence_camera", camera.correspondenceMap);
+    imshow("correspondence_projector", projector.correspondenceMap);
+    imshow("pointcloud", camera.pointcloud);
+    imshow(window, depthMapP);
+    imshow("depth_camera", depthMapC);
     waitKey(0);
     return 0;
 }
