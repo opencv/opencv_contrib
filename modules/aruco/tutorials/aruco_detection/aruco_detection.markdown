@@ -71,7 +71,7 @@ Marker Creation
 ------
 
 Before their detection, markers need to be printed in order to be placed in the environment.
-Marker images can be generated using the drawMarker() function.
+Marker images can be generated using the ```drawMarker()``` function.
 
 For example, lets analyze the following call:
 
@@ -82,7 +82,7 @@ For example, lets analyze the following call:
 
 - The first parameter is one of the predefined dictionaries in the aruco module. Concretely, this
 dictionary is composed by 250 markers and a marker size of 6x6 bits.
-- The second parameter is the marker id, in this case the marker 23 of the dictionary DICT_6X6_250.
+- The second parameter is the marker id, in this case the marker 23 of the dictionary ```DICT_6X6_250```.
 Note that each dictionary is composed by a different number of markers. In this case, the valid ids
 go from 0 to 249. Any specific id out of the valid range will produce an exception.
 - The third parameter, 200, is the size of the output marker image. In this case, the output image
@@ -142,9 +142,9 @@ And these are the marker candidates that have been rejected during the identific
 
 ![Image with rejected candidates](images/singlemarkersrejected.png)
 
-In the aruco module, the detection is performed in the detectMarkers() function. This function is
+In the aruco module, the detection is performed in the ```detectMarkers()``` function. This function is
 the most important in the module, since all the rest of functionalities are based on the
-previous detected markers returned by detectMarkers().
+previous detected markers returned by ```detectMarkers()```.
 
 An example of marker detection:
 
@@ -158,34 +158,34 @@ An example of marker detection:
 ```
 
 - The first parameter is the image where the markers are going to be detected.
-- DICT_6X6_250 is one of the predefined dictionaries in the module. This dictionary is composed by 250 markers of 6x6 bits.
-- The detected markers are stored in the markerCorners and markerIds structures:
-    - markerCorners is the list of corners of the detected markers. For each marker, its four
+- ```DICT_6X6_250``` is one of the predefined dictionaries in the module. This dictionary is composed by 250 markers of 6x6 bits.
+- The detected markers are stored in the ```markerCorners``` and ```markerIds``` structures:
+    - ```markerCorners``` is the list of corners of the detected markers. For each marker, its four
     corners are returned in their original order (which is clockwise starting with top left). So, the first corner is the top left corner, followed by the top right, bottom right and bottom left.
-    - markerIds is the list of ids of each of the detected markers in markerCorners.
-    Note that the returned markerCorners and markerIds vectors have the same sizes.
-- The fourth parameter is the object of type DetectionParameters. This object includes all the
+    - ```markerIds``` is the list of ids of each of the detected markers in ```markerCorners```.
+    Note that the returned ```markerCorners``` and ```markerIds``` vectors have the same sizes.
+- The fourth parameter is the object of type ```DetectionParameters```. This object includes all the
 parameters that can be customized during the detection process. This parameters are commented in
 detail in the next section.
-- The final parameter, rejectedCandidates, is a returned list of marker candidates, i.e. those
+- The final parameter, ```rejectedCandidates```, is a returned list of marker candidates, i.e. those
 squares that have been found but they do not present a valid codification. Each candidate is also
-defined by its four corners, and its format is the same than the markerCorners parameter. This
-parameter can be omitted and is only useful for debugging purposes and for 'refind' strategies (see refineDetectedMarkers() ).
+defined by its four corners, and its format is the same than the ```markerCorners``` parameter. This
+parameter can be omitted and is only useful for debugging purposes and for 'refind' strategies (see ```refineDetectedMarkers()``` ).
 
 
-The next thing you probably want to do after detectMarkers() is checking that your markers have
+The next thing you probably want to do after ```detectMarkers()``` is checking that your markers have
 been correctly detected. Fortunately, the aruco module provides a function to draw the detected
-markers in the input image, this function is drawDetectedMarkers(). For example:
+markers in the input image, this function is ```drawDetectedMarkers()```. For example:
 
 ``` c++
     cv::Mat outputImage
     cv::aruco::drawDetectedMarkers(inputImage, outputImage, markerCorners, markerIds);
 ```
 
-- inputImage should be the same image where the markers were detected (or at least it should have the same size).
-- outputImage will be a copy of inputImage but with the detected markers highlighted.
-- markerCorners and markerIds are the structures of the detected markers in the same format
-provided by the detectMarkers() function.
+- ```inputImage``` should be the same image where the markers were detected (or at least it should have the same size).
+- ```outputImage``` will be a copy of ```inputImage``` but with the detected markers highlighted.
+- ```markerCorners``` and ```markerIds``` are the structures of the detected markers in the same format
+provided by the ```detectMarkers()``` function.
 
 ![Image with detected markers](images/singlemarkersdetection.png)
 
@@ -228,7 +228,7 @@ The next thing you probably want to do after detecting the markers is to obtain 
 
 To perform camera pose estimation you need to know the calibration parameters of your camera. This is
 the camera matrix and distortion coefficients. If you do not know how to calibrate your camera, you can 
-take a look to the Calibration tutorial of OpenCV. You can also calibrate your camera using the aruco module
+take a look to the ```calibrateCamera()``` function and the Calibration tutorial of OpenCV. You can also calibrate your camera using the aruco module
 as it is explained in the Calibration with aruco tutorial. Note that this only need to be done once unless the
 camera optics are modified (for instance changing its focus).
 
@@ -241,7 +241,7 @@ If you want to estimate one pose from a set of markers, what you want to use is 
 Boards tutorial).
 
 The camera pose respect to a marker is the 3d transformation from the marker coordinate system to the 
-camera coordinate system. It is specified by a rotation and a translation vector (see solvePnP for more
+camera coordinate system. It is specified by a rotation and a translation vector (see ```solvePnP()``` function for more
 information).
 
 The aruco module provides a function to estimate the poses of all the detected markers:
@@ -253,11 +253,11 @@ The aruco module provides a function to estimate the poses of all the detected m
     cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 ```
 
-- The corners parameter is the vector of marker corners returned by the detectMarkers() function.
+- The ```corners``` parameter is the vector of marker corners returned by the ```detectMarkers()``` function.
 - The second parameter is the size of the marker side in meters or in any other unit. Note that the 
 translation vectors of the estimated poses will be in the same unit
-- cameraMatrix and distCoeffs are the camera calibration parameters that need to be known a priori.
-- rvecs and tvecs are the rotation and translation vectors respectively, for each of the markers
+- ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters that need to be known a priori.
+- ```rvecs``` and ```tvecs``` are the rotation and translation vectors respectively, for each of the markers
 in corners.
 
 The marker coordinate system that is assumed by this function is placed at the center of the marker
@@ -272,10 +272,10 @@ checked:
     cv::aruco::drawAxis(inputImage, outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
 ```
 
-- The inputImage is the input image where the axis will be drawn.
-- outputImage will be a copy of inputImage with the axis drawn.
-- cameraMatrix and distCoeffs are the camera calibration parameters.
-- rvec and tvec are the pose parameters whose axis want to be drawn.
+- The ```inputImage``` is the input image where the axis will be drawn.
+- ```outputImage``` will be a copy of ```inputImage``` with the axis drawn.
+- ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters.
+- ```rvec``` and ```tvec``` are the pose parameters whose axis want to be drawn.
 - The last parameter is the length of the axis, in the same unit that tvec (usually meters)
 
 A basic full example for pose estimation from single markers  (see marker_detector.cpp for a more detailed example):
@@ -317,7 +317,7 @@ A basic full example for pose estimation from single markers  (see marker_detect
 Detector Parameters
 ------
 
-One of the parameters of detectMarkers() function is a DetectorParameters object. This object
+One of the parameters of ```detectMarkers()``` function is a ```DetectorParameters``` object. This object
 includes all the options that can be customized during the marker detection process.
 
 In this section, all these parameters are commented. The parameters can be classified depending on
@@ -333,13 +333,13 @@ For instance, the thresholded image for the sample image used above is:
 
 This thresholding can be customized in two parameters:
 
-- *int adaptiveThreshWinSize, double adaptiveThreshConstant*
+- ```int adaptiveThreshWinSize```, ```double adaptiveThreshConstant```
 
-The adaptiveThreshWinSize parameter is the window size (in pixels) of the adaptive thresholding and
-the adaptiveThreshConstant is the constant value added in the thresholding condition (see OpenCV
-threshold() function for more details).
+The ```adaptiveThreshWinSize``` parameter is the window size (in pixels) of the adaptive thresholding and
+the ```adaptiveThreshConstant``` is the constant value added in the thresholding condition (see OpenCV
+```threshold()``` function for more details).
 
-Low values of adaptiveThreshWinSize can 'break' the marker border if the marker size is too large, and
+Low values of ```adaptiveThreshWinSize``` can 'break' the marker border if the marker size is too large, and
 it would not be detected, like in the following image:
 
 ![Broken marker image](images/singlemarkersbrokenthresh.png)
@@ -349,11 +349,11 @@ considerably and the the process would tend to a global thresholding, losing the
 
 In general, it is necessary a balanced value depending on the marker size and the required
 performance.
-The adaptiveThreshConstant does not affect to the performance.
+The ```adaptiveThreshConstant``` does not affect to the performance.
 
 Default values:
 
-*adaptiveThreshWinSize*: 21, *adaptiveThreshConstant*: 7
+```adaptiveThreshWinSize```: 21, ```adaptiveThreshConstant```: 7
 
 #### Contour filtering
 
@@ -369,7 +369,7 @@ a higher computational cost. So, it is preferred to discard wrong candidates in 
 On the other hand, if the filtering conditions are too strict, the real marker contours could be discarded and,
 hence, not detected. 
 
-- *double minMarkerPerimeterRate, double maxMarkerPerimeterRate*
+- ```double minMarkerPerimeterRate```, ```double maxMarkerPerimeterRate```
 
 These parameters determine the minimum and maximum size of a marker, concretely the maximum and
 minimum marker perimeter. They are not specified in absolute pixels values, instead they are
@@ -377,32 +377,32 @@ specified relative to the maximum dimension of the input image.
 
 For instance, a image with size 640x480 and a minimum relative marker perimeter of 0.05 will lead
 to a minimum marker perimeter of 640x0.05 = 32 pixels, since 640 is the maximum dimension of the
-image. The same applies for the maxMarkerPerimeterRate parameter.
+image. The same applies for the ```maxMarkerPerimeterRate``` parameter.
 
-If the *maxMarkerPerimeterRate* is too low, it can penalize considerably the detection performance since
+If the ```minMarkerPerimeterRate``` is too low, it can penalize considerably the detection performance since
 many more contours would be considered for future stages.
-This penalization is not so noticeable for the *maxMarkerPerimeterRate parameter*, since there are
+This penalization is not so noticeable for the ```maxMarkerPerimeterRate``` parameter, since there are
 usually many more small contours than big contours.
-A minMarkerPerimeterRate value of 0 and a maxMarkerPerimeterRate value of 4 (or more) will be
+A ```minMarkerPerimeterRate``` value of 0 and a ```maxMarkerPerimeterRate``` value of 4 (or more) will be
 equivalent to consider all the contours in the image, however this is not recommended for
 the performance reasons.
 
-See also the parameters *minCornerDistance* and *minMarkerDistance*, since they can also
+See also the parameters ```minCornerDistance``` and ```minMarkerDistance```, since they can also
 filter markers based on their size.
 
 Default values:
 
- *minMarkerPerimeterRate* : 0.03, *maxMarkerPerimeterRate* : 4.0
+ ```minMarkerPerimeterRate``` : 0.03, ```maxMarkerPerimeterRate``` : 4.0
 
 
-- *double polygonalApproxAccuracyRate*
+- ```double polygonalApproxAccuracyRate```
 
 A polygonal approximation is applied to each candidate and only those that approximate to a square
 shape are accepted. This value determines the maximum error that the polygonal approximation can
-produce (see approxPolyDP() function for more information).
+produce (see ```approxPolyDP()``` function for more information).
 
 This parameter is relative to the candidate length (in pixels). So if the candidate has
-a perimeter of 100 pixels and the value of *polygonalApproxAccuracyRate* is 0.04, the maximum error
+a perimeter of 100 pixels and the value of ```polygonalApproxAccuracyRate``` is 0.04, the maximum error
 would be 100x0.04=5.4 pixels.
 
 In most cases, the default value works fine, but higher error values could be necessary for high
@@ -411,20 +411,20 @@ distorted images.
 Default value: 0.05
 
 
-- *double minCornerDistance*
+- ```double minCornerDistance```
 
 Minimum Euclidean distance between any pair of corners in the same marker (in pixels).
 
 Default value: 10
 
-- *double minMarkerDistance*
+- ```double minMarkerDistance```
 
 Minimum Euclidean distance between any pair of corners from two different markers (in pixels). 
 If two candidates are too close, the smaller one is ignored.
 
 Default value: 10
 
-- *int minDistanceToBorder*
+- ```int minDistanceToBorder```
 
 Minimum distance to any of the marker corners to the image border (in pixels). Markers partially occluded
 by the image border can be correctly detected if the occlusion is small. However, if one of the corner
@@ -456,16 +456,16 @@ On each cell, the number of black and white pixels are counted to decide the bit
 
 There are several parameters that can customize this process:
 
-- *int markerBorderBits*
+- ```int markerBorderBits```
 This parameter indicates the width of the marker border. It is relative to the size of each bit. So, a
 value of 2 indicates the border has the width of two internal bits.
 
 This parameter needs to coincide with the border size of the markers you are using. The border size
-can be configured in the marker drawing functions such as drawMarker().
+can be configured in the marker drawing functions such as ```drawMarker()```.
 
 Default value: 1
 
-- *double minOtsuStdDev*
+- ```double minOtsuStdDev```
 
 This value determines the minimum standard deviation on the pixels values to perform Otsu
 thresholding. If the deviation is low, it probably means that all the square is black (or white)
@@ -474,16 +474,16 @@ depending if the mean value is higher or lower than 128.
 
 Default value: 5.0
 
- - *int perpectiveRemovePixelPerCell*:
+ - ```int perpectiveRemovePixelPerCell```
 
 This parameter determines the number of pixels (per cell) in the obtained image after removing perspective
 distortion (including the border). This is the size of the red squares in the image above.
 
 For instance, lets assume we are dealing with markers of 5x5 bits and border size of 1 bit
-(see *markerBorderBits*). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
+(see ```markerBorderBits```). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
 has to be counted twice). The total number of cells is 7x7. 
 
-If the value of perpectiveRemovePixelPerCell is 10, then the size of the obtained image will be
+If the value of ```perpectiveRemovePixelPerCell``` is 10, then the size of the obtained image will be
 10*7 = 70 -> 70x70 pixels. 
 
 A higher value of this parameter can improve the bits extraction process (up to some degree), however it can penalize
@@ -491,7 +491,7 @@ the performance.
 
 Default value: 4
 
-- *double perspectiveRemoveIgnoredMarginPerCell*
+- ```double perspectiveRemoveIgnoredMarginPerCell```
 
 When extracting the bits of each cell, the numbers of black and white pixels are counted. In general, it is
 not recommended to consider all the cell pixels. Instead it is better to ignore some pixels in the
@@ -507,7 +507,7 @@ For instance, in the following image:
 
 only the pixels inside the green squares are considered. It can be seen in the right image that
 the resulting pixels contain a lower amount of noise from neighbor cells.
-The *perspectiveRemoveIgnoredMarginPerCell* parameter indicates the difference between the red and
+The ```perspectiveRemoveIgnoredMarginPerCell``` parameter indicates the difference between the red and
 the green squares.
 
 This parameter is relative to the total size of the cell. For instance if the cell size is 40 pixels and the 
@@ -516,7 +516,7 @@ amount of pixels that would be analyzed on each cell would actually be 32x32, in
 
 Default value: 0.13
 
-- *bool perspectiveRemoveDistortion*
+- ```bool perspectiveRemoveDistortion```
 
 This parameter enables an alternative process for bits extraction specially designed for markers with high distortion. 
 Detection of markers with high distortion usually fails during the identification step due to an incorrect bits extraction. This process tries a different extraction process that handles this problem.
@@ -530,7 +530,7 @@ Default value: false
 After the bits have been extracted, the next step is checking if the extracted code belongs to the marker
 dictionary and, if necessary, error correction can be performed.
 
-- *double maxErroneousBitsInBorderRate*
+- ```double maxErroneousBitsInBorderRate```
 
 The bits of the marker border should be black. This parameter specifies the allowed number of erroneous 
 bits in the border, i.e. the maximum number of white bits in the border. It is represented 
@@ -539,12 +539,12 @@ relative to the total number of bits in the marker.
 Default value: 0.5
 
 
-- *double errorCorrectionRate*
+- ```double errorCorrectionRate```
 
 Each marker dictionary has a theoretical maximum number of bits that can be corrected. However, this value
-can be modified by the *errorCorrectionRate* parameter.
+can be modified by the ```errorCorrectionRate``` parameter.
 
-For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of errorCorrectionRate is
+For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of ```errorCorrectionRate``` is
 0.5, the real maximum number of bits that can be corrected is 6*0.5=3 bits.
 
 This value is useful to reduce the error correction capabilities in order to avoid false positives.
@@ -555,19 +555,19 @@ Default value: 0.6
 #### Corner Refinement
 
 After markers have been detected and identified, the last step is performing subpixel refinement
-in the corner positions (see OpenCV cornerSubPix())
+in the corner positions (see OpenCV ```cornerSubPix()```)
 
 Note that this step is optional and it only makes sense if the position of the marker corners have to
 be accurate, for instance for pose estimation. It is usually a time consuming step.
 
-- *bool doCornerRefinement*
+- ```bool doCornerRefinement```
 
 This parameter determines if the corner subpixel process is performed or not. It can be disabled
 if accurate corners are not necessary.
 
 Default value: true.
 
- - *int cornerRefinementWinSize*
+ - ```int cornerRefinementWinSize```
 
 This parameter determines the window size of the subpixel refinement process.
 
@@ -578,18 +578,18 @@ it can affect to performance.
 Default value: 5
 
 
-- *int cornerRefinementMaxIterations, double cornerRefinementMinAccuracy*
+- ```int cornerRefinementMaxIterations```, ```double cornerRefinementMinAccuracy```
 
 These two parameters determine the stop criterion of the subpixel refinement process. The 
-*cornerRefinementMaxIterations* indicates the maximum number of iterations and
-*cornerRefinementMinAccuracy* the minimum error value before stopping the process.
+```cornerRefinementMaxIterations``` indicates the maximum number of iterations and
+```cornerRefinementMinAccuracy``` the minimum error value before stopping the process.
 
 If the number of iterations is too high, it can affect the performance. On the other hand, if it is 
 too low, it can produce a poor subpixel refinement.
 
 Default values: 
 
-*cornerRefinementMaxIterations*: 30, *cornerRefinementMinAccuracy*: 0.1
+```cornerRefinementMaxIterations```: 30, ```cornerRefinementMinAccuracy```: 0.1
 
 
 
