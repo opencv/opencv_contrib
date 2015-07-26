@@ -49,6 +49,7 @@
 #include "onlineBoosting.hpp"
 #include <iostream>
 
+
 #define BOILERPLATE_CODE(name,classname) \
     static Ptr<classname> createTracker(const classname::Params &parameters=classname::Params());\
     virtual ~classname(){};
@@ -575,6 +576,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   Ptr<TrackerSampler> sampler;
   Ptr<TrackerModel> model;
 };
+
 
 /************************************ Specific TrackerStateEstimator Classes ************************************/
 
@@ -1241,6 +1243,28 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
       @param parameters KCF parameters TrackerKCF::Params
   */
   BOILERPLATE_CODE("KCF",TrackerKCF);
+};
+
+/************************************ Multi-Tracker Classes ************************************/
+
+class CV_EXPORTS_W MultiTracker
+{
+public:
+
+	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
+
+	bool update(const Mat& image);
+
+	int targetNum = 0;
+	std::vector <Ptr<Tracker>> trackers;
+	std::vector <Rect2d> boundingBoxes;
+	std::vector<Scalar> colors;
+};
+
+class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
+{
+public:
+	bool update(const Mat& image);
 };
 
 //! @}
