@@ -65,8 +65,6 @@ namespace cv
 		else
 			colors.push_back(Scalar(rand() % 256, rand() % 256, rand() % 256));
 
-
-
 		//Target counter
 		targetNum++;
 
@@ -750,5 +748,4 @@ namespace cv
 		//t = (e2 - e1) / getTickFrequency()*1000.0;
 		//printf("NN: %d\t%f\n", patches.size(), t);
 	}
-
 }

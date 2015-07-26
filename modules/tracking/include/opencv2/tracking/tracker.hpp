@@ -1366,7 +1366,6 @@ void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<
 
 
 /************************************ Multi-Tracker Classes ************************************/
-
 class CV_EXPORTS_W MultiTracker_Alt
 {
 public:
@@ -1376,15 +1375,15 @@ public:
 	bool update(const Mat& image);
 
 	int targetNum = 0;
-	std::vector <Ptr<Tracker> > trackers;
+	std::vector <Ptr<Tracker>> trackers;
 	std::vector <Rect2d> boundingBoxes;
 	std::vector<Scalar> colors;
 };
 
-class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker_Alt
+class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
 {
 public:
-	bool update_opt(const Mat& image);
+	bool update(const Mat& image);
 };
 
 //! @}
