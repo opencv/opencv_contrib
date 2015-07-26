@@ -65,7 +65,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
 
     // Calculate and store the mean and mean of squares in the neighborhood
     // of each pixel and store them in Mat mean and sqmean.
-    Mat_<double> mean(size), sqmean(size);
+    Mat_<float> mean(size), sqmean(size);
 
     if( src.data != dst.data )
         mean = dst;
@@ -77,16 +77,16 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
 
     // Compute (k * standard deviation) in the neighborhood of each pixel
     // and store in Mat stddev. Also threshold the values in the src matrix to compute dst matrix.
-    Mat_<double> stddev(size);
+    Mat_<float> stddev(size);
     int i, j, threshold;
     uchar imaxval = saturate_cast<uchar>(maxValue);
     for(i = 0; i < size.height; ++i)
     {
         for(j = 0; j < size.width; ++j)
         {
-            stddev.at<double>(i, j) = delta * cvRound( sqrt(sqmean.at<double>(i, j) -
-                        mean.at<double>(i, j)*mean.at<double>(i, j)) );
-            threshold = cvRound(mean.at<double>(i, j) + stddev.at<double>(i, j));
+            stddev.at<float>(i, j) = saturate_cast<float>(delta) * cvRound( sqrt(sqmean.at<float>(i, j) -
+                        mean.at<float>(i, j)*mean.at<float>(i, j)) );
+            threshold = cvRound(mean.at<float>(i, j) + stddev.at<float>(i, j));
             if(src.at<uchar>(i, j) > threshold)
                 dst.at<uchar>(i, j) = (type == THRESH_BINARY) ? imaxval : 0;
             else

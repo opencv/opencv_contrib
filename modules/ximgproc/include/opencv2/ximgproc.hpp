@@ -41,7 +41,6 @@
 #include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
-#include "ximgproc/niblack.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
@@ -53,9 +52,16 @@ which somehow takes into account pixel affinities in natural images.
     @defgroup ximgproc_filters Filters
 
     @defgroup ximgproc_superpixel Superpixels
-
-    @defgroup ximgproc_niblack Niblack Thresholding
   @}
 */
+
+namespace cv {
+namespace ximgproc {
+    CV_EXPORTS_W
+    void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
+            int type, int blockSize, double delta );
+
+} // namespace ximgproc
+} //namespace cv
 
 #endif

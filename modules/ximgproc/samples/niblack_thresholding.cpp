@@ -10,7 +10,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 
-#include "opencv2/ximgproc.hpp" 
+#include "opencv2/ximgproc.hpp"
 
 using namespace std;
 using namespace cv;
@@ -53,6 +53,6 @@ void on_trackbar(int, void*)
 {
     k_actual = (double)k_from_slider/k_max_value;
     niBlackThreshold(src, dst, 255, THRESH_BINARY, 3, k_actual);
-    
+
     imshow("Destination", dst);
 }
