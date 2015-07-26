@@ -219,7 +219,7 @@ namespace cv
 			// 2 -> Pos&Neg
 			size_t globSize = 2 * numOfPatches*MAX_EXAMPLES_IN_MODEL;
 			//e3 = getTickCount();
-			if (!k.run(1, &globSize, NULL, false))
+			if (!k.run(1, &globSize, NULL, true))
 				printf("Kernel Run Error!!!");
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;

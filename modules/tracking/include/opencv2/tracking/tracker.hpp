@@ -49,6 +49,7 @@
 #include "onlineBoosting.hpp"
 #include <iostream>
 
+
 #define BOILERPLATE_CODE(name,classname) \
     static Ptr<classname> createTracker(const classname::Params &parameters=classname::Params());\
     virtual ~classname(){};
@@ -575,6 +576,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   Ptr<TrackerSampler> sampler;
   Ptr<TrackerModel> model;
 };
+
 
 /************************************ Specific TrackerStateEstimator Classes ************************************/
 
@@ -1361,6 +1363,31 @@ private:
 Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
 Rect2d CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
 void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+
+
+/************************************ Multi-Tracker Classes ************************************/
+
+class CV_EXPORTS_W MultiTracker_Alt
+{
+public:
+
+	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
+
+	bool update(const Mat& image);
+
+	int targetNum = 0;
+	std::vector <Ptr<Tracker>> trackers;
+	std::vector <Rect2d> boundingBoxes;
+	std::vector<Scalar> colors;
+};
+
+class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker_Alt
+{
+public:
+	bool update(const Mat& image);
+};
+
+//! @}
 
 } /* namespace cv */
 
