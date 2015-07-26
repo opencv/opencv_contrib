@@ -60,4 +60,5 @@ int main(int argc, char* argv[])
 	int height = parser.get<int>("height");
 	cv::cnn_3dobj::DataTrans Trans;
 	Trans.convert(src_dir,src_dst,attach_dir,channel,width,height);
+	std::cout << std::endl << "All images in: " << std::endl << src_dir << std::endl << "have been converted to levelDB data in: " << std::endl << src_dst << std::endl << "for extracting feature of gallery images in classification step efficiently, this convertion is not needed in feature extraction of test image" << std::endl;
 }

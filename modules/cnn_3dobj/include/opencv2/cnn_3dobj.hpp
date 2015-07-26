@@ -60,10 +60,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 #include <leveldb/db.h>
-//#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/viz/vizcore.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/highgui/highgui_c.h>
 #define CPU_ONLY
 #include <caffe/blob.hpp>
 #include <caffe/common.hpp>
@@ -71,6 +67,10 @@ the use of this software, even if advised of the possibility of such damage.
 #include <caffe/proto/caffe.pb.h>
 #include <caffe/util/io.hpp>
 #include <caffe/vision_layers.hpp>
+#include "opencv2/viz/vizcore.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc.hpp"
 using std::string;
 using caffe::Blob;
 using caffe::Caffe;
@@ -159,6 +159,38 @@ class CV_EXPORTS_W DataTrans
 		*/
 		CV_WRAP std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id);
 		/** @brief Extract feature into a binary file and vector<cv::Mat> for classification, the model proto and network proto are needed, All images in the file root will be used for feature extraction.
+		*/
+};
+
+class CV_EXPORTS_W Classification
+{
+	private:
+		caffe::shared_ptr<caffe::Net<float> > net_;
+		cv::Size input_geometry_;
+		int num_channels_;
+		cv::Mat mean_;
+		std::vector<string> labels_;
+		void SetMean(const string& mean_file);
+		/** @brief Load the mean file in binaryproto format.
+		*/
+		void WrapInputLayer(std::vector<cv::Mat>* input_channels);
+		/** @brief Wrap the input layer of the network in separate cv::Mat objects(one per channel). This way we save one memcpy operation and we don't need to rely on cudaMemcpy2D. The last preprocessing operation will write the separate channels directly to the input layer.
+		*/
+		void Preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels, bool mean_subtract);
+		/** @brief Convert the input image to the input image format of the network.
+		*/
+	public:
+		Classification(const string& model_file, const string& trained_file, const string& mean_file, const string& label_file);
+		/** @brief Initiate a classification structure.
+		*/
+		std::vector<std::pair<string, float> > Classify(const std::vector<cv::Mat>& reference, const cv::Mat& img, int N = 4, bool mean_substract = false);
+		/** @brief Make a classification.
+		*/
+		cv::Mat feature_extract(const cv::Mat& img, bool mean_subtract);
+		/** @brief Extract a single featrue of one image.
+		*/
+		std::vector<int> Argmax(const std::vector<float>& v, int N);
+		/** @brief Find the N largest number.
 		*/
 };
 //! @}

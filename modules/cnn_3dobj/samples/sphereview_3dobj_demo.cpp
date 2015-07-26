@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
 	std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
 	std::fstream imglabel;
 	char* p=(char*)labeldir.data();
-	imglabel.open(p);
+	imglabel.open(p, fstream::app|fstream::out);
 	bool camera_pov = (true);
 	/// Create a window
 	viz::Viz3d myWindow("Coordinate Frame");
@@ -84,7 +84,15 @@ int main(int argc, char *argv[]){
 	const char* binaryPath = "./binary_";
 	ViewSphere.createHeader((int)campos.size(), 64, 64, headerPath);
 	for(int pose = 0; pose < (int)campos.size(); pose++){
-		imglabel << campos.at(pose).x << ' ' << campos.at(pose).y << ' ' << campos.at(pose).z << endl;
+		char* temp = new char;
+		sprintf (temp,"%d",label_class);
+		string filename = temp;
+		filename += "_";
+		sprintf (temp,"%d",pose);
+		filename += temp;
+		filename += ".png";
+		imglabel << filename << ' ' << (int)(campos.at(pose).x*100) << ' ' << (int)(campos.at(pose).y*100) << ' ' << (int)(campos.at(pose).z*100) << endl;
+		filename = imagedir + filename;
 		/// We can get the pose of the cam using makeCameraPoses
 		Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*radius+cam_focal_point, cam_focal_point, cam_y_dir*radius+cam_focal_point);
 		/// We can get the transformation matrix from camera coordinate system to global using
@@ -111,16 +119,9 @@ int main(int argc, char *argv[]){
 		/// Set the viewer pose to that of camera
 		if (camera_pov)
 			myWindow.setViewerPose(cam_pose);
-		char* temp = new char;
-		sprintf (temp,"%d",label_class);
-		string filename = temp;
-		filename += "_";
-		filename = imagedir + filename;
-		sprintf (temp,"%d",pose);
-		filename += temp;
-		filename += ".png";
 		myWindow.saveScreenshot(filename);
 		ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);
 	}
+	imglabel.close();
 	return 1;
 };

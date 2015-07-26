@@ -96,7 +96,7 @@ namespace cnn_3dobj
 	  leveldb::DB* db;
 	  leveldb::Options options;
 	  options.create_if_missing = true;
-	  options.error_if_exists = true;
+	  // options.error_if_exists = true;
 	  caffe::Datum datum;
 	  datum.set_channels(channel);
 	  datum.set_height(height);
@@ -213,11 +213,11 @@ namespace cnn_3dobj
 		feature_blob_data = feature_blob->cpu_data() +
 		    feature_blob->offset(n);
 			fwrite(feature_blob_data, sizeof(float), dim_features, files[i]);
+			cv::Mat tempfeat = cv::Mat(1, dim_features, CV_32FC1);
 			for (int dim = 0; dim < dim_features; dim++) {
-				cv::Mat tempfeat = cv::Mat(1, dim_features, CV_32FC1);
 				tempfeat.at<float>(0,dim) = *(feature_blob_data++);
-				featureVec.push_back(tempfeat);
 			}
+			featureVec.push_back(tempfeat);
 		++image_indices[i];
 		if (image_indices[i] % 1000 == 0) {
 		  LOG(ERROR)<< "Extracted features of " << image_indices[i] <<
