@@ -565,7 +565,12 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   virtual void read( const FileNode& fn )=0;
   virtual void write( FileStorage& fs ) const=0;
 
- public:
+  Ptr<TrackerModel> getModel()
+  {
+	  return model;
+  }
+
+ protected:
 
   virtual bool initImpl( const Mat& image, const Rect2d& boundingBox ) = 0;
   virtual bool updateImpl( const Mat& image, Rect2d& boundingBox ) = 0;
@@ -1206,11 +1211,7 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     -   "GRAY" -- Use grayscale values as the feature
     -   "CN" -- Color-names feature
    */
-  enum MODE {
-    GRAY = (1u << 0),
-    CN = (1u << 1),
-    CUSTOM = (1u<<2)
-  };
+  enum MODE {GRAY, CN, CN2};
 
   struct CV_EXPORTS Params
   {
@@ -1240,11 +1241,8 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     bool compress_feature;        //!<  activate the pca method to compress the features
     int max_patch_size;           //!<  threshold for the ROI size
     int compressed_size;          //!<  feature size after compression
-    unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
-    unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
+    MODE descriptor;              //!<  descriptor type
   };
-
-  virtual void setFeatureExtractor(void (*)(const Mat, const Rect, Mat&), bool pca_func = false);
 
   /** @brief Constructor
       @param parameters KCF parameters TrackerKCF::Params
@@ -1252,144 +1250,87 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
   BOILERPLATE_CODE("KCF",TrackerKCF);
 };
 
-/************************************ MultiTracker Class ************************************/
-/** @brief This class is used to track multiple objects using the specified tracker algorithm.
- * The MultiTracker is naive implementation of multiple object tracking.
- * It process the tracked objects independently without any optimization accross the tracked objects.
- */
+/************************************ Multi-Tracker Classes ************************************/
+
+/** @brief Base abstract class for the long-term Multi Object Trackers:
+
+@sa Tracker, MultiTrackerTLD
+*/
 class CV_EXPORTS_W MultiTracker
 {
- public:
-
-  /**
-  * \brief Constructor.
-  * In the case of trackerType is given, it will be set as the default algorithm for all trackers.
-  * @param trackerType the name of the tracker algorithm to be used
-  */
-  MultiTracker(const String& trackerType = "" );
-
-  /**
-   * \brief Destructor
-   */
-  ~MultiTracker();
-
-  /**
-  * \brief Add a new object to be tracked.
-  * The defaultAlgorithm will be used the newly added tracker.
-  * @param image input image
-  * @param boundingBox a rectangle represents ROI of the tracked object
-  */
-  bool add( const Mat& image, const Rect2d& boundingBox );
-
-  /**
-  * \brief Add a new object to be tracked.
-  * @param trackerType the name of the tracker algorithm to be used
-  * @param image input image
-  * @param boundingBox a rectangle represents ROI of the tracked object
-  */
-  bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
-
-  /**
-  * \brief Add a set of objects to be tracked.
-  * @param trackerType the name of the tracker algorithm to be used
-  * @param image input image
-  * @param boundingBox list of the tracked objects
-  */
-  bool add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox);
-
-  /**
-  * \brief Add a set of objects to be tracked using the defaultAlgorithm tracker.
-  * @param image input image
-  * @param boundingBox list of the tracked objects
-  */
-  bool add(const Mat& image, std::vector<Rect2d> boundingBox);
-
-  /**
-  * \brief Update the current tracking status.
-  * The result will be saved in the internal storage.
-  * @param image input image
-  */
-  bool update( const Mat& image);
-
-  //!<  storage for the tracked objects, each object corresponds to one tracker algorithm.
-  std::vector<Rect2d> objects;
-
-  /**
-  * \brief Update the current tracking status.
-  * @param image input image
-  * @param boundingBox the tracking result, represent a list of ROIs of the tracked objects.
-  */
-  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
-
- protected:
-  //!<  storage for the tracker algorithms.
-  std::vector< Ptr<Tracker> > trackerList;
-
-  //!<  default algorithm for the tracking method.
-  String defaultAlgorithm;
-};
-
-class ROISelector {
 public:
-  Rect2d select(Mat img, bool fromCenter = true);
-  Rect2d select(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
-  void select(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+	/** @brief Constructor for Multitracker
+	*/
+	MultiTracker()
+	{
+		targetNum = 0;
+	}
 
-  struct handlerT{
-    // basic parameters
-    bool isDrawing;
-    Rect2d box;
-    Mat image;
+	/** @brief Add a new target to a tracking-list and initialize the tracker with a know bounding box that surrounding the target
+	@param image The initial frame
+	@param boundingBox The initial boundig box of target
+	@param tracker_algorithm_name Multi-tracker algorithm name
 
-    // parameters for drawing from the center
-    bool drawFromCenter;
-    Point2f center;
+	@return True if new target initialization went succesfully, false otherwise
+	*/
+	bool addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name);
 
-    // initializer list
-    handlerT(): isDrawing(false), drawFromCenter(true) {};
-  }selectorParams;
+	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets
+	@param image The current frame
 
-  // to store the tracked objects
-  std::vector<handlerT> objects;
-
-private:
-  static void mouseHandler(int event, int x, int y, int flags, void *param);
-  void opencv_mouse_callback( int event, int x, int y, int , void *param );
-
-  // save the keypressed characted
-  int key;
-};
-
-Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
-Rect2d CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
-void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
-
-
-/************************************ Multi-Tracker Classes ************************************/
-class CV_EXPORTS_W MultiTracker_Alt
-{
-public:
-
-	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
-
+	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
+	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
+	missing from the frame (say, out of sight)
+	*/
 	bool update(const Mat& image);
 
-	int targetNum = 0;
-	std::vector <Ptr<Tracker>> trackers;
+	/** @brief Current number of targets in tracking-list
+	*/
+	int targetNum;
+
+	/** @brief Trackers list for Multi-Object-Tracker
+	*/
+	std::vector <Ptr<Tracker> > trackers;
+
+	/** @brief Bounding Boxes list for Multi-Object-Tracker
+	*/
 	std::vector <Rect2d> boundingBoxes;
+	/** @brief List of randomly generated colors for bounding boxes display
+	*/
 	std::vector<Scalar> colors;
 };
 
+/** @brief Multi Object Tracker for TLD. TLD is a novel tracking framework that explicitly decomposes
+the long-term tracking task into tracking, learning and detection.
+
+The tracker follows the object from frame to frame. The detector localizes all appearances that
+have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
+errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
+
+The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this
+implementation, following authors. Tracker is supposed to be able to handle rapid motions, partial
+occlusions, object absence etc.
+
+@sa Tracker, MultiTracker, TrackerTLD
+*/
 class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
 {
 public:
-	bool update(const Mat& image);
+	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets by
+	optimized update method using some techniques to speedup calculations specifically for MO TLD. The only limitation
+	is that	all target bounding boxes should have approximately same aspect ratios. Speed boost is around 20%
+
+	@param image The current frame.
+
+	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
+	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
+	missing from the frame (say, out of sight)
+	*/
+	bool update_opt(const Mat& image);
 };
 
 //! @}
 
 } /* namespace cv */
-
-//! @}
 
 #endif
