@@ -128,7 +128,6 @@ public:
 	void read(const FileNode& fn);
 	void write(FileStorage& fs) const;
 
-protected:
 	class Pexpert
 	{
 	public:
