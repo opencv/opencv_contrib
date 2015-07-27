@@ -565,7 +565,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
   virtual void read( const FileNode& fn )=0;
   virtual void write( FileStorage& fs ) const=0;
 
- protected:
+ public:
 
   virtual bool initImpl( const Mat& image, const Rect2d& boundingBox ) = 0;
   virtual bool updateImpl( const Mat& image, Rect2d& boundingBox ) = 0;
