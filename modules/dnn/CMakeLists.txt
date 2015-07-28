@@ -42,8 +42,12 @@ if(BUILD_TESTS AND ${the_module}_DOWNLOAD_CAFFE_MODELS)
     add_custom_command( TARGET opencv_test_${name} POST_BUILD
                         COMMAND ${PYTHON2_EXECUTABLE} download_model.py test_models.json
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts )
-else()
-    add_definitions(-DDISABLE_CAFFE_MODEL_TESTS=1)
+    add_definitions(-DENABLE_CAFFE_MODEL_TESTS=1)
+endif()
+
+OCV_OPTION(${the_module}_BUILD_TORCH_IMPORTER "Build Torch model importer" OFF)
+if(${the_module}_BUILD_TORCH_IMPORTER)
+    add_definitions(-DENABLE_TORCH_IMPORTER=1)
 endif()
 
 else()#build as standalone module (for development purposes)

@@ -90,6 +90,8 @@ namespace dnn
 
     CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
 
+    CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBinary = true);
+
     //Layer factory allows to create instances of registered layers.
     class CV_EXPORTS LayerRegister
     {
