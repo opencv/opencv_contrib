@@ -9,6 +9,8 @@ The Matlab code generator is fully integrated into the OpenCV build system. If c
 
     cmake -DMATLAB_ROOT_DIR=/Applications/MATLAB_R2013a.app ..
 
+If you prefer using the gui version of cmake (cmake-gui), you can use the *Add Entry* option in the GUI to manually add the *path* variable `MATLAB_ROOT_DIR`.
+
 
 Install
 -------
