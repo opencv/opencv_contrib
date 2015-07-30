@@ -3,6 +3,7 @@
 
 #include <opencv2/core.hpp>
 #include <map>
+#include <ostream>
 
 namespace cv
 {
@@ -34,6 +35,8 @@ struct DictValue
     bool isReal() const;
 
     DictValue &operator=(const DictValue &r);
+
+    friend std::ostream &operator<<(std::ostream &stream, const DictValue &dictv);
 
     ~DictValue();
 
@@ -135,6 +138,8 @@ public:
 
         return value;
     }
+
+    friend std::ostream &operator<<(std::ostream &stream, const Dict &dict);
 };
 
 template<>
@@ -297,6 +302,41 @@ inline int DictValue::size() const
     default:
         return -1;
     }
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const DictValue &dictv)
+{
+    int i;
+
+    if (dictv.isInt())
+    {
+        for (i = 0; i < dictv.size() - 1; i++)
+            stream << dictv.get<int64>(i) << ", ";
+        stream << dictv.get<int64>(i);
+    }
+    else if (dictv.isReal())
+    {
+        for (i = 0; i < dictv.size() - 1; i++)
+            stream << dictv.get<double>(i) << ", ";
+        stream << dictv.get<double>(i);
+    }
+    else if (dictv.isString())
+    {
+        for (i = 0; i < dictv.size() - 1; i++)
+            stream << "\"" << dictv.get<String>(i) << "\", ";
+        stream << dictv.get<String>(i);
+    }
+
+    return stream;
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const Dict &dict)
+{
+    Dict::_Dict::const_iterator it;
+    for (it = dict.dict.begin(); it != dict.dict.end(); it++)
+        stream << it->first << " : " << it->second << "\n";
+
+    return stream;
 }
 
 }

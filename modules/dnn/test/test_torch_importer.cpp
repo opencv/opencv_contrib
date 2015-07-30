@@ -25,7 +25,8 @@ TEST(Torch_Importer, simple_read)
     Net net;
     Ptr<Importer> importer;
 
-    ASSERT_NO_THROW( importer = createTorchImporter("/home/vitaliy/th/conv1.txt", false) );
+    //ASSERT_NO_THROW( importer = createTorchImporter("/home/vitaliy/th/conv1.txt", false) );
+    ASSERT_NO_THROW( importer = createTorchImporter("L:\\home\\vitaliy\\th\\conv1.txt", false) );
     ASSERT_TRUE( importer != NULL );
     importer->populateNet(net);
     //ASSERT_NO_THROW( importer->populateNet(net) );
