@@ -16,6 +16,6 @@ set(SOURCES_3 feature_extract_demo.cpp)
 add_executable(feature_extract_test ${SOURCES_3})
 target_link_libraries(feature_extract_test ${OpenCV_LIBS})
 
-set(SOURCES_4 classify_demo.cpp)
+set(SOURCES_4 classifyIMG_demo.cpp)
 add_executable(classify_test ${SOURCES_4})
 target_link_libraries(classify_test ${OpenCV_LIBS})

@@ -120,7 +120,7 @@ int main(int argc, char *argv[]){
 		if (camera_pov)
 			myWindow.setViewerPose(cam_pose);
 		myWindow.saveScreenshot(filename);
-		ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class);
+		ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class, (int)(campos.at(pose).x*100), (int)(campos.at(pose).y*100), (int)(campos.at(pose).z*100));
 	}
 	imglabel.close();
 	return 1;

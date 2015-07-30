@@ -171,7 +171,7 @@ namespace cnn_3dobj
 		int headerimg[4] = {2051,num_item,rows,cols};
 		for (int i=0; i<4; i++)
 			headerimg[i] = swap_endian(headerimg[i]);
-		int headerlabel[2] = {2049,num_item};
+		int headerlabel[2] = {2050,num_item};
 		for (int i=0; i<2; i++)
 			headerlabel[i] = swap_endian(headerlabel[i]);
 		headerImg.write(reinterpret_cast<const char*>(headerimg), sizeof(int)*4);
@@ -180,7 +180,7 @@ namespace cnn_3dobj
 		headerLabel.close();
 	};
 
-	void IcoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class)
+	void IcoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z)
 	{
 		int isrgb = 0;
 		cv::Mat ImgforBin = cv::imread(filenameImg, isrgb);
@@ -217,8 +217,8 @@ namespace cnn_3dobj
 			  {
 				img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
 			  }
-			unsigned char templab = (unsigned char)label_class;
-			lab_file << templab;
+			signed char templab = (signed char)label_class;
+			lab_file << templab << (signed char)x << (signed char)y << (signed char)z;
 		}
 		else
 		{
@@ -231,8 +231,8 @@ namespace cnn_3dobj
 			  {
 				img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
 			  }
-			unsigned char templab = (unsigned char)label_class;
-			lab_file << templab;
+			signed char templab = (signed char)label_class;
+			lab_file << templab << (signed char)x << (signed char)y << (signed char)z;
 		}
 		img_file.close();
 		lab_file.close();

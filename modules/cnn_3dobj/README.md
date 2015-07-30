@@ -7,7 +7,7 @@
 $ cd <caffe_source_directory>
 $ mkdir biuld
 $ cd build
-$ cmake　-D CMAKE_INSTALL_PREFIX=/usr/local ..
+$ cmake -D CMAKE_INSTALL_PREFIX=/usr/local ..
 $ make all
 $ make install
 ```
@@ -68,9 +68,9 @@ $ cd
 $ cd <opencv_contrib>/modules/cnn_3dobj/samples/build
 ```
 #Demo2:
-###Convert data into leveldb format from folder ../data/images_all for feature extraction afterwards. The leveldb files including all data will be stored in ../data/dbfile. If you will use the OpenCV defined feature extraction process, you could also skip Demo2 for data converting, just run Demo3 after Demo1 for feature extraction because Demo3 also includes the db file converting process before feature extraction.
+###Convert data into leveldb format from folder ../data/images_all for feature extraction afterwards. The leveldb files including all data will be stored in ../data/dbfile. If you will use the OpenCV defined feature extraction process, you could also skip Demo2 for data converting, just run Demo3 after Demo1 for feature extraction because Demo3 also includes the db file converting process before feature extraction, but if you want to use demo4 for classification, this demo will be used in advance to generate a file name list for the prediction list.
 ```
-$ ./images2db_test
+$ ./datatrans_test
 ```
 
 ==============
@@ -80,11 +80,11 @@ $ ./images2db_test
 $ ./feature_extract_test
 ```
 ###This will extract feature from a set of images in a folder as vector<cv::Mat> for further classification and a binary file with containing all feature vectors of each sample.
-###After running this, you will get a binary file storing features in ../data/feature folder, I can provide a Matlab script reading this file if someone need it. If you don't need the binary file, the feature could also be stored in vector<cv::Mat> for directly classification using the softmax layer as shown in Demo4.
+###After running this, you will get a binary file storing features in ../data/feature folder, I can provide a Matlab script reading this file if someone need it. If you don't need the binary file, the feature could also be stored in vector<cv::Mat>.
 
 ==============
 #Demo4:
-###Classifier, this will extracting the feature of a single image and compare it with features of gallery samples for prediction. Just run:
+###Classifier, this will extracting the feature of a single image and compare it with features of gallery samples for prediction. Demo2 should be used in advance to generate a file name list for the prediction list. This demo uses a set of images for feature extraction in a given path, these features will be a reference for prediction on target image. Just run:
 ```
 $ ./classify_test
 ```

@@ -66,7 +66,7 @@ namespace cnn_3dobj
 	  for (unsigned int i = 0; i < reference.size(); i++) {
 		  cv::Mat f1 = reference.at(i);
 		  cv::Mat f2 = feature;
-		  cv::Mat output_temp = f1.t()-f2;
+		  cv::Mat output_temp = f1-f2;
 		  output.push_back(cv::norm(output_temp));
 		  }
 	  std::vector<int> maxN = Argmax(output, N);

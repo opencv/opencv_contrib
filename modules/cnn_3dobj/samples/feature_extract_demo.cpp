@@ -66,11 +66,11 @@ int main(int argc, char* argv[])
 		     "{channel | 1 | Channel of the images. }"
 		     "{width | 64 | Width of images}"
 		     "{height | 64 | Height of images}"
-		     "{caffemodel | ../data/3d_triplet_iter_10000.caffemodel | caffe model for feature exrtaction.}"
-		     "{network_forDB | ../data/3d_triplet_galleryIMG.prototxt | network definition in .prototxt the path of the training samples must be wrotten in in .prototxt files in Phase TEST}"
-		     "{featurename_bin | ../data/feature/feature_iter_10000.bin | the output of the extracted feature in form of binary files together with the vector<cv::Mat> features as the feature.}"
+		     "{pretrained_binary_proto | ../data/3d_triplet_iter_10000.caffemodel | caffe model for feature exrtaction.}"
+		     "{feature_extraction_proto | ../data/3d_triplet_train_test.prototxt | network definition in .prototxt the path of the training samples must be wrotten in in .prototxt files in Phase TEST}"
+		     "{save_feature_dataset_names | ../data/feature/feature_iter_10000.bin | the output of the extracted feature in form of binary files together with the vector<cv::Mat> features as the feature.}"
 		     "{extract_feature_blob_names | feat | the layer used for feature extraction in CNN.}"
-		     "{num_mini_batches | 4 | batches suit for the batches defined in the .proto for the aim of extracting feature from all images.}"
+		     "{num_mini_batches | 6 | batches suit for the batches defined in the .proto for the aim of extracting feature from all images.}"
 		     "{device | CPU | device}"
 		     "{dev_id | 0 | dev_id}";
 	cv::CommandLineParser parser(argc, argv, keys);
@@ -86,16 +86,14 @@ int main(int argc, char* argv[])
 	int channel = parser.get<int>("channel");
 	int width = parser.get<int>("width");
 	int height = parser.get<int>("height");
-	string caffemodel = parser.get<string>("caffemodel");
-	string network_forDB = parser.get<string>("network_forDB");
-	string featurename_bin = parser.get<string>("featurename_bin");
+	string pretrained_binary_proto = parser.get<string>("pretrained_binary_proto");
+	string feature_extraction_proto = parser.get<string>("feature_extraction_proto");
+	string save_feature_dataset_names = parser.get<string>("save_feature_dataset_names");
 	string extract_feature_blob_names = parser.get<string>("extract_feature_blob_names");
 	int num_mini_batches = parser.get<int>("num_mini_batches");
 	string device = parser.get<string>("device");
 	int dev_id = parser.get<int>("dev_id");
 	cv::cnn_3dobj::DataTrans transTemp;
 	transTemp.convert(src_dir,src_dst,attach_dir,channel,width,height);
-	std::cout << std::endl << "All images in: " << std::endl << src_dir << std::endl << "have been converted to levelDB data in: " << std::endl << src_dst << std::endl << "for extracting feature of gallery images in classification step efficiently, this convertion is not needed in feature extraction of test image" << std::endl;
-	std::vector<cv::Mat> extractedFeature = transTemp.feature_extraction_pipeline(caffemodel, network_forDB, featurename_bin, extract_feature_blob_names, num_mini_batches, device, dev_id);
-	std::cout << std::endl << "All featrues of images in: " << std::endl << src_dir << std::endl << "have been extracted as binary file(using levelDB data) in:" << std::endl << featurename_bin << std::endl << "for analysis in Matlab and other software, this function also outputting a vector<cv::Mat> format gallery feature used for classificatioin.";
+	std::vector<cv::Mat> extractedFeature = transTemp.feature_extraction_pipeline(pretrained_binary_proto, feature_extraction_proto, save_feature_dataset_names, extract_feature_blob_names, num_mini_batches, device, dev_id);
 }

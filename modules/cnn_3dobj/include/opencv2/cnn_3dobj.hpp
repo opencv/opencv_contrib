@@ -129,7 +129,7 @@ class CV_EXPORTS_W IcoSphere
 		CV_WRAP static void createHeader(int num_item, int rows, int cols, const char* headerPath);
 		/** @brief Create header in binary files collecting the image data and label.
 		*/
-		CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class);
+		CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z);
 		/** @brief Write binary files used for training in other open source project.
 		*/
 
