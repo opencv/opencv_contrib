@@ -18,7 +18,7 @@ Here is the CMake command for you:
 
 ```
 $ cd <opencv_build_directory>
-$ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules <opencv_source_directory>
+$ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules <opencv_source_directory>
 $ make -j5
 ```
 
@@ -27,7 +27,7 @@ modules from `opencv_contrib` repository. If you don't want all of the modules,
 use CMake's `BUILD_opencv_*` options. Like in this example:
 
 ```
-$ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_opencv_legacy=OFF <opencv_source_directory>
+$ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_legacy=OFF <opencv_source_directory>
 ```
 
 If you prefer using the gui version of cmake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
