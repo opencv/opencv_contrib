@@ -67,13 +67,13 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
                                            minCornerDistance(10),
                                            minDistanceToBorder(3),
                                            minMarkerDistance(10),
-                                           doCornerRefinement(true),
+                                           doCornerRefinement(false),
                                            cornerRefinementWinSize(5),
                                            cornerRefinementMaxIterations(30),
                                            cornerRefinementMinAccuracy(0.1),
                                            markerBorderBits(1),
                                            perspectiveRemoveDistortion(false),
-                                           perspectiveRemovePixelPerCell(8),
+                                           perspectiveRemovePixelPerCell(4),
                                            perspectiveRemoveIgnoredMarginPerCell(0.13),
                                            maxErroneousBitsInBorderRate(0.5),
                                            minOtsuStdDev(5.0),
@@ -129,7 +129,7 @@ _findMarkerContours(InputArray _in, std::vector<std::vector<Point2f> > &candidat
     cv::Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     std::vector<std::vector<cv::Point> > contours;
-    cv::findContours(contoursImg, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
+    cv::findContours(contoursImg, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
     // now filter list of contours
     for (unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter

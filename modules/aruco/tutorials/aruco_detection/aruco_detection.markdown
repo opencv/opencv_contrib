@@ -562,14 +562,14 @@ After markers have been detected and identified, the last step is performing sub
 in the corner positions (see OpenCV ```cornerSubPix()```)
 
 Note that this step is optional and it only makes sense if the position of the marker corners have to
-be accurate, for instance for pose estimation. It is usually a time consuming step.
+be accurate, for instance for pose estimation. It is usually a time consuming step and it is disabled by default.
 
 - ```bool doCornerRefinement```
 
 This parameter determines if the corner subpixel process is performed or not. It can be disabled
 if accurate corners are not necessary.
 
-Default value: true.
+Default value: false.
 
  - ```int cornerRefinementWinSize```
 
