@@ -75,7 +75,7 @@ const unsigned char hammingWeightLUT[] = {
 class DictionaryData {
 
   public:
-    cv::Mat bytesList;
+    Mat bytesList;
     int markerSize;
     int maxCorrectionBits; // maximum number of bits that can be corrected
 
@@ -91,12 +91,12 @@ class DictionaryData {
             nbytes++;
 
         // save bytes in internal format
-        // bytesList.at<cv::Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
-        bytesList = cv::Mat(dictsize, nbytes, CV_8UC4);
+        // bytesList.at<Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
+        bytesList = Mat(dictsize, nbytes, CV_8UC4);
         for (int i = 0; i < dictsize; i++) {
             for (int j = 0; j < nbytes; j++) {
                 for (int k = 0; k < 4; k++)
-                    bytesList.at<cv::Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
+                    bytesList.at<Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
             }
         }
     }
@@ -107,14 +107,14 @@ class DictionaryData {
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
      * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool identify(const cv::Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
+    bool identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
 
         CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
         int maxCorrectionRecalculed = int( double(maxCorrectionBits) * maxCorrectionRate );
 
         // get as a byte list
-        cv::Mat candidateBytes = _getByteListFromBits(onlyBits);
+        Mat candidateBytes = _getByteListFromBits(onlyBits);
 
         idx = -1; // by default, not found
 
@@ -127,7 +127,7 @@ class DictionaryData {
                 // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
                 for (unsigned int b = 0; b < candidateBytes.total(); b++) {
                     unsigned char xorRes =
-                        bytesList.ptr<cv::Vec4b>(m)[b][r] ^ candidateBytes.ptr<cv::Vec4b>(0)[b][0];
+                        bytesList.ptr<Vec4b>(m)[b][r] ^ candidateBytes.ptr<Vec4b>(0)[b][0];
                     currentHamming += hammingWeightLUT[xorRes];
                 }
 
@@ -159,7 +159,7 @@ class DictionaryData {
     int getDistanceToId(InputArray bits, int id, bool allRotations = true) {
         CV_Assert(id >= 0 && id < bytesList.rows);
 
-        cv::Mat candidateBytes = _getByteListFromBits(bits.getMat());
+        Mat candidateBytes = _getByteListFromBits(bits.getMat());
         unsigned int nRotations = 4;
         if(!allRotations) nRotations = 1;
         int currentMinDistance = int(bits.total() * bits.total());
@@ -167,7 +167,7 @@ class DictionaryData {
             int currentHamming = 0;
             for (unsigned int b = 0; b < candidateBytes.total(); b++) {
                 unsigned char xorRes =
-                    bytesList.ptr<cv::Vec4b>(id)[b][r] ^ candidateBytes.ptr<cv::Vec4b>(0)[b][0];
+                    bytesList.ptr<Vec4b>(id)[b][r] ^ candidateBytes.ptr<Vec4b>(0)[b][0];
                 currentHamming += hammingWeightLUT[xorRes];
             }
 
@@ -192,18 +192,18 @@ class DictionaryData {
         _img.create(sidePixels, sidePixels, CV_8UC1);
 
         // create small marker with 1 pixel per bin
-        cv::Mat tinyMarker(markerSize + 2*borderBits, markerSize + 2*borderBits, CV_8UC1,
-                           cv::Scalar::all(0));
-        cv::Mat innerRegion =
+        Mat tinyMarker(markerSize + 2*borderBits, markerSize + 2*borderBits, CV_8UC1,
+                       Scalar::all(0));
+        Mat innerRegion =
             tinyMarker.rowRange(borderBits, tinyMarker.rows - borderBits).
                        colRange(borderBits, tinyMarker.cols - borderBits);
         // put inner bits
-        cv::Mat bits = 255 * _getBitsFromByteList(bytesList.rowRange(id, id + 1));
+        Mat bits = 255 * _getBitsFromByteList(bytesList.rowRange(id, id + 1));
         CV_Assert(innerRegion.total() == bits.total());
         bits.copyTo(innerRegion);
 
         // resize tiny marker to output size
-        cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, cv::INTER_NEAREST);
+        cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, INTER_NEAREST);
     }
 
 
@@ -214,32 +214,32 @@ class DictionaryData {
     /**
       * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
-    cv::Mat _getByteListFromBits(const cv::Mat &bits) const {
+    Mat _getByteListFromBits(const Mat &bits) const {
 
         int nbytes = (bits.cols * bits.rows) / 8;
         if ((bits.cols * bits.rows) % 8 != 0)
             nbytes++;
-        cv::Mat candidateByteList(1, nbytes, CV_8UC4, cv::Scalar::all(0));
+        Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
         unsigned char currentBit = 0;
         int currentByte = 0;
         for (int row = 0; row < bits.rows; row++) {
             for (int col = 0; col < bits.cols; col++) {
-                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] =
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0] << 1;
-                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] =
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1] << 1;
-                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] =
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2] << 1;
-                candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] =
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3] << 1;
+                candidateByteList.ptr<Vec4b>(0)[currentByte][0] =
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][0] << 1;
+                candidateByteList.ptr<Vec4b>(0)[currentByte][1] =
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][1] << 1;
+                candidateByteList.ptr<Vec4b>(0)[currentByte][2] =
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][2] << 1;
+                candidateByteList.ptr<Vec4b>(0)[currentByte][3] =
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][3] << 1;
                 if (bits.at<unsigned char>(row, col))
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][0]++;
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][0]++;
                 if (bits.at<unsigned char>(col, bits.cols - 1 - row))
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][1]++;
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][1]++;
                 if (bits.at<unsigned char>(bits.rows - 1 - row, bits.cols - 1 - col))
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][2]++;
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][2]++;
                 if (bits.at<unsigned char>(bits.rows - 1 - col, row))
-                    candidateByteList.ptr<cv::Vec4b>(0)[currentByte][3]++;
+                    candidateByteList.ptr<Vec4b>(0)[currentByte][3]++;
                 currentBit++;
                 if (currentBit == 8) {
                     currentBit = 0;
@@ -255,15 +255,15 @@ class DictionaryData {
     /**
       * @brief Transform list of bytes to matrix of bits
       */
-    cv::Mat _getBitsFromByteList(const cv::Mat &byteList) const {
+    Mat _getBitsFromByteList(const Mat &byteList) const {
         CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
                   && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
-        cv::Mat bits(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+        Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
 
         unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
         int currentByteIdx = 0;
         // we only need the bytes in normal rotation
-        unsigned char currentByte = byteList.ptr<cv::Vec4b>(0)[0][0];
+        unsigned char currentByte = byteList.ptr<Vec4b>(0)[0][0];
         int currentBit = 0;
         for (int row = 0; row < bits.rows; row++) {
             for (int col = 0; col < bits.cols; col++) {
@@ -274,7 +274,7 @@ class DictionaryData {
                 currentBit++;
                 if (currentBit == 8) {
                     currentByteIdx++;
-                    currentByte = byteList.ptr<cv::Vec4b>(0)[currentByteIdx][0];
+                    currentByte = byteList.ptr<Vec4b>(0)[currentByteIdx][0];
                     // if not enough bits for one more byte, we are in the end
                     // update bit position accordingly
                     if (8 * (currentByteIdx + 1) > (int)bits.total())

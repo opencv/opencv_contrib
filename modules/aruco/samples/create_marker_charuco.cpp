@@ -49,16 +49,16 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Create a ChArUco marker image" << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-o <image> # Output image" << std::endl;
-    std::cout << "-sl <squareLength> # Square side lenght (in pixels)" << std::endl;
-    std::cout << "-ml <markerLength> # Marker side lenght (in pixels)" << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "-ids <id1,id2,id3,id4> # Four ids for the ChArUco marker" << std::endl;
-    std::cout << "[-m <marginSize>] # Margins size (in pixels). Default is 0" << std::endl;
-    std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << std::endl;
-    std::cout << "[-si] # show generated image" << std::endl;
+    cout << "Create a ChArUco marker image" << endl;
+    cout << "Parameters: " << endl;
+    cout << "-o <image> # Output image" << endl;
+    cout << "-sl <squareLength> # Square side lenght (in pixels)" << endl;
+    cout << "-ml <markerLength> # Marker side lenght (in pixels)" << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-ids <id1,id2,id3,id4> # Four ids for the ChArUco marker" << endl;
+    cout << "[-m <marginSize>] # Margins size (in pixels). Default is 0" << endl;
+    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << endl;
+    cout << "[-si] # show generated image" << endl;
 }
 
 
@@ -100,20 +100,20 @@ int main(int argc, char *argv[]) {
     int squareLength = atoi( getParam("-sl", argc, argv).c_str() );
     int markerLength = atoi( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
 
-    std::string idsString = getParam("-ids", argc, argv);
-    std::istringstream ss(idsString);
-    std::vector<std::string> splittedIds;
-    std::string token;
-    while (std::getline(ss, token, ','))
+    string idsString = getParam("-ids", argc, argv);
+    istringstream ss(idsString);
+    vector<string> splittedIds;
+    string token;
+    while (getline(ss, token, ','))
         splittedIds.push_back(token);
     if (splittedIds.size() < 4) {
-        std::cerr << "Incorrect ids format" << std::endl;
+        cerr << "Incorrect ids format" << endl;
         help();
         return 0;
     }
-    cv::Vec4i ids;
+    Vec4i ids;
     for (int i=0; i<4; i++)
         ids[i] = atoi( splittedIds[i].c_str() );
 
@@ -131,16 +131,16 @@ int main(int argc, char *argv[]) {
     if (isParam("-si", argc, argv))
       showImage = true;
 
-    cv::Mat markerImg;
-    cv::aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
+    Mat markerImg;
+    aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
                                   borderBits);
 
     if (showImage) {
-      cv::imshow("board", markerImg);
-      cv::waitKey(0);
+      imshow("board", markerImg);
+      waitKey(0);
     }
 
-    cv::imwrite( getParam("-o", argc, argv), markerImg);
+    imwrite( getParam("-o", argc, argv), markerImg);
 
     return 0;
 }

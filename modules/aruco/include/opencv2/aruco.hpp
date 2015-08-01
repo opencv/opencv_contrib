@@ -171,7 +171,7 @@ struct DetectorParameters {
 CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
                               OutputArrayOfArrays corners, OutputArray ids,
                               DetectorParameters parameters=DetectorParameters(),
-                              OutputArrayOfArrays rejectedImgPoints = cv::noArray());
+                              OutputArrayOfArrays rejectedImgPoints = noArray());
 
 
 
@@ -225,7 +225,7 @@ public:
 
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
-    std::vector<std::vector<cv::Point3f> > objPoints;
+    std::vector<std::vector<Point3f> > objPoints;
 
     // the dictionary of markers employed for this board
     DICTIONARY dictionary;
@@ -258,7 +258,7 @@ public:
      *
      * This function return the image of the GridBoard, ready to be printed.
      */
-    void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -281,8 +281,8 @@ public:
     /**
       *
       */
-    cv::Size getGridSize() const {
-        return cv::Size(_markersX, _markersY);
+    Size getGridSize() const {
+        return Size(_markersX, _markersY);
     }
 
     /**
@@ -383,7 +383,7 @@ CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
                                       InputArray cameraMatrix = noArray(),
                                       InputArray distCoeffs = noArray(),
                                       float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
-                                      OutputArray recoveredIdxs = cv::noArray(),
+                                      OutputArray recoveredIdxs = noArray(),
                                       DetectorParameters parameters = DetectorParameters());
 
 
@@ -407,7 +407,7 @@ CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
  */
 CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
                                     InputArrayOfArrays corners, InputArray ids = noArray(),
-                                    cv::Scalar borderColor = cv::Scalar(0, 255, 0));
+                                    Scalar borderColor = Scalar(0, 255, 0));
 
 
 
@@ -463,7 +463,7 @@ CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, Output
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS void drawPlanarBoard(const Board &board, cv::Size outSize, OutputArray img,
+CV_EXPORTS void drawPlanarBoard(const Board &board, Size outSize, OutputArray img,
                                 int marginSize = 0, int borderBits = 1);
 
 

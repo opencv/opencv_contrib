@@ -49,14 +49,14 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Create an ArUco marker image" << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-o <image> # Output image" << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "-id <int> # Marker id in the dictionary" << std::endl;
-    std::cout << "[-ms <int>] # Marker size in pixels. Default is 200" << std::endl;
-    std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << std::endl;
-    std::cout << "[-si] # show generated image" << std::endl;
+    cout << "Create an ArUco marker image" << endl;
+    cout << "Parameters: " << endl;
+    cout << "-o <image> # Output image" << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-id <int> # Marker id in the dictionary" << endl;
+    cout << "[-ms <int>] # Marker size in pixels. Default is 200" << endl;
+    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << endl;
+    cout << "[-si] # show generated image" << endl;
 }
 
 
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     }
 
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
 
     int markerId = atoi( getParam("-id", argc, argv).c_str() );
 
@@ -113,15 +113,15 @@ int main(int argc, char *argv[]) {
     if (isParam("-si", argc, argv))
       showImage = true;
 
-    cv::Mat markerImg;
-    cv::aruco::drawMarker(dictionary, markerId, markerSize, markerImg, borderBits);
+    Mat markerImg;
+    aruco::drawMarker(dictionary, markerId, markerSize, markerImg, borderBits);
 
     if (showImage) {
-      cv::imshow("marker", markerImg);
-      cv::waitKey(0);
+      imshow("marker", markerImg);
+      waitKey(0);
     }
 
-    cv::imwrite( getParam("-o", argc, argv), markerImg);
+    imwrite( getParam("-o", argc, argv), markerImg);
 
     return 0;
 }

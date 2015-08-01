@@ -49,19 +49,19 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Create a ChArUco board image" << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-o <image> # Output image" << std::endl;
-    std::cout << "-w <nsquares> # Number of squares in X direction" << std::endl;
-    std::cout << "-h <nsquares> # Number of squares in Y direction" << std::endl;
-    std::cout << "-sl <squareLength> # Square side lenght (in pixels)" << std::endl;
-    std::cout << "-ml <markerLength> # Marker side lenght (in pixels)" << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "[-m <marginSize>] # Margins size (in pixels)" <<
-                 "Default is (squareLength-markerLength)" << std::endl;
-    std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
-                  << std::endl;
-    std::cout << "[-si] # show generated image" << std::endl;
+    cout << "Create a ChArUco board image" << endl;
+    cout << "Parameters: " << endl;
+    cout << "-o <image> # Output image" << endl;
+    cout << "-w <nsquares> # Number of squares in X direction" << endl;
+    cout << "-h <nsquares> # Number of squares in Y direction" << endl;
+    cout << "-sl <squareLength> # Square side lenght (in pixels)" << endl;
+    cout << "-ml <markerLength> # Marker side lenght (in pixels)" << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "[-m <marginSize>] # Margins size (in pixels)" <<
+                 "Default is (squareLength-markerLength)" << endl;
+    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
+                  << endl;
+    cout << "[-si] # show generated image" << endl;
 }
 
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     int squareLength = atoi( getParam("-sl", argc, argv).c_str() );
     int markerLength = atoi( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
 
     int margins = squareLength - markerLength;
     if (isParam("-m", argc, argv)) {
@@ -121,24 +121,24 @@ int main(int argc, char *argv[]) {
     if (isParam("-si", argc, argv))
       showImage = true;
 
-    cv::Size imageSize;
+    Size imageSize;
     imageSize.width = squaresX * squareLength + 2 * margins;
     imageSize.height = squaresY * squareLength + 2 * margins;
 
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(squaresX, squaresY,
+    aruco::CharucoBoard board = aruco::CharucoBoard::create(squaresX, squaresY,
                                                                     (float)squareLength,
                                                                     (float)markerLength,
                                                                     dictionary);
 
-    cv::Mat boardImage;
+    Mat boardImage;
     board.draw(imageSize, boardImage, margins, borderBits);
 
     if (showImage) {
-      cv::imshow("board", boardImage);
-      cv::waitKey(0);
+      imshow("board", boardImage);
+      waitKey(0);
     }
 
-    cv::imwrite( getParam("-o", argc, argv), boardImage);
+    imwrite( getParam("-o", argc, argv), boardImage);
 
     return 0;
 }

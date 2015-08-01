@@ -64,7 +64,7 @@ class CV_EXPORTS CharucoBoard : public Board {
 public:
 
     // vector of chessboard 3D corners precalculated
-    std::vector< cv::Point3f > chessboardCorners;
+    std::vector< Point3f > chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
 //    std::vector< std::vector<int> > nearestMarkerIds;
@@ -82,7 +82,7 @@ public:
      *
      * This function return the image of the ChArUco board, ready to be printed.
      */
-    void draw(cv::Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -105,8 +105,8 @@ public:
     /**
       *
       */
-    cv::Size getChessboardSize() const {
-        return cv::Size(_squaresX, _squaresY);
+    Size getChessboardSize() const {
+        return Size(_squaresX, _squaresY);
     }
 
     /**
@@ -215,7 +215,7 @@ CV_EXPORTS bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray c
 CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
                                            InputArray charucoCorners,
                                            InputArray charucoIds = noArray(),
-                                           cv::Scalar cornerColor = cv::Scalar(255, 0, 0));
+                                           Scalar cornerColor = Scalar(255, 0, 0));
 
 
 
@@ -247,7 +247,7 @@ CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
  */
 CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
                                          InputArrayOfArrays charucoIds, const CharucoBoard &board,
-                                         cv::Size imageSize, InputOutputArray cameraMatrix,
+                                         Size imageSize, InputOutputArray cameraMatrix,
                                          InputOutputArray distCoeffs,
                                          OutputArrayOfArrays rvecs = noArray(),
                                          OutputArrayOfArrays tvecs = noArray(),
@@ -313,7 +313,7 @@ CV_EXPORTS void detectCharucoDiamond(InputArray image, InputArrayOfArrays marker
 CV_EXPORTS void drawDetectedDiamonds(InputArray in, OutputArray out,
                                      InputArrayOfArrays diamondCorners,
                                      InputArray diamondIds = noArray(),
-                                     cv::Scalar borderColor = cv::Scalar(0, 0, 255));
+                                     Scalar borderColor = Scalar(0, 0, 255));
 
 
 

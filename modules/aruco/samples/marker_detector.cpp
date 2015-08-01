@@ -49,19 +49,19 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Basic marker detection" << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
-                 << std::endl;
-    std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << std::endl;
-    std::cout << "[-c <cameraParams>] # Camera intrinsic parameters. Needed for camera pose"
-              << std::endl;
-    std::cout << "[-l <markerLength>] # Marker side lenght (in meters). Needed for correct" <<
-                 "scale in camera pose, default 0.1" << std::endl;
-    std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
-    std::cout << "[-r] # show rejected candidates too" << std::endl;
+    cout << "Basic marker detection" << endl;
+    cout << "Parameters: " << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
+                 << endl;
+    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
+                 << endl;
+    cout << "[-c <cameraParams>] # Camera intrinsic parameters. Needed for camera pose"
+              << endl;
+    cout << "[-l <markerLength>] # Marker side lenght (in meters). Needed for correct" <<
+                 "scale in camera pose, default 0.1" << endl;
+    cout << "[-dp <detectorParams>] # File of marker detector parameters" << endl;
+    cout << "[-r] # show rejected candidates too" << endl;
 }
 
 
@@ -94,8 +94,8 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
 
 /**
  */
-static void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &distCoeffs) {
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
+static void readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
+    FileStorage fs(filename, FileStorage::READ);
     fs["camera_matrix"] >> camMatrix;
     fs["distortion_coefficients"] >> distCoeffs;
 }
@@ -104,8 +104,8 @@ static void readCameraParameters(string filename, cv::Mat &camMatrix, cv::Mat &d
 
 /**
  */
-static void readDetectorParameters(string filename, cv::aruco::DetectorParameters &params) {
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
+static void readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+    FileStorage fs(filename, FileStorage::READ);
     fs["adaptiveThreshWinSize"] >> params.adaptiveThreshWinSize;
     fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
     fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
@@ -139,26 +139,26 @@ int main(int argc, char *argv[]) {
     }
 
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
 
     bool showRejected = false;
     if (isParam("-r", argc, argv))
       showRejected = true;
 
     bool estimatePose = false;
-    cv::Mat camMatrix, distCoeffs;
+    Mat camMatrix, distCoeffs;
     if (isParam("-c", argc, argv)) {
       readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
       estimatePose = true;
     }
     float markerLength = (float)atof( getParam("-l", argc, argv, "0.1").c_str() );
 
-    cv::aruco::DetectorParameters detectorParams;
+    aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
 
-    cv::VideoCapture inputVideo;
+    VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
         inputVideo.open(getParam("-v", argc, argv));
@@ -176,47 +176,47 @@ int main(int argc, char *argv[]) {
     int totalIterations = 0;
 
     while (inputVideo.grab()) {
-        cv::Mat image, imageCopy;
+        Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        double tick = (double)cv::getTickCount();
+        double tick = (double)getTickCount();
 
-        std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners, rejected;
-        std::vector<cv::Mat> rvecs, tvecs;
+        vector<int> ids;
+        vector<vector<Point2f> > corners, rejected;
+        vector<Mat> rvecs, tvecs;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
         if (estimatePose && ids.size() > 0)
-            cv::aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs,
+            aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs,
                                                  rvecs, tvecs);
 
-        double currentTime = ((double)cv::getTickCount()-tick)/cv::getTickFrequency();
+        double currentTime = ((double)getTickCount()-tick)/getTickFrequency();
         totalTime += currentTime;
         totalIterations++;
         if(totalIterations%30 == 0) {
-            std::cout << "Detection Time = " << currentTime*1000 << " ms " <<
-                         "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << std::endl;
+            cout << "Detection Time = " << currentTime*1000 << " ms " <<
+                         "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << endl;
         }
 
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             if (estimatePose) {
                 for (unsigned int i = 0; i < ids.size(); i++)
-                        cv::aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i],
+                        aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i],
                                             tvecs[i], markerLength*0.5f);
             }
         }
 
         if (showRejected && rejected.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected,
-                                               cv::noArray(), cv::Scalar(100, 0, 255));
+            aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected,
+                                               noArray(), Scalar(100, 0, 255));
 
-        cv::imshow("out", imageCopy);
-        char key = (char) cv::waitKey(waitTime);
+        imshow("out", imageCopy);
+        char key = (char) waitKey(waitTime);
         if (key == 27)
             break;
     }

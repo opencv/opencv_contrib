@@ -51,28 +51,28 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Calibration using a ArUco Planar Grid board" << std::endl;
-    std::cout << "How to Use:" << std::endl;
-    std::cout << "To capture a frame for calibration, press 'c'," << std::endl;
-    std::cout << "If input comes from video, press any key for next frame" << std::endl;
-    std::cout << "To finish capturing, press 'ESC' key and calibration starts." << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-w <nmarkers> # Number of markers in X direction" << std::endl;
-    std::cout << "-h <nmarkers> # Number of markers in Y direction" << std::endl;
-    std::cout << "-l <markerLength> # Marker side lenght (in meters)" << std::endl;
-    std::cout << "-s <markerSeparation> # Separation between two consecutive" <<
-                 "markers in the grid (in meters)" << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "-o <outputFile> # Output file with calibrated camera parameters" << std::endl;
-    std::cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
-                 << std::endl;
-    std::cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << std::endl;
-    std::cout << "[-dp <detectorParams>] # File of marker detector parameters" << std::endl;
-    std::cout << "[-rs] # Apply refind strategy" << std::endl;
-    std::cout << "[-zt] # Assume zero tangential distortion" << std::endl;
-    std::cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << std::endl;
-    std::cout << "[-p] # Fix the principal point at the center" << std::endl;
+    cout << "Calibration using a ArUco Planar Grid board" << endl;
+    cout << "How to Use:" << endl;
+    cout << "To capture a frame for calibration, press 'c'," << endl;
+    cout << "If input comes from video, press any key for next frame" << endl;
+    cout << "To finish capturing, press 'ESC' key and calibration starts." << endl;
+    cout << "Parameters: " << endl;
+    cout << "-w <nmarkers> # Number of markers in X direction" << endl;
+    cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
+    cout << "-l <markerLength> # Marker side lenght (in meters)" << endl;
+    cout << "-s <markerSeparation> # Separation between two consecutive" <<
+                 "markers in the grid (in meters)" << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-o <outputFile> # Output file with calibrated camera parameters" << endl;
+    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
+                 << endl;
+    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
+                 << endl;
+    cout << "[-dp <detectorParams>] # File of marker detector parameters" << endl;
+    cout << "[-rs] # Apply refind strategy" << endl;
+    cout << "[-zt] # Assume zero tangential distortion" << endl;
+    cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << endl;
+    cout << "[-p] # Fix the principal point at the center" << endl;
 }
 
 
@@ -105,8 +105,8 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
 
 /**
  */
-static void readDetectorParameters(string filename, cv::aruco::DetectorParameters &params) {
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
+static void readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+    FileStorage fs(filename, FileStorage::READ);
     fs["adaptiveThreshWinSize"] >> params.adaptiveThreshWinSize;
     fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
     fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
@@ -133,10 +133,10 @@ static void readDetectorParameters(string filename, cv::aruco::DetectorParameter
 /**
  */
 static void saveCameraParams(const string& filename,
-                             cv::Size imageSize, float aspectRatio, int flags,
-                             const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs,
+                             Size imageSize, float aspectRatio, int flags,
+                             const Mat& cameraMatrix, const Mat& distCoeffs,
                              double totalAvgErr ) {
-    cv::FileStorage fs( filename, cv::FileStorage::WRITE );
+    FileStorage fs( filename, FileStorage::WRITE );
 
     time_t tt;
     time( &tt );
@@ -149,15 +149,15 @@ static void saveCameraParams(const string& filename,
     fs << "image_width" << imageSize.width;
     fs << "image_height" << imageSize.height;
 
-    if ( flags & cv::CALIB_FIX_ASPECT_RATIO )
+    if ( flags & CALIB_FIX_ASPECT_RATIO )
         fs << "aspectRatio" << aspectRatio;
 
     if ( flags != 0 ) {
         sprintf( buf, "flags: %s%s%s%s",
-        flags & cv::CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
-        flags & cv::CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
-        flags & cv::CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
-        flags & cv::CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "" );
+        flags & CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
+        flags & CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
+        flags & CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
+        flags & CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "" );
     }
 
     fs << "flags" << flags;
@@ -185,21 +185,21 @@ int main(int argc, char *argv[]) {
     float markerLength = (float)atof( getParam("-l", argc, argv).c_str() );
     float markerSeparation = (float)atof( getParam("-s", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
     string outputFile = getParam("-o", argc, argv);
 
     int calibrationFlags = 0;
     float aspectRatio = 1;
     if (isParam("-a", argc, argv)) {
-        calibrationFlags |= cv::CALIB_FIX_ASPECT_RATIO;
+        calibrationFlags |= CALIB_FIX_ASPECT_RATIO;
         aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
     }
     if (isParam("-zt", argc, argv))
-        calibrationFlags |= cv::CALIB_ZERO_TANGENT_DIST;
+        calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
     if (isParam("-p", argc, argv))
-        calibrationFlags |= cv::CALIB_FIX_PRINCIPAL_POINT;
+        calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
-    cv::aruco::DetectorParameters detectorParams;
+    aruco::DetectorParameters detectorParams;
     if (isParam("-dp", argc, argv)) {
       readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
     if (isParam("-rs", argc, argv))
         refindStrategy = true;
 
-    cv::VideoCapture inputVideo;
+    VideoCapture inputVideo;
     int waitTime;
     if (isParam("-v", argc, argv)) {
         inputVideo.open(getParam("-v", argc, argv));
@@ -222,46 +222,46 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY, markerLength,
+    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY, markerLength,
                                                               markerSeparation, dictionary);
 
-    std::vector<std::vector<std::vector<cv::Point2f> > > allCorners;
-    std::vector<std::vector<int> > allIds;
-    cv::Size imgSize;
+    vector<vector<vector<Point2f> > > allCorners;
+    vector<vector<int> > allIds;
+    Size imgSize;
 
     while (inputVideo.grab()) {
-        cv::Mat image, imageCopy;
+        Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners, rejected;
+        vector<int> ids;
+        vector<vector<Point2f> > corners, rejected;
 
         // detect markers and estimate pose
-        cv::aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
 
         // refind strategy to detect more markers
         if (refindStrategy)
-            cv::aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
+            aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
 
         // draw results
         image.copyTo(imageCopy);
         if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
-        cv::imshow("out", imageCopy);
-        char key = (char) cv::waitKey(waitTime);
+        imshow("out", imageCopy);
+        char key = (char) waitKey(waitTime);
         if (key == 27)
             break;
         if (key == 'c' && ids.size() > 0) {
-            std::cout << "Frame captured" << std::endl;
+            cout << "Frame captured" << endl;
             allCorners.push_back(corners);
             allIds.push_back(ids);
             imgSize = image.size();
         }
     }
 
-    cv::Mat cameraMatrix, distCoeffs;
-    std::vector<cv::Mat> rvecs, tvecs;
+    Mat cameraMatrix, distCoeffs;
+    vector<Mat> rvecs, tvecs;
     double repError;
 
     if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
@@ -270,9 +270,9 @@ int main(int argc, char *argv[]) {
     }
 
 
-    std::vector<std::vector<cv::Point2f> > allCornersConcatenated;
-    std::vector<int> allIdsConcatenated;
-    std::vector<int> markerCounterPerFrame;
+    vector<vector<Point2f> > allCornersConcatenated;
+    vector<int> allIdsConcatenated;
+    vector<int> markerCounterPerFrame;
     markerCounterPerFrame.reserve(allCorners.size());
     for(int i=0; i<allCorners.size(); i++) {
         markerCounterPerFrame.push_back(allCorners[i].size());
@@ -281,15 +281,15 @@ int main(int argc, char *argv[]) {
             allIdsConcatenated.push_back(allIds[i][j]);
         }
     }
-    repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
+    repError = aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
                                                markerCounterPerFrame, board, imgSize, cameraMatrix,
                                                distCoeffs, rvecs, tvecs, calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,
                      repError );
 
-    std::cout << "Rep Error: " << repError << std::endl;
-    std::cout << "Calibration saved to " << outputFile << std::endl;
+    cout << "Rep Error: " << repError << endl;
+    cout << "Calibration saved to " << outputFile << endl;
 
     return 0;
 }

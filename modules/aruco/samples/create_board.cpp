@@ -49,20 +49,20 @@ using namespace cv;
 /**
  */
 static void help() {
-    std::cout << "Create an ArUco grid board image" << std::endl;
-    std::cout << "Parameters: " << std::endl;
-    std::cout << "-o <image> # Output image" << std::endl;
-    std::cout << "-w <nmarkers> # Number of markers in X direction" << std::endl;
-    std::cout << "-h <nmarkers> # Number of markers in Y direction" << std::endl;
-    std::cout << "-l <markerLength> # Marker side lenght (in pixels)" << std::endl;
-    std::cout << "-s <markerSeparation> # Separation between two consecutive" <<
-                 "markers in the grid (in pixels)" << std::endl;
-    std::cout << "-d <dictionary> # 0: ARUCO, ..." << std::endl;
-    std::cout << "[-m <marginSize>] # Margins size (in pixels)" <<
-                 "Default is marker separation" << std::endl;
-    std::cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
-                  << std::endl;
-    std::cout << "[-si] # show generated image" << std::endl;
+    cout << "Create an ArUco grid board image" << endl;
+    cout << "Parameters: " << endl;
+    cout << "-o <image> # Output image" << endl;
+    cout << "-w <nmarkers> # Number of markers in X direction" << endl;
+    cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
+    cout << "-l <markerLength> # Marker side lenght (in pixels)" << endl;
+    cout << "-s <markerSeparation> # Separation between two consecutive" <<
+                 "markers in the grid (in pixels)" << endl;
+    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "[-m <marginSize>] # Margins size (in pixels)" <<
+                 "Default is marker separation" << endl;
+    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
+                  << endl;
+    cout << "[-si] # show generated image" << endl;
 }
 
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     int markerLength = atoi( getParam("-l", argc, argv).c_str() );
     int markerSeparation = atoi( getParam("-s", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    cv::aruco::DICTIONARY dictionary = cv::aruco::DICTIONARY(dictionaryId);
+    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
 
     int margins = markerSeparation;
     if (isParam("-m", argc, argv)) {
@@ -122,23 +122,23 @@ int main(int argc, char *argv[]) {
     if (isParam("-si", argc, argv))
       showImage = true;
 
-    cv::Size imageSize;
+    Size imageSize;
     imageSize.width = markersX*(markerLength+markerSeparation) - markerSeparation + 2 * margins;
     imageSize.height = markersY*(markerLength+markerSeparation) - markerSeparation + 2 * margins;
 
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(markersX, markersY,
+    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY,
                                                               float(markerLength),
                                                               float(markerSeparation), dictionary);
 
-    cv::Mat boardImage;
+    Mat boardImage;
     board.draw(imageSize, boardImage, margins, borderBits);
 
     if (showImage) {
-      cv::imshow("board", boardImage);
-      cv::waitKey(0);
+      imshow("board", boardImage);
+      waitKey(0);
     }
 
-    cv::imwrite( getParam("-o", argc, argv), boardImage);
+    imwrite( getParam("-o", argc, argv), boardImage);
 
     return 0;
 }

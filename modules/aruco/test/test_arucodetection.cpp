@@ -43,6 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <string>
 
 using namespace std;
+using namespace cv;
 
 
 class CV_ArucoDetectionSimple : public cvtest::BaseTest
@@ -63,44 +64,44 @@ void CV_ArucoDetectionSimple::run(int) {
 
     for(int i=0; i<20; i++) {
 
-        std::vector< std::vector<cv::Point2f> > groundTruthCorners;
-        std::vector< int > groundTruthIds;
+        vector< vector<Point2f> > groundTruthCorners;
+        vector< int > groundTruthIds;
 
         const int markerSidePixels = 100;
         int imageSize = markerSidePixels*2 + 3*(markerSidePixels/2);
 
-        cv::Mat img = cv::Mat(imageSize, imageSize, CV_8UC1, cv::Scalar::all(255));
+        Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
         for(int y=0; y<2; y++) {
             for(int x=0; x<2; x++) {
-                cv::Mat marker;
+                Mat marker;
                 int id = i*4 + y*2 + x;
-                cv::aruco::drawMarker(cv::aruco::DICT_6X6_250, id, markerSidePixels, marker);
-                cv::Point2f firstCorner = cv::Point2f(markerSidePixels/2.f +
+                aruco::drawMarker(aruco::DICT_6X6_250, id, markerSidePixels, marker);
+                Point2f firstCorner = Point2f(markerSidePixels/2.f +
                                                       x*(1.5f*markerSidePixels),
                                                       markerSidePixels/2.f +
                                                       y*(1.5f*markerSidePixels) );
-                cv::Mat aux = img.colRange((int)firstCorner.x, (int)firstCorner.x+markerSidePixels)
+                Mat aux = img.colRange((int)firstCorner.x, (int)firstCorner.x+markerSidePixels)
                                  .rowRange((int)firstCorner.y, (int)firstCorner.y+markerSidePixels);
                 marker.copyTo(aux);
                 groundTruthIds.push_back(id);
-                groundTruthCorners.push_back( std::vector<cv::Point2f>() );
+                groundTruthCorners.push_back( vector<Point2f>() );
                 groundTruthCorners.back().push_back(firstCorner);
                 groundTruthCorners.back().push_back(firstCorner +
-                                                    cv::Point2f(markerSidePixels-1,0));
+                                                    Point2f(markerSidePixels-1,0));
                 groundTruthCorners.back().push_back(firstCorner +
-                                                    cv::Point2f(markerSidePixels-1,
+                                                    Point2f(markerSidePixels-1,
                                                                 markerSidePixels-1));
                 groundTruthCorners.back().push_back(firstCorner +
-                                                    cv::Point2f(0,markerSidePixels-1));
+                                                    Point2f(0,markerSidePixels-1));
             }
         }
         if(i%2==1) img.convertTo(img, CV_8UC3);
 
-        std::vector< std::vector<cv::Point2f> > corners;
-        std::vector< int > ids;
-        cv::aruco::DetectorParameters params;
+        vector< vector<Point2f> > corners;
+        vector< int > ids;
+        aruco::DetectorParameters params;
         params.doCornerRefinement = false;
-        cv::aruco::detectMarkers(img, cv::aruco::DICT_6X6_250, corners, ids, params);
+        aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
         for (unsigned int m=0; m<groundTruthIds.size(); m++) {
             int idx = -1;
             for(unsigned int k=0; k<ids.size(); k++) {
@@ -116,7 +117,7 @@ void CV_ArucoDetectionSimple::run(int) {
             }
 
             for(int c=0; c<4; c++) {
-                double dist = cv::norm( groundTruthCorners[m][c] - corners[idx][c] );
+                double dist = norm( groundTruthCorners[m][c] - corners[idx][c] );
                 if(dist > 0.001) {
                     ts->printf( cvtest::TS::LOG, "Incorrect marker corners position" );
                     ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -140,41 +141,41 @@ static double deg2rad(double deg) {
 
 
 static void
-getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv::Mat &tvec) {
+getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
 
-    rvec = cv::Mat(3,1,CV_64FC1);
-    tvec = cv::Mat(3,1,CV_64FC1);
+    rvec = Mat(3,1,CV_64FC1);
+    tvec = Mat(3,1,CV_64FC1);
 
     // Rvec
     // first put the Z axis aiming to -X (like the camera axis system)
-    cv::Mat rotZ(3,1,CV_64FC1);
+    Mat rotZ(3,1,CV_64FC1);
     rotZ.ptr<double>(0)[0] = 0;
     rotZ.ptr<double>(0)[1] = 0;
     rotZ.ptr<double>(0)[2] = -0.5*PI;
 
-    cv::Mat rotX(3,1,CV_64FC1);
+    Mat rotX(3,1,CV_64FC1);
     rotX.ptr<double>(0)[0] = 0.5*PI;
     rotX.ptr<double>(0)[1] = 0;
     rotX.ptr<double>(0)[2] = 0;
 
-    cv::Mat camRvec, camTvec;
-    cv::composeRT(rotZ, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), rotX, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), camRvec, camTvec );
+    Mat camRvec, camTvec;
+    composeRT(rotZ, Mat(3,1,CV_64FC1,Scalar::all(0)), rotX, Mat(3,1,CV_64FC1,Scalar::all(0)), camRvec, camTvec );
 
     // now pitch and yaw angles
-    cv::Mat rotPitch(3,1,CV_64FC1);
+    Mat rotPitch(3,1,CV_64FC1);
     rotPitch.ptr<double>(0)[0] = 0;
     rotPitch.ptr<double>(0)[1] = pitch;
     rotPitch.ptr<double>(0)[2] = 0;
 
-    cv::Mat rotYaw(3,1,CV_64FC1);
+    Mat rotYaw(3,1,CV_64FC1);
     rotYaw.ptr<double>(0)[0] = yaw;
     rotYaw.ptr<double>(0)[1] = 0;
     rotYaw.ptr<double>(0)[2] = 0;
 
-    cv::composeRT(rotPitch, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), rotYaw, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), rvec, tvec );
+    composeRT(rotPitch, Mat(3,1,CV_64FC1,Scalar::all(0)), rotYaw, Mat(3,1,CV_64FC1,Scalar::all(0)), rvec, tvec );
 
     // compose both rotations
-    cv::composeRT(camRvec, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), rvec, cv::Mat(3,1,CV_64FC1,cv::Scalar::all(0)), rvec, tvec );
+    composeRT(camRvec, Mat(3,1,CV_64FC1,Scalar::all(0)), rvec, Mat(3,1,CV_64FC1,Scalar::all(0)), rvec, tvec );
 
     // Tvec, just move in z (camera) direction the specific distance
     tvec.ptr<double>(0)[0] = 0.;
@@ -184,43 +185,43 @@ getSyntheticRT(double yaw, double pitch, double distance, cv::Mat &rvec, cv::Mat
 }
 
 
-static cv::Mat
-projectMarker(cv::aruco::DICTIONARY dictionary, int id, cv::Mat cameraMatrix, double yaw,
-              double pitch, double distance, cv::Size imageSize, int markerBorder,
-              std::vector<cv::Point2f> &corners) {
+static Mat
+projectMarker(aruco::DICTIONARY dictionary, int id, Mat cameraMatrix, double yaw,
+              double pitch, double distance, Size imageSize, int markerBorder,
+              vector<Point2f> &corners) {
 
 
-    cv::Mat markerImg;
+    Mat markerImg;
     const int markerSizePixels = 100;
-    cv::aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
+    aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
 
-    cv::Mat rvec, tvec;
+    Mat rvec, tvec;
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
     const float markerLength = 0.05f;
-    std::vector<cv::Point3f> markerObjPoints;
-    markerObjPoints.push_back( cv::Point3f(-markerLength/2.f, +markerLength/2.f, 0) );
-    markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(markerLength, 0, 0) );
-    markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(markerLength, -markerLength, 0) );
-    markerObjPoints.push_back( markerObjPoints[0] + cv::Point3f(0, -markerLength, 0) );
+    vector<Point3f> markerObjPoints;
+    markerObjPoints.push_back( Point3f(-markerLength/2.f, +markerLength/2.f, 0) );
+    markerObjPoints.push_back( markerObjPoints[0] + Point3f(markerLength, 0, 0) );
+    markerObjPoints.push_back( markerObjPoints[0] + Point3f(markerLength, -markerLength, 0) );
+    markerObjPoints.push_back( markerObjPoints[0] + Point3f(0, -markerLength, 0) );
 
-    cv::Mat distCoeffs(5, 0, CV_64FC1, cv::Scalar::all(0));
-    cv::projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
+    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
 
-    std::vector<cv::Point2f> originalCorners;
-    originalCorners.push_back( cv::Point2f(0, 0) );
-    originalCorners.push_back( cv::Point2f((float)markerSizePixels, 0) );
-    originalCorners.push_back( cv::Point2f((float)markerSizePixels, (float)markerSizePixels) );
-    originalCorners.push_back( cv::Point2f(0, (float)markerSizePixels) );
+    vector<Point2f> originalCorners;
+    originalCorners.push_back( Point2f(0, 0) );
+    originalCorners.push_back( Point2f((float)markerSizePixels, 0) );
+    originalCorners.push_back( Point2f((float)markerSizePixels, (float)markerSizePixels) );
+    originalCorners.push_back( Point2f(0, (float)markerSizePixels) );
 
-    cv::Mat transformation = cv::getPerspectiveTransform(originalCorners, corners);
+    Mat transformation = getPerspectiveTransform(originalCorners, corners);
 
-    cv::Mat img(imageSize, CV_8UC1, cv::Scalar::all(255));
-    cv::Mat aux;
+    Mat img(imageSize, CV_8UC1, Scalar::all(255));
+    Mat aux;
     const char borderValue = 127;
-    cv::warpPerspective(markerImg, aux, transformation, imageSize, cv::INTER_NEAREST,
-                        cv::BORDER_CONSTANT, cv::Scalar::all(borderValue));
+    warpPerspective(markerImg, aux, transformation, imageSize, INTER_NEAREST,
+                        BORDER_CONSTANT, Scalar::all(borderValue));
 
     // copy only not-border pixels
     for (int y = 0; y < aux.rows; y++) {
@@ -255,8 +256,8 @@ CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
 void CV_ArucoDetectionPerspective::run(int) {
 
     int iter = 0;
-    cv::Mat cameraMatrix = cv::Mat::eye(3,3, CV_64FC1);
-    cv::Size imgSize(500,500);
+    Mat cameraMatrix = Mat::eye(3,3, CV_64FC1);
+    Size imgSize(500,500);
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
@@ -266,19 +267,19 @@ void CV_ArucoDetectionPerspective::run(int) {
                 int currentId = iter % 250;
                 int markerBorder = iter%2+1;
                 iter ++;
-                std::vector<cv::Point2f> groundTruthCorners;
-                cv::Mat img = projectMarker(cv::aruco::DICT_6X6_250, currentId, cameraMatrix,
+                vector<Point2f> groundTruthCorners;
+                Mat img = projectMarker(aruco::DICT_6X6_250, currentId, cameraMatrix,
                                             deg2rad(yaw), deg2rad(pitch), distance, imgSize,
                                             markerBorder, groundTruthCorners);
 
 
-                std::vector< std::vector<cv::Point2f> > corners;
-                std::vector< int > ids;
-                cv::aruco::DetectorParameters params;
+                vector< vector<Point2f> > corners;
+                vector< int > ids;
+                aruco::DetectorParameters params;
                 params.minDistanceToBorder = 1;
                 params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
-                cv::aruco::detectMarkers(img, cv::aruco::DICT_6X6_250, corners, ids, params);
+                aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
 
                 if(ids.size()!=1 || (ids.size()==1 && ids[0]!=currentId)) {
                     if(ids.size() != 1)
@@ -289,7 +290,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                     return;
                 }
                 for(int c=0; c<4; c++) {
-                    double dist = cv::norm( groundTruthCorners[c] - corners[0][c] );
+                    double dist = norm( groundTruthCorners[c] - corners[0][c] );
                     if(dist > 5) {
                         ts->printf( cvtest::TS::LOG, "Incorrect marker corners position" );
                         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
