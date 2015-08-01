@@ -62,6 +62,8 @@ CV_ArucoDetectionSimple::CV_ArucoDetectionSimple() {}
 
 void CV_ArucoDetectionSimple::run(int) {
 
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+
     for(int i=0; i<20; i++) {
 
         vector< vector<Point2f> > groundTruthCorners;
@@ -75,7 +77,7 @@ void CV_ArucoDetectionSimple::run(int) {
             for(int x=0; x<2; x++) {
                 Mat marker;
                 int id = i*4 + y*2 + x;
-                aruco::drawMarker(aruco::DICT_6X6_250, id, markerSidePixels, marker);
+                aruco::drawMarker(dictionary, id, markerSidePixels, marker);
                 Point2f firstCorner = Point2f(markerSidePixels/2.f +
                                                       x*(1.5f*markerSidePixels),
                                                       markerSidePixels/2.f +
@@ -101,7 +103,7 @@ void CV_ArucoDetectionSimple::run(int) {
         vector< int > ids;
         aruco::DetectorParameters params;
         params.doCornerRefinement = false;
-        aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
+        aruco::detectMarkers(img, dictionary, corners, ids, params);
         for (unsigned int m=0; m<groundTruthIds.size(); m++) {
             int idx = -1;
             for(unsigned int k=0; k<ids.size(); k++) {
@@ -186,7 +188,7 @@ getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) 
 
 
 static Mat
-projectMarker(aruco::DICTIONARY dictionary, int id, Mat cameraMatrix, double yaw,
+projectMarker(aruco::DictionaryData dictionary, int id, Mat cameraMatrix, double yaw,
               double pitch, double distance, Size imageSize, int markerBorder,
               vector<Point2f> &corners) {
 
@@ -261,6 +263,7 @@ void CV_ArucoDetectionPerspective::run(int) {
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     for(double distance = 0.1; distance <= 0.5; distance += 0.1) {
         for(int pitch = 0; pitch < 360; pitch+=20) {
             for(int yaw = 30; yaw <=90; yaw+=20) {
@@ -268,7 +271,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                 int markerBorder = iter%2+1;
                 iter ++;
                 vector<Point2f> groundTruthCorners;
-                Mat img = projectMarker(aruco::DICT_6X6_250, currentId, cameraMatrix,
+                Mat img = projectMarker(dictionary, currentId, cameraMatrix,
                                             deg2rad(yaw), deg2rad(pitch), distance, imgSize,
                                             markerBorder, groundTruthCorners);
 
@@ -279,7 +282,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                 params.minDistanceToBorder = 1;
                 params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
-                aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
+                aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 if(ids.size()!=1 || (ids.size()==1 && ids[0]!=currentId)) {
                     if(ids.size() != 1)

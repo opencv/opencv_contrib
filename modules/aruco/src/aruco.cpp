@@ -45,7 +45,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
-#include "dictionary.cpp"
 
 namespace cv {
 namespace aruco {
@@ -879,21 +878,21 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
 
 /**
   */
-static const DictionaryData &_getDictionaryData(DICTIONARY name) {
-    switch (name) {
-    case DICT_ARUCO:
-        return DICT_ARUCO_DATA;
-    case DICT_6X6_250:
-        return DICT_6X6_250_DATA;
-    }
-    return DICT_ARUCO_DATA;
-}
+//static const DictionaryData &_getDictionaryData(DICTIONARY name) {
+//    switch (name) {
+//    case DICT_ARUCO:
+//        return DICT_ARUCO_DATA;
+//    case DICT_6X6_250:
+//        return DICT_6X6_250_DATA;
+//    }
+//    return DICT_ARUCO_DATA;
+//}
 
 
 
 /**
   */
-void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays _corners,
+void detectMarkers(InputArray _image, DictionaryData dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, DetectorParameters params,
                    OutputArrayOfArrays _rejectedImgPoints) {
 
@@ -908,8 +907,7 @@ void detectMarkers(InputArray _image, DICTIONARY dictionary, OutputArrayOfArrays
     _detectCandidates(grey, candidates, contours, params);
 
     /// STEP 2: Check candidate codification (identify markers)
-    DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    _identifyCandidates(grey, candidates, contours, dictionaryData, _corners, _ids, params,
+    _identifyCandidates(grey, candidates, contours, dictionary, _corners, _ids, params,
                         _rejectedImgPoints);
 
     /// STEP 3: Filter detected markers;
@@ -1163,8 +1161,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
 
     vector<bool> alreadyIdentified(_rejectedCorners.total(), false);
 
-    DictionaryData dictionaryData = _getDictionaryData(board.dictionary);
-    int maxCorrectionRecalculed = int( double(dictionaryData.maxCorrectionBits) *
+    int maxCorrectionRecalculed = int( double(board.dictionary.maxCorrectionBits) *
                                        errorCorrectionRate );
     Mat grey;
     _convertToGrey(_image, grey);
@@ -1218,7 +1215,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
             if(errorCorrectionRate >=0 ) {
 
                 // extract bits
-                Mat bits = _extractBits(grey, rotatedMarker, dictionaryData.markerSize,
+                Mat bits = _extractBits(grey, rotatedMarker, board.dictionary.markerSize,
                                         params.markerBorderBits,
                                         params.perspectiveRemovePixelPerCell,
                                         params.perspectiveRemoveIgnoredMarginPerCell,
@@ -1228,8 +1225,8 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                     bits.rowRange(params.markerBorderBits, bits.rows - params.markerBorderBits)
                         .colRange(params.markerBorderBits, bits.rows - params.markerBorderBits);
 
-                codeDistance = dictionaryData.getDistanceToId(onlyBits, undetectedMarkersIds[i],
-                                                              false);
+                codeDistance = board.dictionary.getDistanceToId(onlyBits, undetectedMarkersIds[i],
+                                                                false);
             }
 
             if(errorCorrectionRate<0 || codeDistance <= maxCorrectionRecalculed) {
@@ -1353,7 +1350,7 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 /**
  */
 GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
-                            float markerSeparation, DICTIONARY _dictionary) {
+                            float markerSeparation, DictionaryData _dictionary) {
 
     GridBoard res;
 
@@ -1481,9 +1478,8 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
 
 /**
  */
-void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray _img, int borderBits) {
-    DictionaryData dictionaryData = _getDictionaryData(dictionary);
-    dictionaryData.drawMarker(id, sidePixels, _img, borderBits);
+void drawMarker(DictionaryData dictionary, int id, int sidePixels, OutputArray _img, int borderBits) {
+    dictionary.drawMarker(id, sidePixels, _img, borderBits);
 }
 
 
@@ -1495,8 +1491,6 @@ void drawPlanarBoard(const Board &board, Size outSize, OutputArray _img, int mar
 
     CV_Assert(outSize.area() > 0);
     CV_Assert(marginSize >= 0);
-
-    DictionaryData dictData = _getDictionaryData(board.dictionary);
 
     _img.create(outSize, CV_8UC1);
     Mat out = _img.getMat();
@@ -1556,9 +1550,9 @@ void drawPlanarBoard(const Board &board, Size outSize, OutputArray _img, int mar
         }
 
         // get tiny marker
-        int tinyMarkerSize = 10 * dictData.markerSize + 2;
+        int tinyMarkerSize = 10 * board.dictionary.markerSize + 2;
         Mat tinyMarker;
-        dictData.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker, borderBits);
+        board.dictionary.drawMarker(board.ids[m], tinyMarkerSize, tinyMarker, borderBits);
 
         // interpolate tiny marker to marker position in markerZone
         Mat inCorners(4, 1, CV_32FC2);

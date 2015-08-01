@@ -37,6 +37,7 @@ the use of this software, even if advised of the possibility of such damage.
 */
 
 #include "precomp.hpp"
+#include "opencv2/aruco/dictionary.hpp"
 #include "predefined_dictionaries.cpp"
 
 #include <opencv2/core.hpp>
@@ -68,22 +69,10 @@ const unsigned char hammingWeightLUT[] = {
 
 
 
-/**
- * @brief Dictionary/Set of markers. It contains the inner codification
- *
- */
-class DictionaryData {
-
-  public:
-    Mat bytesList;
-    int markerSize;
-    int maxCorrectionBits; // maximum number of bits that can be corrected
-
-
     /**
       */
-    DictionaryData(const unsigned char * bytes = 0, int _markerSize = 0, int dictsize = 0,
-                   int _maxcorr = 0) {
+    DictionaryData::DictionaryData(const unsigned char * bytes, int _markerSize, int dictsize,
+                   int _maxcorr) {
         markerSize = _markerSize;
         maxCorrectionBits = _maxcorr;
         int nbytes = (markerSize * markerSize) / 8;
@@ -107,7 +96,7 @@ class DictionaryData {
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
      * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
+    bool DictionaryData::identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
 
         CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
@@ -156,7 +145,7 @@ class DictionaryData {
     /**
       * Returns the distance of the input bits to the specific id.
       */
-    int getDistanceToId(InputArray bits, int id, bool allRotations = true) {
+    int DictionaryData::getDistanceToId(InputArray bits, int id, bool allRotations) const {
         CV_Assert(id >= 0 && id < bytesList.rows);
 
         Mat candidateBytes = _getByteListFromBits(bits.getMat());
@@ -183,7 +172,7 @@ class DictionaryData {
     /**
      * @brief Draw a canonical marker image
      */
-    void drawMarker(int id, int sidePixels, OutputArray _img, int borderBits = 1) const {
+    void DictionaryData::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
 
         CV_Assert(sidePixels > markerSize);
         CV_Assert(id < bytesList.rows);
@@ -208,13 +197,11 @@ class DictionaryData {
 
 
 
-  private:
-
 
     /**
       * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
-    Mat _getByteListFromBits(const Mat &bits) const {
+    Mat DictionaryData::_getByteListFromBits(const Mat &bits) const {
 
         int nbytes = (bits.cols * bits.rows) / 8;
         if ((bits.cols * bits.rows) % 8 != 0)
@@ -255,7 +242,7 @@ class DictionaryData {
     /**
       * @brief Transform list of bytes to matrix of bits
       */
-    Mat _getBitsFromByteList(const Mat &byteList) const {
+    Mat DictionaryData::_getBitsFromByteList(const Mat &byteList) const {
         CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
                   && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
         Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
@@ -288,13 +275,23 @@ class DictionaryData {
     }
 
 
-};
 
 
 
 // DictionaryData constructors calls
 const DictionaryData DICT_ARUCO_DATA = DictionaryData(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
 const DictionaryData DICT_6X6_250_DATA = DictionaryData(&(DICT_6X6_250_BYTES[0][0][0]), 6, 250, 5);
+
+
+const DictionaryData & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
+    switch (name) {
+    case DICT_ARUCO:
+        return DICT_ARUCO_DATA;
+    case DICT_6X6_250:
+        return DICT_6X6_250_DATA;
+    }
+    return DICT_ARUCO_DATA;
+}
 
 
 

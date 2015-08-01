@@ -100,7 +100,7 @@ public:
      * and the size of the markers and chessboard squares.
      */
     static CharucoBoard create(int squaresX, int squaresY, float squareLength,
-                               float markerLength, DICTIONARY dictionary);
+                               float markerLength, DictionaryData dictionary);
 
     /**
       *
@@ -332,7 +332,7 @@ CV_EXPORTS void drawDetectedDiamonds(InputArray in, OutputArray out,
  *
  * This function return the image of a ChArUco marker, ready to be printed.
  */
-CV_EXPORTS void drawCharucoDiamond(DICTIONARY dictionary, Vec4i ids, int squareLength,
+CV_EXPORTS void drawCharucoDiamond(DictionaryData dictionary, Vec4i ids, int squareLength,
                                    int markerLength, OutputArray img, int marginSize = 0,
                                    int borderBits = 1);
 

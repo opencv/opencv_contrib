@@ -106,7 +106,8 @@ int main(int argc, char *argv[]) {
     int markerLength = atoi( getParam("-l", argc, argv).c_str() );
     int markerSeparation = atoi( getParam("-s", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(
+                aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     int margins = markerSeparation;
     if (isParam("-m", argc, argv)) {

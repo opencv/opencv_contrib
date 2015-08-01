@@ -99,7 +99,7 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
 }
 
 
-static void projectMarker(Mat &img, aruco::DICTIONARY dictionary, int id,
+static void projectMarker(Mat &img, aruco::DictionaryData dictionary, int id,
                           vector<Point3f> markerObjPoints, Mat cameraMatrix,
                           Mat rvec, Mat tvec, int markerBorder) {
 
@@ -228,8 +228,8 @@ void CV_CharucoDetection::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3,3, CV_64FC1);
     Size imgSize(500,500);
-    aruco::CharucoBoard board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f,
-                                                                    aruco::DICT_6X6_250);
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::CharucoBoard board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, dictionary);
 
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
@@ -255,7 +255,7 @@ void CV_CharucoDetection::run(int) {
                 params.minDistanceToBorder = 3;
                 params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
-                aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
+                aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 if(ids.size()==0) {
                     ts->printf( cvtest::TS::LOG, "Marker detection failed" );
@@ -332,8 +332,8 @@ void CV_CharucoPoseEstimation::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3,3, CV_64FC1);
     Size imgSize(500,500);
-    aruco::CharucoBoard board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f,
-                                                                    aruco::DICT_6X6_250);
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::CharucoBoard board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, dictionary);
 
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
@@ -359,7 +359,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 params.minDistanceToBorder = 3;
                 params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
-                aruco::detectMarkers(img, aruco::DICT_6X6_250, corners, ids, params);
+                aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 if(ids.size()==0) {
                     ts->printf( cvtest::TS::LOG, "Marker detection failed" );

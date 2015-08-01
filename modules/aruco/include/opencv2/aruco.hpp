@@ -41,6 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/core.hpp>
 #include <vector>
+#include "opencv2/aruco/dictionary.hpp"
 
 /**
  * @defgroup aruco ArUco Marker Detection
@@ -68,14 +69,6 @@ namespace aruco {
 
 //! @addtogroup aruco
 //! @{
-
-
-
-/**
- * @brief Predefined markers dictionaries/sets
- * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
- */
-enum DICTIONARY { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
 
 
 
@@ -168,7 +161,7 @@ struct DetectorParameters {
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS void detectMarkers(InputArray image, DICTIONARY dictionary,
+CV_EXPORTS void detectMarkers(InputArray image, DictionaryData dictionary,
                               OutputArrayOfArrays corners, OutputArray ids,
                               DetectorParameters parameters=DetectorParameters(),
                               OutputArrayOfArrays rejectedImgPoints = noArray());
@@ -228,7 +221,7 @@ public:
     std::vector<std::vector<Point3f> > objPoints;
 
     // the dictionary of markers employed for this board
-    DICTIONARY dictionary;
+    DictionaryData dictionary;
 
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
@@ -276,7 +269,7 @@ public:
      * the marker size and marker separation.
      */
     static GridBoard create(int markersX, int markersY, float markerLength,
-                            float markerSeparation, DICTIONARY dictionary);
+                            float markerSeparation, DictionaryData dictionary);
 
     /**
       *
@@ -444,7 +437,7 @@ CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix
  *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS void drawMarker(DICTIONARY dictionary, int id, int sidePixels, OutputArray img,
+CV_EXPORTS void drawMarker(DictionaryData dictionary, int id, int sidePixels, OutputArray img,
                            int borderBits = 1);
 
 

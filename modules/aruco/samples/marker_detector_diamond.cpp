@@ -143,7 +143,8 @@ int main(int argc, char *argv[]) {
     float squareLength = (float)atof( getParam("-sl", argc, argv).c_str() );
     float markerLength = (float)atof( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::DICTIONARY dictionary = aruco::DICTIONARY(dictionaryId);
+    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(
+                aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     bool showRejected = false;
     if (isParam("-r", argc, argv))
