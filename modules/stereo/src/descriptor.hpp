@@ -55,27 +55,30 @@ namespace cv
     namespace stereo
     {
         //types of supported kernels
-        enum { CV_DENSE_CENSUS, CV_SPARSE_CENSUS, CV_STAR_CENSUS};
-        enum {CV_CS_CENSUS, CV_MODIFIED_CS_CENSUS};
-        enum {CV_MODIFIED_CENSUS_TRANSFORM, CV_MEAN_VARIATION};
-       //!Mean Variation is a robust kernel that compares a pixel
+        enum {
+            CV_DENSE_CENSUS, CV_SPARSE_CENSUS,
+            CV_CS_CENSUS, CV_MODIFIED_CS_CENSUS, CV_MODIFIED_CENSUS_TRANSFORM,
+            CV_MEAN_VARIATION
+        };
+        //!Mean Variation is a robust kernel that compares a pixel
         //!not just with the center but also with the mean of the window
+        template<int num_images>
         struct MVKernel
         {
-            uint8_t *image[20];
-            int *integralImage[20];
+            uint8_t *image[num_images];
+            int *integralImage[num_images];
             int stop;
             MVKernel(){}
-            MVKernel(uint8_t **images, int **integral, int numImag = 2)
+            MVKernel(uint8_t **images, int **integral)
             {
-                for(int i = 0; i < numImag; i++)
+                for(int i = 0; i < num_images; i++)
                 {
                     image[i] = images[i];
                     integralImage[i] = integral[i];
                 }
-                stop = numImag;
+                stop = num_images;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
             {
                 (void)w2;
                 for(int i = 0; i < stop; i++)
@@ -95,18 +98,19 @@ namespace cv
         };
         //!Compares pixels from a patch giving high weights to pixels in which
         //!the intensity is higher. The other pixels receive a lower weight
+        template <int num_images>
         struct MCTKernel
         {
-            uint8_t *image[20];
+            uint8_t *image[num_images];
             int t,imageStop;
             MCTKernel(){}
-            MCTKernel(uint8_t ** images, int threshold,const int numberImages = 2)
+            MCTKernel(uint8_t ** images, int threshold)
             {
-                for(int i = 0; i < numberImages; i++)
+                for(int i = 0; i < num_images; i++)
                 {
                     image[i] = images[i];
                 }
-                imageStop = numberImages;
+                imageStop = num_images;
                 t = threshold;
             }
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
@@ -135,20 +139,21 @@ namespace cv
         };
         //!A madified cs census that compares a pixel with the imediat neightbour starting
         //!from the center
+        template<int num_images>
         struct ModifiedCsCensus
         {
-            uint8_t *image[20];
+            uint8_t *image[num_images];
             int n2;
             int imageStop;
             ModifiedCsCensus(){}
-            ModifiedCsCensus(uint8_t **images, int ker, int numberOfImages = 2)
+            ModifiedCsCensus(uint8_t **images, int ker)
             {
-                for(int i = 0; i < numberOfImages; i++)
+                for(int i = 0; i < num_images; i++)
                     image[i] = images[i];
-                imageStop = numberOfImages;
+                imageStop = num_images;
                 n2 = ker;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
             {
                 (void)j;
                 (void)rWidth;
@@ -163,18 +168,19 @@ namespace cv
             }
         };
         //!A kernel in which a pixel is compared with the center of the window
+        template<int num_images>
         struct CensusKernel
         {
-            uint8_t *image[20];
+            uint8_t *image[num_images];
             int imageStop;
             CensusKernel(){}
-            CensusKernel(uint8_t **images, int numberOfImages = 2)
+            CensusKernel(uint8_t **images)
             {
-                for(int i = 0; i < numberOfImages; i++)
+                for(int i = 0; i < num_images; i++)
                     image[i] = images[i];
-                imageStop = numberOfImages;
+                imageStop = num_images;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[20]) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
             {
                 (void)w2;
                 for(int i = 0; i < imageStop; i++)
@@ -210,7 +216,6 @@ namespace cv
                 kernel_ = kernel;
                 n2_stop = k2Stop;
             }
-
             void operator()(const cv::Range &r) const {
                 for (int i = r.start; i <= r.end ; i++)
                 {
@@ -265,16 +270,17 @@ namespace cv
             }
         };
         //!implementation for the star kernel descriptor
+        template<int num_images>
         class StarKernelCensus:public ParallelLoopBody
         {
         private:
-            uint8_t *image[20];
-            int *dst[20];
+            uint8_t *image[num_images];
+            int *dst[num_images];
             int n2, width, height, im_num,stride_;
         public:
-            StarKernelCensus(const cv::Mat *img, int k2, int **distance,const int number_of_images)
+            StarKernelCensus(const cv::Mat *img, int k2, int **distance)
             {
-                for(int i = 0; i < number_of_images; i++)
+                for(int i = 0; i < num_images; i++)
                 {
                     image[i] = img[i].data;
                     dst[i] = distance[i];
@@ -282,7 +288,7 @@ namespace cv
                 n2 = k2;
                 width = img[0].cols;
                 height = img[0].rows;
-                im_num = number_of_images;
+                im_num = num_images;
                 stride_ = (int)img[0].step;
             }
             void operator()(const cv::Range &r) const {
@@ -356,16 +362,17 @@ namespace cv
             }
         };
         //!paralel implementation of the center symetric census
+        template <int num_images>
         class SymetricCensus:public ParallelLoopBody
         {
         private:
-            uint8_t *image[20];
-            int *dst[20];
+            uint8_t *image[num_images];
+            int *dst[num_images];
             int n2, width, height, im_num,stride_;
         public:
-            SymetricCensus(const cv::Mat *img, int k2,int number_of_images, int **distance)
+            SymetricCensus(const cv::Mat *img, int k2, int **distance)
             {
-                for(int i = 0; i < number_of_images; i++)
+                for(int i = 0; i < num_images; i++)
                 {
                     image[i] = img[i].data;
                     dst[i] = distance[i];
@@ -373,7 +380,7 @@ namespace cv
                 n2 = k2;
                 width = img[0].cols;
                 height = img[0].rows;
-                im_num = number_of_images;
+                im_num = num_images;
                 stride_ = (int)img[0].step;
             }
             void operator()(const cv::Range &r) const {
