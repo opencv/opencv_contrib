@@ -45,7 +45,7 @@ As for the ```GridBoard``` objects, the aruco module provides a function to crea
 is the static function ```cv::aruco::CharucoBoard::create()``` :
 
 ``` c++
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 ```
 
 - The first and second parameters are the number of squares in X and Y direction respectively.
@@ -60,7 +60,7 @@ Once we have our ```CharucoBoard``` object, we can create an image to print it. 
 ```CharucoBoard::draw()``` method:
 
 ``` c++
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     cv::Mat boardImage;
     board.draw( cv::Size(600, 500), boardImage, 10, 1 );
 ```
@@ -100,7 +100,8 @@ The function that detect the Charuco corners is ```cv::aruco::interpolateCorners
     cv::Mat cameraMatrix, distCoeffs;
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     ...
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners;
@@ -128,7 +129,8 @@ are optional. A similar example without these parameters would be:
 
 ``` c++
     cv::Mat inputImage;
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     ...
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners;
@@ -194,7 +196,8 @@ Finally, this is a full example of Charuco detection (without using calibration 
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 
     DetectorParameters params;
     params.doCornerRefinement = false;
@@ -265,7 +268,8 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, DICT_6X6_250);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;

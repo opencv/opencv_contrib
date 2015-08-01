@@ -44,17 +44,10 @@ unequivocally. This is also done based on the binary codification.
 A dictionary of markers is a set of markers that are considered in an specific application. It is
 simply the list of binary codifications of each of its markers.
 
-The main properties of a dictionary are the dictionary size, the marker size and the inter-marker
-distance.
+The main properties of a dictionary are the dictionary size and the marker size.
 
 - The dictionary size is the number of markers that composed the dictionary.
 - The marker size is the size of those markers (the number of bits).
-- The inter-marker distance is the minimum distance among its markers. The inter-marker distance
-determines the error detection and correction capabilities of the dictionary.
-
-In general, lower dictionary sizes and higher marker sizes increase the inter-marker distance and
-vice-versa. However, the detection of markers with higher sizes is more complex, due to the higher
-amount of bits that need to be extracted from the image.
 
 The aruco module includes some predefined dictionaries covering a range of different dictionary
 sizes and marker sizes.
@@ -65,6 +58,7 @@ is too high and managing so huge numbers is not practical. Instead, a marker id 
 the marker index inside the dictionary it belongs to. For instance, the first 5 markers inside a
 dictionary has the ids: 0, 1, 2, 3 and 4.
 
+More information about dictionaries is provided in the "Selecting a dictionary" section.
 
 
 Marker Creation
@@ -77,11 +71,16 @@ For example, lets analyze the following call:
 
 ``` c++
     cv::Mat markerImage;
-    cv::aruco::drawMarker(DICT_6X6_250, 23, 200, markerImage, 1);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
 ```
 
-- The first parameter is one of the predefined dictionaries in the aruco module. Concretely, this
-dictionary is composed by 250 markers and a marker size of 6x6 bits.
+First, the ```Dictionary``` object is created by choosing one of the predefined dictionaries in the aruco module. 
+Concretely, this dictionary is composed by 250 markers and a marker size of 6x6 bits (```DICT_6X6_250```).
+
+The parameters of ```drawMarker``` are:
+
+- The first parameter is the ```Dictionary``` object previously created.
 - The second parameter is the marker id, in this case the marker 23 of the dictionary ```DICT_6X6_250```.
 Note that each dictionary is composed by a different number of markers. In this case, the valid ids
 go from 0 to 249. Any specific id out of the valid range will produce an exception.
@@ -154,11 +153,14 @@ An example of marker detection:
     vector< int > markerIds;
     vector< vector<Point2f> > markerCorners, rejectedCandidates;
     cv::aruco::DetectorParameters parameters;
-    cv::aruco::detectMarkers(inputImage, DICT_6X6_250, markerCorners, markerIds, parameters, rejectedCandidates);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 ```
 
+The parameters of ```detectMarkers``` are:
+
 - The first parameter is the image where the markers are going to be detected.
-- ```DICT_6X6_250``` is one of the predefined dictionaries in the module. This dictionary is composed by 250 markers of 6x6 bits.
+- The second parameter is the dictionary object, in this case one of the predefined dictionaries (```DICT_6X6_250```).
 - The detected markers are stored in the ```markerCorners``` and ```markerIds``` structures:
     - ```markerCorners``` is the list of corners of the detected markers. For each marker, its four
     corners are returned in their original order (which is clockwise starting with top left). So, the first corner is the top left corner, followed by the top right, bottom right and bottom left.
@@ -197,6 +199,7 @@ camera (see marker_detector.cpp for a more detailed example):
 ``` c++
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -289,6 +292,8 @@ A basic full example for pose estimation from single markers  (see marker_detect
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -315,6 +320,112 @@ A basic full example for pose estimation from single markers  (see marker_detect
             break;
     }
 ```
+
+
+Selecting a dictionary
+------
+
+The aruco module provides the ```Dictionary``` class to represent a dictionary of markers.
+
+Apart of the marker size and the number of markers in the dictionary, there is another important dictionary
+parameter, the inter-marker distance. The inter-marker distance is the minimum distance among its markers
+and it determines the error detection and correction capabilities of the dictionary.
+
+In general, lower dictionary sizes and higher marker sizes increase the inter-marker distance and
+vice-versa. However, the detection of markers with higher sizes is more complex, due to the higher
+amount of bits that need to be extracted from the image.
+
+For instance, if you need only 10 markers in your application, it is better to use a dictionary only
+composed by those 10 markers than using one dictionary composed by 1000 markers. The reason is that
+the dictionary composed by 10 markers will have a higher inter-marker distance and, thus, it will be
+more robust to errors.
+
+As a consequence, the aruco module includes several ways to select your dictionary of markers, so that
+you can increase your system robustness:
+
+- Predefined dictionaries:
+
+This is the easiest way to select a dictionary. The aruco module includes a set of predefined dictionaries
+ of a variety of marker sizes and number of markers. For instance:
+
+``` c++
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+```
+
+DICT_6X6_250 is an example of predefined dictionary of markers with 6x6 bits and a total of 250
+markers. 
+
+From all the provided dictionaries, it is recommended to choose the smaller one that fits to your application.
+For instance, if you need 200 markers of 6x6 bits, it is better to use DICT_6X6_250 than DICT_6X6_1000. 
+The smaller the dictionary, the higher the inter-marker distance.
+
+- Automatic dictionary generation:
+
+The dictionary can be generated automatically to adjust to the desired number of markers and bits, so that
+the inter-marker distance is optimized:
+
+``` c++
+    cv::aruco::Dictionary dictionary = cv::aruco::generateCustomDictionary(36, 5);
+```
+
+This will generate a customized dictionary composed by 36 markers of 5x5 bits. The process can take several
+seconds, depending on the parameters (it is slower for larger dictionaries and higher number of bits).
+
+- Manually dictionary generation:
+
+Finally, the dictionary can be configured manually, so that any codification can be employed. To do that,
+the ```Dictionary``` object parameters need to be assigned manually. It must be noted that, unless you have
+ a special reason to do this manually, it is preferable to use one of the previous alternatives.
+
+The ```Dictionary``` parameters are:
+
+
+``` c++
+    class Dictionary {
+        public:
+
+        Mat bytesList;
+        int markerSize;
+        int maxCorrectionBits; // maximum number of bits that can be corrected
+    
+        ...
+    
+    }
+
+```
+
+```bytesList``` is the array that contains all the information about the marker codes. ```markerSize``` is the size
+ of each marker dimension (for instance, 5 for markers with 5x5 bits). Finally, ```maxCorrectionBits``` is
+the maximum number of erroneous bits that can be corrected during the marker detection. If this value is too
+high, it can lead to a high amount of false positives.
+
+Each row in ```bytesList``` represents one of the dictionary markers. However, the markers are not stored in its
+binary form, instead they are stored in a special format to simplificate their detection. 
+
+Fortunately, a marker can be easily transformed to this form using the static method ```Dictionary::getByteListFromBits()```.
+
+For example:
+
+``` c++
+    Dictionary dictionary;
+    // markers of 6x6 bits
+    dictionary.markerSize = 6;
+    // maximum number of bit corrections
+    dictionary.maxCorrectionBits = 3;
+
+    // lets create a dictionary of 100 markers
+    for(int i=0; i<100; i++)
+        // assume generateMarkerBits() generate a new marker in binary format, so that
+        // markerBits is a 6x6 matrix of CV_8UC1 type, only containing 0s and 1s
+        cv::Mat markerBits = generateMarkerBits(); 
+        cv::Mat markerCompressed = getByteListFromBits(markerBits);
+        // add the marker as a new row
+        dictionary.bytesList.push_back(markerCompressed);
+    }
+
+```
+
+
 
 
 Detector Parameters
@@ -545,8 +656,8 @@ Default value: 0.5
 
 - ```double errorCorrectionRate```
 
-Each marker dictionary has a theoretical maximum number of bits that can be corrected. However, this value
-can be modified by the ```errorCorrectionRate``` parameter.
+Each marker dictionary has a theoretical maximum number of bits that can be corrected (```Dictionary.maxCorrectionBits```). 
+However, this value can be modified by the ```errorCorrectionRate``` parameter.
 
 For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of ```errorCorrectionRate``` is
 0.5, the real maximum number of bits that can be corrected is 6*0.5=3 bits.

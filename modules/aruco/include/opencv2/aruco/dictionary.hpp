@@ -114,6 +114,8 @@ class CV_EXPORTS Dictionary {
  */
 enum PREDEFINED_DICTIONARY_NAME { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
 CV_EXPORTS const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+CV_EXPORTS Dictionary generateCustomDictionary(int nMarkers, int markerSize,
+                                               const Dictionary& baseDictionary = Dictionary());
 
 
 

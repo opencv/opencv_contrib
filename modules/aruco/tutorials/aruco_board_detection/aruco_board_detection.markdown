@@ -30,7 +30,7 @@ The aruco module allows the use of Boards. The main class is the ```cv::aruco::B
     class  Board {
     public:
         std::vector<std::vector<cv::Point3f> > objPoints;
-        cv::aruco::DICTIONARY dictionary;
+        cv::aruco::Dictionary dictionary;
         std::vector<int> ids;
     };
 ```
@@ -121,7 +121,7 @@ A ```GridBoard``` object can be defined using the following parameters:
 This object can be easily created from these parameters using the ```cv::aruco::GridBoard::create()``` static function:
 
 ``` c++
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
 ```
 
 - The first and second parameters are the number of markers in the X and Y direction respectively.
@@ -137,7 +137,7 @@ After creating a Grid Board, we probably want to print it and use it. A function
 of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::draw()```. For example:
 
 ``` c++
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
     cv::Mat boardImage;
     board.draw( cv::Size(600, 500), boardImage, 10, 1 );
 ```
@@ -163,7 +163,8 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, DICT_6X6_250);
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;

@@ -295,6 +295,12 @@ const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
 }
 
 
+Dictionary generateCustomDictionary(int nMarkers, int markerSize,
+                                    const Dictionary& baseDictionary) {
+    return Dictionary();
+}
+
+
 
 }
 }
