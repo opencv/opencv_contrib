@@ -61,8 +61,8 @@ namespace aruco {
 class CV_EXPORTS Dictionary {
 
   public:
-    Mat bytesList;
-    int markerSize;
+    Mat bytesList; // marker code information
+    int markerSize; // number of bits per dimension
     int maxCorrectionBits; // maximum number of bits that can be corrected
 
 
@@ -80,7 +80,7 @@ class CV_EXPORTS Dictionary {
     bool identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const;
 
     /**
-      * Returns the distance of the input bits to the specific id.
+      * @brief Returns the distance of the input bits to the specific id.
       */
     int getDistanceToId(InputArray bits, int id, bool allRotations = true) const;
 
@@ -113,7 +113,26 @@ class CV_EXPORTS Dictionary {
  * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
  */
 enum PREDEFINED_DICTIONARY_NAME { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
+
+
+/**
+  * @brief Returns one of the predefined dictionaries defined in PREDEFINED_DICTIONARY_NAME
+  */
 CV_EXPORTS const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+
+
+/**
+  * @brief Generates a new customizable marker dictionary
+  *
+  * @param nMarkers number of markers in the dictionary
+  * @param markerSize number of bits per dimension of each markers
+  * @param baseDictionary Include the markers in this dictionary at the beginning (optional)
+  *
+  * This function creates a new dictionary composed by nMarkers markers and each markers composed
+  * by markerSize x markerSize bits. If baseDictionary is provided, its markers are directly
+  * included and the rest are generated based on them. If the size of baseDictionary is higher
+  * than nMarkers, only the first nMarkers in baseDictionary are taken and no new marker is added.
+  */
 CV_EXPORTS Dictionary generateCustomDictionary(int nMarkers, int markerSize,
                                                const Dictionary& baseDictionary = Dictionary());
 
