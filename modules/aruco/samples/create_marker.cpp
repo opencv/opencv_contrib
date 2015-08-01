@@ -95,8 +95,8 @@ int main(int argc, char *argv[]) {
     }
 
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(
-                aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
+                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     int markerId = atoi( getParam("-id", argc, argv).c_str() );
 

@@ -100,8 +100,8 @@ int main(int argc, char *argv[]) {
     int squareLength = atoi( getParam("-sl", argc, argv).c_str() );
     int markerLength = atoi( getParam("-ml", argc, argv).c_str() );
     int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(
-                aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
+                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     string idsString = getParam("-ids", argc, argv);
     istringstream ss(idsString);

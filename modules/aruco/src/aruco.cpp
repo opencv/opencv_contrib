@@ -668,7 +668,7 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
  * @brief Tries to identify one candidate given the dictionary
  */
 static bool
-_identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputArray _corners,
+_identifyOneCandidate(Dictionary dictionary, InputArray _image, InputOutputArray _corners,
                       InputArray _contour, int &idx, DetectorParameters params) {
 
     CV_Assert(_corners.total() == 4);
@@ -725,7 +725,7 @@ _identifyOneCandidate(DictionaryData dictionary, InputArray _image, InputOutputA
  */
 static void
 _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates, InputArrayOfArrays _contours,
-                    const DictionaryData &dictionary, OutputArrayOfArrays _accepted,
+                    const Dictionary &dictionary, OutputArrayOfArrays _accepted,
                     OutputArray _ids, DetectorParameters params,
                     OutputArrayOfArrays _rejected = noArray()) {
 
@@ -892,7 +892,7 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
 
 /**
   */
-void detectMarkers(InputArray _image, DictionaryData dictionary, OutputArrayOfArrays _corners,
+void detectMarkers(InputArray _image, Dictionary dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, DetectorParameters params,
                    OutputArrayOfArrays _rejectedImgPoints) {
 
@@ -1350,7 +1350,7 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 /**
  */
 GridBoard GridBoard::create(int markersX, int markersY, float markerLength,
-                            float markerSeparation, DictionaryData _dictionary) {
+                            float markerSeparation, Dictionary _dictionary) {
 
     GridBoard res;
 
@@ -1478,7 +1478,7 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
 
 /**
  */
-void drawMarker(DictionaryData dictionary, int id, int sidePixels, OutputArray _img, int borderBits) {
+void drawMarker(Dictionary dictionary, int id, int sidePixels, OutputArray _img, int borderBits) {
     dictionary.drawMarker(id, sidePixels, _img, borderBits);
 }
 

@@ -62,7 +62,7 @@ CV_ArucoDetectionSimple::CV_ArucoDetectionSimple() {}
 
 void CV_ArucoDetectionSimple::run(int) {
 
-    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 
     for(int i=0; i<20; i++) {
 
@@ -188,7 +188,7 @@ getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) 
 
 
 static Mat
-projectMarker(aruco::DictionaryData dictionary, int id, Mat cameraMatrix, double yaw,
+projectMarker(aruco::Dictionary dictionary, int id, Mat cameraMatrix, double yaw,
               double pitch, double distance, Size imageSize, int markerBorder,
               vector<Point2f> &corners) {
 
@@ -263,7 +263,7 @@ void CV_ArucoDetectionPerspective::run(int) {
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
-    aruco::DictionaryData dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     for(double distance = 0.1; distance <= 0.5; distance += 0.1) {
         for(int pitch = 0; pitch < 360; pitch+=20) {
             for(int yaw = 30; yaw <=90; yaw+=20) {

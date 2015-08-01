@@ -58,7 +58,7 @@ namespace aruco {
  * @brief Dictionary/Set of markers. It contains the inner codification
  *
  */
-class CV_EXPORTS DictionaryData {
+class CV_EXPORTS Dictionary {
 
   public:
     Mat bytesList;
@@ -68,8 +68,8 @@ class CV_EXPORTS DictionaryData {
 
     /**
       */
-    DictionaryData(const unsigned char * bytes = 0, int _markerSize = 0, int dictsize = 0,
-                   int _maxcorr = 0);
+    Dictionary(const unsigned char * bytes = 0, int _markerSize = 0, int dictsize = 0,
+               int _maxcorr = 0);
 
 
 
@@ -117,7 +117,7 @@ class CV_EXPORTS DictionaryData {
  * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
  */
 enum PREDEFINED_DICTIONARY_NAME { DICT_ARUCO = 0, DICT_6X6_250 = 1 };
-CV_EXPORTS const DictionaryData & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+CV_EXPORTS const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
 
 
 

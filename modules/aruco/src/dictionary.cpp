@@ -71,8 +71,8 @@ const unsigned char hammingWeightLUT[] = {
 
     /**
       */
-    DictionaryData::DictionaryData(const unsigned char * bytes, int _markerSize, int dictsize,
-                   int _maxcorr) {
+    Dictionary::Dictionary(const unsigned char * bytes, int _markerSize, int dictsize,
+                           int _maxcorr) {
         markerSize = _markerSize;
         maxCorrectionBits = _maxcorr;
         int nbytes = (markerSize * markerSize) / 8;
@@ -96,7 +96,8 @@ const unsigned char hammingWeightLUT[] = {
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
      * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool DictionaryData::identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
+    bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
+                              double maxCorrectionRate) const {
 
         CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
@@ -145,7 +146,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
       * Returns the distance of the input bits to the specific id.
       */
-    int DictionaryData::getDistanceToId(InputArray bits, int id, bool allRotations) const {
+    int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
         CV_Assert(id >= 0 && id < bytesList.rows);
 
         Mat candidateBytes = _getByteListFromBits(bits.getMat());
@@ -172,7 +173,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
      * @brief Draw a canonical marker image
      */
-    void DictionaryData::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
+    void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
 
         CV_Assert(sidePixels > markerSize);
         CV_Assert(id < bytesList.rows);
@@ -201,7 +202,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
       * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
-    Mat DictionaryData::_getByteListFromBits(const Mat &bits) const {
+    Mat Dictionary::_getByteListFromBits(const Mat &bits) const {
 
         int nbytes = (bits.cols * bits.rows) / 8;
         if ((bits.cols * bits.rows) % 8 != 0)
@@ -242,7 +243,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
       * @brief Transform list of bytes to matrix of bits
       */
-    Mat DictionaryData::_getBitsFromByteList(const Mat &byteList) const {
+    Mat Dictionary::_getBitsFromByteList(const Mat &byteList) const {
         CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
                   && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
         Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
@@ -279,11 +280,11 @@ const unsigned char hammingWeightLUT[] = {
 
 
 // DictionaryData constructors calls
-const DictionaryData DICT_ARUCO_DATA = DictionaryData(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
-const DictionaryData DICT_6X6_250_DATA = DictionaryData(&(DICT_6X6_250_BYTES[0][0][0]), 6, 250, 5);
+const Dictionary DICT_ARUCO_DATA = Dictionary(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
+const Dictionary DICT_6X6_250_DATA = Dictionary(&(DICT_6X6_250_BYTES[0][0][0]), 6, 250, 5);
 
 
-const DictionaryData & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
+const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     switch (name) {
     case DICT_ARUCO:
         return DICT_ARUCO_DATA;
