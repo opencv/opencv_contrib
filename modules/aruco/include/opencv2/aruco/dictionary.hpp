@@ -91,20 +91,16 @@ class CV_EXPORTS Dictionary {
     void drawMarker(int id, int sidePixels, OutputArray _img, int borderBits = 1) const;
 
 
-
-  private:
-
-
     /**
       * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
-    Mat _getByteListFromBits(const Mat &bits) const;
+    static Mat getByteListFromBits(const Mat &bits);
 
 
     /**
       * @brief Transform list of bytes to matrix of bits
       */
-    Mat _getBitsFromByteList(const Mat &byteList) const;
+    static Mat getBitsFromByteList(const Mat &byteList, int markerSize);
 
 
 };

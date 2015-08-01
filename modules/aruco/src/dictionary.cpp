@@ -104,7 +104,7 @@ const unsigned char hammingWeightLUT[] = {
         int maxCorrectionRecalculed = int( double(maxCorrectionBits) * maxCorrectionRate );
 
         // get as a byte list
-        Mat candidateBytes = _getByteListFromBits(onlyBits);
+        Mat candidateBytes = getByteListFromBits(onlyBits);
 
         idx = -1; // by default, not found
 
@@ -149,7 +149,7 @@ const unsigned char hammingWeightLUT[] = {
     int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
         CV_Assert(id >= 0 && id < bytesList.rows);
 
-        Mat candidateBytes = _getByteListFromBits(bits.getMat());
+        Mat candidateBytes = getByteListFromBits(bits.getMat());
         unsigned int nRotations = 4;
         if(!allRotations) nRotations = 1;
         int currentMinDistance = int(bits.total() * bits.total());
@@ -188,7 +188,7 @@ const unsigned char hammingWeightLUT[] = {
             tinyMarker.rowRange(borderBits, tinyMarker.rows - borderBits).
                        colRange(borderBits, tinyMarker.cols - borderBits);
         // put inner bits
-        Mat bits = 255 * _getBitsFromByteList(bytesList.rowRange(id, id + 1));
+        Mat bits = 255 * getBitsFromByteList(bytesList.rowRange(id, id + 1), markerSize);
         CV_Assert(innerRegion.total() == bits.total());
         bits.copyTo(innerRegion);
 
@@ -202,7 +202,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
       * @brief Transform matrix of bits to list of bytes in the 4 rotations
       */
-    Mat Dictionary::_getByteListFromBits(const Mat &bits) const {
+    Mat Dictionary::getByteListFromBits(const Mat &bits) {
 
         int nbytes = (bits.cols * bits.rows) / 8;
         if ((bits.cols * bits.rows) % 8 != 0)
@@ -243,7 +243,7 @@ const unsigned char hammingWeightLUT[] = {
     /**
       * @brief Transform list of bytes to matrix of bits
       */
-    Mat Dictionary::_getBitsFromByteList(const Mat &byteList) const {
+    Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
         CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
                   && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
         Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
