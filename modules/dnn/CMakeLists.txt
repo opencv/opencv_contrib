@@ -33,9 +33,18 @@ ocv_module_include_directories(include src/caffe ${PROTOBUF_INCLUDE_DIR})
 
 ocv_create_module(${PROTOBUF_LIBRARIES})
 
+ocv_add_samples()
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
-ocv_add_samples()
+
+OCV_OPTION(${the_module}_DOWNLOAD_CAFFE_MODELS "Use GoogLeNet Caffe model for testing" ON IF BUILD_TESTS AND PYTHON2_EXECUTABLE AND DEFINED ENV{OPENCV_TEST_DATA_PATH})
+if(BUILD_TESTS AND ${the_module}_DOWNLOAD_CAFFE_MODELS)
+    add_custom_command( TARGET opencv_test_${name} POST_BUILD
+                        COMMAND ${PYTHON2_EXECUTABLE} download_model.py test_models.json
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts )
+else()
+    add_definitions(-DDISABLE_CAFFE_MODEL_TESTS=1)
+endif()
 
 else()#build as standalone module (for development purposes)
 

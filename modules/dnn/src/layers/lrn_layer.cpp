@@ -1,6 +1,7 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include <opencv2/imgproc.hpp>
+#include <algorithm>
 
 namespace cv
 {
@@ -45,8 +46,8 @@ namespace dnn
             CV_Error(cv::Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
 
         size = params.get<int>("local_size", 5);
-        if (size % 2 != 1)
-            CV_Error(cv::Error::StsBadArg, "LRN layer only supports odd values for local_size");
+        if (size % 2 != 1 || size <= 0)
+            CV_Error(cv::Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
 
         alpha = params.get<double>("alpha", 1);
         beta = params.get<double>("beta", 0.75);
@@ -57,10 +58,10 @@ namespace dnn
         CV_Assert(inputs.size() == 1);
         outputs.resize(1);
 
-        Vec4i shape = inputs[0]->shape();
+        Vec4i shape = inputs[0]->shape4();
         outputs[0].create(shape);
 
-        shape[1] = 1; //maybe make shape[0] = 1 too
+        shape[0] = 1; //maybe make shape[0] = 1 too
         bufBlob.create(shape);
     }
 
@@ -85,26 +86,37 @@ namespace dnn
 
     void LRNLayer::channelNoramlization(Blob &srcBlob, Blob &dstBlob)
     {
+        CV_DbgAssert(srcBlob.ptrRaw() != dstBlob.ptrRaw());
+
         int num = srcBlob.num();
         int channels = srcBlob.channels();
+        int ksize = (size - 1) / 2;
 
         for (int n = 0; n < num; n++)
         {
-            Mat buf = bufBlob.getMat(n, 0);
-            Mat accum = dstBlob.getMat(n, 0); //memory saving
+            Mat accum = dstBlob.getMat(n, channels-1); //trick for memory saving
             accum.setTo(0);
+
+            for (int cn = 0; cn < std::min(ksize, channels); cn++)
+                cv::accumulateSquare(srcBlob.getMat(n, cn), accum);
 
             for (int cn = 0; cn < channels; cn++)
             {
-                cv::accumulateSquare(srcBlob.getMat(n, cn), accum);
-            }
+                if (cn + ksize < channels)
+                {
+                    cv::accumulateSquare(srcBlob.getMat(n, cn + ksize), accum);
+                }
 
-            accum.convertTo(accum, accum.type(), alpha/channels, 1);
-            cv::pow(accum, beta, accum);
+                if (cn - ksize - 1 >= 0)
+                {
+                    Mat left = srcBlob.getMat(n, cn - ksize - 1);
+                    cv::subtract(accum, left.mul(left), accum); //subtractSquare
+                }
 
-            for (int cn = channels - 1; cn >= 0; cn--)
-            {
-                cv::divide(srcBlob.getMat(n, cn), accum, dstBlob.getMat(n, cn));
+                Mat dst = dstBlob.getMat(n, cn);
+                accum.convertTo(dst, dst.type(), alpha/size, 1);
+                cv::pow(dst, beta, dst);
+                cv::divide(srcBlob.getMat(n, cn), dst, dst);
             }
         }
     }

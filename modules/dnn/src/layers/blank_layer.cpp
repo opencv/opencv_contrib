@@ -18,7 +18,7 @@ namespace dnn
         {
             outputs.resize(inputs.size());
             for (size_t i = 0; i < inputs.size(); i++)
-                outputs[i] = *inputs[i];
+                outputs[i].shareFrom(*inputs[i]);
         }
 
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -28,12 +28,6 @@ namespace dnn
         }
     };
 
-    static Ptr<Layer> blankLayerRegisterer(LayerParams &params)
-    {
-        return Ptr<Layer>(new BlankLayer(params));
-    }
-
-
-    REGISTER_LAYER_FUNC(Dropout, blankLayerRegisterer)
+    REGISTER_LAYER_CLASS(Dropout, BlankLayer)
 }
 }

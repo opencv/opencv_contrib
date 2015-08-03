@@ -8,9 +8,10 @@ namespace cv
 {
 namespace dnn
 {
+    //TODO: set default axis number to 1, and add custom shape length in FullyConnected
     class SoftMaxLayer : public Layer
     {
-        int axis;
+        int axis_, axis;
         Blob maxAggregator;
 
     public:
@@ -25,15 +26,16 @@ namespace dnn
 
     SoftMaxLayer::SoftMaxLayer(LayerParams &params)
     {
-        axis = params.get<int>("axis", 1);
-        CV_Assert(0 <= axis && axis < 4);
+        //hotfix!!!
+        axis_ = params.get<int>("axis", 1);
     }
 
     void SoftMaxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
         CV_Assert(inputs.size() == 1);
+        axis = inputs[0]->canonicalAxis(axis_);
 
-        Vec4i shape = inputs[0]->shape();
+        BlobShape shape = inputs[0]->shape();
         outputs.resize(1);
         outputs[0].create(shape);
 
@@ -46,9 +48,9 @@ namespace dnn
         Blob &src = *inputs[0];
         Blob &dst = outputs[0];
 
-        float *srcPtr = src.ptr<float>();
-        float *dstPtr = dst.ptr<float>();
-        float *bufPtr = maxAggregator.ptr<float>();
+        float *srcPtr = src.ptrf();
+        float *dstPtr = dst.ptrf();
+        float *bufPtr = maxAggregator.ptrf();
 
         size_t outerSize = src.total(0, axis);
         size_t channels = src.size(axis);
@@ -85,7 +87,7 @@ namespace dnn
             }
         }
 
-        cv::exp(dst.getMat(), dst.getMat());
+        cv::exp(dst.getMatRef(), dst.getMatRef());
 
         for (size_t outerDim = 0; outerDim < outerSize; outerDim++)
         {

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR__
+#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR__
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
@@ -52,3 +53,4 @@ public:
 };
 
 }
+#endif

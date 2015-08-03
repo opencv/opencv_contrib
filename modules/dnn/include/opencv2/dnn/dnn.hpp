@@ -7,62 +7,12 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn/dict.hpp>
+#include <opencv2/dnn/blob.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class Layer;
-    class NetConfiguration;
-    class Net;
-    class Blob;
-    class LayerParams;
-
-    //wrapper over cv::Mat and cv::UMat
-    class CV_EXPORTS Blob
-    {
-    public:
-        explicit Blob();
-        explicit Blob(InputArray in);
-
-        void create(int ndims, const int *sizes, int type = CV_32F);
-        void create(Vec4i shape, int type = CV_32F);
-        void create(int num, int cn, int rows, int cols, int type = CV_32F);
-
-        void fill(InputArray in);
-        void fill(int ndims, const int *sizes, int type, void *data, bool deepCopy = true);
-
-        Mat& getMatRef();
-        const Mat& getMatRef() const;
-        Mat getMat();
-        Mat getMat(int num, int channel);
-
-        //shape getters
-        int cols() const;
-        int rows() const;
-        int channels() const;
-        int num() const;
-        Size size2() const;
-        Vec4i shape() const;
-        int size(int index) const;
-        size_t total(int startAxis = 0, int endAxis = -1) const;
-
-        uchar *rawPtr(int num = 0, int cn = 0, int row = 0, int col = 0);
-
-        template<typename TFloat>
-        TFloat *ptr(int num = 0, int cn = 0, int row = 0, int col = 0);
-
-        int type() const;
-        bool isFloat() const;
-        bool isDouble() const;
-
-    private:
-        const int *sizes() const;
-        int dims() const;
-
-        Mat m;
-    };
-
     class CV_EXPORTS LayerParams : public Dict
     {
     public:
@@ -70,30 +20,11 @@ namespace dnn
         std::vector<Blob> learnedBlobs;
     };
 
-    class CV_EXPORTS LayerRegister
-    {
-    public:
-
-        typedef Ptr<Layer> (*Constuctor)(LayerParams &params);
-
-        static void registerLayer(const String &type, Constuctor constructor);
-
-        static void unregisterLayer(const String &type);
-
-        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params);
-
-    private:
-        LayerRegister();
-
-        struct Impl;
-        static Ptr<Impl> impl;
-    };
-
-    //this class allows to build new Layers
+    //Interface class allows to build new Layers
     class CV_EXPORTS Layer
     {
     public:
-        //TODO: this field must be declared as public if we want support possibility to change these params in runtime
+        //learned params of layer must be stored here to allow externally read them
         std::vector<Blob> learnedParams;
 
         virtual ~Layer();
@@ -103,16 +34,13 @@ namespace dnn
 
         virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
-        virtual int getNumInputs();
-        virtual int getNumOutputs();
         //each input/output can be labeled to easily identify their using "layer_name.output_name"
-        virtual String getInputName(int inputNum);
-        virtual String getOutputName(int outputNum);
+        virtual int inputNameToIndex(String inputName);
+        virtual int outputNameToIndex(String outputName);
     };
 
     //containers for String and int
     typedef DictValue LayerId;
-    typedef DictValue BlobId;
 
     class CV_EXPORTS Net
     {
@@ -125,14 +53,10 @@ namespace dnn
         int getLayerId(LayerId layer);
         void deleteLayer(LayerId layer);
 
-        //each output of each layer can be labeled by unique string label (as in Caffe)
-        //if label not specified then %layer_name%.%layer_output_id% can be used
-        void setOutputNames(LayerId layer, const std::vector<String> &outputNames);
-        void setLayerInputs(const std::vector<String> &outputs, LayerId layer);
         void setNetInputs(const std::vector<String> &inputBlobNames);
 
-        void connect(BlobId input, BlobId output);
-        void connect(const std::vector<BlobId> &outputs, const std::vector<BlobId> &inputs);
+        void connect(String outPin, String inpPin);
+        void connect(int outLayerId, int outNum, int inLayerId, int inNum);
 
         void forward();
         void forward(LayerId toLayer);
@@ -143,11 +67,11 @@ namespace dnn
         void forwardOpt(LayerId toLayer);
         void forwardOpt(const std::vector<LayerId> &toLayers);
 
-        void setBlob(BlobId outputName, const Blob &blob);
-        Blob getBlob(BlobId outputName);
+        void setBlob(String outputName, const Blob &blob);
+        Blob getBlob(String outputName);
 
         void setParam(LayerId layer, int numParam, const Blob &blob);
-        void getParam(LayerId layer, int numParam);
+        Blob getParam(LayerId layer, int numParam = 0);
 
     private:
 
@@ -164,8 +88,27 @@ namespace dnn
         virtual ~Importer();
     };
 
-    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel);
+    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
 
+    //Layer factory allows to create instances of registered layers.
+    class CV_EXPORTS LayerRegister
+    {
+    public:
+
+        typedef Ptr<Layer>(*Constuctor)(LayerParams &params);
+
+        static void registerLayer(const String &type, Constuctor constructor);
+
+        static void unregisterLayer(const String &type);
+
+        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params);
+
+    private:
+        LayerRegister();
+
+        struct Impl;
+        static Ptr<Impl> impl;
+    };
 
     //allows automatically register created layer on module load time
     struct _LayerRegisterer

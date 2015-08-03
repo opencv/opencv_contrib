@@ -37,70 +37,79 @@ namespace
                 ReadNetParamsFromBinaryFileOrDie(caffeModel, &netBinary);
         }
 
-        inline bool skipCaffeLayerParam(const FieldDescriptor *fd)
-        {
-            const std::string &name = fd->name();
-
-            if (fd->cpp_type() != FieldDescriptor::CPPTYPE_MESSAGE)
-            {
-                static const char *SKIP_FIELDS[] = { "type", "name", "top", "bottom", NULL };
-
-                for (int i = 0; SKIP_FIELDS[i]; i++)
-                {
-                    if (name == SKIP_FIELDS[i])
-                        return true;
-                }
-
-                return false;
-            }
-            else
-            {
-                static const std::string _param("_param");
-                bool endsWith_param = (name.size() >= _param.size()) && name.compare(name.size() - _param.size(), _param.size(), _param) == 0;
-                return !endsWith_param;
-            }
-        }
-
         void addParam(const Message &msg, const FieldDescriptor *field, cv::dnn::LayerParams &params)
         {
-            const Reflection *msgRefl = msg.GetReflection();
+            const Reflection *refl = msg.GetReflection();
             int type = field->cpp_type();
             bool isRepeated = field->is_repeated();
             const std::string &name = field->name();
 
-            std::cout << field->type_name() << " " << name << ":";
-
-            #define GET_FIRST(Type) (isRepeated ? msgRefl->GetRepeated##Type(msg, field, 0) : msgRefl->Get##Type(msg, field))
+            #define SET_UP_FILED(getter, arrayConstr, gtype)                                    \
+                if (isRepeated) {                                                               \
+                    const RepeatedField<gtype> &v = refl->GetRepeatedField<gtype>(msg, field);  \
+                    params.set(name, DictValue::arrayConstr(v.begin(), (int)v.size()));                  \
+                }                                                                               \
+                else {                                                                          \
+                    params.set(name, refl->getter(msg, field));                               \
+                }
 
             switch (type)
             {
             case FieldDescriptor::CPPTYPE_INT32:
-                std::cout << params.set(name, GET_FIRST(Int32));
+                SET_UP_FILED(GetInt32, arrayInt, ::google::protobuf::int32);
                 break;
             case FieldDescriptor::CPPTYPE_UINT32:
-                std::cout << params.set(name, GET_FIRST(UInt32));
+                SET_UP_FILED(GetUInt32, arrayInt, ::google::protobuf::uint32);
                 break;
-            case FieldDescriptor::CPPTYPE_DOUBLE:
-                std::cout << params.set(name, GET_FIRST(Double));
+            case FieldDescriptor::CPPTYPE_INT64:
+                SET_UP_FILED(GetInt32, arrayInt, ::google::protobuf::int64);
                 break;
-            case FieldDescriptor::CPPTYPE_FLOAT:
-                std::cout << params.set(name, GET_FIRST(Float));
-                break;
-            case FieldDescriptor::CPPTYPE_ENUM:
-                std::cout << params.set(name, GET_FIRST(Enum)->name());
+            case FieldDescriptor::CPPTYPE_UINT64:
+                SET_UP_FILED(GetUInt32, arrayInt, ::google::protobuf::uint64);
                 break;
             case FieldDescriptor::CPPTYPE_BOOL:
-                std::cout << params.set(name, GET_FIRST(Bool));
+                SET_UP_FILED(GetBool, arrayInt, bool);
+                break;
+            case FieldDescriptor::CPPTYPE_DOUBLE:
+                SET_UP_FILED(GetDouble, arrayReal, double);
+                break;
+            case FieldDescriptor::CPPTYPE_FLOAT:
+                SET_UP_FILED(GetFloat, arrayReal, float);
+                break;
+            case FieldDescriptor::CPPTYPE_STRING:
+                if (isRepeated) {
+                    const RepeatedPtrField<std::string> &v = refl->GetRepeatedPtrField<std::string>(msg, field);
+                    params.set(name, DictValue::arrayString(v.begin(), (int)v.size()));
+                }
+                else {
+                    params.set(name, refl->GetString(msg, field));
+                }
+                break;
+            case FieldDescriptor::CPPTYPE_ENUM:
+                if (isRepeated) {
+                    int size = refl->FieldSize(msg, field);
+                    std::vector<cv::String> buf(size);
+                    for (int i = 0; i < size; i++)
+                        buf[i] = refl->GetRepeatedEnum(msg, field, i)->name();
+                    params.set(name, DictValue::arrayString(buf.begin(), size));
+                }
+                else {
+                    params.set(name, refl->GetEnum(msg, field)->name());
+                }
                 break;
             default:
-                std::cout << "unknown";
+                CV_Error(Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
                 break;
             }
-
-            std::cout << std::endl;
         }
 
-        void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params)
+        inline static bool ends_with_param(const std::string &str)
+        {
+            static const std::string _param("_param");
+            return (str.size() >= _param.size()) && str.compare(str.size() - _param.size(), _param.size(), _param) == 0;
+        }
+
+        void extractLayerParams(const Message &msg, cv::dnn::LayerParams &params, bool isInternal = false)
         {
             const Descriptor *msgDesc = msg.GetDescriptor();
             const Reflection *msgRefl = msg.GetReflection();
@@ -109,19 +118,21 @@ namespace
             {
                 const FieldDescriptor *fd = msgDesc->field(fieldId);
 
-                bool hasData =  fd->is_required() ||
-                               (fd->is_optional() && (msgRefl->HasField(msg, fd) /*|| fd->has_default_value()*/)) ||
-                               (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
+                if (!isInternal && !ends_with_param(fd->name()))
+                    continue;
 
-                if ( !hasData || skipCaffeLayerParam(fd) )
+                bool hasData =  fd->is_required() ||
+                               (fd->is_optional() && msgRefl->HasField(msg, fd)) ||
+                               (fd->is_repeated() && msgRefl->FieldSize(msg, fd) > 0);
+                if (!hasData)
                     continue;
 
                 if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE)
                 {
                     if (fd->is_repeated()) //Extract only first item!
-                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params);
+                        extractLayerParams(msgRefl->GetRepeatedMessage(msg, fd, 0), params, true);
                     else
-                        extractLayerParams(msgRefl->GetMessage(msg, fd), params);
+                        extractLayerParams(msgRefl->GetMessage(msg, fd), params, true);
                 }
                 else
                 {
@@ -130,39 +141,41 @@ namespace
             }
         }
 
-        void blobFromProto(const caffe::BlobProto &protoBlob, cv::dnn::Blob &dstBlob)
+        BlobShape blobShapeFromProto(const caffe::BlobProto &pbBlob)
         {
-            AutoBuffer<int, 4> shape;
-
-            if (protoBlob.has_num() || protoBlob.has_channels() || protoBlob.has_height() || protoBlob.has_width())
+            if (pbBlob.has_num() || pbBlob.has_channels() || pbBlob.has_height() || pbBlob.has_width())
             {
-                shape.resize(4);
-                shape[0] = protoBlob.num();
-                shape[1] = protoBlob.channels();
-                shape[2] = protoBlob.height();
-                shape[3] = protoBlob.width();
+                return BlobShape(pbBlob.num(), pbBlob.channels(), pbBlob.height(), pbBlob.width());
             }
-            else if (protoBlob.has_shape())
+            else if (pbBlob.has_shape())
             {
-                const caffe::BlobShape &_shape = protoBlob.shape();
-                shape.resize(_shape.dim_size());
+                const caffe::BlobShape &_shape = pbBlob.shape();
+                BlobShape shape(_shape.dim_size());
 
                 for (int i = 0; i < _shape.dim_size(); i++)
-                    shape[i] = _shape.dim(i);
+                    shape[i] = (int)_shape.dim(i);
+
+                return shape;
             }
             else
             {
-                CV_Error(cv::Error::StsAssert, "Unknown shape of input blob");
+                CV_Error(Error::StsError, "Unknown shape of input blob");
+                return BlobShape(-1);
             }
+        }
 
-            dstBlob.create(shape.size(), shape, CV_32F);
-            CV_Assert(protoBlob.data_size() == (int)dstBlob.getMatRef().total());
+        void blobFromProto(const caffe::BlobProto &pbBlob, cv::dnn::Blob &dstBlob)
+        {
+            BlobShape shape = blobShapeFromProto(pbBlob);
 
-            CV_DbgAssert(protoBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
+            dstBlob.create(shape, CV_32F);
+            CV_Assert(pbBlob.data_size() == (int)dstBlob.getMatRef().total());
+
+            CV_DbgAssert(pbBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
             float *dstData = dstBlob.getMatRef().ptr<float>();
 
-            for (int i = 0; i < protoBlob.data_size(); i++)
-                dstData[i] = protoBlob.data(i);
+            for (int i = 0; i < pbBlob.data_size(); i++)
+                dstData[i] = pbBlob.data(i);
         }
 
         void extractBinaryLayerParms(const caffe::LayerParameter& layer, LayerParams& layerParams)
@@ -187,55 +200,100 @@ namespace
             }
         }
 
+        struct BlobNote
+        {
+            BlobNote(const std::string &_name, int _layerId, int _outNum) :
+                name(_name.c_str()), layerId(_layerId), outNum(_outNum) {}
+
+            const char *name;
+            int layerId, outNum;
+        };
+
         void populateNet(Net dstNet)
         {
+            int layersSize = net.layer_size();
+            std::vector<BlobNote> addedBlobs;
+            addedBlobs.reserve(layersSize + 1);
+
             //setup input layer names
             {
                 std::vector<String> netInputs(net.input_size());
-                for (int ii = 0; ii < net.input_size(); ii++)
-                    netInputs[ii] = net.input(ii);
+                for (int inNum = 0; inNum < net.input_size(); inNum++)
+                {
+                    addedBlobs.push_back(BlobNote(net.input(inNum), 0, inNum));
+                    netInputs[inNum] = net.input(inNum);
+                }
                 dstNet.setNetInputs(netInputs);
             }
 
-            int layersSize = net.layer_size();
-
-            std::vector<String> layersName(layersSize);
-            std::vector<int> layersId(layersSize);
-            std::vector<std::vector<String> > bottomsVec(layersSize);
-
             for (int li = 0; li < layersSize; li++)
             {
-                const caffe::LayerParameter layer = net.layer(li);
+                const caffe::LayerParameter &layer = net.layer(li);
                 String name = layer.name();
                 String type = layer.type();
                 LayerParams layerParams;
-
-                std::vector<String> tops;
-                tops.assign(layer.top().begin(), layer.top().end());
-                bottomsVec[li].assign(layer.bottom().begin(), layer.bottom().end());
-
-                std::cout << std::endl << "LAYER: " << name << std::endl;
 
                 extractLayerParams(layer, layerParams);
                 extractBinaryLayerParms(layer, layerParams);
 
                 int id = dstNet.addLayer(name, type, layerParams);
-                dstNet.setOutputNames(id, tops);
 
-                layersName[li] = name;
-                layersId[li] = id;
+                for (int inNum = 0; inNum < layer.bottom_size(); inNum++)
+                    addInput(layer.bottom(inNum), id, inNum, dstNet, addedBlobs);
+
+                for (int outNum = 0; outNum < layer.top_size(); outNum++)
+                    addOutput(layer, id, outNum, addedBlobs);
             }
+        }
 
-            for (int li = 0; li < layersSize; li++)
+        void addOutput(const caffe::LayerParameter &layer, int layerId, int outNum, std::vector<BlobNote> &addedBlobs)
+        {
+            const std::string &name = layer.top(outNum);
+
+            bool haveDups = false;
+            for (int idx = (int)addedBlobs.size() - 1; idx >= 0; idx--)
             {
-                dstNet.setLayerInputs(bottomsVec[li], layersId[li]);
+                if (addedBlobs[idx].name == name)
+                {
+                    haveDups = true;
+                    break;
+                }
             }
+
+            if (haveDups)
+            {
+                bool isInplace = layer.bottom_size() > outNum && layer.bottom(outNum) == name;
+                if (!isInplace)
+                    CV_Error(Error::StsBadArg, "Duplicate blobs produced by multiple sources");
+            }
+
+            addedBlobs.push_back(BlobNote(name, layerId, outNum));
+        }
+
+        void addInput(const std::string &name, int layerId, int inNum, Net &dstNet, std::vector<BlobNote> &addedBlobs)
+        {
+            int idx;
+            for (idx = (int)addedBlobs.size() - 1; idx >= 0; idx--)
+            {
+                if (addedBlobs[idx].name == name)
+                    break;
+            }
+
+            if (idx < 0)
+            {
+                CV_Error(Error::StsObjectNotFound, "Can't found output blob \"" + name + "\"");
+                return;
+            }
+
+            dstNet.connect(addedBlobs[idx].layerId, addedBlobs[idx].outNum, layerId, inNum);
         }
 
         ~CaffeImporter()
         {
 
         }
+
+
     };
 
 }
