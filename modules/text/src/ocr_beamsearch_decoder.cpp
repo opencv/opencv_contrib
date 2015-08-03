@@ -459,7 +459,7 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = sqrt(kernels.cols);
+    patch_size  = (int)sqrt(kernels.cols);
     // algorithm internal parameters
     window_size = 32;
     quad_size   = 12;

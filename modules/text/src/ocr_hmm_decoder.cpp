@@ -525,7 +525,7 @@ public:
                 char_center.x += words_rect[w].x;
                 char_center.y += words_rect[w].y;
                 int win_size = max(contours_rect.at(i).width,contours_rect.at(i).height);
-                win_size += win_size*0.6; // add some pixels in the border TODO: is this a parameter for the user space?
+                win_size += (int)(win_size*0.6); // add some pixels in the border TODO: is this a parameter for the user space?
                 Rect char_rect = Rect(char_center.x-win_size/2,char_center.y-win_size/2,win_size,win_size);
                 char_rect &= Rect(0,0,image.cols,image.rows);
                 Mat tmp_image;
@@ -969,9 +969,9 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
 
 
     int quad_id = 1;
-    for (int q_x=0; q_x<=window_size-quad_size; q_x=q_x+(quad_size/2-1))
+    for (int q_x=0; q_x<=window_size-quad_size; q_x=q_x+(int)(quad_size/2-1))
     {
-        for (int q_y=0; q_y<=window_size-quad_size; q_y=q_y+(quad_size/2-1))
+        for (int q_y=0; q_y<=window_size-quad_size; q_y=q_y+(int)(quad_size/2-1))
         {
             Rect quad_rect = Rect(q_x,q_y,quad_size,quad_size);
             quad = img(quad_rect);

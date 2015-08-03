@@ -98,18 +98,18 @@ int main(int argc, char* argv[]) {
                                  voc, transitionProbabilities, emissionProbabilities);
 
     std::string output;
-    double t_r = getTickCount();
+    double t_r = (double)getTickCount();
     ocrTes->run(mask, output);
     output.erase(remove(output.begin(), output.end(), '\n'), output.end());
     cout << " OCR_Tesseract  output \"" << output << "\". Done in "
          << ((double)getTickCount() - t_r)*1000/getTickFrequency() << " ms." << endl;
 
-    t_r = getTickCount();
+    t_r = (double)getTickCount();
     ocrNM->run(mask, output);
     cout << " OCR_NM         output \"" << output << "\". Done in "
          << ((double)getTickCount() - t_r)*1000/getTickFrequency() << " ms." << endl;
 
-    t_r = getTickCount();
+    t_r = (double)getTickCount();
     ocrCNN->run(image, mask, output);
     cout << " OCR_CNN        output \"" << output << "\". Done in "
          << ((double)getTickCount() - t_r)*1000/getTickFrequency() << " ms." << endl;
