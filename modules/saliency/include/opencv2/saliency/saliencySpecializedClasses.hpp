@@ -405,6 +405,117 @@ private:
 
 //! @}
 
+
+
+/**
+ * \brief Objectness algorithms based on [4]
+ * [4] Zitnick, C. Lawrence, and Piotr Dollár. "Edge boxes: Locating object proposals from edges." Computer Vision–ECCV 2014
+ */
+
+/** @brief the EdgeBoxes algorithm from @cite EdgeBoxes
+ */
+class CV_EXPORTS ObjectnessEdgeBoxes : public Objectness
+{
+public:
+
+  ObjectnessEdgeBoxes();
+  virtual ~ObjectnessEdgeBoxes();
+
+  /** @brief Return the list of the rectangles' objectness value,
+
+    in the same order as the *vector\<Vec4i\> objectnessBoundingBox* returned by the algorithm (in
+    computeSaliencyImpl function). The bigger value these scores are, it is more likely to be an
+    object window.
+     */
+  std::vector<float> getobjectnessValues();
+
+  /** @brief This is a utility function that allows to set the correct path from which the algorithm will load
+    the trained model.
+    @param trainingPath trained model path
+     */
+  void setTrainingPath( std::string trainingPath );
+
+  /** @brief This is a utility function that allows to set an arbitrary path in which the algorithm will save the
+    optional results
+
+    (ie writing on file the total number and the list of rectangles returned by objectess, one for
+    each row).
+    @param resultsDir results' folder path
+     */
+  void setBBResDir( std::string resultsDir );
+
+  bool computeSaliencyMap( Mat &edgeImage, Mat &orientationImage, Mat &resultImage);
+
+protected:
+  /** @brief Performs all the operations and calls all internal functions necessary for the
+  accomplishment of the EdgeBoxes algorithm.
+
+    @param image input image. According to the needs of this specialized algorithm, the param image is a
+    single *Mat*
+    @param objectnessBoundingBox objectness Bounding Box vector. According to the result given by this
+    specialized algorithm, the objectnessBoundingBox is a *vector\<Vec4i\>*. Each bounding box is
+    represented by a *Vec4i* for (minX, minY, maxX, maxY).
+     */
+  bool computeSaliencyImpl( InputArray image, OutputArray objectnessBoundingBox );
+
+private:
+
+  // Names and paths to read model and to store results
+  std::string _trainingPath, _resultsDir;
+
+  // List of the rectangles' objectness value, in the same order as
+  // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
+  std::vector<float> objectnessValues;
+
+
+void computeEdgeWeights(std::vector<int> &edge_idx_list, 
+  Mat &affinity_matrix, 
+  Vec4i &box, 
+  std::vector<Vec2i> &group_position, 
+  std::vector<double> &edge_weight_list);
+
+
+  double scoreBox(Vec4i &box,
+      std::vector<std::vector<int>> &row_intersection_list,
+      Mat &row_intersection_img,
+      std::vector<std::vector<int>> &column_intersection_list,
+      Mat &column_intersection_img,
+      Mat &affinity_matrix,
+      std::vector<Vec2i> &group_position,
+      std::vector<double> &group_sum_magnitude);
+
+  // functions
+
+  void computeIntersectionDataStructure(Mat &group_idx_img,
+      std::vector<std::vector<int>> &row_intersection_list,
+      Mat &row_intersection_img,
+      std::vector<std::vector<int>> &column_intersection_list,
+      Mat &column_intersection_img);
+
+  void computeAffinity(std::vector<double> &group_mean_orientation, Mat &group_idx_img, Mat &affinity_matrix);
+
+  bool getNextComponent(Mat &edgeImage,
+      int &current_row, 
+      int &current_col, 
+      Mat &isProcessed, 
+      int &next_row, 
+      int &next_col);
+
+
+  bool clusterEdges(Mat &edgeImage, 
+      Mat &orientationImage,
+      Mat &group_idx_img,
+      std::vector<double> &group_mean_orientation,
+      std::vector<double> &group_mean_magnitude,
+      std::vector<double> &group_sum_magnitude,
+      std::vector<Vec2i> &group_position);
+
+};
+
+
+
+//! @}
+
 }
 /* namespace saliency */
 } /* namespace cv */
