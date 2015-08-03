@@ -1,0 +1,215 @@
+/*
+By downloading, copying, installing or using the software you agree to this license.
+If you do not agree to this license, do not download, install,
+copy or use the software.
+
+
+                          License Agreement
+               For Open Source Computer Vision Library
+                       (3-clause BSD License)
+
+Copyright (C) 2000-2015, Intel Corporation, all rights reserved.
+Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
+Copyright (C) 2009-2015, NVIDIA Corporation, all rights reserved.
+Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+Copyright (C) 2015, OpenCV Foundation, all rights reserved.
+Copyright (C) 2015, Itseez Inc., all rights reserved.
+Third party copyrights are property of their respective owners.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+  * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+  * Neither the names of the copyright holders nor the names of the contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+This software is provided by the copyright holders and contributors "as is" and
+any express or implied warranties, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose are disclaimed.
+In no event shall copyright holders or contributors be liable for any direct,
+indirect, incidental, special, exemplary, or consequential damages
+(including, but not limited to, procurement of substitute goods or services;
+loss of use, data, or profits; or business interruption) however caused
+and on any theory of liability, whether in contract, strict liability,
+or tort (including negligence or otherwise) arising in any way out of
+the use of this software, even if advised of the possibility of such damage.
+*/
+
+#include "precomp.hpp"
+
+using std::cerr;
+using std::endl;
+using std::vector;
+using std::string;
+
+namespace cv {
+namespace xobjdetect {
+
+WBDetector::WBDetector(const string& model_filename):
+    model_filename_(model_filename)
+{}
+
+static vector<Mat> sample_patches(
+        const string& path,
+        int n_rows,
+        int n_cols,
+        int n_patches)
+{
+    vector<String> filenames;
+    glob(path, filenames);
+    vector<Mat> patches;
+    int patch_count = 0;
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        Mat img = imread(filenames[i], CV_LOAD_IMAGE_GRAYSCALE);
+        for (int row = 0; row + n_rows < img.rows; row += n_rows) {
+            for (int col = 0; col + n_cols < img.cols; col += n_cols) {
+                patches.push_back(img(Rect(col, row, n_cols, n_rows)).clone());
+                patch_count += 1;
+                if (patch_count == n_patches) {
+                    goto sampling_finished;
+                }
+            }
+        }
+    }
+sampling_finished:
+    return patches;
+}
+
+static vector<Mat> read_imgs(const string& path)
+{
+    vector<String> filenames;
+    glob(path, filenames);
+    vector<Mat> imgs;
+    for (size_t i = 0; i < filenames.size(); ++i) {
+        imgs.push_back(imread(filenames[i], CV_LOAD_IMAGE_GRAYSCALE));
+    }
+    return imgs;
+}
+
+void WBDetector::train(
+    const string& pos_samples_path,
+    const string& neg_imgs_path)
+{
+
+    vector<Mat> pos_imgs = read_imgs(pos_samples_path);
+    vector<Mat> neg_imgs = sample_patches(neg_imgs_path, 24, 24, pos_imgs.size());
+
+    assert(pos_imgs.size());
+    assert(neg_imgs.size());
+
+    int n_features;
+    Mat pos_data, neg_data;
+
+    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create(CvFeatureParams::LBP);
+    eval->init(CvFeatureParams::create(CvFeatureParams::LBP), 1, Size(24, 24));
+    n_features = eval->getNumFeatures();
+
+    const int stages[] = {32, 64, 128, 256, 512, 1024, 2048, 4096};
+    const int stage_count = sizeof(stages) / sizeof(*stages);
+    const int stage_neg = 5000;
+    const int max_per_image = 25;
+
+    const float scales_arr[] = {.3, .4, .5, .6, .7, .8, .9, 1};
+    const vector<float> scales(scales_arr,
+            scales_arr + sizeof(scales_arr) / sizeof(*scales_arr));
+
+    WaldBoost boost;
+    vector<String> neg_filenames;
+    glob(neg_imgs_path, neg_filenames);
+
+
+    for (int i = 0; i < stage_count; ++i) {
+
+        cerr << "compute features" << endl;
+
+        pos_data = Mat1b(n_features, pos_imgs.size());
+        neg_data = Mat1b(n_features, neg_imgs.size());
+
+        for (size_t k = 0; k < pos_imgs.size(); ++k) {
+            eval->setImage(pos_imgs[k], +1, 0, boost.get_feature_indices());
+            for (int j = 0; j < n_features; ++j) {
+                pos_data.at<uchar>(j, k) = (*eval)(j, 0);
+            }
+        }
+
+        for (size_t k = 0; k < neg_imgs.size(); ++k) {
+            eval->setImage(neg_imgs[k], 0, 0, boost.get_feature_indices());
+            for (int j = 0; j < n_features; ++j) {
+                neg_data.at<uchar>(j, k) = (*eval)(j, 0);
+            }
+        }
+
+
+        boost.reset(stages[i]);
+        boost.fit(pos_data, neg_data);
+
+        if (i + 1 == stage_count) {
+            break;
+        }
+
+        int bootstrap_count = 0;
+        size_t img_i = 0;
+        for (; img_i < neg_filenames.size(); ++img_i) {
+            cerr << "win " << bootstrap_count << "/" << stage_neg
+                 << " img " << (img_i + 1) << "/" << neg_filenames.size() << "\r";
+            Mat img = imread(neg_filenames[img_i], CV_LOAD_IMAGE_GRAYSCALE);
+            vector<Rect> bboxes;
+            Mat1f confidences;
+            boost.detect(eval, img, scales, bboxes, confidences);
+
+            if (confidences.rows > 0) {
+                Mat1i indices;
+                sortIdx(confidences, indices,
+                        CV_SORT_EVERY_COLUMN + CV_SORT_DESCENDING);
+
+                int win_count = min(max_per_image, confidences.rows);
+                win_count = min(win_count, stage_neg - bootstrap_count);
+                Mat window;
+                for (int k = 0; k < win_count; ++k) {
+                    resize(img(bboxes[indices(k, 0)]), window, Size(24, 24));
+                    neg_imgs.push_back(window.clone());
+                    bootstrap_count += 1;
+                }
+                if (bootstrap_count >= stage_neg) {
+                    break;
+                }
+            }
+        }
+        cerr << "bootstrapped " << bootstrap_count << " windows from "
+             << (img_i + 1) << " images" << endl;
+    }
+
+    boost.save(model_filename_);
+}
+
+void WBDetector::detect(
+    const Mat& img,
+    vector<Rect> &bboxes,
+    vector<double> &confidences)
+{
+    WaldBoost boost;
+    boost.load(model_filename_);
+
+    Mat test_img = img.clone();
+    bboxes.clear();
+    confidences.clear();
+    vector<float> scales;
+    for (float scale = 0.2f; scale < 1.2f; scale *= 1.1) {
+        scales.push_back(scale);
+    }
+    Ptr<CvFeatureParams> params = CvFeatureParams::create(CvFeatureParams::LBP);
+    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create(CvFeatureParams::LBP);
+    eval->init(params, 1, Size(24, 24));
+    boost.detect(eval, img, scales, bboxes, confidences);
+    assert(confidences.size() == bboxes.size());
+}
+
+}
+}

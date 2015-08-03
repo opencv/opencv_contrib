@@ -1,4 +1,4 @@
-set(name fcw_train)
+set(name waldboost_detector)
 set(the_target opencv_${name})
 
 set(OPENCV_${the_target}_DEPS opencv_core opencv_imgcodecs opencv_videoio
