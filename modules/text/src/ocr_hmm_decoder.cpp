@@ -352,7 +352,8 @@ public:
             }
 
             //cout << path[best_idx] << endl;
-            out_sequence = out_sequence+" "+path[best_idx];
+            if (out_sequence.size()>0) out_sequence = out_sequence+" "+path[best_idx];
+            else out_sequence = path[best_idx];
 
             if (component_rects != NULL)
                 component_rects->push_back(words_rect[w]);
@@ -608,7 +609,8 @@ public:
             }
 
             //cout << path[best_idx] << endl;
-            out_sequence = out_sequence+" "+path[best_idx];
+            if (out_sequence.size()>0) out_sequence = out_sequence+" "+path[best_idx];
+            else out_sequence = path[best_idx];
 
             if (component_rects != NULL)
                 component_rects->push_back(words_rect[w]);
