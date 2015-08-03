@@ -140,7 +140,10 @@ public:
 
         tess.SetImage((uchar*)image.data, image.size().width, image.size().height, image.channels(), image.step1());
         tess.Recognize(0);
-        output = string(tess.GetUTF8Text());
+        char *outText;
+        outText = tess.GetUTF8Text();
+        output = string(outText);
+        delete [] outText;
 
         if ( (component_rects != NULL) || (component_texts != NULL) || (component_confidences != NULL) )
         {

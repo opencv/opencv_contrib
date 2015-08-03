@@ -1,0 +1,135 @@
+
+/*---------------STEP 1---------------------*/
+/* modify this file
+*  opencv2/tracking/tracker.hpp
+*  and put several lines of snippet similar to 
+*  the following:
+*/ 
+/*------------------------------------------*/
+
+class CV_EXPORTS_W TrackerKCF : public Tracker
+{
+ public:
+  struct CV_EXPORTS Params
+  {
+    Params();
+    void read( const FileNode& /*fn*/ );
+    void write( FileStorage& /*fs*/ ) const;
+  };
+
+  /** @brief Constructor
+    @param parameters KCF parameters TrackerKCF::Params
+     */
+  BOILERPLATE_CODE("KCF",TrackerKCF);
+};
+
+
+/*---------------STEP 2---------------------*/
+/* modify this file
+*  src/tracker.cpp
+*  add one line in function  
+*  Ptr<Tracker> Tracker::create( const String& trackerType )
+*/ 
+/*------------------------------------------*/
+
+Ptr<Tracker> Tracker::create( const String& trackerType )
+{
+  BOILERPLATE_CODE("MIL",TrackerMIL);
+  BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
+  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
+  BOILERPLATE_CODE("TLD",TrackerTLD);
+  BOILERPLATE_CODE("KCF",TrackerKCF); // add this line!
+  return Ptr<Tracker>();
+}
+
+
+/*---------------STEP 3---------------------*/
+/* make a new file and paste the snippet below
+*  and modify it according to your needs.
+*  also make sure to put the LICENSE part.
+*  src/trackerKCF.cpp
+*/
+/*------------------------------------------*/
+
+/*---------------------------
+|  TrackerKCFModel
+|---------------------------*/
+namespace cv{
+   /**
+  * \brief Implementation of TrackerModel for MIL algorithm
+  */
+  class TrackerKCFModel : public TrackerModel{
+  public:
+    TrackerKCFModel(TrackerKCF::Params /*params*/){}
+    ~TrackerKCFModel(){}
+  protected:
+    void modelEstimationImpl( const std::vector<Mat>& responses ){}
+    void modelUpdateImpl(){}
+  };
+} /* namespace cv */
+
+
+/*---------------------------
+|  TrackerKCF
+|---------------------------*/
+namespace cv{
+  
+  /*
+ * Prototype
+ */
+  class TrackerKCFImpl : public TrackerKCF{
+  public:
+    TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
+    void read( const FileNode& fn );
+    void write( FileStorage& fs ) const;
+  
+  protected:
+    bool initImpl( const Mat& image, const Rect2d& boundingBox );
+    bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    
+    TrackerKCF::Params params;
+  };
+    
+  /*
+ * Constructor
+ */
+  Ptr<TrackerKCF> TrackerKCF::createTracker(const TrackerKCF::Params &parameters){
+      return Ptr<TrackerKCFImpl>(new TrackerKCFImpl(parameters));
+  }
+  TrackerKCFImpl::TrackerKCFImpl( const TrackerKCF::Params &parameters ) :
+      params( parameters )
+  {
+    isInit = false;
+  }
+  
+  void TrackerKCFImpl::read( const cv::FileNode& fn ){
+    params.read( fn );
+  }
+
+  void TrackerKCFImpl::write( cv::FileStorage& fs ) const{
+    params.write( fs );
+  }
+  
+  
+  bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
+    model=Ptr<TrackerKCFModel>(new TrackerKCFModel(params));
+    return true;
+  }
+  bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){return true;}
+  
+  /*
+ * Parameters
+ */
+  TrackerKCF::Params::Params(){
+      
+  }
+
+  void TrackerKCF::Params::read( const cv::FileNode& fn ){
+    
+  }
+
+  void TrackerKCF::Params::write( cv::FileStorage& fs ) const{
+    
+  }
+  
+} /* namespace cv */

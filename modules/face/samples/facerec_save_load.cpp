@@ -19,6 +19,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -50,7 +51,7 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
     std::ifstream file(filename.c_str(), ifstream::in);
     if (!file) {
         string error_message = "No valid input file was given, please check the given filename.";
-        CV_Error(CV_StsBadArg, error_message);
+        CV_Error(Error::StsBadArg, error_message);
     }
     string line, path, classlabel;
     while (getline(file, line)) {
@@ -92,7 +93,7 @@ int main(int argc, const char *argv[]) {
     // Quit if there are not enough images for this demo.
     if(images.size() <= 1) {
         string error_message = "This demo needs at least 2 images to work. Please add more images to your data set!";
-        CV_Error(CV_StsError, error_message);
+        CV_Error(Error::StsError, error_message);
     }
     // Get the height from the first image. We'll need this
     // later in code to reshape the images to their original
@@ -126,7 +127,7 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createEigenFaceRecognizer(0, 123.0);
     //
-    Ptr<FaceRecognizer> model0 = createEigenFaceRecognizer();
+    Ptr<BasicFaceRecognizer> model0 = createEigenFaceRecognizer();
     model0->train(images, labels);
     // save the model to eigenfaces_at.yaml
     model0->save("eigenfaces_at.yml");
@@ -134,7 +135,7 @@ int main(int argc, const char *argv[]) {
     //
     // Now create a new Eigenfaces Recognizer
     //
-    Ptr<FaceRecognizer> model1 = createEigenFaceRecognizer();
+    Ptr<BasicFaceRecognizer> model1 = createEigenFaceRecognizer();
     model1->load("eigenfaces_at.yml");
     // The following line predicts the label of a given
     // test image:
@@ -149,11 +150,11 @@ int main(int argc, const char *argv[]) {
     string result_message = format("Predicted class = %d / Actual class = %d.", predictedLabel, testLabel);
     cout << result_message << endl;
     // Here is how to get the eigenvalues of this Eigenfaces model:
-    Mat eigenvalues = model1->getMat("eigenvalues");
+    Mat eigenvalues = model1->getEigenValues();
     // And we can do the same to display the Eigenvectors (read Eigenfaces):
-    Mat W = model1->getMat("eigenvectors");
+    Mat W = model1->getEigenVectors();
     // Get the sample mean from the training data
-    Mat mean = model1->getMat("mean");
+    Mat mean = model1->getMean();
     // Display or save:
     if(argc == 2) {
         imshow("mean", norm_0_255(mean.reshape(1, images[0].rows)));
@@ -182,8 +183,8 @@ int main(int argc, const char *argv[]) {
     for(int num_components = 10; num_components < 300; num_components+=15) {
         // slice the eigenvectors from the model
         Mat evs = Mat(W, Range::all(), Range(0, num_components));
-        Mat projection = subspaceProject(evs, mean, images[0].reshape(1,1));
-        Mat reconstruction = subspaceReconstruct(evs, mean, projection);
+        Mat projection = LDA::subspaceProject(evs, mean, images[0].reshape(1,1));
+        Mat reconstruction = LDA::subspaceReconstruct(evs, mean, projection);
         // Normalize the result:
         reconstruction = norm_0_255(reconstruction.reshape(1, images[0].rows));
         // Display or save:
