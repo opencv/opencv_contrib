@@ -9,9 +9,19 @@
 #include<cstring>
 #include<iomanip>
 
+#ifdef __GNUC__
+#  pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
 char cnpy::BigEndianTest() {
-    unsigned char x[] = {1,0};
-    short y = *(short*) x;
+    union
+    {
+        unsigned char x[2];
+        short y;
+    };
+    x[0] = 1;
+    x[1] = 0;
+
     return y == 1 ? '<' : '>';
 }
 

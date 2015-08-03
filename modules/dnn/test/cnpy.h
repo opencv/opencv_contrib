@@ -150,7 +150,7 @@ namespace cnpy {
         std::vector<char> npy_header = create_npy_header(data,shape,ndims);
 
         unsigned long nels = 1;
-        for (int m=0; m<ndims; m++ ) nels *= shape[m];
+        for (unsigned m=0; m<ndims; m++ ) nels *= shape[m];
         int nbytes = nels*sizeof(T) + npy_header.size();
 
         //get the CRC of the data to be added
