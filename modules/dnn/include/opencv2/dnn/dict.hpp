@@ -152,9 +152,28 @@ inline DictValue DictValue::get<DictValue>(int idx) const
 template<>
 inline int64 DictValue::get<int64>(int idx) const
 {
-    CV_Assert(isInt());
-    CV_Assert(idx == -1 && pi->size() == 1 || idx >= 0 && idx < (int)pi->size());
-    return (*pi)[(idx == -1) ? 0 : idx];
+    CV_Assert(idx == -1 && size() == 1 || idx >= 0 && idx < size());
+    idx = (idx == -1) ? 0 : idx;
+
+    if (type == Param::INT)
+    {
+        return (*pi)[idx];
+    }
+    else if (type == Param::REAL)
+    {
+        double doubleValue = (*pd)[idx];
+
+        double fracpart, intpart;
+        fracpart = std::modf(doubleValue, &intpart);
+        CV_Assert(fracpart == 0.0);
+
+        return doubleValue;
+    }
+    else
+    {
+        CV_Assert(isInt() || isReal());
+        return 0;
+    }
 }
 
 template<>
@@ -178,19 +197,20 @@ inline bool DictValue::get<bool>(int idx) const
 template<>
 inline double DictValue::get<double>(int idx) const
 {
+    CV_Assert(idx == -1 && size() == 1 || idx >= 0 && idx < size());
+    idx = (idx == -1) ? 0 : idx;
+
     if (type == Param::REAL)
     {
-        CV_Assert(idx == -1 && pd->size() == 1 || idx >= 0 && idx < (int)pd->size());
-        return (*pd)[0];
+        return (*pd)[idx];
     }
     else if (type == Param::INT)
     {
-        CV_Assert(idx == -1 && pi->size() == 1 || idx >= 0 && idx < (int)pi->size());
-        return (double)(*pi)[0];;
+        return (double)(*pi)[idx];
     }
     else
     {
-        CV_Assert(isReal());
+        CV_Assert(isReal() || isInt());
         return 0;
     }
 }
@@ -300,6 +320,7 @@ inline int DictValue::size() const
         return (int)pd->size();
         break;
     default:
+        CV_Error(Error::StsInternal, "");
         return -1;
     }
 }
