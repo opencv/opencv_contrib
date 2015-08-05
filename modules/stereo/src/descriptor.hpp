@@ -78,10 +78,10 @@ namespace cv
                 }
                 stop = num_images;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 (void)w2;
-                for(int i = 0; i < stop; i++)
+                for (int i = 0; i < stop; i++)
                 {
                     if (image[i][rrWidth + jj] > image[i][rWidth + j])
                     {
@@ -113,7 +113,7 @@ namespace cv
                 imageStop = num_images;
                 t = threshold;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 (void)w2;
                 for(int i = 0; i < imageStop; i++)
@@ -153,7 +153,7 @@ namespace cv
                 imageStop = num_images;
                 n2 = ker;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 (void)j;
                 (void)rWidth;
@@ -180,7 +180,7 @@ namespace cv
                     image[i] = images[i];
                 imageStop = num_images;
             }
-            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int *c) const
+            void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 (void)w2;
                 for(int i = 0; i < imageStop; i++)
@@ -258,13 +258,13 @@ namespace cv
             MeanKernelIntegralImage(const cv::Mat &image, int window,float scale, int *cost):
                 img((int *)image.data),windowSize(window) ,width(image.cols) ,scalling(scale) , c(cost){};
             void operator()(const cv::Range &r) const{
-                for(int i = r.start; i <= r.end; i++)
+                for (int i = r.start; i <= r.end; i++)
                 {
                     int iw = i * width;
                     for (int j = windowSize + 1; j <= width - windowSize - 1; j++)
                     {
-                        c[iw + j] = (int)((img[(i + windowSize ) * width + j + windowSize ] + img[(i - windowSize ) * width + j - windowSize ]
-                        - img[(i + windowSize ) * width + j - windowSize ] - img[(i - windowSize ) * width + j + windowSize ]) * scalling);
+                        c[iw + j] = (int)((img[(i + windowSize - 1) * width + j + windowSize - 1] + img[(i - windowSize - 1) * width + j - windowSize - 1]
+                        - img[(i + windowSize) * width + j - windowSize] - img[(i - windowSize) * width + j + windowSize]) * scalling);
                     }
                 }
             }
