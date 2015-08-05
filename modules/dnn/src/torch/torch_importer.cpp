@@ -53,12 +53,18 @@ struct TorchImporter : public ::cv::dnn::Importer
 
     struct Module
     {
-        String thName, type;
+        String thName, apiType;
         dnn::LayerParams params;
         std::vector<Module*> modules;
 
-        Module(const String &_thName, const String &_type = String())
-            : thName(_thName), type(_type) {}
+        Module(const String &_thName, const String &_apiType = String())
+            : thName(_thName), apiType(_apiType) {}
+
+        ~Module()
+        {
+            for (size_t i = 0; i < modules.size(); i++)
+                delete modules[i];
+        }
     };
 
     Module *rootModule;
@@ -67,6 +73,9 @@ struct TorchImporter : public ::cv::dnn::Importer
 
     TorchImporter(String filename, bool isBinary)
     {
+        rootModule = curModule = NULL;
+        moduleCounter = 0;
+
         file = THDiskFile_new(filename.c_str(), "r", 0);
         CV_Assert(file && THFile_isOpened(file));
 
@@ -206,7 +215,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             double *buf = storageMat.ptr<double>();
             THFile_readLongRaw(file, (long*)buf, size);
 
-            for (size_t i = 0; i < (size_t)size; i++)
+            for (size_t i = (size_t)size; i-- > 0; )
                 buf[i] = ((long*)buf)[i];
         }
             break;
@@ -295,7 +304,7 @@ struct TorchImporter : public ::cv::dnn::Importer
         std::cout << "scalarParams:\n";
         std::cout << scalarParams;
 
-        std::cout << "#" << tensorParams.size() << "tensorParams:\n";
+        std::cout << "#" << tensorParams.size() << " tensorParams:\n";
         std::map<String,Blob>::const_iterator it;
         for (it = tensorParams.begin(); it != tensorParams.end(); it++)
             std::cout << it->first << ": Tensor " << it->second.shape() << "\n";
@@ -348,7 +357,8 @@ struct TorchImporter : public ::cv::dnn::Importer
 
         //allocate Blob
         Mat srcMat(ndims, (int*)isizes, typeTensor , storages[indexStorage].ptr() + offset, (size_t*)ssteps);
-        int dstType = (typeTensor == CV_64F) ? CV_64F : CV_32F;
+        //int dstType = (typeTensor == CV_64F) ? CV_64F : CV_32F;
+        int dstType = CV_32F;
 
         Blob blob;
         blob.create(BlobShape(ndims, isizes), dstType);
@@ -357,7 +367,7 @@ struct TorchImporter : public ::cv::dnn::Importer
         tensors.insert(std::make_pair(indexTensor, blob));
     }
 
-    bool isNNClass(const String &className, String &nnName)
+    static bool isNNClass(const String &className, String &nnName)
     {
         const char *prefixes[] = {"nn.", "cunn.", "cudnn.", "fbcunn.", NULL};
 
@@ -373,7 +383,7 @@ struct TorchImporter : public ::cv::dnn::Importer
         return false;
     }
 
-    void convertTorchKernelsParams(const Dict &torchParams, cv::dnn::LayerParams &layerParams)
+    static void convertTorchKernelsParams(const Dict &torchParams, cv::dnn::LayerParams &layerParams)
     {
         layerParams.set("kernel_h", torchParams.get<int>("kH"));
         layerParams.set("kernel_w", torchParams.get<int>("kW"));
@@ -418,7 +428,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else if (nnName == "SpatialConvolution")
             {
-                newModule->type = "Convolution";
+                newModule->apiType = "Convolution";
                 readTorchTable(scalarParams, tensorParams);
 
                 CV_Assert(tensorParams.count("weight"));
@@ -436,7 +446,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else if (nnName == "SpatialMaxPooling" || nnName == "SpatialAveragePooling")
             {
-                newModule->type = "Pooling";
+                newModule->apiType = "Pooling";
                 readTorchTable(scalarParams, tensorParams);
 
                 if (nnName == "SpatialMaxPooling")
@@ -449,7 +459,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else if (nnName == "Linear")
             {
-                newModule->type = "InnerProduct";
+                newModule->apiType = "InnerProduct";
                 readTorchTable(scalarParams, tensorParams);
 
                 CV_Assert(tensorParams.count("weight"));
@@ -467,7 +477,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else if (nnName == "Reshape")
             {
-                newModule->type = "Reshape";
+                newModule->apiType = "Reshape";
 
                 readTorchTable(scalarParams, tensorParams);
                 CV_Assert(scalarParams.has("size"));
@@ -491,6 +501,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else
             {
+                delete newModule;
                 readTorchTable(scalarParams, tensorParams);
                 CV_Error(Error::StsNotImplemented, "Unknown nn class \"" + className + "\"");
             }
@@ -504,7 +515,6 @@ struct TorchImporter : public ::cv::dnn::Importer
     void readObject()
     {
         int typeidx = readInt();
-        std::cout << "typeidx: " << typeidx << "\n";
 
         if (typeidx == TYPE_TORCH)
         {
@@ -541,11 +551,11 @@ struct TorchImporter : public ::cv::dnn::Importer
         if (module == NULL)
             return prevLayerId;
 
-        if (module->type.length())
+        if (module->apiType.length())
         {
-            int newLayerId = this->net.addLayer(generateLayerName(module->type), module->type, module->params);
+            int newLayerId = this->net.addLayer(generateLayerName(module->apiType), module->apiType, module->params);
             net.connect(prevLayerId, prevOutNum, newLayerId, 0);
-            std::cout << "added " << module->thName << " i.e. " << module->type << "\n";
+            std::cout << "added " << module->thName << " i.e. " << module->apiType << "\n";
             return newLayerId;
         }
         else
@@ -584,16 +594,16 @@ struct TorchImporter : public ::cv::dnn::Importer
 
     void populateNet(Net net)
     {
+        if (rootModule == NULL)
+        {
+            rootModule = new Module("Sequential");
+            curModule = rootModule;
+
+            THFile_seek(file, 0);
+            readObject();
+        }
+
         this->net = net;
-        THFile_seek(file, 0);
-        readedIndexes.clear();
-        storages.clear();
-
-        rootModule = new Module("Sequential");
-        curModule = rootModule;
-        readObject();
-
-        moduleCounter = 0;
         fill(rootModule);
     }
 };
@@ -603,12 +613,28 @@ CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBina
     return Ptr<Importer>(new TorchImporter(filename, isBinary));
 }
 
+
+CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary)
+{
+    Ptr<TorchImporter> importer(new TorchImporter(filename, isBinary));
+    importer->readObject();
+    CV_Assert(importer->tensors.size() == 1);
+
+    return importer->tensors.begin()->second;
+}
+
 #else //ENABLE_TORCH_IMPORTER
 
 CV_EXPORTS Ptr<Importer> createTorchImporter(const String&, bool)
 {
     CV_Error(Error::StsNotImplemented, "Module was build without Torch importer");
     return Ptr<Importer>();
+}
+
+CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary)
+{
+    CV_Error(Error::StsNotImplemented, "Module was build without Torch importer");
+    return Blob();
 }
 
 #endif //ENABLE_TORCH_IMPORTER
