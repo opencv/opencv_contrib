@@ -60,45 +60,45 @@ namespace rgbd
         {
             calculatePoints();
         }
-        for(int i = roi.y; i < silhouette.rows && i < roi.y + roi.height; i += increment_step)
+        Subdiv2D subdiv(roi);
+        for (int i = roi.y; i < silhouette.rows && i < roi.y + roi.height; i += increment_step)
         {
-            for(int j = roi.x; j < silhouette.cols && j < roi.x + roi.width; j += increment_step)
+            for (int j = roi.x; j < silhouette.cols && j < roi.x + roi.width; j += increment_step)
             {
-                if(silhouette.at<uchar>(i, j) == 0)
+                if (silhouette.at<uchar>(i, j) == 0)
                 {
                     continue;
                 }
-                if(i + static_cast<int>(increment_step) == silhouette.rows || j + static_cast<int>(increment_step) == silhouette.cols)
-                {
-                    continue;
-                }
-                if(silhouette.at<uchar>(i + increment_step, j) > 0 &&
-                    silhouette.at<uchar>(i, j + increment_step) > 0 &&
-                    silhouette.at<uchar>(i + increment_step, j + increment_step) > 0)
-                {
-                    //depth comparison not working?
-                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i + increment_step, j)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i, j + increment_step)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    if(abs(rgbdFrame->depth.at<float>(i, j) - rgbdFrame->depth.at<float>(i + increment_step, j + increment_step)) > depthDiff)
-                    {
-                        continue;
-                    }
-                    faceIndices.push_back(pointsIndex.at<int>(i, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i+increment_step, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i, j+increment_step));
-                    faceIndices.push_back(pointsIndex.at<int>(i, j+increment_step));
-                    faceIndices.push_back(pointsIndex.at<int>(i+increment_step, j));
-                    faceIndices.push_back(pointsIndex.at<int>(i+increment_step, j+increment_step));
-                }
+                subdiv.insert(Point2f(j, i));
             }
         }
+        std::vector<Vec6f> triangleList;
+        subdiv.getTriangleList(triangleList);
 
+        for (std::size_t i = 0; i < triangleList.size(); i++)
+        {
+            if (triangleList.at(i)[0] < 0
+                || triangleList.at(i)[0] > silhouette.cols
+                || triangleList.at(i)[1] < 0
+                || triangleList.at(i)[1] > silhouette.rows
+                || triangleList.at(i)[2] < 0
+                || triangleList.at(i)[2] > silhouette.cols
+                || triangleList.at(i)[3] < 0
+                || triangleList.at(i)[3] > silhouette.rows
+                || triangleList.at(i)[4] < 0
+                || triangleList.at(i)[4] > silhouette.cols
+                || triangleList.at(i)[5] < 0
+                || triangleList.at(i)[5] > silhouette.rows
+                )
+                continue;
+
+            int v0 = pointsIndex.at<int>(cvRound(triangleList.at(i)[1]), cvRound(triangleList.at(i)[0]));
+            int v1 = pointsIndex.at<int>(cvRound(triangleList.at(i)[3]), cvRound(triangleList.at(i)[2]));
+            int v2 = pointsIndex.at<int>(cvRound(triangleList.at(i)[5]), cvRound(triangleList.at(i)[4]));
+            faceIndices.push_back(v0);
+            faceIndices.push_back(v1);
+            faceIndices.push_back(v2);
+        }
     }
 
     inline void project_triangle(Point3f& p0, Point3f& p1, Point3f& p2,
@@ -163,24 +163,13 @@ namespace rgbd
 
             return;
         }
-        else
-        {
-            // TODO: implement LSCM
-            for (std::size_t i = 0; i < points.size(); i++) {
-                RgbdPoint & point = points.at(i);
-                point.texture_uv = Point2f((float)point.image_xy.x / silhouette.cols, (float)point.image_xy.y / silhouette.rows);
-            }
-        }
 
-        return;
-
-#if 0
         nlNewContext();
         nlSolverParameteri(NL_SOLVER, NL_CG);
         nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
         nlSolverParameteri(NL_NB_VARIABLES, 2 * getNumPoints());
         nlSolverParameteri(NL_LEAST_SQUARES, NL_TRUE);
-        nlSolverParameteri(NL_MAX_ITERATIONS, 5 * getNumPoints());
+        nlSolverParameteri(NL_MAX_ITERATIONS, 5);
         nlSolverParameterd(NL_THRESHOLD, 1e-10);
 
         nlBegin(NL_SYSTEM);
@@ -271,7 +260,6 @@ namespace rgbd
         nlDeleteContext(nlGetCurrent());
 
         return;
-#endif
     }
 
     void RgbdClusterMesh::save(const std::string &path)
@@ -283,14 +271,14 @@ namespace rgbd
         std::string extension = path.substr(path.length() - 4, 4);
         CV_Assert(extension.compare(".ply") == 0 || extension.compare(".obj") == 0);
 
-        if(!bFaceIndicesUpdated)
+        if (!bFaceIndicesUpdated)
         {
             calculateFaceIndices();
         }
-        
+
         std::ofstream fs(path.c_str(), std::ofstream::out);
-        
-        if(extension.compare(".ply") == 0)
+
+        if (extension.compare(".ply") == 0)
         {
             fs << "ply" << std::endl;
             fs << "format ascii 1.0" << std::endl;
@@ -303,7 +291,7 @@ namespace rgbd
             fs << "element face " << faceIndices.size() / 3 << std::endl;
             fs << "property list uchar uint vertex_indices" << std::endl;
             fs << "end_header" << std::endl;
-            for(std::size_t i = 0; i < points.size(); i++)
+            for (std::size_t i = 0; i < points.size(); i++)
             {
                 Point3f & v = points.at(i).world_xyz;
                 Point2f & vt = points.at(i).texture_uv;
@@ -311,33 +299,33 @@ namespace rgbd
                 std::stringstream ss;
                 fs << -v.x << " " << -v.y << " " << v.z << " " << vt.x << " " << vt.y << std::endl;
             }
-            for(std::size_t i = 0; i < faceIndices.size(); i += 3)
+            for (std::size_t i = 0; i < faceIndices.size(); i += 3)
             {
                 fs << "3 " << faceIndices.at(i) << " "
                     << faceIndices.at(i + 1) << " "
                     << faceIndices.at(i + 2) << std::endl;
             }
         }
-        else if(extension.compare(".obj") == 0)
+        else if (extension.compare(".obj") == 0)
         {
-            for(std::size_t i = 0; i < points.size(); i++)
+            for (std::size_t i = 0; i < points.size(); i++)
             {
                 Point3f & v = points.at(i).world_xyz;
                 // negate xy for Unity compatibility
-                std::stringstream ss;
                 fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
             }
-            for(std::size_t i = 0; i < points.size(); i++)
+
+            for (std::size_t i = 0; i < points.size(); i++)
             {
                 Point2f & vt = points.at(i).texture_uv;
-                std::stringstream ss;
                 fs << "vt " << vt.x << " " << vt.y << std::endl;
             }
-            for(std::size_t i = 0; i < faceIndices.size(); i += 3)
+
+            for (std::size_t i = 0; i < faceIndices.size(); i += 3)
             {
                 fs << "f " << faceIndices.at(i) + 1 << "/" << faceIndices.at(i) + 1
-                    << "/ " << faceIndices.at(i + 1) + 1 << "/" << faceIndices.at(i + 1) + 1
-                    << "/ " << faceIndices.at(i + 2) + 1 << "/" << faceIndices.at(i + 2) + 1
+                    << "/ " << faceIndices.at(i+1) + 1 << "/" << faceIndices.at(i+1) + 1
+                    << "/ " << faceIndices.at(i+2) + 1 << "/" << faceIndices.at(i+2) + 1
                     << "/" << std::endl;
             }
         }

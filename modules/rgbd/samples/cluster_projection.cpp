@@ -126,8 +126,17 @@ int main( int argc, char** argv )
 
         float pixelSize, refDistance;
         file["depth"] >> depth;
-        file["cameraMatrix"] >> cameraMatrix;
+        float fx = 570,
+            fy = 570,
+            cx = 319.5f,
+            cy = 239.5f;
+
+        cameraMatrix.at<float>(0, 0) = fx;
+        cameraMatrix.at<float>(1, 1) = fy;
+        cameraMatrix.at<float>(0, 2) = cx;
+        cameraMatrix.at<float>(1, 2) = cy;
         depth.convertTo(depth, CV_32F);
+        depth = depth * 0.001f; // [mm] to [m]
     }
 
     Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
