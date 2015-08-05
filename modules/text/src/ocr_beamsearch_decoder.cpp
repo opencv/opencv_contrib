@@ -73,6 +73,22 @@ void OCRBeamSearchDecoder::run(Mat& image, string& output_text, vector<Rect>* co
         component_confidences->clear();
 }
 
+void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>* component_rects,
+                               vector<string>* component_texts, vector<float>* component_confidences,
+                               int component_level)
+{
+    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
+    CV_Assert( mask.type() == CV_8UC1 );
+    CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
+    output_text.clear();
+    if (component_rects != NULL)
+        component_rects->clear();
+    if (component_texts != NULL)
+        component_texts->clear();
+    if (component_confidences != NULL)
+        component_confidences->clear();
+}
+
 
 void OCRBeamSearchDecoder::ClassifierCallback::eval( InputArray image, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation)
 {
@@ -136,7 +152,7 @@ public:
         if (component_confidences != NULL)
             component_confidences->clear();
 
-        // TODO split a line into words
+        // TODO We must split a line into words or specify we only work with words
 
         if(src.type() == CV_8UC3)
         {
@@ -174,14 +190,7 @@ public:
         }
 
 
-        //TODO it would be interesting to have a hash table with a vector of booleans
-        // but this is not possible when we have a large number of possible segmentations.
-        //vector<bool> visited_nodes(pow(2,oversegmentation.size()),false); // hash table for visited nodes
-        // options are using std::set<unsigned long long int> to store only the keys of visited nodes
-        // but will deteriorate the time performance.
         set<unsigned long long int> visited_nodes; //TODO make it member of class
-        // it is also possible to reduce the number of seg. points in some way (e.g. use only seg.points
-        // for which there is a change on the class prediction)
 
         vector<int> start_segmentation;
         start_segmentation.push_back(oversegmentation[0]);
@@ -219,6 +228,21 @@ public:
         // TODO fill other output parameters
 
         return;
+    }
+
+    void run( Mat& src,
+              Mat& mask,
+              string& out_sequence,
+              vector<Rect>* component_rects,
+              vector<string>* component_texts,
+              vector<float>* component_confidences,
+              int component_level)
+    {
+
+        CV_Assert( mask.type() == CV_8UC1 );
+
+        // Nothing to do with a mask here. We do slidding window anyway.
+        run( src, out_sequence, component_rects, component_texts, component_confidences, component_level );
     }
 
 private:
@@ -421,22 +445,29 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
         fs["feature_min"] >> feature_min;
         fs["feature_max"] >> feature_max;
         fs.release();
-        // TODO check all matrix dimensions match correctly and no one is empty
     }
     else
         CV_Error(Error::StsBadArg, "Default classifier data file not found!");
 
-    nr_feature = weights.rows;
-    nr_class   = weights.cols;
-    // TODO some of this can be inferred from the input file (e.g. patch size must be sqrt(filters.cols))
-    step_size   = 4;
+    // check all matrix dimensions match correctly and no one is empty
+    CV_Assert( (M.cols > 0) && (M.rows > 0) );
+    CV_Assert( (P.cols > 0) && (P.rows > 0) );
+    CV_Assert( (kernels.cols > 0) && (kernels.rows > 0) );
+    CV_Assert( (weights.cols > 0) && (weights.rows > 0) );
+    CV_Assert( (feature_min.cols > 0) && (feature_min.rows > 0) );
+    CV_Assert( (feature_max.cols > 0) && (feature_max.rows > 0) );
+
+    nr_feature  = weights.rows;
+    nr_class    = weights.cols;
+    patch_size  = (int)sqrt(kernels.cols);
+    // algorithm internal parameters
     window_size = 32;
     quad_size   = 12;
-    patch_size  = 8;
     num_quads   = 25;
     num_tiles   = 25;
     alpha       = 0.5;
 
+    step_size   = 4; // TODO showld this be a parameter for the user?
 
 }
 
@@ -459,7 +490,6 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
         cvtColor(src,src,COLOR_RGB2GRAY);
     }
 
-    // TODO shall we resize the input image or make a copy ?
     resize(src,src,Size(window_size*src.cols/src.rows,window_size));
 
     int seg_points = 0;
@@ -555,8 +585,8 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
         double *p = new double[nr_class];
         double predict_label = eval_feature(feature,p);
         //cout << " Prediction: " << vocabulary[predict_label] << " with probability " << p[0] << endl;
-        if (predict_label < 0) // TODO use cvError
-            cout << "OCRBeamSearchClassifierCNN::eval Error: unexpected prediction in eval_feature()" << endl;
+        if (predict_label < 0)
+          CV_Error(Error::StsInternal, "OCRBeamSearchClassifierCNN::eval Error: unexpected prediction in eval_feature()");
 
 
         seg_points++;

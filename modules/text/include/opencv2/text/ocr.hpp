@@ -69,6 +69,9 @@ public:
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0) = 0;
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0) = 0;
 };
 
 /** @brief OCRTesseract class provides an interface with the tesseract-ocr API (v3.02.02) in C++.
@@ -103,6 +106,10 @@ public:
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
@@ -170,11 +177,11 @@ public:
 public:
     /** @brief Recognize text using HMM.
 
-    Takes image on input and returns recognized text in the output_text parameter. Optionally
+    Takes binary image on input and returns recognized text in the output_text parameter. Optionally
     provides also the Rects for individual text elements found (e.g. words), and the list of those
     text elements with their confidence values.
 
-    @param image Input image CV_8UC1 with a single text line (or word).
+    @param image Input binary image CV_8UC1 with a single text line (or word).
 
     @param output_text Output text. Most likely character sequence found by the HMM decoder.
 
@@ -190,6 +197,33 @@ public:
     @param component_level Only OCR_LEVEL_WORD is supported.
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    /** @brief Recognize text using HMM.
+
+    Takes an image and a mask (where each connected component corresponds to a segmented character)
+    on input and returns recognized text in the output_text parameter. Optionally
+    provides also the Rects for individual text elements found (e.g. words), and the list of those
+    text elements with their confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3 with a single text line (or word).
+    @param mask Input binary image CV_8UC1 same size as input image. Each connected component in mask corresponds to a segmented character in the input image.
+
+    @param output_text Output text. Most likely character sequence found by the HMM decoder.
+
+    @param component_rects If provided the method will output a list of Rects for the individual
+    text elements found (e.g. words).
+
+    @param component_texts If provided the method will output a list of text strings for the
+    recognition of individual text elements found (e.g. words).
+
+    @param component_confidences If provided the method will output a list of confidence values
+    for the recognition of individual text elements found (e.g. words).
+
+    @param component_level Only OCR_LEVEL_WORD is supported.
+     */
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
@@ -231,7 +265,7 @@ protected:
 
 @param filename The XML or YAML file with the classifier model (e.g. OCRHMM_knn_model_data.xml)
 
-The default classifier is based in the scene text recognition method proposed by Lukás Neumann &
+The KNN default classifier is based in the scene text recognition method proposed by Lukás Neumann &
 Jiri Matas in [Neumann11b]. Basically, the region (contour) in the input image is normalized to a
 fixed size, while retaining the centroid and aspect ratio, in order to extract a feature vector
 based on gradient orientations along the chain-code of its perimeter. Then, the region is classified
@@ -240,19 +274,32 @@ types.
  */
 CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string& filename);
 
-/** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
+/** @brief Allow to implicitly load the default character classifier when creating an OCRHMMDecoder object.
 
-@param vocabulary The language vocabulary (chars when ascii english text).
+@param filename The XML or YAML file with the classifier model (e.g. OCRBeamSearch_CNN_model_data.xml.gz)
 
-@param lexicon The list of words that are expected to be found in a particular image.
-
-@param transition_probabilities_table Output table with transition probabilities between character pairs. cols == rows == vocabulary.size().
-
-The function calculate frequency statistics of character pairs from the given lexicon and fills the output transition_probabilities_table with them. The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
-@note
-   -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+The CNN default classifier is based in the scene text recognition method proposed by Adam Coates &
+Andrew NG in [Coates11a]. The character classifier consists in a Single Layer Convolutional Neural Network and
+a linear classifier. It is applied to the input image in a sliding window fashion, providing a set of recognitions
+at each window location.
  */
+CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const std::string& filename);
+
+//! @}
+
+/** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
+ *
+ * @param vocabulary The language vocabulary (chars when ascii english text).
+ *
+ * @param lexicon The list of words that are expected to be found in a particular image.
+ *
+ * @param transition_probabilities_table Output table with transition probabilities between character pairs. cols == rows == vocabulary.size().
+ *
+ * The function calculate frequency statistics of character pairs from the given lexicon and fills the output transition_probabilities_table with them. The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
+ * @note
+ *    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
+ *            <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+ *             */
 CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vector<std::string>& lexicon, OutputArray transition_probabilities_table);
 
 
@@ -319,6 +366,10 @@ public:
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
     /** @brief Creates an instance of the OCRBeamSearchDecoder class. Initializes HMMDecoder.
 
     @param classifier The character classifier with built in feature extractor.
@@ -359,10 +410,10 @@ protected:
 
 /** @brief Allow to implicitly load the default character classifier when creating an OCRBeamSearchDecoder object.
 
-@param filename The XML or YAML file with the classifier model (e.g. OCRHMM_knn_model_data.xml)
+@param filename The XML or YAML file with the classifier model (e.g. OCRBeamSearch_CNN_model_data.xml.gz)
 
-The default classifier is based in the scene text recognition method proposed by Adam Coates &
-Andrew NG in [Coates11a]. The character classifier sonsists in a Single Layer Convolutional Neural Network and
+The CNN default classifier is based in the scene text recognition method proposed by Adam Coates &
+Andrew NG in [Coates11a]. The character classifier consists in a Single Layer Convolutional Neural Network and
 a linear classifier. It is applied to the input image in a sliding window fashion, providing a set of recognitions
 at each window location.
  */
