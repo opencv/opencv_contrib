@@ -110,7 +110,7 @@ namespace cv
             parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<2>(images, n2,date));
         }
         //single version of star census
-        void stereo::starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
+        void starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
         {
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -119,7 +119,7 @@ namespace cv
             int n2 = (kernelSize) >> 1;
             Mat images[] = {img1};
             int *date[] = { (int *)dist.data};
-            parallel_for_( Range(n2, img1.rows - n2), StarKernelCensus<1>(images, n2,date));
+            parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<1>(images, n2,date));
         }
         //Modified census transforms
         //the first one deals with small illumination changes
@@ -167,14 +167,14 @@ namespace cv
             if(type == CV_MODIFIED_CENSUS_TRANSFORM)
             {
                 //MCT
-                parallel_for_( Range(n2, img1.rows - n2),
+                parallel_for_(Range(n2, img1.rows - n2),
                     CombinedDescriptor<2,3,2, 1,MCTKernel<1> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<1>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
             {
                 //MV
                 int *integral[] = { (int *)IntegralImage.data};
-                parallel_for_(  Range(n2, img1.rows - n2),
+                parallel_for_(Range(n2, img1.rows - n2),
                     CombinedDescriptor<2,3,2,1, MVKernel<1> >(img1.cols, img1.rows,stride,n2,date,MVKernel<1>(images,integral),n2));
             }
         }
@@ -194,11 +194,11 @@ namespace cv
             int stride = (int)img1.step;
             if(type == CV_CS_CENSUS)
             {
-                parallel_for_(  Range(n2, img1.rows - n2), SymetricCensus<2>(imag, n2,date));
+                parallel_for_(Range(n2, img1.rows - n2), SymetricCensus<2>(imag, n2,date));
             }
             else if(type == CV_MODIFIED_CS_CENSUS)
             {
-                parallel_for_(  Range(n2, img1.rows - n2),
+                parallel_for_(Range(n2, img1.rows - n2),
                     CombinedDescriptor<1,1,1,2,ModifiedCsCensus<2> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<2>(images,n2),1));
             }
         }
@@ -235,7 +235,7 @@ namespace cv
             int height = image.rows;
             cost.setTo(0);
             int *c = (int *)cost.data;
-            parallel_for_( Range(win + 1, height - win - 1),MeanKernelIntegralImage(image,win,scalling,c));
+            parallel_for_(Range(win + 1, height - win - 1),MeanKernelIntegralImage(image,win,scalling,c));
         }
     }
 }
