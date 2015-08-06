@@ -244,6 +244,8 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
+                std::transform(words[j].begin(), words[j].end(), words[j].begin(), ::toupper);
+
                 if (find(example->lex.begin(), example->lex.end(), words[j]) == example->lex.end())
                 {
                     continue;
