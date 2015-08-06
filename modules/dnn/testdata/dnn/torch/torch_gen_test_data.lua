@@ -27,7 +27,7 @@ function save(net, input, label)
 end
 
 local net_simple = nn.Sequential()
---net_simple:add(nn.ReLU())
+net_simple:add(nn.ReLU())
 net_simple:add(nn.SpatialConvolution(3,64, 11,7, 3,4, 3,2))
 net_simple:add(nn.SpatialMaxPooling(4,5, 3,2, 1,2))
 net_simple:add(nn.Sigmoid())
