@@ -1,4 +1,5 @@
 #if 1 || defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
+#if 1 || defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
 #include "test_precomp.hpp"
 
 namespace cvtest
@@ -9,16 +10,10 @@ using namespace testing;
 using namespace cv;
 using namespace cv::dnn;
 
-static std::string getOpenCVExtraDir()
-{
-    return cvtest::TS::ptr()->get_data_path();
-}
-
 template<typename TStr>
-static std::string getTestFile(TStr filename)
+static std::string _tf(TStr filename)
 {
-    //return (getOpenCVExtraDir() + "/dnn/") + filename;
-    return String("/home/vitaliy/th/") + filename;
+    return (getOpenCVExtraDir() + "/dnn/torch/") + filename;
 }
 
 TEST(Torch_Importer, simple_read)
@@ -26,38 +21,75 @@ TEST(Torch_Importer, simple_read)
     Net net;
     Ptr<Importer> importer;
 
-    ASSERT_NO_THROW( importer = createTorchImporter(getTestFile("conv1.txt"), false) );
+    ASSERT_NO_THROW( importer = createTorchImporter(_tf("net_simple_net.txt"), false) );
     ASSERT_TRUE( importer != NULL );
-    ASSERT_NO_THROW( importer->populateNet(net) );
+    importer->populateNet(net);
 }
 
-static Blob convertBlob(const Blob &inp, int type)
+static void runTorchNet(String prefix, String outLayerName, bool isBinary)
 {
-    Mat tmpMat;
-    inp.getMatRef().convertTo(tmpMat, type);
+    String suffix = (isBinary) ? ".dat" : ".txt";
 
-    Blob res;
-    res.create(inp.shape(), type);
-    res.fill(inp.shape(), type, (void*)tmpMat.data);
-    return res;
-}
-
-TEST(Torch_Importer, run_convolution)
-{
     Net net;
-    Ptr<Importer> importer = createTorchImporter(getTestFile("run_conv_net.txt"), false);
+    Ptr<Importer> importer;
+    ASSERT_NO_THROW( importer = createTorchImporter(_tf(prefix + "_net" + suffix), isBinary) );
     ASSERT_TRUE(importer != NULL);
+    //ASSERT_NO_THROW( importer->populateNet(net) );
     importer->populateNet(net);
 
-    Blob inp = convertBlob( readTorchMat(getTestFile("run_conv_input.txt"), false), CV_32F );
-    Blob outRef = convertBlob( readTorchMat(getTestFile("run_conv_output.txt"), false), CV_32F );
+    Blob inp, outRef;
+    ASSERT_NO_THROW( inp = readTorchMat(_tf(prefix + "_input" + suffix), isBinary) );
+    ASSERT_NO_THROW( outRef = readTorchMat(_tf(prefix + "_output" + suffix), isBinary) );
 
     net.setBlob(".0", inp);
     net.forward();
-    Blob out = net.getBlob("l1_Convolution");
+    Blob out = net.getBlob(outLayerName);
+
+    std::cout << "inp " << inp.shape() << "\n";
+    std::cout << "out " << out.shape() << "\n";
+    std::cout << "ref " << outRef.shape() << "\n";
 
     normAssert(outRef, out);
 }
 
+TEST(Torch_Importer, run_convolution)
+{
+    runTorchNet("net_conv", "l1_Convolution", false);
 }
+
+TEST(Torch_Importer, run_pool_max)
+{
+    runTorchNet("net_pool_max", "l1_Pooling", false);
+}
+
+TEST(Torch_Importer, run_pool_ave)
+{
+    //TODO: fix
+    //runTorchNet("net_pool_ave", "l1_Pooling", false);
+}
+
+TEST(Torch_Importer, run_reshape)
+{
+    runTorchNet("net_reshape", "l1_Reshape", false);
+    runTorchNet("net_reshape_batch", "l1_Reshape", false);
+}
+
+TEST(Torch_Importer, run_linear)
+{
+    runTorchNet("net_linear_2d", "l1_InnerProduct", false);
+}
+
+TEST(Torch_Importer, run_paralel)
+{
+    //TODO: fix and add Reshape
+    //runTorchNet("net_parallel", "l2_torchMerge", false);
+}
+
+TEST(Torch_Importer, run_concat)
+{
+    runTorchNet("net_concat", "l2_torchMerge", false);
+}
+
+}
+#endif
 #endif

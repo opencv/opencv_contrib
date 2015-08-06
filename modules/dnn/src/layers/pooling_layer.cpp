@@ -8,6 +8,7 @@ namespace cv
 {
 namespace dnn
 {
+//TODO: add ceil_mode param
     class PoolingLayer : public Layer
     {
         enum

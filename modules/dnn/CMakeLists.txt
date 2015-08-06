@@ -50,6 +50,24 @@ if(${the_module}_BUILD_TORCH_IMPORTER)
     add_definitions(-DENABLE_TORCH_IMPORTER=1)
 endif()
 
+OCV_OPTION(${the_module}_BUILD_TORCH_TESTS "Build Torch tests (installed Torch7 with nn module is required)" ON IF BUILD_TESTS AND ${the_module}_BUILD_TORCH_IMPORTER)
+if(${the_module}_BUILD_TORCH_TESTS)
+
+    if(NOT DEFINED ENV{OPENCV_TEST_DATA_PATH})
+        message(FATAL_ERROR "OPENCV_TEST_DATA_PATH environment variable was not specified")
+    endif()
+
+    execute_process(COMMAND th ${CMAKE_CURRENT_SOURCE_DIR}/testdata/dnn/torch/torch_nn_echo.lua RESULT_VARIABLE TORCH_STATUS)
+    if(TORCH_STATUS)
+        message(FATAL_ERROR "Torch executable \"th\" not found (status: ${TORCH_STATUS}) or nn module not found")
+    endif()
+
+    add_custom_command( TARGET opencv_test_${name} POST_BUILD
+                        COMMAND th ${CMAKE_CURRENT_SOURCE_DIR}/testdata/dnn/torch/torch_gen_test_data.lua
+                        WORKING_DIRECTORY  $ENV{OPENCV_TEST_DATA_PATH}/dnn/torch )
+    add_definitions(-DENABLE_TORCH_TESTS=1)
+endif()
+
 else()#build as standalone module (for development purposes)
 
 project(dnn_standalone)

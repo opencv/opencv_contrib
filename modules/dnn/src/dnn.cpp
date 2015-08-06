@@ -295,6 +295,10 @@ struct Net::Impl
         if (ld.flag)
             return;
 
+        //determine parent layers
+        for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
+            ld.inputLayersId.insert(ld.inputBlobsId[i].lid);
+
         //allocate parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
             allocateLayer(*i);
@@ -305,6 +309,7 @@ struct Net::Impl
         {
             LayerPin from = ld.inputBlobsId[i];
             CV_Assert(from.valid());
+            CV_Assert(layers.count(from.lid) && layers[from.lid].outputBlobs.size() > from.oid);
             ld.inputBlobs[i] = &layers[from.lid].outputBlobs[from.oid];
         }
 

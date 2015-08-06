@@ -28,6 +28,9 @@ SliceLayer::SliceLayer(LayerParams &params)
 {
     inAxis = params.get<int>("axis", 1);
 
+    if (!params.has("slice_point"))
+        return;
+
     const DictValue &_slicePoints = params.get("slice_point");
     slicePoints.resize(_slicePoints.size());
     for (int i = 0; i < _slicePoints.size(); i++)

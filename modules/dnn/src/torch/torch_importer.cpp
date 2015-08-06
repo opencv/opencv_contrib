@@ -253,7 +253,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
 
             String key = readString();
-            std::cout << "key: " << key << "\n";
+            std::cout << i << "th key: " << key << "\n";
 
             fpos = THFile_position(file);
             int vtype = readInt();
@@ -296,7 +296,6 @@ struct TorchImporter : public ::cv::dnn::Importer
             {
                 THFile_seek(file, fpos);
                 readObject();
-                continue;
             }
         }
 
@@ -425,6 +424,16 @@ struct TorchImporter : public ::cv::dnn::Importer
                 curModule = newModule;
                 readTorchTable(scalarParams, tensorParams);
                 curModule = parentModule;
+
+                if (nnName == "Parallel")
+                {
+                    layerParams.set("inputDimension", scalarParams.get<int>("inputDimension"));
+                    layerParams.set("outputDimension", scalarParams.get<int>("outputDimension"));
+                }
+                if (nnName == "Concat")
+                {
+                    layerParams.set("dimension", scalarParams.get<int>("dimension"));
+                }
             }
             else if (nnName == "SpatialConvolution")
             {
@@ -471,8 +480,7 @@ struct TorchImporter : public ::cv::dnn::Importer
                     layerParams.learnedBlobs.push_back(tensorParams["bias"]);
                 layerParams.set("bias_term", bias);
 
-                //TODO: axis detect
-                layerParams.set("num_output", weightBlob.size(1));
+                layerParams.set("num_output", weightBlob.size(0));
                 curModule->modules.push_back(newModule);
             }
             else if (nnName == "Reshape")
@@ -485,25 +493,31 @@ struct TorchImporter : public ::cv::dnn::Importer
                 DictValue dimParam = scalarParams.get("size");
                 layerParams.set("dim", dimParam);
 
+                if (scalarParams.has("batchMode") && scalarParams.get<bool>("batchMode"))
+                    layerParams.set("axis", 1);
+
                 curModule->modules.push_back(newModule);
             }
             else if (nnName == "ReLU")
             {
                 curModule->modules.push_back(new Module(nnName, "ReLU"));
+                readObject();
             }
             else if (nnName == "Tanh")
             {
                 curModule->modules.push_back(new Module(nnName, "TanH"));
+                readObject();
             }
             else if (nnName == "Sigmoid")
             {
                 curModule->modules.push_back(new Module(nnName, "Sigmoid"));
+                readObject();
             }
             else
             {
                 delete newModule;
-                readTorchTable(scalarParams, tensorParams);
                 CV_Error(Error::StsNotImplemented, "Unknown nn class \"" + className + "\"");
+                readObject();
             }
         }
         else
@@ -542,8 +556,7 @@ struct TorchImporter : public ::cv::dnn::Importer
 
     inline String generateLayerName(const String &label = String())
     {
-        this->moduleCounter++;
-        return "l" + toString(this->moduleCounter) + "_" + label;
+        return "l" + toString(++this->moduleCounter) + "_" + label;
     }
 
     int fill(Module *module, int prevLayerId = 0, int prevOutNum = 0)
@@ -555,7 +568,6 @@ struct TorchImporter : public ::cv::dnn::Importer
         {
             int newLayerId = this->net.addLayer(generateLayerName(module->apiType), module->apiType, module->params);
             net.connect(prevLayerId, prevOutNum, newLayerId, 0);
-            std::cout << "added " << module->thName << " i.e. " << module->apiType << "\n";
             return newLayerId;
         }
         else
@@ -573,10 +585,23 @@ struct TorchImporter : public ::cv::dnn::Importer
             {
                 int splitId, mergeId, newId;
 
-                String splitType = (module->thName == "Parallel") ? "Slice" : "Split";
-                splitId = net.addLayer(generateLayerName("torchSplit"), splitType, module->params);
+                String splitType;
+                LayerParams splitParams, mergeParams;
+                if (module->thName == "Parallel")
+                {
+                    splitType = "Slice";
+                    splitParams.set("axis", module->params.get<int>("inputDimension") - 1);
+                    mergeParams.set("axis", module->params.get<int>("outputDimension") - 1);
+                }
+                else
+                {
+                    splitType = "Split";
+                    mergeParams.set("axis", module->params.get<int>("dimension") - 1);
+                }
+
+                splitId = net.addLayer(generateLayerName("torchSplit"), splitType, splitParams);
+                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", mergeParams);
                 net.connect(prevLayerId, prevOutNum, splitId, 0);
-                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", module->params);
 
                 for (size_t i = 0; i < module->modules.size(); i++)
                 {

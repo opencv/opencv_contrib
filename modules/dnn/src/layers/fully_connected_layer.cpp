@@ -33,13 +33,15 @@ namespace dnn
         axis_ = params.get<int>("axis", 1);
 
         CV_Assert(params.learnedBlobs.size() >= 1);
-        CV_Assert(!bias || (params.learnedBlobs.size() >= 2 && (int)params.learnedBlobs[1].total() == numOutputs));
+        CV_Assert(!bias || params.learnedBlobs.size() >= 2);
 
         learnedParams.resize(bias ? 2 : 1);
         learnedParams[0] = params.learnedBlobs[0];
+        CV_Assert(learnedParams[0].dims() >= 2 && learnedParams[0].total() >= (size_t)numOutputs);
         if (bias)
         {
             learnedParams[1] = params.learnedBlobs[1];
+            CV_Assert(learnedParams[1].total() == (size_t)numOutputs);
         }
     }
 
@@ -51,7 +53,7 @@ namespace dnn
         innerSize = (int)inputs[0]->total(axis);
 
         CV_Assert((size_t)innerSize * (size_t)numOutputs == learnedParams[0].total());
-        CV_Assert(learnedParams[0].rows() == numOutputs && learnedParams[0].cols() == innerSize);
+        CV_Assert(learnedParams[0].size(-2) == numOutputs && learnedParams[0].size(-1) == innerSize);
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
