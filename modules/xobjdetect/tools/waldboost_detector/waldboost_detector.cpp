@@ -30,4 +30,3 @@ int main(int argc, char **argv)
         imwrite(argv[4], img);
     }
 }
-

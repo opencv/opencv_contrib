@@ -107,8 +107,8 @@ void WBDetector::train(
     int n_features;
     Mat pos_data, neg_data;
 
-    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create(CvFeatureParams::LBP);
-    eval->init(CvFeatureParams::create(CvFeatureParams::LBP), 1, Size(24, 24));
+    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create();
+    eval->init(CvFeatureParams::create(), 1, Size(24, 24));
     n_features = eval->getNumFeatures();
 
     const int stages[] = {32, 64, 128, 256, 512, 1024, 2048, 4096};
@@ -135,14 +135,14 @@ void WBDetector::train(
         for (size_t k = 0; k < pos_imgs.size(); ++k) {
             eval->setImage(pos_imgs[k], +1, 0, boost.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
-                pos_data.at<uchar>(j, k) = (*eval)(j, 0);
+                pos_data.at<uchar>(j, k) = (*eval)(j);
             }
         }
 
         for (size_t k = 0; k < neg_imgs.size(); ++k) {
             eval->setImage(neg_imgs[k], 0, 0, boost.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
-                neg_data.at<uchar>(j, k) = (*eval)(j, 0);
+                neg_data.at<uchar>(j, k) = (*eval)(j);
             }
         }
 
@@ -204,8 +204,8 @@ void WBDetector::detect(
     for (float scale = 0.2f; scale < 1.2f; scale *= 1.1) {
         scales.push_back(scale);
     }
-    Ptr<CvFeatureParams> params = CvFeatureParams::create(CvFeatureParams::LBP);
-    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create(CvFeatureParams::LBP);
+    Ptr<CvFeatureParams> params = CvFeatureParams::create();
+    Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create();
     eval->init(params, 1, Size(24, 24));
     boost.detect(eval, img, scales, bboxes, confidences);
     assert(confidences.size() == bboxes.size());

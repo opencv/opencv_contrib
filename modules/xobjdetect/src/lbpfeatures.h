@@ -64,8 +64,8 @@ public:
     virtual void setImage(const cv::Mat& img, uchar clsLabel, int idx, const std::vector<int> &feature_ind);
     virtual void setWindow(const cv::Point& p)
     { cur_sum = sum.rowRange(p.y, p.y + winSize.height).colRange(p.x, p.x + winSize.width); }
-    virtual float operator()(int featureIdx, int sampleIdx)
-    { return (float)features[featureIdx].calc( cur_sum, offset_, sampleIdx); }
+    virtual float operator()(int featureIdx)
+    { return (float)features[featureIdx].calc( cur_sum ); }
     virtual void writeFeatures( cv::FileStorage &fs, const cv::Mat& featureMap ) const;
 protected:
     virtual void generateFeatures();
@@ -75,7 +75,7 @@ protected:
     public:
         Feature();
         Feature( int offset, int x, int y, int _block_w, int _block_h  );
-        uchar calc( const cv::Mat& _sum, int offset, size_t y );
+        uchar calc( const cv::Mat& _sum );
         void write( cv::FileStorage &fs ) const;
 
         cv::Rect rect;
@@ -90,7 +90,7 @@ protected:
     int offset_;
 };
 
-inline uchar CvLBPEvaluator::Feature::calc(const cv::Mat &_sum, int offset, size_t y)
+inline uchar CvLBPEvaluator::Feature::calc(const cv::Mat &_sum)
 {
     const int* psum = _sum.ptr<int>();
 

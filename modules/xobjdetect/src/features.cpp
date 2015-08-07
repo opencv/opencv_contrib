@@ -96,7 +96,7 @@ bool CvFeatureParams::read( const FileNode &node )
     return ( maxCatCount >= 0 && featSize >= 1 );
 }
 
-Ptr<CvFeatureParams> CvFeatureParams::create( int featureType )
+Ptr<CvFeatureParams> CvFeatureParams::create()
 {
     return Ptr<CvFeatureParams>(new CvLBPFeatureParams);
 }
@@ -114,7 +114,7 @@ void CvFeatureEvaluator::init(const CvFeatureParams *_featureParams,
     generateFeatures();
 }
 
-void CvFeatureEvaluator::setImage(const Mat &img, uchar clsLabel, int idx, const std::vector<int>& feature_ind)
+void CvFeatureEvaluator::setImage(const Mat &, uchar clsLabel, int idx, const std::vector<int>& feature_ind)
 {
     //CV_Assert(img.cols == winSize.width);
     //CV_Assert(img.rows == winSize.height);
@@ -122,7 +122,7 @@ void CvFeatureEvaluator::setImage(const Mat &img, uchar clsLabel, int idx, const
     cls.ptr<float>(idx)[0] = clsLabel;
 }
 
-Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create(int type)
+Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create()
 {
     return Ptr<CvFeatureEvaluator>(new CvLBPEvaluator);
 }

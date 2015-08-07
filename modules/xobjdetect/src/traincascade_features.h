@@ -110,7 +110,7 @@ public:
     virtual void init( const CvFeatureParams& fp );
     virtual void write( cv::FileStorage &fs ) const;
     virtual bool read( const cv::FileNode &node );
-    static cv::Ptr<CvFeatureParams> create( int featureType );
+    static cv::Ptr<CvFeatureParams> create();
     int maxCatCount; // 0 in case of numerical features
     int featSize; // 1 in case of simple features (HAAR, LBP) and N_BINS(9)*N_CELLS(4) in case of Dalal's HOG features
 };
@@ -124,8 +124,8 @@ public:
     virtual void setImage(const cv::Mat& img, uchar clsLabel, int idx, const std::vector<int> &feature_ind);
     virtual void setWindow(const cv::Point& p) = 0;
     virtual void writeFeatures( cv::FileStorage &fs, const cv::Mat& featureMap ) const = 0;
-    virtual float operator()(int featureIdx, int sampleIdx) = 0;
-    static cv::Ptr<CvFeatureEvaluator> create(int type);
+    virtual float operator()(int featureIdx) = 0;
+    static cv::Ptr<CvFeatureEvaluator> create();
 
     int getNumFeatures() const { return numFeatures; }
     int getMaxCatCount() const { return featureParams->maxCatCount; }

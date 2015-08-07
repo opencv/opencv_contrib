@@ -317,7 +317,7 @@ int WaldBoost::predict(Ptr<CvFeatureEvaluator> eval, float *h) const
     assert(feature_indices_.size() == size_t(weak_count_));
     float res = 0;
     for (int i = 0; i < weak_count_; ++i) {
-        float val = (*eval)(feature_indices_[i], 0);
+        float val = (*eval)(feature_indices_[i]);
         int label = polarities_[i] * (val - thresholds_[i]) > 0 ? +1: -1;
         res += alphas_[i] * label;
         if (res < THR) {
