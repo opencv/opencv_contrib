@@ -135,14 +135,14 @@ void WBDetector::train(
         for (size_t k = 0; k < pos_imgs.size(); ++k) {
             eval->setImage(pos_imgs[k], +1, 0, boost.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
-                pos_data.at<uchar>(j, k) = (*eval)(j);
+                pos_data.at<uchar>(j, (int)k) = (uchar)(*eval)(j);
             }
         }
 
         for (size_t k = 0; k < neg_imgs.size(); ++k) {
             eval->setImage(neg_imgs[k], 0, 0, boost.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
-                neg_data.at<uchar>(j, (int)k) = (*eval)(j);
+                neg_data.at<uchar>(j, (int)k) = (uchar)(*eval)(j);
             }
         }
 
