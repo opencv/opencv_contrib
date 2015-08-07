@@ -84,7 +84,7 @@ static void compute_min_step(const Mat &data_pos, const Mat &data_neg, size_t n_
     max(reduced_pos, reduced_neg, data_max);
     data_max += 0.01;
 
-    data_step = (data_max - data_min) / (n_bins - 1);
+    data_step = (data_max - data_min) / (double)(n_bins - 1);
 }
 
 static void quantize_data(Mat &data, Mat1f &data_min, Mat1f &data_step)
@@ -132,15 +132,15 @@ void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
         float scale = scales[i];
         resize(img, resized_img, Size(), scale, scale);
         eval->setImage(resized_img, 0, 0, feature_indices_);
-        int n_rows = 24 / scale;
-        int n_cols = 24 / scale;
+        int n_rows = (int)(24 / scale);
+        int n_cols = (int)(24 / scale);
         for (int r = 0; r + 24 < resized_img.rows; r += step) {
             for (int c = 0; c + 24 < resized_img.cols; c += step) {
                 //eval->setImage(resized_img(Rect(c, r, 24, 24)), 0, 0);
                 eval->setWindow(Point(c, r));
                 if (predict(eval, &h) == +1) {
-                    int row = r / scale;
-                    int col = c / scale;
+                    int row = (int)(r / scale);
+                    int col = (int)(c / scale);
                     bboxes.push_back(Rect(col, row, n_cols, n_rows));
                     confidences.push_back(h);
                 }
@@ -164,14 +164,14 @@ void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
         float scale = scales[i];
         resize(img, resized_img, Size(), scale, scale);
         eval->setImage(resized_img, 0, 0, feature_indices_);
-        int n_rows = 24 / scale;
-        int n_cols = 24 / scale;
+        int n_rows = (int)(24 / scale);
+        int n_cols = (int)(24 / scale);
         for (int r = 0; r + 24 < resized_img.rows; r += step) {
             for (int c = 0; c + 24 < resized_img.cols; c += step) {
                 eval->setWindow(Point(c, r));
                 if (predict(eval, &h) == +1) {
-                    int row = r / scale;
-                    int col = c / scale;
+                    int row = (int)(r / scale);
+                    int col = (int)(c / scale);
                     bboxes.push_back(Rect(col, row, n_cols, n_rows));
                     confidences.push_back(h);
                 }
@@ -233,7 +233,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
             compute_cdf(data_pos.row(feat_i), pos_weights, pos_cdf);
             compute_cdf(data_neg.row(feat_i), neg_weights, neg_cdf);
 
-            float neg_total = sum(neg_weights)[0];
+            float neg_total = (float)sum(neg_weights)[0];
             Mat1f err_direct = pos_cdf + neg_total - neg_cdf;
             Mat1f err_backward = 1.0f - err_direct;
 
@@ -265,7 +265,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
         }
 
 
-        float alpha = .5f * log((1 - min_err) / min_err);
+        float alpha = .5f * (float)log((1 - min_err) / min_err);
         alphas_.push_back(alpha);
         feature_indices_.push_back(min_feature_ind);
         thresholds_.push_back(min_threshold);

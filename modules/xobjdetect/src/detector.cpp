@@ -60,12 +60,12 @@ static vector<Mat> sample_patches(
         const string& path,
         int n_rows,
         int n_cols,
-        int n_patches)
+        size_t n_patches)
 {
     vector<String> filenames;
     glob(path, filenames);
     vector<Mat> patches;
-    int patch_count = 0;
+    size_t patch_count = 0;
     for (size_t i = 0; i < filenames.size(); ++i) {
         Mat img = imread(filenames[i], CV_LOAD_IMAGE_GRAYSCALE);
         for (int row = 0; row + n_rows < img.rows; row += n_rows) {
@@ -116,7 +116,7 @@ void WBDetector::train(
     const int stage_neg = 5000;
     const int max_per_image = 25;
 
-    const float scales_arr[] = {.3, .4, .5, .6, .7, .8, .9, 1};
+    const float scales_arr[] = {.3f, .4f, .5f, .6f, .7f, .8f, .9f, 1.0f};
     const vector<float> scales(scales_arr,
             scales_arr + sizeof(scales_arr) / sizeof(*scales_arr));
 
@@ -129,8 +129,8 @@ void WBDetector::train(
 
         cerr << "compute features" << endl;
 
-        pos_data = Mat1b(n_features, pos_imgs.size());
-        neg_data = Mat1b(n_features, neg_imgs.size());
+        pos_data = Mat1b(n_features, (int)pos_imgs.size());
+        neg_data = Mat1b(n_features, (int)neg_imgs.size());
 
         for (size_t k = 0; k < pos_imgs.size(); ++k) {
             eval->setImage(pos_imgs[k], +1, 0, boost.get_feature_indices());
@@ -142,7 +142,7 @@ void WBDetector::train(
         for (size_t k = 0; k < neg_imgs.size(); ++k) {
             eval->setImage(neg_imgs[k], 0, 0, boost.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
-                neg_data.at<uchar>(j, k) = (*eval)(j);
+                neg_data.at<uchar>(j, (int)k) = (*eval)(j);
             }
         }
 
@@ -201,7 +201,7 @@ void WBDetector::detect(
     bboxes.clear();
     confidences.clear();
     vector<float> scales;
-    for (float scale = 0.2f; scale < 1.2f; scale *= 1.1) {
+    for (float scale = 0.2f; scale < 1.2f; scale *= 1.1f) {
         scales.push_back(scale);
     }
     Ptr<CvFeatureParams> params = CvFeatureParams::create();
