@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         return(0);
     }
 
-    string vocabulary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyx0123456789"; // must have the same order as the clasifier output classes
+    string vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the clasifier output classes
     vector<string> lexicon;  // a list of words expected to be found on the input image
     lexicon.push_back(string("abb"));
     lexicon.push_back(string("patata"));

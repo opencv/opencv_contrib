@@ -70,6 +70,22 @@ void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_
         component_confidences->clear();
 }
 
+void OCRTesseract::run(Mat& image, Mat& mask, string& output_text, vector<Rect>* component_rects,
+                       vector<string>* component_texts, vector<float>* component_confidences,
+                       int component_level)
+{
+    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
+    CV_Assert( mask.type() == CV_8UC1 );
+    CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
+    output_text.clear();
+    if (component_rects != NULL)
+        component_rects->clear();
+    if (component_texts != NULL)
+        component_texts->clear();
+    if (component_confidences != NULL)
+        component_confidences->clear();
+}
+
 class OCRTesseractImpl : public OCRTesseract
 {
 private:
@@ -187,6 +203,16 @@ public:
         if(component_confidences)
             component_confidences->clear();
 #endif
+    }
+
+    void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=NULL,
+             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+             int component_level=0)
+    {
+        CV_Assert( mask.type() == CV_8UC1 );
+        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
+
+        run( mask, output, component_rects, component_texts, component_confidences, component_level);
     }
 
 

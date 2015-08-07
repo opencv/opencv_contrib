@@ -49,17 +49,22 @@ using std::vector;
 class DisparityWLSFilterImpl : public DisparityWLSFilter
 {
 protected:
-    double lambda,sigma_color;
+    int left_offset, right_offset, top_offset, bottom_offset;
+    Rect valid_disp_ROI;
+    Rect right_view_valid_disp_ROI;
+    int min_disp;
     bool use_confidence;
     Mat confidence_map;
+
+    double lambda,sigma_color;
     int LRC_thresh,depth_discontinuity_radius;
     float depth_discontinuity_roll_off_factor;
     float resize_factor;
     int num_stripes;
 
-    void init(double _lambda, double _sigma_color, bool _use_confidence);
-    void computeDepthDiscontinuityMaps(Mat& left_disp, Mat& right_disp, Mat& left_dst, Mat& right_dst, Rect ROI);
-    void computeConfidenceMap(InputArray left_disp, InputArray right_disp, Rect ROI);
+    void init(double _lambda, double _sigma_color, bool _use_confidence, int l_offs, int r_offs, int t_offs, int b_offs, int _min_disp);
+    void computeDepthDiscontinuityMaps(Mat& left_disp, Mat& right_disp, Mat& left_dst, Mat& right_dst);
+    void computeConfidenceMap(InputArray left_disp, InputArray right_disp);
 
 protected:
     struct ComputeDiscontinuityAwareLRC_ParBody : public ParallelLoopBody
@@ -99,13 +104,13 @@ protected:
 
     void boxFilterOp(Mat& src,Mat& dst)
     {
-        int rad = (int)ceil(resize_factor*depth_discontinuity_radius);
+        int rad = depth_discontinuity_radius;
         boxFilter(src,dst,CV_32F,Size(2*rad+1,2*rad+1),Point(-1,-1));
     }
 
     void sqrBoxFilterOp(Mat& src,Mat& dst)
     {
-        int rad = (int)ceil(resize_factor*depth_discontinuity_radius);
+        int rad = depth_discontinuity_radius;
         sqrBoxFilter(src,dst,CV_32F,Size(2*rad+1,2*rad+1),Point(-1,-1));
     }
 
@@ -115,22 +120,33 @@ protected:
     }
 
 public:
-    static Ptr<DisparityWLSFilterImpl> create(bool _use_confidence);
-    void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, Rect ROI, InputArray disparity_map_right, InputArray);
+    static Ptr<DisparityWLSFilterImpl> create(bool _use_confidence, int l_offs, int r_offs, int t_offs, int b_offs, int min_disp);
+    void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray);
 
     double getLambda() {return lambda;}
     void setLambda(double _lambda) {lambda = _lambda;}
+
     double getSigmaColor() {return sigma_color;}
     void setSigmaColor(double _sigma_color) {sigma_color = _sigma_color;}
-    Mat getConfidenceMap() {return confidence_map;}
+
     int getLRCthresh() {return LRC_thresh;}
     void setLRCthresh(int _LRC_thresh) {LRC_thresh = _LRC_thresh;}
+
     int getDepthDiscontinuityRadius() {return depth_discontinuity_radius;}
     void setDepthDiscontinuityRadius(int _disc_radius) {depth_discontinuity_radius = _disc_radius;}
+
+    Mat getConfidenceMap() {return confidence_map;}
+    Rect getROI() {return valid_disp_ROI;}
 };
 
-void DisparityWLSFilterImpl::init(double _lambda, double _sigma_color, bool _use_confidence)
+void DisparityWLSFilterImpl::init(double _lambda, double _sigma_color, bool _use_confidence,  int l_offs, int r_offs, int t_offs, int b_offs, int _min_disp)
 {
+    left_offset = l_offs; right_offset  = r_offs;
+    top_offset  = t_offs; bottom_offset = b_offs;
+    min_disp = _min_disp;
+    valid_disp_ROI = Rect();
+    right_view_valid_disp_ROI = Rect();
+    min_disp=0;
     lambda = _lambda;
     sigma_color = _sigma_color;
     use_confidence = _use_confidence;
@@ -142,11 +158,10 @@ void DisparityWLSFilterImpl::init(double _lambda, double _sigma_color, bool _use
     num_stripes = getNumThreads();
 }
 
-void DisparityWLSFilterImpl::computeDepthDiscontinuityMaps(Mat& left_disp, Mat& right_disp, Mat& left_dst, Mat& right_dst, Rect ROI)
+void DisparityWLSFilterImpl::computeDepthDiscontinuityMaps(Mat& left_disp, Mat& right_disp, Mat& left_dst, Mat& right_dst)
 {
-    Rect right_ROI(left_disp.cols-(ROI.x+ROI.width),ROI.y,ROI.width,ROI.height);
-    Mat left_disp_ROI (left_disp, ROI);
-    Mat right_disp_ROI(right_disp,right_ROI);
+    Mat left_disp_ROI (left_disp, valid_disp_ROI);
+    Mat right_disp_ROI(right_disp,right_view_valid_disp_ROI);
     Mat ldisp,rdisp,ldisp_squared,rdisp_squared;
 
     {
@@ -171,36 +186,37 @@ void DisparityWLSFilterImpl::computeDepthDiscontinuityMaps(Mat& left_disp, Mat& 
 
     left_dst  = Mat::zeros(left_disp.rows,left_disp.cols,CV_32F);
     right_dst = Mat::zeros(right_disp.rows,right_disp.cols,CV_32F);
-    Mat left_dst_ROI (left_dst,ROI);
-    Mat right_dst_ROI(right_dst,right_ROI);
+    Mat left_dst_ROI (left_dst,valid_disp_ROI);
+    Mat right_dst_ROI(right_dst,right_view_valid_disp_ROI);
 
     parallel_for_(Range(0,num_stripes),ComputeDepthDisc_ParBody(*this,ldisp,ldisp_squared,left_dst_ROI ,num_stripes));
     parallel_for_(Range(0,num_stripes),ComputeDepthDisc_ParBody(*this,rdisp,rdisp_squared,right_dst_ROI,num_stripes));
 }
 
 
-void DisparityWLSFilterImpl::computeConfidenceMap(InputArray left_disp, InputArray right_disp, Rect ROI)
+void DisparityWLSFilterImpl::computeConfidenceMap(InputArray left_disp, InputArray right_disp)
 {
     Mat ldisp = left_disp.getMat();
     Mat rdisp = right_disp.getMat();
     Mat depth_discontinuity_map_left,depth_discontinuity_map_right;
-    computeDepthDiscontinuityMaps(ldisp,rdisp,depth_discontinuity_map_left,depth_discontinuity_map_right,ROI);
+    right_view_valid_disp_ROI = Rect(ldisp.cols-(valid_disp_ROI.x+valid_disp_ROI.width),valid_disp_ROI.y,
+                                     valid_disp_ROI.width,valid_disp_ROI.height);
+    computeDepthDiscontinuityMaps(ldisp,rdisp,depth_discontinuity_map_left,depth_discontinuity_map_right);
 
-    Rect right_ROI(ldisp.cols-(ROI.x+ROI.width),ROI.y,ROI.width,ROI.height);
     confidence_map = depth_discontinuity_map_left;
 
-    parallel_for_(Range(0,num_stripes),ComputeDiscontinuityAwareLRC_ParBody(*this,ldisp,rdisp, depth_discontinuity_map_left,depth_discontinuity_map_right,confidence_map,ROI,right_ROI,num_stripes));
+    parallel_for_(Range(0,num_stripes),ComputeDiscontinuityAwareLRC_ParBody(*this,ldisp,rdisp, depth_discontinuity_map_left,depth_discontinuity_map_right,confidence_map,valid_disp_ROI,right_view_valid_disp_ROI,num_stripes));
     confidence_map = 255.0f*confidence_map;
 }
 
-Ptr<DisparityWLSFilterImpl> DisparityWLSFilterImpl::create(bool _use_confidence)
+Ptr<DisparityWLSFilterImpl> DisparityWLSFilterImpl::create(bool _use_confidence, int l_offs=0, int r_offs=0, int t_offs=0, int b_offs=0, int min_disp=0)
 {
     DisparityWLSFilterImpl *wls = new DisparityWLSFilterImpl();
-    wls->init(8000.0,1.0,_use_confidence);
+    wls->init(8000.0,1.0,_use_confidence,l_offs, r_offs, t_offs, b_offs, min_disp);
     return Ptr<DisparityWLSFilterImpl>(wls);
 }
 
-void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, Rect ROI, InputArray disparity_map_right, InputArray)
+void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray)
 {
     CV_Assert( !disparity_map_left.empty() && (disparity_map_left.depth() == CV_16S) && (disparity_map_left.channels() == 1) );
     CV_Assert( !left_view.empty() && (left_view.depth() == CV_8U) && (left_view.channels() == 3 || left_view.channels() == 1) );
@@ -209,6 +225,12 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
         resize_factor = disparity_map_left.cols()/(float)left_view.cols();
     else
         resize_factor = 1.0;
+    if(ROI.area()!=0) /* user provided a ROI */
+        valid_disp_ROI = ROI;
+    else
+        valid_disp_ROI = Rect(left_offset,top_offset,
+                              disparity_map_left.cols()-left_offset-right_offset,
+                              disparity_map_left.rows()-top_offset-bottom_offset);
 
     if(!use_confidence)
     {
@@ -220,13 +242,16 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
             float y_ratio = src_full_size.rows/(float)disp_full_size.rows;
             resize(disp_full_size,disp_full_size,src_full_size.size());
             disp_full_size = disp_full_size*x_ratio;
-            ROI = Rect((int)(ROI.x*x_ratio),(int)(ROI.y*y_ratio),(int)(ROI.width*x_ratio),(int)(ROI.height*y_ratio));
+            ROI = Rect((int)(valid_disp_ROI.x*x_ratio),    (int)(valid_disp_ROI.y*y_ratio),
+                       (int)(valid_disp_ROI.width*x_ratio),(int)(valid_disp_ROI.height*y_ratio));
         }
+        else
+            ROI = valid_disp_ROI;
         disp = Mat(disp_full_size,ROI);
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
         Mat& dst_full_size = filtered_disparity_map.getMatRef();
-        dst_full_size = Scalar(-16);
+        dst_full_size = Scalar(16*(min_disp-1));
         dst = Mat(dst_full_size,ROI);
         Mat filtered_disp;
         fastGlobalSmootherFilter(src,disp,filtered_disp,lambda,sigma_color);
@@ -237,7 +262,7 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
         CV_Assert( !disparity_map_right.empty() && (disparity_map_right.depth() == CV_16S) && (disparity_map_right.channels() == 1) );
         CV_Assert( (disparity_map_left.cols() == disparity_map_right.cols()) );
         CV_Assert( (disparity_map_left.rows() == disparity_map_right.rows()) );
-        computeConfidenceMap(disparity_map_left,disparity_map_right,ROI);
+        computeConfidenceMap(disparity_map_left,disparity_map_right);
         Mat disp_full_size = disparity_map_left.getMat();
         Mat src_full_size = left_view.getMat();
         if(disp_full_size.size!=src_full_size.size)
@@ -247,13 +272,16 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
             resize(disp_full_size,disp_full_size,src_full_size.size());
             disp_full_size = disp_full_size*x_ratio;
             resize(confidence_map,confidence_map,src_full_size.size());
-            ROI = Rect((int)(ROI.x*x_ratio),(int)(ROI.y*y_ratio),(int)(ROI.width*x_ratio),(int)(ROI.height*y_ratio));
+            ROI = Rect((int)(valid_disp_ROI.x*x_ratio),    (int)(valid_disp_ROI.y*y_ratio),
+                       (int)(valid_disp_ROI.width*x_ratio),(int)(valid_disp_ROI.height*y_ratio));
         }
+        else
+            ROI = valid_disp_ROI;
         disp = Mat(disp_full_size,ROI);
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
         Mat& dst_full_size = filtered_disparity_map.getMatRef();
-        dst_full_size = Scalar(-16);
+        dst_full_size = Scalar(16*(min_disp-1));
         dst = Mat(dst_full_size,ROI);
         Mat conf(confidence_map,ROI);
 
@@ -355,7 +383,73 @@ void DisparityWLSFilterImpl::ParallelMatOp_ParBody::operator() (const Range& ran
 }
 
 CV_EXPORTS_W
-Ptr<DisparityWLSFilter> createDisparityWLSFilter(bool use_confidence)
+Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left)
+{
+    Ptr<DisparityWLSFilter> wls;
+    matcher_left->setDisp12MaxDiff(1000000);
+    matcher_left->setSpeckleWindowSize(0);
+
+    int min_disp = matcher_left->getMinDisparity();
+    int num_disp = matcher_left->getNumDisparities();
+    int wsize    = matcher_left->getBlockSize();
+    int wsize2   = wsize/2;
+
+    if(Ptr<StereoBM> bm = matcher_left.dynamicCast<StereoBM>())
+    {
+        bm->setTextureThreshold(0);
+        bm->setUniquenessRatio(0);
+        wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp)+wsize2,max(0,-min_disp)+wsize2,wsize2,wsize2,min_disp);
+        wls->setDepthDiscontinuityRadius((int)ceil(0.33*wsize));
+    }
+    else if(Ptr<StereoSGBM> sgbm = matcher_left.dynamicCast<StereoSGBM>())
+    {
+        sgbm->setUniquenessRatio(0);
+        wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp),max(0,-min_disp),0,0,min_disp);
+        wls->setDepthDiscontinuityRadius((int)ceil(0.5*wsize));
+    }
+    else
+        CV_Error(Error::StsBadArg, "DisparityWLSFilter natively supports only StereoBM and StereoSGBM");
+
+    return wls;
+}
+
+CV_EXPORTS_W
+Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left)
+{
+    int min_disp = matcher_left->getMinDisparity();
+    int num_disp = matcher_left->getNumDisparities();
+    int wsize    = matcher_left->getBlockSize();
+    if(Ptr<StereoBM> bm = matcher_left.dynamicCast<StereoBM>())
+    {
+        Ptr<StereoBM> right_bm = StereoBM::create(num_disp,wsize);
+        right_bm->setMinDisparity(-(min_disp+num_disp)+1);
+        right_bm->setTextureThreshold(0);
+        right_bm->setUniquenessRatio(0);
+        right_bm->setDisp12MaxDiff(1000000);
+        right_bm->setSpeckleWindowSize(0);
+        return right_bm;
+    }
+    else if(Ptr<StereoSGBM> sgbm = matcher_left.dynamicCast<StereoSGBM>())
+    {
+        Ptr<StereoSGBM> right_sgbm = StereoSGBM::create(-(min_disp+num_disp)+1,num_disp,wsize);
+        right_sgbm->setUniquenessRatio(0);
+        right_sgbm->setP1(sgbm->getP1());
+        right_sgbm->setP2(sgbm->getP2());
+        right_sgbm->setMode(sgbm->getMode());
+        right_sgbm->setPreFilterCap(sgbm->getPreFilterCap());
+        right_sgbm->setDisp12MaxDiff(1000000);
+        right_sgbm->setSpeckleWindowSize(0);
+        return right_sgbm;
+    }
+    else
+    {
+        CV_Error(Error::StsBadArg, "createRightMatcher supports only StereoBM and StereoSGBM");
+        return Ptr<StereoMatcher>();
+    }
+}
+
+CV_EXPORTS_W
+Ptr<DisparityWLSFilter> createDisparityWLSFilterGeneric(bool use_confidence)
 {
     return Ptr<DisparityWLSFilter>(DisparityWLSFilterImpl::create(use_confidence));
 }
