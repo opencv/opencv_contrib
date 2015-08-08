@@ -49,11 +49,7 @@ using namespace std;
 using namespace cv;
 
 #define NUM_TEST_FRAMES 100
-<<<<<<< HEAD
-#define TEST_VIDEO_INDEX 15		//TLD Dataset Video Index from 1-10 for TLD and 1-60 for VOT
-=======
 #define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
->>>>>>> Added Multi-tracker functionality and example
 //#define RECORD_VIDEO_FLG
 
 static Mat image;
@@ -123,17 +119,12 @@ int main()
 
 	//From TLD dataset
 	selectObject = true;
-<<<<<<< HEAD
 	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/VOT 2015", 1);
-	Rect2d boundingBox2(470, 490, 50, 120);
-=======
-	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/TLD_dataset");
 	Rect2d boundingBox2;
-	boundingBox2.x = 280;
-	boundingBox2.y = 60;
-	boundingBox2.width = 40;
-	boundingBox2.height = 60;
->>>>>>> Added Multi-tracker functionality and example
+	boundingBox2.x = 470;
+	boundingBox2.y = 500;
+	boundingBox2.width = 50;
+	boundingBox2.height = 100;
 
 	frame = tld::tld_getNextDatasetFrame();
 	frame.copyTo(image);
@@ -142,22 +133,13 @@ int main()
 #ifdef RECORD_VIDEO_FLG
 	String outputFilename = "test.avi";
 	VideoWriter outputVideo;
-<<<<<<< HEAD
-	outputVideo.open(outputFilename, -1, 15, Size(image.cols, image.rows));
-=======
 	outputVideo.open(outputFilename, -1, 30, Size(image.cols, image.rows));
->>>>>>> Added Multi-tracker functionality and example
 
 	if (!outputVideo.isOpened())
 	{
 		std::cout << "!!! Output video could not be opened" << std::endl;
 		getchar();
-<<<<<<< HEAD
 		return 0;
-
-=======
-		return;
->>>>>>> Added Multi-tracker functionality and example
 	}
 #endif
 
@@ -201,26 +183,17 @@ int main()
 				{
 					//initializes the tracker
 					mt.addTarget(frame, boundingBox1, tracker_algorithm_name);
-<<<<<<< HEAD
-					rectangle(frame, boundingBox1, mt.colors[0], 2, 1);
-
-
-					mt.addTarget(frame, boundingBox2, tracker_algorithm_name);
-					rectangle(frame, boundingBox2, mt.colors[1], 2, 1);
-=======
 					rectangle(image, boundingBox1, mt.colors[0], 2, 1);
 
 
 					mt.addTarget(frame, boundingBox2, tracker_algorithm_name);
 					rectangle(image, boundingBox2, mt.colors[1], 2, 1);
->>>>>>> Added Multi-tracker functionality and example
 					initialized = true;
 				}
 				else
 				{
 					//updates the tracker
-					if (mt.update(frame))
-<<<<<<< HEAD
+					if (mt.update_opt(frame))
 					{
 						for (int i = 0; i < mt.targetNum; i++)
 							rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
@@ -228,15 +201,6 @@ int main()
 				}
 			}
 			imshow("Tracking API", frame);
-
-#ifdef RECORD_VIDEO_FLG
-			outputVideo << frame;
-=======
-							for (int i=0; i < mt.targetNum; i++)
-								rectangle(image, mt.boundingBoxes[i], mt.colors[i], 2, 1);
-				}
-			}
-			imshow("Tracking API", image);
 
 #ifdef RECORD_VIDEO_FLG
 			outputVideo << image;
@@ -248,12 +212,7 @@ int main()
 			int64 e2 = getTickCount();
 			double t1 = (e2 - e1) / getTickFrequency();
 			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
-
-<<<<<<< HEAD
 			//waitKey(0);
-=======
-			waitKey(0);
->>>>>>> Added Multi-tracker functionality and example
 		}
 	}
 
