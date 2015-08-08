@@ -491,6 +491,10 @@ namespace cv
 							continue;
 						varBuffer.push_back(Point(dx * i, dy * j));
 						varScaleIDs.push_back(scaleID);
+
+						//Debug display candidates after Variance Filter
+						double curScale = pow(tld::SCALE_STEP, scaleID);
+						debugStack[0].push_back(Rect2d(dx * i* curScale, dy * j*curScale, initSize.width*curScale, initSize.height*curScale));
 					}
 				}
 				scaleID++;
@@ -519,6 +523,9 @@ namespace cv
 			//e2 = getTickCount();
 			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Ensemble: %d\t%f\n", ensBuffer.size(), t);
+
+			//printf("varBuffer: %d\n", varBuffer.size());
+			//printf("ensBuffer: %d\n", ensBuffer.size());
 
 			//NN classification
 			//e1 = getTickCount();
@@ -561,8 +568,11 @@ namespace cv
 
 			if (maxSc < 0)
 				return false;
-			res = maxScRect;
-			return true;
+			else
+			{
+				res = maxScRect;
+				return true;
+			}
 		}
 
 		bool TLDDetector::ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize)
