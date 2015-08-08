@@ -66,6 +66,8 @@ namespace cv
 
 		static const cv::Size GaussBlurKernelSize(3, 3);
 
+
+
 		class TLDDetector
 		{
 		public:
@@ -79,6 +81,7 @@ namespace cv
 			double ocl_Sc(const Mat_<uchar>& patch);
 			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 
+			std::vector <Rect2d> debugStack[10];
 			std::vector<TLDEnsembleClassifier> classifiers;
 			Mat *posExp, *negExp;
 			int *posNum, *negNum;
@@ -93,15 +96,14 @@ namespace cv
 				bool isObject, shouldBeIntegrated;
 			};
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
-			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
-		protected:
-
-
+			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches,  Size initSize);
 
 			friend class MyMouseCallbackDEBUG;
-			void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
-			inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
+			static void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
+			static inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
 		};
+
+
 	}
 }
 
