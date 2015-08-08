@@ -1,4 +1,4 @@
-#include "tldTracker.hpp"
+#include "multiTracker.hpp"
 
 namespace cv
 {
@@ -29,75 +29,104 @@ namespace cv
 
 	bool MultiTracker::update(const Mat& image)
 	{
+		printf("Naive-Loop MO-TLD Update....\n");
 		for (int i = 0; i < trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
 				return false;
 
 		return true;
 	}
-	 
+
 	//Multitracker TLD
 	/*Optimized update method for TLD Multitracker */
-	bool MultiTrackerTLD::update(const Mat& image)
+	bool MultiTrackerTLD::update_opt(const Mat& image)
 	{
-		
-		for (int k = 0; k < trackers.size(); k++)
+		printf("Optimized MO-TLD Update....\n");
+
+		//Get parameters from first object
+		//Set current target(tracker) parameters
+		Rect2d boundingBox = boundingBoxes[0];
+		//TLD Tracker data extraction
+		Tracker* trackerPtr = trackers[0];
+		tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+		//TLD Model Extraction
+		tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+		Ptr<tld::Data> data = tracker->data;
+		double scale = data->getScale();
+
+		Mat image_gray, image_blurred, imageForDetector;
+		cvtColor(image, image_gray, COLOR_BGR2GRAY);
+
+		if (scale > 1.0)
+			resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, tld::DOWNSCALE_MODE);
+		else
+			imageForDetector = image_gray;
+		GaussianBlur(imageForDetector, image_blurred, tld::GaussBlurKernelSize, 0.0);
+
+		//best overlap around 92%
+		Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
+
+		std::vector<std::vector<tld::TLDDetector::LabeledPatch>> detectorResults(targetNum);
+		std::vector<std::vector<Rect2d>> candidates(targetNum);
+		std::vector<std::vector<double>> candidatesRes(targetNum);
+		std::vector<Rect2d> tmpCandidates(targetNum);
+		std::vector<bool> detect_flgs(targetNum);
+		std::vector<bool> trackerNeedsReInit(targetNum);
+
+		bool DETECT_FLG = false;
+
+		//printf("%d\n", targetNum);
+		//Detect all
+		for (int k = 0; k < targetNum; k++)
+			tmpCandidates[k] = boundingBoxes[k];
+		//if (ocl::haveOpenCL())
+			detect_all(imageForDetector, image_blurred, tmpCandidates, detectorResults, detect_flgs, trackers);
+		//else
+			//DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+
+			//printf("BOOOLZZZ  %d\n", detect_flgs[0]);
+			//printf("BOOOLXXX  %d\n", detect_flgs[1]);
+		for (int k = 0; k < targetNum; k++)
 		{
-			//Set current target(tracker) parameters
-			Rect2d boundingBox = boundingBoxes[k];
-			Ptr<tld::TrackerTLDImpl> tracker = (Ptr<tld::TrackerTLDImpl>)static_cast<Ptr<tld::TrackerTLDImpl>> (trackers[k]);
+			//TLD Tracker data extraction
+			Tracker* trackerPtr = trackers[k];
+			tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			//TLD Model Extraction
 			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 			Ptr<tld::Data> data = tracker->data;
-			double scale = data->getScale();
 
-
-			Mat image_gray, image_blurred, imageForDetector;
-			cvtColor(image, image_gray, COLOR_BGR2GRAY);
-
-			if (scale > 1.0)
-				resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, tld::DOWNSCALE_MODE);
-			else
-				imageForDetector = image_gray;
-			GaussianBlur(imageForDetector, image_blurred, tld::GaussBlurKernelSize, 0.0);
-
+			///////
 			data->frameNum++;
-			Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
-			std::vector<tld::TLDDetector::LabeledPatch> detectorResults;
-			//best overlap around 92%
 
-			std::vector<Rect2d> candidates;
-			std::vector<double> candidatesRes;
-			bool trackerNeedsReInit = false;
-			bool DETECT_FLG = false;
 			for (int i = 0; i < 2; i++)
 			{
-				Rect2d tmpCandid = boundingBox;
+				Rect2d tmpCandid = boundingBoxes[k];
 
-				if (i == 1)
+				//if (i == 1)
 				{
-					if (ocl::haveOpenCL())
-						DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
-					else
-						DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+					DETECT_FLG = detect_flgs[k];
+					tmpCandid = tmpCandidates[k];
 				}
 
 				if (((i == 0) && !data->failedLastTime && tracker->trackerProxy->update(image, tmpCandid)) || (DETECT_FLG))
 				{
-					candidates.push_back(tmpCandid);
+					candidates[k].push_back(tmpCandid);
 					if (i == 0)
 						tld::resample(image_gray, tmpCandid, standardPatch);
 					else
 						tld::resample(imageForDetector, tmpCandid, standardPatch);
-					candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
+					candidatesRes[k].push_back(tldModel->detector->Sc(standardPatch));
 				}
 				else
 				{
 					if (i == 0)
-						trackerNeedsReInit = true;
+						trackerNeedsReInit[k] = true;
+					else
+						trackerNeedsReInit[k] = false;
 				}
 			}
-
-			std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
+			//printf("CanditateRes Size:  %d \n", candidatesRes[k].size());
+			std::vector<double>::iterator it = std::max_element(candidatesRes[k].begin(), candidatesRes[k].end());
 
 			//dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
 			//for( int i = 0; i < (int)candidatesRes.size(); i++ )
@@ -105,25 +134,25 @@ namespace cv
 			//data->printme();
 			//tldModel->printme(stdout);
 
-			if (it == candidatesRes.end())
+			if (it == candidatesRes[k].end())
 			{
+
 				data->confident = false;
 				data->failedLastTime = true;
 				return false;
 			}
 			else
 			{
-				boundingBox = candidates[it - candidatesRes.begin()];
-				boundingBoxes[k] = boundingBox;
+				boundingBoxes[k] = candidates[k][it - candidatesRes[k].begin()];
 				data->failedLastTime = false;
-				if (trackerNeedsReInit || it != candidatesRes.begin())
-					tracker->trackerProxy->init(image, boundingBox);
+				if (trackerNeedsReInit[k] || it != candidatesRes[k].begin())
+					tracker->trackerProxy->init(image, boundingBoxes[k]);
 			}
 
 #if 1
-			if (it != candidatesRes.end())
+			if (it != candidatesRes[k].end())
 			{
-				tld::resample(imageForDetector, candidates[it - candidatesRes.begin()], standardPatch);
+				tld::resample(imageForDetector, candidates[k][it - candidatesRes[k].begin()], standardPatch);
 				//dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
 				//if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
 				//dfprintf((stderr, "detector WON\n"));
@@ -139,29 +168,29 @@ namespace cv
 
 			if (data->confident)
 			{
-				tld::TrackerTLDImpl::Pexpert pExpert(imageForDetector, image_blurred, boundingBox, tldModel->detector, tracker->params, data->getMinSize());
-				tld::TrackerTLDImpl::Nexpert nExpert(imageForDetector, boundingBox, tldModel->detector, tracker->params);
+				tld::TrackerTLDImpl::Pexpert pExpert(imageForDetector, image_blurred, boundingBoxes[k], tldModel->detector, tracker->params, data->getMinSize());
+				tld::TrackerTLDImpl::Nexpert nExpert(imageForDetector, boundingBoxes[k], tldModel->detector, tracker->params);
 				std::vector<Mat_<uchar> > examplesForModel, examplesForEnsemble;
 				examplesForModel.reserve(100); examplesForEnsemble.reserve(100);
 				int negRelabeled = 0;
-				for (int i = 0; i < (int)detectorResults.size(); i++)
+				for (int i = 0; i < (int)detectorResults[k].size(); i++)
 				{
 					bool expertResult;
-					if (detectorResults[i].isObject)
+					if (detectorResults[k][i].isObject)
 					{
-						expertResult = nExpert(detectorResults[i].rect);
-						if (expertResult != detectorResults[i].isObject)
+						expertResult = nExpert(detectorResults[k][i].rect);
+						if (expertResult != detectorResults[k][i].isObject)
 							negRelabeled++;
 					}
 					else
 					{
-						expertResult = pExpert(detectorResults[i].rect);
+						expertResult = pExpert(detectorResults[k][i].rect);
 					}
 
-					detectorResults[i].shouldBeIntegrated = detectorResults[i].shouldBeIntegrated || (detectorResults[i].isObject != expertResult);
-					detectorResults[i].isObject = expertResult;
+					detectorResults[k][i].shouldBeIntegrated = detectorResults[k][i].shouldBeIntegrated || (detectorResults[k][i].isObject != expertResult);
+					detectorResults[k][i].isObject = expertResult;
 				}
-				tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
+				tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults[k]);
 				//dprintf(("%d relabeled by nExpert\n", negRelabeled));
 				pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 				if (ocl::haveOpenCL())
@@ -183,9 +212,251 @@ namespace cv
 #endif
 			}
 
-			
-		}
 
+		}
+		//Debug display candidates after Variance Filter
+		////////////////////////////////////////////////
+		Mat tmpImg = image;
+		for (int i = 0; i < debugStack[0].size(); i++)
+			//rectangle(tmpImg, debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
+		debugStack[0].clear();
+		tmpImg.copyTo(image);
+		////////////////////////////////////////////////
 		return true;
+	}
+
+	void detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch >> &patches, std::vector<bool> &detect_flgs,
+		std::vector<Ptr<Tracker>> &trackers)
+	{
+		//TLD Tracker data extraction
+		Tracker* trackerPtr = trackers[0];
+		cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+		//TLD Model Extraction
+		tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+		Size initSize = tldModel->getMinSize();
+
+		for (int k = 0; k < trackers.size(); k++)
+			patches[k].clear();
+
+		Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
+		Mat tmp;
+		int dx = initSize.width / 10, dy = initSize.height / 10;
+		Size2d size = img.size();
+		double scale = 1.0;
+		int npos = 0, nneg = 0;
+		double maxSc = -5.0;
+		Rect2d maxScRect;
+		int scaleID;
+		std::vector <Mat> resized_imgs, blurred_imgs;
+
+		std::vector <std::vector <Point>> varBuffer(trackers.size()), ensBuffer(trackers.size());
+		std::vector <std::vector <int>> varScaleIDs(trackers.size()), ensScaleIDs(trackers.size());
+
+		std::vector <Point> tmpP;
+		std::vector <int> tmpI;
+
+		//int64 e1, e2;
+		//double t;
+		//e1 = getTickCount();
+
+		//Detection part
+		//Generate windows and filter by variance
+		scaleID = 0;
+		resized_imgs.push_back(img);
+		blurred_imgs.push_back(imgBlurred);
+		do
+		{
+			Mat_<double> intImgP, intImgP2;
+			tld::TLDDetector::computeIntegralImages(resized_imgs[scaleID], intImgP, intImgP2);
+			for (int i = 0, imax = cvFloor((0.0 + resized_imgs[scaleID].cols - initSize.width) / dx); i < imax; i++)
+			{
+				for (int j = 0, jmax = cvFloor((0.0 + resized_imgs[scaleID].rows - initSize.height) / dy); j < jmax; j++)
+				{
+					//Optimized variance calculation
+					int x = dx * i,
+						y = dy * j,
+						width = initSize.width,
+						height = initSize.height;
+					double p = 0, p2 = 0;
+					double A, B, C, D;
+
+					A = intImgP(y, x);
+					B = intImgP(y, x + width);
+					C = intImgP(y + height, x);
+					D = intImgP(y + height, x + width);
+					p = (A + D - B - C) / (width * height);
+
+					A = intImgP2(y, x);
+					B = intImgP2(y, x + width);
+					C = intImgP2(y + height, x);
+					D = intImgP2(y + height, x + width);
+					p2 = (A + D - B - C) / (width * height);
+					double windowVar = p2 - p * p;
+
+					//Loop for on all objects
+					for (int k=0; k < trackers.size(); k++)
+					{
+						//TLD Tracker data extraction
+						Tracker* trackerPtr = trackers[k];
+						cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+						//TLD Model Extraction
+						tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+
+						//Optimized variance calculation
+						bool varPass = (windowVar > tld::VARIANCE_THRESHOLD * *tldModel->detector->originalVariancePtr);
+
+						if (!varPass)
+							continue;
+						varBuffer[k].push_back(Point(dx * i, dy * j));
+						varScaleIDs[k].push_back(scaleID);
+
+						//Debug display candidates after Variance Filter
+						double curScale = pow(tld::SCALE_STEP, scaleID);
+						debugStack[0].push_back(Rect2d(dx * i* curScale, dy * j*curScale, tldModel->getMinSize().width*curScale, tldModel->getMinSize().height*curScale));
+					}
+				}
+			}
+			scaleID++;
+			size.width /= tld::SCALE_STEP;
+			size.height /= tld::SCALE_STEP;
+			scale *= tld::SCALE_STEP;
+			resize(img, tmp, size, 0, 0, tld::DOWNSCALE_MODE);
+			resized_imgs.push_back(tmp);
+			GaussianBlur(resized_imgs[scaleID], tmp, tld::GaussBlurKernelSize, 0.0f);
+			blurred_imgs.push_back(tmp);
+		} while (size.width >= initSize.width && size.height >= initSize.height);
+
+
+
+		//e2 = getTickCount();
+		//t = (e2 - e1) / getTickFrequency()*1000.0;
+		//printf("Variance: %d\t%f\n", varBuffer.size(), t);
+
+		//printf("OrigVar 1: %f\n", *tldModel->detector->originalVariancePtr);
+
+		//Encsemble classification
+		//e1 = getTickCount();
+		for (int k = 0; k < trackers.size(); k++)
+		{
+			//TLD Tracker data extraction
+			Tracker* trackerPtr = trackers[k];
+			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			//TLD Model Extraction
+			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+
+
+			for (int i = 0; i < (int)varBuffer[k].size(); i++)
+			{
+				tldModel->detector->prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[k][i]].step[0]));
+
+				double ensRes = 0;
+				uchar* data = &blurred_imgs[varScaleIDs[k][i]].at<uchar>(varBuffer[k][i].y, varBuffer[k][i].x);
+				for (int x = 0; x < (int)tldModel->detector->classifiers.size(); x++)
+				{
+					int position = 0;
+					for (int n = 0; n < (int)tldModel->detector->classifiers[x].measurements.size(); n++)
+					{
+						position = position << 1;
+						if (data[tldModel->detector->classifiers[x].offset[n].x] < data[tldModel->detector->classifiers[x].offset[n].y])
+							position++;
+					}
+					double posNum = (double)tldModel->detector->classifiers[x].posAndNeg[position].x;
+					double negNum = (double)tldModel->detector->classifiers[x].posAndNeg[position].y;
+					if (posNum == 0.0 && negNum == 0.0)
+						continue;
+					else
+						ensRes += posNum / (posNum + negNum);
+				}
+				ensRes /= tldModel->detector->classifiers.size();
+				ensRes = tldModel->detector->ensembleClassifierNum(&blurred_imgs[varScaleIDs[k][i]].at<uchar>(varBuffer[k][i].y, varBuffer[k][i].x));
+
+				if ( ensRes <= tld::ENSEMBLE_THRESHOLD)
+					continue;
+				ensBuffer[k].push_back(varBuffer[k][i]);
+				ensScaleIDs[k].push_back(varScaleIDs[k][i]);
+			}
+			/*
+			for (int i = 0; i < (int)varBuffer[k].size(); i++)
+			{
+			tldModel->detector->prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[k][i]].step[0]));
+			if (tldModel->detector->ensembleClassifierNum(&blurred_imgs[varScaleIDs[k][i]].at<uchar>(varBuffer[k][i].y, varBuffer[k][i].x)) <= tld::ENSEMBLE_THRESHOLD)
+			continue;
+			ensBuffer[k].push_back(varBuffer[k][i]);
+			ensScaleIDs[k].push_back(varScaleIDs[k][i]);
+			}
+			*/
+		}
+		//e2 = getTickCount();
+		//t = (e2 - e1) / getTickFrequency()*1000.0;
+		//printf("Ensemble: %d\t%f\n", ensBuffer.size(), t);
+
+		//printf("varBuffer 1: %d\n", varBuffer[0].size());
+		//printf("ensBuffer 1: %d\n", ensBuffer[0].size());
+
+		//printf("varBuffer 2: %d\n", varBuffer[1].size());
+		//printf("ensBuffer 2: %d\n", ensBuffer[1].size());
+
+		//NN classification
+		//e1 = getTickCount();
+		for (int k = 0; k < trackers.size(); k++)
+		{
+			//TLD Tracker data extraction
+			Tracker* trackerPtr = trackers[k];
+			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			//TLD Model Extraction
+			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+
+			npos = 0;
+			nneg = 0;
+			maxSc = -5.0;
+
+			for (int i = 0; i < (int)ensBuffer[k].size(); i++)
+			{
+				tld::TLDDetector::LabeledPatch labPatch;
+				double curScale = pow(tld::SCALE_STEP, ensScaleIDs[k][i]);
+				labPatch.rect = Rect2d(ensBuffer[k][i].x*curScale, ensBuffer[k][i].y*curScale, initSize.width * curScale, initSize.height * curScale);
+				tld::resample(resized_imgs[ensScaleIDs[k][i]], Rect2d(ensBuffer[k][i], initSize), standardPatch);
+
+				double srValue, scValue;
+				srValue = tldModel->detector->Sr(standardPatch);
+
+				////To fix: Check the paper, probably this cause wrong learning
+				//
+				labPatch.isObject = srValue > tld::THETA_NN;
+				labPatch.shouldBeIntegrated = abs(srValue - tld::THETA_NN) < 0.1;
+				patches[k].push_back(labPatch);
+				//
+
+				if (!labPatch.isObject)
+				{
+					nneg++;
+					continue;
+				}
+				else
+				{
+					npos++;
+				}
+				scValue = tldModel->detector->Sc(standardPatch);
+				if (scValue > maxSc)
+				{
+					maxSc = scValue;
+					maxScRect = labPatch.rect;
+				}
+				//printf("%d	%f	%f\n", k, srValue, scValue);
+			}
+
+			//e2 = getTickCount();
+			//t = (e2 - e1) / getTickFrequency()*1000.0;
+			//printf("NN: %d\t%f\n", patches.size(), t);
+
+			if (maxSc < 0)
+				detect_flgs[k] = false;
+			else
+			{
+				res[k] = maxScRect;
+				//printf("%f %f %f %f\n", maxScRect.x, maxScRect.y, maxScRect.width, maxScRect.height);
+				detect_flgs[k] = true;
+			}
+		}
 	}
 }
