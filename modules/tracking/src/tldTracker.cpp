@@ -45,6 +45,13 @@
 namespace cv
 {
 
+	TrackerTLD::Params::Params(){}
+
+	void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
+
+	void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
+
+
 Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
 {
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
@@ -112,7 +119,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
     std::vector<TLDDetector::LabeledPatch> detectorResults;
     //best overlap around 92%
-
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit = false;
@@ -123,12 +129,11 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
 		if (i == 1)
 		{
-			if (ocl::haveOpenCL())
+			if (!ocl::haveOpenCL())
 				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 			else
 				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 		}
-
         if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
         {
             candidates.push_back(tmpCandid);
@@ -144,7 +149,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
                 trackerNeedsReInit = true;
         }
     }
-
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
 
     //dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
@@ -230,6 +234,16 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 #endif
     }
 
+
+	//Debug display candidates after Variance Filter
+	////////////////////////////////////////////////
+	Mat tmpImg = image;
+	for (int i = 0; i < tldModel->detector->debugStack[0].size(); i++)
+		//rectangle(tmpImg, tldModel->detector->debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
+	tldModel->detector->debugStack[0].clear();
+	tmpImg.copyTo(image);
+
+	////////////////////////////////////////////////
     return true;
 }
 
