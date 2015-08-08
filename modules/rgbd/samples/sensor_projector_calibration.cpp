@@ -138,7 +138,11 @@ int main(int argc, char** argv)
     waitKey(30);
 
     // decode
-    Mat correspondenceMap = Mat::zeros(image.size(), CV_8UC3);
+    pattern->setLightThreshold(2);
+    Mat correspondenceMapX = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
+    Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
+    Mat correspondenceMapProX = Mat::zeros(params.height, params.width, CV_8UC3);
+    Mat correspondenceMapProY = Mat::zeros(params.height, params.width, CV_8UC3);
     for (int y = 0; y < capture.get(CAP_PROP_FRAME_HEIGHT); y++) {
         for (int x = 0; x < capture.get(CAP_PROP_FRAME_WIDTH); x++) {
             Point point;
@@ -146,16 +150,37 @@ int main(int argc, char** argv)
             const bool error = true;
             if (pattern->getProjPixel(cameraImages, x, y, point) == error)
             {
-                //continue;
+                continue;
+            }
+
+            if (point.x >= params.width-5 || point.y >= params.height-5 || point.x <= 5 || point.y <= 5)
+            {
+                continue;
             }
 
             Range xr(x, x + 1);
             Range yr(y, y + 1);
-            correspondenceMap(yr, xr) = Scalar(0, point.y * 255 / params.height, point.x * 255 / params.width);
+            // weird encoding to reliably recover the point...
+//            correspondenceMapX(yr, xr) = Scalar((point.x & 0x0F00) >> 4, (point.x & 0xF0), (point.x & 0x0F) << 4);
+//            correspondenceMapY(yr, xr) = Scalar((point.y & 0x0F00) >> 4, (point.y & 0xF0), (point.y & 0x0F) << 4);
+            correspondenceMapX(yr, xr) = Scalar(0, (point.x & 0xFF00) / 256, (point.x & 0xFF));
+            correspondenceMapY(yr, xr) = Scalar(0, (point.y & 0xFF00) / 256, (point.y & 0xFF));
+
+            Range xp(point.x - 1, point.x + 2);
+            Range yp(point.y - 1, point.y + 2);
+            correspondenceMapProX(yp, xp) = Scalar((x & 0x0F00) >> 4, (x & 0xF0), (x & 0x0F) << 4);
+            correspondenceMapProY(yp, xp) = Scalar((y & 0x0F00) >> 4, (y & 0xF0), (y & 0x0F) << 4);
         }
     }
 
-    imshow("correspondence", correspondenceMap);
+    imshow("correspondence X", correspondenceMapX);
+    imshow("correspondence Y", correspondenceMapY);
+
+    imshow("correspondence Pro X", correspondenceMapProX);
+    imshow("correspondence Pro Y", correspondenceMapProY);
+
+    imwrite("correspondenceX.png", correspondenceMapX);
+    imwrite("correspondenceY.png", correspondenceMapY);
 
     waitKey(0);
     return 0;

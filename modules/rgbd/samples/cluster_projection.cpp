@@ -60,13 +60,19 @@ using namespace std;
 
 int main( int argc, char** argv )
 {
+    Mat correspondenceMapX, correspondenceMapY;
+    Mat correspondenceX, correspondenceY;
+    correspondenceMapX = imread("correspondenceX.png");
+    correspondenceMapY = imread("correspondenceY.png");
+
     Mat image, depth;
     float focalLength;
     Mat cameraMatrix = Mat::eye(3, 3, CV_32FC1);
 
     if (argc != 2) {
         // bad arguments
-        exit(1);
+        argv[1] = "OPENNI";
+        //exit(1);
     }
 
     if (string(argv[1]) == "OPENNI")
@@ -118,6 +124,8 @@ int main( int argc, char** argv )
         cameraMatrix.at<float>(1, 1) = fy;
         cameraMatrix.at<float>(0, 2) = cx;
         cameraMatrix.at<float>(1, 2) = cy;
+
+        cout << cameraMatrix << endl;
     }
     else
     {
@@ -126,17 +134,8 @@ int main( int argc, char** argv )
 
         float pixelSize, refDistance;
         file["depth"] >> depth;
-        float fx = 570,
-            fy = 570,
-            cx = 319.5f,
-            cy = 239.5f;
-
-        cameraMatrix.at<float>(0, 0) = fx;
-        cameraMatrix.at<float>(1, 1) = fy;
-        cameraMatrix.at<float>(0, 2) = cx;
-        cameraMatrix.at<float>(1, 2) = cy;
+        file["cameraMatrix"] >> cameraMatrix;
         depth.convertTo(depth, CV_32F);
-        depth = depth * 0.001f; // [mm] to [m]
     }
 
     Ptr<RgbdFrame> frame = makePtr<RgbdFrame>(image, depth);
@@ -149,19 +148,45 @@ int main( int argc, char** argv )
 
     depthTo3d(*frame);
 
+    // generate valid point mask for clusters
+    compare(frame->depth, 0, frame->mask, CMP_GT);
+    correspondenceX = Mat::zeros(correspondenceMapX.size(), CV_32S);
+    correspondenceY = Mat::zeros(correspondenceMapY.size(), CV_32S);
+    for (int i = 0; i < frame->mask.rows; i++)
+    {
+        for (int j = 0; j < frame->mask.cols; j++)
+        {
+            if (frame->mask.at<uchar>(i, j) == 0)
+                continue;
+
+            Vec3b sx = correspondenceMapX.at<Vec3b>(i, j);
+            Vec3b sy = correspondenceMapY.at<Vec3b>(i, j);
+            if (sx[0] == 255
+                && sx[1] == 255
+                && sx[2] == 255)
+            {
+                //frame->points3d.at<Vec3f>(i, j) = Vec3f(0, 0, 0);
+            }
+            else
+            {
+//                correspondenceX.at<float>(i, j) = (float)((int)sx[0] << 4 + (int)sx[1] + (int)sx[2] >> 4);
+//                correspondenceY.at<float>(i, j) = (float)((int)sy[0] << 4 + (int)sy[1] + (int)sy[2] >> 4);
+                correspondenceX.at<float>(i, j) = (float)((int)sx[1] * 256 + (int)sx[2]);
+                correspondenceY.at<float>(i, j) = (float)((int)sy[1] * 256 + (int)sy[2]);
+            }
+        }
+    }
+
     imshow("depth", frame->points3d);
     waitKey(0);
 
-    // generate valid point mask for clusters
-    compare(frame->depth, 0, frame->mask, CMP_GT);
-
     RgbdClusterMesh mainCluster(frame);
-    mainCluster.increment_step = 2;
-    mainCluster.calculatePoints();
-    mainCluster.calculateFaceIndices();
-    mainCluster.save("main.obj");
+    //mainCluster.increment_step = 2;
+    //mainCluster.calculatePoints();
+    //mainCluster.calculateFaceIndices();
+    //mainCluster.save("main.obj");
     vector<RgbdClusterMesh> clusters;
-    planarSegmentation(mainCluster, clusters);
+    planarSegmentation(mainCluster, clusters, 2);
     deleteEmptyClusters(clusters);
 
     for (std::size_t i = 0; i < clusters.size(); i++) {
@@ -181,8 +206,10 @@ int main( int argc, char** argv )
             clusters.at(i).increment_step = 4;
             clusters.at(i).calculatePoints();
             clusters.at(i).unwrapTexCoord();
-            clusters.at(i).save(ss.str() + ".obj");
-            clusters.at(i).save(ss.str() + ".ply");
+            clusters.at(i).correspondenceX = correspondenceX;
+            clusters.at(i).correspondenceY = correspondenceY;
+            //clusters.at(i).save(ss.str() + ".obj");
+            //clusters.at(i).save(ss.str() + ".ply");
             continue;
         }
 
@@ -192,14 +219,22 @@ int main( int argc, char** argv )
         for (std::size_t j = 0; j < smallClusters.size(); j++) {
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
+            //erode(smallClusters.at(j).silhouette, smallClusters.at(j).silhouette, Mat());
+            //erode(smallClusters.at(j).silhouette, smallClusters.at(j).silhouette, Mat());
             imshow(ss.str(), smallClusters.at(j).silhouette * 255);
 
-            // downsample by 0.5x
-            smallClusters.at(j).increment_step = 2;
+            // downsample by 1x
+            smallClusters.at(j).increment_step = 1;
             smallClusters.at(j).calculatePoints();
+            if (smallClusters.at(j).getNumPoints() == 0)
+            {
+                continue;
+            }
             smallClusters.at(j).unwrapTexCoord();
+            smallClusters.at(j).correspondenceX = correspondenceX;
+            smallClusters.at(j).correspondenceY = correspondenceY;
             smallClusters.at(j).save(ss.str() + ".obj");
-            smallClusters.at(j).save(ss.str() + ".ply");
+            //smallClusters.at(j).save(ss.str() + ".ply");
         }
     }
 

@@ -1041,6 +1041,7 @@ namespace rgbd
   class CV_EXPORTS RgbdCluster
   {
   public:
+    Mat correspondenceX, correspondenceY;
     Ptr<RgbdFrame> rgbdFrame;
     /* silhouette of the cluster. RgbdFrame::mask should be used to indicate valid depth points */
     Mat silhouette;

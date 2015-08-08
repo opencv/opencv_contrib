@@ -405,8 +405,8 @@ bool GrayCodePattern_Impl::getProjPixel(InputArrayOfArrays patternImages, int x,
     {
       //get pixel intensity for regular pattern projection and its inverse
       double val1, val2;
-      val1 = _patternImages[count * 2].at<uchar>(Point(x, y));
-      val2 = _patternImages[count * 2 + 1].at<uchar>(Point(x, y));
+      val2 = _patternImages[count * 2].at<uchar>(Point(x, y));
+      val1 = _patternImages[count * 2 + 1].at<uchar>(Point(x, y));
 
       //check if intensity deference is in a valid rage
       if( abs(val1 - val2) < lightThreshold )
@@ -426,8 +426,8 @@ bool GrayCodePattern_Impl::getProjPixel(InputArrayOfArrays patternImages, int x,
   for( int count = 0; count < numOfColImgs; count++ )
     {
 
-      double val1 = _patternImages[count * 2 + numOfColImgs * 2].at<uchar>(Point(x, y));
-      double val2 = _patternImages[count * 2 + numOfColImgs * 2 + 1].at<uchar>(Point(x, y));
+      double val2 = _patternImages[count * 2 + numOfColImgs * 2].at<uchar>(Point(x, y));
+      double val1 = _patternImages[count * 2 + numOfColImgs * 2 + 1].at<uchar>(Point(x, y));
 
       // check if the difference between the values of the normal and it's inverse projection image is valid
       if( abs(val1 - val2) < lightThreshold )
