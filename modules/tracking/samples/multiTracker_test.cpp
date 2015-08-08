@@ -49,7 +49,7 @@ using namespace std;
 using namespace cv;
 
 #define NUM_TEST_FRAMES 100
-#define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
+#define TEST_VIDEO_INDEX 15		//TLD Dataset Video Index from 1-10 for TLD and 1-60 for VOT
 //#define RECORD_VIDEO_FLG
 
 static Mat image;
@@ -119,12 +119,12 @@ int main()
 
 	//From TLD dataset
 	selectObject = true;
-	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/TLD_dataset");
+	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/VOT 2015", 1);
 	Rect2d boundingBox2;
-	boundingBox2.x = 280;
-	boundingBox2.y = 60;
-	boundingBox2.width = 40;
-	boundingBox2.height = 60;
+	boundingBox2.x = 470;
+	boundingBox2.y = 500;
+	boundingBox2.width = 50;
+	boundingBox2.height = 100;
 
 	frame = tld::tld_getNextDatasetFrame();
 	frame.copyTo(image);
@@ -140,6 +140,7 @@ int main()
 		std::cout << "!!! Output video could not be opened" << std::endl;
 		getchar();
 		return;
+
 	}
 #endif
 
@@ -193,12 +194,14 @@ int main()
 				else
 				{
 					//updates the tracker
-					if (mt.update(frame))
-							for (int i=0; i < mt.targetNum; i++)
-								rectangle(image, mt.boundingBoxes[i], mt.colors[i], 2, 1);
+					if (mt.update_opt(frame))
+					{
+						for (int i = 0; i < mt.targetNum; i++)
+							rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
+					}
 				}
 			}
-			imshow("Tracking API", image);
+			imshow("Tracking API", frame);
 
 #ifdef RECORD_VIDEO_FLG
 			outputVideo << image;
@@ -210,7 +213,7 @@ int main()
 			double t1 = (e2 - e1) / getTickFrequency();
 			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
 
-			waitKey(0);
+			//waitKey(0);
 		}
 	}
 
