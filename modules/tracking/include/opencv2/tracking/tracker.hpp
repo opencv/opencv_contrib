@@ -1264,7 +1264,7 @@ public:
 class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
 {
 public:
-	bool update(const Mat& image);
+	bool update_opt(const Mat& image);
 };
 
 //! @}
