@@ -58,7 +58,7 @@ namespace cv
         enum {
             CV_DENSE_CENSUS, CV_SPARSE_CENSUS,
             CV_CS_CENSUS, CV_MODIFIED_CS_CENSUS, CV_MODIFIED_CENSUS_TRANSFORM,
-            CV_MEAN_VARIATION
+            CV_MEAN_VARIATION, CV_STAR_KERNEL
         };
         //!Mean Variation is a robust kernel that compares a pixel
         //!not just with the center but also with the mean of the window

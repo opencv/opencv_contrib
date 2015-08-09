@@ -57,14 +57,12 @@ namespace cv
         //maxDisp - represents the maximum disparity
         Matching::Matching(int maxDisp, int scalling, int confidence)
         {
-            CV_Assert(maxDisp > 10);
-            CV_Assert(scalling != 0);
-            CV_Assert(confidence >= 1);
-            this->scallingFactor = scalling;
             //set the maximum disparity
-            this->maxDisparity = maxDisp;
+            setMaxDisparity(maxDisp);
+            //set scalling factor
+            setScallingFactor(scalling);
             //set the value for the confidence
-            this->confidenceCheck = confidence;
+            setConfidence(confidence);
             //generate the hamming lut in case SSE is not available
             hammingLut();
         }
@@ -82,7 +80,7 @@ namespace cv
         void Matching::setScallingFactor(int val)
         {
             CV_Assert(val > 0);
-            scallingFactor = val;
+            this->scallingFactor = val;
         }
         //!method for getting the scalling factor
         int Matching::getScallingFactor()
@@ -99,10 +97,10 @@ namespace cv
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(cost.rows == leftImage.rows);
             CV_Assert(cost.cols / (maxDisparity + 1) == leftImage.cols);
-            // cost.setTo(0);
-            int *c = (int *)cost.data;
-            memset(c, 0, sizeof(c[0]) * leftImage.cols * leftImage.rows * (maxDisparity + 1));
-            parallel_for_(cv::Range(kernelSize / 2,leftImage.rows - kernelSize / 2), hammingDistance(leftImage,rightImage,c,maxDisparity,kernelSize / 2,hamLut));
+            cost.setTo(0);
+            //int *c = (int *)cost.data;
+            //memset(c, 0, sizeof(c[0]) * leftImage.cols * leftImage.rows * (maxDisparity + 1));
+            parallel_for_(cv::Range(kernelSize / 2,leftImage.rows - kernelSize / 2), hammingDistance(leftImage,rightImage,(int *)cost.data,maxDisparity,kernelSize / 2,hamLut));
         }
         //preprocessing the cost volume in order to get it ready for aggregation
         void Matching::costGathering(const Mat &hammingDistanceCost, Mat &cost)
@@ -110,12 +108,12 @@ namespace cv
             CV_Assert(hammingDistanceCost.rows == hammingDistanceCost.rows);
             CV_Assert(hammingDistanceCost.type() == CV_32SC4);
             CV_Assert(cost.type() == CV_32SC4);
-            //cost.setTo(0);
+            cost.setTo(0);
             int maxDisp = maxDisparity;
             int width = cost.cols / ( maxDisp + 1) - 1;
             int height = cost.rows - 1;
             int *c = (int *)cost.data;
-            memset(c, 0, sizeof(c[0]) * (width + 1) * (height + 1) * (maxDisp + 1));
+            //memset(c, 0, sizeof(c[0]) * (width + 1) * (height + 1) * (maxDisp + 1));
             parallel_for_(cv::Range(1,height), costGatheringHorizontal(hammingDistanceCost,maxDisparity,cost));
             for (int i = 1; i <= height; i++)
             {
@@ -136,12 +134,13 @@ namespace cv
             CV_Assert(windowSize % 2 != 0);
             CV_Assert(partialSums.rows == cost.rows);
             CV_Assert(partialSums.cols == cost.cols);
+            cost.setTo(0);
             int win = windowSize / 2;
-            int *c = (int *)cost.data;
+            //int *c = (int *)cost.data;
             int maxDisp = maxDisparity;
-            int width = cost.cols / ( maxDisp + 1) - 1;
+            //int width = cost.cols / ( maxDisp + 1) - 1;
             int height = cost.rows - 1;
-            memset(c, 0, sizeof(c[0]) * width * height * (maxDisp + 1));
+            //memset(c, 0, sizeof(c[0]) * width * height * (maxDisp + 1));
             parallel_for_(cv::Range(win + 1,height - win - 1), agregateCost(partialSums,windowSize,maxDisp,cost));
         }
         //!Finding the correct disparity from the cost volume, we also make a confidence check
@@ -303,7 +302,7 @@ namespace cv
         void Matching ::setConfidence(double val)
         {
             CV_Assert(val >= 1);
-            confidenceCheck = val;
+            this->confidenceCheck = val;
         }
         //getter for confidence check
         double Matching ::getConfidence()
@@ -313,26 +312,27 @@ namespace cv
         //!Method responsible for generating the disparity map
         void Matching::dispartyMapFormation(const Mat &costVolume, Mat &mapFinal, int th)
         {
-            uint8_t *map = mapFinal.data;
+            mapFinal.setTo(0);
+            //uint8_t *map = mapFinal.data;
             int disparity = maxDisparity;
-            int width = costVolume.cols / ( disparity + 1) - 1;
+            //int width = costVolume.cols / ( disparity + 1) - 1;
             int height = costVolume.rows - 1;
-            memset(map, 0, sizeof(map[0]) * width * height);
+            //memset(map, 0, sizeof(map[0]) * width * height);
             parallel_for_(Range(0,height - 1), makeMap(costVolume,th,disparity,confidenceCheck,scallingFactor,mapFinal));
         }
         //!1x9 median filter
-        void Matching::Median1x9Filter(const Mat &originalMap, Mat &map)
+        void Matching::Median1x9Filter(const Mat &originalImage, Mat &filteredImage)
         {
-            CV_Assert(originalMap.rows == map.rows);
-            CV_Assert(originalMap.cols == map.cols);
-            parallel_for_(Range(1,originalMap.rows - 2), Median1x9(originalMap,map));
+            CV_Assert(originalImage.rows == filteredImage.rows);
+            CV_Assert(originalImage.cols == filteredImage.cols);
+            parallel_for_(Range(1,originalImage.rows - 2), Median1x9(originalImage,filteredImage));
         }
         //!9x1 median filter
-        void Matching::Median9x1Filter(const Mat &originalMap, Mat &map)
+        void Matching::Median9x1Filter(const Mat &originalImage, Mat &filteredImage)
         {
-            CV_Assert(originalMap.cols == map.cols);
-            CV_Assert(originalMap.cols == map.cols);
-            parallel_for_(Range(1,originalMap.cols - 2), Median9x1(originalMap,map));
+            CV_Assert(originalImage.cols == filteredImage.cols);
+            CV_Assert(originalImage.cols == filteredImage.cols);
+            parallel_for_(Range(1,originalImage.cols - 2), Median9x1(originalImage,filteredImage));
         }
     }
 }

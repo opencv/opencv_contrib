@@ -46,6 +46,8 @@
 \****************************************************************************************/
 
 #include "precomp.hpp"
+#include "descriptor.hpp"
+#include "matching.hpp"
 #include <stdio.h>
 #include <limits>
 
@@ -53,14 +55,15 @@ namespace cv
 {
     namespace stereo
     {
+
         struct StereoBinaryBMParams
         {
-            StereoBinaryBMParams(int _numDisparities = 64, int _SADWindowSize = 9)
+            StereoBinaryBMParams(int _numDisparities = 64, int _kernelSize = 9)
             {
                 preFilterType = StereoBinaryBM::PREFILTER_XSOBEL;
                 preFilterSize = 9;
                 preFilterCap = 31;
-                SADWindowSize = _SADWindowSize;
+                kernelSize = _kernelSize;
                 minDisparity = 0;
                 numDisparities = _numDisparities > 0 ? _numDisparities : 64;
                 textureThreshold = 10;
@@ -69,12 +72,17 @@ namespace cv
                 roi1 = roi2 = Rect(0, 0, 0, 0);
                 disp12MaxDiff = -1;
                 dispType = CV_16S;
+                usePrefilter = false;
+                regionRemoval = 1;
+                scalling = 4;
+                kernelType = CV_MODIFIED_CENSUS_TRANSFORM;
+                agregationWindowSize = 9;
             }
 
             int preFilterType;
             int preFilterSize;
             int preFilterCap;
-            int SADWindowSize;
+            int kernelSize;
             int minDisparity;
             int numDisparities;
             int textureThreshold;
@@ -84,6 +92,11 @@ namespace cv
             Rect roi1, roi2;
             int disp12MaxDiff;
             int dispType;
+            int scalling;
+            bool usePrefilter;
+            int regionRemoval;
+            int kernelType;
+            int agregationWindowSize;
         };
 
         static void prefilterNorm(const Mat& src, Mat& dst, int winsize, int ftzero, uchar* buf)
@@ -104,7 +117,6 @@ namespace cv
 
             for (x = 0; x < size.width; x++)
                 vsum[x] = (ushort)(sptr[x] * (wsz2 + 2));
-
             for (y = 1; y < wsz2; y++)
             {
                 for (x = 0; x < size.width; x++)
@@ -228,179 +240,6 @@ namespace cv
 
         static const int DISPARITY_SHIFT = 4;
 
-        static void
-            findStereoCorrespondenceBM(const Mat& left, const Mat& right,
-            Mat& disp, Mat& cost, const StereoBinaryBMParams& state,
-            uchar* buf, int _dy0, int _dy1)
-        {
-            const int ALIGN = 16;
-            int x, y, d;
-            int wsz = state.SADWindowSize, wsz2 = wsz / 2;
-            int dy0 = MIN(_dy0, wsz2 + 1), dy1 = MIN(_dy1, wsz2 + 1);
-            int ndisp = state.numDisparities;
-            int mindisp = state.minDisparity;
-            int lofs = MAX(ndisp - 1 + mindisp, 0);
-            int rofs = -MIN(ndisp - 1 + mindisp, 0);
-            int width = left.cols, height = left.rows;
-            int width1 = width - rofs - ndisp + 1;
-            int ftzero = state.preFilterCap;
-            int textureThreshold = state.textureThreshold;
-            int uniquenessRatio = state.uniquenessRatio;
-            short FILTERED = (short)((mindisp - 1) << DISPARITY_SHIFT);
-
-            int *sad, *hsad0, *hsad, *hsad_sub, *htext;
-            uchar *cbuf0, *cbuf;
-            const uchar* lptr0 = left.ptr() + lofs;
-            const uchar* rptr0 = right.ptr() + rofs;
-            const uchar *lptr, *lptr_sub, *rptr;
-            short* dptr = disp.ptr<short>();
-            int sstep = (int)left.step;
-            int dstep = (int)(disp.step / sizeof(dptr[0]));
-            int cstep = (height + dy0 + dy1)*ndisp;
-            int costbuf = 0;
-            int coststep = cost.data ? (int)(cost.step / sizeof(costbuf)) : 0;
-            const int TABSZ = 256;
-            uchar tab[TABSZ];
-
-            sad = (int*)alignPtr(buf + sizeof(sad[0]), ALIGN);
-            hsad0 = (int*)alignPtr(sad + ndisp + 1 + dy0*ndisp, ALIGN);
-            htext = (int*)alignPtr((int*)(hsad0 + (height + dy1)*ndisp) + wsz2 + 2, ALIGN);
-            cbuf0 = (uchar*)alignPtr((uchar*)(htext + height + wsz2 + 2) + dy0*ndisp, ALIGN);
-
-            for (x = 0; x < TABSZ; x++)
-                tab[x] = (uchar)std::abs(x - ftzero);
-
-            // initialize buffers
-            memset(hsad0 - dy0*ndisp, 0, (height + dy0 + dy1)*ndisp*sizeof(hsad0[0]));
-            memset(htext - wsz2 - 1, 0, (height + wsz + 1)*sizeof(htext[0]));
-
-            for (x = -wsz2 - 1; x < wsz2; x++)
-            {
-                hsad = hsad0 - dy0*ndisp; cbuf = cbuf0 + (x + wsz2 + 1)*cstep - dy0*ndisp;
-                lptr = lptr0 + std::min(std::max(x, -lofs), width - lofs - 1) - dy0*sstep;
-                rptr = rptr0 + std::min(std::max(x, -rofs), width - rofs - 1) - dy0*sstep;
-                for (y = -dy0; y < height + dy1; y++, hsad += ndisp, cbuf += ndisp, lptr += sstep, rptr += sstep)
-                {
-                    int lval = lptr[0];
-                    for (d = 0; d < ndisp; d++)
-                    {
-                        int diff = std::abs(lval - rptr[d]);
-                        cbuf[d] = (uchar)diff;
-                        hsad[d] = (int)(hsad[d] + diff);
-                    }
-                    htext[y] += tab[lval];
-                }
-            }
-
-            // initialize the left and right borders of the disparity map
-            for (y = 0; y < height; y++)
-            {
-                for (x = 0; x < lofs; x++)
-                    dptr[y*dstep + x] = FILTERED;
-                for (x = lofs + width1; x < width; x++)
-                    dptr[y*dstep + x] = FILTERED;
-            }
-            dptr += lofs;
-
-            for (x = 0; x < width1; x++, dptr++)
-            {
-                int* costptr = cost.data ? cost.ptr<int>() + lofs + x : &costbuf;
-                int x0 = x - wsz2 - 1, x1 = x + wsz2;
-                const uchar* cbuf_sub = cbuf0 + ((x0 + wsz2 + 1) % (wsz + 1))*cstep - dy0*ndisp;
-                cbuf = cbuf0 + ((x1 + wsz2 + 1) % (wsz + 1))*cstep - dy0*ndisp;
-                hsad = hsad0 - dy0*ndisp;
-                lptr_sub = lptr0 + MIN(MAX(x0, -lofs), width - 1 - lofs) - dy0*sstep;
-                lptr = lptr0 + MIN(MAX(x1, -lofs), width - 1 - lofs) - dy0*sstep;
-                rptr = rptr0 + MIN(MAX(x1, -rofs), width - 1 - rofs) - dy0*sstep;
-
-                for (y = -dy0; y < height + dy1; y++, cbuf += ndisp, cbuf_sub += ndisp,
-                    hsad += ndisp, lptr += sstep, lptr_sub += sstep, rptr += sstep)
-                {
-                    int lval = lptr[0];
-                    for (d = 0; d < ndisp; d++)
-                    {
-                        int diff = std::abs(lval - rptr[d]);
-                        cbuf[d] = (uchar)diff;
-                        hsad[d] = hsad[d] + diff - cbuf_sub[d];
-                    }
-                    htext[y] += tab[lval] - tab[lptr_sub[0]];
-                }
-
-                // fill borders
-                for (y = dy1; y <= wsz2; y++)
-                    htext[height + y] = htext[height + dy1 - 1];
-                for (y = -wsz2 - 1; y < -dy0; y++)
-                    htext[y] = htext[-dy0];
-
-                // initialize sums
-                int tsum = 0;
-                {
-                    for (d = 0; d < ndisp; d++)
-                        sad[d] = (int)(hsad0[d - ndisp*dy0] * (wsz2 + 2 - dy0));
-
-                    hsad = hsad0 + (1 - dy0)*ndisp;
-                    for (y = 1 - dy0; y < wsz2; y++, hsad += ndisp)
-                        for (d = 0; d < ndisp; d++)
-                            sad[d] = (int)(sad[d] + hsad[d]);
-
-                    for (y = -wsz2 - 1; y < wsz2; y++)
-                        tsum += htext[y];
-                }
-                // finally, start the real processing
-                {
-                    for (y = 0; y < height; y++)
-                    {
-                        int minsad = INT_MAX, mind = -1;
-                        hsad = hsad0 + MIN(y + wsz2, height + dy1 - 1)*ndisp;
-                        hsad_sub = hsad0 + MAX(y - wsz2 - 1, -dy0)*ndisp;
-
-                        for (d = 0; d < ndisp; d++)
-                        {
-                            int currsad = sad[d] + hsad[d] - hsad_sub[d];
-                            sad[d] = currsad;
-                            if (currsad < minsad)
-                            {
-                                minsad = currsad;
-                                mind = d;
-                            }
-                        }
-
-                        tsum += htext[y + wsz2] - htext[y - wsz2 - 1];
-                        if (tsum < textureThreshold)
-                        {
-                            dptr[y*dstep] = FILTERED;
-                            continue;
-                        }
-
-                        if (uniquenessRatio > 0)
-                        {
-                            int thresh = minsad + (minsad * uniquenessRatio / 100);
-                            for (d = 0; d < ndisp; d++)
-                            {
-                                if ((d < mind - 1 || d > mind + 1) && sad[d] <= thresh)
-                                    break;
-                            }
-                            if (d < ndisp)
-                            {
-                                dptr[y*dstep] = FILTERED;
-                                continue;
-                            }
-                        }
-
-                        {
-                            sad[-1] = sad[1];
-                            sad[ndisp] = sad[ndisp - 2];
-                            int p = sad[mind + 1], n = sad[mind - 1];
-                            d = p + n - 2 * sad[mind] + std::abs(p - n);
-                            dptr[y*dstep] = (short)(((ndisp - mind - 1 + mindisp) * 256 + (d != 0 ? (p - n) * 256 / d : 0) + 15) >> 4);
-                            costptr[y*coststep] = sad[mind];
-                        }
-                    }
-                }
-            }
-        }
-
-
         struct PrefilterInvoker : public ParallelLoopBody
         {
             PrefilterInvoker(const Mat& left0, const Mat& right0, Mat& left, Mat& right,
@@ -429,83 +268,7 @@ namespace cv
             StereoBinaryBMParams* state;
         };
 
-        struct FindStereoCorrespInvoker : public ParallelLoopBody
-        {
-            FindStereoCorrespInvoker(const Mat& _left, const Mat& _right,
-                Mat& _disp, StereoBinaryBMParams* _state,
-                int _nstripes, size_t _stripeBufSize,
-                bool _useShorts, Rect _validDisparityRect,
-                Mat& _slidingSumBuf, Mat& _cost)
-            {
-                left = &_left; right = &_right;
-                disp = &_disp; state = _state;
-                nstripes = _nstripes; stripeBufSize = _stripeBufSize;
-                useShorts = _useShorts;
-                validDisparityRect = _validDisparityRect;
-                slidingSumBuf = &_slidingSumBuf;
-                cost = &_cost;
-            }
-
-            void operator()(const Range& range) const
-            {
-                int cols = left->cols, rows = left->rows;
-                int _row0 = std::min(cvRound(range.start * rows / nstripes), rows);
-                int _row1 = std::min(cvRound(range.end * rows / nstripes), rows);
-                uchar *ptr = slidingSumBuf->ptr() + range.start * stripeBufSize;
-                int FILTERED = (state->minDisparity - 1) * 16;
-
-                Rect roi = validDisparityRect & Rect(0, _row0, cols, _row1 - _row0);
-                if (roi.height == 0)
-                    return;
-                int row0 = roi.y;
-                int row1 = roi.y + roi.height;
-
-                Mat part;
-                if (row0 > _row0)
-                {
-                    part = disp->rowRange(_row0, row0);
-                    part = Scalar::all(FILTERED);
-                }
-                if (_row1 > row1)
-                {
-                    part = disp->rowRange(row1, _row1);
-                    part = Scalar::all(FILTERED);
-                }
-
-                Mat left_i = left->rowRange(row0, row1);
-                Mat right_i = right->rowRange(row0, row1);
-                Mat disp_i = disp->rowRange(row0, row1);
-                Mat cost_i = state->disp12MaxDiff >= 0 ? cost->rowRange(row0, row1) : Mat();
-
-                findStereoCorrespondenceBM(left_i, right_i, disp_i, cost_i, *state, ptr, row0, rows - row1);
-
-                if (state->disp12MaxDiff >= 0)
-                    validateDisparity(disp_i, cost_i, state->minDisparity, state->numDisparities, state->disp12MaxDiff);
-
-                if (roi.x > 0)
-                {
-                    part = disp_i.colRange(0, roi.x);
-                    part = Scalar::all(FILTERED);
-                }
-                if (roi.x + roi.width < cols)
-                {
-                    part = disp_i.colRange(roi.x + roi.width, cols);
-                    part = Scalar::all(FILTERED);
-                }
-            }
-
-        protected:
-            const Mat *left, *right;
-            Mat* disp, *slidingSumBuf, *cost;
-            StereoBinaryBMParams *state;
-
-            int nstripes;
-            size_t stripeBufSize;
-            bool useShorts;
-            Rect validDisparityRect;
-        };
-
-        class StereoBinaryBMImpl : public StereoBinaryBM
+        class StereoBinaryBMImpl : public StereoBinaryBM,public Matching
         {
         public:
             StereoBinaryBMImpl()
@@ -513,9 +276,9 @@ namespace cv
                 params = StereoBinaryBMParams();
             }
 
-            StereoBinaryBMImpl(int _numDisparities, int _SADWindowSize)
+            StereoBinaryBMImpl(int _numDisparities, int _kernelSize) : Matching(_numDisparities)
             {
-                params = StereoBinaryBMParams(_numDisparities, _SADWindowSize);
+                params = StereoBinaryBMParams(_numDisparities, _kernelSize);
             }
 
             void compute(InputArray leftarr, InputArray rightarr, OutputArray disparr)
@@ -542,9 +305,9 @@ namespace cv
                 if (params.preFilterCap < 1 || params.preFilterCap > 63)
                     CV_Error(Error::StsOutOfRange, "preFilterCap must be within 1..63");
 
-                if (params.SADWindowSize < 5 || params.SADWindowSize > 255 || params.SADWindowSize % 2 == 0 ||
-                    params.SADWindowSize >= std::min(leftsize.width, leftsize.height))
-                    CV_Error(Error::StsOutOfRange, "SADWindowSize must be odd, be within 5..255 and be not larger than image width or height");
+                if (params.kernelSize < 5 || params.kernelSize > 255 || params.kernelSize % 2 == 0 ||
+                    params.kernelSize >= std::min(leftsize.width, leftsize.height))
+                    CV_Error(Error::StsOutOfRange, "kernelSize must be odd, be within 5..255 and be not larger than image width or height");
 
                 if (params.numDisparities <= 0 || params.numDisparities % 16 != 0)
                     CV_Error(Error::StsOutOfRange, "numDisparities must be positive and divisble by 16");
@@ -557,85 +320,111 @@ namespace cv
 
                 int FILTERED = (params.minDisparity - 1) << DISPARITY_SHIFT;
 
-
                 Mat left0 = leftarr.getMat(), right0 = rightarr.getMat();
-                disparr.create(left0.size(), dtype);
                 Mat disp0 = disparr.getMat();
+
+                censusImage[0].create(left0.rows,left0.cols,CV_32SC4);
+                censusImage[1].create(left0.rows,left0.cols,CV_32SC4);
+
+                partialSumsLR.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_32SC4);
+                agregatedHammingLRCost.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_32SC4);
+                hammingDistance.create(left0.rows, left0.cols * (params.numDisparities + 1),CV_32SC4);
 
                 preFilteredImg0.create(left0.size(), CV_8U);
                 preFilteredImg1.create(left0.size(), CV_8U);
-                cost.create(left0.size(), CV_16S);
 
                 Mat left = preFilteredImg0, right = preFilteredImg1;
 
-                int mindisp = params.minDisparity;
                 int ndisp = params.numDisparities;
 
                 int width = left0.cols;
                 int height = left0.rows;
-                int lofs = std::max(ndisp - 1 + mindisp, 0);
-                int rofs = -std::min(ndisp - 1 + mindisp, 0);
-                int width1 = width - rofs - ndisp + 1;
 
-                if (lofs >= width || rofs >= width || width1 < 1)
-                {
-                    disp0 = Scalar::all(FILTERED * (disp0.type() < CV_32F ? 1 : 1. / (1 << DISPARITY_SHIFT)));
-                    return;
-                }
-
-                Mat disp = disp0;
-                if (dtype == CV_32F)
-                {
-                    dispbuf.create(disp0.size(), CV_16S);
-                    disp = dispbuf;
-                }
-
-                int wsz = params.SADWindowSize;
+                int wsz = params.kernelSize;
                 int bufSize0 = (int)((ndisp + 2)*sizeof(int));
                 bufSize0 += (int)((height + wsz + 2)*ndisp*sizeof(int));
                 bufSize0 += (int)((height + wsz + 2)*sizeof(int));
                 bufSize0 += (int)((height + wsz + 2)*ndisp*(wsz + 2)*sizeof(uchar) + 256);
 
                 int bufSize1 = (int)((width + params.preFilterSize + 2) * sizeof(int) + 256);
-                int bufSize2 = 0;
-                if (params.speckleRange >= 0 && params.speckleWindowSize > 0)
-                    bufSize2 = width*height*(sizeof(Point_<short>) + sizeof(int) + sizeof(uchar));
+                if(params.usePrefilter == true)
+                {
+                    uchar *_buf = slidingSumBuf.ptr();
 
-#if CV_SSE2
-                bool useShorts = params.preFilterCap <= 31 && params.SADWindowSize <= 21 && checkHardwareSupport(CV_CPU_SSE2);
-#else
-                const bool useShorts = false;
-#endif
-                const double SAD_overhead_coeff = 10.0;
-                double N0 = 8000000 / (useShorts ? 1 : 4);  // approx tbb's min number instructions reasonable for one thread
-                double maxStripeSize = std::min(std::max(N0 / (width * ndisp), (wsz - 1) * SAD_overhead_coeff), (double)height);
-                int nstripes = cvCeil(height / maxStripeSize);
-                int bufSize = std::max(bufSize0 * nstripes, std::max(bufSize1 * 2, bufSize2));
+                    parallel_for_(Range(0, 2), PrefilterInvoker(left0, right0, left, right, _buf, _buf + bufSize1, &params), 1);
+                }
+                else if(params.usePrefilter == false)
+                {
+                    left = left0;
+                    right = right0;
+                }
+                if(params.kernelType == CV_SPARSE_CENSUS)
+                {
+                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_SPARSE_CENSUS);
+                }
+                else if(params.kernelType == CV_DENSE_CENSUS)
+                {
+                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_SPARSE_CENSUS);
+                }
+                else if(params.kernelType == CV_CS_CENSUS)
+                {
+                    symetricCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_CS_CENSUS);
+                }
+                else if(params.kernelType == CV_MODIFIED_CS_CENSUS)
+                {
+                    symetricCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_MODIFIED_CS_CENSUS);
+                }
+                else if(params.kernelType == CV_MODIFIED_CENSUS_TRANSFORM)
+                {
+                    modifiedCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_MODIFIED_CENSUS_TRANSFORM,0);
+                }
+                else if(params.kernelType == CV_MEAN_VARIATION)
+                {
+                    parSumsIntensityImage[0].create(left0.rows, left0.cols,CV_32SC4);
+                    parSumsIntensityImage[1].create(left0.rows, left0.cols,CV_32SC4);
+                    Integral[0].create(left0.rows,left0.cols,CV_32SC4);
+                    Integral[1].create(left0.rows,left0.cols,CV_32SC4);
+                    integral(left, parSumsIntensityImage[0],CV_32S);
+                    integral(right, parSumsIntensityImage[1],CV_32S);
+                    imageMeanKernelSize(parSumsIntensityImage[0], params.kernelSize,Integral[0]);
+                    imageMeanKernelSize(parSumsIntensityImage[1], params.kernelSize, Integral[1]);
+                    modifiedCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_MEAN_VARIATION,0,Integral[0], Integral[1]);
+                }
+                else if(params.kernelType == CV_STAR_KERNEL)
+                {
+                    starCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1]);
+                }
+                hammingDistanceBlockMatching(censusImage[0], censusImage[1], hammingDistance);
+                costGathering(hammingDistance, partialSumsLR);
+                blockAgregation(partialSumsLR, params.agregationWindowSize, agregatedHammingLRCost);
+                dispartyMapFormation(agregatedHammingLRCost, disp0, 3);
+                Median1x9Filter(disp0, disp0);
+                Median9x1Filter(disp0,disp0);
 
-                if (slidingSumBuf.cols < bufSize)
-                    slidingSumBuf.create(1, bufSize, CV_8U);
-
-                uchar *_buf = slidingSumBuf.ptr();
-
-                parallel_for_(Range(0, 2), PrefilterInvoker(left0, right0, left, right, _buf, _buf + bufSize1, &params), 1);
-
-                Rect validDisparityRect(0, 0, width, height), R1 = params.roi1, R2 = params.roi2;
-                validDisparityRect = getValidDisparityROI(R1.area() > 0 ? Rect(0, 0, width, height) : validDisparityRect,
-                    R2.area() > 0 ? Rect(0, 0, width, height) : validDisparityRect,
-                    params.minDisparity, params.numDisparities,
-                    params.SADWindowSize);
-
-                parallel_for_(Range(0, nstripes),
-                    FindStereoCorrespInvoker(left, right, disp, &params, nstripes,
-                    bufSize0, useShorts, validDisparityRect,
-                    slidingSumBuf, cost));
-
-                if (params.speckleRange >= 0 && params.speckleWindowSize > 0)
-                    filterSpeckles(disp, FILTERED, params.speckleWindowSize, params.speckleRange, slidingSumBuf);
-
-                if (disp0.data != disp.data)
-                    disp.convertTo(disp0, disp0.type(), 1. / (1 << DISPARITY_SHIFT), 0);
+                if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
+                {
+                    smallRegionRemoval(disp0,params.speckleWindowSize,disp0);
+                }
+                else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
+                {
+                    if (params.speckleRange >= 0 && params.speckleWindowSize > 0)
+                        filterSpeckles(disp0, FILTERED, params.speckleWindowSize, params.speckleRange, slidingSumBuf);
+                }
             }
+            int getAgregationWindowSize() const { return params.agregationWindowSize;}
+            void setAgregationWindowSize(int value = 9) { params.agregationWindowSize = value;}
+
+            int getBinaryKernelType() const { return params.kernelType;}
+            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { params.kernelType = value; }
+
+            int getSpekleRemovalTechnique() const { return params.regionRemoval;}
+            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) { params.regionRemoval = factor; }
+
+            bool getUsePrefilter() const { return params.usePrefilter;}
+            void setUsePrefilter(bool value = false) { params.usePrefilter = value;}
+
+            int getScalleFactor() const { return params.scalling;}
+            void setScalleFactor(int factor) {params.scalling = factor; setScallingFactor(factor);}
 
             int getMinDisparity() const { return params.minDisparity; }
             void setMinDisparity(int minDisparity) { params.minDisparity = minDisparity; }
@@ -643,8 +432,8 @@ namespace cv
             int getNumDisparities() const { return params.numDisparities; }
             void setNumDisparities(int numDisparities) { params.numDisparities = numDisparities; }
 
-            int getBlockSize() const { return params.SADWindowSize; }
-            void setBlockSize(int blockSize) { params.SADWindowSize = blockSize; }
+            int getBlockSize() const { return params.kernelSize; }
+            void setBlockSize(int blockSize) { params.kernelSize = blockSize; }
 
             int getSpeckleWindowSize() const { return params.speckleWindowSize; }
             void setSpeckleWindowSize(int speckleWindowSize) { params.speckleWindowSize = speckleWindowSize; }
@@ -684,7 +473,7 @@ namespace cv
                 fs << "name" << name_
                     << "minDisparity" << params.minDisparity
                     << "numDisparities" << params.numDisparities
-                    << "blockSize" << params.SADWindowSize
+                    << "blockSize" << params.kernelSize
                     << "speckleWindowSize" << params.speckleWindowSize
                     << "speckleRange" << params.speckleRange
                     << "disp12MaxDiff" << params.disp12MaxDiff
@@ -701,7 +490,7 @@ namespace cv
                 CV_Assert(n.isString() && String(n) == name_);
                 params.minDisparity = (int)fn["minDisparity"];
                 params.numDisparities = (int)fn["numDisparities"];
-                params.SADWindowSize = (int)fn["blockSize"];
+                params.kernelSize = (int)fn["blockSize"];
                 params.speckleWindowSize = (int)fn["speckleWindowSize"];
                 params.speckleRange = (int)fn["speckleRange"];
                 params.disp12MaxDiff = (int)fn["disp12MaxDiff"];
@@ -716,15 +505,21 @@ namespace cv
             StereoBinaryBMParams params;
             Mat preFilteredImg0, preFilteredImg1, cost, dispbuf;
             Mat slidingSumBuf;
+            Mat parSumsIntensityImage[2];
+            Mat censusImage[2];
+            Mat hammingDistance;
+            Mat partialSumsLR;
+            Mat agregatedHammingLRCost;
+            Mat Integral[2];
 
             static const char* name_;
         };
 
         const char* StereoBinaryBMImpl::name_ = "StereoMatcher.BM";
 
-        Ptr<StereoBinaryBM> StereoBinaryBM::create(int _numDisparities, int _SADWindowSize)
+        Ptr<StereoBinaryBM> StereoBinaryBM::create(int _numDisparities, int _kernelSize)
         {
-            return makePtr<StereoBinaryBMImpl>(_numDisparities, _SADWindowSize);
+            return makePtr<StereoBinaryBMImpl>(_numDisparities, _kernelSize);
         }
     }
 }

@@ -81,12 +81,12 @@ namespace cv
             {
             private:
                 int *left, *right, *c;
-                int v,kernelSize, width, height;
+                int v,kernelSize, width, height,_stride;
                 int MASK;
                 int *hammLut;
             public :
                 hammingDistance(const Mat &leftImage, const Mat &rightImage, int *cost, int maxDisp, int kerSize, int *hammingLUT):
-                    left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), height(leftImage.rows), MASK(65535), hammLut(hammingLUT){}
+                    left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), height(leftImage.rows), _stride((int)leftImage.step1()), MASK(65535), hammLut(hammingLUT){}
                 void operator()(const cv::Range &r) const {
                     for (int i = r.start; i <= r.end ; i++)
                     {
@@ -246,16 +246,17 @@ namespace cv
             class Median1x9:public ParallelLoopBody
             {
             private:
-                uint8_t *harta;
-                uint8_t *mapModified;
-                int height, width;
+                uint8_t *original;
+                uint8_t *filtered;
+                int height, width,_stride;
             public:
-                Median1x9(const Mat &hartaOriginala, Mat &map)
+                Median1x9(const Mat &originalImage, Mat &filteredImage)
                 {
-                    harta = hartaOriginala.data;
-                    mapModified = map.data;
-                    height = hartaOriginala.rows;
-                    width = hartaOriginala.cols;
+                    original = originalImage.data;
+                    filtered = filteredImage.data;
+                    height = originalImage.rows;
+                    width = originalImage.cols;
+                    _stride = (int)originalImage.step;
                 }
                 void operator()(const cv::Range &r) const{
                     for (int m = r.start; m <= r.end; m++)
@@ -265,7 +266,7 @@ namespace cv
                             int k = 0;
                             uint8_t window[9];
                             for (int i = n - 4; i <= n + 4; ++i)
-                                window[k++] = harta[m * width + i];
+                                window[k++] = original[m * _stride + i];
                             for (int j = 0; j < 5; ++j)
                             {
                                 int min = j;
@@ -276,7 +277,7 @@ namespace cv
                                 window[j] = window[min];
                                 window[min] = temp;
                             }
-                            mapModified[m  * width + n] = window[4];
+                            filtered[m  * _stride + n] = window[4];
                         }
                     }
                 }
@@ -285,16 +286,17 @@ namespace cv
             class Median9x1:public ParallelLoopBody
             {
             private:
-                uint8_t *harta;
-                uint8_t *mapModified;
-                int height, width;
+                uint8_t *original;
+                uint8_t *filtered;
+                int height, width, _stride;
             public:
-                Median9x1(const Mat &hartaOriginala, Mat &map)
+                Median9x1(const Mat &originalImage, Mat &filteredImage)
                 {
-                    harta = hartaOriginala.data;
-                    mapModified = map.data;
-                    height = hartaOriginala.rows;
-                    width = hartaOriginala.cols;
+                    original = originalImage.data;
+                    filtered = filteredImage.data;
+                    height = originalImage.rows;
+                    width = originalImage.cols;
+                    _stride = (int)originalImage.step;
                 }
                 void operator()(const Range &r) const{
                     for (int n = r.start; n <= r.end; ++n)
@@ -304,7 +306,7 @@ namespace cv
                             int k = 0;
                             uint8_t window[9];
                             for (int i = m - 4; i <= m + 4; ++i)
-                                window[k++] = harta[i * width + n];
+                                window[k++] = original[i * _stride + n];
                             for (int j = 0; j < 5; j++)
                             {
                                 int min = j;
@@ -315,12 +317,12 @@ namespace cv
                                 window[j] = window[min];
                                 window[min] = temp;
                             }
-                            mapModified[m  * width + n] = window[4];
+                            filtered[m  * _stride + n] = window[4];
                         }
                     }
                 }
             };
-        public:
+        protected:
             //!method for setting the maximum disparity
             void setMaxDisparity(int val);
             //!method for getting the disparity
@@ -347,12 +349,13 @@ namespace cv
             *th - is the LR threshold
             */
             void dispartyMapFormation(const Mat &costVolume, Mat &map, int th);
+            void smallRegionRemoval(const Mat &input, int t, Mat &out);
+        public:
+            static void Median1x9Filter(const Mat &inputImage, Mat &outputImage);
+            static void Median9x1Filter(const Mat &inputImage, Mat &outputImage);
             //!constructor for the matching class
             //!maxDisp - represents the maximum disparity
             //!a median filter that has proven to work a bit better especially when applied on disparity maps
-            static void Median1x9Filter(const Mat &hartaOriginala, Mat &map);
-            static void Median9x1Filter(const Mat &hartaOriginala, Mat &map);
-            void smallRegionRemoval(const Mat &harta, int t, Mat &out);
             Matching(int maxDisp, int scallingFactor = 4,int confidenceCheck = 6);
             Matching(void);
             ~Matching(void);
