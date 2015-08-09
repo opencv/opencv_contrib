@@ -281,15 +281,72 @@ const unsigned char hammingWeightLUT[] = {
 
 // DictionaryData constructors calls
 const Dictionary DICT_ARUCO_DATA = Dictionary(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
-const Dictionary DICT_6X6_250_DATA = Dictionary(&(DICT_6X6_250_BYTES[0][0][0]), 6, 250, 5);
+const Dictionary DICT_6X6_TEST_DATA = Dictionary(&(DICT_6X6_TEST_BYTES[0][0][0]), 6, 250, 5);
+
+const Dictionary DICT_4X4_50_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 50, 1);
+const Dictionary DICT_4X4_100_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 100, 1);
+const Dictionary DICT_4X4_250_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 250, 1);
+const Dictionary DICT_4X4_1000_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 1000, 0);
+
+const Dictionary DICT_5X5_50_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 50, 3);
+const Dictionary DICT_5X5_100_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 100, 3);
+const Dictionary DICT_5X5_250_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 250, 2);
+const Dictionary DICT_5X5_1000_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 1000, 2);
+
+const Dictionary DICT_6X6_50_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 50, 6);
+const Dictionary DICT_6X6_100_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 100, 5);
+const Dictionary DICT_6X6_250_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 250, 5);
+const Dictionary DICT_6X6_1000_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 1000, 4);
+
+const Dictionary DICT_7X7_50_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 50, 9);
+const Dictionary DICT_7X7_100_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 100, 8);
+const Dictionary DICT_7X7_250_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 250, 8);
+const Dictionary DICT_7X7_1000_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 1000, 6);
 
 
 const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     switch (name) {
     case DICT_ARUCO:
         return DICT_ARUCO_DATA;
+    case DICT_6X6_TEST:
+        return DICT_6X6_TEST_DATA;
+
+    case DICT_4X4_50:
+        return DICT_4X4_50_DATA;
+    case DICT_4X4_100:
+        return DICT_4X4_100_DATA;
+    case DICT_4X4_250:
+        return DICT_4X4_250_DATA;
+    case DICT_4X4_1000:
+        return DICT_4X4_1000_DATA;
+
+    case DICT_5X5_50:
+        return DICT_5X5_50_DATA;
+    case DICT_5X5_100:
+        return DICT_5X5_100_DATA;
+    case DICT_5X5_250:
+        return DICT_5X5_250_DATA;
+    case DICT_5X5_1000:
+        return DICT_5X5_1000_DATA;
+
+    case DICT_6X6_50:
+        return DICT_6X6_50_DATA;
+    case DICT_6X6_100:
+        return DICT_6X6_100_DATA;
     case DICT_6X6_250:
         return DICT_6X6_250_DATA;
+    case DICT_6X6_1000:
+        return DICT_6X6_1000_DATA;
+
+    case DICT_7X7_50:
+        return DICT_7X7_50_DATA;
+    case DICT_7X7_100:
+        return DICT_7X7_100_DATA;
+    case DICT_7X7_250:
+        return DICT_7X7_250_DATA;
+    case DICT_7X7_1000:
+        return DICT_7X7_1000_DATA;
+
     }
     return DICT_ARUCO_DATA;
 }
