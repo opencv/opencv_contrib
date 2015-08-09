@@ -87,7 +87,7 @@ void TR_icdarImp::objParseFiles(const string &path, int img_id, vector<Ptr <Obje
         line.erase(remove(line.begin(), line.end(), '\n'), line.end());
         line.erase(remove(line.begin(), line.end(), '\r'), line.end());
         //Ignore byte-order marks (BOM first utf character in W$ files)
-        if ( (line[0] == (char)0xEF) && (line[1] == (char)0xBB) && (line[2] == (char)0xBF) )
+        if ( (line[0] == (char)0xEFu) && (line[1] == (char)0xBBu) && (line[2] == (char)0xBFu) )
             line.erase (line.begin(),line.begin()+3);
         vector<string> fields;
         split(line, fields, ',');
@@ -111,7 +111,7 @@ void TR_icdarImp::objParseFiles(const string &path, int img_id, vector<Ptr <Obje
         line.erase(remove(line.begin(), line.end(), '\n'), line.end());
         line.erase(remove(line.begin(), line.end(), '\r'), line.end());
         //Ignore byte-order marks (BOM first utf character in W$ files)
-        if ( (line[0] == (char)0xEF) && (line[1] == (char)0xBB) && (line[2] == (char)0xBF) )
+        if ( (line[0] == (char)0xEFu) && (line[1] == (char)0xBBu) && (line[2] == (char)0xBFu) )
             line.erase (line.begin(),line.begin()+3);
         curr->lex100.push_back(line);
     }
@@ -130,7 +130,7 @@ void TR_icdarImp::objParseFiles(const string &path, int img_id, vector<Ptr <Obje
         line.erase(remove(line.begin(), line.end(), '\n'), line.end());
         line.erase(remove(line.begin(), line.end(), '\r'), line.end());
         //Ignore byte-order marks (BOM first utf character in W$ files)
-        if ( (line[0] == (char)0xEF) && (line[1] == (char)0xBB) && (line[2] == (char)0xBF) )
+        if ( (line[0] == (char)0xEFu) && (line[1] == (char)0xBBu) && (line[2] == (char)0xBFu) )
             line.erase (line.begin(),line.begin()+3);
         curr->lexFull.push_back(line);
     }

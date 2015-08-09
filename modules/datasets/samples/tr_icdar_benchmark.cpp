@@ -286,8 +286,8 @@ int main(int argc, char *argv[])
                     boxes[j].y += nm_boxes[i].y-15;
                 }
 
-                float min_confidence  = (ocr_is_tesseract)? 51. : 0.;
-                float min_confidence4 = (ocr_is_tesseract)? 60. : 0.;
+                float min_confidence  = (ocr_is_tesseract)? (float)51. : (float)0.;
+                float min_confidence4 = (ocr_is_tesseract)? (float)60. : (float)0.;
                 //cout << "  word = " << words[j] << "\t confidence = " << confidences[j] << endl;
                 if ((words[j].size() < 2) || (confidences[j] < min_confidence) ||
                     ((words[j].size()==2) && (words[j][0] == words[j][1])) ||
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
 
         /* Predicted words which are not in the lexicon are filtered
            or changed to match one (when edit distance ratio < 0.34)*/
-        float max_edit_distance_ratio = 0.34;
+        float max_edit_distance_ratio = (float)0.34;
         for (size_t j=0; j<final_boxes.size(); j++)
         {
 
