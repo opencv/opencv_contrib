@@ -60,41 +60,40 @@ namespace rgbd
         {
             calculatePoints();
         }
-        Subdiv2D subdiv(roi);
-        for (int i = roi.y; i < silhouette.rows && i < roi.y + roi.height; i += increment_step)
+        // TODO: optimize projector space ROI
+        Rect faceRoi(1, 1, 1023, 767);
+        Subdiv2D subdiv(faceRoi);
+        Mat correspondenceMapPro = Mat::zeros(768, 1024, CV_32S);
+
+        int xMin = 1e5, xMax = -1e5, yMin = 1e5, yMax = -1e5;
+        for (int i = 0; i < getNumPoints(); i++)
         {
-            for (int j = roi.x; j < silhouette.cols && j < roi.x + roi.width; j += increment_step)
-            {
-                if (silhouette.at<uchar>(i, j) == 0)
-                {
-                    continue;
-                }
-                subdiv.insert(Point2f(j, i));
-            }
+            Point2i & p = points.at(i).projector_xy;
+            subdiv.insert(p);
+            correspondenceMapPro.at<int>(p) = i;
+
+            xMin = min(xMin, p.x);
+            xMax = max(xMax, p.x);
+            yMin = min(yMin, p.y);
+            yMax = max(yMax, p.y);
         }
+        faceRoi = Rect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+         
         std::vector<Vec6f> triangleList;
         subdiv.getTriangleList(triangleList);
 
         for (std::size_t i = 0; i < triangleList.size(); i++)
         {
-            if (triangleList.at(i)[0] < 0
-                || triangleList.at(i)[0] > silhouette.cols
-                || triangleList.at(i)[1] < 0
-                || triangleList.at(i)[1] > silhouette.rows
-                || triangleList.at(i)[2] < 0
-                || triangleList.at(i)[2] > silhouette.cols
-                || triangleList.at(i)[3] < 0
-                || triangleList.at(i)[3] > silhouette.rows
-                || triangleList.at(i)[4] < 0
-                || triangleList.at(i)[4] > silhouette.cols
-                || triangleList.at(i)[5] < 0
-                || triangleList.at(i)[5] > silhouette.rows
-                )
+            Point2i p0(triangleList.at(i)[0], triangleList.at(i)[1]);
+            Point2i p1(triangleList.at(i)[2], triangleList.at(i)[3]);
+            Point2i p2(triangleList.at(i)[4], triangleList.at(i)[5]);
+            if (!faceRoi.contains(p0) || !faceRoi.contains(p1) || !faceRoi.contains(p2))
                 continue;
 
-            int v0 = pointsIndex.at<int>(cvRound(triangleList.at(i)[1]), cvRound(triangleList.at(i)[0]));
-            int v1 = pointsIndex.at<int>(cvRound(triangleList.at(i)[3]), cvRound(triangleList.at(i)[2]));
-            int v2 = pointsIndex.at<int>(cvRound(triangleList.at(i)[5]), cvRound(triangleList.at(i)[4]));
+            int v0 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[1]), cvRound(triangleList.at(i)[0]));
+            int v1 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[3]), cvRound(triangleList.at(i)[2]));
+            int v2 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[5]), cvRound(triangleList.at(i)[4]));
+            
             faceIndices.push_back(v0);
             faceIndices.push_back(v1);
             faceIndices.push_back(v2);
@@ -136,6 +135,7 @@ namespace rgbd
 
         if (bPlane)
         {
+            // TODO: seems not working
             Vec3f center = points.at(0).world_xyz;
             Vec3f planeNormal(plane_coefficients[0], plane_coefficients[1], plane_coefficients[2]);
 
@@ -169,7 +169,7 @@ namespace rgbd
         nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
         nlSolverParameteri(NL_NB_VARIABLES, 2 * getNumPoints());
         nlSolverParameteri(NL_LEAST_SQUARES, NL_TRUE);
-        nlSolverParameteri(NL_MAX_ITERATIONS, 5);
+        nlSolverParameteri(NL_MAX_ITERATIONS, 500);
         nlSolverParameterd(NL_THRESHOLD, 1e-10);
 
         nlBegin(NL_SYSTEM);
@@ -183,8 +183,9 @@ namespace rgbd
         float uMin = 1000000000;
         int uMaxInd = 0;
         int uMinInd = 0;
-        for(int i = 0; i < getNumPoints(); i++) {
-            Point3f & point = points.at(i).world_xyz;
+        for(int i = 0; i < getNumPoints(); i++)
+        {
+            Point2i & point = points.at(i).projector_xy;
             nlSetVariable(2 * i, point.x);
             nlSetVariable(2 * i + 1, point.y);
 
@@ -250,7 +251,8 @@ namespace rgbd
         nlEnd(NL_SYSTEM);
         nlSolve();
 
-        for (std::size_t i = 0; i < points.size(); i++) {
+        for (int i = 0; i < getNumPoints(); i++)
+        {
             RgbdPoint & point = points.at(i);
             float u = (float)nlGetVariable(static_cast<NLuint>(i) * 2    ) / (uMax - uMin);
             float v = (float)nlGetVariable(static_cast<NLuint>(i) * 2 + 1) / (uMax - uMin);
@@ -280,6 +282,8 @@ namespace rgbd
 
         if (extension.compare(".ply") == 0)
         {
+            std::cout << "ply not supported" << std::endl;
+#if 0
             fs << "ply" << std::endl;
             fs << "format ascii 1.0" << std::endl;
             fs << "element vertex " << points.size() << std::endl;
@@ -305,12 +309,18 @@ namespace rgbd
                     << faceIndices.at(i + 1) << " "
                     << faceIndices.at(i + 2) << std::endl;
             }
+#endif
         }
         else if (extension.compare(".obj") == 0)
         {
             for (std::size_t i = 0; i < points.size(); i++)
             {
-                Point3f & v = points.at(i).world_xyz;
+                Point2i & x = points.at(i).image_xy;
+                Point3f v;
+                v.x = points.at(i).projector_xy.x;
+                v.y = points.at(i).projector_xy.y;
+                v.z = 0;
+
                 // negate xy for Unity compatibility
                 fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
             }
@@ -323,9 +333,22 @@ namespace rgbd
 
             for (std::size_t i = 0; i < faceIndices.size(); i += 3)
             {
-                fs << "f " << faceIndices.at(i) + 1 << "/" << faceIndices.at(i) + 1
-                    << "/ " << faceIndices.at(i+1) + 1 << "/" << faceIndices.at(i+1) + 1
-                    << "/ " << faceIndices.at(i+2) + 1 << "/" << faceIndices.at(i+2) + 1
+                int i0 = faceIndices.at(i);
+                int i2 = faceIndices.at(i + 1);
+                int i1 = faceIndices.at(i + 2);
+
+                float distanceThreshold = 10; // [px]
+                distanceThreshold;// *= distanceThreshold;
+                if (norm(points.at(i0).projector_xy - points.at(i1).projector_xy) > distanceThreshold
+                    || norm(points.at(i1).projector_xy - points.at(i2).projector_xy) > distanceThreshold
+                    || norm(points.at(i2).projector_xy - points.at(i0).projector_xy) > distanceThreshold)
+                {
+                    continue;
+                }
+
+                fs << "f " << i0 + 1 << "/" << i0 + 1
+                    << "/ " << i1 + 1 << "/" << i1 + 1
+                    << "/ " << i2 + 1 << "/" << i2 + 1
                     << "/" << std::endl;
             }
         }

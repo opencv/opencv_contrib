@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 
     // initialize gray coding
     GrayCodePattern::Params params;
-    params.width = 1024;
-    params.height = 768;
+    params.width = 1024 / 2;
+    params.height = 768 / 2;
     Ptr<GrayCodePattern> pattern = GrayCodePattern::create(params);
 
     vector<Mat> patternImages;
@@ -91,6 +91,12 @@ int main(int argc, char** argv)
     // window placement; wait for user
     while (true)
     {
+        capture.grab();
+
+        capture.retrieve(image, CAP_OPENNI_DEPTH_MAP);
+        flip(image, image, 1);
+        imshow("camera", image * 10);
+
         int key = waitKey(30);
         if (key == 'f')
         {
@@ -138,11 +144,12 @@ int main(int argc, char** argv)
     waitKey(30);
 
     // decode
-    pattern->setLightThreshold(2);
+    pattern->setLightThreshold(20);
     Mat correspondenceMapX = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
-    Mat correspondenceMapProX = Mat::zeros(params.height, params.width, CV_8UC3);
-    Mat correspondenceMapProY = Mat::zeros(params.height, params.width, CV_8UC3);
+    Size projectorSize(params.width * 2, params.height * 2);
+    Mat correspondenceMapProX = Mat::zeros(projectorSize, CV_8UC3);
+    Mat correspondenceMapProY = Mat::zeros(projectorSize, CV_8UC3);
     for (int y = 0; y < capture.get(CAP_PROP_FRAME_HEIGHT); y++) {
         for (int x = 0; x < capture.get(CAP_PROP_FRAME_WIDTH); x++) {
             Point point;
@@ -158,6 +165,8 @@ int main(int argc, char** argv)
                 continue;
             }
 
+            point *= 2;
+
             Range xr(x, x + 1);
             Range yr(y, y + 1);
             // weird encoding to reliably recover the point...
@@ -168,8 +177,8 @@ int main(int argc, char** argv)
 
             Range xp(point.x - 1, point.x + 2);
             Range yp(point.y - 1, point.y + 2);
-            correspondenceMapProX(yp, xp) = Scalar((x & 0x0F00) >> 4, (x & 0xF0), (x & 0x0F) << 4);
-            correspondenceMapProY(yp, xp) = Scalar((y & 0x0F00) >> 4, (y & 0xF0), (y & 0x0F) << 4);
+            //correspondenceMapProX(yp, xp) = Scalar((x & 0x0F00) >> 4, (x & 0xF0), (x & 0x0F) << 4);
+            //correspondenceMapProY(yp, xp) = Scalar((y & 0x0F00) >> 4, (y & 0xF0), (y & 0x0F) << 4);
         }
     }
 

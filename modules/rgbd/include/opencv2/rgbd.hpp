@@ -1034,6 +1034,7 @@ namespace rgbd
     Point3f bgr;
     Point2i image_xy;
     Point2f texture_uv;
+    Point2i projector_xy;
   };
 
   /** A cluster of a depth map. It can be used as both an image and a point cloud.
@@ -1041,7 +1042,6 @@ namespace rgbd
   class CV_EXPORTS RgbdCluster
   {
   public:
-    Mat correspondenceX, correspondenceY;
     Ptr<RgbdFrame> rgbdFrame;
     /* silhouette of the cluster. RgbdFrame::mask should be used to indicate valid depth points */
     Mat silhouette;
@@ -1053,9 +1053,12 @@ namespace rgbd
     Vec4f plane_coefficients;
     bool bPlane;
     bool bVectorPointsUpdated;
+    /* bounding box */
     Rect roi;
     /* increment step when calculating points (1 to include all pixels to points, 2 to sample every 2 pixels) */
     uint increment_step;
+    /* pixel correspondence map */
+    Mat projectorPixels;
 
     /** Constructor.
      */
@@ -1066,8 +1069,9 @@ namespace rgbd
     int getNumPoints();
 
     /** Update `points`. Must be called after `silhouette` or `depth` is updated.
+     * @param skipNoCorrespondencePoints eliminate points with no projector correspondence information.
      */
-    void calculatePoints();
+    void calculatePoints(bool skipNoCorrespondencePoints = false);
   };
 
   class CV_EXPORTS RgbdClusterMesh : public RgbdCluster {

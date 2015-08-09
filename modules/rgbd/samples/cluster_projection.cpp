@@ -60,8 +60,8 @@ using namespace std;
 
 int main( int argc, char** argv )
 {
+    Mat projectorPixels;
     Mat correspondenceMapX, correspondenceMapY;
-    Mat correspondenceX, correspondenceY;
     correspondenceMapX = imread("correspondenceX.png");
     correspondenceMapY = imread("correspondenceY.png");
 
@@ -150,8 +150,7 @@ int main( int argc, char** argv )
 
     // generate valid point mask for clusters
     compare(frame->depth, 0, frame->mask, CMP_GT);
-    correspondenceX = Mat::zeros(correspondenceMapX.size(), CV_32S);
-    correspondenceY = Mat::zeros(correspondenceMapY.size(), CV_32S);
+    projectorPixels = Mat::zeros(correspondenceMapX.size(), CV_32SC2);
     for (int i = 0; i < frame->mask.rows; i++)
     {
         for (int j = 0; j < frame->mask.cols; j++)
@@ -165,20 +164,19 @@ int main( int argc, char** argv )
                 && sx[1] == 255
                 && sx[2] == 255)
             {
-                //frame->points3d.at<Vec3f>(i, j) = Vec3f(0, 0, 0);
+                projectorPixels.at<Point2i>(i, j) = Point2i(-1, -1);
             }
             else
             {
 //                correspondenceX.at<float>(i, j) = (float)((int)sx[0] << 4 + (int)sx[1] + (int)sx[2] >> 4);
 //                correspondenceY.at<float>(i, j) = (float)((int)sy[0] << 4 + (int)sy[1] + (int)sy[2] >> 4);
-                correspondenceX.at<float>(i, j) = (float)((int)sx[1] * 256 + (int)sx[2]);
-                correspondenceY.at<float>(i, j) = (float)((int)sy[1] * 256 + (int)sy[2]);
+                projectorPixels.at<Point2i>(i, j) = Point2i((int)sx[1] * 256 + (int)sx[2], (int)sy[1] * 256 + (int)sy[2]);
             }
         }
     }
 
     imshow("depth", frame->points3d);
-    waitKey(0);
+    waitKey(30);
 
     RgbdClusterMesh mainCluster(frame);
     //mainCluster.increment_step = 2;
@@ -204,10 +202,9 @@ int main( int argc, char** argv )
             stringstream ss;
             ss << "cluster" << i;
             clusters.at(i).increment_step = 4;
-            clusters.at(i).calculatePoints();
+            clusters.at(i).projectorPixels = projectorPixels;
+            clusters.at(i).calculatePoints(true);
             clusters.at(i).unwrapTexCoord();
-            clusters.at(i).correspondenceX = correspondenceX;
-            clusters.at(i).correspondenceY = correspondenceY;
             //clusters.at(i).save(ss.str() + ".obj");
             //clusters.at(i).save(ss.str() + ".ply");
             continue;
@@ -225,14 +222,13 @@ int main( int argc, char** argv )
 
             // downsample by 1x
             smallClusters.at(j).increment_step = 1;
-            smallClusters.at(j).calculatePoints();
+            smallClusters.at(j).projectorPixels = projectorPixels;
+            smallClusters.at(j).calculatePoints(true);
             if (smallClusters.at(j).getNumPoints() == 0)
             {
                 continue;
             }
             smallClusters.at(j).unwrapTexCoord();
-            smallClusters.at(j).correspondenceX = correspondenceX;
-            smallClusters.at(j).correspondenceY = correspondenceY;
             smallClusters.at(j).save(ss.str() + ".obj");
             //smallClusters.at(j).save(ss.str() + ".ply");
         }

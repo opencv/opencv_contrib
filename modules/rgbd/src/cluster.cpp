@@ -73,7 +73,7 @@ namespace rgbd
         }
     }
 
-    void RgbdCluster::calculatePoints()
+    void RgbdCluster::calculatePoints(bool skipNoCorrespondencePoints)
     {
         pointsIndex = Mat_<int>::eye(silhouette.rows, silhouette.cols) * -1;
         points.clear();
@@ -83,11 +83,22 @@ namespace rgbd
             {
                 if(silhouette.at<uchar>(i, j) > 0)
                 {
+                    if (skipNoCorrespondencePoints)
+                    {
+                        Point2i & projectorPoint = projectorPixels.at<Point2i>(i, j);
+                        if(projectorPoint.x < 0 || projectorPoint.y < 0)
+                            continue;
+                    }
+
                     if(rgbdFrame->depth.at<float>(i, j) > 0)
                     {
                         RgbdPoint point;
                         point.world_xyz = rgbdFrame->points3d.at<Point3f>(i, j);
                         point.image_xy = Point2i(j, i);
+                        if (skipNoCorrespondencePoints)
+                        {
+                            point.projector_xy = projectorPixels.at<Point2i>(i, j);
+                        }
 
                         pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
                         points.push_back(point);
