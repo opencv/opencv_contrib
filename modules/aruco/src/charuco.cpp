@@ -321,10 +321,13 @@ _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
     for(unsigned int i=0; i<filteredChessboardImgPoints.size(); i++) {
         vector<Point2f> in;
         in.push_back(filteredChessboardImgPoints[i]);
+        cv::Size winSize = filteredWinSizes[i];
+        if(winSize.height == -1 || winSize.width == -1)
+            winSize = cv::Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
 
         cornerSubPix(grey, in,
-                     cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
-                     filteredWinSizes[i],
+                     winSize,
+                     cv::Size(),
                      cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
                                     params.cornerRefinementMaxIterations,
                                     params.cornerRefinementMinAccuracy));

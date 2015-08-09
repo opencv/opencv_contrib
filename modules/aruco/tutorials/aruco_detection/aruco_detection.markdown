@@ -445,29 +445,45 @@ For instance, the thresholded image for the sample image used above is:
 
 ![Thresholded image](images/singlemarkersthresh.png)
 
-This thresholding can be customized in two parameters:
+This thresholding can be customized in the following parameters:
 
-- ```int adaptiveThreshWinSize```, ```double adaptiveThreshConstant```
+- ```int adaptiveThreshWinSizeMin```, ```int adaptiveThreshWinSizeMax```, ```int adaptiveThreshWinSizeStep```
 
-The ```adaptiveThreshWinSize``` parameter is the window size (in pixels) of the adaptive thresholding and
-the ```adaptiveThreshConstant``` is the constant value added in the thresholding condition (see OpenCV
+The ```adaptiveThreshWinSizeMin``` and adaptiveThreshWinSizeMax``` parameters represent the interval where the
+thresholding window sizes (in pixels) are selected for the adaptive thresholding (see OpenCV
 ```threshold()``` function for more details).
 
-Low values of ```adaptiveThreshWinSize``` can 'break' the marker border if the marker size is too large, and
+The parameter ``adaptiveThreshWinSizeStep``` indicates the increments on the window size from 
+```adaptiveThreshWinSizeMin``` to adaptiveThreshWinSizeMax```.
+
+For instance, for the values ```adaptiveThreshWinSizeMin``` = 5 and adaptiveThreshWinSizeMax``` = 21 and
+```adaptiveThreshWinSizeStep``` = 4, there will be 5 thresholding steps with window sizes 5, 9, 13, 17 and 21.
+On each thresholding image, marker candidates will be extracted.
+
+Low values of window size can 'break' the marker border if the marker size is too large, and
 it would not be detected, like in the following image:
 
 ![Broken marker image](images/singlemarkersbrokenthresh.png)
 
-On the other hand, too high values can reduce the performance
-considerably and the the process would tend to a global thresholding, losing the adaptive benefits.
+On the other hand, too high values can produce the same effect if the markers are too small, and it can also
+reduce the performance. Moreover the the process would tend to a global thresholding, losing the adaptive benefits.
 
-In general, it is necessary a balanced value depending on the marker size and the required
-performance.
-The ```adaptiveThreshConstant``` does not affect to the performance.
+The simplest (and default) case is using the same value for ```adaptiveThreshWinSizeMin``` and
+ ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is sometimes better using a
+ range of values for the window size, although many thresholding steps can also reduce the performance considerably. 
 
 Default values:
 
-```adaptiveThreshWinSize```: 21, ```adaptiveThreshConstant```: 7
+```adaptiveThreshWinSizeMin```: 21, ```adaptiveThreshWinSizeMax```: 21, ```adaptiveThreshWinSizeStep```: 10
+
+
+- ```double adaptiveThreshConstant```
+
+This parameter represents the constant value added in the thresholding condition (see OpenCV
+```threshold()``` function for more details). Its default value is a good option in most cases.
+
+Default value: 7
+
 
 #### Contour filtering
 

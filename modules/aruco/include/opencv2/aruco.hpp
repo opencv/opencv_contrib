@@ -74,8 +74,12 @@ namespace aruco {
 
 /**
  * @brief Parameters for the detectMarker process:
- * - adaptiveThreshWinSize: window size for adaptive thresholding before finding contours.
- *   (default 21)
+ * - adaptiveThreshWinSizeMin: minimum window size for adaptive thresholding before finding
+ *   contours (default 21).
+ * - adaptiveThreshWinSizeMax: maximum window size for adaptive thresholding before finding
+ *   contours (default 21).
+ * - adaptiveThreshWinSizeStep: increments from adaptiveThreshWinSizeMin to adaptiveThreshWinSizeMax
+ *   during the thresholding (default 10).
  * - adaptiveThreshConstant: constant for adaptive thresholding before finding contours (default 7)
  * - minMarkerPerimeterRate: determine minimum perimeter for marker contour to be detected. This
  *   is defined as a rate respect to the maximum dimension of the input image (default 0.03).
@@ -116,7 +120,9 @@ struct DetectorParameters {
 
     CV_EXPORTS DetectorParameters();
 
-    int adaptiveThreshWinSize;
+    int adaptiveThreshWinSizeMin;
+    int adaptiveThreshWinSizeMax;
+    int adaptiveThreshWinSizeStep;
     double adaptiveThreshConstant;
     double minMarkerPerimeterRate;
     double maxMarkerPerimeterRate;

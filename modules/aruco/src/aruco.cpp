@@ -58,7 +58,9 @@ using namespace std;
 /**
   *
   */
-DetectorParameters::DetectorParameters() : adaptiveThreshWinSize(21),
+DetectorParameters::DetectorParameters() : adaptiveThreshWinSizeMin(21),
+                                           adaptiveThreshWinSizeMax(21),
+                                           adaptiveThreshWinSizeStep(10),
                                            adaptiveThreshConstant(7),
                                            minMarkerPerimeterRate(0.03),
                                            maxMarkerPerimeterRate(4.),
@@ -102,7 +104,8 @@ static void _convertToGrey(InputArray _in, OutputArray _out) {
 static void _threshold(InputArray _in, OutputArray _out, int winSize, double constant) {
 
     CV_Assert(winSize >= 3);
-
+    if(winSize%2 ==0)
+        winSize ++;
     adaptiveThreshold(_in, _out, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, winSize, constant);
 }
 
@@ -213,23 +216,34 @@ _filterTooCloseCandidates(const vector<vector<Point2f> > &candidatesIn,
     vector<pair<int, int> > nearCandidates;
     for (unsigned int i = 0; i < candidatesIn.size(); i++) {
         for (unsigned int j = i + 1; j < candidatesIn.size(); j++) {
-            double distSq = 0;
-            for (int c = 0; c < 4; c++)
-                distSq += (candidatesIn[i][c].x - candidatesIn[j][c].x) *
-                              (candidatesIn[i][c].x - candidatesIn[j][c].x) +
-                          (candidatesIn[i][c].y - candidatesIn[j][c].y) *
-                              (candidatesIn[i][c].y - candidatesIn[j][c].y);
-            distSq /= 4.;
-            // if mean square distance is lower than 100, remove the smaller one of the two markers
-            // (minimum mean distance = 10)
-            if (distSq < minMarkerDistance * minMarkerDistance)
-                nearCandidates.push_back(pair<int, int>(i, j));
+            // fc is the first corner considered on one of the markers, 4 combinatios are posible
+            for(int fc = 0; fc<4; fc++) {
+                double distSq = 0;
+                for (int c = 0; c < 4; c++) {
+                    // modC is the corner having in mind first corner considered
+                    int modC = (c + fc)%4;
+                    distSq += (candidatesIn[i][modC].x - candidatesIn[j][c].x) *
+                                  (candidatesIn[i][modC].x - candidatesIn[j][c].x) +
+                              (candidatesIn[i][modC].y - candidatesIn[j][c].y) *
+                                  (candidatesIn[i][modC].y - candidatesIn[j][c].y);
+                }
+                distSq /= 4.;
+                // if mean square distance is lower than 100, remove the smaller one of the
+                // two markers
+                if (distSq < minMarkerDistance * minMarkerDistance) {
+                    nearCandidates.push_back(pair<int, int>(i, j));
+                    break;
+                }
+            }
         }
     }
 
     // mark smaller one in pairs to remove
     vector<bool> toRemove(candidatesIn.size(), false);
     for (unsigned int i = 0; i < nearCandidates.size(); i++) {
+        // if one of the marker has been already markerd to removed, dont need to do anything
+        if(toRemove[nearCandidates[i].first] ||  toRemove[nearCandidates[i].second])
+            continue;
         double perimeterSq1 = 0, perimeterSq2 = 0;
         for (unsigned int c = 0; c < 4; c++) {
             // check which one is the smaller and remove it
@@ -249,11 +263,11 @@ _filterTooCloseCandidates(const vector<vector<Point2f> > &candidatesIn,
                              candidatesIn[nearCandidates[i].second][(c + 1) % 4].y) *
                                 (candidatesIn[nearCandidates[i].second][c].y -
                                  candidatesIn[nearCandidates[i].second][(c + 1) % 4].y);
-            if (perimeterSq1 > perimeterSq2)
-                toRemove[nearCandidates[i].second] = true;
-            else
-                toRemove[nearCandidates[i].first] = true;
         }
+        if (perimeterSq1 > perimeterSq2)
+            toRemove[nearCandidates[i].second] = true;
+        else
+            toRemove[nearCandidates[i].first] = true;
     }
 
     // remove extra candidates
@@ -279,7 +293,7 @@ _filterTooCloseCandidates(const vector<vector<Point2f> > &candidatesIn,
  */
 static void
 _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArrayOfArrays _contours,
-                  DetectorParameters params, OutputArray _thresholdedImage = noArray()) {
+                  DetectorParameters params) {
 
     Mat image = _image.getMat();
     CV_Assert(image.total() != 0);
@@ -288,26 +302,40 @@ _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArra
     Mat grey;
     _convertToGrey(image, grey);
 
-    /// 2. THRESHOLD
-    CV_Assert(params.adaptiveThreshWinSize >= 3);
-    Mat thresh;
-    _threshold(grey, thresh, params.adaptiveThreshWinSize, params.adaptiveThreshConstant);
-    if (_thresholdedImage.needed())
-        thresh.copyTo(_thresholdedImage);
+    CV_Assert(params.adaptiveThreshWinSizeMin >= 3 && params.adaptiveThreshWinSizeMax >= 3);
+    CV_Assert(params.adaptiveThreshWinSizeMax >= params.adaptiveThreshWinSizeMin);
+    CV_Assert(params.adaptiveThreshWinSizeStep > 0);
 
-    /// 3. DETECT RECTANGLES
     vector<vector<Point2f> > candidates;
     vector<vector<Point> > contours;
-    _findMarkerContours(thresh, candidates, contours, params.minMarkerPerimeterRate,
-                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
-                        params.minCornerDistance, params.minDistanceToBorder);
+    // for each value in the interval of thresholding window sizes
+    for(int scale = params.adaptiveThreshWinSizeMin; scale <= params.adaptiveThreshWinSizeMax;
+        scale += params.adaptiveThreshWinSizeStep) {
+        /// 2. THRESHOLD
+        Mat thresh;
+        _threshold(grey, thresh, scale, params.adaptiveThreshConstant);
+
+        /// 3. DETECT RECTANGLES
+        vector<vector<Point2f> > currentCandidates;
+        vector<vector<Point> > currentContours;
+        _findMarkerContours(thresh, currentCandidates, currentContours, params.minMarkerPerimeterRate,
+                            params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
+                            params.minCornerDistance, params.minDistanceToBorder);
+
+        // join candidates
+        for(int i=0; i<currentCandidates.size(); i++) {
+            candidates.push_back(currentCandidates[i]);
+            contours.push_back(currentContours[i]);
+        }
+
+    }
 
     /// 4. SORT CORNERS
     _reorderCandidatesCorners(candidates, contours);
 
     /// 5. FILTER OUT NEAR CANDIDATE PAIRS
     vector<vector<Point2f> > candidatesOut;
-    vector<vector<Point> > contoursOut;
+    vector<vector<Point> > contoursOut ;
     _filterTooCloseCandidates(candidates, candidatesOut, contours, contoursOut,
                               params.minMarkerDistance);
 

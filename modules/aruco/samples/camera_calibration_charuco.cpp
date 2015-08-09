@@ -107,7 +107,9 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
  */
 static void readDetectorParameters(string filename, aruco::DetectorParameters &params) {
     FileStorage fs(filename, FileStorage::READ);
-    fs["adaptiveThreshWinSize"] >> params.adaptiveThreshWinSize;
+    fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
+    fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
+    fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
     fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
     fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
     fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
