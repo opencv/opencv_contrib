@@ -87,18 +87,20 @@ namespace cv{
     * KCF functions and vars
     */
     void createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const;
-    void inline fft2(const Mat src, std::vector<Mat> & dest) const;
-    void inline fft2(const Mat src, Mat & dest) const;
+    void inline fft2(const Mat src, std::vector<Mat> & _dest, std::vector<Mat> & _layers) const;
+    void inline fft2(const Mat src, Mat & _dest) const;
     void inline ifft2(const Mat src, Mat & dest) const;
     void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
     void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
-    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx,double pca_rate, int compressed_sz) const;
-    void inline compress(const Mat _proj_mtx, const Mat src, Mat & dest) const;
+    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx,double pca_rate, int compressed_sz,
+                                       std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat _data_pca, Mat _new_cov, Mat w, Mat u, Mat v) const;
+    void inline compress(const Mat _proj_mtx, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& patch) const;
     void extractCN(Mat _patch, Mat & cnFeatures) const;
-    void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const;
-    void calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const;
-    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response) const;
+    void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k,
+                          std::vector<Mat> & _layers,std::vector<Mat> & _xf,std::vector<Mat> & _yf, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
+    void calcResponse(const Mat _alphaf, const Mat _kf, Mat & _response, Mat & _spec) const;
+    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _kf, Mat & _response, Mat & _spec, Mat & _spec2) const;
 
     void shiftRows(Mat& mat) const;
     void shiftRows(Mat& mat, int n) const;
@@ -107,17 +109,26 @@ namespace cv{
   private:
     double output_sigma;
     Rect2d roi;
-    Mat hann; 	//hann window filter
+    Mat hann;   //hann window filter
 
-    Mat y,yf; 	// training response and its FFT
-    Mat x,xf; 	// observation and its FFT
-    Mat k,kf;	// dense gaussian kernel and its FFT
+    Mat y,yf;   // training response and its FFT
+    Mat x,xf;   // observation and its FFT
+    Mat k,kf;   // dense gaussian kernel and its FFT
     Mat kf_lambda; // kf+lambda
-    Mat new_alphaf, alphaf;	// training coefficients
+    Mat new_alphaf, alphaf;     // training coefficients
     Mat new_alphaf_den, alphaf_den; // for splitted training coefficients
     Mat z, new_z; // model
     Mat response; // detection result
     Mat old_cov_mtx, proj_mtx; // for feature compression
+    Mat spec, spec2;
+    std::vector<Mat> layers;
+    std::vector<Mat> vxf,vyf,vxyf;
+    Mat _xy,_xyf;
+    Mat _data, _compress;
+    std::vector<Mat> _layers_pca;
+    std::vector<Scalar> _average;
+
+    Mat data_pca, new_covar,_w,_u,_vt;
 
     bool resizeImage; // resize the image whenever needed and the patch size is large
 
@@ -180,8 +191,8 @@ namespace cv{
     // initialize the hann window filter
     createHanningWindow(hann, roi.size(), CV_64F);
     if(params.descriptor==CN){
-      Mat layers[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
-      merge(layers, 10, hann);
+      Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
+      merge(_layer, 10, hann);
     }
 
     // create gaussian response
@@ -208,8 +219,8 @@ namespace cv{
    * Main part of the KCF algorithm
    */
   bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
-    double minVal, maxVal;	// min-max response
-    Point minLoc,maxLoc;	// min-max location
+    double minVal, maxVal;      // min-max response
+    Point minLoc,maxLoc;        // min-max location
     Mat zc;
 
     Mat img=image.clone();
@@ -226,17 +237,21 @@ namespace cv{
     if(frame>0){
       //compute the gaussian kernel
       if(params.compress_feature){
-        compress(proj_mtx,x,x);
-        compress(proj_mtx,z,zc);
-        denseGaussKernel(params.sigma,x,zc,k);
+        compress(proj_mtx,x,x,_data,_compress);
+        compress(proj_mtx,z,zc,_data,_compress);
+        denseGaussKernel(params.sigma,x,zc,k,layers,vxf,vyf,vxyf,_xy,_xyf);
       }else
-        denseGaussKernel(params.sigma,x,z,k);
+        denseGaussKernel(params.sigma,x,z,k,layers,vxf,vyf,vxyf,_xy,_xyf);
+
+      // compute the fourier transform of the kernel
+      fft2(k,kf);
+      if(frame==1)spec2=Mat_<Vec2d >(kf.rows, kf.cols);
 
       // calculate filter response
       if(params.split_coeff)
-        calcResponse(alphaf,alphaf_den,k,response);
+        calcResponse(alphaf,alphaf_den,kf,response, spec, spec2);
       else
-        calcResponse(alphaf,k,response);
+        calcResponse(alphaf,kf,response, spec);
 
       // extract the maximum response
       minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
@@ -259,33 +274,46 @@ namespace cv{
       z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
 
     if(params.compress_feature){
+      // initialize the vector of Mat variables
+      if(frame==0){
+        _layers_pca.resize(z.channels());
+        _average.resize(z.channels());
+      }
+
       // feature compression
-      updateProjectionMatrix(z,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size);
-      compress(proj_mtx,x,x);
+      updateProjectionMatrix(z,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
+      compress(proj_mtx,x,x,_data,_compress);
+    }
+
+    // initialize some required Mat variables
+    if(frame==0){
+      layers.resize(x.channels());
+      vxf.resize(x.channels());
+      vyf.resize(x.channels());
+      vxyf.resize(vyf.size());
+      new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols);
     }
 
     // Kernel Regularized Least-Squares, calculate alphas
-    denseGaussKernel(params.sigma,x,x,k);
+    denseGaussKernel(params.sigma,x,x,k,layers,vxf,vyf,vxyf,_xy,_xyf);
 
+    // compute the fourier transform of the kernel and add a small value
     fft2(k,kf);
     kf_lambda=kf+params.lambda;
 
-    /* TODO: optimize this element-wise division
-     * new_alphaf=yf./kf
-     * z=(a+bi)/(c+di)[(ac+bd)+i(bc-ad)]/(c^2+d^2)
-     */
-    new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols);
-    std::complex<double> temp;
-
+    double den;
     if(params.split_coeff){
       mulSpectrums(yf,kf,new_alphaf,0);
       mulSpectrums(kf,kf_lambda,new_alphaf_den,0);
     }else{
       for(int i=0;i<yf.rows;i++){
         for(int j=0;j<yf.cols;j++){
-          temp=std::complex<double>(yf.at<Vec2d>(i,j)[0],yf.at<Vec2d>(i,j)[1])/(std::complex<double>(kf_lambda.at<Vec2d>(i,j)[0],kf_lambda.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
-          new_alphaf.at<Vec2d >(i,j)[0]=temp.real();
-          new_alphaf.at<Vec2d >(i,j)[1]=temp.imag();
+          den = 1.0/(kf_lambda.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[0]+kf_lambda.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[1]);
+
+          new_alphaf.at<Vec2d>(i,j)[0]=
+          (yf.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[0]+yf.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[1])*den;
+          new_alphaf.at<Vec2d>(i,j)[1]=
+          (yf.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[0]-yf.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[1])*den;
         }
       }
     }
@@ -349,28 +377,15 @@ namespace cv{
   /*
    * simplification of fourier transform function in opencv
    */
-  void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest) const {
-    std::vector<Mat> layers(src.channels());
-    std::vector<Mat> outputs(src.channels());
-
-    split(src, layers);
-
-    for(int i=0;i<src.channels();i++){
-      dft(layers[i],outputs[i],DFT_COMPLEX_OUTPUT);
-    }
-
-    merge(outputs,dest);
+  void inline TrackerKCFImpl::fft2(const Mat src, Mat & _dest) const {
+    dft(src,_dest,DFT_COMPLEX_OUTPUT);
   }
 
-  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & dest) const {
-    std::vector<Mat> layers(src.channels());
-    dest.clear();
-    dest.resize(src.channels());
-
-    split(src, layers);
+  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & _dest, std::vector<Mat> & _layers) const {
+    split(src, _layers);
 
     for(int i=0;i<src.channels();i++){
-      dft(layers[i],dest[i],DFT_COMPLEX_OUTPUT);
+      dft(_layers[i],_dest[i],DFT_COMPLEX_OUTPUT);
     }
   }
 
@@ -385,9 +400,6 @@ namespace cv{
    * Point-wise multiplication of two Multichannel Mat data
    */
   void inline TrackerKCFImpl::pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB) const {
-    dest.clear();
-    dest.resize(src1.size());
-
     for(unsigned i=0;i<src1.size();i++){
       mulSpectrums(src1[i], src2[i], dest[i],flags,conjB);
     }
@@ -406,30 +418,26 @@ namespace cv{
   /*
    * obtains the projection matrix using PCA
    */
-  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz) const {
+  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz,
+                                                     std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat _data_pca, Mat _new_cov, Mat w, Mat u, Mat vt) const {
     CV_Assert(compressed_sz<=src.channels());
 
-    // compute average
-    std::vector<Mat> layers(src.channels());
-    std::vector<Scalar> average(src.channels());
-    split(src,layers);
+    split(src,layers_pca);
 
     for (int i=0;i<src.channels();i++){
-      average[i]=mean(layers[i]);
-      layers[i]-=average[i];
+      average[i]=mean(layers_pca[i]);
+      layers_pca[i]-=average[i];
     }
 
     // calc covariance matrix
-    Mat data,new_cov;
-    merge(layers,data);
-    data=data.reshape(1,src.rows*src.cols);
+    merge(layers_pca,_data_pca);
+    _data_pca=_data_pca.reshape(1,src.rows*src.cols);
 
-    new_cov=1.0/(double)(src.rows*src.cols-1)*(data.t()*data);
-    if(old_cov.rows==0)old_cov=new_cov.clone();
+    _new_cov=1.0/(double)(src.rows*src.cols-1)*(_data_pca.t()*_data_pca);
+    if(old_cov.rows==0)old_cov=_new_cov.clone();
 
     // calc PCA
-    Mat w, u, vt;
-    SVD::compute((1.0-pca_rate)*old_cov+pca_rate*new_cov, w, u, vt);
+    SVD::compute((1.0-pca_rate)*old_cov+pca_rate*_new_cov, w, u, vt);
 
     // extract the projection matrix
     _proj_mtx=u(Rect(0,0,compressed_sz,src.channels())).clone();
@@ -445,9 +453,9 @@ namespace cv{
   /*
    * compress the features
    */
-  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest) const {
-    Mat data=src.reshape(1,src.rows*src.cols);
-    Mat compressed=data*_proj_mtx;
+  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest, Mat & data, Mat & compressed) const {
+    data=src.reshape(1,src.rows*src.cols);
+    compressed=data*_proj_mtx;
     dest=compressed.reshape(_proj_mtx.cols,src.rows).clone();
   }
 
@@ -533,13 +541,12 @@ namespace cv{
   /*
    *  dense gauss kernel function
    */
-  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k) const {
-    std::vector<Mat> _xf,_yf,xyf_v;
-    Mat xy,xyf;
+  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k,
+                                        std::vector<Mat> & _layers,std::vector<Mat> & _xf,std::vector<Mat> & _yf, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const {
     double normX, normY;
 
-    fft2(_x,_xf);
-    fft2(_y,_yf);
+    fft2(_x,_xf,_layers);
+    fft2(_y,_yf,_layers);
 
     normX=norm(_x);
     normX*=normX;
@@ -626,36 +633,32 @@ namespace cv{
   /*
    * calculate the detection response
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _k, Mat & _response) const {
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _kf, Mat & _response, Mat & _spec) const {
     //alpha f--> 2channels ; k --> 1 channel;
-    Mat _kf;
-    fft2(_k,_kf);
-    Mat spec;
-    mulSpectrums(_alphaf,_kf,spec,0,false);
+    mulSpectrums(_alphaf,_kf,_spec,0,false);
     ifft2(spec,_response);
   }
 
   /*
    * calculate the detection response for splitted form
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _k, Mat & _response) const {
-    Mat _kf;
-    fft2(_k,_kf);
-    Mat spec;
-    Mat spec2=Mat_<Vec2d >(_k.rows, _k.cols);
-    std::complex<double> temp;
+  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _kf, Mat & _response, Mat & _spec, Mat & _spec2) const {
 
-    mulSpectrums(_alphaf,_kf,spec,0,false);
+    mulSpectrums(_alphaf,_kf,_spec,0,false);
 
-    for(int i=0;i<_k.rows;i++){
-      for(int j=0;j<_k.cols;j++){
-        temp=std::complex<double>(spec.at<Vec2d>(i,j)[0],spec.at<Vec2d>(i,j)[1])/(std::complex<double>(_alphaf_den.at<Vec2d>(i,j)[0],_alphaf_den.at<Vec2d>(i,j)[1])/*+std::complex<double>(0.0000000001,0.0000000001)*/);
-        spec2.at<Vec2d >(i,j)[0]=temp.real();
-        spec2.at<Vec2d >(i,j)[1]=temp.imag();
+    //z=(a+bi)/(c+di)=[(ac+bd)+i(bc-ad)]/(c^2+d^2)
+    double den;
+    for(int i=0;i<_kf.rows;i++){
+      for(int j=0;j<_kf.cols;j++){
+        den=1.0/(_alphaf_den.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+_alphaf_den.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1]);
+        _spec2.at<Vec2d>(i,j)[0]=
+          (_spec.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+_spec.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
+        _spec2.at<Vec2d>(i,j)[1]=
+          (_spec.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[0]-_spec.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
       }
     }
 
-    ifft2(spec2,_response);
+    ifft2(_spec2,_response);
   }
   /*----------------------------------------------------------------------*/
 
