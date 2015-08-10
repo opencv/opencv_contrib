@@ -71,9 +71,9 @@ namespace cv
 		//best overlap around 92%
 		Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
 
-		std::vector<std::vector<tld::TLDDetector::LabeledPatch>> detectorResults(targetNum);
-		std::vector<std::vector<Rect2d>> candidates(targetNum);
-		std::vector<std::vector<double>> candidatesRes(targetNum);
+		std::vector<std::vector<tld::TLDDetector::LabeledPatch> > detectorResults(targetNum);
+		std::vector<std::vector<Rect2d> > candidates(targetNum);
+		std::vector<std::vector<double> > candidatesRes(targetNum);
 		std::vector<Rect2d> tmpCandidates(targetNum);
 		std::vector<bool> detect_flgs(targetNum);
 		std::vector<bool> trackerNeedsReInit(targetNum);
@@ -221,8 +221,8 @@ namespace cv
 		return true;
 	}
 
-	void detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch >> &patches, std::vector<bool> &detect_flgs,
-		std::vector<Ptr<Tracker>> &trackers)
+	void detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch > > &patches, std::vector<bool> &detect_flgs,
+		std::vector<Ptr<Tracker> > &trackers)
 	{
 		//TLD Tracker data extraction
 		Tracker* trackerPtr = trackers[0];
@@ -245,8 +245,8 @@ namespace cv
 		int scaleID;
 		std::vector <Mat> resized_imgs, blurred_imgs;
 
-		std::vector <std::vector <Point>> varBuffer(trackers.size()), ensBuffer(trackers.size());
-		std::vector <std::vector <int>> varScaleIDs(trackers.size()), ensScaleIDs(trackers.size());
+		std::vector <std::vector <Point> > varBuffer(trackers.size()), ensBuffer(trackers.size());
+		std::vector <std::vector <int> > varScaleIDs(trackers.size()), ensScaleIDs(trackers.size());
 
 		std::vector <Point> tmpP;
 		std::vector <int> tmpI;
@@ -457,8 +457,8 @@ namespace cv
 		//printf("NN: %d\t%f\n", patches.size(), t);
 	}
 
-	void ocl_detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch >> &patches, std::vector<bool> &detect_flgs,
-		std::vector<Ptr<Tracker>> &trackers)
+	void ocl_detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch > > &patches, std::vector<bool> &detect_flgs,
+		std::vector<Ptr<Tracker> > &trackers)
 	{
 		//TLD Tracker data extraction
 		Tracker* trackerPtr = trackers[0];
@@ -481,8 +481,8 @@ namespace cv
 		int scaleID;
 		std::vector <Mat> resized_imgs, blurred_imgs;
 
-		std::vector <std::vector <Point>> varBuffer(trackers.size()), ensBuffer(trackers.size());
-		std::vector <std::vector <int>> varScaleIDs(trackers.size()), ensScaleIDs(trackers.size());
+		std::vector <std::vector <Point> > varBuffer(trackers.size()), ensBuffer(trackers.size());
+		std::vector <std::vector <int> > varScaleIDs(trackers.size()), ensScaleIDs(trackers.size());
 
 		std::vector <Point> tmpP;
 		std::vector <int> tmpI;
