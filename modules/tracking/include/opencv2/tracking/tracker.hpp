@@ -1204,7 +1204,10 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     -   "GRAY" -- Use grayscale values as the feature
     -   "CN" -- Color-names feature
    */
-  enum MODE {GRAY, CN, CN2};
+  enum MODE {
+    GRAY = (1u << 0),
+    CN = (1u << 1)
+  };
 
   struct CV_EXPORTS Params
   {
@@ -1234,7 +1237,8 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     bool compress_feature;        //!<  activate the pca method to compress the features
     int max_patch_size;           //!<  threshold for the ROI size
     int compressed_size;          //!<  feature size after compression
-    MODE descriptor;              //!<  descriptor type
+    unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
+    unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
   };
 
   /** @brief Constructor
@@ -1244,16 +1248,6 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 };
 
 //! @}
-
-class CV_EXPORTS_W MultiTracker
-{
- public:
-  bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
-  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
- protected:
-  std::vector< Ptr<Tracker> > trackerList;
-  std::vector<Rect2d> objects;
-};
 
 } /* namespace cv */
 

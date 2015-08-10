@@ -109,18 +109,20 @@ namespace cv{
   private:
     double output_sigma;
     Rect2d roi;
-    Mat hann;   //hann window filter
+    Mat hann; 	//hann window filter
     Mat hann_cn;
 
-    Mat y,yf;   // training response and its FFT
-    Mat x,xf;   // observation and its FFT
-    Mat k,kf;   // dense gaussian kernel and its FFT
+    Mat y,yf; 	// training response and its FFT
+    Mat x; 	// observation and its FFT
+    Mat k,kf;	// dense gaussian kernel and its FFT
     Mat kf_lambda; // kf+lambda
-    Mat new_alphaf, alphaf;     // training coefficients
+    Mat new_alphaf, alphaf;	// training coefficients
     Mat new_alphaf_den, alphaf_den; // for splitted training coefficients
-    Mat z, new_z; // model
+    Mat z; // model
     Mat response; // detection result
     Mat old_cov_mtx, proj_mtx; // for feature compression
+
+    // pre-defined Mat variables for optimization of private functions
     Mat spec, spec2;
     std::vector<Mat> layers;
     std::vector<Mat> vxf,vyf,vxyf;
@@ -130,6 +132,24 @@ namespace cv{
     std::vector<Scalar> _average;
     Mat img_Patch;
 
+    // data type for the extracted features
+    struct _features{
+      Mat vec[2];
+      Mat & pca;
+      Mat & npca;
+      _features():pca(vec[0]),npca(vec[1]){};
+    };
+
+    // storage for the extracted features, KRLS model, KRLS compressed model
+    _features X,Z,Zc;
+
+    // storage of the extracted features
+    std::vector<Mat> features_pca;
+    std::vector<Mat> features_npca;
+    std::vector<MODE> descriptors_pca;
+    std::vector<MODE> descriptors_npca;
+
+    // optimization variables for updateProjectionMatrix
     Mat data_pca, new_covar,_w,_u,_vt;
 
     bool resizeImage; // resize the image whenever needed and the patch size is large
@@ -149,7 +169,13 @@ namespace cv{
     isInit = false;
     resizeImage = false;
 
-    CV_Assert(params.descriptor == GRAY || params.descriptor == CN);
+    // accept only the available descriptor modes
+    CV_Assert(
+      (params.desc_pca & GRAY) == GRAY
+      || (params.desc_npca & GRAY) == GRAY
+      || (params.desc_pca & CN) == CN
+      || (params.desc_npca & CN) == CN
+    );
   }
 
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -192,10 +218,10 @@ namespace cv{
 
     // initialize the hann window filter
     createHanningWindow(hann, roi.size(), CV_64F);
-    if(params.descriptor==CN){
-      Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
-      merge(_layer, 10, hann_cn);
-    }
+
+    // hann window filter for CN feature
+    Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
+    merge(_layer, 10, hann_cn);
 
     // create gaussian response
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_64F);
@@ -213,6 +239,16 @@ namespace cv{
 
     model=Ptr<TrackerKCFModel>(new TrackerKCFModel(params));
 
+    // record the non-compressed descriptors
+    if((params.desc_npca & GRAY) == GRAY)descriptors_npca.push_back(GRAY);
+    if((params.desc_npca & CN) == CN)descriptors_npca.push_back(CN);
+    features_npca.resize(descriptors_npca.size());
+
+    // record the compressed descriptors
+    if((params.desc_pca & GRAY) == GRAY)descriptors_pca.push_back(GRAY);
+    if((params.desc_pca & CN) == CN)descriptors_pca.push_back(CN);
+    features_pca.resize(descriptors_pca.size());
+
     // TODO: return true only if roi inside the image
     return true;
   }
@@ -221,13 +257,12 @@ namespace cv{
    * Main part of the KCF algorithm
    */
   bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
-    double minVal, maxVal;      // min-max response
-    Point minLoc,maxLoc;        // min-max location
-    Mat zc;
+    double minVal, maxVal;	// min-max response
+    Point minLoc,maxLoc;	// min-max location
 
     Mat img=image.clone();
     // check the channels of the input image, grayscale is preferred
-    CV_Assert(image.channels() == 1 || image.channels() == 3);
+    CV_Assert(img.channels() == 1 || img.channels() == 3);
 
     // resize the image whenever needed
     if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
@@ -236,15 +271,41 @@ namespace cv{
     if(frame>0){
 
       // extract and pre-process the patch
-      if(!getSubWindow(img,roi, x, img_Patch, params.descriptor))return false;
+      // get non compressed descriptors
+      for(unsigned i=0;i<descriptors_npca.size();i++){
+        if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+      }
+      if(features_npca.size()>0)merge(features_npca,X.npca);
+
+      // get compressed descriptors
+      for(unsigned i=0;i<descriptors_pca.size();i++){
+        if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+      }
+      if(features_pca.size()>0)merge(features_pca,X.pca);
+
+      //compress the features and the KRSL model
+      if(params.desc_pca !=0){
+        compress(proj_mtx,X.pca,X.pca,_data,_compress);
+        compress(proj_mtx,Z.pca,Zc.pca,_data,_compress);
+      }
+
+      // copy the compressed KRLS model
+      Zc.npca = Z.npca;
+
+      // merge all features
+      if(params.desc_npca==0){
+        x = X.pca;
+        z = Zc.pca;
+      }else if(params.desc_pca==0){
+        x = X.npca;
+        z = Z.npca;
+      }else{
+        merge(X.vec,2,x);
+        merge(Zc.vec,2,z);
+      }
 
       //compute the gaussian kernel
-      if(params.compress_feature && params.descriptor != GRAY){
-        compress(proj_mtx,x,x,_data,_compress);
-        compress(proj_mtx,z,zc,_data,_compress);
-        denseGaussKernel(params.sigma,x,zc,k,layers,vxf,vyf,vxyf,_xy,_xyf);
-      }else
-        denseGaussKernel(params.sigma,x,z,k,layers,vxf,vyf,vxyf,_xy,_xyf);
+      denseGaussKernel(params.sigma,x,z,k,layers,vxf,vyf,vxyf,_xy,_xyf);
 
       // compute the fourier transform of the kernel
       fft2(k,kf);
@@ -267,25 +328,46 @@ namespace cv{
     }
 
     // extract the patch for learning purpose
-    if(!getSubWindow(img,roi, x, img_Patch, params.descriptor))return false;
+    // get non compressed descriptors
+    for(unsigned i=0;i<descriptors_npca.size();i++){
+      if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+    }
+    if(features_npca.size()>0)merge(features_npca,X.npca);
+
+    // get compressed descriptors
+    for(unsigned i=0;i<descriptors_pca.size();i++){
+      if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+    }
+    if(features_pca.size()>0)merge(features_pca,X.pca);
 
     //update the training data
-    if(frame==0)
-      z=x.clone();
-    else
-      z=(1.0-params.interp_factor)*z+params.interp_factor*x;
+    if(frame==0){
+      Z.pca = X.pca.clone();
+      Z.npca = X.npca.clone();
+    }else{
+      Z.pca=(1.0-params.interp_factor)*Z.pca+params.interp_factor*X.pca;
+      Z.npca=(1.0-params.interp_factor)*Z.npca+params.interp_factor*X.npca;
+    }
 
-    if(params.compress_feature && params.descriptor != GRAY){
+    if(params.desc_pca !=0/*params.compress_feature*/ /*&& params.descriptor != GRAY*/){
       // initialize the vector of Mat variables
       if(frame==0){
-        _layers_pca.resize(z.channels());
-        _average.resize(z.channels());
+        _layers_pca.resize(Z.pca.channels());
+        _average.resize(Z.pca.channels());
       }
 
       // feature compression
-      updateProjectionMatrix(z,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
-      compress(proj_mtx,x,x,_data,_compress);
+      updateProjectionMatrix(Z.pca,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
+      compress(proj_mtx,X.pca,X.pca,_data,_compress);
     }
+
+    // merge all features
+    if(params.desc_npca==0)
+      x = X.pca;
+    else if(params.desc_pca==0)
+      x = X.npca;
+    else
+      merge(X.vec,2,x);
 
     // initialize some required Mat variables
     if(frame==0){
@@ -674,9 +756,10 @@ namespace cv{
       output_sigma_factor=1.0/16.0;
       resize=true;
       max_patch_size=80*80;
-      descriptor=CN;
       split_coeff=true;
       wrap_kernel=false;
+      desc_npca = GRAY;
+      desc_pca = CN;
 
       //feature compression
       compress_feature=true;
