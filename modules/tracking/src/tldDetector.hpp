@@ -73,8 +73,8 @@ namespace cv
 		public:
 			TLDDetector(){}
 			~TLDDetector(){}
-			inline double ensembleClassifierNum(const uchar* data);
-			inline void prepareClassifiers(int rowstep);
+			double ensembleClassifierNum(const uchar* data);
+			void prepareClassifiers(int rowstep);
 			double Sr(const Mat_<uchar>& patch);
 			double ocl_Sr(const Mat_<uchar>& patch);
 			double Sc(const Mat_<uchar>& patch);
