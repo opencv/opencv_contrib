@@ -69,7 +69,6 @@ namespace cv
                 textureThreshold = 10;
                 uniquenessRatio = 15;
                 speckleRange = speckleWindowSize = 0;
-                roi1 = roi2 = Rect(0, 0, 0, 0);
                 disp12MaxDiff = -1;
                 dispType = CV_16S;
                 usePrefilter = false;
@@ -89,7 +88,6 @@ namespace cv
             int uniquenessRatio;
             int speckleRange;
             int speckleWindowSize;
-            Rect roi1, roi2;
             int disp12MaxDiff;
             int dispType;
             int scalling;
@@ -268,7 +266,7 @@ namespace cv
             StereoBinaryBMParams* state;
         };
 
-        class StereoBinaryBMImpl : public StereoBinaryBM,public Matching
+        class StereoBinaryBMImpl : public StereoBinaryBM, public Matching
         {
         public:
             StereoBinaryBMImpl()
@@ -279,6 +277,7 @@ namespace cv
             StereoBinaryBMImpl(int _numDisparities, int _kernelSize) : Matching(_numDisparities)
             {
                 params = StereoBinaryBMParams(_numDisparities, _kernelSize);
+                previous_size = 0;
             }
 
             void compute(InputArray leftarr, InputArray rightarr, OutputArray disparr)
@@ -339,6 +338,14 @@ namespace cv
 
                 int width = left0.cols;
                 int height = left0.rows;
+
+                if(previous_size != width * height)
+                {
+                    previous_size = width * height;
+                    specklePointX = new int[width * height];
+                    specklePointY = new int[width * height];
+                    pus = new long long[width * height];
+                }
 
                 int wsz = params.kernelSize;
                 int bufSize0 = (int)((ndisp + 2)*sizeof(int));
@@ -462,12 +469,6 @@ namespace cv
             int getSmallerBlockSize() const { return 0; }
             void setSmallerBlockSize(int) {}
 
-            Rect getROI1() const { return params.roi1; }
-            void setROI1(Rect roi1) { params.roi1 = roi1; }
-
-            Rect getROI2() const { return params.roi2; }
-            void setROI2(Rect roi2) { params.roi2 = roi2; }
-
             void write(FileStorage& fs) const
             {
                 fs << "name" << name_
@@ -499,7 +500,6 @@ namespace cv
                 params.preFilterCap = (int)fn["preFilterCap"];
                 params.textureThreshold = (int)fn["textureThreshold"];
                 params.uniquenessRatio = (int)fn["uniquenessRatio"];
-                params.roi1 = params.roi2 = Rect();
             }
 
             StereoBinaryBMParams params;
@@ -511,7 +511,7 @@ namespace cv
             Mat partialSumsLR;
             Mat agregatedHammingLRCost;
             Mat Integral[2];
-
+            int previous_size;
             static const char* name_;
         };
 

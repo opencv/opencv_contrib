@@ -147,12 +147,6 @@ namespace cv
             virtual int getSmallerBlockSize() const = 0;
             virtual void setSmallerBlockSize(int blockSize) = 0;
 
-            virtual Rect getROI1() const = 0;
-            virtual void setROI1(Rect roi1) = 0;
-
-            virtual Rect getROI2() const = 0;
-            virtual void setROI2(Rect roi2) = 0;
-
             virtual int getScalleFactor() const = 0 ;
             virtual void setScalleFactor(int factor) = 0;
 
@@ -233,9 +227,9 @@ namespace cv
             zero. In the current implementation, this parameter must be divisible by 16.
             @param blockSize Matched block size. It must be an odd number \>=1 . Normally, it should be
             somewhere in the 3..11 range.
-            @param P1 The first parameter controlling the disparity smoothness. See below.
-            @param P2 The second parameter controlling the disparity smoothness. The larger the values are,
-            the smoother the disparity is. P1 is the penalty on the disparity change by plus or minus 1
+            @param P1 The first parameter controlling the disparity smoothness.This parameter is used for the case of slanted surfaces (not fronto parallel).
+            @param P2 The second parameter controlling the disparity smoothness.This parameter is used for "solving" the depth discontinuities problem.
+            The larger the values are, the smoother the disparity is. P1 is the penalty on the disparity change by plus or minus 1
             between neighbor pixels. P2 is the penalty on the disparity change by more than 1 between neighbor
             pixels. The algorithm requires P2 \> P1 . See stereo_match.cpp sample where some reasonably good
             P1 and P2 values are shown (like 8\*number_of_image_channels\*SADWindowSize\*SADWindowSize and
@@ -263,7 +257,7 @@ namespace cv
             to a custom value.
             */
             CV_EXPORTS static Ptr<cv::stereo::StereoBinarySGBM> create(int minDisparity, int numDisparities, int blockSize,
-                int P1 = 0, int P2 = 0, int disp12MaxDiff = 0,
+                int P1 = 100, int P2 = 1000, int disp12MaxDiff = 0,
                 int preFilterCap = 0, int uniquenessRatio = 0,
                 int speckleWindowSize = 0, int speckleRange = 0,
                 int mode = StereoBinarySGBM::MODE_SGBM);
