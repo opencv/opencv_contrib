@@ -120,11 +120,7 @@ int main()
 	//From TLD dataset
 	selectObject = true;
 	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/VOT 2015", 1);
-	Rect2d boundingBox2;
-	boundingBox2.x = 470;
-	boundingBox2.y = 500;
-	boundingBox2.width = 50;
-	boundingBox2.height = 100;
+	Rect2d boundingBox2(470, 490, 50, 120);
 
 	frame = tld::tld_getNextDatasetFrame();
 	frame.copyTo(image);
@@ -133,7 +129,7 @@ int main()
 #ifdef RECORD_VIDEO_FLG
 	String outputFilename = "test.avi";
 	VideoWriter outputVideo;
-	outputVideo.open(outputFilename, -1, 30, Size(image.cols, image.rows));
+	outputVideo.open(outputFilename, -1, 15, Size(image.cols, image.rows));
 
 	if (!outputVideo.isOpened())
 	{
@@ -183,17 +179,17 @@ int main()
 				{
 					//initializes the tracker
 					mt.addTarget(frame, boundingBox1, tracker_algorithm_name);
-					rectangle(image, boundingBox1, mt.colors[0], 2, 1);
+					rectangle(frame, boundingBox1, mt.colors[0], 2, 1);
 
 
 					mt.addTarget(frame, boundingBox2, tracker_algorithm_name);
-					rectangle(image, boundingBox2, mt.colors[1], 2, 1);
+					rectangle(frame, boundingBox2, mt.colors[1], 2, 1);
 					initialized = true;
 				}
 				else
 				{
 					//updates the tracker
-					if (mt.update_opt(frame))
+					if (mt.update(frame))
 					{
 						for (int i = 0; i < mt.targetNum; i++)
 							rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
@@ -203,8 +199,7 @@ int main()
 			imshow("Tracking API", frame);
 
 #ifdef RECORD_VIDEO_FLG
-			outputVideo << image;
->>>>>>> Added Multi-tracker functionality and example
+			outputVideo << frame;
 #endif
 
 
