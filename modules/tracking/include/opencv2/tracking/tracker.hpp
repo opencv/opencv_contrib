@@ -1256,7 +1256,7 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 
 @sa Tracker, MultiTrackerTLD
 */
-class CV_EXPORTS_W MultiTracker
+class CV_EXPORTS_W MultiTracker_Alt
 {
 public:
 	/** @brief Constructor for Multitracker
@@ -1313,7 +1313,7 @@ occlusions, object absence etc.
 
 @sa Tracker, MultiTracker, TrackerTLD
 */
-class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
+class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker_Alt
 {
 public:
 	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets by
