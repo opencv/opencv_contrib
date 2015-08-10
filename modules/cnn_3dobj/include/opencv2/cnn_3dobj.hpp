@@ -57,16 +57,13 @@ the use of this software, even if advised of the possibility of such damage.
 #include <stdlib.h>
 #include <tr1/memory>
 #include <dirent.h>
-#include <glog/logging.h>
-#include <google/protobuf/text_format.h>
-#include <leveldb/db.h>
 #define CPU_ONLY
-#include <caffe/blob.hpp>
-#include <caffe/common.hpp>
-#include <caffe/net.hpp>
-#include <caffe/proto/caffe.pb.h>
-#include <caffe/util/io.hpp>
-#include <caffe/vision_layers.hpp>
+#include "caffe/blob.hpp"
+#include "caffe/common.hpp"
+#include "caffe/net.hpp"
+#include "caffe/proto/caffe.pb.h"
+#include "caffe/util/io.hpp"
+#include "caffe/vision_layers.hpp"
 #include "opencv2/viz/vizcore.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
@@ -135,33 +132,6 @@ class CV_EXPORTS_W IcoSphere
 
 };
 
-class CV_EXPORTS_W DataTrans
-{
-	private:
-		std::set<string> all_class_name;
-		std::map<string,int> class2id;
-	public:
-		DataTrans();
-		CV_WRAP void list_dir(const char *path,std::vector<string>& files,bool r);
-		/** @brief Use directory of the file including images starting with an int label as the name of each image.
-		*/
-		CV_WRAP string get_classname(string path);
-		/** @brief
-		*/
-		CV_WRAP int get_labelid(string fileName);
-		/** @brief Get the label of each image.
-		*/
-		CV_WRAP void loadimg(string path,char* buffer,bool is_color);
-		/** @brief Load images.
-		*/
-		CV_WRAP void convert(string imgdir,string outputdb,string attachdir,int channel,int width,int height);
-		/** @brief Convert a set of images as a leveldb database for CNN training.
-		*/
-		CV_WRAP std::vector<cv::Mat> feature_extraction_pipeline(std::string pretrained_binary_proto, std::string feature_extraction_proto, std::string save_feature_dataset_names, std::string extract_feature_blob_names, int num_mini_batches, std::string device, int dev_id);
-		/** @brief Extract feature into a binary file and vector<cv::Mat> for classification, the model proto and network proto are needed, All images in the file root will be used for feature extraction.
-		*/
-};
-
 class CV_EXPORTS_W Classification
 {
 	private:
@@ -180,13 +150,20 @@ class CV_EXPORTS_W Classification
 		/** @brief Convert the input image to the input image format of the network.
 		*/
 	public:
-		Classification(const string& model_file, const string& trained_file, const string& mean_file, const string& label_file);
+		Classification();
+		void list_dir(const char *path,std::vector<string>& files,bool r);
+		/** @brief Get the file name from a root dictionary.
+		*/
+		void NetSetter(const string& model_file, const string& trained_file, const string& mean_file, const string& cpu_only, int device_id);
 		/** @brief Initiate a classification structure.
 		*/
-		std::vector<std::pair<string, float> > Classify(const std::vector<cv::Mat>& reference, const cv::Mat& img, int N = 4, bool mean_substract = false);
+		void GetLabellist(const std::vector<string>& name_gallery);
+		/** @brief Get the label of the gallery images for result displaying in prediction.
+		*/
+		std::vector<std::pair<string, float> > Classify(const cv::Mat& reference, const cv::Mat& img, int N, bool mean_substract = false);
 		/** @brief Make a classification.
 		*/
-		cv::Mat feature_extract(const cv::Mat& img, bool mean_subtract);
+		void FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract);
 		/** @brief Extract a single featrue of one image.
 		*/
 		std::vector<int> Argmax(const std::vector<float>& v, int N);

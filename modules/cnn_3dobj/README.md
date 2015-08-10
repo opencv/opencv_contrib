@@ -63,27 +63,11 @@ $ ./examples/triplet/train_3d_triplet.sh
 ###After doing this, you will get .caffemodel files as the trained net work. I have already provide the net definition .prototxt files and the trained .caffemodel in <opencv_contrib>/modules/cnn_3dobj/samples/build folder, you could just use them without training in caffe. If you are not interested on feature analysis with the help of binary files provided in Demo2, just skip to Demo3 for feature extraction or Demo4 for classifier.
 
 ==============
+#Demo4:
 ```
 $ cd
 $ cd <opencv_contrib>/modules/cnn_3dobj/samples/build
 ```
-#Demo2:
-###Convert data into leveldb format from folder ../data/images_all for feature extraction afterwards. The leveldb files including all data will be stored in ../data/dbfile. If you will use the OpenCV defined feature extraction process, you could also skip Demo2 for data converting, just run Demo3 after Demo1 for feature extraction because Demo3 also includes the db file converting process before feature extraction, but if you want to use demo4 for classification, this demo will be used in advance to generate a file name list for the prediction list.
-```
-$ ./datatrans_test
-```
-
-==============
-#Demo3:
-###feature extraction, this demo will convert a set of images in a particular path into leveldb database for feature extraction using Caffe and outputting a binary file including all extracted feature.
-```
-$ ./feature_extract_test
-```
-###This will extract feature from a set of images in a folder as vector<cv::Mat> for further classification and a binary file with containing all feature vectors of each sample.
-###After running this, you will get a binary file storing features in ../data/feature folder, I can provide a Matlab script reading this file if someone need it. If you don't need the binary file, the feature could also be stored in vector<cv::Mat>.
-
-==============
-#Demo4:
 ###Classifier, this will extracting the feature of a single image and compare it with features of gallery samples for prediction. Demo2 should be used in advance to generate a file name list for the prediction list. This demo uses a set of images for feature extraction in a given path, these features will be a reference for prediction on target image. Just run:
 ```
 $ ./classify_test
