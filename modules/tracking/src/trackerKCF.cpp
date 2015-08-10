@@ -95,7 +95,7 @@ namespace cv{
     void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx,double pca_rate, int compressed_sz,
                                        std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat _data_pca, Mat _new_cov, Mat w, Mat u, Mat v) const;
     void inline compress(const Mat _proj_mtx, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
-    bool getSubWindow(const Mat img, const Rect roi, Mat& patch) const;
+    bool getSubWindow(const Mat img, const Rect roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc = GRAY) const;
     void extractCN(Mat _patch, Mat & cnFeatures) const;
     void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k,
                           std::vector<Mat> & _layers,std::vector<Mat> & _xf,std::vector<Mat> & _yf, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
@@ -110,6 +110,7 @@ namespace cv{
     double output_sigma;
     Rect2d roi;
     Mat hann;   //hann window filter
+    Mat hann_cn;
 
     Mat y,yf;   // training response and its FFT
     Mat x,xf;   // observation and its FFT
@@ -127,6 +128,7 @@ namespace cv{
     Mat _data, _compress;
     std::vector<Mat> _layers_pca;
     std::vector<Scalar> _average;
+    Mat img_Patch;
 
     Mat data_pca, new_covar,_w,_u,_vt;
 
@@ -147,7 +149,7 @@ namespace cv{
     isInit = false;
     resizeImage = false;
 
-    CV_Assert(params.descriptor == GRAY || params.descriptor == CN /*|| params.descriptor == CN2*/);
+    CV_Assert(params.descriptor == GRAY || params.descriptor == CN);
   }
 
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -192,7 +194,7 @@ namespace cv{
     createHanningWindow(hann, roi.size(), CV_64F);
     if(params.descriptor==CN){
       Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
-      merge(_layer, 10, hann);
+      merge(_layer, 10, hann_cn);
     }
 
     // create gaussian response
@@ -230,13 +232,14 @@ namespace cv{
     // resize the image whenever needed
     if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
 
-    // extract and pre-process the patch
-    if(!getSubWindow(img,roi, x))return false;
-
     // detection part
     if(frame>0){
+
+      // extract and pre-process the patch
+      if(!getSubWindow(img,roi, x, img_Patch, params.descriptor))return false;
+
       //compute the gaussian kernel
-      if(params.compress_feature){
+      if(params.compress_feature && params.descriptor != GRAY){
         compress(proj_mtx,x,x,_data,_compress);
         compress(proj_mtx,z,zc,_data,_compress);
         denseGaussKernel(params.sigma,x,zc,k,layers,vxf,vyf,vxyf,_xy,_xyf);
@@ -264,16 +267,15 @@ namespace cv{
     }
 
     // extract the patch for learning purpose
-    if(!getSubWindow(img,roi, x))return false;
+    if(!getSubWindow(img,roi, x, img_Patch, params.descriptor))return false;
 
     //update the training data
-    new_z=x.clone();
     if(frame==0)
       z=x.clone();
     else
-      z=(1.0-params.interp_factor)*z+params.interp_factor*new_z;
+      z=(1.0-params.interp_factor)*z+params.interp_factor*x;
 
-    if(params.compress_feature){
+    if(params.compress_feature && params.descriptor != GRAY){
       // initialize the vector of Mat variables
       if(frame==0){
         _layers_pca.resize(z.channels());
@@ -462,7 +464,7 @@ namespace cv{
   /*
    * obtain the patch and apply hann window filter to it
    */
-  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& patch) const {
+  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc) const {
 
     Rect region=_roi;
 
@@ -494,22 +496,22 @@ namespace cv{
     if(patch.rows==0 || patch.cols==0)return false;
 
     // extract the desired descriptors
-    switch(params.descriptor){
-      case GRAY:
-        if(img.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
-        patch.convertTo(patch,CV_64F);
-        patch=patch/255.0-0.5; // normalize to range -0.5 .. 0.5
+    switch(desc){
+      default:
+        if(img.channels()>1)
+          cvtColor(patch,feat, CV_BGR2GRAY);
+        else
+          feat=patch;
+        feat.convertTo(feat,CV_64F);
+        feat=feat/255.0-0.5; // normalize to range -0.5 .. 0.5
+        feat=feat.mul(hann); // hann window filter
         break;
       case CN:
         CV_Assert(img.channels() == 3);
-        extractCN(patch,patch);
-        break;
-      case CN2:
-        if(patch.channels()>1)cvtColor(patch,patch, CV_BGR2GRAY);
+        extractCN(patch,feat);
+        feat=feat.mul(hann_cn); // hann window filter
         break;
     }
-
-    patch=patch.mul(hann); // hann window filter
 
     return true;
 
@@ -521,7 +523,8 @@ namespace cv{
     Vec3b & pixel = _patch.at<Vec3b>(0,0);
     unsigned index;
 
-    Mat temp = Mat::zeros(_patch.rows,_patch.cols,CV_64FC(10));
+    if(cnFeatures.type() != CV_64FC(10))
+      cnFeatures = Mat::zeros(_patch.rows,_patch.cols,CV_64FC(10));
 
     for(int i=0;i<_patch.rows;i++){
       for(int j=0;j<_patch.cols;j++){
@@ -530,12 +533,11 @@ namespace cv{
 
         //copy the values
         for(int _k=0;_k<10;_k++){
-          temp.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
+          cnFeatures.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
         }
       }
     }
 
-    cnFeatures=temp.clone();
   }
 
   /*
