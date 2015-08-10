@@ -8,7 +8,7 @@ inline cv::dnn::Blob blobFromNPY(const cv::String &path)
     cnpy::NpyArray npyBlob = cnpy::npy_load(path.c_str());
     cv::dnn::BlobShape shape((int)npyBlob.shape.size(), (int*)&npyBlob.shape[0]);
 
-    cv::dnn::Blob blob;
+    cv::dnn::Blob blob(shape);
     blob.fill(shape, CV_32F, npyBlob.data);
 
     npyBlob.destruct();

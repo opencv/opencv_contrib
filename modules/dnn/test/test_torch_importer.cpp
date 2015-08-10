@@ -1,5 +1,5 @@
-#if 1 || defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
-#if 1 || defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
+#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
+#if defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
 #include "test_precomp.hpp"
 
 namespace cvtest
@@ -31,10 +31,8 @@ static void runTorchNet(String prefix, String outLayerName, bool isBinary)
     String suffix = (isBinary) ? ".dat" : ".txt";
 
     Net net;
-    Ptr<Importer> importer;
-    ASSERT_NO_THROW( importer = createTorchImporter(_tf(prefix + "_net" + suffix), isBinary) );
+    Ptr<Importer> importer = createTorchImporter(_tf(prefix + "_net" + suffix), isBinary);
     ASSERT_TRUE(importer != NULL);
-    //ASSERT_NO_THROW( importer->populateNet(net) );
     importer->populateNet(net);
 
     Blob inp, outRef;
@@ -44,10 +42,6 @@ static void runTorchNet(String prefix, String outLayerName, bool isBinary)
     net.setBlob(".0", inp);
     net.forward();
     Blob out = net.getBlob(outLayerName);
-
-    std::cout << "inp " << inp.shape() << "\n";
-    std::cout << "out " << out.shape() << "\n";
-    std::cout << "ref " << outRef.shape() << "\n";
 
     normAssert(outRef, out);
 }
@@ -81,8 +75,7 @@ TEST(Torch_Importer, run_linear)
 
 TEST(Torch_Importer, run_paralel)
 {
-    //TODO: fix and add Reshape
-    //runTorchNet("net_parallel", "l2_torchMerge", false);
+    runTorchNet("net_parallel", "l2_torchMerge", false);
 }
 
 TEST(Torch_Importer, run_concat)

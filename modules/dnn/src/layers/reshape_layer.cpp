@@ -25,9 +25,20 @@ protected:
 
 ReshapeLayer::ReshapeLayer(LayerParams &params)
 {
+    inAxis = params.get<int>("axis", 0);
+    inNumAxes = params.get<int>("num_axes", -1);
+    CV_Assert(inNumAxes >= -1);
+
+    autoAxisIdx = -1;
+
+    if (!params.has("dim"))
+    {
+        shapeDesc = BlobShape(0);
+        return;
+    }
+
     DictValue paramShape = params.get("dim");
     shapeDesc = BlobShape(paramShape.size());
-    autoAxisIdx = -1;
 
     for (int i = 0; i < paramShape.size(); i++)
     {
@@ -43,33 +54,31 @@ ReshapeLayer::ReshapeLayer(LayerParams &params)
 
         shapeDesc[i] = dim;
     }
-
-    inAxis = params.get<int>("axis", 0);
-    inNumAxes = params.get<int>("num_axes", -1);
-    CV_Assert(inNumAxes >= -1);
 }
 
 void ReshapeLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    CV_Assert(inputs.size() == 1);
-    outputs.resize(1);
+    outputs.resize(inputs.size());
 
-    Blob &inpBlob = *inputs[0];
-    Blob &outBlob = outputs[0];
-    BlobShape inpShape = inpBlob.shape();
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        Blob &inpBlob = *inputs[i];
+        Blob &outBlob = outputs[i];
+        BlobShape inpShape = inpBlob.shape();
 
-    int startAxis = (inAxis >= 0) ? inAxis : inpShape.dims() + 1 + inAxis;
-    int endAxis = (inNumAxes == -1) ? inpShape.dims() : startAxis + inNumAxes;
-    CV_Assert(0 <= startAxis && startAxis <= inpShape.dims());
-    CV_Assert(0 <= endAxis && endAxis <= inpShape.dims());
+        int startAxis = (inAxis >= 0) ? inAxis : inpShape.dims() + 1 + inAxis;
+        int endAxis = (inNumAxes == -1) ? inpShape.dims() : startAxis + inNumAxes;
+        CV_Assert(0 <= startAxis && startAxis <= inpShape.dims());
+        CV_Assert(0 <= endAxis && endAxis <= inpShape.dims());
 
-    int newDims = inpShape.dims() - (endAxis - startAxis) + shapeDesc.dims();
-    BlobShape outShape(newDims);
+        int newDims = inpShape.dims() - (endAxis - startAxis) + shapeDesc.dims();
+        BlobShape outShape(newDims);
 
-    computeOutputShape(startAxis, endAxis, inpShape, outShape);
+        computeOutputShape(startAxis, endAxis, inpShape, outShape);
 
-    outBlob.shareFrom(inpBlob);
-    outBlob.reshape(outShape);
+        outBlob.shareFrom(inpBlob);
+        outBlob.reshape(outShape);
+    }
 }
 
 void ReshapeLayer::computeOutputShape(int startAxis, int endAxis, BlobShape &inpShape, BlobShape &outShape)
@@ -84,7 +93,7 @@ void ReshapeLayer::computeOutputShape(int startAxis, int endAxis, BlobShape &inp
         {
             int inpAxisIdx = startAxis + i;
             if (inpAxisIdx < 0 || inpShape.dims() <= inpAxisIdx)
-                CV_Error(Error::StsOutOfRange, "new shape contains a 0, but there was no corresponding bottom axis to copy");
+                CV_Error(Error::StsOutOfRange, "copy dimension (which has zero size) is not presented into reshaped blob");
             outShape[idx++] = inpShape[startAxis + i];
         }
         else
@@ -113,7 +122,7 @@ void ReshapeLayer::computeOutputShape(int startAxis, int endAxis, BlobShape &inp
 
     if (inpShape.total() != outShape.total())
     {
-        CV_Error(Error::StsBadArg, "Mismatch between input and output blob elements count");
+        CV_Error(Error::StsUnmatchedSizes, "Mismatch between input and output blob elements count");
     }
 }
 

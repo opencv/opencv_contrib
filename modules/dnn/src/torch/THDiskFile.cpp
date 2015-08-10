@@ -1,3 +1,4 @@
+#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THGeneral.h"
 #include "THDiskFile.h"
 #include "THFilePrivate.h"
@@ -607,3 +608,4 @@ THFile *THPipeFile_new(const char *name, const char *mode, int isQuiet)
 }
 
 }
+#endif

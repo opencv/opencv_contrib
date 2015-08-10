@@ -75,6 +75,23 @@ TEST(Layer_LRN_channels_Test, Accuracy)
      testLayer("lrn_channels.prototxt");
 }
 
+TEST(Layer_Reshape_squeeze, Accuracy)
+{
+    LayerParams params;
+    params.set("axis", 2);
+    params.set("num_axes", 1);
+
+    Blob inp(BlobShape(4, 3, 1, 2));
+    std::vector<Blob*> inpVec(1, &inp);
+    std::vector<Blob> outVec;
+
+    Ptr<Layer> rl = LayerRegister::createLayerInstance("Reshape", params);
+    rl->allocate(inpVec, outVec);
+    rl->forward(inpVec, outVec);
+
+    EXPECT_EQ(outVec[0].shape(), BlobShape(Vec3i(4, 3, 2)));
+}
+
 TEST(Layer_Reshape_Split_Slice_Test, Accuracy)
 {
     Net net;

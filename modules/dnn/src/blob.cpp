@@ -114,6 +114,11 @@ namespace dnn
         }
     }
 
+    Blob::Blob(const BlobShape &shape, int type)
+    {
+        this->create(shape, type);
+    }
+
     void Blob::fill(const BlobShape &shape, int type, void *data, bool deepCopy)
     {
         CV_Assert(type == CV_32F || type == CV_64F);
@@ -127,14 +132,6 @@ namespace dnn
         {
             m = Mat(shape.dims(), shape.ptr(), type, data);
         }
-    }
-
-    void Blob::fill(InputArray in)
-    {
-        CV_Assert(in.isMat() || in.isMatVector());
-
-        //TODO
-        *this = Blob(in);
     }
 
     void Blob::create(const BlobShape &shape, int type)

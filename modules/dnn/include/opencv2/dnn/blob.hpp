@@ -51,6 +51,9 @@ namespace dnn
     {
     public:
         explicit Blob();
+
+        explicit Blob(const BlobShape &shape, int type = CV_32F);
+
         /** @brief constucts 4-dimensional blob from input
          *  @param in 2-dimensional or 3-dimensional single-channel image (or vector from them)
          *  @param dstCn if specified force size of ouptut blob channel-dimension

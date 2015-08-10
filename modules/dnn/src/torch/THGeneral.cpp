@@ -1,4 +1,6 @@
+#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THGeneral.h"
+#include <opencv2/core.hpp>
 
 extern "C"
 {
@@ -15,10 +17,9 @@ extern "C"
 #endif
 
 /* Torch Error Handling */
-static void defaultTorchErrorHandlerFunction(const char *msg, void *data)
+static void defaultTorchErrorHandlerFunction(const char *msg, void*)
 {
-  printf("$ Error: %s\n", msg);
-  exit(-1);
+  CV_Error(cv::Error::StsError, cv::String("Torch Error: ") + msg);
 }
 
 static __thread void (*torchErrorHandlerFunction)(const char *msg, void *data) = defaultTorchErrorHandlerFunction;
@@ -61,13 +62,12 @@ void THSetErrorHandler( void (*torchErrorHandlerFunction_)(const char *msg, void
 }
 
 /* Torch Arg Checking Handling */
-static void defaultTorchArgErrorHandlerFunction(int argNumber, const char *msg, void *data)
+static void defaultTorchArgErrorHandlerFunction(int argNumber, const char *msg, void*)
 {
   if(msg)
-    printf("$ Invalid argument %d: %s\n", argNumber, msg);
+    CV_Error(cv::Error::StsError, cv::format("Torch invalid argument %d: %s", argNumber, msg));
   else
-    printf("$ Invalid argument %d\n", argNumber);
-  exit(-1);
+    CV_Error(cv::Error::StsError, cv::format("Invalid argument %d", argNumber));
 }
 
 static __thread void (*torchArgErrorHandlerFunction)(int argNumber, const char *msg, void *data) = defaultTorchArgErrorHandlerFunction;
@@ -252,3 +252,4 @@ double THLog1p(const double x)
 }
 
 }
+#endif

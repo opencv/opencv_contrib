@@ -309,7 +309,7 @@ struct Net::Impl
         {
             LayerPin from = ld.inputBlobsId[i];
             CV_Assert(from.valid());
-            CV_Assert(layers.count(from.lid) && layers[from.lid].outputBlobs.size() > from.oid);
+            CV_DbgAssert(layers.count(from.lid) && (int)layers[from.lid].outputBlobs.size() > from.oid);
             ld.inputBlobs[i] = &layers[from.lid].outputBlobs[from.oid];
         }
 

@@ -7,15 +7,16 @@ namespace cv
 namespace dnn
 {
 
-inline BlobShape::BlobShape(int ndims, int fill) : sz( (size_t)std::max(ndims, 1) )
+inline BlobShape::BlobShape(int ndims, int fill) : sz( (size_t)std::max(ndims, 0) )
 {
+    CV_Assert(ndims >= 0);
     for (int i = 0; i < ndims; i++)
         sz[i] = fill;
 }
 
-inline BlobShape::BlobShape(int ndims, const int *sizes) : sz( (size_t)std::max(ndims, 1) )
+inline BlobShape::BlobShape(int ndims, const int *sizes) : sz( (size_t)std::max(ndims, 0) )
 {
-    CV_Assert(ndims > 0);
+    CV_Assert(ndims >= 0);
     for (int i = 0; i < ndims; i++)
         sz[i] = sizes[i];
 }
@@ -30,7 +31,6 @@ inline BlobShape::BlobShape(int num, int cn, int rows, int cols) : sz(4)
 
 inline BlobShape::BlobShape(const std::vector<int> &sizes) : sz( sizes.size() )
 {
-    CV_Assert(sizes.size() > 0);
     for (int i = 0; i < (int)sizes.size(); i++)
         sz[i] = sizes[i];
 }
@@ -81,14 +81,14 @@ inline int &BlobShape::operator[] (int axis)
 
 inline ptrdiff_t BlobShape::total()
 {
-    CV_Assert(dims() >= 1);
+    if (dims() == 0)
+        return 0;
 
     ptrdiff_t res = 1;
     for (int i = 0; i < dims(); i++)
         res *= sz[i];
     return res;
 }
-
 
 inline const int *BlobShape::ptr() const
 {
@@ -119,12 +119,7 @@ inline bool operator== (const BlobShape &l, const BlobShape &r)
 inline int Blob::canonicalAxis(int axis) const
 {
     CV_Assert(-dims() <= axis && axis < dims());
-
-    if (axis < 0)
-    {
-        return dims() + axis;
-    }
-    return axis;
+    return (axis < 0) ? axis + dims() : axis;
 }
 
 inline int Blob::dims() const
