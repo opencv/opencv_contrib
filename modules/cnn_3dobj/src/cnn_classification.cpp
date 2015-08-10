@@ -81,15 +81,13 @@ namespace cnn_3dobj
   };
 
   //Return the top N predictions.
-  std::vector<std::pair<string, float> > Classification::Classify(const cv::Mat& reference, const cv::Mat& img, int N, bool mean_substract)
+  std::vector<std::pair<string, float> > Classification::Classify(const cv::Mat& reference, const cv::Mat& target, int N)
   {
-    cv::Mat feature;
-    Classification::FeatureExtract(img, feature, mean_substract);
     std::vector<float> output;
     for (int i = 0; i < reference.rows; i++)
     {
       cv::Mat f1 = reference.row(i);
-      cv::Mat f2 = feature;
+      cv::Mat f2 = target;
       cv::Mat output_temp = f1-f2;
       output.push_back(cv::norm(output_temp));
     }
@@ -132,7 +130,7 @@ namespace cnn_3dobj
     mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
   };
 
-  void Classification::FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract)
+  void Classification::FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract, std::string featrue_blob)
   {
     Blob<float>* input_layer = net_->input_blobs()[0];
     input_layer->Reshape(1, num_channels_,
@@ -147,7 +145,7 @@ namespace cnn_3dobj
       Preprocess(img, &input_channels, mean_subtract);
       net_->ForwardPrefilled();
       /* Copy the output layer to a std::vector */
-      Blob<float>* output_layer = net_->output_blobs()[0];
+      Blob<float>* output_layer = net_->blob_by_name(featrue_blob).get();
       const float* begin = output_layer->cpu_data();
       const float* end = begin + output_layer->channels();
       std::vector<float> featureVec = std::vector<float>(begin, end);
@@ -164,7 +162,7 @@ namespace cnn_3dobj
         Preprocess(img[i], &input_channels, mean_subtract);
         net_->ForwardPrefilled();
         /* Copy the output layer to a std::vector */
-        Blob<float>* output_layer = net_->output_blobs()[0];
+        Blob<float>* output_layer = net_->blob_by_name(featrue_blob).get();
         const float* begin = output_layer->cpu_data();
         const float* end = begin + output_layer->channels();
         std::vector<float> featureVec = std::vector<float>(begin, end);

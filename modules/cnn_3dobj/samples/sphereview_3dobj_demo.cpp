@@ -41,11 +41,11 @@ using namespace std;
 using namespace cv::cnn_3dobj;
 int main(int argc, char *argv[]){
 	const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-			     "{ite_depth | 1 | Iteration of sphere generation.}"
-			     "{plymodel | ../ape.ply | path of the '.ply' file for image rendering. }"
-			     "{imagedir | ../data/images_ape/ | path of the generated images for one particular .ply model. }"
-			     "{labeldir | ../data/label_ape.txt | path of the generated images for one particular .ply model. }"
-			     "{num_class | 2 | total number of classes of models}"
+			     "{ite_depth | 2 | Iteration of sphere generation.}"
+			     "{plymodel | ../3Dmodel/ape.ply | path of the '.ply' file for image rendering. }"
+			     "{imagedir | ../data/images_all/ | path of the generated images for one particular .ply model. }"
+			     "{labeldir | ../data/label_all.txt | path of the generated images for one particular .ply model. }"
+			     "{num_class | 4 | total number of classes of models}"
 			     "{label_class | 0 | class label of current .ply model}";
 	cv::CommandLineParser parser(argc, argv, keys);
 	parser.about("Demo for Sphere View data generation");

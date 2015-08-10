@@ -160,10 +160,10 @@ class CV_EXPORTS_W Classification
 		void GetLabellist(const std::vector<string>& name_gallery);
 		/** @brief Get the label of the gallery images for result displaying in prediction.
 		*/
-		std::vector<std::pair<string, float> > Classify(const cv::Mat& reference, const cv::Mat& img, int N, bool mean_substract = false);
+		std::vector<std::pair<string, float> > Classify(const cv::Mat& reference, const cv::Mat& target, int N);
 		/** @brief Make a classification.
 		*/
-		void FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract);
+		void FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract, std::string feature_blob);
 		/** @brief Extract a single featrue of one image.
 		*/
 		std::vector<int> Argmax(const std::vector<float>& v, int N);

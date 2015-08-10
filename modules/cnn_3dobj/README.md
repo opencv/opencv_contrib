@@ -37,19 +37,19 @@ $ make
 #Demo1:
 ###Imagas generation from different pose, 4 models are used, there will be 276 images in all which each class contains 69 iamges
 ```
-$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=0
+$ ./sphereview_test -plymodel=../3Dmodel/ape.ply -label_class=0
 ```
 ###press q to start
 ```
-$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ant.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=1
+$ ./sphereview_test -plymodel=../3Dmodel/ant.ply -label_class=1
 ```
 ###press q to start
 ```
-$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/cow.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=2
+$ ./sphereview_test -plymodel=../3Dmodel/cow.ply -label_class=2
 ```
 ###press q to start
 ```
-$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/plane.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=3
+$ ./sphereview_test -plymodel=../3Dmodel/plane.ply -label_class=3
 ```
 ###press q to start, when all images are created in images_all folder as a collection of images for network tranining and feature extraction, then proceed on.
 ###After this demo, the binary files of images and labels will be stored as 'binary_image' and 'binary_label' in current path, you should copy them into the leveldb folder in Caffe triplet training, for example: copy these 2 files in <caffe_source_directory>/data/linemod and rename them as 'binary_image_train', 'binary_image_test' and 'binary_label_train', 'binary_label_train'.
