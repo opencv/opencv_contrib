@@ -1256,7 +1256,7 @@ public:
 	bool update(const Mat& image);
 
 	int targetNum = 0;
-	std::vector <Ptr<Tracker>> trackers;
+	std::vector <Ptr<Tracker> > trackers;
 	std::vector <Rect2d> boundingBoxes;
 	std::vector<Scalar> colors;
 };
