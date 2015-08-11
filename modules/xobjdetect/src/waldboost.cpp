@@ -44,8 +44,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace xobjdetect {
 
 static void compute_cdf(const Mat1b& data,
                         const Mat1f& weights,
@@ -395,4 +395,5 @@ WaldBoost::~WaldBoost()
 {
 }
 
-};
+}
+}

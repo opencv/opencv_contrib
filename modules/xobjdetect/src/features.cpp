@@ -44,8 +44,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-using namespace std;
-using namespace cv;
+namespace cv {
+namespace xobjdetect {
 
 float calcNormFactor( const Mat& sum, const Mat& sqSum )
 {
@@ -63,9 +63,9 @@ float calcNormFactor( const Mat& sum, const Mat& sqSum )
 
 CvParams::CvParams() : name( "params" ) {}
 void CvParams::printDefaults() const
-{ cout << "--" << name << "--" << endl; }
+{ std::cout << "--" << name << "--" << std::endl; }
 void CvParams::printAttrs() const {}
-bool CvParams::scanAttr( const string, const string ) { return false; }
+bool CvParams::scanAttr( const std::string, const std::string ) { return false; }
 
 
 //---------------------------- FeatureParams --------------------------------------
@@ -125,4 +125,7 @@ void CvFeatureEvaluator::setImage(const Mat &, uchar clsLabel, int idx, const st
 Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create()
 {
     return Ptr<CvFeatureEvaluator>(new CvLBPEvaluator);
+}
+
+}
 }

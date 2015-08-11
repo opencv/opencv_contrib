@@ -45,7 +45,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 
-using namespace cv;
+namespace cv {
+namespace xobjdetect {
 
 CvLBPFeatureParams::CvLBPFeatureParams()
 {
@@ -121,4 +122,7 @@ void CvLBPEvaluator::Feature::calcPoints(int offset)
 void CvLBPEvaluator::Feature::write(FileStorage &fs) const
 {
     fs << CC_RECT << "[:" << rect.x << rect.y << rect.width << rect.height << "]";
+}
+
+}
 }

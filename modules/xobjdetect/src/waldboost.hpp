@@ -48,6 +48,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include "precomp.hpp"
 
 namespace cv {
+namespace xobjdetect {
 
 class WaldBoost {
 public:
@@ -83,6 +84,7 @@ private:
     std::vector<float> cascade_thresholds_;
 };
 
+}
 }
 
 #endif

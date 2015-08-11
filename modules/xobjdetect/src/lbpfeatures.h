@@ -49,6 +49,10 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #define LBPF_NAME "lbpFeatureParams"
+
+namespace cv {
+namespace xobjdetect {
+
 struct CvLBPFeatureParams : CvFeatureParams
 {
     CvLBPFeatureParams();
@@ -104,6 +108,9 @@ inline uchar CvLBPEvaluator::Feature::calc(const cv::Mat &_sum)
         (psum[p[9]] - psum[p[10]] - psum[p[13]] + psum[p[14]] >= cval ? 4 : 0) |  // 7
         (psum[p[8]] - psum[p[9]] - psum[p[12]] + psum[p[13]] >= cval ? 2 : 0) |   // 6
         (psum[p[4]] - psum[p[5]] - psum[p[8]] + psum[p[9]] >= cval ? 1 : 0));     // 3
+}
+
+}
 }
 
 #endif

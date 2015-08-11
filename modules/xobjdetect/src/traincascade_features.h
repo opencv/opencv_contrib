@@ -70,6 +70,9 @@ the use of this software, even if advised of the possibility of such damage.
     (p3) = (rect).x + (rect).width - (rect).height                        \
            + (step) * ((rect).y + (rect).width + (rect).height);
 
+namespace cv {
+namespace xobjdetect {
+
 float calcNormFactor( const cv::Mat& sum, const cv::Mat& sqSum );
 
 template<class Feature>
@@ -141,5 +144,8 @@ protected:
     CvFeatureParams *featureParams;
     cv::Mat cls;
 };
+
+}
+}
 
 #endif
