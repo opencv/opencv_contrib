@@ -119,7 +119,7 @@ namespace dnn
                         int wend = min(wstart + kernelW, inpW);
                         hstart = max(hstart, 0);
                         wstart = max(wstart, 0);
-                        const int pool_index = ph * outW + pw;
+                        const int poolIndex = ph * outW + pw;
                         float max_val = -FLT_MAX;
 
                         for (int h = hstart; h < hend; ++h)
@@ -130,7 +130,7 @@ namespace dnn
                                     max_val = srcData[index];
                             }
 
-                        dstData[pool_index] = max_val;
+                        dstData[poolIndex] = max_val;
                     }
                 }
             }
@@ -154,7 +154,7 @@ namespace dnn
                         int wstart = pw * strideW - padW;
                         int hend = min(hstart + kernelH, inpH + padH);
                         int wend = min(wstart + kernelW, inpW + padW);
-                        int pool_size = (hend - hstart) * (wend - wstart);
+                        int poolSize = (hend - hstart) * (wend - wstart);
                         hstart = max(hstart, 0);
                         wstart = max(wstart, 0);
                         hend = min(hend, inpH);
@@ -166,7 +166,7 @@ namespace dnn
                             for (int w = wstart; w < wend; ++w)
                                 dstData[ph * outW + pw] += srcData[h * inpW + w];
 
-                        dstData[ph * outW + pw] /= pool_size;
+                        dstData[ph * outW + pw] /= poolSize;
                     }
                 }
           }

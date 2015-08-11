@@ -29,6 +29,7 @@ namespace dnn
         void im2col(Blob &inpBlob, int imNum, int cnGroup);
 
     public:
+        ConvolutionLayer() {}
         ConvolutionLayer(LayerParams &params);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
@@ -63,7 +64,7 @@ namespace dnn
         learnedParams.assign(params.learnedBlobs.begin(), params.learnedBlobs.begin() + (bias ? 2 : 1));
 
         const Blob &wgtBlob = learnedParams[0];
-        CV_Assert(wgtBlob.dims() == 4 && wgtBlob.cols() == kerW && wgtBlob.rows() == kerH && wgtBlob.num() == numOutput);
+        CV_Assert(wgtBlob.dims() == 4 && wgtBlob.cols() == kerW && wgtBlob.rows() == kerH);
 
         if (bias)
         {
@@ -81,8 +82,7 @@ namespace dnn
         computeInpOutShape(inpBlob);
 
         CV_Assert(inpCn % group == 0 && outCn % group == 0);
-        CV_Assert(learnedParams[0].channels() == inpCn / group);
-        CV_Assert(learnedParams[0].num() == outCn);
+        CV_Assert(learnedParams[0].num() == outCn && learnedParams[0].channels() == inpCn / group);
 
         outGroupCn = outCn / group;
         inpGroupCn = inpCn / group;
@@ -165,7 +165,7 @@ namespace dnn
 
         outH = (inpH + 2 * padH - kerH) / strideH + 1;
         outW = (inpW + 2 * padW - kerW) / strideW + 1;
-        outCn = learnedParams[0].num();
+        outCn = numOutput;
 
         topH = outH; topW = outW; topCn = outCn;
     }
@@ -178,7 +178,7 @@ namespace dnn
 
         inpH = strideH * (outH - 1) + kerH - 2 * padH;
         inpW = strideW * (outW - 1) + kerW - 2 * padW;
-        inpCn = learnedParams[0].channels();
+        inpCn = numOutput;
 
         topH = inpH; topW = inpW; topCn = inpCn;
     }
@@ -201,16 +201,16 @@ namespace dnn
                     if (is1x1())
                         colMat = dstMat;
 
-                    Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptrRaw(n, g*inpGroupCn));
-                    Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptrRaw(g*inpGroupCn));
+                    Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptrRaw(n, g*outGroupCn));
+                    Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptrRaw(g*outGroupCn));
                     cv::gemm(wghtMat, convMat, 1, noArray(), 0, colMat, GEMM_1_T);
 
                     col2im(dstMat);
 
                     if (bias)
                     {
-                        float *biasPtr = learnedParams[1].ptrf() + g*outGroupCn;
-                        Mat biasMat(outGroupCn, 1, CV_32F, biasPtr);
+                        float *biasPtr = learnedParams[1].ptrf() + g*inpGroupCn;
+                        Mat biasMat(inpGroupCn, 1, CV_32F, biasPtr);
                         cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
                     }
                 }
@@ -223,9 +223,9 @@ namespace dnn
         if (is1x1()) return;
 
         if (dstMat.type() == CV_32F)
-            col2im_cpu((float*)colMat.ptr(), inpCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float*)dstMat.ptr());
+            col2im_cpu((float*)colMat.ptr(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float*)dstMat.ptr());
         if (dstMat.type() == CV_64F)
-            col2im_cpu((double*)colMat.ptr(), inpCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)dstMat.ptr());
+            col2im_cpu((double*)colMat.ptr(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)dstMat.ptr());
     }
 }
 }

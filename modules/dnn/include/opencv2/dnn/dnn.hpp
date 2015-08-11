@@ -1,10 +1,7 @@
 #ifndef __OPENCV_DNN_DNN_HPP__
 #define __OPENCV_DNN_DNN_HPP__
 
-#include <map>
 #include <vector>
-#include <iostream>
-
 #include <opencv2/core.hpp>
 #include <opencv2/dnn/dict.hpp>
 #include <opencv2/dnn/blob.hpp>

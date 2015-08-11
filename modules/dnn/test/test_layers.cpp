@@ -16,30 +16,22 @@ static std::string getOpenCVExtraDir()
 }
 
 template<typename TStr>
-static std::string getTestFile(TStr filename)
+static String _tf(TStr filename)
 {
     return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
 }
 
-template<typename T, int n>
-bool isEqual(const cv::Vec<T, n> &l, const cv::Vec<T, n> &r)
+static void testLayer(String basename, bool useCaffeModel = false)
 {
-    for (int i = 0; i < n; i++)
-    {
-        if (l[i] != r[i])
-            return false;
-    }
-    return true;
-}
+    Blob inp = blobFromNPY(_tf("blob.npy"));
+    Blob ref = blobFromNPY(_tf(basename + ".npy"));
 
-static void testLayer(String proto, String caffemodel = String())
-{
-    Blob inp = blobFromNPY(getTestFile("blob.npy"));
-    Blob ref = blobFromNPY(getTestFile(proto + ".caffe.npy"));
+    String prototxt = basename + ".prototxt";
+    String caffemodel = basename + ".caffemodel";
 
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(getTestFile(proto), caffemodel);
+        Ptr<Importer> importer = createCaffeImporter(_tf(prototxt), (useCaffeModel) ? _tf(caffemodel) : String());
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
@@ -60,22 +52,47 @@ static void testLayer(String proto, String caffemodel = String())
     EXPECT_LE(normInf, 0.0001);
 }
 
-TEST(Layer_Softmax_Test, Accuracy)
+TEST(Layer_Test_Softmax, Accuracy)
 {
-     testLayer("softmax.prototxt");
+     testLayer("softmax");
 }
 
-TEST(Layer_LRN_spatial_Test, Accuracy)
+TEST(Layer_Test_LRN_spatial, Accuracy)
 {
-     testLayer("lrn_spatial.prototxt");
+     testLayer("lrn_spatial");
 }
 
-TEST(Layer_LRN_channels_Test, Accuracy)
+TEST(Layer_Test_LRN_channels, Accuracy)
 {
-     testLayer("lrn_channels.prototxt");
+     testLayer("lrn_channels");
 }
 
-TEST(Layer_Reshape_squeeze, Accuracy)
+TEST(Layer_Test_Convolution, Accuracy)
+{
+     testLayer("convolution", true);
+}
+
+TEST(Layer_Test_InnerProduct, Accuracy)
+{
+     testLayer("inner_product", true);
+}
+
+TEST(Layer_Test_Pooling_max, Accuracy)
+{
+     testLayer("pooling_max");
+}
+
+TEST(Layer_Test_Pooling_ave, Accuracy)
+{
+     testLayer("pooling_ave");
+}
+
+TEST(Layer_Test_DeConvolution, Accuracy)
+{
+     testLayer("deconvolution", true);
+}
+
+TEST(Layer_Test_Reshape, squeeze)
 {
     LayerParams params;
     params.set("axis", 2);
@@ -92,28 +109,23 @@ TEST(Layer_Reshape_squeeze, Accuracy)
     EXPECT_EQ(outVec[0].shape(), BlobShape(Vec3i(4, 3, 2)));
 }
 
-TEST(Layer_Reshape_Split_Slice_Test, Accuracy)
+TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 {
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(getTestFile("reshape_and_slice_routines.prototxt"));
+        Ptr<Importer> importer = createCaffeImporter(_tf("reshape_and_slice_routines.prototxt"));
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
 
-    BlobShape shape = BlobShape(Vec2i(6, 12));
-
-    Mat1f inputMat(shape[0], shape[1]);
+    Blob input(BlobShape(Vec2i(6, 12)));
     RNG rng(0);
-    rng.fill(inputMat, RNG::UNIFORM, -1, 1);
+    rng.fill(input.getMatRef(), RNG::UNIFORM, -1, 1);
 
-    Blob input(inputMat);
-    input.reshape(shape);
     net.setBlob(".input", input);
     net.forward();
     Blob output = net.getBlob("output");
 
-    input.fill(shape, CV_32F, inputMat.data);
     normAssert(input, output);
 }
 
