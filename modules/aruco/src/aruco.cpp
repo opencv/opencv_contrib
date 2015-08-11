@@ -1167,7 +1167,8 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                            InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
                            InputOutputArray _rejectedCorners, InputArray _cameraMatrix,
                            InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
-                           OutputArray _recoveredIdxs, DetectorParameters params) {
+                           bool checkAllOrders, OutputArray _recoveredIdxs,
+                           DetectorParameters params) {
 
     if(_detectedIds.total() == 0)
         return;
@@ -1211,32 +1212,41 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                 continue;
 
             // check distance
-            double minDistance = minRepDistance + 1;
+            double minDistance = minRepDistance*minRepDistance + 1;
             bool valid = false;
             int validRot = 0;
             for(int c=0; c<4; c++) { // first corner in rejected candidate
                 double currentMaxDistance = 0;
                 for(int k=0; k<4; k++) {
                     Point2f rejCorner = _rejectedCorners.getMat(j).ptr<Point2f>()[(c+k)%4];
-                    double cornerDist = norm(undetectedMarkersCorners[i][k] - rejCorner);
+                    Point2f distVector = undetectedMarkersCorners[i][k] - rejCorner;
+                    double cornerDist = distVector.x*distVector.x + distVector.y*distVector.y;
                     currentMaxDistance = max(currentMaxDistance, cornerDist);
                 }
-                if(currentMaxDistance < minRepDistance && currentMaxDistance < minDistance ) {
+                if(currentMaxDistance < minRepDistance*minRepDistance &&
+                        currentMaxDistance < minDistance ) {
                     valid = true;
                     validRot = c;
                     minDistance = currentMaxDistance;
+                    break;
                 }
+                if(!checkAllOrders)
+                    break;
             }
 
             if(!valid)
                 continue;
 
             // apply rotation before extract bits
-            Mat rotatedMarker = Mat(4, 1, CV_32FC2);
-            for (int c=0; c < 4; c++)
-                rotatedMarker.ptr<Point2f>()[c] =
-                        _rejectedCorners.getMat(j).ptr<Point2f>()[(c + 4 + validRot) % 4];
-
+            Mat rotatedMarker;
+            if(checkAllOrders) {
+                rotatedMarker = Mat(4, 1, CV_32FC2);
+                for (int c=0; c < 4; c++)
+                    rotatedMarker.ptr<Point2f>()[c] =
+                            _rejectedCorners.getMat(j).ptr<Point2f>()[(c + 4 + validRot) % 4];
+            }
+            else
+                rotatedMarker = _rejectedCorners.getMat(j);
 
 
             int codeDistance=0;
@@ -1279,7 +1289,6 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                 finalAcceptedCorners.push_back(rotatedMarker);
                 finalAcceptedIds.push_back(undetectedMarkersIds[i]);
                 recoveredIdxs.push_back(j);
-
             }
 
         }

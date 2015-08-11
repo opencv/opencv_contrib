@@ -362,6 +362,8 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * reprojected marker in order to consider it as a correspondence.
  * @param errorCorrectionRate rate of allowed erroneous bits respect to the error correction
  * capability of the used dictionary. -1 ignores the error correction step.
+ * @param checkAllOrders Consider the four posible corner orders in the rejectedCorners array.
+ * If it set to false, only the provided corner order is considered (default true).
  * @param recoveredIdx Optional array to returns the indexes of the recovered candidates in the
  * original rejectedCorners array.
  * @param parameters marker detection parameters
@@ -382,6 +384,7 @@ CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
                                       InputArray cameraMatrix = noArray(),
                                       InputArray distCoeffs = noArray(),
                                       float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
+                                      bool checkAllOrders = true,
                                       OutputArray recoveredIdxs = noArray(),
                                       DetectorParameters parameters = DetectorParameters());
 

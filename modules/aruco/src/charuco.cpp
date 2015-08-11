@@ -716,7 +716,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
     CV_Assert(squareMarkerLengthRate > 1.0);
 
     CharucoBoard charucoDiamondLayout;
-    Dictionary dict = getPredefinedDictionary(DICT_ARUCO);
+    Dictionary dict = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0));
     charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dict);
 
     vector< vector<Point2f> > diamondCorners;
@@ -726,85 +726,85 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
     if(_markerIds.total() < 4)
         return;
 
-    for (unsigned int i=0; i<_markerIds.total()-3; i++) {
+    Mat grey;
+    if (_image.getMat().type() == CV_8UC3)
+        cvtColor(_image.getMat(), grey, COLOR_BGR2GRAY);
+    else
+       _image.getMat().copyTo(grey);
+
+    for (unsigned int i=0; i<_markerIds.total(); i++) {
         if(assigned[i])
             continue;
 
         int currentId = _markerIds.getMat().ptr<int>()[i];
 
-        for(unsigned int j=0; j<4; j++) { // 4 positions
+        vector< Mat > currentMarker;
+        vector< int > currentMarkerId;
+        currentMarker.push_back(_markerCorners.getMat(i));
+        currentMarkerId.push_back(currentId);
 
-            vector< Mat > currentMarker;
-            vector< int > currentMarkerId;
-            currentMarker.push_back(_markerCorners.getMat(i));
-            currentMarkerId.push_back(currentId);
-
-            vector< Mat > candidates;
-            vector< int > candidatesIdxs;
-            for(unsigned int k=i+1; k<assigned.size(); k++) {
-                if(!assigned[k]) {
-                    candidates.push_back(_markerCorners.getMat(k));
-                    candidatesIdxs.push_back(k);
-                }
+        vector< Mat > candidates;
+        vector< int > candidatesIdxs;
+        for(unsigned int k=0; k<assigned.size(); k++) {
+            if(k==i) continue;
+            if(!assigned[k]) {
+                candidates.push_back(_markerCorners.getMat(k));
+                candidatesIdxs.push_back(k);
             }
-            if(candidates.size()<3)
-                break;
+        }
+        if(candidates.size()<3)
+            break;
 
-            for(int k=0; k<4; k++)
-                charucoDiamondLayout.ids[k] = currentId+1+k;
-            charucoDiamondLayout.ids[j] = currentId;
+        for(int k=1; k<4; k++)
+            charucoDiamondLayout.ids[k] = currentId+1+k;
+        charucoDiamondLayout.ids[0] = currentId;
 
-            vector<int> acceptedIdxs;
-            aruco::refineDetectedMarkers(_image, charucoDiamondLayout, currentMarker,
-                                         currentMarkerId, candidates, _cameraMatrix,
-                                         _distCoeffs, minRepDistance, -1, acceptedIdxs);
+        vector<int> acceptedIdxs;
+        aruco::refineDetectedMarkers(grey, charucoDiamondLayout, currentMarker, currentMarkerId,
+                                     candidates, noArray(), noArray(), minRepDistance, -1,
+                                     false, acceptedIdxs);
 
-            if(currentMarker.size() == 4) {
+        if(currentMarker.size() == 4) {
 
-                assigned[i] = true;
+            assigned[i] = true;
 
-                Vec4i markerId;
-                markerId[j] = currentId;
-                for(int k=0, idx=0; k<4; k++) {
-                    if(k==j) continue;
-                    int currentMarkerIdx = candidatesIdxs[ acceptedIdxs[idx] ];
-                    markerId[k] = _markerIds.getMat().ptr<int>()[currentMarkerIdx];
-                    assigned[ currentMarkerIdx ] = true;
-                    idx++;
-                }
+            Vec4i markerId;
+            markerId[0] = currentId;
+            for(int k=1; k<4; k++) {
+                int currentMarkerIdx = candidatesIdxs[ acceptedIdxs[k-1] ];
+                markerId[k] = _markerIds.getMat().ptr<int>()[currentMarkerIdx];
+                assigned[ currentMarkerIdx ] = true;
+            }
 
-                vector< Point2f > currentMarkerCorners;
-                Mat aux;
-                interpolateCornersCharuco(currentMarker, currentMarkerId, _image,
-                                          charucoDiamondLayout, currentMarkerCorners, aux,
-                                          _cameraMatrix, _distCoeffs);
+            vector< Point2f > currentMarkerCorners;
+            Mat aux;
+            interpolateCornersCharuco(currentMarker, currentMarkerId, grey,
+                                      charucoDiamondLayout, currentMarkerCorners, aux,
+                                      _cameraMatrix, _distCoeffs);
 
-                if(currentMarkerCorners.size() > 0) {
-                    // reorder corners
-                    Point2f aux;
-                    vector< Point2f > currentMarkerCornersReorder;
-                    currentMarkerCornersReorder.resize(4);
-                    currentMarkerCornersReorder[0] = currentMarkerCorners[2];
-                    currentMarkerCornersReorder[1] = currentMarkerCorners[3];
-                    currentMarkerCornersReorder[2] = currentMarkerCorners[1];
-                    currentMarkerCornersReorder[3] = currentMarkerCorners[0];
+            if(currentMarkerCorners.size() > 0) {
+                // reorder corners
+                vector< Point2f > currentMarkerCornersReorder;
+                currentMarkerCornersReorder.resize(4);
+                currentMarkerCornersReorder[0] = currentMarkerCorners[2];
+                currentMarkerCornersReorder[1] = currentMarkerCorners[3];
+                currentMarkerCornersReorder[2] = currentMarkerCorners[1];
+                currentMarkerCornersReorder[3] = currentMarkerCorners[0];
 
-                    Vec4i markerIdReorder;
-                    markerIdReorder.val[0] = markerId.val[0];
-                    markerIdReorder.val[1] = markerId.val[2];
-                    markerIdReorder.val[2] = markerId.val[3];
-                    markerIdReorder.val[3] = markerId.val[1];
+                Vec4i markerIdReorder;
+                markerIdReorder.val[0] = markerId.val[0];
+                markerIdReorder.val[1] = markerId.val[2];
+                markerIdReorder.val[2] = markerId.val[3];
+                markerIdReorder.val[3] = markerId.val[1];
 
-                    diamondCorners.push_back(currentMarkerCornersReorder);
-                    diamondIds.push_back(markerIdReorder);
-                }
-                break;
+                diamondCorners.push_back(currentMarkerCornersReorder);
+                diamondIds.push_back(markerIdReorder);
             }
 
         }
 
-
     }
+
 
     if(diamondIds.size() > 0) {
 
