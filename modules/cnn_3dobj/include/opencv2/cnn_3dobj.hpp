@@ -58,12 +58,16 @@ the use of this software, even if advised of the possibility of such damage.
 #include <tr1/memory>
 #include <dirent.h>
 #define CPU_ONLY
-#include "caffe/blob.hpp"
-#include "caffe/common.hpp"
-#include "caffe/net.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/util/io.hpp"
-#include "caffe/vision_layers.hpp"
+
+#ifdef HAVE_CAFFE
+#include <caffe/blob.hpp>
+#include <caffe/common.hpp>
+#include <caffe/net.hpp>
+#include <caffe/proto/caffe.pb.h>
+#include <caffe/util/io.hpp>
+#include <caffe/vision_layers.hpp>
+#endif
+
 #include "opencv2/viz/vizcore.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
@@ -132,10 +136,10 @@ class CV_EXPORTS_W IcoSphere
 
 };
 
-class CV_EXPORTS_W Classification
+class CV_EXPORTS_W Feature
 {
 	private:
-		caffe::shared_ptr<caffe::Net<float> > net_;
+		caffe::Net<float>* net_;
 		cv::Size input_geometry_;
 		int num_channels_;
 		cv::Mat mean_;
@@ -150,7 +154,7 @@ class CV_EXPORTS_W Classification
 		/** @brief Convert the input image to the input image format of the network.
 		*/
 	public:
-		Classification();
+		Feature();
 		void list_dir(const char *path,std::vector<string>& files,bool r);
 		/** @brief Get the file name from a root dictionary.
 		*/

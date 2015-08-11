@@ -6,8 +6,8 @@ namespace cv
 {
 namespace cnn_3dobj
 {
-  Classification::Classification(){};
-  void Classification::list_dir(const char *path,vector<string>& files,bool r)
+  Feature::Feature(){};
+  void Feature::list_dir(const char *path,vector<string>& files,bool r)
   {
     DIR *pDir;
     struct dirent *ent;
@@ -25,7 +25,7 @@ namespace cnn_3dobj
         if(r)
         {
           sprintf(childpath, "%s/%s", path, ent->d_name);
-          Classification::list_dir(childpath,files,false);
+          Feature::list_dir(childpath,files,false);
         }
       }
       else
@@ -36,7 +36,7 @@ namespace cnn_3dobj
     sort(files.begin(),files.end());
   };
 
-  void Classification::NetSetter(const string& model_file, const string& trained_file, const string& mean_file, const string& cpu_only, int device_id)
+  void Feature::NetSetter(const string& model_file, const string& trained_file, const string& mean_file, const string& cpu_only, int device_id)
   {
     if (strcmp(cpu_only.c_str(), "CPU") == 0)
     {
@@ -48,7 +48,7 @@ namespace cnn_3dobj
       caffe::Caffe::SetDevice(device_id);
     }
     /* Load the network. */
-    net_.reset(new Net<float>(model_file, TEST));
+    net_ = new Net<float>(model_file, TEST);
     net_->CopyTrainedLayersFrom(trained_file);
     CHECK_EQ(net_->num_inputs(), 1) << "Network should have exactly one input.";
     CHECK_EQ(net_->num_outputs(), 1) << "Network should have exactly one output.";
@@ -61,14 +61,14 @@ namespace cnn_3dobj
     SetMean(mean_file);
   };
 
-  void Classification::GetLabellist(const std::vector<string>& name_gallery)
+  void Feature::GetLabellist(const std::vector<string>& name_gallery)
   {
     for (unsigned int i = 0; i < name_gallery.size(); ++i)
     labels_.push_back(name_gallery[i]);
   };
 
   /* Return the indices of the top N values of vector v. */
-  std::vector<int> Classification::Argmax(const std::vector<float>& v, int N)
+  std::vector<int> Feature::Argmax(const std::vector<float>& v, int N)
   {
     std::vector<std::pair<float, int> > pairs;
     for (size_t i = 0; i < v.size(); ++i)
@@ -81,7 +81,7 @@ namespace cnn_3dobj
   };
 
   //Return the top N predictions.
-  std::vector<std::pair<string, float> > Classification::Classify(const cv::Mat& reference, const cv::Mat& target, int N)
+  std::vector<std::pair<string, float> > Feature::Classify(const cv::Mat& reference, const cv::Mat& target, int N)
   {
     std::vector<float> output;
     for (int i = 0; i < reference.rows; i++)
@@ -102,7 +102,7 @@ namespace cnn_3dobj
   };
 
   /* Load the mean file in binaryproto format. */
-  void Classification::SetMean(const string& mean_file)
+  void Feature::SetMean(const string& mean_file)
   {
     BlobProto blob_proto;
     ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
@@ -130,7 +130,7 @@ namespace cnn_3dobj
     mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
   };
 
-  void Classification::FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract, std::string featrue_blob)
+  void Feature::FeatureExtract(InputArray inputimg, OutputArray feature, bool mean_subtract, std::string featrue_blob)
   {
     Blob<float>* input_layer = net_->input_blobs()[0];
     input_layer->Reshape(1, num_channels_,
@@ -183,7 +183,7 @@ namespace cnn_3dobj
   * don't need to rely on cudaMemcpy2D. The last preprocessing
   * operation will write the separate channels directly to the input
   * layer. */
-  void Classification::WrapInputLayer(std::vector<cv::Mat>* input_channels)
+  void Feature::WrapInputLayer(std::vector<cv::Mat>* input_channels)
   {
     Blob<float>* input_layer = net_->input_blobs()[0];
     int width = input_layer->width();
@@ -197,7 +197,7 @@ namespace cnn_3dobj
     }
   };
 
-  void Classification::Preprocess(const cv::Mat& img,
+  void Feature::Preprocess(const cv::Mat& img,
 std::vector<cv::Mat>* input_channels, bool mean_subtract)
   {
     /* Convert the input image to the input image format of the network. */

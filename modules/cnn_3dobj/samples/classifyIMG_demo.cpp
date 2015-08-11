@@ -32,6 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#define HAVE_CAFFE
 #include <opencv2/cnn_3dobj.hpp>
 #include <iomanip>
 using namespace cv;
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
 		     "{device | CPU | device}"
 		     "{dev_id | 0 | dev_id}";
 	cv::CommandLineParser parser(argc, argv, keys);
-	parser.about("Demo for Sphere View data generation");
+	parser.about("Demo for object data classification and pose estimation");
 	if (parser.has("help"))
 	{
 	  parser.printMessage();

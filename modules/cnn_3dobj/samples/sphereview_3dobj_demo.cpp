@@ -32,6 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#define HAVE_CAFFE
 #include <opencv2/cnn_3dobj.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <iostream>
