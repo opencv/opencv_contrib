@@ -66,18 +66,29 @@ int main()
     int lightThreshold;
     int lightIntensity;
     GrayCodePattern::Params params;
+    bool useOpenni = false;
     FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
     fs["deviceId"] >> devId;
     fs["lightThreshold"] >> lightThreshold;
     fs["lightIntensity"] >> lightIntensity;
     fs["projectorWidth"] >> params.width;
     fs["projectorHeight"] >> params.height;
+    fs["useOpenni"] >> useOpenni;
 
-    VideoCapture capture(devId);
+    Ptr<VideoCapture> capture;
+    if (useOpenni)
+    {
+        capture = makePtr<VideoCapture>(CAP_OPENNI2);
+    }
+    else
+    {
+        capture = makePtr<VideoCapture>(devId);
+    }
+
     // set registeration on
-    capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
+    capture->set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
 
-    if (!capture.isOpened())
+    if (!capture->isOpened())
     {
         cout << "Camera unavailable" << endl;
         return -1;
@@ -101,13 +112,13 @@ int main()
     // window placement; wait for user
     for (;;)
     {
-        capture.grab();
+        capture->grab();
 
-        capture.retrieve(image, CAP_OPENNI_DEPTH_MAP);
+        capture->retrieve(image, CAP_OPENNI_DEPTH_MAP);
         flip(image, image, 1);
         imshow("depth", image * 10);
 
-        capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+        capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
         flip(image, image, 1);
         Mat gray;
         cvtColor(image, gray, COLOR_BGR2GRAY);
@@ -142,9 +153,9 @@ int main()
         for (int t = 0; t < 5; t++)
         {
             waitKey(50);
-            capture.grab();
+            capture->grab();
 
-            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+            capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
             flip(image, image, 1);
         }
 
@@ -165,9 +176,9 @@ int main()
         for (int t = 0; t < 5; t++)
         {
             waitKey(50);
-            capture.grab();
+            capture->grab();
 
-            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+            capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
             flip(image, image, 1);
         }
     }
@@ -178,8 +189,8 @@ int main()
     Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Size projectorSize(params.width * 2, params.height * 2);
     Mat projectorImage = Mat::zeros(projectorSize, CV_8UC3);
-    for (int y = 0; y < capture.get(CAP_PROP_FRAME_HEIGHT); y++) {
-        for (int x = 0; x < capture.get(CAP_PROP_FRAME_WIDTH); x++) {
+    for (int y = 0; y < image.rows; y++) {
+        for (int x = 0; x < image.cols; x++) {
             Point point;
 
             const bool error = true;
