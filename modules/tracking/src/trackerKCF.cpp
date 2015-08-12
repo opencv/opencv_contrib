@@ -132,16 +132,8 @@ namespace cv{
     std::vector<Scalar> _average;
     Mat img_Patch;
 
-    // data type for the extracted features
-    struct _features{
-      _features():vec(),pca(vec[0]),npca(vec[1]){}
-      Mat vec[2];
-      Mat & pca;
-      Mat & npca;
-    };
-
     // storage for the extracted features, KRLS model, KRLS compressed model
-    _features X,Z,Zc;
+    Mat X[2],Z[2],Zc[2];
 
     // storage of the extracted features
     std::vector<Mat> features_pca;
@@ -275,33 +267,33 @@ namespace cv{
       for(unsigned i=0;i<descriptors_npca.size();i++){
         if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
       }
-      if(features_npca.size()>0)merge(features_npca,X.npca);
+      if(features_npca.size()>0)merge(features_npca,X[1]);
 
       // get compressed descriptors
       for(unsigned i=0;i<descriptors_pca.size();i++){
         if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
       }
-      if(features_pca.size()>0)merge(features_pca,X.pca);
+      if(features_pca.size()>0)merge(features_pca,X[0]);
 
       //compress the features and the KRSL model
       if(params.desc_pca !=0){
-        compress(proj_mtx,X.pca,X.pca,_data,_compress);
-        compress(proj_mtx,Z.pca,Zc.pca,_data,_compress);
+        compress(proj_mtx,X[0],X[0],_data,_compress);
+        compress(proj_mtx,Z[0],Zc[0],_data,_compress);
       }
 
       // copy the compressed KRLS model
-      Zc.npca = Z.npca;
+      Zc[1] = Z[1];
 
       // merge all features
       if(params.desc_npca==0){
-        x = X.pca;
-        z = Zc.pca;
+        x = X[0];
+        z = Zc[0];
       }else if(params.desc_pca==0){
-        x = X.npca;
-        z = Z.npca;
+        x = X[1];
+        z = Z[1];
       }else{
-        merge(X.vec,2,x);
-        merge(Zc.vec,2,z);
+        merge(X,2,x);
+        merge(Zc,2,z);
       }
 
       //compute the gaussian kernel
@@ -332,42 +324,42 @@ namespace cv{
     for(unsigned i=0;i<descriptors_npca.size();i++){
       if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
     }
-    if(features_npca.size()>0)merge(features_npca,X.npca);
+    if(features_npca.size()>0)merge(features_npca,X[1]);
 
     // get compressed descriptors
     for(unsigned i=0;i<descriptors_pca.size();i++){
       if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
     }
-    if(features_pca.size()>0)merge(features_pca,X.pca);
+    if(features_pca.size()>0)merge(features_pca,X[0]);
 
     //update the training data
     if(frame==0){
-      Z.pca = X.pca.clone();
-      Z.npca = X.npca.clone();
+      Z[0] = X[0].clone();
+      Z[1] = X[1].clone();
     }else{
-      Z.pca=(1.0-params.interp_factor)*Z.pca+params.interp_factor*X.pca;
-      Z.npca=(1.0-params.interp_factor)*Z.npca+params.interp_factor*X.npca;
+      Z[0]=(1.0-params.interp_factor)*Z[0]+params.interp_factor*X[0];
+      Z[1]=(1.0-params.interp_factor)*Z[1]+params.interp_factor*X[1];
     }
 
     if(params.desc_pca !=0/*params.compress_feature*/ /*&& params.descriptor != GRAY*/){
       // initialize the vector of Mat variables
       if(frame==0){
-        _layers_pca.resize(Z.pca.channels());
-        _average.resize(Z.pca.channels());
+        _layers_pca.resize(Z[0].channels());
+        _average.resize(Z[0].channels());
       }
 
       // feature compression
-      updateProjectionMatrix(Z.pca,old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
-      compress(proj_mtx,X.pca,X.pca,_data,_compress);
+      updateProjectionMatrix(Z[0],old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
+      compress(proj_mtx,X[0],X[0],_data,_compress);
     }
 
     // merge all features
     if(params.desc_npca==0)
-      x = X.pca;
+      x = X[0];
     else if(params.desc_pca==0)
-      x = X.npca;
+      x = X[1];
     else
-      merge(X.vec,2,x);
+      merge(X,2,x);
 
     // initialize some required Mat variables
     if(frame==0){
