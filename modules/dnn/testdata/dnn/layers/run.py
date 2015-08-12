@@ -5,10 +5,6 @@ import sys, os, glob
 CAFFE_ROOT = "/home/vitaliy/opencv/caffe/"
 sys.path.insert(0, CAFFE_ROOT + 'python')
 
-CV2_DIR = "/home/vitaliy/opencv/build-opencv-qt/lib"
-sys.path.insert(0, CV2_DIR)
-
-
 import numpy as np
 import caffe
 import cv2

@@ -11,7 +11,7 @@ using namespace cv::dnn;
 #include <google/protobuf/message.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include "caffe/util/upgrade_proto.hpp"
+#include "caffe_io.hpp"
 
 using ::google::protobuf::RepeatedField;
 using ::google::protobuf::RepeatedPtrField;
@@ -31,7 +31,7 @@ namespace
 
         CaffeImporter(const char *pototxt, const char *caffeModel)
         {
-            ReadNetParamsFromTextFileOrDie(std::string(pototxt), &net);
+            ReadNetParamsFromTextFileOrDie(pototxt, &net);
 
             if (caffeModel && caffeModel[0])
                 ReadNetParamsFromBinaryFileOrDie(caffeModel, &netBinary);

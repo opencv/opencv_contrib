@@ -1,6 +1,6 @@
-#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR__
-#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR__
-#include <stdlib.h>
+#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
+#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <opencv2/core.hpp>
@@ -44,10 +44,10 @@ public:
         }
         else if (!cond_str && strcmp(type, "CHECK"))
         {
-            if (!strcmp(type, "INFO"))
-                std::cout << stream.str();
+            if (!std::strcmp(type, "INFO"))
+                std::cout << stream.str() << std::endl;
             else
-                std::cerr << stream.str();
+                std::cerr << stream.str() << std::endl;
         }
     }
 };

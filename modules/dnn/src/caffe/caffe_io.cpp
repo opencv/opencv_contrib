@@ -3,15 +3,72 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
+#include <opencv2/core.hpp>
+
 #include <map>
 #include <string>
+#include <fstream>
+#include <vector>
 
-#include "caffe/common.hpp"
 #include "caffe.pb.h"
-#include "caffe/util/io.hpp"
-#include "caffe/util/upgrade_proto.hpp"
+#include "caffe_io.hpp"
+#include "glog_emulator.hpp"
 
-namespace caffe {
+namespace cv {
+namespace dnn {
+
+using std::string;
+using std::map;
+using namespace caffe;
+using namespace ::google::protobuf;
+using namespace ::google::protobuf::io;
+
+// Return true iff the net is not the current version.
+bool NetNeedsUpgrade(const NetParameter& net_param);
+
+// Return true iff any layer contains parameters specified using
+// deprecated V0LayerParameter.
+bool NetNeedsV0ToV1Upgrade(const NetParameter& net_param);
+
+// Perform all necessary transformations to upgrade a V0NetParameter into a
+// NetParameter (including upgrading padding layers and LayerParameters).
+bool UpgradeV0Net(const NetParameter& v0_net_param, NetParameter* net_param);
+
+// Upgrade NetParameter with padding layers to pad-aware conv layers.
+// For any padding layer, remove it and put its pad parameter in any layers
+// taking its top blob as input.
+// Error if any of these above layers are not-conv layers.
+void UpgradeV0PaddingLayers(const NetParameter& param,
+                            NetParameter* param_upgraded_pad);
+
+// Upgrade a single V0LayerConnection to the V1LayerParameter format.
+bool UpgradeV0LayerParameter(const V1LayerParameter& v0_layer_connection,
+                             V1LayerParameter* layer_param);
+
+V1LayerParameter_LayerType UpgradeV0LayerType(const string& type);
+
+// Return true iff any layer contains deprecated data transformation parameters.
+bool NetNeedsDataUpgrade(const NetParameter& net_param);
+
+// Perform all necessary transformations to upgrade old transformation fields
+// into a TransformationParameter.
+void UpgradeNetDataTransformation(NetParameter* net_param);
+
+// Return true iff the Net contains any layers specified as V1LayerParameters.
+bool NetNeedsV1ToV2Upgrade(const NetParameter& net_param);
+
+// Perform all necessary transformations to upgrade a NetParameter with
+// deprecated V1LayerParameters.
+bool UpgradeV1Net(const NetParameter& v1_net_param, NetParameter* net_param);
+
+bool UpgradeV1LayerParameter(const V1LayerParameter& v1_layer_param,
+                             LayerParameter* layer_param);
+
+const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type);
+
+// Check for deprecations and upgrade the NetParameter as needed.
+bool UpgradeNetAsNeeded(const string& param_file, NetParameter* param);
+
 
 bool NetNeedsUpgrade(const NetParameter& net_param) {
   return NetNeedsV0ToV1Upgrade(net_param) || NetNeedsV1ToV2Upgrade(net_param);
@@ -924,19 +981,46 @@ const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type) {
   }
 }
 
-void ReadNetParamsFromTextFileOrDie(const string& param_file,
+const int kProtoReadBytesLimit = INT_MAX;  // Max size of 2 GB minus 1 byte.
+
+bool ReadProtoFromTextFile(const char* filename, Message* proto) {
+    std::ifstream fs(filename, std::ifstream::in);
+    CHECK(fs.is_open()) << "Can't open \"" << filename << "\"";
+    IstreamInputStream input(&fs);
+    bool success = google::protobuf::TextFormat::Parse(&input, proto);
+    fs.close();
+    return success;
+}
+
+bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
+    std::ifstream fs(filename, std::ifstream::in | std::ifstream::binary);
+    CHECK(fs.is_open()) << "Can't open \"" << filename << "\"";
+    ZeroCopyInputStream* raw_input = new IstreamInputStream(&fs);
+    CodedInputStream* coded_input = new CodedInputStream(raw_input);
+    coded_input->SetTotalBytesLimit(kProtoReadBytesLimit, 536870912);
+
+    bool success = proto->ParseFromCodedStream(coded_input);
+
+    delete coded_input;
+    delete raw_input;
+    fs.close();
+    return success;
+}
+
+void ReadNetParamsFromTextFileOrDie(const char* param_file,
                                     NetParameter* param) {
   CHECK(ReadProtoFromTextFile(param_file, param))
       << "Failed to parse NetParameter file: " << param_file;
   UpgradeNetAsNeeded(param_file, param);
 }
 
-void ReadNetParamsFromBinaryFileOrDie(const string& param_file,
+void ReadNetParamsFromBinaryFileOrDie(const char* param_file,
                                       NetParameter* param) {
   CHECK(ReadProtoFromBinaryFile(param_file, param))
       << "Failed to parse NetParameter file: " << param_file;
   UpgradeNetAsNeeded(param_file, param);
 }
 
-}  // namespace caffe
+}
+}
 #endif
