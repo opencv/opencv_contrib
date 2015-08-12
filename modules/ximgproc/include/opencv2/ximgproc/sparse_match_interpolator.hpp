@@ -66,7 +66,7 @@ public:
 };
 
 CV_EXPORTS_W
-Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator(bool useSED=false);
+Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator();
 }
 }
 #endif

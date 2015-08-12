@@ -33,94 +33,162 @@ struct node
     node() {}
     node(short l,float d): label(l), dist(d){}
 };
+void ransacInterpolationOld(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow, int num_iter, vector<node>* g);
 
 class EdgeAwareInterpolatorImpl : public EdgeAwareInterpolator
 {
 public:
-    static Ptr<EdgeAwareInterpolatorImpl> create(bool useSED);
+    static Ptr<EdgeAwareInterpolatorImpl> create();
     void interpolate(InputArray reference_image, InputArray target_image, InputArray matches, OutputArray dense_flow);
 
 protected:
     int w,h;
-    bool useSED;
-    vector<node>* g;
+    int match_num;
 
-    Ptr<StructuredEdgeDetection> sed;
+    //internal data:
+    vector<node>* g;
+    Mat labels;
+    Mat NNlabels;
+    Mat NNdistances;
+
+    //internal parameters:
+    float lambda; // value between zero and one; controls edge sensitivity (default: 0.999f)
+    int k;        // number of nearest-neighbor matches that we consider during interpolation (default: 128)
+    float sigma;  // controls the speed of weight decay while increasing the distance (default: 0.05f)
+    float inlier_eps; //threshold that defines inliers during RANSAC-based local affine transform fitting (default: 2.0f)
+    float fgs_lambda; // default: 500.0f
+    float fgs_sigma;  // default: 1.5f
+
+    // aux parameters:
+    int distance_transform_num_iter, ransac_interpolation_num_iter;
+    static const int ransac_num_stripes = 4;
+    RNG rngs[ransac_num_stripes];
+
     void init();
-    void geodesicDistanceTransform(Mat& distances, Mat& labels, Mat& cost_map, int num_iter=1);
-    void getKNNMatches(Mat& distances, Mat& labels, Mat& cost_map, int k, int match_num, Mat& dstNNlabels, Mat& dstNNdistances);
-    void leastSquaresInterpolation(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow);
-    void ransacInterpolation(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow, int num_iter);
-    void computeSED(Mat src, Mat& dst);
-    void computeGradientMagnitude(Mat src, Mat& dst, bool useL2=false);
+    void preprocessData(Mat& src, vector<SparseMatch>& matches);
+    void ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow);
+
+    void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
+    void buildGraph(Mat& distances, Mat& cost_map);
+    void computeGradientMagnitude(Mat& src, Mat& dst);
+
+protected:
+    struct GetKNNMatches_ParBody : public ParallelLoopBody
+    {
+        EdgeAwareInterpolatorImpl* inst;
+        int num_stripes;
+        int stripe_sz;
+
+        GetKNNMatches_ParBody(EdgeAwareInterpolatorImpl& _inst, int _num_stripes);
+        void operator () (const Range& range) const;
+    };
+
+    struct RansacInterpolation_ParBody : public ParallelLoopBody
+    {
+        EdgeAwareInterpolatorImpl* inst;
+        Mat* transforms;
+        float* weighted_inlier_nums;
+        SparseMatch* matches;
+        int num_stripes;
+        int stripe_sz;
+        int inc;
+
+        RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, SparseMatch* _matches, int _num_stripes, int _inc);
+        void operator () (const Range& range) const;
+    };
 };
 
-void EdgeAwareInterpolatorImpl::init() {}
-
-Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create(bool useSED)
+void EdgeAwareInterpolatorImpl::init() 
 {
-    EdgeAwareInterpolatorImpl *gd = new EdgeAwareInterpolatorImpl();
-    gd->init();
-    gd->useSED = useSED;
-    if(useSED)
-        gd->sed = createStructuredEdgeDetection("model.yml");
-    return Ptr<EdgeAwareInterpolatorImpl>(gd);
+    lambda     = 999.0f;
+    k          = 128;
+    sigma      = 0.05f;
+    inlier_eps = 2.0f;
+    fgs_lambda = 500.0f;
+    fgs_sigma  = 1.5f;
+
+    distance_transform_num_iter   = 2;
+    ransac_interpolation_num_iter = 1;
+}
+
+Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
+{
+    EdgeAwareInterpolatorImpl *eai = new EdgeAwareInterpolatorImpl();
+    eai->init();
+    return Ptr<EdgeAwareInterpolatorImpl>(eai);
 }
 
 void EdgeAwareInterpolatorImpl::interpolate(InputArray reference_image, InputArray, InputArray matches, OutputArray dense_flow)
 {
-    float lambda = 999.0f; //controls edge sensitivity
-    int k=128; //num of nearest-neighbor matches
     w = reference_image.cols();
     h = reference_image.rows();
-
-    Mat distances(h,w,CV_32F);
-    Mat labels   (h,w,CV_16S);
-    Mat cost_map (h,w,CV_32F);
-    distances = Scalar(INF);
-    labels    = Scalar(-1);
-
+    
     vector<SparseMatch> matches_vector = *(const std::vector<SparseMatch>*)matches.getObj();
     std::sort(matches_vector.begin(),matches_vector.end());
-    int x,y;
-    int match_num = matches_vector.size();
+    match_num = matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);
-    int x_prev=-1;
-    for(unsigned int i=0;i<matches_vector.size();i++)
-    {
-        x = min((int)(matches_vector[i].reference_image_pos.x+0.5f),w-1);
-        y = min((int)(matches_vector[i].reference_image_pos.y+0.5f),h-1);
 
-        x_prev = x;
+    Mat src = reference_image.getMat();
+    labels = Mat(h,w,CV_16S);
+    labels = Scalar(-1);
+    NNlabels = Mat(match_num,k,CV_16S);
+    NNlabels = Scalar(-1);
+    NNdistances = Mat(match_num,k,CV_32F);
+    NNdistances = Scalar(0.0f);
+    g = new vector<node>[match_num];
+    preprocessData(src,matches_vector);
+
+    dense_flow.create(reference_image.size(),CV_32FC2);
+    Mat dst = dense_flow.getMat();
+    ransacInterpolation(matches_vector,dst);
+    fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
+    delete[] g;
+}
+
+void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& matches)
+{
+    Mat distances(h,w,CV_32F);
+    Mat cost_map (h,w,CV_32F);
+    distances = Scalar(INF);
+
+    int x,y;
+    for(unsigned int i=0;i<matches.size();i++)
+    {
+        x = min((int)(matches[i].reference_image_pos.x+0.5f),w-1);
+        y = min((int)(matches[i].reference_image_pos.y+0.5f),h-1);
+
         distances.at<float>(y,x) = 0.0f;
         labels.at<short>(y,x) = (short)i;
     }
 
-    if(useSED)
-        computeSED(reference_image.getMat(),cost_map);
-    else
-        computeGradientMagnitude(reference_image.getMat(),cost_map);
-
+    computeGradientMagnitude(src,cost_map);
     cost_map = (1000.0f-lambda) + lambda*cost_map;
-    geodesicDistanceTransform(distances,labels,cost_map,1);
 
-    g = new vector<node>[match_num];
-    Mat NNlabels(match_num,k,CV_16S);
-    Mat NNdistances(match_num,k,CV_32F);
-    getKNNMatches(distances,labels,cost_map,k,match_num,NNlabels,NNdistances);
-
-    dense_flow.create(reference_image.size(),CV_32FC2);
-    Mat dst = dense_flow.getMat();
-
-    ransacInterpolation(labels,NNlabels,NNdistances,matches_vector,dst,2);
-    fastGlobalSmootherFilter(reference_image.getMat(),dst,dst,500.0,1.5);
-    delete[] g;
+    geodesicDistanceTransform(distances,cost_map);
+    buildGraph(distances,cost_map);
+    parallel_for_(Range(0,getNumThreads()),GetKNNMatches_ParBody(*this,getNumThreads()));
 }
 
-// distances - CV_32F - zero in keypoints, INF in other points 
-// labels - CV_16S - indexed keypoints, -1 in other points
-// cost_map - CV_32F, gradient magnitude or more some other edge detector response
-void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& labels, Mat& cost_map, int num_iter)
+void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat& src, Mat& dst)
+{
+    Mat dx,dy,src_gray;
+    cvtColor(src,src_gray,COLOR_BGR2GRAY);
+    Sobel(src_gray, dx, CV_16SC1, 1, 0);
+    Sobel(src_gray, dy, CV_16SC1, 0, 1);
+    float norm_coef = 4.0f*255.0f;
+
+    for(int i=0;i<h;i++)
+    {
+        short* dx_row  = dx.ptr<short>(i);
+        short* dy_row  = dy.ptr<short>(i);
+        float* dst_row = dst.ptr<float>(i);
+
+        for(int j=0;j<w;j++)
+            dst_row[j] = ((float)abs(dx_row[j])+abs(dy_row[j]))/norm_coef;
+    }
+}
+
+void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
 {
     float c1 = 1.0f/2.0f;
     float c2 = sqrt(2.0f)/2.0f;
@@ -137,7 +205,7 @@ void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& l
         cur_dist=d;\
         cur_label = prev_label;}
 
-    for(int it=0;it<num_iter;it++)
+    for(int it=0;it<distance_transform_num_iter;it++)
     {
         //first pass (left-to-right, top-to-bottom):
         dist_row  = distances.ptr<float>(0);
@@ -210,47 +278,92 @@ void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& l
 #undef CHECK
 }
 
-void EdgeAwareInterpolatorImpl::computeSED(Mat src, Mat& dst)
+void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 {
-    Mat src_CV32F;
-    src.convertTo(src_CV32F, CV_32F, 1/255.0);
-    sed->detectEdges(src_CV32F, dst);
-}
+    float *dist_row,      *cost_row;
+    float *dist_row_prev, *cost_row_prev;
+    short *label_row;
+    short *label_row_prev;
+    int i,j,n;
+    const float c1 = 1.0f/2.0f;
+    const float c2 = sqrt(2.0f)/2.0f;
+    float d;
+    bool found;
 
-void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat src, Mat& dst, bool useL2)
-{
-    Mat dx,dy,src_gray;
-    cvtColor(src,src_gray,COLOR_BGR2GRAY);
-    Sobel(src_gray, dx, CV_16SC1, 1, 0);
-    Sobel(src_gray, dy, CV_16SC1, 0, 1);
-    float norm_coef = 4.0f*255.0f;
-
-    if(useL2)
-    {
-        norm_coef*=norm_coef;
-        for(int i=0;i<h;i++)
-        {
-            short* dx_row  = dx.ptr<short>(i);
-            short* dy_row  = dy.ptr<short>(i);
-            float* dst_row = dst.ptr<float>(i);
-
-            for(int j=0;j<w;j++)
-                dst_row[j] = ((float)dx_row[j]*dx_row[j]+dy_row[j]*dy_row[j])/norm_coef;
-
-            hal::sqrt(dst_row,dst_row,h);
-        }
+#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+    if(cur_label!=prev_label)\
+    {\
+        d = prev_dist + cur_dist + coef*(cur_cost+prev_cost);\
+        found = false;\
+        for(unsigned int n=0;n<g[prev_label].size();n++)\
+        {\
+            if(g[prev_label][n].label==cur_label)\
+            {\
+                g[prev_label][n].dist = min(g[prev_label][n].dist,d);\
+                found=true;\
+                break;\
+            }\
+        }\
+        if(!found)\
+            g[prev_label].push_back(node(cur_label ,d));\
     }
-    else
-    {
-        for(int i=0;i<h;i++)
-        {
-            short* dx_row  = dx.ptr<short>(i);
-            short* dy_row  = dy.ptr<short>(i);
-            float* dst_row = dst.ptr<float>(i);
 
-            for(int j=0;j<w;j++)
-                dst_row[j] = ((float)abs(dx_row[j])+abs(dy_row[j]))/norm_coef;
+    dist_row  = distances.ptr<float>(0);
+    label_row = labels.ptr<short>(0);
+    cost_row  = cost_map.ptr<float>(0);
+    for(j=1;j<w;j++)
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1],label_row[j-1],cost_row[j-1],c1);
+
+    for(i=1;i<h;i++)
+    {
+        dist_row       = distances.ptr<float>(i);
+        dist_row_prev  = distances.ptr<float>(i-1);
+
+        label_row      = labels.ptr<short>(i);
+        label_row_prev = labels.ptr<short>(i-1);
+
+        cost_row      = cost_map.ptr<float>(i);
+        cost_row_prev = cost_map.ptr<float>(i-1);
+
+        j=0;
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
+        j++;
+        for(;j<w-1;j++)
+        {
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
         }
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+    }
+#undef CHECK
+
+    // force equal distances in both directions:
+    node* neighbors;
+    for(i=0;i<match_num;i++)
+    {
+        neighbors = &g[i].front();
+        for(j=0;j<(int)g[i].size();j++)
+        {
+            found = false;
+
+            for(n=0;n<(int)g[neighbors[j].label].size();n++)
+            {
+                if(g[neighbors[j].label][n].label==i)
+                {
+                    neighbors[j].dist = g[neighbors[j].label][n].dist = min(neighbors[j].dist,g[neighbors[j].label][n].dist);
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found)
+                g[neighbors[j].label].push_back(node((short)i,neighbors[j].dist));
+        }        
     }
 }
 
@@ -384,118 +497,33 @@ struct nodeHeap
     }
 };
 
-//dstNNlabels, dstNNdistances - each row contains all NN matches of a particular match
-//k - number of NN matches
-void EdgeAwareInterpolatorImpl::getKNNMatches(Mat& distances, Mat& labels, Mat& cost_map, int k, int match_num, Mat& dstNNlabels, Mat& dstNNdistances)
+EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::GetKNNMatches_ParBody(EdgeAwareInterpolatorImpl& _inst, int _num_stripes):
+inst(&_inst),num_stripes(_num_stripes)
 {
-    //Step 1: build a graph out of the matches
-    float *dist_row,      *cost_row;
-    float *dist_row_prev, *cost_row_prev;
-    short *label_row;
-    short *label_row_prev;
-    int i,j;
-    float c1 = 1.0f/2.0f;
-    float c2 = sqrt(2.0f)/2.0f;
-    float d;
-    bool found;
+    stripe_sz = (int)ceil(inst->match_num/(double)num_stripes);
+}
 
-#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
-    if(cur_label!=prev_label)\
-    {\
-        d = prev_dist + cur_dist + coef*(cur_cost+prev_cost);\
-        found = false;\
-        for(unsigned int n=0;n<g[prev_label].size();n++)\
-        {\
-            if(g[prev_label][n].label==cur_label)\
-            {\
-                g[prev_label][n].dist = min(g[prev_label][n].dist,d);\
-                found=true;\
-                break;\
-            }\
-        }\
-        if(!found)\
-            g[prev_label].push_back(node(cur_label ,d));\
-    }
-
-    dist_row  = distances.ptr<float>(0);
-    label_row = labels.ptr<short>(0);
-    cost_row  = cost_map.ptr<float>(0);
-    for(j=1;j<w;j++)
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1],label_row[j-1],cost_row[j-1],c1);
-
-    for(i=1;i<h;i++)
-    {
-        dist_row       = distances.ptr<float>(i);
-        dist_row_prev  = distances.ptr<float>(i-1);
-
-        label_row      = labels.ptr<short>(i);
-        label_row_prev = labels.ptr<short>(i-1);
-
-        cost_row      = cost_map.ptr<float>(i);
-        cost_row_prev = cost_map.ptr<float>(i-1);
-
-        j=0;
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
-        j++;
-        for(;j<w-1;j++)
-        {
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
-        }
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-    }
-#undef CHECK
-
-    // force equal distances in both directions:
-    node* neighbors;
-    for(i=0;i<match_num;i++)
-    {
-        neighbors = &g[i].front();
-        for(j=0;j<g[i].size();j++)
-        {
-            found = false;
-
-            for(int k=0;k<g[neighbors[j].label].size();k++)
-            {
-                if(g[neighbors[j].label][k].label==i)
-                {
-                    neighbors[j].dist = g[neighbors[j].label][k].dist = min(neighbors[j].dist,g[neighbors[j].label][k].dist);
-                    found = true;
-                    break;
-                }
-            }
-
-            if(!found)
-                g[neighbors[j].label].push_back(node(i,neighbors[j].dist));
-        }        
-    }
-
-    //Step 2: for each match find k nearest-neighbor matches with corresponding distances 
-    //        using Dijkstra algorithm
-
-    nodeHeap q(match_num);
+void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& range) const
+{
+    int start = std::min(range.start * stripe_sz, inst->match_num);
+    int end   = std::min(range.end   * stripe_sz, inst->match_num);
+    nodeHeap q((short)inst->match_num);
     int num_expanded_vertices;
     bitset<SHRT_MAX> expanded_flag;
-    dstNNlabels = Scalar(-1);
-    dstNNdistances = Scalar(0.0f);
+    node* neighbors;
 
-    for(i=0;i<match_num;i++)
+    for(int i=start;i<end;i++)
     {
-        if(g[i].empty())
+        if(inst->g[i].empty())
             continue;
-        //find k closest matches:
+        
         num_expanded_vertices = 0;
         expanded_flag.reset();
         q.clear();
-        q.add(node(i,0.0f));
-        short* NNlabels_row = dstNNlabels.ptr<short>(i);
-        float* NNdistances_row = dstNNdistances.ptr<float>(i);
-        while(num_expanded_vertices<k && !q.empty())
+        q.add(node((short)i,0.0f));
+        short* NNlabels_row    = inst->NNlabels.ptr<short>(i);
+        float* NNdistances_row = inst->NNdistances.ptr<float>(i);
+        while(num_expanded_vertices<inst->k && !q.empty())
         {
             node vert_for_expansion = q.getMin();
             expanded_flag[vert_for_expansion.label] = 1;
@@ -506,8 +534,8 @@ void EdgeAwareInterpolatorImpl::getKNNMatches(Mat& distances, Mat& labels, Mat& 
             num_expanded_vertices++;
 
             //update the heap:
-            neighbors = &g[vert_for_expansion.label].front();
-            for(j=0;j<g[vert_for_expansion.label].size();j++)
+            neighbors = &inst->g[vert_for_expansion.label].front();
+            for(int j=0;j<(int)inst->g[vert_for_expansion.label].size();j++)
             {
                 if(!expanded_flag[neighbors[j].label])
                     q.updateNode(node(neighbors[j].label,vert_for_expansion.dist+neighbors[j].dist));
@@ -554,46 +582,8 @@ void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, Spa
     sa[4][4] = sa[1][1];
     sa[5][5] = sa[2][2];
 
-    bool res = solve(A, B, MM, DECOMP_EIG);
+    solve(A, B, MM, DECOMP_EIG);
     MM.reshape(2,3).convertTo(dst,CV_32F);
-}
-
-void EdgeAwareInterpolatorImpl::leastSquaresInterpolation(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow)
-{
-    // for each match compute an affine transform with distance-weighted least squares and
-    // fill the the voronoi diagram cell correspondingly
-    int n = matches.size();
-    int k = NNlabels.cols;
-    float sigma = 0.05;
-    short* KNNlabels;
-    float* KNNdistances;
-    NNdistances *= (-sigma*sigma);
-    Mat* transforms = new Mat[n];
-    
-    //fit all the local affine transforms:
-    for(int i=0;i<n;i++)
-    {
-        KNNlabels     = NNlabels.ptr<short>(i);
-        KNNdistances  = NNdistances.ptr<float>(i);
-        hal::exp(KNNdistances,KNNdistances,k);
-        
-        weightedLeastSquaresAffineFit(KNNlabels,KNNdistances,k,&matches.front(),transforms[i]);
-    }
-
-    //construct the final piecewise-affine interpolation:
-    short* label_row;
-    float* tr;
-    for(int i=0;i<h;i++)
-    {
-        label_row = labels.ptr<short>(i);
-        Point2f* dst_row = dst_dense_flow.ptr<Point2f>(i); 
-        for(int j=0;j<w;j++)
-        {
-            tr = transforms[label_row[j]].ptr<float>(0);
-            dst_row[j] = Point2f(tr[0]*j+tr[1]*i+tr[2],tr[3]*j+tr[4]*i+tr[5]) - Point2f((float)j,(float)i);
-        }
-    }
-    delete[] transforms;
 }
 
 void generateHypothesis(short* labels, int count, RNG& rng, bitset<SHRT_MAX>& is_used, SparseMatch* matches, Mat& dst)
@@ -648,93 +638,113 @@ void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* mat
     }
 }
 
-void EdgeAwareInterpolatorImpl::ransacInterpolation(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow, int num_iter)
+EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, SparseMatch* _matches, int _num_stripes, int _inc):
+inst(&_inst), transforms(_transforms), weighted_inlier_nums(_weighted_inlier_nums), num_stripes(_num_stripes), matches(_matches), inc(_inc)
 {
-    int n = matches.size();
-    int k = NNlabels.cols;
-    float sigma = 0.05f;
-    float inlier_eps = 2.0f;
-    bitset<SHRT_MAX> is_used;
+    stripe_sz = (int)ceil(inst->match_num/(double)num_stripes);
+}
+
+void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const Range& range) const
+{
+    if(range.end>range.start+1)
+    {
+        for(int n=range.start;n<range.end;n++)
+            (*this)(Range(n,n+1));
+        return;
+    }
+
+    int start = std::min(range.start * stripe_sz, inst->match_num);
+    int end   = std::min(range.end   * stripe_sz, inst->match_num);
+    if(inc<0)
+    {
+        int tmp = end;
+        end = start-1;
+        start = tmp-1;
+    }
+
     short* KNNlabels;
     float* KNNdistances;
-    NNdistances *= (-sigma*sigma);
-
-    Mat* transforms = new Mat[n];
-    float* weighted_inlier_nums = new float[n];
-    memset(weighted_inlier_nums,0,n*sizeof(float));
+    bitset<SHRT_MAX> is_used;
     Mat hypothesis_transform;
-    RNG rng(0);
 
-    short* inlier_labels = new short[k];
-    float* inlier_distances = new float[k];
+    short* inlier_labels    = new short[inst->k];
+    float* inlier_distances = new float[inst->k];
     float* tr;
     int num_inliers;
     Point2f a,b;
 
-    int start_i,end_i,inc;
-
-    for(int it=0;it<num_iter;it++)
+    for(int i=start;i!=end;i+=inc)
     {
-        if(it%2==0)
+        if(inst->g[i].empty())
+            continue;
+
+        KNNlabels    = inst->NNlabels.ptr<short>(i);
+        KNNdistances = inst->NNdistances.ptr<float>(i);
+        if(inc>0) //forward pass
+            hal::exp(KNNdistances,KNNdistances,inst->k);
+
+        for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
         {
-            start_i = 0;
-            end_i = n;
-            inc = 1;
+            generateHypothesis(KNNlabels,inst->k,inst->rngs[range.start],is_used,matches,hypothesis_transform);
+            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
         }
-        else
+
+        //propagate hypotheses from neighbors:
+        node* neighbors = &inst->g[i].front();
+        for(int j=0;j<(int)inst->g[i].size();j++)
         {
-            start_i = n-1;
-            end_i = -1;
-            inc = -1;
+            if((inc*neighbors[j].label)<(inc*i) && (inc*neighbors[j].label)>=(inc*start)) //already processed this neighbor
+                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
         }
 
-        for(int i=start_i;i!=end_i;i+=inc)
+        if(inc<0) //backward pass
         {
-            if(g[i].empty())
-                continue;
+            // determine inliers and compute a least squares fit:
+            tr = transforms[i].ptr<float>(0);
+            num_inliers = 0;
 
-            KNNlabels = NNlabels.ptr<short>(i);
-            KNNdistances = NNdistances.ptr<float>(i);
-            if(it==0)
-                hal::exp(KNNdistances,KNNdistances,k);
-
-            generateHypothesis(KNNlabels,k,rng,is_used,&matches.front(),hypothesis_transform);
-            verifyHypothesis(KNNlabels,KNNdistances,k,&matches.front(),inlier_eps,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
-
-            //propagate hypotheses from neighbors:
-            node* neighbors = &g[i].front();
-            for(int j=0;j<g[i].size();j++)
+            for(int j=0;j<inst->k;j++)
             {
-                if((inc*neighbors[j].label)<(inc*i)) //already processed this neighbor
-                    verifyHypothesis(KNNlabels,KNNdistances,k,&matches.front(),inlier_eps,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
-            }
-
-            if(it==num_iter-1)
-            {
-                // determine inliers and compute a least squares fit:
-                tr = transforms[i].ptr<float>(0);
-                num_inliers = 0;
-                
-                for(int j=0;j<k;j++)
+                a = matches[KNNlabels[j]].reference_image_pos;
+                b = matches[KNNlabels[j]].target_image_pos;
+                if(abs(tr[0]*a.x + tr[1]*a.y + tr[2] - b.x) +
+                   abs(tr[3]*a.x + tr[4]*a.y + tr[5] - b.y) < inst->inlier_eps)
                 {
-                    a = matches[KNNlabels[j]].reference_image_pos;
-                    b = matches[KNNlabels[j]].target_image_pos;
-                    if(abs(tr[0]*a.x + tr[1]*a.y + tr[2] - b.x) +
-                       abs(tr[3]*a.x + tr[4]*a.y + tr[5] - b.y) < inlier_eps)
-                    {
-                        inlier_labels[num_inliers] = KNNlabels[j];
-                        inlier_distances[num_inliers] = KNNdistances[j];
-                        num_inliers++;
-                    }
+                    inlier_labels[num_inliers]    = KNNlabels[j];
+                    inlier_distances[num_inliers] = KNNdistances[j];
+                    num_inliers++;
                 }
-
-                weightedLeastSquaresAffineFit(inlier_labels,inlier_distances,num_inliers,&matches.front(),transforms[i]);
             }
+
+            weightedLeastSquaresAffineFit(inlier_labels,inlier_distances,num_inliers,matches,transforms[i]);
         }
     }
 
+    delete[] inlier_labels;
+    delete[] inlier_distances;
+}
+
+void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow)
+{
+    NNdistances *= (-sigma*sigma);
+
+    Mat* transforms = new Mat[match_num];
+    float* weighted_inlier_nums = new float[match_num];
+    memset(weighted_inlier_nums,0,match_num*sizeof(float));
+    int inc = 1;
+
+    for(int i=0;i<ransac_num_stripes;i++)
+        rngs[i] = RNG(0);
+
+    //forward pass:
+    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,&matches.front(),ransac_num_stripes,1));
+    //backward pass:
+    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,&matches.front(),ransac_num_stripes,-1));
+    
+
     //construct the final piecewise-affine interpolation:
     short* label_row;
+    float* tr;
     for(int i=0;i<h;i++)
     {
         label_row = labels.ptr<short>(i);
@@ -748,14 +758,12 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(Mat& labels, Mat& NNlabels, 
 
     delete[] transforms;
     delete[] weighted_inlier_nums;
-    delete[] inlier_labels;
-    delete[] inlier_distances;
 }
 
 CV_EXPORTS_W
-Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator(bool useSED)
+Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator()
 {
-    return Ptr<EdgeAwareInterpolator>(EdgeAwareInterpolatorImpl::create(useSED));
+    return Ptr<EdgeAwareInterpolator>(EdgeAwareInterpolatorImpl::create());
 }
 
 }

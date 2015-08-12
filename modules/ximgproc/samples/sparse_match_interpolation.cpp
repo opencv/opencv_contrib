@@ -185,7 +185,7 @@ int main(int argc, char** argv)
                             matches.push_back(SparseMatch(points[i],dst_points[i]));
                     }
 
-                    Ptr<EdgeAwareInterpolator> gd = createEdgeAwareInterpolator(false);
+                    Ptr<EdgeAwareInterpolator> gd = createEdgeAwareInterpolator();
                     double filtering_time = (double)getTickCount();
                     gd->interpolate(prev,cur,matches,dense_flow);
                     filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
@@ -248,8 +248,8 @@ int main(int argc, char** argv)
                 if(status[i]!=0)
                     matches.push_back(SparseMatch(points[i],dst_points[i]));
             }
-
-            Ptr<EdgeAwareInterpolator> gd = createEdgeAwareInterpolator(false);
+            setNumThreads(4);
+            Ptr<EdgeAwareInterpolator> gd = createEdgeAwareInterpolator();
             double filtering_time = (double)getTickCount();
             gd->interpolate(prev,cur,matches,dense_flow);
             filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
