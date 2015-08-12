@@ -38,6 +38,7 @@
 #define __OPENCV_XIMGPROC_HPP__
 
 #include "ximgproc/edge_filter.hpp"
+#include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
 
