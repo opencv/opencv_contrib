@@ -60,7 +60,7 @@ using namespace cv::rgbd;
 using namespace cv::structured_light;
 using namespace std;
 
-int main(int argc, char** argv)
+int main()
 {
     VideoCapture capture(CAP_OPENNI2);
     // set registeration on
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     Ptr<GrayCodePattern> pattern = GrayCodePattern::create(params);
 
     vector<Mat> patternImages;
-    pattern->generate(patternImages, Scalar(0, 0, 0), Scalar(70, 70, 70));
+    pattern->generate(patternImages, Scalar(0, 0, 0), Scalar(1, 1, 1) * 100);
 
     string window = "pattern";
     namedWindow(window, WINDOW_NORMAL);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     imshow(window, patternImages.at(patternImages.size() / 2 - 1));
 
     // window placement; wait for user
-    while (true)
+    for (;;)
     {
         capture.grab();
 
@@ -141,21 +141,33 @@ int main(int argc, char** argv)
         Mat gray;
         cvtColor(image, gray, COLOR_BGR2GRAY);
         imshow("camera", gray);
+
         cameraImages.push_back(gray);
 
         waitKey(50);
     }
 
-    imshow(window, Mat::zeros(params.height, params.width, CV_8U));
-    waitKey(30);
+    // capture color image for warping
+    {
+        imshow(window, Mat::zeros(params.height, params.width, CV_8U));
+        waitKey(50);
+
+        for (int t = 0; t < 5; t++)
+        {
+            waitKey(50);
+            capture.grab();
+
+            capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+            flip(image, image, 1);
+        }
+    }
 
     // decode
     pattern->setLightThreshold(20);
     Mat correspondenceMapX = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
-    //Size projectorSize(params.width * 2, params.height * 2);
-    //Mat correspondenceMapProX = Mat::zeros(projectorSize, CV_8UC3);
-    //Mat correspondenceMapProY = Mat::zeros(projectorSize, CV_8UC3);
+    Size projectorSize(params.width * 2, params.height * 2);
+    Mat projectorImage = Mat::zeros(projectorSize, CV_8UC3);
     for (int y = 0; y < capture.get(CAP_PROP_FRAME_HEIGHT); y++) {
         for (int x = 0; x < capture.get(CAP_PROP_FRAME_WIDTH); x++) {
             Point point;
@@ -166,7 +178,7 @@ int main(int argc, char** argv)
                 continue;
             }
 
-            if (point.x >= params.width-5 || point.y >= params.height-5 || point.x <= 5 || point.y <= 5)
+            if (point.x >= params.width - 1 || point.y >= params.height - 1 || point.x < 1 || point.y < 1)
             {
                 continue;
             }
@@ -176,26 +188,25 @@ int main(int argc, char** argv)
             Range xr(x, x + 1);
             Range yr(y, y + 1);
             // weird encoding to reliably recover the point...
-            //correspondenceMapX(yr, xr) = Scalar((point.x & 0x0F00) >> 4, (point.x & 0xF0), (point.x & 0x0F) << 4);
-            //correspondenceMapY(yr, xr) = Scalar((point.y & 0x0F00) >> 4, (point.y & 0xF0), (point.y & 0x0F) << 4);
             correspondenceMapX(yr, xr) = Scalar(0, (point.x & 0xFF00) / 256, (point.x & 0xFF));
             correspondenceMapY(yr, xr) = Scalar(0, (point.y & 0xFF00) / 256, (point.y & 0xFF));
 
-            Range xp(point.x - 1, point.x + 2);
-            Range yp(point.y - 1, point.y + 2);
-            //correspondenceMapProX(yp, xp) = Scalar((x & 0x0F00) >> 4, (x & 0xF0), (x & 0x0F) << 4);
-            //correspondenceMapProY(yp, xp) = Scalar((y & 0x0F00) >> 4, (y & 0xF0), (y & 0x0F) << 4);
+            Range xp(point.x, point.x + 1);
+            Range yp(point.y, point.y + 1);
+            Vec3b color = image.at<Vec3b>(y, x);
+            projectorImage(yp, xp) = Scalar(color);
         }
     }
 
     imshow("correspondence X", correspondenceMapX);
     imshow("correspondence Y", correspondenceMapY);
 
-    //imshow("correspondence Pro X", correspondenceMapProX);
-    //imshow("correspondence Pro Y", correspondenceMapProY);
+    imshow("Projector Image", projectorImage);
 
     imwrite("correspondenceX.png", correspondenceMapX);
     imwrite("correspondenceY.png", correspondenceMapY);
+
+    imwrite("projectorImage.png", projectorImage);
 
     waitKey(0);
     return 0;
