@@ -54,42 +54,47 @@ static void testLayer(String basename, bool useCaffeModel = false)
 
 TEST(Layer_Test_Softmax, Accuracy)
 {
-     testLayer("softmax");
+     testLayer("layer_softmax");
 }
 
 TEST(Layer_Test_LRN_spatial, Accuracy)
 {
-     testLayer("lrn_spatial");
+     testLayer("layer_lrn_spatial");
 }
 
 TEST(Layer_Test_LRN_channels, Accuracy)
 {
-     testLayer("lrn_channels");
+     testLayer("layer_lrn_channels");
 }
 
 TEST(Layer_Test_Convolution, Accuracy)
 {
-     testLayer("convolution", true);
+     testLayer("layer_convolution", true);
 }
 
 TEST(Layer_Test_InnerProduct, Accuracy)
 {
-     testLayer("inner_product", true);
+     testLayer("layer_inner_product", true);
 }
 
 TEST(Layer_Test_Pooling_max, Accuracy)
 {
-     testLayer("pooling_max");
+     testLayer("layer_pooling_max");
 }
 
 TEST(Layer_Test_Pooling_ave, Accuracy)
 {
-     testLayer("pooling_ave");
+     testLayer("layer_pooling_ave");
 }
 
 TEST(Layer_Test_DeConvolution, Accuracy)
 {
-     testLayer("deconvolution", true);
+     testLayer("layer_deconvolution", true);
+}
+
+TEST(Layer_Test_MVN, Accuracy)
+{
+     testLayer("layer_mvn");
 }
 
 TEST(Layer_Test_Reshape, squeeze)

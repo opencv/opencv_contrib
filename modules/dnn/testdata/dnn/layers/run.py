@@ -30,7 +30,7 @@ def get_cafe_output(inp_blob, proto_name, caffemodel_name):
     return out_blob
 
 if __name__ == '__main__':
-    proto_filenames = glob.glob("*.prototxt")
+    proto_filenames = glob.glob("layer_*.prototxt")
 
     inp_blob = np.load('blob.npy')
     print inp_blob.shape
