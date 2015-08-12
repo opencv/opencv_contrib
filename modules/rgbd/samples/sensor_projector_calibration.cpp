@@ -62,7 +62,18 @@ using namespace std;
 
 int main()
 {
-    VideoCapture capture(CAP_OPENNI2);
+    int devId;
+    int lightThreshold;
+    int lightIntensity;
+    GrayCodePattern::Params params;
+    FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
+    fs["deviceId"] >> devId;
+    fs["lightThreshold"] >> lightThreshold;
+    fs["lightIntensity"] >> lightIntensity;
+    fs["projectorWidth"] >> params.width;
+    fs["projectorHeight"] >> params.height;
+
+    VideoCapture capture(devId);
     // set registeration on
     capture.set(CAP_PROP_OPENNI_REGISTRATION, 0.0);
 
@@ -75,13 +86,12 @@ int main()
     Mat image;
 
     // initialize gray coding
-    GrayCodePattern::Params params;
-    params.width = 1024 / 2;
-    params.height = 768 / 2;
+    params.width /= 2;
+    params.height /= 2;
     Ptr<GrayCodePattern> pattern = GrayCodePattern::create(params);
 
     vector<Mat> patternImages;
-    pattern->generate(patternImages, Scalar(0, 0, 0), Scalar(1, 1, 1) * 100);
+    pattern->generate(patternImages, Scalar(0, 0, 0), Scalar(1, 1, 1) * lightIntensity);
 
     string window = "pattern";
     namedWindow(window, WINDOW_NORMAL);
@@ -163,7 +173,7 @@ int main()
     }
 
     // decode
-    pattern->setLightThreshold(20);
+    pattern->setLightThreshold(lightThreshold);
     Mat correspondenceMapX = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Size projectorSize(params.width * 2, params.height * 2);
