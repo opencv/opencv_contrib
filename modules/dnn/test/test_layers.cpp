@@ -5,18 +5,11 @@
 namespace cvtest
 {
 
-using namespace std;
-using namespace testing;
 using namespace cv;
 using namespace cv::dnn;
 
-static std::string getOpenCVExtraDir()
-{
-    return cvtest::TS::ptr()->get_data_path();
-}
-
-template<typename TStr>
-static String _tf(TStr filename)
+template<typename TString>
+static String _tf(TString filename)
 {
     return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
 }
@@ -40,16 +33,7 @@ static void testLayer(String basename, bool useCaffeModel = false)
     net.forward();
     Blob out = net.getBlob("output");
 
-    EXPECT_EQ(ref.shape(), out.shape());
-
-    Mat &mRef = ref.getMatRef();
-    Mat &mOut = out.getMatRef();
-
-    double normL1 = cvtest::norm(mRef, mOut, NORM_L1) / ref.total();
-    EXPECT_LE(normL1, 0.0001);
-
-    double normInf = cvtest::norm(mRef, mOut, NORM_INF);
-    EXPECT_LE(normInf, 0.0001);
+    normAssert(ref, out);
 }
 
 TEST(Layer_Test_Softmax, Accuracy)

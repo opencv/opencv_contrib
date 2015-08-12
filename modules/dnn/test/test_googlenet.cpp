@@ -4,13 +4,11 @@
 namespace cvtest
 {
 
-using namespace std;
-using namespace testing;
 using namespace cv;
 using namespace cv::dnn;
 
 template<typename TString>
-static std::string getTestFile(TString filename)
+static std::string _tf(TString filename)
 {
     return (getOpenCVExtraDir() + "/dnn/") + filename;
 }
@@ -19,14 +17,14 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
 {
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(getTestFile("bvlc_googlenet.prototxt"), getTestFile("bvlc_googlenet.caffemodel"));
+        Ptr<Importer> importer = createCaffeImporter(_tf("bvlc_googlenet.prototxt"), _tf("bvlc_googlenet.caffemodel"));
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
 
     std::vector<Mat> inpMats;
-    inpMats.push_back( imread(getTestFile("googlenet_0.jpg")) );
-    inpMats.push_back( imread(getTestFile("googlenet_1.jpg")) );
+    inpMats.push_back( imread(_tf("googlenet_0.jpg")) );
+    inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
     Blob inp(inpMats);
@@ -34,7 +32,7 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     net.forward();
 
     Blob out = net.getBlob("prob");
-    Blob ref = blobFromNPY(getTestFile("googlenet_prob.npy"));
+    Blob ref = blobFromNPY(_tf("googlenet_prob.npy"));
     normAssert(out, ref);
 }
 

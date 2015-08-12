@@ -189,8 +189,7 @@ cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
     FILE* fp = fopen(fname.c_str(),"rb");
 
     if(!fp) {
-        printf("npz_load: Error! Unable to open file %s!\n",fname.c_str());
-        abort();
+        throw std::runtime_error("npz_load: Error! Unable to open file " + fname + "!\n");
     }
 
     while(1) {
@@ -227,8 +226,7 @@ cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
     }
 
     fclose(fp);
-    printf("npz_load: Error! Variable name %s not found in %s!\n",varname.c_str(),fname.c_str());
-    abort();
+    throw std::runtime_error("npz_load: Error! Variable name " + varname + " not found in " + fname + "!\n");
 }
 
 cnpy::NpyArray cnpy::npy_load(std::string fname) {
@@ -236,8 +234,7 @@ cnpy::NpyArray cnpy::npy_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(), "rb");
 
     if(!fp) {
-        printf("npy_load: Error! Unable to open file %s!\n",fname.c_str());
-        abort();
+        throw std::runtime_error("npy_load: Error! Unable to open file " + fname + "!\n");
     }
 
     NpyArray arr = load_the_npy_file(fp);
