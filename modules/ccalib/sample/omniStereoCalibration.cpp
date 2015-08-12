@@ -274,7 +274,7 @@ int main(int argc, char** argv)
             return fprintf( stderr, "Unknown option %s\n", s ), -1;
         }
     }
-    
+
     // get image name list
     vector<string> image_list1, detec_list_1, image_list2, detec_list_2;
     if((!readStringList(inputFilename1, image_list1)) || (!readStringList(inputFilename2, image_list2)))
@@ -293,7 +293,7 @@ int main(int argc, char** argv)
     {
         objectPoints.push_back(object);
     }
-    
+
     // run calibration, some images are discarded in calibration process because they are failed
     // in initialization. Retained image indexes are in idx variable.
     Mat K1, K2, D1, D2, xi1, xi2, idx;

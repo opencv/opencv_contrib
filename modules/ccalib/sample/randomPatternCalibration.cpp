@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cv;
 
-const char * usage = 
+const char * usage =
     "\n example command line for calibrate a camera by random pattern. \n"
     "   randomPatternCalibration -pw 600 -ph 850 -mm 20 image_list.xml \n"
     "\n"
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     finder.computeObjectImagePoints(vecImg);
     vector<Mat> objectPoints = finder.getObjectPoints();
     vector<Mat> imagePoints = finder.getImagePoints();
-    
+
     Mat K;
     Mat D;
     vector<Mat> rvec, tvec;

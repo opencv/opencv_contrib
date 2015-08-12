@@ -40,8 +40,7 @@
 //M*/
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
-#include "precomp.hpp"
-#include <iostream>
+
 namespace cv
 {
 namespace omnidir

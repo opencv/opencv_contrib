@@ -42,9 +42,8 @@
 #ifndef __OPENCV_MULTICAMERACALIBRATION_HPP__
 #define __OPENCV_MULTICAMERACALIBRATION_HPP__
 
-#include "precomp.hpp"
-#include "randomPatten.hpp"
-#include "omnidir.hpp"
+#include "opencv2/randomPatten.hpp"
+#include "opencv2/omnidir.hpp"
 #include <string>
 #include <iostream>
 using namespace cv;
