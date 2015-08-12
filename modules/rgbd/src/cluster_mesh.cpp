@@ -133,6 +133,7 @@ namespace rgbd
             calculateFaceIndices();
         }
 
+#if 0
         if (bPlane)
         {
             // TODO: seems not working
@@ -163,6 +164,7 @@ namespace rgbd
 
             return;
         }
+#endif
 
         nlNewContext();
         nlSolverParameteri(NL_SOLVER, NL_CG);
@@ -284,6 +286,7 @@ namespace rgbd
         {
             std::cout << "ply not supported" << std::endl;
 #if 0
+            // needs update
             fs << "ply" << std::endl;
             fs << "format ascii 1.0" << std::endl;
             fs << "element vertex " << points.size() << std::endl;

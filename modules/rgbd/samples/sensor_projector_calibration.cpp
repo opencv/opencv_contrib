@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     string window = "pattern";
     namedWindow(window, WINDOW_NORMAL);
     moveWindow(window, 0, 0);
-    imshow(window, Mat::zeros(params.height, params.width, CV_8U));
+    imshow(window, patternImages.at(patternImages.size() / 2 - 1));
 
     // window placement; wait for user
     while (true)
@@ -95,8 +95,14 @@ int main(int argc, char** argv)
 
         capture.retrieve(image, CAP_OPENNI_DEPTH_MAP);
         flip(image, image, 1);
-        imshow("camera", image * 10);
+        imshow("depth", image * 10);
 
+        capture.retrieve(image, CAP_OPENNI_BGR_IMAGE);
+        flip(image, image, 1);
+        Mat gray;
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+        imshow("camera", gray);
+    
         int key = waitKey(30);
         if (key == 'f')
         {
@@ -147,9 +153,9 @@ int main(int argc, char** argv)
     pattern->setLightThreshold(20);
     Mat correspondenceMapX = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
     Mat correspondenceMapY = Mat(image.size(), CV_8UC3, Scalar(255, 255, 255));
-    Size projectorSize(params.width * 2, params.height * 2);
-    Mat correspondenceMapProX = Mat::zeros(projectorSize, CV_8UC3);
-    Mat correspondenceMapProY = Mat::zeros(projectorSize, CV_8UC3);
+    //Size projectorSize(params.width * 2, params.height * 2);
+    //Mat correspondenceMapProX = Mat::zeros(projectorSize, CV_8UC3);
+    //Mat correspondenceMapProY = Mat::zeros(projectorSize, CV_8UC3);
     for (int y = 0; y < capture.get(CAP_PROP_FRAME_HEIGHT); y++) {
         for (int x = 0; x < capture.get(CAP_PROP_FRAME_WIDTH); x++) {
             Point point;
@@ -170,8 +176,8 @@ int main(int argc, char** argv)
             Range xr(x, x + 1);
             Range yr(y, y + 1);
             // weird encoding to reliably recover the point...
-//            correspondenceMapX(yr, xr) = Scalar((point.x & 0x0F00) >> 4, (point.x & 0xF0), (point.x & 0x0F) << 4);
-//            correspondenceMapY(yr, xr) = Scalar((point.y & 0x0F00) >> 4, (point.y & 0xF0), (point.y & 0x0F) << 4);
+            //correspondenceMapX(yr, xr) = Scalar((point.x & 0x0F00) >> 4, (point.x & 0xF0), (point.x & 0x0F) << 4);
+            //correspondenceMapY(yr, xr) = Scalar((point.y & 0x0F00) >> 4, (point.y & 0xF0), (point.y & 0x0F) << 4);
             correspondenceMapX(yr, xr) = Scalar(0, (point.x & 0xFF00) / 256, (point.x & 0xFF));
             correspondenceMapY(yr, xr) = Scalar(0, (point.y & 0xFF00) / 256, (point.y & 0xFF));
 
@@ -185,8 +191,8 @@ int main(int argc, char** argv)
     imshow("correspondence X", correspondenceMapX);
     imshow("correspondence Y", correspondenceMapY);
 
-    imshow("correspondence Pro X", correspondenceMapProX);
-    imshow("correspondence Pro Y", correspondenceMapProY);
+    //imshow("correspondence Pro X", correspondenceMapProX);
+    //imshow("correspondence Pro Y", correspondenceMapProY);
 
     imwrite("correspondenceX.png", correspondenceMapX);
     imwrite("correspondenceY.png", correspondenceMapY);

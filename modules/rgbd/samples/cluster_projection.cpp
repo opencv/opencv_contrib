@@ -93,7 +93,7 @@ int main( int argc, char** argv )
 
         focalLength = static_cast<float>(capture.get(CAP_PROP_OPENNI_FOCAL_LENGTH));
 
-        while (true)
+        for (int i = 0; i < 5; i++)
         {
             capture.grab();
 
@@ -103,8 +103,7 @@ int main( int argc, char** argv )
             capture.retrieve(depth, CAP_OPENNI_DEPTH_MAP);
             imshow("Depth", depth * 8);
 
-            if (waitKey(30) >= 0)
-                break;
+            waitKey(30);
         }
 
         flip(image, image, 1);
@@ -168,8 +167,6 @@ int main( int argc, char** argv )
             }
             else
             {
-//                correspondenceX.at<float>(i, j) = (float)((int)sx[0] << 4 + (int)sx[1] + (int)sx[2] >> 4);
-//                correspondenceY.at<float>(i, j) = (float)((int)sy[0] << 4 + (int)sy[1] + (int)sy[2] >> 4);
                 projectorPixels.at<Point2i>(i, j) = Point2i((int)sx[1] * 256 + (int)sx[2], (int)sy[1] * 256 + (int)sy[2]);
             }
         }
@@ -179,21 +176,11 @@ int main( int argc, char** argv )
     waitKey(30);
 
     RgbdClusterMesh mainCluster(frame);
-    //mainCluster.increment_step = 2;
-    //mainCluster.calculatePoints();
-    //mainCluster.calculateFaceIndices();
-    //mainCluster.save("main.obj");
     vector<RgbdClusterMesh> clusters;
     planarSegmentation(mainCluster, clusters, 2);
     deleteEmptyClusters(clusters);
 
     for (std::size_t i = 0; i < clusters.size(); i++) {
-        {
-            stringstream ss;
-            ss << "cluster " << i;
-            imshow(ss.str(), clusters.at(i).silhouette * 255);
-        }
-
         Mat labels;
         Mat stats;
         Mat centroids;
@@ -201,12 +188,13 @@ int main( int argc, char** argv )
         if (clusters.at(i).bPlane) {
             stringstream ss;
             ss << "cluster" << i;
-            clusters.at(i).increment_step = 4;
+            // downsample by 2x
+            clusters.at(i).increment_step = 2;
             clusters.at(i).projectorPixels = projectorPixels;
             clusters.at(i).calculatePoints(true);
             clusters.at(i).unwrapTexCoord();
-            //clusters.at(i).save(ss.str() + ".obj");
-            //clusters.at(i).save(ss.str() + ".ply");
+            clusters.at(i).save(ss.str() + ".obj");
+            imshow(ss.str(), clusters.at(i).silhouette * 255);
             continue;
         }
 
@@ -216,11 +204,9 @@ int main( int argc, char** argv )
         for (std::size_t j = 0; j < smallClusters.size(); j++) {
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
-            //erode(smallClusters.at(j).silhouette, smallClusters.at(j).silhouette, Mat());
-            //erode(smallClusters.at(j).silhouette, smallClusters.at(j).silhouette, Mat());
             imshow(ss.str(), smallClusters.at(j).silhouette * 255);
 
-            // downsample by 1x
+            // no downsample
             smallClusters.at(j).increment_step = 1;
             smallClusters.at(j).projectorPixels = projectorPixels;
             smallClusters.at(j).calculatePoints(true);
@@ -230,7 +216,6 @@ int main( int argc, char** argv )
             }
             smallClusters.at(j).unwrapTexCoord();
             smallClusters.at(j).save(ss.str() + ".obj");
-            //smallClusters.at(j).save(ss.str() + ".ply");
         }
     }
 
