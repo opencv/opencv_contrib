@@ -140,7 +140,7 @@ namespace omnidir
     @param R Rotation matrix between the input and output images. By default, it is identity matrix.
     */
     CV_EXPORTS_W void undistortImage(InputArray distorted, OutputArray undistorted, InputArray K, InputArray D, InputArray xi, int flags,
-        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Matx33d::eye());
+        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
 
     /** @brief Perform omnidirectional camera calibration, the default depth of outputs is CV_64F.
 

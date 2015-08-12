@@ -146,11 +146,11 @@ void multiCameraCalibration::loadImages()
         std::string filename = file_list[i].substr(0, file_list[i].find('.'));
         int spritPosition1 = filename.rfind('/');
         int spritPosition2 = filename.rfind('\\');
-        if (spritPosition1!=std::string::npos)
+        if (spritPosition1!=(int)std::string::npos)
         {
             filename = filename.substr(spritPosition1+1, filename.size() - 1);
         }
-        else if(spritPosition2!= std::string::npos)
+        else if(spritPosition2!= (int)std::string::npos)
         {
             filename = filename.substr(spritPosition2+1, filename.size() - 1);
         }
@@ -176,10 +176,10 @@ void multiCameraCalibration::loadImages()
 
         // calibrate
         Mat idx;
-        double rms;
+        //double rms;
         if (_camType == PINHOLE)
         {
-            rms = cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
+            cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera],_flags);
             idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32S);
@@ -201,7 +201,7 @@ void multiCameraCalibration::loadImages()
         //}
         else if (_camType == OMNIDIRECTIONAL)
         {
-            rms = cv::omnidir::calibrate(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
+            cv::omnidir::calibrate(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _xi[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera], _flags, TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 300, 1e-7),
                 idx);
@@ -277,8 +277,8 @@ void multiCameraCalibration::initialize()
     int nEdges = (int) _edgeList.size();
 
     // build graph
-    Mat G = Mat::zeros((int)this->_vertexList.size(), (int)this->_vertexList.size(), CV_32S);
-    for (int edgeIdx = 0; edgeIdx < (int)this->_edgeList.size(); ++edgeIdx)
+    Mat G = Mat::zeros(nVertices, nVertices, CV_32S);
+    for (int edgeIdx = 0; edgeIdx < nEdges; ++edgeIdx)
     {
         G.at<int>(this->_edgeList[edgeIdx].cameraVertex, this->_edgeList[edgeIdx].photoVertex) = edgeIdx + 1;
     }
@@ -334,7 +334,7 @@ double multiCameraCalibration::optimizeExtrinsics()
         tvec.reshape(1, 1).copyTo(extrinParam.colRange(offset+3, offset +6));
         offset += 6;
     }
-    double error_pre = computeProjectError(extrinParam);
+    //double error_pre = computeProjectError(extrinParam);
     // optimization
     const double alpha_smooth = 0.01;
     //const double thresh_cond = 1e6;
@@ -356,7 +356,7 @@ double multiCameraCalibration::optimizeExtrinsics()
 
         extrinParam = extrinParam + G.reshape(1, 1);
         change = norm(G) / norm(extrinParam);
-        double error = computeProjectError(extrinParam);
+        //double error = computeProjectError(extrinParam);
     }
 
     double error = computeProjectError(extrinParam);
@@ -461,10 +461,10 @@ void multiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     {
         tvecTran.convertTo(tvecTran, CV_32F);
     }
-    float _xi;
+    float xif = 0.0f;
     if (_camType == OMNIDIRECTIONAL)
     {
-        _xi= xi.at<float>(0);
+        xif= xi.at<float>(0);
     }
 
     Mat imagePoints2, jacobian, dx_drvecCamera, dx_dtvecCamera, dx_drvecPhoto, dx_dtvecPhoto;
@@ -478,7 +478,7 @@ void multiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     //}
     else if (_camType == OMNIDIRECTIONAL)
     {
-        cv::omnidir::projectPoints(objectPoints, imagePoints2, rvecTran, tvecTran, K, _xi, distort, jacobian);
+        cv::omnidir::projectPoints(objectPoints, imagePoints2, rvecTran, tvecTran, K, xif, distort, jacobian);
     }
     if (objectPoints.depth() == CV_32F)
     {
@@ -562,7 +562,7 @@ void multiCameraCalibration::findRowNonZero(const Mat& row, Mat& idx)
 double multiCameraCalibration::computeProjectError(Mat& parameters)
 {
     int nVertex = (int)_vertexList.size();
-    CV_Assert(parameters.total() == (nVertex-1) * 6 && parameters.depth() == CV_32F);
+    CV_Assert((int)parameters.total() == (nVertex-1) * 6 && parameters.depth() == CV_32F);
     int nEdge = (int)_edgeList.size();
 
     // recompute the transform between photos and cameras
@@ -756,7 +756,7 @@ void multiCameraCalibration::dAB(InputArray A, InputArray B, OutputArray dABdA, 
 void multiCameraCalibration::vector2parameters(const Mat& parameters, std::vector<Vec3f>& rvecVertex, std::vector<Vec3f>& tvecVertexs)
 {
     int nVertex = (int)_vertexList.size();
-    CV_Assert(parameters.channels() == 1 && parameters.total() == 6*(nVertex - 1));
+    CV_Assert((int)parameters.channels() == 1 && (int)parameters.total() == 6*(nVertex - 1));
     CV_Assert(parameters.depth() == CV_32F);
     parameters.reshape(1, 1);
 
