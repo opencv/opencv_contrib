@@ -1,22 +1,20 @@
 cmake_minimum_required(VERSION 2.8)
 
 macro(_dnn_find_protobuf)
+  find_package(Protobuf)
 
-find_package( Protobuf )
-
-if(${PROTOBUF_FOUND} AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
-  message(STATUS "Found PROTOBUF Compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
-  file(GLOB PROTO_FILES src/*.proto)
-  PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
-  set(HAVE_PROTOBUF ON)
-  add_definitions(-DHAVE_PROTOBUF=1)
-else()
-  message(STATUS "PROTOBUF not found. Caffe import function will be disabled.")
-  set(HAVE_PROTOBUF OFF)
-  set(PROTOBUF_LIBRARIES "")
-  add_definitions(-DHAVE_PROTOBUF=0)
-endif()
-
+  if(${PROTOBUF_FOUND} AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
+    message(STATUS "Found PROTOBUF Compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
+    file(GLOB PROTO_FILES src/caffe/*.proto)
+    PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
+    set(HAVE_PROTOBUF ON)
+    add_definitions(-DHAVE_PROTOBUF=1)
+  else()
+    message(STATUS "PROTOBUF not found. Caffe import function will be disabled.")
+    set(HAVE_PROTOBUF OFF)
+    set(PROTOBUF_LIBRARIES "")
+    add_definitions(-DHAVE_PROTOBUF=0)
+  endif()
 endmacro(_dnn_find_protobuf)
 
 if(${CMAKE_PROJECT_NAME} STREQUAL "OpenCV")#build as OpenCV module
