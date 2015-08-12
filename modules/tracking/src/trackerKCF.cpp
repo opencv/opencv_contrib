@@ -134,10 +134,10 @@ namespace cv{
 
     // data type for the extracted features
     struct _features{
+      _features():vec(),pca(vec[0]),npca(vec[1]){}
       Mat vec[2];
       Mat & pca;
       Mat & npca;
-      _features():pca(vec[0]),npca(vec[1]){};
     };
 
     // storage for the extracted features, KRLS model, KRLS compressed model
