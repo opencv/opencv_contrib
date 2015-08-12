@@ -144,13 +144,13 @@ void multiCameraCalibration::loadImages()
     {
         int cameraVertex, timestamp;
         std::string filename = file_list[i].substr(0, file_list[i].find('.'));
-        int spritPosition1 = filename.rfind('/');
-        int spritPosition2 = filename.rfind('\\');
-        if (spritPosition1!=(int)std::string::npos)
+        size_t spritPosition1 = filename.rfind('/');
+        size_t spritPosition2 = filename.rfind('\\');
+        if (spritPosition1!=std::string::npos)
         {
             filename = filename.substr(spritPosition1+1, filename.size() - 1);
         }
-        else if(spritPosition2!= (int)std::string::npos)
+        else if(spritPosition2!= std::string::npos)
         {
             filename = filename.substr(spritPosition2+1, filename.size() - 1);
         }
@@ -383,7 +383,7 @@ void multiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams
 
     for (int edgeIdx = 0; edgeIdx < nEdge; ++edgeIdx)
     {
-        int nPoints = _objectPointsForEachCamera[_edgeList[edgeIdx].cameraVertex][_edgeList[edgeIdx].photoIndex].total();
+        int nPoints = (int)_objectPointsForEachCamera[_edgeList[edgeIdx].cameraVertex][_edgeList[edgeIdx].photoIndex].total();
         pointsLocation[edgeIdx+1] = pointsLocation[edgeIdx] + nPoints*2;
     }
 

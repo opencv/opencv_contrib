@@ -894,7 +894,7 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
     int nPointsAll = 0;
     for (int i = 0; i < n; ++i)
     {
-        nPointsAll += objectPoints.getMat(i).total();
+        nPointsAll += (int)objectPoints.getMat(i).total();
     }
 
     //Mat J = Mat::zeros(2*n*objectPoints.getMat(0).total(), 10+6*n, CV_64F);
@@ -940,8 +940,8 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
 
         Mat(JIn.t()*JEx).copyTo(JTJ(Rect(i*6, 6*n, 6, 10)));
 
-        JTE(Rect(0, 6*n, 1, 10)) = JTE(Rect(0, 6*n,1, 10)) + JIn.t() * projError.reshape(1, 2*projError.total());
-        JTE(Rect(0, i*6, 1, 6)) = JEx.t() * projError.reshape(1, 2*projError.total());
+        JTE(Rect(0, 6*n, 1, 10)) = JTE(Rect(0, 6*n,1, 10)) + JIn.t() * projError.reshape(1, 2*(int)projError.total());
+        JTE(Rect(0, i*6, 1, 6)) = JEx.t() * projError.reshape(1, 2*(int)projError.total());
 
         //int nPoints = objectPoints.getMat(i).total();
         //JIn.copyTo(J(Rect(6*n, i*nPoints*2, 10, nPoints*2)));
@@ -970,8 +970,8 @@ void cv::omnidir::internal::computeJacobianStereo(InputArrayOfArrays objectPoint
     CV_Assert((imagePoints1.total() == imagePoints2.total()) && (imagePoints1.total() == objectPoints.total()));
 
     // compute Jacobian matrix by naive way
-    int n_img = objectPoints.total();
-    int n_points = objectPoints.getMat(0).total();
+    int n_img = (int)objectPoints.total();
+    int n_points = (int)objectPoints.getMat(0).total();
     Mat J = Mat::zeros(4 * n_points * n_img, 20 + 6 * (n_img + 1), CV_64F);
     Mat exAll = Mat::zeros(4 * n_points * n_img, 1, CV_64F);
     double *para = parameters.getMat().ptr<double>();
@@ -1298,7 +1298,7 @@ double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, 
 
     if (idx.needed())
     {
-        idx.create(1, _idx.total(), CV_32S);
+        idx.create(1, (int)_idx.total(), CV_Assert_32S);
         _idx.copyTo(idx.getMat());
     }
 
@@ -1620,7 +1620,7 @@ void cv::omnidir::stereoReconstruct(InputArray image1, InputArray image2, InputA
                 }
             }
         }
-        int nPoints;
+        int nPoints = 0;
         if (pointType == XYZ)
         {
             nPoints = (int)_pointCloud.size();
@@ -1638,7 +1638,7 @@ void cv::omnidir::internal::encodeParameters(InputArray K, InputArrayOfArrays om
 {
     CV_Assert(K.type() == CV_64F && K.size() == Size(3,3));
     CV_Assert(distoaration.total() == 4 && distoaration.type() == CV_64F);
-    int n = omAll.total();
+    int n = (int)omAll.total();
     Mat _omAll = omAll.getMat(), _tAll = tAll.getMat();
     Mat tmp = Mat(_omAll.at<Vec3d>(0)).reshape(1,3).clone();
     Matx33d _K = K.getMat();
@@ -1771,7 +1771,7 @@ void cv::omnidir::internal::encodeParametersStereo(InputArray K1, InputArray K2,
     if(T.empty())
         T.create(3, 1, CV_64F);
 
-    int n = (parameters.total() - 20) / 6 - 1;
+    int n = ((int)parameters.total() - 20) / 6 - 1;
 
     if(omL.empty())
         omL.create(1, n, CV_64FC3);
@@ -1839,7 +1839,7 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
     int nPointsAll = 0;
     for (int i = 0; i < n; ++i)
     {
-        nPointsAll += objectPoints.getMat(i).total();
+        nPointsAll += (int)objectPoints.getMat(i).total();
     }
 
     Mat reprojError = Mat(nPointsAll, 1, CV_64FC2);
@@ -1907,7 +1907,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
     CV_Assert(!objectPoints.empty() && objectPoints.type() == CV_64FC3);
     CV_Assert(!imagePoints1.empty() && imagePoints1.type() == CV_64FC2 && imagePoints1.total() == objectPoints.total());
     CV_Assert(!imagePoints2.empty() && imagePoints2.type() == CV_64FC2 && imagePoints1.total() == imagePoints2.total());
-    int n_img = objectPoints.total();
+    int n_img = (int)objectPoints.total();
     CV_Assert((int)parameters.total() == (6*(n_img+1)+20));
 
     Mat _K1, _K2, _D1, _D2;
@@ -1917,7 +1917,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
     double _xi1, _xi2;
     internal::decodeParametersStereo(_parameters, _K1, _K2, _om, _T, _omL, _tL, _D1, _D2, _xi1, _xi2);
 
-    int n_points = objectPoints.getMat(0).total();
+    int n_points = (int)objectPoints.getMat(0).total();
     Mat reprojErrorAll = Mat::zeros(2*n_points*n_img, 1, CV_64FC2);
 
     // error for left image

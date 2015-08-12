@@ -68,7 +68,7 @@ Your can specify ```flags``` to fix parameters during calibration. Use 'plus' op
 
 Stereo Calibration
 --------------------------
-Stereo calibration is to calibrate two cameras together. The output parameters include camera parameters of two cameras and the relative pose of them. To recover the relative pose, two cameras must observe the same pattern at the same time, so the ```objectPoints``` of two cameras are the same. 
+Stereo calibration is to calibrate two cameras together. The output parameters include camera parameters of two cameras and the relative pose of them. To recover the relative pose, two cameras must observe the same pattern at the same time, so the ```objectPoints``` of two cameras are the same.
 
 Now detect image corners for both cameras as discussed above to get ```imagePoints1``` and ```imagePoints2```. Then compute the shared ```objectPoints```.
 
