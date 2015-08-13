@@ -1442,7 +1442,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
 
     vector<bool> alreadyIdentified(_rejectedCorners.total(), false);
 
-    int maxCorrectionRecalculed = int( double(board.dictionary.maxCorrectionBits) *
+    int maxCorrectionRecalculated = int( double(board.dictionary.maxCorrectionBits) *
                                        errorCorrectionRate );
     Mat grey;
     _convertToGrey(_image, grey);
@@ -1459,12 +1459,17 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
     vector<int> recoveredIdxs; // origin ids of accepted markers in _rejectedCorners
 
     for (unsigned int i=0; i < undetectedMarkersIds.size(); i++) {
+        int closestCandidateIdx = -1;
+        int closestCandidateRot = 0;
+        double closestCandidateDistance = minRepDistance*minRepDistance + 1;
+        Mat closestRotatedMarker;
+
         for(unsigned int j=0; j<_rejectedCorners.total(); j++) {
             if (alreadyIdentified[j])
                 continue;
 
             // check distance
-            double minDistance = minRepDistance*minRepDistance + 1;
+            double minDistance = closestCandidateDistance + 1;
             bool valid = false;
             int validRot = 0;
             for(int c=0; c<4; c++) { // first corner in rejected candidate
@@ -1475,12 +1480,10 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                     double cornerDist = distVector.x*distVector.x + distVector.y*distVector.y;
                     currentMaxDistance = max(currentMaxDistance, cornerDist);
                 }
-                if(currentMaxDistance < minRepDistance*minRepDistance &&
-                        currentMaxDistance < minDistance ) {
+                if(currentMaxDistance < closestCandidateDistance ) {
                     valid = true;
                     validRot = c;
                     minDistance = currentMaxDistance;
-                    break;
                 }
                 if(!checkAllOrders)
                     break;
@@ -1519,34 +1522,40 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                                                                 false);
             }
 
-            if(errorCorrectionRate<0 || codeDistance <= maxCorrectionRecalculed) {
-                // subpixel refinement
-                if(params.doCornerRefinement) {
-                    CV_Assert(params.cornerRefinementWinSize > 0 &&
-                              params.cornerRefinementMaxIterations > 0 &&
-                              params.cornerRefinementMinAccuracy > 0);
-                    cornerSubPix(grey, rotatedMarker,
-                                 cvSize(params.cornerRefinementWinSize,
-                                        params.cornerRefinementWinSize),
-                                 cvSize(-1, -1),
-                                 cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                                params.cornerRefinementMaxIterations,
-                                                params.cornerRefinementMinAccuracy));
-                }
-
-                // remove from rejected
-                alreadyIdentified[j] = true;
-
-                // add to detected
-                finalAcceptedCorners.push_back(rotatedMarker);
-                finalAcceptedIds.push_back(undetectedMarkersIds[i]);
-                recoveredIdxs.push_back(j);
+            if(errorCorrectionRate < 0 || codeDistance > maxCorrectionRecalculated) {
+                closestCandidateIdx = j;
+                closestCandidateRot = validRot;
+                closestCandidateDistance = minDistance;
+                closestRotatedMarker = rotatedMarker;
             }
 
         }
+
+        if(closestCandidateIdx >= 0) {
+            // subpixel refinement
+            if(params.doCornerRefinement) {
+                CV_Assert(params.cornerRefinementWinSize > 0 &&
+                          params.cornerRefinementMaxIterations > 0 &&
+                          params.cornerRefinementMinAccuracy > 0);
+                cornerSubPix(grey, closestRotatedMarker,
+                             cvSize(params.cornerRefinementWinSize,
+                                    params.cornerRefinementWinSize),
+                             cvSize(-1, -1),
+                             cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                            params.cornerRefinementMaxIterations,
+                                            params.cornerRefinementMinAccuracy));
+            }
+
+            // remove from rejected
+            alreadyIdentified[closestCandidateIdx] = true;
+
+            // add to detected
+            finalAcceptedCorners.push_back(closestRotatedMarker);
+            finalAcceptedIds.push_back(undetectedMarkersIds[i]);
+            recoveredIdxs.push_back(closestCandidateIdx);
+        }
+
     }
-
-
 
     // parse output
     if(finalAcceptedIds.size() != _detectedIds.total()) {
