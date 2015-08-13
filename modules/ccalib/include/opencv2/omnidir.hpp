@@ -115,6 +115,7 @@ namespace omnidir
 
     @param K Camera matrix \f$K = \vecthreethree{f_x}{s}{c_x}{0}{f_y}{c_y}{0}{0}{_1}\f$, with depth CV_32F or CV_64F
     @param D Input vector of distortion coefficients \f$(k_1, k_2, p_1, p_2)\f$, with depth CV_32F or CV_64F
+    @param xi The parameter xi for CMei's model
     @param R Rotation transform between the original and object space : 3x3 1-channel, or vector: 3x1/1x3, with depth CV_32F or CV_64F
     @param P New camera matrix (3x3) or new projection matrix (3x4)
     @param size Undistorted image size.
@@ -206,6 +207,8 @@ namespace omnidir
 
     /** @brief Stereo 3D reconstruction from a pair of images
 
+    @param image1 The first input image
+    @param image2 The second input image
     @param K1 Input camera matrix of the first camera
     @param D1 Input distortion parameters \f$(k_1, k_2, p_1, p_2)\f$ for the first camera
     @param xi1 Input parameter xi for the first camera for CMei's model

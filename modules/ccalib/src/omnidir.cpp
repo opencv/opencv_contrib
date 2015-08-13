@@ -1298,7 +1298,7 @@ double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, 
 
     if (idx.needed())
     {
-        idx.create(1, (int)_idx.total(), CV_Assert_32S);
+        idx.create(1, (int)_idx.total(), CV_32S);
         _idx.copyTo(idx.getMat());
     }
 
