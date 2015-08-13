@@ -67,11 +67,12 @@ int main(int argc, char** argv)
 	string device = parser.get<string>("device");
 	int dev_id = parser.get<int>("dev_id");
 
-	cv::cnn_3dobj::Classification classifier;
-	classifier.NetSetter(network_forIMG, caffemodel, mean_file, device, dev_id);
+	cv::cnn_3dobj::DescriptorExtractor descriptor;
+	bool set_succeed = descriptor.SetNet(device, dev_id);
+	descriptor.LoadNet(set_succeed, network_forIMG, caffemodel, mean_file);
 	std::vector<string> name_gallery;
-	classifier.list_dir(src_dir.c_str(), name_gallery, false);
-	classifier.GetLabellist(name_gallery);
+	descriptor.list_dir(src_dir.c_str(), name_gallery, false);
+	descriptor.GetLabellist(name_gallery);
 	for (unsigned int i = 0; i < name_gallery.size(); i++) {
 	  name_gallery[i] = src_dir + name_gallery[i];
 	}
@@ -80,7 +81,7 @@ int main(int argc, char** argv)
 	for (unsigned int i = 0; i < name_gallery.size(); i++) {
 	  img_gallery.push_back(cv::imread(name_gallery[i], -1));
 	}
-	classifier.FeatureExtract(img_gallery, feature_reference, false, feature_blob);
+	descriptor.FeatureExtract(img_gallery, feature_reference, false, feature_blob);
 
 	std::cout << std::endl << "---------- Prediction for "
 	    << target_img << " ----------" << std::endl;
@@ -92,9 +93,9 @@ int main(int argc, char** argv)
 	for (unsigned int i = 0; i < feature_reference.rows; i++)
 	  std::cout << feature_reference.row(i) << endl;
 	cv::Mat feature_test;
-	classifier.FeatureExtract(img, feature_test, false, feature_blob);
+	descriptor.FeatureExtract(img, feature_test, false, feature_blob);
 	std::cout << std::endl << "---------- Featrue of target image: " << target_img << "----------" << endl << feature_test << std::endl;
-	prediction = classifier.Classify(feature_reference, feature_test, num_candidate);
+	prediction = descriptor.Classify(feature_reference, feature_test, num_candidate);
 	// Print the top N prediction.
 	std::cout << std::endl << "---------- Prediction result(Distance - File Name in Gallery) ----------" << std::endl;
 	for (size_t i = 0; i < prediction.size(); ++i) {
