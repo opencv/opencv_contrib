@@ -1638,7 +1638,7 @@ void cv::omnidir::internal::encodeParameters(InputArray K, InputArrayOfArrays om
     CV_Assert(distoaration.total() == 4 && distoaration.type() == CV_64F);
     int n = (int)omAll.total();
     Mat _omAll = omAll.getMat(), _tAll = tAll.getMat();
-    Mat tmp = Mat(_omAll.at<Vec3d>(0)).reshape(1,3).clone();
+
     Matx33d _K = K.getMat();
     Vec4d _D = (Vec4d)distoaration.getMat();
     parameters.create(1, 10+6*n,CV_64F);
