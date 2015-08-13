@@ -38,12 +38,32 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
-
+#include "opencv2/tracking/tracker.hpp"
 #include "tldTracker.hpp"
-
+#include "tldModel.hpp"
 
 namespace cv
 {
+
+TrackerTLD::Params::Params()
+{
+    standardPatchSize = 15;
+    negExamplesInInitModel = 300;
+    maxExamplesInModel = 500;
+    measuresPerClassifier = 13;
+    gridsize = 15;
+    downscaleMode = INTER_LINEAR;
+    thetaNN = 0.50;
+    coreThreshold = 0.5;
+    scaleStep = 1.2;
+    ensembleThreshold = 0.5;
+    varianceThreshold = 0.5;
+    NExpertThreshold = 0.2;
+}
+
+void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
+
+void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
 {
@@ -57,8 +77,7 @@ TrackerTLDImpl::TrackerTLDImpl(const TrackerTLD::Params &parameters) :
     params( parameters )
 {
   isInit = false;
-  trackerProxy = Ptr<TrackerProxyImpl<TrackerMedianFlow, TrackerMedianFlow::Params> >
-      (new TrackerProxyImpl<TrackerMedianFlow, TrackerMedianFlow::Params>());
+  trackerProxy = makePtr<TrackerProxyImpl<TrackerMedianFlow, TrackerMedianFlow::Params> >();
 }
 
 void TrackerTLDImpl::read(const cv::FileNode& fn)
@@ -82,14 +101,14 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     if( scale > 1.0 )
     {
         Mat image_proxy;
-        resize(image_gray, image_proxy, Size(cvRound(image.cols * scale), cvRound(image.rows * scale)), 0, 0, DOWNSCALE_MODE);
+        resize(image_gray, image_proxy, Size(cvRound(image.cols * scale), cvRound(image.rows * scale)), 0, 0, params.downscaleMode);
         image_proxy.copyTo(image_gray);
         myBoundingBox.x *= scale;
         myBoundingBox.y *= scale;
         myBoundingBox.width *= scale;
         myBoundingBox.height *= scale;
     }
-    model = Ptr<TrackerTLDModel>(new TrackerTLDModel(params, image_gray, myBoundingBox, data->getMinSize()));
+    model = makePtr<TrackerTLDModel>(params, image_gray, myBoundingBox, data->getMinSize());
 
     data->confident = false;
     data->failedLastTime = false;
@@ -103,13 +122,13 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     cvtColor( image, image_gray, COLOR_BGR2GRAY );
     double scale = data->getScale();
     if( scale > 1.0 )
-        resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, DOWNSCALE_MODE);
+        resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, params.downscaleMode);
     else
         imageForDetector = image_gray;
     GaussianBlur(imageForDetector, image_blurred, GaussBlurKernelSize, 0.0);
     TrackerTLDModel* tldModel = ((TrackerTLDModel*)static_cast<TrackerModel*>(model));
     data->frameNum++;
-    Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+    Mat_<uchar> standardPatch(params.standardPatchSize, params.standardPatchSize);
     std::vector<TLDDetector::LabeledPatch> detectorResults;
     //best overlap around 92%
 
@@ -181,7 +200,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     }
 #endif
 
-    if( *it > CORE_THRESHOLD )
+    if( *it > params.coreThreshold )
         data->confident = true;
 
     if( data->confident )
@@ -242,9 +261,9 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
     std::vector<Rect2d> closest, scanGrid;
     Mat scaledImg, blurredImg;
 
-    double scale = scaleAndBlur(img_, cvRound(log(1.0 * resultBox_.width / (initSize_.width)) / log(SCALE_STEP)),
-            scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
-    TLDDetector::generateScanGrid(img_.rows, img_.cols, initSize_, scanGrid);
+    double scale = scaleAndBlur(img_, cvRound(log(1.0 * resultBox_.width / (initSize_.width)) / log(params_.scaleStep)),
+            scaledImg, blurredImg, GaussBlurKernelSize, params_.scaleStep);
+    TLDDetector::generateScanGrid(params_, img_.rows, img_.cols, initSize_, scanGrid);
     getClosestN(scanGrid, Rect2d(resultBox_.x / scale, resultBox_.y / scale, resultBox_.width / scale, resultBox_.height / scale), 10, closest);
 
     for( int i = 0; i < (int)closest.size(); i++ )
@@ -253,7 +272,7 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
         {
             Point2f center;
             Size2f size;
-            Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE), blurredPatch(initSize_);
+            Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize), blurredPatch(initSize_);
             center.x = (float)(closest[i].x + closest[i].width * (0.5 + rng.uniform(-0.01, 0.01)));
             center.y = (float)(closest[i].y + closest[i].height * (0.5 + rng.uniform(-0.01, 0.01)));
             size.width = (float)(closest[i].width * rng.uniform((double)0.99, (double)1.01));
@@ -283,10 +302,7 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
 
 bool TrackerTLDImpl::Nexpert::operator()(Rect2d box)
 {
-    if( overlap(resultBox_, box) < NEXPERT_THRESHOLD )
-        return false;
-    else
-        return true;
+    return overlap(resultBox_, box) >= params_.NExpertThreshold;
 }
 
 Data::Data(Rect2d initBox)

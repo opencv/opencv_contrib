@@ -51,25 +51,12 @@ namespace cv
 {
 	namespace tld
 	{
-		const int STANDARD_PATCH_SIZE = 15;
-		const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
-		const int MAX_EXAMPLES_IN_MODEL = 500;
-		const int MEASURES_PER_CLASSIFIER = 13;
-		const int GRIDSIZE = 15;
-		const int DOWNSCALE_MODE = cv::INTER_LINEAR;
-		const double THETA_NN = 0.50;
-		const double CORE_THRESHOLD = 0.5;
-		const double SCALE_STEP = 1.2;
-		const double ENSEMBLE_THRESHOLD = 0.5;
-		const double VARIANCE_THRESHOLD = 0.5;
-		const double NEXPERT_THRESHOLD = 0.2;
-
 		static const cv::Size GaussBlurKernelSize(3, 3);
 
 		class TLDDetector
 		{
 		public:
-			TLDDetector(){}
+			TLDDetector(const TrackerTLD::Params& params): params_(params){}
 			~TLDDetector(){}
 			inline double ensembleClassifierNum(const uchar* data);
 			inline void prepareClassifiers(int rowstep);
@@ -86,7 +73,7 @@ namespace cv
 			std::vector<int> *timeStampsPositive, *timeStampsNegative;
 			double *originalVariancePtr;
 
-			static void generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
+			static void generateScanGrid(const TrackerTLD::Params& params_, int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
 			struct LabeledPatch
 			{
 				Rect2d rect;
@@ -95,7 +82,7 @@ namespace cv
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 		protected:
-
+			TrackerTLD::Params params_;
 
 
 			friend class MyMouseCallbackDEBUG;

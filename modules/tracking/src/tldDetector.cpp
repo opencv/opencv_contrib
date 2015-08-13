@@ -85,7 +85,7 @@ namespace cv
 			//float t;
 			//e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
-			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			Mat_<uchar> modelSample(params_.standardPatchSize, params_.standardPatchSize);
 			for (int i = 0; i < *posNum; i++)
 			{
 				modelSample.data = &(posExp->data[i * 225]);
@@ -116,7 +116,7 @@ namespace cv
 			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNCC(1, 2*MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2*params_.maxExamplesInModel, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 
 			ocl::Kernel k;
@@ -192,8 +192,8 @@ namespace cv
 			UMat devPatches = patches.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devPosNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNegNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devPosNCC(params_.maxExamplesInModel, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNegNCC(params_.maxExamplesInModel, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 			ocl::Kernel k;
 			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
@@ -217,7 +217,7 @@ namespace cv
 			//printf("Mem Cpy GPU: %f\n", t);
 
 			// 2 -> Pos&Neg
-			size_t globSize = 2 * numOfPatches*MAX_EXAMPLES_IN_MODEL;
+			size_t globSize = 2 * numOfPatches*params_.maxExamplesInModel;
 			//e3 = getTickCount();
 			if (!k.run(1, &globSize, NULL, false))
 				printf("Kernel batchNCC: Run Error!!!\n");
@@ -313,7 +313,7 @@ namespace cv
 			//double t;
 			//e1 = getTickCount();
 			double splus = 0.0, sminus = 0.0;
-			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			Mat_<uchar> modelSample(params_.standardPatchSize, params_.standardPatchSize);
 			int med = getMedian((*timeStampsPositive));
 			for (int i = 0; i < *posNum; i++)
 			{
@@ -349,7 +349,7 @@ namespace cv
 			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNCC(1, 2 * MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2 * params_.maxExamplesInModel, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 
 			ocl::Kernel k;
@@ -417,7 +417,7 @@ namespace cv
 		}
 
 		// Generate Search Windows for detector from aspect ratio of initial BBs
-		void TLDDetector::generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling)
+		void TLDDetector::generateScanGrid(const TrackerTLD::Params& params_, int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling)
 		{
 			res.clear();
 			//Scales step: SCALE_STEP; Translation steps: 10% of width & 10% of height; minSize: 20pix
@@ -432,16 +432,16 @@ namespace cv
 				{
 					if (h <= initBox.height)
 					{
-						h /= SCALE_STEP; w /= SCALE_STEP;
+						h /= params_.scaleStep; w /= params_.scaleStep;
 						if (h < 20 || w < 20)
 						{
-							h = initBox.height * SCALE_STEP; w = initBox.width * SCALE_STEP;
+							h = initBox.height * params_.scaleStep; w = initBox.width * params_.scaleStep;
 							CV_Assert(h > initBox.height || w > initBox.width);
 						}
 					}
 					else
 					{
-						h *= SCALE_STEP; w *= SCALE_STEP;
+						h *= params_.scaleStep; w *= params_.scaleStep;
 					}
 				}
 				else
@@ -457,7 +457,7 @@ namespace cv
 		bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize)
 		{
 			patches.clear();
-			Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize);
 			Mat tmp;
 			int dx = initSize.width / 10, dy = initSize.height / 10;
 			Size2d size = img.size();
@@ -494,10 +494,10 @@ namespace cv
 					}
 				}
 				scaleID++;
-				size.width /= SCALE_STEP;
-				size.height /= SCALE_STEP;
-				scale *= SCALE_STEP;
-				resize(img, tmp, size, 0, 0, DOWNSCALE_MODE);
+				size.width /= params_.scaleStep;
+				size.height /= params_.scaleStep;
+				scale *= params_.scaleStep;
+				resize(img, tmp, size, 0, 0, params_.downscaleMode);
 				resized_imgs.push_back(tmp);
 				GaussianBlur(resized_imgs[scaleID], tmp, GaussBlurKernelSize, 0.0f);
 				blurred_imgs.push_back(tmp);
@@ -511,7 +511,7 @@ namespace cv
 			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[i]].step[0]));
-				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= ENSEMBLE_THRESHOLD)
+				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= params_.ensembleThreshold)
 					continue;
 				ensBuffer.push_back(varBuffer[i]);
 				ensScaleIDs.push_back(varScaleIDs[i]);
@@ -525,7 +525,7 @@ namespace cv
 			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
-				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
+				double curScale = pow(params_.scaleStep, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 				resample(resized_imgs[ensScaleIDs[i]], Rect2d(ensBuffer[i], initSize), standardPatch);
 
@@ -534,8 +534,8 @@ namespace cv
 
 				////To fix: Check the paper, probably this cause wrong learning
 				//
-				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
+				labPatch.isObject = srValue > params_.thetaNN;
+				labPatch.shouldBeIntegrated = abs(srValue - params_.thetaNN) < 0.1;
 				patches.push_back(labPatch);
 				//
 
@@ -568,7 +568,7 @@ namespace cv
 		bool TLDDetector::ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize)
 		{
 			patches.clear();
-			Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+			Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize);
 			Mat tmp;
 			int dx = initSize.width / 10, dy = initSize.height / 10;
 			Size2d size = img.size();
@@ -604,10 +604,10 @@ namespace cv
 					}
 				}
 				scaleID++;
-				size.width /= SCALE_STEP;
-				size.height /= SCALE_STEP;
-				scale *= SCALE_STEP;
-				resize(img, tmp, size, 0, 0, DOWNSCALE_MODE);
+				size.width /= params_.scaleStep;
+				size.height /= params_.scaleStep;
+				scale *= params_.scaleStep;
+				resize(img, tmp, size, 0, 0, params_.downscaleMode);
 				resized_imgs.push_back(tmp);
 				GaussianBlur(resized_imgs[scaleID], tmp, GaussBlurKernelSize, 0.0f);
 				blurred_imgs.push_back(tmp);
@@ -621,7 +621,7 @@ namespace cv
 			for (int i = 0; i < (int)varBuffer.size(); i++)
 			{
 				prepareClassifiers((int)blurred_imgs[varScaleIDs[i]].step[0]);
-				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= ENSEMBLE_THRESHOLD)
+				if (ensembleClassifierNum(&blurred_imgs[varScaleIDs[i]].at<uchar>(varBuffer[i].y, varBuffer[i].x)) <= params_.ensembleThreshold)
 					continue;
 				ensBuffer.push_back(varBuffer[i]);
 				ensScaleIDs.push_back(varScaleIDs[i]);
@@ -654,7 +654,7 @@ namespace cv
 			{
 				LabeledPatch labPatch;
 				standardPatch.data = &stdPatches.data[225 * i];
-				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
+				double curScale = pow(params_.scaleStep, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 
 				double srValue, scValue;
@@ -666,8 +666,8 @@ namespace cv
 
 				////To fix: Check the paper, probably this cause wrong learning
 				//
-				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
+				labPatch.isObject = srValue > params_.thetaNN;
+				labPatch.shouldBeIntegrated = abs(srValue - params_.thetaNN) < 0.1;
 				patches.push_back(labPatch);
 				//
 
@@ -719,7 +719,7 @@ namespace cv
 			D = intImgP2(y + height, x + width);
 			p2 = (A + D - B - C) / (width * height);
 
-			return ((p2 - p * p) > VARIANCE_THRESHOLD * *originalVariance);
+			return ((p2 - p * p) > params_.varianceThreshold * *originalVariance);
 		}
 
 	}

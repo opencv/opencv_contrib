@@ -53,7 +53,7 @@ namespace cv
 			Mat scaledImg, blurredImg, image_blurred;
 
 			//Create Detector
-			detector = Ptr<TLDDetector>(new TLDDetector());
+			detector = Ptr<TLDDetector>(new TLDDetector(params));
 
 			//Propagate data to Detector
 			posNum = 0;
@@ -74,13 +74,13 @@ namespace cv
 			//Calculate the variance in initial BB
 			originalVariance_ = variance(image(boundingBox));
 			//Find the scale
-			double scale = scaleAndBlur(image, cvRound(log(1.0 * boundingBox.width / (minSize.width)) / log(SCALE_STEP)),
-				scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
+			double scale = scaleAndBlur(image, cvRound(log(1.0 * boundingBox.width / (minSize.width)) / log(params_.scaleStep)),
+				scaledImg, blurredImg, GaussBlurKernelSize, params_.scaleStep);
 			GaussianBlur(image, image_blurred, GaussBlurKernelSize, 0.0);
-			TLDDetector::generateScanGrid(image.rows, image.cols, minSize_, scanGrid);
+			TLDDetector::generateScanGrid(params_, image.rows, image.cols, minSize_, scanGrid);
 			getClosestN(scanGrid, Rect2d(boundingBox.x / scale, boundingBox.y / scale, boundingBox.width / scale, boundingBox.height / scale), 10, closest);
 			Mat_<uchar> blurredPatch(minSize);
-			TLDEnsembleClassifier::makeClassifiers(minSize, MEASURES_PER_CLASSIFIER, GRIDSIZE, detector->classifiers);
+			TLDEnsembleClassifier::makeClassifiers(minSize, params_.measuresPerClassifier, params_.gridsize, detector->classifiers);
 
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
@@ -91,7 +91,7 @@ namespace cv
 				{
 					Point2f center;
 					Size2f size;
-					Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+					Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize);
 					center.x = (float)(closest[i].x + closest[i].width * (0.5 + rng.uniform(-0.01, 0.01)));
 					center.y = (float)(closest[i].y + closest[i].height * (0.5 + rng.uniform(-0.01, 0.01)));
 					size.width = (float)(closest[i].width * rng.uniform((double)0.99, (double)1.01));
@@ -121,17 +121,17 @@ namespace cv
 			}
 
 			//Generate initial negative samples and put them to the model
-			TLDDetector::generateScanGrid(image.rows, image.cols, minSize, scanGrid, true);
+			TLDDetector::generateScanGrid(params_, image.rows, image.cols, minSize, scanGrid, true);
 			negativeExamples.clear();
-			negativeExamples.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
+			negativeExamples.reserve(params_.negExamplesInInitModel);
 			std::vector<int> indices;
-			indices.reserve(NEG_EXAMPLES_IN_INIT_MODEL);
-			while ((int)negativeExamples.size() < NEG_EXAMPLES_IN_INIT_MODEL)
+			indices.reserve(params_.negExamplesInInitModel);
+			while ((int)negativeExamples.size() < params_.negExamplesInInitModel)
 			{
 				int i = rng.uniform((int)0, (int)scanGrid.size());
-				if (std::find(indices.begin(), indices.end(), i) == indices.end() && overlap(boundingBox, scanGrid[i]) < NEXPERT_THRESHOLD)
+				if (std::find(indices.begin(), indices.end(), i) == indices.end() && overlap(boundingBox, scanGrid[i]) < params_.NExpertThreshold)
 				{
-					Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+					Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize);
 					resample(image, scanGrid[i], standardPatch);
 					pushIntoModel(standardPatch, false);
 
@@ -146,7 +146,7 @@ namespace cv
 
 		void TrackerTLDModel::integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches)
 		{
-			Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE), blurredPatch(minSize_);
+			Mat_<uchar> standardPatch(params_.standardPatchSize, params_.standardPatchSize), blurredPatch(minSize_);
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
 			for (int k = 0; k < (int)patches.size(); k++)
 			{
@@ -204,7 +204,7 @@ namespace cv
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
 				double sr = detector->Sr(eForModel[k]);
-				if ((sr > THETA_NN) != isPositive)
+				if ((sr > params_.thetaNN) != isPositive)
 				{
 					if (isPositive)
 					{
@@ -221,7 +221,7 @@ namespace cv
 				for (int i = 0; i < (int)detector->classifiers.size(); i++)
 					p += detector->classifiers[i].posteriorProbability(eForEnsemble[k].data, (int)eForEnsemble[k].step[0]);
 				p /= detector->classifiers.size();
-				if ((p > ENSEMBLE_THRESHOLD) != isPositive)
+				if ((p > params_.ensembleThreshold) != isPositive)
 				{
 					if (isPositive)
 						positiveIntoEnsemble++;
@@ -274,7 +274,7 @@ namespace cv
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
 				double sr = resultSr[k];
-				if ((sr > THETA_NN) != isPositive)
+				if ((sr > params_.thetaNN) != isPositive)
 				{
 					if (isPositive)
 					{
@@ -291,7 +291,7 @@ namespace cv
 				for (int i = 0; i < (int)detector->classifiers.size(); i++)
 					p += detector->classifiers[i].posteriorProbability(eForEnsemble[k].data, (int)eForEnsemble[k].step[0]);
 				p /= detector->classifiers.size();
-				if ((p > ENSEMBLE_THRESHOLD) != isPositive)
+				if ((p > params_.ensembleThreshold) != isPositive)
 				{
 					if (isPositive)
 						positiveIntoEnsemble++;
@@ -328,8 +328,8 @@ namespace cv
 				{
 					uchar *patchPtr = example.data;
 					uchar *modelPtr = posExp.data;
-					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
-						modelPtr[posNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					for (int i = 0; i < params_.standardPatchSize*params_.standardPatchSize; i++)
+						modelPtr[posNum*params_.standardPatchSize*params_.standardPatchSize + i] = patchPtr[i];
 					posNum++;
 				}
 
@@ -343,8 +343,8 @@ namespace cv
 				{
 					uchar *patchPtr = example.data;
 					uchar *modelPtr = negExp.data;
-					for (int i = 0; i < STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE; i++)
-						modelPtr[negNum*STANDARD_PATCH_SIZE*STANDARD_PATCH_SIZE + i] = patchPtr[i];
+					for (int i = 0; i < params_.standardPatchSize*params_.standardPatchSize; i++)
+						modelPtr[negNum*params_.standardPatchSize*params_.standardPatchSize + i] = patchPtr[i];
 					negNum++;
 				}
 
@@ -352,7 +352,7 @@ namespace cv
 				proxyN = &timeStampNegativeNext;
 				proxyT = &timeStampsNegative;
 			}
-			if ((int)proxyV->size() < MAX_EXAMPLES_IN_MODEL)
+			if ((int)proxyV->size() < params_.maxExamplesInModel)
 			{
 				proxyV->push_back(example);
 				proxyT->push_back(*proxyN);

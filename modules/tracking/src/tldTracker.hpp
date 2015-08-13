@@ -51,13 +51,6 @@
 
 namespace cv
 {
-
-TrackerTLD::Params::Params(){}
-
-void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
-
-void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
-
 namespace tld
 {
 class TrackerProxy

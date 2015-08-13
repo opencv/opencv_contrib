@@ -1181,6 +1181,19 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
     Params();
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
+
+    int standardPatchSize;
+    int negExamplesInInitModel;
+    int maxExamplesInModel;
+    int measuresPerClassifier;
+    int gridsize;
+    int downscaleMode;
+    double thetaNN;
+    double coreThreshold;
+    double scaleStep;
+    double ensembleThreshold;
+    double varianceThreshold;
+    double NExpertThreshold;
   };
 
   /** @brief Constructor
