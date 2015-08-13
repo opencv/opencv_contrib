@@ -181,10 +181,10 @@ void multiCameraCalibration::loadImages()
 
         // calibrate
         Mat idx;
-        //double rms;
+        double rms;
         if (_camType == PINHOLE)
         {
-            cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
+            rms = cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera],_flags);
             idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32S);
@@ -206,7 +206,7 @@ void multiCameraCalibration::loadImages()
         //}
         else if (_camType == OMNIDIRECTIONAL)
         {
-            cv::omnidir::calibrate(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
+            rms = cv::omnidir::calibrate(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _xi[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera], _flags, TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 300, 1e-7),
                 idx);
