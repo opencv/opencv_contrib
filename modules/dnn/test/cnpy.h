@@ -18,6 +18,12 @@
 #include<zlib.h>
 #endif
 
+#ifndef NDEBUG
+#define cnpy_assert(expression) assert(expression)
+#else
+#define cnpy_assert(expression) ((void)(expression))
+#endif
+
 namespace cnpy {
 
     struct NpyArray {
@@ -76,21 +82,21 @@ namespace cnpy {
             unsigned int* tmp_shape = 0;
             bool fortran_order;
             parse_npy_header(fp,word_size,tmp_shape,tmp_dims,fortran_order);
-            assert(!fortran_order);
+            cnpy_assert(!fortran_order);
 
             if(word_size != sizeof(T)) {
                 std::cout<<"libnpy error: "<<fname<<" has word size "<<word_size<<" but npy_save appending data sized "<<sizeof(T)<<"\n";
-                assert( word_size == sizeof(T) );
+                cnpy_assert( word_size == sizeof(T) );
             }
             if(tmp_dims != ndims) {
                 std::cout<<"libnpy error: npy_save attempting to append misdimensioned data to "<<fname<<"\n";
-                assert(tmp_dims == ndims);
+                cnpy_assert(tmp_dims == ndims);
             }
 
             for(unsigned i = 1; i < ndims; i++) {
                 if(shape[i] != tmp_shape[i]) {
                     std::cout<<"libnpy error: npy_save attempting to append misshaped data to "<<fname<<"\n";
-                    assert(shape[i] == tmp_shape[i]);
+                    cnpy_assert(shape[i] == tmp_shape[i]);
                 }
             }
             tmp_shape[0] += shape[0];

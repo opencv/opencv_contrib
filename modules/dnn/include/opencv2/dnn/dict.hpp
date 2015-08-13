@@ -167,7 +167,7 @@ inline int64 DictValue::get<int64>(int idx) const
         fracpart = std::modf(doubleValue, &intpart);
         CV_Assert(fracpart == 0.0);
 
-        return doubleValue;
+        return (int64)doubleValue;
     }
     else
     {

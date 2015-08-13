@@ -9,10 +9,6 @@
 #include<cstring>
 #include<iomanip>
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#endif
-
 char cnpy::BigEndianTest() {
     union
     {
@@ -73,7 +69,7 @@ void cnpy::parse_npy_header(FILE* fp, unsigned int& word_size, unsigned int*& sh
     if(res != 11)
         throw std::runtime_error("parse_npy_header: failed fread");
     std::string header = fgets(buffer,256,fp);
-    assert(header[header.size()-1] == '\n');
+    cnpy_assert(header[header.size()-1] == '\n');
 
     size_t loc1, loc2;
 
@@ -99,7 +95,7 @@ void cnpy::parse_npy_header(FILE* fp, unsigned int& word_size, unsigned int*& sh
     //not sure when this applies except for byte array
     loc1 = header.find("descr")+9;
     bool littleEndian = (header[loc1] == '<' || header[loc1] == '|' ? true : false);
-    assert(littleEndian);
+    cnpy_assert(littleEndian);
 
     //char type = header[loc1+1];
     //assert(type == map_type(T));
@@ -126,10 +122,10 @@ void cnpy::parse_zip_footer(FILE* fp, unsigned short& nrecs, unsigned int& globa
     global_header_offset = *(unsigned int*) &footer[16];
     comment_len = *(unsigned short*) &footer[20];
 
-    assert(disk_no == 0);
-    assert(disk_start == 0);
-    assert(nrecs_on_disk == nrecs);
-    assert(comment_len == 0);
+    cnpy_assert(disk_no == 0);
+    cnpy_assert(disk_start == 0);
+    cnpy_assert(nrecs_on_disk == nrecs);
+    cnpy_assert(comment_len == 0);
 }
 
 cnpy::NpyArray load_the_npy_file(FILE* fp) {
@@ -156,7 +152,7 @@ cnpy::npz_t cnpy::npz_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(),"rb");
 
     if(!fp) printf("npz_load: Error! Unable to open file %s!\n",fname.c_str());
-    assert(fp);
+    cnpy_assert(fp);
 
     cnpy::npz_t arrays;
 

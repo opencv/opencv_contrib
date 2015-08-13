@@ -333,7 +333,7 @@ static long THDiskFile_readString(THFile *self, const char *format, char **str_)
     char *p = (char*)THAlloc(TBRS_BSZ);
     long total = TBRS_BSZ;
     long pos = 0L;
-    
+
     for (;;)
     {
       if(total-pos == 0) /* we need more space! */
@@ -357,7 +357,7 @@ static long THDiskFile_readString(THFile *self, const char *format, char **str_)
         *str_ = p;
         return pos;
       }
-    }    
+    }
   }
   else
   {

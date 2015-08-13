@@ -48,8 +48,8 @@ void MVNLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 
         int workSize[2];
         int splitDim = (acrossChannels) ? 1 : 2;
-        workSize[0] = inpBlob.total(0, splitDim);
-        workSize[1] = inpBlob.total(splitDim);
+        workSize[0] = (int)inpBlob.total(0, splitDim);
+        workSize[1] = (int)inpBlob.total(splitDim);
 
         Mat inpMat = inpBlob.getMatRef().reshape(1, 2, workSize);
         Mat outMat = outBlob.getMatRef().reshape(1, 2, workSize);

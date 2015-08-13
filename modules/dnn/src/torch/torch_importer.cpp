@@ -662,7 +662,7 @@ CV_EXPORTS Ptr<Importer> createTorchImporter(const String&, bool)
     return Ptr<Importer>();
 }
 
-CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary)
+CV_EXPORTS Blob readTorchMat(const String&, bool)
 {
     CV_Error(Error::StsNotImplemented, "Module was build without Torch importer");
     return Blob();

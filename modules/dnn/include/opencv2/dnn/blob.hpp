@@ -83,18 +83,18 @@ namespace dnn
         /** @brief returns size of corresponding dimension (axis)
         @param axis dimension index
         Python-like indexing is supported, so \p axis can be negative, i. e. -1 is last dimension.
-        @note Unlike ::xsize, if \p axis points to non-existing dimension then an error will be generated.
+        @note Unlike xsize(), if \p axis points to non-existing dimension then an error will be generated.
         */
         int size(int axis) const;
 
         /** @brief returns number of elements
         @param startAxis starting axis (inverse indexing can be used)
         @param endAxis ending (excluded) axis
-        @see ::canonicalAxis
+        @see canonicalAxis()
         */
         size_t total(int startAxis = 0, int endAxis = -1) const;
 
-        /** @brief converts axis index to canonical format (where 0 <= axis <= ::dims)
+        /** @brief converts axis index to canonical format (where 0 <= axis < dims())
         */
         int canonicalAxis(int axis) const;
 

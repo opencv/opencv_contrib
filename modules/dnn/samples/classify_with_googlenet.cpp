@@ -4,6 +4,7 @@
 #include <opencv2/highgui.hpp>
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 using namespace cv;
 using namespace cv::dnn;
 
@@ -12,7 +13,7 @@ typedef std::pair<int, double> ClassProb;
 ClassProb getMaxClass(Blob &probBlob, int sampleNum = 0)
 {
     int numClasses = (int)probBlob.total(1);
-    Mat probMat(1, numClasses, CV_32F, probBlob.ptr<float>(sampleNum));
+    Mat probMat(1, numClasses, CV_32F, probBlob.ptrf(sampleNum));
 
     double prob;
     Point probLoc;
@@ -21,7 +22,7 @@ ClassProb getMaxClass(Blob &probBlob, int sampleNum = 0)
     return std::make_pair(probLoc.x, prob);
 }
 
-std::vector<String> CLASES_NAMES;
+std::vector<String> CLASSES_NAMES;
 
 void initClassesNames()
 {
@@ -33,7 +34,7 @@ void initClassesNames()
     {
         std::getline(fp, name);
         if (name.length())
-            CLASES_NAMES.push_back( name.substr(name.find(' ')+1) );
+            CLASSES_NAMES.push_back( name.substr(name.find(' ')+1) );
     }
 
     fp.close();
@@ -63,7 +64,7 @@ int main(int argc, char **argv)
     ClassProb bc = getMaxClass(prob);
 
     initClassesNames();
-    std::string className = (bc.first < (int)CLASES_NAMES.size()) ? CLASES_NAMES[bc.first] : "unnamed";
+    std::string className = (bc.first < (int)CLASSES_NAMES.size()) ? CLASSES_NAMES[bc.first] : "unnamed";
 
     std::cout << "Best class:";
     std::cout << " #" << bc.first;
