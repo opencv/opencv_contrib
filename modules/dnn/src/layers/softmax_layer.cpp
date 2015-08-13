@@ -1,5 +1,6 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "softmax_layer.hpp"
 #include <algorithm>
 #include <stdlib.h>
 using std::max;
@@ -9,21 +10,6 @@ namespace cv
 namespace dnn
 {
     //TODO: set default axis number to 1, and add custom shape length in FullyConnected
-    class SoftMaxLayer : public Layer
-    {
-        int axis_, axis;
-        Blob maxAggregator;
-
-    public:
-        SoftMaxLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
-
-
-    REGISTER_LAYER_CLASS(Softmax, SoftMaxLayer);
-
-
     SoftMaxLayer::SoftMaxLayer(LayerParams &params)
     {
         //hotfix!!!

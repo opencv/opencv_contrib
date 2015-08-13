@@ -1,15 +1,18 @@
+#ifndef __OPENCV_DNN_LAYERS_ELEMENTWISE_LAYERS_HPP__
+#define __OPENCV_DNN_LAYERS_ELEMENTWISE_LAYERS_HPP__
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include <cmath>
-using std::abs;
-using std::exp;
-using std::tanh;
-using std::pow;
 
 namespace cv
 {
 namespace dnn
 {
+
+using std::abs;
+using std::exp;
+using std::tanh;
+using std::pow;
 
     template<typename Func>
     class ElementWiseLayer : public Layer
@@ -135,13 +138,6 @@ namespace dnn
             return log((TFloat)1 + exp(-abs(x)));
         }
     };
-
-    REGISTER_LAYER_CLASS(ReLU, ElementWiseLayer<ReLUFunctor>)
-    REGISTER_LAYER_CLASS(TanH, ElementWiseLayer<TanHFunctor>)
-    REGISTER_LAYER_CLASS(BNLL, ElementWiseLayer<BNLLFunctor>)
-    REGISTER_LAYER_CLASS(Power, ElementWiseLayer<PowerFunctor>)
-    REGISTER_LAYER_CLASS(AbsVal, ElementWiseLayer<AbsValFunctor>)
-    REGISTER_LAYER_CLASS(Sigmoid, ElementWiseLayer<SigmoidFunctor>)
-
 }
 }
+#endif

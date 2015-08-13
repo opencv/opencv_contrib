@@ -1,5 +1,6 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "pooling_layer.hpp"
 #include <float.h>
 #include <algorithm>
 using std::max;
@@ -10,36 +11,6 @@ namespace cv
 namespace dnn
 {
 //TODO: add ceil_mode param
-    class PoolingLayer : public Layer
-    {
-        enum
-        {
-            MAX,
-            AVE,
-            STOCHASTIC
-        };
-
-        int type;
-        int padH, padW;
-        int strideH, strideW;
-        int kernelH, kernelW;
-
-        int inpH, inpW;
-        int outH, outW;
-
-        void computeOutputShape(int inpH, int inpW);
-        void maxPooling(Blob &input, Blob &output);
-        void avePooling(Blob &input, Blob &output);
-
-    public:
-        PoolingLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
-
-
-    REGISTER_LAYER_CLASS(Pooling, PoolingLayer)
-
 
     PoolingLayer::PoolingLayer(LayerParams &params)
     {

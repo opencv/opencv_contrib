@@ -1,28 +1,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "slice_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-class SliceLayer : public Layer
-{
-public:
-    SliceLayer(LayerParams &params);
-
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-private:
-    int inAxis;
-    std::vector<int> slicePoints;
-};
-
-
-REGISTER_LAYER_CLASS(Slice, SliceLayer)
-
 
 SliceLayer::SliceLayer(LayerParams &params)
 {

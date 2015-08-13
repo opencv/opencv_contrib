@@ -1,26 +1,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "mvn_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-class MVNLayer : public Layer
-{
-    double eps;
-    bool acrossChannels, normalizeVariance;
-
-public:
-
-    MVNLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-};
-
-
-REGISTER_LAYER_CLASS(MVN, MVNLayer)
-
 
 MVNLayer::MVNLayer(LayerParams &params)
 {

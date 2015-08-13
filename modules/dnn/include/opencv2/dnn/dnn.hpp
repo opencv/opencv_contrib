@@ -10,6 +10,8 @@ namespace cv
 {
 namespace dnn
 {
+    CV_EXPORTS void initModule();
+
     class CV_EXPORTS LayerParams : public Dict
     {
     public:
@@ -90,56 +92,10 @@ namespace dnn
     CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBinary = true);
 
     CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary = true);
-
-
-    //Layer factory allows to create instances of registered layers.
-    class CV_EXPORTS LayerRegister
-    {
-    public:
-
-        typedef Ptr<Layer>(*Constuctor)(LayerParams &params);
-
-        static void registerLayer(const String &type, Constuctor constructor);
-
-        static void unregisterLayer(const String &type);
-
-        static Ptr<Layer> createLayerInstance(const String &type, LayerParams& params);
-
-    private:
-        LayerRegister();
-
-        struct Impl;
-        static Ptr<Impl> impl;
-    };
-
-    //allows automatically register created layer on module load time
-    struct _LayerRegisterer
-    {
-        String type;
-
-        _LayerRegisterer(const String &type, LayerRegister::Constuctor constuctor)
-        {
-            this->type = type;
-            LayerRegister::registerLayer(type, constuctor);
-        }
-
-        ~_LayerRegisterer()
-        {
-            LayerRegister::unregisterLayer(type);
-        }
-    };
-
-    //registers layer on module load time
-    #define REGISTER_LAYER_FUNC(type, constuctorFunc) \
-    static _LayerRegisterer __layerRegisterer_##type(#type, constuctorFunc);
-
-    #define REGISTER_LAYER_CLASS(type, class)                       \
-    Ptr<Layer> __layerRegisterer_func_##type(LayerParams &params)   \
-        { return Ptr<Layer>(new class(params)); }                   \
-    static _LayerRegisterer __layerRegisterer_##type(#type, __layerRegisterer_func_##type);
 }
 }
 
+#include <opencv2/dnn/layer.hpp>
 #include <opencv2/dnn/dnn.inl.hpp>
 
 #endif  /* __OPENCV_DNN_DNN_HPP__ */

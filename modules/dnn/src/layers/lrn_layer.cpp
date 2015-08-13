@@ -1,5 +1,6 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "lrn_layer.hpp"
 #include <opencv2/imgproc.hpp>
 #include <algorithm>
 
@@ -7,34 +8,6 @@ namespace cv
 {
 namespace dnn
 {
-    class LRNLayer : public Layer
-    {
-        enum
-        {
-            CHANNEL_NRM,
-            SPATIAL_NRM,
-            SPATIAL_CONTRAST_NRM //cuda-convnet feature
-        } type;
-
-        int size;
-        double alpha, beta;
-
-        Blob bufBlob;
-
-        void channelNoramlization(Blob &src, Blob &dst);
-        void spatialNormalization(Blob &src, Blob &dst);
-
-    public:
-
-        LRNLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
-
-
-    REGISTER_LAYER_CLASS(LRN, LRNLayer)
-
-
     LRNLayer::LRNLayer(LayerParams &params)
     {
         String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");

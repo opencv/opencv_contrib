@@ -1,5 +1,6 @@
+#ifndef __OPENCV_DNN_LAYERS_BLANK_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_BLANK_LAYER_HPP__
 #include "../precomp.hpp"
-#include "layers_common.hpp"
 
 namespace cv
 {
@@ -27,7 +28,6 @@ namespace dnn
                 outputs[i] = *inputs[i];
         }
     };
-
-    REGISTER_LAYER_CLASS(Dropout, BlankLayer)
 }
 }
+#endif

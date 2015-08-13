@@ -1,24 +1,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "concat_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-    class ConcatLayer : public Layer
-    {
-        int axis;
-
-    public:
-        ConcatLayer(LayerParams& params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
-
-
-    REGISTER_LAYER_CLASS(Concat, ConcatLayer)
-
-
     ConcatLayer::ConcatLayer(LayerParams &params)
     {
         axis = params.get<int>("axis", 1);

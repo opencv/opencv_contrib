@@ -1,27 +1,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "reshape_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-//TODO: Extend cv::Mat::reshape method
-class ReshapeLayer : public Layer
-{
-public:
-    ReshapeLayer(LayerParams &params);
-
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-    void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
-
-protected:
-    BlobShape shapeDesc;
-    int inAxis, inNumAxes, autoAxisIdx;
-
-    void computeOutputShape(int startAxis, int endAxis, BlobShape &inpShape, BlobShape &outShape);
-};
 
 ReshapeLayer::ReshapeLayer(LayerParams &params)
 {
@@ -136,11 +120,6 @@ Ptr<Layer> createFlattenLayer(LayerParams&)
 
     return Ptr<Layer>(new ReshapeLayer(params));
 }
-
-
-REGISTER_LAYER_CLASS(Reshape, ReshapeLayer)
-REGISTER_LAYER_FUNC(Flatten, createFlattenLayer)
-
 
 }
 }

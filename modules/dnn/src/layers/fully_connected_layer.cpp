@@ -1,31 +1,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include <iostream>
+#include "fully_connected_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-    class FullyConnectedLayer : public Layer
-    {
-        bool bias;
-        int numOutputs;
-        int axis_, axis;
-
-        int innerSize;
-
-        void reshape(const Blob &inp, Blob &out);
-
-    public:
-        FullyConnectedLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
-
-
-    REGISTER_LAYER_CLASS(InnerProduct, FullyConnectedLayer)
-
-
     FullyConnectedLayer::FullyConnectedLayer(LayerParams &params)
     {
         numOutputs = params.get<int>("num_output");
