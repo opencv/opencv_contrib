@@ -46,7 +46,14 @@
 #include "opencv2/omnidir.hpp"
 #include <string>
 #include <iostream>
+
+/** @defgroup mulcalib Multiple cameras calibration toolbox
+*/
+
 using namespace cv;
+
+//! @addtogroup mulcalib
+//! @{
 
 #define HEAD -1
 #define INVALID -2
@@ -200,4 +207,5 @@ private:
     std::vector<std::vector<Mat> > _omEachCamera, _tEachCamera;
 };
 
+//! @}
 #endif

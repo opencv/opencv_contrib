@@ -45,6 +45,9 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui.hpp"
 
+/** @defgroup ranPattern Random pattern calibration pattern
+*/
+
 using namespace cv;
 /** @brief Class for finding features points and corresponding 3D in world coordinate of
 a "random" pattern, which can be to be used in calibration. It is useful when pattern is
@@ -56,6 +59,10 @@ Please refer to paper
     Calibration Toolbox Using A Feature Descriptor-Based Calibration
     Pattern", in IROS 2013.
 */
+
+//! @addtogroup ranPattern
+//! @{
+
 class CV_EXPORTS randomPatternCornerFinder
 {
 public:
@@ -164,5 +171,6 @@ private:
     int _imageWidth, _imageHeight;
 };
 
+//! @}
 
 #endif

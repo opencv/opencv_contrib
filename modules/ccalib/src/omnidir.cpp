@@ -764,7 +764,7 @@ void cv::omnidir::internal::initializeStereoCalibration(InputOutputArrayOfArrays
     const Size& size1, const Size& size2, OutputArray om, OutputArray T, OutputArrayOfArrays omL, OutputArrayOfArrays tL, OutputArray K1, OutputArray D1, OutputArray K2, OutputArray D2,
     double &xi1, double &xi2, int flags, OutputArray idx)
 {
-    int n = objectPoints.total();
+    int n = (int)objectPoints.total();
     Mat idx1, idx2;
     Matx33d _K1, _K2;
     Matx14d _D1, _D2;
@@ -1620,15 +1620,13 @@ void cv::omnidir::stereoReconstruct(InputArray image1, InputArray image2, InputA
                 }
             }
         }
-        int nPoints = 0;
+
         if (pointType == XYZ)
         {
-            nPoints = (int)_pointCloud.size();
             Mat(_pointCloud).convertTo(pointCloud, CV_MAKE_TYPE(CV_32F, 3));
         }
         else if (pointType == XYZRGB)
         {
-            nPoints = (int)_pointCloudColor.size();
             Mat(_pointCloudColor).convertTo(pointCloud, CV_MAKE_TYPE(CV_32F, 6));
         }
     }
