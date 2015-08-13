@@ -282,6 +282,57 @@ _filterCornersWithoutMinMarkers(const CharucoBoard &board,
 
 
 /**
+  * ParallelLoopBody class for the parallelization of the charuco corners subpixel refinement
+  * Called from function _selectAndRefineChessboardCorners()
+  */
+class CharucoSubpixelParallel : public ParallelLoopBody
+{
+public:
+    CharucoSubpixelParallel( const Mat *_grey,
+                             vector<Point2f> *_filteredChessboardImgPoints,
+                             vector<Size> *_filteredWinSizes,
+                             DetectorParameters *_params )
+        : grey(_grey),
+          filteredChessboardImgPoints(_filteredChessboardImgPoints),
+          filteredWinSizes(_filteredWinSizes),
+          params(_params) { }
+
+    void operator()( const cv::Range& range ) const
+    {
+        const int begin = range.start;
+        const int end = range.end;
+
+        for ( int i = begin; i<end; i++ )
+        {
+            vector<Point2f> in;
+            in.push_back((*filteredChessboardImgPoints)[i]);
+            cv::Size winSize = (*filteredWinSizes)[i];
+            if(winSize.height == -1 || winSize.width == -1)
+                winSize = cv::Size(params->cornerRefinementWinSize,
+                                   params->cornerRefinementWinSize);
+
+            cornerSubPix(*grey, in, winSize, cv::Size(),
+                         cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                        params->cornerRefinementMaxIterations,
+                                        params->cornerRefinementMinAccuracy));
+
+            (*filteredChessboardImgPoints)[i] = in[0];
+        }
+    }
+
+private:
+    CharucoSubpixelParallel& operator=(const CharucoSubpixelParallel&); // to quiet MSVC
+
+    const Mat *grey;
+    vector<Point2f> *filteredChessboardImgPoints;
+    vector<Size> *filteredWinSizes;
+    DetectorParameters *params;
+};
+
+
+
+
+/**
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
   * refinement. Returns number of valid corners.
   */
@@ -318,25 +369,25 @@ _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
        _image.getMat().copyTo(grey);
 
     DetectorParameters params; // use default params for corner refinement
-    for(unsigned int i=0; i<filteredChessboardImgPoints.size(); i++) {
-        vector<Point2f> in;
-        in.push_back(filteredChessboardImgPoints[i]);
-        cv::Size winSize = filteredWinSizes[i];
-        if(winSize.height == -1 || winSize.width == -1)
-            winSize = cv::Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
 
-        cornerSubPix(grey, in,
-                     winSize,
-                     cv::Size(),
-                     cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                    params.cornerRefinementMaxIterations,
-                                    params.cornerRefinementMinAccuracy));
+    //// For each of the charuco corners, apply subpixel refinement
+    //for(unsigned int i=0; i<filteredChessboardImgPoints.size(); i++) {
+    //    vector<Point2f> in;
+    //    in.push_back(filteredChessboardImgPoints[i]);
+    //    cv::Size winSize = filteredWinSizes[i];
+    //    if(winSize.height == -1 || winSize.width == -1)
+    //        winSize = cv::Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
+    //    cornerSubPix(grey, in, winSize, cv::Size(),
+    //                 cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+    //                                params.cornerRefinementMaxIterations,
+    //                                params.cornerRefinementMinAccuracy));
+    //    filteredChessboardImgPoints[i] = in[0];
+    //}
 
-        filteredChessboardImgPoints[i] = in[0];
-
-    }
-
-
+    // this is the parallel call for the previous commented loop (result is equivalent)
+    parallel_for_(Range(0, filteredChessboardImgPoints.size()),
+                  CharucoSubpixelParallel(&grey, &filteredChessboardImgPoints, &filteredWinSizes,
+                                          &params));
 
     // parse output
     _selectedCorners.create((int)filteredChessboardImgPoints.size(), 1, CV_32FC2);
@@ -465,7 +516,6 @@ _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputArray
     CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
     CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
               _markerIds.getMat().total() > 0);
-
 
     unsigned int nMarkers = (unsigned int)_markerIds.getMat().total();
     vector<Mat> transformations;
