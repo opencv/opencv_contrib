@@ -86,21 +86,21 @@ namespace cv{
     /*
     * KCF functions and vars
     */
-    void createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const;
-    void inline fft2(const Mat src, std::vector<Mat> & _dest, std::vector<Mat> & _layers) const;
-    void inline fft2(const Mat src, Mat & _dest) const;
+    void createHanningWindow(OutputArray dest, const cv::Size winSize, const int type) const;
+    void inline fft2(const Mat src, std::vector<Mat> & dest, std::vector<Mat> & layers_data) const;
+    void inline fft2(const Mat src, Mat & dest) const;
     void inline ifft2(const Mat src, Mat & dest) const;
     void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
     void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
-    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx,double pca_rate, int compressed_sz,
-                                       std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat _data_pca, Mat _new_cov, Mat w, Mat u, Mat v) const;
-    void inline compress(const Mat _proj_mtx, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
+    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix,double pca_rate, int compressed_sz,
+                                       std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat v) const;
+    void inline compress(const Mat proj_matrix, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc = GRAY) const;
-    void extractCN(Mat _patch, Mat & cnFeatures) const;
-    void denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k,
-                          std::vector<Mat> & _layers,std::vector<Mat> & _xf,std::vector<Mat> & _yf, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
-    void calcResponse(const Mat _alphaf, const Mat _kf, Mat & _response, Mat & _spec) const;
-    void calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _kf, Mat & _response, Mat & _spec, Mat & _spec2) const;
+    void extractCN(Mat patch_data, Mat & cnFeatures) const;
+    void denseGaussKernel(const double sigma, const Mat , const Mat y_data, Mat & k_data,
+                          std::vector<Mat> & layers_data,std::vector<Mat> & xf_data,std::vector<Mat> & yf_data, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
+    void calcResponse(const Mat alphaf_data, const Mat kf_data, Mat & response_data, Mat & spec_data) const;
+    void calcResponse(const Mat alphaf_data, const Mat alphaf_den_data, const Mat kf_data, Mat & response_data, Mat & spec_data, Mat & spec2_data) const;
 
     void shiftRows(Mat& mat) const;
     void shiftRows(Mat& mat, int n) const;
@@ -110,7 +110,7 @@ namespace cv{
     double output_sigma;
     Rect2d roi;
     Mat hann; 	//hann window filter
-    Mat hann_cn;
+    Mat hann_cn; //10 dimensional hann-window filter for CN features,
 
     Mat y,yf; 	// training response and its FFT
     Mat x; 	// observation and its FFT
@@ -126,10 +126,10 @@ namespace cv{
     Mat spec, spec2;
     std::vector<Mat> layers;
     std::vector<Mat> vxf,vyf,vxyf;
-    Mat _xy,_xyf;
-    Mat _data, _compress;
-    std::vector<Mat> _layers_pca;
-    std::vector<Scalar> _average;
+    Mat xy_data,xyf_data;
+    Mat data_temp, compress_data;
+    std::vector<Mat> layers_pca_data;
+    std::vector<Scalar> average_data;
     Mat img_Patch;
 
     // storage for the extracted features, KRLS model, KRLS compressed model
@@ -142,7 +142,7 @@ namespace cv{
     std::vector<MODE> descriptors_npca;
 
     // optimization variables for updateProjectionMatrix
-    Mat data_pca, new_covar,_w,_u,_vt;
+    Mat data_pca, new_covar,w_data,u_data,vt_data;
 
     bool resizeImage; // resize the image whenever needed and the patch size is large
 
@@ -277,8 +277,8 @@ namespace cv{
 
       //compress the features and the KRSL model
       if(params.desc_pca !=0){
-        compress(proj_mtx,X[0],X[0],_data,_compress);
-        compress(proj_mtx,Z[0],Zc[0],_data,_compress);
+        compress(proj_mtx,X[0],X[0],data_temp,compress_data);
+        compress(proj_mtx,Z[0],Zc[0],data_temp,compress_data);
       }
 
       // copy the compressed KRLS model
@@ -297,7 +297,7 @@ namespace cv{
       }
 
       //compute the gaussian kernel
-      denseGaussKernel(params.sigma,x,z,k,layers,vxf,vyf,vxyf,_xy,_xyf);
+      denseGaussKernel(params.sigma,x,z,k,layers,vxf,vyf,vxyf,xy_data,xyf_data);
 
       // compute the fourier transform of the kernel
       fft2(k,kf);
@@ -344,13 +344,13 @@ namespace cv{
     if(params.desc_pca !=0/*params.compress_feature*/ /*&& params.descriptor != GRAY*/){
       // initialize the vector of Mat variables
       if(frame==0){
-        _layers_pca.resize(Z[0].channels());
-        _average.resize(Z[0].channels());
+        layers_pca_data.resize(Z[0].channels());
+        average_data.resize(Z[0].channels());
       }
 
       // feature compression
-      updateProjectionMatrix(Z[0],old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,_layers_pca,_average,data_pca, new_covar,_w,_u,_vt);
-      compress(proj_mtx,X[0],X[0],_data,_compress);
+      updateProjectionMatrix(Z[0],old_cov_mtx,proj_mtx,params.pca_learning_rate,params.compressed_size,layers_pca_data,average_data,data_pca, new_covar,w_data,u_data,vt_data);
+      compress(proj_mtx,X[0],X[0],data_temp,compress_data);
     }
 
     // merge all features
@@ -371,7 +371,7 @@ namespace cv{
     }
 
     // Kernel Regularized Least-Squares, calculate alphas
-    denseGaussKernel(params.sigma,x,x,k,layers,vxf,vyf,vxyf,_xy,_xyf);
+    denseGaussKernel(params.sigma,x,x,k,layers,vxf,vyf,vxyf,xy_data,xyf_data);
 
     // compute the fourier transform of the kernel and add a small value
     fft2(k,kf);
@@ -415,11 +415,11 @@ namespace cv{
   /*
    * hann window filter
    */
-  void TrackerKCFImpl::createHanningWindow(OutputArray _dst, const cv::Size winSize, const int type) const {
+  void TrackerKCFImpl::createHanningWindow(OutputArray dest, const cv::Size winSize, const int type) const {
       CV_Assert( type == CV_32FC1 || type == CV_64FC1 );
 
-      _dst.create(winSize, type);
-      Mat dst = _dst.getMat();
+      dest.create(winSize, type);
+      Mat dst = dest.getMat();
 
       int rows = dst.rows, cols = dst.cols;
 
@@ -453,15 +453,15 @@ namespace cv{
   /*
    * simplification of fourier transform function in opencv
    */
-  void inline TrackerKCFImpl::fft2(const Mat src, Mat & _dest) const {
-    dft(src,_dest,DFT_COMPLEX_OUTPUT);
+  void inline TrackerKCFImpl::fft2(const Mat src, Mat & dest) const {
+    dft(src,dest,DFT_COMPLEX_OUTPUT);
   }
 
-  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & _dest, std::vector<Mat> & _layers) const {
-    split(src, _layers);
+  void inline TrackerKCFImpl::fft2(const Mat src, std::vector<Mat> & dest, std::vector<Mat> & layers_data) const {
+    split(src, layers_data);
 
     for(int i=0;i<src.channels();i++){
-      dft(_layers[i],_dest[i],DFT_COMPLEX_OUTPUT);
+      dft(layers_data[i],dest[i],DFT_COMPLEX_OUTPUT);
     }
   }
 
@@ -494,8 +494,8 @@ namespace cv{
   /*
    * obtains the projection matrix using PCA
    */
-  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  _proj_mtx, double pca_rate, int compressed_sz,
-                                                     std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat _data_pca, Mat _new_cov, Mat w, Mat u, Mat vt) const {
+  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix, double pca_rate, int compressed_sz,
+                                                     std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat vt) const {
     CV_Assert(compressed_sz<=src.channels());
 
     split(src,layers_pca);
@@ -506,33 +506,33 @@ namespace cv{
     }
 
     // calc covariance matrix
-    merge(layers_pca,_data_pca);
-    _data_pca=_data_pca.reshape(1,src.rows*src.cols);
+    merge(layers_pca,pca_data);
+    pca_data=pca_data.reshape(1,src.rows*src.cols);
 
-    _new_cov=1.0/(double)(src.rows*src.cols-1)*(_data_pca.t()*_data_pca);
-    if(old_cov.rows==0)old_cov=_new_cov.clone();
+    new_cov=1.0/(double)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
+    if(old_cov.rows==0)old_cov=new_cov.clone();
 
     // calc PCA
-    SVD::compute((1.0-pca_rate)*old_cov+pca_rate*_new_cov, w, u, vt);
+    SVD::compute((1.0-pca_rate)*old_cov+pca_rate*new_cov, w, u, vt);
 
     // extract the projection matrix
-    _proj_mtx=u(Rect(0,0,compressed_sz,src.channels())).clone();
-    Mat proj_vars=Mat::eye(compressed_sz,compressed_sz,_proj_mtx.type());
+    proj_matrix=u(Rect(0,0,compressed_sz,src.channels())).clone();
+    Mat proj_vars=Mat::eye(compressed_sz,compressed_sz,proj_matrix.type());
     for(int i=0;i<compressed_sz;i++){
       proj_vars.at<double>(i,i)=w.at<double>(i);
     }
 
     // update the covariance matrix
-    old_cov=(1.0-pca_rate)*old_cov+pca_rate*_proj_mtx*proj_vars*_proj_mtx.t();
+    old_cov=(1.0-pca_rate)*old_cov+pca_rate*proj_matrix*proj_vars*proj_matrix.t();
   }
 
   /*
    * compress the features
    */
-  void inline TrackerKCFImpl::compress(const Mat _proj_mtx, const Mat src, Mat & dest, Mat & data, Mat & compressed) const {
+  void inline TrackerKCFImpl::compress(const Mat proj_matrix, const Mat src, Mat & dest, Mat & data, Mat & compressed) const {
     data=src.reshape(1,src.rows*src.cols);
-    compressed=data*_proj_mtx;
-    dest=compressed.reshape(_proj_mtx.cols,src.rows).clone();
+    compressed=data*proj_matrix;
+    dest=compressed.reshape(proj_matrix.cols,src.rows).clone();
   }
 
   /*
@@ -571,7 +571,12 @@ namespace cv{
 
     // extract the desired descriptors
     switch(desc){
-      default:
+      case CN:
+        CV_Assert(img.channels() == 3);
+        extractCN(patch,feat);
+        feat=feat.mul(hann_cn); // hann window filter
+        break;
+      default: // GRAY
         if(img.channels()>1)
           cvtColor(patch,feat, CV_BGR2GRAY);
         else
@@ -579,11 +584,6 @@ namespace cv{
         feat.convertTo(feat,CV_64F);
         feat=feat/255.0-0.5; // normalize to range -0.5 .. 0.5
         feat=feat.mul(hann); // hann window filter
-        break;
-      case CN:
-        CV_Assert(img.channels() == 3);
-        extractCN(patch,feat);
-        feat=feat.mul(hann_cn); // hann window filter
         break;
     }
 
@@ -593,16 +593,16 @@ namespace cv{
 
   /* Convert BGR to ColorNames
    */
-  void TrackerKCFImpl::extractCN(Mat _patch, Mat & cnFeatures) const {
-    Vec3b & pixel = _patch.at<Vec3b>(0,0);
+  void TrackerKCFImpl::extractCN(Mat patch_data, Mat & cnFeatures) const {
+    Vec3b & pixel = patch_data.at<Vec3b>(0,0);
     unsigned index;
 
     if(cnFeatures.type() != CV_64FC(10))
-      cnFeatures = Mat::zeros(_patch.rows,_patch.cols,CV_64FC(10));
+      cnFeatures = Mat::zeros(patch_data.rows,patch_data.cols,CV_64FC(10));
 
-    for(int i=0;i<_patch.rows;i++){
-      for(int j=0;j<_patch.cols;j++){
-        pixel=_patch.at<Vec3b>(i,j);
+    for(int i=0;i<patch_data.rows;i++){
+      for(int j=0;j<patch_data.cols;j++){
+        pixel=patch_data.at<Vec3b>(i,j);
         index=(unsigned)(floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8));
 
         //copy the values
@@ -617,29 +617,29 @@ namespace cv{
   /*
    *  dense gauss kernel function
    */
-  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat _x, const Mat _y, Mat & _k,
-                                        std::vector<Mat> & _layers,std::vector<Mat> & _xf,std::vector<Mat> & _yf, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const {
+  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat x_data, const Mat y_data, Mat & k_data,
+                                        std::vector<Mat> & layers_data,std::vector<Mat> & xf_data,std::vector<Mat> & yf_data, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const {
     double normX, normY;
 
-    fft2(_x,_xf,_layers);
-    fft2(_y,_yf,_layers);
+    fft2(x_data,xf_data,layers_data);
+    fft2(y_data,yf_data,layers_data);
 
-    normX=norm(_x);
+    normX=norm(x_data);
     normX*=normX;
-    normY=norm(_y);
+    normY=norm(y_data);
     normY*=normY;
 
-    pixelWiseMult(_xf,_yf,xyf_v,0,true);
+    pixelWiseMult(xf_data,yf_data,xyf_v,0,true);
     sumChannels(xyf_v,xyf);
     ifft2(xyf,xyf);
 
     if(params.wrap_kernel){
-      shiftRows(xyf, _x.rows/2);
-      shiftCols(xyf, _x.cols/2);
+      shiftRows(xyf, x_data.rows/2);
+      shiftCols(xyf, x_data.cols/2);
     }
 
     //(xx + yy - 2 * xy) / numel(x)
-    xy=(normX+normY-2*xyf)/(_x.rows*_x.cols*_x.channels());
+    xy=(normX+normY-2*xyf)/(x_data.rows*x_data.cols*x_data.channels());
 
     // TODO: check wether we really need thresholding or not
     //threshold(xy,xy,0.0,0.0,THRESH_TOZERO);//max(0, (xx + yy - 2 * xy) / numel(x))
@@ -651,7 +651,7 @@ namespace cv{
 
     double sig=-1.0/(sigma*sigma);
     xy=sig*xy;
-    exp(xy,_k);
+    exp(xy,k_data);
 
   }
 
@@ -709,32 +709,32 @@ namespace cv{
   /*
    * calculate the detection response
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _kf, Mat & _response, Mat & _spec) const {
+  void TrackerKCFImpl::calcResponse(const Mat alphaf_data, const Mat kf_data, Mat & response_data, Mat & spec_data) const {
     //alpha f--> 2channels ; k --> 1 channel;
-    mulSpectrums(_alphaf,_kf,_spec,0,false);
-    ifft2(spec,_response);
+    mulSpectrums(alphaf_data,kf_data,spec_data,0,false);
+    ifft2(spec_data,response_data);
   }
 
   /*
    * calculate the detection response for splitted form
    */
-  void TrackerKCFImpl::calcResponse(const Mat _alphaf, const Mat _alphaf_den, const Mat _kf, Mat & _response, Mat & _spec, Mat & _spec2) const {
+  void TrackerKCFImpl::calcResponse(const Mat alphaf_data, const Mat _alphaf_den, const Mat kf_data, Mat & response_data, Mat & spec_data, Mat & spec2_data) const {
 
-    mulSpectrums(_alphaf,_kf,_spec,0,false);
+    mulSpectrums(alphaf_data,kf_data,spec_data,0,false);
 
     //z=(a+bi)/(c+di)=[(ac+bd)+i(bc-ad)]/(c^2+d^2)
     double den;
-    for(int i=0;i<_kf.rows;i++){
-      for(int j=0;j<_kf.cols;j++){
+    for(int i=0;i<kf_data.rows;i++){
+      for(int j=0;j<kf_data.cols;j++){
         den=1.0/(_alphaf_den.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+_alphaf_den.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1]);
-        _spec2.at<Vec2d>(i,j)[0]=
-          (_spec.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+_spec.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
-        _spec2.at<Vec2d>(i,j)[1]=
-          (_spec.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[0]-_spec.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
+        spec2_data.at<Vec2d>(i,j)[0]=
+          (spec_data.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+spec_data.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
+        spec2_data.at<Vec2d>(i,j)[1]=
+          (spec_data.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[0]-spec_data.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
       }
     }
 
-    ifft2(_spec2,_response);
+    ifft2(spec2_data,response_data);
   }
   /*----------------------------------------------------------------------*/
 
