@@ -73,21 +73,19 @@ int main( int argc, char** argv )
     fs["projectorHeight"] >> projSize.height;
     fs["useOpenni"] >> useOpenni;
 
-    Mat projectorPixels;
+    Mat projectorPixels, cameraPixels;
     {
         Mat correspondenceMapX, correspondenceMapY;
         correspondenceMapX = imread("correspondenceX.png");
         correspondenceMapY = imread("correspondenceY.png");
-        camSize = correspondenceMapX.size();
 
+        camSize = correspondenceMapX.size();
         projectorPixels = Mat::zeros(correspondenceMapX.size(), CV_32SC2);
+        cameraPixels = Mat::zeros(projSize, CV_32SC2);
         for (int i = 0; i < camSize.height; i++)
         {
             for (int j = 0; j < camSize.width; j++)
             {
-//                if (frame->mask.at<uchar>(i, j) == 0)
-//                    continue;
-
                 Vec3b sx = correspondenceMapX.at<Vec3b>(i, j);
                 Vec3b sy = correspondenceMapY.at<Vec3b>(i, j);
                 int x = (int)sx[1] * 256 + (int)sx[2];
@@ -102,10 +100,58 @@ int main( int argc, char** argv )
                 else
                 {
                     projectorPixels.at<Point2i>(i, j) = Point2i(x, y);
+                    cameraPixels.at<Point2i>(y, x) = Point2i(j, i);
                 }
             }
         }
+#if 1
+        // eliminate non smooth points
+        for (int i = 1; i < camSize.height - 1; i++)
+        {
+            for (int j = 1; j < camSize.width - 1; j++)
+            {
+                Point2i & p = projectorPixels.at<Point2i>(i, j);
+                if (p.x < 0 || p.y < 0)
+                {
+                    continue;
+                }
+                // look for 8 neighbors
+                int count = 0;
+                float avgx = 0;
+                float avgy = 0;
+                for (int dy = -2; dy <= 2; dy++)
+                {
+                    for (int dx = -2; dx <= 2; dx++)
+                    {
+                        Point2i & pt = projectorPixels.at<Point2i>(i + dy, j + dx);
+                        if (pt.x < 0 || pt.y < 0)
+                        {
+                            continue;
+                        }
+                        avgx += pt.x;
+                        avgy += pt.y;
+                        count++;
+                    }
+                }
 
+                if (count < 10)
+                {
+                    // not enough samples, skip
+                    p.x = -1; p.y = -1;
+                }
+                else
+                {
+                    avgx /= count;
+                    avgy /= count;
+                    if (norm(Point2f(p.x - avgx, p.y - avgy)) > 3)
+                    {
+                        // too far, skip
+                        p.x = -1; p.y = -1;
+                    }
+                }
+            }
+        }
+#endif
     }
 
     Mat image, depth;
@@ -176,6 +222,54 @@ int main( int argc, char** argv )
         // generate valid point mask for clusters
         compare(frame->depth, 0, frame->mask, CMP_GT);
 
+        // eliminate depth discontinuity
+        for (int i = 1; i < camSize.height - 1; i++)
+        {
+            for (int j = 1; j < camSize.width - 1; j++)
+            {
+                float p = frame->depth.at<float>(i, j);
+                if (frame->mask.at<uchar>(i, j) == 0)
+                {
+                    continue;
+                }
+                // look for 8 neighbors
+                int count = 0;
+                float avg = 0;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        float pt = frame->depth.at<float>(i + dy, j + dx);
+                        if (pt == 0)
+                        {
+                            continue;
+                        }
+                        avg += pt;
+                        count++;
+                    }
+                }
+
+                if (count < 5)
+                {
+                    // not enough samples
+                    frame->mask.at<uchar>(i, j) = 0;
+                    frame->depth.at<float>(i, j) = 0;
+                    frame->points3d.at<Point3f>(i, j) = Point3f(0, 0, 0);
+                }
+                else
+                {
+                    avg /= count;
+                    if (abs(p - avg) > 0.005f) // [m]
+                    {
+                        // too far
+                        frame->mask.at<uchar>(i, j) = 0;
+                        frame->depth.at<float>(i, j) = 0;
+                        frame->points3d.at<Point3f>(i, j) = Point3f(0, 0, 0);
+                    }
+                }
+            }
+        }
+
         imshow("depth", frame->points3d);
         waitKey(30);
 
@@ -185,10 +279,6 @@ int main( int argc, char** argv )
         deleteEmptyClusters(clusters);
 
         for (std::size_t i = 0; i < clusters.size(); i++) {
-            Mat labels;
-            Mat stats;
-            Mat centroids;
-
             if (clusters.at(i).bPlane) {
                 stringstream ss;
                 ss << "cluster" << i;
@@ -196,19 +286,65 @@ int main( int argc, char** argv )
                 clusters.at(i).increment_step = 2;
                 clusters.at(i).projectorPixels = projectorPixels;
                 clusters.at(i).calculatePoints(true);
-                clusters.at(i).unwrapTexCoord();
-                clusters.at(i).save(ss.str() + ".obj");
+                //clusters.at(i).unwrapTexCoord();
+                //clusters.at(i).save(ss.str() + ".obj");
                 imshow(ss.str(), clusters.at(i).silhouette * 255);
                 continue;
             }
 
             vector<RgbdClusterMesh> smallClusters;
-            euclideanClustering(clusters.at(i), smallClusters);
+            //euclideanClustering(clusters.at(i), smallClusters);
+            Mat projectorLabels, stats, centroids;
+            int minArea = 1000;
+            // convert camera space silhouette to projector space
+            Mat projectorSilhouette = Mat::zeros(cameraPixels.size(), CV_8U);
+            Mat & cameraSilhouette = clusters.at(i).silhouette;
+            for (int i = 0; i < cameraSilhouette.rows; i++)
+            {
+                for (int j = 0; j < cameraSilhouette.cols; j++)
+                {
+                    Point2i & p = projectorPixels.at<Point2i>(i, j);
+                    if (cameraSilhouette.at<uchar>(i, j) > 0 && p.x >= 0 && p.y >= 0)
+                    {
+                        projectorSilhouette.at<uchar>(p) = 255;
+                    }
+                }
+            }
+            Mat kernel = Mat::ones(7, 7, CV_32S);
+            dilate(projectorSilhouette, projectorSilhouette, kernel);
+            connectedComponentsWithStats(projectorSilhouette, projectorLabels, stats, centroids, 8);
+            Mat labels = Mat::zeros(cameraSilhouette.size(), CV_32S);
+            // return to camera space
+            for (int i = 0; i < projectorSilhouette.rows; i++)
+            {
+                for (int j = 0; j < projectorSilhouette.cols; j++)
+                {
+                    int label = projectorLabels.at<int>(i, j);
+                    if (label > 0)
+                    {
+                        labels.at<int>(cameraPixels.at<Point2i>(i, j)) = label;
+                    }
+                }
+            }
+            imshow("silhouette", projectorSilhouette);
+            for (int label = 1; label < stats.rows; label++)
+            { // 0: background label
+                if (stats.at<int>(label, CC_STAT_AREA) >= minArea)
+                {
+                    smallClusters.push_back(RgbdClusterMesh(clusters.at(i).rgbdFrame));
+                    RgbdClusterMesh& cluster = smallClusters.back();
+                    compare(labels, label, cluster.silhouette, CMP_EQ);
+                    cluster.roi = Rect(0, 0, cameraSilhouette.cols, cameraSilhouette.rows);
+                    //cluster.roi = Rect(stats.at<int>(label, CC_STAT_LEFT), stats.at<int>(label, CC_STAT_TOP),
+                    //    stats.at<int>(label, CC_STAT_WIDTH), stats.at<int>(label, CC_STAT_HEIGHT));
+                    cluster.calculatePoints();
+                }
+            }
+            
             //deleteEmptyClusters(smallClusters);
             for (std::size_t j = 0; j < smallClusters.size(); j++) {
                 stringstream ss;
                 ss << "mesh_" << i << "_" << j;
-                imshow(ss.str(), smallClusters.at(j).silhouette * 255);
 
                 // no downsample
                 smallClusters.at(j).increment_step = 1;
@@ -220,6 +356,7 @@ int main( int argc, char** argv )
                 }
                 smallClusters.at(j).unwrapTexCoord();
                 smallClusters.at(j).save(ss.str() + ".obj");
+                imshow(ss.str(), smallClusters.at(j).silhouette * 255);
                 ss << "_tex";
                 smallClusters.at(j).save(ss.str() + ".obj", true);
             }

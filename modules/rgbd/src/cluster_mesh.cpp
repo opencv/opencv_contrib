@@ -90,10 +90,19 @@ namespace rgbd
             if (!faceRoi.contains(p0) || !faceRoi.contains(p1) || !faceRoi.contains(p2))
                 continue;
 
-            int v0 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[1]), cvRound(triangleList.at(i)[0]));
-            int v1 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[3]), cvRound(triangleList.at(i)[2]));
-            int v2 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[5]), cvRound(triangleList.at(i)[4]));
+            int v0 = correspondenceMapPro.at<int>(cvRound(p0.y), cvRound(p0.x));
+            int v1 = correspondenceMapPro.at<int>(cvRound(p1.y), cvRound(p1.x));
+            int v2 = correspondenceMapPro.at<int>(cvRound(p2.y), cvRound(p2.x));
             
+/*            // eliminate too big triangles
+            float distanceThreshold = 50; // [mm]
+            if (norm(points.at(v0).world_xyz - points.at(v1).world_xyz) > distanceThreshold
+                || norm(points.at(v1).world_xyz - points.at(v2).world_xyz) > distanceThreshold
+                || norm(points.at(v2).world_xyz - points.at(v0).world_xyz) > distanceThreshold)
+            {
+                continue;
+            }*/
+
             faceIndices.push_back(v0);
             faceIndices.push_back(v1);
             faceIndices.push_back(v2);
@@ -218,9 +227,18 @@ namespace rgbd
 
             Point2f z0, z1, z2;
             Point3f p0, p1, p2;
-            p0 = points.at(idx0).world_xyz;
-            p1 = points.at(idx1).world_xyz;
-            p2 = points.at(idx2).world_xyz;
+            p0.x = points.at(idx0).projector_xy.x;
+            p0.y = points.at(idx0).projector_xy.y;
+            p0.z = points.at(idx0).world_xyz.z * 1000;
+            p1.x = points.at(idx1).projector_xy.x;
+            p1.y = points.at(idx1).projector_xy.y;
+            p1.z = points.at(idx1).world_xyz.z * 1000;
+            p2.x = points.at(idx2).projector_xy.x;
+            p2.y = points.at(idx2).projector_xy.y;
+            p2.z = points.at(idx2).world_xyz.z * 1000;
+            //p0 = points.at(idx0).world_xyz;
+            //p1 = points.at(idx1).world_xyz;
+            //p2 = points.at(idx2).world_xyz;
             project_triangle(p0, p1, p2, z0, z1, z2);
 
             Point2f z01 = z1 - z0;
@@ -339,7 +357,7 @@ namespace rgbd
             for (std::size_t i = 0; i < points.size(); i++)
             {
                 Point2f & vt = points.at(i).texture_uv;
-                fs << "vt " << vt.x << " " << vt.y << std::endl;
+                fs << "vt " << vt.x << " " << -vt.y << std::endl;
             }
 
             for (std::size_t i = 0; i < faceIndices.size(); i += 3)
@@ -349,12 +367,11 @@ namespace rgbd
                 int i1 = faceIndices.at(i + 2);
 
                 float distanceThreshold = 10; // [px]
-                distanceThreshold;// *= distanceThreshold;
                 if (norm(points.at(i0).projector_xy - points.at(i1).projector_xy) > distanceThreshold
                     || norm(points.at(i1).projector_xy - points.at(i2).projector_xy) > distanceThreshold
                     || norm(points.at(i2).projector_xy - points.at(i0).projector_xy) > distanceThreshold)
                 {
-                    continue;
+                    //continue;
                 }
 
                 fs << "f " << i0 + 1 << "/" << i0 + 1
