@@ -181,7 +181,7 @@ void multiCameraCalibration::loadImages()
 
         // calibrate
         Mat idx;
-        double rms;
+        double rms = 0.0;
         if (_camType == PINHOLE)
         {
             rms = cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
