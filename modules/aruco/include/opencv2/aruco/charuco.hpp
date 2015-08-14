@@ -273,8 +273,6 @@ CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
  * @param diamondIds ids of the diamonds in diamondCorners. The id of each diamond is in fact of
  * type Vec4i, so each diamond has 4 ids, which are the ids of the aruco markers composing the
  * diamond.
- * @param minRepDistance minimum reprojection distance error when trying to find the diamond
- * structure among the set of detected markers.
  * @param cameraMatrix Optional camera calibration matrix.
  * @param distCoeffs Optional camera distortion coefficients.
  *
@@ -286,7 +284,6 @@ CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
 CV_EXPORTS void detectCharucoDiamond(InputArray image, InputArrayOfArrays markerCorners,
                                      InputArray markerIds, float squareMarkerLengthRate,
                                      OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
-                                     float minRepDistance = 20.f,
                                      InputArray cameraMatrix = noArray(),
                                      InputArray distCoeffs = noArray());
 
