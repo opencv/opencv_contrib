@@ -45,6 +45,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <iostream>
+
 
 namespace cv {
 namespace aruco {
@@ -64,7 +66,7 @@ DetectorParameters::DetectorParameters() : adaptiveThreshWinSizeMin(21),
                                            adaptiveThreshConstant(7),
                                            minMarkerPerimeterRate(0.03),
                                            maxMarkerPerimeterRate(4.),
-                                           polygonalApproxAccuracyRate(0.05),
+                                           polygonalApproxAccuracyRate(0.03),
                                            minCornerDistance(10),
                                            minDistanceToBorder(3),
                                            minMarkerDistance(10),
@@ -345,6 +347,7 @@ _detectInitialCandidates(const cv::Mat &grey, vector<vector<Point2f> > &candidat
             / params.adaptiveThreshWinSizeStep + 1;
 
 
+    // if only one scale
     if(nScales == 1) {
         // for each value in the interval of thresholding window sizes
         for(int scale = params.adaptiveThreshWinSizeMin; scale <= params.adaptiveThreshWinSizeMax;
@@ -368,6 +371,7 @@ _detectInitialCandidates(const cv::Mat &grey, vector<vector<Point2f> > &candidat
 
         }
     }
+    // if more than one scale, do it in parallel
     else {
 
         vector< vector<vector<Point2f> > > candidatesArrays(nScales);
@@ -1522,7 +1526,7 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                                                                 false);
             }
 
-            if(errorCorrectionRate < 0 || codeDistance > maxCorrectionRecalculated) {
+            if(errorCorrectionRate < 0 || codeDistance < maxCorrectionRecalculated) {
                 closestCandidateIdx = j;
                 closestCandidateRot = validRot;
                 closestCandidateDistance = minDistance;
