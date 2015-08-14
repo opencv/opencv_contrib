@@ -264,9 +264,9 @@ void CV_ArucoDetectionPerspective::run(int) {
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
     aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-    for(double distance = 0.1; distance <= 0.5; distance += 0.1) {
-        for(int pitch = 0; pitch < 360; pitch+=20) {
-            for(int yaw = 30; yaw <=90; yaw+=20) {
+    for(double distance = 0.1; distance <= 0.5; distance += 0.2) {
+        for(int pitch = 0; pitch < 360; pitch+=60) {
+            for(int yaw = 30; yaw <=90; yaw+=50) {
                 int currentId = iter % 250;
                 int markerBorder = iter%2+1;
                 iter ++;
@@ -310,6 +310,75 @@ void CV_ArucoDetectionPerspective::run(int) {
 
 
 
+class CV_ArucoDetectionMarkerSize : public cvtest::BaseTest
+{
+public:
+    CV_ArucoDetectionMarkerSize();
+protected:
+    void run(int);
+};
+
+
+
+CV_ArucoDetectionMarkerSize::CV_ArucoDetectionMarkerSize() {}
+
+
+void CV_ArucoDetectionMarkerSize::run(int) {
+
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    int markerSide = 20;
+    int imageSize = 200;
+
+    for(int i=0; i<10; i++) {
+        Mat marker;
+        int id = 10 + i*20;
+
+        Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
+        aruco::drawMarker(dictionary, id, markerSide, marker);
+        Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
+        marker.copyTo(aux);
+
+        vector< vector<Point2f> > corners;
+        vector< int > ids;
+        aruco::DetectorParameters params;
+
+        params.minMarkerPerimeterRate = std::min(4., (4.*markerSide)/float(imageSize) + 0.1);
+        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        if(corners.size() != 0) {
+            ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::minMarkerPerimeterRate" );
+            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+            return;
+        }
+
+        params.minMarkerPerimeterRate = std::max(0., (4.*markerSide)/float(imageSize) - 0.1);
+        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id) {
+            ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::minMarkerPerimeterRate" );
+            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+            return;
+        }
+
+        params.maxMarkerPerimeterRate = std::min(4., (4.*markerSide)/float(imageSize) - 0.1);
+        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        if(corners.size() != 0) {
+            ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::maxMarkerPerimeterRate" );
+            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+            return;
+        }
+
+        params.maxMarkerPerimeterRate = std::max(0., (4.*markerSide)/float(imageSize) + 0.1);
+        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id) {
+            ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::maxMarkerPerimeterRate" );
+            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+            return;
+        }
+    }
+
+}
+
+
+
 
 
 
@@ -320,5 +389,10 @@ TEST(CV_ArucoDetectionSimple, algorithmic) {
 
 TEST(CV_ArucoDetectionPerspective, algorithmic) {
     CV_ArucoDetectionPerspective test;
+    test.safe_run();
+}
+
+TEST(CV_ArucoDetectionMarkerSize, algorithmic) {
+    CV_ArucoDetectionMarkerSize test;
     test.safe_run();
 }

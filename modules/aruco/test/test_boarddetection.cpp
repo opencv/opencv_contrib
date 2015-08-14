@@ -182,9 +182,10 @@ void CV_ArucoBoardPose::run(int) {
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
-    for(double distance = 0.2; distance <= 0.4; distance += 0.1) {
-        for(int yaw = 0; yaw < 360; yaw+=20) {
-            for(int pitch = 30; pitch <=90; pitch+=20) {
+    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
+        for(int yaw = 0; yaw < 360; yaw+=100) {
+            for(int pitch = 30; pitch <=90; pitch+=50) {
                 for(unsigned int i=0; i<board.ids.size(); i++)
                     board.ids[i] = (iter+int(i))%250;
                 int markerBorder = iter%2+1;
@@ -209,7 +210,6 @@ void CV_ArucoBoardPose::run(int) {
                 }
 
                 Mat rvec, tvec;
-                Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
                 aruco::estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs,
                                              rvec, tvec);
 
@@ -252,8 +252,82 @@ void CV_ArucoBoardPose::run(int) {
 
 
 
+class CV_ArucoRefine : public cvtest::BaseTest
+{
+public:
+    CV_ArucoRefine();
+protected:
+    void run(int);
+};
+
+
+
+
+CV_ArucoRefine::CV_ArucoRefine() {}
+
+
+void CV_ArucoRefine::run(int) {
+
+    int iter = 0;
+    Mat cameraMatrix = Mat::eye(3,3, CV_64FC1);
+    Size imgSize(500,500);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::GridBoard board = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, dictionary);
+    cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
+    cameraMatrix.at<double>(0,2) = imgSize.width / 2;
+    cameraMatrix.at<double>(1,2) = imgSize.height / 2;
+    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
+        for(int yaw = 0; yaw < 360; yaw+=100) {
+            for(int pitch = 30; pitch <=90; pitch+=50) {
+                for(unsigned int i=0; i<board.ids.size(); i++)
+                    board.ids[i] = (iter+int(i))%250;
+                int markerBorder = iter%2+1;
+                iter ++;
+
+                Mat img = projectBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
+                                           distance, imgSize, markerBorder);
+
+
+                vector< vector<Point2f> > corners, rejected;
+                vector< int > ids;
+                aruco::DetectorParameters params;
+                params.minDistanceToBorder = 3;
+                params.doCornerRefinement = true;
+                params.markerBorderBits = markerBorder;
+                aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
+
+                int markersBeforeDelete = ids.size();
+                if(markersBeforeDelete<2) continue;
+
+                rejected.push_back(corners[0]);
+                corners.erase(corners.begin(), corners.begin()+1);
+                ids.erase(ids.begin(), ids.begin()+1);
+
+                aruco::refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
+                                             distCoeffs, 10, 3., true, cv::noArray(), params);
+
+                if(ids.size() < markersBeforeDelete) {
+                    ts->printf(cvtest::TS::LOG, "Error in refine detected markers" );
+                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                    return;
+                }
+            }
+        }
+    }
+
+
+}
+
+
+
 
 TEST(CV_ArucoBoardPose, accuracy) {
     CV_ArucoBoardPose test;
+    test.safe_run();
+}
+
+TEST(CV_ArucoRefine, accuracy) {
+    CV_ArucoRefine test;
     test.safe_run();
 }

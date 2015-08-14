@@ -237,9 +237,9 @@ void CV_CharucoDetection::run(int) {
 
     Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
 
-    for(double distance = 0.2; distance <= 0.4; distance += 0.1) {
-        for(int yaw = 0; yaw < 360; yaw+=20) {
-            for(int pitch = 30; pitch <=90; pitch+=20) {
+    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
+        for(int yaw = 0; yaw < 360; yaw+=100) {
+            for(int pitch = 30; pitch <=90; pitch+=50) {
 
                 int markerBorder = iter%2+1;
                 iter ++;
@@ -341,9 +341,9 @@ void CV_CharucoPoseEstimation::run(int) {
 
     Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
 
-    for(double distance = 0.2; distance <= 0.4; distance += 0.1) {
-        for(int yaw = 0; yaw < 360; yaw+=20) {
-            for(int pitch = 30; pitch <=90; pitch+=20) {
+    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
+        for(int yaw = 0; yaw < 360; yaw+=100) {
+            for(int pitch = 30; pitch <=90; pitch+=50) {
 
                 int markerBorder = iter%2+1;
                 iter ++;
