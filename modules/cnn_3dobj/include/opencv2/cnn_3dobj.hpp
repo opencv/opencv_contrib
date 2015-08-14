@@ -91,7 +91,7 @@ namespace cnn_3dobj
 
 The class create some sphere views of camera towards a 3D object meshed from .ply files @cite hinterstoisser2008panter .
 */
-    class CV_EXPORTS_W IcoSphere
+    class CV_EXPORTS_W icoSphere
     {
         private:
         float X;
@@ -104,7 +104,7 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
         std::vector<cv::Point3d> CameraPos_temp;
         float radius;
         float diff;
-        IcoSphere(float radius_in, int depth_in);
+        icoSphere(float radius_in, int depth_in);
         /** @brief Make all view points having the some distance from the focal point used by the camera view.
         */
         CV_WRAP void norm(float v[]);
@@ -116,7 +116,7 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
         CV_WRAP void subdivide(float v1[], float v2[], float v3[], int depth);
         /** @brief Make all view points having the some distance from the focal point used by the camera view.
         */
-        CV_WRAP static uint32_t swap_endian(uint32_t val);
+        CV_WRAP static uint32_t swapEndian(uint32_t val);
         /** @brief Suit the position of bytes in 4 byte data structure for particular system.
         */
         CV_WRAP cv::Point3d getCenter(cv::Mat cloud);
@@ -133,52 +133,47 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
         */
     };
 
-    class CV_EXPORTS_W DescriptorExtractor
+    class CV_EXPORTS_W descriptorExtractor
     {
         private:
         caffe::Net<float>* net_;
         cv::Size input_geometry_;
         int num_channels_;
         cv::Mat mean_;
-        std::vector<string> labels_;
-        void SetMean(const string& mean_file);
+        void setMean(const string& mean_file);
         /** @brief Load the mean file in binaryproto format.
         */
-        void WrapInputLayer(std::vector<cv::Mat>* input_channels);
+        void wrapInputLayer(std::vector<cv::Mat>* input_channels);
         /** @brief Wrap the input layer of the network in separate cv::Mat objects(one per channel). This way we save one memcpy operation and we don't need to rely on cudaMemcpy2D. The last preprocessing operation will write the separate channels directly to the input layer.
         */
-        void Preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels, bool mean_subtract);
+        void preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels, int net_ready);
         /** @brief Convert the input image to the input image format of the network.
         */
         public:
-        DescriptorExtractor();
-        void list_dir(const char *path,std::vector<string>& files,bool r);
+        std::vector<string> labels_;
+        descriptorExtractor();
+        void listDir(const char *path,std::vector<string>& files,bool r);
         /** @brief Get the file name from a root dictionary.
         */
-        bool SetNet(const string& cpu_only, int device_id);
+        bool setNet(const string& cpu_only, int device_id);
         /** @brief Initiate a classification structure.
         */
-        bool LoadNet(bool netsetter, const string& model_file, const string& trained_file, const string& mean_file);
+        int loadNet(bool netsetter, const string& model_file, const string& trained_file);
         /** @brief Initiate a classification structure.
         */
-        void GetLabellist(const std::vector<string>& name_gallery);
+        int loadNet(bool netsetter, const string& model_file, const string& trained_file, const string& mean_file);
+        /** @brief Initiate a classification structure.
+        */
+        void getLabellist(const std::vector<string>& name_gallery);
         /** @brief Get the label of the gallery images for result displaying in prediction.
         */
-        std::vector<std::pair<string, float> > Classify(const cv::Mat& reference, const cv::Mat& target, int N);
-        /** @brief Make a classification.
-        */
-        void Extract(bool net_ready, InputArray inputimg, OutputArray feature, bool mean_subtract, std::string feature_blob);
+        void extract(int net_ready, InputArray inputimg, OutputArray feature, std::string feature_blob);
         /** @brief Extract a single featrue of one image.
-        */
-        std::vector<int> Argmax(const std::vector<float>& v, int N);
-        /** @brief Find the N largest number.
         */
     };
     //! @}
 }
 }
-
-
 
 #endif /* CNN_3DOBJ_HPP_ */
 #endif

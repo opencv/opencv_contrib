@@ -6,7 +6,7 @@ namespace cv
 {
 namespace cnn_3dobj
 {
-    IcoSphere::IcoSphere(float radius_in, int depth_in)
+    icoSphere::icoSphere(float radius_in, int depth_in)
     {
 
         X = 0.5f;
@@ -35,7 +35,7 @@ namespace cnn_3dobj
         {
             for (int k = 0; k<j; k++)
             {
-                if (CameraPos.at(k).x-CameraPos.at(j).x<diff && CameraPos.at(k).y-CameraPos.at(j).y<diff && CameraPos.at(k).z-CameraPos.at(j).z<diff)
+                if (CameraPos.at(k).x-CameraPos.at(j).x < diff && CameraPos.at(k).y-CameraPos.at(j).y < diff && CameraPos.at(k).z-CameraPos.at(j).z < diff)
                     break;
                 if(k == j-1)
                     CameraPos_temp.push_back(CameraPos[j]);
@@ -49,7 +49,7 @@ namespace cnn_3dobj
             cout << CameraPos.at(i).x <<' '<< CameraPos.at(i).y << ' ' << CameraPos.at(i).z << endl;
         }
     };
-    void IcoSphere::norm(float v[])
+    void icoSphere::norm(float v[])
     {
         float len = 0;
         for (int i = 0; i < 3; ++i)
@@ -63,7 +63,7 @@ namespace cnn_3dobj
         }
     };
 
-    void IcoSphere::add(float v[])
+    void icoSphere::add(float v[])
     {
         Point3f temp_Campos;
         std::vector<float>* temp = new std::vector<float>;
@@ -77,7 +77,7 @@ namespace cnn_3dobj
         CameraPos.push_back(temp_Campos);
     };
 
-    void IcoSphere::subdivide(float v1[], float v2[], float v3[], int depth)
+    void icoSphere::subdivide(float v1[], float v2[], float v3[], int depth)
     {
         norm(v1);
         norm(v2);
@@ -107,13 +107,13 @@ namespace cnn_3dobj
         subdivide(v12, v23, v31, depth - 1);
     };
 
-    uint32_t IcoSphere::swap_endian(uint32_t val)
+    uint32_t icoSphere::swapEndian(uint32_t val)
     {
         val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
         return (val << 16) | (val >> 16);
     };
 
-    cv::Point3d IcoSphere::getCenter(cv::Mat cloud)
+    cv::Point3d icoSphere::getCenter(cv::Mat cloud)
     {
         Point3f* data = cloud.ptr<cv::Point3f>();
         Point3d dataout;
@@ -129,7 +129,7 @@ namespace cnn_3dobj
         return dataout;
     };
 
-    float IcoSphere::getRadius(cv::Mat cloud, cv::Point3d center)
+    float icoSphere::getRadius(cv::Mat cloud, cv::Point3d center)
     {
         float radiusCam = 0;
         Point3f* data = cloud.ptr<cv::Point3f>();
@@ -149,7 +149,7 @@ namespace cnn_3dobj
         return radiusCam;
     };
 
-    void IcoSphere::createHeader(int num_item, int rows, int cols, const char* headerPath)
+    void icoSphere::createHeader(int num_item, int rows, int cols, const char* headerPath)
     {
         char* a0 = (char*)malloc(1024);
         strcpy(a0, headerPath);
@@ -165,17 +165,17 @@ namespace cnn_3dobj
         std::ofstream headerLabel(headerPathlab, ios::out|ios::binary);
         int headerimg[4] = {2051,num_item,rows,cols};
         for (int i=0; i<4; i++)
-            headerimg[i] = swap_endian(headerimg[i]);
+            headerimg[i] = swapEndian(headerimg[i]);
         int headerlabel[2] = {2050,num_item};
         for (int i=0; i<2; i++)
-            headerlabel[i] = swap_endian(headerlabel[i]);
+            headerlabel[i] = swapEndian(headerlabel[i]);
         headerImg.write(reinterpret_cast<const char*>(headerimg), sizeof(int)*4);
         headerImg.close();
         headerLabel.write(reinterpret_cast<const char*>(headerlabel), sizeof(int)*2);
         headerLabel.close();
     };
 
-    void IcoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z)
+    void icoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z)
     {
         int isrgb = 0;
         cv::Mat ImgforBin = cv::imread(filenameImg, isrgb);

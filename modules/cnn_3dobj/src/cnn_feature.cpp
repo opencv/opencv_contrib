@@ -6,8 +6,8 @@ namespace cv
 {
 namespace cnn_3dobj
 {
-    DescriptorExtractor::DescriptorExtractor(){};
-    void DescriptorExtractor::list_dir(const char *path,vector<string>& files,bool r)
+    descriptorExtractor::descriptorExtractor(){};
+    void descriptorExtractor::listDir(const char *path,vector<string>& files,bool r)
     {
         DIR *pDir;
         struct dirent *ent;
@@ -25,7 +25,7 @@ namespace cnn_3dobj
                 if(r)
                 {
                     sprintf(childpath, "%s/%s", path, ent->d_name);
-                    DescriptorExtractor::list_dir(childpath,files,false);
+                    descriptorExtractor::listDir(childpath,files,false);
                 }
             }
             else
@@ -36,7 +36,7 @@ namespace cnn_3dobj
         sort(files.begin(),files.end());
     };
 
-    bool DescriptorExtractor::SetNet(const string& cpu_only, int device_id)
+    bool descriptorExtractor::setNet(const string& cpu_only, int device_id)
     {
         if (strcmp(cpu_only.c_str(), "CPU") == 0 || strcmp(cpu_only.c_str(), "GPU") == 0)
         {
@@ -59,9 +59,9 @@ namespace cnn_3dobj
         }
     };
 
-    bool DescriptorExtractor::LoadNet(bool netsetter, const string& model_file, const string& trained_file, const string& mean_file)
+    int descriptorExtractor::loadNet(bool netsetter, const string& model_file, const string& trained_file, const string& mean_file)
     {
-        bool net_ready = false;
+        int net_ready = 0;
         if (netsetter)
         {
             /* Load the network. */
@@ -77,58 +77,50 @@ namespace cnn_3dobj
                 std::cout << "Input layer should have 1 or 3 channels." << std::endl;
             input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
             /* Load the binaryproto mean file. */
-            SetMean(mean_file);
-            net_ready = true;
-            return net_ready;
+            setMean(mean_file);
+            net_ready = 2;
         }
         else
         {
             std::cout << "Error: Device must be set in advance using SetNet function" << std::endl;
-            return net_ready;
         }
+        return net_ready;
     };
 
-    void DescriptorExtractor::GetLabellist(const std::vector<string>& name_gallery)
+    int descriptorExtractor::loadNet(bool netsetter, const string& model_file, const string& trained_file)
+    {
+        int net_ready = 0;
+        if (netsetter)
+        {
+            /* Load the network. */
+            net_ = new Net<float>(model_file, TEST);
+            net_->CopyTrainedLayersFrom(trained_file);
+            if (net_->num_inputs() != 1)
+                std::cout << "Network should have exactly one input." << std::endl;
+            if (net_->num_outputs() != 1)
+                std::cout << "Network should have exactly one output." << std::endl;
+            Blob<float>* input_layer = net_->input_blobs()[0];
+            num_channels_ = input_layer->channels();
+            if (num_channels_ != 3 && num_channels_ != 1)
+                std::cout << "Input layer should have 1 or 3 channels." << std::endl;
+            input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
+            net_ready = 1;
+        }
+        else
+        {
+            std::cout << "Error: Device must be set in advance using SetNet function" << std::endl;
+        }
+        return net_ready;
+    };
+
+    void descriptorExtractor::getLabellist(const std::vector<string>& name_gallery)
     {
         for (unsigned int i = 0; i < name_gallery.size(); ++i)
             labels_.push_back(name_gallery[i]);
     };
 
-    /* Return the indices of the top N values of vector v. */
-    std::vector<int> DescriptorExtractor::Argmax(const std::vector<float>& v, int N)
-    {
-        std::vector<std::pair<float, int> > pairs;
-        for (size_t i = 0; i < v.size(); ++i)
-            pairs.push_back(std::make_pair(v[i], i));
-        std::partial_sort(pairs.begin(), pairs.begin() + N, pairs.end());
-        std::vector<int> result;
-        for (int i = 0; i < N; ++i)
-            result.push_back(pairs[i].second);
-        return result;
-    };
-
-    std::vector<std::pair<string, float> > DescriptorExtractor::Classify(const cv::Mat& reference, const cv::Mat& target, int N)
-    {
-        std::vector<float> output;
-        for (int i = 0; i < reference.rows; i++)
-        {
-            cv::Mat f1 = reference.row(i);
-            cv::Mat f2 = target;
-            cv::Mat output_temp = f1-f2;
-            output.push_back(cv::norm(output_temp));
-        }
-        std::vector<int> maxN = Argmax(output, N);
-        std::vector<std::pair<string, float> > predictions;
-        for (int i = 0; i < N; ++i)
-        {
-            int idx = maxN[i];
-            predictions.push_back(std::make_pair(labels_[idx], output[idx]));
-        }
-        return predictions;
-    };
-
     /* Load the mean file in binaryproto format. */
-    void DescriptorExtractor::SetMean(const string& mean_file)
+    void descriptorExtractor::setMean(const string& mean_file)
     {
         BlobProto blob_proto;
         ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
@@ -156,7 +148,7 @@ namespace cnn_3dobj
         mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
     };
 
-    void DescriptorExtractor::Extract(bool net_ready, InputArray inputimg, OutputArray feature, bool mean_subtract, std::string featrue_blob)
+    void descriptorExtractor::extract(int net_ready, InputArray inputimg, OutputArray feature, std::string featrue_blob)
     {
         if (net_ready)
         {
@@ -166,11 +158,11 @@ namespace cnn_3dobj
             /* Forward dimension change to all layers. */
             net_->Reshape();
             std::vector<cv::Mat> input_channels;
-            WrapInputLayer(&input_channels);
+            wrapInputLayer(&input_channels);
             if (inputimg.kind() == 65536)
             {/* this is a Mat */
                 Mat img = inputimg.getMat();
-                Preprocess(img, &input_channels, mean_subtract);
+                preprocess(img, &input_channels, net_ready);
                 net_->ForwardPrefilled();
                 /* Copy the output layer to a std::vector */
                 Blob<float>* output_layer = net_->blob_by_name(featrue_blob).get();
@@ -187,7 +179,7 @@ namespace cnn_3dobj
                 Mat feature_vector;
                 for (unsigned int i = 0; i < img.size(); ++i)
                 {
-                    Preprocess(img[i], &input_channels, mean_subtract);
+                    preprocess(img[i], &input_channels, net_ready);
                     net_->ForwardPrefilled();
                     /* Copy the output layer to a std::vector */
                     Blob<float>* output_layer = net_->blob_by_name(featrue_blob).get();
@@ -214,7 +206,7 @@ namespace cnn_3dobj
     * don't need to rely on cudaMemcpy2D. The last preprocessing
     * operation will write the separate channels directly to the input
     * layer. */
-    void DescriptorExtractor::WrapInputLayer(std::vector<cv::Mat>* input_channels)
+    void descriptorExtractor::wrapInputLayer(std::vector<cv::Mat>* input_channels)
     {
         Blob<float>* input_layer = net_->input_blobs()[0];
         int width = input_layer->width();
@@ -228,8 +220,8 @@ namespace cnn_3dobj
         }
     };
 
-    void DescriptorExtractor::Preprocess(const cv::Mat& img,
-std::vector<cv::Mat>* input_channels, bool mean_subtract)
+    void descriptorExtractor::preprocess(const cv::Mat& img,
+std::vector<cv::Mat>* input_channels, int net_ready)
     {
         /* Convert the input image to the input image format of the network. */
         cv::Mat sample;
@@ -254,7 +246,7 @@ std::vector<cv::Mat>* input_channels, bool mean_subtract)
         else
             sample_resized.convertTo(sample_float, CV_32FC1);
         cv::Mat sample_normalized;
-        if (mean_subtract)
+        if (net_ready == 2)
             cv::subtract(sample_float, mean_, sample_normalized);
         else
             sample_normalized = sample_float;
