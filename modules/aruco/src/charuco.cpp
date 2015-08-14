@@ -760,10 +760,11 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                           InputArray _markerIds, float squareMarkerLengthRate,
                           OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
-                          float minRepDistance, InputArray _cameraMatrix, InputArray _distCoeffs) {
+                          InputArray _cameraMatrix, InputArray _distCoeffs) {
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
-    CV_Assert(squareMarkerLengthRate > 1.0);
+
+    const float minRepDistanceRate = 0.12f;
 
     CharucoBoard charucoDiamondLayout;
     Dictionary dict = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0));
@@ -785,6 +786,16 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
     for (unsigned int i=0; i<_markerIds.total(); i++) {
         if(assigned[i])
             continue;
+
+        float perimeterSq = 0;
+        Mat corners = _markerCorners.getMat(i);
+        for (int c = 0; c < 4; c++) {
+            perimeterSq += (corners.ptr<Point2f>()[c].x - corners.ptr<Point2f>()[(c + 1) % 4].x) *
+                           (corners.ptr<Point2f>()[c].x - corners.ptr<Point2f>()[(c + 1) % 4].x) +
+                           (corners.ptr<Point2f>()[c].y - corners.ptr<Point2f>()[(c + 1) % 4].y) *
+                           (corners.ptr<Point2f>()[c].y - corners.ptr<Point2f>()[(c + 1) % 4].y);
+        }
+        float minRepDistance = perimeterSq * minRepDistanceRate * minRepDistanceRate;
 
         int currentId = _markerIds.getMat().ptr<int>()[i];
 
@@ -841,14 +852,8 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                 currentMarkerCornersReorder[2] = currentMarkerCorners[1];
                 currentMarkerCornersReorder[3] = currentMarkerCorners[0];
 
-                Vec4i markerIdReorder;
-                markerIdReorder.val[0] = markerId.val[0];
-                markerIdReorder.val[1] = markerId.val[2];
-                markerIdReorder.val[2] = markerId.val[3];
-                markerIdReorder.val[3] = markerId.val[1];
-
                 diamondCorners.push_back(currentMarkerCornersReorder);
-                diamondIds.push_back(markerIdReorder);
+                diamondIds.push_back(markerId);
             }
 
         }
@@ -891,11 +896,9 @@ void drawCharucoDiamond(Dictionary dictionary, Vec4i ids, int squareLength, int 
     // create a charuco board similar to a charuco marker and print it
     CharucoBoard board = CharucoBoard::create(3, 3, squareLength, markerLength, dictionary);
 
-    // assign the charuco marker ids, change the order to make them in clockwise direction
-    board.ids[0] = ids[0];
-    board.ids[1] = ids[3];
-    board.ids[2] = ids[1];
-    board.ids[3] = ids[2];
+    // assign the charuco marker ids
+    for(int i=0; i<4; i++)
+        board.ids[i] = ids[i];
 
     Size outSize(3*squareLength + 2*marginSize, 3*squareLength + 2*marginSize);
     board.draw(outSize, _img, marginSize, borderBits);
