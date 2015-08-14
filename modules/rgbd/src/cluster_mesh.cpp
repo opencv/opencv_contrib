@@ -266,7 +266,7 @@ namespace rgbd
         return;
     }
 
-    void RgbdClusterMesh::save(const std::string &path)
+    void RgbdClusterMesh::save(const std::string &path, bool replaceXyByTexCoord)
     {
         // has extension
         CV_Assert(path.length() >= 3);
@@ -318,11 +318,19 @@ namespace rgbd
         {
             for (std::size_t i = 0; i < points.size(); i++)
             {
-                Point2i & x = points.at(i).image_xy;
                 Point3f v;
-                v.x = points.at(i).projector_xy.x;
-                v.y = points.at(i).projector_xy.y;
-                v.z = 0;
+                if (replaceXyByTexCoord == false)
+                {
+                    v.x = points.at(i).projector_xy.x;
+                    v.y = points.at(i).projector_xy.y;
+                    v.z = 1000 * points.at(i).world_xyz.z;
+                }
+                else
+                {
+                    v.x = points.at(i).texture_uv.x * 100;
+                    v.y = points.at(i).texture_uv.y * 100;
+                    v.z = 0;
+                }
 
                 // negate xy for Unity compatibility
                 fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;

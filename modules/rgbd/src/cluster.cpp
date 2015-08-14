@@ -147,31 +147,40 @@ namespace rgbd
         std::vector<Vec4f> coeffs;
         (*plane)(*(mainCluster.rgbdFrame), mask, coeffs);
 
-        if(static_cast<int>(coeffs.size()) < maxPlaneNum)
-        {
-            maxPlaneNum = static_cast<int>(coeffs.size());
-        }
+        int numExtractedPlanes = static_cast<int>(coeffs.size());
 
-        for(int label = 0; label < maxPlaneNum + 1; label++)
+        int numValidPlanes = 0;
+        int residualLabel = 0;
+        for(int label = 0; label < numExtractedPlanes; label++)
         {
             clusters.push_back(T2(mainCluster.rgbdFrame));
             T2& cluster = clusters.back();
-            if(label < maxPlaneNum)
-            {
-                compare(mask, label, cluster.silhouette, CMP_EQ);
-                cluster.bPlane = true;
-                cluster.calculatePoints();
-                cluster.plane_coefficients = coeffs.at(label);
-                if (cluster.getNumPoints() < minArea) {
-                    // TODO: isn't this should be added to the residual cluster?
-                    clusters.pop_back();
-                }
+
+            compare(mask, label, cluster.silhouette, CMP_EQ);
+            cluster.bPlane = true;
+            cluster.calculatePoints();
+            cluster.plane_coefficients = coeffs.at(label);
+            if (cluster.getNumPoints() < minArea) {
+                // rollback
+                clusters.pop_back();
             }
             else
             {
-                compare(mask, label, cluster.silhouette, CMP_GE); // residual
+                // valid plane
+                numValidPlanes++;
+                if (numValidPlanes >= maxPlaneNum)
+                {
+                    residualLabel = label + 1;
+                    break;
+                }
             }
         }
+
+        // residual
+        clusters.push_back(T2(mainCluster.rgbdFrame));
+        T2& cluster = clusters.back();
+        compare(mask, residualLabel, cluster.silhouette, CMP_GE);
+        cluster.calculatePoints();
     }
     template CV_EXPORTS void planarSegmentation<RgbdCluster, RgbdCluster>(RgbdCluster& mainCluster, std::vector<RgbdCluster>& clusters, int maxPlaneNum, int minArea);
     template CV_EXPORTS void planarSegmentation<RgbdClusterMesh, RgbdClusterMesh>(RgbdClusterMesh& mainCluster, std::vector<RgbdClusterMesh>& clusters, int maxPlaneNum, int minArea);

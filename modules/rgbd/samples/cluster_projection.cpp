@@ -181,7 +181,7 @@ int main( int argc, char** argv )
 
         RgbdClusterMesh mainCluster(frame);
         vector<RgbdClusterMesh> clusters;
-        planarSegmentation(mainCluster, clusters, 2);
+        planarSegmentation(mainCluster, clusters, 1, 100000);
         deleteEmptyClusters(clusters);
 
         for (std::size_t i = 0; i < clusters.size(); i++) {
@@ -220,6 +220,8 @@ int main( int argc, char** argv )
                 }
                 smallClusters.at(j).unwrapTexCoord();
                 smallClusters.at(j).save(ss.str() + ".obj");
+                ss << "_tex";
+                smallClusters.at(j).save(ss.str() + ".obj", true);
             }
         }
 
@@ -231,7 +233,7 @@ int main( int argc, char** argv )
 
         int xMin = 1e5, xMax = -1e5, yMin = 1e5, yMax = -1e5;
         int count = 0;
-        vector<Point2i> points;
+        vector<Point2i> projPoints, camPoints;
         for (int i = 0; i < camSize.height; i++)
         {
             for (int j = 0; j < camSize.width; j++)
@@ -241,7 +243,8 @@ int main( int argc, char** argv )
                 {
                     continue;
                 }
-                points.push_back(p);
+                projPoints.push_back(p);
+                camPoints.push_back(Point2i(i, j));
                 subdiv.insert(p);
                 correspondenceMapPro.at<int>(p) = count;
                 count++;
@@ -278,16 +281,16 @@ int main( int argc, char** argv )
 
         string path = "mesh.obj";
         std::ofstream ofs(path.c_str(), std::ofstream::out);
-        for (std::size_t i = 0; i < points.size(); i++)
+        for (std::size_t i = 0; i < projPoints.size(); i++)
         {
-            Point2i & x = points.at(i);
+            Point2i & x = projPoints.at(i);
             // negate xy for Unity compatibility
             ofs << "v " << -x.x << " " << -x.y << " " << 0 << std::endl;
         }
 
-        for (std::size_t i = 0; i < points.size(); i++)
+        for (std::size_t i = 0; i < projPoints.size(); i++)
         {
-            Point2i & vt = points.at(i);
+            Point2i & vt = projPoints.at(i);
             ofs << "vt " << vt.x << " " << vt.y << std::endl;
         }
 
@@ -297,10 +300,15 @@ int main( int argc, char** argv )
             int i2 = indices.at(i + 1);
             int i1 = indices.at(i + 2);
 
-            float distanceThreshold = 10; // [px]
-            if (norm(points.at(i0) - points.at(i1)) > distanceThreshold
-                || norm(points.at(i1) - points.at(i2)) > distanceThreshold
-                || norm(points.at(i2) - points.at(i0)) > distanceThreshold)
+            float projDistanceThreshold = 10; // [px]
+            float camDistanceThreshold = 5; // [px]
+            if (norm(projPoints.at(i0) - projPoints.at(i1)) > projDistanceThreshold
+                || norm(projPoints.at(i1) - projPoints.at(i2)) > projDistanceThreshold
+                || norm(projPoints.at(i2) - projPoints.at(i0)) > projDistanceThreshold
+                || norm(camPoints.at(i0) - camPoints.at(i1)) > camDistanceThreshold
+                || norm(camPoints.at(i1) - camPoints.at(i2)) > camDistanceThreshold
+                || norm(camPoints.at(i2) - camPoints.at(i0)) > camDistanceThreshold
+                )
             {
                 continue;
             }
