@@ -238,7 +238,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 	//Debug display candidates after Variance Filter
 	////////////////////////////////////////////////
 	Mat tmpImg = image;
-	for (int i = 0; i < tldModel->detector->debugStack[0].size(); i++)
+	for (int i = 0; i < (int)tldModel->detector->debugStack[0].size(); i++)
 		//rectangle(tmpImg, tldModel->detector->debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
 	tldModel->detector->debugStack[0].clear();
 	tmpImg.copyTo(image);
