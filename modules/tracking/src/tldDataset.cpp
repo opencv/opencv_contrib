@@ -118,7 +118,7 @@ namespace cv
 		cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath, int datasetInd)
 		{
 			char* folderName = (char *)"";
-			int x = 0,
+			double x = 0,
 				y = 0,
 				w = 0,
 				h = 0;
