@@ -98,7 +98,7 @@ int main()
 	//
 	//  "MIL", "BOOSTING", "MEDIANFLOW", "TLD"
 	//
-	const char* tracker_algorithm_name = "TLD";
+	char* tracker_algorithm_name = (char*)"TLD";
 
 	Mat frame;
 	paused = false;
