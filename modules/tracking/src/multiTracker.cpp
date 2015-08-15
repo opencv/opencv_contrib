@@ -90,8 +90,6 @@ namespace cv
 		printf("Optimized MO-TLD Update....\n");
 
 		//Get parameters from first object
-		//Set current target(tracker) parameters
-		Rect2d boundingBox = boundingBoxes[0];
 		//TLD Tracker data extraction
 		Tracker* trackerPtr = trackers[0];
 		tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
