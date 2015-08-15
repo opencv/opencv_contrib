@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
         if(markerIds.size() > 0)
             aruco::detectCharucoDiamond(image, markerCorners, markerIds,
                                             squareLength/markerLength, diamondCorners, diamondIds,
-                                            40.f, camMatrix, distCoeffs);
+                                            camMatrix, distCoeffs);
 
         if (estimatePose && diamondIds.size() > 0) {
             if(!autoScale) {
