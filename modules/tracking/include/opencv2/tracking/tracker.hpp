@@ -1251,11 +1251,16 @@ class CV_EXPORTS_W MultiTracker
 {
 public:
 
+	MultiTracker()
+	{
+		targetNum = 0;
+	}
+
 	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
 
 	bool update(const Mat& image);
 
-	int targetNum = 0;
+	int targetNum;
 	std::vector <Ptr<Tracker> > trackers;
 	std::vector <Rect2d> boundingBoxes;
 	std::vector<Scalar> colors;

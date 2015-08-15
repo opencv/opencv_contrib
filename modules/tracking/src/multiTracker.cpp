@@ -76,7 +76,7 @@ namespace cv
 	bool MultiTracker::update(const Mat& image)
 	{
 		printf("Naive-Loop MO-TLD Update....\n");
-		for (int i = 0; i < trackers.size(); i++)
+		for (int i = 0; i < (int)trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
 				return false;
 
@@ -132,11 +132,11 @@ namespace cv
 		for (int k = 0; k < targetNum; k++)
 		{
 			//TLD Tracker data extraction
-			Tracker* trackerPtr = trackers[k];
-			tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			trackerPtr = trackers[k];
+			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
-			Ptr<tld::Data> data = tracker->data;
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			data = tracker->data;
 
 			data->frameNum++;
 
@@ -254,7 +254,7 @@ namespace cv
 		//Debug display candidates after Variance Filter
 		////////////////////////////////////////////////
 		Mat tmpImg = image;
-		for (int i = 0; i < debugStack[0].size(); i++)
+		for (int i = 0; i < (int)debugStack[0].size(); i++)
 			//rectangle(tmpImg, debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
 		debugStack[0].clear();
 		tmpImg.copyTo(image);
@@ -272,7 +272,7 @@ namespace cv
 		tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 		Size initSize = tldModel->getMinSize();
 
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 			patches[k].clear();
 
 		Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
@@ -331,13 +331,13 @@ namespace cv
 					double windowVar = p2 - p * p;
 
 					//Loop for on all objects
-					for (int k=0; k < trackers.size(); k++)
+					for (int k = 0; k < (int)trackers.size(); k++)
 					{
 						//TLD Tracker data extraction
-						Tracker* trackerPtr = trackers[k];
-						cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+						trackerPtr = trackers[k];
+						tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 						//TLD Model Extraction
-						tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 
 						//Optimized variance calculation
 						bool varPass = (windowVar > tld::VARIANCE_THRESHOLD * *tldModel->detector->originalVariancePtr);
@@ -373,13 +373,13 @@ namespace cv
 
 		//Encsemble classification
 		//e1 = getTickCount();
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
-			Tracker* trackerPtr = trackers[k];
-			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			trackerPtr = trackers[k];
+			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 
 
 			for (int i = 0; i < (int)varBuffer[k].size(); i++)
@@ -435,13 +435,13 @@ namespace cv
 
 		//NN classification
 		//e1 = getTickCount();
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
-			Tracker* trackerPtr = trackers[k];
-			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			trackerPtr = trackers[k];
+			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 
 			npos = 0;
 			nneg = 0;
@@ -508,7 +508,7 @@ namespace cv
 		tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 		Size initSize = tldModel->getMinSize();
 
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 			patches[k].clear();
 
 		Mat_<uchar> standardPatch(tld::STANDARD_PATCH_SIZE, tld::STANDARD_PATCH_SIZE);
@@ -567,13 +567,13 @@ namespace cv
 					double windowVar = p2 - p * p;
 
 					//Loop for on all objects
-					for (int k = 0; k < trackers.size(); k++)
+					for (int k = 0; k < (int)trackers.size(); k++)
 					{
 						//TLD Tracker data extraction
-						Tracker* trackerPtr = trackers[k];
-						cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+						trackerPtr = trackers[k];
+						tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 						//TLD Model Extraction
-						tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 
 						//Optimized variance calculation
 						bool varPass = (windowVar > tld::VARIANCE_THRESHOLD * *tldModel->detector->originalVariancePtr);
@@ -609,13 +609,13 @@ namespace cv
 
 		//Encsemble classification
 		//e1 = getTickCount();
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
-			Tracker* trackerPtr = trackers[k];
-			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			trackerPtr = trackers[k];
+			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 
 
 			for (int i = 0; i < (int)varBuffer[k].size(); i++)
@@ -670,13 +670,13 @@ namespace cv
 
 		//NN classification
 		//e1 = getTickCount();
-		for (int k = 0; k < trackers.size(); k++)
+		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
-			Tracker* trackerPtr = trackers[k];
-			cv::tld::TrackerTLDImpl* tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
+			trackerPtr = trackers[k];
+			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tld::TrackerTLDModel* tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
 			//Size InitSize = tldModel->getMinSize();
 			npos = 0;
 			nneg = 0;

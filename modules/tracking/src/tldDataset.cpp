@@ -51,7 +51,7 @@ namespace cv
 		bool flagVOT = false;
 
 		//TLD Dataset Parameters
-		char* tldFolderName[10] = {
+		const char* tldFolderName[10] = {
 			"01_david",
 			"02_jumping",
 			"03_pedestrian1",
@@ -63,7 +63,7 @@ namespace cv
 			"09_carchase",
 			"10_panda"
 		};
-		char* votFolderName[60] = {
+		const  char* votFolderName[60] = {
 			"bag", "ball1", "ball2", "basketball", "birds1", "birds2", "blanket", "bmx", "bolt1", "bolt2",
 			"book", "butterfly", "car1", "car2", "crossing", "dinosaur", "fernando", "fish1", "fish2", "fish3",
 			"fish4", "girl", "glove", "godfather", "graduate", "gymnastics1", "gymnastics2	", "gymnastics3", "gymnastics4", "hand",
@@ -72,11 +72,11 @@ namespace cv
 			"singer2", "singer3", "soccer1", "soccer2", "soldier", "sphere", "tiger", "traffic", "tunnel", "wiper"
 		};
 
-		Rect2d tldInitBB[10] = {
+		const Rect2d tldInitBB[10] = {
 			Rect2d(165, 93, 51, 54), Rect2d(147, 110, 33, 32), Rect2d(47, 51, 21, 36), Rect2d(130, 134, 21, 53), Rect2d(154, 102, 24, 52),
 			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(337, 219, 54, 37), Rect2d(58, 100, 27, 22)
 		};
-		Rect2d votInitBB[60] = {
+		const Rect2d votInitBB[60] = {
 			Rect2d(142, 125, 90, 39), Rect2d(490, 400, 40, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
 			Rect2d(450, 380, 60, 60), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(225, 175, 50, 50), Rect2d(58, 100, 27, 22),
 
@@ -118,7 +118,10 @@ namespace cv
 		cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath, int datasetInd)
 		{
 			char* folderName = (char *)"";
-			int x, y, w, h;
+			int x = 0,
+				y = 0,
+				w = 0,
+				h = 0;
 
 			//Index range
 			// 1-10 TLD Dataset
@@ -127,7 +130,7 @@ namespace cv
 
 			if (datasetInd == 0)
 			{
-				folderName = tldFolderName[id];
+				folderName = (char*)tldFolderName[id];
 				x = tldInitBB[id].x;
 				y = tldInitBB[id].y;
 				w = tldInitBB[id].width;
@@ -138,7 +141,7 @@ namespace cv
 			}
 			if (datasetInd == 1)
 				{
-					folderName = votFolderName[id];
+					folderName = (char*)votFolderName[id];
 					x = votInitBB[id].x;
 					y = votInitBB[id].y;
 					w = votInitBB[id].width;
