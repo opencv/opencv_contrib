@@ -352,9 +352,107 @@ const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
 }
 
 
+Mat _generateRandomMarker(int markerSize) {
+    Mat marker(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+    for(int i=0; i<markerSize; i++) {
+        for(int j=0; j<markerSize; j++) {
+            unsigned char bit = rand()%2;
+            marker.at<unsigned char>(i, j) = bit;
+        }
+    }
+    return marker;
+}
+
+int _getSelfDistance(const Mat &marker) {
+    Mat bytes = Dictionary::getByteListFromBits(marker);
+    int minHamming = marker.total() + 1;
+    for(int i=1; i<4; i++) {
+        int currentHamming = 0;
+        for(int j=0; j<bytes.cols; j++) {
+            unsigned char xorRes = bytes.ptr<Vec4b>()[j][0] ^ bytes.ptr<Vec4b>()[j][i];
+            currentHamming += hammingWeightLUT[xorRes];
+        }
+        if(currentHamming < minHamming)
+            minHamming = currentHamming;
+    }
+    return minHamming;
+}
+
+
 Dictionary generateCustomDictionary(int nMarkers, int markerSize,
                                     const Dictionary& baseDictionary) {
-    return Dictionary();
+
+    Dictionary out;
+    out.markerSize = markerSize;
+
+    int C = std::floor(markerSize*markerSize/4.);
+    int tau = 2*std::floor(C*4./3.);
+
+    if(baseDictionary.bytesList.rows > 0) {
+        CV_Assert(baseDictionary.markerSize == markerSize);
+        out.bytesList = baseDictionary.bytesList.clone();
+
+        // calculate tau of baseDictionary
+        int minDistance = markerSize*markerSize + 1;
+        for(int i=0; i<out.bytesList.rows; i++) {
+            Mat markerBytes = out.bytesList.rowRange(i, i+1);
+            Mat markerBits = Dictionary::getBitsFromByteList(markerBytes, markerSize);
+            minDistance = std::min(minDistance, _getSelfDistance(markerBits) );
+            for(int j=i+1; j<out.bytesList.rows; j++) {
+                minDistance = std::min(minDistance, out.getDistanceToId(markerBits, j));
+            }
+        }
+        tau = minDistance;
+    }
+
+
+    int bestTau = 0;
+    Mat bestMarker;
+    const int maxUnproductiveIterations = 5000;
+    int unproductiveIterations = 0;
+
+    while(out.bytesList.rows < nMarkers) {
+        cv::Mat currentMarker = _generateRandomMarker(markerSize);
+        int selfDistance = _getSelfDistance(currentMarker);
+        int minDistance = selfDistance;
+
+        if(selfDistance >= bestTau) {
+            for(int i=0; i<out.bytesList.rows; i++) {
+                int currentDistance = out.getDistanceToId(currentMarker, i);
+                minDistance = std::min(currentDistance, minDistance);
+                if(minDistance <= bestTau) {
+                    break;
+                }
+            }
+        }
+
+        if(minDistance >= tau) {
+            unproductiveIterations = 0;
+            bestTau = 0;
+            Mat bytes = Dictionary::getByteListFromBits(currentMarker);
+            out.bytesList.push_back(bytes);
+        }
+        else {
+            unproductiveIterations++;
+
+            if(minDistance > bestTau) {
+                bestTau = minDistance;
+                bestMarker = currentMarker;
+            }
+
+            if(unproductiveIterations == maxUnproductiveIterations) {
+                unproductiveIterations = 0;
+                tau = bestTau;
+                bestTau = 0;
+                Mat bytes = Dictionary::getByteListFromBits(bestMarker);
+                out.bytesList.push_back(bytes);
+            }
+        }
+
+    }
+    out.maxCorrectionBits = (tau-1)/2;
+
+    return out;
 }
 
 
