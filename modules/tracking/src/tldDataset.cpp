@@ -52,7 +52,10 @@ namespace cv
 		cv::Rect2d tld_InitDataset(int datasetInd,const char* rootPath)
 		{
 			char* folderName = (char *)"";
-			int x, y, w, h;
+			int x = 0;
+			int y = 0;
+			int w = 0;
+			int h = 0;
 			flagPNG = false;
 
 			frameNum = 1;

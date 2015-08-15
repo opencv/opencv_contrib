@@ -110,9 +110,22 @@ int main(int argc, char** argv)
     tick2 = cv::getTickCount();
     cout << endl << "PPF Elapsed Time " <<
          (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;
-         
-    // Get only first N results
-    int N = 2;
+
+    //check results size from match call above
+    size_t results_size = results.size();
+    cout << "Number of matching poses: " << results_size;
+    if (results_size == 0) {
+        cout << endl << "No matching poses found. Exiting." << endl;
+        exit(0);
+    }
+
+    // Get only first N results - but adjust to results size if num of results are less than that specified by N
+    size_t N = 2;
+    if (results_size < N) {
+        cout << endl << "Reducing matching poses to be reported (as specified in code): "
+             << N << " to the number of matches found: " << results_size << endl;
+        N = results_size;
+    }
     vector<Pose3DPtr> resultsSub(results.begin(),results.begin()+N);
     
     // Create an instance of ICP

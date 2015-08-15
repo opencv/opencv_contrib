@@ -4,215 +4,330 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/ximgproc/disparity_filter.hpp"
-#include <stdio.h>
+#include <iostream>
 #include <string>
-#include <vector>
-#include <map>
-
-#if defined(_WIN32)
-#include <direct.h>
-#else 
-#include <sys/stat.h>
-#endif
 
 using namespace cv;
 using namespace cv::ximgproc;
 using namespace std;
 
-#define UNKNOWN_DISPARITY 16320
- 
-static void print_help()
-{
-    printf("\nDemo for disparity filtering, evaluating speed and performance of different filters\n");
-    printf("\nUsage: disparity_filtering.exe <path_to_dataset_folder> <path_to_results_folder>\n");
-}
-
-struct dataset_entry
-{
-    string name;
-    string dataset_folder;
-    string left_file,right_file,GT_file;
-    dataset_entry(string _dataset_folder): dataset_folder(_dataset_folder){}
-    void readEntry(Mat& dst_left,Mat& dst_right,Mat& dst_GT)
-    {
-        dst_left  = imread(dataset_folder+"/"+left_file,  IMREAD_COLOR);
-        dst_right = imread(dataset_folder+"/"+right_file, IMREAD_COLOR);
-        Mat raw_disp = imread(dataset_folder+"/"+GT_file, IMREAD_COLOR);
-        dst_GT = Mat(raw_disp.rows,raw_disp.cols,CV_16S);
-        for(int i=0;i<raw_disp.rows;i++)
-            for(int j=0;j<raw_disp.cols;j++)
-            {
-                Vec3b bgrPixel = raw_disp.at<Vec3b>(i, j);
-                dst_GT.at<short>(i,j) = 64*bgrPixel.val[2]+bgrPixel.val[1]/4; //16-multiplied disparity
-            }
-    }
-};
-
-struct config
-{
-    Ptr<StereoMatcher> matcher_instance;
-    Ptr<DisparityFilter> filter_instance;
-    config(Ptr<StereoMatcher> _matcher_instance,Ptr<DisparityFilter> _filter_instance)
-    {
-        matcher_instance = _matcher_instance;
-        filter_instance = _filter_instance;
-    }
-    config() {}
-};
-
-void operator>>(const FileNode& node,dataset_entry& entry);
-double computeMSE(Mat& GT, Mat& src, Rect ROI);
-double computeBadPixelPercent(Mat& GT, Mat& src, Rect ROI, int thresh=24/*1.5 pixels*/);
-void getDisparityVis(Mat& disparity_map,Mat& dst);
 Rect computeROI(Size2i src_sz, Ptr<StereoMatcher> matcher_instance);
-void setConfigsForTesting(map<string,config>& cfgs);
-void CreateDir(string path);
+
+const String keys =
+    "{help h usage ? |                  | print this message                                                }"
+    "{@left          |../data/aloeL.jpg | left view of the stereopair                                       }"
+    "{@right         |../data/aloeR.jpg | right view of the stereopair                                      }"
+    "{GT             |../data/aloeGT.png| optional ground-truth disparity (MPI-Sintel or Middlebury format) }"
+    "{dst_path       |None              | optional path to save the resulting filtered disparity map        }"
+    "{dst_raw_path   |None              | optional path to save raw disparity map before filtering          }"
+    "{algorithm      |bm                | stereo matching method (bm or sgbm)                               }"
+    "{filter         |wls_conf          | used post-filtering (wls_conf or wls_no_conf)                     }"
+    "{no-display     |                  | don't display results                                             }"
+    "{no-downscale   |                  | force stereo matching on full-sized views to improve quality      }"
+    "{dst_conf_path  |None              | optional path to save the confidence map used in filtering        }"
+    "{vis_mult       |1.0               | coefficient used to scale disparity map visualizations            }"
+    "{max_disparity  |160               | parameter of stereo matching                                      }"
+    "{window_size    |-1                | parameter of stereo matching                                      }"
+    "{wls_lambda     |8000.0            | parameter of post-filtering                                       }"
+    "{wls_sigma      |1.5               | parameter of post-filtering                                       }"
+    ;
 
 int main(int argc, char** argv)
 {
-    if(argc < 3)
+    CommandLineParser parser(argc,argv,keys);
+    parser.about("Disparity Filtering Demo");
+    if (parser.has("help"))
     {
-        print_help();
+        parser.printMessage();
         return 0;
     }
-    string dataset_folder(argv[1]);
-    string res_folder(argv[2]);
 
-    map<string,config> configs_for_testing;
-    setConfigsForTesting(configs_for_testing);
-    CreateDir(res_folder);
+    String left_im = parser.get<String>(0);
+    String right_im = parser.get<String>(1);
+    String GT_path = parser.get<String>("GT");
 
-    for (map<string,config>::iterator cfg = configs_for_testing.begin(); cfg != configs_for_testing.end(); cfg++)
+    String dst_path = parser.get<String>("dst_path");
+    String dst_raw_path = parser.get<String>("dst_raw_path");
+    String dst_conf_path = parser.get<String>("dst_conf_path");
+    String algo = parser.get<String>("algorithm");
+    String filter = parser.get<String>("filter");
+    bool no_display = parser.has("no-display");
+    bool no_downscale = parser.has("no-downscale");
+    int max_disp = parser.get<int>("max_disparity");
+    double lambda = parser.get<double>("wls_lambda");
+    double sigma  = parser.get<double>("wls_sigma");
+    double vis_mult = parser.get<double>("vis_mult");
+
+    int wsize;
+    if(parser.get<int>("window_size")>=0) //user provided window_size value
+        wsize = parser.get<int>("window_size");
+    else
     {
-        string vis_folder = res_folder+"/vis_"+cfg->first;
-        CreateDir(vis_folder);
-
-        string cfg_file_name = res_folder+"/"+cfg->first+"_res.csv";
-        FILE* cur_cfg_res_file = fopen(cfg_file_name.c_str(),"w");
-        fprintf(cur_cfg_res_file,"Name,MSE,MSE after postfiltering,Percent bad,Percent bad after postfiltering,Matcher Execution Time(s),Filter Execution Time(s)\n");
-
-        printf("Processing configuration: %s\n",cfg->first.c_str());
-
-        FileStorage fs(dataset_folder + "/_dataset.xml", FileStorage::READ);
-        FileNode n = fs["data_set"];
-        double MSE_pre,percent_pre,MSE_post,percent_post,matching_time,filtering_time;
-        double average_MSE_pre=0,average_percent_pre=0,average_MSE_post=0,
-            average_percent_post=0,average_matching_time=0,average_filtering_time=0;
-        int cnt = 0;
-        for (FileNodeIterator it = n.begin(); it != n.end(); it++)
-        {
-            dataset_entry entry(dataset_folder);
-            (*it)>>entry;
-            printf("%s ",entry.name.c_str());
-            Mat left,right,GT;
-            entry.readEntry(left,right,GT);
-            Mat raw_disp;
-            Mat left_gray; cvtColor(left, left_gray, COLOR_BGR2GRAY );
-            Mat right_gray; cvtColor(right, right_gray, COLOR_BGR2GRAY );
-            matching_time = (double)getTickCount();
-            cfg->second.matcher_instance->compute(left_gray,right_gray,raw_disp);
-            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
-
-            Rect ROI = computeROI(left.size(),cfg->second.matcher_instance);
-            Mat filtered_disp;
-            filtering_time = (double)getTickCount();
-            cfg->second.filter_instance->filter(raw_disp,left,filtered_disp,ROI);
-            filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
-
-
-            MSE_pre = computeMSE(GT,raw_disp,ROI);
-            percent_pre = computeBadPixelPercent(GT,raw_disp,ROI);
-            MSE_post = computeMSE(GT,filtered_disp,ROI);
-            percent_post = computeBadPixelPercent(GT,filtered_disp,ROI);
-
-            fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n",entry.name.c_str(),MSE_pre,MSE_post,
-                percent_pre,percent_post,matching_time,filtering_time);
-
-            average_matching_time+=matching_time; average_filtering_time+=filtering_time;
-            average_MSE_pre+=MSE_pre; average_percent_pre+=percent_pre;
-            average_MSE_post+=MSE_post; average_percent_post+=percent_post;
-            cnt++;
-
-            // dump visualizations:
-            imwrite(vis_folder + "/" + entry.name + "_left.png",left);
-            Mat GT_vis,raw_disp_vis,filtered_disp_vis;
-            getDisparityVis(GT,GT_vis);
-            getDisparityVis(raw_disp,raw_disp_vis);
-            getDisparityVis(filtered_disp,filtered_disp_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_GT.png",GT_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_raw.png",raw_disp_vis);
-            imwrite(vis_folder + "/" + entry.name + "_disparity_filtered.png",filtered_disp_vis);
-
-            printf("- Done\n");
-
-        }
-        fprintf(cur_cfg_res_file,"%s,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f\n","average",average_MSE_pre/cnt,
-            average_MSE_post/cnt,average_percent_pre/cnt,average_percent_post/cnt,
-            average_matching_time/cnt,average_filtering_time/cnt);
-        fclose(cur_cfg_res_file);
+        if(algo=="sgbm")
+            wsize = 3; //default window size for SGBM
+        else if(!no_downscale && algo=="bm" && filter=="wls_conf")
+            wsize = 7; //default window size for BM on downscaled views (downscaling is performed only for wls_conf)
+        else
+            wsize = 15; //default window size for BM on full-sized views
     }
+
+    if (!parser.check())
+    {
+        parser.printErrors();
+        return -1;
+    }
+
+    //! [load_views]
+    Mat left  = imread(left_im ,IMREAD_COLOR);
+    if ( left.empty() )
+    {
+        cout<<"Cannot read image file: "<<left_im;
+        return -1;
+    }
+
+    Mat right = imread(right_im,IMREAD_COLOR);
+    if ( right.empty() )
+    {
+        cout<<"Cannot read image file: "<<right_im;
+        return -1;
+    }
+    //! [load_views]
+
+    bool noGT;
+    Mat GT_disp;
+    if (GT_path=="../data/aloeGT.png" && left_im!="../data/aloeL.jpg")
+        noGT=true;
+    else
+    {
+        noGT=false;
+        if(readGT(GT_path,GT_disp)!=0)
+        {
+            cout<<"Cannot read ground truth image file: "<<GT_path<<endl;
+            return -1;
+        }
+    }
+
+    Mat left_for_matcher, right_for_matcher;
+    Mat left_disp,right_disp;
+    Mat filtered_disp;
+    Mat conf_map = Mat(left.rows,left.cols,CV_8U);
+    conf_map = Scalar(255);
+    Rect ROI;
+    Ptr<DisparityWLSFilter> wls_filter;
+    double matching_time, filtering_time;
+    if(max_disp<=0 || max_disp%16!=0)
+    {
+        cout<<"Incorrect max_disparity value: it should be positive and divisible by 16";
+        return -1;
+    }
+    if(wsize<=0 || wsize%2!=1)
+    {
+        cout<<"Incorrect window_size value: it should be positive and odd";
+        return -1;
+    }
+    if(filter=="wls_conf") // filtering with confidence (significantly better quality than wls_no_conf)
+    {
+        if(!no_downscale)
+        {
+            // downscale the views to speed-up the matching stage, as we will need to compute both left
+            // and right disparity maps for confidence map computation
+            //! [downscale]
+            max_disp/=2;
+            if(max_disp%16!=0)
+                max_disp += 16-(max_disp%16);
+            resize(left ,left_for_matcher ,Size(),0.5,0.5);
+            resize(right,right_for_matcher,Size(),0.5,0.5);
+            //! [downscale]
+        }
+        else
+        {
+            left_for_matcher  = left.clone();
+            right_for_matcher = right.clone();
+        }
+
+        if(algo=="bm")
+        {
+            //! [matching]
+            Ptr<StereoBM> left_matcher = StereoBM::create(max_disp,wsize);
+            wls_filter = createDisparityWLSFilter(left_matcher);
+            Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
+
+            cvtColor(left_for_matcher,  left_for_matcher,  COLOR_BGR2GRAY);
+            cvtColor(right_for_matcher, right_for_matcher, COLOR_BGR2GRAY);
+
+            matching_time = (double)getTickCount();
+            left_matcher-> compute(left_for_matcher, right_for_matcher,left_disp);
+            right_matcher->compute(right_for_matcher,left_for_matcher, right_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+            //! [matching]
+        }
+        else if(algo=="sgbm")
+        {
+            Ptr<StereoSGBM> left_matcher  = StereoSGBM::create(0,max_disp,wsize);
+            left_matcher->setP1(24*wsize*wsize);
+            left_matcher->setP2(96*wsize*wsize);
+            left_matcher->setPreFilterCap(63);
+            left_matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
+            wls_filter = createDisparityWLSFilter(left_matcher);
+            Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
+
+            matching_time = (double)getTickCount();
+            left_matcher-> compute(left_for_matcher, right_for_matcher,left_disp);
+            right_matcher->compute(right_for_matcher,left_for_matcher, right_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+        }
+        else
+        {
+            cout<<"Unsupported algorithm";
+            return -1;
+        }
+
+        //! [filtering]
+        wls_filter->setLambda(lambda);
+        wls_filter->setSigmaColor(sigma);
+        filtering_time = (double)getTickCount();
+        wls_filter->filter(left_disp,left,filtered_disp,right_disp);
+        filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+        //! [filtering]
+        conf_map = wls_filter->getConfidenceMap();
+
+        // Get the ROI that was used in the last filter call:
+        ROI = wls_filter->getROI();
+        if(!no_downscale)
+        {
+            // upscale raw disparity and ROI back for a proper comparison:
+            resize(left_disp,left_disp,Size(),2.0,2.0);
+            left_disp = left_disp*2.0;
+            ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
+        }
+    }
+    else if(filter=="wls_no_conf")
+    {
+        /* There is no convenience function for the case of filtering with no confidence, so we
+        will need to set the ROI and matcher parameters manually */
+
+        left_for_matcher  = left.clone();
+        right_for_matcher = right.clone();
+
+        if(algo=="bm")
+        {
+            Ptr<StereoBM> matcher  = StereoBM::create(max_disp,wsize);
+            matcher->setTextureThreshold(0);
+            matcher->setUniquenessRatio(0);
+            cvtColor(left_for_matcher,  left_for_matcher, COLOR_BGR2GRAY);
+            cvtColor(right_for_matcher, right_for_matcher, COLOR_BGR2GRAY);
+            ROI = computeROI(left_for_matcher.size(),matcher);
+            wls_filter = createDisparityWLSFilterGeneric(false);
+            wls_filter->setDepthDiscontinuityRadius((int)ceil(0.33*wsize));
+
+            matching_time = (double)getTickCount();
+            matcher->compute(left_for_matcher,right_for_matcher,left_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+        }
+        else if(algo=="sgbm")
+        {
+            Ptr<StereoSGBM> matcher  = StereoSGBM::create(0,max_disp,wsize);
+            matcher->setUniquenessRatio(0);
+            matcher->setDisp12MaxDiff(1000000);
+            matcher->setSpeckleWindowSize(0);
+            matcher->setP1(24*wsize*wsize);
+            matcher->setP2(96*wsize*wsize);
+            matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
+            ROI = computeROI(left_for_matcher.size(),matcher);
+            wls_filter = createDisparityWLSFilterGeneric(false);
+            wls_filter->setDepthDiscontinuityRadius((int)ceil(0.5*wsize));
+
+            matching_time = (double)getTickCount();
+            matcher->compute(left_for_matcher,right_for_matcher,left_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+        }
+        else
+        {
+            cout<<"Unsupported algorithm";
+            return -1;
+        }
+
+        wls_filter->setLambda(lambda);
+        wls_filter->setSigmaColor(sigma);
+        filtering_time = (double)getTickCount();
+        wls_filter->filter(left_disp,left,filtered_disp,Mat(),ROI);
+        filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+    }
+    else
+    {
+        cout<<"Unsupported filter";
+        return -1;
+    }
+
+    //collect and print all the stats:
+    cout.precision(2);
+    cout<<"Matching time:  "<<matching_time<<"s"<<endl;
+    cout<<"Filtering time: "<<filtering_time<<"s"<<endl;
+    cout<<endl;
+
+    double MSE_before,percent_bad_before,MSE_after,percent_bad_after;
+    if(!noGT)
+    {
+        MSE_before = computeMSE(GT_disp,left_disp,ROI);
+        percent_bad_before = computeBadPixelPercent(GT_disp,left_disp,ROI);
+        MSE_after = computeMSE(GT_disp,filtered_disp,ROI);
+        percent_bad_after = computeBadPixelPercent(GT_disp,filtered_disp,ROI);
+
+        cout.precision(5);
+        cout<<"MSE before filtering: "<<MSE_before<<endl;
+        cout<<"MSE after filtering:  "<<MSE_after<<endl;
+        cout<<endl;
+        cout.precision(3);
+        cout<<"Percent of bad pixels before filtering: "<<percent_bad_before<<endl;
+        cout<<"Percent of bad pixels after filtering:  "<<percent_bad_after<<endl;
+    }
+
+    if(dst_path!="None")
+    {
+        Mat filtered_disp_vis;
+        getDisparityVis(filtered_disp,filtered_disp_vis,vis_mult);
+        imwrite(dst_path,filtered_disp_vis);
+    }
+    if(dst_raw_path!="None")
+    {
+        Mat raw_disp_vis;
+        getDisparityVis(left_disp,raw_disp_vis,vis_mult);
+        imwrite(dst_raw_path,raw_disp_vis);
+    }
+    if(dst_conf_path!="None")
+    {
+        imwrite(dst_conf_path,conf_map);
+    }
+
+    if(!no_display)
+    {
+        namedWindow("left", WINDOW_AUTOSIZE);
+        imshow("left", left);
+        namedWindow("right", WINDOW_AUTOSIZE);
+        imshow("right", right);
+
+        if(!noGT)
+        {
+            Mat GT_disp_vis;
+            getDisparityVis(GT_disp,GT_disp_vis,vis_mult);
+            namedWindow("ground-truth disparity", WINDOW_AUTOSIZE);
+            imshow("ground-truth disparity", GT_disp_vis);
+        }
+
+        //! [visualization]
+        Mat raw_disp_vis;
+        getDisparityVis(left_disp,raw_disp_vis,vis_mult);
+        namedWindow("raw disparity", WINDOW_AUTOSIZE);
+        imshow("raw disparity", raw_disp_vis);
+        Mat filtered_disp_vis;
+        getDisparityVis(filtered_disp,filtered_disp_vis,vis_mult);
+        namedWindow("filtered disparity", WINDOW_AUTOSIZE);
+        imshow("filtered disparity", filtered_disp_vis);
+        waitKey();
+        //! [visualization]
+    }
+
     return 0;
-}
-
-void operator>>(const FileNode& node,dataset_entry& entry) 
-{
-    node["name"] >> entry.name;
-    node["left_file"] >> entry.left_file;
-    node["right_file"] >> entry.right_file;
-    node["GT_file"] >> entry.GT_file;
-}
-
-double computeMSE(Mat& GT, Mat& src, Rect ROI)
-{
-    double res = 0;
-    Mat GT_ROI(GT,ROI);
-    Mat src_ROI(src,ROI);
-    int cnt=0;
-    for(int i=0;i<src_ROI.rows;i++)
-        for(int j=0;j<src_ROI.cols;j++)
-        {
-            if(GT_ROI.at<short>(i,j)!=UNKNOWN_DISPARITY)
-            {
-                res += (GT_ROI.at<short>(i,j) - src_ROI.at<short>(i,j))*(GT_ROI.at<short>(i,j) - src_ROI.at<short>(i,j));
-                cnt++;
-            }
-        }
-    res /= cnt*256;
-    return res;
-}
-
-double computeBadPixelPercent(Mat& GT, Mat& src, Rect ROI, int thresh)
-{
-    int bad_pixel_num = 0;
-    Mat GT_ROI(GT,ROI);
-    Mat src_ROI(src,ROI);
-    int cnt=0;
-    for(int i=0;i<src_ROI.rows;i++)
-        for(int j=0;j<src_ROI.cols;j++)
-        {
-            if(GT_ROI.at<short>(i,j)!=UNKNOWN_DISPARITY)
-            {
-                if( abs(GT_ROI.at<short>(i,j) - src_ROI.at<short>(i,j))>=thresh )
-                    bad_pixel_num++;
-                cnt++;
-            }
-        }
-    return (100.0*bad_pixel_num)/cnt;
-}
-
-void getDisparityVis(Mat& disparity_map,Mat& dst)
-{
-    dst = Mat(disparity_map.rows,disparity_map.cols,CV_8UC3);
-    for(int i=0;i<dst.rows;i++)
-        for(int j=0;j<dst.cols;j++)
-        {
-            if(disparity_map.at<short>(i,j)==UNKNOWN_DISPARITY)
-                dst.at<Vec3b>(i,j) = Vec3b(0,0,0);
-            else
-                dst.at<Vec3b>(i,j) = Vec3b(saturate_cast<unsigned char>(disparity_map.at<short>(i,j)/8),
-                                           saturate_cast<unsigned char>(disparity_map.at<short>(i,j)/8),
-                                           saturate_cast<unsigned char>(disparity_map.at<short>(i,j)/8));
-        }
 }
 
 Rect computeROI(Size2i src_sz, Ptr<StereoMatcher> matcher_instance)
@@ -225,34 +340,10 @@ Rect computeROI(Size2i src_sz, Ptr<StereoMatcher> matcher_instance)
     int minD = min_disparity, maxD = min_disparity + num_disparities - 1;
 
     int xmin = maxD + bs2;
-    int xmax = src_sz.width - minD - bs2;
+    int xmax = src_sz.width + minD - bs2;
     int ymin = bs2;
     int ymax = src_sz.height - bs2;
 
     Rect r(xmin, ymin, xmax - xmin, ymax - ymin);
     return r;
-}
-
-void setConfigsForTesting(map<string,config>& cfgs)
-{
-    Ptr<StereoBM> stereobm_matcher = StereoBM::create(128,21); 
-    stereobm_matcher->setTextureThreshold(0); 
-    stereobm_matcher->setUniquenessRatio(0);
-
-    Ptr<DisparityFilter> wls_filter = createDisparityWLSFilter();
-    Ptr<DisparityFilter> dt_filter = createDisparityDTFilter();
-    Ptr<DisparityFilter> guided_filter = createDisparityGuidedFilter();
-
-    cfgs["stereobm_wls"] = config(stereobm_matcher,wls_filter);
-    cfgs["stereobm_dtf"] = config(stereobm_matcher,dt_filter);
-    cfgs["stereobm_gf"]  = config(stereobm_matcher,guided_filter);
-}
-
-void CreateDir(string path)
-{
-#if defined(_WIN32)
-    _mkdir(path.c_str());
-#else 
-    mkdir(path.c_str(), 0777);
-#endif
 }

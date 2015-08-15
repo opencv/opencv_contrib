@@ -203,7 +203,10 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
     {
       KeyLine kl = keylines[keyCounter];
       if( mask.at<uchar>( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at<uchar>( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
+      {
         keylines.erase( keylines.begin() + keyCounter );
+        keyCounter--;
+      }
     }
   }
 
