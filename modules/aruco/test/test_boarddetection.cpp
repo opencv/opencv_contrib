@@ -108,7 +108,7 @@ static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
     const int markerSizePixels = 100;
     aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
 
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector<Point2f> corners;
     projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
@@ -182,7 +182,7 @@ void CV_ArucoBoardPose::run(int) {
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw+=100) {
             for(int pitch = 30; pitch <=90; pitch+=50) {
@@ -199,7 +199,6 @@ void CV_ArucoBoardPose::run(int) {
                 vector< int > ids;
                 aruco::DetectorParameters params;
                 params.minDistanceToBorder = 3;
-                params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -276,7 +275,7 @@ void CV_ArucoRefine::run(int) {
     cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw+=100) {
             for(int pitch = 30; pitch <=90; pitch+=50) {

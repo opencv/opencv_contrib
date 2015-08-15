@@ -102,7 +102,6 @@ void CV_ArucoDetectionSimple::run(int) {
         vector< vector<Point2f> > corners;
         vector< int > ids;
         aruco::DetectorParameters params;
-        params.doCornerRefinement = false;
         aruco::detectMarkers(img, dictionary, corners, ids, params);
         for (unsigned int m=0; m<groundTruthIds.size(); m++) {
             int idx = -1;
@@ -207,7 +206,7 @@ projectMarker(aruco::Dictionary dictionary, int id, Mat cameraMatrix, double yaw
     markerObjPoints.push_back( markerObjPoints[0] + Point3f(markerLength, -markerLength, 0) );
     markerObjPoints.push_back( markerObjPoints[0] + Point3f(0, -markerLength, 0) );
 
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
 
@@ -280,7 +279,6 @@ void CV_ArucoDetectionPerspective::run(int) {
                 vector< int > ids;
                 aruco::DetectorParameters params;
                 params.minDistanceToBorder = 1;
-                params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -378,6 +376,97 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 }
 
 
+class CV_ArucoBitCorrection : public cvtest::BaseTest
+{
+public:
+    CV_ArucoBitCorrection();
+protected:
+    void run(int);
+};
+
+
+
+CV_ArucoBitCorrection::CV_ArucoBitCorrection() {}
+
+
+void CV_ArucoBitCorrection::run(int) {
+
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary2 = dictionary;
+    int markerSide = 50;
+    int imageSize = 150;
+    aruco::DetectorParameters params;
+
+
+    for(int i=0; i<10; i++) {
+        Mat marker;
+        int id = 10 + i*20;
+
+        cv::Mat currentCodeBytes = dictionary.bytesList.rowRange(id, id+1);
+
+        for(int i=0; i<5; i++) {
+            params.errorCorrectionRate = 0.2 + i*0.1;
+            int errors = dictionary.maxCorrectionBits*params.errorCorrectionRate - 1;
+
+            cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
+                                                                             dictionary.markerSize);
+            for(int e=0; e<errors; e++) {
+                currentCodeBits.ptr<unsigned char>()[2*e] =
+                        !currentCodeBits.ptr<unsigned char>()[2*e];
+            }
+            cv::Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
+            currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id+1));
+
+            Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
+            aruco::drawMarker(dictionary2, id, markerSide, marker);
+            Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
+            marker.copyTo(aux);
+            cv::imshow("aa", img);
+            vector< vector<Point2f> > corners;
+            vector< int > ids;
+            aruco::detectMarkers(img, dictionary, corners, ids, params);
+            if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id)  {
+                ts->printf( cvtest::TS::LOG, "Error in bit correction" );
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+        }
+
+        for(int i=0; i<5; i++) {
+            params.errorCorrectionRate = 0.2 + i*0.1;
+            int errors = dictionary.maxCorrectionBits*params.errorCorrectionRate + 1;
+
+            cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
+                                                                             dictionary.markerSize);
+            for(int e=0; e<errors; e++) {
+                currentCodeBits.ptr<unsigned char>()[2*e] =
+                        !currentCodeBits.ptr<unsigned char>()[2*e];
+            }
+            cv::Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
+            aruco::Dictionary dictionary3 = dictionary;
+            dictionary3.bytesList = dictionary2.bytesList.rowRange(id, id+1).clone();
+            currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id+1));
+
+            Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
+            aruco::drawMarker(dictionary2, id, markerSide, marker);
+            Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
+            marker.copyTo(aux);
+            vector< vector<Point2f> > corners;
+            vector< int > ids;
+            aruco::detectMarkers(img, dictionary3, corners, ids, params);
+            if(corners.size() != 0)  {
+                ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::errorCorrectionRate" );
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+        }
+
+    }
+
+}
+
 
 
 
@@ -396,3 +485,9 @@ TEST(CV_ArucoDetectionMarkerSize, algorithmic) {
     CV_ArucoDetectionMarkerSize test;
     test.safe_run();
 }
+
+TEST(CV_ArucoBitCorrection, algorithmic) {
+    CV_ArucoBitCorrection test;
+    test.safe_run();
+}
+

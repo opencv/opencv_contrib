@@ -108,7 +108,7 @@ static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
     const int markerSizePixels = 100;
     aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
 
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector<Point2f> corners;
     projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
@@ -142,7 +142,7 @@ static Mat projectChessboard(int squaresX, int squaresY, float squareSize,
                                  Mat rvec, Mat tvec) {
 
     Mat img(imageSize, CV_8UC1, Scalar::all(255));
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
     for(int y=0; y<squaresY; y++) {
         float startY = float(y)*squareSize;
@@ -235,7 +235,7 @@ void CV_CharucoDetection::run(int) {
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
 
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw+=100) {
@@ -253,7 +253,6 @@ void CV_CharucoDetection::run(int) {
                 vector< int > ids;
                 aruco::DetectorParameters params;
                 params.minDistanceToBorder = 3;
-                params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -339,7 +338,7 @@ void CV_CharucoPoseEstimation::run(int) {
     cameraMatrix.at<double>(0,2) = imgSize.width / 2;
     cameraMatrix.at<double>(1,2) = imgSize.height / 2;
 
-    Mat distCoeffs(5, 0, CV_64FC1, Scalar::all(0));
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw+=100) {
@@ -350,14 +349,13 @@ void CV_CharucoPoseEstimation::run(int) {
 
                 Mat rvec, tvec;
                 Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
-                                                  distance, imgSize, markerBorder, rvec, tvec);
+                                              distance, imgSize, markerBorder, rvec, tvec);
 
 
                 vector< vector<Point2f> > corners;
                 vector< int > ids;
                 aruco::DetectorParameters params;
                 params.minDistanceToBorder = 3;
-                params.doCornerRefinement = false;
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -421,6 +419,140 @@ void CV_CharucoPoseEstimation::run(int) {
 
 
 
+class CV_CharucoDiamondDetection : public cvtest::BaseTest
+{
+public:
+    CV_CharucoDiamondDetection();
+protected:
+    void run(int);
+};
+
+
+CV_CharucoDiamondDetection::CV_CharucoDiamondDetection() {}
+
+
+void CV_CharucoDiamondDetection::run(int) {
+
+    int iter = 0;
+    Mat cameraMatrix = Mat::eye(3,3, CV_64FC1);
+    Size imgSize(500,500);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    float squareLength = 0.03f;
+    float markerLength = 0.015f;
+    aruco::CharucoBoard board = aruco::CharucoBoard::create(3, 3, squareLength, markerLength,
+                                                            dictionary);
+
+    cameraMatrix.at<double>(0,0) = cameraMatrix.at<double>(1,1) = 650;
+    cameraMatrix.at<double>(0,2) = imgSize.width / 2;
+    cameraMatrix.at<double>(1,2) = imgSize.height / 2;
+
+    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+
+    for(double distance = 0.3; distance <= 0.3; distance += 0.2) {
+        for(int yaw = 0; yaw < 360; yaw+=100) {
+            for(int pitch = 30; pitch <=90; pitch+=30) {
+
+                int markerBorder = iter%2+1;
+                for(int i=0; i<4; i++)
+                    board.ids[i] = 4*iter + i;
+                iter ++;
+
+                Mat rvec, tvec;
+                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
+                                                  distance, imgSize, markerBorder, rvec, tvec);
+
+
+                vector< vector<Point2f> > corners;
+                vector< int > ids;
+                aruco::DetectorParameters params;
+                params.minDistanceToBorder = 0;
+                params.markerBorderBits = markerBorder;
+                aruco::detectMarkers(img, dictionary, corners, ids, params);
+
+                if(ids.size()!=4) {
+                    ts->printf( cvtest::TS::LOG, "Not enough markers for diamond detection" );
+                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                    return;
+                }
+
+                vector< vector<Point2f> > diamondCorners;
+                vector<Vec4i> diamondIds;
+
+                aruco::detectCharucoDiamond(img, corners, ids, squareLength/markerLength,
+                                            diamondCorners, diamondIds, cameraMatrix, distCoeffs);
+
+                if(diamondIds.size()!=1) {
+                    ts->printf( cvtest::TS::LOG, "Diamond not detected correctly" );
+                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                    return;
+                }
+
+                for(int i=0; i<4; i++) {
+                    if(diamondIds[0][i] != board.ids[i]) {
+                        ts->printf( cvtest::TS::LOG, "Incorrect diamond ids" );
+                        ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                        return;
+                    }
+                }
+
+                vector<Point2f> projectedDiamondCorners;
+                projectPoints(board.chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+                                  projectedDiamondCorners);
+
+                vector<Point2f> projectedDiamondCornersReorder(4);
+                projectedDiamondCornersReorder[0] = projectedDiamondCorners[2];
+                projectedDiamondCornersReorder[1] = projectedDiamondCorners[3];
+                projectedDiamondCornersReorder[2] = projectedDiamondCorners[1];
+                projectedDiamondCornersReorder[3] = projectedDiamondCorners[0];
+
+
+                for(unsigned int i=0; i<4; i++) {
+
+                    double repError = norm(diamondCorners[0][i] -
+                                               projectedDiamondCornersReorder[i]);
+
+                    if(repError > 5.) {
+                        ts->printf(cvtest::TS::LOG, "Diamond corner reprojection error too high" );
+                        ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                        return;
+                    }
+
+                }
+
+                std::vector<cv::Mat> estimatedRvec, estimatedTvec;
+                aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, cameraMatrix,
+                                                 distCoeffs, estimatedRvec, estimatedTvec);
+
+                vector<Point2f> projectedDiamondCornersPose;
+                vector<Vec3f> diamondObjPoints(4);
+                diamondObjPoints[0] = Vec3f(-squareLength / 2.f, squareLength / 2.f, 0);
+                diamondObjPoints[1] = Vec3f(squareLength / 2.f, squareLength / 2.f, 0);
+                diamondObjPoints[2] = Vec3f(squareLength / 2.f, -squareLength / 2.f, 0);
+                diamondObjPoints[3] = Vec3f(-squareLength / 2.f, -squareLength / 2.f, 0);
+                projectPoints(diamondObjPoints, estimatedRvec[0], estimatedTvec[0],
+                              cameraMatrix, distCoeffs, projectedDiamondCornersPose);
+
+                for(unsigned int i=0; i<4; i++) {
+                    double repError = norm(projectedDiamondCornersReorder[i] -
+                                               projectedDiamondCornersPose[i]);
+
+                    if(repError > 5.) {
+                        ts->printf(cvtest::TS::LOG, "Charuco pose error too high" );
+                        ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
+                        return;
+                    }
+
+                }
+
+            }
+        }
+    }
+
+
+}
+
+
+
 
 
 TEST(CV_CharucoDetection, accuracy) {
@@ -431,5 +563,10 @@ TEST(CV_CharucoDetection, accuracy) {
 
 TEST(CV_CharucoPoseEstimation, accuracy) {
     CV_CharucoPoseEstimation test;
+    test.safe_run();
+}
+
+TEST(CV_CharucoDiamondDetection, accuracy) {
+    CV_CharucoDiamondDetection test;
     test.safe_run();
 }
