@@ -21,7 +21,7 @@ $ cmake -D CMAKE_INSTALL_PREFIX=/usr/local ..
 $ make all -j4
 $ sudo make install
 ```
-###After all these steps, the headers and libs of CAFFE will be set on /usr/local/ path, and when you compiling opencv with opencv_contrib modules as below, the protobuf and caffe will be recognized as already installed while building. Protobuf is 
+###After all these steps, the headers and libs of CAFFE will be set on /usr/local/ path, and when you compiling opencv with opencv_contrib modules as below, the protobuf and caffe will be recognized as already installed while building. Protobuf is needed.
 
 #Compiling OpenCV
 ```
@@ -57,7 +57,7 @@ $ make
 ```
 $ ./sphereview_test -plymodel=../3Dmodel/ape.ply -label_class=0
 ```
-###press 'Q' to start 2D image genaration 
+###press 'Q' to start 2D image genaration
 ```
 $ ./sphereview_test -plymodel=../3Dmodel/ant.ply -label_class=1
 ```
