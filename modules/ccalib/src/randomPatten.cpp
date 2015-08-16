@@ -53,7 +53,7 @@
  * Pattern", in IROS 2013.
  */
 #include "precomp.hpp"
-#include "opencv2/randomPatten.hpp"
+#include "opencv2/ccalib/randomPatten.hpp"
 #include <iostream>
 using namespace cv;
 using namespace std;

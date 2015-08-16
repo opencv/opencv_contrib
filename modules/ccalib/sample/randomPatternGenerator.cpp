@@ -1,4 +1,4 @@
-#include "opencv2/randomPatten.hpp";
+#include "opencv2/ccalib/randomPatten.hpp";
 
 const char * usage =
     "\n example command line for generating a random pattern. \n"

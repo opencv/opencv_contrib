@@ -42,8 +42,8 @@
 #ifndef __OPENCV_MULTICAMERACALIBRATION_HPP__
 #define __OPENCV_MULTICAMERACALIBRATION_HPP__
 
-#include "opencv2/randomPatten.hpp"
-#include "opencv2/omnidir.hpp"
+#include "opencv2/ccalib/randomPatten.hpp"
+#include "opencv2/ccalib/omnidir.hpp"
 #include <string>
 #include <iostream>
 

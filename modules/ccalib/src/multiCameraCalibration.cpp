@@ -58,7 +58,7 @@
  */
 
 #include "precomp.hpp"
-#include "opencv2/multiCameraCalibration.hpp"
+#include "opencv2/ccalib/multiCameraCalibration.hpp"
 #include <string>
 #include <vector>
 #include <queue>
@@ -590,18 +590,14 @@ double multiCameraCalibration::computeProjectError(Mat& parameters)
         cv::Rodrigues(rvecVertex[photoVertex-1], RPhoto);
         if (cameraVertex == 0)
         {
-            //RPhoto.copyTo(edgeList[edgeIdx].transform.rowRange(0, 3).colRange(0, 3));
             RPhoto.copyTo(transform.rowRange(0, 3).colRange(0, 3));
             TPhoto.copyTo(transform.rowRange(0, 3).col(3));
-            //TPhoto.copyTo(transform.rowRange(0, 3).col(3));
         }
         else
         {
             TCamera = Mat(tvecVertex[cameraVertex - 1]).reshape(1, 3);
             cv::Rodrigues(rvecVertex[cameraVertex - 1], RCamera);
-            //Mat(RCamera*RPhoto).copyTo(edgeList[edgeIdx].transform.rowRange(0, 3).colRange(0, 3));
             Mat(RCamera*RPhoto).copyTo(transform.rowRange(0, 3).colRange(0, 3));
-            //Mat(RCamera * TPhoto + TCamera).copyTo(edgeList[edgeIdx].transform.rowRange(0, 3).col(3));
             Mat(RCamera * TPhoto + TCamera).copyTo(transform.rowRange(0, 3).col(3));
         }
 

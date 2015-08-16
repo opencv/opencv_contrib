@@ -244,10 +244,10 @@ namespace omnidir
 
 namespace internal
 {
-    void initializeCalibration(InputOutputArrayOfArrays objectPoints, InputOutputArrayOfArrays imagePoints, Size size, OutputArrayOfArrays omAll,
+    void initializeCalibration(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, Size size, OutputArrayOfArrays omAll,
         OutputArrayOfArrays tAll, OutputArray K, double& xi, OutputArray idx = noArray());
 
-    void initializeStereoCalibration(InputOutputArrayOfArrays objectPoints, InputOutputArrayOfArrays imagePoints1, InputOutputArrayOfArrays imagePoints2,
+    void initializeStereoCalibration(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
         const Size& size1, const Size& size2, OutputArray om, OutputArray T, OutputArrayOfArrays omL, OutputArrayOfArrays tL, OutputArray K1, OutputArray D1, OutputArray K2, OutputArray D2,
         double &xi1, double &xi2, int flags, OutputArray idx);
 

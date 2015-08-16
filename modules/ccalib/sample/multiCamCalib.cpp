@@ -1,6 +1,6 @@
-#include "opencv2/omnidir.hpp"
-#include "opencv2/multiCameraCalibration.hpp"
-#include "opencv2/randomPatten.hpp"
+#include "opencv2/ccalib/omnidir.hpp"
+#include "opencv2/ccalib/multiCameraCalibration.hpp"
+#include "opencv2/ccalib/randomPatten.hpp"
 
 using namespace std;
 using namespace cv;
