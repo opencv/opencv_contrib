@@ -293,9 +293,9 @@ int main(int argc, char *argv[]) {
     vector<int> allIdsConcatenated;
     vector<int> markerCounterPerFrame;
     markerCounterPerFrame.reserve(allCorners.size());
-    for(int i=0; i<allCorners.size(); i++) {
-        markerCounterPerFrame.push_back(allCorners[i].size());
-        for(int j=0; j<allCorners[i].size(); j++) {
+    for(unsigned int i=0; i<allCorners.size(); i++) {
+        markerCounterPerFrame.push_back((int)allCorners[i].size());
+        for(unsigned int j=0; j<allCorners[i].size(); j++) {
             allCornersConcatenated.push_back(allCorners[i][j]);
             allIdsConcatenated.push_back(allIds[i][j]);
         }

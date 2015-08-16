@@ -185,8 +185,7 @@ _findMarkerContours(InputArray _in, vector<vector<Point2f> > &candidates,
 /**
   * @brief Assure order of candidate corners is clockwise direction
   */
-static void _reorderCandidatesCorners(vector<vector<Point2f> > &candidates,
-                                      vector<vector<Point> > &contours) {
+static void _reorderCandidatesCorners(vector<vector<Point2f> > &candidates) {
 
     for (unsigned int i = 0; i < candidates.size(); i++) {
         double dx1 = candidates[i][1].x - candidates[i][0].x;
@@ -364,7 +363,7 @@ _detectInitialCandidates(const cv::Mat &grey, vector<vector<Point2f> > &candidat
                                 params.minCornerDistance, params.minDistanceToBorder);
 
             // join candidates
-            for(int i=0; i<currentCandidates.size(); i++) {
+            for(unsigned int i=0; i<currentCandidates.size(); i++) {
                 candidates.push_back(currentCandidates[i]);
                 contours.push_back(currentContours[i]);
             }
@@ -396,7 +395,7 @@ _detectInitialCandidates(const cv::Mat &grey, vector<vector<Point2f> > &candidat
 
         // join candidates
         for(int i = 0; i < nScales; i++) {
-            for(int j=0; j<candidatesArrays[i].size(); j++) {
+            for(unsigned int j=0; j<candidatesArrays[i].size(); j++) {
                 candidates.push_back(candidatesArrays[i][j]);
                 contours.push_back(contoursArrays[i][j]);
             }
@@ -431,7 +430,7 @@ _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArra
     _detectInitialCandidates(grey, candidates, contours, params);
 
     /// 3. SORT CORNERS
-    _reorderCandidatesCorners(candidates, contours);
+    _reorderCandidatesCorners(candidates);
 
     /// 4. FILTER OUT NEAR CANDIDATE PAIRS
     vector<vector<Point2f> > candidatesOut;
@@ -450,7 +449,7 @@ _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArra
 
         _contours.create(contoursOut[i].size(), 1, CV_32SC2, i, true);
         Mat c = _contours.getMat(i);
-        for (int j = 0; j < contoursOut[i].size(); j++)
+        for (unsigned int j = 0; j < contoursOut[i].size(); j++)
             c.ptr<Point2i>()[j] = contoursOut[i][j];
 
     }
@@ -547,8 +546,8 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
     // Transform corners to Point2i to find them easily
     Point cornersInt[4];
     for(int c=0; c<4; c++)
-        cornersInt[c] = Point(_corners.getMat().ptr<Point2f>()[c].x,
-                              _corners.getMat().ptr<Point2f>()[c].y);
+        cornersInt[c] = Point((int)_corners.getMat().ptr<Point2f>()[c].x,
+                              (int)_corners.getMat().ptr<Point2f>()[c].y);
 
     // This stores the indexes of each corner in the contour vector
     int cornerInContourIdxs[4];
@@ -556,7 +555,7 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
         cornerInContourIdxs[c] = -1; // default -1
 
     // look for each corner and store position in cornerInContourIdxs
-    for(int i=0; i<_contour.total(); i++) {
+    for(int i=0; i<(int)_contour.total(); i++) {
         for(int c=0; c<4; c++) {
             if(cornerInContourIdxs[c]==-1 && _contour.getMat().ptr<Point>()[i] == cornersInt[c]) {
                 cornerInContourIdxs[c] = i;
@@ -599,7 +598,7 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
 
     // calculate error of each side (top, right, bottom and left) for each bit transition
     // error is separation of contour from ideal rect line of perspective transformation
-    vector<double> fErr[4];
+    vector<float> fErr[4];
     for(int k=0; k<4; k++) {
         fErr[k].resize(markerSizeWithBorders+1, 0); // error on each bit transition
         // on the corners, the error is 0
@@ -611,7 +610,7 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
         int endIdx = cornerInContourIdxs[(k+1)%4];
         float lastValueErr = 0;
         // while doing this side of contour
-        for(int i=startIdx; i!=endIdx; i=(i+tContour.size()+incr)%tContour.size()) {
+        for(int i=startIdx; i!=endIdx; i=(i+(int)tContour.size()+incr)%(int)tContour.size()) {
             // valueError is the error respect to the rectLine
             // valueInterval is the other corrdinate
             float valueInterval, valueErr;
@@ -632,7 +631,7 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
             // if there is a bit transition jump, we have a new value to store
             if(valueInterval > currBit) {
                 // error is mean between this and last error
-                fErr[k][currBit] = valueErr*0.5 + lastValueErr*0.5;
+                fErr[k][currBit] = valueErr*0.5f + lastValueErr*0.5f;
                 currBit++; // increase, now look for next bit transition
                 if(currBit == (markerSizeWithBorders+1)) // if no more bits, finish this side
                     break;
@@ -696,9 +695,9 @@ _extractBitsDistortion(InputArray _image, InputArray _corners, InputArray _conto
    // for each cell, calculate transformation and include it in resultImg
     vector<Point2f> pointsOut(4);
     pointsOut[0] = Point2f(0,0);
-    pointsOut[1] = Point2f(cellSize,0);
-    pointsOut[2] = Point2f(cellSize,cellSize);
-    pointsOut[3] = Point2f(0,cellSize);
+    pointsOut[1] = Point2f((float)cellSize, 0.f);
+    pointsOut[2] = Point2f((float)cellSize, (float)cellSize);
+    pointsOut[3] = Point2f(0.f, (float)cellSize);
     for(int y=0; y<markerSizeWithBorders; y++) {
         for(int x=0; x<markerSizeWithBorders; x++) {
             vector<Point2f> pointsIn(4);
@@ -1152,7 +1151,7 @@ void detectMarkers(InputArray _image, Dictionary dictionary, OutputArrayOfArrays
         //}
 
         // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, _corners.total()),
+        parallel_for_(Range(0, (int)_corners.total()),
                       MarkerSubpixelParallel(&grey, _corners, &params ));
     }
 
@@ -1464,7 +1463,6 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
 
     for (unsigned int i=0; i < undetectedMarkersIds.size(); i++) {
         int closestCandidateIdx = -1;
-        int closestCandidateRot = 0;
         double closestCandidateDistance = minRepDistance*minRepDistance + 1;
         Mat closestRotatedMarker;
 
@@ -1528,7 +1526,6 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
 
             if(errorCorrectionRate < 0 || codeDistance < maxCorrectionRecalculated) {
                 closestCandidateIdx = j;
-                closestCandidateRot = validRot;
                 closestCandidateDistance = minDistance;
                 closestRotatedMarker = rotatedMarker;
             }
@@ -1894,7 +1891,7 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     vector<Mat> processedObjectPoints, processedImagePoints;
-    int nFrames = _counter.total();
+    int nFrames = (int)_counter.total();
     int markerCounter = 0;
     for (int frame = 0; frame < nFrames; frame++) {
         int nMarkersInThisFrame = _counter.getMat().ptr<int>()[frame];

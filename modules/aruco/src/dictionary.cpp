@@ -352,7 +352,7 @@ const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
 }
 
 
-Mat _generateRandomMarker(int markerSize) {
+static Mat _generateRandomMarker(int markerSize) {
     Mat marker(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
     for(int i=0; i<markerSize; i++) {
         for(int j=0; j<markerSize; j++) {
@@ -363,9 +363,9 @@ Mat _generateRandomMarker(int markerSize) {
     return marker;
 }
 
-int _getSelfDistance(const Mat &marker) {
+static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
-    int minHamming = marker.total() + 1;
+    int minHamming = (int)marker.total() + 1;
     for(int i=1; i<4; i++) {
         int currentHamming = 0;
         for(int j=0; j<bytes.cols; j++) {
@@ -385,8 +385,8 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
     Dictionary out;
     out.markerSize = markerSize;
 
-    int C = std::floor(markerSize*markerSize/4.);
-    int tau = 2*std::floor(C*4./3.);
+    int C = std::floor(float(markerSize*markerSize)/4.f);
+    int tau = 2*std::floor(float(C)*4.f/3.f);
 
     if(baseDictionary.bytesList.rows > 0) {
         CV_Assert(baseDictionary.markerSize == markerSize);

@@ -350,7 +350,7 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         params.minMarkerPerimeterRate = std::max(0., (4.*markerSide)/float(imageSize) - 0.1);
         aruco::detectMarkers(img, dictionary, corners, ids, params);
-        if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id) {
+        if(corners.size() != 1 || (corners.size()==1 && ids[0]!=id) ) {
             ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::minMarkerPerimeterRate" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
@@ -366,7 +366,7 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         params.maxMarkerPerimeterRate = std::max(0., (4.*markerSide)/float(imageSize) + 0.1);
         aruco::detectMarkers(img, dictionary, corners, ids, params);
-        if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id) {
+        if(corners.size() != 1 || (corners.size()==1 && ids[0]!=id) ) {
             ts->printf( cvtest::TS::LOG, "Error in DetectorParameters::maxMarkerPerimeterRate" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
@@ -398,15 +398,15 @@ void CV_ArucoBitCorrection::run(int) {
     aruco::DetectorParameters params;
 
 
-    for(int i=0; i<10; i++) {
+    for(int l=0; l<10; l++) {
         Mat marker;
-        int id = 10 + i*20;
+        int id = 10 + l*20;
 
         cv::Mat currentCodeBytes = dictionary.bytesList.rowRange(id, id+1);
 
         for(int i=0; i<5; i++) {
             params.errorCorrectionRate = 0.2 + i*0.1;
-            int errors = dictionary.maxCorrectionBits*params.errorCorrectionRate - 1;
+            int errors = std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate - 1.);
 
             cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
                                                                              dictionary.markerSize);
@@ -425,7 +425,7 @@ void CV_ArucoBitCorrection::run(int) {
             vector< vector<Point2f> > corners;
             vector< int > ids;
             aruco::detectMarkers(img, dictionary, corners, ids, params);
-            if(corners.size() != 1 || (corners.size()==1) && ids[0]!=id)  {
+            if(corners.size() != 1 || (corners.size()==1 && ids[0]!=id) )  {
                 ts->printf( cvtest::TS::LOG, "Error in bit correction" );
                 ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
                 return;
@@ -435,7 +435,7 @@ void CV_ArucoBitCorrection::run(int) {
 
         for(int i=0; i<5; i++) {
             params.errorCorrectionRate = 0.2 + i*0.1;
-            int errors = dictionary.maxCorrectionBits*params.errorCorrectionRate + 1;
+            int errors = std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate + 1.);
 
             cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
                                                                              dictionary.markerSize);

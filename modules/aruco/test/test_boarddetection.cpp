@@ -296,7 +296,7 @@ void CV_ArucoRefine::run(int) {
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
-                int markersBeforeDelete = ids.size();
+                int markersBeforeDelete = (int)ids.size();
                 if(markersBeforeDelete<2) continue;
 
                 rejected.push_back(corners[0]);
@@ -306,7 +306,7 @@ void CV_ArucoRefine::run(int) {
                 aruco::refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
                                              distCoeffs, 10, 3., true, cv::noArray(), params);
 
-                if(ids.size() < markersBeforeDelete) {
+                if((int)ids.size() < markersBeforeDelete) {
                     ts->printf(cvtest::TS::LOG, "Error in refine detected markers" );
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                     return;

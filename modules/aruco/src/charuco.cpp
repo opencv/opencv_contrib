@@ -385,7 +385,7 @@ _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
     //}
 
     // this is the parallel call for the previous commented loop (result is equivalent)
-    parallel_for_(Range(0, filteredChessboardImgPoints.size()),
+    parallel_for_(Range(0, (int)filteredChessboardImgPoints.size()),
                   CharucoSubpixelParallel(&grey, &filteredChessboardImgPoints, &filteredWinSizes,
                                           &params));
 
@@ -894,7 +894,8 @@ void drawCharucoDiamond(Dictionary dictionary, Vec4i ids, int squareLength, int 
     CV_Assert(marginSize >= 0 && borderBits > 0);
 
     // create a charuco board similar to a charuco marker and print it
-    CharucoBoard board = CharucoBoard::create(3, 3, squareLength, markerLength, dictionary);
+    CharucoBoard board = CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength,
+                                              dictionary);
 
     // assign the charuco marker ids
     for(int i=0; i<4; i++)

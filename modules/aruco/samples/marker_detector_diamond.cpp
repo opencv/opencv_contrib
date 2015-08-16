@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     bool autoScale = false;
     float autoScaleFactor = 1.;
     if (isParam("-as", argc, argv)) {
-      autoScaleFactor = atof( getParam("-as", argc, argv).c_str() );
+      autoScaleFactor = (float)atof( getParam("-as", argc, argv).c_str() );
       autoScale = true;
     }
 
@@ -185,8 +185,6 @@ int main(int argc, char *argv[]) {
         inputVideo.open(camId);
         waitTime = 10;
     }
-
-    float axisLength = 0.5f*squareLength;
 
     double totalTime = 0;
     int totalIterations = 0;
