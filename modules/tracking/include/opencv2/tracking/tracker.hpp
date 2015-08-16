@@ -1247,28 +1247,80 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 
 /************************************ Multi-Tracker Classes ************************************/
 
+/** @brief Base abstract class for the long-term Multi Object Trackers:
+
+@sa Tracker, MultiTrackerTLD
+*/
 class CV_EXPORTS_W MultiTracker
 {
 public:
-
+	/** @brief Constructor for Multitracker
+	*/
 	MultiTracker()
 	{
 		targetNum = 0;
 	}
 
+	/** @brief Add a new target to a tracking-list and initialize the tracker with a know bounding box that surrounding the target
+	@param image The initial frame
+	@param boundingBox The initial boundig box of target
+	@param tracker_algorithm_name Multi-tracker algorithm name
+
+	@return True if new target initialization went succesfully, false otherwise
+	*/
 	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
 
+	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets
+	@param image The current frame
+
+	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
+	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
+	missing from the frame (say, out of sight)
+	*/
 	bool update(const Mat& image);
 
+	/** @brief Current number of targets in tracking-list
+	*/
 	int targetNum;
+
+	/** @brief Trackers list for Multi-Object-Tracker
+	*/
 	std::vector <Ptr<Tracker> > trackers;
+
+	/** @brief Bounding Boxes list for Multi-Object-Tracker
+	*/
 	std::vector <Rect2d> boundingBoxes;
+	/** @brief List of randomly generated colors for bounding boxes display
+	*/
 	std::vector<Scalar> colors;
 };
 
+/** @brief Multi Object Tracker for TLD. TLD is a novel tracking framework that explicitly decomposes
+the long-term tracking task into tracking, learning and detection.
+
+The tracker follows the object from frame to frame. The detector localizes all appearances that
+have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
+errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
+
+The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this
+implementation, following authors. Tracker is supposed to be able to handle rapid motions, partial
+occlusions, object absence etc.
+
+@sa Tracker, MultiTracker, TrackerTLD
+*/
 class CV_EXPORTS_W MultiTrackerTLD : public MultiTracker
 {
 public:
+	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets by
+	optimized update method using some techniques to speedup calculations specifically for MO TLD. The only limitation
+	is that	all target bounding boxes should have approximately same aspect ratios. Speed boost is around 20%
+
+	@param image The current frame.
+
+	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
+	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
+	missing from the frame (say, out of sight)
+	*/
 	bool update_opt(const Mat& image);
 };
 
