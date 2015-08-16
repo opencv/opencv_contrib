@@ -1256,7 +1256,7 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 
 @sa Tracker, MultiTrackerTLD
 */
-class CV_EXPORTS_W MultiTracker_Alt
+class CV_EXPORTS_W MultiTracker
 {
 public:
 	/** @brief Constructor for Multitracker
@@ -1273,11 +1273,10 @@ public:
 
 	@return True if new target initialization went succesfully, false otherwise
 	*/
-	bool addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name);
+	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
 
 	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets
 	@param image The current frame
-
 	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
 	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
 	missing from the frame (say, out of sight)
