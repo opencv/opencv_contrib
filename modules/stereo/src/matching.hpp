@@ -67,7 +67,7 @@ namespace cv
             //!the LUT used in case SSE is not available
             int hamLut[65537];
             //!function used for getting the minimum disparity from the cost volume"
-            static int minim(int *c, int iwpj, int widthDisp,const double confidence, const int search_region)
+            static int minim(short *c, int iwpj, int widthDisp,const double confidence, const int search_region)
             {
                 double mini, mini2, mini3;
                 mini = mini2 = mini3 = DBL_MAX;
@@ -101,7 +101,7 @@ namespace cv
             }
             //!Interpolate in order to obtain better results
             //!function for refining the disparity at sub pixel using simetric v
-            static double symetricVInterpolation(int *c, int iwjp, int widthDisp, int winDisp,const int search_region)
+            static double symetricVInterpolation(short *c, int iwjp, int widthDisp, int winDisp,const int search_region)
             {
                 if (winDisp == 0 || winDisp == widthDisp - 1)
                     return winDisp;
@@ -146,12 +146,13 @@ namespace cv
             class hammingDistance : public ParallelLoopBody
             {
             private:
-                int *left, *right, *c;
+                int *left, *right;
+                short *c;
                 int v,kernelSize, width, height;
                 int MASK;
                 int *hammLut;
             public :
-                hammingDistance(const Mat &leftImage, const Mat &rightImage, int *cost, int maxDisp, int kerSize, int *hammingLUT):
+                hammingDistance(const Mat &leftImage, const Mat &rightImage, short *cost, int maxDisp, int kerSize, int *hammingLUT):
                     left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), height(leftImage.rows), MASK(65535), hammLut(hammingLUT){}
                 void operator()(const cv::Range &r) const {
                     for (int i = r.start; i <= r.end ; i++)
@@ -168,42 +169,10 @@ namespace cv
                                 j2 = (0 > j - d) ? (0) : (j - d);
                                 xorul = left[(iwj)] ^ right[(iw + j2)];
 #if CV_SSE4_1
-                                c[(iwj)* (v + 1) + d] = _mm_popcnt_u32(xorul);
+                                c[(iwj)* (v + 1) + d] = (short)_mm_popcnt_u32(xorul);
 #else
-                                c[(iwj)* (v + 1) + d] = hammLut[xorul & MASK] + hammLut[xorul >> 16];
+                                c[(iwj)* (v + 1) + d] = (short)(hammLut[xorul & MASK] + hammLut[xorul >> 16]);
 #endif
-                            }
-                        }
-                    }
-                }
-            };
-            //!preprocessing used for agregation
-            class costGatheringHorizontal:public ParallelLoopBody
-            {
-            private:
-                int *c, *ham;
-                int width, maxDisp;
-            public:
-                costGatheringHorizontal(const Mat &hamimg,const int maxDispa, Mat &output)
-                {
-                    ham = (int *)hamimg.data;
-                    c = (int *)output.data;
-                    maxDisp = maxDispa;
-                    width = output.cols / ( maxDisp + 1) - 1;
-                }
-                void operator()(const cv::Range &r) const {
-                    for (int i = r.start; i <= r.end; i++)
-                    {
-                        int iw = i * width;
-                        int iwi = (i - 1) * width;
-                        for (int j = 1; j <= width; j++)
-                        {
-                            int iwj = (iw + j) * (maxDisp + 1);
-                            int iwjmu = (iw + j - 1) * (maxDisp + 1);
-                            int iwijmu = (iwi + j - 1) * (maxDisp + 1);
-                            for (int d = 0; d <= maxDisp; d++)
-                            {
-                                c[iwj + d] = ham[iwijmu + d] + c[iwjmu + d];
                             }
                         }
                     }
@@ -214,17 +183,17 @@ namespace cv
             {
             private:
                 int win;
-                int *c, *parSum;
+                short *c, *parSum;
                 int maxDisp,width, height;
             public:
                 agregateCost(const Mat &partialSums, int windowSize, int maxDispa, Mat &cost)
                 {
                     win = windowSize / 2;
-                    c = (int *)cost.data;
+                    c = (short *)cost.data;
                     maxDisp = maxDispa;
                     width = cost.cols / ( maxDisp + 1) - 1;
                     height = cost.rows - 1;
-                    parSum = (int *)partialSums.data;
+                    parSum = (short *)partialSums.data;
                 }
                 void operator()(const cv::Range &r) const {
                     for (int i = r.start; i <= r.end; i++)
@@ -255,11 +224,11 @@ namespace cv
                 int width,disparity,scallingFact,th;
                 double confCheck;
                 uint8_t *map;
-                int *c;
+                short *c;
             public:
                 makeMap(const Mat &costVolume, int threshold, int maxDisp, double confidence,int scale, Mat &mapFinal)
                 {
-                    c = (int *)costVolume.data;
+                    c = (short *)costVolume.data;
                     map = mapFinal.data;
                     disparity = maxDisp;
                     width = costVolume.cols / ( disparity + 1) - 1;
@@ -393,6 +362,7 @@ namespace cv
             int *specklePointX;
             int *specklePointY;
             long long *pus;
+            int previous_size;
             //!method for setting the maximum disparity
             void setMaxDisparity(int val)
             {
@@ -436,22 +406,37 @@ namespace cv
                 CV_Assert(kernelSize % 2 != 0);
                 CV_Assert(cost.rows == leftImage.rows);
                 CV_Assert(cost.cols / (maxDisparity + 1) == leftImage.cols);
-                int *c = (int *)cost.data;
+                short *c = (short *)cost.data;
                 memset(c, 0, sizeof(c[0]) * leftImage.cols * leftImage.rows * (maxDisparity + 1));
-                parallel_for_(cv::Range(kernelSize / 2,leftImage.rows - kernelSize / 2), hammingDistance(leftImage,rightImage,(int *)cost.data,maxDisparity,kernelSize / 2,hamLut));
+                parallel_for_(cv::Range(kernelSize / 2,leftImage.rows - kernelSize / 2), hammingDistance(leftImage,rightImage,(short *)cost.data,maxDisparity,kernelSize / 2,hamLut));
             }
             //preprocessing the cost volume in order to get it ready for aggregation
             void costGathering(const Mat &hammingDistanceCost, Mat &cost)
             {
                 CV_Assert(hammingDistanceCost.rows == hammingDistanceCost.rows);
-                CV_Assert(hammingDistanceCost.type() == CV_32SC4);
-                CV_Assert(cost.type() == CV_32SC4);
+                CV_Assert(hammingDistanceCost.type() == CV_16S);
+                CV_Assert(cost.type() == CV_16S);
                 int maxDisp = maxDisparity;
                 int width = cost.cols / ( maxDisp + 1) - 1;
                 int height = cost.rows - 1;
-                int *c = (int *)cost.data;
+                short *c = (short *)cost.data;
+                short *ham = (short *)hammingDistanceCost.data;
                 memset(c, 0, sizeof(c[0]) * (width + 1) * (height + 1) * (maxDisp + 1));
-                parallel_for_(cv::Range(1,height), costGatheringHorizontal(hammingDistanceCost,maxDisparity,cost));
+                for (int i = 1; i <= height; i++)
+                {
+                    int iw = i * width;
+                    int iwi = (i - 1) * width;
+                    for (int j = 1; j <= width; j++)
+                    {
+                        int iwj = (iw + j) * (maxDisp + 1);
+                        int iwjmu = (iw + j - 1) * (maxDisp + 1);
+                        int iwijmu = (iwi + j - 1) * (maxDisp + 1);
+                        for (int d = 0; d <= maxDisp; d++)
+                        {
+                            c[iwj + d] = ham[iwijmu + d] + c[iwjmu + d];
+                        }
+                    }
+                }
                 for (int i = 1; i <= height; i++)
                 {
                     for (int j = 1; j <= width; j++)
@@ -472,7 +457,7 @@ namespace cv
                 CV_Assert(partialSums.rows == cost.rows);
                 CV_Assert(partialSums.cols == cost.cols);
                 int win = windowSize / 2;
-                int *c = (int *)cost.data;
+                short *c = (short *)cost.data;
                 int maxDisp = maxDisparity;
                 int width = cost.cols / ( maxDisp + 1) - 1;
                 int height = cost.rows - 1;
@@ -484,8 +469,8 @@ namespace cv
             {
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
-                CV_Assert(t > 0);
-                memset(pus, 0, sizeof(pus));
+                CV_Assert(t >= 0);
+                memset(pus, 0, previous_size * sizeof(pus[0]));
                 uint8_t *map = currentMap.data;
                 uint8_t *outputMap = out.data;
                 int height = currentMap.rows;

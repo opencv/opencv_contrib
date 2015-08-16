@@ -52,7 +52,7 @@ namespace cv
     {
         //function that performs the census transform on two images.
         //Two variants of census are offered a sparse version whcih takes every second pixel as well as dense version
-        void censusTransform(const Mat &image1, const Mat &image2, int kernelSize, Mat &dist1, Mat &dist2, const int type)
+        CV_EXPORTS void censusTransform(const Mat &image1, const Mat &image2, int kernelSize, Mat &dist1, Mat &dist2, const int type)
         {
             CV_Assert(image1.size() == image2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -75,7 +75,7 @@ namespace cv
             }
         }
         //function that performs census on one image
-        void censusTransform(const Mat &image1, int kernelSize, Mat &dist1, const int type)
+        CV_EXPORTS void censusTransform(const Mat &image1, int kernelSize, Mat &dist1, const int type)
         {
             CV_Assert(image1.size() == dist1.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -98,7 +98,7 @@ namespace cv
             }
         }
         //in a 9x9 kernel only certain positions are choosen for comparison
-        void starCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1, Mat &dist2)
+        CV_EXPORTS void starCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1, Mat &dist2)
         {
             CV_Assert(img1.size() == img2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -110,7 +110,7 @@ namespace cv
             parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<2>(images, n2,date));
         }
         //single version of star census
-        void starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
+        CV_EXPORTS void starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
         {
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -126,7 +126,7 @@ namespace cv
         //the sencond modified census transform is invariant to noise; i.e.
         //if the current pixel with whom we are dooing the comparison is a noise, this descriptor will provide a better result by comparing with the mean of the window
         //otherwise if the pixel is not noise the information is strengthend
-        void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat &IntegralImage1, const Mat &IntegralImage2 )
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat &IntegralImage1, const Mat &IntegralImage2 )
         {
             CV_Assert(img1.size() == img2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -153,7 +153,7 @@ namespace cv
                     CombinedDescriptor<2,3,2,2, MVKernel<2> >(img1.cols, img1.rows,stride,n2,date,MVKernel<2>(images,integral),n2));
             }
         }
-        void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &IntegralImage)
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &IntegralImage)
         {
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -168,7 +168,7 @@ namespace cv
             {
                 //MCT
                 parallel_for_(Range(n2, img1.rows - n2),
-                    CombinedDescriptor<2,3,2, 1,MCTKernel<1> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<1>(images,t),n2));
+                    CombinedDescriptor<2,4,2, 1,MCTKernel<1> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<1>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
             {
@@ -180,7 +180,7 @@ namespace cv
         }
         //different versions of simetric census
         //These variants since they do not compare with the center they are invariant to noise
-        void symetricCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1, Mat &dist2, const int type)
+        CV_EXPORTS void symetricCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1, Mat &dist2, const int type)
         {
             CV_Assert(img1.size() ==  img2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -202,7 +202,7 @@ namespace cv
                     CombinedDescriptor<1,1,1,2,ModifiedCsCensus<2> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<2>(images,n2),1));
             }
         }
-        void symetricCensusTransform(const Mat &img1, int kernelSize, Mat &dist1, const int type)
+        CV_EXPORTS void symetricCensusTransform(const Mat &img1, int kernelSize, Mat &dist1, const int type)
         {
             CV_Assert(img1.size() ==  dist1.size());
             CV_Assert(kernelSize % 2 != 0);

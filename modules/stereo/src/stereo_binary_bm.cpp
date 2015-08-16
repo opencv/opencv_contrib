@@ -269,7 +269,7 @@ namespace cv
         class StereoBinaryBMImpl : public StereoBinaryBM, public Matching
         {
         public:
-            StereoBinaryBMImpl()
+            StereoBinaryBMImpl(): Matching(64)
             {
                 params = StereoBinaryBMParams();
             }
@@ -322,20 +322,6 @@ namespace cv
                 Mat left0 = leftarr.getMat(), right0 = rightarr.getMat();
                 Mat disp0 = disparr.getMat();
 
-                censusImage[0].create(left0.rows,left0.cols,CV_32SC4);
-                censusImage[1].create(left0.rows,left0.cols,CV_32SC4);
-
-                partialSumsLR.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_32SC4);
-                agregatedHammingLRCost.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_32SC4);
-                hammingDistance.create(left0.rows, left0.cols * (params.numDisparities + 1),CV_32SC4);
-
-                preFilteredImg0.create(left0.size(), CV_8U);
-                preFilteredImg1.create(left0.size(), CV_8U);
-
-                Mat left = preFilteredImg0, right = preFilteredImg1;
-
-                int ndisp = params.numDisparities;
-
                 int width = left0.cols;
                 int height = left0.rows;
 
@@ -345,7 +331,21 @@ namespace cv
                     specklePointX = new int[width * height];
                     specklePointY = new int[width * height];
                     pus = new long long[width * height];
+
+                    censusImage[0].create(left0.rows,left0.cols,CV_32SC4);
+                    censusImage[1].create(left0.rows,left0.cols,CV_32SC4);
+
+                    partialSumsLR.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16S);
+                    agregatedHammingLRCost.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16S);
+                    hammingDistance.create(left0.rows, left0.cols * (params.numDisparities + 1),CV_16S);
+
+                    preFilteredImg0.create(left0.size(), CV_8U);
+                    preFilteredImg1.create(left0.size(), CV_8U);
                 }
+
+                Mat left = preFilteredImg0, right = preFilteredImg1;
+
+                int ndisp = params.numDisparities;
 
                 int wsz = params.kernelSize;
                 int bufSize0 = (int)((ndisp + 2)*sizeof(int));
@@ -419,52 +419,52 @@ namespace cv
                 }
             }
             int getAgregationWindowSize() const { return params.agregationWindowSize;}
-            void setAgregationWindowSize(int value = 9) { params.agregationWindowSize = value;}
+            void setAgregationWindowSize(int value = 9) { CV_Assert(value % 2 != 0); params.agregationWindowSize = value;}
 
             int getBinaryKernelType() const { return params.kernelType;}
-            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { params.kernelType = value; }
+            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { CV_Assert(value < 7); params.kernelType = value; }
 
             int getSpekleRemovalTechnique() const { return params.regionRemoval;}
-            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) { params.regionRemoval = factor; }
+            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) {CV_Assert(factor < 2); params.regionRemoval = factor; }
 
             bool getUsePrefilter() const { return params.usePrefilter;}
             void setUsePrefilter(bool value = false) { params.usePrefilter = value;}
 
             int getScalleFactor() const { return params.scalling;}
-            void setScalleFactor(int factor) {params.scalling = factor; setScallingFactor(factor);}
+            void setScalleFactor(int factor = 4) {CV_Assert(factor > 0); params.scalling = factor; setScallingFactor(factor);}
 
             int getMinDisparity() const { return params.minDisparity; }
-            void setMinDisparity(int minDisparity) { params.minDisparity = minDisparity; }
+            void setMinDisparity(int minDisparity) {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
 
             int getNumDisparities() const { return params.numDisparities; }
-            void setNumDisparities(int numDisparities) { params.numDisparities = numDisparities; }
+            void setNumDisparities(int numDisparities) {CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
 
             int getBlockSize() const { return params.kernelSize; }
-            void setBlockSize(int blockSize) { params.kernelSize = blockSize; }
+            void setBlockSize(int blockSize) {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
 
             int getSpeckleWindowSize() const { return params.speckleWindowSize; }
-            void setSpeckleWindowSize(int speckleWindowSize) { params.speckleWindowSize = speckleWindowSize; }
+            void setSpeckleWindowSize(int speckleWindowSize) {CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
 
             int getSpeckleRange() const { return params.speckleRange; }
-            void setSpeckleRange(int speckleRange) { params.speckleRange = speckleRange; }
+            void setSpeckleRange(int speckleRange) {CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
 
             int getDisp12MaxDiff() const { return params.disp12MaxDiff; }
-            void setDisp12MaxDiff(int disp12MaxDiff) { params.disp12MaxDiff = disp12MaxDiff; }
+            void setDisp12MaxDiff(int disp12MaxDiff) {CV_Assert(disp12MaxDiff >= 0); params.disp12MaxDiff = disp12MaxDiff; }
 
             int getPreFilterType() const { return params.preFilterType; }
-            void setPreFilterType(int preFilterType) { params.preFilterType = preFilterType; }
+            void setPreFilterType(int preFilterType) { CV_Assert(preFilterType >= 0); params.preFilterType = preFilterType; }
 
             int getPreFilterSize() const { return params.preFilterSize; }
-            void setPreFilterSize(int preFilterSize) { params.preFilterSize = preFilterSize; }
+            void setPreFilterSize(int preFilterSize) { CV_Assert(preFilterSize >= 0);  params.preFilterSize = preFilterSize; }
 
             int getPreFilterCap() const { return params.preFilterCap; }
-            void setPreFilterCap(int preFilterCap) { params.preFilterCap = preFilterCap; }
+            void setPreFilterCap(int preFilterCap) {CV_Assert(preFilterCap >= 0); params.preFilterCap = preFilterCap; }
 
             int getTextureThreshold() const { return params.textureThreshold; }
-            void setTextureThreshold(int textureThreshold) { params.textureThreshold = textureThreshold; }
+            void setTextureThreshold(int textureThreshold) {CV_Assert(textureThreshold >= 0); params.textureThreshold = textureThreshold; }
 
             int getUniquenessRatio() const { return params.uniquenessRatio; }
-            void setUniquenessRatio(int uniquenessRatio) { params.uniquenessRatio = uniquenessRatio; }
+            void setUniquenessRatio(int uniquenessRatio) {CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
 
             int getSmallerBlockSize() const { return 0; }
             void setSmallerBlockSize(int) {}
@@ -506,12 +506,11 @@ namespace cv
             Mat preFilteredImg0, preFilteredImg1, cost, dispbuf;
             Mat slidingSumBuf;
             Mat parSumsIntensityImage[2];
+            Mat Integral[2];
             Mat censusImage[2];
             Mat hammingDistance;
             Mat partialSumsLR;
             Mat agregatedHammingLRCost;
-            Mat Integral[2];
-            int previous_size;
             static const char* name_;
         };
 

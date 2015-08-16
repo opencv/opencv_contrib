@@ -59,14 +59,10 @@ namespace cv
 {
     namespace stereo
     {
-
         //! @addtogroup stereo
         //! @{
         //		 void correctMatches( InputArray F, InputArray points1, InputArray points2,
         //	OutputArray newPoints1, OutputArray newPoints2 );
-        enum {
-            CV_SPECKLE_REMOVAL_ALGORITHM, CV_SPECKLE_REMOVAL_AVG_ALGORITHM
-            };
         /** @brief Filters off small noise blobs (speckles) in the disparity map
         @param img The input 16-bit signed disparity image
         @param newVal The disparity value used to paint-off the speckles
@@ -117,8 +113,14 @@ namespace cv
             virtual void setDisp12MaxDiff(int disp12MaxDiff) = 0;
 
         };
-
-
+        //!speckle removal algorithms. These algorithms have the purpose of removing small regions
+        enum {
+            CV_SPECKLE_REMOVAL_ALGORITHM, CV_SPECKLE_REMOVAL_AVG_ALGORITHM
+        };
+        //!subpixel interpolationm methods for disparities.
+        enum{
+            CV_QUADRATIC_INTERPOLATION, CV_SIMETRICV_INTERPOLATION
+        };
         /** @brief Class for computing stereo correspondence using the block matching algorithm, introduced and
         contributed to OpenCV by K. Konolige.
         */
@@ -174,7 +176,7 @@ namespace cv
             The function create StereoBM object. You can then call StereoBM::compute() to compute disparity for
             a specific stereo pair.
             */
-            CV_EXPORTS static Ptr< cv::stereo::StereoBinaryBM > create(int numDisparities = 0, int blockSize = 21);
+            CV_EXPORTS static Ptr< cv::stereo::StereoBinaryBM > create(int numDisparities = 0, int blockSize = 9);
         };
 
         /** @brief The class implements the modified H. Hirschmuller algorithm @cite HH08 that differs from the original
@@ -219,6 +221,15 @@ namespace cv
             virtual int getMode() const = 0;
             virtual void setMode(int mode) = 0;
 
+            virtual int getSpekleRemovalTechnique() const = 0 ;
+            virtual void setSpekleRemovalTechnique(int factor) = 0;
+
+            virtual int getBinaryKernelType() const = 0;
+            virtual void setBinaryKernelType(int value) = 0;
+
+            virtual int getSubPixelInterpolationMethod() const = 0;
+            virtual void setSubPixelInterpolationMethod(int value) = 0;
+
             /** @brief Creates StereoSGBM object
 
             @param minDisparity Minimum possible disparity value. Normally, it is zero but sometimes
@@ -257,9 +268,9 @@ namespace cv
             to a custom value.
             */
             CV_EXPORTS static Ptr<cv::stereo::StereoBinarySGBM> create(int minDisparity, int numDisparities, int blockSize,
-                int P1 = 100, int P2 = 1000, int disp12MaxDiff = 0,
-                int preFilterCap = 0, int uniquenessRatio = 0,
-                int speckleWindowSize = 0, int speckleRange = 0,
+                int P1 = 100, int P2 = 1000, int disp12MaxDiff = 1,
+                int preFilterCap = 0, int uniquenessRatio = 5,
+                int speckleWindowSize = 400, int speckleRange = 200,
                 int mode = StereoBinarySGBM::MODE_SGBM);
         };
         //! @}

@@ -47,8 +47,11 @@ by Heiko Hirschmuller.
 We match blocks rather than individual pixels, thus the algorithm is called
 SGBM (Semi-global block matching)
 */
+
 #include "precomp.hpp"
 #include <limits.h>
+#include <descriptor.hpp>
+#include <matching.hpp>
 
 namespace cv
 {
@@ -58,12 +61,13 @@ namespace cv
         typedef short CostType;
         typedef short DispType;
         enum { NR = 16, NR2 = NR/2 };
+
         struct StereoBinarySGBMParams
         {
             StereoBinarySGBMParams()
             {
                 minDisparity = numDisparities = 0;
-                SADWindowSize = 0;
+                kernelSize = 0;
                 P1 = P2 = 0;
                 disp12MaxDiff = 0;
                 preFilterCap = 0;
@@ -79,7 +83,7 @@ namespace cv
             {
                 minDisparity = _minDisparity;
                 numDisparities = _numDisparities;
-                SADWindowSize = _SADWindowSize;
+                kernelSize = _SADWindowSize;
                 P1 = _P1;
                 P2 = _P2;
                 disp12MaxDiff = _disp12MaxDiff;
@@ -88,10 +92,13 @@ namespace cv
                 speckleWindowSize = _speckleWindowSize;
                 speckleRange = _speckleRange;
                 mode = _mode;
+                regionRemoval = 1;
+                kernelType = CV_MODIFIED_CENSUS_TRANSFORM;
+                subpixelInterpolationMethod = CV_QUADRATIC_INTERPOLATION;
             }
             int minDisparity;
             int numDisparities;
-            int SADWindowSize;
+            int kernelSize;
             int preFilterCap;
             int uniquenessRatio;
             int P1;
@@ -100,163 +107,11 @@ namespace cv
             int speckleRange;
             int disp12MaxDiff;
             int mode;
+            int regionRemoval;
+            int kernelType;
+            int subpixelInterpolationMethod;
         };
-        /*
-        For each pixel row1[x], max(-maxD, 0) <= minX <= x < maxX <= width - max(0, -minD),
-        and for each disparity minD<=d<maxD the function
-        computes the cost (cost[(x-minX)*(maxD - minD) + (d - minD)]), depending on the difference between
-        row1[x] and row2[x-d]. The subpixel algorithm from
-        "Depth Discontinuities by Pixel-to-Pixel Stereo" by Stan Birchfield and C. Tomasi
-        is used, hence the suffix BT.
-        the temporary buffer should contain width2*2 elements
-        */
-        static void calcPixelCostBT( const Mat& img1, const Mat& img2, int y,
-            int minD, int maxD, CostType* cost,
-            PixType* buffer, const PixType* tab,
-            int tabOfs, int )
-        {
-            int x, c, width = img1.cols, cn = img1.channels();
-            int minX1 = std::max(-maxD, 0), maxX1 = width + std::min(minD, 0);
-            int minX2 = std::max(minX1 - maxD, 0), maxX2 = std::min(maxX1 - minD, width);
-            int D = maxD - minD, width1 = maxX1 - minX1, width2 = maxX2 - minX2;
-            const PixType *row1 = img1.ptr<PixType>(y), *row2 = img2.ptr<PixType>(y);
-            PixType *prow1 = buffer + width2*2, *prow2 = prow1 + width*cn*2;
-            tab += tabOfs;
-            for( c = 0; c < cn*2; c++ )
-            {
-                prow1[width*c] = prow1[width*c + width-1] =
-                    prow2[width*c] = prow2[width*c + width-1] = tab[0];
-            }
-            int n1 = y > 0 ? -(int)img1.step : 0, s1 = y < img1.rows-1 ? (int)img1.step : 0;
-            int n2 = y > 0 ? -(int)img2.step : 0, s2 = y < img2.rows-1 ? (int)img2.step : 0;
-            if( cn == 1 )
-            {
-                for( x = 1; x < width-1; x++ )
-                {
-                    prow1[x] = tab[(row1[x+1] - row1[x-1])*2 + row1[x+n1+1] - row1[x+n1-1] + row1[x+s1+1] - row1[x+s1-1]];
-                    prow2[width-1-x] = tab[(row2[x+1] - row2[x-1])*2 + row2[x+n2+1] - row2[x+n2-1] + row2[x+s2+1] - row2[x+s2-1]];
-                    prow1[x+width] = row1[x];
-                    prow2[width-1-x+width] = row2[x];
-                }
-            }
-            else
-            {
-                for( x = 1; x < width-1; x++ )
-                {
-                    prow1[x] = tab[(row1[x*3+3] - row1[x*3-3])*2 + row1[x*3+n1+3] - row1[x*3+n1-3] + row1[x*3+s1+3] - row1[x*3+s1-3]];
-                    prow1[x+width] = tab[(row1[x*3+4] - row1[x*3-2])*2 + row1[x*3+n1+4] - row1[x*3+n1-2] + row1[x*3+s1+4] - row1[x*3+s1-2]];
-                    prow1[x+width*2] = tab[(row1[x*3+5] - row1[x*3-1])*2 + row1[x*3+n1+5] - row1[x*3+n1-1] + row1[x*3+s1+5] - row1[x*3+s1-1]];
-                    prow2[width-1-x] = tab[(row2[x*3+3] - row2[x*3-3])*2 + row2[x*3+n2+3] - row2[x*3+n2-3] + row2[x*3+s2+3] - row2[x*3+s2-3]];
-                    prow2[width-1-x+width] = tab[(row2[x*3+4] - row2[x*3-2])*2 + row2[x*3+n2+4] - row2[x*3+n2-2] + row2[x*3+s2+4] - row2[x*3+s2-2]];
-                    prow2[width-1-x+width*2] = tab[(row2[x*3+5] - row2[x*3-1])*2 + row2[x*3+n2+5] - row2[x*3+n2-1] + row2[x*3+s2+5] - row2[x*3+s2-1]];
-                    prow1[x+width*3] = row1[x*3];
-                    prow1[x+width*4] = row1[x*3+1];
-                    prow1[x+width*5] = row1[x*3+2];
-                    prow2[width-1-x+width*3] = row2[x*3];
-                    prow2[width-1-x+width*4] = row2[x*3+1];
-                    prow2[width-1-x+width*5] = row2[x*3+2];
-                }
-            }
-            memset( cost, 0, width1*D*sizeof(cost[0]) );
-            buffer -= minX2;
-            cost -= minX1*D + minD; // simplify the cost indices inside the loop
-#if CV_SSE2
-            volatile bool useSIMD = checkHardwareSupport(CV_CPU_SSE2);
-#endif
-#if 1
-            for( c = 0; c < cn*2; c++, prow1 += width, prow2 += width )
-            {
-                int diff_scale = c < cn ? 0 : 2;
-                // precompute
-                //   v0 = min(row2[x-1/2], row2[x], row2[x+1/2]) and
-                //   v1 = max(row2[x-1/2], row2[x], row2[x+1/2]) and
-                for( x = minX2; x < maxX2; x++ )
-                {
-                    int v = prow2[x];
-                    int vl = x > 0 ? (v + prow2[x-1])/2 : v;
-                    int vr = x < width-1 ? (v + prow2[x+1])/2 : v;
-                    int v0 = std::min(vl, vr); v0 = std::min(v0, v);
-                    int v1 = std::max(vl, vr); v1 = std::max(v1, v);
-                    buffer[x] = (PixType)v0;
-                    buffer[x + width2] = (PixType)v1;
-                }
-                for( x = minX1; x < maxX1; x++ )
-                {
-                    int u = prow1[x];
-                    int ul = x > 0 ? (u + prow1[x-1])/2 : u;
-                    int ur = x < width-1 ? (u + prow1[x+1])/2 : u;
-                    int u0 = std::min(ul, ur); u0 = std::min(u0, u);
-                    int u1 = std::max(ul, ur); u1 = std::max(u1, u);
-#if CV_SSE2
-                    if( useSIMD )
-                    {
-                        __m128i _u = _mm_set1_epi8((char)u), _u0 = _mm_set1_epi8((char)u0);
-                        __m128i _u1 = _mm_set1_epi8((char)u1), z = _mm_setzero_si128();
-                        __m128i ds = _mm_cvtsi32_si128(diff_scale);
-                        for( int d = minD; d < maxD; d += 16 )
-                        {
-                            __m128i _v = _mm_loadu_si128((const __m128i*)(prow2 + width-x-1 + d));
-                            __m128i _v0 = _mm_loadu_si128((const __m128i*)(buffer + width-x-1 + d));
-                            __m128i _v1 = _mm_loadu_si128((const __m128i*)(buffer + width-x-1 + d + width2));
-                            __m128i c0 = _mm_max_epu8(_mm_subs_epu8(_u, _v1), _mm_subs_epu8(_v0, _u));
-                            __m128i c1 = _mm_max_epu8(_mm_subs_epu8(_v, _u1), _mm_subs_epu8(_u0, _v));
-                            __m128i diff = _mm_min_epu8(c0, c1);
-                            c0 = _mm_load_si128((__m128i*)(cost + x*D + d));
-                            c1 = _mm_load_si128((__m128i*)(cost + x*D + d + 8));
-                            _mm_store_si128((__m128i*)(cost + x*D + d), _mm_adds_epi16(c0, _mm_srl_epi16(_mm_unpacklo_epi8(diff,z), ds)));
-                            _mm_store_si128((__m128i*)(cost + x*D + d + 8), _mm_adds_epi16(c1, _mm_srl_epi16(_mm_unpackhi_epi8(diff,z), ds)));
-                        }
-                    }
-                    else
-#endif
-                    {
-                        for( int d = minD; d < maxD; d++ )
-                        {
-                            int v = prow2[width-x-1 + d];
-                            int v0 = buffer[width-x-1 + d];
-                            int v1 = buffer[width-x-1 + d + width2];
-                            int c0 = std::max(0, u - v1); c0 = std::max(c0, v0 - u);
-                            int c1 = std::max(0, v - u1); c1 = std::max(c1, u0 - v);
-                            cost[x*D + d] = (CostType)(cost[x*D+d] + (std::min(c0, c1) >> diff_scale));
-                        }
-                    }
-                }
-            }
-#else
-            for( c = 0; c < cn*2; c++, prow1 += width, prow2 += width )
-            {
-                for( x = minX1; x < maxX1; x++ )
-                {
-                    int u = prow1[x];
-#if CV_SSE2
-                    if( useSIMD )
-                    {
-                        __m128i _u = _mm_set1_epi8(u), z = _mm_setzero_si128();
 
-                        for( int d = minD; d < maxD; d += 16 )
-                        {
-                            __m128i _v = _mm_loadu_si128((const __m128i*)(prow2 + width-1-x + d));
-                            __m128i diff = _mm_adds_epu8(_mm_subs_epu8(_u,_v), _mm_subs_epu8(_v,_u));
-                            __m128i c0 = _mm_load_si128((__m128i*)(cost + x*D + d));
-                            __m128i c1 = _mm_load_si128((__m128i*)(cost + x*D + d + 8));
-
-                            _mm_store_si128((__m128i*)(cost + x*D + d), _mm_adds_epi16(c0, _mm_unpacklo_epi8(diff,z)));
-                            _mm_store_si128((__m128i*)(cost + x*D + d + 8), _mm_adds_epi16(c1, _mm_unpackhi_epi8(diff,z)));
-                        }
-                    }
-                    else
-#endif
-                    {
-                        for( int d = minD; d < maxD; d++ )
-                        {
-                            int v = prow2[width-1-x + d];
-                            cost[x*D + d] = (CostType)(cost[x*D + d] + (CostType)std::abs(u - v));
-                        }
-                    }
-                }
-            }
-#endif
-        }
         /*
         computes disparity for "roi" in img1 w.r.t. img2 and write it to disp1buf.
         that is, disp1buf(x, y)=d means that img1(x+roi.x, y+roi.y) ~ img2(x+roi.x-d, y+roi.y).
@@ -276,7 +131,7 @@ namespace cv
         */
         static void computeDisparityBinarySGBM( const Mat& img1, const Mat& img2,
             Mat& disp1, const StereoBinarySGBMParams& params,
-            Mat& buffer )
+            Mat& buffer,const Mat& hamDist)
         {
 #if CV_SSE2
             static const uchar LSBTab[] =
@@ -293,14 +148,14 @@ namespace cv
 
             volatile bool useSIMD = checkHardwareSupport(CV_CPU_SSE2);
 #endif
+
             const int ALIGN = 16;
             const int DISP_SHIFT = StereoMatcher::DISP_SHIFT;
             const int DISP_SCALE = (1 << DISP_SHIFT);
             const CostType MAX_COST = SHRT_MAX;
             int minD = params.minDisparity, maxD = minD + params.numDisparities;
-            Size SADWindowSize;
-            SADWindowSize.width = SADWindowSize.height = params.SADWindowSize > 0 ? params.SADWindowSize : 5;
-            int ftzero = std::max(params.preFilterCap, 15) | 1;
+            Size kernelSize;
+            kernelSize.width = kernelSize.height = params.kernelSize > 0 ? params.kernelSize : 5;
             int uniquenessRatio = params.uniquenessRatio >= 0 ? params.uniquenessRatio : 10;
             int disp12MaxDiff = params.disp12MaxDiff > 0 ? params.disp12MaxDiff : 1;
             int P1 = params.P1 > 0 ? params.P1 : 2, P2 = std::max(params.P2 > 0 ? params.P2 : 5, P1+1);
@@ -308,13 +163,10 @@ namespace cv
             int minX1 = std::max(-maxD, 0), maxX1 = width + std::min(minD, 0);
             int D = maxD - minD, width1 = maxX1 - minX1;
             int INVALID_DISP = minD - 1, INVALID_DISP_SCALED = INVALID_DISP*DISP_SCALE;
-            int SW2 = SADWindowSize.width/2, SH2 = SADWindowSize.height/2;
+            int SW2 = kernelSize.width/2, SH2 = kernelSize.height/2;
             bool fullDP = params.mode == StereoBinarySGBM::MODE_HH;
             int npasses = fullDP ? 2 : 1;
-            const int TAB_OFS = 256*4, TAB_SIZE = 256 + TAB_OFS*2;
-            PixType clipTab[TAB_SIZE];
-            for( k = 0; k < TAB_SIZE; k++ )
-                clipTab[k] = (PixType)(std::min(std::max(k - TAB_OFS, -ftzero), ftzero) + ftzero);
+
             if( minX1 >= maxX1 )
             {
                 disp1 = Scalar::all(INVALID_DISP_SCALED);
@@ -329,6 +181,9 @@ namespace cv
             // the previous row, i.e. 2 rows in total
             const int NLR = 2;
             const int LrBorder = NLR - 1;
+            int ww = img2.cols;
+            short *ham;
+            ham = (short *)hamDist.data;
             // for each possible stereo match (img1(x,y) <=> img2(x-d,y))
             // we keep pixel difference cost (C) and the summary cost over NR directions (S).
             // we also keep all the partial costs for the previous line L_r(x,d) and also min_k L_r(x, k)
@@ -351,7 +206,7 @@ namespace cv
             CostType* pixDiff = hsumBuf + costBufSize*hsumBufNRows;
             CostType* disp2cost = pixDiff + costBufSize + (LrSize + minLrSize)*NLR;
             DispType* disp2ptr = (DispType*)(disp2cost + width);
-            PixType* tempBuf = (PixType*)(disp2ptr + width);
+            //            PixType* tempBuf = (PixType*)(disp2ptr + width);
             // add P2 to every C(x,y). it saves a few operations in the inner loops
             for( k = 0; k < width1*D; k++ )
                 Cbuf[k] = (CostType)P2;
@@ -393,10 +248,15 @@ namespace cv
                         for( k = dy1; k <= dy2; k++ )
                         {
                             CostType* hsumAdd = hsumBuf + (std::min(k, height-1) % hsumBufNRows)*costBufSize;
-
                             if( k < height )
                             {
-                                calcPixelCostBT( img1, img2, k, minD, maxD, pixDiff, tempBuf, clipTab, TAB_OFS, ftzero );
+                                for(int ii = 0; ii <= ww; ii++)
+                                {
+                                    for(int dd = 0; dd <= params.numDisparities; dd++)
+                                    {
+                                        pixDiff[ii * (params.numDisparities)+ dd] = (CostType)(ham[(k * (ww) + ii) * (params.numDisparities +1) + dd]);
+                                    }
+                                }
                                 memset(hsumAdd, 0, D*sizeof(CostType));
                                 for( x = 0; x <= SW2*D; x += D )
                                 {
@@ -404,14 +264,17 @@ namespace cv
                                     for( d = 0; d < D; d++ )
                                         hsumAdd[d] = (CostType)(hsumAdd[d] + pixDiff[x + d]*scale);
                                 }
+
                                 if( y > 0 )
                                 {
                                     const CostType* hsumSub = hsumBuf + (std::max(y - SH2 - 1, 0) % hsumBufNRows)*costBufSize;
                                     const CostType* Cprev = !fullDP || y == 0 ? C : C - costBufSize;
+
                                     for( x = D; x < width1*D; x += D )
                                     {
                                         const CostType* pixAdd = pixDiff + std::min(x + SW2*D, (width1-1)*D);
                                         const CostType* pixSub = pixDiff + std::max(x - (SW2+1)*D, 0);
+
 #if CV_SSE2
                                         if( useSIMD )
                                         {
@@ -554,21 +417,28 @@ namespace cv
 #endif
                         {
                             int minL0 = MAX_COST, minL1 = MAX_COST, minL2 = MAX_COST, minL3 = MAX_COST;
+
                             for( d = 0; d < D; d++ )
                             {
                                 int Cpd = Cp[d], L0, L1, L2, L3;
+
                                 L0 = Cpd + std::min((int)Lr_p0[d], std::min(Lr_p0[d-1] + P1, std::min(Lr_p0[d+1] + P1, delta0))) - delta0;
                                 L1 = Cpd + std::min((int)Lr_p1[d], std::min(Lr_p1[d-1] + P1, std::min(Lr_p1[d+1] + P1, delta1))) - delta1;
                                 L2 = Cpd + std::min((int)Lr_p2[d], std::min(Lr_p2[d-1] + P1, std::min(Lr_p2[d+1] + P1, delta2))) - delta2;
                                 L3 = Cpd + std::min((int)Lr_p3[d], std::min(Lr_p3[d-1] + P1, std::min(Lr_p3[d+1] + P1, delta3))) - delta3;
+
                                 Lr_p[d] = (CostType)L0;
                                 minL0 = std::min(minL0, L0);
+
                                 Lr_p[d + D2] = (CostType)L1;
                                 minL1 = std::min(minL1, L1);
+
                                 Lr_p[d + D2*2] = (CostType)L2;
                                 minL2 = std::min(minL2, L2);
+
                                 Lr_p[d + D2*3] = (CostType)L3;
                                 minL3 = std::min(minL3, L3);
+
                                 Sp[d] = saturate_cast<CostType>(Sp[d] + L0 + L1 + L2 + L3);
                             }
                             minLr[0][xm] = (CostType)minL0;
@@ -577,6 +447,7 @@ namespace cv
                             minLr[0][xm+3] = (CostType)minL3;
                         }
                     }
+
                     if( pass == npasses )
                     {
                         for( x = 0; x < width; x++ )
@@ -593,6 +464,7 @@ namespace cv
                             if( npasses == 1 )
                             {
                                 int xm = x*NR2, xd = xm*D2;
+
                                 int minL0 = MAX_COST;
                                 int delta0 = minLr[0][xm + NR2] + P2;
                                 CostType* Lr_p0 = Lr[0] + xd + NRD2;
@@ -685,11 +557,42 @@ namespace cv
                             }
                             if( 0 < d && d < D-1 )
                             {
-                                // do subpixel quadratic interpolation:
-                                //   fit parabola into (x1=d-1, y1=Sp[d-1]), (x2=d, y2=Sp[d]), (x3=d+1, y3=Sp[d+1])
-                                //   then find minimum of the parabola.
-                                int denom2 = std::max(Sp[d-1] + Sp[d+1] - 2*Sp[d], 1);
-                                d = d*DISP_SCALE + ((Sp[d-1] - Sp[d+1])*DISP_SCALE + denom2)/(denom2*2);
+                                if(params.subpixelInterpolationMethod == CV_SIMETRICV_INTERPOLATION)
+                                {
+                                    double m2m1, m3m1, m3, m2, m1;
+                                    m2 = Sp[d - 1];
+                                    m3 = Sp[d + 1];
+                                    m1 = Sp[d];
+                                    m2m1 = m2 - m1;
+                                    m3m1 = m3 - m1;
+                                    if (!(m2m1 == 0 || m3m1 == 0))
+                                    {
+                                        double p;
+                                        p = 0;
+                                        if (m2 > m3)
+                                        {
+                                            p = (0.5 - 0.25 * ((m3m1 * m3m1) / (m2m1 * m2m1) + (m3m1 / m2m1)));
+                                        }
+                                        else
+                                        {
+                                            p = -1 * (0.5 - 0.25 * ((m2m1 * m2m1) / (m3m1 * m3m1) + (m2m1 / m3m1)));
+                                        }
+                                        if (p >= -0.5 && p <= 0.5)
+                                            d = (int)(d * DISP_SCALE + p * DISP_SCALE );
+                                    }
+                                    else
+                                    {
+                                        d *= DISP_SCALE;
+                                    }
+                                }
+                                else if(params.subpixelInterpolationMethod == CV_QUADRATIC_INTERPOLATION)
+                                {
+                                    // do subpixel quadratic interpolation:
+                                    //   fit parabola into (x1=d-1, y1=Sp[d-1]), (x2=d, y2=Sp[d]), (x3=d+1, y3=Sp[d+1])
+                                    //   then find minimum of the parabola.
+                                    int denom2 = std::max(Sp[d-1] + Sp[d+1] - 2*Sp[d], 1);
+                                    d = d*DISP_SCALE + ((Sp[d-1] - Sp[d+1])*DISP_SCALE + denom2)/(denom2*2);
+                                }
                             }
                             else
                                 d *= DISP_SCALE;
@@ -717,17 +620,17 @@ namespace cv
                 }
             }
         }
-        class StereoBinarySGBMImpl : public StereoBinarySGBM
+        class StereoBinarySGBMImpl : public StereoBinarySGBM, public Matching
         {
         public:
-            StereoBinarySGBMImpl()
+            StereoBinarySGBMImpl():Matching()
             {
                 params = StereoBinarySGBMParams();
             }
             StereoBinarySGBMImpl( int _minDisparity, int _numDisparities, int _SADWindowSize,
                 int _P1, int _P2, int _disp12MaxDiff, int _preFilterCap,
                 int _uniquenessRatio, int _speckleWindowSize, int _speckleRange,
-                int _mode )
+                int _mode ):Matching(_numDisparities)
             {
                 params = StereoBinarySGBMParams( _minDisparity, _numDisparities, _SADWindowSize,
                     _P1, _P2, _disp12MaxDiff, _preFilterCap,
@@ -741,41 +644,132 @@ namespace cv
                     left.depth() == CV_8U );
                 disparr.create( left.size(), CV_16S );
                 Mat disp = disparr.getMat();
-                computeDisparityBinarySGBM( left, right, disp, params, buffer );
-                // medianBlur(disp, disp, 3);
-                if( params.speckleWindowSize > 0 )
-                    filterSpeckles(disp, (params.minDisparity - 1)*StereoMatcher::DISP_SCALE, params.speckleWindowSize,
-                    StereoMatcher::DISP_SCALE*params.speckleRange, buffer);
+                censusImageLeft.create(left.rows,left.cols,CV_32SC4);
+                censusImageRight.create(left.rows,left.cols,CV_32SC4);
+
+                hamDist.create(left.rows, left.cols * (params.numDisparities + 1),CV_16S);
+
+                if(params.kernelType == CV_SPARSE_CENSUS)
+                {
+                    censusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_SPARSE_CENSUS);
+                }
+                else if(params.kernelType == CV_DENSE_CENSUS)
+                {
+                    censusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_SPARSE_CENSUS);
+                }
+                else if(params.kernelType == CV_CS_CENSUS)
+                {
+                    symetricCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_CS_CENSUS);
+                }
+                else if(params.kernelType == CV_MODIFIED_CS_CENSUS)
+                {
+                    symetricCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_MODIFIED_CS_CENSUS);
+                }
+                else if(params.kernelType == CV_MODIFIED_CENSUS_TRANSFORM)
+                {
+                    modifiedCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_MODIFIED_CENSUS_TRANSFORM,0);
+                }
+                else if(params.kernelType == CV_MEAN_VARIATION)
+                {
+                    parSumsIntensityImage[0].create(left.rows, left.cols,CV_32SC4);
+                    parSumsIntensityImage[1].create(left.rows, left.cols,CV_32SC4);
+                    Integral[0].create(left.rows,left.cols,CV_32SC4);
+                    Integral[1].create(left.rows,left.cols,CV_32SC4);
+                    integral(left, parSumsIntensityImage[0],CV_32S);
+                    integral(right, parSumsIntensityImage[1],CV_32S);
+                    imageMeanKernelSize(parSumsIntensityImage[0], params.kernelSize,Integral[0]);
+                    imageMeanKernelSize(parSumsIntensityImage[1], params.kernelSize, Integral[1]);
+                    modifiedCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_MEAN_VARIATION,0,Integral[0], Integral[1]);
+                }
+                else if(params.kernelType == CV_STAR_KERNEL)
+                {
+                    starCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight);
+                }
+
+                hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist);
+
+                computeDisparityBinarySGBM( left, right, disp, params, buffer,hamDist);
+
+                if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
+                {
+                    int width = left.cols;
+                    int height = left.rows;
+                    if(previous_size != width * height)
+                    {
+                        previous_size = width * height;
+                        specklePointX = new int[width * height];
+                        specklePointY = new int[width * height];
+                        pus = new long long[width * height];
+                    }
+                    double minVal; double maxVal;
+                    Mat imgDisparity8U2;
+                    imgDisparity8U2.create(height,width,CV_8UC1);
+                    Mat aux;
+                    aux.create(height,width,CV_8UC1);
+                    minMaxLoc(disp, &minVal, &maxVal);
+                    disp.convertTo(imgDisparity8U2, CV_8UC1, 255 / (maxVal - minVal));
+                    Median1x9Filter(imgDisparity8U2, aux);
+                    Median9x1Filter(aux,imgDisparity8U2);
+                    smallRegionRemoval(imgDisparity8U2,params.speckleWindowSize,imgDisparity8U2);
+                    imgDisparity8U2.convertTo(disp, CV_16S);
+                }
+                else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
+                {
+                    int width = left.cols;
+                    int height = left.rows;
+                    double minVal; double maxVal;
+                    Mat imgDisparity8U2;
+                    imgDisparity8U2.create(height,width,CV_8UC1);
+                    Mat aux;
+                    aux.create(height,width,CV_8UC1);
+                    minMaxLoc(disp, &minVal, &maxVal);
+                    disp.convertTo(imgDisparity8U2, CV_8UC1, 255 / (maxVal - minVal));
+                    Median1x9Filter(imgDisparity8U2, aux);
+                    Median9x1Filter(aux,imgDisparity8U2);
+                    imgDisparity8U2.convertTo(disp, CV_16S);
+                    if( params.speckleWindowSize > 0 )
+                        filterSpeckles(disp, (params.minDisparity - 1) * StereoMatcher::DISP_SCALE, params.speckleWindowSize,
+                        StereoMatcher::DISP_SCALE * params.speckleRange, buffer);
+                }
             }
+            int getSubPixelInterpolationMethod() const { return params.subpixelInterpolationMethod;}
+            void setSubPixelInterpolationMethod(int value = CV_QUADRATIC_INTERPOLATION) { CV_Assert(value < 2); params.subpixelInterpolationMethod = value;}
+
+            int getBinaryKernelType() const { return params.kernelType;}
+            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { CV_Assert(value < 7); params.kernelType = value; }
+
+            int getSpekleRemovalTechnique() const { return params.regionRemoval;}
+            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) { CV_Assert(factor < 2); params.regionRemoval = factor; }
+
             int getMinDisparity() const { return params.minDisparity; }
-            void setMinDisparity(int minDisparity) { params.minDisparity = minDisparity; }
+            void setMinDisparity(int minDisparity) {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
 
             int getNumDisparities() const { return params.numDisparities; }
-            void setNumDisparities(int numDisparities) { params.numDisparities = numDisparities; }
+            void setNumDisparities(int numDisparities) { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
 
-            int getBlockSize() const { return params.SADWindowSize; }
-            void setBlockSize(int blockSize) { params.SADWindowSize = blockSize; }
+            int getBlockSize() const { return params.kernelSize; }
+            void setBlockSize(int blockSize) {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
 
             int getSpeckleWindowSize() const { return params.speckleWindowSize; }
-            void setSpeckleWindowSize(int speckleWindowSize) { params.speckleWindowSize = speckleWindowSize; }
+            void setSpeckleWindowSize(int speckleWindowSize) {CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
 
             int getSpeckleRange() const { return params.speckleRange; }
-            void setSpeckleRange(int speckleRange) { params.speckleRange = speckleRange; }
+            void setSpeckleRange(int speckleRange) { CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
 
             int getDisp12MaxDiff() const { return params.disp12MaxDiff; }
-            void setDisp12MaxDiff(int disp12MaxDiff) { params.disp12MaxDiff = disp12MaxDiff; }
+            void setDisp12MaxDiff(int disp12MaxDiff) {CV_Assert(disp12MaxDiff > 0); params.disp12MaxDiff = disp12MaxDiff; }
 
             int getPreFilterCap() const { return params.preFilterCap; }
-            void setPreFilterCap(int preFilterCap) { params.preFilterCap = preFilterCap; }
+            void setPreFilterCap(int preFilterCap) { CV_Assert(preFilterCap > 0); params.preFilterCap = preFilterCap; }
 
             int getUniquenessRatio() const { return params.uniquenessRatio; }
-            void setUniquenessRatio(int uniquenessRatio) { params.uniquenessRatio = uniquenessRatio; }
+            void setUniquenessRatio(int uniquenessRatio) { CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
 
             int getP1() const { return params.P1; }
-            void setP1(int P1) { params.P1 = P1; }
+            void setP1(int P1) { CV_Assert(P1 > 0); params.P1 = P1; }
 
             int getP2() const { return params.P2; }
-            void setP2(int P2) { params.P2 = P2; }
+            void setP2(int P2) {CV_Assert(P2 > 0); CV_Assert(P2 >= 2 * params.P1); params.P2 = P2; }
 
             int getMode() const { return params.mode; }
             void setMode(int mode) { params.mode = mode; }
@@ -785,7 +779,7 @@ namespace cv
                 fs << "name" << name_
                     << "minDisparity" << params.minDisparity
                     << "numDisparities" << params.numDisparities
-                    << "blockSize" << params.SADWindowSize
+                    << "blockSize" << params.kernelSize
                     << "speckleWindowSize" << params.speckleWindowSize
                     << "speckleRange" << params.speckleRange
                     << "disp12MaxDiff" << params.disp12MaxDiff
@@ -795,13 +789,14 @@ namespace cv
                     << "P2" << params.P2
                     << "mode" << params.mode;
             }
+
             void read(const FileNode& fn)
             {
                 FileNode n = fn["name"];
                 CV_Assert( n.isString() && String(n) == name_ );
                 params.minDisparity = (int)fn["minDisparity"];
                 params.numDisparities = (int)fn["numDisparities"];
-                params.SADWindowSize = (int)fn["blockSize"];
+                params.kernelSize = (int)fn["blockSize"];
                 params.speckleWindowSize = (int)fn["speckleWindowSize"];
                 params.speckleRange = (int)fn["speckleRange"];
                 params.disp12MaxDiff = (int)fn["disp12MaxDiff"];
@@ -811,24 +806,35 @@ namespace cv
                 params.P2 = (int)fn["P2"];
                 params.mode = (int)fn["mode"];
             }
+
             StereoBinarySGBMParams params;
             Mat buffer;
             static const char* name_;
+            Mat censusImageLeft;
+            Mat censusImageRight;
+            Mat partialSumsLR;
+            Mat agregatedHammingLRCost;
+            Mat hamDist;
+            Mat parSumsIntensityImage[2];
+            Mat Integral[2];
         };
+
         const char* StereoBinarySGBMImpl::name_ = "StereoMatcher.SGBM";
-        Ptr<StereoBinarySGBM> StereoBinarySGBM::create(int minDisparity, int numDisparities, int SADWindowSize,
+
+        Ptr<StereoBinarySGBM> StereoBinarySGBM::create(int minDisparity, int numDisparities, int kernelSize,
             int P1, int P2, int disp12MaxDiff,
             int preFilterCap, int uniquenessRatio,
             int speckleWindowSize, int speckleRange,
             int mode)
         {
             return Ptr<StereoBinarySGBM>(
-                new StereoBinarySGBMImpl(minDisparity, numDisparities, SADWindowSize,
+                new StereoBinarySGBMImpl(minDisparity, numDisparities, kernelSize,
                 P1, P2, disp12MaxDiff,
                 preFilterCap, uniquenessRatio,
                 speckleWindowSize, speckleRange,
                 mode));
         }
+
         typedef cv::Point_<short> Point2s;
     }
 }

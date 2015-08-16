@@ -424,26 +424,26 @@ namespace cv
         Implementation of a census transform which is taking into account just the some pixels from the census kernel thus allowing for larger block sizes
         **/
         //void applyCensusOnImages(const cv::Mat &im1,const cv::Mat &im2, int kernelSize, cv::Mat &dist, cv::Mat &dist2, const int type);
-        void censusTransform(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
+        CV_EXPORTS void censusTransform(const cv::Mat &image1, const cv::Mat &image2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
         //single image census transform
-        void censusTransform(const cv::Mat &image1, int kernelSize, cv::Mat &dist1, const int type);
+        CV_EXPORTS void censusTransform(const cv::Mat &image1, int kernelSize, cv::Mat &dist1, const int type);
         /**
         STANDARD_MCT - Modified census which is memorizing for each pixel 2 bits and includes a tolerance to the pixel comparison
         MCT_MEAN_VARIATION - Implementation of a modified census transform which is also taking into account the variation to the mean of the window not just the center pixel
         **/
-        void modifiedCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2, const int type, int t = 0 , const cv::Mat &IntegralImage1 = cv::Mat::zeros(100,100,CV_8UC1), const cv::Mat &IntegralImage2 = cv::Mat::zeros(100,100,CV_8UC1));
+        CV_EXPORTS void modifiedCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2, const int type, int t = 0 , const cv::Mat &IntegralImage1 = cv::Mat::zeros(100,100,CV_8UC1), const cv::Mat &IntegralImage2 = cv::Mat::zeros(100,100,CV_8UC1));
         //single version of modified census transform descriptor
-        void modifiedCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist, const int type, int t = 0 ,const cv::Mat &IntegralImage = cv::Mat::zeros(100,100,CV_8UC1));
+        CV_EXPORTS void modifiedCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist, const int type, int t = 0 ,const cv::Mat &IntegralImage = cv::Mat::zeros(100,100,CV_8UC1));
         /**The classical center symetric census
         A modified version of cs census which is comparing a pixel with its correspondent after the center
         **/
-        void symetricCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
+        CV_EXPORTS void symetricCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1, cv::Mat &dist2, const int type);
         //single version of census transform
-        void symetricCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist1, const int type);
+        CV_EXPORTS void symetricCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist1, const int type);
         //in a 9x9 kernel only certain positions are choosen
-        void starCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2);
+        CV_EXPORTS void starCensusTransform(const cv::Mat &img1, const cv::Mat &img2, int kernelSize, cv::Mat &dist1,cv::Mat &dist2);
         //single image version of star kernel
-        void starCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist);
+        CV_EXPORTS void starCensusTransform(const cv::Mat &img1, int kernelSize, cv::Mat &dist);
         //integral image computation used in the Mean Variation Census Transform
         void imageMeanKernelSize(const cv::Mat &img, int windowSize, cv::Mat &c);
     }
