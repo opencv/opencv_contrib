@@ -11,7 +11,7 @@ of these markers is that a single marker provides enough correspondences (its fo
 to obtain the camera pose. Also, the inner binary codification makes them specially robust, allowing
 the possibility of applying error detection and correction techniques.
 
-The aruco module is based on the [ArUco library](http://www.uco.es/investiga/grupos/ava/node/26), 
+The aruco module is based on the [ArUco library](http://www.uco.es/investiga/grupos/ava/node/26),
 a popular library for detection of square fiducial markers developed by Rafael Muñoz and Sergio Garrido:
 
 > S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
@@ -75,7 +75,7 @@ For example, lets analyze the following call:
     cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
 ```
 
-First, the ```Dictionary``` object is created by choosing one of the predefined dictionaries in the aruco module. 
+First, the ```Dictionary``` object is created by choosing one of the predefined dictionaries in the aruco module.
 Concretely, this dictionary is composed by 250 markers and a marker size of 6x6 bits (```DICT_6X6_250```).
 
 The parameters of ```drawMarker``` are:
@@ -212,7 +212,7 @@ camera (see marker_detector.cpp for a more detailed example):
         // if at least one marker detected
         if (ids.size() > 0)
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
-    
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
@@ -231,20 +231,20 @@ Pose Estimation
 The next thing you probably want to do after detecting the markers is to obtain the camera pose from them.
 
 To perform camera pose estimation you need to know the calibration parameters of your camera. This is
-the camera matrix and distortion coefficients. If you do not know how to calibrate your camera, you can 
+the camera matrix and distortion coefficients. If you do not know how to calibrate your camera, you can
 take a look to the ```calibrateCamera()``` function and the Calibration tutorial of OpenCV. You can also calibrate your camera using the aruco module
 as it is explained in the Calibration with aruco tutorial. Note that this only need to be done once unless the
 camera optics are modified (for instance changing its focus).
 
-At the end, what you get after the calibration is the camera matrix: a matrix of 3x3 elements with the 
-focal distances and the camera center coordinates (a.k.a intrinsic parameters), and the distortion 
+At the end, what you get after the calibration is the camera matrix: a matrix of 3x3 elements with the
+focal distances and the camera center coordinates (a.k.a intrinsic parameters), and the distortion
 coefficients: a vector of 5 elements or more that models the distortion produced by your camera.
 
 When you estimate the pose with ArUco markers, you can estimate the pose of each marker individually.
 If you want to estimate one pose from a set of markers, what you want to use is aruco Boards (see ArUco
 Boards tutorial).
 
-The camera pose respect to a marker is the 3d transformation from the marker coordinate system to the 
+The camera pose respect to a marker is the 3d transformation from the marker coordinate system to the
 camera coordinate system. It is specified by a rotation and a translation vector (see ```solvePnP()``` function for more
 information).
 
@@ -258,7 +258,7 @@ The aruco module provides a function to estimate the poses of all the detected m
 ```
 
 - The ```corners``` parameter is the vector of marker corners returned by the ```detectMarkers()``` function.
-- The second parameter is the size of the marker side in meters or in any other unit. Note that the 
+- The second parameter is the size of the marker side in meters or in any other unit. Note that the
 translation vectors of the estimated poses will be in the same unit
 - ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters that need to be known a priori.
 - ```rvecs``` and ```tvecs``` are the rotation and translation vectors respectively, for each of the markers
@@ -298,13 +298,13 @@ A basic full example for pose estimation from single markers  (see marker_detect
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
         image.copyTo(imageCopy);
-    
+
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
-    
+
         // if at least one marker detected
-        if (ids.size() > 0) { 
+        if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
             vector< Mat > rvecs, tvecs;
@@ -313,7 +313,7 @@ A basic full example for pose estimation from single markers  (see marker_detect
             for(int i=0; i<ids.size(); i++)
                 cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
         }
-    
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
@@ -353,10 +353,10 @@ This is the easiest way to select a dictionary. The aruco module includes a set 
 ```
 
 DICT_6X6_250 is an example of predefined dictionary of markers with 6x6 bits and a total of 250
-markers. 
+markers.
 
 From all the provided dictionaries, it is recommended to choose the smaller one that fits to your application.
-For instance, if you need 200 markers of 6x6 bits, it is better to use DICT_6X6_250 than DICT_6X6_1000. 
+For instance, if you need 200 markers of 6x6 bits, it is better to use DICT_6X6_250 than DICT_6X6_1000.
 The smaller the dictionary, the higher the inter-marker distance.
 
 - Automatic dictionary generation:
@@ -387,9 +387,9 @@ The ```Dictionary``` parameters are:
         Mat bytesList;
         int markerSize;
         int maxCorrectionBits; // maximum number of bits that can be corrected
-    
+
         ...
-    
+
     }
 
 ```
@@ -400,7 +400,7 @@ the maximum number of erroneous bits that can be corrected during the marker det
 high, it can lead to a high amount of false positives.
 
 Each row in ```bytesList``` represents one of the dictionary markers. However, the markers are not stored in its
-binary form, instead they are stored in a special format to simplificate their detection. 
+binary form, instead they are stored in a special format to simplificate their detection.
 
 Fortunately, a marker can be easily transformed to this form using the static method ```Dictionary::getByteListFromBits()```.
 
@@ -417,7 +417,7 @@ For example:
     for(int i=0; i<100; i++)
         // assume generateMarkerBits() generate a new marker in binary format, so that
         // markerBits is a 6x6 matrix of CV_8UC1 type, only containing 0s and 1s
-        cv::Mat markerBits = generateMarkerBits(); 
+        cv::Mat markerBits = generateMarkerBits();
         cv::Mat markerCompressed = getByteListFromBits(markerBits);
         // add the marker as a new row
         dictionary.bytesList.push_back(markerCompressed);
@@ -453,7 +453,7 @@ The ```adaptiveThreshWinSizeMin``` and adaptiveThreshWinSizeMax``` parameters re
 thresholding window sizes (in pixels) are selected for the adaptive thresholding (see OpenCV
 ```threshold()``` function for more details).
 
-The parameter ``adaptiveThreshWinSizeStep``` indicates the increments on the window size from 
+The parameter ``adaptiveThreshWinSizeStep``` indicates the increments on the window size from
 ```adaptiveThreshWinSizeMin``` to adaptiveThreshWinSizeMax```.
 
 For instance, for the values ```adaptiveThreshWinSizeMin``` = 5 and adaptiveThreshWinSizeMax``` = 21 and
@@ -470,7 +470,7 @@ reduce the performance. Moreover the the process would tend to a global threshol
 
 The simplest (and default) case is using the same value for ```adaptiveThreshWinSizeMin``` and
  ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is sometimes better using a
- range of values for the window size, although many thresholding steps can also reduce the performance considerably. 
+ range of values for the window size, although many thresholding steps can also reduce the performance considerably.
 
 Default values:
 
@@ -488,16 +488,16 @@ Default value: 7
 #### Contour filtering
 
 After thresholding, contours are detected. However, not all contours
-are considered as marker candidates. They are filtered out in different steps so that contours that are 
+are considered as marker candidates. They are filtered out in different steps so that contours that are
 very unlikely to be markers are discarded. The parameters in this section customize
-this filtering process. 
+this filtering process.
 
 It must be noted that in most cases it is a question of balance between detection capacity
 and performance. All the considered contours will be processed in the following stages, which usually have
 a higher computational cost. So, it is preferred to discard wrong candidates in this stage than in the later stages.
 
 On the other hand, if the filtering conditions are too strict, the real marker contours could be discarded and,
-hence, not detected. 
+hence, not detected.
 
 - ```double minMarkerPerimeterRate```, ```double maxMarkerPerimeterRate```
 
@@ -549,7 +549,7 @@ Default value: 10
 
 - ```double minMarkerDistance```
 
-Minimum Euclidean distance between any pair of corners from two different markers (in pixels). 
+Minimum Euclidean distance between any pair of corners from two different markers (in pixels).
 If two candidates are too close, the smaller one is ignored.
 
 Default value: 10
@@ -560,7 +560,7 @@ Minimum distance to any of the marker corners to the image border (in pixels). M
 by the image border can be correctly detected if the occlusion is small. However, if one of the corner
 is occluded, the returned corner is usually placed in a wrong position near the image border.
 
-If the position of marker corners is important, for instance if you want to do pose estimation, it is 
+If the position of marker corners is important, for instance if you want to do pose estimation, it is
 better to discard markers with any of their corners are too close to the image border. Elsewhere, it is not necessary.
 
 Default value: 3
@@ -573,13 +573,13 @@ are markers or not.
 
 Before analyzing the binary code itself, the bits need to be extracted. To do so, the perspective
 distortion is removed and the resulting image is thresholded using Otsu threshold to separate
-black and white pixels. 
+black and white pixels.
 
 This is an example of the image obtained after removing the perspective distortion of a marker:
 
 ![Perspective removing](images/removeperspective.png)
 
-Then, the image is divided in a grid with the same cells than the number of bits in the marker. 
+Then, the image is divided in a grid with the same cells than the number of bits in the marker.
 On each cell, the number of black and white pixels are counted to decide the bit assigned to the cell (from the majority value):
 
 ![Marker cells](images/bitsextraction1.png)
@@ -612,10 +612,10 @@ distortion (including the border). This is the size of the red squares in the im
 
 For instance, lets assume we are dealing with markers of 5x5 bits and border size of 1 bit
 (see ```markerBorderBits```). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
-has to be counted twice). The total number of cells is 7x7. 
+has to be counted twice). The total number of cells is 7x7.
 
 If the value of ```perpectiveRemovePixelPerCell``` is 10, then the size of the obtained image will be
-10*7 = 70 -> 70x70 pixels. 
+10*7 = 70 -> 70x70 pixels.
 
 A higher value of this parameter can improve the bits extraction process (up to some degree), however it can penalize
 the performance.
@@ -628,7 +628,7 @@ When extracting the bits of each cell, the numbers of black and white pixels are
 not recommended to consider all the cell pixels. Instead it is better to ignore some pixels in the
 margins of the cells.
 
-The reason of this is that, after removing the perspective distortion, the cells' colors are, in general, not 
+The reason of this is that, after removing the perspective distortion, the cells' colors are, in general, not
 perfectly separated and white cells can invade some pixels of black cells (and vice-versa). Thus, it is
 better to ignore some pixels just to avoid counting erroneous pixels.
 
@@ -641,15 +641,15 @@ the resulting pixels contain a lower amount of noise from neighbor cells.
 The ```perspectiveRemoveIgnoredMarginPerCell``` parameter indicates the difference between the red and
 the green squares.
 
-This parameter is relative to the total size of the cell. For instance if the cell size is 40 pixels and the 
-value of this parameter is 0.1, a margin of 40*0.1=4 pixels is ignored in the cells. This means that the total 
+This parameter is relative to the total size of the cell. For instance if the cell size is 40 pixels and the
+value of this parameter is 0.1, a margin of 40*0.1=4 pixels is ignored in the cells. This means that the total
 amount of pixels that would be analyzed on each cell would actually be 32x32, instead of 40x40.
 
 Default value: 0.13
 
 - ```bool perspectiveRemoveDistortion```
 
-This parameter enables an alternative process for bits extraction specially designed for markers with high distortion. 
+This parameter enables an alternative process for bits extraction specially designed for markers with high distortion.
 Detection of markers with high distortion usually fails during the identification step due to an incorrect bits extraction. This process tries a different extraction process that handles this problem.
 This process reduces the performance considerably and it should only be activated if you are sure it is useful for your application. In most cases it is not worth using it.
 
@@ -663,8 +663,8 @@ dictionary and, if necessary, error correction can be performed.
 
 - ```double maxErroneousBitsInBorderRate```
 
-The bits of the marker border should be black. This parameter specifies the allowed number of erroneous 
-bits in the border, i.e. the maximum number of white bits in the border. It is represented 
+The bits of the marker border should be black. This parameter specifies the allowed number of erroneous
+bits in the border, i.e. the maximum number of white bits in the border. It is represented
 relative to the total number of bits in the marker.
 
 Default value: 0.5
@@ -672,7 +672,7 @@ Default value: 0.5
 
 - ```double errorCorrectionRate```
 
-Each marker dictionary has a theoretical maximum number of bits that can be corrected (```Dictionary.maxCorrectionBits```). 
+Each marker dictionary has a theoretical maximum number of bits that can be corrected (```Dictionary.maxCorrectionBits```).
 However, this value can be modified by the ```errorCorrectionRate``` parameter.
 
 For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of ```errorCorrectionRate``` is
@@ -702,7 +702,7 @@ Default value: false.
 
 This parameter determines the window size of the subpixel refinement process.
 
-High values can produce that close image corners are included in the window region, so that the 
+High values can produce that close image corners are included in the window region, so that the
 marker corner moves to a different and wrong location during the process. Furthermore
 it can affect to performance.
 
@@ -711,14 +711,14 @@ Default value: 5
 
 - ```int cornerRefinementMaxIterations```, ```double cornerRefinementMinAccuracy```
 
-These two parameters determine the stop criterion of the subpixel refinement process. The 
+These two parameters determine the stop criterion of the subpixel refinement process. The
 ```cornerRefinementMaxIterations``` indicates the maximum number of iterations and
 ```cornerRefinementMinAccuracy``` the minimum error value before stopping the process.
 
-If the number of iterations is too high, it can affect the performance. On the other hand, if it is 
+If the number of iterations is too high, it can affect the performance. On the other hand, if it is
 too low, it can produce a poor subpixel refinement.
 
-Default values: 
+Default values:
 
 ```cornerRefinementMaxIterations```: 30, ```cornerRefinementMinAccuracy```: 0.1
 

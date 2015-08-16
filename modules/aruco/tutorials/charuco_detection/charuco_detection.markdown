@@ -3,7 +3,7 @@ Detection of ChArUco Corners {#tutorial_charuco_detection}
 
 ArUco markers and boards are very useful due to their fast detection and their versatility.
 However, one of the problems of ArUco markers is that the accuracy of their corner positions is not too high,
-even after applying subpixel refinement. 
+even after applying subpixel refinement.
 
 On the contrary, the corners of chessboard patterns can be refined more accurately since each corner is
 surrounded by two black squares. However, finding a chessboard pattern is not as versatile as finding an ArUco board:
@@ -24,7 +24,7 @@ Aruco boards.
 ChArUco Board Creation
 ------
 
-The aruco module provides the ```cv::aruco::CharucoBoard``` class that represents a Charuco Board and which inherits from the ```Board``` class. 
+The aruco module provides the ```cv::aruco::CharucoBoard``` class that represents a Charuco Board and which inherits from the ```Board``` class.
 
 This class, as the rest of Charuco functionalities, are defined in:
 
@@ -53,10 +53,10 @@ is the static function ```cv::aruco::CharucoBoard::create()``` :
 in any unit, having in mind that the estimated pose for this board would be measured in the same units (usually meters are used).
 - Finally, the dictionary of the markers is provided.
 
-The ids of each of the markers are assigned by default in ascending and starting on 0, like in ```GridBoard::create()```. 
+The ids of each of the markers are assigned by default in ascending and starting on 0, like in ```GridBoard::create()```.
 This can be easily customized by accessing to the ids vector through ```board.ids```, like in the ```Board``` parent class.
 
-Once we have our ```CharucoBoard``` object, we can create an image to print it. This can be done with the 
+Once we have our ```CharucoBoard``` object, we can create an image to print it. This can be done with the
 ```CharucoBoard::draw()``` method:
 
 ``` c++
@@ -150,7 +150,7 @@ If calibration parameters are provided, the charuco corners are interpolated by,
 and, then, reprojecting the Charuco corners back to the image.
 
 On the other hand, if calibration parameters are not provided, the Charuco corners are interpolated by calculating the
-corresponding homography between the Charuco plane and the Charuco image projection. 
+corresponding homography between the Charuco plane and the Charuco image projection.
 
 The main problem of using homography is that the interpolation is more sensible to image distortion. Actually, the homography is only performed
 using the closest markers of each Charuco corner to reduce the effect of distortion.
@@ -160,13 +160,13 @@ is that, due to the proximity of the chessboard squares, the subpixel process ca
 deviations in the corner positions and these deviations are propagated to the Charuco corner interpolation,
 producing poor results.
 
-Furthermore, only those corners whose two surrounding markers have be found are returned. If any of the two surrounding markers has 
-not been detected, this usually means that there is some occlusion or the image quality is not good in that zone. In any case, it is 
+Furthermore, only those corners whose two surrounding markers have be found are returned. If any of the two surrounding markers has
+not been detected, this usually means that there is some occlusion or the image quality is not good in that zone. In any case, it is
 preferable not to consider that corner, since what we want is to be sure that the interpolated Charuco corners are very accurate.
 
 After the Charuco corners have been interpolated, a subpixel refinement is performed.
 
-Once we have interpolated the Charuco corners, we would probably want to draw them to see if their detections are correct. 
+Once we have interpolated the Charuco corners, we would probably want to draw them to see if their detections are correct.
 This can be easily done using the ```drawDetectedCornersCharuco()``` function:
 
 ``` c++
@@ -206,11 +206,11 @@ Finally, this is a full example of Charuco detection (without using calibration 
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
         image.copyTo(imageCopy);
-    
+
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids, params);
-    
+
         // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
@@ -219,10 +219,10 @@ Finally, this is a full example of Charuco detection (without using calibration 
             std::vector<int> charucoIds;
             cv::aruco::interpolateCornersCharuco(corners, ids, image, board, charucoCorners, charucoIds);
             // if at least one charuco corner detected
-            if(charucoIds.size() > 0) 
+            if(charucoIds.size() > 0)
                 cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
         }
-    
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
@@ -275,11 +275,11 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
         image.copyTo(imageCopy);
-    
+
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
-    
+
         // if at least one marker detected
         if (ids.size() > 0) {
             std::vector<cv::Point2f> charucoCorners;
@@ -295,7 +295,7 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
                     cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
             }
         }
-    
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)

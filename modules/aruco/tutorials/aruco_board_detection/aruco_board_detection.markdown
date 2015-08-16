@@ -1,7 +1,7 @@
 Detection of ArUco Boards {#tutorial_aruco_board_detection}
 ==============================
 
-A Board of markers is a set of markers that acts like a single marker in the sense that it provides a 
+A Board of markers is a set of markers that acts like a single marker in the sense that it provides a
 single pose for the camera.
 
 The most popular board is the one with all the markers in the same plane, since it can be easily printed:
@@ -21,7 +21,7 @@ The main benefits of using Boards are:
 
 - The pose estimation is much more versatile. Only some markers are necessary to perform pose estimation.
 Thus, the pose can be calculated even in the presence of occlusions or partial views.
-- The obtained pose is usually more accurate since a higher amount of point correspondences (marker 
+- The obtained pose is usually more accurate since a higher amount of point correspondences (marker
 corners) are employed.
 
 The aruco module allows the use of Boards. The main class is the ```cv::aruco::Board``` class which defines the Board layout:
@@ -36,8 +36,8 @@ The aruco module allows the use of Boards. The main class is the ```cv::aruco::B
 ```
 
 A object of type ```Board``` has three parameters:
-- The ```objPoints``` structure is the list of corner positions in the 3d Board reference system, i.e. its layout. 
-For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting 
+- The ```objPoints``` structure is the list of corner positions in the 3d Board reference system, i.e. its layout.
+For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting
 with the top left corner.
 - The ```dictionary``` parameter indicates to which marker dictionary the Board markers belong to.
 - Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified  ```dictionary```.
@@ -96,8 +96,8 @@ Creating the ```Board``` object requires specifying the corner positions for eac
 However, in many cases, the board will be just a set of markers in the same plane and in a grid layout,
 so it can be easily printed and used.
 
-Fortunately, the aruco module provides the basic functionality to create and print these types of markers 
-easily. 
+Fortunately, the aruco module provides the basic functionality to create and print these types of markers
+easily.
 
 The ```GridBoard``` class is a specialized class that inherits from the ```Board``` class and which represents a Board
 with all the markers in the same plane and in a grid layout, as in the following image:
@@ -170,11 +170,11 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
         image.copyTo(imageCopy);
-    
+
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
-    
+
         // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
@@ -186,7 +186,7 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
             if(valid > 0)
                 cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
-    
+
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
         if (key == 27)
@@ -195,4 +195,4 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
 ```
 
 
-    
+
