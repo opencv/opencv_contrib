@@ -175,9 +175,8 @@ namespace cnn_3dobj
         headerLabel.close();
     };
 
-    void icoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z)
+    void icoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z, int isrgb)
     {
-        int isrgb = 0;
         cv::Mat ImgforBin = cv::imread(filenameImg, isrgb);
         char* A0 = (char*)malloc(1024);
         strcpy(A0, binaryPath);
@@ -208,9 +207,24 @@ namespace cnn_3dobj
             createHeader(num_item, 64, 64, binaryPath);
             img_file.open(binPathimg,ios::out|ios::binary|ios::app);
             lab_file.open(binPathlab,ios::out|ios::binary|ios::app);
-            for (int r = 0; r < ImgforBin.rows; r++)
+            if (isrgb == 0)
             {
-                img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
+                for (int r = 0; r < ImgforBin.rows; r++)
+                {
+                    img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
+                }
+            }
+            else
+            {
+                std::vector<cv::Mat> Img3forBin;
+                cv::split(ImgforBin,Img3forBin);
+                for (unsigned int i = 0; i < Img3forBin.size(); i++)
+                {
+                    for (int r = 0; r < Img3forBin[i].rows; r++)
+                    {
+                        img_file.write(reinterpret_cast<const char*>(Img3forBin[i].ptr(r)), Img3forBin[i].cols*Img3forBin[i].elemSize());
+                    }
+                }
             }
             signed char templab = (signed char)label_class;
             lab_file << templab << (signed char)x << (signed char)y << (signed char)z;
@@ -222,9 +236,24 @@ namespace cnn_3dobj
             img_file.open(binPathimg,ios::out|ios::binary|ios::app);
             lab_file.open(binPathlab,ios::out|ios::binary|ios::app);
             cout <<"Concatenating the training data at: " << binaryPath << ". " << endl;
-            for (int r = 0; r < ImgforBin.rows; r++)
+            if (isrgb == 0)
             {
-                img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
+                for (int r = 0; r < ImgforBin.rows; r++)
+                {
+                    img_file.write(reinterpret_cast<const char*>(ImgforBin.ptr(r)), ImgforBin.cols*ImgforBin.elemSize());
+                }
+            }
+            else
+            {
+                std::vector<cv::Mat> Img3forBin;
+                cv::split(ImgforBin,Img3forBin);
+                for (unsigned int i = 0; i < Img3forBin.size(); i++)
+                {
+                    for (int r = 0; r < Img3forBin[i].rows; r++)
+                    {
+                        img_file.write(reinterpret_cast<const char*>(Img3forBin[i].ptr(r)), Img3forBin[i].cols*Img3forBin[i].elemSize());
+                    }
+                }
             }
             signed char templab = (signed char)label_class;
             lab_file << templab << (signed char)x << (signed char)y << (signed char)z;

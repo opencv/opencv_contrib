@@ -53,7 +53,7 @@ $ make
 =============
 #Demos
 ##Demo1: training data generation
-###Imagas generation from different pose, by default there are 4 models used, there will be 276 images in all which each class contains 69 iamges, if you want to use additional .ply models, it is necessary to change the class number parameter to the new class number and also give it a new class label.
+###Imagas generation from different pose, by default there are 4 models used, there will be 276 images in all which each class contains 69 iamges, if you want to use additional .ply models, it is necessary to change the class number parameter to the new class number and also give it a new class label. If you will train net work and extract feature from RGB images set the parameter rgb_use as 1.
 ```
 $ ./sphereview_test -plymodel=../3Dmodel/ape.ply -label_class=0
 ```
@@ -90,5 +90,9 @@ $ cd <opencv_contrib>/modules/cnn_3dobj/samples/build
 ###Classifier, this will extracting the feature of a single image and compare it with features of gallery samples for prediction. This demo uses a set of images for feature extraction in a given path, these features will be a reference for prediction on target image. Just run:
 ```
 $ ./classify_test
+```
+###if the classification and pose estimation issue need to extract mean got from all training images, you can run this:
+```
+$ ./classify_test -mean_file=../data/images_mean/triplet_mean.binaryproto
 ```
 ==============================================

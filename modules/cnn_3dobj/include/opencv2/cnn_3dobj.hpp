@@ -128,7 +128,7 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
         CV_WRAP static void createHeader(int num_item, int rows, int cols, const char* headerPath);
         /** @brief Create header in binary files collecting the image data and label.
         */
-        CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z);
+        CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z, int isrgb);
         /** @brief Write binary files used for training in other open source project.
         */
     };
@@ -136,39 +136,37 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
     class CV_EXPORTS_W descriptorExtractor
     {
         private:
-        caffe::Net<float>* net_;
-        cv::Size input_geometry_;
-        int num_channels_;
+        caffe::Net<float>* convnet;
+        cv::Size input_geometry;
+        int num_channels;
+        bool net_set;
+        int net_ready;
         cv::Mat mean_;
+        std::vector<string> device_info;
         void setMean(const string& mean_file);
-        /** @brief Load the mean file in binaryproto format.
+        /** @brief Load the mean file in binaryproto format if it is needed.
         */
-        void wrapInputLayer(std::vector<cv::Mat>* input_channels);
+        void wrapInput(std::vector<cv::Mat>* input_channels);
         /** @brief Wrap the input layer of the network in separate cv::Mat objects(one per channel). This way we save one memcpy operation and we don't need to rely on cudaMemcpy2D. The last preprocessing operation will write the separate channels directly to the input layer.
         */
-        void preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels, int net_ready);
+        void preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels);
         /** @brief Convert the input image to the input image format of the network.
         */
         public:
-        std::vector<string> labels_;
-        descriptorExtractor();
-        void listDir(const char *path,std::vector<string>& files,bool r);
-        /** @brief Get the file name from a root dictionary.
+        descriptorExtractor(const string& device_type, int device_id);
+        /** @brief Set the device for feature extraction.
         */
-        bool setNet(const string& cpu_only, int device_id);
+        std::vector<string> getDevice();
+        /** @brief Get device information for feature extraction.
+        */
+        void setDevice(const string& device_type, const string& device_id = "");
+        /** @brief Set device information for feature extraction.
+        */
+        void loadNet(const string& model_file, const string& trained_file, string mean_file = "");
         /** @brief Initiate a classification structure.
         */
-        int loadNet(bool netsetter, const string& model_file, const string& trained_file);
-        /** @brief Initiate a classification structure.
-        */
-        int loadNet(bool netsetter, const string& model_file, const string& trained_file, const string& mean_file);
-        /** @brief Initiate a classification structure.
-        */
-        void getLabellist(const std::vector<string>& name_gallery);
-        /** @brief Get the label of the gallery images for result displaying in prediction.
-        */
-        void extract(int net_ready, InputArray inputimg, OutputArray feature, std::string feature_blob);
-        /** @brief Extract a single featrue of one image.
+        void extract(InputArrayOfArrays inputimg, OutputArray feature, std::string feature_blob);
+        /** @brief Extract features from a set of images.
         */
     };
     //! @}

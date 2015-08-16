@@ -34,23 +34,11 @@ void CV_CNN_Feature_Test::run(int)
     string device = "CPU";
     int dev_id = 0;
 
-    cv::cnn_3dobj::descriptorExtractor descriptor;
-    bool set_succeed = descriptor.setNet(device, dev_id);
-    if (!set_succeed) {
-      ts->printf(cvtest::TS::LOG, "Net parameters which is GPU or CPU could not be set");
-      ts->set_failed_test_info(cvtest::TS::FAIL_MISSING_TEST_DATA);
-      return;
-    }
-    int net_ready;
+    cv::cnn_3dobj::descriptorExtractor descriptor(device, dev_id);
     if (strcmp(mean_file.c_str(), "no") == 0)
-        net_ready = descriptor.loadNet(set_succeed, network_forIMG, caffemodel);
+        descriptor.loadNet(network_forIMG, caffemodel);
     else
-        net_ready = descriptor.loadNet(set_succeed, network_forIMG, caffemodel, mean_file);
-    if (!net_ready) {
-      ts->printf(cvtest::TS::LOG, "No model loaded");
-      ts->set_failed_test_info(cvtest::TS::FAIL_MISSING_TEST_DATA);
-      return;
-    }
+        descriptor.loadNet(network_forIMG, caffemodel, mean_file);
     cv::Mat img = cv::imread(target_img, -1);
     if (img.empty()) {
       ts->printf(cvtest::TS::LOG, "could not read image %s\n", target_img.c_str());
@@ -58,7 +46,7 @@ void CV_CNN_Feature_Test::run(int)
       return;
     }
     cv::Mat feature_test;
-    descriptor.extract(net_ready, img, feature_test, feature_blob);
+    descriptor.extract(img, feature_test, feature_blob);
     if (feature_test.empty()) {
       ts->printf(cvtest::TS::LOG, "could not extract feature from image %s\n", target_img.c_str());
       ts->set_failed_test_info(cvtest::TS::FAIL_MISSING_TEST_DATA);

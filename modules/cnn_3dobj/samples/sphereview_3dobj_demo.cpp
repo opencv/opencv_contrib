@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
 "{imagedir | ../data/images_all/ | path of the generated images for one particular .ply model. }"
 "{labeldir | ../data/label_all.txt | path of the generated images for one particular .ply model. }"
 "{num_class | 4 | total number of classes of models}"
-"{label_class | 0 | class label of current .ply model}";
+"{label_class | 0 | class label of current .ply model}"
+"{rgb_use | 0 | use RGB image or grayscale}";
     cv::CommandLineParser parser(argc, argv, keys);
     parser.about("Demo for Sphere View data generation");
     if (parser.has("help"))
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
     string labeldir = parser.get<string>("labeldir");
     int num_class = parser.get<int>("num_class");
     int label_class = parser.get<int>("label_class");
+    int rgb_use = parser.get<int>("rgb_use");
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
     std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
     std::fstream imglabel;
@@ -122,7 +124,7 @@ int main(int argc, char *argv[])
         if (camera_pov)
             myWindow.setViewerPose(cam_pose);
         myWindow.saveScreenshot(filename);
-        ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class, (int)(campos.at(pose).x*100), (int)(campos.at(pose).y*100), (int)(campos.at(pose).z*100));
+        ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class, (int)(campos.at(pose).x*100), (int)(campos.at(pose).y*100), (int)(campos.at(pose).z*100), rgb_use);
     }
     imglabel.close();
     return 1;
