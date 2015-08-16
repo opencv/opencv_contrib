@@ -193,6 +193,3 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
             break;
     }
 ```
-
-
-

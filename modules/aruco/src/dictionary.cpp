@@ -385,8 +385,8 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
     Dictionary out;
     out.markerSize = markerSize;
 
-    int C = std::floor(float(markerSize*markerSize)/4.f);
-    int tau = 2*std::floor(float(C)*4.f/3.f);
+    int C = (int)std::floor(float(markerSize*markerSize)/4.f);
+    int tau = 2*(int)std::floor(float(C)*4.f/3.f);
 
     if(baseDictionary.bytesList.rows > 0) {
         CV_Assert(baseDictionary.markerSize == markerSize);

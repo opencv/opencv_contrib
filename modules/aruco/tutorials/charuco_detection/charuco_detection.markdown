@@ -302,5 +302,3 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
             break;
     }
 ```
-
-

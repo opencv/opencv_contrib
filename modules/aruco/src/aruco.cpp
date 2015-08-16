@@ -447,7 +447,7 @@ _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates, OutputArra
         for (int j = 0; j < 4; j++)
             m.ptr<Vec2f>(0)[j] = candidatesOut[i][j];
 
-        _contours.create(contoursOut[i].size(), 1, CV_32SC2, i, true);
+        _contours.create((int)contoursOut[i].size(), 1, CV_32SC2, i, true);
         Mat c = _contours.getMat(i);
         for (unsigned int j = 0; j < contoursOut[i].size(); j++)
             c.ptr<Point2i>()[j] = contoursOut[i][j];

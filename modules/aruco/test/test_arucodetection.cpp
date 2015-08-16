@@ -406,7 +406,8 @@ void CV_ArucoBitCorrection::run(int) {
 
         for(int i=0; i<5; i++) {
             params.errorCorrectionRate = 0.2 + i*0.1;
-            int errors = std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate - 1.);
+            int errors = (int)std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate
+                                         - 1.);
 
             cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
                                                                              dictionary.markerSize);
@@ -435,7 +436,8 @@ void CV_ArucoBitCorrection::run(int) {
 
         for(int i=0; i<5; i++) {
             params.errorCorrectionRate = 0.2 + i*0.1;
-            int errors = std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate + 1.);
+            int errors = (int)std::floor(dictionary.maxCorrectionBits*params.errorCorrectionRate
+                                         + 1.);
 
             cv::Mat currentCodeBits = aruco::Dictionary::getBitsFromByteList(currentCodeBytes,
                                                                              dictionary.markerSize);
@@ -490,4 +492,3 @@ TEST(CV_ArucoBitCorrection, algorithmic) {
     CV_ArucoBitCorrection test;
     test.safe_run();
 }
-

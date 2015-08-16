@@ -721,20 +721,3 @@ too low, it can produce a poor subpixel refinement.
 Default values:
 
 ```cornerRefinementMaxIterations```: 30, ```cornerRefinementMinAccuracy```: 0.1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
