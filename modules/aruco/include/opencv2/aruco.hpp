@@ -364,7 +364,7 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * capability of the used dictionary. -1 ignores the error correction step.
  * @param checkAllOrders Consider the four posible corner orders in the rejectedCorners array.
  * If it set to false, only the provided corner order is considered (default true).
- * @param recoveredIdx Optional array to returns the indexes of the recovered candidates in the
+ * @param recoveredIdxs Optional array to returns the indexes of the recovered candidates in the
  * original rejectedCorners array.
  * @param parameters marker detection parameters
  *

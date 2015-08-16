@@ -20,7 +20,7 @@ a popular library for detection of square fiducial markers developed by Rafael M
 
 The aruco functionalities are included in:
 ``` c++
-    #include <opencv2/aruco.hpp>
+    \#include <opencv2/aruco.hpp>
 ```
 
 
