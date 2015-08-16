@@ -189,32 +189,34 @@ namespace rgbd
         // assign initial UV, but here we assume X->U Y->V
         // since we use a depth map
 
-        // find min/max in U direction
-        float uMax = -1000000000;
-        float uMin = 1000000000;
-        int uMaxInd = 0;
-        int uMinInd = 0;
-        for(int i = 0; i < getNumPoints(); i++)
         {
-            Point2i & point = points.at(i).projector_xy;
-            nlSetVariable(2 * i, point.x);
-            nlSetVariable(2 * i + 1, point.y);
+            // find min/max in U direction
+            float uMax = -1e5;
+            float uMin = 1e5;
+            int uMaxInd = 0;
+            int uMinInd = 0;
+            for (int i = 0; i < getNumPoints(); i++)
+            {
+                Point2i & point = points.at(i).projector_xy;
+                nlSetVariable(2 * i, point.x);
+                nlSetVariable(2 * i + 1, point.y);
 
-            if (point.x > uMax){
-                uMax = point.x;
-                uMaxInd = i;
-            }
-            if (point.x < uMin){
-                uMin = point.x;
-                uMinInd = i;
-            }
+                if (point.x > uMax) {
+                    uMax = point.x;
+                    uMaxInd = i;
+                }
+                if (point.x < uMin) {
+                    uMin = point.x;
+                    uMinInd = i;
+                }
 
+            }
+            // "pin" leftmost and rightmost two points
+            nlLockVariable(2 * uMaxInd);
+            nlLockVariable(2 * uMaxInd + 1);
+            nlLockVariable(2 * uMinInd);
+            nlLockVariable(2 * uMinInd + 1);
         }
-        // "pin" leftmost and rightmost two points
-        nlLockVariable(2 * uMaxInd);
-        nlLockVariable(2 * uMaxInd + 1);
-        nlLockVariable(2 * uMinInd);
-        nlLockVariable(2 * uMinInd + 1);
 
         nlBegin(NL_MATRIX);
 
@@ -236,9 +238,6 @@ namespace rgbd
             p2.x = points.at(idx2).projector_xy.x;
             p2.y = points.at(idx2).projector_xy.y;
             p2.z = points.at(idx2).world_xyz.z * 1000;
-            //p0 = points.at(idx0).world_xyz;
-            //p1 = points.at(idx1).world_xyz;
-            //p2 = points.at(idx2).world_xyz;
             project_triangle(p0, p1, p2, z0, z1, z2);
 
             Point2f z01 = z1 - z0;
@@ -271,12 +270,28 @@ namespace rgbd
         nlEnd(NL_SYSTEM);
         nlSolve();
 
-        for (int i = 0; i < getNumPoints(); i++)
         {
-            RgbdPoint & point = points.at(i);
-            float u = (float)nlGetVariable(static_cast<NLuint>(i) * 2    ) / (uMax - uMin);
-            float v = (float)nlGetVariable(static_cast<NLuint>(i) * 2 + 1) / (uMax - uMin);
-            point.texture_uv = Point2f(u, v);
+            // store in a temporary vector for scaling
+            std::vector<Point2f> uvs;
+            float uMin = 1e5, uMax = -1e5, vMin = 1e5, vMax = -1e5;
+            for (int i = 0; i < getNumPoints(); i++)
+            {
+                float u = (float)nlGetVariable(static_cast<NLuint>(i) * 2);
+                float v = (float)nlGetVariable(static_cast<NLuint>(i) * 2 + 1);
+                uvs.push_back(Point2f(u, v));
+                uMin = std::min(uMin, u);
+                uMax = std::max(uMax, u);
+                vMin = std::min(vMin, v);
+                vMax = std::max(vMax, v);
+            }
+
+            for (int i = 0; i < getNumPoints(); i++)
+            {
+                RgbdPoint & point = points.at(i);
+                float u = uvs.at(i).x;
+                float v = uvs.at(i).y;
+                point.texture_uv = Point2f((u - uMin) / (uMax - uMin), (v - vMin) / (vMax - vMin) - 1);
+            }
         }
 
         nlDeleteContext(nlGetCurrent());
