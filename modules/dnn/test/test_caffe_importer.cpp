@@ -12,7 +12,7 @@ static std::string _tf(TString filename)
     return (getOpenCVExtraDir() + "/dnn/") + filename;
 }
 
-TEST(ReadCaffe_GTSRB, Accuracy)
+TEST(Test_Caffe, read_gtsrb)
 {
     Net net;
     {
@@ -22,7 +22,7 @@ TEST(ReadCaffe_GTSRB, Accuracy)
     }
 }
 
-TEST(ReadCaffe_GoogLeNet, Accuracy)
+TEST(Test_Caffe, read_googlenet)
 {
     Net net;
     {

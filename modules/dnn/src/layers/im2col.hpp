@@ -7,11 +7,12 @@ namespace dnn
 {
 
 template <typename Dtype>
-void im2col_cpu(const Dtype* data_im, const int channels,
-    const int height, const int width, const int kernel_h, const int kernel_w,
-    const int pad_h, const int pad_w,
-    const int stride_h, const int stride_w,
-    Dtype* data_col)
+void im2col_cpu(const Dtype* data_im, 
+                int channels, int height, int width, 
+                int kernel_h, int kernel_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                Dtype* data_col)
 {
     int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
     int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
@@ -35,11 +36,12 @@ void im2col_cpu(const Dtype* data_im, const int channels,
 }
 
 template <typename Dtype>
-void col2im_cpu(const Dtype* data_col, const int channels,
-    const int height, const int width, const int patch_h, const int patch_w,
-    const int pad_h, const int pad_w,
-    const int stride_h, const int stride_w,
-    Dtype* data_im)
+void col2im_cpu(const Dtype* data_col, 
+                int channels, int height, int width,
+                int patch_h, int patch_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                Dtype* data_im)
 {
     memset(data_im, 0, height * width * channels * sizeof(Dtype));
 
@@ -67,6 +69,13 @@ void col2im_cpu(const Dtype* data_col, const int channels,
         }
     }
 }
+
+void im2col_ocl(UMat &img,
+                int channels, int height, int width,
+                int kernel_h, int kernel_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                UMat &col);
 
 }
 }

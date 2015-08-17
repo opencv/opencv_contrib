@@ -1,4 +1,5 @@
 #include "../precomp.hpp"
+#include <opencv2/core/ocl.hpp>
 #include "layers_common.hpp"
 #include "convolution_layer.hpp"
 #include "im2col.hpp"
@@ -105,6 +106,14 @@ namespace dnn
         {
             colMat = Mat(ksize, inpBlob.rows()*inpBlob.cols(), inpBlob.type(), srcPtr);
             return;
+        }
+
+        if (ocl::useOpenCL() && inpBlob.type() == CV_32F)
+        {
+            UMat src = inpBlob.getMatRef().getUMat(ACCESS_READ);
+            UMat dst(colMat.size(), colMat.type());
+            im2col_ocl(src, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dst);
+            dst.copyTo(colMat);
         }
 
         if (inpBlob.type() == CV_32F)

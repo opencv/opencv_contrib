@@ -58,8 +58,7 @@ TEST(Torch_Importer, run_pool_max)
 
 TEST(Torch_Importer, run_pool_ave)
 {
-    //TODO: fix
-    //runTorchNet("net_pool_ave", "l1_Pooling", false);
+    runTorchNet("net_pool_ave", "l1_Pooling", false);
 }
 
 TEST(Torch_Importer, run_reshape)

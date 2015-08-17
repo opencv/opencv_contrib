@@ -1,4 +1,5 @@
 #include "test_precomp.hpp"
+#include <opencv2/core/ocl.hpp>
 #include <iostream>
 #include "npy_blob.hpp"
 
@@ -54,6 +55,17 @@ TEST(Layer_Test_LRN_channels, Accuracy)
 TEST(Layer_Test_Convolution, Accuracy)
 {
      testLayer("layer_convolution", true);
+}
+
+//TODO: move this test into separate file
+TEST(Layer_Test_Convolution, AccuracyOCL)
+{
+    if (cv::ocl::haveOpenCL())
+    {
+        cv::ocl::setUseOpenCL(true);
+        testLayer("layer_convolution", true);
+        cv::ocl::setUseOpenCL(false);
+    }
 }
 
 TEST(Layer_Test_InnerProduct, Accuracy)
