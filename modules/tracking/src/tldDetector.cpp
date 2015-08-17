@@ -131,8 +131,8 @@ namespace cv
 				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
 				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
 				ocl::KernelArg::PtrWriteOnly(devNCC),
-				posNum,
-				negNum);
+				*posNum,
+				*negNum);
 
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;
@@ -208,8 +208,8 @@ namespace cv
 				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
 				ocl::KernelArg::PtrWriteOnly(devPosNCC),
 				ocl::KernelArg::PtrWriteOnly(devNegNCC),
-				posNum,
-				negNum,
+				*posNum,
+				*negNum,
 				numOfPatches);
 
 			//e4 = getTickCount();
@@ -364,8 +364,8 @@ namespace cv
 				ocl::KernelArg::PtrReadOnly(devPositiveSamples),
 				ocl::KernelArg::PtrReadOnly(devNegativeSamples),
 				ocl::KernelArg::PtrWriteOnly(devNCC),
-				posNum,
-				negNum);
+				*posNum,
+				*negNum);
 
 			//e4 = getTickCount();
 			//t = (e4 - e3) / getTickFrequency()*1000.0;
