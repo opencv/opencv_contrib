@@ -383,7 +383,7 @@ int Net::addLayer(const String &name, const String &type, LayerParams &params)
 {
     if (name.find('.') != String::npos)
     {
-        CV_Error(Error::StsBadArg, "Added layer name \"" + name + "\" should not contain dot symbol");
+        CV_Error(Error::StsBadArg, "Added layer name \"" + name + "\" must not contain dot symbol");
         return -1;
     }
 
@@ -398,6 +398,14 @@ int Net::addLayer(const String &name, const String &type, LayerParams &params)
     impl->layers.insert(std::make_pair(id, LayerData(id, name, type, params)));
 
     return id;
+}
+
+int Net::addLayerToPrev(const String &name, const String &type, LayerParams &params)
+{
+    int prvLid = impl->lastLayerId;
+    int newLid = this->addLayer(name, type, params);
+    this->connect(prvLid, 0, newLid, 0);
+    return newLid;
 }
 
 void Net::connect(int outLayerId, int outNum, int inLayerId, int inNum)
@@ -467,6 +475,18 @@ Blob Net::getParam(LayerId layer, int numParam)
     return layerBlobs[numParam];
 }
 
+int Net::getLayerId(const String &layer)
+{
+    return impl->getLayerId(layer);
+}
+
+void Net::deleteLayer(LayerId)
+{
+    CV_Error(Error::StsNotImplemented, "");
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 Importer::~Importer()
 {
 
@@ -528,17 +548,6 @@ Ptr<Layer> LayerRegister::createLayerInstance(const String &_type, LayerParams& 
     {
         return Ptr<Layer>(); //NULL
     }
-}
-
-int Net::getLayerId(LayerId)
-{
-    CV_Error(Error::StsNotImplemented, "");
-    return -1;
-}
-
-void Net::deleteLayer(LayerId)
-{
-    CV_Error(Error::StsNotImplemented, "");
 }
 
 }

@@ -9,10 +9,10 @@ namespace dnn
 {
 
 void im2col_ocl(UMat &img,
-                int channels, int height, int width, 
+                int channels, int height, int width,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
-                int stride_h, int stride_w, 
+                int stride_h, int stride_w,
                 UMat &col)
 {
     int h_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;

@@ -49,13 +49,14 @@ namespace dnn
         ~Net();
 
         int addLayer(const String &name, const String &type, LayerParams &params);
-        int getLayerId(LayerId layer);
-        void deleteLayer(LayerId layer);
+        int addLayerToPrev(const String &name, const String &type, LayerParams &params);
 
-        void setNetInputs(const std::vector<String> &inputBlobNames);
+        int getLayerId(const String &layer);
+        void deleteLayer(LayerId layer);
 
         void connect(String outPin, String inpPin);
         void connect(int outLayerId, int outNum, int inLayerId, int inNum);
+        void setNetInputs(const std::vector<String> &inputBlobNames);
 
         void forward();
         void forward(LayerId toLayer);
