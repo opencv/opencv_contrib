@@ -75,7 +75,6 @@ namespace cv
 
 	bool MultiTracker::update(const Mat& image)
 	{
-		printf("Naive-Loop MO-TLD Update....\n");
 		for (int i = 0; i < (int)trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
 				return false;
@@ -87,8 +86,6 @@ namespace cv
 	/*Optimized update method for TLD Multitracker */
 	bool MultiTrackerTLD::update_opt(const Mat& image)
 	{
-		printf("Optimized MO-TLD Update....\n");
-
 		//Get parameters from first object
 		//TLD Tracker data extraction
 		Tracker* trackerPtr = trackers[0];
@@ -186,16 +183,7 @@ namespace cv
 
 #if 1
 			if (it != candidatesRes[k].end())
-			{
 				tld::resample(imageForDetector, candidates[k][it - candidatesRes[k].begin()], standardPatch);
-				//dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
-				//if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
-				//dfprintf((stderr, "detector WON\n"));
-			}
-			else
-			{
-				//dfprintf((stderr, "%d x x\n", data->frameNum));
-			}
 #endif
 
 			if (*it > tld::CORE_THRESHOLD)
@@ -226,7 +214,6 @@ namespace cv
 					detectorResults[k][i].isObject = expertResult;
 				}
 				tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults[k]);
-				//dprintf(("%d relabeled by nExpert\n", negRelabeled));
 				pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 				if (ocl::haveOpenCL())
 					tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
@@ -249,14 +236,7 @@ namespace cv
 
 
 		}
-		//Debug display candidates after Variance Filter
-		////////////////////////////////////////////////
-		Mat tmpImg = image;
-		for (int i = 0; i < (int)debugStack[0].size(); i++)
-			//rectangle(tmpImg, debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
-		debugStack[0].clear();
-		tmpImg.copyTo(image);
-		////////////////////////////////////////////////
+
 		return true;
 	}
 
@@ -289,10 +269,6 @@ namespace cv
 
 		std::vector <Point> tmpP;
 		std::vector <int> tmpI;
-
-		//int64 e1, e2;
-		//double t;
-		//e1 = getTickCount();
 
 		//Detection part
 		//Generate windows and filter by variance
@@ -344,10 +320,6 @@ namespace cv
 							continue;
 						varBuffer[k].push_back(Point(dx * i, dy * j));
 						varScaleIDs[k].push_back(scaleID);
-
-						//Debug display candidates after Variance Filter
-						double curScale = pow(tld::SCALE_STEP, scaleID);
-						debugStack[0].push_back(Rect2d(dx * i* curScale, dy * j*curScale, tldModel->getMinSize().width*curScale, tldModel->getMinSize().height*curScale));
 					}
 				}
 			}
@@ -361,16 +333,7 @@ namespace cv
 			blurred_imgs.push_back(tmp);
 		} while (size.width >= initSize.width && size.height >= initSize.height);
 
-
-
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-		//printf("Variance: %d\t%f\n", varBuffer.size(), t);
-
-		//printf("OrigVar 1: %f\n", *tldModel->detector->originalVariancePtr);
-
 		//Encsemble classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -410,29 +373,9 @@ namespace cv
 				ensBuffer[k].push_back(varBuffer[k][i]);
 				ensScaleIDs[k].push_back(varScaleIDs[k][i]);
 			}
-			/*
-			for (int i = 0; i < (int)varBuffer[k].size(); i++)
-			{
-			tldModel->detector->prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[k][i]].step[0]));
-			if (tldModel->detector->ensembleClassifierNum(&blurred_imgs[varScaleIDs[k][i]].at<uchar>(varBuffer[k][i].y, varBuffer[k][i].x)) <= tld::ENSEMBLE_THRESHOLD)
-			continue;
-			ensBuffer[k].push_back(varBuffer[k][i]);
-			ensScaleIDs[k].push_back(varScaleIDs[k][i]);
-			}
-			*/
 		}
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-		//printf("Ensemble: %d\t%f\n", ensBuffer.size(), t);
-
-		//printf("varBuffer 1: %d\n", varBuffer[0].size());
-		//printf("ensBuffer 1: %d\n", ensBuffer[0].size());
-
-		//printf("varBuffer 2: %d\n", varBuffer[1].size());
-		//printf("ensBuffer 2: %d\n", ensBuffer[1].size());
 
 		//NN classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -477,7 +420,6 @@ namespace cv
 					maxSc = scValue;
 					maxScRect = labPatch.rect;
 				}
-				//printf("%d	%f	%f\n", k, srValue, scValue);
 			}
 
 
@@ -487,13 +429,9 @@ namespace cv
 			else
 			{
 				res[k] = maxScRect;
-				//printf("%f %f %f %f\n", maxScRect.x, maxScRect.y, maxScRect.width, maxScRect.height);
 				detect_flgs[k] = true;
 			}
 		}
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-		//printf("NN: %d\t%f\n", patches.size(), t);
 	}
 
 	void ocl_detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch > > &patches, std::vector<bool> &detect_flgs,
@@ -525,10 +463,6 @@ namespace cv
 
 		std::vector <Point> tmpP;
 		std::vector <int> tmpI;
-
-		//int64 e1, e2;
-		//double t;
-		//e1 = getTickCount();
 
 		//Detection part
 		//Generate windows and filter by variance
@@ -580,10 +514,6 @@ namespace cv
 							continue;
 						varBuffer[k].push_back(Point(dx * i, dy * j));
 						varScaleIDs[k].push_back(scaleID);
-
-						//Debug display candidates after Variance Filter
-						double curScale = pow(tld::SCALE_STEP, scaleID);
-						debugStack[0].push_back(Rect2d(dx * i* curScale, dy * j*curScale, tldModel->getMinSize().width*curScale, tldModel->getMinSize().height*curScale));
 					}
 				}
 			}
@@ -597,16 +527,7 @@ namespace cv
 			blurred_imgs.push_back(tmp);
 		} while (size.width >= initSize.width && size.height >= initSize.height);
 
-
-
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-		//printf("Variance: %d\t%f\n", varBuffer.size(), t);
-
-		//printf("OrigVar 1: %f\n", *tldModel->detector->originalVariancePtr);
-
 		//Encsemble classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -646,28 +567,9 @@ namespace cv
 				ensBuffer[k].push_back(varBuffer[k][i]);
 				ensScaleIDs[k].push_back(varScaleIDs[k][i]);
 			}
-			/*
-			for (int i = 0; i < (int)varBuffer[k].size(); i++)
-			{
-			tldModel->detector->prepareClassifiers(static_cast<int> (blurred_imgs[varScaleIDs[k][i]].step[0]));
-			if (tldModel->detector->ensembleClassifierNum(&blurred_imgs[varScaleIDs[k][i]].at<uchar>(varBuffer[k][i].y, varBuffer[k][i].x)) <= tld::ENSEMBLE_THRESHOLD)
-			continue;
-			ensBuffer[k].push_back(varBuffer[k][i]);
-			ensScaleIDs[k].push_back(varScaleIDs[k][i]);
-			}
-			*/
 		}
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-
-		//printf("varBuffer 1: %d\n", varBuffer[0].size());
-		//printf("ensBuffer 1: %d\n", ensBuffer[0].size());
-
-		//printf("varBuffer 2: %d\n", varBuffer[1].size());
-		//printf("ensBuffer 2: %d\n", ensBuffer[1].size());
 
 		//NN classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -675,7 +577,6 @@ namespace cv
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
 			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
-			//Size InitSize = tldModel->getMinSize();
 			npos = 0;
 			nneg = 0;
 			maxSc = -5.0;
@@ -730,7 +631,6 @@ namespace cv
 					maxSc = scValue;
 					maxScRect = labPatch.rect;
 				}
-				//printf("%d	%f	%f\n", k, srValue, scValue);
 			}
 
 
@@ -740,13 +640,9 @@ namespace cv
 			else
 			{
 				res[k] = maxScRect;
-				//printf("%f %f %f %f\n", maxScRect.x, maxScRect.y, maxScRect.width, maxScRect.height);
 				detect_flgs[k] = true;
 			}
 		}
-		//e2 = getTickCount();
-		//t = (e2 - e1) / getTickFrequency()*1000.0;
-		//printf("NN: %d\t%f\n", patches.size(), t);
 	}
 
 }
