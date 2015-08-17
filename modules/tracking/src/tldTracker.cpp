@@ -151,12 +151,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     }
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
 
-    //dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
-    //for( int i = 0; i < (int)candidatesRes.size(); i++ )
-        //dprintf(("\tcandidatesRes[%d] = %f\n", i, candidatesRes[i]));
-    //data->printme();
-    //tldModel->printme(stdout);
-
     if( it == candidatesRes.end() )
     {
         data->confident = false;
@@ -173,16 +167,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
 #if 1
     if( it != candidatesRes.end() )
-    {
         resample(imageForDetector, candidates[it - candidatesRes.begin()], standardPatch);
-        //dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
-        //if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
-            //dfprintf((stderr, "detector WON\n"));
-    }
-    else
-    {
-        //dfprintf((stderr, "%d x x\n", data->frameNum));
-    }
 #endif
 
     if( *it > CORE_THRESHOLD )
@@ -213,7 +198,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
             detectorResults[i].isObject = expertResult;
         }
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
-        //dprintf(("%d relabeled by nExpert\n", negRelabeled));
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 		if (ocl::haveOpenCL())
 			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
@@ -234,16 +218,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 #endif
     }
 
-
-	//Debug display candidates after Variance Filter
-	////////////////////////////////////////////////
-	Mat tmpImg = image;
-	for (int i = 0; i < (int)tldModel->detector->debugStack[0].size(); i++)
-		//rectangle(tmpImg, tldModel->detector->debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
-	tldModel->detector->debugStack[0].clear();
-	tmpImg.copyTo(image);
-
-	////////////////////////////////////////////////
     return true;
 }
 
@@ -310,7 +284,6 @@ Data::Data(Rect2d initBox)
     minSize.width = (int)(initBox.width * 20.0 / minDim);
     minSize.height = (int)(initBox.height * 20.0 / minDim);
     frameNum = 0;
-    //dprintf(("minSize = %dx%d\n", minSize.width, minSize.height));
 }
 
 void Data::printme(FILE*  port)

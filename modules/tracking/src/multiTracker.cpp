@@ -75,7 +75,6 @@ namespace cv
 
 	bool MultiTracker::update(const Mat& image)
 	{
-		printf("Naive-Loop MO-TLD Update....\n");
 		for (int i = 0; i < (int)trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
 				return false;
@@ -237,14 +236,7 @@ namespace cv
 
 
 		}
-		//Debug display candidates after Variance Filter
-		////////////////////////////////////////////////
-		Mat tmpImg = image;
-		for (int i = 0; i < (int)debugStack[0].size(); i++)
-			//rectangle(tmpImg, debugStack[0][i], Scalar(255, 255, 255), 1, 1, 0);
-		debugStack[0].clear();
-		tmpImg.copyTo(image);
-		////////////////////////////////////////////////
+
 		return true;
 	}
 
@@ -342,7 +334,6 @@ namespace cv
 		} while (size.width >= initSize.width && size.height >= initSize.height);
 
 		//Encsemble classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -385,7 +376,6 @@ namespace cv
 		}
 
 		//NN classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -538,7 +528,6 @@ namespace cv
 		} while (size.width >= initSize.width && size.height >= initSize.height);
 
 		//Encsemble classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -581,7 +570,6 @@ namespace cv
 		}
 
 		//NN classification
-		//e1 = getTickCount();
 		for (int k = 0; k < (int)trackers.size(); k++)
 		{
 			//TLD Tracker data extraction
@@ -589,7 +577,6 @@ namespace cv
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
 			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
-			//Size InitSize = tldModel->getMinSize();
 			npos = 0;
 			nneg = 0;
 			maxSc = -5.0;

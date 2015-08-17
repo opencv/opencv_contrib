@@ -81,7 +81,6 @@ namespace cv
 			double ocl_Sc(const Mat_<uchar>& patch);
 			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 
-			std::vector <Rect2d> debugStack[10];
 			std::vector<TLDEnsembleClassifier> classifiers;
 			Mat *posExp, *negExp;
 			int *posNum, *negNum;
