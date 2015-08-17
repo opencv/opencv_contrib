@@ -3,6 +3,7 @@
 #include "layers_common.hpp"
 #include "convolution_layer.hpp"
 #include "im2col.hpp"
+#include <iostream>
 
 namespace cv
 {
@@ -28,6 +29,9 @@ namespace dnn
             Blob &biasBlob = learnedParams[1];
             CV_Assert(biasBlob.total() == (size_t)numOutput);
         }
+
+        //TBD
+        useOpenCL = params.has("use_opencl");
     }
 
     void ConvolutionLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -108,12 +112,17 @@ namespace dnn
             return;
         }
 
-        if (ocl::useOpenCL() && inpBlob.type() == CV_32F)
+        if (useOpenCL && ocl::useOpenCL() && inpBlob.type() == CV_32F && !is1x1())
         {
-            UMat src = inpBlob.getMatRef().getUMat(ACCESS_READ);
+            std::vector<Range> ranges(4, Range::all());
+            ranges[0] = Range(imNum, imNum+1);
+            ranges[1] = Range(cnGroup*inpGroupCn, (cnGroup + 1)*inpGroupCn);
+
+            UMat src = inpBlob.getMatRef()(&ranges[0]).getUMat(ACCESS_READ);
             UMat dst(colMat.size(), colMat.type());
             im2col_ocl(src, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dst);
             dst.copyTo(colMat);
+            return;
         }
 
         if (inpBlob.type() == CV_32F)

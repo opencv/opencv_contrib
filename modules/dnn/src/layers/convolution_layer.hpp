@@ -22,6 +22,7 @@ namespace dnn
         int inpGroupCn, outGroupCn;
         int ksize;
 
+        bool useOpenCL;
         Mat colMat, biasOnesMat;
 
         inline bool is1x1() const;

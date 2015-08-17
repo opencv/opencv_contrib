@@ -173,7 +173,7 @@ struct Net::Impl
         MapIdToLayerData::iterator it = layers.find(id);
 
         if (it == layers.end())
-            CV_Error(Error::StsError, "Layer with requested id=" + toString(id) + " not found");
+            CV_Error(Error::StsObjectNotFound, format("Layer with requested id=%d not found", id));
 
         return it->second;
     }
@@ -534,6 +534,11 @@ int Net::getLayerId(LayerId)
 {
     CV_Error(Error::StsNotImplemented, "");
     return -1;
+}
+
+void Net::deleteLayer(LayerId)
+{
+    CV_Error(Error::StsNotImplemented, "");
 }
 
 }
