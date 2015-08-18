@@ -109,7 +109,12 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      double sigma_dist, double sigma_color, int postprocess_window,
                                      double sigma_dist_fix, double sigma_color_fix, double occ_thr,
                                      int upscale_averaging_radius, double upscale_sigma_dist,
-                                     double upscale_sigma_color, double speed_up_thr );    
+                                     double upscale_sigma_color, double speed_up_thr ); 
+
+CV_EXPORTS_W void calcOpticalFlowSparseToDense ( InputArray from, InputArray to, OutputArray flow,
+                                                 int grid_step = 8, float lambda = 999.0f, int k = 128, 
+                                                 float sigma = 0.05f, float inlier_eps = 2.0f, 
+                                                 float fgs_lambda = 500.0f, float fgs_sigma = 1.5f );
 
 /** @brief Read a .flo file
 
@@ -164,6 +169,8 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
 
 //! Additional interface to the Farneback's algorithm - calcOpticalFlowFarneback()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
+
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
 //! @}
 

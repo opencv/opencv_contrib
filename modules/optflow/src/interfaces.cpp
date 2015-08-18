@@ -177,5 +177,48 @@ Ptr<DenseOpticalFlow> createOptFlow_Farneback()
 {
     return makePtr<OpticalFlowFarneback>();
 }
+
+class OpticalFlowSparseToDense : public DenseOpticalFlow
+{
+public:
+    OpticalFlowSparseToDense();
+    void calc(InputArray I0, InputArray I1, InputOutputArray flow);
+    void collectGarbage();
+protected:
+    //sparse flow params:
+    int grid_step;
+
+    //interpolation params:
+    float lambda; 
+    int k;        
+    float sigma;  
+    float inlier_eps; 
+    float fgs_lambda; 
+    float fgs_sigma;  
+};
+
+OpticalFlowSparseToDense::OpticalFlowSparseToDense()
+{
+    grid_step  = 8;
+
+    lambda     = 999.0f;
+    k          = 128;
+    sigma      = 0.05f;
+    inlier_eps = 2.0f;
+    fgs_lambda = 500.0f;
+    fgs_sigma  = 1.5f;
+}
+
+void OpticalFlowSparseToDense::calc(InputArray I0, InputArray I1, InputOutputArray flow)
+{
+    calcOpticalFlowSparseToDense(I0,I1,flow,grid_step,lambda,k,sigma,inlier_eps,fgs_lambda,fgs_sigma);
+}
+
+void OpticalFlowSparseToDense::collectGarbage() {}
+
+Ptr<DenseOpticalFlow> createOptFlow_SparseToDense()
+{
+    return makePtr<OpticalFlowSparseToDense>();
+}
 }
 }
