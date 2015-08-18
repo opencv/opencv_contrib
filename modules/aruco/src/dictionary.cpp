@@ -92,8 +92,6 @@ Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize
 
 
 /**
- * @brief Given a matrix of bits. Returns whether if marker is identified or not.
- * It returns by reference the correct id (if any) and the correct rotation
  */
 bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
                           double maxCorrectionRate) const {
@@ -142,14 +140,15 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
 
 
 /**
-  * Returns the distance of the input bits to the specific id.
   */
 int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
+
     CV_Assert(id >= 0 && id < bytesList.rows);
 
-    Mat candidateBytes = getByteListFromBits(bits.getMat());
     unsigned int nRotations = 4;
     if(!allRotations) nRotations = 1;
+
+    Mat candidateBytes = getByteListFromBits(bits.getMat());
     int currentMinDistance = int(bits.total() * bits.total());
     for(unsigned int r = 0; r < nRotations; r++) {
         int currentHamming = 0;
@@ -203,11 +202,13 @@ Mat Dictionary::getByteListFromBits(const Mat &bits) {
 
     int nbytes = (bits.cols * bits.rows) / 8;
     if((bits.cols * bits.rows) % 8 != 0) nbytes++;
+
     Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
     unsigned char currentBit = 0;
     int currentByte = 0;
     for(int row = 0; row < bits.rows; row++) {
         for(int col = 0; col < bits.cols; col++) {
+            // circular shift
             candidateByteList.ptr< Vec4b >(0)[currentByte][0] =
                 candidateByteList.ptr< Vec4b >(0)[currentByte][0] << 1;
             candidateByteList.ptr< Vec4b >(0)[currentByte][1] =
@@ -216,6 +217,7 @@ Mat Dictionary::getByteListFromBits(const Mat &bits) {
                 candidateByteList.ptr< Vec4b >(0)[currentByte][2] << 1;
             candidateByteList.ptr< Vec4b >(0)[currentByte][3] =
                 candidateByteList.ptr< Vec4b >(0)[currentByte][3] << 1;
+            // increment if bit is 1
             if(bits.at< unsigned char >(row, col))
                 candidateByteList.ptr< Vec4b >(0)[currentByte][0]++;
             if(bits.at< unsigned char >(col, bits.cols - 1 - row))
@@ -226,6 +228,7 @@ Mat Dictionary::getByteListFromBits(const Mat &bits) {
                 candidateByteList.ptr< Vec4b >(0)[currentByte][3]++;
             currentBit++;
             if(currentBit == 8) {
+                // next byte
                 currentBit = 0;
                 currentByte++;
             }
@@ -302,7 +305,8 @@ const Dictionary DICT_7X7_1000_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0])
 
 const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     switch(name) {
-    case DICT_ARUCO:
+
+    case DICT_ARUCO_ORIGINAL:
         return DICT_ARUCO_DATA;
     case DICT_6X6_TEST:
         return DICT_6X6_TEST_DATA;
@@ -342,11 +346,15 @@ const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
         return DICT_7X7_250_DATA;
     case DICT_7X7_1000:
         return DICT_7X7_1000_DATA;
+
     }
-    return DICT_ARUCO_DATA;
+    return DICT_4X4_50_DATA;
 }
 
 
+/**
+ * @brief Generates a random marker Mat of size markerSize x markerSize
+ */
 static Mat _generateRandomMarker(int markerSize) {
     Mat marker(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
     for(int i = 0; i < markerSize; i++) {
@@ -358,6 +366,13 @@ static Mat _generateRandomMarker(int markerSize) {
     return marker;
 }
 
+/**
+ * @brief Calculate selfDistance of the codification of a marker Mat. Self distance is the Hamming
+ * distance of the marker to itself in the other rotations.
+ * See S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
+ * "Automatic generation and detection of highly reliable fiducial markers under occlusion".
+ * Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
+ */
 static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
     int minHamming = (int)marker.total() + 1;
@@ -372,21 +387,26 @@ static int _getSelfDistance(const Mat &marker) {
     return minHamming;
 }
 
-
+/**
+ */
 Dictionary generateCustomDictionary(int nMarkers, int markerSize,
                                     const Dictionary &baseDictionary) {
 
     Dictionary out;
     out.markerSize = markerSize;
 
+    // theoretical maximum intermarker distance
+    // See S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
+    // "Automatic generation and detection of highly reliable fiducial markers under occlusion".
+    // Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
     int C = (int)std::floor(float(markerSize * markerSize) / 4.f);
     int tau = 2 * (int)std::floor(float(C) * 4.f / 3.f);
 
+    // if baseDictionary is provided, calculate its intermarker distance
     if(baseDictionary.bytesList.rows > 0) {
         CV_Assert(baseDictionary.markerSize == markerSize);
         out.bytesList = baseDictionary.bytesList.clone();
 
-        // calculate tau of baseDictionary
         int minDistance = markerSize * markerSize + 1;
         for(int i = 0; i < out.bytesList.rows; i++) {
             Mat markerBytes = out.bytesList.rowRange(i, i + 1);
@@ -399,17 +419,22 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
         tau = minDistance;
     }
 
-
+    // current best option
     int bestTau = 0;
     Mat bestMarker;
+
+    // after these number of unproductive iterations, the best option is accepted
     const int maxUnproductiveIterations = 5000;
     int unproductiveIterations = 0;
 
     while(out.bytesList.rows < nMarkers) {
         cv::Mat currentMarker = _generateRandomMarker(markerSize);
+
         int selfDistance = _getSelfDistance(currentMarker);
         int minDistance = selfDistance;
 
+        // if self distance is better or equal than current best option, calculate distance
+        // to previous accepted markers
         if(selfDistance >= bestTau) {
             for(int i = 0; i < out.bytesList.rows; i++) {
                 int currentDistance = out.getDistanceToId(currentMarker, i);
@@ -420,6 +445,7 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
             }
         }
 
+        // if distance is high enough, accept the marker
         if(minDistance >= tau) {
             unproductiveIterations = 0;
             bestTau = 0;
@@ -428,11 +454,13 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
         } else {
             unproductiveIterations++;
 
+            // if distance is not enough, but is better than the current best option
             if(minDistance > bestTau) {
                 bestTau = minDistance;
                 bestMarker = currentMarker;
             }
 
+            // if number of unproductive iterarions has been reached, accept the current best option
             if(unproductiveIterations == maxUnproductiveIterations) {
                 unproductiveIterations = 0;
                 tau = bestTau;
@@ -442,6 +470,8 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
             }
         }
     }
+
+    // update the maximum number of correction bits for the generated dictionary
     out.maxCorrectionBits = (tau - 1) / 2;
 
     return out;

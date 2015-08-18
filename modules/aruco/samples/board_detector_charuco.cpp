@@ -57,7 +57,10 @@ static void help() {
     cout << "-h <nsquares> # Number of squares in Y direction" << endl;
     cout << "-sl <squareLength> # Square side lenght (in meters)" << endl;
     cout << "-ml <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
+         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
     cout << "[-c <cameraParams>] # Camera intrinsic parameters file" << endl;
     cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
     cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
@@ -174,7 +177,7 @@ int main(int argc, char *argv[]) {
 
     float axisLength = 0.5f * ((float)std::min(squaresX, squaresY) * (squareLength));
 
-
+    // create charuco board object
     aruco::CharucoBoard board =
         aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
 
@@ -192,7 +195,7 @@ int main(int argc, char *argv[]) {
         vector< Point2f > charucoCorners;
         Mat rvec, tvec;
 
-        // detect markers and estimate pose
+        // detect markers
         aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
                              rejectedMarkers);
 
@@ -201,14 +204,14 @@ int main(int argc, char *argv[]) {
             aruco::refineDetectedMarkers(image, board, markerCorners, markerIds, rejectedMarkers,
                                          camMatrix, distCoeffs);
 
-
+        // interpolate charuco corners
         int interpolatedCorners = 0;
         if(markerIds.size() > 0)
             interpolatedCorners =
                 aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board,
                                                  charucoCorners, charucoIds, camMatrix, distCoeffs);
 
-
+        // estimate charuco board pose
         bool validPose = false;
         if(camMatrix.total() != 0)
             validPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,

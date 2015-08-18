@@ -80,7 +80,8 @@ class CV_EXPORTS Dictionary {
     bool identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const;
 
     /**
-      * @brief Returns the distance of the input bits to the specific id.
+      * @brief Returns the distance of the input bits to the specific id. If allRotations is true,
+      * the four posible bits rotation are considered
       */
     int getDistanceToId(InputArray bits, int id, bool allRotations = true) const;
 
@@ -112,9 +113,7 @@ class CV_EXPORTS Dictionary {
  * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
  */
 enum PREDEFINED_DICTIONARY_NAME {
-    DICT_ARUCO = 0,
-    DICT_6X6_TEST,
-    DICT_4X4_50,
+    DICT_4X4_50 = 0,
     DICT_4X4_100,
     DICT_4X4_250,
     DICT_4X4_1000,
@@ -129,7 +128,9 @@ enum PREDEFINED_DICTIONARY_NAME {
     DICT_7X7_50,
     DICT_7X7_100,
     DICT_7X7_250,
-    DICT_7X7_1000
+    DICT_7X7_1000,
+    DICT_ARUCO_ORIGINAL,
+    DICT_6X6_TEST,
 };
 
 

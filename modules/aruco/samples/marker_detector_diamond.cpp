@@ -55,7 +55,10 @@ static void help() {
     cout << "Parameters: " << endl;
     cout << "-sl <squareLength> # Square side lenght (in meters)" << endl;
     cout << "-ml <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
+         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
     cout << "[-c <cameraParams>] # Camera intrinsic parameters file" << endl;
     cout << "[-as <float>] # Automatic scale. The provided number is multiplied by the last "
          << "diamond id becoming an indicator of the square length. In this case, the -sl and "
@@ -190,22 +193,23 @@ int main(int argc, char *argv[]) {
         vector< vector< Point2f > > markerCorners, rejectedMarkers, diamondCorners;
         vector< Mat > rvecs, tvecs;
 
-        // detect markers and estimate pose
+        // detect markers
         aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
                              rejectedMarkers);
 
-
-
+        // detect diamonds
         if(markerIds.size() > 0)
             aruco::detectCharucoDiamond(image, markerCorners, markerIds,
                                         squareLength / markerLength, diamondCorners, diamondIds,
                                         camMatrix, distCoeffs);
 
+        // estimate diamond pose
         if(estimatePose && diamondIds.size() > 0) {
             if(!autoScale) {
                 aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix,
                                                  distCoeffs, rvecs, tvecs);
             } else {
+                // if autoscale, extract square size from last diamond id
                 for(unsigned int i = 0; i < diamondCorners.size(); i++) {
                     float autoSquareLength = autoScaleFactor * float(diamondIds[i].val[3]);
                     vector< vector< Point2f > > currentCorners;

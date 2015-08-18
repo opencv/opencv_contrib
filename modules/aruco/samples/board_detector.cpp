@@ -56,7 +56,10 @@ static void help() {
     cout << "-l <markerLength> # Marker side lenght (in meters)" << endl;
     cout << "-s <markerSeparation> # Separation between two consecutive"
          << "markers in the grid (in meters)" << endl;
-    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
+         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
     cout << "-c <cameraParams> # Camera intrinsic parameters file" << endl;
     cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
     cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
@@ -174,6 +177,7 @@ int main(int argc, char *argv[]) {
     float axisLength = 0.5f * ((float)min(markersX, markersY) * (markerLength + markerSeparation) +
                                markerSeparation);
 
+    // create board object
     aruco::GridBoard board =
         aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
 
@@ -190,7 +194,7 @@ int main(int argc, char *argv[]) {
         vector< vector< Point2f > > corners, rejected;
         Mat rvec, tvec;
 
-        // detect markers and estimate pose
+        // detect markers
         aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
 
         // refind strategy to detect more markers
@@ -198,6 +202,7 @@ int main(int argc, char *argv[]) {
             aruco::refineDetectedMarkers(image, board, corners, ids, rejected, camMatrix,
                                          distCoeffs);
 
+        // estimate board pose
         int markersOfBoardDetected = 0;
         if(ids.size() > 0)
             markersOfBoardDetected =
@@ -216,7 +221,6 @@ int main(int argc, char *argv[]) {
         if(ids.size() > 0) {
             aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
         }
-
 
         if(showRejected && rejected.size() > 0)
             aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, noArray(),

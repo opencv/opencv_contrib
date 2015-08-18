@@ -61,7 +61,10 @@ static void help() {
     cout << "-h <nsquares> # Number of squares in Y direction" << endl;
     cout << "-sl <squareLength> # Square side lenght (in meters)" << endl;
     cout << "-ml <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
+    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
+         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
     cout << "-o <outputFile> # Output file with calibrated camera parameters" << endl;
     cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
     cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
@@ -214,9 +217,11 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
+    // create charuco board object
     aruco::CharucoBoard board =
         aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
 
+    // collect data from each frame
     vector< vector< vector< Point2f > > > allCorners;
     vector< vector< int > > allIds;
     vector< Mat > allImgs;
@@ -229,12 +234,13 @@ int main(int argc, char *argv[]) {
         vector< int > ids;
         vector< vector< Point2f > > corners, rejected;
 
-        // detect markers and estimate pose
+        // detect markers
         aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
 
         // refind strategy to detect more markers
         if(refindStrategy) aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
 
+        // interpolate charuco corners
         Mat currentCharucoCorners, currentCharucoIds;
         if(ids.size() > 0)
             aruco::interpolateCornersCharuco(corners, ids, image, board, currentCharucoCorners,
@@ -270,7 +276,7 @@ int main(int argc, char *argv[]) {
         cameraMatrix.at< double >(0, 0) = aspectRatio;
     }
 
-
+    // prepare data for calibration
     vector< vector< Point2f > > allCornersConcatenated;
     vector< int > allIdsConcatenated;
     vector< int > markerCounterPerFrame;
@@ -282,11 +288,14 @@ int main(int argc, char *argv[]) {
             allIdsConcatenated.push_back(allIds[i][j]);
         }
     }
+
+    // calibrate camera using aruco markers
     double arucoRepErr;
     arucoRepErr = aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
                                               markerCounterPerFrame, board, imgSize, cameraMatrix,
                                               distCoeffs, noArray(), noArray(), calibrationFlags);
 
+    // prepare data for charuco calibration
     int nFrames = (int)allCorners.size();
     vector< Mat > allCharucoCorners;
     vector< Mat > allCharucoIds;
@@ -311,6 +320,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // calibrate camera using charuco
     repError =
         aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize,
                                       cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
@@ -322,6 +332,7 @@ int main(int argc, char *argv[]) {
     cout << "Rep Error Aruco: " << arucoRepErr << endl;
     cout << "Calibration saved to " << outputFile << endl;
 
+    // show interpolated charuco corners for debugging
     if(showChessboardCorners) {
         for(unsigned int frame = 0; frame < filteredImages.size(); frame++) {
             Mat imageCopy = filteredImages[frame].clone();
