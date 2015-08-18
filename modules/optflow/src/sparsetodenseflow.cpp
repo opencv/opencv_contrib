@@ -79,7 +79,24 @@ CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, O
             matches.push_back(ximgproc::SparseMatch(points[i],dst_points[i]));
     }
 
+    int match_num = matches.size();
+    Point2f mean = Point2f(0.0f,0.0f);
+    Point2f diff;
+    float variance = 0.0f;
+    for(int i=0;i<match_num;i++)
+        mean += (matches[i].target_image_pos-matches[i].reference_image_pos);
+    mean/=match_num;
+
+    for(int i=0;i<match_num;i++)
+    {
+        diff = (matches[i].target_image_pos-matches[i].reference_image_pos) - mean;
+        variance += (abs(diff.x)+abs(diff.y))*(abs(diff.x)+abs(diff.y));
+    }
+    variance   = sqrt(variance/match_num);
+    inlier_eps = 0.4*sqrt(variance);
+
     Ptr<ximgproc::EdgeAwareInterpolator> gd = ximgproc::createEdgeAwareInterpolator();
+    gd->setInlierEps(inlier_eps);
     gd->interpolate(prev,cur,matches,dense_flow);
 }
 

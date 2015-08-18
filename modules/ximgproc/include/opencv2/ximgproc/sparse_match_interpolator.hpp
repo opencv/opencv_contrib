@@ -63,6 +63,7 @@ public:
 class CV_EXPORTS_W EdgeAwareInterpolator : public SparseMatchInterpolator
 {
 public:
+    CV_WRAP virtual void setInlierEps(float eps) = 0;
 };
 
 CV_EXPORTS_W

@@ -41,6 +41,8 @@ public:
     static Ptr<EdgeAwareInterpolatorImpl> create();
     void interpolate(InputArray reference_image, InputArray target_image, InputArray matches, OutputArray dense_flow);
 
+    void setInlierEps(float eps);
+
 protected:
     int w,h;
     int match_num;
@@ -98,6 +100,11 @@ protected:
         void operator () (const Range& range) const;
     };
 };
+
+void EdgeAwareInterpolatorImpl::setInlierEps(float eps)
+{
+    inlier_eps = eps;
+}
 
 void EdgeAwareInterpolatorImpl::init() 
 {
