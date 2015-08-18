@@ -58,6 +58,7 @@ protected:
     float inlier_eps; //threshold that defines inliers during RANSAC-based local affine transform fitting (default: 2.0f)
     float fgs_lambda; // default: 500.0f
     float fgs_sigma;  // default: 1.5f
+    float regularization_coef;
 
     // aux parameters:
     int distance_transform_num_iter, ransac_interpolation_num_iter;
@@ -107,6 +108,7 @@ void EdgeAwareInterpolatorImpl::init()
     fgs_lambda = 500.0f;
     fgs_sigma  = 1.5f;
 
+    regularization_coef = 0.01f;
     distance_transform_num_iter   = 2;
     ransac_interpolation_num_iter = 1;
 }
@@ -617,11 +619,11 @@ void generateHypothesis(short* labels, int count, RNG& rng, bitset<SHRT_MAX>& is
     getAffineTransform(src_points,dst_points).convertTo(dst,CV_32F);
 }
 
-void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* matches, float eps, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
+void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
 {
     float* tr = hypothesis_transform.ptr<float>(0);
     Point2f a,b;
-    float weighted_num_inliers = 0;
+    float weighted_num_inliers = -lambda*(tr[0]*tr[0]+tr[1]*tr[1]+tr[3]*tr[3]+tr[4]*tr[4]);;
     for(int i=0;i<count;i++)
     {
         a = matches[labels[i]].reference_image_pos;
@@ -686,7 +688,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
         {
             generateHypothesis(KNNlabels,inst->k,inst->rngs[range.start],is_used,matches,hypothesis_transform);
-            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
+            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,inst->regularization_coef,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
         }
 
         //propagate hypotheses from neighbors:
@@ -694,7 +696,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         for(int j=0;j<(int)inst->g[i].size();j++)
         {
             if((inc*neighbors[j].label)<(inc*i) && (inc*neighbors[j].label)>=(inc*start)) //already processed this neighbor
-                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
+                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,inst->regularization_coef,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
         }
 
         if(inc<0) //backward pass
@@ -730,7 +732,9 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
 
     Mat* transforms = new Mat[match_num];
     float* weighted_inlier_nums = new float[match_num];
-    memset(weighted_inlier_nums,0,match_num*sizeof(float));
+    for(int i=0;i<match_num;i++)
+        weighted_inlier_nums[i] = -1E+10F;
+    //memset(weighted_inlier_nums,0,match_num*sizeof(float));
     int inc = 1;
 
     for(int i=0;i<ransac_num_stripes;i++)
