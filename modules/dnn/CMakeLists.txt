@@ -1,33 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 
-macro(_dnn_find_protobuf)
-  find_package(Protobuf)
-
-  if(${PROTOBUF_FOUND} AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
-    message(STATUS "Found PROTOBUF Compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
-    file(GLOB PROTO_FILES src/caffe/*.proto)
-    PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS ${PROTO_FILES})
-    set(HAVE_PROTOBUF ON)
-    add_definitions(-DHAVE_PROTOBUF=1)
-  else()
-    message(STATUS "PROTOBUF not found. Caffe import function will be disabled.")
-    set(HAVE_PROTOBUF OFF)
-    set(PROTOBUF_LIBRARIES "")
-    add_definitions(-DHAVE_PROTOBUF=0)
-  endif()
-endmacro(_dnn_find_protobuf)
-
 if(${CMAKE_PROJECT_NAME} STREQUAL "OpenCV")#build as OpenCV module
 
 set(the_description "Deep neural network module. It allows to load models and to make forward pass")
 set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
-_dnn_find_protobuf()
+include(cmake/find_protobuf.cmake)
 
 ocv_add_module(dnn opencv_imgproc opencv_core opencv_highgui WRAP python matlab)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninitialized -Wsign-promo -Wmissing-declarations -Wmissing-prototypes)
 ocv_glob_module_sources(${PROTO_SRCS} ${PROTO_HDRS})
 ocv_source_group("Src\\protobuf" FILES ${PROTO_SRCS} ${PROTO_HDRS})
-ocv_module_include_directories(include src/caffe ${PROTOBUF_INCLUDE_DIR})
+ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
 ocv_create_module(${PROTOBUF_LIBRARIES})
 
@@ -70,7 +53,7 @@ else()#build as standalone module (for development purposes)
 
 project(dnn_standalone)
 
-_dnn_find_protobuf()
+include(cmake/find_protobuf.cmake)
 find_package( OpenCV 3.0 REQUIRED )
 
 file(GLOB_RECURSE MODULE_SOURCES "src/*.cpp")
