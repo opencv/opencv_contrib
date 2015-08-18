@@ -51,7 +51,9 @@ const double PI = 3.141592653589793238463;
 
 static double deg2rad(double deg) { return deg * PI / 180.; }
 
-
+/**
+ * @brief Get rvec and tvec from yaw, pitch and distance
+ */
 static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
 
     rvec = Mat(3, 1, CV_64FC1);
@@ -97,7 +99,9 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     tvec.ptr< double >(0)[2] = distance;
 }
 
-
+/**
+ * @brief Project a synthetic marker
+ */
 static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
                           vector< Point3f > markerObjPoints, Mat cameraMatrix, Mat rvec, Mat tvec,
                           int markerBorder) {
@@ -133,7 +137,9 @@ static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
     }
 }
 
-
+/**
+ * @brief Get a synthetic image of Chessboard in perspective
+ */
 static Mat projectChessboard(int squaresX, int squaresY, float squareSize, Size imageSize,
                              Mat cameraMatrix, Mat rvec, Mat tvec) {
 
@@ -171,19 +177,23 @@ static Mat projectChessboard(int squaresX, int squaresY, float squareSize, Size 
 }
 
 
-
+/**
+ * @brief Check pose estimation of charuco board
+ */
 static Mat projectCharucoBoard(aruco::CharucoBoard board, Mat cameraMatrix, double yaw,
                                double pitch, double distance, Size imageSize, int markerBorder,
                                Mat &rvec, Mat &tvec) {
 
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
+    // project markers
     Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
     for(unsigned int m = 0; m < board.ids.size(); m++) {
         projectMarker(img, board.dictionary, board.ids[m], board.objPoints[m], cameraMatrix, rvec,
                       tvec, markerBorder);
     }
 
+    // project chessboard
     Mat chessboard =
         projectChessboard(board.getChessboardSize().width, board.getChessboardSize().height,
                           board.getSquareLength(), imageSize, cameraMatrix, rvec, tvec);
@@ -200,6 +210,9 @@ static Mat projectCharucoBoard(aruco::CharucoBoard board, Mat cameraMatrix, doub
 
 
 
+/**
+ * @brief Check Charuco detection
+ */
 class CV_CharucoDetection : public cvtest::BaseTest {
     public:
     CV_CharucoDetection();
@@ -207,8 +220,6 @@ class CV_CharucoDetection : public cvtest::BaseTest {
     protected:
     void run(int);
 };
-
-
 
 
 CV_CharucoDetection::CV_CharucoDetection() {}
@@ -228,6 +239,7 @@ void CV_CharucoDetection::run(int) {
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
+    // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
@@ -235,11 +247,12 @@ void CV_CharucoDetection::run(int) {
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
+                // create synthetic image
                 Mat rvec, tvec;
                 Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
-
+                // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
                 aruco::DetectorParameters params;
@@ -253,6 +266,7 @@ void CV_CharucoDetection::run(int) {
                     return;
                 }
 
+                // interpolate charuco corners
                 vector< Point2f > charucoCorners;
                 vector< int > charucoIds;
 
@@ -264,7 +278,7 @@ void CV_CharucoDetection::run(int) {
                                                      charucoIds, cameraMatrix, distCoeffs);
                 }
 
-
+                // check results
                 vector< Point2f > projectedCharucoCorners;
                 projectPoints(board.chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
@@ -295,7 +309,9 @@ void CV_CharucoDetection::run(int) {
 
 
 
-
+/**
+ * @brief Check charuco pose estimation
+ */
 class CV_CharucoPoseEstimation : public cvtest::BaseTest {
     public:
     CV_CharucoPoseEstimation();
@@ -303,8 +319,6 @@ class CV_CharucoPoseEstimation : public cvtest::BaseTest {
     protected:
     void run(int);
 };
-
-
 
 
 CV_CharucoPoseEstimation::CV_CharucoPoseEstimation() {}
@@ -323,7 +337,7 @@ void CV_CharucoPoseEstimation::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-
+    // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
@@ -331,11 +345,12 @@ void CV_CharucoPoseEstimation::run(int) {
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
+                // get synthetic image
                 Mat rvec, tvec;
                 Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
-
+                // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
                 aruco::DetectorParameters params;
@@ -349,6 +364,7 @@ void CV_CharucoPoseEstimation::run(int) {
                     return;
                 }
 
+                // interpolate charuco corners
                 vector< Point2f > charucoCorners;
                 vector< int > charucoIds;
 
@@ -362,10 +378,12 @@ void CV_CharucoPoseEstimation::run(int) {
 
                 if(charucoIds.size() == 0) continue;
 
+                // estimate charuco pose
                 aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix,
                                                 distCoeffs, rvec, tvec);
 
 
+                // check result
                 vector< Point2f > projectedCharucoCorners;
                 projectPoints(board.chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
@@ -395,7 +413,9 @@ void CV_CharucoPoseEstimation::run(int) {
 }
 
 
-
+/**
+ * @brief Check diamond detection
+ */
 class CV_CharucoDiamondDetection : public cvtest::BaseTest {
     public:
     CV_CharucoDiamondDetection();
@@ -424,7 +444,7 @@ void CV_CharucoDiamondDetection::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-
+    // for different perspectives
     for(double distance = 0.3; distance <= 0.3; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 30) {
@@ -434,11 +454,12 @@ void CV_CharucoDiamondDetection::run(int) {
                     board.ids[i] = 4 * iter + i;
                 iter++;
 
+                // get synthetic image
                 Mat rvec, tvec;
                 Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
-
+                // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
                 aruco::DetectorParameters params;
@@ -452,12 +473,13 @@ void CV_CharucoDiamondDetection::run(int) {
                     return;
                 }
 
+                // detect diamonds
                 vector< vector< Point2f > > diamondCorners;
                 vector< Vec4i > diamondIds;
-
                 aruco::detectCharucoDiamond(img, corners, ids, squareLength / markerLength,
                                             diamondCorners, diamondIds, cameraMatrix, distCoeffs);
 
+                // check results
                 if(diamondIds.size() != 1) {
                     ts->printf(cvtest::TS::LOG, "Diamond not detected correctly");
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
@@ -471,6 +493,7 @@ void CV_CharucoDiamondDetection::run(int) {
                         return;
                     }
                 }
+
 
                 vector< Point2f > projectedDiamondCorners;
                 projectPoints(board.chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
@@ -495,10 +518,12 @@ void CV_CharucoDiamondDetection::run(int) {
                     }
                 }
 
+                // estimate diamond pose
                 std::vector< cv::Mat > estimatedRvec, estimatedTvec;
                 aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, cameraMatrix,
                                                  distCoeffs, estimatedRvec, estimatedTvec);
 
+                // check result
                 vector< Point2f > projectedDiamondCornersPose;
                 vector< Vec3f > diamondObjPoints(4);
                 diamondObjPoints[0] = Vec3f(-squareLength / 2.f, squareLength / 2.f, 0);

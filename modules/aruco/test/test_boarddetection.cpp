@@ -51,7 +51,9 @@ const double PI = 3.141592653589793238463;
 
 static double deg2rad(double deg) { return deg * PI / 180.; }
 
-
+/**
+ * @brief Get rvec and tvec from yaw, pitch and distance
+ */
 static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
 
     rvec = Mat(3, 1, CV_64FC1);
@@ -97,28 +99,33 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     tvec.ptr< double >(0)[2] = distance;
 }
 
-
+/**
+ * @brief Project a synthetic marker
+ */
 static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
                           vector< Point3f > markerObjPoints, Mat cameraMatrix, Mat rvec, Mat tvec,
                           int markerBorder) {
 
 
+    // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
     aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
 
+    // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector< Point2f > corners;
     projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
+    // get perspective transform
     vector< Point2f > originalCorners;
     originalCorners.push_back(Point2f(0, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
     originalCorners.push_back(Point2f(0, (float)markerSizePixels));
-
     Mat transformation = getPerspectiveTransform(originalCorners, corners);
 
+    // apply transformation
     Mat aux;
     const char borderValue = 127;
     warpPerspective(markerImg, aux, transformation, img.size(), INTER_NEAREST, BORDER_CONSTANT,
@@ -134,7 +141,9 @@ static void projectMarker(Mat &img, aruco::Dictionary dictionary, int id,
 }
 
 
-
+/**
+ * @brief Get a synthetic image of GridBoard in perspective
+ */
 static Mat projectBoard(aruco::GridBoard board, Mat cameraMatrix, double yaw, double pitch,
                         double distance, Size imageSize, int markerBorder) {
 
@@ -152,7 +161,9 @@ static Mat projectBoard(aruco::GridBoard board, Mat cameraMatrix, double yaw, do
 
 
 
-
+/**
+ * @brief Check pose estimation of aruco board
+ */
 class CV_ArucoBoardPose : public cvtest::BaseTest {
     public:
     CV_ArucoBoardPose();
@@ -160,8 +171,6 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
     protected:
     void run(int);
 };
-
-
 
 
 CV_ArucoBoardPose::CV_ArucoBoardPose() {}
@@ -178,6 +187,8 @@ void CV_ArucoBoardPose::run(int) {
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+
+    // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
@@ -186,6 +197,7 @@ void CV_ArucoBoardPose::run(int) {
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
+                // create synthetic image
                 Mat img = projectBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw), distance,
                                        imgSize, markerBorder);
 
@@ -203,9 +215,11 @@ void CV_ArucoBoardPose::run(int) {
                     return;
                 }
 
+                // estimate pose
                 Mat rvec, tvec;
                 aruco::estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
+                // check result
                 for(unsigned int i = 0; i < ids.size(); i++) {
                     int foundIdx = -1;
                     for(unsigned int j = 0; j < board.ids.size(); j++) {
@@ -241,6 +255,9 @@ void CV_ArucoBoardPose::run(int) {
 
 
 
+/**
+ * @brief Check refine strategy
+ */
 class CV_ArucoRefine : public cvtest::BaseTest {
     public:
     CV_ArucoRefine();
@@ -248,8 +265,6 @@ class CV_ArucoRefine : public cvtest::BaseTest {
     protected:
     void run(int);
 };
-
-
 
 
 CV_ArucoRefine::CV_ArucoRefine() {}
@@ -266,6 +281,8 @@ void CV_ArucoRefine::run(int) {
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+
+    // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
@@ -274,10 +291,12 @@ void CV_ArucoRefine::run(int) {
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
+                // create synthetic image
                 Mat img = projectBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw), distance,
                                        imgSize, markerBorder);
 
 
+                // detect markers
                 vector< vector< Point2f > > corners, rejected;
                 vector< int > ids;
                 aruco::DetectorParameters params;
@@ -286,6 +305,7 @@ void CV_ArucoRefine::run(int) {
                 params.markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
+                // remove a marker from detection
                 int markersBeforeDelete = (int)ids.size();
                 if(markersBeforeDelete < 2) continue;
 
@@ -293,9 +313,11 @@ void CV_ArucoRefine::run(int) {
                 corners.erase(corners.begin(), corners.begin() + 1);
                 ids.erase(ids.begin(), ids.begin() + 1);
 
+                // try to refind the erased marker
                 aruco::refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
                                              distCoeffs, 10, 3., true, cv::noArray(), params);
 
+                // check result
                 if((int)ids.size() < markersBeforeDelete) {
                     ts->printf(cvtest::TS::LOG, "Error in refine detected markers");
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
