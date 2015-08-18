@@ -61,15 +61,14 @@ namespace aruco {
  */
 class CV_EXPORTS CharucoBoard : public Board {
 
-public:
-
+    public:
     // vector of chessboard 3D corners precalculated
     std::vector< Point3f > chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
-//    std::vector< std::vector<int> > nearestMarkerIds;
-    std::vector< std::vector<int> > nearestMarkerIdx;
-    std::vector< std::vector<int> > nearestMarkerCorners;
+    //    std::vector< std::vector<int> > nearestMarkerIds;
+    std::vector< std::vector< int > > nearestMarkerIdx;
+    std::vector< std::vector< int > > nearestMarkerCorners;
 
     /**
      * @brief Draw a ChArUco board
@@ -99,32 +98,25 @@ public:
      * This functions creates a CharucoBoard object given the number of squares in each direction
      * and the size of the markers and chessboard squares.
      */
-    static CharucoBoard create(int squaresX, int squaresY, float squareLength,
-                               float markerLength, Dictionary dictionary);
+    static CharucoBoard create(int squaresX, int squaresY, float squareLength, float markerLength,
+                               Dictionary dictionary);
 
     /**
       *
       */
-    Size getChessboardSize() const {
-        return Size(_squaresX, _squaresY);
-    }
+    Size getChessboardSize() const { return Size(_squaresX, _squaresY); }
 
     /**
       *
       */
-    float getSquareLength() const {
-        return _squareLength;
-    }
+    float getSquareLength() const { return _squareLength; }
 
     /**
       *
       */
-    float getMarkerLength() const {
-        return _markerLength;
-    }
+    float getMarkerLength() const { return _markerLength; }
 
-private:
-
+    private:
     void _getNearestMarkerCorners();
 
     // number of markers in X and Y directions
@@ -135,9 +127,6 @@ private:
 
     // marker side lenght (normally in meters)
     float _markerLength;
-
-
-
 };
 
 
@@ -166,13 +155,11 @@ private:
  * also returned in charucoIds.
  * The function returns the number of interpolated corners.
  */
-CV_EXPORTS int interpolateCornersCharuco(InputArrayOfArrays markerCorners,
-                                         InputArray markerIds,
+CV_EXPORTS int interpolateCornersCharuco(InputArrayOfArrays markerCorners, InputArray markerIds,
                                          InputArray image, const CharucoBoard &board,
-                                         OutputArray charucoCorners,
-                                         OutputArray charucoIds,
+                                         OutputArray charucoCorners, OutputArray charucoIds,
                                          InputArray cameraMatrix = noArray(),
-                                         InputArray distCoeffs = noArray() );
+                                         InputArray distCoeffs = noArray());
 
 
 
@@ -245,16 +232,11 @@ CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
  * receives a list of detected corners and its identifiers from several views of the Board.
  * The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraCharuco(InputArrayOfArrays charucoCorners,
-                                         InputArrayOfArrays charucoIds, const CharucoBoard &board,
-                                         Size imageSize, InputOutputArray cameraMatrix,
-                                         InputOutputArray distCoeffs,
-                                         OutputArrayOfArrays rvecs = noArray(),
-                                         OutputArrayOfArrays tvecs = noArray(),
-                                         int flags = 0,
-                                         TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
-                                                                              TermCriteria::EPS,
-                                                                              30, DBL_EPSILON));
+CV_EXPORTS double calibrateCameraCharuco(
+    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const CharucoBoard &board,
+    Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+    TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 
@@ -336,12 +318,7 @@ CV_EXPORTS void drawCharucoDiamond(Dictionary dictionary, Vec4i ids, int squareL
 
 
 
-
-
-
 //! @}
-
-
 }
 }
 

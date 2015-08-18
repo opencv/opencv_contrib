@@ -60,15 +60,15 @@ namespace aruco {
  */
 class CV_EXPORTS Dictionary {
 
-  public:
-    Mat bytesList; // marker code information
-    int markerSize; // number of bits per dimension
+    public:
+    Mat bytesList;         // marker code information
+    int markerSize;        // number of bits per dimension
     int maxCorrectionBits; // maximum number of bits that can be corrected
 
 
     /**
       */
-    Dictionary(const unsigned char * bytes = 0, int _markerSize = 0, int dictsize = 0,
+    Dictionary(const unsigned char *bytes = 0, int _markerSize = 0, int dictsize = 0,
                int _maxcorr = 0);
 
 
@@ -101,8 +101,6 @@ class CV_EXPORTS Dictionary {
       * @brief Transform list of bytes to matrix of bits
       */
     static Mat getBitsFromByteList(const Mat &byteList, int markerSize);
-
-
 };
 
 
@@ -113,18 +111,32 @@ class CV_EXPORTS Dictionary {
  * Each dictionary indicates the number of bits and the number of markers contained
  * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
  */
-enum PREDEFINED_DICTIONARY_NAME { DICT_ARUCO = 0, DICT_6X6_TEST,
-                                  DICT_4X4_50, DICT_4X4_100, DICT_4X4_250, DICT_4X4_1000,
-                                  DICT_5X5_50, DICT_5X5_100, DICT_5X5_250, DICT_5X5_1000,
-                                  DICT_6X6_50, DICT_6X6_100, DICT_6X6_250, DICT_6X6_1000,
-                                  DICT_7X7_50, DICT_7X7_100, DICT_7X7_250, DICT_7X7_1000
-                                };
+enum PREDEFINED_DICTIONARY_NAME {
+    DICT_ARUCO = 0,
+    DICT_6X6_TEST,
+    DICT_4X4_50,
+    DICT_4X4_100,
+    DICT_4X4_250,
+    DICT_4X4_1000,
+    DICT_5X5_50,
+    DICT_5X5_100,
+    DICT_5X5_250,
+    DICT_5X5_1000,
+    DICT_6X6_50,
+    DICT_6X6_100,
+    DICT_6X6_250,
+    DICT_6X6_1000,
+    DICT_7X7_50,
+    DICT_7X7_100,
+    DICT_7X7_250,
+    DICT_7X7_1000
+};
 
 
 /**
   * @brief Returns one of the predefined dictionaries defined in PREDEFINED_DICTIONARY_NAME
   */
-CV_EXPORTS const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+CV_EXPORTS const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
 
 
 /**
@@ -140,13 +152,11 @@ CV_EXPORTS const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME
   * than nMarkers, only the first nMarkers in baseDictionary are taken and no new marker is added.
   */
 CV_EXPORTS Dictionary generateCustomDictionary(int nMarkers, int markerSize,
-                                               const Dictionary& baseDictionary = Dictionary());
+                                               const Dictionary &baseDictionary = Dictionary());
 
 
 
 //! @}
-
-
 }
 }
 

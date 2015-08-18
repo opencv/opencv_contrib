@@ -65,216 +65,212 @@ const unsigned char hammingWeightLUT[] = {
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8};
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+};
 
 
 
-    /**
-      */
-    Dictionary::Dictionary(const unsigned char * bytes, int _markerSize, int dictsize,
-                           int _maxcorr) {
-        markerSize = _markerSize;
-        maxCorrectionBits = _maxcorr;
-        int nbytes = (markerSize * markerSize) / 8;
-        if ((markerSize * markerSize) % 8 != 0)
-            nbytes++;
+/**
+  */
+Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize, int _maxcorr) {
+    markerSize = _markerSize;
+    maxCorrectionBits = _maxcorr;
+    int nbytes = (markerSize * markerSize) / 8;
+    if((markerSize * markerSize) % 8 != 0) nbytes++;
 
-        // save bytes in internal format
-        // bytesList.at<Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
-        bytesList = Mat(dictsize, nbytes, CV_8UC4);
-        for (int i = 0; i < dictsize; i++) {
-            for (int j = 0; j < nbytes; j++) {
-                for (int k = 0; k < 4; k++)
-                    bytesList.at<Vec4b>(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
-            }
+    // save bytes in internal format
+    // bytesList.at<Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
+    bytesList = Mat(dictsize, nbytes, CV_8UC4);
+    for(int i = 0; i < dictsize; i++) {
+        for(int j = 0; j < nbytes; j++) {
+            for(int k = 0; k < 4; k++)
+                bytesList.at< Vec4b >(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
         }
     }
+}
 
 
 
-    /**
-     * @brief Given a matrix of bits. Returns whether if marker is identified or not.
-     * It returns by reference the correct id (if any) and the correct rotation
-     */
-    bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
-                              double maxCorrectionRate) const {
+/**
+ * @brief Given a matrix of bits. Returns whether if marker is identified or not.
+ * It returns by reference the correct id (if any) and the correct rotation
+ */
+bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
+                          double maxCorrectionRate) const {
 
-        CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
+    CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
-        int maxCorrectionRecalculed = int( double(maxCorrectionBits) * maxCorrectionRate );
+    int maxCorrectionRecalculed = int(double(maxCorrectionBits) * maxCorrectionRate);
 
-        // get as a byte list
-        Mat candidateBytes = getByteListFromBits(onlyBits);
+    // get as a byte list
+    Mat candidateBytes = getByteListFromBits(onlyBits);
 
-        idx = -1; // by default, not found
+    idx = -1; // by default, not found
 
-        // search closest marker in dict
-        for (int m = 0; m < bytesList.rows; m++) {
-            int currentMinDistance = markerSize * markerSize + 1;
-            int currentRotation = -1;
-            for (unsigned int r = 0; r < 4; r++) {
-                int currentHamming = 0;
-                // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
-                for (unsigned int b = 0; b < candidateBytes.total(); b++) {
-                    unsigned char xorRes =
-                        bytesList.ptr<Vec4b>(m)[b][r] ^ candidateBytes.ptr<Vec4b>(0)[b][0];
-                    currentHamming += hammingWeightLUT[xorRes];
-                }
-
-                if (currentHamming < currentMinDistance) {
-                    currentMinDistance = currentHamming;
-                    currentRotation = r;
-                }
-            }
-
-            // if maxCorrection is fullfilled, return this one
-            if (currentMinDistance <= maxCorrectionRecalculed ) {
-                idx = m;
-                rotation = currentRotation;
-                break;
-            }
-        }
-
-        if (idx != -1)
-            return true;
-        else
-            return false;
-
-    }
-
-
-    /**
-      * Returns the distance of the input bits to the specific id.
-      */
-    int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
-        CV_Assert(id >= 0 && id < bytesList.rows);
-
-        Mat candidateBytes = getByteListFromBits(bits.getMat());
-        unsigned int nRotations = 4;
-        if(!allRotations) nRotations = 1;
-        int currentMinDistance = int(bits.total() * bits.total());
-        for (unsigned int r = 0; r < nRotations; r++) {
+    // search closest marker in dict
+    for(int m = 0; m < bytesList.rows; m++) {
+        int currentMinDistance = markerSize * markerSize + 1;
+        int currentRotation = -1;
+        for(unsigned int r = 0; r < 4; r++) {
             int currentHamming = 0;
-            for (unsigned int b = 0; b < candidateBytes.total(); b++) {
+            // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
+            for(unsigned int b = 0; b < candidateBytes.total(); b++) {
                 unsigned char xorRes =
-                    bytesList.ptr<Vec4b>(id)[b][r] ^ candidateBytes.ptr<Vec4b>(0)[b][0];
+                    bytesList.ptr< Vec4b >(m)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
                 currentHamming += hammingWeightLUT[xorRes];
             }
 
-            if (currentHamming < currentMinDistance) {
+            if(currentHamming < currentMinDistance) {
                 currentMinDistance = currentHamming;
+                currentRotation = r;
             }
         }
-        return currentMinDistance;
+
+        // if maxCorrection is fullfilled, return this one
+        if(currentMinDistance <= maxCorrectionRecalculed) {
+            idx = m;
+            rotation = currentRotation;
+            break;
+        }
     }
 
+    if(idx != -1)
+        return true;
+    else
+        return false;
+}
 
 
-    /**
-     * @brief Draw a canonical marker image
-     */
-    void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
+/**
+  * Returns the distance of the input bits to the specific id.
+  */
+int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
+    CV_Assert(id >= 0 && id < bytesList.rows);
 
-        CV_Assert(sidePixels > markerSize);
-        CV_Assert(id < bytesList.rows);
-        CV_Assert(borderBits > 0);
+    Mat candidateBytes = getByteListFromBits(bits.getMat());
+    unsigned int nRotations = 4;
+    if(!allRotations) nRotations = 1;
+    int currentMinDistance = int(bits.total() * bits.total());
+    for(unsigned int r = 0; r < nRotations; r++) {
+        int currentHamming = 0;
+        for(unsigned int b = 0; b < candidateBytes.total(); b++) {
+            unsigned char xorRes =
+                bytesList.ptr< Vec4b >(id)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
+            currentHamming += hammingWeightLUT[xorRes];
+        }
 
-        _img.create(sidePixels, sidePixels, CV_8UC1);
-
-        // create small marker with 1 pixel per bin
-        Mat tinyMarker(markerSize + 2*borderBits, markerSize + 2*borderBits, CV_8UC1,
-                       Scalar::all(0));
-        Mat innerRegion =
-            tinyMarker.rowRange(borderBits, tinyMarker.rows - borderBits).
-                       colRange(borderBits, tinyMarker.cols - borderBits);
-        // put inner bits
-        Mat bits = 255 * getBitsFromByteList(bytesList.rowRange(id, id + 1), markerSize);
-        CV_Assert(innerRegion.total() == bits.total());
-        bits.copyTo(innerRegion);
-
-        // resize tiny marker to output size
-        cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, INTER_NEAREST);
+        if(currentHamming < currentMinDistance) {
+            currentMinDistance = currentHamming;
+        }
     }
+    return currentMinDistance;
+}
+
+
+
+/**
+ * @brief Draw a canonical marker image
+ */
+void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
+
+    CV_Assert(sidePixels > markerSize);
+    CV_Assert(id < bytesList.rows);
+    CV_Assert(borderBits > 0);
+
+    _img.create(sidePixels, sidePixels, CV_8UC1);
+
+    // create small marker with 1 pixel per bin
+    Mat tinyMarker(markerSize + 2 * borderBits, markerSize + 2 * borderBits, CV_8UC1,
+                   Scalar::all(0));
+    Mat innerRegion = tinyMarker.rowRange(borderBits, tinyMarker.rows - borderBits)
+                          .colRange(borderBits, tinyMarker.cols - borderBits);
+    // put inner bits
+    Mat bits = 255 * getBitsFromByteList(bytesList.rowRange(id, id + 1), markerSize);
+    CV_Assert(innerRegion.total() == bits.total());
+    bits.copyTo(innerRegion);
+
+    // resize tiny marker to output size
+    cv::resize(tinyMarker, _img.getMat(), _img.getMat().size(), 0, 0, INTER_NEAREST);
+}
 
 
 
 
-    /**
-      * @brief Transform matrix of bits to list of bytes in the 4 rotations
-      */
-    Mat Dictionary::getByteListFromBits(const Mat &bits) {
+/**
+  * @brief Transform matrix of bits to list of bytes in the 4 rotations
+  */
+Mat Dictionary::getByteListFromBits(const Mat &bits) {
 
-        int nbytes = (bits.cols * bits.rows) / 8;
-        if ((bits.cols * bits.rows) % 8 != 0)
-            nbytes++;
-        Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
-        unsigned char currentBit = 0;
-        int currentByte = 0;
-        for (int row = 0; row < bits.rows; row++) {
-            for (int col = 0; col < bits.cols; col++) {
-                candidateByteList.ptr<Vec4b>(0)[currentByte][0] =
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][0] << 1;
-                candidateByteList.ptr<Vec4b>(0)[currentByte][1] =
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][1] << 1;
-                candidateByteList.ptr<Vec4b>(0)[currentByte][2] =
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][2] << 1;
-                candidateByteList.ptr<Vec4b>(0)[currentByte][3] =
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][3] << 1;
-                if (bits.at<unsigned char>(row, col))
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][0]++;
-                if (bits.at<unsigned char>(col, bits.cols - 1 - row))
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][1]++;
-                if (bits.at<unsigned char>(bits.rows - 1 - row, bits.cols - 1 - col))
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][2]++;
-                if (bits.at<unsigned char>(bits.rows - 1 - col, row))
-                    candidateByteList.ptr<Vec4b>(0)[currentByte][3]++;
-                currentBit++;
-                if (currentBit == 8) {
-                    currentBit = 0;
-                    currentByte++;
-                }
+    int nbytes = (bits.cols * bits.rows) / 8;
+    if((bits.cols * bits.rows) % 8 != 0) nbytes++;
+    Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
+    unsigned char currentBit = 0;
+    int currentByte = 0;
+    for(int row = 0; row < bits.rows; row++) {
+        for(int col = 0; col < bits.cols; col++) {
+            candidateByteList.ptr< Vec4b >(0)[currentByte][0] =
+                candidateByteList.ptr< Vec4b >(0)[currentByte][0] << 1;
+            candidateByteList.ptr< Vec4b >(0)[currentByte][1] =
+                candidateByteList.ptr< Vec4b >(0)[currentByte][1] << 1;
+            candidateByteList.ptr< Vec4b >(0)[currentByte][2] =
+                candidateByteList.ptr< Vec4b >(0)[currentByte][2] << 1;
+            candidateByteList.ptr< Vec4b >(0)[currentByte][3] =
+                candidateByteList.ptr< Vec4b >(0)[currentByte][3] << 1;
+            if(bits.at< unsigned char >(row, col))
+                candidateByteList.ptr< Vec4b >(0)[currentByte][0]++;
+            if(bits.at< unsigned char >(col, bits.cols - 1 - row))
+                candidateByteList.ptr< Vec4b >(0)[currentByte][1]++;
+            if(bits.at< unsigned char >(bits.rows - 1 - row, bits.cols - 1 - col))
+                candidateByteList.ptr< Vec4b >(0)[currentByte][2]++;
+            if(bits.at< unsigned char >(bits.rows - 1 - col, row))
+                candidateByteList.ptr< Vec4b >(0)[currentByte][3]++;
+            currentBit++;
+            if(currentBit == 8) {
+                currentBit = 0;
+                currentByte++;
             }
         }
-        return candidateByteList;
     }
+    return candidateByteList;
+}
 
 
 
-    /**
-      * @brief Transform list of bytes to matrix of bits
-      */
-    Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
-        CV_Assert(byteList.total() > 0 && byteList.total() >= (unsigned int)markerSize*markerSize/8
-                  && byteList.total() <= (unsigned int)markerSize*markerSize/8+1);
-        Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
+/**
+  * @brief Transform list of bytes to matrix of bits
+  */
+Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
+    CV_Assert(byteList.total() > 0 &&
+              byteList.total() >= (unsigned int)markerSize * markerSize / 8 &&
+              byteList.total() <= (unsigned int)markerSize * markerSize / 8 + 1);
+    Mat bits(markerSize, markerSize, CV_8UC1, Scalar::all(0));
 
-        unsigned char base2List[] = {128, 64, 32, 16, 8, 4, 2, 1};
-        int currentByteIdx = 0;
-        // we only need the bytes in normal rotation
-        unsigned char currentByte = byteList.ptr<Vec4b>(0)[0][0];
-        int currentBit = 0;
-        for (int row = 0; row < bits.rows; row++) {
-            for (int col = 0; col < bits.cols; col++) {
-                if (currentByte >= base2List[currentBit]) {
-                    bits.at<unsigned char>(row, col) = 1;
-                    currentByte -= base2List[currentBit];
-                }
-                currentBit++;
-                if (currentBit == 8) {
-                    currentByteIdx++;
-                    currentByte = byteList.ptr<Vec4b>(0)[currentByteIdx][0];
-                    // if not enough bits for one more byte, we are in the end
-                    // update bit position accordingly
-                    if (8 * (currentByteIdx + 1) > (int)bits.total())
-                        currentBit = 8 * (currentByteIdx + 1) - (int)bits.total();
-                    else
-                        currentBit = 0; // ok, bits enough for next byte
-                }
+    unsigned char base2List[] = { 128, 64, 32, 16, 8, 4, 2, 1 };
+    int currentByteIdx = 0;
+    // we only need the bytes in normal rotation
+    unsigned char currentByte = byteList.ptr< Vec4b >(0)[0][0];
+    int currentBit = 0;
+    for(int row = 0; row < bits.rows; row++) {
+        for(int col = 0; col < bits.cols; col++) {
+            if(currentByte >= base2List[currentBit]) {
+                bits.at< unsigned char >(row, col) = 1;
+                currentByte -= base2List[currentBit];
+            }
+            currentBit++;
+            if(currentBit == 8) {
+                currentByteIdx++;
+                currentByte = byteList.ptr< Vec4b >(0)[currentByteIdx][0];
+                // if not enough bits for one more byte, we are in the end
+                // update bit position accordingly
+                if(8 * (currentByteIdx + 1) > (int)bits.total())
+                    currentBit = 8 * (currentByteIdx + 1) - (int)bits.total();
+                else
+                    currentBit = 0; // ok, bits enough for next byte
             }
         }
-        return bits;
     }
-
+    return bits;
+}
 
 
 
@@ -304,8 +300,8 @@ const Dictionary DICT_7X7_250_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]),
 const Dictionary DICT_7X7_1000_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 1000, 6);
 
 
-const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
-    switch (name) {
+const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
+    switch(name) {
     case DICT_ARUCO:
         return DICT_ARUCO_DATA;
     case DICT_6X6_TEST:
@@ -346,7 +342,6 @@ const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
         return DICT_7X7_250_DATA;
     case DICT_7X7_1000:
         return DICT_7X7_1000_DATA;
-
     }
     return DICT_ARUCO_DATA;
 }
@@ -354,10 +349,10 @@ const Dictionary & getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
 
 static Mat _generateRandomMarker(int markerSize) {
     Mat marker(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
-    for(int i=0; i<markerSize; i++) {
-        for(int j=0; j<markerSize; j++) {
-            unsigned char bit = rand()%2;
-            marker.at<unsigned char>(i, j) = bit;
+    for(int i = 0; i < markerSize; i++) {
+        for(int j = 0; j < markerSize; j++) {
+            unsigned char bit = rand() % 2;
+            marker.at< unsigned char >(i, j) = bit;
         }
     }
     return marker;
@@ -366,39 +361,38 @@ static Mat _generateRandomMarker(int markerSize) {
 static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
     int minHamming = (int)marker.total() + 1;
-    for(int i=1; i<4; i++) {
+    for(int i = 1; i < 4; i++) {
         int currentHamming = 0;
-        for(int j=0; j<bytes.cols; j++) {
-            unsigned char xorRes = bytes.ptr<Vec4b>()[j][0] ^ bytes.ptr<Vec4b>()[j][i];
+        for(int j = 0; j < bytes.cols; j++) {
+            unsigned char xorRes = bytes.ptr< Vec4b >()[j][0] ^ bytes.ptr< Vec4b >()[j][i];
             currentHamming += hammingWeightLUT[xorRes];
         }
-        if(currentHamming < minHamming)
-            minHamming = currentHamming;
+        if(currentHamming < minHamming) minHamming = currentHamming;
     }
     return minHamming;
 }
 
 
 Dictionary generateCustomDictionary(int nMarkers, int markerSize,
-                                    const Dictionary& baseDictionary) {
+                                    const Dictionary &baseDictionary) {
 
     Dictionary out;
     out.markerSize = markerSize;
 
-    int C = (int)std::floor(float(markerSize*markerSize)/4.f);
-    int tau = 2*(int)std::floor(float(C)*4.f/3.f);
+    int C = (int)std::floor(float(markerSize * markerSize) / 4.f);
+    int tau = 2 * (int)std::floor(float(C) * 4.f / 3.f);
 
     if(baseDictionary.bytesList.rows > 0) {
         CV_Assert(baseDictionary.markerSize == markerSize);
         out.bytesList = baseDictionary.bytesList.clone();
 
         // calculate tau of baseDictionary
-        int minDistance = markerSize*markerSize + 1;
-        for(int i=0; i<out.bytesList.rows; i++) {
-            Mat markerBytes = out.bytesList.rowRange(i, i+1);
+        int minDistance = markerSize * markerSize + 1;
+        for(int i = 0; i < out.bytesList.rows; i++) {
+            Mat markerBytes = out.bytesList.rowRange(i, i + 1);
             Mat markerBits = Dictionary::getBitsFromByteList(markerBytes, markerSize);
-            minDistance = std::min(minDistance, _getSelfDistance(markerBits) );
-            for(int j=i+1; j<out.bytesList.rows; j++) {
+            minDistance = std::min(minDistance, _getSelfDistance(markerBits));
+            for(int j = i + 1; j < out.bytesList.rows; j++) {
                 minDistance = std::min(minDistance, out.getDistanceToId(markerBits, j));
             }
         }
@@ -417,7 +411,7 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
         int minDistance = selfDistance;
 
         if(selfDistance >= bestTau) {
-            for(int i=0; i<out.bytesList.rows; i++) {
+            for(int i = 0; i < out.bytesList.rows; i++) {
                 int currentDistance = out.getDistanceToId(currentMarker, i);
                 minDistance = std::min(currentDistance, minDistance);
                 if(minDistance <= bestTau) {
@@ -431,8 +425,7 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
             bestTau = 0;
             Mat bytes = Dictionary::getByteListFromBits(currentMarker);
             out.bytesList.push_back(bytes);
-        }
-        else {
+        } else {
             unproductiveIterations++;
 
             if(minDistance > bestTau) {
@@ -448,14 +441,10 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
                 out.bytesList.push_back(bytes);
             }
         }
-
     }
-    out.maxCorrectionBits = (tau-1)/2;
+    out.maxCorrectionBits = (tau - 1) / 2;
 
     return out;
 }
-
-
-
 }
 }

@@ -55,39 +55,35 @@ static void help() {
     cout << "-w <nmarkers> # Number of markers in X direction" << endl;
     cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
     cout << "-l <markerLength> # Marker side lenght (in pixels)" << endl;
-    cout << "-s <markerSeparation> # Separation between two consecutive" <<
-                 "markers in the grid (in pixels)" << endl;
+    cout << "-s <markerSeparation> # Separation between two consecutive"
+         << "markers in the grid (in pixels)" << endl;
     cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
-    cout << "[-m <marginSize>] # Margins size (in pixels)" <<
-                 "Default is marker separation" << endl;
-    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1"
-                  << endl;
+    cout << "[-m <marginSize>] # Margins size (in pixels)"
+         << "Default is marker separation" << endl;
+    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << endl;
     cout << "[-si] # show generated image" << endl;
 }
 
 
 /**
  */
-static bool isParam(string param, int argc, char **argv ) {
-    for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param )
-            return true;
+static bool isParam(string param, int argc, char **argv) {
+    for(int i = 0; i < argc; i++)
+        if(string(argv[i]) == param) return true;
     return false;
-
 }
 
 
 /**
  */
 static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx=-1;
-    for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param)
-            idx = i;
-    if (idx == -1 || (idx + 1) >= argc)
+    int idx = -1;
+    for(int i = 0; i < argc && idx == -1; i++)
+        if(string(argv[i]) == param) idx = i;
+    if(idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1];
+        return argv[idx + 1];
 }
 
 
@@ -95,51 +91,50 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
  */
 int main(int argc, char *argv[]) {
 
-    if (!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
-        !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv) ) {
+    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
+       !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv)) {
         help();
         return 0;
     }
 
-    int markersX = atoi( getParam("-w", argc, argv).c_str() );
-    int markersY = atoi( getParam("-h", argc, argv).c_str() );
-    int markerLength = atoi( getParam("-l", argc, argv).c_str() );
-    int markerSeparation = atoi( getParam("-s", argc, argv).c_str() );
-    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
-                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int markersX = atoi(getParam("-w", argc, argv).c_str());
+    int markersY = atoi(getParam("-h", argc, argv).c_str());
+    int markerLength = atoi(getParam("-l", argc, argv).c_str());
+    int markerSeparation = atoi(getParam("-s", argc, argv).c_str());
+    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     int margins = markerSeparation;
-    if (isParam("-m", argc, argv)) {
-      margins = atoi( getParam("-m", argc, argv).c_str() );
+    if(isParam("-m", argc, argv)) {
+        margins = atoi(getParam("-m", argc, argv).c_str());
     }
 
     int borderBits = 1;
-    if (isParam("-bb", argc, argv)) {
-      borderBits = atoi( getParam("-bb", argc, argv).c_str() );
+    if(isParam("-bb", argc, argv)) {
+        borderBits = atoi(getParam("-bb", argc, argv).c_str());
     }
 
     bool showImage = false;
-    if (isParam("-si", argc, argv))
-      showImage = true;
+    if(isParam("-si", argc, argv)) showImage = true;
 
     Size imageSize;
-    imageSize.width = markersX*(markerLength+markerSeparation) - markerSeparation + 2 * margins;
-    imageSize.height = markersY*(markerLength+markerSeparation) - markerSeparation + 2 * margins;
+    imageSize.width = markersX * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
+    imageSize.height =
+        markersY * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
 
-    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY,
-                                                              float(markerLength),
-                                                              float(markerSeparation), dictionary);
+    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
+                                                      float(markerSeparation), dictionary);
 
     Mat boardImage;
     board.draw(imageSize, boardImage, margins, borderBits);
 
-    if (showImage) {
-      imshow("board", boardImage);
-      waitKey(0);
+    if(showImage) {
+        imshow("board", boardImage);
+        waitKey(0);
     }
 
-    imwrite( getParam("-o", argc, argv), boardImage);
+    imwrite(getParam("-o", argc, argv), boardImage);
 
     return 0;
 }

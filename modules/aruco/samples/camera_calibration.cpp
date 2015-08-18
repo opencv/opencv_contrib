@@ -60,14 +60,12 @@ static void help() {
     cout << "-w <nmarkers> # Number of markers in X direction" << endl;
     cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
     cout << "-l <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-s <markerSeparation> # Separation between two consecutive" <<
-                 "markers in the grid (in meters)" << endl;
+    cout << "-s <markerSeparation> # Separation between two consecutive"
+         << "markers in the grid (in meters)" << endl;
     cout << "-d <dictionary> # 0: ARUCO, ..." << endl;
     cout << "-o <outputFile> # Output file with calibrated camera parameters" << endl;
-    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera"
-                 << endl;
-    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0"
-                 << endl;
+    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
+    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
     cout << "[-dp <detectorParams>] # File of marker detector parameters" << endl;
     cout << "[-rs] # Apply refind strategy" << endl;
     cout << "[-zt] # Assume zero tangential distortion" << endl;
@@ -78,26 +76,23 @@ static void help() {
 
 /**
  */
-static bool isParam(string param, int argc, char **argv ) {
-    for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param )
-            return true;
+static bool isParam(string param, int argc, char **argv) {
+    for(int i = 0; i < argc; i++)
+        if(string(argv[i]) == param) return true;
     return false;
-
 }
 
 
 /**
  */
 static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx=-1;
-    for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param)
-            idx = i;
-    if (idx == -1 || (idx + 1) >= argc)
+    int idx = -1;
+    for(int i = 0; i < argc && idx == -1; i++)
+        if(string(argv[i]) == param) idx = i;
+    if(idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1];
+        return argv[idx + 1];
 }
 
 
@@ -122,7 +117,6 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
     fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
     fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
     fs["markerBorderBits"] >> params.markerBorderBits;
-    fs["perspectiveRemoveDistortion"] >> params.perspectiveRemoveDistortion;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
     fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
@@ -134,32 +128,29 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
 
 /**
  */
-static void saveCameraParams(const string& filename,
-                             Size imageSize, float aspectRatio, int flags,
-                             const Mat& cameraMatrix, const Mat& distCoeffs,
-                             double totalAvgErr ) {
-    FileStorage fs( filename, FileStorage::WRITE );
+static void saveCameraParams(const string &filename, Size imageSize, float aspectRatio, int flags,
+                             const Mat &cameraMatrix, const Mat &distCoeffs, double totalAvgErr) {
+    FileStorage fs(filename, FileStorage::WRITE);
 
     time_t tt;
-    time( &tt );
-    struct tm *t2 = localtime( &tt );
+    time(&tt);
+    struct tm *t2 = localtime(&tt);
     char buf[1024];
-    strftime( buf, sizeof(buf)-1, "%c", t2 );
+    strftime(buf, sizeof(buf) - 1, "%c", t2);
 
     fs << "calibration_time" << buf;
 
     fs << "image_width" << imageSize.width;
     fs << "image_height" << imageSize.height;
 
-    if ( flags & CALIB_FIX_ASPECT_RATIO )
-        fs << "aspectRatio" << aspectRatio;
+    if(flags & CALIB_FIX_ASPECT_RATIO) fs << "aspectRatio" << aspectRatio;
 
-    if ( flags != 0 ) {
-        sprintf( buf, "flags: %s%s%s%s",
-        flags & CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
-        flags & CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
-        flags & CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
-        flags & CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "" );
+    if(flags != 0) {
+        sprintf(buf, "flags: %s%s%s%s",
+                flags & CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
+                flags & CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
+                flags & CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
+                flags & CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "");
     }
 
     fs << "flags" << flags;
@@ -176,86 +167,78 @@ static void saveCameraParams(const string& filename,
  */
 int main(int argc, char *argv[]) {
 
-    if (!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
-        !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv) ) {
+    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
+       !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv)) {
         help();
         return 0;
     }
 
-    int markersX = atoi( getParam("-w", argc, argv).c_str() );
-    int markersY = atoi( getParam("-h", argc, argv).c_str() );
-    float markerLength = (float)atof( getParam("-l", argc, argv).c_str() );
-    float markerSeparation = (float)atof( getParam("-s", argc, argv).c_str() );
-    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
-                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int markersX = atoi(getParam("-w", argc, argv).c_str());
+    int markersY = atoi(getParam("-h", argc, argv).c_str());
+    float markerLength = (float)atof(getParam("-l", argc, argv).c_str());
+    float markerSeparation = (float)atof(getParam("-s", argc, argv).c_str());
+    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
     string outputFile = getParam("-o", argc, argv);
 
     int calibrationFlags = 0;
     float aspectRatio = 1;
-    if (isParam("-a", argc, argv)) {
+    if(isParam("-a", argc, argv)) {
         calibrationFlags |= CALIB_FIX_ASPECT_RATIO;
-        aspectRatio = (float)atof( getParam("-a", argc, argv).c_str() );
+        aspectRatio = (float)atof(getParam("-a", argc, argv).c_str());
     }
-    if (isParam("-zt", argc, argv))
-        calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
-    if (isParam("-p", argc, argv))
-        calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
+    if(isParam("-zt", argc, argv)) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
+    if(isParam("-p", argc, argv)) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
     aruco::DetectorParameters detectorParams;
-    if (isParam("-dp", argc, argv)) {
-      readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+    if(isParam("-dp", argc, argv)) {
+        readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
 
     bool refindStrategy = false;
-    if (isParam("-rs", argc, argv))
-        refindStrategy = true;
+    if(isParam("-rs", argc, argv)) refindStrategy = true;
 
     VideoCapture inputVideo;
     int waitTime;
-    if (isParam("-v", argc, argv)) {
+    if(isParam("-v", argc, argv)) {
         inputVideo.open(getParam("-v", argc, argv));
         waitTime = 0;
-    }
-    else {
+    } else {
         int camId = 0;
-        if (isParam("-ci", argc, argv))
-            camId = atoi( getParam("-ci", argc, argv).c_str() );
+        if(isParam("-ci", argc, argv)) camId = atoi(getParam("-ci", argc, argv).c_str());
         inputVideo.open(camId);
         waitTime = 10;
     }
 
-    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY, markerLength,
-                                                              markerSeparation, dictionary);
+    aruco::GridBoard board =
+        aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
 
-    vector<vector<vector<Point2f> > > allCorners;
-    vector<vector<int> > allIds;
+    vector< vector< vector< Point2f > > > allCorners;
+    vector< vector< int > > allIds;
     Size imgSize;
 
-    while (inputVideo.grab()) {
+    while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        vector<int> ids;
-        vector<vector<Point2f> > corners, rejected;
+        vector< int > ids;
+        vector< vector< Point2f > > corners, rejected;
 
         // detect markers and estimate pose
         aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
 
         // refind strategy to detect more markers
-        if (refindStrategy)
-            aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
+        if(refindStrategy) aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
 
         // draw results
         image.copyTo(imageCopy);
-        if (ids.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
 
         imshow("out", imageCopy);
-        char key = (char) waitKey(waitTime);
-        if (key == 27)
-            break;
-        if (key == 'c' && ids.size() > 0) {
+        char key = (char)waitKey(waitTime);
+        if(key == 27) break;
+        if(key == 'c' && ids.size() > 0) {
             cout << "Frame captured" << endl;
             allCorners.push_back(corners);
             allIds.push_back(ids);
@@ -264,32 +247,32 @@ int main(int argc, char *argv[]) {
     }
 
     Mat cameraMatrix, distCoeffs;
-    vector<Mat> rvecs, tvecs;
+    vector< Mat > rvecs, tvecs;
     double repError;
 
-    if( calibrationFlags & CALIB_FIX_ASPECT_RATIO ) {
+    if(calibrationFlags & CALIB_FIX_ASPECT_RATIO) {
         cameraMatrix = Mat::eye(3, 3, CV_64F);
-        cameraMatrix.at<double>(0,0) = aspectRatio;
+        cameraMatrix.at< double >(0, 0) = aspectRatio;
     }
 
 
-    vector<vector<Point2f> > allCornersConcatenated;
-    vector<int> allIdsConcatenated;
-    vector<int> markerCounterPerFrame;
+    vector< vector< Point2f > > allCornersConcatenated;
+    vector< int > allIdsConcatenated;
+    vector< int > markerCounterPerFrame;
     markerCounterPerFrame.reserve(allCorners.size());
-    for(unsigned int i=0; i<allCorners.size(); i++) {
+    for(unsigned int i = 0; i < allCorners.size(); i++) {
         markerCounterPerFrame.push_back((int)allCorners[i].size());
-        for(unsigned int j=0; j<allCorners[i].size(); j++) {
+        for(unsigned int j = 0; j < allCorners[i].size(); j++) {
             allCornersConcatenated.push_back(allCorners[i][j]);
             allIdsConcatenated.push_back(allIds[i][j]);
         }
     }
     repError = aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
-                                               markerCounterPerFrame, board, imgSize, cameraMatrix,
-                                               distCoeffs, rvecs, tvecs, calibrationFlags);
+                                           markerCounterPerFrame, board, imgSize, cameraMatrix,
+                                           distCoeffs, rvecs, tvecs, calibrationFlags);
 
     saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,
-                     repError );
+                     repError);
 
     cout << "Rep Error: " << repError << endl;
     cout << "Calibration saved to " << outputFile << endl;

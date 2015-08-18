@@ -64,26 +64,23 @@ static void help() {
 
 /**
  */
-static bool isParam(string param, int argc, char **argv ) {
-    for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param )
-            return true;
+static bool isParam(string param, int argc, char **argv) {
+    for(int i = 0; i < argc; i++)
+        if(string(argv[i]) == param) return true;
     return false;
-
 }
 
 
 /**
  */
 static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx=-1;
-    for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param)
-            idx = i;
-    if (idx == -1 || (idx + 1) >= argc)
+    int idx = -1;
+    for(int i = 0; i < argc && idx == -1; i++)
+        if(string(argv[i]) == param) idx = i;
+    if(idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1];
+        return argv[idx + 1];
 }
 
 
@@ -91,57 +88,56 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
  */
 int main(int argc, char *argv[]) {
 
-    if (!isParam("-sl", argc, argv) || !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) ||
-        !isParam("-ids", argc, argv) ) {
+    if(!isParam("-sl", argc, argv) || !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) ||
+       !isParam("-ids", argc, argv)) {
         help();
         return 0;
     }
 
-    int squareLength = atoi( getParam("-sl", argc, argv).c_str() );
-    int markerLength = atoi( getParam("-ml", argc, argv).c_str() );
-    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
-                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int squareLength = atoi(getParam("-sl", argc, argv).c_str());
+    int markerLength = atoi(getParam("-ml", argc, argv).c_str());
+    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     string idsString = getParam("-ids", argc, argv);
     istringstream ss(idsString);
-    vector<string> splittedIds;
+    vector< string > splittedIds;
     string token;
-    while (getline(ss, token, ','))
+    while(getline(ss, token, ','))
         splittedIds.push_back(token);
-    if (splittedIds.size() < 4) {
+    if(splittedIds.size() < 4) {
         cerr << "Incorrect ids format" << endl;
         help();
         return 0;
     }
     Vec4i ids;
-    for (int i=0; i<4; i++)
-        ids[i] = atoi( splittedIds[i].c_str() );
+    for(int i = 0; i < 4; i++)
+        ids[i] = atoi(splittedIds[i].c_str());
 
     int margins = 0;
-    if (isParam("-m", argc, argv)) {
-      margins = atoi( getParam("-m", argc, argv).c_str() );
+    if(isParam("-m", argc, argv)) {
+        margins = atoi(getParam("-m", argc, argv).c_str());
     }
 
     int borderBits = 1;
-    if (isParam("-bb", argc, argv)) {
-      borderBits = atoi( getParam("-bb", argc, argv).c_str() );
+    if(isParam("-bb", argc, argv)) {
+        borderBits = atoi(getParam("-bb", argc, argv).c_str());
     }
 
     bool showImage = false;
-    if (isParam("-si", argc, argv))
-      showImage = true;
+    if(isParam("-si", argc, argv)) showImage = true;
 
     Mat markerImg;
     aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
-                                  borderBits);
+                              borderBits);
 
-    if (showImage) {
-      imshow("board", markerImg);
-      waitKey(0);
+    if(showImage) {
+        imshow("board", markerImg);
+        waitKey(0);
     }
 
-    imwrite( getParam("-o", argc, argv), markerImg);
+    imwrite(getParam("-o", argc, argv), markerImg);
 
     return 0;
 }

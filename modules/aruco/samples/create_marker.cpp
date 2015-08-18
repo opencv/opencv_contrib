@@ -62,26 +62,23 @@ static void help() {
 
 /**
  */
-static bool isParam(string param, int argc, char **argv ) {
-    for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param )
-            return true;
+static bool isParam(string param, int argc, char **argv) {
+    for(int i = 0; i < argc; i++)
+        if(string(argv[i]) == param) return true;
     return false;
-
 }
 
 
 /**
  */
 static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx=-1;
-    for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param)
-            idx = i;
-    if (idx == -1 || (idx + 1) >= argc)
+    int idx = -1;
+    for(int i = 0; i < argc && idx == -1; i++)
+        if(string(argv[i]) == param) idx = i;
+    if(idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1];
+        return argv[idx + 1];
 }
 
 
@@ -89,40 +86,39 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
  */
 int main(int argc, char *argv[]) {
 
-    if (!isParam("-d", argc, argv) || !isParam("-o", argc, argv) ) {
+    if(!isParam("-d", argc, argv) || !isParam("-o", argc, argv)) {
         help();
         return 0;
     }
 
-    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
-                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
-    int markerId = atoi( getParam("-id", argc, argv).c_str() );
+    int markerId = atoi(getParam("-id", argc, argv).c_str());
 
     int borderBits = 1;
-    if (isParam("-bb", argc, argv)) {
-      borderBits = atoi( getParam("-bb", argc, argv).c_str() );
+    if(isParam("-bb", argc, argv)) {
+        borderBits = atoi(getParam("-bb", argc, argv).c_str());
     }
 
     int markerSize = 200;
-    if (isParam("-ms", argc, argv)) {
-      markerSize = atoi( getParam("-ms", argc, argv).c_str() );
+    if(isParam("-ms", argc, argv)) {
+        markerSize = atoi(getParam("-ms", argc, argv).c_str());
     }
 
     bool showImage = false;
-    if (isParam("-si", argc, argv))
-      showImage = true;
+    if(isParam("-si", argc, argv)) showImage = true;
 
     Mat markerImg;
     aruco::drawMarker(dictionary, markerId, markerSize, markerImg, borderBits);
 
-    if (showImage) {
-      imshow("marker", markerImg);
-      waitKey(0);
+    if(showImage) {
+        imshow("marker", markerImg);
+        waitKey(0);
     }
 
-    imwrite( getParam("-o", argc, argv), markerImg);
+    imwrite(getParam("-o", argc, argv), markerImg);
 
     return 0;
 }

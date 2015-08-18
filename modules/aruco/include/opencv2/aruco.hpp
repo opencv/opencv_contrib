@@ -100,8 +100,6 @@ namespace aruco {
  * - cornerRefinementMinAccuracy: minimum error for the stop cristeria of the corner refinement
  *   process (default: 0.1)
  * - markerBorderBits: number of bits of the marker border, i.e. marker border width (default 1).
- * - perspectiveRemoveDistortion: employ routine to remove perspective taking into account the image
-*    distortion in the marker contour (default false).
  * - perpectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
  *   when removing the perspective (default 8).
  * - perspectiveRemoveIgnoredMarginPerCell: width of the margin of pixels on each cell not
@@ -135,7 +133,6 @@ struct DetectorParameters {
     int cornerRefinementMaxIterations;
     double cornerRefinementMinAccuracy;
     int markerBorderBits;
-    bool perspectiveRemoveDistortion;
     int perspectiveRemovePixelPerCell;
     double perspectiveRemoveIgnoredMarginPerCell;
     double maxErroneousBitsInBorderRate;
@@ -167,9 +164,8 @@ struct DetectorParameters {
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary,
-                              OutputArrayOfArrays corners, OutputArray ids,
-                              DetectorParameters parameters=DetectorParameters(),
+CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary, OutputArrayOfArrays corners,
+                              OutputArray ids, DetectorParameters parameters = DetectorParameters(),
                               OutputArrayOfArrays rejectedImgPoints = noArray());
 
 
@@ -220,18 +216,17 @@ CV_EXPORTS void estimatePoseSingleMarkers(InputArrayOfArrays corners, float mark
  */
 class CV_EXPORTS Board {
 
-public:
-
+    public:
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
-    std::vector<std::vector<Point3f> > objPoints;
+    std::vector< std::vector< Point3f > > objPoints;
 
     // the dictionary of markers employed for this board
     Dictionary dictionary;
 
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
-    std::vector<int> ids;
+    std::vector< int > ids;
 };
 
 
@@ -243,9 +238,7 @@ public:
  */
 class CV_EXPORTS GridBoard : public Board {
 
-public:
-
-
+    public:
     /**
      * @brief Draw a GridBoard
      *
@@ -274,32 +267,26 @@ public:
      * This functions creates a GridBoard object given the number of markers in each direction and
      * the marker size and marker separation.
      */
-    static GridBoard create(int markersX, int markersY, float markerLength,
-                            float markerSeparation, Dictionary dictionary);
+    static GridBoard create(int markersX, int markersY, float markerLength, float markerSeparation,
+                            Dictionary dictionary);
 
     /**
       *
       */
-    Size getGridSize() const {
-        return Size(_markersX, _markersY);
-    }
+    Size getGridSize() const { return Size(_markersX, _markersY); }
 
     /**
       *
       */
-    float getMarkerLength() const {
-        return _markerLength;
-    }
+    float getMarkerLength() const { return _markerLength; }
 
     /**
       *
       */
-    float getMarkerSeparation() const {
-        return _markerSeparation;
-    }
+    float getMarkerSeparation() const { return _markerSeparation; }
 
 
-private:
+    private:
     // number of markers in X and Y directions
     int _markersX, _markersY;
 
@@ -308,7 +295,6 @@ private:
 
     // separation between markers in the grid
     float _markerSeparation;
-
 };
 
 
@@ -377,16 +363,12 @@ CV_EXPORTS int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, con
  * using projectPoint function. If not, missing marker projections are interpolated using global
  * homography, and all the marker corners in the board must have the same Z coordinate.
  */
-CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
-                                      InputOutputArrayOfArrays detectedCorners,
-                                      InputOutputArray detectedIds,
-                                      InputOutputArray rejectedCorners,
-                                      InputArray cameraMatrix = noArray(),
-                                      InputArray distCoeffs = noArray(),
-                                      float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
-                                      bool checkAllOrders = true,
-                                      OutputArray recoveredIdxs = noArray(),
-                                      DetectorParameters parameters = DetectorParameters());
+CV_EXPORTS void refineDetectedMarkers(
+    InputArray image, const Board &board, InputOutputArrayOfArrays detectedCorners,
+    InputOutputArray detectedIds, InputOutputArray rejectedCorners,
+    InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
+    float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
+    OutputArray recoveredIdxs = noArray(), DetectorParameters parameters = DetectorParameters());
 
 
 
@@ -407,8 +389,8 @@ CV_EXPORTS void refineDetectedMarkers(InputArray image, const Board &board,
  * the markers in the image. The marker borders are painted and the markers identifiers if provided.
  * Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out,
-                                    InputArrayOfArrays corners, InputArray ids = noArray(),
+CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays corners,
+                                    InputArray ids = noArray(),
                                     Scalar borderColor = Scalar(0, 255, 0));
 
 
@@ -498,20 +480,15 @@ CV_EXPORTS void drawPlanarBoard(const Board &board, Size outSize, OutputArray im
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids,
-                                       InputArray counter, const Board &board, Size imageSize,
-                                       InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-                                       OutputArrayOfArrays rvecs = noArray(),
-                                       OutputArrayOfArrays tvecs = noArray(), int flags = 0,
-                                       TermCriteria criteria = TermCriteria(TermCriteria::COUNT +
-                                                                            TermCriteria::EPS,
-                                                                            30, DBL_EPSILON));
+CV_EXPORTS double calibrateCameraAruco(
+    InputArrayOfArrays corners, InputArray ids, InputArray counter, const Board &board,
+    Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+    TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 
 //! @}
-
-
 }
 }
 

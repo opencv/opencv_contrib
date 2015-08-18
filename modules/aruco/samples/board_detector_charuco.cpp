@@ -69,26 +69,23 @@ static void help() {
 
 /**
  */
-static bool isParam(string param, int argc, char **argv ) {
-    for (int i=0; i<argc; i++)
-        if (string(argv[i]) == param )
-            return true;
+static bool isParam(string param, int argc, char **argv) {
+    for(int i = 0; i < argc; i++)
+        if(string(argv[i]) == param) return true;
     return false;
-
 }
 
 
 /**
  */
 static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx=-1;
-    for (int i=0; i<argc && idx==-1; i++)
-        if (string(argv[i]) == param)
-            idx = i;
-    if (idx == -1 || (idx + 1) >= argc)
+    int idx = -1;
+    for(int i = 0; i < argc && idx == -1; i++)
+        if(string(argv[i]) == param) idx = i;
+    if(idx == -1 || (idx + 1) >= argc)
         return defvalue;
     else
-        return argv[idx+1] ;
+        return argv[idx + 1];
 }
 
 
@@ -120,7 +117,6 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
     fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
     fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
     fs["markerBorderBits"] >> params.markerBorderBits;
-    fs["perspectiveRemoveDistortion"] >> params.perspectiveRemoveDistortion;
     fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
     fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
     fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
@@ -133,71 +129,67 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
  */
 int main(int argc, char *argv[]) {
 
-    if (!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-sl", argc, argv) ||
-        !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) ) {
+    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-sl", argc, argv) ||
+       !isParam("-ml", argc, argv) || !isParam("-d", argc, argv)) {
         help();
         return 0;
     }
 
-    int squaresX = atoi( getParam("-w", argc, argv).c_str() );
-    int squaresY = atoi( getParam("-h", argc, argv).c_str() );
-    float squareLength = (float)atof( getParam("-sl", argc, argv).c_str() );
-    float markerLength = (float)atof( getParam("-ml", argc, argv).c_str() );
-    int dictionaryId = atoi( getParam("-d", argc, argv).c_str() );
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(
-                                   aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int squaresX = atoi(getParam("-w", argc, argv).c_str());
+    int squaresY = atoi(getParam("-h", argc, argv).c_str());
+    float squareLength = (float)atof(getParam("-sl", argc, argv).c_str());
+    float markerLength = (float)atof(getParam("-ml", argc, argv).c_str());
+    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     bool showRejected = false;
-    if (isParam("-r", argc, argv))
-      showRejected = true;
+    if(isParam("-r", argc, argv)) showRejected = true;
 
     Mat camMatrix, distCoeffs;
-    if (isParam("-c", argc, argv)) {
-      readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+    if(isParam("-c", argc, argv)) {
+        readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
     }
 
     aruco::DetectorParameters detectorParams;
-    if (isParam("-dp", argc, argv)) {
-      readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+    if(isParam("-dp", argc, argv)) {
+        readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
-    detectorParams.doCornerRefinement=false; // no corner refinement in markers
+    detectorParams.doCornerRefinement = false; // no corner refinement in markers
 
     bool refindStrategy = false;
-    if (isParam("-rs", argc, argv))
-        refindStrategy = true;
+    if(isParam("-rs", argc, argv)) refindStrategy = true;
 
     VideoCapture inputVideo;
     int waitTime;
-    if (isParam("-v", argc, argv)) {
+    if(isParam("-v", argc, argv)) {
         inputVideo.open(getParam("-v", argc, argv));
         waitTime = 0;
-    }
-    else {
+    } else {
         int camId = 0;
-        if (isParam("-ci", argc, argv))
-            camId = atoi( getParam("-ci", argc, argv).c_str() );
+        if(isParam("-ci", argc, argv)) camId = atoi(getParam("-ci", argc, argv).c_str());
         inputVideo.open(camId);
         waitTime = 10;
     }
 
-    float axisLength = 0.5f*((float)std::min(squaresX, squaresY) * (squareLength));
+    float axisLength = 0.5f * ((float)std::min(squaresX, squaresY) * (squareLength));
 
 
-    aruco::CharucoBoard board = aruco::CharucoBoard::create(squaresX, squaresY, squareLength,
-                                                            markerLength, dictionary);
+    aruco::CharucoBoard board =
+        aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
 
     double totalTime = 0;
     int totalIterations = 0;
 
-    while (inputVideo.grab()) {
+    while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
 
         double tick = (double)getTickCount();
 
-        vector<int> markerIds, charucoIds;
-        vector<vector<Point2f> > markerCorners, rejectedMarkers;
-        vector<Point2f> charucoCorners;
+        vector< int > markerIds, charucoIds;
+        vector< vector< Point2f > > markerCorners, rejectedMarkers;
+        vector< Point2f > charucoCorners;
         Mat rvec, tvec;
 
         // detect markers and estimate pose
@@ -205,17 +197,16 @@ int main(int argc, char *argv[]) {
                              rejectedMarkers);
 
         // refind strategy to detect more markers
-        if (refindStrategy)
-            aruco::refineDetectedMarkers(image, board, markerCorners, markerIds,
-                                         rejectedMarkers, camMatrix, distCoeffs);
+        if(refindStrategy)
+            aruco::refineDetectedMarkers(image, board, markerCorners, markerIds, rejectedMarkers,
+                                         camMatrix, distCoeffs);
 
 
         int interpolatedCorners = 0;
-        if (markerIds.size() > 0)
-            interpolatedCorners = aruco::interpolateCornersCharuco(markerCorners, markerIds,
-                                                                   image, board, charucoCorners,
-                                                                   charucoIds, camMatrix,
-                                                                   distCoeffs);
+        if(markerIds.size() > 0)
+            interpolatedCorners =
+                aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board,
+                                                 charucoCorners, charucoIds, camMatrix, distCoeffs);
 
 
         bool validPose = false;
@@ -225,42 +216,39 @@ int main(int argc, char *argv[]) {
 
 
 
-        double currentTime = ((double)getTickCount()-tick)/getTickFrequency();
+        double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;
         totalIterations++;
-        if(totalIterations%30 == 0) {
-            cout << "Detection Time = " << currentTime*1000 << " ms " <<
-                    "(Mean = " << 1000*totalTime/double(totalIterations) << " ms)" << endl;
+        if(totalIterations % 30 == 0) {
+            cout << "Detection Time = " << currentTime * 1000 << " ms "
+                 << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms)" << endl;
         }
 
 
 
         // draw results
         image.copyTo(imageCopy);
-        if (markerIds.size() > 0) {
+        if(markerIds.size() > 0) {
             aruco::drawDetectedMarkers(imageCopy, imageCopy, markerCorners);
         }
 
-        if (showRejected && rejectedMarkers.size() > 0)
+        if(showRejected && rejectedMarkers.size() > 0)
             aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers, noArray(),
                                        Scalar(100, 0, 255));
 
-        if (interpolatedCorners > 0) {
+        if(interpolatedCorners > 0) {
             Scalar color;
             color = Scalar(0, 0, 255);
             aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds,
                                               color);
         }
 
-        if (validPose)
-            aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec,
-                            axisLength);
+        if(validPose)
+            aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         imshow("out", imageCopy);
-        char key = (char) waitKey(waitTime);
-        if (key == 27)
-            break;
-
+        char key = (char)waitKey(waitTime);
+        if(key == 27) break;
     }
 
     return 0;
