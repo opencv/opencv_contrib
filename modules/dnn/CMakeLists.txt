@@ -4,6 +4,8 @@ if(${CMAKE_PROJECT_NAME} STREQUAL "OpenCV")#build as OpenCV module
 
 set(the_description "Deep neural network module. It allows to load models and to make forward pass")
 set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
+
+OCV_OPTION(BUILD_LIBPROTOBUF_FROM_SOURCES "Build libprotobuf from sources or try to find it in system" OFF)
 include(cmake/find_protobuf.cmake)
 
 ocv_add_module(dnn opencv_imgproc opencv_core opencv_highgui WRAP python matlab)
