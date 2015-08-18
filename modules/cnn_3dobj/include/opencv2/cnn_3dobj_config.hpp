@@ -1,5 +1,0 @@
-#ifndef __OPENCV_CNN_3DOBJ_CONFIG_HPP__
-#define __OPENCV_CNN_3DOBJ_CONFIG_HPP__
-// HAVE CAFFE
-#define HAVE_CAFFE
-#endif

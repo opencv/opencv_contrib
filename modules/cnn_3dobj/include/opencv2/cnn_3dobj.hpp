@@ -77,7 +77,44 @@ using caffe::Blob;
 using caffe::Caffe;
 using caffe::Datum;
 using caffe::Net;
-/** @defgroup cnn_3dobj CNN based on Caffe aimming at 3D object recognition and pose estimation
+/** @defgroup cnn_3dobj 3D object recognition and pose estimation API
+
+As CNN based learning algorithm shows better performance on the classification issues,
+the rich labeled data could be more useful in the training stage. 3D object classification and pose estimation
+is a jointed mission aimming at seperate different posed apart in the descriptor form.
+
+In the training stage, we prepare 2D training images generated from our module with their
+class label and pose label. We fully exploit the information lies in their labels
+by using a triplet and pair-wise jointed loss function in CNN training.
+
+As CNN based learning algorithm shows better performance on the classification issues,
+the rich labeled data could be more useful in the training stage. 3D object classification and pose estimation
+is a jointed mission aiming at separate different posea apart in the descriptor form.
+
+In the training stage, we prepare 2D training images generated from our module with their
+class label and pose label. We fully exploit the information that lies in their labels
+by using a triplet and pair-wise jointed loss function in CNN training.
+
+Both class and pose label are in consideration in the triplet loss. The loss score
+will be smaller when features from the same class and same pose is more similar
+and features from different classes or different poses will lead to a much larger loss score.
+
+This loss is also jointed with a pair wise component to make sure the loss is never be zero
+and have a restriction on the model scale.
+
+About the training and feature extraction process, it is a rough implementation by using OpenCV
+and Caffe from the idea of Paul Wohlhart. The principal purpose of this API is constructing
+a well labeled database from .ply models for CNN training with triplet loss and extracting features
+with the constructed model for prediction or other purpose of pattern recognition, algorithms into two main Class:
+
+**icoSphere: methods belonging to this class generates 2D images from a 3D model, together with their class and pose from camera view labels.
+
+**descriptorExtractor: methods belonging to this class extract descriptors from 2D images which is
+discriminant on category prediction and pose estimation.
+
+@note This API need Caffe with triplet version which is designed for this module
+<https://github.com/Wangyida/caffe/tree/cnn_triplet>.
+
 */
 namespace cv
 {
@@ -87,52 +124,96 @@ namespace cnn_3dobj
 //! @addtogroup cnn_3dobj
 //! @{
 
-/** @brief Icosohedron based camera view generator.
+/** @brief Icosohedron based camera view data generator.
+ The class create some sphere views of camera towards a 3D object meshed from .ply files @cite hinterstoisser2008panter .
+ */
 
-The class create some sphere views of camera towards a 3D object meshed from .ply files @cite hinterstoisser2008panter .
-*/
+/************************************ Data Generation Class ************************************/
     class CV_EXPORTS_W icoSphere
     {
         private:
+        /** @brief X position of one base point on the initial Icosohedron sphere,
+          Y is set to be 0 as default.
+         */
         float X;
+
+        /** @brief Z position of one base point on the initial Icosohedron sphere.
+         */
         float Z;
 
-        public:
-        std::vector<float> vertexNormalsList;
-        std::vector<float> vertexList;
-        std::vector<cv::Point3d> CameraPos;
-        std::vector<cv::Point3d> CameraPos_temp;
-        float radius;
+        /** @brief A threshold for the dupicated points elimination.
+         */
         float diff;
-        icoSphere(float radius_in, int depth_in);
-        /** @brief Make all view points having the some distance from the focal point used by the camera view.
-        */
+
+        /** @brief Temp camera position for duplex position elimination.
+         */
+        std::vector<cv::Point3d> CameraPos_temp;
+
+        /** @brief Make all view points having the same distance from the focal point used by the camera view.
+         */
         CV_WRAP void norm(float v[]);
-        /** @brief Add new view point between 2 point of the previous view point.
-        */
+
+        /** @brief Add a new view point.
+         */
         CV_WRAP void add(float v[]);
-        /** @brief Generating new view points from all triangles.
-        */
+
+        /** @brief Generate new view points from all triangles.
+         */
         CV_WRAP void subdivide(float v1[], float v2[], float v3[], int depth);
-        /** @brief Make all view points having the some distance from the focal point used by the camera view.
-        */
-        CV_WRAP static uint32_t swapEndian(uint32_t val);
-        /** @brief Suit the position of bytes in 4 byte data structure for particular system.
-        */
-        CV_WRAP cv::Point3d getCenter(cv::Mat cloud);
+
+        public:
+        /** @brief Camera position on the sphere after duplicated points elimination.
+         */
+        std::vector<cv::Point3d> CameraPos;
+
+        /** @brief Generating a sphere by mean of a iteration based points selection process.
+        @param radius_in Another radius used for adjusting the view distance.
+        @param depth_in Number of interations for increasing the points on sphere.
+         */
+        icoSphere(float radius_in, int depth_in);
+
         /** @brief Get the center of points on surface in .ply model.
-        */
-        CV_WRAP float getRadius(cv::Mat cloud, cv::Point3d center);
+        @param cloud Point cloud used for computing the center point.
+         */
+        CV_WRAP cv::Point3d getCenter(cv::Mat cloud);
+
         /** @brief Get the proper camera radius from the view point to the center of model.
-        */
-        CV_WRAP static void createHeader(int num_item, int rows, int cols, const char* headerPath);
+        @param cloud Point cloud used for computing the center point.
+        @param center center point of the point cloud.
+         */
+        CV_WRAP float getRadius(cv::Mat cloud, cv::Point3d center);
+
+        /** @brief Suit the position of bytes in 4 byte data structure for particular system.
+         */
+        CV_WRAP static uint32_t swapEndian(uint32_t val);
+
         /** @brief Create header in binary files collecting the image data and label.
-        */
+        @param num_item Number of items.
+        @param rows Rows of a single sample image.
+        @param cols Columns of a single sample image.
+        @param headerPath Path where the header will be stored.
+         */
+        CV_WRAP static void createHeader(int num_item, int rows, int cols, const char* headerPath);
+
+        /** @brief Write binary files used for training in other open source project including Caffe.
+        @param filenameImg Path which including a set of images.
+        @param binaryPath Path which will output a binary file.
+        @param headerPath Path which header belongs to.
+        @param num_item Number of samples.
+        @param label_class Class label of the sample.
+        @param x Pose label of X.
+        @param y Pose label of Y.
+        @param z Pose label of Z.
+        @param isrgb Option for choice of using RGB images or not.
+         */
         CV_WRAP static void writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z, int isrgb);
-        /** @brief Write binary files used for training in other open source project.
-        */
     };
 
+/** @brief Caffe based 3D images descriptor.
+ A class to extract features from an image. The so obtained descriptors can be used for classification and pose estimation goals @cite wohlhart15.
+ */
+
+/************************************ Feature Extraction Class ************************************/
     class CV_EXPORTS_W descriptorExtractor
     {
         private:
@@ -142,32 +223,66 @@ The class create some sphere views of camera towards a 3D object meshed from .pl
         bool net_set;
         int net_ready;
         cv::Mat mean_;
-        std::vector<string> device_info;
-        void setMean(const string& mean_file);
+        string deviceType;
+        int deviceId;
+
         /** @brief Load the mean file in binaryproto format if it is needed.
-        */
+        @param mean_file Path of mean file which stores the mean of training images, it is usually generated by Caffe tool.
+         */
+        void setMean(const string& mean_file);
+
+        /** @brief Wrap the input layer of the network in separate cv::Mat objects(one per channel).
+         This way we save one memcpy operation and we don't need to rely on cudaMemcpy2D.
+         The last preprocessing operation will write the separate channels directly to the input layer.
+         */
         void wrapInput(std::vector<cv::Mat>* input_channels);
-        /** @brief Wrap the input layer of the network in separate cv::Mat objects(one per channel). This way we save one memcpy operation and we don't need to rely on cudaMemcpy2D. The last preprocessing operation will write the separate channels directly to the input layer.
-        */
-        void preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels);
+
         /** @brief Convert the input image to the input image format of the network.
-        */
+         */
+        void preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels);
+
         public:
-        descriptorExtractor(const string& device_type, int device_id);
-        /** @brief Set the device for feature extraction.
-        */
-        std::vector<string> getDevice();
-        /** @brief Get device information for feature extraction.
-        */
-        void setDevice(const string& device_type, const string& device_id = "");
-        /** @brief Set device information for feature extraction.
-        */
-        void loadNet(const string& model_file, const string& trained_file, string mean_file = "");
-        /** @brief Initiate a classification structure.
-        */
+        /** @brief Set the device for feature extraction, if the GPU is used, there should be a device_id.
+        @param device_type CPU or GPU.
+        @param device_id ID of GPU.
+         */
+        descriptorExtractor(const string& device_type, int device_id = 0);
+
+        /** @brief Get device type information for feature extraction.
+         */
+        string getDeviceType();
+
+        /** @brief Get device ID information for feature extraction.
+         */
+        int getDeviceId();
+
+        /** @brief Set device type information for feature extraction.
+         Useful to change device without the need to reload the net.
+        @param device_type CPU or GPU.
+         */
+        void setDeviceType(const string& device_type);
+
+        /** @brief Set device ID information for feature extraction.
+         Useful to change device without the need to reload the net. Only used for GPU.
+        @param device_id ID of GPU.
+         */
+        void setDeviceId(const int& device_id);
+
+        /** @brief Initiate a classification structure, the net work parameter is stored in model_file,
+         the network structure is stored in trained_file, you can decide whether to use mean images or not.
+        @param model_file Path of caffemodel which including all parameters in CNN.
+        @param trained_file Path of prototxt which defining the structure of CNN.
+        @param mean_file Path of mean file(option).
+         */
+        void loadNet(const string& model_file, const string& trained_file, const string& mean_file = "");
+
+        /** @brief Extract features from a single image or from a vector of images.
+         If loadNet was not called before, this method invocation will fail.
+        @param inputimg Input images.
+        @param feature Output features.
+        @param feature_blob Layer which the feature is extracted from.
+         */
         void extract(InputArrayOfArrays inputimg, OutputArray feature, std::string feature_blob);
-        /** @brief Extract features from a set of images.
-        */
     };
     //! @}
 }

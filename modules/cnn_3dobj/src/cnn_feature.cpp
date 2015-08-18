@@ -8,19 +8,20 @@ namespace cnn_3dobj
 {
     descriptorExtractor::descriptorExtractor(const string& device_type, int device_id)
     {
+        net_ready = 0;
         if (strcmp(device_type.c_str(), "CPU") == 0 || strcmp(device_type.c_str(), "GPU") == 0)
         {
             if (strcmp(device_type.c_str(), "CPU") == 0)
             {
                 caffe::Caffe::set_mode(caffe::Caffe::CPU);
-                device_info.push_back("CPU");
+                deviceType = "CPU";
                 std::cout << "Using CPU" << std::endl;
             }
             else
             {
                 caffe::Caffe::set_mode(caffe::Caffe::GPU);
                 caffe::Caffe::SetDevice(device_id);
-                device_info.push_back("GPU");
+                deviceType = "GPU";
                 std::cout << "Using GPU" << std::endl;
                 std::cout << "Using Device_id=" << device_id << std::endl;
             }
@@ -33,44 +34,59 @@ namespace cnn_3dobj
         }
     };
 
-    std::vector<string> descriptorExtractor::getDevice()
+    string descriptorExtractor::getDeviceType()
     {
-        std::vector<string> device_info_out;
-        device_info_out = device_info;
+        string device_info_out;
+        device_info_out = deviceType;
         return device_info_out;
     };
 
-    void descriptorExtractor::setDevice(const string& device_type, const string& device_id)
+    int descriptorExtractor::getDeviceId()
+    {
+        int device_info_out;
+        device_info_out = deviceId;
+        return device_info_out;
+    };
+
+    void descriptorExtractor::setDeviceType(const string& device_type)
     {
         if (strcmp(device_type.c_str(), "CPU") == 0 || strcmp(device_type.c_str(), "GPU") == 0)
         {
             if (strcmp(device_type.c_str(), "CPU") == 0)
             {
                 caffe::Caffe::set_mode(caffe::Caffe::CPU);
-                device_info.push_back("CPU");
+                deviceType = "CPU";
                 std::cout << "Using CPU" << std::endl;
             }
             else
             {
-                int dev_id = atoi(device_id.c_str());
                 caffe::Caffe::set_mode(caffe::Caffe::GPU);
-                caffe::Caffe::SetDevice(dev_id);
-                device_info.push_back("GPU");
+                deviceType = "GPU";
                 std::cout << "Using GPU" << std::endl;
-                std::cout << "Using Device_id=" << dev_id << std::endl;
             }
-            net_set = true;
         }
         else
         {
-            std::cout << "Error: Device name must be 'GPU' together with an device number or 'CPU'." << std::endl;
-            net_set = false;
+            std::cout << "Error: Device name must be 'GPU' or 'CPU'." << std::endl;
         }
     };
 
-    void descriptorExtractor::loadNet(const string& model_file, const string& trained_file, string mean_file)
+    void descriptorExtractor::setDeviceId(const int& device_id)
     {
-        net_ready = 0;
+        if (strcmp(deviceType.c_str(), "GPU") == 0)
+        {
+            caffe::Caffe::SetDevice(device_id);
+            deviceId = device_id;
+            std::cout << "Using GPU with Device ID = " << device_id << std::endl;
+        }
+        else
+        {
+            std::cout << "Error: Device ID only need to be set when GPU is used." << std::endl;
+        }
+    };
+
+    void descriptorExtractor::loadNet(const string& model_file, const string& trained_file, const string& mean_file)
+    {
         if (net_set)
         {
             /* Load the network. */
@@ -98,7 +114,7 @@ namespace cnn_3dobj
         }
         else
         {
-            std::cout << "Error: Device must be set in advance using SetNet function" << std::endl;
+            std::cout << "Error: Net is not set properly in advance using construtor." << std::endl;
         }
     };
 
@@ -181,14 +197,14 @@ namespace cnn_3dobj
             }
         }
         else
-          std::cout << "Network must be set properly using SetNet and LoadNet in advance.";
+          std::cout << "Device must be set properly using constructor and the net must be set in advance using loadNet.";
     };
 
     /* Wrap the input layer of the network in separate cv::Mat objects
-    * (one per channel). This way we save one memcpy operation and we
-    * don't need to rely on cudaMemcpy2D. The last preprocessing
-    * operation will write the separate channels directly to the input
-    * layer. */
+     * (one per channel). This way we save one memcpy operation and we
+     * don't need to rely on cudaMemcpy2D. The last preprocessing
+     * operation will write the separate channels directly to the input
+     * layer. */
     void descriptorExtractor::wrapInput(std::vector<cv::Mat>* input_channels)
     {
         Blob<float>* input_layer = convnet->input_blobs()[0];
@@ -233,12 +249,12 @@ namespace cnn_3dobj
         else
             sample_normalized = sample_float;
         /* This operation will write the separate BGR planes directly to the
-        * input layer of the network because it is wrapped by the cv::Mat
-        * objects in input_channels. */
+         * input layer of the network because it is wrapped by the cv::Mat
+         * objects in input_channels. */
         cv::split(sample_normalized, *input_channels);
         if (reinterpret_cast<float*>(input_channels->at(0).data)
       != convnet->input_blobs()[0]->cpu_data())
             std::cout << "Input channels are not wrapping the input layer of the network." << std::endl;
     };
-}
-}
+} /* namespace cnn_3dobj */
+} /* namespace cv */

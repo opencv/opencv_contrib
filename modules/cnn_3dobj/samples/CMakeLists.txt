@@ -11,3 +11,7 @@ target_link_libraries(sphereview_test ${OpenCV_LIBS})
 set(SOURCES_classifier classifyIMG_demo.cpp)
 add_executable(classify_test ${SOURCES_classifier})
 target_link_libraries(classify_test ${OpenCV_LIBS})
+
+set(SOURCES_modelanalysis model_analysis_demo.cpp)
+add_executable(model_test ${SOURCES_modelanalysis})
+target_link_libraries(model_test ${OpenCV_LIBS})

@@ -8,12 +8,8 @@ namespace cnn_3dobj
 {
     icoSphere::icoSphere(float radius_in, int depth_in)
     {
-
         X = 0.5f;
         Z = 0.5f;
-        X *= (int)radius_in;
-        Z *= (int)radius_in;
-        diff = 0.00000005964;
         float vdata[12][3] = { { -X, 0.0f, Z }, { X, 0.0f, Z },
           { -X, 0.0f, -Z }, { X, 0.0f, -Z }, { 0.0f, Z, X }, { 0.0f, Z, -X },
           { 0.0f, -Z, X }, { 0.0f, -Z, -X }, { Z, X, 0.0f }, { -Z, X, 0.0f },
@@ -23,6 +19,9 @@ namespace cnn_3dobj
           { 5, 2, 3 }, { 2, 7, 3 }, { 7, 10, 3 }, { 7, 6, 10 }, { 7, 11, 6 },
           { 11, 0, 6 }, { 0, 1, 6 }, { 6, 1, 10 }, { 9, 0, 11 },
           { 9, 11, 2 }, { 9, 2, 5 }, { 7, 2, 11 } };
+        diff = 0.00000001;
+        X *= (int)radius_in;
+        Z *= (int)radius_in;
 
         // Iterate over points
         for (int i = 0; i < 20; ++i)
@@ -31,20 +30,24 @@ namespace cnn_3dobj
               vdata[tindices[i][2]], depth_in);
         }
         CameraPos_temp.push_back(CameraPos[0]);
-        for (int j = 1; j<int(CameraPos.size()); j++)
+        for (unsigned int j = 1; j < CameraPos.size(); ++j)
         {
-            for (int k = 0; k<j; k++)
+            for (unsigned int k = 0; k < j; ++k)
             {
-                if (CameraPos.at(k).x-CameraPos.at(j).x < diff && CameraPos.at(k).y-CameraPos.at(j).y < diff && CameraPos.at(k).z-CameraPos.at(j).z < diff)
+                float dist_x, dist_y, dist_z;
+                dist_x = (CameraPos.at(k).x-CameraPos.at(j).x) * (CameraPos.at(k).x-CameraPos.at(j).x);
+                dist_y = (CameraPos.at(k).y-CameraPos.at(j).y) * (CameraPos.at(k).y-CameraPos.at(j).y);
+                dist_z = (CameraPos.at(k).z-CameraPos.at(j).z) * (CameraPos.at(k).z-CameraPos.at(j).z);
+                if (dist_x < diff && dist_y < diff && dist_z < diff)
                     break;
-                if(k == j-1)
+                else if (k == j-1)
                     CameraPos_temp.push_back(CameraPos[j]);
             }
         }
         CameraPos = CameraPos_temp;
         cout << "View points in total: " << CameraPos.size() << endl;
         cout << "The coordinate of view point: " << endl;
-        for(int i=0; i < (int)CameraPos.size(); i++)
+        for(unsigned int i = 0; i < CameraPos.size(); i++)
         {
             cout << CameraPos.at(i).x <<' '<< CameraPos.at(i).y << ' ' << CameraPos.at(i).z << endl;
         }
@@ -69,8 +72,6 @@ namespace cnn_3dobj
         std::vector<float>* temp = new std::vector<float>;
         for (int k = 0; k < 3; ++k)
         {
-            vertexList.push_back(v[k]);
-            vertexNormalsList.push_back(v[k]);
             temp->push_back(v[k]);
         }
         temp_Campos.x = temp->at(0);temp_Campos.y = temp->at(1);temp_Campos.z = temp->at(2);
@@ -261,4 +262,5 @@ namespace cnn_3dobj
         img_file.close();
         lab_file.close();
     };
-}}
+} /* namespace cnn_3dobj */
+} /* namespace cv */

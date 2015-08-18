@@ -42,9 +42,9 @@ using namespace std;
 using namespace cv::cnn_3dobj;
 int main(int argc, char *argv[])
 {
-    const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../3Dmodel/ape.ply -imagedir=../data/images_ape/ -labeldir=../data/label_ape.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+    const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../data/3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
 "{ite_depth | 2 | Iteration of sphere generation.}"
-"{plymodel | ../3Dmodel/ape.ply | path of the '.ply' file for image rendering. }"
+"{plymodel | ../data/3Dmodel/ape.ply | path of the '.ply' file for image rendering. }"
 "{imagedir | ../data/images_all/ | path of the generated images for one particular .ply model. }"
 "{labeldir | ../data/label_all.txt | path of the generated images for one particular .ply model. }"
 "{num_class | 4 | total number of classes of models}"
@@ -84,8 +84,8 @@ int main(int argc, char *argv[])
     Point3d cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
     float radius = ViewSphere.getRadius(objmesh.cloud, cam_focal_point);
     Point3d cam_y_dir(0.0f,0.0f,1.0f);
-    const char* headerPath = "./header_for_";
-    const char* binaryPath = "./binary_";
+    const char* headerPath = "../data/header_for_";
+    const char* binaryPath = "../data/binary_";
     ViewSphere.createHeader((int)campos.size(), 64, 64, headerPath);
     for(int pose = 0; pose < (int)campos.size(); pose++){
         char* temp = new char;
