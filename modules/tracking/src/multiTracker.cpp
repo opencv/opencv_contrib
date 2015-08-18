@@ -130,7 +130,7 @@ namespace cv
 			trackerPtr = trackers[k];
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 			data = tracker->data;
 
 			data->frameNum++;
@@ -311,7 +311,7 @@ namespace cv
 						trackerPtr = trackers[k];
 						tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 						//TLD Model Extraction
-						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
 						//Optimized variance calculation
 						bool varPass = (windowVar > tld::VARIANCE_THRESHOLD * *tldModel->detector->originalVariancePtr);
@@ -340,7 +340,7 @@ namespace cv
 			trackerPtr = trackers[k];
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
 
 			for (int i = 0; i < (int)varBuffer[k].size(); i++)
@@ -382,7 +382,7 @@ namespace cv
 			trackerPtr = trackers[k];
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
 			npos = 0;
 			nneg = 0;
@@ -505,7 +505,7 @@ namespace cv
 						trackerPtr = trackers[k];
 						tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 						//TLD Model Extraction
-						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+						tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
 						//Optimized variance calculation
 						bool varPass = (windowVar > tld::VARIANCE_THRESHOLD * *tldModel->detector->originalVariancePtr);
@@ -534,7 +534,7 @@ namespace cv
 			trackerPtr = trackers[k];
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
 
 			for (int i = 0; i < (int)varBuffer[k].size(); i++)
@@ -576,7 +576,7 @@ namespace cv
 			trackerPtr = trackers[k];
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
-			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->model));
+			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 			npos = 0;
 			nneg = 0;
 			maxSc = -5.0;
