@@ -58,15 +58,16 @@
  */
 
 #include "precomp.hpp"
-#include "opencv2/ccalib/multiCameraCalibration.hpp"
+#include "opencv2/ccalib/multicalib.hpp"
 #include "opencv2/core.hpp"
 #include <string>
 #include <vector>
 #include <queue>
 #include <iostream>
-using namespace cv;
 
-multiCameraCalibration::multiCameraCalibration(int cameraType, int nCameras, const std::string& fileName,
+namespace cv { namespace multicalib {
+
+MultiCameraCalibration::MultiCameraCalibration(int cameraType, int nCameras, const std::string& fileName,
     float patternWidth, float patternHeight, int verbose, int showExtration, int nMiniMatches, int flags, TermCriteria criteria,
     Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
     Ptr<DescriptorMatcher> matcher)
@@ -97,7 +98,7 @@ multiCameraCalibration::multiCameraCalibration(int cameraType, int nCameras, con
     }
 }
 
-double multiCameraCalibration::run()
+double MultiCameraCalibration::run()
 {
     loadImages();
     initialize();
@@ -105,7 +106,7 @@ double multiCameraCalibration::run()
     return error;
 }
 
-std::vector<std::string> multiCameraCalibration::readStringList()
+std::vector<std::string> MultiCameraCalibration::readStringList()
 {
     std::vector<std::string> l;
     l.resize(0);
@@ -120,21 +121,16 @@ std::vector<std::string> multiCameraCalibration::readStringList()
     return l;
 }
 
-void multiCameraCalibration::loadImages()
+void MultiCameraCalibration::loadImages()
 {
     std::vector<std::string> file_list;
     file_list = readStringList();
 
-    //Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,
-    //    0, 3, 0.002f);
-    //Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,
-    //    0, 3, 0.002f);
-    //Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-L1");
     Ptr<FeatureDetector> detector = _detector;
     Ptr<DescriptorExtractor> descriptor = _descriptor;
     Ptr<DescriptorMatcher> matcher = _matcher;
 
-    randomPatternCornerFinder finder(_patternWidth, _patternHeight, _nMiniMatches, CV_32F, _verbose, this->_showExtraction, detector, descriptor, matcher);
+    randpattern::RandomPatternCornerFinder finder(_patternWidth, _patternHeight, _nMiniMatches, CV_32F, _verbose, this->_showExtraction, detector, descriptor, matcher);
     Mat pattern = cv::imread(file_list[0]);
     finder.loadPattern(pattern);
 
@@ -266,7 +262,7 @@ void multiCameraCalibration::loadImages()
 
 }
 
-int multiCameraCalibration::getPhotoVertex(int timestamp)
+int MultiCameraCalibration::getPhotoVertex(int timestamp)
 {
     int photoVertex = INVALID;
 
@@ -290,7 +286,7 @@ int multiCameraCalibration::getPhotoVertex(int timestamp)
     return photoVertex;
 }
 
-void multiCameraCalibration::initialize()
+void MultiCameraCalibration::initialize()
 {
     int nVertices = (int)_vertexList.size();
     int nEdges = (int) _edgeList.size();
@@ -340,7 +336,7 @@ void multiCameraCalibration::initialize()
     }
 }
 
-double multiCameraCalibration::optimizeExtrinsics()
+double MultiCameraCalibration::optimizeExtrinsics()
 {
     // get om, t vector
     int nVertex = (int)this->_vertexList.size();
@@ -361,7 +357,6 @@ double multiCameraCalibration::optimizeExtrinsics()
     //double error_pre = computeProjectError(extrinParam);
     // optimization
     const double alpha_smooth = 0.01;
-    //const double thresh_cond = 1e6;
     double change = 1;
     for(int iter = 0; ; ++iter)
     {
@@ -405,7 +400,7 @@ double multiCameraCalibration::optimizeExtrinsics()
     return error;
 }
 
-void multiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams, Mat& JTJ_inv, Mat& JTE)
+void MultiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams, Mat& JTJ_inv, Mat& JTE)
 {
     int nParam = (int)extrinsicParams.total();
     int nEdge = (int)_edgeList.size();
@@ -470,7 +465,7 @@ void multiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams
     JTE = J.t() * E;
 
 }
-void multiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, const Mat& tvecPhoto, const Mat& rvecCamera,
+void MultiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, const Mat& tvecPhoto, const Mat& rvecCamera,
     const Mat& tvecCamera, Mat& rvecTran, Mat& tvecTran, const Mat& objectPoints, const Mat& imagePoints, const Mat& K,
     const Mat& distort, const Mat& xi, Mat& jacobianPhoto, Mat& jacobianCamera, Mat& E)
 {
@@ -479,7 +474,7 @@ void multiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
         dtvecTran_drvecPhoto, dtvecTran_dtvecPhoto,
         dtvecTran_drvecCamera, dtvecTran_dtvecCamera;
 
-    multiCameraCalibration::compose_motion(rvecPhoto, tvecPhoto, rvecCamera, tvecCamera, rvecTran, tvecTran,
+    MultiCameraCalibration::compose_motion(rvecPhoto, tvecPhoto, rvecCamera, tvecCamera, rvecTran, tvecTran,
         drvecTran_drecvPhoto, drvecTran_dtvecPhoto, drvecTran_drvecCamera, drvecTran_dtvecCamera,
         dtvecTran_drvecPhoto, dtvecTran_dtvecPhoto, dtvecTran_drvecCamera, dtvecTran_dtvecCamera);
 
@@ -534,7 +529,7 @@ void multiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     dx_dtvecPhoto.copyTo(jacobianPhoto.colRange(3, 6));
 
 }
-void multiCameraCalibration::graphTraverse(const Mat& G, int begin, std::vector<int>& order, std::vector<int>& pre)
+void MultiCameraCalibration::graphTraverse(const Mat& G, int begin, std::vector<int>& order, std::vector<int>& pre)
 {
     CV_Assert(!G.empty() && G.rows == G.cols);
     int nVertex = G.rows;
@@ -568,7 +563,7 @@ void multiCameraCalibration::graphTraverse(const Mat& G, int begin, std::vector<
     }
 }
 
-void multiCameraCalibration::findRowNonZero(const Mat& row, Mat& idx)
+void MultiCameraCalibration::findRowNonZero(const Mat& row, Mat& idx)
 {
     CV_Assert(!row.empty() && row.rows == 1 && row.channels() == 1);
     Mat _row;
@@ -589,7 +584,7 @@ void multiCameraCalibration::findRowNonZero(const Mat& row, Mat& idx)
     }
 }
 
-double multiCameraCalibration::computeProjectError(Mat& parameters)
+double MultiCameraCalibration::computeProjectError(Mat& parameters)
 {
     int nVertex = (int)_vertexList.size();
     CV_Assert((int)parameters.total() == (nVertex-1) * 6 && parameters.depth() == CV_32F);
@@ -666,7 +661,7 @@ double multiCameraCalibration::computeProjectError(Mat& parameters)
     return meanReProjError;
 }
 
-void multiCameraCalibration::compose_motion(InputArray _om1, InputArray _T1, InputArray _om2, InputArray _T2, Mat& om3, Mat& T3, Mat& dom3dom1,
+void MultiCameraCalibration::compose_motion(InputArray _om1, InputArray _T1, InputArray _om2, InputArray _T2, Mat& om3, Mat& T3, Mat& dom3dom1,
     Mat& dom3dT1, Mat& dom3dom2, Mat& dom3dT2, Mat& dT3dom1, Mat& dT3dT1, Mat& dT3dom2, Mat& dT3dT2)
 {
     Mat om1, om2, T1, T2;
@@ -715,71 +710,7 @@ void multiCameraCalibration::compose_motion(InputArray _om1, InputArray _T1, Inp
     dT3dom1 = Mat::zeros(3, 3, CV_64FC1);
 }
 
-void multiCameraCalibration::JRodriguesMatlab(const Mat& src, Mat& dst)
-{
-    Mat tmp(src.cols, src.rows, src.type());
-    if (src.rows == 9)
-    {
-        Mat(src.row(0).t()).copyTo(tmp.col(0));
-        Mat(src.row(1).t()).copyTo(tmp.col(3));
-        Mat(src.row(2).t()).copyTo(tmp.col(6));
-        Mat(src.row(3).t()).copyTo(tmp.col(1));
-        Mat(src.row(4).t()).copyTo(tmp.col(4));
-        Mat(src.row(5).t()).copyTo(tmp.col(7));
-        Mat(src.row(6).t()).copyTo(tmp.col(2));
-        Mat(src.row(7).t()).copyTo(tmp.col(5));
-        Mat(src.row(8).t()).copyTo(tmp.col(8));
-    }
-    else
-    {
-        Mat(src.col(0).t()).copyTo(tmp.row(0));
-        Mat(src.col(1).t()).copyTo(tmp.row(3));
-        Mat(src.col(2).t()).copyTo(tmp.row(6));
-        Mat(src.col(3).t()).copyTo(tmp.row(1));
-        Mat(src.col(4).t()).copyTo(tmp.row(4));
-        Mat(src.col(5).t()).copyTo(tmp.row(7));
-        Mat(src.col(6).t()).copyTo(tmp.row(2));
-        Mat(src.col(7).t()).copyTo(tmp.row(5));
-        Mat(src.col(8).t()).copyTo(tmp.row(8));
-    }
-    dst = tmp.clone();
-}
-
-void multiCameraCalibration::dAB(InputArray A, InputArray B, OutputArray dABdA, OutputArray dABdB)
-{
-    CV_Assert(A.getMat().cols == B.getMat().rows);
-    CV_Assert(A.type() == CV_64FC1 && B.type() == CV_64FC1);
-
-    int p = A.getMat().rows;
-    int n = A.getMat().cols;
-    int q = B.getMat().cols;
-
-    dABdA.create(p * q, p * n, CV_64FC1);
-    dABdB.create(p * q, q * n, CV_64FC1);
-
-    dABdA.getMat() = Mat::zeros(p * q, p * n, CV_64FC1);
-    dABdB.getMat() = Mat::zeros(p * q, q * n, CV_64FC1);
-
-    for (int i = 0; i < q; ++i)
-    {
-        for (int j = 0; j < p; ++j)
-        {
-            int ij = j + i * p;
-            for (int k = 0; k < n; ++k)
-            {
-                int kj = j + k * p;
-                dABdA.getMat().at<double>(ij, kj) = B.getMat().at<double>(k, i);
-            }
-        }
-    }
-
-    for (int i = 0; i < q; ++i)
-    {
-        A.getMat().copyTo(dABdB.getMat().rowRange(i * p, i * p + p).colRange(i * n, i * n + n));
-    }
-}
-
-void multiCameraCalibration::vector2parameters(const Mat& parameters, std::vector<Vec3f>& rvecVertex, std::vector<Vec3f>& tvecVertexs)
+void MultiCameraCalibration::vector2parameters(const Mat& parameters, std::vector<Vec3f>& rvecVertex, std::vector<Vec3f>& tvecVertexs)
 {
     int nVertex = (int)_vertexList.size();
     CV_Assert((int)parameters.channels() == 1 && (int)parameters.total() == 6*(nVertex - 1));
@@ -796,7 +727,7 @@ void multiCameraCalibration::vector2parameters(const Mat& parameters, std::vecto
     }
 }
 
-void multiCameraCalibration::parameters2vector(const std::vector<Vec3f>& rvecVertex, const std::vector<Vec3f>& tvecVertex, Mat& parameters)
+void MultiCameraCalibration::parameters2vector(const std::vector<Vec3f>& rvecVertex, const std::vector<Vec3f>& tvecVertex, Mat& parameters)
 {
     CV_Assert(rvecVertex.size() == tvecVertex.size());
     int nVertex = (int)rvecVertex.size();
@@ -810,7 +741,7 @@ void multiCameraCalibration::parameters2vector(const std::vector<Vec3f>& rvecVer
     }
 }
 
-void multiCameraCalibration::writeParameters(const std::string& filename)
+void MultiCameraCalibration::writeParameters(const std::string& filename)
 {
     FileStorage fs( filename, FileStorage::WRITE );
 
@@ -846,3 +777,4 @@ void multiCameraCalibration::writeParameters(const std::string& filename)
         fs << photoTimestamp << _vertexList[photoIdx].pose;
     }
 }
+}} // namespace multicalib, cv

@@ -1009,7 +1009,7 @@ void cv::omnidir::internal::computeJacobianStereo(InputArrayOfArrays objectPoint
     JTE = J.t()*exAll;
     subMatrix(JTJ, JTJ, _idx, _idx);
     subMatrix(JTE, JTE, std::vector<int>(1, 1), _idx);
-    
+
     JTJ_inv = Mat(JTJ+epsilon).inv();
 }
 
@@ -1057,72 +1057,6 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     dT3dom2 = dT3tdom2;
     dT3dom1 = Mat::zeros(3, 3, CV_64FC1);
 }
-
-// This function is from fisheye.cpp
-//void cv::omnidir::internal::JRodriguesMatlab(const Mat& src, Mat& dst)
-//{
-//    Mat tmp(src.cols, src.rows, src.type());
-//    if (src.rows == 9)
-//    {
-//        Mat(src.row(0).t()).copyTo(tmp.col(0));
-//        Mat(src.row(1).t()).copyTo(tmp.col(3));
-//        Mat(src.row(2).t()).copyTo(tmp.col(6));
-//        Mat(src.row(3).t()).copyTo(tmp.col(1));
-//        Mat(src.row(4).t()).copyTo(tmp.col(4));
-//        Mat(src.row(5).t()).copyTo(tmp.col(7));
-//        Mat(src.row(6).t()).copyTo(tmp.col(2));
-//        Mat(src.row(7).t()).copyTo(tmp.col(5));
-//        Mat(src.row(8).t()).copyTo(tmp.col(8));
-//    }
-//    else
-//    {
-//        Mat(src.col(0).t()).copyTo(tmp.row(0));
-//        Mat(src.col(1).t()).copyTo(tmp.row(3));
-//        Mat(src.col(2).t()).copyTo(tmp.row(6));
-//        Mat(src.col(3).t()).copyTo(tmp.row(1));
-//        Mat(src.col(4).t()).copyTo(tmp.row(4));
-//        Mat(src.col(5).t()).copyTo(tmp.row(7));
-//        Mat(src.col(6).t()).copyTo(tmp.row(2));
-//        Mat(src.col(7).t()).copyTo(tmp.row(5));
-//        Mat(src.col(8).t()).copyTo(tmp.row(8));
-//    }
-//    dst = tmp.clone();
-//}
-
-// This function is from fisheye.cpp
-//void cv::omnidir::internal::dAB(InputArray A, InputArray B, OutputArray dABdA, OutputArray dABdB)
-//{
-//    CV_Assert(A.getMat().cols == B.getMat().rows);
-//    CV_Assert(A.type() == CV_64FC1 && B.type() == CV_64FC1);
-//
-//    int p = A.getMat().rows;
-//    int n = A.getMat().cols;
-//    int q = B.getMat().cols;
-//
-//    dABdA.create(p * q, p * n, CV_64FC1);
-//    dABdB.create(p * q, q * n, CV_64FC1);
-//
-//    dABdA.getMat() = Mat::zeros(p * q, p * n, CV_64FC1);
-//    dABdB.getMat() = Mat::zeros(p * q, q * n, CV_64FC1);
-//
-//    for (int i = 0; i < q; ++i)
-//    {
-//        for (int j = 0; j < p; ++j)
-//        {
-//            int ij = j + i * p;
-//            for (int k = 0; k < n; ++k)
-//            {
-//                int kj = j + k * p;
-//                dABdA.getMat().at<double>(ij, kj) = B.getMat().at<double>(k, i);
-//            }
-//        }
-//    }
-//
-//    for (int i = 0; i < q; ++i)
-//    {
-//        A.getMat().copyTo(dABdB.getMat().rowRange(i * p, i * p + p).colRange(i * n, i * n + n));
-//    }
-//}
 
 double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, Size size,
     InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays omAll, OutputArrayOfArrays tAll,

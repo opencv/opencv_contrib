@@ -42,15 +42,16 @@
 #ifndef __OPENCV_MULTICAMERACALIBRATION_HPP__
 #define __OPENCV_MULTICAMERACALIBRATION_HPP__
 
-#include "opencv2/ccalib/randomPatten.hpp"
+#include "opencv2/ccalib/randpattern.hpp"
 #include "opencv2/ccalib/omnidir.hpp"
 #include <string>
 #include <iostream>
 
+namespace cv { namespace multicalib {
+
 /** @defgroup mulcalib Multiple cameras calibration toolbox
 */
 
-using namespace cv;
 
 //! @addtogroup mulcalib
 //! @{
@@ -72,7 +73,7 @@ For more details, please refer to paper
     Pattern", in IROS 2013.
 */
 
-class CV_EXPORTS multiCameraCalibration
+class CV_EXPORTS MultiCameraCalibration
 {
 public:
     enum {
@@ -132,7 +133,7 @@ public:
     @descriptor feature descriptor.
     @matcher feature matcher.
     */
-    multiCameraCalibration(int cameraType, int nCameras, const std::string& fileName, float patternWidth,
+    MultiCameraCalibration(int cameraType, int nCameras, const std::string& fileName, float patternWidth,
         float patternHeight, int verbose = 0, int showExtration = 0, int nMiniMatches = 20, int flags = 0,
         TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 200, 1e-7),
         Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.006f),
@@ -210,4 +211,6 @@ private:
 };
 
 //! @}
+
+}} // namespace multicalib, cv
 #endif

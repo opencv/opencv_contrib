@@ -1,14 +1,16 @@
-#include "opencv2/ccalib/randomPatten.hpp";
+#include "opencv2/ccalib/randpattern.hpp"
+
+using namespace cv;
 
 const char * usage =
     "\n example command line for generating a random pattern. \n"
-    "   randomPatternGenerator -iw 600 -ih 850 pattern.png\n"
+    "   random_patterng_generator -iw 600 -ih 850 pattern.png\n"
     "\n";
 
 static void help()
 {
     printf("\n This is a sample for generating a random pattern that can be used for calibration.\n"
-        "Usage: randomPatternGenerator\n"
+        "Usage: random_patterng_generator\n"
         "    -iw <image_width> # the width of pattern image\n"
         "    -ih <image_height> # the height of pattern image\n"
         "    filename # the filename for pattern image \n"
@@ -50,7 +52,7 @@ int main(int argc, char** argv)
         }
     }
 
-    randomPatternGenerator generator(width, height);
+    randpattern::RandomPatternGenerator generator(width, height);
     generator.generatePattern();
     pattern = generator.getPattern();
     imwrite(filename, pattern);
