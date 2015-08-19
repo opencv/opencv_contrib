@@ -249,9 +249,11 @@ int main(int argc, char *argv[]) {
         image.copyTo(imageCopy);
         if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, corners);
 
-        if(currentCharucoCorners.total() > 0) {
+        if(currentCharucoCorners.total() > 0)
             aruco::drawDetectedCornersCharuco(imageCopy, currentCharucoCorners, currentCharucoIds);
-        }
+
+        putText(imageCopy, "Press 'c' to add current frame. 'ESC' to finish and calibrate",
+                Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 2);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
@@ -263,6 +265,11 @@ int main(int argc, char *argv[]) {
             allImgs.push_back(image);
             imgSize = image.size();
         }
+    }
+
+    if(allIds.size() < 1) {
+        std::cerr << "Not enough captures for calibration" << std::endl;
+        return 0;
     }
 
     Mat cameraMatrix, distCoeffs;
@@ -302,20 +309,20 @@ int main(int argc, char *argv[]) {
     allCharucoIds.reserve(nFrames);
 
     for(int i = 0; i < nFrames; i++) {
+        // interpolate using camera parameters
         Mat currentCharucoCorners, currentCharucoIds;
         aruco::interpolateCornersCharuco(allCorners[i], allIds[i], allImgs[i], board,
                                          currentCharucoCorners, currentCharucoIds, cameraMatrix,
                                          distCoeffs);
-        bool validPose;
-        Mat currentRvec, currentTvec;
-        validPose =
-            aruco::estimatePoseCharucoBoard(currentCharucoCorners, currentCharucoIds, board,
-                                            cameraMatrix, distCoeffs, currentRvec, currentTvec);
-        if(validPose) {
-            allCharucoCorners.push_back(currentCharucoCorners);
-            allCharucoIds.push_back(currentCharucoIds);
-            filteredImages.push_back(allImgs[i]);
-        }
+
+        allCharucoCorners.push_back(currentCharucoCorners);
+        allCharucoIds.push_back(currentCharucoIds);
+        filteredImages.push_back(allImgs[i]);
+    }
+
+    if(allCharucoCorners.size() < 4) {
+        std::cerr << "Not enough corners for calibration" << std::endl;
+        return 0;
     }
 
     // calibrate camera using charuco

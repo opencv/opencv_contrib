@@ -239,6 +239,8 @@ int main(int argc, char *argv[]) {
         // draw results
         image.copyTo(imageCopy);
         if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, corners, ids);
+        putText(imageCopy, "Press 'c' to add current frame. 'ESC' to finish and calibrate",
+                Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 2);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
@@ -249,6 +251,11 @@ int main(int argc, char *argv[]) {
             allIds.push_back(ids);
             imgSize = image.size();
         }
+    }
+
+    if(allIds.size() < 1) {
+        std::cerr << "Not enough captures for calibration" << std::endl;
+        return 0;
     }
 
     Mat cameraMatrix, distCoeffs;
