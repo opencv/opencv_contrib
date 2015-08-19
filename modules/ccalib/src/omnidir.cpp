@@ -843,7 +843,7 @@ void cv::omnidir::internal::initializeStereoCalibration(InputArrayOfArrays objec
 /// cv::omnidir::internal::computeJacobian
 
 void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
-    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags)
+    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon)
 {
     CV_Assert(!objectPoints.empty() && objectPoints.type() == CV_64FC3);
     CV_Assert(!imagePoints.empty() && imagePoints.type() == CV_64FC2);
@@ -915,12 +915,21 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
     subMatrix(JTJ, JTJ, _idx, _idx);
     subMatrix(JTE, JTE, std::vector<int>(1, 1), _idx);
     // in case JTJ is singular
-    double epsilon = 1e-10;
+	//SVD svd(JTJ, SVD::NO_UV);
+	//double cond = svd.w.at<double>(0)/svd.w.at<double>(5);
+
+	//if (cond_JTJ.needed())
+	//{
+	//	cond_JTJ.create(1, 1, CV_64F);
+	//	cond_JTJ.getMat().at<double>(0) = cond;
+	//}
+
+    //double epsilon = 1e-4*std::exp(cond);
     JTJ_inv = Mat(JTJ+epsilon).inv();
 }
 
 void cv::omnidir::internal::computeJacobianStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
-    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags)
+    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon)
 {
     CV_Assert(!objectPoints.empty() && objectPoints.type() == CV_64FC3);
     CV_Assert(!imagePoints1.empty() && imagePoints1.type() == CV_64FC2);
@@ -1000,7 +1009,7 @@ void cv::omnidir::internal::computeJacobianStereo(InputArrayOfArrays objectPoint
     JTE = J.t()*exAll;
     subMatrix(JTJ, JTJ, _idx, _idx);
     subMatrix(JTE, JTE, std::vector<int>(1, 1), _idx);
-    double epsilon = 1e-10;
+    
     JTJ_inv = Mat(JTJ+epsilon).inv();
 }
 
@@ -1168,7 +1177,7 @@ double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, 
     cv::omnidir::internal::encodeParameters(_K, _omAll, _tAll, Mat::zeros(1,4,CV_64F), _xi, currentParam);
 
     // optimization
-    const double alpha_smooth = 0.001;
+    const double alpha_smooth = 0.01;
     //const double thresh_cond = 1e6;
     double change = 1;
     for(int iter = 0; ; ++iter)
@@ -1179,8 +1188,8 @@ double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, 
             break;
         double alpha_smooth2 = 1 - std::pow(1 - alpha_smooth, (double)iter + 1.0);
         Mat JTJ_inv, JTError;
-
-        cv::omnidir::internal::computeJacobian(_patternPoints, _imagePoints, currentParam, JTJ_inv, JTError, flags);
+		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
+        cv::omnidir::internal::computeJacobian(_patternPoints, _imagePoints, currentParam, JTJ_inv, JTError, flags, epsilon);
 
         // Gauss¨CNewton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
@@ -1330,8 +1339,10 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
             break;
         double alpha_smooth2 = 1 - std::pow(1 - alpha_smooth, (double)iter + 1.0);
         Mat JTJ_inv, JTError;
+		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
 
-        cv::omnidir::internal::computeJacobianStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt, currentParam, JTJ_inv, JTError, flags);
+        cv::omnidir::internal::computeJacobianStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt, currentParam,
+			JTJ_inv, JTError, flags, epsilon);
 
         // Gauss¨CNewton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
@@ -1835,7 +1846,7 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
     double s = sigma_x.at<double>(0);
 
     Mat _JTJ_inv, _JTE;
-    computeJacobian(objectPoints, imagePoints, parameters, _JTJ_inv, _JTE, flags);
+    computeJacobian(objectPoints, imagePoints, parameters, _JTJ_inv, _JTE, flags, 0.0);
     sqrt(_JTJ_inv, _JTJ_inv);
 
     errors = 3 * s * _JTJ_inv.diag();
@@ -1923,7 +1934,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
     double s = sigma_x.at<double>(0);
 
     Mat _JTJ_inv, _JTE;
-    computeJacobianStereo(objectPoints, imagePoints1, imagePoints2, _parameters, _JTJ_inv, _JTE, flags);
+    computeJacobianStereo(objectPoints, imagePoints1, imagePoints2, _parameters, _JTJ_inv, _JTE, flags, 0.0);
     cv::sqrt(_JTJ_inv, _JTJ_inv);
 
     errors = 3 * s * _JTJ_inv.diag();

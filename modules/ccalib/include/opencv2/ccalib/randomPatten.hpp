@@ -79,9 +79,9 @@ public:
     @matcher feature matcher.
     */
     randomPatternCornerFinder(float patternWidth, float patternHeight,
-        int nminiMatch = 20, int depth = CV_32F, int showExtraction = 0,
-        Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.002f),
-        Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0, 3, 0.002f),
+        int nminiMatch = 20, int depth = CV_32F, int verbose = 0, int showExtraction = 0,
+        Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.005f),
+        Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0, 3, 0.005f),
         Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-L1"));
 
     /* @brief Load pattern image and compute features for pattern
@@ -122,6 +122,7 @@ private:
     cv::Size _patternImageSize;
     int _nminiMatch;
     int _depth;
+	int _verbose;
 
     Ptr<FeatureDetector> _detector;
     Ptr<DescriptorExtractor> _descriptor;
@@ -141,7 +142,7 @@ private:
         std::vector<DMatch>& filteredMatches12, int knn=1 );
     void drawCorrespondence(const Mat& image1, const std::vector<cv::KeyPoint> keypoint1,
         const Mat& image2, const std::vector<cv::KeyPoint> keypoint2, const std::vector<cv::DMatch> matchces,
-        const Mat& mask1, const Mat& mask2);
+        const Mat& mask1, const Mat& mask2, const int step);
 };
 
 /* @brief Class to generate "random" pattern image that are used for randomPatternCornerFinder

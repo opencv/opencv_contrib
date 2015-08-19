@@ -59,6 +59,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/ccalib/multiCameraCalibration.hpp"
+#include "opencv2/core.hpp"
 #include <string>
 #include <vector>
 #include <queue>
@@ -66,7 +67,7 @@
 using namespace cv;
 
 multiCameraCalibration::multiCameraCalibration(int cameraType, int nCameras, const std::string& fileName,
-    float patternWidth, float patternHeight, int showExtration, int nMiniMatches, int flags, TermCriteria criteria,
+    float patternWidth, float patternHeight, int verbose, int showExtration, int nMiniMatches, int flags, TermCriteria criteria,
     Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
     Ptr<DescriptorMatcher> matcher)
 {
@@ -89,7 +90,7 @@ multiCameraCalibration::multiCameraCalibration(int cameraType, int nCameras, con
     _detector = detector;
     _descriptor = descriptor;
     _matcher = matcher;
-
+	_verbose = verbose;
     for (int i = 0; i < _nCamera; ++i)
     {
         _vertexList.push_back(vertex());
@@ -133,7 +134,7 @@ void multiCameraCalibration::loadImages()
     Ptr<DescriptorExtractor> descriptor = _descriptor;
     Ptr<DescriptorMatcher> matcher = _matcher;
 
-    randomPatternCornerFinder finder(_patternWidth, _patternHeight, 10, CV_32F, this->_showExtraction, detector, descriptor, matcher);
+    randomPatternCornerFinder finder(_patternWidth, _patternHeight, _nMiniMatches, CV_32F, _verbose, this->_showExtraction, detector, descriptor, matcher);
     Mat pattern = cv::imread(file_list[0]);
     finder.loadPattern(pattern);
 
@@ -170,12 +171,24 @@ void multiCameraCalibration::loadImages()
         for (int imgIdx = 0; imgIdx < (int)filesEachCameraFull[camera].size(); ++imgIdx)
         {
             image = imread(filesEachCameraFull[camera][imgIdx], IMREAD_GRAYSCALE);
+			if (!image.empty() && _verbose)
+			{
+				std::cout << "open image " << filesEachCameraFull[camera][imgIdx] << " successfully" << std::endl;
+			}
+			else if (image.empty() && _verbose)
+			{
+				std::cout << "open image" << filesEachCameraFull[camera][imgIdx] << " failed" << std::endl;
+			}
             std::vector<Mat> imgObj = finder.computeObjectImagePointsForSingle(image);
 			if ((int)imgObj[0].total() > _nMiniMatches)
 			{
 				_imagePointsForEachCamera[camera].push_back(imgObj[0]);
 				_objectPointsForEachCamera[camera].push_back(imgObj[1]);
 				timestampAvailable[camera].push_back(timestampFull[camera][imgIdx]);
+			}
+			else if ((int)imgObj[0].total() <= _nMiniMatches && _verbose)
+			{
+				std::cout << "image " << filesEachCameraFull[camera][imgIdx] <<" has too few matched points "<< std::endl;
 			}
         }
 
@@ -246,6 +259,9 @@ void multiCameraCalibration::loadImages()
 			this->_edgeList.push_back(edge(cameraVertex, photoVertex, idx.at<int>(i), transform));
         }
 		std::cout << "initialized for camera " << camera << " rms = " << rms << std::endl;
+		std::cout << "initialized camera matrix for camera " << camera << " is" << std::endl;
+		std::cout << _cameraMatrix[camera] << std::endl;
+		std::cout << "xi for camera " << camera << " is " << _xi[camera] << std::endl;
     }
 
 }
@@ -310,6 +326,11 @@ void multiCameraCalibration::initialize()
         {
             this->_vertexList[vertexIdx].pose = transform * prePose.inv();
             this->_vertexList[vertexIdx].pose.convertTo(this->_vertexList[vertexIdx].pose, CV_32F);
+			if (_verbose)
+			{
+				std::cout << "initial pose for camera " << vertexIdx << " is " << std::endl;
+				std::cout << this->_vertexList[vertexIdx].pose << std::endl;
+			}
         }
         else
         {
@@ -375,6 +396,11 @@ double multiCameraCalibration::optimizeExtrinsics()
         R.copyTo(pose.colRange(0, 3).rowRange(0, 3));
         Mat(tvecVertex[verIdx-1]).reshape(1, 3).copyTo(pose.rowRange(0, 3).col(3));
         _vertexList[verIdx].pose = pose;
+		if (_verbose && verIdx < _nCamera)
+		{
+			std::cout << "final camera pose of camera " << verIdx << " is" << std::endl;
+			std::cout << pose << std::endl;
+		}
     }
     return error;
 }
