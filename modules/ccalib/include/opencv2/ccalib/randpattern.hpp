@@ -47,6 +47,10 @@
 
 namespace cv { namespace randpattern {
 
+
+//! @addtogroup ccalib
+//! @{
+
 /** @brief Class for finding features points and corresponding 3D in world coordinate of
 a "random" pattern, which can be to be used in calibration. It is useful when pattern is
 partly occluded or only a part of pattern can be observed in multiple cameras calibration.
@@ -57,9 +61,6 @@ Please refer to paper
     Calibration Toolbox Using A Feature Descriptor-Based Calibration
     Pattern", in IROS 2013.
 */
-
-//! @addtogroup ccalib
-//! @{
 
 class CV_EXPORTS RandomPatternCornerFinder
 {
