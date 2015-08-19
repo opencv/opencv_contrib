@@ -234,20 +234,19 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(markerIds.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, markerCorners);
-        }
+        if(markerIds.size() > 0)
+            aruco::drawDetectedMarkers(imageCopy, markerCorners);
+
 
         if(showRejected && rejectedMarkers.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers, noArray(),
-                                       Scalar(100, 0, 255));
+            aruco::drawDetectedMarkers(imageCopy, rejectedMarkers, noArray(), Scalar(100, 0, 255));
 
         if(diamondIds.size() > 0) {
-            aruco::drawDetectedDiamonds(imageCopy, imageCopy, diamondCorners, diamondIds);
+            aruco::drawDetectedDiamonds(imageCopy, diamondCorners, diamondIds);
 
             if(estimatePose) {
                 for(unsigned int i = 0; i < diamondIds.size(); i++)
-                    aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
                                     squareLength * 0.5f);
             }
         }

@@ -231,22 +231,20 @@ int main(int argc, char *argv[]) {
         // draw results
         image.copyTo(imageCopy);
         if(markerIds.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, markerCorners);
+            aruco::drawDetectedMarkers(imageCopy, markerCorners);
         }
 
         if(showRejected && rejectedMarkers.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, rejectedMarkers, noArray(),
-                                       Scalar(100, 0, 255));
+            aruco::drawDetectedMarkers(imageCopy, rejectedMarkers, noArray(), Scalar(100, 0, 255));
 
         if(interpolatedCorners > 0) {
             Scalar color;
             color = Scalar(0, 0, 255);
-            aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds,
-                                              color);
+            aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, color);
         }
 
         if(validPose)
-            aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
+            aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);

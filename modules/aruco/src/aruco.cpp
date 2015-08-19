@@ -1377,12 +1377,12 @@ GridBoard GridBoard::create(int markersX, int markersY, float markerLength, floa
 
 /**
  */
-void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _corners,
+void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
                          InputArray _ids, Scalar borderColor) {
 
 
-    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
-              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert(_image.getMat().total() != 0 &&
+              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
     CV_Assert((_corners.total() == _ids.total()) || _ids.total() == 0);
 
     // calculate colors
@@ -1390,13 +1390,6 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
     textColor = cornerColor = borderColor;
     swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
     swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
-
-    _out.create(_in.size(), CV_8UC3);
-    Mat outImg = _out.getMat();
-    if(_in.getMat().channels() == 3)
-        _in.getMat().copyTo(outImg);
-    else
-        cvtColor(_in.getMat(), outImg, COLOR_GRAY2BGR);
 
     int nMarkers = (int)_corners.total();
     for(int i = 0; i < nMarkers; i++) {
@@ -1408,10 +1401,10 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
             Point2f p0, p1;
             p0 = currentMarker.ptr< Point2f >(0)[j];
             p1 = currentMarker.ptr< Point2f >(0)[(j + 1) % 4];
-            line(outImg, p0, p1, borderColor, 1);
+            line(_image, p0, p1, borderColor, 1);
         }
         // draw first corner mark
-        rectangle(outImg, currentMarker.ptr< Point2f >(0)[0] - Point2f(3, 3),
+        rectangle(_image, currentMarker.ptr< Point2f >(0)[0] - Point2f(3, 3),
                   currentMarker.ptr< Point2f >(0)[0] + Point2f(3, 3), cornerColor, 1, LINE_AA);
 
         // draw ID
@@ -1422,7 +1415,7 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
             cent = cent / 4.;
             stringstream s;
             s << "id=" << _ids.getMat().ptr< int >(0)[i];
-            putText(outImg, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
+            putText(_image, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
 }
@@ -1431,19 +1424,12 @@ void drawDetectedMarkers(InputArray _in, OutputArray _out, InputArrayOfArrays _c
 
 /**
  */
-void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputArray _distCoeffs,
+void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs,
               InputArray _rvec, InputArray _tvec, float length) {
 
-    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
-              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert(_image.getMat().total() != 0 &&
+              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
     CV_Assert(length > 0);
-
-    _out.create(_in.size(), CV_8UC3);
-    Mat outImg = _out.getMat();
-    if(_in.getMat().channels() == 3)
-        _in.getMat().copyTo(outImg);
-    else
-        cvtColor(_in.getMat(), outImg, COLOR_GRAY2BGR);
 
     // project axis points
     vector< Point3f > axisPoints;
@@ -1455,9 +1441,9 @@ void drawAxis(InputArray _in, OutputArray _out, InputArray _cameraMatrix, InputA
     projectPoints(axisPoints, _rvec, _tvec, _cameraMatrix, _distCoeffs, imagePoints);
 
     // draw axis lines
-    line(outImg, imagePoints[0], imagePoints[1], Scalar(0, 0, 255), 3);
-    line(outImg, imagePoints[0], imagePoints[2], Scalar(0, 255, 0), 3);
-    line(outImg, imagePoints[0], imagePoints[3], Scalar(255, 0, 0), 3);
+    line(_image, imagePoints[0], imagePoints[1], Scalar(0, 0, 255), 3);
+    line(_image, imagePoints[0], imagePoints[2], Scalar(0, 255, 0), 3);
+    line(_image, imagePoints[0], imagePoints[3], Scalar(255, 0, 0), 3);
 }
 
 

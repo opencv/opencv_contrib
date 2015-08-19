@@ -220,15 +220,14 @@ int main(int argc, char *argv[]) {
         // draw results
         image.copyTo(imageCopy);
         if(ids.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            aruco::drawDetectedMarkers(imageCopy, corners, ids);
         }
 
         if(showRejected && rejected.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, noArray(),
-                                       Scalar(100, 0, 255));
+            aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         if(markersOfBoardDetected > 0)
-            aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
+            aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);

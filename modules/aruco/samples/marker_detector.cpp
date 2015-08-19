@@ -42,6 +42,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 #include <iostream>
 
+#include <opencv2/imgproc.hpp>
+
 using namespace std;
 using namespace cv;
 
@@ -199,18 +201,17 @@ int main(int argc, char *argv[]) {
         // draw results
         image.copyTo(imageCopy);
         if(ids.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             if(estimatePose) {
                 for(unsigned int i = 0; i < ids.size(); i++)
-                    aruco::drawAxis(imageCopy, imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
                                     markerLength * 0.5f);
             }
         }
 
         if(showRejected && rejected.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, imageCopy, rejected, noArray(),
-                                       Scalar(100, 0, 255));
+            aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);

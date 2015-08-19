@@ -617,34 +617,27 @@ int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _mar
 
 /**
   */
-void drawDetectedCornersCharuco(InputArray _in, OutputArray _out, InputArray _charucoCorners,
+void drawDetectedCornersCharuco(InputOutputArray _image, InputArray _charucoCorners,
                                 InputArray _charucoIds, Scalar cornerColor) {
 
-    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
-              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert(_image.getMat().total() != 0 &&
+              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
     CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()) ||
               _charucoIds.getMat().total() == 0);
-
-    _out.create(_in.size(), CV_8UC3);
-    Mat outImg = _out.getMat();
-    if(_in.getMat().channels() == 3)
-        _in.getMat().copyTo(outImg);
-    else
-        cvtColor(_in.getMat(), outImg, COLOR_GRAY2BGR);
 
     unsigned int nCorners = (unsigned int)_charucoCorners.getMat().total();
     for(unsigned int i = 0; i < nCorners; i++) {
         Point2f corner = _charucoCorners.getMat().ptr< Point2f >(0)[i];
 
         // draw first corner mark
-        rectangle(outImg, corner - Point2f(3, 3), corner + Point2f(3, 3), cornerColor, 1, LINE_AA);
+        rectangle(_image, corner - Point2f(3, 3), corner + Point2f(3, 3), cornerColor, 1, LINE_AA);
 
         // draw ID
         if(_charucoIds.total() != 0) {
             int id = _charucoIds.getMat().ptr< int >(0)[i];
             stringstream s;
             s << "id=" << id;
-            putText(outImg, s.str(), corner + Point2f(5, -5), FONT_HERSHEY_SIMPLEX, 0.5,
+            putText(_image, s.str(), corner + Point2f(5, -5), FONT_HERSHEY_SIMPLEX, 0.5,
                     cornerColor, 2);
         }
     }
@@ -912,12 +905,12 @@ void drawCharucoDiamond(Dictionary dictionary, Vec4i ids, int squareLength, int 
 
 /**
  */
-void drawDetectedDiamonds(InputArray _in, OutputArray _out, InputArrayOfArrays _corners,
+void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners,
                           InputArray _ids, Scalar borderColor) {
 
 
-    CV_Assert(_in.getMat().cols != 0 && _in.getMat().rows != 0 &&
-              (_in.getMat().channels() == 1 || _in.getMat().channels() == 3));
+    CV_Assert(_image.getMat().total() != 0 &&
+              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
     CV_Assert((_corners.total() == _ids.total()) || _ids.total() == 0);
 
     // calculate colors
@@ -925,13 +918,6 @@ void drawDetectedDiamonds(InputArray _in, OutputArray _out, InputArrayOfArrays _
     textColor = cornerColor = borderColor;
     swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
     swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
-
-    _out.create(_in.size(), CV_8UC3);
-    Mat outImg = _out.getMat();
-    if(_in.getMat().channels() == 3)
-        _in.getMat().copyTo(outImg);
-    else
-        cvtColor(_in.getMat(), outImg, COLOR_GRAY2BGR);
 
     int nMarkers = (int)_corners.total();
     for(int i = 0; i < nMarkers; i++) {
@@ -943,11 +929,11 @@ void drawDetectedDiamonds(InputArray _in, OutputArray _out, InputArrayOfArrays _
             Point2f p0, p1;
             p0 = currentMarker.ptr< Point2f >(0)[j];
             p1 = currentMarker.ptr< Point2f >(0)[(j + 1) % 4];
-            line(outImg, p0, p1, borderColor, 1);
+            line(_image, p0, p1, borderColor, 1);
         }
 
         // draw first corner mark
-        rectangle(outImg, currentMarker.ptr< Point2f >(0)[0] - Point2f(3, 3),
+        rectangle(_image, currentMarker.ptr< Point2f >(0)[0] - Point2f(3, 3),
                   currentMarker.ptr< Point2f >(0)[0] + Point2f(3, 3), cornerColor, 1, LINE_AA);
 
         // draw id composed by four numbers
@@ -958,7 +944,7 @@ void drawDetectedDiamonds(InputArray _in, OutputArray _out, InputArrayOfArrays _
             cent = cent / 4.;
             stringstream s;
             s << "id=" << _ids.getMat().ptr< Vec4i >(0)[i];
-            putText(outImg, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
+            putText(_image, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
 }

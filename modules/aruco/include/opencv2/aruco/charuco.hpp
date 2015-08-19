@@ -190,8 +190,8 @@ CV_EXPORTS bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray c
 
 /**
  * @brief Draws a set of Charuco corners
- * @param in input image
- * @param out output image
+ * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
+ * altered.
  * @param charucoCorners vector of detected charuco corners
  * @param charucoIds list of identifiers for each corner in charucoCorners
  * @param cornerColor color of the square surrounding each corner
@@ -199,8 +199,7 @@ CV_EXPORTS bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray c
  * This function draws a set of detected Charuco corners. If identifiers vector is provided, it also
  * draws the id of each corner.
  */
-CV_EXPORTS void drawDetectedCornersCharuco(InputArray in, OutputArray out,
-                                           InputArray charucoCorners,
+CV_EXPORTS void drawDetectedCornersCharuco(InputOutputArray image, InputArray charucoCorners,
                                            InputArray charucoIds = noArray(),
                                            Scalar cornerColor = Scalar(255, 0, 0));
 
@@ -274,8 +273,8 @@ CV_EXPORTS void detectCharucoDiamond(InputArray image, InputArrayOfArrays marker
 /**
  * @brief Draw a set of detected ChArUco Diamond markers
  *
- * @param in input image
- * @param out output image. It will be a copy of in but the markers will be painted on.
+ * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
+ * altered.
  * @param diamondCorners positions of diamond corners in the same format returned by
  * detectCharucoDiamond(). (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
  * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
@@ -289,8 +288,7 @@ CV_EXPORTS void detectCharucoDiamond(InputArray image, InputArrayOfArrays marker
  * are painted and the markers identifiers if provided.
  * Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedDiamonds(InputArray in, OutputArray out,
-                                     InputArrayOfArrays diamondCorners,
+CV_EXPORTS void drawDetectedDiamonds(InputOutputArray image, InputArrayOfArrays diamondCorners,
                                      InputArray diamondIds = noArray(),
                                      Scalar borderColor = Scalar(0, 0, 255));
 

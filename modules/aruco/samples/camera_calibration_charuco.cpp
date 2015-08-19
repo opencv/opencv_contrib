@@ -247,11 +247,10 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, imageCopy, corners);
+        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, corners);
 
         if(currentCharucoCorners.total() > 0) {
-            aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, currentCharucoCorners,
-                                              currentCharucoIds);
+            aruco::drawDetectedCornersCharuco(imageCopy, currentCharucoCorners, currentCharucoIds);
         }
 
         imshow("out", imageCopy);
@@ -338,8 +337,8 @@ int main(int argc, char *argv[]) {
             if(allIds[frame].size() > 0) {
 
                 if(allCharucoCorners[frame].total() > 0) {
-                    aruco::drawDetectedCornersCharuco(
-                        imageCopy, imageCopy, allCharucoCorners[frame], allCharucoIds[frame]);
+                    aruco::drawDetectedCornersCharuco( imageCopy, allCharucoCorners[frame],
+                                                       allCharucoIds[frame]);
                 }
             }
 

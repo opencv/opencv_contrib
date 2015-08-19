@@ -375,21 +375,21 @@ CV_EXPORTS void refineDetectedMarkers(
 /**
  * @brief Draw detected markers in image
  *
- * @param in input image
- * @param out output image. It will be a copy of in but the markers will be painted on.
+ * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
+ * altered.
  * @param corners positions of marker corners on input image.
  * (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the dimensions of
  * this array should be Nx4. The order of the corners should be clockwise.
  * @param ids vector of identifiers for markers in markersCorners .
  * Optional, if not provided, ids are not painted.
  * @param borderColor color of marker borders. Rest of colors (text color and first corner color)
- * are calculated based on this one.
+ * are calculated based on this one to improve visualization.
  *
  * Given an array of detected marker corners and its corresponding ids, this functions draws
  * the markers in the image. The marker borders are painted and the markers identifiers if provided.
  * Useful for debugging purposes.
  */
-CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOfArrays corners,
+CV_EXPORTS void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays corners,
                                     InputArray ids = noArray(),
                                     Scalar borderColor = Scalar(0, 255, 0));
 
@@ -398,8 +398,8 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOf
 /**
  * @brief Draw coordinate system axis from pose estimation
  *
- * @param in input image
- * @param out output image. It will be a copy of in but the axis will be painted on.
+ * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
+ * altered.
  * @param cameraMatrix input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
@@ -411,8 +411,8 @@ CV_EXPORTS void drawDetectedMarkers(InputArray in, OutputArray out, InputArrayOf
  * Given the pose estimation of a marker or board, this function draws the axis of the world
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
  */
-CV_EXPORTS void drawAxis(InputArray in, OutputArray out, InputArray cameraMatrix,
-                         InputArray distCoeffs, InputArray rvec, InputArray tvec, float length);
+CV_EXPORTS void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs,
+                         InputArray rvec, InputArray tvec, float length);
 
 
 

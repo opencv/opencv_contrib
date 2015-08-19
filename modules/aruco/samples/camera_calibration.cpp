@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
