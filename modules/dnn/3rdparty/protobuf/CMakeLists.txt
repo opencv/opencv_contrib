@@ -89,16 +89,16 @@ if(WIN32 AND BUILD_SHARED_LIBS AND MSVC)
     add_definitions(-DLIBPROTOBUF_EXPORTS)
 endif()
 
-add_definitions( -D_GNU_SOURCE=1 )
-add_definitions( -DHAVE_CONFIG_H )
+#add_definitions( -DGOOGLE_PROTOBUF_NO_THREAD_SAFETY ) #we don't need thread safety
+add_definitions( -D_GNU_SOURCE=1 ) #it's maybe useful
+add_definitions( -DHAVE_CONFIG_H ) #we will use config.h
 configure_file("cmake/config.h.in" "config.h")
 
 if(MSVC)
   add_definitions( -D_CRT_SECURE_NO_WARNINGS=1 )
-  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 /wd4127 /wd4100 /wd4512 /wd4125 /w4398 /w4510 /w4610 /w4244 /w4702 /w4389)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 /wd4127 /wd4100 /wd4512 /wd4125 /wd4389 /wd4510 /wd4610 /wd4702)
 else()
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
-  ocv_warnings_disable(CMAKE_C_FLAGS -Wunused-parameter) # clang
 endif()
 
 # Easier to support different versions of protobufs
@@ -115,6 +115,12 @@ function(append_if_exist OUTPUT_LIST)
 endfunction()
 
 set(PROTOBUF_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(MSVC)
+  set(ATOMICOPS_INTERNALS ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_msvc.cc)
+else()
+  set(ATOMICOPS_INTERNALS ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_gcc.cc)
+endif()
 
 append_if_exist(PROTOBUF_SRCS
   ${PROTOBUF_ROOT}/src/google/protobuf/compiler/importer.cc
@@ -139,8 +145,7 @@ append_if_exist(PROTOBUF_SRCS
   ${PROTOBUF_ROOT}/src/google/protobuf/reflection_ops.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/repeated_field.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/service.cc
-  ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_gcc.cc
-  ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_msvc.cc
+  ${ATOMICOPS_INTERNALS}
   ${PROTOBUF_ROOT}/src/google/protobuf/stubs/common.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/stubs/once.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/stubs/stringprintf.cc
@@ -151,7 +156,7 @@ append_if_exist(PROTOBUF_SRCS
   ${PROTOBUF_ROOT}/src/google/protobuf/unknown_field_set.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/wire_format.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/wire_format_lite.cc
-#  ${PROTOBUF_ROOT}/src/google/protobuf/stubs/hash.cc
+  #${PROTOBUF_ROOT}/src/google/protobuf/stubs/hash.cc
 )
 
 if(UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR CV_ICC))

@@ -99,7 +99,7 @@ struct TorchImporter : public ::cv::dnn::Importer
 
     inline bool readBool()
     {
-        return readInt();
+        return readInt() != 0;
     }
 
     inline double readDouble()
@@ -439,7 +439,7 @@ struct TorchImporter : public ::cv::dnn::Importer
                 CV_Assert(tensorParams.count("weight"));
                 layerParams.learnedBlobs.push_back(tensorParams["weight"]);
 
-                bool bias = tensorParams.count("bias");
+                bool bias = tensorParams.count("bias") != 0;
                 layerParams.set("bias_term", bias);
                 if (bias)
                     layerParams.learnedBlobs.push_back(tensorParams["bias"]);
@@ -471,7 +471,7 @@ struct TorchImporter : public ::cv::dnn::Importer
                 Blob weightBlob = tensorParams["weight"];
                 layerParams.learnedBlobs.push_back(weightBlob);
 
-                bool bias = tensorParams.count("bias");
+                bool bias = tensorParams.count("bias") != 0;
                 if (bias)
                     layerParams.learnedBlobs.push_back(tensorParams["bias"]);
                 layerParams.set("bias_term", bias);

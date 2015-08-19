@@ -31,4 +31,7 @@ else()
     VERBATIM
   )
   set_source_files_properties(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} PROPERTIES GENERATED TRUE)
+
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4125 /wd4267 /wd4127 /wd4244 /wd4512 /wd4702)
 endif()
