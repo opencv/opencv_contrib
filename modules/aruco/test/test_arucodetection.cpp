@@ -414,28 +414,28 @@ void CV_ArucoBitCorrection::run(int) {
 
         // 5 valid cases
         for(int i = 0; i < 5; i++) {
-            // how many bit errors
+            // how many bit errors (the error is low enough so it can be corrected)
             params.errorCorrectionRate = 0.2 + i * 0.1;
             int errors =
                 (int)std::floor(dictionary.maxCorrectionBits * params.errorCorrectionRate - 1.);
 
-            // apply error
+            // create erroneous marker in currentCodeBits
             cv::Mat currentCodeBits =
                 aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary.markerSize);
             for(int e = 0; e < errors; e++) {
                 currentCodeBits.ptr< unsigned char >()[2 * e] =
                     !currentCodeBits.ptr< unsigned char >()[2 * e];
             }
+
+            // add erroneous marker to dictionary2 in order to create the erroneous marker image
             cv::Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
             currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id + 1));
-
-            // create erroneous marker image
             Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
             aruco::drawMarker(dictionary2, id, markerSide, marker);
             Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
             marker.copyTo(aux);
 
-            // detect
+            // try to detect using original dictionary
             vector< vector< Point2f > > corners;
             vector< int > ids;
             aruco::detectMarkers(img, dictionary, corners, ids, params);
@@ -448,30 +448,32 @@ void CV_ArucoBitCorrection::run(int) {
 
         // 5 invalid cases
         for(int i = 0; i < 5; i++) {
-            // how many bit errors
+            // how many bit errors (the error is too high to be corrected)
             params.errorCorrectionRate = 0.2 + i * 0.1;
             int errors =
                 (int)std::floor(dictionary.maxCorrectionBits * params.errorCorrectionRate + 1.);
 
-            // apply errors
+            // create erroneous marker in currentCodeBits
             cv::Mat currentCodeBits =
                 aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary.markerSize);
             for(int e = 0; e < errors; e++) {
                 currentCodeBits.ptr< unsigned char >()[2 * e] =
                     !currentCodeBits.ptr< unsigned char >()[2 * e];
             }
-            cv::Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
+
+            // dictionary3 is only composed by the modified marker (in its original form)
             aruco::Dictionary dictionary3 = dictionary;
             dictionary3.bytesList = dictionary2.bytesList.rowRange(id, id + 1).clone();
-            currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id + 1));
 
-            // create erroneous marker image
+            // add erroneous marker to dictionary2 in order to create the erroneous marker image
+            cv::Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
+            currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id + 1));
             Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
             aruco::drawMarker(dictionary2, id, markerSide, marker);
             Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
             marker.copyTo(aux);
 
-            // detect
+            // try to detect using dictionary3, it should fail
             vector< vector< Point2f > > corners;
             vector< int > ids;
             aruco::detectMarkers(img, dictionary3, corners, ids, params);
