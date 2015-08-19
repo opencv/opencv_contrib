@@ -95,9 +95,10 @@ configure_file("cmake/config.h.in" "config.h")
 
 if(MSVC)
   add_definitions( -D_CRT_SECURE_NO_WARNINGS=1 )
-  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 /wd4127 /wd4100 /wd4512 /wd4125 /w4398 /w4510 /w4610 /w4244 /w4702 /w4389)
 else()
-  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wshadow -Wmissing-declarations -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
+  ocv_warnings_disable(CMAKE_C_FLAGS -Wunused-parameter) # clang
 endif()
 
 # Easier to support different versions of protobufs
@@ -171,6 +172,6 @@ if(ENABLE_SOLUTION_FOLDERS)
   set_target_properties(libprotobuf PROPERTIES FOLDER "3rdparty")
 endif()
 
-#if(NOT BUILD_SHARED_LIBS)
-#  ocv_install_target(libprotobuf EXPORT OpenCVModules ARCHIVE DESTINATION ${OPENCV_3P_LIB_INSTALL_PATH} COMPONENT dev)
-#endif()
+if(NOT BUILD_SHARED_LIBS)
+  ocv_install_target(libprotobuf EXPORT OpenCVModules ARCHIVE DESTINATION ${OPENCV_3P_LIB_INSTALL_PATH} COMPONENT dev)
+endif()

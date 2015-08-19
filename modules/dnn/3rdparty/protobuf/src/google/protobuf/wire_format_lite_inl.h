@@ -284,7 +284,7 @@ inline bool WireFormatLite::ReadRepeatedFixedSizePrimitive(
   return true;
 }
 
-// Specializations of ReadRepeatedPrimitive for the fixed size types, which use 
+// Specializations of ReadRepeatedPrimitive for the fixed size types, which use
 // the optimized code path.
 #define READ_REPEATED_FIXED_SIZE_PRIMITIVE(CPPTYPE, DECLARED_TYPE)             \
 template <>                                                                    \

@@ -35,6 +35,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/stl_util.h>
+#include <algorithm>
 
 namespace google {
 namespace protobuf {
@@ -63,7 +64,7 @@ ArrayInputStream::~ArrayInputStream() {
 
 bool ArrayInputStream::Next(const void** data, int* size) {
   if (position_ < size_) {
-    last_returned_size_ = min(block_size_, size_ - position_);
+    last_returned_size_ = std::min(block_size_, size_ - position_);
     *data = data_ + position_;
     *size = last_returned_size_;
     position_ += last_returned_size_;
@@ -116,7 +117,7 @@ ArrayOutputStream::~ArrayOutputStream() {
 
 bool ArrayOutputStream::Next(void** data, int* size) {
   if (position_ < size_) {
-    last_returned_size_ = min(block_size_, size_ - position_);
+    last_returned_size_ = std::min(block_size_, size_ - position_);
     *data = data_ + position_;
     *size = last_returned_size_;
     position_ += last_returned_size_;
@@ -163,7 +164,7 @@ bool StringOutputStream::Next(void** data, int* size) {
     // that the new size is at least kMinimumSize.
     STLStringResizeUninitialized(
       target_,
-      max(old_size * 2,
+      std::max(old_size * 2,
           kMinimumSize + 0));  // "+ 0" works around GCC4 weirdness.
   }
 
@@ -190,7 +191,7 @@ int CopyingInputStream::Skip(int count) {
   char junk[4096];
   int skipped = 0;
   while (skipped < count) {
-    int bytes = Read(junk, min(count - skipped,
+    int bytes = Read(junk, std::min(count - skipped,
                                implicit_cast<int>(sizeof(junk))));
     if (bytes <= 0) {
       // EOF or read error.
