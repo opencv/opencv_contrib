@@ -356,7 +356,7 @@ const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
  * @brief Generates a random marker Mat of size markerSize x markerSize
  */
 static Mat _generateRandomMarker(int markerSize) {
-    Mat marker(markerSize, markerSize, CV_8UC1, cv::Scalar::all(0));
+    Mat marker(markerSize, markerSize, CV_8UC1, Scalar::all(0));
     for(int i = 0; i < markerSize; i++) {
         for(int j = 0; j < markerSize; j++) {
             unsigned char bit = rand() % 2;
@@ -411,9 +411,9 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
         for(int i = 0; i < out.bytesList.rows; i++) {
             Mat markerBytes = out.bytesList.rowRange(i, i + 1);
             Mat markerBits = Dictionary::getBitsFromByteList(markerBytes, markerSize);
-            minDistance = std::min(minDistance, _getSelfDistance(markerBits));
+            minDistance = min(minDistance, _getSelfDistance(markerBits));
             for(int j = i + 1; j < out.bytesList.rows; j++) {
-                minDistance = std::min(minDistance, out.getDistanceToId(markerBits, j));
+                minDistance = min(minDistance, out.getDistanceToId(markerBits, j));
             }
         }
         tau = minDistance;
@@ -428,7 +428,7 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
     int unproductiveIterations = 0;
 
     while(out.bytesList.rows < nMarkers) {
-        cv::Mat currentMarker = _generateRandomMarker(markerSize);
+        Mat currentMarker = _generateRandomMarker(markerSize);
 
         int selfDistance = _getSelfDistance(currentMarker);
         int minDistance = selfDistance;
@@ -438,7 +438,7 @@ Dictionary generateCustomDictionary(int nMarkers, int markerSize,
         if(selfDistance >= bestTau) {
             for(int i = 0; i < out.bytesList.rows; i++) {
                 int currentDistance = out.getDistanceToId(currentMarker, i);
-                minDistance = std::min(currentDistance, minDistance);
+                minDistance = min(currentDistance, minDistance);
                 if(minDistance <= bestTau) {
                     break;
                 }

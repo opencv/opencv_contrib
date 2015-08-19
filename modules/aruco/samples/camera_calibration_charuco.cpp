@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(allIds.size() < 1) {
-        std::cerr << "Not enough captures for calibration" << std::endl;
+        cerr << "Not enough captures for calibration" << endl;
         return 0;
     }
 
@@ -332,7 +332,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(allCharucoCorners.size() < 4) {
-        std::cerr << "Not enough corners for calibration" << std::endl;
+        cerr << "Not enough corners for calibration" << endl;
         return 0;
     }
 

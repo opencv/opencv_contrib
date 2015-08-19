@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    float axisLength = 0.5f * ((float)std::min(squaresX, squaresY) * (squareLength));
+    float axisLength = 0.5f * ((float)min(squaresX, squaresY) * (squareLength));
 
     // create charuco board object
     aruco::CharucoBoard board =

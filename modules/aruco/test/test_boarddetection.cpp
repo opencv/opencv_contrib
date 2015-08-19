@@ -315,7 +315,7 @@ void CV_ArucoRefine::run(int) {
 
                 // try to refind the erased marker
                 aruco::refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
-                                             distCoeffs, 10, 3., true, cv::noArray(), params);
+                                             distCoeffs, 10, 3., true, noArray(), params);
 
                 // check result
                 if((int)ids.size() < markersBeforeDelete) {

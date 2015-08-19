@@ -277,7 +277,7 @@ class DetectInitialCandidatesParallel : public ParallelLoopBody {
         : grey(_grey), candidatesArrays(_candidatesArrays), contoursArrays(_contoursArrays),
           params(_params) {}
 
-    void operator()(const cv::Range &range) const {
+    void operator()(const Range &range) const {
         const int begin = range.start;
         const int end = range.end;
 
@@ -309,7 +309,7 @@ class DetectInitialCandidatesParallel : public ParallelLoopBody {
 /**
  * @brief Initial steps on finding square candidates
  */
-static void _detectInitialCandidates(const cv::Mat &grey, vector< vector< Point2f > > &candidates,
+static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > > &candidates,
                                      vector< vector< Point > > &contours,
                                      DetectorParameters params) {
 
@@ -572,12 +572,12 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     public:
     IdentifyCandidatesParallel(const Mat *_grey, InputArrayOfArrays _candidates,
                                InputArrayOfArrays _contours, const Dictionary *_dictionary,
-                               std::vector< int > *_idsTmp, std::vector< char > *_validCandidates,
+                               vector< int > *_idsTmp, vector< char > *_validCandidates,
                                DetectorParameters *_params)
         : grey(_grey), candidates(_candidates), contours(_contours), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
 
-    void operator()(const cv::Range &range) const {
+    void operator()(const Range &range) const {
         const int begin = range.start;
         const int end = range.end;
 
@@ -597,8 +597,8 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     const Mat *grey;
     InputArrayOfArrays candidates, contours;
     const Dictionary *dictionary;
-    std::vector< int > *idsTmp;
-    std::vector< char > *validCandidates;
+    vector< int > *idsTmp;
+    vector< char > *validCandidates;
     DetectorParameters *params;
 };
 
@@ -624,8 +624,8 @@ static void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidate
     Mat grey;
     _convertToGrey(_image.getMat(), grey);
 
-    std::vector< int > idsTmp(ncandidates, -1);
-    std::vector< char > validCandidates(ncandidates, 0);
+    vector< int > idsTmp(ncandidates, -1);
+    vector< char > validCandidates(ncandidates, 0);
 
     //// Analyze each of the candidates
     // for (int i = 0; i < ncandidates; i++) {
@@ -779,7 +779,7 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
                            DetectorParameters *_params)
         : grey(_grey), corners(_corners), params(_params) {}
 
-    void operator()(const cv::Range &range) const {
+    void operator()(const Range &range) const {
         const int begin = range.start;
         const int end = range.end;
 
@@ -860,13 +860,13 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
         : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
           distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
 
-    void operator()(const cv::Range &range) const {
+    void operator()(const Range &range) const {
         const int begin = range.start;
         const int end = range.end;
 
         for(int i = begin; i < end; i++) {
-            cv::solvePnP(*markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
-                         rvecs.getMat(i), tvecs.getMat(i));
+            solvePnP(*markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i),
+                     tvecs.getMat(i));
         }
     }
 
@@ -903,8 +903,8 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
     //// for each marker, calculate its pose
     // for (int i = 0; i < nMarkers; i++) {
-    //    cv::solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs,
-    //                 _rvecs.getMat(i), _tvecs.getMat(i));
+    //    solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs,
+    //             _rvecs.getMat(i), _tvecs.getMat(i));
     //}
 
     // this is the parallel call for the previous commented loop (result is equivalent)

@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(allIds.size() < 1) {
-        std::cerr << "Not enough captures for calibration" << std::endl;
+        cerr << "Not enough captures for calibration" << endl;
         return 0;
     }
 

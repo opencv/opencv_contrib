@@ -295,19 +295,18 @@ class CharucoSubpixelParallel : public ParallelLoopBody {
         : grey(_grey), filteredChessboardImgPoints(_filteredChessboardImgPoints),
           filteredWinSizes(_filteredWinSizes), params(_params) {}
 
-    void operator()(const cv::Range &range) const {
+    void operator()(const Range &range) const {
         const int begin = range.start;
         const int end = range.end;
 
         for(int i = begin; i < end; i++) {
             vector< Point2f > in;
             in.push_back((*filteredChessboardImgPoints)[i]);
-            cv::Size winSize = (*filteredWinSizes)[i];
+            Size winSize = (*filteredWinSizes)[i];
             if(winSize.height == -1 || winSize.width == -1)
-                winSize =
-                    cv::Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize);
+                winSize = Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize);
 
-            cornerSubPix(*grey, in, winSize, cv::Size(),
+            cornerSubPix(*grey, in, winSize, Size(),
                          cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
                                         params->cornerRefinementMaxIterations,
                                         params->cornerRefinementMinAccuracy));
@@ -370,10 +369,10 @@ static unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, In
     // for(unsigned int i=0; i<filteredChessboardImgPoints.size(); i++) {
     //    vector<Point2f> in;
     //    in.push_back(filteredChessboardImgPoints[i]);
-    //    cv::Size winSize = filteredWinSizes[i];
+    //    Size winSize = filteredWinSizes[i];
     //    if(winSize.height == -1 || winSize.width == -1)
-    //        winSize = cv::Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
-    //    cornerSubPix(grey, in, winSize, cv::Size(),
+    //        winSize = Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
+    //    cornerSubPix(grey, in, winSize, Size(),
     //                 cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
     //                                params.cornerRefinementMaxIterations,
     //                                params.cornerRefinementMinAccuracy));

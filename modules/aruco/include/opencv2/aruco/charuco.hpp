@@ -66,7 +66,6 @@ class CV_EXPORTS CharucoBoard : public Board {
     std::vector< Point3f > chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
-    //    std::vector< std::vector<int> > nearestMarkerIds;
     std::vector< std::vector< int > > nearestMarkerIdx;
     std::vector< std::vector< int > > nearestMarkerCorners;
 
