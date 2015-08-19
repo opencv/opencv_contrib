@@ -117,9 +117,9 @@ static bool readDetectorParameters(string filename, aruco::DetectorParameters &p
     fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
     fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
     fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
-    fs["minCornerDistance"] >> params.minCornerDistance;
+    fs["minCornerDistanceRate"] >> params.minCornerDistanceRate;
     fs["minDistanceToBorder"] >> params.minDistanceToBorder;
-    fs["minMarkerDistance"] >> params.minMarkerDistance;
+    fs["minMarkerDistanceRate"] >> params.minMarkerDistanceRate;
     fs["doCornerRefinement"] >> params.doCornerRefinement;
     fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
     fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
         }
     }
     detectorParams.doCornerRefinement = true; // do corner refinement in markers
+    detectorParams.adaptiveThreshWinSizeMin = 3;
 
     VideoCapture inputVideo;
     int waitTime;

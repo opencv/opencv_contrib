@@ -541,18 +541,19 @@ distorted images.
 Default value: 0.05
 
 
-- ```double minCornerDistance```
+- ```double minCornerDistanceRate```
 
-Minimum Euclidean distance between any pair of corners in the same marker (in pixels).
+Minimum distance between any pair of corners in the same marker. It is expressed relative to the marker
+perimeter. Minimum distance in pixels is Perimeter * minCornerDistanceRate.
 
-Default value: 10
+Default value: 0.05
 
-- ```double minMarkerDistance```
+- ```double minMarkerDistanceRate```
 
-Minimum Euclidean distance between any pair of corners from two different markers (in pixels).
-If two candidates are too close, the smaller one is ignored.
+Minimum distance between any pair of corners from two different markers. It is expressed relative to
+the minimum marker perimeter of the two markers. If two candidates are too close, the smaller one is ignored.
 
-Default value: 10
+Default value: 0.05
 
 - ```int minDistanceToBorder```
 

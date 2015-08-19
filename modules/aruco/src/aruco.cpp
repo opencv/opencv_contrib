@@ -67,9 +67,9 @@ DetectorParameters::DetectorParameters()
       minMarkerPerimeterRate(0.03),
       maxMarkerPerimeterRate(4.),
       polygonalApproxAccuracyRate(0.03),
-      minCornerDistance(10),
+      minCornerDistanceRate(0.05),
       minDistanceToBorder(3),
-      minMarkerDistance(10),
+      minMarkerDistanceRate(0.05),
       doCornerRefinement(false),
       cornerRefinementWinSize(5),
       cornerRefinementMaxIterations(30),
@@ -115,10 +115,10 @@ static void _threshold(InputArray _in, OutputArray _out, int winSize, double con
 static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &candidates,
                                 vector< vector< Point > > &contoursOut, double minPerimeterRate,
                                 double maxPerimeterRate, double accuracyRate,
-                                double minCornerDistance, int minDistanceToBorder) {
+                                double minCornerDistanceRate, int minDistanceToBorder) {
 
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
-              minCornerDistance > 0 && minDistanceToBorder >= 0);
+              minCornerDistanceRate >= 0 && minDistanceToBorder >= 0);
 
     // calculate maximum and minimum sizes in pixels
     unsigned int minPerimeterPixels =
@@ -151,7 +151,8 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
                            (double)(approxCurve[j].y - approxCurve[(j + 1) % 4].y);
             minDistSq = min(minDistSq, d);
         }
-        if(minDistSq < minCornerDistance * minCornerDistance) continue;
+        double minCornerDistancePixels = double(contours[i].size()) * minCornerDistanceRate;
+        if(minDistSq < minCornerDistancePixels * minCornerDistancePixels) continue;
 
         // check if it is too near to the image border
         bool tooNearBorder = false;
@@ -201,13 +202,16 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                                       vector< vector< Point2f > > &candidatesOut,
                                       const vector< vector< Point > > &contoursIn,
                                       vector< vector< Point > > &contoursOut,
-                                      double minMarkerDistance) {
+                                      double minMarkerDistanceRate) {
 
-    CV_Assert(minMarkerDistance > 0);
+    CV_Assert(minMarkerDistanceRate >= 0);
 
     vector< pair< int, int > > nearCandidates;
     for(unsigned int i = 0; i < candidatesIn.size(); i++) {
         for(unsigned int j = i + 1; j < candidatesIn.size(); j++) {
+
+            unsigned int minimumPerimeter = min(contoursIn[i].size(), contoursIn[j].size() );
+
             // fc is the first corner considered on one of the markers, 4 combinatios are posible
             for(int fc = 0; fc < 4; fc++) {
                 double distSq = 0;
@@ -220,8 +224,10 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                                   (candidatesIn[i][modC].y - candidatesIn[j][c].y);
                 }
                 distSq /= 4.;
+
                 // if mean square distance is too low, remove the smaller one of the two markers
-                if(distSq < minMarkerDistance * minMarkerDistance) {
+                double minMarkerDistancePixels = double(minimumPerimeter) * minMarkerDistanceRate;
+                if(distSq < minMarkerDistancePixels * minMarkerDistancePixels) {
                     nearCandidates.push_back(pair< int, int >(i, j));
                     break;
                 }
@@ -234,27 +240,9 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
     for(unsigned int i = 0; i < nearCandidates.size(); i++) {
         // if one of the marker has been already markerd to removed, dont need to do anything
         if(toRemove[nearCandidates[i].first] || toRemove[nearCandidates[i].second]) continue;
-        double perimeterSq1 = 0, perimeterSq2 = 0;
-        for(unsigned int c = 0; c < 4; c++) {
-            // check which one is the smaller and remove it
-            perimeterSq1 += (candidatesIn[nearCandidates[i].first][c].x -
-                             candidatesIn[nearCandidates[i].first][(c + 1) % 4].x) *
-                                (candidatesIn[nearCandidates[i].first][c].x -
-                                 candidatesIn[nearCandidates[i].first][(c + 1) % 4].x) +
-                            (candidatesIn[nearCandidates[i].first][c].y -
-                             candidatesIn[nearCandidates[i].first][(c + 1) % 4].y) *
-                                (candidatesIn[nearCandidates[i].first][c].y -
-                                 candidatesIn[nearCandidates[i].first][(c + 1) % 4].y);
-            perimeterSq2 += (candidatesIn[nearCandidates[i].second][c].x -
-                             candidatesIn[nearCandidates[i].second][(c + 1) % 4].x) *
-                                (candidatesIn[nearCandidates[i].second][c].x -
-                                 candidatesIn[nearCandidates[i].second][(c + 1) % 4].x) +
-                            (candidatesIn[nearCandidates[i].second][c].y -
-                             candidatesIn[nearCandidates[i].second][(c + 1) % 4].y) *
-                                (candidatesIn[nearCandidates[i].second][c].y -
-                                 candidatesIn[nearCandidates[i].second][(c + 1) % 4].y);
-        }
-        if(perimeterSq1 > perimeterSq2)
+        unsigned int perimeter1 = contoursIn[nearCandidates[i].first].size();
+        unsigned int perimeter2 = contoursIn[nearCandidates[i].second].size();
+        if(perimeter1 > perimeter2)
             toRemove[nearCandidates[i].second] = true;
         else
             toRemove[nearCandidates[i].first] = true;
@@ -303,7 +291,7 @@ class DetectInitialCandidatesParallel : public ParallelLoopBody {
             // detect rectangles
             _findMarkerContours(thresh, (*candidatesArrays)[i], (*contoursArrays)[i],
                                 params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
-                                params->polygonalApproxAccuracyRate, params->minCornerDistance,
+                                params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
                                 params->minDistanceToBorder);
         }
     }
@@ -345,7 +333,7 @@ static void _detectInitialCandidates(const cv::Mat &grey, vector< vector< Point2
         vector< vector< Point > > currentContours;
         _findMarkerContours(thresh, currentCandidates, currentContours,
                             params.minMarkerPerimeterRate, params.maxMarkerPerimeterRate,
-                            params.polygonalApproxAccuracyRate, params.minCornerDistance,
+                            params.polygonalApproxAccuracyRate, params.minCornerDistanceRate,
                             params.minDistanceToBorder);
 
         // join candidates
@@ -414,7 +402,7 @@ static void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates
     vector< vector< Point2f > > candidatesOut;
     vector< vector< Point > > contoursOut;
     _filterTooCloseCandidates(candidates, candidatesOut, contours, contoursOut,
-                              params.minMarkerDistance);
+                              params.minMarkerDistanceRate);
 
     // parse output
     _candidates.create((int)candidatesOut.size(), 1, CV_32FC2);

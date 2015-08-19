@@ -87,12 +87,13 @@ namespace aruco {
  *   is defined as a rate respect to the maximum dimension of the input image (default 4.0).
  * - polygonalApproxAccuracyRate: minimum accuracy during the polygonal approximation process to
  *   determine which contours are squares.
- * - minCornerDistance: minimum distance between corners for detected markers (in pixels)
- *   (default 10)
+ * - minCornerDistanceRate: minimum distance between corners for detected markers relative to its
+ *   perimeter (default 0.05)
  * - minDistanceToBorder: minimum distance of any corner to the image border for detected markers
  *   (in pixels) (default 3)
- * - minMarkerDistance: minimum mean distance beetween two marker corners to be considered
- *   similar, so that the smaller one is removed (in pixels) (default 10).
+ * - minMarkerDistanceRate: minimum mean distance beetween two marker corners to be considered
+ *   similar, so that the smaller one is removed. The rate is relative to the smaller perimeter
+ *   of the two markers (default 0.05).
  * - doCornerRefinement: do subpixel refinement or not
  * - cornerRefinementWinSize: window size for the corner refinement process (in pixels) (default 5).
  * - cornerRefinementMaxIterations: maximum number of iterations for stop criteria of the corner
@@ -125,9 +126,9 @@ struct DetectorParameters {
     double minMarkerPerimeterRate;
     double maxMarkerPerimeterRate;
     double polygonalApproxAccuracyRate;
-    double minCornerDistance;
+    double minCornerDistanceRate;
     int minDistanceToBorder;
-    double minMarkerDistance;
+    double minMarkerDistanceRate;
     bool doCornerRefinement;
     int cornerRefinementWinSize;
     int cornerRefinementMaxIterations;
