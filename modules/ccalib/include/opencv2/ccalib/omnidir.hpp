@@ -45,13 +45,11 @@
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
 
-/** @defgroup omnidir Omnidirectional camera calibration
-*/
 namespace cv
 {
 namespace omnidir
 {
-    //! @addtogroup omnidir
+    //! @addtogroup ccalib
     //! @{
 
     enum {

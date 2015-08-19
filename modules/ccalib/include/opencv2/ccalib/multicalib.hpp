@@ -49,11 +49,7 @@
 
 namespace cv { namespace multicalib {
 
-/** @defgroup mulcalib Multiple cameras calibration toolbox
-*/
-
-
-//! @addtogroup mulcalib
+//! @addtogroup ccalib
 //! @{
 
 #define HEAD -1

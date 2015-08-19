@@ -46,8 +46,6 @@
 #include "opencv2/highgui.hpp"
 
 namespace cv { namespace randpattern {
-/** @defgroup ranPattern Random pattern calibration pattern
-*/
 
 /** @brief Class for finding features points and corresponding 3D in world coordinate of
 a "random" pattern, which can be to be used in calibration. It is useful when pattern is
@@ -60,7 +58,7 @@ Please refer to paper
     Pattern", in IROS 2013.
 */
 
-//! @addtogroup ranPattern
+//! @addtogroup ccalib
 //! @{
 
 class CV_EXPORTS RandomPatternCornerFinder
