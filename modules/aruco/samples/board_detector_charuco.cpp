@@ -94,17 +94,22 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
 
 /**
  */
-static void readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
+static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
     FileStorage fs(filename, FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
     fs["camera_matrix"] >> camMatrix;
     fs["distortion_coefficients"] >> distCoeffs;
+    return true;
 }
 
 
 /**
  */
-static void readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+static bool readDetectorParameters(string filename, aruco::DetectorParameters &params) {
     FileStorage fs(filename, FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
     fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
     fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
     fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
@@ -125,6 +130,7 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
     fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
     fs["minOtsuStdDev"] >> params.minOtsuStdDev;
     fs["errorCorrectionRate"] >> params.errorCorrectionRate;
+    return true;
 }
 
 
@@ -151,12 +157,20 @@ int main(int argc, char *argv[]) {
 
     Mat camMatrix, distCoeffs;
     if(isParam("-c", argc, argv)) {
-        readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+        bool readOk = readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+        if(!readOk) {
+            cerr << "Invalid camera file" << endl;
+            return 0;
+        }
     }
 
     aruco::DetectorParameters detectorParams;
     if(isParam("-dp", argc, argv)) {
-        readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+        bool readOk = readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+        if(!readOk) {
+            cerr << "Invalid detector parameters file" << endl;
+            return 0;
+        }
     }
 
     bool refindStrategy = false;

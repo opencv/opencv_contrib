@@ -103,8 +103,10 @@ static string getParam(string param, int argc, char **argv, string defvalue = ""
 
 /**
  */
-static void readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+static bool readDetectorParameters(string filename, aruco::DetectorParameters &params) {
     FileStorage fs(filename, FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
     fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
     fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
     fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
@@ -125,15 +127,18 @@ static void readDetectorParameters(string filename, aruco::DetectorParameters &p
     fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
     fs["minOtsuStdDev"] >> params.minOtsuStdDev;
     fs["errorCorrectionRate"] >> params.errorCorrectionRate;
+    return true;
 }
 
 
 
 /**
  */
-static void saveCameraParams(const string &filename, Size imageSize, float aspectRatio, int flags,
+static bool saveCameraParams(const string &filename, Size imageSize, float aspectRatio, int flags,
                              const Mat &cameraMatrix, const Mat &distCoeffs, double totalAvgErr) {
     FileStorage fs(filename, FileStorage::WRITE);
+    if(!fs.isOpened())
+        return false;
 
     time_t tt;
     time(&tt);
@@ -162,6 +167,8 @@ static void saveCameraParams(const string &filename, Size imageSize, float aspec
     fs << "distortion_coefficients" << distCoeffs;
 
     fs << "avg_reprojection_error" << totalAvgErr;
+
+    return true;
 }
 
 
@@ -196,7 +203,11 @@ int main(int argc, char *argv[]) {
 
     aruco::DetectorParameters detectorParams;
     if(isParam("-dp", argc, argv)) {
-        readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+        bool readOk = readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+        if(!readOk) {
+            cerr << "Invalid detector parameters file" << endl;
+            return 0;
+        }
     }
 
     bool refindStrategy = false;
@@ -284,8 +295,13 @@ int main(int argc, char *argv[]) {
                                            markerCounterPerFrame, board, imgSize, cameraMatrix,
                                            distCoeffs, rvecs, tvecs, calibrationFlags);
 
-    saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix, distCoeffs,
-                     repError);
+    bool saveOk = saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix,
+                                   distCoeffs, repError);
+
+    if(!saveOk) {
+        cerr << "Cannot save output file" << endl;
+        return 0;
+    }
 
     cout << "Rep Error: " << repError << endl;
     cout << "Calibration saved to " << outputFile << endl;
