@@ -1,3 +1,5 @@
+project(libprotobuf)
+
 include(CheckIncludeFiles)
 include(cmake/CheckCxxHashset.cmake)
 include(cmake/CheckCxxHashmap.cmake)
@@ -89,13 +91,13 @@ endif()
 
 add_definitions( -D_GNU_SOURCE=1 )
 add_definitions( -DHAVE_CONFIG_H )
-configure_file("cmake/libporobuf_config.h.in" "config.h")
+configure_file("cmake/config.h.in" "config.h")
 
 if(MSVC)
   add_definitions( -D_CRT_SECURE_NO_WARNINGS=1 )
   ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305)
 else()
-  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wundef)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wshadow -Wmissing-declarations -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
 endif()
 
 # Easier to support different versions of protobufs
@@ -105,15 +107,15 @@ function(append_if_exist OUTPUT_LIST)
         if(EXISTS ${fil})
             list(APPEND ${OUTPUT_LIST} "${fil}")
         else()
-            message("Warning: file missing: ${fil}")
+            message(WARNING "file missing: ${fil}")
         endif()
     endforeach()
     set(${OUTPUT_LIST} ${${OUTPUT_LIST}} PARENT_SCOPE)
 endfunction()
 
-set(PROTOBUF_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf)
+set(PROTOBUF_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
-append_if_exist(PROTO_SRCS
+append_if_exist(PROTOBUF_SRCS
   ${PROTOBUF_ROOT}/src/google/protobuf/compiler/importer.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/compiler/parser.cc
   ${PROTOBUF_ROOT}/src/google/protobuf/descriptor.cc
@@ -150,3 +152,25 @@ append_if_exist(PROTO_SRCS
   ${PROTOBUF_ROOT}/src/google/protobuf/wire_format_lite.cc
 #  ${PROTOBUF_ROOT}/src/google/protobuf/stubs/hash.cc
 )
+
+if(UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR CV_ICC))
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif()
+
+add_library(libprotobuf STATIC ${PROTOBUF_SRCS})
+include_directories(${PROTOBUF_ROOT}/src ${CMAKE_CURRENT_BINARY_DIR})
+
+set_target_properties(libprotobuf
+    PROPERTIES
+    OUTPUT_NAME libprotobuf
+    DEBUG_POSTFIX "${OPENCV_DEBUG_POSTFIX}"
+    ARCHIVE_OUTPUT_DIRECTORY ${3P_LIBRARY_OUTPUT_PATH}
+    )
+
+if(ENABLE_SOLUTION_FOLDERS)
+  set_target_properties(libprotobuf PROPERTIES FOLDER "3rdparty")
+endif()
+
+#if(NOT BUILD_SHARED_LIBS)
+#  ocv_install_target(libprotobuf EXPORT OpenCVModules ARCHIVE DESTINATION ${OPENCV_3P_LIB_INSTALL_PATH} COMPONENT dev)
+#endif()

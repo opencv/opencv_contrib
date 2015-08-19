@@ -53,4 +53,3 @@ macro(CHECK_HASHMAP)
   endif(NOT HAVE_GNU_EXT_HASH_MAP)
 
 endmacro(CHECK_HASHMAP)
-

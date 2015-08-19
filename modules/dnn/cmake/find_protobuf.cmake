@@ -5,7 +5,7 @@ endif()
 if(NOT BUILD_LIBPROTOBUF_FROM_SOURCES AND PROTOBUF_FOUND AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
   message(STATUS "The protocol buffer compiler and libprotobuf were found")
 
-  PROTOBUF_GENERATE_CPP(PROTO_HDRS PROTO_SRCS src/caffe/caffe.proto)
+  PROTOBUF_GENERATE_CPP(PROTOBUF_HDRS PROTOBUF_SRCS src/caffe/caffe.proto)
   add_definitions(-DHAVE_PROTOBUF=1)
 else()
   if(NOT PROTOBUF_FOUND)
@@ -14,12 +14,23 @@ else()
     message(STATUS "The protocol buffer compiler not found")
   endif()
 
-  include(cmake/libprotobuf.cmake)
-  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+  if(NOT OPENCV_INITIAL_PASS)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf)
+  endif()
 
-  set(PROTOBUF_INCLUDE_DIR ${PROTOBUF_ROOT}/src  ${CMAKE_CURRENT_SOURCE_DIR}/src/caffe/compiled)
-  list(APPEND PROTO_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/caffe/compiled/caffe.pb.cc)
-  set(PROTOBUF_LIBRARIES "")
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/caffe.pb.cc
+           ${CMAKE_CURRENT_BINARY_DIR}/caffe.pb.h
+    COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/src/caffe/compiled/caffe.tar.gz
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Unpacking compiled caffe protobuf files"
+    VERBATIM
+  )
+
+  set(PROTOBUF_LIBRARIES libprotobuf)
+  set(PROTOBUF_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf/src ${CMAKE_CURRENT_BINARY_DIR})
+  set(PROTOBUF_SRCS ${CMAKE_CURRENT_BINARY_DIR}/caffe.pb.cc)
+  set(PROTOBUF_HDRS ${CMAKE_CURRENT_BINARY_DIR}/caffe.pb.h)
   set(PROTOBUF_PROTOC_EXECUTABLE "")
   add_definitions(-DHAVE_PROTOBUF=1)
 endif()
