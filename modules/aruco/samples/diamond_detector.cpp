@@ -165,7 +165,6 @@ int main(int argc, char *argv[]) {
     if(isParam("-dp", argc, argv)) {
         readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
-    detectorParams.doCornerRefinement = false; // no corner refinement in markers
 
     VideoCapture inputVideo;
     int waitTime;

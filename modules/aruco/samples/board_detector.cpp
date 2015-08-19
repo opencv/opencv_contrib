@@ -158,6 +158,7 @@ int main(int argc, char *argv[]) {
     if(isParam("-dp", argc, argv)) {
         readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
     }
+    detectorParams.doCornerRefinement = true; // do corner refinement in markers
 
     bool refindStrategy = false;
     if(isParam("-rs", argc, argv)) refindStrategy = true;
