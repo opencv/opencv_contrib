@@ -210,7 +210,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
     for(unsigned int i = 0; i < candidatesIn.size(); i++) {
         for(unsigned int j = i + 1; j < candidatesIn.size(); j++) {
 
-            unsigned int minimumPerimeter = min(contoursIn[i].size(), contoursIn[j].size() );
+            int minimumPerimeter = min((int)contoursIn[i].size(), (int)contoursIn[j].size() );
 
             // fc is the first corner considered on one of the markers, 4 combinatios are posible
             for(int fc = 0; fc < 4; fc++) {
@@ -240,8 +240,8 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
     for(unsigned int i = 0; i < nearCandidates.size(); i++) {
         // if one of the marker has been already markerd to removed, dont need to do anything
         if(toRemove[nearCandidates[i].first] || toRemove[nearCandidates[i].second]) continue;
-        unsigned int perimeter1 = contoursIn[nearCandidates[i].first].size();
-        unsigned int perimeter2 = contoursIn[nearCandidates[i].second].size();
+        size_t perimeter1 = contoursIn[nearCandidates[i].first].size();
+        size_t perimeter2 = contoursIn[nearCandidates[i].second].size();
         if(perimeter1 > perimeter2)
             toRemove[nearCandidates[i].second] = true;
         else
