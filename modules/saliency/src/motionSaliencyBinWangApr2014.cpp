@@ -39,6 +39,7 @@
  //
  //M*/
 
+#include <limits>
 #include "precomp.hpp"
 //TODO delete highgui include
 //#include <opencv2/highgui.hpp>
@@ -81,7 +82,7 @@ bool MotionSaliencyBinWangApr2014::init()
   // Since data is even, the median is estimated using two values ​​that occupy
   // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
 
-  potentialBackground = Mat( imgSize.height, imgSize.width, CV_32FC2, Scalar( NAN, 0 ) );
+  potentialBackground = Mat( imgSize.height, imgSize.width, CV_32FC2, Scalar( std::numeric_limits<float>::quiet_NaN(), 0 ) );
 
   backgroundModel.resize( K + 1 );
 
@@ -89,7 +90,7 @@ bool MotionSaliencyBinWangApr2014::init()
   {
     Mat* tmpm = new Mat;
     tmpm->create( imgSize.height, imgSize.width, CV_32FC2 );
-    tmpm->setTo( Scalar( NAN, 0 ) );
+    tmpm->setTo( Scalar( std::numeric_limits<float>::quiet_NaN(), 0 ) );
     Ptr<Mat> tmp = Ptr<Mat>( tmpm );
     backgroundModel[i] = tmp;
   }
@@ -479,7 +480,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
                 /////////////////// REPLACEMENT of backgroundModel template ///////////////////
                 //replace TA with current TK
                 backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-                potentialBackground.at<Vec2f>( i, j )[0] = (float)NAN;
+                potentialBackground.at<Vec2f>( i, j )[0] = std::numeric_limits<float>::quiet_NaN();
                 potentialBackground.at<Vec2f>( i, j )[1] = 0;
 
                 break;
@@ -489,7 +490,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
           else
           {
             backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-            potentialBackground.at<Vec2f>( i, j )[0] = (float)NAN;
+            potentialBackground.at<Vec2f>( i, j )[0] = std::numeric_limits<float>::quiet_NaN();
             potentialBackground.at<Vec2f>( i, j )[1] = 0;
           }
         }  // close if of EVALUATION
