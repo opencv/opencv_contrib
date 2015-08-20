@@ -602,10 +602,10 @@ static void bi_get_histogram( float* histogram, const double y, const double x, 
 
     // A C --> pixel positions
     // B D
-    const float* A = hcube->ptr<float>(0,  mny   *_hist_th_q_no,  mnx   *_hist_th_q_no);
-    const float* B = hcube->ptr<float>(0, (mny+1)*_hist_th_q_no,  mnx   *_hist_th_q_no);
-    const float* C = hcube->ptr<float>(0,  mny   *_hist_th_q_no, (mnx+1)*_hist_th_q_no);
-    const float* D = hcube->ptr<float>(0, (mny+1)*_hist_th_q_no, (mnx+1)*_hist_th_q_no);
+    const float* A = hcube->ptr<float>(0,  mny   ,  mnx   );
+    const float* B = hcube->ptr<float>(0, (mny+1),  mnx   );
+    const float* C = hcube->ptr<float>(0,  mny   , (mnx+1));
+    const float* D = hcube->ptr<float>(0, (mny+1), (mnx+1));
 
     double alpha = mnx+1-x;
     double beta  = mny+1-y;
@@ -1156,7 +1156,7 @@ struct ComputeHistogramsInvoker : ParallelLoopBody
                Rect( 0, 0, layers->at(r).size[2]-1, layers->at(r).size[1]-1 ) )
              ) continue;
 
-          float* hist = layers->at(r).ptr<float>(0,y*_hist_th_q_no,x*_hist_th_q_no);
+          float* hist = layers->at(r).ptr<float>(0,y,x);
 
           for( int h = 0; h < _hist_th_q_no; h++ )
             hist[h] = layers->at(r+1).at<float>(h,y,x);
