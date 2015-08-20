@@ -44,9 +44,15 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <iostream>
 
 #include "opencv2/datasets/dataset.hpp"
 #include "opencv2/datasets/util.hpp"
+#include <opencv2/highgui.hpp>
+
+#include <opencv2/core.hpp>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -62,30 +68,30 @@ struct TRACK_votObj : public Object
 {
     int id;
     std::string imagePath;
-    vector <Point2d> gtbb;
+	vector <Point2d> gtbb;
 };
 
 class CV_EXPORTS TRACK_vot : public Dataset
 {
 public:
-    static Ptr<TRACK_vot> create();
+	static Ptr<TRACK_vot> create();
 
     virtual void load(const std::string &path) = 0;
 
-    virtual int getDatasetsNum() = 0;
+	virtual int getDatasetsNum() = 0;
 
-    virtual int getDatasetLength(int id) = 0;
+	virtual int getDatasetLength(int id) = 0;
 
-    virtual bool initDataset(int id) = 0;
+	virtual bool initDataset(int id) = 0;
 
-    virtual bool getNextFrame(Mat &frame) = 0;
+	virtual bool getNextFrame(Mat &frame) = 0;
 
-    virtual vector <Point2d> getGT() = 0;
+	virtual vector <Point2d> getGT() = 0;
 
 protected:
-    vector <vector <Ptr<TRACK_votObj> > > data;
-    int activeDatasetID;
-    int frameCounter;
+	vector <vector <Ptr<TRACK_votObj> > > data;
+	int activeDatasetID;
+	int frameCounter;
 };
 
 //! @}

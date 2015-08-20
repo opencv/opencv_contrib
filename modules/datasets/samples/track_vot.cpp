@@ -55,6 +55,8 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 
+#define DATASET_ID 1
+
 int main(int argc, char *argv[])
 {
 	const char *keys =
@@ -72,18 +74,18 @@ int main(int argc, char *argv[])
 	}
 
 	Ptr<TRACK_vot> dataset = TRACK_vot::create();
-	dataset->load(path);
+	dataset->load("D:/opencv/VOT 2015");
 	printf("Datasets number: %d\n", dataset->getDatasetsNum());
 	for (int i = 1; i <= dataset->getDatasetsNum(); i++)
 		printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
 
-	dataset->initDataset(datasetID);
+	dataset->initDataset(DATASET_ID);
 
-	for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
+	for (int i = 0; i < dataset->getDatasetLength(DATASET_ID); i++)
 	{
 		Mat frame;
-		if (!dataset->getNextFrame(frame))
-			break;
+		dataset->getNextFrame(frame);
+
 		//Draw Ground Truth BB
 		vector <Point2d> gtPoints =  dataset->getGT();
 		for (int j = 0; j < (int)(gtPoints.size()-1); j++)
