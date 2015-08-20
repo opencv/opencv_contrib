@@ -6,23 +6,15 @@ namespace cv
 {
 namespace dnn
 {
-    FullyConnectedLayer::FullyConnectedLayer(LayerParams &params)
+    FullyConnectedLayer::FullyConnectedLayer(LayerParams &params) : Layer(params)
     {
         numOutputs = params.get<int>("num_output");
         bias = params.get<bool>("bias_term", true);
         axis_ = params.get<int>("axis", 1);
 
-        CV_Assert(params.learnedBlobs.size() >= 1);
-        CV_Assert(!bias || params.learnedBlobs.size() >= 2);
-
-        learnedParams.resize(bias ? 2 : 1);
-        learnedParams[0] = params.learnedBlobs[0];
-        CV_Assert(learnedParams[0].dims() >= 2 && learnedParams[0].total() >= (size_t)numOutputs);
-        if (bias)
-        {
-            learnedParams[1] = params.learnedBlobs[1];
-            CV_Assert(learnedParams[1].total() == (size_t)numOutputs);
-        }
+        CV_Assert(blobs.size() == (bias ? 2 : 1));
+        CV_Assert(blobs[0].dims() >= 2 && blobs[0].total() >= (size_t)numOutputs);
+        CV_Assert(!bias || blobs[1].total() == (size_t)numOutputs);
     }
 
     void FullyConnectedLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -32,8 +24,8 @@ namespace dnn
         axis = inputs[0]->canonicalAxis(axis_);
         innerSize = (int)inputs[0]->total(axis);
 
-        CV_Assert((size_t)innerSize * (size_t)numOutputs == learnedParams[0].total());
-        CV_Assert(learnedParams[0].size(-2) == numOutputs && learnedParams[0].size(-1) == innerSize);
+        CV_Assert((size_t)innerSize * (size_t)numOutputs == blobs[0].total());
+        CV_Assert(blobs[0].size(-2) == numOutputs && blobs[0].size(-1) == innerSize);
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
@@ -63,7 +55,7 @@ namespace dnn
             int K = innerSize;
 
             Mat srcMat(M, K, inputs[i]->type(), inputs[i]->ptrf());
-            Mat weight(N, K, learnedParams[0].type(), learnedParams[0].ptrf());
+            Mat weight(N, K, blobs[0].type(), blobs[0].ptrf());
             Mat dstMat(M, N, outputs[i].type(), outputs[i].ptrf());
 
             //important: Caffe stores weights as transposed array
@@ -72,7 +64,7 @@ namespace dnn
             if (bias)
             {
                 Mat biasOnesMat = Mat::ones(M, 1, CV_32F);
-                Mat biasMat(1, N, CV_32F, learnedParams[1].ptrf());
+                Mat biasMat(1, N, CV_32F, blobs[1].ptrf());
                 cv::gemm(biasOnesMat, biasMat, 1, dstMat, 1, dstMat);
             }
         }

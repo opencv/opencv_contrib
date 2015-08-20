@@ -12,7 +12,7 @@ namespace dnn
 {
 //TODO: add ceil_mode param
 
-    PoolingLayer::PoolingLayer(LayerParams &params)
+    PoolingLayer::PoolingLayer(LayerParams &params) : Layer(params)
     {
         if (params.has("pool"))
         {

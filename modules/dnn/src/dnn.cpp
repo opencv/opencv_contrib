@@ -48,7 +48,12 @@ struct LayerData
 {
     LayerData() {}
     LayerData(int _id, const String &_name, const String &_type, LayerParams &_params)
-        : id(_id), name(_name), type(_type), params(_params) {}
+        : id(_id), name(_name), type(_type), params(_params)
+    {
+        //add logging info
+        params.name = name;
+        params.type = type;
+    }
 
     int id;
     String name;
@@ -470,7 +475,7 @@ Blob Net::getParam(LayerId layer, int numParam)
 {
     LayerData &ld = impl->getLayerData(layer);
 
-    std::vector<Blob> &layerBlobs = ld.layerInstance->learnedParams;
+    std::vector<Blob> &layerBlobs = ld.layerInstance->blobs;
     CV_Assert(numParam < (int)layerBlobs.size());
     return layerBlobs[numParam];
 }
@@ -487,7 +492,12 @@ void Net::deleteLayer(LayerId)
 
 //////////////////////////////////////////////////////////////////////////
 
-Importer::~Importer()
+Importer::~Importer() {}
+
+Layer::Layer() {}
+
+Layer::Layer(const LayerParams &params)
+    : blobs(params.blobs), name(params.name), type(params.type)
 {
 
 }
@@ -502,10 +512,7 @@ int Layer::outputNameToIndex(String)
     return -1;
 }
 
-Layer::~Layer()
-{
-
-}
+Layer::~Layer() {}
 
 //////////////////////////////////////////////////////////////////////////
 

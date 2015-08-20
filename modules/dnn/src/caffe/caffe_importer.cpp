@@ -193,10 +193,10 @@ namespace
                 return;
 
             const caffe::LayerParameter &binLayer = netBinary.layer(li);
-            layerParams.learnedBlobs.resize(binLayer.blobs_size());
+            layerParams.blobs.resize(binLayer.blobs_size());
             for (int bi = 0; bi < binLayer.blobs_size(); bi++)
             {
-                blobFromProto(binLayer.blobs(bi), layerParams.learnedBlobs[bi]);
+                blobFromProto(binLayer.blobs(bi), layerParams.blobs[bi]);
             }
         }
 

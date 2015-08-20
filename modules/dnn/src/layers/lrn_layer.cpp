@@ -8,7 +8,7 @@ namespace cv
 {
 namespace dnn
 {
-    LRNLayer::LRNLayer(LayerParams &params)
+    LRNLayer::LRNLayer(LayerParams &params) : Layer(params)
     {
         String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
         if (nrmType == "ACROSS_CHANNELS")
@@ -16,11 +16,11 @@ namespace dnn
         else if (nrmType == "WITHIN_CHANNEL")
             type = SPATIAL_NRM;
         else
-            CV_Error(cv::Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
+            CV_Error(Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
 
         size = params.get<int>("local_size", 5);
         if (size % 2 != 1 || size <= 0)
-            CV_Error(cv::Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
+            CV_Error(Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
 
         alpha = params.get<double>("alpha", 1);
         beta = params.get<double>("beta", 0.75);

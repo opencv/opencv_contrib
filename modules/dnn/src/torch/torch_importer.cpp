@@ -437,12 +437,12 @@ struct TorchImporter : public ::cv::dnn::Importer
                 readTorchTable(scalarParams, tensorParams);
 
                 CV_Assert(tensorParams.count("weight"));
-                layerParams.learnedBlobs.push_back(tensorParams["weight"]);
+                layerParams.blobs.push_back(tensorParams["weight"]);
 
                 bool bias = tensorParams.count("bias") != 0;
                 layerParams.set("bias_term", bias);
                 if (bias)
-                    layerParams.learnedBlobs.push_back(tensorParams["bias"]);
+                    layerParams.blobs.push_back(tensorParams["bias"]);
 
                 layerParams.set("num_output", scalarParams.get<int>("nOutputPlane"));
                 convertTorchKernelsParams(scalarParams, layerParams);
@@ -469,11 +469,11 @@ struct TorchImporter : public ::cv::dnn::Importer
 
                 CV_Assert(tensorParams.count("weight"));
                 Blob weightBlob = tensorParams["weight"];
-                layerParams.learnedBlobs.push_back(weightBlob);
+                layerParams.blobs.push_back(weightBlob);
 
                 bool bias = tensorParams.count("bias") != 0;
                 if (bias)
-                    layerParams.learnedBlobs.push_back(tensorParams["bias"]);
+                    layerParams.blobs.push_back(tensorParams["bias"]);
                 layerParams.set("bias_term", bias);
 
                 layerParams.set("num_output", weightBlob.size(0));

@@ -8,7 +8,7 @@ namespace dnn
 {
 
 //TODO: maybe "top_count" param is useless because it can be determined by output connections number?
-SplitLayer::SplitLayer(LayerParams &params)
+SplitLayer::SplitLayer(LayerParams &params) : Layer(params)
 {
     if (params.has("top_count"))
     {

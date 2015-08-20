@@ -7,7 +7,7 @@ namespace cv
 namespace dnn
 {
 
-ReshapeLayer::ReshapeLayer(LayerParams &params)
+ReshapeLayer::ReshapeLayer(LayerParams &params) : Layer(params)
 {
     inAxis = params.get<int>("axis", 0);
     inNumAxes = params.get<int>("num_axes", -1);

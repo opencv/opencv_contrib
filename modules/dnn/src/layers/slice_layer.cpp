@@ -7,7 +7,7 @@ namespace cv
 namespace dnn
 {
 
-SliceLayer::SliceLayer(LayerParams &params)
+SliceLayer::SliceLayer(LayerParams &params) : Layer(params)
 {
     inAxis = params.get<int>("axis", 1);
 

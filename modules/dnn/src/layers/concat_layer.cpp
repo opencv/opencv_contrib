@@ -6,7 +6,7 @@ namespace cv
 {
 namespace dnn
 {
-    ConcatLayer::ConcatLayer(LayerParams &params)
+    ConcatLayer::ConcatLayer(LayerParams &params) : Layer(params)
     {
         axis = params.get<int>("axis", 1);
         CV_Assert(axis >= 0);

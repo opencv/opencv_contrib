@@ -10,7 +10,7 @@ namespace cv
 namespace dnn
 {
     //TODO: set default axis number to 1, and add custom shape length in FullyConnected
-    SoftMaxLayer::SoftMaxLayer(LayerParams &params)
+    SoftMaxLayer::SoftMaxLayer(LayerParams &params) : Layer(params)
     {
         //hotfix!!!
         axis_ = params.get<int>("axis", 1);

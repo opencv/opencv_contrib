@@ -7,7 +7,7 @@ namespace cv
 namespace dnn
 {
 
-MVNLayer::MVNLayer(LayerParams &params)
+MVNLayer::MVNLayer(LayerParams &params) : Layer(params)
 {
     eps = params.get<double>("eps", 1e-9);
     acrossChannels = params.get<bool>("across_channels", false);

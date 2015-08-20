@@ -43,7 +43,7 @@ namespace dnn
         void col2im(Mat &dstMat);
 
     public:
-        DeConvolutionLayer(LayerParams &params) : ConvolutionLayer(params) {}
+        DeConvolutionLayer(LayerParams &params);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
 }

@@ -9,7 +9,7 @@ namespace cv
 {
 namespace dnn
 {
-    ConvolutionLayer::ConvolutionLayer(LayerParams &params)
+    ConvolutionLayer::ConvolutionLayer(LayerParams &params) : Layer(params)
     {
         getKernelParams(params, kerH, kerW, padH, padW, strideH, strideW);
 
@@ -18,15 +18,15 @@ namespace dnn
         group = params.get<int>("group", 1);
         CV_Assert(numOutput % group == 0);
 
-        CV_Assert(params.learnedBlobs.size() >= 1 && (!bias || params.learnedBlobs.size() >= 2));
-        learnedParams.assign(params.learnedBlobs.begin(), params.learnedBlobs.begin() + (bias ? 2 : 1));
+        CV_Assert(!bias || blobs.size() == 2);
+        CV_Assert( bias || blobs.size() == 1);
 
-        const Blob &wgtBlob = learnedParams[0];
+        const Blob &wgtBlob = blobs[0];
         CV_Assert(wgtBlob.dims() == 4 && wgtBlob.cols() == kerW && wgtBlob.rows() == kerH);
 
         if (bias)
         {
-            Blob &biasBlob = learnedParams[1];
+            Blob &biasBlob = blobs[1];
             CV_Assert(biasBlob.total() == (size_t)numOutput);
         }
 
@@ -43,7 +43,7 @@ namespace dnn
         computeInpOutShape(inpBlob);
 
         CV_Assert(inpCn % group == 0 && outCn % group == 0);
-        CV_Assert(learnedParams[0].num() == outCn && learnedParams[0].channels() == inpCn / group);
+        CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
 
         outGroupCn = outCn / group;
         inpGroupCn = inpCn / group;
@@ -73,7 +73,7 @@ namespace dnn
 
     void ConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
-        Blob &wgtBlob = learnedParams[0];
+        Blob &wgtBlob = blobs[0];
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
@@ -93,7 +93,7 @@ namespace dnn
 
                     if (bias)
                     {
-                        float *biasPtr = learnedParams[1].ptrf() + g*outGroupCn;
+                        float *biasPtr = blobs[1].ptrf() + g*outGroupCn;
                         Mat biasMat(outGroupCn, 1, CV_32F, biasPtr);
                         cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
                     }
@@ -144,6 +144,9 @@ namespace dnn
         topH = outH; topW = outW; topCn = outCn;
     }
 
+    DeConvolutionLayer::DeConvolutionLayer(LayerParams &params)
+        : ConvolutionLayer(params) {}
+
     void DeConvolutionLayer::computeInpOutShape(const Blob &inpBlob)
     {
         outH = inpBlob.rows();
@@ -159,7 +162,7 @@ namespace dnn
 
     void DeConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
-        Blob &wghtBlob = learnedParams[0];
+        Blob &wghtBlob = blobs[0];
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
@@ -183,7 +186,7 @@ namespace dnn
 
                     if (bias)
                     {
-                        float *biasPtr = learnedParams[1].ptrf() + g*inpGroupCn;
+                        float *biasPtr = blobs[1].ptrf() + g*inpGroupCn;
                         Mat biasMat(inpGroupCn, 1, CV_32F, biasPtr);
                         cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
                     }

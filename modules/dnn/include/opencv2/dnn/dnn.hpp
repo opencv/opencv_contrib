@@ -10,32 +10,44 @@ namespace cv
 {
 namespace dnn
 {
+    /** @brief initialize dnn module and built-in layers
+     * This function automatically called on most of OpenCV builds,
+     * but you need to call it manually on some specific configurations.
+     */
     CV_EXPORTS void initModule();
 
-    class CV_EXPORTS LayerParams : public Dict
+    struct CV_EXPORTS LayerParams : public Dict
     {
-    public:
+        ///list of learned parameters stored as blobs
+        std::vector<Blob> blobs;
 
-        std::vector<Blob> learnedBlobs;
+        ///optional, name of the layer instance (can be used internal purposes)
+        String name;
+        ///optional, type name which was used for creating layer by layer factory
+        String type;
     };
 
-    //Interface class allows to build new Layers
-    class CV_EXPORTS Layer
+    ///Interface class allows to build new Layers
+    struct CV_EXPORTS Layer
     {
-    public:
-        //learned params of layer must be stored here to allow externally read them
-        std::vector<Blob> learnedParams;
-
-        virtual ~Layer();
+        ///list of learned parameters must be stored here to allow read them using Net::getParam()
+        std::vector<Blob> blobs;
 
         //shape of output blobs must be adjusted with respect to shape of input blobs
         virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
         virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
-        //each input/output can be labeled to easily identify their using "layer_name.output_name"
+        //each input and output can be labeled to easily identify them using "<layer_name>[.output_name]" notation
         virtual int inputNameToIndex(String inputName);
         virtual int outputNameToIndex(String outputName);
+
+        String name; //!< name of the layer instance, can be used for logging or other internal purposes
+        String type; //!< type name which was used for creating layer by layer factory
+
+        Layer();
+        explicit Layer(const LayerParams &params); //!< intialize only #name, #type and #blobs fields
+        virtual ~Layer();
     };
 
     //containers for String and int
@@ -63,7 +75,7 @@ namespace dnn
         void forward(LayerId startLayer, LayerId toLayer);
         void forward(const std::vector<LayerId> &startLayers, const std::vector<LayerId> &toLayers);
 
-        //[Wished feature] Optimized smart forward(). Makes forward only for layers which wasn't changed after previous forward().
+        //[Wished feature] Optimized forward: makes forward only for layers which wasn't changed after previous forward().
         void forwardOpt(LayerId toLayer);
         void forwardOpt(const std::vector<LayerId> &toLayers);
 
