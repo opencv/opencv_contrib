@@ -2,9 +2,9 @@ name: "test_Convolution"
 input: "input"
 
 input_dim: 2
-input_dim: 6
-input_dim: 75
-input_dim: 113
+input_dim: 12
+input_dim: 36
+input_dim: 37
 
 layer {
   type: "Deconvolution"

@@ -15,20 +15,23 @@ static String _tf(TString filename)
     return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
 }
 
-static void testLayer(String basename, bool useCaffeModel = false)
+static void testLayer(String basename, bool useCaffeModel = false, bool useCommonInputBlob = true)
 {
-    Blob inp = blobFromNPY(_tf("blob.npy"));
-    Blob ref = blobFromNPY(_tf(basename + ".npy"));
+    String prototxt = _tf(basename + ".prototxt");
+    String caffemodel = _tf(basename + ".caffemodel");
 
-    String prototxt = basename + ".prototxt";
-    String caffemodel = basename + ".caffemodel";
+    String inpfile = (useCommonInputBlob) ? _tf("blob.npy") : _tf(basename + ".input.npy");
+    String outfile = _tf(basename + ".npy");
 
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(_tf(prototxt), (useCaffeModel) ? _tf(caffemodel) : String());
+        Ptr<Importer> importer = createCaffeImporter(prototxt, (useCaffeModel) ? caffemodel : String());
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
+
+    Blob inp = blobFromNPY(inpfile);
+    Blob ref = blobFromNPY(outfile);
 
     net.setBlob(".input", inp);
     net.forward();
@@ -85,7 +88,7 @@ TEST(Layer_Test_Pooling_ave, Accuracy)
 
 TEST(Layer_Test_DeConvolution, Accuracy)
 {
-     testLayer("layer_deconvolution", true);
+     testLayer("layer_deconvolution", true, false);
 }
 
 TEST(Layer_Test_MVN, Accuracy)
