@@ -79,7 +79,7 @@ namespace dnn
         Ptr<Impl> impl;
     };
 
-    class CV_EXPORTS Importer
+    class Importer
     {
     public:
 

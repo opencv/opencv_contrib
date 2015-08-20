@@ -67,6 +67,7 @@ namespace dnn
 
         Mat& getMatRef();
         const Mat& getMatRef() const;
+        //TODO: add UMat get methods
         Mat getMat(int n, int cn);
 
         //shape getters
@@ -98,13 +99,13 @@ namespace dnn
         */
         int canonicalAxis(int axis) const;
 
-        /** @brief returns real shape of the blob
+        /** @brief returns shape of the blob
         */
         BlobShape shape() const;
 
         bool equalShape(const Blob &other) const;
 
-        //shape getters, oriented for 4-dim Blobs processing
+        //shape getters for 4-dim Blobs processing
         int cols() const;
         int rows() const;
         int channels() const;
@@ -113,11 +114,14 @@ namespace dnn
         Vec4i shape4() const;
 
         //CPU data pointer functions
-        int offset(int n = 0, int cn = 0, int row = 0, int col = 0) const;
-        uchar *ptrRaw(int n = 0, int cn = 0, int row = 0, int col = 0);
-        float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
+        template<int n>
+        size_t offset(const Vec<int, n> &pos) const;
+        size_t offset(int n = 0, int cn = 0, int row = 0, int col = 0) const;
+        uchar *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         template<typename TFloat>
         TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+        float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
+        //TODO: add const ptr methods
 
         /** @brief share data with other blob and returns *this
         @returns *this

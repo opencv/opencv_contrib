@@ -86,8 +86,8 @@ namespace dnn
                 {
                     im2col(inpBlob, n, g);
 
-                    Mat kerMat(outGroupCn, ksize, wgtBlob.type(), wgtBlob.ptrRaw(g*outGroupCn));
-                    Mat dstMat(outGroupCn, outH*outW, outBlob.type(), outBlob.ptrRaw(n, g*outGroupCn));
+                    Mat kerMat(outGroupCn, ksize, wgtBlob.type(), wgtBlob.ptr(g*outGroupCn));
+                    Mat dstMat(outGroupCn, outH*outW, outBlob.type(), outBlob.ptr(n, g*outGroupCn));
 
                     cv::gemm(kerMat, colMat, 1, noArray(), 0, dstMat);
 
@@ -104,7 +104,7 @@ namespace dnn
 
     void ConvolutionLayer::im2col(Blob &inpBlob, int imNum, int cnGroup)
     {
-        uchar *srcPtr = inpBlob.ptrRaw(imNum, cnGroup*inpGroupCn);
+        uchar *srcPtr = inpBlob.ptr(imNum, cnGroup*inpGroupCn);
 
         if (is1x1())
         {
@@ -170,13 +170,13 @@ namespace dnn
             {
                 for (int g = 0; g < group; g++)
                 {
-                    Mat dstMat(inpGroupCn, inpH*inpW, decnBlob.type(), decnBlob.ptrRaw(n, g*inpGroupCn));
+                    Mat dstMat(inpGroupCn, inpH*inpW, decnBlob.type(), decnBlob.ptr(n, g*inpGroupCn));
 
                     if (is1x1())
                         colMat = dstMat;
 
-                    Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptrRaw(n, g*outGroupCn));
-                    Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptrRaw(g*outGroupCn));
+                    Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptr(n, g*outGroupCn));
+                    Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptr(g*outGroupCn));
                     cv::gemm(wghtMat, convMat, 1, noArray(), 0, colMat, GEMM_1_T);
 
                     col2im(dstMat);

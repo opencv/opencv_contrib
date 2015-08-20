@@ -158,10 +158,25 @@ inline size_t Blob::total(int startAxis, int endAxis) const
     return size;
 }
 
-inline int Blob::offset(int n, int cn, int row, int col) const
+
+template<int n>
+inline size_t Blob::offset(const Vec<int, n> &pos) const
 {
-    CV_DbgAssert(0 <= n && n < num() && 0 <= cn && cn < channels() && 0 <= row && row < rows() && 0 <= col && col < cols());
-    return ((n*channels() + cn)*rows() + row)*cols() + col;
+    size_t ofs = 0;
+    int i;
+    for (i = 0; i < std::min(n, dims()); i++)
+    {
+        CV_DbgAssert(pos[i] >= 0 && pos[i] < size(i));
+        ofs = ofs * (size_t)size(i) + pos[i];
+    }
+    for (; i < dims(); i++)
+        ofs *= (size_t)size(i);
+    return ofs;
+}
+
+inline size_t Blob::offset(int n, int cn, int row, int col) const
+{
+    return offset(Vec4i(n, cn, row, col));
 }
 
 inline float *Blob::ptrf(int n, int cn, int row, int col)
@@ -170,7 +185,7 @@ inline float *Blob::ptrf(int n, int cn, int row, int col)
     return (float*)m.data + offset(n, cn, row, col);
 }
 
-inline uchar *Blob::ptrRaw(int n, int cn, int row, int col)
+inline uchar *Blob::ptr(int n, int cn, int row, int col)
 {
     return m.data + m.elemSize() * offset(n, cn, row, col);
 }
@@ -179,7 +194,7 @@ template<typename TFloat>
 inline TFloat* Blob::ptr(int n, int cn, int row, int col)
 {
     CV_Assert(type() == cv::DataDepth<TFloat>::value);
-    return (TFloat*) ptrRaw(n, cn, row, col);
+    return (TFloat*) ptr(n, cn, row, col);
 }
 
 inline BlobShape Blob::shape() const
@@ -212,7 +227,7 @@ inline const Mat& Blob::getMatRef() const
 
 inline Mat Blob::getMat(int n, int cn)
 {
-    return Mat(rows(), cols(), m.type(), this->ptrRaw(n, cn));
+    return Mat(rows(), cols(), m.type(), this->ptr(n, cn));
 }
 
 inline int Blob::cols() const

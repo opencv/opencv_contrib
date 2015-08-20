@@ -33,7 +33,7 @@ using std::pow;
         {
             for (size_t i = 0; i < inputs.size(); i++)
             {
-                CV_Assert(inputs[i]->ptrRaw() == outputs[i].ptrRaw() && inputs[i]->type() == outputs[i].type());
+                CV_Assert(inputs[i]->ptr() == outputs[i].ptr() && inputs[i]->type() == outputs[i].type());
 
                 size_t size = outputs[i].total();
 

@@ -59,7 +59,7 @@ namespace dnn
 
     void LRNLayer::channelNoramlization(Blob &srcBlob, Blob &dstBlob)
     {
-        CV_DbgAssert(srcBlob.ptrRaw() != dstBlob.ptrRaw());
+        CV_DbgAssert(srcBlob.ptr() != dstBlob.ptr());
 
         int num = srcBlob.num();
         int channels = srcBlob.channels();
