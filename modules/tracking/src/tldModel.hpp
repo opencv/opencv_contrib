@@ -81,12 +81,9 @@ namespace cv
 			Rect2d boundingBox_;
 			RNG rng;
 <<<<<<< HEAD
-<<<<<<< HEAD
 
 =======
 >>>>>>> Fixing Warnings #2
-=======
->>>>>>> origin/fuzzy_math
 		};
 
 	}

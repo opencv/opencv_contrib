@@ -129,7 +129,6 @@ public:
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
-<<<<<<< HEAD
 
 An image descriptor that can be computed very fast, while being
 about as robust as, for example, SURF or BRIEF.
@@ -171,136 +170,7 @@ class CV_EXPORTS LATCH : public DescriptorExtractor
 public:
 	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
-=======
 
-An image descriptor that can be computed very fast, while being
-about as robust as, for example, SURF or BRIEF.
- */
-class CV_EXPORTS_W LUCID : public Feature2D
-{
-public:
-    /**
-     * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
-     * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
-     */
-    CV_WRAP static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
-};
-
-
-/*
-* LATCH Descriptor
-*/
-
-/** latch Class for computing the LATCH descriptor.
-If you find this code useful, please add a reference to the following paper in your work:
-Gil Levi and Tal Hassner, "LATCH: Learned Arrangements of Three Patch Codes", arXiv preprint arXiv:1501.03719, 15 Jan. 2015
-
-LATCH is a binary descriptor based on learned comparisons of triplets of image patches.
-
-* bytes is the size of the descriptor - can be 64, 32, 16, 8, 4, 2 or 1
-* rotationInvariance - whether or not the descriptor should compansate for orientation changes.
-* half_ssd_size - the size of half of the mini-patches size. For example, if we would like to compare triplets of patches of size 7x7x
-    then the half_ssd_size should be (7-1)/2 = 3.
-
-Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then 
-    you will have to use an extractor which estimates the patch orientation (in degrees). Examples for such extractors are ORB and SIFT.
-
-Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures2D/latch_match.cpp
-
-*/
-class CV_EXPORTS_W LATCH : public Feature2D
-{
-public:
-	CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
-};
-
-/** @brief Class implementing DAISY descriptor, described in @cite Tola10
-
-@param radius radius of the descriptor at the initial scale
-@param q_radius amount of radial range division quantity
-@param q_theta amount of angular range division quantity
-@param q_hist amount of gradient orientations range division quantity
-@param norm choose descriptors normalization type, where
-DAISY::NRM_NONE will not do any normalization (default),
-DAISY::NRM_PARTIAL mean that histograms are normalized independently for L2 norm equal to 1.0,
-DAISY::NRM_FULL mean that descriptors are normalized for L2 norm equal to 1.0,
-DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 but no individual one is bigger than 0.154 as in SIFT
-@param H optional 3x3 homography matrix used to warp the grid of daisy but sampling keypoints remains unwarped on image
-@param interpolation switch to disable interpolation for speed improvement at minor quality loss
-@param use_orientation sample patterns using keypoints orientation, disabled by default.
-
- */
-class CV_EXPORTS_W DAISY : public Feature2D
-{
-public:
-    enum
-    {
-        NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
-    };
-    CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
-                int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
-                bool interpolation = true, bool use_orientation = false );
-
-    /** @overload
-     * @param image image to extract descriptors
-     * @param keypoints of interest within image
-     * @param descriptors resulted descriptors array
-     */
-    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
-
-    virtual void compute( InputArrayOfArrays images,
-                          std::vector<std::vector<KeyPoint> >& keypoints,
-                          OutputArrayOfArrays descriptors );
-
-    /** @overload
-     * @param image image to extract descriptors
-     * @param roi region of interest within image
-     * @param descriptors resulted descriptors array for roi image pixels
-     */
-    virtual void compute( InputArray image, Rect roi, OutputArray descriptors ) = 0;
-
-    /**@overload
-     * @param image image to extract descriptors
-     * @param descriptors resulted descriptors array for all image pixels
-     */
-    virtual void compute( InputArray image, OutputArray descriptors ) = 0;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     */
-    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     * @param H homography matrix for warped grid
-     */
-    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const = 0;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     */
-    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const = 0;
->>>>>>> origin/fuzzy_math
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     * @param H homography matrix for warped grid
-     */
-    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor , double *H ) const = 0;
-
-};
 
 
 //! @}

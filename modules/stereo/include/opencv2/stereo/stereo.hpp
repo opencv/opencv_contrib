@@ -46,7 +46,3 @@
 #endif
 
 #include "opencv2/stereo.hpp"
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/fuzzy_math

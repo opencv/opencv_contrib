@@ -48,11 +48,7 @@
 
 namespace cv
 {
-<<<<<<< HEAD
     extern const double ColorNames[][10];
-=======
-	extern const double ColorNames[][10];
->>>>>>> origin/fuzzy_math
 }
 
 #endif

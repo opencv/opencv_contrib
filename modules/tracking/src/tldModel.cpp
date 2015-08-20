@@ -373,14 +373,11 @@ namespace cv
 			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
 <<<<<<< HEAD
-<<<<<<< HEAD
 
 
 
 
 =======
 >>>>>>> Fixing Warnings #2
-=======
->>>>>>> origin/fuzzy_math
 	}
 }
