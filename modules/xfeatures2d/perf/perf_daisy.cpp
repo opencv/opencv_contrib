@@ -25,7 +25,7 @@ PERF_TEST_P(daisy, extract, testing::Values(DAISY_IMAGES))
     Ptr<DAISY> descriptor = DAISY::create();
 
     vector<KeyPoint> points;
-    vector<float> descriptors;
+    Mat_<float> descriptors;
     // compute all daisies in image
     TEST_CYCLE() descriptor->compute(frame, descriptors);
 
