@@ -284,6 +284,7 @@ namespace cv
 			//printf("Sr GPU: %f\n\n", t);
 		}
 
+
 		// Calculate Conservative similarity of the patch (NN-Model)
 		double TLDDetector::Sc(const Mat_<uchar>& patch)
 		{
@@ -473,8 +474,8 @@ namespace cv
 			//double t;
 
 			//e1 = getTickCount();
-
 			//Detection part
+
 			//Generate windows and filter by variance
 			scaleID = 0;
 			resized_imgs.push_back(img);

@@ -10,8 +10,8 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-// Third party copyrights are property of their respective owners.
+// Copyright (C) 2015, University of Ostrava, Institute for Research and Applications of Fuzzy Modeling,
+// Pavel Vlasanek, all rights reserved. Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
@@ -39,54 +39,32 @@
 //
 //M*/
 
-#ifndef OPENCV_TLD_MODEL
-#define OPENCV_TLD_MODEL
-
-#include "precomp.hpp"
-#include "tldDetector.hpp"
-#include "tldUtils.hpp"
+#ifndef __OPENCV_FUZZY_TYPES_H__
+#define __OPENCV_FUZZY_TYPES_H__
 
 namespace cv
 {
-	namespace tld
-	{
-		class TrackerTLDModel : public TrackerModel
-		{
-		public:
-			TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize);
-			Rect2d getBoundingBox(){ return boundingBox_; }
-			void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
-			void integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches);
-			void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
-			void ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
-			Size getMinSize(){ return minSize_; }
-			void printme(FILE* port = stdout);
-			Ptr<TLDDetector> detector;
 
-			std::vector<Mat_<uchar> > positiveExamples, negativeExamples;
-			Mat posExp, negExp;
-			int posNum, negNum;
-			std::vector<int> timeStampsPositive, timeStampsNegative;
-			int timeStampPositiveNext, timeStampNegativeNext;
-			double originalVariance_;
+namespace ft
+{
+    //! @addtogroup fuzzy
+    //! @{
 
-			double getOriginalVariance(){ return originalVariance_; }
+    enum
+    {
+        LINEAR = 1,
+        SINUS = 2
+    };
 
-		protected:
-			Size minSize_;
-			TrackerTLD::Params params_;
-			void pushIntoModel(const Mat_<uchar>& example, bool positive);
-			void modelEstimationImpl(const std::vector<Mat>& /*responses*/){}
-			void modelUpdateImpl(){}
-			Rect2d boundingBox_;
-			RNG rng;
-<<<<<<< HEAD
+    enum
+    {
+        ONE_STEP = 1,
+        MULTI_STEP = 2,
+        ITERATIVE = 3
+    };
 
-=======
->>>>>>> Fixing Warnings #2
-		};
-
-	}
+    //! @}
+}
 }
 
-#endif
+#endif // __OPENCV_FUZZY_TYPES_H__

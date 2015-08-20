@@ -39,18 +39,17 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
+#pragma once
 #ifndef __OPENCV_STEREO_PRECOMP_H__
 #define __OPENCV_STEREO_PRECOMP_H__
 
 #include "opencv2/stereo.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/features2d.hpp"
-#include "opencv2/core.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
-#include "opencv2/core/cvdef.h"
+#include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/calib3d.hpp"
 
 #include <algorithm>
 #include <cmath>
