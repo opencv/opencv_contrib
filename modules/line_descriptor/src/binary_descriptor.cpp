@@ -692,7 +692,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   /* sigma values and reduction factor used in Gaussian pyramids */
   float preSigma2 = 0;  //orignal image is not blurred, has zero sigma;
   float curSigma2 = 1.0;  //[sqrt(2)]^0=1;
-  double factor = sqrt( 2 );  //the down sample factor between connective two octave images
+  double factor = sqrt( 2.0 );  //the down sample factor between connective two octave images
 
   /* loop over number of octaves */
   for ( int octaveCount = 0; octaveCount < params.numOfOctave_; octaveCount++ )
