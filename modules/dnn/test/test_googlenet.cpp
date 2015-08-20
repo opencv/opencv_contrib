@@ -1,3 +1,4 @@
+#if defined(ENABLE_CAFFE_MODEL_TESTS)
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
 
@@ -27,8 +28,7 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    Blob inp(inpMats);
-    net.setBlob(".data", inp);
+    net.setBlob(".data", Blob(inpMats));
     net.forward();
 
     Blob out = net.getBlob("prob");
@@ -37,3 +37,4 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
 }
 
 }
+#endif

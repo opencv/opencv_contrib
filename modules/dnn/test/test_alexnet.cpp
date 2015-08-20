@@ -1,3 +1,4 @@
+#if defined(ENABLE_CAFFE_MODEL_TESTS) && defined(ENABLE_CAFFE_ALEXNET_TEST) //AlexNet is disabled now
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
 
@@ -36,3 +37,4 @@ TEST(Reproducibility_AlexNet, Accuracy)
 }
 
 }
+#endif
