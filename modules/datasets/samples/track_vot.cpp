@@ -40,7 +40,6 @@
 //M*/
 
 #include "opencv2/datasets/track_vot.hpp"
-
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -73,7 +72,7 @@ int main(int argc, char *argv[])
 	}
 
 	Ptr<TRACK_vot> dataset = TRACK_vot::create();
-	dataset->load("D:/opencv/VOT 2015");
+	dataset->load(path);
 	printf("Datasets number: %d\n", dataset->getDatasetsNum());
 	for (int i = 1; i <= dataset->getDatasetsNum(); i++)
 		printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
