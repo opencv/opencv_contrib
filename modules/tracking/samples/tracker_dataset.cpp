@@ -37,7 +37,7 @@
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
 //
-//M*/
+//M*//
 
 #include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
