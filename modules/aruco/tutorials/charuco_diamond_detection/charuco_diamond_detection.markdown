@@ -8,7 +8,7 @@ It is similar to a ChArUco board in appearance, however they are conceptually di
 
 In both, ChArUco board and Diamond markers, their detection is based on the previous detected ArUco
 markers. In the ChArUco case, the used markers are selected by directly looking their identifiers. This means
-that if a marker board is found on a image, it will be automatically assumed to belong to the board. Furthermore,
+that if a marker (included in the board) is found on a image, it will be automatically assumed to belong to the board. Furthermore,
 if a marker board is found more than once in the image, it will produce an ambiguity since the system wont
 be able to know which one should be used for the Board.
 
@@ -16,7 +16,7 @@ On the other hand, the detection of Diamond marker is not based on the identifie
 is based on the relative position of the markers. As a consequence, marker identifiers can be repeated in the
 same diamond or among different diamonds, and they can be detected simultaneously without ambiguity. However,
 due to the complexity of finding marker based on their relative position, the diamond markers are limited to
-a size of 3x3 and 4 markers.
+a size of 3x3 squares and 4 markers.
 
 As in a single ArUco marker, each Diamond marker is composed by 4 corners and a identifier. The four corners
 correspond to the 4 chessboard corners in the marker and the identifier is actually an array of 4 numbers, which are
@@ -24,13 +24,13 @@ the identifiers of the four ArUco markers inside the diamond.
 
 Diamond markers are useful in those scenarios where repeated markers should be allowed. For instance:
 
-- Increasing the number of identifiers of single markers by using diamond marker for labeling. They would allow
+- To increase the number of identifiers of single markers by using diamond marker for labeling. They would allow
 up to N^4 different ids, being N the number of markers in the used dictionary.
 
 - Give to each of the four markers a conceptual meaning. For instance, one of the four marker ids could be
-used to indicate the scale of the marker (i.e. the size of the square), so that the same marker can be found
+used to indicate the scale of the marker (i.e. the size of the square), so that the same diamond can be found
 in the environment with different sizes just by changing one of the four markers and the user does not need
-to manually indicate the scale of each of them. This case is included in the ```diamond_detector.cpp``` inside
+to manually indicate the scale of each of them. This case is included in the ```diamond_detector.cpp``` file inside
 the samples folder of the module.
 
 Furthermore, as its corners are chessboard corners, they can be used for accurate pose estimation.
@@ -64,7 +64,7 @@ A full working example is included in the ```create_diamond.cpp``` inside the mo
 ChArUco Diamond Detection
 ------
 
-As in most cases, the detection of diamond markers requires a previous detection of ArUco marker.
+As in most cases, the detection of diamond markers requires a previous detection of ArUco markers.
 After detecting markers, diamond are detected using the ```detectCharucoDiamond()``` function:
 
 ``` c++
@@ -87,7 +87,7 @@ After detecting markers, diamond are detected using the ```detectCharucoDiamond(
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);
 ```
 
-The ```detectCharucoDiamond()``` receives the original image and the previous detected marker corners and ids.
+The ```detectCharucoDiamond()``` function receives the original image and the previous detected marker corners and ids.
 The input image is necessary to perform subpixel refinement in the ChArUco corners.
 It also receives the rate between the square size and the marker sizes which is required for both, detecting the diamond
 from the relative positions of the markers and interpolating the ChArUco corners.

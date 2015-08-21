@@ -101,6 +101,8 @@ The generated image is:
 
 ![Generated marker](images/marker23.jpg)
 
+A full working example is included in the ```create_marker.cpp``` inside the module samples folder.
+
 
 Marker Detection
 ------

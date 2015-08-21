@@ -153,7 +153,9 @@ The output image will be something like this:
 
 ![](images/board.jpg)
 
-Finally, a full example of board detection  (see board_detector.cpp for a more detailed example):
+A full working example of board creation is included in the ```create_board.cpp``` inside the module samples folder.
+
+Finally, a full example of board detection:
 
 ``` c++
     cv::VideoCapture inputVideo;

@@ -33,9 +33,6 @@ visible in all the viewpoints.
 The function to calibrate is ```calibrateCameraCharuco()```. Example:
 
 ``` c++
-    \#include <opencv2/aruco/charuco.hpp>
-    ...
-    ...
     aruco::CharucoBoard board = ... // create charuco board
     cv::Size imgSize = ... // camera image size
 
@@ -53,13 +50,13 @@ The function to calibrate is ```calibrateCameraCharuco()```. Example:
     double repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
 ```
 
-The ChArUco corners and ChArUco identifiers captured on each viewpoint are stored in the vectors allCharucoCorners and allCharucoIds, one element per viewpoint.
+The ChArUco corners and ChArUco identifiers captured on each viewpoint are stored in the vectors ```allCharucoCorners``` and ```allCharucoIds```, one element per viewpoint.
 
 The ```calibrateCameraCharuco()``` function will fill the ```cameraMatrix``` and ```distCoeffs``` arrays with the camera calibration parameters. It will return the reprojection
-error obtained from the calibration. The elements in ```rvecs``` and ```tvecs``` will be filled with the estimated position of the camera (respect to the ChArUco board)
+error obtained from the calibration. The elements in ```rvecs``` and ```tvecs``` will be filled with the estimated pose of the camera (respect to the ChArUco board)
 in each of the viewpoints.
 
-Finally, the ```calibrationFlags``` flag determines some of the options for the calibration. Its format is equivalent to the flags parameter in the OpenCV
+Finally, the ```calibrationFlags``` parameter determines some of the options for the calibration. Its format is equivalent to the flags parameter in the OpenCV
 ```calibrateCamera()``` function.
 
 A full working example is included in the ```calibrate_camera_charuco.cpp``` inside the module samples folder.
@@ -79,9 +76,6 @@ requires the detections of an ArUco board from different viewpoints.
 Example of ```calibrateCameraAruco()``` use:
 
 ``` c++
-    \#include <opencv2/aruco.hpp>
-    ...
-    ...
     aruco::Board board = ... // create aruco board
     cv::Size imgSize = ... // camera image size
 
