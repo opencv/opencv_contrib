@@ -60,7 +60,9 @@ using namespace cv::rgbd;
 using namespace cv::structured_light;
 using namespace std;
 
-void captureImageMultipleTimes(Ptr<VideoCapture>& capture, Mat& image, Mat& gray, Mat& depth, int wait = 0, int n = 1)
+void captureImageMultipleTimes(Ptr<VideoCapture>& capture, Mat& image, Mat& gray, Mat& depth, int wait = 0, int n = 1);
+
+void captureImageMultipleTimes(Ptr<VideoCapture>& capture, Mat& image, Mat& gray, Mat& depth, int wait, int n)
 {
     // sometimes need to grab n times to get good images
     for (int i = 0; i < n; i++)
@@ -113,7 +115,7 @@ int main(int argc, char** argv)
     else
     {
         // read from yml file
-        FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
+        FileStorage fs("capturer_parameters.yml", FileStorage::READ);
         fs["deviceId"] >> devId;
         fs["lightThreshold"] >> lightThreshold;
         fs["lightIntensity"] >> lightIntensity;

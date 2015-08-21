@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     else
     {
         // read from yml file
-        FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
+        FileStorage fs("capturer_parameters.yml", FileStorage::READ);
         fs["deviceId"] >> devId;
         //fs["lightThreshold"] >> lightThreshold;
         //fs["lightIntensity"] >> lightIntensity;
