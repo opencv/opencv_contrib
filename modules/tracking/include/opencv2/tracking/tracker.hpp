@@ -1273,7 +1273,7 @@ public:
 
 	@return True if new target initialization went succesfully, false otherwise
 	*/
-	bool addTarget(const Mat& image, const Rect2d& boundingBox, char* tracker_algorithm_name);
+	bool addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name);
 
 	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets
 	@param image The current frame
