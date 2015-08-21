@@ -69,15 +69,15 @@ int main(int argc, char** argv)
     const String keys =
         "{help h usage ? |       | print this message   }"
         "{id             |   0   | device ID            }"
-        "{w              |  -1   | projector width      }"
-        "{h              |  -1   | projector height     }"
+        "{pw             |  -1   | projector width      }"
+        "{ph             |  -1   | projector height     }"
         "{openni         |   0   | use OpenNI device    }"
         ;
     CommandLineParser parser(argc, argv, keys);
 
     devId = parser.get<int>("id");
-    projSize.width = parser.get<int>("w");
-    projSize.height = parser.get<int>("h");
+    projSize.width = parser.get<int>("pw");
+    projSize.height = parser.get<int>("ph");
     useOpenni = parser.get<int>("openni") > 0;
 
     if (projSize.width > 0 && projSize.height > 0)

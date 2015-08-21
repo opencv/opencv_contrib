@@ -7,6 +7,7 @@ public class Calibration : EditorWindow
     int deviceID = 0;
     int lightThreshold = 10;
     int lightIntensity = 50;
+    int monitorWidth = 1024;
     int projectorWidth = 1024;
     int projectorHeight = 768;
     bool useKinect = false;
@@ -54,6 +55,7 @@ public class Calibration : EditorWindow
         deviceID = EditorGUILayout.IntField("Device ID", deviceID);
         lightThreshold = EditorGUILayout.IntField("Light Threshold", lightThreshold);
         lightIntensity = EditorGUILayout.IntField("Light Intensity", lightIntensity);
+        monitorWidth = EditorGUILayout.IntField("Monitor Width", monitorWidth);
         projectorWidth = EditorGUILayout.IntField("Projector Width", projectorWidth);
         projectorHeight = EditorGUILayout.IntField("Projector Height", projectorHeight);
         useKinect = EditorGUILayout.Toggle("Use Kinect", useKinect);
@@ -73,7 +75,7 @@ public class Calibration : EditorWindow
             Process process = new Process();
             process.StartInfo.FileName = exePath + "\\rgbd-example-projection_calibration.exe";
             process.StartInfo.WorkingDirectory = workingPath + "\\Opencv";
-            process.StartInfo.Arguments = "-threshold=" + lightThreshold.ToString() + " -intensity=" + lightIntensity.ToString() + " -w=" + projectorWidth.ToString() + " -h=" + projectorHeight.ToString() + " -openni=" + useKinectInt.ToString();
+            process.StartInfo.Arguments = "-threshold=" + lightThreshold.ToString() + " -intensity=" + lightIntensity.ToString() + " -pw=" + projectorWidth.ToString() + " -mw=" + monitorWidth.ToString() + " -ph=" + projectorHeight.ToString() + " -openni=" + useKinectInt.ToString();
             process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
             process.Start();
         }
@@ -83,7 +85,7 @@ public class Calibration : EditorWindow
             Process process = new Process();
             process.StartInfo.FileName = exePath + "\\rgbd-example-projection_meshing.exe";
             process.StartInfo.WorkingDirectory = workingPath + "\\Opencv";
-            process.StartInfo.Arguments = "-w=" + projectorWidth.ToString() + " -h=" + projectorHeight.ToString() + " -openni=" + useKinectInt.ToString();
+            process.StartInfo.Arguments = "-mw=" + monitorWidth.ToString() + " -pw=" + projectorWidth.ToString() + " -ph=" + projectorHeight.ToString() + " -openni=" + useKinectInt.ToString();
             process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
             process.Start();
         }
