@@ -82,8 +82,8 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
 	{
 		Mat frame;
-		dataset->getNextFrame(frame);
-
+		if (!dataset->getNextFrame(frame))
+			break;
 		//Draw Ground Truth BB
 		vector <Point2d> gtPoints =  dataset->getGT();
 		for (int j = 0; j < (int)(gtPoints.size()-1); j++)
