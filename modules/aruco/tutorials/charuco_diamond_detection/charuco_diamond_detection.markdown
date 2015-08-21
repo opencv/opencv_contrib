@@ -114,7 +114,7 @@ The result is the same that the one produced by ```drawDetectedMarkers()```, but
 
 ![Detected diamond markers](images/detecteddiamonds.png)
 
-A full working example is included in the ```diamond_detector.cpp``` inside the module samples folder.
+A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.
 
 
 ChArUco Diamond Pose Estimation
@@ -152,4 +152,4 @@ Finally, an axis can be drawn to check the estimated pose is correct using ```dr
 The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out,
 as in a simple ArUco marker pose estimation.
 
-A full working example is included in the ```diamond_detector.cpp``` inside the module samples folder.
+A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.

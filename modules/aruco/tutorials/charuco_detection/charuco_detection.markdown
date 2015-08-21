@@ -190,7 +190,7 @@ In the presence of occlusion. like in the following image, although some corners
 
 ![Charuco detection with occlusion](images/chocclusion.png)
 
-Finally, this is a full example of Charuco detection (without using calibration parameters) (see board_detector_charuco.cpp for a more detailed example):
+Finally, this is a full example of Charuco detection (without using calibration parameters):
 
 ``` c++
     cv::VideoCapture inputVideo;
@@ -230,7 +230,7 @@ Finally, this is a full example of Charuco detection (without using calibration 
     }
 ```
 
-
+A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
 
 ChArUco Pose Estimation
 ------
@@ -258,7 +258,7 @@ The axis can be drawn using ```drawAxis()``` to check the pose is correctly esti
 
 ![Charuco Board Axis](images/chaxis.png)
 
-A full example of Charuco detection with pose estimation: (see a more detailed example in board_detector_charuco.cpp)
+A full example of Charuco detection with pose estimation:
 
 ``` c++
     cv::VideoCapture inputVideo;
@@ -302,3 +302,5 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
             break;
     }
 ```
+
+A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.

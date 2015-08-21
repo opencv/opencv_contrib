@@ -193,7 +193,7 @@ provided by the ```detectMarkers()``` function.
 Note that this function is only provided for visualization and its use can be perfectly omitted.
 
 With these two functions we can create a basic marker detection loop to detect markers from our
-camera (see marker_detector.cpp for a more detailed example):
+camera:
 
 ``` c++
     cv::VideoCapture inputVideo;
@@ -221,6 +221,8 @@ camera (see marker_detector.cpp for a more detailed example):
 
 Note that some of the optional parameters have been omitted, like the detection parameter object or the
 output vector of rejected candidates.
+
+A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
 
 
 
@@ -280,7 +282,7 @@ checked:
 - ```rvec``` and ```tvec``` are the pose parameters whose axis want to be drawn.
 - The last parameter is the length of the axis, in the same unit that tvec (usually meters)
 
-A basic full example for pose estimation from single markers  (see marker_detector.cpp for a more detailed example):
+A basic full example for pose estimation from single markers:
 
 ``` c++
     cv::VideoCapture inputVideo;
@@ -318,6 +320,8 @@ A basic full example for pose estimation from single markers  (see marker_detect
             break;
     }
 ```
+
+A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
 
 
 Selecting a dictionary

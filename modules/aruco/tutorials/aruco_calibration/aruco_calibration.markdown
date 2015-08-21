@@ -62,7 +62,7 @@ in each of the viewpoints.
 Finally, the ```calibrationFlags``` flag determines some of the options for the calibration. Its format is equivalent to the flags parameter in the OpenCV
 ```calibrateCamera()``` function.
 
-A full working example is included in the ```camera_calibration_charuco.cpp``` inside the module samples folder.
+A full working example is included in the ```calibrate_camera_charuco.cpp``` inside the module samples folder.
 
 
 
@@ -105,4 +105,4 @@ In this case, and contrary to the ```calibrateCameraCharuco()``` function, the d
 The rest of parameters are the same than in ```calibrateCameraCharuco()```, except the board layout object which does not need to be a ```CharucoBoard``` object, it can be
 any ```Board``` object.
 
-A full working example is included in the ```camera_calibration.cpp``` inside the module samples folder.
+A full working example is included in the ```calibrate_camera.cpp``` inside the module samples folder.

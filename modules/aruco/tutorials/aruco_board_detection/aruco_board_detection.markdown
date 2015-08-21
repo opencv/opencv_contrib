@@ -194,6 +194,8 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
     }
 ```
 
+A full working example is included in the ```detect_board.cpp``` inside the module samples folder.
+
 
 Refine marker detection
 -----
@@ -253,3 +255,5 @@ be observed that some of the markers that were not detected in the first place c
 
 It must also be noted that, in some cases, if the number of detected markers in the first place is too low (for instance only
 1 or 2 markers), the projections of the missing markers can be of bad quality, producing erroneous correspondences.
+
+See module samples for a more detailed implementation.
