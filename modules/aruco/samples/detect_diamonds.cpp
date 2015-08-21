@@ -161,6 +161,7 @@ int main(int argc, char *argv[]) {
             cerr << "Invalid camera file" << endl;
             return 0;
         }
+        estimatePose = true;
     }
 
     bool autoScale = false;

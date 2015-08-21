@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
             cerr << "Invalid camera file" << endl;
             return 0;
         }
+        estimatePose = true;
     }
     float markerLength = (float)atof(getParam("-l", argc, argv, "0.1").c_str());
 
