@@ -283,7 +283,7 @@ namespace cv{
         if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
       }
       //get non-compressed custom descriptors
-      for(unsigned i=0,j=descriptors_npca.size()-extractor_npca.size();i<extractor_npca.size();i++,j++){
+      for(unsigned i=0,j=(unsigned)(descriptors_npca.size()-extractor_npca.size());i<extractor_npca.size();i++,j++){
         if(!getSubWindow(img,roi, features_npca[j], extractor_npca[i]))return false;
       }
       if(features_npca.size()>0)merge(features_npca,X[1]);
@@ -293,7 +293,7 @@ namespace cv{
         if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
       }
       //get compressed custom descriptors
-      for(unsigned i=0,j=descriptors_pca.size()-extractor_pca.size();i<extractor_pca.size();i++,j++){
+      for(unsigned i=0,j=(unsigned)(descriptors_pca.size()-extractor_pca.size());i<extractor_pca.size();i++,j++){
         if(!getSubWindow(img,roi, features_pca[j], extractor_pca[i]))return false;
       }
       if(features_pca.size()>0)merge(features_pca,X[0]);
@@ -348,7 +348,7 @@ namespace cv{
       if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
     }
     //get non-compressed custom descriptors
-    for(unsigned i=0,j=descriptors_npca.size()-extractor_npca.size();i<extractor_npca.size();i++,j++){
+    for(unsigned i=0,j=(unsigned)(descriptors_npca.size()-extractor_npca.size());i<extractor_npca.size();i++,j++){
       if(!getSubWindow(img,roi, features_npca[j], extractor_npca[i]))return false;
     }
     if(features_npca.size()>0)merge(features_npca,X[1]);
@@ -358,7 +358,7 @@ namespace cv{
       if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
     }
     //get compressed custom descriptors
-    for(unsigned i=0,j=descriptors_pca.size()-extractor_pca.size();i<extractor_pca.size();i++,j++){
+    for(unsigned i=0,j=(unsigned)(descriptors_pca.size()-extractor_pca.size());i<extractor_pca.size();i++,j++){
       if(!getSubWindow(img,roi, features_pca[j], extractor_pca[i]))return false;
     }
     if(features_pca.size()>0)merge(features_pca,X[0]);
