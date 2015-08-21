@@ -32,6 +32,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+/**
+ * @file sphereview_3dobj_demo.cpp
+ * @brief Generating training data for CNN with triplet loss.
+ * @author Yida Wang
+ */
 #define HAVE_CAFFE
 #include <iostream>
 #include "opencv2/imgproc.hpp"
@@ -52,6 +57,7 @@ int main(int argc, char** argv)
 "{feature_blob | feat | Name of layer which will represent as the feature, in this network, ip1 or feat is well.}"
 "{device | CPU | device}"
 "{dev_id | 0 | dev_id}";
+    /* Get parameters from comand line. */
     cv::CommandLineParser parser(argc, argv, keys);
     parser.about("Demo for object data classification and pose estimation");
     if (parser.has("help"))
@@ -70,13 +76,23 @@ int main(int argc, char** argv)
     string device = parser.get<string>("device");
     int dev_id = parser.get<int>("dev_id");
 
-
     std::vector<string> ref_img;
+    /* Sample which is most closest in pose to reference image
+    *and also the same class.
+    */
     ref_img.push_back(ref_img1);
+    /* Sample which is less closest in pose to reference image
+    *and also the same class.
+    */
     ref_img.push_back(ref_img2);
+    /* Sample which is very close in pose to reference image
+    *but not the same class.
+    */
     ref_img.push_back(ref_img3);
 
+    /* Initialize a net work with Device. */
     cv::cnn_3dobj::descriptorExtractor descriptor(device, dev_id);
+    /* Load net with the caffe trained net work parameter and structure. */
     if (strcmp(mean_file.c_str(), "no") == 0)
         descriptor.loadNet(network_forIMG, caffemodel);
     else
@@ -116,6 +132,10 @@ int main(int argc, char** argv)
     }
     bool pose_pass = false;
     bool class_pass = false;
+    /* Have comparations on the distance between reference image and 3 other images
+    *distance between closest sample and reference image should be smallest and
+    *distance between sample in another class and reference image should be largest.
+    */
     if (matches[0] < matches[1] && matches[0] < matches[2])
         pose_pass = true;
     if (matches[1] < matches[2])

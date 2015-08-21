@@ -32,6 +32,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+/**
+ * @file demo_sphereview_data.cpp
+ * @brief Generating training data for CNN with triplet loss.
+ * @author Yida Wang
+ */
 #define HAVE_CAFFE
 #include <opencv2/cnn_3dobj.hpp>
 #include <opencv2/viz/vizcore.hpp>
@@ -44,14 +49,15 @@ int main(int argc, char *argv[])
 {
     const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../data/3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
 "{ite_depth | 2 | Iteration of sphere generation.}"
-"{plymodel | ../data/3Dmodel/ape.ply | path of the '.ply' file for image rendering. }"
-"{imagedir | ../data/images_all/ | path of the generated images for one particular .ply model. }"
-"{labeldir | ../data/label_all.txt | path of the generated images for one particular .ply model. }"
-"{num_class | 4 | total number of classes of models}"
-"{label_class | 0 | class label of current .ply model}"
-"{rgb_use | 0 | use RGB image or grayscale}";
+"{plymodel | ../data/3Dmodel/ape.ply | Path of the '.ply' file for image rendering. }"
+"{imagedir | ../data/images_all/ | Path of the generated images for one particular .ply model. }"
+"{labeldir | ../data/label_all.txt | Path of the generated images for one particular .ply model. }"
+"{num_class | 4 | Total number of classes of models}"
+"{label_class | 0 | Class label of current .ply model}"
+"{rgb_use | 0 | Use RGB image or grayscale}";
+    /* Get parameters from comand line. */
     cv::CommandLineParser parser(argc, argv, keys);
-    parser.about("Demo for Sphere View data generation");
+    parser.about("Generating training data for CNN with triplet loss");
     if (parser.has("help"))
     {
         parser.printMessage();
@@ -70,23 +76,25 @@ int main(int argc, char *argv[])
     char* p=(char*)labeldir.data();
     imglabel.open(p, fstream::app|fstream::out);
     bool camera_pov = (true);
-    /// Create a window
+    /* Create a window using viz. */
     viz::Viz3d myWindow("Coordinate Frame");
+    /* Set window size as 64*64, we use this scale as default. */
     myWindow.setWindowSize(Size(64,64));
-    /// Add coordinate axes
+    /* Add coordinate axes. */
     myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
+    /* Set background color. */
     myWindow.setBackgroundColor(viz::Color::gray());
     myWindow.spin();
-    /// Set background color
-    /// Let's assume camera has the following properties
-    /// Create a cloud widget.
+    /* Create a Mesh widget, loading .ply models. */
     viz::Mesh objmesh = viz::Mesh::load(plymodel);
+    /* Get the center of the generated mesh widget, cause some .ply files.  */
     Point3d cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
     float radius = ViewSphere.getRadius(objmesh.cloud, cam_focal_point);
     Point3d cam_y_dir(0.0f,0.0f,1.0f);
     const char* headerPath = "../data/header_for_";
     const char* binaryPath = "../data/binary_";
     ViewSphere.createHeader((int)campos.size(), 64, 64, headerPath);
+    /* Images will be saved as .png files. */
     for(int pose = 0; pose < (int)campos.size(); pose++){
         char* temp = new char;
         sprintf (temp,"%d",label_class);
@@ -97,17 +105,16 @@ int main(int argc, char *argv[])
         filename += ".png";
         imglabel << filename << ' ' << (int)(campos.at(pose).x*100) << ' ' << (int)(campos.at(pose).y*100) << ' ' << (int)(campos.at(pose).z*100) << endl;
         filename = imagedir + filename;
-        /// We can get the pose of the cam using makeCameraPoses
+        /* Get the pose of the camera using makeCameraPoses. */
         Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*radius+cam_focal_point, cam_focal_point, cam_y_dir*radius+cam_focal_point);
-        /// We can get the transformation matrix from camera coordinate system to global using
-        /// - makeTransformToGlobal. We need the axes of the camera
+        /* Get the transformation matrix from camera coordinate system to global. */
         Affine3f transform = viz::makeTransformToGlobal(Vec3f(1.0f,0.0f,0.0f), Vec3f(0.0f,1.0f,0.0f), Vec3f(0.0f,0.0f,1.0f), campos.at(pose));
         viz::WMesh mesh_widget(objmesh);
-        /// Pose of the widget in camera frame
+        /* Pose of the widget in camera frame. */
         Affine3f cloud_pose = Affine3f().translate(Vec3f(1.0f,1.0f,1.0f));
-        /// Pose of the widget in global frame
+        /* Pose of the widget in global frame. */
         Affine3f cloud_pose_global = transform * cloud_pose;
-        /// Visualize camera frame
+        /* Visualize camera frame. */
         if (!camera_pov)
         {
             viz::WCameraPosition cpw(1); // Coordinate axes
@@ -116,14 +123,16 @@ int main(int argc, char *argv[])
         myWindow.showWidget("CPW_FRUSTUM", cpw_frustum, cam_pose);
         }
 
-        /// Visualize widget
+        /* Visualize widget. */
         mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
         myWindow.showWidget("ape", mesh_widget, cloud_pose_global);
 
-        /// Set the viewer pose to that of camera
+        /* Set the viewer pose to that of camera. */
         if (camera_pov)
             myWindow.setViewerPose(cam_pose);
+        /* Save screen shot as images. */
         myWindow.saveScreenshot(filename);
+        /* Write images into binary files for further using in CNN training. */
         ViewSphere.writeBinaryfile(filename, binaryPath, headerPath,(int)campos.size()*num_class, label_class, (int)(campos.at(pose).x*100), (int)(campos.at(pose).y*100), (int)(campos.at(pose).z*100), rgb_use);
     }
     imglabel.close();
