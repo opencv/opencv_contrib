@@ -106,7 +106,7 @@ corners and ids:
     std::vector< cv::Vec4i > diamondIds;
     std::vector< std::vector< cv::Point2f > > diamondCorners;
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);
-    
+
     cv::aruco::drawDetectedDiamonds(inputImage, diamondCorners, diamondIds);
 ```
 
@@ -135,7 +135,7 @@ i.e. using the ```estimatePoseSingleMarkers()``` function. For instance:
     // estimate poses
     std::vector<cv::Mat> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix, distCoeffs, rvecs, tvecs);
-    
+
     // draw axis
     for(unsigned int i=0; i<rvecs.size(); i++)
         cv::aruco::drawAxis(inputImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], axisLength);
@@ -149,7 +149,7 @@ Finally, an axis can be drawn to check the estimated pose is correct using ```dr
 
 ![Detected diamond axis](images/diamondsaxis.png)
 
-The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out, 
+The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out,
 as in a simple ArUco marker pose estimation.
 
 A full working example is included in the ```diamond_detector.cpp``` inside the module samples folder.
