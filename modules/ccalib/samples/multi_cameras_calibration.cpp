@@ -34,11 +34,11 @@ static void help()
 
 int main(int argc, char** argv)
 {
-    float patternWidth, patternHeight;
-    int nCamera, nMiniMatches, cameraType;
+    float patternWidth = 0.0f, patternHeight = 0.0f;
+    int nCamera = 0, nMiniMatches = 0, cameraType = 0;
     const char* outputFilename = "multi-camera-results.xml";
     const char* inputFilename = 0;
-    int showFeatureExtraction, verbose;
+    int showFeatureExtraction = 0, verbose = 0;
     if (argc < 2)
     {
         help();

@@ -94,10 +94,9 @@ static bool readStringList( const string& filename, vector<string>& l )
     return true;
 }
 
-static void saveCameraParams( const string & filename, Size imageSize, Size boardSize, double square_width,
-    double square_height, int flags, const Mat& cameraMatrix, const Mat& distCoeffs, const double xi,
-    const vector<Vec3d>& rvecs, const vector<Vec3d>& tvecs, vector<string> detec_list, const Mat& idx,
-    const double rms, const vector<Mat>& imagePoints)
+static void saveCameraParams( const string & filename, int flags, const Mat& cameraMatrix,
+	const Mat& distCoeffs, const double xi, const vector<Vec3d>& rvecs, const vector<Vec3d>& tvecs,
+	vector<string> detec_list, const Mat& idx, const double rms, const vector<Mat>& imagePoints)
 {
     FileStorage fs( filename, FileStorage::WRITE );
 
@@ -172,7 +171,7 @@ int main(int argc, char** argv)
 {
     Size boardSize, imageSize;
     int flags = 0;
-    double square_width, square_height;
+    double square_width = 0.0, square_height = 0.0;
     const char* outputFilename = "out_camera_params.xml";
     const char* inputFilename = 0;
     vector<Mat> objectPoints;
@@ -253,6 +252,6 @@ int main(int argc, char** argv)
     TermCriteria criteria(3, 200, 1e-8);
     rms = omnidir::calibrate(objectPoints, imagePoints, imageSize, K, xi, D, rvecs, tvecs, flags, criteria, idx);
     _xi = xi.at<double>(0);
-    saveCameraParams(outputFilename, imageSize, boardSize, square_width, square_height, flags, K, D, _xi,
+    saveCameraParams(outputFilename, flags, K, D, _xi,
         rvecs, tvecs, detec_list, idx, rms, imagePoints);
 }

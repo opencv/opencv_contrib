@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 {
     Size boardSize, imageSize1, imageSize2;
     int flags = 0;
-    double square_width, square_height;
+    double square_width = 0.0, square_height = 0.0;
     const char* outputFilename = "out_camera_params_stereo.xml";
     const char* inputFilename1 = 0;
     const char* inputFilename2 = 0;

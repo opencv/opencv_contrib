@@ -92,13 +92,13 @@ static void saveCameraParams(const string& filename, Size imageSize, float patte
 
 int main(int argc, char** argv)
 {
-    const char* inputFilename;
+    const char* inputFilename = 0;
     const char* outputFilename = "out_camera_params.xml";
     vector<string> imglist;
     vector<Mat> vecImg;
     int flags = 0;
-    float patternWidth, patternHeight;
-    int nMiniMatches;
+    float patternWidth = 0.0f, patternHeight = 0.0f;
+    int nMiniMatches = 0;
     if(argc < 2)
     {
         help();
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
         }
         else if (strcmp(s, "-mm") == 0)
         {
-            if (sscanf(argv[++i], "%d", &nMiniMatches) != 1 || nMiniMatches < 5)
+            if (sscanf(argv[++i], "%d", &nMiniMatches) != 1 || nMiniMatches < 15)
                 return fprintf( stderr, "Invalid number of minimal matches or number is too small"), -1;
         }
         else if( strcmp( s, "-fp" ) == 0 )

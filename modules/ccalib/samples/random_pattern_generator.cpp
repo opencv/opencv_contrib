@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 {
     const char* filename = 0;
     Mat pattern;
-    int width, height;
+    int width = 0, height = 0;
     if(argc < 2)
     {
         help();
