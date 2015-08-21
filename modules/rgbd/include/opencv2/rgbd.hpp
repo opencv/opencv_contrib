@@ -1060,7 +1060,7 @@ namespace rgbd
     uint increment_step;
     /* pixel correspondence map */
     Mat projectorPixels;
-    
+
     /** Return the number of valid points.
      */
     int getNumPoints();
@@ -1069,7 +1069,7 @@ namespace rgbd
      * @param skipNoCorrespondencePoints eliminate points with no projector correspondence information.
      */
     void calculatePoints(bool skipNoCorrespondencePoints = false);
-      
+
     /* indices. Each set of three points forms a triangle. */
     std::vector<int> faceIndices;
     bool bFaceIndicesUpdated;

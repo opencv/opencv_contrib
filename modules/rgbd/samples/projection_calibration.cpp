@@ -162,7 +162,7 @@ int main(int argc, char** argv)
         captureImageMultipleTimes(capture, image, gray, depth, 0, 1);
         imshow("depth", depth * 10);
         imshow("camera", gray);
-    
+
         int key = waitKey(30);
         if (key == 'f')
         {

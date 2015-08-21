@@ -325,7 +325,7 @@ int main(int argc, char** argv)
         // segment the mask, and return to the camera space is the best way to maintain the topology.
 
         //euclideanClustering(clusters.at(i), smallClusters);
-        
+
         // generate a silhouette in projector space
         Mat projectorLabels, stats, centroids;
         int minArea = 1000;

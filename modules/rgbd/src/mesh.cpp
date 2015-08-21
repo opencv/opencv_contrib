@@ -139,7 +139,7 @@ namespace rgbd
             yMax = max(yMax, p.y);
         }
         faceRoi = Rect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
-         
+
         std::vector<Vec6f> triangleList;
         subdiv.getTriangleList(triangleList);
 
@@ -154,7 +154,7 @@ namespace rgbd
             int v0 = correspondenceMapPro.at<int>(p0.y, p0.x);
             int v1 = correspondenceMapPro.at<int>(p1.y, p1.x);
             int v2 = correspondenceMapPro.at<int>(p2.y, p2.x);
-            
+
 #if 0
             // eliminate too big triangles
             float distanceThreshold = 50; // [mm]
