@@ -200,7 +200,7 @@ A full working example is included in the ```detect_board.cpp``` inside the modu
 Refine marker detection
 -----
 
-ArUco board can also be used to improve the detection of markers. If we have detected a subset of the markers
+ArUco boards can also be used to improve the detection of markers. If we have detected a subset of the markers
 that belongs to the board, we can use these markers and the board layout information to try to find the
 markers that have not been previously detected.
 
@@ -210,7 +210,7 @@ after calling ```detectMarkers()```.
 The main parameters of this function are the original image where markers were detected, the Board object,
 the detected marker corners, the detected marker ids and the rejected marker corners.
 
-The rejected corners can be obtained from the ```detectMarkers()``` function and are also known ad marker
+The rejected corners can be obtained from the ```detectMarkers()``` function and are also known as marker
 candidates. This candidates are square shapes that have been found in the original image but have failed
 to pass the identification step (i.e. their inner codification presents too many errors) and thus they
 have not been recognized as markers.
@@ -225,14 +225,14 @@ it is necessary to have detected at least one marker of the board. The projectio
 camera parameters (camera matrix and distortion coefficients) if they are provided. If not, the projections
 are obtained from local homography and only planar board are allowed (i.e. the Z coordinate of all the
 marker corners should be the same). The ```minRepDistance``` parameter in ```refineDetectedMarkers()```
-determines the minimum euclidean distance between the candidate corners and the projection corners
+determines the minimum euclidean distance between the candidate corners and the projected marker corners
 (default value 10).
 
 - Binary codification. If a candidate surpasses the minimum distance condition, its internal bits
 are analyzed again to determine if it is actually the projected marker or not. However, in this case,
 the condition is not so strong and the number of allowed erroneous bits can be higher. This is indicated
 in the ```errorCorrectionRate``` parameter (default value 3.0). If a negative value is provided, the
-internal bits are not analyzed at all and only the corner distances is evaluated.
+internal bits are not analyzed at all and only the corner distances are evaluated.
 
 This is an example of using the  ```refineDetectedMarkers()``` function:
 
