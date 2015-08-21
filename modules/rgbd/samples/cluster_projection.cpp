@@ -106,9 +106,9 @@ int main( int argc, char** argv )
         }
 #if 1
         // eliminate non smooth points
-        for (int i = 1; i < camSize.height - 1; i++)
+        for (int i = 2; i < camSize.height - 2; i++)
         {
-            for (int j = 1; j < camSize.width - 1; j++)
+            for (int j = 2; j < camSize.width - 2; j++)
             {
                 Point2i & p = projectorPixels.at<Point2i>(i, j);
                 if (p.x < 0 || p.y < 0)
