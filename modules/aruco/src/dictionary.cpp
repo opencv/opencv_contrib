@@ -276,7 +276,6 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
 
 // DictionaryData constructors calls
 const Dictionary DICT_ARUCO_DATA = Dictionary(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
-const Dictionary DICT_6X6_TEST_DATA = Dictionary(&(DICT_6X6_TEST_BYTES[0][0][0]), 6, 250, 5);
 
 const Dictionary DICT_4X4_50_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 50, 1);
 const Dictionary DICT_4X4_100_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 100, 1);
@@ -304,8 +303,6 @@ const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
 
     case DICT_ARUCO_ORIGINAL:
         return DICT_ARUCO_DATA;
-    case DICT_6X6_TEST:
-        return DICT_6X6_TEST_DATA;
 
     case DICT_4X4_50:
         return DICT_4X4_50_DATA;

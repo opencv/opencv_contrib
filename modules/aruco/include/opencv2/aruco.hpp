@@ -52,7 +52,7 @@ the use of this software, even if advised of the possibility of such damage.
  * - Pose estimation from a single marker or from a board/set of markers
  * - Detection of ChArUco board for high subpixel accuracy
  * - Camera calibration from both, ArUco boards and ChArUco boards.
- * - Detection of ChArUco-based markers
+ * - Detection of ChArUco diamond markers
  * The samples directory includes easy examples of how to use the module.
  *
  * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado.
