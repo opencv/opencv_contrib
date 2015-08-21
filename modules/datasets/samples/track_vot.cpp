@@ -55,15 +55,15 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 
-#define DATASET_ID 1
-
 int main(int argc, char *argv[])
 {
 	const char *keys =
 		"{ help h usage ? |    | show this message }"
-		"{ path p         |true| path to folder with dataset }";
+		"{ path p         |true| path to folder with dataset }"
+		"{ datasetID id         |1| Dataset ID}";
 	CommandLineParser parser(argc, argv, keys);
 	string path(parser.get<string>("path"));
+	int datasetID(parser.get<int>("datasetID"));
 	if (parser.has("help") || path == "true")
 	{
 		parser.printMessage();
@@ -77,9 +77,9 @@ int main(int argc, char *argv[])
 	for (int i = 1; i <= dataset->getDatasetsNum(); i++)
 		printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
 
-	dataset->initDataset(DATASET_ID);
+	dataset->initDataset(datasetID);
 
-	for (int i = 0; i < dataset->getDatasetLength(DATASET_ID); i++)
+	for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
 	{
 		Mat frame;
 		dataset->getNextFrame(frame);
