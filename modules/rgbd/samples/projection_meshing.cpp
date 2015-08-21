@@ -307,9 +307,9 @@ int main(int argc, char** argv)
             stringstream ss;
             ss << "cluster" << i;
             // downsample by 2x
-            clusters.at(i).increment_step = 2;
-            clusters.at(i).projectorPixels = projectorPixels;
-            clusters.at(i).calculatePoints(true);
+            //clusters.at(i).increment_step = 2;
+            //clusters.at(i).projectorPixels = projectorPixels;
+            //clusters.at(i).calculatePoints(true);
             //clusters.at(i).unwrapTexCoord();
             //clusters.at(i).save(ss.str() + ".obj");
             imshow(ss.str(), clusters.at(i).silhouette * 255);
@@ -317,7 +317,16 @@ int main(int argc, char** argv)
         }
 
         vector<RgbdMesh> smallClusters;
+
+        // euclidianClustering is made for segmentation.
+        // however, it is hard to maintain 3D mesh topology in camera and projector space
+        // which is important for UV unwrapping.
+        // it seems computing a mask in projector image,
+        // segment the mask, and return to the camera space is the best way to maintain the topology.
+
         //euclideanClustering(clusters.at(i), smallClusters);
+        
+        // generate a silhouette in projector space
         Mat projectorLabels, stats, centroids;
         int minArea = 1000;
         // convert camera space silhouette to projector space
@@ -334,6 +343,9 @@ int main(int argc, char** argv)
                 }
             }
         }
+
+        // since projector space silhouette is sparse,
+        // dilate before computing connectedComponentsWithStats
         Mat kernel = Mat::ones(7, 7, CV_32S);
         dilate(projectorSilhouette, projectorSilhouette, kernel);
         connectedComponentsWithStats(projectorSilhouette, projectorLabels, stats, centroids, 8);
@@ -359,13 +371,10 @@ int main(int argc, char** argv)
                 RgbdMesh& cluster = smallClusters.back();
                 compare(labels, label, cluster.silhouette, CMP_EQ);
                 cluster.roi = Rect(0, 0, cameraSilhouette.cols, cameraSilhouette.rows);
-                //cluster.roi = Rect(stats.at<int>(label, CC_STAT_LEFT), stats.at<int>(label, CC_STAT_TOP),
-                //    stats.at<int>(label, CC_STAT_WIDTH), stats.at<int>(label, CC_STAT_HEIGHT));
                 cluster.calculatePoints();
             }
         }
 
-        //deleteEmptyClusters(smallClusters);
         for (std::size_t j = 0; j < smallClusters.size(); j++) {
             stringstream ss;
             ss << "mesh_" << i << "_" << j;
@@ -381,8 +390,6 @@ int main(int argc, char** argv)
             smallClusters.at(j).unwrapTexCoord();
             smallClusters.at(j).save(ss.str() + ".obj");
             imshow(ss.str(), smallClusters.at(j).silhouette * 255);
-            ss << "_tex";
-            smallClusters.at(j).save(ss.str() + ".obj", true);
         }
     }
 

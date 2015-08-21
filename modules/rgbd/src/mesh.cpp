@@ -261,7 +261,7 @@ namespace rgbd
             int uMinInd = 0;
             for (int i = 0; i < getNumPoints(); i++)
             {
-                Point2i & point = points.at(i).projector_xy;
+                Point2i & point = points.at(i).image_xy;
                 nlSetVariable(2 * i, point.x);
                 nlSetVariable(2 * i + 1, point.y);
 
@@ -293,15 +293,9 @@ namespace rgbd
 
             Point2f z0, z1, z2;
             Point3f p0, p1, p2;
-            p0.x = static_cast<float>(points.at(idx0).projector_xy.x);
-            p0.y = static_cast<float>(points.at(idx0).projector_xy.y);
-            p0.z = static_cast<float>(points.at(idx0).world_xyz.z * 1000);
-            p1.x = static_cast<float>(points.at(idx1).projector_xy.x);
-            p1.y = static_cast<float>(points.at(idx1).projector_xy.y);
-            p1.z = static_cast<float>(points.at(idx1).world_xyz.z * 1000);
-            p2.x = static_cast<float>(points.at(idx2).projector_xy.x);
-            p2.y = static_cast<float>(points.at(idx2).projector_xy.y);
-            p2.z = static_cast<float>(points.at(idx2).world_xyz.z * 1000);
+            p0 = points.at(idx0).world_xyz;
+            p1 = points.at(idx1).world_xyz;
+            p2 = points.at(idx2).world_xyz;
             project_triangle(p0, p1, p2, z0, z1, z2);
 
             Point2f z01 = z1 - z0;
