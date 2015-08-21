@@ -106,10 +106,8 @@ static void onMouse(int event, int x, int y, int, void*)
 static void help()
 {
 	cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
+		"TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
 		"-- pause video [p] and draw a bounding box around the target to start the tracker\n"
-		"Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
-		"Call:\n"
-		"./tracker <tracker_algorithm> <video_name> <start_frame> [<bounding_frame>]\n"
 		<< endl;
 
 	cout << "\n\nHot keys: \n"
@@ -128,10 +126,6 @@ int main(int argc, char *argv[])
 		help();
 		return -1;
 	}
-
-	cout << tracker_algorithm << endl;
-	cout << datasetRootPath << endl;
-	cout << datasetID << endl;
 
 	Mat frame;
 	paused = false;
