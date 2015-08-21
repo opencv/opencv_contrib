@@ -210,7 +210,10 @@ namespace cv
 
 		bool  TRACK_votImpl::getNextFrame(Mat &frame)
 		{
-			frame = imread(data[activeDatasetID - 1][frameCounter]->imagePath);
+			if (frameCounter >= (int)data[activeDatasetID - 1].size())
+				return false;
+			string imgPath = data[activeDatasetID - 1][frameCounter]->imagePath;
+			frame = imread(imgPath);
 			frameCounter++;
 			return !frame.empty();
 		}

@@ -50,9 +50,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 
-#define NUM_TEST_FRAMES 100
-#define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
-//#define RECORD_VIDEO_FLG
+#define NUM_TEST_FRAMES 1000
 
 static Mat image;
 static bool paused;
@@ -186,10 +184,8 @@ int main(int argc, char *argv[])
 			//Time measurment
 			int64 e1 = getTickCount();
 			if (initialized){
-				dataset->getNextFrame(frame);
-				if (frame.empty()){
+				if (!dataset->getNextFrame(frame))
 					break;
-				}
 				frame.copyTo(image);
 			}
 
