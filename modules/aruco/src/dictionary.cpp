@@ -39,13 +39,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include "precomp.hpp"
 #include "opencv2/aruco/dictionary.hpp"
 #include "predefined_dictionaries.cpp"
-
 #include <opencv2/core.hpp>
-#include <opencv2/core/types_c.h>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
 
-#include <iostream>
 
 namespace cv {
 namespace aruco {

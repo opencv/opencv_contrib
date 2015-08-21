@@ -42,8 +42,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 #include <iostream>
 
-#include <opencv2/imgproc.hpp>
-
 using namespace std;
 using namespace cv;
 

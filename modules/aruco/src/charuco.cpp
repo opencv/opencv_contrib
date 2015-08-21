@@ -38,13 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 #include "opencv2/aruco/charuco.hpp"
-
 #include <opencv2/core.hpp>
-#include <opencv2/core/types_c.h>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-
-#include <iostream>
 
 
 namespace cv {
@@ -307,9 +302,9 @@ class CharucoSubpixelParallel : public ParallelLoopBody {
                 winSize = Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize);
 
             cornerSubPix(*grey, in, winSize, Size(),
-                         cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                        params->cornerRefinementMaxIterations,
-                                        params->cornerRefinementMinAccuracy));
+                         TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                      params->cornerRefinementMaxIterations,
+                                      params->cornerRefinementMinAccuracy));
 
             (*filteredChessboardImgPoints)[i] = in[0];
         }
@@ -373,9 +368,9 @@ static unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, In
     //    if(winSize.height == -1 || winSize.width == -1)
     //        winSize = Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
     //    cornerSubPix(grey, in, winSize, Size(),
-    //                 cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-    //                                params.cornerRefinementMaxIterations,
-    //                                params.cornerRefinementMinAccuracy));
+    //                 TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+    //                              params->cornerRefinementMaxIterations,
+    //                              params->cornerRefinementMinAccuracy));
     //    filteredChessboardImgPoints[i] = in[0];
     //}
 

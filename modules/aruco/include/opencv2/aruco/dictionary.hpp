@@ -40,12 +40,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_DICTIONARY_HPP__
 
 #include <opencv2/core.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/core/types_c.h>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <vector>
-
 
 namespace cv {
 namespace aruco {

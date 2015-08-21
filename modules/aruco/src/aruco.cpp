@@ -38,14 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 #include "opencv2/aruco.hpp"
-
 #include <opencv2/core.hpp>
-#include <opencv2/core/types_c.h>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui.hpp>
-
-#include <iostream>
 
 
 namespace cv {
@@ -785,10 +779,10 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
 
         for(int i = begin; i < end; i++) {
             cornerSubPix(*grey, corners.getMat(i),
-                         cvSize(params->cornerRefinementWinSize, params->cornerRefinementWinSize),
-                         cvSize(-1, -1), cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                                        params->cornerRefinementMaxIterations,
-                                                        params->cornerRefinementMinAccuracy));
+                         Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize),
+                         Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                                    params->cornerRefinementMaxIterations,
+                                                    params->cornerRefinementMinAccuracy));
         }
     }
 
@@ -833,11 +827,10 @@ void detectMarkers(InputArray _image, Dictionary dictionary, OutputArrayOfArrays
         //// do corner refinement for each of the detected markers
         // for (unsigned int i = 0; i < _corners.total(); i++) {
         //    cornerSubPix(grey, _corners.getMat(i),
-        //                 cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
-        //                 cvSize(-1, -1),
-        //                 cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-        //                                params.cornerRefinementMaxIterations,
-        //                                params.cornerRefinementMinAccuracy));
+        //                 Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
+        //                 Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+        //                                            params.cornerRefinementMaxIterations,
+        //                                            params.cornerRefinementMinAccuracy));
         //}
 
         // this is the parallel call for the previous commented loop (result is equivalent)
@@ -1217,10 +1210,10 @@ void refineDetectedMarkers(InputArray _image, const Board &board,
                           params.cornerRefinementMaxIterations > 0 &&
                           params.cornerRefinementMinAccuracy > 0);
                 cornerSubPix(grey, closestRotatedMarker,
-                             cvSize(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
-                             cvSize(-1, -1), cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                                            params.cornerRefinementMaxIterations,
-                                                            params.cornerRefinementMinAccuracy));
+                             Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
+                             Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                                        params.cornerRefinementMaxIterations,
+                                                        params.cornerRefinementMinAccuracy));
             }
 
             // remove from rejected
