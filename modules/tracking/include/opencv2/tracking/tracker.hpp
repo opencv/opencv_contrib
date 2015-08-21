@@ -1206,7 +1206,8 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
    */
   enum MODE {
     GRAY = (1u << 0),
-    CN = (1u << 1)
+    CN = (1u << 1),
+    CUSTOM = (1u<<2)
   };
 
   struct CV_EXPORTS Params
@@ -1240,6 +1241,11 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
     unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
   };
+
+  /**
+   * \brief Set custom function for the feature extraction
+   */
+  virtual void setFeatureExtractor(void (*)(const Mat, const Rect, Mat&), bool pca_func = false);
 
   /** @brief Constructor
       @param parameters KCF parameters TrackerKCF::Params

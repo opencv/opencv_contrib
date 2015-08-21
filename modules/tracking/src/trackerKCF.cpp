@@ -73,6 +73,7 @@ namespace cv{
     TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
+    void setFeatureExtractor(void (*f)(const Mat, const Rect, Mat&), bool pca_func = false);
 
   protected:
      /*
@@ -96,6 +97,7 @@ namespace cv{
                                        std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat v) const;
     void inline compress(const Mat proj_matrix, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc = GRAY) const;
+    bool getSubWindow(const Mat img, const Rect roi, Mat& feat, void (*f)(const Mat, const Rect, Mat& )) const;
     void extractCN(Mat patch_data, Mat & cnFeatures) const;
     void denseGaussKernel(const double sigma, const Mat , const Mat y_data, Mat & k_data,
                           std::vector<Mat> & layers_data,std::vector<Mat> & xf_data,std::vector<Mat> & yf_data, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
@@ -144,6 +146,12 @@ namespace cv{
     // optimization variables for updateProjectionMatrix
     Mat data_pca, new_covar,w_data,u_data,vt_data;
 
+    // custom feature extractor
+    bool use_custom_extractor_pca;
+    bool use_custom_extractor_npca;
+    std::vector<void(*)(const Mat img, const Rect roi, Mat& output)> extractor_pca;
+    std::vector<void(*)(const Mat img, const Rect roi, Mat& output)> extractor_npca;
+
     bool resizeImage; // resize the image whenever needed and the patch size is large
 
     int frame;
@@ -160,14 +168,9 @@ namespace cv{
   {
     isInit = false;
     resizeImage = false;
+    use_custom_extractor_pca = false;
+    use_custom_extractor_npca = false;
 
-    // accept only the available descriptor modes
-    CV_Assert(
-      (params.desc_pca & GRAY) == GRAY
-      || (params.desc_npca & GRAY) == GRAY
-      || (params.desc_pca & CN) == CN
-      || (params.desc_npca & CN) == CN
-    );
   }
 
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -234,12 +237,24 @@ namespace cv{
     // record the non-compressed descriptors
     if((params.desc_npca & GRAY) == GRAY)descriptors_npca.push_back(GRAY);
     if((params.desc_npca & CN) == CN)descriptors_npca.push_back(CN);
+    if(use_custom_extractor_npca)descriptors_npca.push_back(CUSTOM);
     features_npca.resize(descriptors_npca.size());
 
     // record the compressed descriptors
     if((params.desc_pca & GRAY) == GRAY)descriptors_pca.push_back(GRAY);
     if((params.desc_pca & CN) == CN)descriptors_pca.push_back(CN);
+    if(use_custom_extractor_pca)descriptors_pca.push_back(CUSTOM);
     features_pca.resize(descriptors_pca.size());
+
+    // accept only the available descriptor modes
+    CV_Assert(
+      (params.desc_pca & GRAY) == GRAY
+      || (params.desc_npca & GRAY) == GRAY
+      || (params.desc_pca & CN) == CN
+      || (params.desc_npca & CN) == CN
+      || use_custom_extractor_pca
+      || use_custom_extractor_npca
+    );
 
     // TODO: return true only if roi inside the image
     return true;
@@ -264,14 +279,22 @@ namespace cv{
 
       // extract and pre-process the patch
       // get non compressed descriptors
-      for(unsigned i=0;i<descriptors_npca.size();i++){
+      for(unsigned i=0;i<descriptors_npca.size()-extractor_npca.size();i++){
         if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+      }
+      //get non-compressed custom descriptors
+      for(unsigned i=0,j=descriptors_npca.size()-extractor_npca.size();i<extractor_npca.size();i++,j++){
+        if(!getSubWindow(img,roi, features_npca[j], extractor_npca[i]))return false;
       }
       if(features_npca.size()>0)merge(features_npca,X[1]);
 
       // get compressed descriptors
-      for(unsigned i=0;i<descriptors_pca.size();i++){
+      for(unsigned i=0;i<descriptors_pca.size()-extractor_pca.size();i++){
         if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+      }
+      //get compressed custom descriptors
+      for(unsigned i=0,j=descriptors_pca.size()-extractor_pca.size();i<extractor_pca.size();i++,j++){
+        if(!getSubWindow(img,roi, features_pca[j], extractor_pca[i]))return false;
       }
       if(features_pca.size()>0)merge(features_pca,X[0]);
 
@@ -285,10 +308,10 @@ namespace cv{
       Zc[1] = Z[1];
 
       // merge all features
-      if(params.desc_npca==0){
+      if(features_npca.size()==0){
         x = X[0];
         z = Zc[0];
-      }else if(params.desc_pca==0){
+      }else if(features_pca.size()==0){
         x = X[1];
         z = Z[1];
       }else{
@@ -321,14 +344,22 @@ namespace cv{
 
     // extract the patch for learning purpose
     // get non compressed descriptors
-    for(unsigned i=0;i<descriptors_npca.size();i++){
+    for(unsigned i=0;i<descriptors_npca.size()-extractor_npca.size();i++){
       if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+    }
+    //get non-compressed custom descriptors
+    for(unsigned i=0,j=descriptors_npca.size()-extractor_npca.size();i<extractor_npca.size();i++,j++){
+      if(!getSubWindow(img,roi, features_npca[j], extractor_npca[i]))return false;
     }
     if(features_npca.size()>0)merge(features_npca,X[1]);
 
     // get compressed descriptors
-    for(unsigned i=0;i<descriptors_pca.size();i++){
+    for(unsigned i=0;i<descriptors_pca.size()-extractor_pca.size();i++){
       if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+    }
+    //get compressed custom descriptors
+    for(unsigned i=0,j=descriptors_pca.size()-extractor_pca.size();i<extractor_pca.size();i++,j++){
+      if(!getSubWindow(img,roi, features_pca[j], extractor_pca[i]))return false;
     }
     if(features_pca.size()>0)merge(features_pca,X[0]);
 
@@ -341,7 +372,7 @@ namespace cv{
       Z[1]=(1.0-params.interp_factor)*Z[1]+params.interp_factor*X[1];
     }
 
-    if(params.desc_pca !=0/*params.compress_feature*/ /*&& params.descriptor != GRAY*/){
+    if(params.desc_pca !=0 || use_custom_extractor_pca){
       // initialize the vector of Mat variables
       if(frame==0){
         layers_pca_data.resize(Z[0].channels());
@@ -354,9 +385,9 @@ namespace cv{
     }
 
     // merge all features
-    if(params.desc_npca==0)
+    if(features_npca.size()==0)
       x = X[0];
-    else if(params.desc_pca==0)
+    else if(features_pca.size()==0)
       x = X[1];
     else
       merge(X,2,x);
@@ -591,6 +622,38 @@ namespace cv{
 
   }
 
+  /*
+   * get feature using external function
+   */
+  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& feat, void (*f)(const Mat, const Rect, Mat& )) const{
+
+    // return false if roi is outside the image
+    if((_roi.x+_roi.width<0)
+      ||(_roi.y+_roi.height<0)
+      ||(_roi.x>=img.cols)
+      ||(_roi.y>=img.rows)
+    )return false;
+
+    f(img, _roi, feat);
+
+    if(_roi.width != feat.cols || _roi.height != feat.rows){
+      printf("error in customized function of features extractor!\n");
+      printf("Rules: roi.width==feat.cols && roi.height = feat.rows \n");
+    }
+
+    Mat hann_win;
+    std::vector<Mat> _layers;
+
+    for(int i=0;i<feat.channels();i++)
+      _layers.push_back(hann);
+
+    merge(_layers, hann_win);
+
+    feat=feat.mul(hann_win); // hann window filter
+
+    return true;
+  }
+
   /* Convert BGR to ColorNames
    */
   void TrackerKCFImpl::extractCN(Mat patch_data, Mat & cnFeatures) const {
@@ -736,6 +799,16 @@ namespace cv{
 
     ifft2(spec2_data,response_data);
   }
+
+  void TrackerKCFImpl::setFeatureExtractor(void (*f)(const Mat, const Rect, Mat&), bool pca_func){
+    if(pca_func){
+      extractor_pca.push_back(f);
+      use_custom_extractor_pca = true;
+    }else{
+      extractor_npca.push_back(f);
+      use_custom_extractor_npca = true;
+    }
+  }
   /*----------------------------------------------------------------------*/
 
   /*
@@ -762,5 +835,7 @@ namespace cv{
   void TrackerKCF::Params::read( const cv::FileNode& /*fn*/ ){}
 
   void TrackerKCF::Params::write( cv::FileStorage& /*fs*/ ) const{}
+
+  void TrackerKCF::setFeatureExtractor(void (*)(const Mat, const Rect, Mat&), bool ){};
 
 } /* namespace cv */
