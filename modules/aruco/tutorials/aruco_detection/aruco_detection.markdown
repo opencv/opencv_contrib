@@ -114,7 +114,7 @@ detected markers. Each detected marker includes:
 The marker detection process is comprised by two main steps:
 
 1. Detection of marker candidates. In this step the image is analyzed in order to find square shapes
-that are candidates to be markers. It begings with an adaptive thresholding to segment the markers,
+that are candidates to be markers. It begins with an adaptive thresholding to segment the markers,
 then contours are extracted from the thresholded image and those that are not convex or do not
 approximate to a square shape are discarded. Some extra filtering are also applied (removing
 too small or too big contours, removing contours too close to each other, etc).
@@ -451,7 +451,7 @@ This thresholding can be customized in the following parameters:
 
 - ```int adaptiveThreshWinSizeMin```, ```int adaptiveThreshWinSizeMax```, ```int adaptiveThreshWinSizeStep```
 
-The ```adaptiveThreshWinSizeMin``` and adaptiveThreshWinSizeMax``` parameters represent the interval where the
+The ```adaptiveThreshWinSizeMin``` and ```adaptiveThreshWinSizeMax``` parameters represent the interval where the
 thresholding window sizes (in pixels) are selected for the adaptive thresholding (see OpenCV
 ```threshold()``` function for more details).
 
@@ -468,7 +468,7 @@ it would not be detected, like in the following image:
 ![Broken marker image](images/singlemarkersbrokenthresh.png)
 
 On the other hand, too high values can produce the same effect if the markers are too small, and it can also
-reduce the performance. Moreover the the process would tend to a global thresholding, losing the adaptive benefits.
+reduce the performance. Moreover the process would tend to a global thresholding, losing the adaptive benefits.
 
 The simplest (and default) case is using the same value for ```adaptiveThreshWinSizeMin``` and
  ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is sometimes better using a
@@ -518,9 +518,6 @@ usually many more small contours than big contours.
 A ```minMarkerPerimeterRate``` value of 0 and a ```maxMarkerPerimeterRate``` value of 4 (or more) will be
 equivalent to consider all the contours in the image, however this is not recommended for
 the performance reasons.
-
-See also the parameters ```minCornerDistance``` and ```minMarkerDistance```, since they can also
-filter markers based on their size.
 
 Default values:
 
@@ -649,14 +646,6 @@ value of this parameter is 0.1, a margin of 40*0.1=4 pixels is ignored in the ce
 amount of pixels that would be analyzed on each cell would actually be 32x32, instead of 40x40.
 
 Default value: 0.13
-
-- ```bool perspectiveRemoveDistortion```
-
-This parameter enables an alternative process for bits extraction specially designed for markers with high distortion.
-Detection of markers with high distortion usually fails during the identification step due to an incorrect bits extraction. This process tries a different extraction process that handles this problem.
-This process reduces the performance considerably and it should only be activated if you are sure it is useful for your application. In most cases it is not worth using it.
-
-Default value: false
 
 
 #### Marker identification
