@@ -169,10 +169,8 @@ int main(int argc, char *argv[])
 			//Time measurment
 			int64 e1 = getTickCount();
 			if (initialized){
-				dataset->getNextFrame(frame);
-				if (frame.empty()){
+				if (!dataset->getNextFrame(frame))
 					break;
-				}
 				frame.copyTo(image);
 			}
 
