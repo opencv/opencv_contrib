@@ -238,6 +238,7 @@ namespace rgbd
         }
 #endif
 
+#ifdef HAVE_OPENNL
         nlNewContext();
         nlSolverParameteri(NL_SOLVER, NL_CG);
         nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
@@ -360,6 +361,10 @@ namespace rgbd
         nlDeleteContext(nlGetCurrent());
 
         return;
+#else
+        std::cout << "UV mapping requires build with OpenNL" << std::endl;
+        return;
+#endif
     }
 
     void RgbdMesh::save(const std::string &path, bool replaceXyByTexCoord)
