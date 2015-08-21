@@ -228,4 +228,3 @@ vector <Point2d> TRACK_votImpl::getGT()
 }
 }
 
-
