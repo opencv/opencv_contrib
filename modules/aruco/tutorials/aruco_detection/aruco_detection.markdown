@@ -181,11 +181,10 @@ markers in the input image, this function is ```drawDetectedMarkers()```. For ex
 
 ``` c++
     cv::Mat outputImage
-    cv::aruco::drawDetectedMarkers(inputImage, outputImage, markerCorners, markerIds);
+    cv::aruco::drawDetectedMarkers(image, markerCorners, markerIds);
 ```
 
-- ```inputImage``` should be the same image where the markers were detected (or at least it should have the same size).
-- ```outputImage``` will be a copy of ```inputImage``` but with the detected markers highlighted.
+- ```image``` is the input/output image where the markers will be drawn (it will normally be the same image where the markers were detected).
 - ```markerCorners``` and ```markerIds``` are the structures of the detected markers in the same format
 provided by the ```detectMarkers()``` function.
 
@@ -211,7 +210,7 @@ camera (see marker_detector.cpp for a more detailed example):
 
         // if at least one marker detected
         if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
         cv::imshow("out", imageCopy);
         char key = (char) cv::waitKey(waitTime);
@@ -273,11 +272,10 @@ The aruco module provides a function to draw the axis as in the image above, so 
 checked:
 
 ``` c++
-    cv::aruco::drawAxis(inputImage, outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+    cv::aruco::drawAxis(image, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
 ```
 
-- The ```inputImage``` is the input image where the axis will be drawn.
-- ```outputImage``` will be a copy of ```inputImage``` with the axis drawn.
+- ```image``` is the input/output image where the axis will be drawn (it will normally be the same image where the markers were detected).
 - ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters.
 - ```rvec``` and ```tvec``` are the pose parameters whose axis want to be drawn.
 - The last parameter is the length of the axis, in the same unit that tvec (usually meters)
@@ -305,13 +303,13 @@ A basic full example for pose estimation from single markers  (see marker_detect
 
         // if at least one marker detected
         if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             vector< Mat > rvecs, tvecs;
             cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
             // draw axis for each marker
             for(int i=0; i<ids.size(); i++)
-                cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
+                cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
         }
 
         cv::imshow("out", imageCopy);

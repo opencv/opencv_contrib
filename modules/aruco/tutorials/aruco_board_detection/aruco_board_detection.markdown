@@ -1,7 +1,7 @@
 Detection of ArUco Boards {#tutorial_aruco_board_detection}
 ==============================
 
-A Board of markers is a set of markers that acts like a single marker in the sense that it provides a
+An ArUco Board is a set of markers that acts like a single marker in the sense that it provides a
 single pose for the camera.
 
 The most popular board is the one with all the markers in the same plane, since it can be easily printed:
@@ -102,7 +102,7 @@ easily.
 The ```GridBoard``` class is a specialized class that inherits from the ```Board``` class and which represents a Board
 with all the markers in the same plane and in a grid layout, as in the following image:
 
-![Imagw with aruco board](images/gboriginal.png)
+![Image with aruco board](images/gboriginal.png)
 
 Concretely, the coordinate system in a Grid Board is positioned in the board plane, centered in the bottom left
 corner of the board and with the Z pointing out, like in the following image (X:red, Y:green, Z:blue):
@@ -177,14 +177,14 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
 
         // if at least one marker detected
         if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             cv::Mat rvec, tvec;
             int valid = estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
             // if at least one board marker detected
             if(valid > 0)
-                cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+                cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
 
         cv::imshow("out", imageCopy);
@@ -193,3 +193,63 @@ Finally, a full example of board detection  (see board_detector.cpp for a more d
             break;
     }
 ```
+
+
+Refine marker detection
+-----
+
+ArUco board can also be used to improve the detection of markers. If we have detected a subset of the markers
+that belongs to the board, we can use these markers and the board layout information to try to find the
+markers that have not been previously detected.
+
+This can be done using the ```refineDetectedMarkers()``` function, which should be called
+after calling ```detectMarkers()```.
+
+The main parameters of this function are the original image where markers were detected, the Board object,
+the detected marker corners, the detected marker ids and the rejected marker corners.
+
+The rejected corners can be obtained from the ```detectMarkers()``` function and are also known ad marker
+candidates. This candidates are square shapes that have been found in the original image but have failed
+to pass the identification step (i.e. their inner codification presents too many errors) and thus they
+have not been recognized as markers.
+
+However, these candidates are sometimes actual markers that have not been correctly identified due to high
+noise in the image, very low resolution or other related problems that affect to the binary code extraction.
+The ```refineDetectedMarkers()``` function finds correspondences between these candidates and the missing
+markers of the board. This search is based on two parameters:
+
+- Distance between the candidate and the projection of the missing marker. To obtain these projections,
+it is necessary to have detected at least one marker of the board. The projections are obtained using the
+camera parameters (camera matrix and distortion coefficients) if they are provided. If not, the projections
+are obtained from local homography and only planar board are allowed (i.e. the Z coordinate of all the
+marker corners should be the same). The ```minRepDistance``` parameter in ```refineDetectedMarkers()```
+determines the minimum euclidean distance between the candidate corners and the projection corners
+(default value 10).
+
+- Binary codification. If a candidate surpasses the minimum distance condition, its internal bits
+are analyzed again to determine if it is actually the projected marker or not. However, in this case,
+the condition is not so strong and the number of allowed erroneous bits can be higher. This is indicated
+in the ```errorCorrectionRate``` parameter (default value 3.0). If a negative value is provided, the
+internal bits are not analyzed at all and only the corner distances is evaluated.
+
+This is an example of using the  ```refineDetectedMarkers()``` function:
+
+``` c++
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+    vector< int > markerIds;
+    vector< vector<Point2f> > markerCorners, rejectedCandidates;
+    cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, cv::aruco::DetectorParameters(), rejectedCandidates);
+
+    cv::aruco::refineDetectedMarkersinputImage, board, markerCorners, markerIds, rejectedCandidates);
+    // After calling this function, if any new marker has been detected it will be removed from rejectedCandidates and included
+    // at the end of markerCorners and markerIds
+```
+
+This is an example of marker detection before and after applying ```refineDetectedMarkers()```. It can
+be observed that some of the markers that were not detected in the first place can be recovered by ```refineDetectedMarkers()```.
+
+![Refine detected markers result](images/refinemarkers.png)
+
+It must also be noted that, in some cases, if the number of detected markers in the first place is too low (for instance only
+1 or 2 markers), the projections of the missing markers can be of bad quality, producing erroneous correspondences.

@@ -170,10 +170,10 @@ Once we have interpolated the Charuco corners, we would probably want to draw th
 This can be easily done using the ```drawDetectedCornersCharuco()``` function:
 
 ``` c++
-    cv::aruco::drawDetectedCornersCharuco(inputImage, outputImage, charucoCorners, charucoIds, color);
+    cv::aruco::drawDetectedCornersCharuco(image, charucoCorners, charucoIds, color);
 ```
 
-- The ```inputImage``` is the image where the corners have been detected.
+- ```image``` is the image where the corners will be drawn (it will normally be the same image where the corners were detected).
 - The ```outputImage``` will be a clone of ```inputImage``` with the corners drawn.
 - ```charucoCorners``` and ```charucoIds``` are the detected Charuco corners from the ```interpolateCornersCharuco()``` function.
 - Finally, the last parameter is the (optional) color we want to draw the corners with, of type ```cv::Scalar```.
@@ -213,14 +213,14 @@ Finally, this is a full example of Charuco detection (without using calibration 
 
         // if at least one marker detected
         if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, imageCopy, corners, ids);
+            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             std::vector<cv::Point2f> charucoCorners;
             std::vector<int> charucoIds;
             cv::aruco::interpolateCornersCharuco(corners, ids, image, board, charucoCorners, charucoIds);
             // if at least one charuco corner detected
             if(charucoIds.size() > 0)
-                cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
+                cv::aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
         }
 
         cv::imshow("out", imageCopy);
@@ -287,12 +287,12 @@ A full example of Charuco detection with pose estimation: (see a more detailed e
             cv::aruco::interpolateCornersCharuco(corners, ids, image, board, charucoCorners, charucoIds, cameraMatrix, distCoeffs);
             // if at least one charuco corner detected
             if(charucoIds.size() > 0) {
-                cv::aruco::drawDetectedCornersCharuco(imageCopy, imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
+                cv::aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
                 cv::Mat rvec, tvec;
                 bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
                 // if charuco pose is valid
                 if(valid)
-                    cv::aruco::drawAxis(imageCopy, imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+                    cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
             }
         }
 
