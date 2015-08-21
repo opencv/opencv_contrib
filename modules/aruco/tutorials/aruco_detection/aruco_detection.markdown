@@ -455,7 +455,7 @@ The ```adaptiveThreshWinSizeMin``` and ```adaptiveThreshWinSizeMax``` parameters
 thresholding window sizes (in pixels) are selected for the adaptive thresholding (see OpenCV
 ```threshold()``` function for more details).
 
-The parameter ``adaptiveThreshWinSizeStep``` indicates the increments on the window size from
+The parameter ```adaptiveThreshWinSizeStep``` indicates the increments on the window size from
 ```adaptiveThreshWinSizeMin``` to adaptiveThreshWinSizeMax```.
 
 For instance, for the values ```adaptiveThreshWinSizeMin``` = 5 and adaptiveThreshWinSizeMax``` = 21 and
