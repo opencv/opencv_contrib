@@ -114,7 +114,7 @@ static void saveCameraParams( const string & filename, Size imageSize, Size boar
 
     if ( flags != 0)
     {
-        sprintf( buf, "flags: %s%s%s%s%s",
+        sprintf( buf, "flags: %s%s%s%s%s%s%s%s%s",
             flags & omnidir::CALIB_USE_GUESS ? "+use_intrinsic_guess" : "",
             flags & omnidir::CALIB_FIX_SKEW ? "+fix_skew" : "",
             flags & omnidir::CALIB_FIX_K1 ? "+fix_k1" : "",

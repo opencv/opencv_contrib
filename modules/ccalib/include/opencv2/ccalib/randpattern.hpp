@@ -150,7 +150,7 @@ B. Li, L. Heng, K. Kevin  and M. Pollefeys, "A Multiple-Camera System
 Calibration Toolbox Using A Feature Descriptor-Based Calibration
 Pattern", in IROS 2013.
 */
-class RandomPatternGenerator
+class CV_EXPORTS RandomPatternGenerator
 {
 public:
     /* @brief Construct RandomPatternGenerator
