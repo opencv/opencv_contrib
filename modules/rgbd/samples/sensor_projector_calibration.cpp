@@ -60,6 +60,26 @@ using namespace cv::rgbd;
 using namespace cv::structured_light;
 using namespace std;
 
+void captureImageMultipleTimes(Ptr<VideoCapture>& capture, Mat& image, Mat& gray, Mat& depth, int wait = 0, int n = 1)
+{
+    // sometimes need to grab n times to get good images
+    for (int i = 0; i < n; i++)
+    {
+        if (wait > 0)
+        {
+            waitKey(wait);
+        }
+
+        capture->grab();
+
+        capture->retrieve(depth, CAP_OPENNI_DEPTH_MAP);
+        capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
+    }
+    flip(depth, depth, 1);
+    flip(image, image, 1);
+    cvtColor(image, gray, COLOR_BGR2GRAY);
+}
+
 int main()
 {
     int devId;
@@ -94,7 +114,7 @@ int main()
         return -1;
     }
 
-    Mat image;
+    Mat image, gray, depth;
 
     // initialize gray coding
     params.width /= 2;
@@ -112,16 +132,8 @@ int main()
     // window placement; wait for user
     for (;;)
     {
-        capture->grab();
-
-        capture->retrieve(image, CAP_OPENNI_DEPTH_MAP);
-        flip(image, image, 1);
-        imshow("depth", image * 10);
-
-        capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
-        flip(image, image, 1);
-        Mat gray;
-        cvtColor(image, gray, COLOR_BGR2GRAY);
+        captureImageMultipleTimes(capture, image, gray, depth, 0, 1);
+        imshow("depth", depth * 10);
         imshow("camera", gray);
     
         int key = waitKey(30);
@@ -148,22 +160,12 @@ int main()
 
         imshow(window, patternImages.at(i));
 
-        waitKey(50);
-
-        for (int t = 0; t < 5; t++)
-        {
-            waitKey(50);
-            capture->grab();
-
-            capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
-            flip(image, image, 1);
-        }
-
-        Mat gray;
-        cvtColor(image, gray, COLOR_BGR2GRAY);
+        captureImageMultipleTimes(capture, image, gray, depth, 50, 5);
         imshow("camera", gray);
 
-        cameraImages.push_back(gray);
+        Mat grayTemp;
+        gray.copyTo(grayTemp);
+        cameraImages.push_back(grayTemp);
 
         waitKey(50);
     }
@@ -173,14 +175,7 @@ int main()
         imshow(window, Mat::zeros(params.height, params.width, CV_8U));
         waitKey(50);
 
-        for (int t = 0; t < 5; t++)
-        {
-            waitKey(50);
-            capture->grab();
-
-            capture->retrieve(image, CAP_OPENNI_BGR_IMAGE);
-            flip(image, image, 1);
-        }
+        captureImageMultipleTimes(capture, image, gray, depth, 50, 5);
     }
 
     // decode
