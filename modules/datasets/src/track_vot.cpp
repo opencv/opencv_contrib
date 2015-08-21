@@ -45,189 +45,189 @@ using namespace std;
 
 namespace cv
 {
-	namespace datasets
-	{
+    namespace datasets
+    {
 
-		class TRACK_votImpl : public TRACK_vot
-		{
-		public:
-			//Constructor
-			TRACK_votImpl()
-			{
+        class TRACK_votImpl : public TRACK_vot
+        {
+        public:
+            //Constructor
+            TRACK_votImpl()
+            {
 
-				activeDatasetID = 1;
-				frameCounter = 0;
-			}
-			//Destructor
-			virtual ~TRACK_votImpl() {}
+                activeDatasetID = 1;
+                frameCounter = 0;
+            }
+            //Destructor
+            virtual ~TRACK_votImpl() {}
 
-			//Load Dataset
-			virtual void load(const string &path);
+            //Load Dataset
+            virtual void load(const string &path);
 
-			virtual int getDatasetsNum();
+            virtual int getDatasetsNum();
 
-			virtual int getDatasetLength(int id);
+            virtual int getDatasetLength(int id);
 
-			virtual bool initDataset(int id);
+            virtual bool initDataset(int id);
 
-			virtual bool getNextFrame(Mat &frame);
+            virtual bool getNextFrame(Mat &frame);
 
-			virtual vector <Point2d> getGT();
+            virtual vector <Point2d> getGT();
 
-		private:
-			void loadDataset(const string &path);
+        private:
+            void loadDataset(const string &path);
 
-			string numberToString(int number);
-		};
+            string numberToString(int number);
+        };
 
-		void TRACK_votImpl::load(const string &path)
-		{
-			loadDataset(path);
-		}
+        void TRACK_votImpl::load(const string &path)
+        {
+            loadDataset(path);
+        }
 
-		string TRACK_votImpl::numberToString(int number)
-		{
-			string out;
-			char numberStr[9];
-			sprintf(numberStr, "%u", number);
-			for (unsigned int i = 0; i < 8 - strlen(numberStr); ++i)
-			{
-				out += "0";
-			}
-			out += numberStr;
-			return out;
-		}
+        string TRACK_votImpl::numberToString(int number)
+        {
+            string out;
+            char numberStr[9];
+            sprintf(numberStr, "%u", number);
+            for (unsigned int i = 0; i < 8 - strlen(numberStr); ++i)
+            {
+                out += "0";
+            }
+            out += numberStr;
+            return out;
+        }
 
-		inline bool fileExists(const std::string& name)
-		{
-			struct stat buffer;
-			return (stat(name.c_str(), &buffer) == 0);
-		}
+        inline bool fileExists(const std::string& name)
+        {
+            struct stat buffer;
+            return (stat(name.c_str(), &buffer) == 0);
+        }
 
-		void TRACK_votImpl::loadDataset(const string &rootPath)
-		{
-			string nameListPath = rootPath + "/list.txt";
-			ifstream namesList(nameListPath.c_str());
-			vector <int> datasetsLengths;
-			string datasetName;
+        void TRACK_votImpl::loadDataset(const string &rootPath)
+        {
+            string nameListPath = rootPath + "/list.txt";
+            ifstream namesList(nameListPath.c_str());
+            vector <int> datasetsLengths;
+            string datasetName;
 
-			if (namesList.is_open())
-			{
-				int currDatasetID = 0;
+            if (namesList.is_open())
+            {
+                int currDatasetID = 0;
 
-				//All datasets/folders loop
-				while (getline(namesList, datasetName))
-				{
-					currDatasetID++;
-					vector <Ptr<TRACK_votObj> > objects;
+                //All datasets/folders loop
+                while (getline(namesList, datasetName))
+                {
+                    currDatasetID++;
+                    vector <Ptr<TRACK_votObj> > objects;
 
-					//All frames/images loop
-					Ptr<TRACK_votObj> currDataset(new TRACK_votObj);
+                    //All frames/images loop
+                    Ptr<TRACK_votObj> currDataset(new TRACK_votObj);
 
-					//Open dataset's ground truth file
-					string gtListPath = rootPath + "/" + datasetName + "/groundtruth.txt";
-					ifstream gtList(gtListPath.c_str());
-					if (!gtList.is_open())
-						cout << "Error to open groundtruth.txt!!!";
+                    //Open dataset's ground truth file
+                    string gtListPath = rootPath + "/" + datasetName + "/groundtruth.txt";
+                    ifstream gtList(gtListPath.c_str());
+                    if (!gtList.is_open())
+                        cout << "Error to open groundtruth.txt!!!";
 
-					//Make a list of datasets lengths
-					int currFrameID = 1;
-					if (currDatasetID == 0)
-						cout << "VOT 2015 Dataset Initialization...\n";
-					bool trFLG = true;
-					do
-					{
-						currFrameID++;
-						string fullPath = rootPath + "/" + datasetName + "/" + numberToString(currFrameID) + ".jpg";
-						if (!fileExists(fullPath))
-							break;
+                    //Make a list of datasets lengths
+                    int currFrameID = 1;
+                    if (currDatasetID == 0)
+                        cout << "VOT 2015 Dataset Initialization...\n";
+                    bool trFLG = true;
+                    do
+                    {
+                        currFrameID++;
+                        string fullPath = rootPath + "/" + datasetName + "/" + numberToString(currFrameID) + ".jpg";
+                        if (!fileExists(fullPath))
+                            break;
 
-						//Make VOT Object
-						Ptr<TRACK_votObj> currObj(new TRACK_votObj);
-						currObj->imagePath = fullPath;
-						currObj->id = currFrameID;
+                        //Make VOT Object
+                        Ptr<TRACK_votObj> currObj(new TRACK_votObj);
+                        currObj->imagePath = fullPath;
+                        currObj->id = currFrameID;
 
-						//Get Ground Truth data
-						double	x1 = 0, y1 = 0,
-							x2 = 0, y2 = 0,
-							x3 = 0, y3 = 0,
-							x4 = 0, y4 = 0;
-						string tmp;
-						getline(gtList, tmp);
-						sscanf(tmp.c_str(), "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4);
-						currObj->gtbb.push_back(Point2d(x1, y1));
-						currObj->gtbb.push_back(Point2d(x2, y2));
-						currObj->gtbb.push_back(Point2d(x3, y3));
-						currObj->gtbb.push_back(Point2d(x4, y4));
+                        //Get Ground Truth data
+                        double	x1 = 0, y1 = 0,
+                            x2 = 0, y2 = 0,
+                            x3 = 0, y3 = 0,
+                            x4 = 0, y4 = 0;
+                        string tmp;
+                        getline(gtList, tmp);
+                        sscanf(tmp.c_str(), "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4);
+                        currObj->gtbb.push_back(Point2d(x1, y1));
+                        currObj->gtbb.push_back(Point2d(x2, y2));
+                        currObj->gtbb.push_back(Point2d(x3, y3));
+                        currObj->gtbb.push_back(Point2d(x4, y4));
 
-						//Add object to storage
-						objects.push_back(currObj);
+                        //Add object to storage
+                        objects.push_back(currObj);
 
-					} while (trFLG);
+                    } while (trFLG);
 
-					datasetsLengths.push_back(currFrameID - 1);
-					data.push_back(objects);
-				}
-			}
-			else
-			{
-				cout << rootPath + "Couldn't find a *list.txt* in VOT 2015 folder!!!";
-			}
+                    datasetsLengths.push_back(currFrameID - 1);
+                    data.push_back(objects);
+                }
+            }
+            else
+            {
+                cout << rootPath + "Couldn't find a *list.txt* in VOT 2015 folder!!!";
+            }
 
-			namesList.close();
-			return;
-		}
+            namesList.close();
+            return;
+        }
 
-		int TRACK_votImpl::getDatasetsNum()
-		{
-			return data.size();
-		}
+        int TRACK_votImpl::getDatasetsNum()
+        {
+            return data.size();
+        }
 
-		int TRACK_votImpl::getDatasetLength(int id)
-		{
-			if (id > 0 && id <= (int)data.size())
-				return data[id - 1].size();
-			else
-			{
-				cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
-				return -1;
-			}
-		}
+        int TRACK_votImpl::getDatasetLength(int id)
+        {
+            if (id > 0 && id <= (int)data.size())
+                return data[id - 1].size();
+            else
+            {
+                cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
+                return -1;
+            }
+        }
 
-		bool TRACK_votImpl::initDataset(int id)
-		{
-			if (id > 0 && id <= (int)data.size())
-			{
-				activeDatasetID = id;
-				return true;
-			}
-			else
-			{
-				cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
-				return false;
-			}
-		}
+        bool TRACK_votImpl::initDataset(int id)
+        {
+            if (id > 0 && id <= (int)data.size())
+            {
+                activeDatasetID = id;
+                return true;
+            }
+            else
+            {
+                cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
+                return false;
+            }
+        }
 
-		bool  TRACK_votImpl::getNextFrame(Mat &frame)
-		{
-			if (frameCounter >= (int)data[activeDatasetID - 1].size())
-				return false;
-			string imgPath = data[activeDatasetID - 1][frameCounter]->imagePath;
-			frame = imread(imgPath);
-			frameCounter++;
-			return !frame.empty();
-		}
+        bool  TRACK_votImpl::getNextFrame(Mat &frame)
+        {
+            if (frameCounter >= (int)data[activeDatasetID - 1].size())
+                return false;
+            string imgPath = data[activeDatasetID - 1][frameCounter]->imagePath;
+            frame = imread(imgPath);
+            frameCounter++;
+            return !frame.empty();
+        }
 
-		Ptr<TRACK_vot> TRACK_vot::create()
-		{
-			return Ptr<TRACK_votImpl>(new TRACK_votImpl);
-		}
+        Ptr<TRACK_vot> TRACK_vot::create()
+        {
+            return Ptr<TRACK_votImpl>(new TRACK_votImpl);
+        }
 
-		vector <Point2d> TRACK_votImpl::getGT()
-		{
-			Ptr <TRACK_votObj> currObj = data[activeDatasetID - 1][frameCounter - 1];
-			return currObj->gtbb;
-		}
+        vector <Point2d> TRACK_votImpl::getGT()
+        {
+            Ptr <TRACK_votObj> currObj = data[activeDatasetID - 1][frameCounter - 1];
+            return currObj->gtbb;
+        }
 
-	}
+    }
 }
