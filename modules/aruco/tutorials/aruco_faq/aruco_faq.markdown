@@ -52,7 +52,7 @@ No. The main goal of ChArUco boards is provide high accurate corners for pose es
 
 - Should all the markers in an ArUco board be placed in the same plane?
 
-No, the marker corners in a ArUco board can be placed anywhere in its 3d coordinate system. 
+No, the marker corners in a ArUco board can be placed anywhere in its 3d coordinate system.
 
 
 - Should all the markers in an ChArUco board be placed in the same plane?
@@ -91,7 +91,7 @@ It is highly recommended the calibration using ChArUco board due to the high acc
 - Should I use a predefined dictionary or generate my own dictionary?
 
 In general, it is easier to use one of the predefined dictionaries. However, if you need a bigger dictionary (in terms of number of markers or number of bits)
-you should generate your own dictionary. Dictionary generation is also useful if you want to maximize the inter-marker distance to achieve a better error 
+you should generate your own dictionary. Dictionary generation is also useful if you want to maximize the inter-marker distance to achieve a better error
 correction during the identification step.
 
 - I am generating my own dictionary but it takes too long
@@ -102,7 +102,7 @@ generating the dictionary on each iteration of your detection loop, you are doin
 Furthermore, it is recommendable to save the dictionary to a file and read it on every execution so you dont need to generate it.
 
 
-- I would like to use some markers of the original ArUco library that I have already printed, can I use them? 
+- I would like to use some markers of the original ArUco library that I have already printed, can I use them?
 
 Yes, one of the predefined dictionary is ```DICT_ARUCO_ORIGINAL```, which detects the marker of the original ArUco library with the same identifiers.
 
@@ -129,7 +129,7 @@ If you manually modify the marker ids of the boards, or if you use a different t
 
 - Does the aruco module provide functions to save the Dictionary or Board to file?
 
-Not right now. However the data member of both the dictionary and board classes are public and can be easily stored. 
+Not right now. However the data member of both the dictionary and board classes are public and can be easily stored.
 
 
 - I have use this module in my research work, how can I cite it?
