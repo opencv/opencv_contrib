@@ -248,11 +248,6 @@ This is an example of using the  ```refineDetectedMarkers()``` function:
     // at the end of markerCorners and markerIds
 ```
 
-This is an example of marker detection before and after applying ```refineDetectedMarkers()```. It can
-be observed that some of the markers that were not detected in the first place can be recovered by ```refineDetectedMarkers()```.
-
-![Refine detected markers result](images/refinemarkers.png)
-
 It must also be noted that, in some cases, if the number of detected markers in the first place is too low (for instance only
 1 or 2 markers), the projections of the missing markers can be of bad quality, producing erroneous correspondences.
 
