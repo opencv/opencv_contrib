@@ -50,11 +50,72 @@ namespace cv
 {
 namespace rgbd
 {
-    RgbdClusterMesh::RgbdClusterMesh(Ptr<RgbdFrame> _rgbdFrame) : RgbdCluster(_rgbdFrame), bFaceIndicesUpdated(false)
+    RgbdMesh::RgbdMesh(Ptr<RgbdFrame> _rgbdFrame) :
+        bPlane(false), bVectorPointsUpdated(false), increment_step(1), rgbdFrame(_rgbdFrame), bFaceIndicesUpdated(false)
     {
+        CV_Assert(!rgbdFrame->depth.empty());
+        CV_Assert(!rgbdFrame->mask.empty());
+
+        (rgbdFrame->mask).copyTo(silhouette);
+
+        roi.x = 0;
+        roi.y = 0;
+        roi.width = rgbdFrame->depth.cols;
+        roi.height = rgbdFrame->depth.rows;
     }
 
-    void RgbdClusterMesh::calculateFaceIndices(float depthDiff)
+    int RgbdMesh::getNumPoints()
+    {
+        if (bVectorPointsUpdated)
+            return static_cast<int>(points.size());
+        else
+        {
+            // assuming elements of silhouette are 0 or 1
+            return static_cast<int>(sum(silhouette)[0]);
+        }
+    }
+
+    void RgbdMesh::calculatePoints(bool skipNoCorrespondencePoints)
+    {
+        pointsIndex = Mat_<int>::eye(silhouette.rows, silhouette.cols) * -1;
+        points.clear();
+        for (int i = roi.y; i < silhouette.rows && i < roi.y + roi.height; i += increment_step)
+        {
+            for (int j = roi.x; j < silhouette.cols && j < roi.x + roi.width; j += increment_step)
+            {
+                if (silhouette.at<uchar>(i, j) > 0)
+                {
+                    if (skipNoCorrespondencePoints)
+                    {
+                        Point2i & projectorPoint = projectorPixels.at<Point2i>(i, j);
+                        if (projectorPoint.x < 0 || projectorPoint.y < 0)
+                            continue;
+                    }
+
+                    if (rgbdFrame->depth.at<float>(i, j) > 0)
+                    {
+                        RgbdPoint point;
+                        point.world_xyz = rgbdFrame->points3d.at<Point3f>(i, j);
+                        point.image_xy = Point2i(j, i);
+                        if (skipNoCorrespondencePoints)
+                        {
+                            point.projector_xy = projectorPixels.at<Point2i>(i, j);
+                        }
+
+                        pointsIndex.at<int>(i, j) = static_cast<int>(points.size());
+                        points.push_back(point);
+                    }
+                    else
+                    {
+                        silhouette.at<uchar>(i, j) = 0;
+                    }
+                }
+            }
+        }
+        bVectorPointsUpdated = true;
+    }
+
+    void RgbdMesh::calculateFaceIndices()
     {
         if(!bVectorPointsUpdated)
         {
@@ -65,7 +126,7 @@ namespace rgbd
         Subdiv2D subdiv(faceRoi);
         Mat correspondenceMapPro = Mat::zeros(768, 1024, CV_32S);
 
-        int xMin = 1e5, xMax = -1e5, yMin = 1e5, yMax = -1e5;
+        int xMin = 100000, xMax = -100000, yMin = 100000, yMax = -100000;
         for (int i = 0; i < getNumPoints(); i++)
         {
             Point2i & p = points.at(i).projector_xy;
@@ -84,24 +145,26 @@ namespace rgbd
 
         for (std::size_t i = 0; i < triangleList.size(); i++)
         {
-            Point2i p0(triangleList.at(i)[0], triangleList.at(i)[1]);
-            Point2i p1(triangleList.at(i)[2], triangleList.at(i)[3]);
-            Point2i p2(triangleList.at(i)[4], triangleList.at(i)[5]);
+            Point2i p0(cvRound(triangleList.at(i)[0]), cvRound(triangleList.at(i)[1]));
+            Point2i p1(cvRound(triangleList.at(i)[2]), cvRound(triangleList.at(i)[3]));
+            Point2i p2(cvRound(triangleList.at(i)[4]), cvRound(triangleList.at(i)[5]));
             if (!faceRoi.contains(p0) || !faceRoi.contains(p1) || !faceRoi.contains(p2))
                 continue;
 
-            int v0 = correspondenceMapPro.at<int>(cvRound(p0.y), cvRound(p0.x));
-            int v1 = correspondenceMapPro.at<int>(cvRound(p1.y), cvRound(p1.x));
-            int v2 = correspondenceMapPro.at<int>(cvRound(p2.y), cvRound(p2.x));
+            int v0 = correspondenceMapPro.at<int>(p0.y, p0.x);
+            int v1 = correspondenceMapPro.at<int>(p1.y, p1.x);
+            int v2 = correspondenceMapPro.at<int>(p2.y, p2.x);
             
-/*            // eliminate too big triangles
+#if 0
+            // eliminate too big triangles
             float distanceThreshold = 50; // [mm]
             if (norm(points.at(v0).world_xyz - points.at(v1).world_xyz) > distanceThreshold
                 || norm(points.at(v1).world_xyz - points.at(v2).world_xyz) > distanceThreshold
                 || norm(points.at(v2).world_xyz - points.at(v0).world_xyz) > distanceThreshold)
             {
                 continue;
-            }*/
+            }
+#endif
 
             faceIndices.push_back(v0);
             faceIndices.push_back(v1);
@@ -128,7 +191,7 @@ namespace rgbd
         z2 = Point2f(x2, y2);
     }
 
-    void RgbdClusterMesh::unwrapTexCoord()
+    void RgbdMesh::unwrapTexCoord()
     {
         if(!bVectorPointsUpdated)
         {
@@ -191,8 +254,8 @@ namespace rgbd
 
         {
             // find min/max in U direction
-            float uMax = -1e5;
-            float uMin = 1e5;
+            float uMax = -1e5f;
+            float uMin = 1e5f;
             int uMaxInd = 0;
             int uMinInd = 0;
             for (int i = 0; i < getNumPoints(); i++)
@@ -202,11 +265,11 @@ namespace rgbd
                 nlSetVariable(2 * i + 1, point.y);
 
                 if (point.x > uMax) {
-                    uMax = point.x;
+                    uMax = static_cast<float>(point.x);
                     uMaxInd = i;
                 }
                 if (point.x < uMin) {
-                    uMin = point.x;
+                    uMin = static_cast<float>(point.x);
                     uMinInd = i;
                 }
 
@@ -229,15 +292,15 @@ namespace rgbd
 
             Point2f z0, z1, z2;
             Point3f p0, p1, p2;
-            p0.x = points.at(idx0).projector_xy.x;
-            p0.y = points.at(idx0).projector_xy.y;
-            p0.z = points.at(idx0).world_xyz.z * 1000;
-            p1.x = points.at(idx1).projector_xy.x;
-            p1.y = points.at(idx1).projector_xy.y;
-            p1.z = points.at(idx1).world_xyz.z * 1000;
-            p2.x = points.at(idx2).projector_xy.x;
-            p2.y = points.at(idx2).projector_xy.y;
-            p2.z = points.at(idx2).world_xyz.z * 1000;
+            p0.x = static_cast<float>(points.at(idx0).projector_xy.x);
+            p0.y = static_cast<float>(points.at(idx0).projector_xy.y);
+            p0.z = static_cast<float>(points.at(idx0).world_xyz.z * 1000);
+            p1.x = static_cast<float>(points.at(idx1).projector_xy.x);
+            p1.y = static_cast<float>(points.at(idx1).projector_xy.y);
+            p1.z = static_cast<float>(points.at(idx1).world_xyz.z * 1000);
+            p2.x = static_cast<float>(points.at(idx2).projector_xy.x);
+            p2.y = static_cast<float>(points.at(idx2).projector_xy.y);
+            p2.z = static_cast<float>(points.at(idx2).world_xyz.z * 1000);
             project_triangle(p0, p1, p2, z0, z1, z2);
 
             Point2f z01 = z1 - z0;
@@ -299,7 +362,7 @@ namespace rgbd
         return;
     }
 
-    void RgbdClusterMesh::save(const std::string &path, bool replaceXyByTexCoord)
+    void RgbdMesh::save(const std::string &path, bool replaceXyByTexCoord)
     {
         // has extension
         CV_Assert(path.length() >= 3);
@@ -354,8 +417,8 @@ namespace rgbd
                 Point3f v;
                 if (replaceXyByTexCoord == false)
                 {
-                    v.x = points.at(i).projector_xy.x;
-                    v.y = points.at(i).projector_xy.y;
+                    v.x = static_cast<float>(points.at(i).projector_xy.x);
+                    v.y = static_cast<float>(points.at(i).projector_xy.y);
                     v.z = 1000 * points.at(i).world_xyz.z;
                 }
                 else
@@ -398,5 +461,88 @@ namespace rgbd
         fs.close();
     }
 
+    void eliminateSmallClusters(std::vector<RgbdMesh>& clusters, int minPoints)
+    {
+        for (std::size_t i = 0; i < clusters.size(); )
+        {
+            if (clusters.at(i).getNumPoints() >= 0 && clusters.at(i).getNumPoints() <= minPoints)
+            {
+                clusters.erase(clusters.begin() + i);
+            }
+            else
+            {
+                i++;
+            }
+        }
+    }
+
+    void deleteEmptyClusters(std::vector<RgbdMesh>& clusters)
+    {
+        eliminateSmallClusters(clusters, 0);
+    }
+
+    void planarSegmentation(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int maxPlaneNum, int minArea)
+    {
+        // assert frame size == points3d size
+
+        Ptr<RgbdPlane> plane = makePtr<RgbdPlane>();
+        plane->setThreshold(0.025f);
+        Mat mask;
+        std::vector<Vec4f> coeffs;
+        (*plane)(*(mainCluster.rgbdFrame), mask, coeffs);
+
+        int numExtractedPlanes = static_cast<int>(coeffs.size());
+
+        int numValidPlanes = 0;
+        int residualLabel = 0;
+        for (int label = 0; label < numExtractedPlanes; label++)
+        {
+            clusters.push_back(RgbdMesh(mainCluster.rgbdFrame));
+            RgbdMesh& cluster = clusters.back();
+
+            compare(mask, label, cluster.silhouette, CMP_EQ);
+            cluster.bPlane = true;
+            cluster.calculatePoints();
+            cluster.plane_coefficients = coeffs.at(label);
+            if (cluster.getNumPoints() < minArea) {
+                // rollback
+                clusters.pop_back();
+            }
+            else
+            {
+                // valid plane
+                numValidPlanes++;
+                if (numValidPlanes >= maxPlaneNum)
+                {
+                    residualLabel = label + 1;
+                    break;
+                }
+            }
+        }
+
+        // residual
+        clusters.push_back(RgbdMesh(mainCluster.rgbdFrame));
+        RgbdMesh& cluster = clusters.back();
+        compare(mask, residualLabel, cluster.silhouette, CMP_GE);
+        cluster.calculatePoints();
+    }
+
+    void euclideanClustering(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int minArea)
+    {
+        Mat labels, stats, centroids;
+        connectedComponentsWithStats(mainCluster.silhouette, labels, stats, centroids, 8);
+        for (int label = 1; label < stats.rows; label++)
+        { // 0: background label
+            if (stats.at<int>(label, CC_STAT_AREA) >= minArea)
+            {
+                clusters.push_back(RgbdMesh(mainCluster.rgbdFrame));
+                RgbdMesh& cluster = clusters.back();
+                compare(labels, label, cluster.silhouette, CMP_EQ);
+                cluster.roi = Rect(stats.at<int>(label, CC_STAT_LEFT), stats.at<int>(label, CC_STAT_TOP),
+                    stats.at<int>(label, CC_STAT_WIDTH), stats.at<int>(label, CC_STAT_HEIGHT));
+                cluster.calculatePoints();
+            }
+        }
+    }
 }
 }

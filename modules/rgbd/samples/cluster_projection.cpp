@@ -47,7 +47,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
-//#include <opencv2/videoio.hpp>
+#include <opencv2/videoio.hpp>
 #include <opencv2/core/utility.hpp>
 
 #include <iostream>
@@ -61,19 +61,20 @@ using namespace std;
 int main( int argc, char** argv )
 {
     int devId;
-    int lightThreshold;
-    int lightIntensity;
+    //int lightThreshold;
+    //int lightIntensity;
     Size camSize, projSize;
     bool useOpenni;
     FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
     fs["deviceId"] >> devId;
-    fs["lightThreshold"] >> lightThreshold;
-    fs["lightIntensity"] >> lightIntensity;
+    //fs["lightThreshold"] >> lightThreshold;
+    //fs["lightIntensity"] >> lightIntensity;
     fs["projectorWidth"] >> projSize.width;
     fs["projectorHeight"] >> projSize.height;
     fs["useOpenni"] >> useOpenni;
 
     Mat projectorPixels, cameraPixels;
+    // load pixel correspondence maps
     {
         Mat correspondenceMapX, correspondenceMapY;
         correspondenceMapX = imread("correspondenceX.png");
@@ -90,10 +91,7 @@ int main( int argc, char** argv )
                 Vec3b sy = correspondenceMapY.at<Vec3b>(i, j);
                 int x = (int)sx[1] * 256 + (int)sx[2];
                 int y = (int)sy[1] * 256 + (int)sy[2];
-                if (/*sx[0] == 255
-                    && sx[1] == 255
-                    && sx[2] == 255*/
-                    x < 0 || projSize.width <= x || y < 0 || projSize.height <= y)
+                if ( x < 0 || projSize.width <= x || y < 0 || projSize.height <= y)
                 {
                     projectorPixels.at<Point2i>(i, j) = Point2i(-1, -1);
                 }
@@ -104,7 +102,7 @@ int main( int argc, char** argv )
                 }
             }
         }
-#if 1
+
         // eliminate non smooth points
         for (int i = 2; i < camSize.height - 2; i++)
         {
@@ -151,7 +149,6 @@ int main( int argc, char** argv )
                 }
             }
         }
-#endif
     }
 
     Mat image, depth;
@@ -222,7 +219,7 @@ int main( int argc, char** argv )
         // generate valid point mask for clusters
         compare(frame->depth, 0, frame->mask, CMP_GT);
 
-        // eliminate depth discontinuity
+        // eliminate depth discontinuity which may cause problems when meshing
         for (int i = 1; i < camSize.height - 1; i++)
         {
             for (int j = 1; j < camSize.width - 1; j++)
@@ -273,8 +270,8 @@ int main( int argc, char** argv )
         imshow("depth", frame->points3d);
         waitKey(30);
 
-        RgbdClusterMesh mainCluster(frame);
-        vector<RgbdClusterMesh> clusters;
+        RgbdMesh mainCluster(frame);
+        vector<RgbdMesh> clusters;
         planarSegmentation(mainCluster, clusters, 1, 100000);
         deleteEmptyClusters(clusters);
 
@@ -292,7 +289,7 @@ int main( int argc, char** argv )
                 continue;
             }
 
-            vector<RgbdClusterMesh> smallClusters;
+            vector<RgbdMesh> smallClusters;
             //euclideanClustering(clusters.at(i), smallClusters);
             Mat projectorLabels, stats, centroids;
             int minArea = 1000;
@@ -331,8 +328,8 @@ int main( int argc, char** argv )
             { // 0: background label
                 if (stats.at<int>(label, CC_STAT_AREA) >= minArea)
                 {
-                    smallClusters.push_back(RgbdClusterMesh(clusters.at(i).rgbdFrame));
-                    RgbdClusterMesh& cluster = smallClusters.back();
+                    smallClusters.push_back(RgbdMesh(clusters.at(i).rgbdFrame));
+                    RgbdMesh& cluster = smallClusters.back();
                     compare(labels, label, cluster.silhouette, CMP_EQ);
                     cluster.roi = Rect(0, 0, cameraSilhouette.cols, cameraSilhouette.rows);
                     //cluster.roi = Rect(stats.at<int>(label, CC_STAT_LEFT), stats.at<int>(label, CC_STAT_TOP),
@@ -368,7 +365,7 @@ int main( int argc, char** argv )
         Subdiv2D subdiv(Rect(0, 0, projSize.width, projSize.height));
         Mat correspondenceMapPro = Mat(projSize, CV_32S, -1);
 
-        int xMin = 1e5, xMax = -1e5, yMin = 1e5, yMax = -1e5;
+        int xMin = 100000, xMax = -100000, yMin = 100000, yMax = -100000;
         int count = 0;
         vector<Point2i> projPoints, camPoints;
         for (int i = 0; i < camSize.height; i++)
@@ -401,15 +398,15 @@ int main( int argc, char** argv )
 
         for (std::size_t i = 0; i < triangleList.size(); i++)
         {
-            Point2i p0(triangleList.at(i)[0], triangleList.at(i)[1]);
-            Point2i p1(triangleList.at(i)[2], triangleList.at(i)[3]);
-            Point2i p2(triangleList.at(i)[4], triangleList.at(i)[5]);
+            Point2i p0(cvRound(triangleList.at(i)[0]), cvRound(triangleList.at(i)[1]));
+            Point2i p1(cvRound(triangleList.at(i)[2]), cvRound(triangleList.at(i)[3]));
+            Point2i p2(cvRound(triangleList.at(i)[4]), cvRound(triangleList.at(i)[5]));
             if (!projRoi.contains(p0) || !projRoi.contains(p1) || !projRoi.contains(p2))
                 continue;
 
-            int v0 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[1]), cvRound(triangleList.at(i)[0]));
-            int v1 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[3]), cvRound(triangleList.at(i)[2]));
-            int v2 = correspondenceMapPro.at<int>(cvRound(triangleList.at(i)[5]), cvRound(triangleList.at(i)[4]));
+            int v0 = correspondenceMapPro.at<int>(p0);
+            int v1 = correspondenceMapPro.at<int>(p1);
+            int v2 = correspondenceMapPro.at<int>(p2);
 
             indices.push_back(v0);
             indices.push_back(v1);

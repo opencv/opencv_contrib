@@ -1039,11 +1039,11 @@ namespace rgbd
 
   /** A cluster of a depth map. It can be used as both an image and a point cloud.
    */
-  class CV_EXPORTS RgbdCluster
-  {
+  class CV_EXPORTS RgbdMesh {
   public:
+    /* RgbdFrame which can be shared with other meshes */
     Ptr<RgbdFrame> rgbdFrame;
-    /* silhouette of the cluster. RgbdFrame::mask should be used to indicate valid depth points */
+    /* silhouette of the cluster. RgbdFrame::mask is different and should be used to indicate valid depth points */
     Mat silhouette;
     /* image to vector point map */
     Mat pointsIndex;
@@ -1051,19 +1051,16 @@ namespace rgbd
     std::vector<RgbdPoint> points;
     /* plane coefficients (if the cluster is a plane) */
     Vec4f plane_coefficients;
+    /* indicate if this mesh is a plane or not */
     bool bPlane;
     bool bVectorPointsUpdated;
-    /* bounding box */
+    /* bounding box of the mesh */
     Rect roi;
-    /* increment step when calculating points (1 to include all pixels to points, 2 to sample every 2 pixels) */
+    /* increment step when calculating points (1 to include all pixels to points, 2 to sample a point from every 2 pixels) */
     uint increment_step;
     /* pixel correspondence map */
     Mat projectorPixels;
-
-    /** Constructor.
-     */
-    RgbdCluster(Ptr<RgbdFrame> _rgbdFrame);
-
+    
     /** Return the number of valid points.
      */
     int getNumPoints();
@@ -1072,22 +1069,18 @@ namespace rgbd
      * @param skipNoCorrespondencePoints eliminate points with no projector correspondence information.
      */
     void calculatePoints(bool skipNoCorrespondencePoints = false);
-  };
-
-  class CV_EXPORTS RgbdClusterMesh : public RgbdCluster {
-  public:
+      
     /* indices. Each set of three points forms a triangle. */
     std::vector<int> faceIndices;
     bool bFaceIndicesUpdated;
 
     /** Constructor.
      */
-    RgbdClusterMesh(Ptr<RgbdFrame> _rgbdFrame);
+    RgbdMesh(Ptr<RgbdFrame> _rgbdFrame);
 
-    /** Update `faceIndices`. Must be called after `points` is updated.
-     * @param depthDiff Form a face when depth difference between vertices is less than the value.
+    /** Do meshing and update `faceIndices`. Must be called after `points` is updated.
      */
-    void calculateFaceIndices(float depthDiff = 0.05f);
+    void calculateFaceIndices();
 
     /** Update texture coordinates in `points` based on the LSCM algorithm.
      */
@@ -1103,12 +1096,12 @@ namespace rgbd
    * @param clusters Input clusters.
    * @param minPoints Delete a cluster with points less than or equal to minPoints.
    */
-  template<typename T> void eliminateSmallClusters(std::vector<T>& clusters, int minPoints);
+  CV_EXPORTS void eliminateSmallClusters(std::vector<RgbdMesh>& clusters, int minPoints);
 
   /** Delete empty clusters.
    * @param clusters Input clusters.
    */
-  template<typename T> void deleteEmptyClusters(std::vector<T>& clusters);
+  CV_EXPORTS void deleteEmptyClusters(std::vector<RgbdMesh>& clusters);
 
   /** Segment planes and return them with residual cluster.
    * @param mainCluster Input cluster.
@@ -1116,14 +1109,14 @@ namespace rgbd
    * @param maxPlaneNum The maximum number of clusters to extract.
    * @param minArea Only planes with points more than or equal to this value are extracted (TODO).
    */
-  template<typename T1, typename T2> void planarSegmentation(T1& mainCluster, std::vector<T2>& clusters, int maxPlaneNum = 3, int minArea = 400);
+  CV_EXPORTS void planarSegmentation(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int maxPlaneNum = 3, int minArea = 400);
 
   /** Split clusters from a silhouette image.
    * @param mainCluster Input cluster.
    * @param clusters Output clusters.
    * @param minArea Only clusters with points more than or equal to this value are extracted.
    */
-  template<typename T1, typename T2> void euclideanClustering(T1& mainCluster, std::vector<T2>& clusters, int minArea = 400);;
+  CV_EXPORTS void euclideanClustering(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int minArea = 400);
 
 // TODO Depth interpolation
 // Curvature
