@@ -80,20 +80,47 @@ void captureImageMultipleTimes(Ptr<VideoCapture>& capture, Mat& image, Mat& gray
     cvtColor(image, gray, COLOR_BGR2GRAY);
 }
 
-int main()
+int main(int argc, char** argv)
 {
     int devId;
     int lightThreshold;
     int lightIntensity;
     GrayCodePattern::Params params;
     bool useOpenni = false;
-    FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
-    fs["deviceId"] >> devId;
-    fs["lightThreshold"] >> lightThreshold;
-    fs["lightIntensity"] >> lightIntensity;
-    fs["projectorWidth"] >> params.width;
-    fs["projectorHeight"] >> params.height;
-    fs["useOpenni"] >> useOpenni;
+
+    const String keys =
+        "{help h usage ? |       | print this message   }"
+        "{id             |   0   | device ID            }"
+        "{w              |  -1   | projector width      }"
+        "{h              |  -1   | projector height     }"
+        "{openni         |   0   | use OpenNI device    }"
+        "{threshold      |   5   | noticable difference of inverted structured lights }"
+        "{intensity      |  70   | intensity of structured lights }"
+        ;
+    CommandLineParser parser(argc, argv, keys);
+
+    devId = parser.get<int>("id");
+    params.width = parser.get<int>("w");
+    params.height = parser.get<int>("h");
+    useOpenni = parser.get<int>("openni") > 0;
+    lightThreshold = parser.get<int>("threshold");
+    lightIntensity = parser.get<int>("intensity");
+
+    if (params.width > 0 && params.height > 0)
+    {
+        // fine; use command line arguments
+    }
+    else
+    {
+        // read from yml file
+        FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
+        fs["deviceId"] >> devId;
+        fs["lightThreshold"] >> lightThreshold;
+        fs["lightIntensity"] >> lightIntensity;
+        fs["projectorWidth"] >> params.width;
+        fs["projectorHeight"] >> params.height;
+        fs["useOpenni"] >> useOpenni;
+    }
 
     Ptr<VideoCapture> capture;
     if (useOpenni)

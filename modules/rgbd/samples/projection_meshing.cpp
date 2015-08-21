@@ -65,13 +65,36 @@ int main( int argc, char** argv )
     //int lightIntensity;
     Size camSize, projSize;
     bool useOpenni;
-    FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
-    fs["deviceId"] >> devId;
-    //fs["lightThreshold"] >> lightThreshold;
-    //fs["lightIntensity"] >> lightIntensity;
-    fs["projectorWidth"] >> projSize.width;
-    fs["projectorHeight"] >> projSize.height;
-    fs["useOpenni"] >> useOpenni;
+
+    const String keys =
+        "{help h usage ? |       | print this message   }"
+        "{id             |   0   | device ID            }"
+        "{w              |  -1   | projector width      }"
+        "{h              |  -1   | projector height     }"
+        "{openni         |   0   | use OpenNI device    }"
+        ;
+    CommandLineParser parser(argc, argv, keys);
+
+    devId = parser.get<int>("id");
+    projSize.width = parser.get<int>("w");
+    projSize.height = parser.get<int>("h");
+    useOpenni = parser.get<int>("openni") > 0;
+
+    if (projSize.width > 0 && projSize.height > 0)
+    {
+        // fine; use command line arguments
+    }
+    else
+    {
+        // read from yml file
+        FileStorage fs("capturer_parameters.yml", FileStorage::Mode::READ);
+        fs["deviceId"] >> devId;
+        //fs["lightThreshold"] >> lightThreshold;
+        //fs["lightIntensity"] >> lightIntensity;
+        fs["projectorWidth"] >> projSize.width;
+        fs["projectorHeight"] >> projSize.height;
+        fs["useOpenni"] >> useOpenni;
+    }
 
     Mat projectorPixels, cameraPixels;
     // load pixel correspondence maps
