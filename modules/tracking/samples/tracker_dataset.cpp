@@ -65,7 +65,7 @@ static bool startSelection = false;
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
 "{@dataset_path     |true| Dataset path     }"
-"{@dataset_id     |1| Dataset path     }"
+"{@dataset_id     |1| Dataset ID     }"
 };
 
 static void onMouse(int event, int x, int y, int, void*)

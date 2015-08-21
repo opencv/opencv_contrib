@@ -65,9 +65,9 @@ Rect2d boundingBox;
 
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
-"{@dataset_path     |true| Dataset path     }"
-"{@dataset_id     |1| Dataset path     }"
 "{@target_num     |1| Number of targets }"
+"{@dataset_path     |true| Dataset path     }"
+"{@dataset_id     |1| Dataset ID     }"
 };
 
 static void onMouse(int event, int x, int y, int, void*)
@@ -119,7 +119,7 @@ static void help()
 		"TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
 		"-- pause video [p] and draw a bounding boxes around the targets to start the tracker\n"
 		"Example:\n"
-		"./example_tracking_multiTracker_dataset<tracker_algorithm> <dataset_path> <dataset_id> <number_of_targets>\n"
+		"./example_tracking_multiTracker_dataset<tracker_algorithm> <number_of_targets> <dataset_path> <dataset_id>\n"
 		<< endl;
 
 	cout << "\n\nHot keys: \n"
@@ -131,9 +131,9 @@ int main(int argc, char *argv[])
 {
 	CommandLineParser parser(argc, argv, keys);
 	string tracker_algorithm = parser.get<string>(0);
-	string datasetRootPath = parser.get<string>(1);
-	int datasetID = parser.get<int>(2);
-	targetsNum = parser.get<int>(3);
+	targetsNum = parser.get<int>(1);
+	string datasetRootPath = parser.get<string>(2);
+	int datasetID = parser.get<int>(3);
 	if (tracker_algorithm.empty() || datasetRootPath.empty() || targetsNum < 1)
 	{
 		help();
