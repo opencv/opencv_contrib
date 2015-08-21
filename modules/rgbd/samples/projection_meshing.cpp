@@ -332,12 +332,12 @@ int main(int argc, char** argv)
         // convert camera space silhouette to projector space
         Mat projectorSilhouette = Mat::zeros(cameraPixels.size(), CV_8U);
         Mat & cameraSilhouette = clusters.at(i).silhouette;
-        for (int i = 0; i < cameraSilhouette.rows; i++)
+        for (int y = 0; y < cameraSilhouette.rows; y++)
         {
-            for (int j = 0; j < cameraSilhouette.cols; j++)
+            for (int x = 0; x < cameraSilhouette.cols; x++)
             {
-                Point2i & p = projectorPixels.at<Point2i>(i, j);
-                if (cameraSilhouette.at<uchar>(i, j) > 0 && p.x >= 0 && p.y >= 0)
+                Point2i & p = projectorPixels.at<Point2i>(y, x);
+                if (cameraSilhouette.at<uchar>(y, x) > 0 && p.x >= 0 && p.y >= 0)
                 {
                     projectorSilhouette.at<uchar>(p) = 255;
                 }
@@ -351,14 +351,14 @@ int main(int argc, char** argv)
         connectedComponentsWithStats(projectorSilhouette, projectorLabels, stats, centroids, 8);
         Mat labels = Mat::zeros(cameraSilhouette.size(), CV_32S);
         // return to camera space
-        for (int i = 0; i < projectorSilhouette.rows; i++)
+        for (int y = 0; y < projectorSilhouette.rows; y++)
         {
-            for (int j = 0; j < projectorSilhouette.cols; j++)
+            for (int x = 0; x < projectorSilhouette.cols; x++)
             {
-                int label = projectorLabels.at<int>(i, j);
+                int label = projectorLabels.at<int>(y, x);
                 if (label > 0)
                 {
-                    labels.at<int>(cameraPixels.at<Point2i>(i, j)) = label;
+                    labels.at<int>(cameraPixels.at<Point2i>(y, x)) = label;
                 }
             }
         }
