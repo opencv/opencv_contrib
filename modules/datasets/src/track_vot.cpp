@@ -106,8 +106,8 @@ namespace cv
 
 		void TRACK_votImpl::loadDataset(const string &rootPath)
 		{
-			ifstream namesList(rootPath + "/list.txt");
-			//ifstream lengthsList(rootPath + "/lengths.txt");
+			string nameListPath = rootPath + "/list.txt";
+			ifstream namesList(nameListPath.c_str());
 			vector <int> datasetsLengths;
 			string datasetName;
 
@@ -125,7 +125,8 @@ namespace cv
 					Ptr<TRACK_votObj> currDataset(new TRACK_votObj);
 
 					//Open dataset's ground truth file
-					ifstream gtList(rootPath + "/" + datasetName + "/groundtruth.txt");
+					string gtListPath = rootPath + "/" + datasetName + "/groundtruth.txt";
+					ifstream gtList(gtListPath.c_str());
 					if (!gtList.is_open())
 						cout << "Error to open groundtruth.txt!!!";
 
@@ -133,7 +134,7 @@ namespace cv
 					int currFrameID = 1;
 					if (currDatasetID == 0)
 						cout << "VOT 2015 Dataset Initialization...\n";
-
+					bool trFLG = true;
 					do
 					{
 						currFrameID++;
@@ -162,7 +163,7 @@ namespace cv
 						//Add object to storage
 						objects.push_back(currObj);
 
-					} while (true);
+					} while (trFLG);
 
 					datasetsLengths.push_back(currFrameID - 1);
 					data.push_back(objects);
