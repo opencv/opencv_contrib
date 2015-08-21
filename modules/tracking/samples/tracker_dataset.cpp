@@ -39,17 +39,21 @@
 //
 //M*/
 
+#include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <iostream>
 
 using namespace std;
 using namespace cv;
+using namespace cv::datasets;
 
-#define NUM_TEST_FRAMES 100
-#define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
+#define NUM_TEST_FRAMES 300
+#define TEST_VIDEO_INDEX 1		//TLD Dataset Video Index from 1-10
 //#define RECORD_VIDEO_FLG
 
 static Mat image;
@@ -57,6 +61,12 @@ static Rect2d boundingBox;
 static bool paused;
 static bool selectObject = false;
 static bool startSelection = false;
+
+static const char* keys =
+{ "{@tracker_algorithm | | Tracker algorithm }"
+"{@dataset_path     |true| Dataset path     }"
+"{@dataset_id     |1| Dataset path     }"
+};
 
 static void onMouse(int event, int x, int y, int, void*)
 {
@@ -93,19 +103,43 @@ static void onMouse(int event, int x, int y, int, void*)
 	}
 }
 
-int main()
+static void help()
 {
-	//
-	//  "MIL", "BOOSTING", "MEDIANFLOW", "TLD"
-	//
-	string tracker_algorithm_name = "TLD";
+	cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
+		"-- pause video [p] and draw a bounding box around the target to start the tracker\n"
+		"Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
+		"Call:\n"
+		"./tracker <tracker_algorithm> <video_name> <start_frame> [<bounding_frame>]\n"
+		<< endl;
+
+	cout << "\n\nHot keys: \n"
+		"\tq - quit the program\n"
+		"\tp - pause video\n";
+}
+
+int main(int argc, char *argv[])
+{
+	CommandLineParser parser(argc, argv, keys);
+	string tracker_algorithm = parser.get<string>(0);
+	string datasetRootPath = parser.get<string>(1);
+	int datasetID = parser.get<int>(2);
+	if (tracker_algorithm.empty() || datasetRootPath.empty())
+	{
+		help();
+		return -1;
+	}
+
+	cout << tracker_algorithm << endl;
+	cout << datasetRootPath << endl;
+	cout << datasetID << endl;
 
 	Mat frame;
 	paused = false;
 	namedWindow("Tracking API", 0);
 	setMouseCallback("Tracking API", onMouse, 0);
 
-	Ptr<Tracker> tracker = Tracker::create(tracker_algorithm_name);
+	//Create Tracker
+	Ptr<Tracker> tracker = Tracker::create(tracker_algorithm);
 	if (tracker == NULL)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
@@ -113,107 +147,74 @@ int main()
 		return 0;
 	}
 
-	//Get the first frame
-	////Open the capture
-	//  VideoCapture cap(0);
-	//  if( !cap.isOpened() )
-	//  {
-	// cout << "Video stream error";
-	//    return;
-	//  }
-	//cap >> frame;
+	//Init Dataset
+	Ptr<TRACK_vot> dataset = TRACK_vot::create();
+	dataset->load(datasetRootPath);
+	dataset->initDataset(datasetID);
 
-	//From TLD dataset
-	selectObject = true;
-	boundingBox = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/TLD_dataset");
-
-	frame = tld::tld_getNextDatasetFrame();
+	//Read first frame
+	dataset->getNextFrame(frame);
 	frame.copyTo(image);
-
-	// Setup output video
-#ifdef RECORD_VIDEO_FLG
-	String outputFilename = "test.avi";
-	VideoWriter outputVideo;
-	outputVideo.open(outputFilename, -1, 30, Size(image.cols, image.rows));
-
-	if (!outputVideo.isOpened())
-	{
-		std::cout << "!!! Output video could not be opened" << std::endl;
-		getchar();
-		return;
-	}
-#endif
 
 	rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
 	imshow("Tracking API", image);
 
 
 	bool initialized = false;
+	paused = true;
 	int frameCounter = 0;
 
 	//Time measurment
 	int64 e3 = getTickCount();
-
 	for (;;)
 	{
-		//Time measurment
-		int64 e1 = getTickCount();
-		//Frame num
-		frameCounter++;
-		if (frameCounter == NUM_TEST_FRAMES) break;
-
-		char c = (char)waitKey(2);
-		if (c == 'q' || c == 27)
-			break;
-		if (c == 'p')
-			paused = !paused;
-
 		if (!paused)
 		{
-			//cap >> frame;
-			frame = tld::tld_getNextDatasetFrame();
-			if (frame.empty())
-			{
-				break;
-			}
-			frame.copyTo(image);
-
-			if (selectObject)
-			{
-				if (!initialized)
-				{
-					//initializes the tracker
-					if (!tracker->init(frame, boundingBox))
-					{
-						cout << "***Could not initialize tracker...***\n";
-						return 0;
-					}
-					initialized = true;
-					rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
+			//Time measurment
+			int64 e1 = getTickCount();
+			if (initialized){
+				dataset->getNextFrame(frame);
+				if (frame.empty()){
+					break;
 				}
-				else
+				frame.copyTo(image);
+			}
+
+			if (!initialized && selectObject)
+			{
+				//initializes the tracker
+				if (!tracker->init(frame, boundingBox))
 				{
-					//updates the tracker
-					if (tracker->update(frame, boundingBox))
-					{
-						rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
-					}
+					cout << "***Could not initialize tracker...***\n";
+					return -1;
+				}
+				initialized = true;
+			}
+			else if (initialized)
+			{
+				//updates the tracker
+				if (tracker->update(frame, boundingBox))
+				{
+					rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
 				}
 			}
 			imshow("Tracking API", image);
-
-#ifdef RECORD_VIDEO_FLG
-			outputVideo << image;
-#endif
-
-
+			frameCounter++;
 			//Time measurment
 			int64 e2 = getTickCount();
 			double t1 = (e2 - e1) / getTickFrequency();
 			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
-
-			//waitKey(0);
 		}
+
+		char c = (char)waitKey(2);
+		if (c == 'q')
+			break;
+		if (c == 'p')
+			paused = !paused;
+
+
+
+		//waitKey(0);
 	}
 
 	//Time measurment
