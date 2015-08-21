@@ -108,6 +108,8 @@ static void help()
 	cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
 		"TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
 		"-- pause video [p] and draw a bounding box around the target to start the tracker\n"
+		"Example:\n"
+		"./example_tracking_tracker_dataset <tracker_algorithm> <dataset_path> <dataset_id>\n"
 		<< endl;
 
 	cout << "\n\nHot keys: \n"
