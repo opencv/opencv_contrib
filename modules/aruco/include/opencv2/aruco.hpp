@@ -46,7 +46,8 @@ the use of this software, even if advised of the possibility of such damage.
 /**
  * @defgroup aruco ArUco Marker Detection
  * This module is dedicated to square fiducial markers (also known as Augmented Reality Markers)
- * These markers are useful for easy, fast and robust camera pose estimation.
+ * These markers are useful for easy, fast and robust camera pose estimation.ç
+ *
  * The main functionalities are:
  * - Detection of markers in a image
  * - Pose estimation from a single marker or from a board/set of markers
@@ -62,6 +63,11 @@ the use of this software, even if advised of the possibility of such damage.
  * Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
  *
  * @sa http://www.uco.es/investiga/grupos/ava/node/26
+ *
+ * This module has been originally developed by Sergio Garrido-Jurado as a project
+ * for Google Summer of Code 2015 (GSoC 15).
+ *
+ *
 */
 
 namespace cv {

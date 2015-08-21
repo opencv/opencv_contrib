@@ -50,3 +50,11 @@ ChArUco corners and use them for pose estimation and camera calibration.
     *Author:* Sergio Garrido
 
     Camera Calibration using ArUco and ChArUco boards
+
+-   @subpage tutorial_aruco_faq
+
+    *Compatibility:* \> OpenCV 3.0
+
+    *Author:* Sergio Garrido
+
+    General and useful questions about the aruco module
