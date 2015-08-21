@@ -139,6 +139,3 @@ You can cite the original ArUco library:
 > S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
 > "Automatic generation and detection of highly reliable fiducial markers under occlusion".
 > Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
-
-
-
