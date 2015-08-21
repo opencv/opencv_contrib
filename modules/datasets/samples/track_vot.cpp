@@ -55,8 +55,6 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 
-#define DATASET_ID 1
-
 int main(int argc, char *argv[])
 {
 	const char *keys =
@@ -79,9 +77,9 @@ int main(int argc, char *argv[])
 	for (int i = 1; i <= dataset->getDatasetsNum(); i++)
 		printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
 
-	dataset->initDataset(DATASET_ID);
+	dataset->initDataset(datasetID);
 
-	for (int i = 0; i < dataset->getDatasetLength(DATASET_ID); i++)
+	for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
 	{
 		Mat frame;
 		dataset->getNextFrame(frame);
