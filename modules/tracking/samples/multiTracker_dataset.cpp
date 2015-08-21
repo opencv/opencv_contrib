@@ -39,6 +39,7 @@
 //
 //M*/
 
+#include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
@@ -47,6 +48,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace cv::datasets;
 
 #define NUM_TEST_FRAMES 100
 #define TEST_VIDEO_INDEX 7		//TLD Dataset Video Index from 1-10
@@ -54,13 +56,23 @@ using namespace cv;
 
 static Mat image;
 static bool paused;
-static bool selectObject = false;
+static bool selectObjects = false;
 static bool startSelection = false;
+vector<Rect2d> boundingBoxes;
+int targetsCnt = 0;
+int targetsNum = 0;
 Rect2d boundingBox;
+
+static const char* keys =
+{ "{@tracker_algorithm | | Tracker algorithm }"
+"{@dataset_path     |true| Dataset path     }"
+"{@dataset_id     |1| Dataset path     }"
+"{@target_num     |1| Number of targets }"
+};
 
 static void onMouse(int event, int x, int y, int, void*)
 {
-	if (!selectObject)
+	if (!selectObjects)
 	{
 		switch (event)
 		{
@@ -75,16 +87,24 @@ static void onMouse(int event, int x, int y, int, void*)
 			//sei with and height of the bounding box
 			boundingBox.width = std::abs(x - boundingBox.x);
 			boundingBox.height = std::abs(y - boundingBox.y);
-			paused = false;
-			selectObject = true;
+			boundingBoxes.push_back(boundingBox);
+			targetsCnt++;
+			if (targetsCnt == targetsNum)
+			{
+				paused = false;
+				selectObjects = true;
+			}
+			startSelection = false;
 			break;
 		case EVENT_MOUSEMOVE:
 
-			if (startSelection && !selectObject)
+			if (startSelection && !selectObjects)
 			{
 				//draw the bounding box
 				Mat currentFrame;
 				image.copyTo(currentFrame);
+				for (int i = 0; i < (int)boundingBoxes.size(); i++)
+					rectangle(currentFrame, boundingBoxes[i], Scalar(255, 0, 0), 2, 1);
 				rectangle(currentFrame, Point((int)boundingBox.x, (int)boundingBox.y), Point(x, y), Scalar(255, 0, 0), 2, 1);
 				imshow("Tracking API", currentFrame);
 			}
@@ -93,12 +113,32 @@ static void onMouse(int event, int x, int y, int, void*)
 	}
 }
 
-int main()
+static void help()
 {
-	//
-	//  "MIL", "BOOSTING", "MEDIANFLOW", "TLD"
-	//
-	char* tracker_algorithm_name = (char*)"TLD";
+	cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
+		"TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
+		"-- pause video [p] and draw a bounding boxes around the targets to start the tracker\n"
+		"Example:\n"
+		"./example_tracking_multiTracker_dataset<tracker_algorithm> <dataset_path> <dataset_id> <number_of_targets>\n"
+		<< endl;
+
+	cout << "\n\nHot keys: \n"
+		"\tq - quit the program\n"
+		"\tp - pause video\n";
+}
+
+int main(int argc, char *argv[])
+{
+	CommandLineParser parser(argc, argv, keys);
+	string tracker_algorithm = parser.get<string>(0);
+	string datasetRootPath = parser.get<string>(1);
+	int datasetID = parser.get<int>(2);
+	targetsNum = parser.get<int>(3);
+	if (tracker_algorithm.empty() || datasetRootPath.empty() || targetsNum < 1)
+	{
+		help();
+		return -1;
+	}
 
 	Mat frame;
 	paused = false;
@@ -106,23 +146,13 @@ int main()
 	setMouseCallback("Tracking API", onMouse, 0);
 
 	MultiTrackerTLD mt;
+	//Init Dataset
+	Ptr<TRACK_vot> dataset = TRACK_vot::create();
+	dataset->load(datasetRootPath);
+	dataset->initDataset(datasetID);
 
-	//Get the first frame
-	////Open the capture
-	//  VideoCapture cap(0);
-	//  if( !cap.isOpened() )
-	//  {
-	// cout << "Video stream error";
-	//    return;
-	//  }
-	//cap >> frame;
-
-	//From TLD dataset
-	selectObject = true;
-	Rect2d boundingBox1 = tld::tld_InitDataset(TEST_VIDEO_INDEX, "D:/opencv/VOT 2015", 1);
-	Rect2d boundingBox2(470, 490, 50, 120);
-
-	frame = tld::tld_getNextDatasetFrame();
+	//Read first frame
+	dataset->getNextFrame(frame);
 	frame.copyTo(image);
 
 	// Setup output video
@@ -142,8 +172,8 @@ int main()
 	rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
 	imshow("Tracking API", image);
 
-
 	bool initialized = false;
+	paused = true;
 	int frameCounter = 0;
 
 	//Time measurment
@@ -151,64 +181,59 @@ int main()
 
 	for (;;)
 	{
-		//Time measurment
-		int64 e1 = getTickCount();
-		//Frame num
-		frameCounter++;
-		if (frameCounter == NUM_TEST_FRAMES) break;
-
-		char c = (char)waitKey(2);
-		if (c == 'q' || c == 27)
-			break;
-		if (c == 'p')
-			paused = !paused;
-
 		if (!paused)
 		{
-			//cap >> frame;
-			frame = tld::tld_getNextDatasetFrame();
-			if (frame.empty())
-			{
-				break;
-			}
-			frame.copyTo(image);
-
-			if (selectObject)
-			{
-				if (!initialized)
-				{
-					//initializes the tracker
-					mt.addTarget(frame, boundingBox1, tracker_algorithm_name);
-					rectangle(frame, boundingBox1, mt.colors[0], 2, 1);
-
-
-					mt.addTarget(frame, boundingBox2, tracker_algorithm_name);
-					rectangle(frame, boundingBox2, mt.colors[1], 2, 1);
-					initialized = true;
+			//Time measurment
+			int64 e1 = getTickCount();
+			if (initialized){
+				dataset->getNextFrame(frame);
+				if (frame.empty()){
+					break;
 				}
-				else
+				frame.copyTo(image);
+			}
+
+			if (!initialized && selectObjects)
+			{
+				//Initialize the tracker and add targets
+				for (int i = 0; i < (int)boundingBoxes.size(); i++)
 				{
-					//updates the tracker
-					if (mt.update(frame))
+					if (!mt.addTarget(frame, boundingBoxes[i], tracker_algorithm))
 					{
-						for (int i = 0; i < mt.targetNum; i++)
-							rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
+						cout << "Trackers Init Error!!!";
+						return 0;
+					}
+					rectangle(frame, boundingBoxes[i], mt.colors[0], 2, 1);
+				}
+				initialized = true;
+			}
+			else if (initialized)
+			{
+				//Update all targets
+				if (mt.update(frame))
+				{
+					for (int i = 0; i < mt.targetNum; i++)
+					{
+						rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
 					}
 				}
 			}
 			imshow("Tracking API", frame);
-
-#ifdef RECORD_VIDEO_FLG
-			outputVideo << frame;
-#endif
-
-
+			frameCounter++;
 			//Time measurment
 			int64 e2 = getTickCount();
 			double t1 = (e2 - e1) / getTickFrequency();
 			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
 			//waitKey(0);
 		}
+
+		char c = (char)waitKey(2);
+		if (c == 'q')
+			break;
+		if (c == 'p')
+			paused = !paused;
+
+		//waitKey(0);
 	}
 
 	//Time measurment
