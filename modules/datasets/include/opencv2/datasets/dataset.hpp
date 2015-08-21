@@ -477,6 +477,8 @@ To run benchmark execute:
 ./opencv/build/bin/example_datasets_tr_svt_benchmark -p=/home/user/path_to_unpacked_folders/svt/svt1/
 ~~~
 
+@defgroup datasets_track Tracking
+
 ### VOT 2015 Database
 
 Implements loading dataset:
@@ -496,9 +498,6 @@ Usage:
 ~~~
 ./opencv/build/bin/example_datasets_track_vot -p=/home/user/path_to_unpacked_files/VOT2015/
 ~~~
-
-@defgroup datasets_track Tracking
-
 @}
 
 */
