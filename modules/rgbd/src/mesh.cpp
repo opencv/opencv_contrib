@@ -51,7 +51,7 @@ namespace cv
 namespace rgbd
 {
     RgbdMesh::RgbdMesh(Ptr<RgbdFrame> _rgbdFrame) :
-        bPlane(false), bVectorPointsUpdated(false), increment_step(1), rgbdFrame(_rgbdFrame), bFaceIndicesUpdated(false)
+        rgbdFrame(_rgbdFrame), bPlane(false), bVectorPointsUpdated(false), increment_step(1), bFaceIndicesUpdated(false)
     {
         CV_Assert(!rgbdFrame->depth.empty());
         CV_Assert(!rgbdFrame->mask.empty());
