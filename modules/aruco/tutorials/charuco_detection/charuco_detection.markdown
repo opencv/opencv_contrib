@@ -232,6 +232,10 @@ Finally, this is a full example of ChArUco detection (without using calibration 
     }
 ```
 
+Sample video:
+
+[![ChArUco board detection video](http://img.youtube.com/vi/Nj44m_N_9FY/0.jpg)](https://youtu.be/Nj44m_N_9FY)
+
 A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
 
 ChArUco Pose Estimation

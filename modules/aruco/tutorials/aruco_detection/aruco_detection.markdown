@@ -323,6 +323,10 @@ A basic full example for pose estimation from single markers:
     }
 ```
 
+Sample video:
+
+[![ArUco markers detection video](http://img.youtube.com/vi/IsXWrcB_Hvs/0.jpg)](https://youtu.be/IsXWrcB_Hvs)
+
 A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
 
 

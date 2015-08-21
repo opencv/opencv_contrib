@@ -152,4 +152,8 @@ Finally, an axis can be drawn to check the estimated pose is correct using ```dr
 The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out,
 as in a simple ArUco marker pose estimation.
 
+Sample video:
+
+[![Diamond markers detection video](http://img.youtube.com/vi/OqKpBnglH7k/0.jpg)](https://youtu.be/OqKpBnglH7k)
+
 A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.

@@ -196,6 +196,10 @@ Finally, a full example of board detection:
     }
 ```
 
+Sample video:
+
+[![Board Detection video](http://img.youtube.com/vi/Q1HlJEjW_j0/0.jpg)](https://youtu.be/Q1HlJEjW_j0)
+
 A full working example is included in the ```detect_board.cpp``` inside the module samples folder.
 
 
