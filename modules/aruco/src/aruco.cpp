@@ -54,8 +54,8 @@ using namespace std;
   *
   */
 DetectorParameters::DetectorParameters()
-    : adaptiveThreshWinSizeMin(21),
-      adaptiveThreshWinSizeMax(21),
+    : adaptiveThreshWinSizeMin(3),
+      adaptiveThreshWinSizeMax(23),
       adaptiveThreshWinSizeStep(10),
       adaptiveThreshConstant(7),
       minMarkerPerimeterRate(0.03),

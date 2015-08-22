@@ -170,7 +170,6 @@ int main(int argc, char *argv[]) {
         }
     }
     detectorParams.doCornerRefinement = true; // do corner refinement in markers
-    detectorParams.adaptiveThreshWinSizeMin = 3;
 
     VideoCapture inputVideo;
     int waitTime;

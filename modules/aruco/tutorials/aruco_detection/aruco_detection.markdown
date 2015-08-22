@@ -476,13 +476,13 @@ it would not be detected, like in the following image:
 On the other hand, too high values can produce the same effect if the markers are too small, and it can also
 reduce the performance. Moreover the process would tend to a global thresholding, losing the adaptive benefits.
 
-The simplest (and default) case is using the same value for ```adaptiveThreshWinSizeMin``` and
- ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is sometimes better using a
+The simplest case is using the same value for ```adaptiveThreshWinSizeMin``` and
+ ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is usually better using a
  range of values for the window size, although many thresholding steps can also reduce the performance considerably.
 
 Default values:
 
-```adaptiveThreshWinSizeMin```: 21, ```adaptiveThreshWinSizeMax```: 21, ```adaptiveThreshWinSizeStep```: 10
+```adaptiveThreshWinSizeMin```: 3, ```adaptiveThreshWinSizeMax```: 23, ```adaptiveThreshWinSizeStep```: 10
 
 
 - ```double adaptiveThreshConstant```

@@ -81,9 +81,9 @@ namespace aruco {
 /**
  * @brief Parameters for the detectMarker process:
  * - adaptiveThreshWinSizeMin: minimum window size for adaptive thresholding before finding
- *   contours (default 21).
+ *   contours (default 3).
  * - adaptiveThreshWinSizeMax: maximum window size for adaptive thresholding before finding
- *   contours (default 21).
+ *   contours (default 23).
  * - adaptiveThreshWinSizeStep: increments from adaptiveThreshWinSizeMin to adaptiveThreshWinSizeMax
  *   during the thresholding (default 10).
  * - adaptiveThreshConstant: constant for adaptive thresholding before finding contours (default 7)
