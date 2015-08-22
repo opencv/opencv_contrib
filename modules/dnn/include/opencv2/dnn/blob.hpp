@@ -1,3 +1,44 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                           License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #ifndef __OPENCV_DNN_DNN_BLOB_HPP__
 #define __OPENCV_DNN_DNN_BLOB_HPP__
 #include <opencv2/core.hpp>
@@ -44,8 +85,9 @@ namespace dnn
     CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
 
 
-    /** @brief provides convenient methods for continuous n-dimensional array processing, dedicated for convolution neural networks
-    It's realized as wrapper over \ref cv::Mat and \ref cv::UMat and will support methods for CPU/GPU switching
+    /** @brief Provides convenient methods for continuous n-dimensional array processing, dedicated for convolution neural networks.
+     *
+     * It's realized as wrapper over @ref cv::Mat and @ref cv::UMat and will support methods for CPU/GPU switching.
     */
     class CV_EXPORTS Blob
     {
@@ -76,15 +118,15 @@ namespace dnn
 
         /** @brief returns size of corresponding dimension (axis)
         @param axis dimension index
-        Python-like indexing is supported, so \p axis can be negative, i. e. -1 is last dimension.
+        Python-like indexing is supported, so @p axis can be negative, i. e. -1 is last dimension.
         Supposed that size of non-existing dimensions equal to 1, so the method always finished.
         */
         int xsize(int axis) const;
 
         /** @brief returns size of corresponding dimension (axis)
         @param axis dimension index
-        Python-like indexing is supported, so \p axis can be negative, i. e. -1 is last dimension.
-        @note Unlike xsize(), if \p axis points to non-existing dimension then an error will be generated.
+        Python-like indexing is supported, so @p axis can be negative, i. e. -1 is last dimension.
+        @note Unlike xsize(), if @p axis points to non-existing dimension then an error will be generated.
         */
         int size(int axis) const;
 
@@ -123,11 +165,12 @@ namespace dnn
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
 
-        /** @brief share data with other blob and returns *this
+        /** @brief Share data with other blob.
         @returns *this
         */
         Blob &shareFrom(const Blob &blob);
-        /** @brief adjust blob shape to required (data reallocated if needed)
+
+        /** @brief Adjust blob shape to required (data reallocated if needed).
         @returns *this
         */
         Blob &reshape(const BlobShape &shape);

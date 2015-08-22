@@ -1,3 +1,44 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                           License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #ifndef __OPENCV_DNN_DNN_HPP__
 #define __OPENCV_DNN_DNN_HPP__
 
@@ -10,48 +51,65 @@ namespace cv
 {
 namespace dnn
 {
-    /** @brief initialize dnn module and built-in layers
+    /** @brief Initialize dnn module and built-in layers.
+     *
      * This function automatically called on most of OpenCV builds,
      * but you need to call it manually on some specific configurations.
      */
     CV_EXPORTS void initModule();
 
+    /** @brief
+     *
+     *
+     * */
     struct CV_EXPORTS LayerParams : public Dict
     {
-        ///list of learned parameters stored as blobs
-        std::vector<Blob> blobs;
+        std::vector<Blob> blobs; //!< List of learned parameters stored as blobs.
 
-        ///optional, name of the layer instance (can be used internal purposes)
-        String name;
-        ///optional, type name which was used for creating layer by layer factory
-        String type;
+        String name; //!< Name of the layer instance (optional, can be used internal purposes).
+        String type; //!< Type name which was used for creating layer by layer factory (optional).
     };
 
-    ///Interface class allows to build new Layers
+    /** @brief Interface class allows to build new Layers.
+     */
     struct CV_EXPORTS Layer
     {
-        ///list of learned parameters must be stored here to allow read them using Net::getParam()
+        ///List of learned parameters must be stored here to allow read them by using Net::getParam().
         std::vector<Blob> blobs;
 
-        //shape of output blobs must be adjusted with respect to shape of input blobs
-        virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
+        /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
+         * @param[in]  inputs  vector of already allocated input blobs
+         * @param[out] outputs vector of output blobs, which must be allocated
+         *
+         * This method must create each produced blob according to shape of @p input blobs and internal layer params.
+         * If this method is called first time then @p output vector consists from empty blobs and its size determined by number of output connections.
+         * This method can be called multiple times if size of any @p input blob was changed.
+         */
+        virtual void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output) = 0;
 
         virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
-        //each input and output can be labeled to easily identify them using "<layer_name>[.output_name]" notation
+        /** @brief Returns index of input blob into the input array.
+         * @param inputName label of input blob
+         *
+         * Each input and output blob can be labeled to easily identify them using "<layer_name>[.output_name]" notation.
+         * This method map label of input blob to its index into input vector.
+         */
         virtual int inputNameToIndex(String inputName);
+        /** @brief Returns index of output blob in output array.
+         * @see inputNameToIndex()
+         */
         virtual int outputNameToIndex(String outputName);
 
-        String name; //!< name of the layer instance, can be used for logging or other internal purposes
-        String type; //!< type name which was used for creating layer by layer factory
+        String name; //!< Name of the layer instance, can be used for logging or other internal purposes.
+        String type; //!< Type name which was used for creating layer by layer factory.
 
         Layer();
-        explicit Layer(const LayerParams &params); //!< intialize only #name, #type and #blobs fields
+        explicit Layer(const LayerParams &params); //!< Intialize only #name, #type and #blobs fields.
         virtual ~Layer();
     };
 
-    //containers for String and int
-    typedef DictValue LayerId;
+    typedef DictValue LayerId; //!< Container for strings and integers.
 
     class CV_EXPORTS Net
     {
