@@ -132,6 +132,14 @@ If you manually modify the marker ids of the boards, or if you use a different t
 Not right now. However the data member of both the dictionary and board classes are public and can be easily stored.
 
 
+- Alright, but how can I render a 3d model to create an augmented reality application?
+
+To do so, you will need to use an external rendering engine library, such as OpenGL. The aruco module only provides the functionality to
+obtain the camera pose, i.e. the rotation and traslation vectors, which is necessary to create the augmented reality effect.
+However, you will need to adapt the rotation and traslation vectors from the OpenCV format to the format accepted by your 3d rendering library.
+The original ArUco library contains examples of how to do it for OpenGL and Ogre3D.
+
+
 - I have use this module in my research work, how can I cite it?
 
 You can cite the original ArUco library:
