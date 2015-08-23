@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     Ptr<VideoCapture> capture;
     if (useOpenni)
     {
-        capture = makePtr<VideoCapture>(CAP_OPENNI2);
+        capture = makePtr<VideoCapture>(static_cast<int>(CAP_OPENNI2));
     }
     else
     {
