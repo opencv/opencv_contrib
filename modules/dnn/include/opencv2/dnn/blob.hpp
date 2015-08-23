@@ -49,30 +49,50 @@ namespace cv
 {
 namespace dnn
 {
+    /** @brief Lightweight class for storing and processing a shape of blob (or anything else).
+     */
     struct BlobShape
     {
-        explicit BlobShape(int ndims = 4, int fill = 1);
-        BlobShape(int num, int cn, int rows, int cols);
-        BlobShape(int ndims, const int *sizes);
-        BlobShape(const std::vector<int> &sizes);
+        explicit BlobShape(int ndims = 4, int fill = 1);    //!< Creates n-dim shape and fill its by @p fill
+        BlobShape(int num, int cn, int rows, int cols);     //!< Creates 4-dim shape [@p num, @p cn, @p rows, @p cols]
+        BlobShape(int ndims, const int *sizes);             //!< Creates n-dim shape from the @p sizes array
+        BlobShape(const std::vector<int> &sizes);           //!< Creates n-dim shape from the @p sizes vector
         template<int n>
-        BlobShape(const Vec<int, n> &shape);
+        BlobShape(const Vec<int, n> &shape);                //!< Creates n-dim shape from @ref cv::Vec
 
+        /** @brief Returns number of dimensions. */
         int dims() const;
-        int size(int axis) const;
+
+        /** @brief Returns reference to the size of the specified @p axis.
+         *
+         * Negative @p axis is supported, in this case a counting starts from the last axis,
+         * i. e. -1 corresponds to last axis.
+         * If non-existing axis was passed then an error will be generated.
+         */
         int &size(int axis);
 
-        //do the same as size()
-        int operator[](int axis) const;
-        int &operator[](int axis);
+        /** @brief Returns the size of the specified @p axis.
+         * @see size()
+         */
+        int size(int axis) const;
 
-        //same as size(), but size of non-existing dimensions equal to 1
+        int operator[](int axis) const; //!< Does the same thing as size(axis).
+        int &operator[](int axis);      //!< Does the same thing as size(int) const.
+
+        /** @brief Returns the size of the specified @p axis.
+         *
+         * Does the same thing as size(int) const, but if non-existing axis will be passed then 1 will be returned,
+         * therefore this function always finishes successfuly.
+         */
         int xsize(int axis) const;
 
+        /** @brief Returns the product of all sizes of axes. */
         ptrdiff_t total();
 
+        /** @brief Returns pointer to the first element of continuous size array. */
         const int *ptr() const;
 
+        /** @brief Checks equality of two shapes. */
         bool equal(const BlobShape &other) const;
 
     private:
@@ -94,14 +114,16 @@ namespace dnn
     public:
         explicit Blob();
 
+        /** @brief Constructs blob with specified @p shape and @p type. */
         explicit Blob(const BlobShape &shape, int type = CV_32F);
 
-        /** @brief constucts 4-dimensional blob from input
-         *  @param in 2-dimensional or 3-dimensional single-channel image (or vector from them)
-         *  @param dstCn if specified force size of ouptut blob channel-dimension
+        /** @brief Constucts 4-dimensional blob from image or array of images.
+         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of images)
+         * @param dstCn if specified force size of ouptut blob channel-dimension
         */
-        explicit Blob(InputArray in, int dstCn = -1);
+        explicit Blob(InputArray image, int dstCn = -1);
 
+        /** @brief Creates blob with specified @p shape and @p type. */
         void create(const BlobShape &shape, int type = CV_32F);
 
         void fill(InputArray in);
@@ -110,74 +132,85 @@ namespace dnn
         Mat& getMatRef();
         const Mat& getMatRef() const;
         //TODO: add UMat get methods
-        Mat getMat(int n, int cn);
 
-        //shape getters
-        ///returns real count of blob dimensions
+        /** @brief Returns number of blob dimensions. */
         int dims() const;
 
-        /** @brief returns size of corresponding dimension (axis)
-        @param axis dimension index
-        Python-like indexing is supported, so @p axis can be negative, i. e. -1 is last dimension.
-        Supposed that size of non-existing dimensions equal to 1, so the method always finished.
-        */
-        int xsize(int axis) const;
-
-        /** @brief returns size of corresponding dimension (axis)
-        @param axis dimension index
-        Python-like indexing is supported, so @p axis can be negative, i. e. -1 is last dimension.
-        @note Unlike xsize(), if @p axis points to non-existing dimension then an error will be generated.
-        */
+        /** @brief Returns the size of the specified @p axis.
+         *
+         * Negative @p axis is supported, in this case a counting starts from the last axis,
+         * i. e. -1 corresponds to last axis.
+         * If non-existing axis was passed then an error will be generated.
+         */
         int size(int axis) const;
 
-        /** @brief returns number of elements
-        @param startAxis starting axis (inverse indexing can be used)
-        @param endAxis ending (excluded) axis
-        @see canonicalAxis()
-        */
-        size_t total(int startAxis = 0, int endAxis = -1) const;
+        /** @brief Returns the size of the specified @p axis.
+         *
+         * Does the same thing as size(int) const, but if non-existing axis will be passed then 1 will be returned,
+         * therefore this function always finishes successfuly.
+         */
+        int xsize(int axis) const;
 
-        /** @brief converts axis index to canonical format (where 0 <= axis < dims())
+        /** @brief Computes the product of sizes of axes among the specified axes range [@p startAxis; @p endAxis).
+         * @param startAxis the first axis to include in the range.
+         * @param endAxis   the first axis to exclude from the range.
+         * @details Negative axis indexing can be used.
+         * @see canonicalAxis()
+         */
+        size_t total(int startAxis = 0, int endAxis = INT_MAX) const;
+
+        /** @brief converts @p axis index to canonical format (where 0 <= axis < dims())
         */
         int canonicalAxis(int axis) const;
 
-        /** @brief returns shape of the blob
-        */
+        /** @brief Returns shape of the blob. */
         BlobShape shape() const;
 
+        /** @brief Checks equality of two blobs shapes. */
         bool equalShape(const Blob &other) const;
 
-        //shape getters for 4-dim Blobs processing
-        int cols() const;
-        int rows() const;
-        int channels() const;
-        int num() const;
-        Size size2() const;
-        Vec4i shape4() const;
+        /** @brief Returns sclice of first two dimensions.
+         *  @details The behavior is similar to the following numpy code: blob[n, cn, ...]
+         */
+        Mat getPlane(int n, int cn);
 
-        //CPU data pointer functions
+        /** @addtogroup Shape getters of 4-dimensional blobs.
+         *  @{
+         */
+        int cols() const;       //!< Returns size of the fourth blob axis.
+        int rows() const;       //!< Returns size of the thrid  blob axis.
+        int channels() const;   //!< Returns size of the second blob axis.
+        int num() const;        //!< Returns size of the first blob axis.
+        Size size2() const;     //!< Returns cv::Size(cols(), rows())
+        Vec4i shape4() const;   //!< Returns shape of firt four blob axes.
+        /** @}*/
+
+        /** @addtogroup CPU pointer getters
+         *  @{
+         */
         template<int n>
         size_t offset(const Vec<int, n> &pos) const;
         size_t offset(int n = 0, int cn = 0, int row = 0, int col = 0) const;
         uchar *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         template<typename TFloat>
         TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+        /** Returns (float*) ptr() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
+        /** @}*/
 
-        /** @brief Share data with other blob.
-        @returns *this
-        */
+        /** @brief Shares data from other @p blob.
+         * @returns *this
+         */
         Blob &shareFrom(const Blob &blob);
 
-        /** @brief Adjust blob shape to required (data reallocated if needed).
-        @returns *this
-        */
+        /** @brief Changes shape of the blob without copying the data.
+         * @returns *this
+         */
         Blob &reshape(const BlobShape &shape);
 
+        /** @brief Returns type of the blob. */
         int type() const;
-        bool isFloat() const;
-        bool isDouble() const;
 
     private:
         const int *sizes() const;

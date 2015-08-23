@@ -78,8 +78,8 @@ namespace dnn
         std::vector<Blob> blobs;
 
         /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
-         * @param[in]  inputs  vector of already allocated input blobs
-         * @param[out] outputs vector of output blobs, which must be allocated
+         * @param[in]  input  vector of already allocated input blobs
+         * @param[out] output vector of output blobs, which must be allocated
          *
          * This method must create each produced blob according to shape of @p input blobs and internal layer params.
          * If this method is called first time then @p output vector consists from empty blobs and its size determined by number of output connections.

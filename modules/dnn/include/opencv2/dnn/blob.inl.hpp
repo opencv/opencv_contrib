@@ -187,12 +187,14 @@ inline size_t Blob::total(int startAxis, int endAxis) const
     if (startAxis < 0)
         startAxis += dims();
 
-    if (endAxis == -1)
+    if (endAxis == INT_MAX)
         endAxis = dims();
+    else if (endAxis < 0)
+        endAxis += dims();
 
     CV_Assert(0 <= startAxis && startAxis <= endAxis && endAxis <= dims());
 
-    size_t size = 1; //assume that blob isn't empty
+    size_t size = 1; //fix: assume that slice isn't empty
     for (int i = startAxis; i < endAxis; i++)
         size *= (size_t)sizes()[i];
 
@@ -266,9 +268,10 @@ inline const Mat& Blob::getMatRef() const
     return m;
 }
 
-inline Mat Blob::getMat(int n, int cn)
+inline Mat Blob::getPlane(int n, int cn)
 {
-    return Mat(rows(), cols(), m.type(), this->ptr(n, cn));
+    CV_Assert(dims() > 2);
+    return Mat(dims() - 2, sizes() + 2, type(), ptr(n, cn));
 }
 
 inline int Blob::cols() const
@@ -299,16 +302,6 @@ inline Size Blob::size2() const
 inline int Blob::type() const
 {
     return m.depth();
-}
-
-inline bool Blob::isFloat() const
-{
-    return (type() == CV_32F);
-}
-
-inline bool Blob::isDouble() const
-{
-    return (type() == CV_32F);
 }
 
 inline const int * Blob::sizes() const

@@ -81,7 +81,7 @@ namespace dnn
 
         size_t outerSize = src.total(0, axis);
         size_t channels = src.size(axis);
-        size_t innerSize = src.total(axis + 1, -1);
+        size_t innerSize = src.total(axis + 1);
 
         size_t outerStep = src.total(axis);
         size_t cnStep = src.total(axis + 1);

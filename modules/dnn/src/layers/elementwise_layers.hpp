@@ -78,13 +78,13 @@ using std::pow;
 
                 size_t size = outputs[i].total();
 
-                if (outputs[i].isFloat())
+                if (outputs[i].type() == CV_32F)
                 {
                     float *data = outputs[i].ptrf();
                     for (size_t j = 0; j < size; j++)
                         data[j] = func(data[j]);
                 }
-                else if (outputs[i].isDouble())
+                else if (outputs[i].type() == CV_64F)
                 {
                     double *data = outputs[i].ptr<double>();
                     for (size_t j = 0; j < size; j++)

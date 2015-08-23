@@ -119,10 +119,10 @@ namespace dnn
         }
     }
 
-    Blob::Blob(InputArray in, int dstCn)
+    Blob::Blob(InputArray image, int dstCn)
     {
         CV_Assert(dstCn == -1 || dstCn > 0);
-        std::vector<Mat> inMats = extractMatVector(in);
+        std::vector<Mat> inMats = extractMatVector(image);
         BlobShape dstShape = getBlobShpae(inMats, dstCn);
 
         m.create(dstShape.dims(), dstShape.ptr(), CV_32F);

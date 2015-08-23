@@ -108,29 +108,29 @@ namespace dnn
 
         for (int n = 0; n < num; n++)
         {
-            Mat accum = dstBlob.getMat(n, channels-1); //trick for memory saving
+            Mat accum = dstBlob.getPlane(n, channels-1); //trick for memory saving
             accum.setTo(0);
 
             for (int cn = 0; cn < std::min(ksize, channels); cn++)
-                cv::accumulateSquare(srcBlob.getMat(n, cn), accum);
+                cv::accumulateSquare(srcBlob.getPlane(n, cn), accum);
 
             for (int cn = 0; cn < channels; cn++)
             {
                 if (cn + ksize < channels)
                 {
-                    cv::accumulateSquare(srcBlob.getMat(n, cn + ksize), accum);
+                    cv::accumulateSquare(srcBlob.getPlane(n, cn + ksize), accum);
                 }
 
                 if (cn - ksize - 1 >= 0)
                 {
-                    Mat left = srcBlob.getMat(n, cn - ksize - 1);
+                    Mat left = srcBlob.getPlane(n, cn - ksize - 1);
                     cv::subtract(accum, left.mul(left), accum); //subtractSquare
                 }
 
-                Mat dst = dstBlob.getMat(n, cn);
+                Mat dst = dstBlob.getPlane(n, cn);
                 accum.convertTo(dst, dst.type(), alpha/size, 1);
                 cv::pow(dst, beta, dst);
-                cv::divide(srcBlob.getMat(n, cn), dst, dst);
+                cv::divide(srcBlob.getPlane(n, cn), dst, dst);
             }
         }
     }
@@ -144,11 +144,11 @@ namespace dnn
         {
             for (int cn = 0; cn < channels; cn++)
             {
-                Mat src = srcBlob.getMat(n, cn);
-                Mat dst = dstBlob.getMat(n, cn);
+                Mat src = srcBlob.getPlane(n, cn);
+                Mat dst = dstBlob.getPlane(n, cn);
                 uchar *dataDst0 = dst.data;
 
-                cv::pow(srcBlob.getMat(n, cn), 2, dst);
+                cv::pow(srcBlob.getPlane(n, cn), 2, dst);
                 //TODO: check border type
                 cv::boxFilter(dst, dst, dst.depth(), cv::Size(size, size), cv::Point(-1, -1), false, cv::BORDER_CONSTANT);
                 dst.convertTo(dst, dst.type(), alpha/(size*size), 1);
