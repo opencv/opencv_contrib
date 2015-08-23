@@ -45,7 +45,7 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef _OPENCV_LBPFEATURES_H_
 #define _OPENCV_LBPFEATURES_H_
 
-#include "traincascade_features.h"
+#include "precomp.hpp"
 
 
 #define LBPF_NAME "lbpFeatureParams"

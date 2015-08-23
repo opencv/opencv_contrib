@@ -72,6 +72,10 @@ public:
     int predict(Ptr<CvFeatureEvaluator> eval, float *h) const;
     void save(const std::string& filename);
     void load(const std::string& filename);
+
+    void read(const FileNode &node);
+    void write(FileStorage &fs) const;
+
     void reset(int weak_count);
     ~WaldBoost();
 

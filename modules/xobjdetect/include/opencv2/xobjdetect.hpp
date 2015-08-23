@@ -56,20 +56,22 @@ namespace xobjdetect
 
 class CV_EXPORTS WBDetector {
 public:
-    WBDetector(const std::string& model_filename);
+    virtual void read(const FileNode &node) = 0;
+    virtual void write(FileStorage &fs) const = 0;
 
-    void train(
+    virtual void train(
         const std::string& pos_samples,
-        const std::string& neg_imgs);
+        const std::string& neg_imgs) = 0;
 
-    void detect(
+    virtual void detect(
         const Mat& img,
         std::vector<Rect> &bboxes,
-        std::vector<double> &confidences);
+        std::vector<double> &confidences) = 0;
 
-private:
-    std::string model_filename_;
+    virtual ~WBDetector(){}
 };
+
+CV_EXPORTS Ptr<WBDetector> create_wbdetector();
 
 } /* namespace xobjdetect */
 } /* namespace cv */

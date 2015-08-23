@@ -52,10 +52,6 @@ using std::string;
 namespace cv {
 namespace xobjdetect {
 
-WBDetector::WBDetector(const string& model_filename):
-    model_filename_(model_filename)
-{}
-
 static vector<Mat> sample_patches(
         const string& path,
         int n_rows,
@@ -93,13 +89,24 @@ static vector<Mat> read_imgs(const string& path)
     return imgs;
 }
 
-void WBDetector::train(
+void WBDetectorImpl::read(const FileNode& node)
+{
+    boost_.read(node);
+}
+
+
+void WBDetectorImpl::write(FileStorage &fs) const
+{
+    boost_.write(fs);
+}
+
+void WBDetectorImpl::train(
     const string& pos_samples_path,
     const string& neg_imgs_path)
 {
 
     vector<Mat> pos_imgs = read_imgs(pos_samples_path);
-    vector<Mat> neg_imgs = sample_patches(neg_imgs_path, 24, 24, pos_imgs.size());
+    vector<Mat> neg_imgs = sample_patches(neg_imgs_path, 24, 24, pos_imgs.size() * 10);
 
     assert(pos_imgs.size());
     assert(neg_imgs.size());
@@ -111,16 +118,15 @@ void WBDetector::train(
     eval->init(CvFeatureParams::create(), 1, Size(24, 24));
     n_features = eval->getNumFeatures();
 
-    const int stages[] = {32, 64, 128, 256, 512, 1024, 2048, 4096};
+    const int stages[] = {64, 128, 256, 512, 1024};
     const int stage_count = sizeof(stages) / sizeof(*stages);
-    const int stage_neg = 5000;
-    const int max_per_image = 25;
+    const int stage_neg = pos_imgs.size() * 5;
+    const int max_per_image = 100;
 
     const float scales_arr[] = {.3f, .4f, .5f, .6f, .7f, .8f, .9f, 1.0f};
     const vector<float> scales(scales_arr,
             scales_arr + sizeof(scales_arr) / sizeof(*scales_arr));
 
-    WaldBoost boost;
     vector<String> neg_filenames;
     glob(neg_imgs_path, neg_filenames);
 
@@ -133,22 +139,22 @@ void WBDetector::train(
         neg_data = Mat1b(n_features, (int)neg_imgs.size());
 
         for (size_t k = 0; k < pos_imgs.size(); ++k) {
-            eval->setImage(pos_imgs[k], +1, 0, boost.get_feature_indices());
+            eval->setImage(pos_imgs[k], +1, 0, boost_.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
                 pos_data.at<uchar>(j, (int)k) = (uchar)(*eval)(j);
             }
         }
 
         for (size_t k = 0; k < neg_imgs.size(); ++k) {
-            eval->setImage(neg_imgs[k], 0, 0, boost.get_feature_indices());
+            eval->setImage(neg_imgs[k], 0, 0, boost_.get_feature_indices());
             for (int j = 0; j < n_features; ++j) {
                 neg_data.at<uchar>(j, (int)k) = (uchar)(*eval)(j);
             }
         }
 
 
-        boost.reset(stages[i]);
-        boost.fit(pos_data, neg_data);
+        boost_.reset(stages[i]);
+        boost_.fit(pos_data, neg_data);
 
         if (i + 1 == stage_count) {
             break;
@@ -162,7 +168,7 @@ void WBDetector::train(
             Mat img = imread(neg_filenames[img_i], CV_LOAD_IMAGE_GRAYSCALE);
             vector<Rect> bboxes;
             Mat1f confidences;
-            boost.detect(eval, img, scales, bboxes, confidences);
+            boost_.detect(eval, img, scales, bboxes, confidences);
 
             if (confidences.rows > 0) {
                 Mat1i indices;
@@ -185,18 +191,13 @@ void WBDetector::train(
         cerr << "bootstrapped " << bootstrap_count << " windows from "
              << (img_i + 1) << " images" << endl;
     }
-
-    boost.save(model_filename_);
 }
 
-void WBDetector::detect(
+void WBDetectorImpl::detect(
     const Mat& img,
     vector<Rect> &bboxes,
     vector<double> &confidences)
 {
-    WaldBoost boost;
-    boost.load(model_filename_);
-
     Mat test_img = img.clone();
     bboxes.clear();
     confidences.clear();
@@ -207,8 +208,13 @@ void WBDetector::detect(
     Ptr<CvFeatureParams> params = CvFeatureParams::create();
     Ptr<CvFeatureEvaluator> eval = CvFeatureEvaluator::create();
     eval->init(params, 1, Size(24, 24));
-    boost.detect(eval, img, scales, bboxes, confidences);
+    boost_.detect(eval, img, scales, bboxes, confidences);
     assert(confidences.size() == bboxes.size());
+}
+
+Ptr<WBDetector> create_wbdetector()
+{
+    return Ptr<WBDetector>(new WBDetectorImpl());
 }
 
 }

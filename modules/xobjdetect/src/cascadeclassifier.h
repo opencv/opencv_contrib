@@ -45,9 +45,7 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef _OPENCV_CASCADECLASSIFIER_H_
 #define _OPENCV_CASCADECLASSIFIER_H_
 
-#include <ctime>
-#include "traincascade_features.h"
-#include "lbpfeatures.h"
+#include "precomp.hpp"
 
 #define CC_CASCADE_FILENAME "cascade.xml"
 #define CC_PARAMS_FILENAME "params.xml"

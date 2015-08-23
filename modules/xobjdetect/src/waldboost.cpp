@@ -271,7 +271,6 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
         thresholds_.push_back(min_threshold);
         polarities_.push_back(min_polarity);
         feature_ignore[min_feature_ind] = true;
-        cascade_thresholds_.push_back(-1);
 
         double loss = 0;
         // Update positive weights
@@ -291,12 +290,47 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
             neg_trace(0, j) += alpha * label;
             loss += exp(+neg_trace(0, j)) / (2.0f * data_neg.cols);
         }
+        double cascade_threshold = -1;
+        minMaxIdx(pos_trace, &cascade_threshold);
+        cascade_thresholds_.push_back(cascade_threshold);
+
         std::cerr << "i=" << std::setw(4) << i;
         std::cerr << " feat=" << std::setw(5) << min_feature_ind;
         std::cerr << " thr=" << std::setw(3) << threshold_q;
+        std::cerr << " casthr=" << std::fixed << std::setprecision(3)
+             << cascade_threshold;
         std::cerr <<  " alpha=" << std::fixed << std::setprecision(3)
              << alpha << " err=" << std::fixed << std::setprecision(3) << min_err
              << " loss=" << std::scientific << loss << std::endl;
+
+        //int pos = 0;
+        //for (int j = 0; j < data_pos.cols; ++j) {
+        //    if (pos_trace(0, j) > cascade_threshold - 0.5) {
+        //        pos_trace(0, pos) = pos_trace(0, j);
+        //        data_pos.col(j).copyTo(data_pos.col(pos));
+        //        pos_weights(0, pos) = pos_weights(0, j);
+        //        pos += 1;
+        //    }
+        //}
+        //std::cerr << "pos " << data_pos.cols << "/" << pos << std::endl;
+        //pos_trace = pos_trace.colRange(0, pos);
+        //data_pos = data_pos.colRange(0, pos);
+        //pos_weights = pos_weights.colRange(0, pos);
+
+        int pos = 0;
+        for (int j = 0; j < data_neg.cols; ++j) {
+            if (neg_trace(0, j) > cascade_threshold - 0.5) {
+                neg_trace(0, pos) = neg_trace(0, j);
+                data_neg.col(j).copyTo(data_neg.col(pos));
+                neg_weights(0, pos) = neg_weights(0, j);
+                pos += 1;
+            }
+        }
+        std::cerr << "neg " << data_neg.cols << "/" << pos << std::endl;
+        neg_trace = neg_trace.colRange(0, pos);
+        data_neg = data_neg.colRange(0, pos);
+        neg_weights = neg_weights.colRange(0, pos);
+
 
         if (loss < 1e-50 || min_err > 0.5) {
             std::cerr << "Stopping early" << std::endl;
@@ -313,72 +347,86 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
 
 int WaldBoost::predict(Ptr<CvFeatureEvaluator> eval, float *h) const
 {
-    double THR = -6;
     assert(feature_indices_.size() == size_t(weak_count_));
+    assert(cascade_thresholds_.size() == size_t(weak_count_));
     float res = 0;
-    for (int i = 0; i < weak_count_; ++i) {
+    int count = weak_count_;
+    for (int i = 0; i < count; ++i) {
         float val = (*eval)(feature_indices_[i]);
         int label = polarities_[i] * (val - thresholds_[i]) > 0 ? +1: -1;
         res += alphas_[i] * label;
-        if (res < THR) {
+        if (res < cascade_thresholds_[i]) {
             return -1;
         }
     }
     *h = res;
-    return res > THR ? +1 : -1;
+    return res > cascade_thresholds_[count - 1] ? +1 : -1;
 }
 
-void WaldBoost::save(const std::string& filename)
+void WaldBoost::write(FileStorage &fs) const
 {
-    std::ofstream f(filename.c_str());
-    f << weak_count_ << std::endl;
-    for (size_t i = 0; i < thresholds_.size(); ++i) {
-        f << thresholds_[i] << " ";
-    }
-    f << std::endl;
-    for (size_t i = 0; i < alphas_.size(); ++i) {
-        f << alphas_[i] << " ";
-    }
-    f << std::endl;
-    for (size_t i = 0; i < polarities_.size(); ++i) {
-        f << polarities_[i] << " ";
-    }
-    f << std::endl;
-    for (size_t i = 0; i < cascade_thresholds_.size(); ++i) {
-        f << cascade_thresholds_[i] << " ";
-    }
-    f << std::endl;
-    for (size_t i = 0; i < feature_indices_.size(); ++i) {
-        f << feature_indices_[i] << " ";
-    }
-    f << std::endl;
+    fs << "waldboost" << "{";
+    fs << "waldboost_params"
+       << "{" << "weak_count" << weak_count_ << "}";
+
+    fs << "thresholds" << "[";
+    for (size_t i = 0; i < thresholds_.size(); ++i)
+        fs << thresholds_[i];
+    fs << "]";
+
+    fs << "alphas" << "[";
+    for (size_t i = 0; i < alphas_.size(); ++i)
+        fs << alphas_[i];
+    fs << "]";
+
+    fs << "polarities" << "[";
+    for (size_t i = 0; i < polarities_.size(); ++i)
+        fs << polarities_[i];
+    fs << "]";
+
+    fs << "cascade_thresholds" << "[";
+    for (size_t i = 0; i < cascade_thresholds_.size(); ++i)
+        fs << cascade_thresholds_[i];
+    fs << "]";
+
+    fs << "feature_indices" << "[";
+    for (size_t i = 0; i < feature_indices_.size(); ++i)
+        fs << feature_indices_[i];
+    fs << "]";
+
+    fs << "}";
 }
 
-void WaldBoost::load(const std::string& filename)
+void WaldBoost::read(const FileNode &node)
 {
-    std::ifstream f(filename.c_str());
-    f >> weak_count_;
+    weak_count_ = (int)(node["waldboost_params"]["weak_count"]);
     thresholds_.resize(weak_count_);
     alphas_.resize(weak_count_);
     polarities_.resize(weak_count_);
     cascade_thresholds_.resize(weak_count_);
     feature_indices_.resize(weak_count_);
 
-    for (int i = 0; i < weak_count_; ++i) {
-        f >> thresholds_[i];
-    }
-    for (int i = 0; i < weak_count_; ++i) {
-        f >> alphas_[i];
-    }
-    for (int i = 0; i < weak_count_; ++i) {
-        f >> polarities_[i];
-    }
-    for (int i = 0; i < weak_count_; ++i) {
-        f >> cascade_thresholds_[i];
-    }
-    for (int i = 0; i < weak_count_; ++i) {
-        f >> feature_indices_[i];
-    }
+    FileNodeIterator n;
+
+    n = node["thresholds"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> thresholds_[i];
+
+    n = node["alphas"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> alphas_[i];
+
+    n = node["polarities"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> polarities_[i];
+
+    n = node["cascade_thresholds"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> cascade_thresholds_[i];
+
+    n = node["feature_indices"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> feature_indices_[i];
 }
 
 void WaldBoost::reset(int weak_count)
