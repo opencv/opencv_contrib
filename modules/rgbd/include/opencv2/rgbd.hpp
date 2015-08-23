@@ -1089,7 +1089,7 @@ namespace rgbd
     /** Save the current mesh to an .obj file.
      * @param path Output filename.
      */
-    void save(const std::string &path, bool replaceXyByTexCoord = false);
+    void save(const std::string &path);
   };
 
   /** Delete small clusters.

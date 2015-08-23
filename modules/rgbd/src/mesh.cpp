@@ -361,7 +361,7 @@ namespace rgbd
 #endif
     }
 
-    void RgbdMesh::save(const std::string &path, bool replaceXyByTexCoord)
+    void RgbdMesh::save(const std::string &path)
     {
         // has extension
         CV_Assert(path.length() >= 3);
@@ -414,18 +414,9 @@ namespace rgbd
             for (std::size_t i = 0; i < points.size(); i++)
             {
                 Point3f v;
-                if (replaceXyByTexCoord == false)
-                {
-                    v.x = static_cast<float>(points.at(i).projector_xy.x);
-                    v.y = static_cast<float>(points.at(i).projector_xy.y);
-                    v.z = 1000 * points.at(i).world_xyz.z;
-                }
-                else
-                {
-                    v.x = points.at(i).texture_uv.x * 100;
-                    v.y = points.at(i).texture_uv.y * 100;
-                    v.z = 0;
-                }
+                v.x = static_cast<float>(points.at(i).projector_xy.x);
+                v.y = static_cast<float>(points.at(i).projector_xy.y);
+                v.z = 1000 * points.at(i).world_xyz.z;
 
                 // negate xy for Unity compatibility
                 fs << "v " << -v.x << " " << -v.y << " " << v.z << std::endl;
