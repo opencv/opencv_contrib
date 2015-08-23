@@ -210,10 +210,10 @@ namespace
             BlobShape shape = blobShapeFromProto(pbBlob);
 
             dstBlob.create(shape, CV_32F);
-            CV_Assert(pbBlob.data_size() == (int)dstBlob.getMatRef().total());
+            CV_Assert(pbBlob.data_size() == (int)dstBlob.matRefConst().total());
 
             CV_DbgAssert(pbBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
-            float *dstData = dstBlob.getMatRef().ptr<float>();
+            float *dstData = dstBlob.matRef().ptr<float>();
 
             for (int i = 0; i < pbBlob.data_size(); i++)
                 dstData[i] = pbBlob.data(i);

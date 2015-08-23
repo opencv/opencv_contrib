@@ -114,7 +114,7 @@ namespace dnn
             }
         }
 
-        cv::exp(dst.getMatRef(), dst.getMatRef());
+        cv::exp(dst.matRef(), dst.matRef());
 
         for (size_t outerDim = 0; outerDim < outerSize; outerDim++)
         {

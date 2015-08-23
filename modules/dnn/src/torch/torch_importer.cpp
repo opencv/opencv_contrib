@@ -392,7 +392,7 @@ struct TorchImporter : public ::cv::dnn::Importer
 
         Blob blob;
         blob.create(BlobShape(ndims, isizes), dstType);
-        srcMat.convertTo(blob.getMatRef(), dstType);
+        srcMat.convertTo(blob.matRef(), dstType);
 
         tensors.insert(std::make_pair(indexTensor, blob));
     }
@@ -686,7 +686,7 @@ CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBina
 }
 
 
-CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary)
+CV_EXPORTS Blob readTorchBlob(const String &filename, bool isBinary)
 {
     Ptr<TorchImporter> importer(new TorchImporter(filename, isBinary));
     importer->readObject();

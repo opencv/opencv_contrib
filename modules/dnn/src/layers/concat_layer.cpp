@@ -83,7 +83,7 @@ namespace dnn
 
     void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
     {
-        const Mat& outMat = outputs[0].getMatRef();
+        const Mat& outMat = outputs[0].matRef();
         std::vector<Range> ranges(outputs[0].dims(), Range::all());
         int sizeStart = 0;
         for (size_t i = 0; i < inputs.size(); i++)
@@ -92,7 +92,7 @@ namespace dnn
             ranges[axis] = Range(sizeStart, sizeEnd);
 
             Mat outSubMat = outMat(&ranges[0]);
-            inputs[i]->getMatRef().copyTo(outSubMat);
+            inputs[i]->matRef().copyTo(outSubMat);
 
             sizeStart = sizeEnd;
         }

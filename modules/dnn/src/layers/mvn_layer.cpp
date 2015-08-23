@@ -77,8 +77,8 @@ void MVNLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
         workSize[0] = (int)inpBlob.total(0, splitDim);
         workSize[1] = (int)inpBlob.total(splitDim);
 
-        Mat inpMat = inpBlob.getMatRef().reshape(1, 2, workSize);
-        Mat outMat = outBlob.getMatRef().reshape(1, 2, workSize);
+        Mat inpMat = inpBlob.matRef().reshape(1, 2, workSize);
+        Mat outMat = outBlob.matRef().reshape(1, 2, workSize);
 
         Scalar mean, dev;
         for (int i = 0; i < workSize[0]; i++)

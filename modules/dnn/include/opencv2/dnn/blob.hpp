@@ -49,8 +49,10 @@ namespace cv
 {
 namespace dnn
 {
-    /** @brief Lightweight class for storing and processing a shape of blob (or anything else).
-     */
+//! @addtogroup dnn
+//! @{
+
+    /** @brief Lightweight class for storing and processing a shape of blob (or anything else). */
     struct BlobShape
     {
         explicit BlobShape(int ndims = 4, int fill = 1);    //!< Creates n-dim shape and fill its by @p fill
@@ -72,7 +74,7 @@ namespace dnn
         int &size(int axis);
 
         /** @brief Returns the size of the specified @p axis.
-         * @see size()
+         *  @see size()
          */
         int size(int axis) const;
 
@@ -95,19 +97,17 @@ namespace dnn
         /** @brief Checks equality of two shapes. */
         bool equal(const BlobShape &other) const;
 
+        bool operator== (const BlobShape &r) const;
+
     private:
         cv::AutoBuffer<int,4> sz;
     };
 
-    bool operator== (const BlobShape &l, const BlobShape &r);
 
-    //maybe useless
-    CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
-
-
-    /** @brief Provides convenient methods for continuous n-dimensional array processing, dedicated for convolution neural networks.
+    /** @brief This class provides methods for continuous n-dimensional CPU and GPU array processing.
      *
-     * It's realized as wrapper over @ref cv::Mat and @ref cv::UMat and will support methods for CPU/GPU switching.
+     * The class is realized as a wrapper over @ref cv::Mat and @ref cv::UMat.
+     * It will support methods for switching and logical synchronization between CPU and GPU.
     */
     class CV_EXPORTS Blob
     {
@@ -117,21 +117,26 @@ namespace dnn
         /** @brief Constructs blob with specified @p shape and @p type. */
         explicit Blob(const BlobShape &shape, int type = CV_32F);
 
-        /** @brief Constucts 4-dimensional blob from image or array of images.
+        /** @brief Constucts 4-dimensional blob (so-called batch) from image or array of images.
          * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of images)
-         * @param dstCn if specified force size of ouptut blob channel-dimension
+         * @param dstCn specify size of second axis of ouptut blob
         */
         explicit Blob(InputArray image, int dstCn = -1);
 
         /** @brief Creates blob with specified @p shape and @p type. */
         void create(const BlobShape &shape, int type = CV_32F);
 
+        /** @brief Creates blob from cv::Mat or cv::UMat without copying the data */
         void fill(InputArray in);
+        /** @brief Creates blob from user data.
+         *  @details If @p deepCopy is false then CPU data will not be allocated.
+         */
         void fill(const BlobShape &shape, int type, void *data, bool deepCopy = true);
 
-        Mat& getMatRef();
-        const Mat& getMatRef() const;
-        //TODO: add UMat get methods
+        Mat& matRef();                      //!< Returns reference to cv::Mat, containing blob data.
+        const Mat& matRefConst() const;     //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.
+        UMat &umatRef();                    //!< Returns reference to cv::UMat, containing blob data (not implemented yet).
+        const UMat &umatRefConst() const;   //!< Returns reference to cv::UMat, containing blob data, for read-only purposes (not implemented yet).
 
         /** @brief Returns number of blob dimensions. */
         int dims() const;
@@ -155,12 +160,10 @@ namespace dnn
          * @param startAxis the first axis to include in the range.
          * @param endAxis   the first axis to exclude from the range.
          * @details Negative axis indexing can be used.
-         * @see canonicalAxis()
          */
         size_t total(int startAxis = 0, int endAxis = INT_MAX) const;
 
-        /** @brief converts @p axis index to canonical format (where 0 <= axis < dims())
-        */
+        /** @brief Converts @p axis index to canonical format (where 0 <= axis < dims()). */
         int canonicalAxis(int axis) const;
 
         /** @brief Returns shape of the blob. */
@@ -177,24 +180,38 @@ namespace dnn
         /** @addtogroup Shape getters of 4-dimensional blobs.
          *  @{
          */
-        int cols() const;       //!< Returns size of the fourth blob axis.
-        int rows() const;       //!< Returns size of the thrid  blob axis.
-        int channels() const;   //!< Returns size of the second blob axis.
-        int num() const;        //!< Returns size of the first blob axis.
+        int cols() const;       //!< Returns size of the fourth axis blob.
+        int rows() const;       //!< Returns size of the thrid  axis blob.
+        int channels() const;   //!< Returns size of the second axis blob.
+        int num() const;        //!< Returns size of the first  axis blob.
         Size size2() const;     //!< Returns cv::Size(cols(), rows())
         Vec4i shape4() const;   //!< Returns shape of firt four blob axes.
         /** @}*/
 
-        /** @addtogroup CPU pointer getters
-         *  @{
+        /** @brief Returns linear index of the element with specified coordinates in the blob.
+         *
+         * If @p n < dims() then unspecified coordinates will be filled by zeros.
+         * If @p n > dims() then extra coordinates will be ignored.
          */
         template<int n>
         size_t offset(const Vec<int, n> &pos) const;
+        /** @overload */
         size_t offset(int n = 0, int cn = 0, int row = 0, int col = 0) const;
+
+        /** @addtogroup CPU pointer getters
+         *  @{
+         */
+        /** @brief Returns pointer to the blob element with the specified position, stored in CPU memory.
+         *
+         * @p n correspond to the first axis, @p cn - to the second, etc.
+         * If dims() > 4 then unspecified coordinates will be filled by zeros.
+         * If dims() < 4 then extra coordinates will be ignored.
+         */
         uchar *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+        /** @overload */
         template<typename TFloat>
         TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
-        /** Returns (float*) ptr() */
+        /** @overload ptr<float>() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
         /** @}*/
@@ -217,6 +234,8 @@ namespace dnn
 
         Mat m;
     };
+
+//! @}
 }
 }
 

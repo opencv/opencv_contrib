@@ -150,12 +150,14 @@ inline bool BlobShape::equal(const BlobShape &other) const
     return true;
 }
 
-inline bool operator== (const BlobShape &l, const BlobShape &r)
+inline bool BlobShape::operator==(const BlobShape &r) const
 {
-    return l.equal(r);
+    return this->equal(r);
 }
 
+CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
 
+/////////////////////////////////////////////////////////////////////
 
 inline int Blob::canonicalAxis(int axis) const
 {
@@ -258,14 +260,26 @@ inline bool Blob::equalShape(const Blob &other) const
     return true;
 }
 
-inline Mat& Blob::getMatRef()
+inline Mat& Blob::matRef()
 {
     return m;
 }
 
-inline const Mat& Blob::getMatRef() const
+inline const Mat& Blob::matRefConst() const
 {
     return m;
+}
+
+inline UMat &Blob::umatRef()
+{
+    CV_Error(Error::StsNotImplemented, "");
+    return *(new UMat());
+}
+
+inline const UMat &Blob::umatRefConst() const
+{
+    CV_Error(Error::StsNotImplemented, "");
+    return *(new UMat());
 }
 
 inline Mat Blob::getPlane(int n, int cn)

@@ -110,7 +110,7 @@ void SliceLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     Blob &inpBlob = *inputs[0];
     const int axis = inpBlob.canonicalAxis(inAxis);
-    const Mat& inpMat = inpBlob.getMatRef();
+    const Mat& inpMat = inpBlob.matRef();
 
     std::vector<Range> ranges(inpBlob.dims(), Range::all());
     int sizeStart = 0;
@@ -120,7 +120,7 @@ void SliceLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
         ranges[axis] = Range(sizeStart, sizeEnd);
 
         Mat inpSubMat = inpMat(&ranges[0]);
-        inpSubMat.copyTo(outputs[i].getMatRef());
+        inpSubMat.copyTo(outputs[i].matRef());
 
         sizeStart = sizeEnd;
     }

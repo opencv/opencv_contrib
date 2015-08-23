@@ -159,7 +159,7 @@ namespace dnn
             ranges[0] = Range(imNum, imNum+1);
             ranges[1] = Range(cnGroup*inpGroupCn, (cnGroup + 1)*inpGroupCn);
 
-            UMat src = inpBlob.getMatRef()(&ranges[0]).getUMat(ACCESS_READ);
+            UMat src = inpBlob.matRef()(&ranges[0]).getUMat(ACCESS_READ);
             UMat dst(colMat.size(), colMat.type());
             im2col_ocl(src, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dst);
             dst.copyTo(colMat);

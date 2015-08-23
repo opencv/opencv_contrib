@@ -77,8 +77,8 @@ static void runTorchNet(String prefix, String outLayerName, bool isBinary)
     importer->populateNet(net);
 
     Blob inp, outRef;
-    ASSERT_NO_THROW( inp = readTorchMat(_tf(prefix + "_input" + suffix), isBinary) );
-    ASSERT_NO_THROW( outRef = readTorchMat(_tf(prefix + "_output" + suffix), isBinary) );
+    ASSERT_NO_THROW( inp = readTorchBlob(_tf(prefix + "_input" + suffix), isBinary) );
+    ASSERT_NO_THROW( outRef = readTorchBlob(_tf(prefix + "_output" + suffix), isBinary) );
 
     net.setBlob(".0", inp);
     net.forward();

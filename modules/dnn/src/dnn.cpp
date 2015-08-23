@@ -454,9 +454,9 @@ int Net::addLayerToPrev(const String &name, const String &type, LayerParams &par
     return newLid;
 }
 
-void Net::connect(int outLayerId, int outNum, int inLayerId, int inNum)
+void Net::connect(int outLayerId, int outNum, int inpLayerId, int inpNum)
 {
-    impl->connect(outLayerId, outNum, inLayerId, inNum);
+    impl->connect(outLayerId, outNum, inpLayerId, inpNum);
 }
 
 void Net::connect(String _outPin, String _inPin)

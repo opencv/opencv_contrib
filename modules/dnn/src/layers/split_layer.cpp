@@ -76,7 +76,7 @@ void SplitLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &o
 void SplitLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     for (size_t i = 0; i < outputs.size(); i++)
-        inputs[0]->getMatRef().copyTo(outputs[i].getMatRef());
+        inputs[0]->matRefConst().copyTo(outputs[i].matRef());
 }
 
 }

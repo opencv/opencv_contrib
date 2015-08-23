@@ -49,19 +49,23 @@
 
 namespace cv
 {
-namespace dnn
+namespace dnn //! This namespace is used for dnn module functionlaity.
 {
+//! @addtogroup dnn
+//! @{
+
     /** @brief Initialize dnn module and built-in layers.
      *
      * This function automatically called on most of OpenCV builds,
-     * but you need to call it manually on some specific configurations.
+     * but you need to call it manually on some specific configurations (iOS for example).
      */
     CV_EXPORTS void initModule();
 
-    /** @brief
+    /** @brief This class provides all data needed to initialize layer.
      *
-     *
-     * */
+     * It includes dictionary with scalar params (which can be readed by using Dict interface),
+     * blob params #blobs and optional meta information: #name and #type of layer instance.
+    */
     struct CV_EXPORTS LayerParams : public Dict
     {
         std::vector<Blob> blobs; //!< List of learned parameters stored as blobs.
@@ -70,16 +74,15 @@ namespace dnn
         String type; //!< Type name which was used for creating layer by layer factory (optional).
     };
 
-    /** @brief Interface class allows to build new Layers.
-     */
+    /** @brief This interface class allows to build new Layers - are building blocks of networks. */
     struct CV_EXPORTS Layer
     {
         ///List of learned parameters must be stored here to allow read them by using Net::getParam().
         std::vector<Blob> blobs;
 
         /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
-         * @param[in]  input  vector of already allocated input blobs
-         * @param[out] output vector of output blobs, which must be allocated
+         *  @param[in]  input  vector of already allocated input blobs
+         *  @param[out] output vector of output blobs, which must be allocated
          *
          * This method must create each produced blob according to shape of @p input blobs and internal layer params.
          * If this method is called first time then @p output vector consists from empty blobs and its size determined by number of output connections.
@@ -90,14 +93,14 @@ namespace dnn
         virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
 
         /** @brief Returns index of input blob into the input array.
-         * @param inputName label of input blob
+         *  @param inputName label of input blob
          *
-         * Each input and output blob can be labeled to easily identify them using "<layer_name>[.output_name]" notation.
-         * This method map label of input blob to its index into input vector.
+         * Each layer input and output can be labeled to easily identify them using "%<layer_name%>[.output_name]" notation.
+         * This method maps label of input blob to its index into input vector.
          */
         virtual int inputNameToIndex(String inputName);
         /** @brief Returns index of output blob in output array.
-         * @see inputNameToIndex()
+         *  @see inputNameToIndex()
          */
         virtual int outputNameToIndex(String outputName);
 
@@ -109,8 +112,15 @@ namespace dnn
         virtual ~Layer();
     };
 
-    typedef DictValue LayerId; //!< Container for strings and integers.
-
+    /** @brief This class allows to create and maunipulate comprehensive artifical neural networks.
+     *
+     * Neural network is presented as directed acyclic graph (DAG), where vertices are Layer instances,
+     * and edges specify relationships between layers inputs and ouputs.
+     *
+     * Each network layer has unique integer id and unique string name inside its network.
+     *
+     * This class supports reference counting of its instances, i. e. copies point to the same instance.
+     */
     class CV_EXPORTS Net
     {
     public:
@@ -118,14 +128,57 @@ namespace dnn
         Net();
         ~Net();
 
+        /** @brief Adds new layer to the net.
+         *  @param name   unique name of the adding layer.
+         *  @param type   typename of the adding layer (type must be registered in LayerRegister).
+         *  @param params parameters which will be used to initialize the creating layer.
+         *  @returns unique identifier of created layer, or -1 if a failure will happen.
+         */
         int addLayer(const String &name, const String &type, LayerParams &params);
+        /** @brief Adds new layer and connects its first input to the first output of previously added layer.
+         *  @see addLayer()
+         */
         int addLayerToPrev(const String &name, const String &type, LayerParams &params);
 
+        /** @brief Converts string name of the layer to the integer identifier.
+         *  @returns id of the layer, or -1 if the layer wasn't found.
+         */
         int getLayerId(const String &layer);
+
+        /** @brief Container for strings and integers. */
+        typedef DictValue LayerId;
+
+        /** @brief Delete layer for the network (not implemented yet) */
         void deleteLayer(LayerId layer);
 
+        /** @brief Connects output of the first layer to input of the second layer.
+         *  @param outPin descriptor of the first layer output.
+         *  @param inpPin descriptor of the second layer input.
+         *
+         * Descriptors have the following template <DFN>&lt;layer_name&gt;[.input_number]</DFN>:
+         * - the first part of the tamplate <DFN>layer_name</DFN> is sting name of the added layer.
+         *   If this part is empty then the network input pseudo layer will be used;
+         * - the second optional part of the template <DFN>input_number</DFN>
+         *   is either number of the layer input, either label one.
+         *   If this part is omitted then the first layer input will be used.
+         *
+         *  @see setNetInputs(), Layer::inputNameToIndex(), Layer::outputNameToIndex()
+         */
         void connect(String outPin, String inpPin);
-        void connect(int outLayerId, int outNum, int inLayerId, int inNum);
+        /** @brief Connects #@p outNum output of the first layer to #@p inNum input of the second layer.
+         *  @param outLayerId identifier of the first layer
+         *  @param inpLayerId identifier of the second layer
+         *  @param outNum number of the first layer output
+         *  @param inpNum number of the second layer input
+         */
+        void connect(int outLayerId, int outNum, int inpLayerId, int inpNum);
+        /** @brief Sets ouputs names of the network input pseudo layer.
+         *
+         * Each net always has special own the network input pseudo layer with id=0.
+         * This layer stores the user blobs only and don't make any computations.
+         * In fact, this layer provides the only way to pass user data into the network.
+         * As any other layer, this layer can label its outputs and this function provides an easy way to do this.
+         */
         void setNetInputs(const std::vector<String> &inputBlobNames);
 
         void forward();
@@ -149,20 +202,57 @@ namespace dnn
         Ptr<Impl> impl;
     };
 
+    /** @brief Small interface class for loading trained serialized models of different dnn-frameworks. */
     class Importer
     {
     public:
 
+        /** @brief Adds loaded layers into the @p net and sets connetions between them. */
         virtual void populateNet(Net net) = 0;
 
         virtual ~Importer();
     };
 
+    /** @brief Creates the importer of <a href="http://caffe.berkeleyvision.org">Caffe</a> framework network.
+     *  @param prototxt   path to the .prototxt file with text description of the network architecture.
+     *  @param caffeModel path to the .caffemodel file with learned network.
+     *  @returns Pointer to the created importer, NULL in failure cases.
+     */
     CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
 
+    /** @brief Creates the importer of <a href="http://torch.ch">Torch7</a> framework network.
+     *  @param filename path to the file, dumped from Torch by using torch.save() function.
+     *  @param isBinary specifies whether the network was serialized in ascii mode or binary.
+     *  @returns Pointer to the created importer, NULL in failure cases.
+     *
+     *  @warning Torch7 importer is experimental now, you need explicitly set CMake opencv_dnn_BUILD_TORCH_IMPORTER flag to compile its.
+     *
+     *  @note Ascii mode of Torch serializer is more preferable, because binary mode extensively use long type of C language,
+     *  which has different bit-length on different systems.
+     *
+     * The loading file must contain serialized <a href="https://github.com/torch/nn/blob/master/doc/module.md">nn.Module</a> object
+     * with importing network. Try to eliminate a custom objects from serialazing data to avoid importing errors.
+     *
+     * List of supported layers (i.e. object instances derived from Torch nn.Module class):
+     * - nn.Sequential
+     * - nn.Parallel
+     * - nn.Concat
+     * - nn.Linear
+     * - nn.SpatialConvolution
+     * - nn.SpatialMaxPooling, nn.SpatialAveragePooling
+     * - nn.ReLU, nn.TanH, nn.Sigmoid
+     * - nn.Reshape
+     *
+     * Also some equivalents of these classes from cunn, cudnn, and fbcunn may be successfully imported.
+     */
     CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBinary = true);
 
-    CV_EXPORTS Blob readTorchMat(const String &filename, bool isBinary = true);
+    /** @brief Loads blob which was serialized as torch.Tensor object of Torch7 framework.
+     *  @warning This function has the same limitations as createTorchImporter().
+     */
+    CV_EXPORTS Blob readTorchBlob(const String &filename, bool isBinary = true);
+
+//! @}
 }
 }
 

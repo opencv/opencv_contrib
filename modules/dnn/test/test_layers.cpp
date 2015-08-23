@@ -165,7 +165,7 @@ TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 
     Blob input(BlobShape(Vec2i(6, 12)));
     RNG rng(0);
-    rng.fill(input.getMatRef(), RNG::UNIFORM, -1, 1);
+    rng.fill(input.matRef(), RNG::UNIFORM, -1, 1);
 
     net.setBlob(".input", input);
     net.forward();
