@@ -292,7 +292,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
         }
         double cascade_threshold = -1;
         minMaxIdx(pos_trace, &cascade_threshold);
-        cascade_thresholds_.push_back(cascade_threshold);
+        cascade_thresholds_.push_back((float)cascade_threshold);
 
         std::cerr << "i=" << std::setw(4) << i;
         std::cerr << " feat=" << std::setw(5) << min_feature_ind;

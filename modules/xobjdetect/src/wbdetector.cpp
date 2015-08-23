@@ -120,7 +120,7 @@ void WBDetectorImpl::train(
 
     const int stages[] = {64, 128, 256, 512, 1024};
     const int stage_count = sizeof(stages) / sizeof(*stages);
-    const int stage_neg = pos_imgs.size() * 5;
+    const int stage_neg = (int)(pos_imgs.size() * 5);
     const int max_per_image = 100;
 
     const float scales_arr[] = {.3f, .4f, .5f, .6f, .7f, .8f, .9f, 1.0f};
