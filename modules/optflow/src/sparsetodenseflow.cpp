@@ -49,8 +49,6 @@ using namespace std;
 namespace cv {
 namespace optflow {
 
-void quadTreePyrLK(Mat& from, Mat& to, Mat& dst, int block_size, Mat& reverse_flow = Mat(), vector<Point2f>& points_filtered = vector<Point2f>(), vector<Point2f>& dst_points_filtered = vector<Point2f>());
-
 CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, OutputArray flow,
                                                int grid_step, int k, 
                                                float sigma, bool use_post_proc, 
@@ -87,11 +85,11 @@ CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, O
 
     for(int i=0;i<prev.rows;i+=grid_step)
         for(int j=0;j<prev.cols;j+=grid_step)
-            points.push_back(Point2f(j,i));
+            points.push_back(Point2f((float)j,(float)i));
 
     calcOpticalFlowPyrLK(prev_grayscale,cur_grayscale,points,dst_points,status,err,Size(21,21));
 
-    for(int i=0;i<points.size();i++)
+    for(unsigned int i=0;i<points.size();i++)
     {
         if(status[i]!=0)
         {

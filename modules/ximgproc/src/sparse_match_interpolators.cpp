@@ -741,7 +741,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
                 vec = (matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos);
                 average_dist += abs(vec.x-average.x) + abs(vec.y-average.y);
             }
-            eps[i] = min(0.5*(average_dist/inst->k),2.0);
+            eps[i] = min(0.5f*(average_dist/inst->k),2.0f);
         }
 
         for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
