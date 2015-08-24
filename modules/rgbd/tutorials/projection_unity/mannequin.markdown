@@ -4,10 +4,10 @@
 Structured light
 --------
 
-1. Open a calibration window by selecting *Window* -> *Calibration*.  
+1. Open a calibration window by selecting *Window* -> *Calibration*.
     ![](img/menu.png)
 
-2. Fill device ID and other parameters. Check *Use Kinect*:  
+2. Fill device ID and other parameters. Check *Use Kinect*:
     ![](img/captureKinect.png)
 
 3. Press *Start Scanning*.
@@ -29,7 +29,7 @@ Structured light
 Mesh generation
 --------
 
-1. Press *Start Meshing*:  
+1. Press *Start Meshing*:
     ![](img/captureKinect.png)
 
 2. Wait until windows show up.
@@ -47,5 +47,5 @@ Unity3D projection mapping
 
 3. Drag the 3D mesh file to the Hierarchy tab. Then, expand the *mesh_N_M* tree to reveal *default* GameObject.
 
-4. Run the project.  
+4. Run the project.
     ![](img/projected.png)
