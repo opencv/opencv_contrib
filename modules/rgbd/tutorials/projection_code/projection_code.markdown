@@ -1,4 +1,4 @@
-Depth map clustering and projection mapping {#tutorial_rgbd_clustering}
+Depth map clustering and projection mapping {#tutorial_projection_code}
 =============================================================
 
 Projection mapping (spatical augmented reality) is a technique to augment a scene using a projector ([ref](http://www.creativebloq.com/video/projection-mapping-912849)).
