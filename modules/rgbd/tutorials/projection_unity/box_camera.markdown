@@ -28,12 +28,12 @@ This tutorial explains how to map quad textures on planar surfaces using a webca
 
 10. Hit any key to close the windows. Scanned data will be automatically loaded to the Unity scene.
 
-11. Move an existing HomographyPlane (or add drag *Prefabs/HomographyPlane.prefab* to the *Scene*). Make them transparent by dragging *Materials/Transparent.mat* on the planes.
+11. Move an existing HomographyPlane (or add drag *Prefabs/HomographyPlane.prefab* to the *Planes* in *Hierarchy*). Make them transparent by dragging *Materials/Transparent.mat* on the planes.
 
 12. Move the corners to align to the corners in the background image.
 	![](img/transparentPlane.png)
 
-13. Map a texture by dragging a material (e.g., *Materials/defaultMat.mat*) to the object in the *Scene*. You may change the Shader or its parameters to configure the appearance.
+13. Map a texture by dragging a material (e.g., *Materials/defaultMat.mat*) to the object in the *Scene*. You may change the Shader (use either *Custom/FalseDepth* or *Custom/FalseDepthUnlit*) or its parameters to configure the appearance.
 	![](img/texturedPlane.png)
 
 14. Done!
