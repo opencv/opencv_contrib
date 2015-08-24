@@ -147,7 +147,7 @@ TEST(Layer_Test_Reshape, squeeze)
     std::vector<Blob*> inpVec(1, &inp);
     std::vector<Blob> outVec;
 
-    Ptr<Layer> rl = LayerRegister::createLayerInstance("Reshape", params);
+    Ptr<Layer> rl = LayerFactory::createLayerInstance("Reshape", params);
     rl->allocate(inpVec, outVec);
     rl->forward(inpVec, outVec);
 

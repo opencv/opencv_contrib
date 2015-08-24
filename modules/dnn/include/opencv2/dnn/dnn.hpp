@@ -74,10 +74,14 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         String type; //!< Type name which was used for creating layer by layer factory (optional).
     };
 
-    /** @brief This interface class allows to build new Layers - are building blocks of networks. */
+    /** @brief This interface class allows to build new Layers - are building blocks of networks.
+     *
+     * Each class, derived from Layer, must implement allocate() methods to declare own outputs and forward() to compute outputs.
+     * Also before using the new layer into networks you must register your layer by using one of @ref LayerFactoryModule "LayerFactory" macros.
+     */
     struct CV_EXPORTS Layer
     {
-        ///List of learned parameters must be stored here to allow read them by using Net::getParam().
+        //! List of learned parameters must be stored here to allow read them by using Net::getParam().
         std::vector<Blob> blobs;
 
         /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
@@ -90,7 +94,11 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         virtual void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output) = 0;
 
-        virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs) = 0;
+        /** @brief Given the @p input blobs, computes the output @p blobs.
+         *  @param[in]  input  the input blobs.
+         *  @param[out] output allocated output blobs, which will store results of the computation.
+         */
+        virtual void forward(std::vector<Blob*> &input, std::vector<Blob> &output) = 0;
 
         /** @brief Returns index of input blob into the input array.
          *  @param inputName label of input blob
@@ -118,6 +126,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      * and edges specify relationships between layers inputs and ouputs.
      *
      * Each network layer has unique integer id and unique string name inside its network.
+     * LayerId can store either layer name or layer id.
      *
      * This class supports reference counting of its instances, i. e. copies point to the same instance.
      */
@@ -125,8 +134,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     {
     public:
 
-        Net();
-        ~Net();
+        Net();  //!< Default constructor.
+        ~Net(); //!< Destructor frees the net only if there aren't references to the net anymore.
 
         /** @brief Adds new layer to the net.
          *  @param name   unique name of the adding layer.
@@ -181,19 +190,52 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         void setNetInputs(const std::vector<String> &inputBlobNames);
 
+        /** @brief Runs forward pass for the whole network */
         void forward();
+        /** @brief Runs forward pass to compute output of layer @p toLayer */
         void forward(LayerId toLayer);
+        /** @brief Runs forward pass to compute output of layer @p toLayer, but computations start from @p startLayer */
         void forward(LayerId startLayer, LayerId toLayer);
+        /** @overload */
         void forward(const std::vector<LayerId> &startLayers, const std::vector<LayerId> &toLayers);
 
-        //[Wished feature] Optimized forward: makes forward only for layers which wasn't changed after previous forward().
+        //TODO:
+        /** @brief Optimized forward.
+         *  @warning Not implemented yet.
+         *  @details Makes forward only those layers which weren't changed after previous forward().
+         */
         void forwardOpt(LayerId toLayer);
+        /** @overload */
         void forwardOpt(const std::vector<LayerId> &toLayers);
 
+        /** @brief Sets the new value for the layer output blob
+         *  @param outputName descriptor of the updating layer output blob.
+         *  @param blob new blob.
+         *  @see connect(String, String) to know format of the descriptor.
+         *  @note If updating blob is not empty then @p blob must have the same shape,
+         *  because network reshaping is not implemented yet.
+         */
         void setBlob(String outputName, const Blob &blob);
+        /** @brief Returns the layer output blob.
+         *  @param outputName the descriptor of the returning layer output blob.
+         *  @see connect(String, String)
+         */
         Blob getBlob(String outputName);
 
+        /** @brief Sets the new value for the learned param of the layer.
+         *  @param layer name or id of the layer.
+         *  @param numParam index of the layer parameter in the Layer::blobs array.
+         *  @param blob the new value.
+         *  @see Layer::blobs
+         *  @note If shape of the new blob differs from the previous shape,
+         *  then the following forward pass may fail.
+        */
         void setParam(LayerId layer, int numParam, const Blob &blob);
+        /** @brief Returns parameter blob of the layer.
+         *  @param layer name or id of the layer.
+         *  @param numParam index of the layer parameter in the Layer::blobs array.
+         *  @see Layer::blobs
+         */
         Blob getParam(LayerId layer, int numParam = 0);
 
     private:

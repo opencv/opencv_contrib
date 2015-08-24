@@ -116,7 +116,7 @@ struct LayerData
         if (layerInstance)
             return layerInstance;
 
-        layerInstance = LayerRegister::createLayerInstance(type, params);
+        layerInstance = LayerFactory::createLayerInstance(type, params);
         if (!layerInstance)
         {
             CV_Error(Error::StsError, "Can't create layer \"" + name + "\" of type \"" + type + "\"");
@@ -557,14 +557,14 @@ Layer::~Layer() {}
 
 //////////////////////////////////////////////////////////////////////////
 
-struct LayerRegister::Impl : public std::map<String, LayerRegister::Constuctor>
+struct LayerFactory::Impl : public std::map<String, LayerFactory::Constuctor>
 {
 };
 
 //allocates on load and cleans on exit
-Ptr<LayerRegister::Impl> LayerRegister::impl(new LayerRegister::Impl());
+Ptr<LayerFactory::Impl> LayerFactory::impl(new LayerFactory::Impl());
 
-void LayerRegister::registerLayer(const String &_type, Constuctor constructor)
+void LayerFactory::registerLayer(const String &_type, Constuctor constructor)
 {
     String type = _type.toLowerCase();
     Impl::iterator it = impl->find(type);
@@ -577,16 +577,16 @@ void LayerRegister::registerLayer(const String &_type, Constuctor constructor)
     impl->insert(std::make_pair(type, constructor));
 }
 
-void LayerRegister::unregisterLayer(const String &_type)
+void LayerFactory::unregisterLayer(const String &_type)
 {
     String type = _type.toLowerCase();
     impl->erase(type);
 }
 
-Ptr<Layer> LayerRegister::createLayerInstance(const String &_type, LayerParams& params)
+Ptr<Layer> LayerFactory::createLayerInstance(const String &_type, LayerParams& params)
 {
     String type = _type.toLowerCase();
-    Impl::const_iterator it = LayerRegister::impl->find(type);
+    Impl::const_iterator it = LayerFactory::impl->find(type);
 
     if (it != impl->end())
     {
