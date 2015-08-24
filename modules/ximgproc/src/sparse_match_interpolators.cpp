@@ -1,22 +1,21 @@
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui.hpp"
-#include <unordered_set>
-#include <unordered_map>
 #include <algorithm>
-#include <queue>
-#include <bitset>
+#include <vector>
+
+using namespace std;
 
 #define INF 1E+20F
 
 namespace cv {
 namespace ximgproc {
 
-SparseMatch::SparseMatch(Point2f ref_point, Point2f target_point)
+struct SparseMatch
 {
-    reference_image_pos = ref_point;
-    target_image_pos = target_point;
-}
+    Point2f reference_image_pos;
+    Point2f target_image_pos;
+    SparseMatch(){}
+    SparseMatch(Point2f ref_point, Point2f target_point): reference_image_pos(ref_point), target_image_pos(target_point) {}
+};
 
 bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
 {
@@ -31,49 +30,46 @@ struct node
     float dist;
     short label;
     node() {}
-    node(short l,float d): label(l), dist(d){}
+    node(short l,float d): label(l), dist(d) {}
 };
-void ransacInterpolationOld(Mat& labels, Mat& NNlabels, Mat& NNdistances, vector<SparseMatch>& matches, Mat& dst_dense_flow, int num_iter, vector<node>* g);
 
 class EdgeAwareInterpolatorImpl : public EdgeAwareInterpolator
 {
 public:
     static Ptr<EdgeAwareInterpolatorImpl> create();
-    void interpolate(InputArray reference_image, InputArray target_image, InputArray matches, OutputArray dense_flow);
-
-    void setInlierEps(float eps);
+    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow);
 
 protected:
     int w,h;
     int match_num;
 
-    //internal data:
+    //internal buffers:
     vector<node>* g;
     Mat labels;
     Mat NNlabels;
     Mat NNdistances;
 
-    //internal parameters:
-    float lambda; // value between zero and one; controls edge sensitivity (default: 0.999f)
-    int k;        // number of nearest-neighbor matches that we consider during interpolation (default: 128)
-    float sigma;  // controls the speed of weight decay while increasing the distance (default: 0.05f)
-    float inlier_eps; //threshold that defines inliers during RANSAC-based local affine transform fitting (default: 2.0f)
-    float fgs_lambda; // default: 500.0f
-    float fgs_sigma;  // default: 1.5f
-    float regularization_coef;
+    //tunable parameters:
+    float lambda;
+    int k;      
+    float sigma;
+    bool use_post_proc;
+    float fgs_lambda;
+    float fgs_sigma; 
 
-    // aux parameters:
-    int distance_transform_num_iter, ransac_interpolation_num_iter;
+    // static parameters:
+    static const int distance_transform_num_iter   = 1;
+    static const int ransac_interpolation_num_iter = 1;
+    float regularization_coef;
     static const int ransac_num_stripes = 4;
     RNG rngs[ransac_num_stripes];
 
     void init();
     void preprocessData(Mat& src, vector<SparseMatch>& matches);
-    void ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow);
-
+    void computeGradientMagnitude(Mat& src, Mat& dst);
     void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
     void buildGraph(Mat& distances, Mat& cost_map);
-    void computeGradientMagnitude(Mat& src, Mat& dst);
+    void ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow);
 
 protected:
     struct GetKNNMatches_ParBody : public ParallelLoopBody
@@ -91,33 +87,40 @@ protected:
         EdgeAwareInterpolatorImpl* inst;
         Mat* transforms;
         float* weighted_inlier_nums;
+        float* eps;
         SparseMatch* matches;
         int num_stripes;
         int stripe_sz;
         int inc;
 
-        RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, SparseMatch* _matches, int _num_stripes, int _inc);
+        RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, float* _eps, SparseMatch* _matches, int _num_stripes, int _inc);
         void operator () (const Range& range) const;
     };
-};
 
-void EdgeAwareInterpolatorImpl::setInlierEps(float eps)
-{
-    inlier_eps = eps;
-}
+public:
+    void  setK(int _k) {k=_k;}
+    int   getK() {return k;}
+    void  setSigma(float _sigma) {sigma=_sigma;}
+    float getSigma() {return sigma;}
+    void  setLambda(float _lambda) {lambda=_lambda;}
+    float getLambda() {return lambda;}
+    void  setUsePostProcessing(bool _use_post_proc) {use_post_proc=_use_post_proc;}
+    bool  getUsePostProcessing() {return use_post_proc;}
+    void  setFGSLambda(float _lambda) {fgs_lambda=_lambda;}
+    float getFGSLambda() {return fgs_lambda;}
+    void  setFGSSigma(float _sigma) {fgs_sigma = _sigma;}
+    float getFGSSigma() {return fgs_sigma;}
+};
 
 void EdgeAwareInterpolatorImpl::init() 
 {
     lambda     = 999.0f;
     k          = 128;
     sigma      = 0.05f;
-    inlier_eps = 2.0f;
+    use_post_proc = true;
     fgs_lambda = 500.0f;
     fgs_sigma  = 1.5f;
-
     regularization_coef = 0.01f;
-    distance_transform_num_iter   = 2;
-    ransac_interpolation_num_iter = 1;
 }
 
 Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
@@ -127,17 +130,26 @@ Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
     return Ptr<EdgeAwareInterpolatorImpl>(eai);
 }
 
-void EdgeAwareInterpolatorImpl::interpolate(InputArray reference_image, InputArray, InputArray matches, OutputArray dense_flow)
+void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray, InputArray to_points, OutputArray dense_flow)
 {
-    w = reference_image.cols();
-    h = reference_image.rows();
+    CV_Assert( !from_image.empty() && (from_image.depth() == CV_8U) && (from_image.channels() == 3 || from_image.channels() == 1) );
+    CV_Assert( !from_points.empty() && from_points.isVector() &&
+               !to_points  .empty() && to_points  .isVector() &&
+               from_points.sameSize(to_points) );
+
+    w = from_image.cols();
+    h = from_image.rows();
     
-    vector<SparseMatch> matches_vector = *(const std::vector<SparseMatch>*)matches.getObj();
-    std::sort(matches_vector.begin(),matches_vector.end());
+    vector<Point2f> from_vector = *(const vector<Point2f>*)from_points.getObj();
+    vector<Point2f> to_vector   = *(const vector<Point2f>*)to_points  .getObj();
+    vector<SparseMatch> matches_vector(from_vector.size());
+    for(unsigned int i=0;i<from_vector.size();i++)
+        matches_vector[i] = SparseMatch(from_vector[i],to_vector[i]);
+    sort(matches_vector.begin(),matches_vector.end());
     match_num = matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);
 
-    Mat src = reference_image.getMat();
+    Mat src = from_image.getMat();
     labels = Mat(h,w,CV_16S);
     labels = Scalar(-1);
     NNlabels = Mat(match_num,k,CV_16S);
@@ -147,10 +159,12 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray reference_image, InputArr
     g = new vector<node>[match_num];
     preprocessData(src,matches_vector);
 
-    dense_flow.create(reference_image.size(),CV_32FC2);
+    dense_flow.create(from_image.size(),CV_32FC2);
     Mat dst = dense_flow.getMat();
     ransacInterpolation(matches_vector,dst);
-    fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
+    if(use_post_proc)
+        fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
+
     delete[] g;
 }
 
@@ -180,20 +194,36 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
 
 void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat& src, Mat& dst)
 {
-    Mat dx,dy,src_gray;
-    cvtColor(src,src_gray,COLOR_BGR2GRAY);
-    Sobel(src_gray, dx, CV_16SC1, 1, 0);
-    Sobel(src_gray, dy, CV_16SC1, 0, 1);
-    float norm_coef = 4.0f*255.0f;
+    Mat dx,dy;
+    Sobel(src, dx, CV_16S, 1, 0);
+    Sobel(src, dy, CV_16S, 0, 1);
+    float norm_coef = src.channels()*4.0f*255.0f;
 
-    for(int i=0;i<h;i++)
+    if(src.channels()==1)
     {
-        short* dx_row  = dx.ptr<short>(i);
-        short* dy_row  = dy.ptr<short>(i);
-        float* dst_row = dst.ptr<float>(i);
+        for(int i=0;i<h;i++)
+        {
+            short* dx_row  = dx.ptr<short>(i);
+            short* dy_row  = dy.ptr<short>(i);
+            float* dst_row = dst.ptr<float>(i);
 
-        for(int j=0;j<w;j++)
-            dst_row[j] = ((float)abs(dx_row[j])+abs(dy_row[j]))/norm_coef;
+            for(int j=0;j<w;j++)
+                dst_row[j] = ((float)abs(dx_row[j])+abs(dy_row[j]))/norm_coef;
+        }
+    }
+    else
+    {
+        for(int i=0;i<h;i++)
+        {
+            Vec3s* dx_row  = dx.ptr<Vec3s>(i);
+            Vec3s* dy_row  = dy.ptr<Vec3s>(i);
+            float* dst_row = dst.ptr<float>(i);
+
+            for(int j=0;j<w;j++)
+                dst_row[j] = (float)(abs(dx_row[j][0])+abs(dy_row[j][0])+
+                                     abs(dx_row[j][1])+abs(dy_row[j][1])+
+                                     abs(dx_row[j][2])+abs(dy_row[j][2]))/norm_coef;
+        }
     }
 }
 
@@ -518,7 +548,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     int end   = std::min(range.end   * stripe_sz, inst->match_num);
     nodeHeap q((short)inst->match_num);
     int num_expanded_vertices;
-    bitset<SHRT_MAX> expanded_flag;
+    unsigned char* expanded_flag = new unsigned char[inst->match_num];
     node* neighbors;
 
     for(int i=start;i<end;i++)
@@ -527,7 +557,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
             continue;
         
         num_expanded_vertices = 0;
-        expanded_flag.reset();
+        memset(expanded_flag,0,inst->match_num);
         q.clear();
         q.add(node((short)i,0.0f));
         short* NNlabels_row    = inst->NNlabels.ptr<short>(i);
@@ -551,9 +581,10 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
             }
         }
     }
+    delete[] expanded_flag;
 }
 
-void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, SparseMatch* matches, Mat& dst)
+void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
     Mat A (6, 6, CV_64F, &sa[0][0]), 
@@ -582,6 +613,8 @@ void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, Spa
         sb[4] += w*a.y*b.y;
         sb[5] += w*b.y;
     }
+    sa[0][0] += lambda;
+    sa[1][1] += lambda;
 
     sa[3][4] = sa[4][3] = sa[1][0] = sa[0][1];
     sa[3][5] = sa[5][3] = sa[2][0] = sa[0][2];
@@ -591,16 +624,19 @@ void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, Spa
     sa[4][4] = sa[1][1];
     sa[5][5] = sa[2][2];
 
+    sb[0] += lambda;
+    sb[4] += lambda;
+
     solve(A, B, MM, DECOMP_EIG);
     MM.reshape(2,3).convertTo(dst,CV_32F);
 }
 
-void generateHypothesis(short* labels, int count, RNG& rng, bitset<SHRT_MAX>& is_used, SparseMatch* matches, Mat& dst)
+void generateHypothesis(short* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst)
 {
     int idx;
     Point2f src_points[3];
     Point2f dst_points[3];
-    is_used.reset();
+    memset(is_used,0,count);
 
     // randomly get 3 distinct matches
     idx = rng.uniform(0,count-2);
@@ -630,7 +666,8 @@ void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* mat
 {
     float* tr = hypothesis_transform.ptr<float>(0);
     Point2f a,b;
-    float weighted_num_inliers = -lambda*(tr[0]*tr[0]+tr[1]*tr[1]+tr[3]*tr[3]+tr[4]*tr[4]);;
+    float weighted_num_inliers = -lambda*((tr[0]-1)*(tr[0]-1)+tr[1]*tr[1]+tr[3]*tr[3]+(tr[4]-1)*(tr[4]-1));
+
     for(int i=0;i<count;i++)
     {
         a = matches[labels[i]].reference_image_pos;
@@ -647,8 +684,8 @@ void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* mat
     }
 }
 
-EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, SparseMatch* _matches, int _num_stripes, int _inc):
-inst(&_inst), transforms(_transforms), weighted_inlier_nums(_weighted_inlier_nums), num_stripes(_num_stripes), matches(_matches), inc(_inc)
+EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, float* _eps, SparseMatch* _matches, int _num_stripes, int _inc):
+inst(&_inst), transforms(_transforms), weighted_inlier_nums(_weighted_inlier_nums), eps(_eps), num_stripes(_num_stripes), matches(_matches), inc(_inc)
 {
     stripe_sz = (int)ceil(inst->match_num/(double)num_stripes);
 }
@@ -673,7 +710,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
 
     short* KNNlabels;
     float* KNNdistances;
-    bitset<SHRT_MAX> is_used;
+    unsigned char* is_used = new unsigned char[inst->k];
     Mat hypothesis_transform;
 
     short* inlier_labels    = new short[inst->k];
@@ -690,12 +727,27 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         KNNlabels    = inst->NNlabels.ptr<short>(i);
         KNNdistances = inst->NNdistances.ptr<float>(i);
         if(inc>0) //forward pass
+        {
             hal::exp(KNNdistances,KNNdistances,inst->k);
+            
+            Point2f average = Point2f(0.0f,0.0f);
+            for(int j=0;j<inst->k;j++)
+                average += matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos;
+            average/=inst->k;
+            float average_dist = 0.0;
+            Point2f vec;
+            for(int j=0;j<inst->k;j++)
+            {
+                vec = (matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos);
+                average_dist += abs(vec.x-average.x) + abs(vec.y-average.y);
+            }
+            eps[i] = min(0.5*(average_dist/inst->k),2.0);
+        }
 
         for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
         {
             generateHypothesis(KNNlabels,inst->k,inst->rngs[range.start],is_used,matches,hypothesis_transform);
-            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,inst->regularization_coef,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
+            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,eps[i],inst->regularization_coef,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
         }
 
         //propagate hypotheses from neighbors:
@@ -703,7 +755,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         for(int j=0;j<(int)inst->g[i].size();j++)
         {
             if((inc*neighbors[j].label)<(inc*i) && (inc*neighbors[j].label)>=(inc*start)) //already processed this neighbor
-                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,inst->inlier_eps,inst->regularization_coef,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
+                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,eps[i],inst->regularization_coef,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
         }
 
         if(inc<0) //backward pass
@@ -717,7 +769,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
                 a = matches[KNNlabels[j]].reference_image_pos;
                 b = matches[KNNlabels[j]].target_image_pos;
                 if(abs(tr[0]*a.x + tr[1]*a.y + tr[2] - b.x) +
-                   abs(tr[3]*a.x + tr[4]*a.y + tr[5] - b.y) < inst->inlier_eps)
+                   abs(tr[3]*a.x + tr[4]*a.y + tr[5] - b.y) < eps[i])
                 {
                     inlier_labels[num_inliers]    = KNNlabels[j];
                     inlier_distances[num_inliers] = KNNdistances[j];
@@ -725,12 +777,13 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
                 }
             }
 
-            weightedLeastSquaresAffineFit(inlier_labels,inlier_distances,num_inliers,matches,transforms[i]);
+            weightedLeastSquaresAffineFit(inlier_labels,inlier_distances,num_inliers,inst->regularization_coef,matches,transforms[i]);
         }
     }
 
     delete[] inlier_labels;
     delete[] inlier_distances;
+    delete[] is_used;
 }
 
 void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow)
@@ -739,18 +792,17 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
 
     Mat* transforms = new Mat[match_num];
     float* weighted_inlier_nums = new float[match_num];
+    float* eps = new float[match_num];
     for(int i=0;i<match_num;i++)
         weighted_inlier_nums[i] = -1E+10F;
-    //memset(weighted_inlier_nums,0,match_num*sizeof(float));
-    int inc = 1;
 
     for(int i=0;i<ransac_num_stripes;i++)
         rngs[i] = RNG(0);
 
     //forward pass:
-    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,&matches.front(),ransac_num_stripes,1));
+    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,eps,&matches.front(),ransac_num_stripes,1));
     //backward pass:
-    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,&matches.front(),ransac_num_stripes,-1));
+    parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,eps,&matches.front(),ransac_num_stripes,-1));
     
 
     //construct the final piecewise-affine interpolation:
@@ -769,6 +821,7 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
 
     delete[] transforms;
     delete[] weighted_inlier_nums;
+    delete[] eps;
 }
 
 CV_EXPORTS_W

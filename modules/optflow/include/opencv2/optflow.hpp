@@ -111,10 +111,28 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      int upscale_averaging_radius, double upscale_sigma_dist,
                                      double upscale_sigma_color, double speed_up_thr ); 
 
+/** @brief Calculate dense optical flow based on PyrLK sparse matches interpolation.
+
+@param from First 8-bit 3-channel or 1-channel image.
+@param to  Second 8-bit 3-channel or 1-channel image of the same size as from
+@param flow computed flow image that has the same size as from and type CV_32FC2
+@param grid_step stride used in sparse match computation. Lower values usually
+       result in higher quality but slow down the algorithm.
+@param k number of nearest-neighbor matches considered, when fitting a locally affine
+       model. Lower values can make the algorithm noticeably faster at the cost of
+       some quality degradation.
+@param sigma parameter defining how fast the weights decrease in the locally-weighted affine
+       fitting. Higher values can help preserve fine details, lower values can help to get rid 
+       of the noise in the output flow.
+@param use_post_proc defines whether the post-processing is used after interpolation (fast global
+       smoother filter).
+@param fgs_lambda see the respective parameter of the FastGlobalSmootherFilter
+@param fgs_sigms  see the respective parameter of the FastGlobalSmootherFilter
+ */
 CV_EXPORTS_W void calcOpticalFlowSparseToDense ( InputArray from, InputArray to, OutputArray flow,
-                                                 int grid_step = 8, float lambda = 999.0f, int k = 128, 
-                                                 float sigma = 0.05f, float inlier_eps = 2.0f, 
-                                                 float fgs_lambda = 500.0f, float fgs_sigma = 1.5f );
+                                                 int grid_step = 8, int k = 128, float sigma = 0.05f,
+                                                 bool use_post_proc = true, float fgs_lambda = 500.0f, 
+                                                 float fgs_sigma = 1.5f );
 
 /** @brief Read a .flo file
 
@@ -170,6 +188,9 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
 //! Additional interface to the Farneback's algorithm - calcOpticalFlowFarneback()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 
+/** @brief PyrLK-based sparse-to-dense optical flow algorithm implementation.
+    @param use_fast_preset special preset that prioritizes speed over quality
+ */
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
 //! @}

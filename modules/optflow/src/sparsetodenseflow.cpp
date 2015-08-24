@@ -44,60 +44,72 @@
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
 using namespace std;
 
+#define INF 1E+20F
+
 namespace cv {
 namespace optflow {
 
+void quadTreePyrLK(Mat& from, Mat& to, Mat& dst, int block_size, Mat& reverse_flow = Mat(), vector<Point2f>& points_filtered = vector<Point2f>(), vector<Point2f>& dst_points_filtered = vector<Point2f>());
+
 CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, OutputArray flow,
-                                                int grid_step, float lambda, int k, 
-                                                float sigma, float inlier_eps, 
-                                                float fgs_lambda, float fgs_sigma)
+                                               int grid_step, int k, 
+                                               float sigma, bool use_post_proc, 
+                                               float fgs_lambda, float fgs_sigma)
 {
+    CV_Assert( grid_step>1 && k>3 && sigma>0.00001f && fgs_lambda>1.0f && fgs_lambda>0.01f );
+    CV_Assert( !from.empty() && from.depth() == CV_8U && (from.channels() == 3 || from.channels() == 1) );
+    CV_Assert( !to  .empty() && to  .depth() == CV_8U && (to  .channels() == 3 || to  .channels() == 1) );
+    CV_Assert( from.sameSize(to) );
+
     Mat prev = from.getMat();
-    Mat cur = to.getMat();
+    Mat cur  = to.getMat();
     Mat prev_grayscale, cur_grayscale;
+
+    while( (prev.cols/grid_step)*(prev.rows/grid_step) > SHRT_MAX ) //ensure that the number matches is not too big
+        grid_step*=2;
+
+    if(prev.channels()==3)
+    {
+        cvtColor(prev,prev_grayscale,COLOR_BGR2GRAY);
+        cvtColor(cur, cur_grayscale, COLOR_BGR2GRAY);
+    }
+    else
+    {
+        prev.copyTo(prev_grayscale);
+        cur .copyTo(cur_grayscale);
+    }
 
     vector<Point2f> points;
     vector<Point2f> dst_points;
     vector<unsigned char> status;
     vector<float> err;
+    vector<Point2f> points_filtered, dst_points_filtered;
 
     for(int i=0;i<prev.rows;i+=grid_step)
         for(int j=0;j<prev.cols;j+=grid_step)
             points.push_back(Point2f(j,i));
 
-    cvtColor(prev,prev_grayscale,COLOR_BGR2GRAY);
-    cvtColor(cur, cur_grayscale, COLOR_BGR2GRAY);
     calcOpticalFlowPyrLK(prev_grayscale,cur_grayscale,points,dst_points,status,err,Size(21,21));
 
-    vector<ximgproc::SparseMatch> matches;
-    flow.create(from.size(),CV_32FC2);
-    Mat dense_flow = flow.getMat();
-        
     for(int i=0;i<points.size();i++)
     {
         if(status[i]!=0)
-            matches.push_back(ximgproc::SparseMatch(points[i],dst_points[i]));
+        {
+            points_filtered.push_back(points[i]);
+            dst_points_filtered.push_back(dst_points[i]);
+        }
     }
 
-    int match_num = matches.size();
-    Point2f mean = Point2f(0.0f,0.0f);
-    Point2f diff;
-    float variance = 0.0f;
-    for(int i=0;i<match_num;i++)
-        mean += (matches[i].target_image_pos-matches[i].reference_image_pos);
-    mean/=match_num;
-
-    for(int i=0;i<match_num;i++)
-    {
-        diff = (matches[i].target_image_pos-matches[i].reference_image_pos) - mean;
-        variance += (abs(diff.x)+abs(diff.y))*(abs(diff.x)+abs(diff.y));
-    }
-    variance   = sqrt(variance/match_num);
-    inlier_eps = 0.4*sqrt(variance);
+    flow.create(from.size(),CV_32FC2);
+    Mat dense_flow = flow.getMat();
 
     Ptr<ximgproc::EdgeAwareInterpolator> gd = ximgproc::createEdgeAwareInterpolator();
-    gd->setInlierEps(inlier_eps);
-    gd->interpolate(prev,cur,matches,dense_flow);
+    gd->setK(k);
+    gd->setSigma(sigma);
+    gd->setUsePostProcessing(use_post_proc);
+    gd->setFGSLambda(fgs_lambda);
+    gd->setFGSSigma (fgs_sigma);
+    gd->interpolate(prev,points_filtered,cur,dst_points_filtered,dense_flow);
 }
 
 }

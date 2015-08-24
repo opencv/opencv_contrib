@@ -181,44 +181,38 @@ Ptr<DenseOpticalFlow> createOptFlow_Farneback()
 class OpticalFlowSparseToDense : public DenseOpticalFlow
 {
 public:
-    OpticalFlowSparseToDense();
+    OpticalFlowSparseToDense(int _grid_step, int _k, float _sigma, bool _use_post_proc, float _fgs_lambda, float _fgs_sigma);
     void calc(InputArray I0, InputArray I1, InputOutputArray flow);
     void collectGarbage();
 protected:
-    //sparse flow params:
     int grid_step;
-
-    //interpolation params:
-    float lambda; 
     int k;        
     float sigma;  
-    float inlier_eps; 
+    bool use_post_proc;
     float fgs_lambda; 
     float fgs_sigma;  
 };
 
-OpticalFlowSparseToDense::OpticalFlowSparseToDense()
+OpticalFlowSparseToDense::OpticalFlowSparseToDense(int _grid_step, int _k, float _sigma, bool _use_post_proc, float _fgs_lambda, float _fgs_sigma)
 {
-    grid_step  = 8;
-
-    lambda     = 999.0f;
-    k          = 128;
-    sigma      = 0.05f;
-    inlier_eps = 2.0f;
-    fgs_lambda = 500.0f;
-    fgs_sigma  = 1.5f;
+    grid_step     = _grid_step;
+    k             = _k;
+    sigma         = _sigma;
+    use_post_proc = _use_post_proc;
+    fgs_lambda    = _fgs_lambda;
+    fgs_sigma     = _fgs_sigma;
 }
 
 void OpticalFlowSparseToDense::calc(InputArray I0, InputArray I1, InputOutputArray flow)
 {
-    calcOpticalFlowSparseToDense(I0,I1,flow,grid_step,lambda,k,sigma,inlier_eps,fgs_lambda,fgs_sigma);
+    calcOpticalFlowSparseToDense(I0,I1,flow,grid_step,k,sigma,use_post_proc,fgs_lambda,fgs_sigma);
 }
 
 void OpticalFlowSparseToDense::collectGarbage() {}
 
 Ptr<DenseOpticalFlow> createOptFlow_SparseToDense()
 {
-    return makePtr<OpticalFlowSparseToDense>();
+    return makePtr<OpticalFlowSparseToDense>(8,128,0.05f,true,500.0f,1.5f);
 }
 }
 }
