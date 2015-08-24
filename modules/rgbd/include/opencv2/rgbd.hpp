@@ -94,6 +94,26 @@ namespace rgbd
     return (depth != std::numeric_limits<unsigned int>::min()) && (depth != std::numeric_limits<unsigned int>::max());
   }
 
+  /** Object that contains a frame data.
+   */
+  struct CV_EXPORTS RgbdFrame
+  {
+      RgbdFrame();
+      RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+      virtual ~RgbdFrame();
+
+      virtual void
+      release();
+
+      int ID;
+      Mat image;
+      Mat depth;
+      Mat mask;
+      Mat normals;
+      Mat points3d;
+      Mat cameraMatrix;
+  };
+
   /** Object that can compute the normals in an image.
    * It is an object as it can cache data for speed efficiency
    * The implemented methods are either:
@@ -312,6 +332,13 @@ namespace rgbd
   CV_EXPORTS
   void
   depthTo3d(InputArray depth, InputArray K, OutputArray points3d, InputArray mask = noArray());
+  /** Converts a depth image to an organized set of 3d points.
+   * The coordinate system is x pointing left, y down and z away from the camera
+   * @param rgbdFrame the RgbdFrame contains depth image and calibration matrix. points3d will be updated
+   */
+  CV_EXPORTS
+  void
+  depthTo3d(RgbdFrame& rgbdFrame);
 
   /** If the input image is of type CV_16UC1 (like the Kinect one), the image is converted to floats, divided
    * by 1000 to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
@@ -367,6 +394,16 @@ namespace rgbd
      */
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
+
+    /** Find The planes in a depth image. Normal is used when matrix is not empty
+     * @param rgbdFrame RgbdFrame containing points3d (and normals)
+     * @param mask An image where each pixel is labeled with the plane it belongs to
+     *        and 255 if it does not belong to any plane
+     * @param plane_coefficients the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0
+     */
+    void
+    operator()(RgbdFrame& rgbdFrame, OutputArray mask,
+               OutputArray plane_coefficients);
 
     int getBlockSize() const
     {
@@ -436,24 +473,6 @@ namespace rgbd
     double threshold_;
     /** coefficient of the sensor error with respect to the. All 0 by default but you want a=0.0075 for a Kinect */
     double sensor_error_a_, sensor_error_b_, sensor_error_c_;
-  };
-
-  /** Object that contains a frame data.
-   */
-  struct CV_EXPORTS RgbdFrame
-  {
-      RgbdFrame();
-      RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
-      virtual ~RgbdFrame();
-
-      virtual void
-      release();
-
-      int ID;
-      Mat image;
-      Mat depth;
-      Mat mask;
-      Mat normals;
   };
 
   /** Object that contains a frame data that is possibly needed for the Odometry.
@@ -1005,6 +1024,99 @@ namespace rgbd
   void
   warpFrame(const Mat& image, const Mat& depth, const Mat& mask, const Mat& Rt, const Mat& cameraMatrix,
             const Mat& distCoeff, Mat& warpedImage, Mat* warpedDepth = 0, Mat* warpedMask = 0);
+
+  /** Store information of a single point
+   */
+  struct CV_EXPORTS RgbdPoint
+  {
+  public:
+    Point3f world_xyz;
+    Point3f bgr;
+    Point2i image_xy;
+    Point2f texture_uv;
+    Point2i projector_xy;
+  };
+
+  /** A cluster of a depth map. It can be used as both an image and a point cloud.
+   */
+  class CV_EXPORTS RgbdMesh {
+  public:
+    /* RgbdFrame which can be shared with other meshes */
+    Ptr<RgbdFrame> rgbdFrame;
+    /* silhouette of the cluster. RgbdFrame::mask is different and should be used to indicate valid depth points */
+    Mat silhouette;
+    /* image to vector point map */
+    Mat pointsIndex;
+    /* vector of points */
+    std::vector<RgbdPoint> points;
+    /* plane coefficients (if the cluster is a plane) */
+    Vec4f plane_coefficients;
+    /* indicate if this mesh is a plane or not */
+    bool bPlane;
+    bool bVectorPointsUpdated;
+    /* bounding box of the mesh */
+    Rect roi;
+    /* increment step when calculating points (1 to include all pixels to points, 2 to sample a point from every 2 pixels) */
+    uint increment_step;
+    /* pixel correspondence map */
+    Mat projectorPixels;
+
+    /** Return the number of valid points.
+     */
+    int getNumPoints();
+
+    /** Update `points`. Must be called after `silhouette` or `depth` is updated.
+     * @param skipNoCorrespondencePoints eliminate points with no projector correspondence information.
+     */
+    void calculatePoints(bool skipNoCorrespondencePoints = false);
+
+    /* indices. Each set of three points forms a triangle. */
+    std::vector<int> faceIndices;
+    bool bFaceIndicesUpdated;
+
+    /** Constructor.
+     */
+    RgbdMesh(Ptr<RgbdFrame> _rgbdFrame);
+
+    /** Do meshing and update `faceIndices`. Must be called after `points` is updated.
+     */
+    void calculateFaceIndices();
+
+    /** Update texture coordinates in `points` based on the LSCM algorithm.
+     */
+    void unwrapTexCoord();
+
+    /** Save the current mesh to an .obj file.
+     * @param path Output filename.
+     */
+    void save(const std::string &path);
+  };
+
+  /** Delete small clusters.
+   * @param clusters Input clusters.
+   * @param minPoints Delete a cluster with points less than or equal to minPoints.
+   */
+  CV_EXPORTS void eliminateSmallClusters(std::vector<RgbdMesh>& clusters, int minPoints);
+
+  /** Delete empty clusters.
+   * @param clusters Input clusters.
+   */
+  CV_EXPORTS void deleteEmptyClusters(std::vector<RgbdMesh>& clusters);
+
+  /** Segment planes and return them with residual cluster.
+   * @param mainCluster Input cluster.
+   * @param clusters Output clusters.
+   * @param maxPlaneNum The maximum number of clusters to extract.
+   * @param minArea Only planes with points more than or equal to this value are extracted (TODO).
+   */
+  CV_EXPORTS void planarSegmentation(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int maxPlaneNum = 3, int minArea = 400);
+
+  /** Split clusters from a silhouette image.
+   * @param mainCluster Input cluster.
+   * @param clusters Output clusters.
+   * @param minArea Only clusters with points more than or equal to this value are extracted.
+   */
+  CV_EXPORTS void euclideanClustering(RgbdMesh& mainCluster, std::vector<RgbdMesh>& clusters, int minArea = 400);
 
 // TODO Depth interpolation
 // Curvature
