@@ -463,6 +463,19 @@ private:
   // Names and paths to read model and to store results
   std::string _trainingPath, _resultsDir;
 
+  //parameters:
+  struct parameters{
+	  std::vector<std::vector<int>> row_intersection_list;
+	  Mat row_intersection_img;
+	  std::vector<std::vector<int>> column_intersection_list;
+	  Mat column_intersection_img;
+	  Mat affinity_matrix;
+	  std::vector<Vec2i> group_position;
+	  std::vector<double> group_sum_magnitude;
+	  int width;
+	  int height;
+  } _params;
+
   // List of the rectangles' objectness value, in the same order as
   // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
   std::vector<float> objectnessValues;
@@ -484,6 +497,8 @@ void computeEdgeWeights(std::vector<int> &edge_idx_list,
       std::vector<Vec2i> &group_position,
       std::vector<double> &group_sum_magnitude);
 
+  double scoreBoxParams(Vec4i &box);
+  float calculateIOU(Vec4i &box1, Vec4i &box2);
   // functions
 
   void computeIntersectionDataStructure(Mat &group_idx_img,
@@ -491,6 +506,25 @@ void computeEdgeWeights(std::vector<int> &edge_idx_list,
       Mat &row_intersection_img,
       std::vector<std::vector<int>> &column_intersection_list,
       Mat &column_intersection_img);
+
+
+
+  void get_window_list(std::vector<Vec4i> &window_list,
+	  std::vector<double> &score_list,
+	  std::vector<float> &aspect_list,
+	  std::vector<float> &width_list,
+	  float &iou,
+	  float &thresh,
+	  float &start_t,
+	  float &end_t,
+	  float &num_t,
+	  float &start_width,
+	  float &end_width,
+	  float &num_width);
+
+  Vec4i local_optimum_box(Vec4i &box, float &aspect, float &width);
+
+  std::vector<Vec4i> non_maximal_suppression(std::vector<Vec4i> &window_list, std::vector<double> &score_list);
 
   void computeAffinity(std::vector<double> &group_mean_orientation, Mat &group_idx_img, Mat &affinity_matrix);
 

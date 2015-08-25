@@ -225,6 +225,17 @@ namespace cv
 		}
 
 
+		double ObjectnessEdgeBoxes::scoreBoxParams(Vec4i &box){
+			return scoreBox(box,
+				_params.row_intersection_list,
+				_params.row_intersection_img,
+				_params.column_intersection_list,
+				_params.column_intersection_img,
+				_params.affinity_matrix,
+				_params.group_position,
+				_params.group_sum_magnitude);
+		}
+
 		void ObjectnessEdgeBoxes::computeIntersectionDataStructure(Mat &group_idx_img,
 			std::vector<std::vector<int>> &row_intersection_list,
 			Mat &row_intersection_img,
@@ -461,11 +472,189 @@ namespace cv
 
 
 
+		void ObjectnessEdgeBoxes::get_window_list(std::vector<Vec4i> &window_list,
+			std::vector<double> &score_list, 
+			std::vector<float> &aspect_list,
+			std::vector<float> &width_list, 
+			float &iou, 
+			float &thresh, 
+			float &start_t, 
+			float &end_t, 
+			float &num_t, 
+			float &start_width, 
+			float &end_width, 
+			float &num_width){
+
+			int img_width = _params.width;
+			int img_height = _params.height;
+
+			window_list.empty();
+			aspect_list.empty();
+			width_list.empty();
+			score_list.empty();
+
+			int width_step = (end_width - start_width) / num_width;
+			float aspect_step = (start_t - (1 / (start_t))) / num_t;
+			for (int width = start_width; width < end_width; width += width_step){
+				for (float aspect = 1 / (start_t); aspect < start_t; aspect += aspect_step){
+
+					int height = width / aspect;
+					int x_step = floor((width - 2 * width*iou) / (1 - iou));
+					int y_step = floor((height - 2 * height*iou) / (1 - iou));
+
+					//create a sliding window:
+					for (int xx = 0; xx < img_width - height; xx += x_step){
+						for (int yy = 0; yy < img_height - width; yy += y_step){
+							Vec4i box(yy,xx,yy+height,xx+width);
+							double score = scoreBoxParams(box);
+							if (score > thresh){
+
+								window_list.push_back(box);
+								aspect_list.push_back(aspect);
+								width_list.push_back(width);
+								score_list.push_back(score);
+
+							}
+
+						}
+					}
+
+
+				}
+			}
+
+			return;
+
+		}
+
+		Vec4i ObjectnessEdgeBoxes::local_optimum_box(Vec4i &box, float &aspect, float &width){
+
+			float variation = 0.01; //look within 1% of the values
+
+			//determine step sizes for greedy gradient descent:
+			int next_width = width*variation;
+			float next_aspect = aspect*variation;
+			std::vector<float> aspect_step_list;
+			aspect_step_list.push_back(next_aspect);
+			std::vector<int> width_step_list;
+			width_step_list.push_back(next_width);
+			int next_position = width*variation;
+			std::vector<int> position_step_list;
+			position_step_list.push_back(next_position);
+
+
+			while (next_width / 2 > 2){
+				next_width = next_width / 2;
+				next_aspect = next_aspect / 2.0f;
+				next_position = next_position / 2;
+				width_step_list.push_back(next_width);
+				aspect_step_list.push_back(next_aspect);
+				position_step_list.push_back(next_position);
+			}
+
+
+
+
+			for (int i = 0; i < width_step_list.size(); i++){
+
+				int width_step = width_step_list[i];
+				float aspect_step = aspect_step_list[i];
+				int height_step = width_step / aspect_step;
+				int position_step = position_step_list[i];
+
+				//generate boxes with a shift in all dimensions:
+				std::vector<Vec4i> potential_boxes;
+				potential_boxes.push_back(box);
+
+				for (int j = 0; j < 16; j++){ //
+					int flip = j;
+					int coeff0 = 2*( (flip >> 1) & 0x01) -1;
+					int coeff1 = 2 * ((flip >> 1) & 0x01) - 1;
+					int coeff2 = 2 * ((flip >> 1) & 0x01) - 1;
+					int coeff3 = 2 * ((flip >> 1) & 0x01) - 1;
+
+					
+					int new_start_y = box[0] + coeff0*position_step;
+					int new_start_x = box[1] + coeff1*position_step;
+					int new_end_y = new_start_y + coeff3*height_step;
+					int new_end_x = new_start_x + coeff3*width_step;
+
+					Vec4i new_box(new_start_y, new_start_x, new_end_y, new_end_x);
+					potential_boxes.push_back(new_box);
+				}
+
+				//select best one
+				double max_score = 0;
+				int max_idx = 0;
+				for (int bb = 0; bb < potential_boxes.size(); bb++){
+					double score = scoreBoxParams(potential_boxes.at(bb));
+					if (score > max_score){
+						max_idx = bb;
+						max_score = score;
+					}
+				}
+				box = potential_boxes.at(max_idx);
+
+				
+			}
+
+
+			return box;
+		}
+
+
+		float ObjectnessEdgeBoxes::calculateIOU(Vec4i &box1, Vec4i &box2){
+
+			float center1_x = (box1[3] - box1[1]) / 2.0f;
+			float center1_y = (box1[2] - box1[0]) / 2.0f;
+			float center2_x = (box2[3] - box2[1]) / 2.0f;
+			float center2_y = (box2[2] - box2[0]) / 2.0f;
+			float diff_center_x = abs(center1_x - center2_x);
+			float diff_center_y = abs(center1_y - center2_y);
+			float width1 = abs(box1[3] - box1[1]);
+			float width2 = abs(box2[3] - box2[1]);
+			float height1 = abs(box1[2] - box1[0]);
+			float height2 = abs(box2[2] - box2[0]);
+
+			float intersection_area = (diff_center_x - (width1 / 2.0f + width2 / 2.0f)) * (diff_center_y - (height1 / 2.0f + height2 / 2.0f));
+			float union_area = width1*height1 + width2*height2 - intersection_area;
+
+
+			return intersection_area/union_area;
+		}
+
+
+		std::vector<Vec4i> ObjectnessEdgeBoxes::non_maximal_suppression(std::vector<Vec4i> &window_list, std::vector<double> &score_list){
+
+			std::vector<Vec4i> sparse_window_list;
+			for (int i = 0; i < window_list.size(); i++){
+
+				for (int j = 0; j < window_list.size(); j++){
+					if (i != j){
+						if (calculateIOU(window_list.at(i), window_list.at(j)) < 0.8f){
+							sparse_window_list.push_back(window_list.at(i));
+						}
+					}
+				}
+
+
+			}
+
+			return window_list;
+		}
+
+
+
 
 		bool ObjectnessEdgeBoxes::computeSaliencyMap( Mat &edgeImage, Mat &orientationImage, Mat &resultImage){
 
 			//generate window list:
-			std::vector<Vec4i> window_list;
+
+			_params.width = edgeImage.cols;
+			_params.height = edgeImage.rows;
+
+
+
 			int width = edgeImage.cols;
 			int height = edgeImage.rows;
 			resultImage = Mat(Size(width, height), CV_64FC1, Scalar(0.0f));
@@ -502,27 +691,93 @@ namespace cv
 			for (int i = 0; i < column_intersection_list.size(); i++){
 				std::vector<int> intersection_list = column_intersection_list.at(i);
 				printf("%d : ", i);
-				for (int j = 0; j < intersection_list.size(); j++){
+				for (int j = 0; j < intersection_list.size(); j++){ 
 					printf("%d,", intersection_list.at(j));
 				}
 				printf("\n");
 			}*/
 
 
-			int N = 6;
+			_params.row_intersection_list = row_intersection_list;
+			_params.row_intersection_img = row_intersection_img;
+			_params.column_intersection_list = column_intersection_list;
+			_params.column_intersection_img = column_intersection_img;
+			_params.affinity_matrix = affinity_matrix;
+			_params.group_position = group_position;
+			_params.group_sum_magnitude = group_sum_magnitude;
+
+
+
+			//create window list:
+			std::vector<Vec4i> window_list;
+			std::vector<float> aspect_list;
+			std::vector<float> width_list;
+			std::vector<double> score_list;
+			float thresh = 1.2;
+			float start_t = 0.33f;
+			float end_t = 3.0f;
+			float start_width = 20.0f;
+			float end_width = 200.0f;
+			float num_t = 10;
+			float num_width = 10;
+			float iou = 0.8f;
+			get_window_list(window_list, score_list, aspect_list, width_list, iou, thresh, start_t, end_t, num_t, start_width, end_width, num_width);
+			
+			/*
+			//evaluate window lists:
+
+			std::vector<double> score_list;
+			for (int i = 0; i < window_list.size(); i++){
+				double score = scoreBox(window_list[i],
+					row_intersection_list,
+					row_intersection_img,
+					column_intersection_list,
+					column_intersection_img,
+					affinity_matrix,
+					group_position,
+					group_sum_magnitude);
+				score_list.push_back(score);
+			}
+			*/
+
+			//perform gradient descent:
+			for (int i = 0; i < window_list.size(); i++){
+				Vec4i box = local_optimum_box(window_list[i], aspect_list[i], width_list[i]);
+				window_list[i] = box;
+			}
+
+
+			//perform non maximal suppression:
+			window_list = non_maximal_suppression(window_list, score_list);
+
+			/*
+
+			int N = 4 ;
 			for (int rm = 0; rm < N; rm++){
 				for (int cm = 0; cm < N; cm++){
 
 					Vec4i box(rm*(int)height / N, cm*(int)width / N, min((rm + 1)*(int)height / N, height-1), min((cm + 1)*(int)width / N, width-1));
 					window_list.push_back(box);
+					double score = scoreBox(box,
+						row_intersection_list,
+						row_intersection_img,
+						column_intersection_list,
+						column_intersection_img,
+						affinity_matrix,
+						group_position,
+						group_sum_magnitude);
 						
 				}
 			}
+			*/
 
 
 			//evaluate all windows:
 			for (int bb = 0; bb < window_list.size(); bb++){
 				Vec4i box = window_list[bb];
+				double score = score_list[bb];
+
+				/*
 				double score = scoreBox(box,
 					row_intersection_list,
 					row_intersection_img,
@@ -531,6 +786,7 @@ namespace cv
 					affinity_matrix,
 					group_position,
 					group_sum_magnitude);
+					*/
 
 				//assign all pixels in window to score value:
 				for (int rb = box[0]; rb < box[2]; rb++){
