@@ -41,6 +41,10 @@
 
 #include "opencv2/datasets/track_vot.hpp"
 
+#include <sys/stat.h>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+
 using namespace std;
 
 namespace cv
@@ -54,7 +58,6 @@ namespace cv
             //Constructor
             TRACK_votImpl()
             {
-
                 activeDatasetID = 1;
                 frameCounter = 0;
             }
@@ -64,6 +67,7 @@ namespace cv
             //Load Dataset
             virtual void load(const string &path);
 
+		protected:
             virtual int getDatasetsNum();
 
             virtual int getDatasetLength(int id);
@@ -74,7 +78,6 @@ namespace cv
 
             virtual vector <Point2d> getGT();
 
-        private:
             void loadDataset(const string &path);
 
             string numberToString(int number);
@@ -128,12 +131,12 @@ namespace cv
                     string gtListPath = rootPath + "/" + datasetName + "/groundtruth.txt";
                     ifstream gtList(gtListPath.c_str());
                     if (!gtList.is_open())
-                        cout << "Error to open groundtruth.txt!!!";
+                        printf("Error to open groundtruth.txt!!!");
 
                     //Make a list of datasets lengths
                     int currFrameID = 1;
                     if (currDatasetID == 0)
-                        cout << "VOT 2015 Dataset Initialization...\n";
+                        printf("VOT 2015 Dataset Initialization...\n");
                     bool trFLG = true;
                     do
                     {
@@ -171,7 +174,7 @@ namespace cv
             }
             else
             {
-                cout << rootPath + "Couldn't find a *list.txt* in VOT 2015 folder!!!";
+                printf("Couldn't find a *list.txt* in VOT 2015 folder!!!");
             }
 
             namesList.close();
@@ -189,7 +192,7 @@ namespace cv
                 return (int)(data[id - 1].size());
             else
             {
-                cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
+                printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
                 return -1;
             }
         }
@@ -203,7 +206,7 @@ namespace cv
             }
             else
             {
-                cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
+				printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
                 return false;
             }
         }
