@@ -180,13 +180,13 @@ namespace cv
 
         int TRACK_votImpl::getDatasetsNum()
         {
-            return data.size();
+            return (int)(data.size());
         }
 
         int TRACK_votImpl::getDatasetLength(int id)
         {
             if (id > 0 && id <= (int)data.size())
-                return data[id - 1].size();
+                return (int)(data[id - 1].size());
             else
             {
                 cout << "Dataset ID is out of range...\n " << "Allowed IDs are: 1~" << (int)data.size() << endl;
