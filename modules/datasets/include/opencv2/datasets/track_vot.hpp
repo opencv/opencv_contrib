@@ -44,15 +44,9 @@
 
 #include <string>
 #include <vector>
-#include <map>
-#include <iostream>
 
 #include "opencv2/datasets/dataset.hpp"
 #include "opencv2/datasets/util.hpp"
-#include <opencv2/highgui.hpp>
-
-#include <opencv2/core.hpp>
-#include <sys/stat.h>
 
 using namespace std;
 
