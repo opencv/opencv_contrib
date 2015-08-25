@@ -84,6 +84,9 @@ int main( int argc, char** argv )
   vector<Mat> pattern;
   graycode->generate( pattern );
 
+  cout << pattern.size() << " pattern images + 2 images for shadows mask computation to acquire with both cameras"
+         << endl;
+
   // Generate the all-white and all-black images needed for shadows mask computation
   Mat white;
   Mat black;
@@ -119,9 +122,6 @@ int main( int argc, char** argv )
      help();
      return -1;
   }
-
-  cout << pattern.size() << " pattern images + 2 images for shadows mask computation to acquire with both cameras"
-       << endl;
 
   // Turning off autofocus
   cap1.set( CAP_PROP_SETTINGS, 1 );
