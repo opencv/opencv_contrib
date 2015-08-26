@@ -42,7 +42,6 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_CNN_3DOBJ_PRECOMP_HPP__
 #define __OPENCV_CNN_3DOBJ_PRECOMP_HPP__
 
-#include <opencv2/cnn_3dobj_config.hpp>
 #include <opencv2/cnn_3dobj.hpp>
 
 #endif

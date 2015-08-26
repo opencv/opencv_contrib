@@ -30,7 +30,7 @@ $ sudo make install
 $ cd <opencv_source_directory>
 $ mkdir build
 $ cd build
-$ cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D WITH_TBB=ON -D BUILD_NEW_PYTHON_SUPPORT=OFF -D WITH_V4L=ON -D WITH_QT=ON -D WITH_OPENGL=ON -D WITH_VTK=ON -D INSTALL_TESTS=ON -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules ..
+$ cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D WITH_TBB=ON -D BUILD_NEW_PYTHON_SUPPORT=OFF -D WITH_V4L=ON -D WITH_QT=OFF -D WITH_OPENGL=ON -D WITH_VTK=ON -D INSTALL_TESTS=ON -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules ..
 $ make -j4
 $ sudo make install
 ```
@@ -56,22 +56,24 @@ $ make
 ##Demo1: training data generation
 ####Imagas generation from different pose, by default there are 4 models used, there will be 276 images in all which each class contains 69 iamges, if you want to use additional .ply models, it is necessary to change the class number parameter to the new class number and also give it a new class label. If you will train net work and extract feature from RGB images set the parameter rgb_use as 1.
 ```
-$ ./sphereview_test -plymodel=../data/3Dmodel/ape.ply -label_class=0
+$ ./sphereview_test -plymodel=../data/3Dmodel/ape.ply -label_class=0 -cam_head_x=0 -cam_head_y=0 -cam_head_z=1
 ```
 ####press 'Q' to start 2D image genaration
 ```
-$ ./sphereview_test -plymodel=../data/3Dmodel/ant.ply -label_class=1
+$ ./sphereview_test -plymodel=../data/3Dmodel/ant.ply -label_class=1 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
 ```
-####press 'Q' to start
 ```
-$ ./sphereview_test -plymodel=../data/3Dmodel/cow.ply -label_class=2
+$ ./sphereview_test -plymodel=../data/3Dmodel/cow.ply -label_class=2 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
 ```
-####press 'Q' to start
 ```
-$ ./sphereview_test -plymodel=../data/3Dmodel/plane.ply -label_class=3
+$ ./sphereview_test -plymodel=../data/3Dmodel/plane.ply -label_class=3 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
 ```
-####press 'Q' to start
-
+```
+$ ./sphereview_test -plymodel=../data/3Dmodel/bunny.ply -label_class=4 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
+```
+```
+$ ./sphereview_test -plymodel=../data/3Dmodel/horse.ply -label_class=5 -cam_head_x=0 -cam_head_y=0 -cam_head_z=-1
+```
 ####When all images are created in images_all folder as a collection of training images for network tranining and as a gallery of reference images for the classification part, then proceed on.
 ####After this demo, the binary files of images and labels will be stored as 'binary_image' and 'binary_label' in current path, you should copy them into the leveldb folder in Caffe triplet training, for example: copy these 2 files in <caffe_source_directory>/data/linemod and rename them as 'binary_image_train', 'binary_image_test' and 'binary_label_train', 'binary_label_train'. Here I use the same as trianing and testing data, you can use different data for training and testing the performance in the CAFFE training process. It's important to observe the loss of testing data to check whether training data is suitable for the your aim. Loss should be obseved as keep decreasing and remain on a much smaller number than the initial loss.
 ####You could start triplet tranining using Caffe like this:

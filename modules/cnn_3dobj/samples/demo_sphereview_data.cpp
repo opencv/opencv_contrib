@@ -47,12 +47,15 @@ using namespace std;
 using namespace cv::cnn_3dobj;
 int main(int argc, char *argv[])
 {
-    const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../data/3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=4 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-"{ite_depth | 2 | Iteration of sphere generation.}"
+    const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../data/3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=6 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
+"{ite_depth | 3 | Iteration of sphere generation.}"
 "{plymodel | ../data/3Dmodel/ape.ply | Path of the '.ply' file for image rendering. }"
 "{imagedir | ../data/images_all/ | Path of the generated images for one particular .ply model. }"
 "{labeldir | ../data/label_all.txt | Path of the generated images for one particular .ply model. }"
-"{num_class | 4 | Total number of classes of models}"
+"{cam_head_x | 0 | Head of the camera. }"
+"{cam_head_y | -1 | Head of the camera. }"
+"{cam_head_z | 0 | Head of the camera. }"
+"{num_class | 6 | Total number of classes of models}"
 "{label_class | 0 | Class label of current .ply model}"
 "{rgb_use | 0 | Use RGB image or grayscale}";
     /* Get parameters from comand line. */
@@ -69,19 +72,20 @@ int main(int argc, char *argv[])
     string labeldir = parser.get<string>("labeldir");
     int num_class = parser.get<int>("num_class");
     int label_class = parser.get<int>("label_class");
+    float cam_head_x = parser.get<float>("cam_head_x");
+    float cam_head_y = parser.get<float>("cam_head_y");
+    float cam_head_z = parser.get<float>("cam_head_z");
     int rgb_use = parser.get<int>("rgb_use");
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
     std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
     std::fstream imglabel;
     char* p=(char*)labeldir.data();
     imglabel.open(p, fstream::app|fstream::out);
-    bool camera_pov = (true);
+    bool camera_pov = true;
     /* Create a window using viz. */
     viz::Viz3d myWindow("Coordinate Frame");
     /* Set window size as 64*64, we use this scale as default. */
     myWindow.setWindowSize(Size(64,64));
-    /* Add coordinate axes. */
-    myWindow.showWidget("Coordinate Widget", viz::WCoordinateSystem());
     /* Set background color. */
     myWindow.setBackgroundColor(viz::Color::gray());
     myWindow.spin();
@@ -90,7 +94,12 @@ int main(int argc, char *argv[])
     /* Get the center of the generated mesh widget, cause some .ply files.  */
     Point3d cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
     float radius = ViewSphere.getRadius(objmesh.cloud, cam_focal_point);
-    Point3d cam_y_dir(0.0f,0.0f,1.0f);
+    objmesh.cloud = objmesh.cloud/radius*100;
+    cam_focal_point = cam_focal_point/radius*100;
+    Point3d cam_y_dir;
+    cam_y_dir.x = cam_head_x;
+    cam_y_dir.y = cam_head_y;
+    cam_y_dir.z = cam_head_z;
     const char* headerPath = "../data/header_for_";
     const char* binaryPath = "../data/binary_";
     ViewSphere.createHeader((int)campos.size(), 64, 64, headerPath);
@@ -106,7 +115,7 @@ int main(int argc, char *argv[])
         imglabel << filename << ' ' << (int)(campos.at(pose).x*100) << ' ' << (int)(campos.at(pose).y*100) << ' ' << (int)(campos.at(pose).z*100) << endl;
         filename = imagedir + filename;
         /* Get the pose of the camera using makeCameraPoses. */
-        Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*radius+cam_focal_point, cam_focal_point, cam_y_dir*radius+cam_focal_point);
+        Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*380+cam_focal_point, cam_focal_point, cam_y_dir*380+cam_focal_point);
         /* Get the transformation matrix from camera coordinate system to global. */
         Affine3f transform = viz::makeTransformToGlobal(Vec3f(1.0f,0.0f,0.0f), Vec3f(0.0f,1.0f,0.0f), Vec3f(0.0f,0.0f,1.0f), campos.at(pose));
         viz::WMesh mesh_widget(objmesh);

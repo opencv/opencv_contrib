@@ -15,3 +15,7 @@ target_link_libraries(classify_test ${OpenCV_LIBS})
 set(SOURCES_modelanalysis demo_model_analysis.cpp)
 add_executable(model_test ${SOURCES_modelanalysis})
 target_link_libraries(model_test ${OpenCV_LIBS})
+
+set(SOURCES_video demo_video.cpp)
+add_executable(video_test ${SOURCES_video})
+target_link_libraries(video_test ${OpenCV_LIBS})

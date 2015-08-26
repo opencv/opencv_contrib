@@ -55,10 +55,10 @@ the use of this software, even if advised of the possibility of such damage.
 #include <set>
 #include <string.h>
 #include <stdlib.h>
-#include <tr1/memory>
 #include <dirent.h>
 #define CPU_ONLY
 
+#include <opencv2/cnn_3dobj_config.hpp>
 #ifdef HAVE_CAFFE
 #include <caffe/blob.hpp>
 #include <caffe/common.hpp>

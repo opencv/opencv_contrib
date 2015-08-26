@@ -146,7 +146,6 @@ namespace cnn_3dobj
                 radiusCam = Radius;
             }
         }
-        radiusCam *= 4;
         return radiusCam;
     };
 
