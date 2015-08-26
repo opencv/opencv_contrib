@@ -72,13 +72,12 @@ void OCRBeamSearchDecoder::run(Mat& image, string& output_text, vector<Rect>* co
     if (component_confidences != NULL)
         component_confidences->clear();
 }
-
 void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>* component_rects,
                                vector<string>* component_texts, vector<float>* component_confidences,
                                int component_level)
 {
+    CV_Assert(mask.type() == CV_8UC1);
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
-    CV_Assert( mask.type() == CV_8UC1 );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
     if (component_rects != NULL)
@@ -102,11 +101,18 @@ void OCRBeamSearchDecoder::ClassifierCallback::eval( InputArray image, vector< v
     oversegmentation.clear();
 }
 
+struct beamSearch_node {
+    double score;
+    vector<int> segmentation;
+    bool expanded;
+    // TODO calculating score of its childs would be much faster if we store the last column
+    //      of their "root" path.
+};
 
-bool beam_sort_function ( pair< double,vector<int> > i, pair< double,vector<int> > j );
-bool beam_sort_function ( pair< double,vector<int> > i, pair< double,vector<int> > j )
+bool beam_sort_function ( beamSearch_node a, beamSearch_node b );
+bool beam_sort_function ( beamSearch_node a, beamSearch_node b )
 {
-    return (i.first > j.first);
+    return (a.score > b.score);
 }
 
 
@@ -122,15 +128,41 @@ public:
                               int _beam_size)
     {
         classifier = _classifier;
-        transition_p = transition_probabilities_table.getMat();
+        step_size = classifier->getStepSize();
+        win_size  = classifier->getWindowSize();
         emission_p = emission_probabilities_table.getMat();
         vocabulary = _vocabulary;
         mode = _mode;
         beam_size = _beam_size;
+        transition_probabilities_table.getMat().copyTo(transition_p);
+        for (int i=0; i<transition_p.rows; i++)
+        {
+            for (int j=0; j<transition_p.cols; j++)
+            {
+                if (transition_p.at<double>(i,j) == 0)
+                    transition_p.at<double>(i,j) = -DBL_MAX;
+                else
+                    transition_p.at<double>(i,j) = log(transition_p.at<double>(i,j));
+            }
+        }
     }
 
     ~OCRBeamSearchDecoderImpl()
     {
+    }
+
+    void run( Mat& src,
+              Mat& mask,
+              string& out_sequence,
+              vector<Rect>* component_rects,
+              vector<string>* component_texts,
+              vector<float>* component_confidences,
+              int component_level)
+    {
+        CV_Assert(mask.type() == CV_8UC1);
+        //nothing to do with a mask here
+        run( src, out_sequence, component_rects, component_texts, component_confidences,
+             component_level);
     }
 
     void run( Mat& src,
@@ -152,20 +184,62 @@ public:
         if (component_confidences != NULL)
             component_confidences->clear();
 
-        // TODO We must split a line into words or specify we only work with words
-
         if(src.type() == CV_8UC3)
         {
             cvtColor(src,src,COLOR_RGB2GRAY);
         }
 
 
-        vector< vector<double> > recognition_probabilities;
-        vector<int> oversegmentation;
+        // TODO if input is a text line (not a word) we may need to split into words here!
 
+        // do sliding window classification along a croped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
-        /*Now we go here with the beam search algorithm to optimize the recognition score*/
+        // if the number of oversegmentation points found is less than 2 we can not do nothing!!
+        if (oversegmentation.size() < 2) return;
+
+
+        //NMS of recognitions
+        double last_best_p = 0;
+        int last_best_idx  = -1;
+        for (size_t i=0; i<recognition_probabilities.size(); )
+        {
+          double best_p = 0;
+          int best_idx = -1;
+          for (size_t j=0; j<recognition_probabilities[i].size(); j++)
+          {
+            if (recognition_probabilities[i][j] > best_p)
+            {
+              best_p = recognition_probabilities[i][j];
+              best_idx = j;
+            }
+          }
+
+          if ((i>0) && (best_idx == last_best_idx)
+              && (oversegmentation[i]*step_size < oversegmentation[i-1]*step_size + win_size) )
+          {
+            if (last_best_p > best_p)
+            {
+              //remove i'th elements and do not increment i
+              recognition_probabilities.erase (recognition_probabilities.begin()+i);
+              oversegmentation.erase (oversegmentation.begin()+i);
+              continue;
+            } else {
+              //remove (i-1)'th elements and do not increment i
+              recognition_probabilities.erase (recognition_probabilities.begin()+i-1);
+              oversegmentation.erase (oversegmentation.begin()+i-1);
+              last_best_idx = best_idx;
+              last_best_p   = best_p;
+              continue;
+            }
+          }
+
+          last_best_idx = best_idx;
+          last_best_p   = best_p;
+          i++;
+        }
+
+        /*Now we go with the beam search algorithm to optimize the recognition score*/
 
         //convert probabilities to log probabilities
         for (size_t i=0; i<recognition_probabilities.size(); i++)
@@ -178,170 +252,160 @@ public:
                     recognition_probabilities[i][j] = log(recognition_probabilities[i][j]);
             }
         }
-        for (int i=0; i<transition_p.rows; i++)
+
+        // initialize the beam with all possible character's pairs
+        int generated_chids = 0;
+        for (size_t i=0; i<recognition_probabilities.size()-1; i++)
         {
-            for (int j=0; j<transition_p.cols; j++)
-            {
-                if (transition_p.at<double>(i,j) == 0)
-                    transition_p.at<double>(i,j) = -DBL_MAX;
-                else
-                    transition_p.at<double>(i,j) = log(transition_p.at<double>(i,j));
-            }
+          for (size_t j=i+1; j<recognition_probabilities.size(); j++)
+          {
+
+            beamSearch_node node;
+            node.segmentation.push_back(i);
+            node.segmentation.push_back(j);
+            node.score = score_segmentation(node.segmentation, out_sequence);
+            vector< vector<int> > childs = generate_childs( node.segmentation );
+            node.expanded = true;
+
+            beam.push_back( node );
+
+            if (!childs.empty())
+              update_beam( childs );
+
+            generated_chids += (int)childs.size();
+
+          }
         }
 
-
-        set<unsigned long long int> visited_nodes; //TODO make it member of class
-
-        vector<int> start_segmentation;
-        start_segmentation.push_back(oversegmentation[0]);
-        start_segmentation.push_back(oversegmentation[oversegmentation.size()-1]);
-
-        vector< pair< double,vector<int> > > beam;
-        beam.push_back( pair< double,vector<int> > (score_segmentation(start_segmentation, recognition_probabilities, out_sequence), start_segmentation) );
-
-        vector< vector<int> > childs = generate_childs(start_segmentation,oversegmentation, visited_nodes);
-        if (!childs.empty())
-            update_beam( beam, childs, recognition_probabilities);
-        //cout << "beam size " << beam.size() << " best score " << beam[0].first<< endl;
-
-        int generated_chids = (int)childs.size();
         while (generated_chids != 0)
         {
             generated_chids = 0;
-            vector< pair< double,vector<int> > > old_beam = beam;
 
-            for (size_t i=0; i<old_beam.size(); i++)
+            for (size_t i=0; i<beam.size(); i++)
             {
-                childs = generate_childs(old_beam[i].second,oversegmentation, visited_nodes);
+                vector< vector<int> > childs;
+                if (!beam[i].expanded)
+                {
+                  childs = generate_childs( beam[i].segmentation );
+                  beam[i].expanded = true;
+                }
                 if (!childs.empty())
-                    update_beam( beam, childs, recognition_probabilities);
+                    update_beam( childs );
                 generated_chids += (int)childs.size();
             }
-            //cout << "beam size " << beam.size() << " best score " << beam[0].first << endl;
         }
 
+        // Done! Get the best prediction found into out_sequence
+        double lp = score_segmentation( beam[0].segmentation, out_sequence );
 
-        // FINISHED ! Get the best prediction found into out_sequence
-        score_segmentation(beam[0].second, recognition_probabilities, out_sequence);
-
-
-        // TODO fill other output parameters
+        // fill other (dummy) output parameters
+        component_rects->push_back(Rect(0,0,src.cols,src.rows));
+        component_texts->push_back(out_sequence);
+        component_confidences->push_back((float)exp(lp));
 
         return;
     }
 
-    void run( Mat& src,
-              Mat& mask,
-              string& out_sequence,
-              vector<Rect>* component_rects,
-              vector<string>* component_texts,
-              vector<float>* component_confidences,
-              int component_level)
-    {
-
-        CV_Assert( mask.type() == CV_8UC1 );
-
-        // Nothing to do with a mask here. We do slidding window anyway.
-        run( src, out_sequence, component_rects, component_texts, component_confidences, component_level );
-    }
-
 private:
+    int win_size;
+    int step_size;
 
-    ////////////////////////////////////////////////////////////
+    vector< beamSearch_node > beam;
+    vector< vector<double> > recognition_probabilities;
+    vector<int> oversegmentation;
 
-    // TODO the way we expand nodes makes the recognition score heuristic not monotonic
-    // it should start from left node 0 and grow always to the right.
-
-    vector< vector<int> > generate_childs(vector<int> &segmentation, vector<int> &oversegmentation, set<unsigned long long int> &visited_nodes)
+    vector< vector<int> > generate_childs( vector<int> &segmentation )
     {
-        /*cout << " generate childs  for [";
-  for (size_t i = 0 ; i < segmentation .size(); i++)
-      cout << segmentation[i] << ",";
-  cout << "] ";*/
 
         vector< vector<int> > childs;
-        for (size_t i=0; i<oversegmentation.size(); i++)
+        for (size_t i=segmentation[segmentation.size()-1]+1; i<oversegmentation.size(); i++)
         {
-            int seg_point = oversegmentation[i];
+            int seg_point = i;
             if (find(segmentation.begin(), segmentation.end(), seg_point) == segmentation.end())
             {
-                //cout << seg_point << " " ;
                 vector<int> child = segmentation;
                 child.push_back(seg_point);
-                sort(child.begin(), child.end());
-                unsigned long long int key = 0;
-                for (size_t j=0; j<child.size(); j++)
-                {
-                    key += (unsigned long long int)pow(2,oversegmentation.size()-(oversegmentation.end()-find(oversegmentation.begin(), oversegmentation.end(), child[j])));
-                }
-                //if (!visited_nodes[key])
-                if (visited_nodes.find(key) == visited_nodes.end())
-                {
-                    childs.push_back(child);
-                    //visited_nodes[key] = true;
-                    visited_nodes.insert(key);
-                }
+                childs.push_back(child);
             }
         }
-        //cout << endl;
         return childs;
     }
 
-
-    ////////////////////////////////////////////////////////////
-
-    //TODO shall the beam itself be a member of the class?
-    void update_beam (vector< pair< double,vector<int> > > &beam, vector< vector<int> > &childs, vector< vector<double> > &recognition_probabilities)
+    void update_beam ( vector< vector<int> > &childs )
     {
         string out_sequence;
         double min_score = -DBL_MAX; //min score value to be part of the beam
-        if ((int)beam.size() == beam_size)
-            min_score = beam[beam.size()-1].first; //last element has the lowest score
+        if ((int)beam.size() >= beam_size)
+            min_score = beam[beam_size-1].score; //last element has the lowest score
+
         for (size_t i=0; i<childs.size(); i++)
         {
-            double score = score_segmentation(childs[i], recognition_probabilities, out_sequence);
+            double score = score_segmentation(childs[i], out_sequence);
             if (score > min_score)
             {
-                beam.push_back(pair< double,vector<int> >(score,childs[i]));
+                beamSearch_node node;
+                node.score = score;
+                node.segmentation = childs[i];
+                node.expanded = false;
+                beam.push_back(node);
                 sort(beam.begin(),beam.end(),beam_sort_function);
                 if ((int)beam.size() > beam_size)
                 {
-                    beam.pop_back();
-                    min_score = beam[beam.size()-1].first;
+                    beam.erase(beam.begin()+beam_size,beam.end());
+                    min_score = beam[beam.size()-1].score;
                 }
             }
         }
     }
 
 
-    ////////////////////////////////////////////////////////////
-    // TODO Add heuristics to the score function (see PhotoOCR paper)
-    // e.g.: in some cases we discard a segmentation because it includes a very large character
-    //       in other cases we do it because the overlapping between two chars is too large
-    //       etc.
-    double score_segmentation(vector<int> &segmentation, vector< vector<double> > &observations, string& outstring)
+    double score_segmentation( vector<int> &segmentation, string& outstring )
     {
 
-        //TODO This must be extracted from dictionary
+        // Score Heuristics:
+        // No need to use Viterbi to know a given segmentation is bad
+        // e.g.: in some cases we discard a segmentation because it includes a very large character
+        //       in other cases we do it because the overlapping between two chars is too large
+        // TODO  Add more heuristics (e.g. penalize large inter-character variance)
+
+        Mat interdist (segmentation.size()-1, 1, CV_32F, 1);
+        for (size_t i=0; i<segmentation.size()-1; i++)
+        {
+          interdist.at<float>(i,0) = oversegmentation[segmentation[i+1]]*step_size -
+                                     oversegmentation[segmentation[i]]*step_size;
+          if ((float)interdist.at<float>(i,0)/win_size > 2.25) // TODO explain how did you set this thrs
+          {
+             return -DBL_MAX;
+          }
+          if ((float)interdist.at<float>(i,0)/win_size < 0.15) // TODO explain how did you set this thrs
+          {
+             return -DBL_MAX;
+          }
+        }
+        Scalar m, std;
+        meanStdDev(interdist, m, std);
+        //double interdist_std = std[0];
+
+        //TODO Extracting start probs from lexicon (if we have it) may boost accuracy!
         vector<double> start_p(vocabulary.size());
         for (int i=0; i<(int)vocabulary.size(); i++)
             start_p[i] = log(1.0/vocabulary.size());
 
 
-        Mat V = Mat::ones((int)segmentation.size()-1,(int)vocabulary.size(),CV_64FC1);
+        Mat V = Mat::ones((int)segmentation.size(),(int)vocabulary.size(),CV_64FC1);
         V = V * -DBL_MAX;
         vector<string> path(vocabulary.size());
 
         // Initialize base cases (t == 0)
         for (int i=0; i<(int)vocabulary.size(); i++)
         {
-            V.at<double>(0,i) = start_p[i] + observations[segmentation[1]-1][i];
+            V.at<double>(0,i) = start_p[i] + recognition_probabilities[segmentation[0]][i];
             path[i] = vocabulary.at(i);
         }
 
 
         // Run Viterbi for t > 0
-        for (int t=1; t<(int)segmentation.size()-1; t++)
+        for (int t=1; t<(int)segmentation.size(); t++)
         {
 
             vector<string> newpath(vocabulary.size());
@@ -352,7 +416,7 @@ private:
                 int best_idx = 0;
                 for (int j=0; j<(int)vocabulary.size(); j++)
                 {
-                    double prob = V.at<double>(t-1,j) + transition_p.at<double>(j,i) + observations[segmentation[t+1]-1][i];
+                    double prob = V.at<double>(t-1,j) + transition_p.at<double>(j,i) + recognition_probabilities[segmentation[t]][i];
                     if ( prob > max_prob)
                     {
                         max_prob = prob;
@@ -372,7 +436,7 @@ private:
         int best_idx = 0;
         for (int i=0; i<(int)vocabulary.size(); i++)
         {
-            double prob = V.at<double>((int)segmentation.size()-2,i);
+            double prob = V.at<double>((int)segmentation.size()-1,i);
             if ( prob > max_prob)
             {
                 max_prob = prob;
@@ -380,9 +444,8 @@ private:
             }
         }
 
-        //cout << " score " << max_prob / (segmentation.size()-1) << " " << path[best_idx] << endl;
         outstring = path[best_idx];
-        return max_prob / (segmentation.size()-1);
+        return (max_prob / (segmentation.size()-1));
     }
 
 };
@@ -408,21 +471,24 @@ public:
 
     void eval( InputArray src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation );
 
+    int getWindowSize() {return window_size;}
+    int getStepSize() {return step_size;}
+    void setStepSize(int _step_size) {step_size = _step_size;}
+
 protected:
     void normalizeAndZCA(Mat& patches);
     double eval_feature(Mat& feature, double* prob_estimates);
 
 private:
-    //TODO implement getters/setters for some of these members (if apply)
-    int nr_class;		 // number of classes
+    int window_size; // window size
+    int step_size;   // sliding window step
+    int nr_class;    // number of classes
     int nr_feature;  // number of features
     Mat feature_min; // scale range
     Mat feature_max;
     Mat weights;     // Logistic Regression weights
     Mat kernels;     // CNN kernels
     Mat M, P;        // ZCA Whitening parameters
-    int step_size;   // sliding window step
-    int window_size; // window size
     int quad_size;
     int patch_size;
     int num_quads;   // extract 25 quads (12x12) from each image
@@ -449,26 +515,15 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
     else
         CV_Error(Error::StsBadArg, "Default classifier data file not found!");
 
-    // check all matrix dimensions match correctly and no one is empty
-    CV_Assert( (M.cols > 0) && (M.rows > 0) );
-    CV_Assert( (P.cols > 0) && (P.rows > 0) );
-    CV_Assert( (kernels.cols > 0) && (kernels.rows > 0) );
-    CV_Assert( (weights.cols > 0) && (weights.rows > 0) );
-    CV_Assert( (feature_min.cols > 0) && (feature_min.rows > 0) );
-    CV_Assert( (feature_max.cols > 0) && (feature_max.rows > 0) );
-
-    nr_feature  = weights.rows;
-    nr_class    = weights.cols;
-    patch_size  = (int)sqrt(kernels.cols);
-    // algorithm internal parameters
-    window_size = 32;
+    nr_feature = weights.rows;
+    nr_class   = weights.cols;
+    patch_size  = sqrt(kernels.cols);
+    window_size = 4*patch_size;
+    step_size   = 4;
     quad_size   = 12;
     num_quads   = 25;
     num_tiles   = 25;
-    alpha       = 0.5;
-
-    step_size   = 4; // TODO showld this be a parameter for the user?
-
+    alpha       = 0.5; // used in non-linear activation function z = max(0, |D*a| - alpha)
 }
 
 void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation)
@@ -493,7 +548,6 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
     resize(src,src,Size(window_size*src.cols/src.rows,window_size));
 
     int seg_points = 0;
-    oversegmentation.push_back(seg_points);
 
     Mat quad;
     Mat tmp;
@@ -584,18 +638,16 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
 
         double *p = new double[nr_class];
         double predict_label = eval_feature(feature,p);
-        //cout << " Prediction: " << vocabulary[predict_label] << " with probability " << p[0] << endl;
-        if (predict_label < 0)
-          CV_Error(Error::StsInternal, "OCRBeamSearchClassifierCNN::eval Error: unexpected prediction in eval_feature()");
+
+        if ( (predict_label < 0) || (predict_label > nr_class) )
+            CV_Error(Error::StsOutOfRange, "OCRBeamSearchClassifierCNN::eval Error: unexpected prediction in eval_feature()");
 
 
-        seg_points++;
-        oversegmentation.push_back(seg_points);
-        vector<double> recognition_p(p, p+nr_class*sizeof(double));
+        vector<double> recognition_p(p, p+nr_class);
         recognition_probabilities.push_back(recognition_p);
-
+        oversegmentation.push_back(seg_points);
+        seg_points++;
     }
-
 
 }
 

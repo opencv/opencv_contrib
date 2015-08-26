@@ -338,6 +338,9 @@ public:
         including 0 as start-sequence location.
          */
         virtual void eval( InputArray image, std::vector< std::vector<double> >& recognition_probabilities, std::vector<int>& oversegmentation );
+
+        int getWindowSize() {return 0;}
+        int getStepSize() {return 0;}
     };
 
 public:
@@ -396,7 +399,7 @@ public:
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
                                                                                        //     cols == rows == vocabulari.size()
                                      decoder_mode mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
-                                     int beam_size = 50);                              // Size of the beam in Beam Search algorithm
+                                     int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
 protected:
 
