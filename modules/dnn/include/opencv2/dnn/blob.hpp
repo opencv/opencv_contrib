@@ -84,7 +84,7 @@ namespace dnn
         /** @brief Returns the size of the specified @p axis.
          *
          * Does the same thing as size(int) const, but if non-existing axis will be passed then 1 will be returned,
-         * therefore this function always finishes successfuly.
+         * therefore this function always finishes successfully.
          */
         int xsize(int axis) const;
 
@@ -152,7 +152,7 @@ namespace dnn
         /** @brief Returns the size of the specified @p axis.
          *
          * Does the same thing as size(int) const, but if non-existing axis will be passed then 1 will be returned,
-         * therefore this function always finishes successfuly.
+         * therefore this function always finishes successfully.
          */
         int xsize(int axis) const;
 
@@ -172,21 +172,18 @@ namespace dnn
         /** @brief Checks equality of two blobs shapes. */
         bool equalShape(const Blob &other) const;
 
-        /** @brief Returns sclice of first two dimensions.
-         *  @details The behavior is similar to the following numpy code: blob[n, cn, ...]
+        /** @brief Returns slice of first two dimensions.
+         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
          */
         Mat getPlane(int n, int cn);
 
-        /** @addtogroup Shape getters of 4-dimensional blobs.
-         *  @{
-         */
+        /* Shape getters of 4-dimensional blobs. */
         int cols() const;       //!< Returns size of the fourth axis blob.
         int rows() const;       //!< Returns size of the thrid  axis blob.
         int channels() const;   //!< Returns size of the second axis blob.
         int num() const;        //!< Returns size of the first  axis blob.
         Size size2() const;     //!< Returns cv::Size(cols(), rows())
-        Vec4i shape4() const;   //!< Returns shape of firt four blob axes.
-        /** @}*/
+        Vec4i shape4() const;   //!< Returns shape of first four blob axes.
 
         /** @brief Returns linear index of the element with specified coordinates in the blob.
          *
@@ -198,9 +195,7 @@ namespace dnn
         /** @overload */
         size_t offset(int n = 0, int cn = 0, int row = 0, int col = 0) const;
 
-        /** @addtogroup CPU pointer getters
-         *  @{
-         */
+        /* CPU pointer getters */
         /** @brief Returns pointer to the blob element with the specified position, stored in CPU memory.
          *
          * @p n correspond to the first axis, @p cn - to the second, etc.
@@ -214,7 +209,6 @@ namespace dnn
         /** @overload ptr<float>() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
-        /** @}*/
 
         /** @brief Shares data from other @p blob.
          * @returns *this

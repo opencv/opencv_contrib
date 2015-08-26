@@ -116,14 +116,14 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         String type; //!< Type name which was used for creating layer by layer factory.
 
         Layer();
-        explicit Layer(const LayerParams &params); //!< Intialize only #name, #type and #blobs fields.
+        explicit Layer(const LayerParams &params); //!< Initialize only #name, #type and #blobs fields.
         virtual ~Layer();
     };
 
-    /** @brief This class allows to create and maunipulate comprehensive artifical neural networks.
+    /** @brief This class allows to create and manipulate comprehensive artificial neural networks.
      *
      * Neural network is presented as directed acyclic graph (DAG), where vertices are Layer instances,
-     * and edges specify relationships between layers inputs and ouputs.
+     * and edges specify relationships between layers inputs and outputs.
      *
      * Each network layer has unique integer id and unique string name inside its network.
      * LayerId can store either layer name or layer id.
@@ -165,7 +165,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @param inpPin descriptor of the second layer input.
          *
          * Descriptors have the following template <DFN>&lt;layer_name&gt;[.input_number]</DFN>:
-         * - the first part of the tamplate <DFN>layer_name</DFN> is sting name of the added layer.
+         * - the first part of the template <DFN>layer_name</DFN> is sting name of the added layer.
          *   If this part is empty then the network input pseudo layer will be used;
          * - the second optional part of the template <DFN>input_number</DFN>
          *   is either number of the layer input, either label one.

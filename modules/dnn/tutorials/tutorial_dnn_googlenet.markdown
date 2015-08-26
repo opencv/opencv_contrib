@@ -56,7 +56,7 @@ Explanation
    We put the output of "prob" layer, which contain probabilities for each of 1000 ILSVRC2012 image classes, to the `prob` blob.
    And find the index of element with maximal value in this one. This index correspond to the class of the image.
 
--# Print the results
+-# Print results
    @snippet dnn/samples/caffe_googlenet.cpp print_info
    For our image we get:
 > Best class: #812 'space shuttle'

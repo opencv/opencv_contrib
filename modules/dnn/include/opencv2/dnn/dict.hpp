@@ -72,7 +72,7 @@ struct DictValue
     static DictValue arrayString(TypeIter begin, int size); //!< Constructs array of strings
 
     template<typename T>
-    T get(int idx = -1) const; //!< Tries to convert array element with specified index to requested type and returns it.
+    T get(int idx = -1) const; //!< Tries to convert array element with specified index to requested type and returns its.
 
     int size() const;
 
