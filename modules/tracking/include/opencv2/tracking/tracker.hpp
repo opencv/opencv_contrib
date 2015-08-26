@@ -1243,6 +1243,118 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
   BOILERPLATE_CODE("KCF",TrackerKCF);
 };
 
+/************************************ MultiTracker Class ************************************/
+/** @brief This class is used to track multiple objects using the specified tracker algorithm.
+ * The MultiTracker is naive implementation of multiple object tracking.
+ * It process the tracked objects independently without any optimization accross the tracked objects.
+ */
+class CV_EXPORTS_W MultiTracker
+{
+ public:
+
+  /**
+  * \brief Constructor.
+  * In the case of trackerType is given, it will be set as the default algorithm for all trackers.
+  * @param trackerType the name of the tracker algorithm to be used
+  */
+  MultiTracker(const String& trackerType = "" );
+
+  /**
+   * \brief Destructor
+   */
+  ~MultiTracker();
+
+  /**
+  * \brief Add a new object to be tracked.
+  * The defaultAlgorithm will be used the newly added tracker.
+  * @param image input image
+  * @param boundingBox a rectangle represents ROI of the tracked object
+  */
+  bool add( const Mat& image, const Rect2d& boundingBox );
+
+  /**
+  * \brief Add a new object to be tracked.
+  * @param trackerType the name of the tracker algorithm to be used
+  * @param image input image
+  * @param boundingBox a rectangle represents ROI of the tracked object
+  */
+  bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
+
+  /**
+  * \brief Add a set of objects to be tracked.
+  * @param trackerType the name of the tracker algorithm to be used
+  * @param image input image
+  * @param boundingBox list of the tracked objects
+  */
+  bool add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox);
+
+  /**
+  * \brief Add a set of objects to be tracked using the defaultAlgorithm tracker.
+  * @param image input image
+  * @param boundingBox list of the tracked objects
+  */
+  bool add(const Mat& image, std::vector<Rect2d> boundingBox);
+
+  /**
+  * \brief Update the current tracking status.
+  * The result will be saved in the internal storage.
+  * @param image input image
+  */
+  bool update( const Mat& image);
+
+  //!<  storage for the tracked objects, each object corresponds to one tracker algorithm.
+  std::vector<Rect2d> objects;
+
+  /**
+  * \brief Update the current tracking status.
+  * @param image input image
+  * @param boundingBox the tracking result, represent a list of ROIs of the tracked objects.
+  */
+  bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
+
+ protected:
+  //!<  storage for the tracker algorithms.
+  std::vector< Ptr<Tracker> > trackerList;
+
+  //!<  default algorithm for the tracking method.
+  String defaultAlgorithm;
+};
+
+class ROISelector {
+public:
+  Rect2d select(Mat img, bool fromCenter = true);
+  Rect2d select(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
+  void select(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+
+  struct handlerT{
+    // basic parameters
+    bool isDrawing;
+    Rect2d box;
+    Mat image;
+
+    // parameters for drawing from the center
+    bool drawFromCenter;
+    Point2f center;
+
+    // initializer list
+    handlerT(): isDrawing(false), drawFromCenter(true) {};
+  }selectorParams;
+
+  // to store the tracked objects
+  std::vector<handlerT> objects;
+
+private:
+  static void mouseHandler(int event, int x, int y, int flags, void *param);
+  void opencv_mouse_callback( int event, int x, int y, int , void *param );
+
+  // save the keypressed characted
+  int key;
+};
+
+Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
+Rect2d CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
+void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+
 //! @}
 
 } /* namespace cv */
