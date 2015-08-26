@@ -53,19 +53,6 @@
 #include <fstream>
 #include <stdlib.h>
 
-#ifdef _MSC_VER
-    #if (_MSC_VER <= 1700)
-        /* This function rounds x to the nearest integer, but rounds halfway cases away from zero. */
-        static inline double round(double x)
-        {
-            if (x < 0.0)
-                return ceil(x - 0.5);
-            else
-                return floor(x + 0.5);
-        }
-    #endif
-#endif
-
 namespace cv
 {
 namespace xfeatures2d
