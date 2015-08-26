@@ -39,12 +39,13 @@ int main(int argc, char* argv[])
     string vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the clasifier output classes
     vector<string> lexicon;  // a list of words expected to be found on the input image
     lexicon.push_back(string("abb"));
-    lexicon.push_back(string("patata"));
+    lexicon.push_back(string("riser"));
     lexicon.push_back(string("CHINA"));
     lexicon.push_back(string("HERE"));
     lexicon.push_back(string("President"));
     lexicon.push_back(string("smash"));
     lexicon.push_back(string("KUALA"));
+    lexicon.push_back(string("Produkt"));
     lexicon.push_back(string("NINTENDO"));
 
     // Create tailored language model a small given lexicon
@@ -54,16 +55,18 @@ int main(int argc, char* argv[])
     // An alternative would be to load the default generic language model
     //    (created from ispell 42869 english words list)
     /*Mat transition_p;
-    string filename = "OCRHMM_transitions_table.xml"; // TODO use same order for voc
+    string filename = "OCRHMM_transitions_table.xml";
     FileStorage fs(filename, FileStorage::READ);
     fs["transition_probabilities"] >> transition_p;
     fs.release();*/
 
     Mat emission_p = Mat::eye(62,62,CV_64FC1);
 
+    // Notice we set here a beam size of 50. This is much faster than using the default value (500).
+    // 50 works well with our tiny lexicon example, but may not with larger dictionaries.
     Ptr<OCRBeamSearchDecoder> ocr = OCRBeamSearchDecoder::create(
                 loadOCRBeamSearchClassifierCNN("OCRBeamSearch_CNN_model_data.xml.gz"),
-                vocabulary, transition_p, emission_p);
+                vocabulary, transition_p, emission_p, OCR_DECODER_VITERBI, 50);
 
     double t_r = (double)getTickCount();
     string output;
