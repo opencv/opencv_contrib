@@ -7,8 +7,8 @@ Goal
 In this tutorial you will learn how to
 
 -   Create a tracker object.
--   Using the roiSelector function to select ROI from a given image.
--   Track a specific region from a given image.
+-   Use the roiSelector function to select a ROI from a given image.
+-   Track a specific region in a given image.
 
 Source Code
 -----------
@@ -25,10 +25,10 @@ Explanation
     In this tutorial, you can choose between video or list of images for the program input.
     As written in the help, you should specify the input video as parameter of the program.
     If you want to use image list as input, the image list should have formatted numbering
-    as shown in help. In the help, it means that the image fils are numbered with 4 digits
+    as shown in help. In the help, it means that the image files are numbered with 4 digits
     (e.g. the file naming will be 0001.jpg, 0002.jpg, and so on).
 
-    You can find samples video in Itseez/opencv_extra/testdata/cv/tracking
+    You can find video samples in Itseez/opencv_extra/testdata/cv/tracking
     <https://github.com/Itseez/opencv_extra/tree/master/testdata/cv/tracking>
 
 -#  **Declares the required variables**
@@ -44,7 +44,7 @@ Explanation
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp create
 
-    There are at least 5 types of tracker algorithm can be used:
+    There are at least 5 types of tracker algorithms that can be used:
     + MIL
     + BOOSTING
     + MEDIANFLOW
@@ -58,7 +58,7 @@ Explanation
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp selectroi
 
     Using this function, you can select the bounding box of the tracked object using a GUI.
-    With default parameters, the selection is started from the center of the box and middle cross will be shown.
+    With default parameters, the selection is started from the center of the box and a middle cross will be shown.
     See @ref cv::selectROI for more detailed information.
 
 -#  **Initializing the tracker object**
