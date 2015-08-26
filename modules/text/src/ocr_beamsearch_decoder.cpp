@@ -371,7 +371,7 @@ private:
         Mat interdist ((int)segmentation.size()-1, 1, CV_32F, 1);
         for (size_t i=0; i<segmentation.size()-1; i++)
         {
-          interdist.at<float>((int)i,0) = (float)oversegmentation[segmentation[(int)i+1]]*step_size 
+          interdist.at<float>((int)i,0) = (float)oversegmentation[segmentation[(int)i+1]]*step_size
                                           - (float)oversegmentation[segmentation[(int)i]]*step_size;
           if ((float)interdist.at<float>((int)i,0)/win_size > 2.25) // TODO explain how did you set this thrs
           {
