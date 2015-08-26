@@ -212,7 +212,8 @@ void WBDetectorImpl::detect(
     assert(confidences.size() == bboxes.size());
 }
 
-Ptr<WBDetector> create_wbdetector()
+Ptr<WBDetector>
+WBDetector::create()
 {
     return Ptr<WBDetector>(new WBDetectorImpl());
 }

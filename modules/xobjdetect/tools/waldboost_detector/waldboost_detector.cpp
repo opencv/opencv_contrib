@@ -16,11 +16,12 @@ int main(int argc, char **argv)
     }
 
     string mode = argv[1];
-    Ptr<WBDetector> detector = create_wbdetector();
+    Ptr<WBDetector> detector = WBDetector::create();
     if (mode == "train") {
         assert(argc == 5);
         detector->train(argv[3], argv[4]);
         FileStorage fs(argv[2], FileStorage::WRITE);
+        fs << "waldboost";
         detector->write(fs);
     } else if (mode == "detect") {
         assert(argc == 6);
@@ -28,7 +29,7 @@ int main(int argc, char **argv)
         vector<double> confidences;
         Mat img = imread(argv[3], CV_LOAD_IMAGE_GRAYSCALE);
         FileStorage fs(argv[2], FileStorage::READ);
-        detector->read(fs["waldboost"]);
+        detector->read(fs.getFirstTopLevelNode());
         detector->detect(img, bboxes, confidences);
 
         FILE *fhandle = fopen(argv[5], "a");

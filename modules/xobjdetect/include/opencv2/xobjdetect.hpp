@@ -53,25 +53,51 @@ namespace cv
 {
 namespace xobjdetect
 {
+//! @addtogroup xobjdetect
+//! @{
 
+
+/** @brief WaldBoost detector
+*/
 class CV_EXPORTS WBDetector {
 public:
+    /** @brief Read detector from FileNode.
+    @param node FileNode for input
+    */
     virtual void read(const FileNode &node) = 0;
+
+    /** @brief Write detector to FileStorage.
+    @param fs FileStorage for output
+    */
     virtual void write(FileStorage &fs) const = 0;
 
+    /** @brief Train WaldBoost detector
+    @param pos_samples Path to directory with cropped positive samples
+    @param neg_imgs Path to directory with negative (background) images
+    */
     virtual void train(
         const std::string& pos_samples,
         const std::string& neg_imgs) = 0;
 
+    /** @brief Detect objects on image using WaldBoost detector
+    @param img Input image for detection
+    @param bboxes Bounding boxes coordinates output vector
+    @param confidences Confidence values for bounding boxes output vector
+    */
     virtual void detect(
         const Mat& img,
         std::vector<Rect> &bboxes,
         std::vector<double> &confidences) = 0;
 
+    /** @brief Create instance of WBDetector
+    */
+    static Ptr<WBDetector> create();
+
     virtual ~WBDetector(){}
 };
 
-CV_EXPORTS Ptr<WBDetector> create_wbdetector();
+
+//! @}
 
 } /* namespace xobjdetect */
 } /* namespace cv */

@@ -365,7 +365,7 @@ int WaldBoost::predict(Ptr<CvFeatureEvaluator> eval, float *h) const
 
 void WaldBoost::write(FileStorage &fs) const
 {
-    fs << "waldboost" << "{";
+    fs << "{";
     fs << "waldboost_params"
        << "{" << "weak_count" << weak_count_ << "}";
 
