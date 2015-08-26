@@ -211,7 +211,7 @@ public:
             if (recognition_probabilities[i][j] > best_p)
             {
               best_p = recognition_probabilities[i][j];
-              best_idx = j;
+              best_idx = (int)j;
             }
           }
 
@@ -261,8 +261,8 @@ public:
           {
 
             beamSearch_node node;
-            node.segmentation.push_back(i);
-            node.segmentation.push_back(j);
+            node.segmentation.push_back((int)i);
+            node.segmentation.push_back((int)j);
             node.score = score_segmentation(node.segmentation, out_sequence);
             vector< vector<int> > childs = generate_childs( node.segmentation );
             node.expanded = true;
@@ -320,7 +320,7 @@ private:
         vector< vector<int> > childs;
         for (size_t i=segmentation[segmentation.size()-1]+1; i<oversegmentation.size(); i++)
         {
-            int seg_point = i;
+            int seg_point = (int)i;
             if (find(segmentation.begin(), segmentation.end(), seg_point) == segmentation.end())
             {
                 vector<int> child = segmentation;
@@ -368,16 +368,16 @@ private:
         //       in other cases we do it because the overlapping between two chars is too large
         // TODO  Add more heuristics (e.g. penalize large inter-character variance)
 
-        Mat interdist (segmentation.size()-1, 1, CV_32F, 1);
+        Mat interdist ((int)segmentation.size()-1, 1, CV_32F, 1);
         for (size_t i=0; i<segmentation.size()-1; i++)
         {
-          interdist.at<float>(i,0) = oversegmentation[segmentation[i+1]]*step_size -
-                                     oversegmentation[segmentation[i]]*step_size;
-          if ((float)interdist.at<float>(i,0)/win_size > 2.25) // TODO explain how did you set this thrs
+          interdist.at<float>(i,0) = (float)oversegmentation[segmentation[(int)i+1]]*step_size -
+                                     (float)oversegmentation[segmentation[(int)i]]*step_size;
+          if ((float)interdist.at<float>((int)i,0)/win_size > 2.25) // TODO explain how did you set this thrs
           {
              return -DBL_MAX;
           }
-          if ((float)interdist.at<float>(i,0)/win_size < 0.15) // TODO explain how did you set this thrs
+          if ((float)interdist.at<float>((int)i,0)/win_size < 0.15) // TODO explain how did you set this thrs
           {
              return -DBL_MAX;
           }
@@ -517,7 +517,7 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
 
     nr_feature = weights.rows;
     nr_class   = weights.cols;
-    patch_size  = sqrt(kernels.cols);
+    patch_size  = (int)sqrt(kernels.cols);
     window_size = 4*patch_size;
     step_size   = 4;
     quad_size   = 12;
