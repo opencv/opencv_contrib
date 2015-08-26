@@ -7,7 +7,7 @@ Introduction
 In this tutorial you will learn how to use opencv_dnn module for image classification by using
 GoogLeNet trained network from [Caffe model zoo](http://caffe.berkeleyvision.org/model_zoo.html).
 
-We will demostrate results of this example on the following picture.
+We will demonstrate results of this example on the following picture.
 ![Buran space shuttle](images/space_shuttle.jpg)
 
 Source Code
