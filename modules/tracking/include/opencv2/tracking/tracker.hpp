@@ -1204,53 +1204,173 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
  */
 class CV_EXPORTS_W TrackerKCF : public Tracker
 {
- public:
-  /**
-   * \brief Feature type to be used in the tracking grayscale, colornames, compressed color-names
-   * The modes available now:
-    -   "GRAY" -- Use grayscale values as the feature
-    -   "CN" -- Color-names feature
-   */
-  enum MODE {GRAY, CN, CN2};
+public:
+	/**
+	* \brief Feature type to be used in the tracking grayscale, colornames, compressed color-names
+	* The modes available now:
+	-   "GRAY" -- Use grayscale values as the feature
+	-   "CN" -- Color-names feature
+	*/
+	enum MODE {
+		GRAY = (1u << 0),
+		CN = (1u << 1),
+		CUSTOM = (1u << 2)
+	};
 
-  struct CV_EXPORTS Params
-  {
-    /**
-     * \brief Constructor
-     */
-    Params();
+	struct CV_EXPORTS Params
+	{
+		/**
+		* \brief Constructor
+		*/
+		Params();
 
-    /**
-     * \brief Read parameters from file, currently unused
-     */
-    void read( const FileNode& /*fn*/ );
+		/**
+		* \brief Read parameters from file, currently unused
+		*/
+		void read(const FileNode& /*fn*/);
 
-    /**
-     * \brief Read parameters from file, currently unused
-     */
-    void write( FileStorage& /*fs*/ ) const;
+		/**
+		* \brief Read parameters from file, currently unused
+		*/
+		void write(FileStorage& /*fs*/) const;
 
-    double sigma;                 //!<  gaussian kernel bandwidth
-    double lambda;                //!<  regularization
-    double interp_factor;         //!<  linear interpolation factor for adaptation
-    double output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
-    double pca_learning_rate;     //!<  compression learning rate
-    bool resize;                  //!<  activate the resize feature to improve the processing speed
-    bool split_coeff;             //!<  split the training coefficients into two matrices
-    bool wrap_kernel;             //!<  wrap around the kernel values
-    bool compress_feature;        //!<  activate the pca method to compress the features
-    int max_patch_size;           //!<  threshold for the ROI size
-    int compressed_size;          //!<  feature size after compression
-    MODE descriptor;              //!<  descriptor type
-  };
+		double sigma;                 //!<  gaussian kernel bandwidth
+		double lambda;                //!<  regularization
+		double interp_factor;         //!<  linear interpolation factor for adaptation
+		double output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
+		double pca_learning_rate;     //!<  compression learning rate
+		bool resize;                  //!<  activate the resize feature to improve the processing speed
+		bool split_coeff;             //!<  split the training coefficients into two matrices
+		bool wrap_kernel;             //!<  wrap around the kernel values
+		bool compress_feature;        //!<  activate the pca method to compress the features
+		int max_patch_size;           //!<  threshold for the ROI size
+		int compressed_size;          //!<  feature size after compression
+		unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
+		unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
+	};
 
-  /** @brief Constructor
-      @param parameters KCF parameters TrackerKCF::Params
-  */
-  BOILERPLATE_CODE("KCF",TrackerKCF);
+	virtual void setFeatureExtractor(void(*)(const Mat, const Rect, Mat&), bool pca_func = false);
+
+	/** @brief Constructor
+	@param parameters KCF parameters TrackerKCF::Params
+	*/
+	BOILERPLATE_CODE("KCF", TrackerKCF);
 };
 
-/************************************ Multi-Tracker Classes ************************************/
+/************************************ MultiTracker Class ---By Laksono Kurnianggoro---) ************************************/
+/** @brief This class is used to track multiple objects using the specified tracker algorithm.
+* The MultiTracker is naive implementation of multiple object tracking.
+* It process the tracked objects independently without any optimization accross the tracked objects.
+*/
+class CV_EXPORTS_W MultiTracker
+{
+public:
+
+	/**
+	* \brief Constructor.
+	* In the case of trackerType is given, it will be set as the default algorithm for all trackers.
+	* @param trackerType the name of the tracker algorithm to be used
+	*/
+	MultiTracker(const String& trackerType = "");
+
+	/**
+	* \brief Destructor
+	*/
+	~MultiTracker();
+
+	/**
+	* \brief Add a new object to be tracked.
+	* The defaultAlgorithm will be used the newly added tracker.
+	* @param image input image
+	* @param boundingBox a rectangle represents ROI of the tracked object
+	*/
+	bool add(const Mat& image, const Rect2d& boundingBox);
+
+	/**
+	* \brief Add a new object to be tracked.
+	* @param trackerType the name of the tracker algorithm to be used
+	* @param image input image
+	* @param boundingBox a rectangle represents ROI of the tracked object
+	*/
+	bool add(const String& trackerType, const Mat& image, const Rect2d& boundingBox);
+
+	/**
+	* \brief Add a set of objects to be tracked.
+	* @param trackerType the name of the tracker algorithm to be used
+	* @param image input image
+	* @param boundingBox list of the tracked objects
+	*/
+	bool add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox);
+
+	/**
+	* \brief Add a set of objects to be tracked using the defaultAlgorithm tracker.
+	* @param image input image
+	* @param boundingBox list of the tracked objects
+	*/
+	bool add(const Mat& image, std::vector<Rect2d> boundingBox);
+
+	/**
+	* \brief Update the current tracking status.
+	* The result will be saved in the internal storage.
+	* @param image input image
+	*/
+	bool update(const Mat& image);
+
+	//!<  storage for the tracked objects, each object corresponds to one tracker algorithm.
+	std::vector<Rect2d> objects;
+
+	/**
+	* \brief Update the current tracking status.
+	* @param image input image
+	* @param boundingBox the tracking result, represent a list of ROIs of the tracked objects.
+	*/
+	bool update(const Mat& image, std::vector<Rect2d> & boundingBox);
+
+protected:
+	//!<  storage for the tracker algorithms.
+	std::vector< Ptr<Tracker> > trackerList;
+
+	//!<  default algorithm for the tracking method.
+	String defaultAlgorithm;
+};
+
+class ROISelector {
+public:
+	Rect2d select(Mat img, bool fromCenter = true);
+	Rect2d select(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
+	void select(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+
+	struct handlerT{
+		// basic parameters
+		bool isDrawing;
+		Rect2d box;
+		Mat image;
+
+		// parameters for drawing from the center
+		bool drawFromCenter;
+		Point2f center;
+
+		// initializer list
+		handlerT() : isDrawing(false), drawFromCenter(true) {};
+	}selectorParams;
+
+	// to store the tracked objects
+	std::vector<handlerT> objects;
+
+private:
+	static void mouseHandler(int event, int x, int y, int flags, void *param);
+	void opencv_mouse_callback(int event, int x, int y, int, void *param);
+
+	// save the keypressed characted
+	int key;
+};
+
+Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
+Rect2d CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
+void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+
+
+/************************************ Multi-Tracker Classes ---By Tyan Vladimir---************************************/
 
 /** @brief Base abstract class for the long-term Multi Object Trackers:
 
@@ -1261,7 +1381,7 @@ class CV_EXPORTS_W MultiTracker_Alt
 public:
 	/** @brief Constructor for Multitracker
 	*/
-	MultiTracker()
+	MultiTracker_Alt()
 	{
 		targetNum = 0;
 	}
@@ -1277,6 +1397,7 @@ public:
 
 	/** @brief Update all trackers from the tracking-list, find a new most likely bounding boxes for the targets
 	@param image The current frame
+
 	@return True means that all targets were located and false means that tracker couldn't locate one of the targets in
 	current frame. Note, that latter *does not* imply that tracker has failed, maybe target is indeed
 	missing from the frame (say, out of sight)

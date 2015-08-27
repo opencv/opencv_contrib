@@ -44,7 +44,7 @@
 namespace cv
 {
 	//Multitracker
-	bool MultiTracker::addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name)
+	bool MultiTracker_Alt::addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name)
 	{
 		Ptr<Tracker> tracker = Tracker::create(tracker_algorithm_name);
 		if (tracker == NULL)
@@ -73,7 +73,7 @@ namespace cv
 		return true;
 	}
 
-	bool MultiTracker::update(const Mat& image)
+	bool MultiTracker_Alt::update(const Mat& image)
 	{
 		for (int i = 0; i < (int)trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
