@@ -48,7 +48,7 @@ namespace cv
 {
 	namespace tld
 	{
-		CV_EXPORTS cv::Rect2d tld_InitDataset(int datasetInd, const char* rootPath = "TLD_dataset");
+		CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
 		CV_EXPORTS cv::Mat tld_getNextDatasetFrame();
 	}
 }
