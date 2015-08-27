@@ -20,7 +20,7 @@ Explanation
 -----------
 
 This part explains how to set custom parameters and use your own feature-extractor function for the CN tracker.
-If you need a more detailed information to use @ref cv:Tracker, please refer to @ref tutorial_introduction_to_tracker.
+If you need a more detailed information to use @ref cv::Tracker, please refer to @ref tutorial_introduction_to_tracker.
 
 -#  **Set Custom Parameters**
 
