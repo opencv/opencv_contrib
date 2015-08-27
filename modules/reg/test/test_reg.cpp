@@ -244,7 +244,7 @@ void RegTest::testProjective()
 
 void RegTest::loadImage()
 {
-    const string imageName = cvtest::TS::ptr()->get_data_path() + "home.png";
+    const string imageName = cvtest::TS::ptr()->get_data_path() + "reg/home.png";
 
     img1 = imread(imageName, -1);
     ASSERT_TRUE(img1.data != 0);
