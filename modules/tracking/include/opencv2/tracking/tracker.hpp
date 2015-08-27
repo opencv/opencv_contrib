@@ -1204,7 +1204,11 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     -   "GRAY" -- Use grayscale values as the feature
     -   "CN" -- Color-names feature
    */
-  enum MODE {GRAY, CN, CN2};
+  enum MODE {
+    GRAY = (1u << 0),
+    CN = (1u << 1),
+    CUSTOM = (1u<<2)
+  };
 
   struct CV_EXPORTS Params
   {
@@ -1234,8 +1238,11 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
     bool compress_feature;        //!<  activate the pca method to compress the features
     int max_patch_size;           //!<  threshold for the ROI size
     int compressed_size;          //!<  feature size after compression
-    MODE descriptor;              //!<  descriptor type
+    unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
+    unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
   };
+
+  virtual void setFeatureExtractor(void (*)(const Mat, const Rect, Mat&), bool pca_func = false);
 
   /** @brief Constructor
       @param parameters KCF parameters TrackerKCF::Params
@@ -1355,8 +1362,8 @@ Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
 Rect2d CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
 void CV_EXPORTS_W selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
 
-//! @}
-
 } /* namespace cv */
+
+//! @}
 
 #endif
