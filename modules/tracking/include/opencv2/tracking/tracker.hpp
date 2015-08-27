@@ -1256,7 +1256,7 @@ class CV_EXPORTS_W TrackerKCF : public Tracker
 
 @sa Tracker, MultiTrackerTLD
 */
-class CV_EXPORTS_W MultiTracker
+class CV_EXPORTS_W MultiTracker_Alt
 {
 public:
 	/** @brief Constructor for Multitracker
