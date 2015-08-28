@@ -315,57 +315,31 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     int nScales = (params.adaptiveThreshWinSizeMax - params.adaptiveThreshWinSizeMin) /
                       params.adaptiveThreshWinSizeStep + 1;
 
-    // if only one scale
-    if(nScales == 1) {
-        int scale = params.adaptiveThreshWinSizeMin;
-        // treshold
-        Mat thresh;
-        _threshold(grey, thresh, scale, params.adaptiveThreshConstant);
+    vector< vector< vector< Point2f > > > candidatesArrays(nScales);
+    vector< vector< vector< Point > > > contoursArrays(nScales);
 
-        // detect rectangles
-        vector< vector< Point2f > > currentCandidates;
-        vector< vector< Point > > currentContours;
-        _findMarkerContours(thresh, currentCandidates, currentContours,
-                            params.minMarkerPerimeterRate, params.maxMarkerPerimeterRate,
-                            params.polygonalApproxAccuracyRate, params.minCornerDistanceRate,
-                            params.minDistanceToBorder);
+    ////for each value in the interval of thresholding window sizes
+    // for(int i = 0; i < nScales; i++) {
+    //    int currScale = params.adaptiveThreshWinSizeMin + i*params.adaptiveThreshWinSizeStep;
+    //    // treshold
+    //    Mat thresh;
+    //    _threshold(grey, thresh, currScale, params.adaptiveThreshConstant);
+    //    // detect rectangles
+    //    _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
+    // params.minMarkerPerimeterRate,
+    //                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
+    //                        params.minCornerDistance, params.minDistanceToBorder);
+    //}
 
-        // join candidates
-        for(unsigned int i = 0; i < currentCandidates.size(); i++) {
-            candidates.push_back(currentCandidates[i]);
-            contours.push_back(currentContours[i]);
-        }
-    }
+    // this is the parallel call for the previous commented loop (result is equivalent)
+    parallel_for_(Range(0, nScales), DetectInitialCandidatesParallel(&grey, &candidatesArrays,
+                                                                     &contoursArrays, &params));
 
-    // if more than one scale, do it in parallel
-    else {
-
-        vector< vector< vector< Point2f > > > candidatesArrays(nScales);
-        vector< vector< vector< Point > > > contoursArrays(nScales);
-
-        ////for each value in the interval of thresholding window sizes
-        // for(int i = 0; i < nScales; i++) {
-        //    int currScale = params.adaptiveThreshWinSizeMin + i*params.adaptiveThreshWinSizeStep;
-        //    // treshold
-        //    Mat thresh;
-        //    _threshold(grey, thresh, currScale, params.adaptiveThreshConstant);
-        //    // detect rectangles
-        //    _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
-        // params.minMarkerPerimeterRate,
-        //                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
-        //                        params.minCornerDistance, params.minDistanceToBorder);
-        //}
-
-        // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, nScales), DetectInitialCandidatesParallel(&grey, &candidatesArrays,
-                                                                         &contoursArrays, &params));
-
-        // join candidates
-        for(int i = 0; i < nScales; i++) {
-            for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
-                candidates.push_back(candidatesArrays[i][j]);
-                contours.push_back(contoursArrays[i][j]);
-            }
+    // join candidates
+    for(int i = 0; i < nScales; i++) {
+        for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
+            candidates.push_back(candidatesArrays[i][j]);
+            contours.push_back(contoursArrays[i][j]);
         }
     }
 }
