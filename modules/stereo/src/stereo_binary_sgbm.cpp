@@ -697,9 +697,9 @@ namespace cv
                     if(previous_size != width * height)
                     {
                         previous_size = width * height;
-                        specklePointX = new int[width * height];
-                        specklePointY = new int[width * height];
-                        pus = new long long[width * height];
+                        speckleX.create(height,width,CV_32SC4);
+                        speckleY.create(height,width,CV_32SC4);
+                        puss.create(height,width,CV_32SC4);
                     }
                     double minVal; double maxVal;
                     Mat imgDisparity8U2;

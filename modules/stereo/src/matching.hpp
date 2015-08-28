@@ -359,9 +359,12 @@ namespace cv
             };
         protected:
             //arrays used in the region removal
-            int *specklePointX;
-            int *specklePointY;
-            long long *pus;
+            Mat speckleY;
+            Mat speckleX;
+            Mat puss;
+            //int *specklePointX;
+            //int *specklePointY;
+            //long long *pus;
             int previous_size;
             //!method for setting the maximum disparity
             void setMaxDisparity(int val)
@@ -470,6 +473,9 @@ namespace cv
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
                 CV_Assert(t >= 0);
+                int *pus = (int *)puss.data;
+                int *specklePointX = (int *)speckleX.data;
+                int *specklePointY = (int *)speckleY.data;
                 memset(pus, 0, previous_size * sizeof(pus[0]));
                 uint8_t *map = currentMap.data;
                 uint8_t *outputMap = out.data;

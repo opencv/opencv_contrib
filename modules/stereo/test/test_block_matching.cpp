@@ -84,6 +84,9 @@ void CV_BlockMatchingTest::run(int )
 {
     Mat image1, image2, gt;
     //some test images can be found in the test data folder
+    //in order for the tests to build succesfully please replace
+    //ts->get_data_path() + "testdata/imL2l.bmp with the path from your disk
+    //for example if your images are on D:\\ , please write D:\\testdata\\imL2l.bmp
     image1 = imread(ts->get_data_path() + "testdata/imL2l.bmp", CV_8UC1);
     image2 = imread(ts->get_data_path() + "testdata/imL2.bmp", CV_8UC1);
     gt = imread(ts->get_data_path() + "testdata/groundtruth.bmp", CV_8UC1);
