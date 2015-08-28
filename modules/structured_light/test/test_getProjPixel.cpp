@@ -73,12 +73,12 @@ void CV_GetProjPixelTest::run( int )
 
   Point projPixel;
 
-  size_t image_width = pattern[0].cols;
-  size_t image_height = pattern[0].rows;
+  int image_width = pattern[0].cols;
+  int image_height = pattern[0].rows;
 
-  for( size_t i = 0; i < image_width; i++ )
+  for( int i = 0; i < image_width; i++ )
   {
-    for( size_t j = 0; j < image_height; j++ )
+    for( int j = 0; j < image_height; j++ )
     {
       //for a (x,y) pixel of the camera returns the corresponding projector pixel
       bool error = graycode->getProjPixel( pattern, i, j, projPixel );
