@@ -95,8 +95,11 @@ namespace cv
                         mini3 = c[(iw + i * search_region) * widthDisp2 + i];
                     }
                 }
-                if (mini3 / mini <= confidence)
-                    return index;
+                if(mini != 0)
+                {
+                    if (mini3 / mini <= confidence)
+                        return index;
+                }
                 return -1;
             }
             //!Interpolate in order to obtain better results
@@ -171,7 +174,7 @@ namespace cv
 #if CV_SSE4_1
                                 c[(iwj)* (v + 1) + d] = (short)_mm_popcnt_u32(xorul);
 #else
-                                c[(iwj)* (v + 1) + d] = (short)(hammLut[xorul & MASK] + hammLut[xorul >> 16]);
+                                c[(iwj)* (v + 1) + d] = (short)(hammLut[xorul & MASK] + hammLut[(xorul >> 16) & MASK]);
 #endif
                             }
                         }
