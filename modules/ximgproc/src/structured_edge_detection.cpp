@@ -549,7 +549,9 @@ protected:
                 offsetY[n] = x2*features.cols*nchannels + y2*nchannels + z;
             }
             // lookup tables for mapping linear index to offset pairs
-
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
         for (int i = 0; i < height; ++i)
         {
             float *regFeaturesPtr = regFeatures.ptr<float>(i*stride/shrink);
@@ -599,6 +601,9 @@ protected:
         dstM.setTo(0);
 
         float step = 2.0f * CV_SQR(stride) / CV_SQR(ipSize) / nTreesEval;
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
         for (int i = 0; i < height; ++i)
         {
             int *pIndex = indexes.ptr<int>(i);
