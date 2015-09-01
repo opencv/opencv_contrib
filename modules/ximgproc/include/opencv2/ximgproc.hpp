@@ -42,6 +42,7 @@
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
+#include "ximgproc/fast_hough_transform.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{

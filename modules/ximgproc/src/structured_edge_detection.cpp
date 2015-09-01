@@ -188,8 +188,8 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
     magnitude.create( src.size(), cv::DataType<float>::type );
     phase.create( src.size(), cv::DataType<float>::type );
-    histogram.create( cv::Size( cvRound(src.size().width/float(pSize)),
-                                cvRound(src.size().height/float(pSize)) ),
+    histogram.create( cv::Size( cvCeil(src.size().width/float(pSize)),
+                                cvCeil(src.size().height/float(pSize)) ),
         CV_MAKETYPE(cv::DataType<float>::type, nBins) );
 
     histogram.setTo(0);

@@ -246,7 +246,7 @@ every source code listing is commented in detail, so you should have no problems
 The source code for this demo application is also available in the src folder coming with this
 documentation:
 
-@include src/facerec_eigenfaces.cpp
+@include face/samples/facerec_eigenfaces.cpp
 
 I've used the jet colormap, so you can see how the grayscale values are distributed within the
 specific Eigenfaces. You can see, that the Eigenfaces do not only encode facial features, but also
@@ -263,8 +263,8 @@ let's see how many Eigenfaces are needed for a good reconstruction. I'll do a su
 for(int num_components = 10; num_components < 300; num_components+=15) {
     // slice the eigenvectors from the model
     Mat evs = Mat(W, Range::all(), Range(0, num_components));
-    Mat projection = subspaceProject(evs, mean, images[0].reshape(1,1));
-    Mat reconstruction = subspaceReconstruct(evs, mean, projection);
+    Mat projection = LDA::subspaceProject(evs, mean, images[0].reshape(1,1));
+    Mat reconstruction = LDA::subspaceReconstruct(evs, mean, projection);
     // Normalize the result:
     reconstruction = norm_0_255(reconstruction.reshape(1, images[0].rows));
     // Display or save:
@@ -370,7 +370,7 @@ given by:
 The source code for this demo application is also available in the src folder coming with this
 documentation:
 
-@include src/facerec_fisherfaces.cpp
+@include face/samples/facerec_fisherfaces.cpp
 
 For this example I am going to use the Yale Facedatabase A, just because the plots are nicer. Each
 Fisherface has the same length as an original image, thus it can be displayed as an image. The demo
@@ -398,8 +398,8 @@ Fisherfaces describes:
 for(int num_component = 0; num_component < min(16, W.cols); num_component++) {
     // Slice the Fisherface from the model:
     Mat ev = W.col(num_component);
-    Mat projection = subspaceProject(ev, mean, images[0].reshape(1,1));
-    Mat reconstruction = subspaceReconstruct(ev, mean, projection);
+    Mat projection = LDA::subspaceProject(ev, mean, images[0].reshape(1,1));
+    Mat reconstruction = LDA::subspaceReconstruct(ev, mean, projection);
     // Normalize the result:
     reconstruction = norm_0_255(reconstruction.reshape(1, images[0].rows));
     // Display or save:
@@ -528,7 +528,7 @@ Patterns Histograms*.
 The source code for this demo application is also available in the src folder coming with this
 documentation:
 
-@include src/facerec_lbph.cpp
+@include face/samples/facerec_lbph.cpp
 
 Conclusion {#tutorial_face_conclusion}
 ----------
@@ -658,7 +658,7 @@ at/s17/3.pgm;1
 
 Here is the script, if you can't find it:
 
-@verbinclude face/samples/src/create_csv.py
+@verbinclude face/samples/etc/create_csv.py
 
 ### Aligning Face Images {#tutorial_face_appendix_align}
 
@@ -677,7 +677,7 @@ where:
 If you are using the same *offset_pct* and *dest_sz* for your images, they are all aligned at the
 eyes.
 
-@verbinclude face/samples/src/crop_face.py
+@verbinclude face/samples/etc/crop_face.py
 
 Imagine we are given [this photo of Arnold
 Schwarzenegger](http://en.wikipedia.org/wiki/File:Arnold_Schwarzenegger_edit%28ws%29.jpg), which is

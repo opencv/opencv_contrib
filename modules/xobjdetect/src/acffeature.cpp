@@ -307,6 +307,8 @@ void computeChannels(InputArray image, vector<Mat>& channels)
         for (int col = 0; col < grad.cols; ++col) {
             //float angle = atan2(row_der(row, col), col_der(row, col)) * to_deg;
             float angle = angles(row, col);
+            if (angle > 180)
+                angle -= 180;
             if (angle < 0)
                 angle += 180;
             int ind = (int)(angle / 30);

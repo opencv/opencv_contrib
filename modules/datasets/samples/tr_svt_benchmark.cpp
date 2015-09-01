@@ -244,6 +244,8 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
+                std::transform(words[j].begin(), words[j].end(), words[j].begin(), ::toupper);
+
                 if (find(example->lex.begin(), example->lex.end(), words[j]) == example->lex.end())
                 {
                     continue;
@@ -286,18 +288,18 @@ int main(int argc, char *argv[])
         f1Each.push_back(f1);
     }
 
-    /*double p = 1.0*returnedCorrectNum/returnedNum;
+    double p = 1.0*returnedCorrectNum/returnedNum;
     double r = 1.0*returnedCorrectNum/correctNum;
     double f1 = 2*(p*r)/(p+r);
-    printf("f1: %f\n", f1);*/
+    printf("f1: %f\n", f1);
 
-    double f1 = 0.0;
+    /*double f1 = 0.0;
     for (vector<double>::iterator it=f1Each.begin(); it!=f1Each.end(); ++it)
     {
         f1 += *it;
     }
     f1 /= f1Each.size();
-    printf("mean f1: %f\n", f1);
+    printf("mean f1: %f\n", f1);*/
 
     return 0;
 }
