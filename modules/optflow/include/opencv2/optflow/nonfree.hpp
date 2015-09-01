@@ -90,6 +90,10 @@ namespace optflow
         virtual void compute(const Mat& img, Mat& siftImg) = 0;
 
         virtual void compute(const Mat& img0, const Mat& img1, Mat& siftImg0, Mat& siftImg1) = 0;
+
+        virtual void compute(const Mat& img0, const Mat& img1,
+            const std::vector<KeyPoint>& keypoints0, const std::vector<KeyPoint>& keypoints1,
+            Mat& siftImg0, Mat& siftImg1) = 0;
     };   
 
     //! Interface to the SIFT-Flow's algorithm

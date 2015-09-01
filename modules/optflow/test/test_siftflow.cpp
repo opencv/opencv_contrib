@@ -168,10 +168,16 @@ void CV_SiftFlowTest::run(int) {
     }
     fclose(gt_flow_file);
 
+    // Create SIFT images
+    cv::Ptr<cv::optflow::SiftImageExtractor> siftImageExtractor =
+        cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_LINEAR);
+    cv::Mat siftImg1, siftImg2;
+    siftImageExtractor->compute(frame1, frame2, siftImg1, siftImg2);
+
     // Do SIFT-Flow
     cv::Mat flow;
     cv::Ptr<cv::DenseOpticalFlow> siftFlow = cv::optflow::createOptFlow_SiftFlow();
-    siftFlow->calc(frame1, frame2, flow);
+    siftFlow->calc(siftImg1, siftImg2, flow);
 
     float rmse = calc_rmse(flow_gt, flow);
 

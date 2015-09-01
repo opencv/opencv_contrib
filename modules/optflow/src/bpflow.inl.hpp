@@ -210,8 +210,10 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
     // Create flow
     _flow.create(I0.size(), CV_32FC2);
     Mat W = _flow.getMat(); // if any data present - will be discarded
+    Mat vx = Mat(Height, Width, CV_32F, 0.0f);
+    Mat vy = Mat(Height, Width, CV_32F, 0.0f);
 
-    calcOneLevel(I0, I1, W);
+    calcOneLevel(I0, I1, W, topwsize, vx, vy);
 
     // Output flow
     W.copyTo(_flow);
@@ -267,7 +269,9 @@ void BPFlow<InputType>::calcOneLevel(const Mat I0, const Mat I1, Mat W,
     setHomogeneousMRF(wsize);
     setOffset(offsetX, offsetY);
 
-    Mat winSizeX()
+    Mat_<int> winSizeX(W.rows, W.cols, winsize);
+    Mat_<int> winSizeY(W.rows, W.cols, winsize);
+    setWinSize(winSizeX, winSizeY);
 
     computeDataTerm();
     computeRangeTerm(gamma);
@@ -968,7 +972,7 @@ void BPFlow<InputType>::setOffset(const Mat& offsetX, const Mat& offsetY)
 
     for (int i = 0; i<2; i++)
     {
-        _Release1DBuffer(pOffset[i]);
+        release1DBuffer(pOffset[i]);
         pOffset[i] = new T_state[Area];
     }
 
@@ -986,7 +990,7 @@ void BPFlow<InputType>::setWinSize(const Mat& winSizeX, const Mat& winSizeY)
 {
     for (int i = 0; i<2; i++)
     {
-        _Release1DBuffer(pWinSize[i]);
+        release1DBuffer(pWinSize[i]);
         pWinSize[i] = new T_state[Area];
     }
 
