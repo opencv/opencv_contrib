@@ -44,8 +44,6 @@
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
 using namespace std;
 
-#define INF 1E+20F
-
 namespace cv {
 namespace optflow {
 
@@ -54,7 +52,7 @@ CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, O
                                                float sigma, bool use_post_proc, 
                                                float fgs_lambda, float fgs_sigma)
 {
-    CV_Assert( grid_step>1 && k>3 && sigma>0.00001f && fgs_lambda>1.0f && fgs_lambda>0.01f );
+    CV_Assert( grid_step>1 && k>3 && sigma>0.00001f && fgs_lambda>1.0f && fgs_sigma>0.01f );
     CV_Assert( !from.empty() && from.depth() == CV_8U && (from.channels() == 3 || from.channels() == 1) );
     CV_Assert( !to  .empty() && to  .depth() == CV_8U && (to  .channels() == 3 || to  .channels() == 1) );
     CV_Assert( from.sameSize(to) );
