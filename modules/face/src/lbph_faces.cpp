@@ -95,7 +95,7 @@ public:
     int predict(InputArray src) const;
 
     // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
+    std::map<int, double> predict(InputArray _src, int &label, double &dist) const;
 
     // See FaceRecognizer::load.
     void load(const FileStorage& fs);
@@ -386,7 +386,7 @@ void LBPH::train(InputArrayOfArrays _in_src, InputArray _in_labels, bool preserv
     }
 }
 
-void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
+std::map<int, double> LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
     if(_histograms.empty()) {
         // throw error if no data (or simply return -1?)
         String error_message = "This LBPH model is not computed yet. Did you call the train method?";
@@ -404,13 +404,18 @@ void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
     // find 1-nearest neighbor
     minDist = DBL_MAX;
     minClass = -1;
+    std::map<int, double> results;
     for(size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, HISTCMP_CHISQR_ALT);
+        int label = _labels.at<int>((int) sampleIdx);
         if((dist < minDist) && (dist < _threshold)) {
             minDist = dist;
-            minClass = _labels.at<int>((int) sampleIdx);
+            minClass = label;
         }
+        if (!results.count(label) || results.at(label) > dist)
+            results[label] = dist;
     }
+    return results;
 }
 
 int LBPH::predict(InputArray _src) const {
