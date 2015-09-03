@@ -53,7 +53,7 @@ namespace dnn
         bias = params.get<bool>("bias_term", true);
         axis_ = params.get<int>("axis", 1);
 
-        CV_Assert(blobs.size() == (bias ? 2 : 1));
+        CV_Assert(blobs.size() == (bias ? 2U : 1U));
         CV_Assert(blobs[0].dims() >= 2 && blobs[0].total() >= (size_t)numOutputs);
         CV_Assert(!bias || blobs[1].total() == (size_t)numOutputs);
     }
