@@ -75,7 +75,7 @@ PERF_TEST_P( FGSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all()
         fastGlobalSmootherFilter(guide,src,dst,lambda,sigma);
     }
 
-    SANITY_CHECK(dst);
+    SANITY_CHECK_NOTHING();
 }
 
 }

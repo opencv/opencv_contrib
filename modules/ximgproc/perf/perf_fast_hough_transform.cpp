@@ -58,7 +58,7 @@ typedef std::tr1::tuple<Size, MatType, MatDepth> srcSize_srcType_dstDepth_t;
 typedef perf::TestBaseWithParam<srcSize_srcType_dstDepth_t>
         srcSize_srcType_dstDepth;
 
-#define ALL_MAT_DEPHTS CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F
+#define ALL_MAT_DEPHTS CV_8U, CV_8S, CV_16U, CV_32S, CV_32F, CV_64F
 
 PERF_TEST_P(srcSize_srcType_dstDepth, FastHoughTransform,
             testing::Combine(

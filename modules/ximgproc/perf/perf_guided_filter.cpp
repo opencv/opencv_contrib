@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -46,12 +46,12 @@ using namespace testing;
 using namespace cv;
 using namespace cv::ximgproc;
 
-CV_ENUM(GuideTypes, CV_8UC1, CV_8UC2, CV_8UC3, CV_32FC1, CV_32FC2, CV_32FC3);
+CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3);
 CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3);
 typedef tuple<GuideTypes, SrcTypes, Size> GFParams;
-    
+
 typedef TestBaseWithParam<GFParams> GuidedFilterPerfTest;
-    
+
 PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz1080p, sz2K)) )
 {
     RNG rng(0);
@@ -75,7 +75,7 @@ PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::al
         guidedFilter(guide, src, dst, radius, eps);
     }
 
-    SANITY_CHECK(dst);
+    SANITY_CHECK_NOTHING();
 }
 
 }

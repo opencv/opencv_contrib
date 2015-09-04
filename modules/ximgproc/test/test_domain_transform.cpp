@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -51,7 +51,7 @@ static string getOpenCVExtraDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-CV_ENUM(SupportedTypes, CV_8UC1, CV_8UC2, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC2, CV_32FC3, CV_32FC4);
+CV_ENUM(SupportedTypes, CV_8UC1, CV_8UC3, CV_32FC1); // reduced set
 CV_ENUM(ModeType, DTF_NC, DTF_IC, DTF_RF)
 typedef tuple<Size, ModeType, SupportedTypes, SupportedTypes> DTParams;
 
@@ -242,7 +242,7 @@ TEST(DomainTransformTest, AuthorReferenceAccuracy)
     dtFilter(src, src, res_RF, ss, sc, DTF_RF);
 
     double totalMaxError = 1.0/64.0*src.total();
-    
+
     EXPECT_LE(cvtest::norm(res_NC, ref_NC, NORM_L2), totalMaxError);
     EXPECT_LE(cvtest::norm(res_NC, ref_NC, NORM_INF), 1);
 

@@ -81,8 +81,7 @@ PERF_TEST_P(OCL_SURF, DISABLED_with_data_transfer, testing::Values(SURF_IMAGES))
         d_descriptors.download(cpu_dp);
     }
 
-    SANITY_CHECK(cpu_kp, 1);
-    SANITY_CHECK(cpu_dp, 1);
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST_P(OCL_SURF, DISABLED_without_data_transfer, testing::Values(SURF_IMAGES))
@@ -104,8 +103,7 @@ PERF_TEST_P(OCL_SURF, DISABLED_without_data_transfer, testing::Values(SURF_IMAGE
     Mat cpu_dp;
     d_keypoints.download(cpu_kp);
     d_descriptors.download(cpu_dp);
-    SANITY_CHECK(cpu_kp, 1);
-    SANITY_CHECK(cpu_dp, 1);
+    SANITY_CHECK_NOTHING();
 }
 
 #endif // HAVE_OPENCV_OCL

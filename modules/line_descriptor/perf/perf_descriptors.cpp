@@ -72,6 +72,6 @@ PERF_TEST_P(file_str, descriptors, testing::Values(IMAGES))
     bd->compute( frame, keylines, descriptors );
   }
 
-  SANITY_CHECK( descriptors );
+  SANITY_CHECK_NOTHING();
 
 }
