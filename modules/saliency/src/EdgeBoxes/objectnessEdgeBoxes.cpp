@@ -40,6 +40,9 @@
  //M*/
 
 #include "precomp.hpp"
+#include <ctime>
+#include <opencv2/highgui.hpp>
+#include <fstream>
 
 namespace cv
 {
@@ -61,15 +64,61 @@ namespace cv
 
 		}
 
-		std::vector<float> ObjectnessEdgeBoxes::getobjectnessValues()
-		{
-			return objectnessValues;
+
+		bool ObjectnessEdgeBoxes::computeSaliency(InputArray image, OutputArray saliencyMap){
+
+			Mat inputImg = image.getMat();
+			
+			//compute edges
+			Mat edgeImage = Mat(inputImg.rows, inputImg.cols, CV_64F);
+
+			//do everything else
+			std::vector<Vec4i> box_list;
+			std::vector<double> score_list;
+			getBoxScores(edgeImage,box_list, score_list);
+			saliencyMap.setTo(_box_list);
+			return true;
 		}
 
-		void ObjectnessEdgeBoxes::setTrainingPath(std::string trainingPath)
-		{
-			_trainingPath = trainingPath;
+
+		bool ObjectnessEdgeBoxes::computeSaliency(InputArray image, OutputArray saliencyMap, const int mode){
+
+			Mat inputImg = image.getMat();
+			Mat edgeImage;
+
+			switch(mode)
+			{
+
+			case 1:
+					edgeImage = inputImg;
+					edgeImage.convertTo(edgeImage, CV_64F, 1 / 255.0f);
+						break;
+
+			case 0:
+						//todo
+						break;
+
+					default: 
+						//todo
+						break;
+			}
+
+			//do everything else
+			std::vector<Vec4i> box_list;
+			std::vector<double> score_list;
+			getBoxScores(edgeImage, box_list, score_list);
+			saliencyMap.setTo(_box_list);
+			return true;
 		}
+
+
+
+		std::vector<float> ObjectnessEdgeBoxes::getobjectnessValues()
+		{
+
+			return _score_list;
+		}
+
 
 		void ObjectnessEdgeBoxes::setBBResDir(std::string resultsDir)
 		{
@@ -92,34 +141,44 @@ namespace cv
 			int N = group_position.size();
 
 			for (int i = 0; i < N; i++){
-				edge_weight_list.push_back(1.0f);
-			}
-
-
-			if (edge_idx_list.size() > 0){
-				for (int i = 0; i < edge_idx_list.size(); i++){
-					edge_weight_list.at(edge_idx_list.at(i)) = 0;
+				
+				Vec2i position = group_position.at(i);
+				if (position[0] > box[0] & position[0] < box[2] & position[1] > box[1] & position[1] & box[3]){
+					edge_weight_list.push_back(1.0f);
 				}
-			}
-			else{
-				for (int i = 0; i < N; i++){
-					edge_weight_list.at(i) = 0.0f;
+				else{
+					edge_weight_list.push_back(0.0f);
 				}
+
 			}
 
+			for (int i = 0; i < edge_idx_list.size(); i++){
+				edge_weight_list.at(edge_idx_list.at(i) - 1) = 0;
+			}
+
+
+			//flip them:
+			for (int i = 0; i < N; i++){
+				edge_weight_list.at(i) = 1 - edge_weight_list.at(i);
+			}
+
+			if (box[0] == 333 & box[1] == 64 & box[2] == 378 & box[3] == 104){
+				int d = 5;
+			}
 
 			std::vector<int> todo_list;
 			int todo_counter;
 			for (int i = 0; i < edge_idx_list.size(); i++){
 				todo_counter = 0;
-				todo_list.push_back(i); //source equals straddling node
+				todo_list.clear();
+				todo_list.push_back(edge_idx_list.at(i)-1); //source equals straddling node
 
-				for (int tt = todo_counter; tt < todo_list.size(); tt++){
-					double source_affinity = 1 - edge_weight_list.at(i);
+				for (int tt = 0; tt < todo_list.size(); tt++){
+					double source_affinity = 1 - edge_weight_list.at(todo_list.at(tt));
 					for (int nn = 0; nn < N; nn++){ //for all possible nodes
 						if (nn != tt){ 
 							//find affinity between source and current node:
-							double source_to_node_affinity = affinity_matrix.at<double>(Point(nn,i));
+							double source_to_node_affinity = affinity_matrix.at<double>(Point(nn,todo_list.at(tt)));
 
 							//if node is in the box:
 							Vec2i position = group_position.at(nn);
@@ -131,18 +190,23 @@ namespace cv
 									if (source_affinity * source_to_node_affinity > node_affinity){
 										edge_weight_list.at(nn) = 1 - (source_affinity * source_to_node_affinity);
 										todo_list.push_back(nn);
-									}
+									}  
 								}
 
 							}
 							else{ // not in box
-								edge_weight_list.at(nn) = 0;
+								edge_weight_list.at(nn) = 1;
 							}
 						}
 					}
 					todo_counter++;
 				}
 
+			}
+
+			//flip them:
+			for (int i = 0; i < N; i++){
+				edge_weight_list.at(i) = 1 - edge_weight_list.at(i);
 			}
 		}
 
@@ -160,7 +224,15 @@ namespace cv
 			int r0 = box[0];
 			int r1 = box[2];
 			int c0 = box[1];
-			int c1 = box[2];
+			int c1 = box[3];
+
+			if (r0 < 0 || r0 > row_intersection_img.rows - 1){return 0.0;}
+
+			if (r1 < 0 || r1 > row_intersection_img.rows - 1){ return 0.0; }
+
+			if (c0 < 0 || c0 > row_intersection_img.cols - 1){ return 0.0; }
+
+			if (c1 < 0 || c1 > row_intersection_img.cols - 1){ return 0.0; }
 
 			std::vector<int> edge_idx_list, list;
 			int start_idx, end_idx;
@@ -327,6 +399,14 @@ namespace cv
 				}
 			}
 			
+
+			for (int rr = 0; rr < affinity_matrix.rows; rr++){
+				for (int cc = 0; cc < affinity_matrix.cols; cc++){
+					if (affinity_matrix.at<double>(rr, cc) == -1){
+						affinity_matrix.at<double>(rr, cc) = 0;
+					}
+				}
+			}
 			
 			
 			//return group_idx_img;
@@ -359,16 +439,20 @@ namespace cv
 			std::vector<double> &group_sum_magnitude,
 			std::vector<Vec2i> &group_position){
 
+			cv::namedWindow("debug window", WINDOW_AUTOSIZE);// Create a window for display.
+
 
 			std::vector<std::vector<double>> all_orientations;
 			std::vector<std::vector<double>> all_magnitudes;
 			std::vector<std::vector<Vec2i>> all_positions;
 
 
-			int cumulative_error = 0;
+			float cumulative_error = 0.0f;
 			int current_col, current_row, next_col, next_row = 0;
 			double current_orientation, current_magnitude, new_orientation, new_magnitude;
-
+			std::vector<double> this_group_orientation_list;
+			std::vector<double> this_group_magnitude_list;
+			std::vector<Vec2i> this_group_position_list;
 
 
 			Mat isProcessed = Mat(Size(edgeImage.cols, edgeImage.rows), CV_8U, Scalar(0));
@@ -379,66 +463,117 @@ namespace cv
 					if (isProcessed.at<bool>(Point(cc, rr))==false){
 						double value = edgeImage.at<double>(Point(cc, rr));
 						if (edgeImage.at<double>(Point(cc, rr)) > 0.1){
-							
-							
 
-							current_col = cc;
-							current_row = rr;
-
+							std::vector<float> tree_orientation_list;
+							std::vector<Vec2i> trunk_list;
+							int trunk_col = cc;
+							int trunk_row = rr;
 							segment_count++;
-							cumulative_error = 0;
+							cumulative_error = 0.0f;
+
+							this_group_magnitude_list.clear();
+							this_group_orientation_list.clear();
+							this_group_position_list.clear();
+
 							current_orientation = edgeImage.at<double>(Point(cc, rr));
 							current_magnitude = orientationImage.at<double>(Point(cc, rr));
 
-							std::vector<double> this_group_magnitude_list, this_group_orientation_list;
-							std::vector<Vec2i> this_group_position_list;
+							tree_orientation_list.push_back(current_orientation);
+							double latest_orientation = current_orientation;
+							trunk_list.push_back(Vec2i(rr, cc));
+
 
 							this_group_magnitude_list.push_back(current_magnitude);
 							this_group_orientation_list.push_back(current_orientation);
-							this_group_position_list.push_back(Vec2i(cc,rr));
+							this_group_position_list.push_back(Vec2i(rr, cc));
+							group_idx_img.at<int>(rr, cc) = segment_count;
+							isProcessed.at<bool>(rr, cc) = true;
 
+							bool keep_growing = true;
+							while (keep_growing){
+								std::vector<Vec2i> new_trunk_list;
+								for (int tt = 0; tt < trunk_list.size(); tt++){ //go through each trunk point
 
-							while (cumulative_error < 3.14 / 2.0f && getNextComponent(edgeImage, rr, cc, isProcessed, next_row, next_col)){
+									Vec2i trunk_point = trunk_list.at(tt);
 
+									//get new branches
+									for (int rd = -1; rd < 2; rd++){
+										for (int cd = -1; cd < 2; cd++){
+											if (rd != 0 || cd != 0){
+												Vec2i branch_point = Vec2i(trunk_point[0] + rd, trunk_point[1] + cd);
+												if (isProcessed.at<bool>(branch_point[0], branch_point[1]) == false){
+													double branch_orientation = orientationImage.at<double>(branch_point[0], branch_point[1]);
+													double branch_magnitude = edgeImage.at<double>(branch_point[0], branch_point[1]);
+													
+													if (branch_magnitude > 0.1){
+														//if we add it to the group and it's under threshold 
+														double potential_error = cumulative_error + fabs(latest_orientation - branch_orientation);
+														if (potential_error < 3.14 / 2.0f){
+															new_trunk_list.push_back(branch_point);
+															latest_orientation = branch_orientation;
+															isProcessed.at<bool>(branch_point[0], branch_point[1]) = true;
+															group_idx_img.at<int>(branch_point[0], branch_point[1]) = segment_count;
+															cumulative_error = potential_error;
+															this_group_magnitude_list.push_back(branch_magnitude);
+															this_group_orientation_list.push_back(branch_orientation);
+															this_group_position_list.push_back(Vec2i(branch_point[0], branch_point[1]));
+														} // potential error
+													}
+													else{
+														isProcessed.at<bool>(branch_point[0], branch_point[1]) == true;
+														group_idx_img.at<int>(branch_point[0], branch_point[1]) = 0;
+													}
+												} // is branch processed
 
+											}
+										}
+									} // looping over potential branches
 
+									trunk_list = new_trunk_list;
+									new_trunk_list.clear();
+									if (trunk_list.size() == 0){
+										keep_growing = 0;
+									}
+								} // for each trunk point
+							} // while keep growing
 
-
-								//find a connected component, add it to current edge group
-								//if (getNextComponent(edgeImage, rr, cc, isProcessed, next_row, next_col)){
-
-									new_orientation = orientationImage.at<double>(Point(next_col, next_row));
-									new_magnitude = edgeImage.at<double>(Point(next_col, next_row));
-									cumulative_error = cumulative_error + abs(current_orientation - new_orientation);
-
-									current_orientation = new_orientation;
-									current_magnitude = new_magnitude;
-									current_col = next_col;
-									current_row = next_row;
-
-									isProcessed.at<bool>(Point(current_col, current_row)) = true;
-									group_idx_img.at<int>(Point(current_col, current_row)) = segment_count;
-									this_group_magnitude_list.push_back(current_magnitude);
-									this_group_orientation_list.push_back(current_orientation);
-									this_group_position_list.push_back(Vec2i(current_row,current_col));
-
-
-								//}
-
-							}//while
 							all_magnitudes.push_back(this_group_magnitude_list);
 							all_orientations.push_back(this_group_orientation_list);
 							all_positions.push_back(this_group_position_list);
 
-						} // edgeMag > 0.1
-						else{
-							//pixel has magnitude < 0.1
-							isProcessed.at<bool>(Point(cc, rr)) = true;
+							if (all_positions.size() == 32){
+								int d = 5;
+							}
+
+							printf("Adding segment %d, length %d \n", segment_count, this_group_magnitude_list.size());
+							if (segment_count == 105){
+								int d = 5;
+							}
 						}
+						else{
+							isProcessed.at<bool>(Point(cc, rr)) == true;
+							group_idx_img.at<int>(Point(cc, rr)) = 0;
+						}
+
+
+
 						
 					} //is processed					
 				}
 			}
+
+
+			std::ofstream group_img_file;
+			group_img_file.open("C:/Users/hisham/Dropbox/trud/edges-master/cv_seg_img.txt");
+			for (int r = 0; r < group_idx_img.rows; r++){
+				for (int c = 0; c < group_idx_img.cols; c++){
+					group_img_file << group_idx_img.at<int>(r, c) << " ";
+				}
+				group_img_file << std::endl;
+			}
+			group_img_file.close();
+
+
 
 
 			for (int i = 0; i < all_orientations.size(); i++){
@@ -461,8 +596,13 @@ namespace cv
 			}
 
 			for (int i = 0; i < all_positions.size(); i++){
+				//printf("loading positions %d \n", i);
+				if (i == 23){
+					int d = 5;
+				}
 				std::vector<Vec2i> position_list = all_positions.at(i);
 				group_position.push_back(position_list.at(0)); //just grab the first position
+
 			}
 
 			return true;
@@ -493,35 +633,95 @@ namespace cv
 			width_list.empty();
 			score_list.empty();
 
+			int counter = 0;
+
 			int width_step = (end_width - start_width) / num_width;
-			float aspect_step = (start_t - (1 / (start_t))) / num_t;
+			float aspect_step = ((1 / (start_t)) - start_t ) / num_t;
 			for (int width = start_width; width < end_width; width += width_step){
-				for (float aspect = 1 / (start_t); aspect < start_t; aspect += aspect_step){
+				for (float aspect = (start_t); aspect <1 / (start_t); aspect += aspect_step){
+
+					//printf("Finished aspect ratio: %f, width: %d \n", aspect, width);
 
 					int height = width / aspect;
-					int x_step = floor((width - 2 * width*iou) / (1 - iou));
-					int y_step = floor((height - 2 * height*iou) / (1 - iou));
+
+					int x_step = std::max(floor((width -  width*iou) / (1 + iou)), 1.0f);
+					int y_step = std::max( floor((height -  height*iou) / (1 + iou)), 1.0f);
+
+					printf("Diag: [%d, %f] \n", width, aspect);
 
 					//create a sliding window:
-					for (int xx = 0; xx < img_width - height; xx += x_step){
-						for (int yy = 0; yy < img_height - width; yy += y_step){
-							Vec4i box(yy,xx,yy+height,xx+width);
-							double score = scoreBoxParams(box);
-							if (score > thresh){
+					for (int xx = 0; xx < img_width - width; xx += x_step){
+						for (int yy = 0; yy < img_height - height; yy += y_step){
+							counter++;
 
-								window_list.push_back(box);
-								aspect_list.push_back(aspect);
-								width_list.push_back(width);
-								score_list.push_back(score);
-
+							//if ((xx == 207) & yy == 406 & width = 44 & abs(aspect - .333) < .1){
+							if ((xx == 64) & (yy == 333) & (width == 40) & (abs(aspect - .870061) < .1)){
+								int d = 5;
 							}
+							//printf("xx = %d, yy=%d, width = %d, aspect = %f \n", xx, yy, width, aspect);
+							
+							Vec4i box(yy,xx,yy+height,xx+width);
 
+
+							int r0 = box[0];
+							int r1 = box[2];
+							int c0 = box[1];
+							int c1 = box[3];
+
+							//box[0] = 153;
+							//box[2] = 191;
+							//box[1] = 84;
+							//box[3] = 124;
+
+
+							//c1 = 124;
+
+							bool in_bounds = true;
+
+							if (r0 < 0 || r0 > _params.height - 1){ in_bounds = false; }
+
+							if (r1 < 0 || r1 > _params.height - 1){ in_bounds = false; }
+
+							if (c0 < 0 || c0 > _params.width - 1){ in_bounds = false; }
+
+							if (c1 < 0 || c1 > _params.width - 1){ in_bounds = false; }
+
+							if (in_bounds){
+								std::clock_t start = std::clock();
+								double score = scoreBoxParams(box);
+								//double score = 0.0;
+								//printf("Elapsed time for score: %03d \n", (int)(std::clock() - start));
+								//printf("Diag: [%d,%f]  [%d,%d,%d,%d] \n", width, aspect, box[0], box[1], box[2], box[3]);
+
+
+								if (score > 0.0f){
+									int d = 5;
+								}
+
+								if (score > thresh){
+
+									window_list.push_back(box);
+									aspect_list.push_back(aspect);
+									width_list.push_back(width);
+									score_list.push_back(score);
+
+									printf("Adding box: %d,%d,%d,%d aspect: %f, width: %d, score: %f, list_size: %d \n", box[0], box[1], box[2], box[3], aspect, width, (float)score, window_list.size());
+
+									if (window_list.size() == 24){
+										int d = 5;
+									}
+								}
+							}
+							
+							
 						}
 					}
 
 
 				}
 			}
+
+			printf("Num windows iterated over: %d \n", counter);
 
 			return;
 
@@ -605,10 +805,10 @@ namespace cv
 
 		float ObjectnessEdgeBoxes::calculateIOU(Vec4i &box1, Vec4i &box2){
 
-			float center1_x = (box1[3] - box1[1]) / 2.0f;
-			float center1_y = (box1[2] - box1[0]) / 2.0f;
-			float center2_x = (box2[3] - box2[1]) / 2.0f;
-			float center2_y = (box2[2] - box2[0]) / 2.0f;
+			float center1_x = (box1[3] - box1[1]) / 2.0f + box1[1];
+			float center1_y = (box1[2] - box1[0]) / 2.0f + box1[0];
+			float center2_x = (box2[3] - box2[1]) / 2.0f + box2[1];
+			float center2_y = (box2[2] - box2[0]) / 2.0f + box2[0];
 			float diff_center_x = abs(center1_x - center2_x);
 			float diff_center_y = abs(center1_y - center2_y);
 			float width1 = abs(box1[3] - box1[1]);
@@ -616,9 +816,62 @@ namespace cv
 			float height1 = abs(box1[2] - box1[0]);
 			float height2 = abs(box2[2] - box2[0]);
 
-			float intersection_area = (diff_center_x - (width1 / 2.0f + width2 / 2.0f)) * (diff_center_y - (height1 / 2.0f + height2 / 2.0f));
+
+			float intersection_start_x = 0.0f;
+			float intersection_width = 0.0f;
+			float intersection_start_y = 0.0f;
+			float intersection_height = 0.0f;
+
+
+			if (diff_center_x - (width1 / 2.0f + width2 / 2.0f) < 0.0f){ //they intersect
+				if (box1[1] < box2[1]){
+					intersection_start_x = box2[1];
+				}
+				else{
+					intersection_start_x = box1[1];
+				}
+
+				if (box1[3] < box2[3]){
+					intersection_width = intersection_start_x - box1[3];
+				}
+				else{
+					intersection_width = intersection_start_x - box2[3];
+				}
+			}else{ //they don't intersect
+				return 0.0f;
+			}
+
+
+			if (diff_center_y - (height1 / 2.0f + height2 / 2.0f) < 0.0f){ //they intersect
+				if (box1[0] < box2[0]){
+					intersection_start_y = box2[0];
+				}
+				else{
+					intersection_start_y = box1[0];
+				}
+
+				if (box1[2] < box2[2]){
+					intersection_height = intersection_start_y - box1[2];
+				}
+				else{
+					intersection_height = intersection_start_y - box2[2];
+				}
+			}
+			else{ //they don't intersect
+				return 0.0f;
+			}
+
+			float intersection_area = intersection_width*intersection_height;
 			float union_area = width1*height1 + width2*height2 - intersection_area;
 
+			if (union_area == 0.0f){
+				return 0.0f;
+			}
+
+			float IOU = intersection_area / union_area;
+			if (IOU > 1.0f){
+				int d = 5;
+			}
 
 			return intersection_area/union_area;
 		}
@@ -628,44 +881,39 @@ namespace cv
 
 			std::vector<Vec4i> sparse_window_list;
 			for (int i = 0; i < window_list.size(); i++){
+				float maxIOU = 0.0f;
+				bool valid = true;
+				for (int j = 0; j < sparse_window_list.size(); j++){
 
-				for (int j = 0; j < window_list.size(); j++){
-					if (i != j){
-						if (calculateIOU(window_list.at(i), window_list.at(j)) < 0.8f){
-							sparse_window_list.push_back(window_list.at(i));
-						}
+					maxIOU = std::max(maxIOU, calculateIOU(window_list.at(i), sparse_window_list.at(j)));
+					if (maxIOU > 0.8f){
+						valid = false;
 					}
+				}
+
+
+				printf("Window [%d %d %d %d] IOU: %f \n", window_list.at(i)[0], window_list.at(i)[1], window_list.at(i)[2], window_list.at(i)[3], maxIOU);
+				if (valid){ 
+					sparse_window_list.push_back(window_list.at(i));
 				}
 
 
 			}
 
-			return window_list;
+			return sparse_window_list;
 		}
 
 
-
-
-		bool ObjectnessEdgeBoxes::computeSaliencyMap( Mat &edgeImage, Mat &orientationImage, Mat &resultImage){
-
-			//generate window list:
+		void ObjectnessEdgeBoxes::initializeDataStructures(Mat &edgeImage, Mat &orientationImage){
 
 			_params.width = edgeImage.cols;
 			_params.height = edgeImage.rows;
 
-
-
-			int width = edgeImage.cols;
-			int height = edgeImage.rows;
-			resultImage = Mat(Size(width, height), CV_64FC1, Scalar(0.0f));
-
-
-			//initialize data structures:
 			Mat group_idx_img;
 			std::vector<double> group_mean_orientation, group_mean_magnitude, group_sum_magnitude;
 			std::vector<Vec2i> group_position;
 
-			
+
 			clusterEdges(edgeImage,
 				orientationImage,
 				group_idx_img,
@@ -673,7 +921,7 @@ namespace cv
 				group_mean_magnitude,
 				group_sum_magnitude,
 				group_position);
-			
+
 			Mat affinity_matrix;
 			computeAffinity(group_mean_orientation, group_idx_img, affinity_matrix);
 
@@ -686,18 +934,6 @@ namespace cv
 				column_intersection_list,
 				column_intersection_img);
 
-
-			/*
-			for (int i = 0; i < column_intersection_list.size(); i++){
-				std::vector<int> intersection_list = column_intersection_list.at(i);
-				printf("%d : ", i);
-				for (int j = 0; j < intersection_list.size(); j++){ 
-					printf("%d,", intersection_list.at(j));
-				}
-				printf("\n");
-			}*/
-
-
 			_params.row_intersection_list = row_intersection_list;
 			_params.row_intersection_img = row_intersection_img;
 			_params.column_intersection_list = column_intersection_list;
@@ -705,6 +941,163 @@ namespace cv
 			_params.affinity_matrix = affinity_matrix;
 			_params.group_position = group_position;
 			_params.group_sum_magnitude = group_sum_magnitude;
+			_params.group_idx_img = group_idx_img;
+
+
+			return;
+		}
+
+
+		void ObjectnessEdgeBoxes::gradient_x(Mat &input, Mat &output){
+			//middle
+			for (int i = 0; i < input.rows; i++){
+				for (int j = 1; j < input.cols - 1; j++){
+					output.at<double>(i, j) = 0.5*(input.at<double>(i, j + 1) - input.at<double>(i, j - 1));
+				}
+			}
+
+			//right and leftmost
+			for (int i = 0; i < input.rows; i++){
+				output.at<double>(i, 0) =  (input.at<double>(i, 1) - input.at<double>(i,0));
+				output.at<double>(i, input.cols - 1) = (input.at<double>(i, input.cols - 1) - input.at<double>(i, input.cols - 2));
+			}
+		}
+
+		void ObjectnessEdgeBoxes::gradient_y(Mat &input, Mat &output){
+			//middle
+			for (int i = 1; i < input.rows-1; i++){
+				for (int j = 0; j < input.cols ; j++){
+					output.at<double>(i, j) = 0.5*(input.at<double>(i+1, j) - input.at<double>(i-1, j));
+				}
+			}
+
+			//top and bottom rows
+			for (int j = 0; j < input.cols; j++){
+				output.at<double>(0, j) = (input.at<double>(1, j) - input.at<double>(0, j));
+				output.at<double>(input.rows - 1, j) = (input.at<double>(input.rows - 1, j) - input.at<double>(input.rows - 2, j));
+			}
+		}
+
+		bool ObjectnessEdgeBoxes::computeSaliencyDiagnostic(Mat &edgeImage, Mat &orientationImage, Mat &resultImage){
+	
+
+
+
+			int width = edgeImage.cols;
+			int height = edgeImage.rows;
+			resultImage = Mat(Size(width, height), CV_64FC1, Scalar(0.0f));
+
+			//getOrientationImage(edgeImage, orientationImage);
+
+			initializeDataStructures(edgeImage, orientationImage);
+
+
+			std::vector<Vec4i> window_list;
+			std::vector<double> score_list;
+			
+
+			int x_step = 20;
+			int y_step = 20;
+
+			for (int i = 0; i < height; i+=y_step){
+				for (int j = 0; j < width; j += x_step){
+
+					Vec4i box = Vec4i(i, j, std::min(i + y_step, height - 1), std::min(j + x_step, width - 1));
+					window_list.push_back(box);
+					score_list.push_back(scoreBoxParams(box));
+
+				}
+			}
+
+		
+
+			//evaluate all windows:
+			for (int bb = 0; bb < window_list.size(); bb++){
+				Vec4i box = window_list[bb];
+				double score = score_list[bb];
+
+
+
+				//assign all pixels in window to score value:
+				printf("Filling in box: %d %d %d %d \n", box[0], box[1], box[2], box[3]);
+				for (int rb = box[0]; rb < box[2]; rb++){
+					for (int cb = box[1]; cb < box[3]; cb++){
+						resultImage.at<double>(Point(cb, rb)) = score;
+						//resultImage.at<double>(Point(cb, rb)) = rb;
+						//printf("Value is now: %f \n", (float)resultImage.at<double>(Point(cb, rb)));
+					}
+				}
+			}
+	
+		
+			return true;
+		}
+
+
+
+
+		void ObjectnessEdgeBoxes::getOrientationImage(Mat &edgeImage, Mat &orientationImage){
+
+			Mat oImage = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
+			//compute orientation:
+			//Mat triangle = Mat::ones(1,4,CV_64F)/4.0;
+			Mat triangle = Mat::ones(1, 4, CV_64F);
+			triangle.at<double>(0, 0) = 0.0;
+			triangle.at<double>(0, 1) = .667;
+			triangle.at<double>(0, 2) = .667;
+			triangle.at<double>(0, 3) = 0.0;
+
+			//double triangle[] = { 1.0/4.0, 1.0/4.0, 1.0 / 4.0, 1.0 / 4.0 };
+			sepFilter2D(edgeImage, oImage, -1, triangle, triangle, Point(01, 01), 0, BORDER_DEFAULT);
+
+
+			Mat Oxx = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
+			Mat Oyy = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
+			Mat Oxy = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
+
+			gradient_x(edgeImage, Oxx);
+			gradient_x(Oxx, Oxx);
+
+			gradient_y(edgeImage, Oyy);
+			gradient_y(Oyy, Oyy);
+
+			gradient_x(edgeImage, Oxy);
+			gradient_y(Oxy, Oxy);
+
+
+			for (int i = 0; i < edgeImage.rows; i++){
+				for (int j = 0; j < edgeImage.cols; j++){
+					double vOyy = Oyy.at<double>(i, j);
+					double vOxx = Oxx.at<double>(i, j);
+					double vOxy = Oxy.at<double>(i, j);
+					int sgn = ((-vOxy >0) - (-vOxy < 0))*(abs(vOxy)>.001);
+
+					//oImage.at<double>(i, j) = sgn;
+					oImage.at<double>(i, j) = fmod(atan((vOyy * sgn / (vOxx + 0.00001))), 3.14);
+				}
+			}
+
+			orientationImage = oImage;
+
+		}
+
+		void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, std::vector<Vec4i> &box_list, std::vector<double> score_list){
+
+			int width = edgeImage.cols;
+			int height = edgeImage.rows;
+
+			//threshold edge image:
+			for (int i = 0; i < edgeImage.rows; i++){
+				for (int j = 0; j < edgeImage.cols; j++){
+					edgeImage.at<double>(i, j) = (edgeImage.at<double>(i, j) > 0.1)*edgeImage.at<double>(i, j);
+				}
+			}
+
+			Mat orientationImage = Mat(edgeImage.rows, edgeImage.cols, CV_64F);
+
+			getOrientationImage(edgeImage, orientationImage);
+
+			initializeDataStructures(edgeImage, orientationImage);
 
 
 
@@ -712,37 +1105,27 @@ namespace cv
 			std::vector<Vec4i> window_list;
 			std::vector<float> aspect_list;
 			std::vector<float> width_list;
-			std::vector<double> score_list;
-			float thresh = 1.2;
+			//std::vector<double> score_list;
+			float thresh = .02;
 			float start_t = 0.33f;
 			float end_t = 3.0f;
-			float start_width = 20.0f;
-			float end_width = 200.0f;
+			float start_width = 40.0f;
+			float end_width = edgeImage.cols;
 			float num_t = 10;
 			float num_width = 10;
-			float iou = 0.8f;
+			float iou = 0.65f;
 			get_window_list(window_list, score_list, aspect_list, width_list, iou, thresh, start_t, end_t, num_t, start_width, end_width, num_width);
-			
-			/*
-			//evaluate window lists:
 
-			std::vector<double> score_list;
+			printf("Number of initial windows: %d\n", window_list.size());
 			for (int i = 0; i < window_list.size(); i++){
-				double score = scoreBox(window_list[i],
-					row_intersection_list,
-					row_intersection_img,
-					column_intersection_list,
-					column_intersection_img,
-					affinity_matrix,
-					group_position,
-					group_sum_magnitude);
-				score_list.push_back(score);
+				printf("Window %d: [%d, %d, %d, %d] \n", i, window_list.at(i)[0], window_list.at(i)[1], window_list.at(i)[2], window_list.at(i)[3]);
 			}
-			*/
+
 
 			//perform gradient descent:
 			for (int i = 0; i < window_list.size(); i++){
 				Vec4i box = local_optimum_box(window_list[i], aspect_list[i], width_list[i]);
+				printf("Local optimum for window %d; %d, %d, %d, %d \n", i, box[0], box[1], box[2], box[3]);
 				window_list[i] = box;
 			}
 
@@ -750,26 +1133,80 @@ namespace cv
 			//perform non maximal suppression:
 			window_list = non_maximal_suppression(window_list, score_list);
 
-			/*
+			//score the boxes:
+			_score_list.clear();
+			_box_list.clear();
+			for (int i = 0; i < window_list.size(); i++){
+				double score = scoreBoxParams(window_list.at(i));
+				_score_list.push_back((float)score);
+				_box_list.push_back(window_list.at(i));
+				score_list.push_back(score);
 
-			int N = 4 ;
-			for (int rm = 0; rm < N; rm++){
-				for (int cm = 0; cm < N; cm++){
+			}
 
-					Vec4i box(rm*(int)height / N, cm*(int)width / N, min((rm + 1)*(int)height / N, height-1), min((cm + 1)*(int)width / N, width-1));
-					window_list.push_back(box);
-					double score = scoreBox(box,
-						row_intersection_list,
-						row_intersection_img,
-						column_intersection_list,
-						column_intersection_img,
-						affinity_matrix,
-						group_position,
-						group_sum_magnitude);
-						
+			return;
+
+		}
+
+
+		bool ObjectnessEdgeBoxes::computeSaliencyMap( Mat &edgeImage, Mat &orientationImage, Mat &resultImage){
+
+			//generate window list:
+
+			Vec4i box1 = Vec4i(0, 0, 10, 10);
+			Vec4i box2 = Vec4i(5, 0, 15, 10);
+			float IOU = calculateIOU(box1, box2);
+
+
+			int width = edgeImage.cols;
+			int height = edgeImage.rows;
+
+			//threshold edge image:
+			for (int i = 0; i < edgeImage.rows; i++){
+				for (int j = 0; j < edgeImage.cols; j++){
+					edgeImage.at<double>(i, j) = (edgeImage.at<double>(i, j) > 0.1)*edgeImage.at<double>(i, j);
 				}
 			}
-			*/
+
+			resultImage = Mat(Size(width, height), CV_64FC1, Scalar(0.0f));
+
+			initializeDataStructures(edgeImage, orientationImage);
+
+
+
+			getOrientationImage(edgeImage, orientationImage);
+
+			//create window list:
+			std::vector<Vec4i> window_list;
+			std::vector<float> aspect_list;
+			std::vector<float> width_list;
+			std::vector<double> score_list;
+			float thresh = .02;
+			float start_t = 0.33f;
+			float end_t = 3.0f;
+			float start_width =40.0f;
+			float end_width = edgeImage.cols;
+			float num_t = 10;
+			float num_width = 10;
+			float iou = 0.65f;
+			get_window_list(window_list, score_list, aspect_list, width_list, iou, thresh, start_t, end_t, num_t, start_width, end_width, num_width);
+			
+			printf("Number of initial windows: %d\n", window_list.size());
+			for (int i = 0; i < window_list.size(); i++){
+				printf("Window %d: [%d, %d, %d, %d] \n", i, window_list.at(i)[0], window_list.at(i)[1], window_list.at(i)[2], window_list.at(i)[3]);
+			}
+
+
+			//perform gradient descent:
+			for (int i = 0; i < window_list.size(); i++){
+				Vec4i box = local_optimum_box(window_list[i], aspect_list[i], width_list[i]);
+				printf("Local optimum for window %d; %d, %d, %d, %d \n", i, box[0], box[1], box[2], box[3]);
+				window_list[i] = box;
+			}
+
+
+			//perform non maximal suppression:
+			window_list = non_maximal_suppression(window_list, score_list);
 
 
 			//evaluate all windows:
@@ -789,9 +1226,12 @@ namespace cv
 					*/
 
 				//assign all pixels in window to score value:
+				printf("Filling in box: %d %d %d %d \n", box[0], box[1], box[2], box[3]);
 				for (int rb = box[0]; rb < box[2]; rb++){
 					for (int cb = box[1]; cb < box[3]; cb++){
-						resultImage.at<double>(Point(cb, rb)) = score;
+						resultImage.at<double>(Point(cb, rb)) = max(score, resultImage.at<double>(Point(cb, rb)));
+						//resultImage.at<double>(Point(cb, rb)) = rb;
+						//printf("Value is now: %f \n", (float)resultImage.at<double>(Point(cb, rb)));
 					}
 				}
 			}

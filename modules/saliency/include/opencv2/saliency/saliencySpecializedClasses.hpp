@@ -418,6 +418,9 @@ class CV_EXPORTS ObjectnessEdgeBoxes : public Objectness
 {
 public:
 
+	const int EDGE_IMAGE = 0;
+	const int ORIGINAL_IMAGE = 1;
+
   ObjectnessEdgeBoxes();
   virtual ~ObjectnessEdgeBoxes();
 
@@ -429,12 +432,6 @@ public:
      */
   std::vector<float> getobjectnessValues();
 
-  /** @brief This is a utility function that allows to set the correct path from which the algorithm will load
-    the trained model.
-    @param trainingPath trained model path
-     */
-  void setTrainingPath( std::string trainingPath );
-
   /** @brief This is a utility function that allows to set an arbitrary path in which the algorithm will save the
     optional results
 
@@ -445,6 +442,9 @@ public:
   void setBBResDir( std::string resultsDir );
 
   bool computeSaliencyMap( Mat &edgeImage, Mat &orientationImage, Mat &resultImage);
+
+  virtual bool ObjectnessEdgeBoxes::computeSaliency(InputArray image, OutputArray saliencyMap);
+  virtual bool ObjectnessEdgeBoxes::computeSaliency(InputArray image, OutputArray saliencyMap, const int mode);
 
 protected:
   /** @brief Performs all the operations and calls all internal functions necessary for the
@@ -460,6 +460,12 @@ protected:
 
 private:
 
+
+	bool _bScoresReady = false;
+	std::vector<float> _score_list;
+	std::vector<Vec4i> _box_list;
+	
+
   // Names and paths to read model and to store results
   std::string _trainingPath, _resultsDir;
 
@@ -470,11 +476,16 @@ private:
 	  std::vector<std::vector<int>> column_intersection_list;
 	  Mat column_intersection_img;
 	  Mat affinity_matrix;
+	  Mat group_idx_img;
 	  std::vector<Vec2i> group_position;
 	  std::vector<double> group_sum_magnitude;
 	  int width;
 	  int height;
   } _params;
+
+  void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, std::vector<Vec4i> &box_list, std::vector<double> score_list);
+
+  void ObjectnessEdgeBoxes::initializeDataStructures(Mat &edgeImage, Mat &orientationImage);
 
   // List of the rectangles' objectness value, in the same order as
   // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
@@ -543,6 +554,17 @@ void computeEdgeWeights(std::vector<int> &edge_idx_list,
       std::vector<double> &group_mean_magnitude,
       std::vector<double> &group_sum_magnitude,
       std::vector<Vec2i> &group_position);
+
+  void ObjectnessEdgeBoxes::gradient_x(Mat &input, Mat &output);
+	
+  void ObjectnessEdgeBoxes::gradient_y(Mat &input, Mat &output);
+
+  void ObjectnessEdgeBoxes::getEdgeImage(Mat &originalImage, Mat &edgeImage);
+
+  void ObjectnessEdgeBoxes::getOrientationImage(Mat &originalImage, Mat &edgeImage);
+
+  bool computeSaliencyDiagnostic(Mat &edgeImage, Mat &orientationImage, Mat &resultImage);
+
 
 };
 

@@ -68,7 +68,9 @@ int main( int argc, char** argv )
 	
 
 	namedWindow("Display window", WINDOW_AUTOSIZE);// Create a window for display.
-	
+	namedWindow("Edge", WINDOW_AUTOSIZE);// Create a window for display.
+	namedWindow("Orientation", WINDOW_AUTOSIZE);// Create a window for display.
+
 
 	std::string saliency_algorithm = "EdgeBoxes";
   
@@ -78,16 +80,37 @@ int main( int argc, char** argv )
 
 	Mat edgeImage;
 	edgeImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/edge.png", 0);
-	edgeImage.convertTo(edgeImage, CV_64FC1);
+	edgeImage.convertTo(edgeImage, CV_64F,1/255.0f);
 	Mat orientationImage;
 	orientationImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/orientation.png", 0);
-	edgeImage.convertTo(orientationImage, CV_64FC1);
-	Mat result;
+	orientationImage.convertTo(orientationImage, CV_64F, 1 / 255.0f);
+	
+	
+
+	
+	Mat result= Mat(edgeImage.rows, edgeImage.cols, CV_64F, double(0));
 	ObjectnessEdgeBoxes oeb;
+
+
+	//oeb.computeSaliencyDiagnostic(edgeImage, orientationImage, result);
 	oeb.computeSaliencyMap(edgeImage, orientationImage, result);
+
+
+	imshow("Edge", edgeImage);
+	//waitKey(0);
+
+	imshow("Orientation", orientationImage);
+	waitKey(10);
+
+	double result_min, result_max;
+	minMaxLoc(result, &result_min, &result_max);
+	result.convertTo(result, CV_64F, 1 / result_max);
 
 	imshow("Display window", result);                   // Show our image inside it.
 	waitKey(0);
+	
+
+
 
 	//saliencyAlgorithm.dynamicCast<ObjectnessEdgeBoxes>()->computeSaliencyMap(edgeImage, orientationImage, result);
 
