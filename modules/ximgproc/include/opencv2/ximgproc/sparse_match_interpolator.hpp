@@ -72,7 +72,7 @@ public:
 };
 
 /** @brief Sparse match interpolation algorithm based on modified locally-weighted affine
-estimator from --- and Fast Global Smoother as post-processing filter.
+estimator from @cite Revaud2015 and Fast Global Smoother as post-processing filter.
  */
 class CV_EXPORTS_W EdgeAwareInterpolator : public SparseMatchInterpolator
 {
@@ -100,14 +100,14 @@ public:
     /** @see setLambda */
     CV_WRAP virtual float getLambda() = 0;
 
-    /** @brief Sets whether the fast-global-smoother-based post-processing is employed. It is turned on by
+    /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed. It is turned on by
     default.
      */
     CV_WRAP virtual void setUsePostProcessing(bool _use_post_proc) = 0;
     /** @see setUsePostProcessing */
     CV_WRAP virtual bool getUsePostProcessing() = 0;
 
-    /** @brief Sets the respective post-processing parameter. 
+    /** @brief Sets the respective fastGlobalSmootherFilter() parameter. 
      */
     CV_WRAP virtual void  setFGSLambda(float _lambda) = 0;
     /** @see setFGSLambda */
