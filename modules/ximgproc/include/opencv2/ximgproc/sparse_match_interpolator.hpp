@@ -46,7 +46,7 @@ namespace ximgproc {
 //! @addtogroup ximgproc_filters
 //! @{
 
-/** @brief Main interface for all filters, that take sparse matches as an 
+/** @brief Main interface for all filters, that take sparse matches as an
 input and produce a dense per-pixel matching (optical flow) as an output.
  */
 class CV_EXPORTS_W SparseMatchInterpolator : public Algorithm
@@ -56,18 +56,18 @@ public:
 
     @param from_image first of the two matched images, 8-bit single-channel or three-channel.
 
-    @param from_points points of the from_image for which there are correspondences in the 
+    @param from_points points of the from_image for which there are correspondences in the
     to_image (Point2f vector, size shouldn't exceed 32767)
 
     @param to_image second of the two matched images, 8-bit single-channel or three-channel.
 
-    @param to_points points in the to_image corresponding to from_points 
+    @param to_points points in the to_image corresponding to from_points
     (Point2f vector, size shouldn't exceed 32767)
 
     @param dense_flow output dense matching (two-channel CV_32F image)
      */
-    CV_WRAP virtual void interpolate(InputArray from_image, InputArray from_points, 
-                                     InputArray to_image  , InputArray to_points, 
+    CV_WRAP virtual void interpolate(InputArray from_image, InputArray from_points,
+                                     InputArray to_image  , InputArray to_points,
                                      OutputArray dense_flow) = 0;
 };
 
@@ -78,7 +78,7 @@ class CV_EXPORTS_W EdgeAwareInterpolator : public SparseMatchInterpolator
 {
 public:
     /** @brief K is a number of nearest-neighbor matches considered, when fitting a locally affine
-    model. Usually it should be around 128. However, lower values would make the interpolation 
+    model. Usually it should be around 128. However, lower values would make the interpolation
     noticeably faster.
      */
     CV_WRAP virtual void setK(int _k) = 0;
@@ -93,7 +93,7 @@ public:
     /** @see setSigma */
     CV_WRAP virtual float getSigma() = 0;
 
-    /** @brief Lambda is a parameter defining the weight of the edge-aware term in geodesic distance, 
+    /** @brief Lambda is a parameter defining the weight of the edge-aware term in geodesic distance,
     should be in the range of 0 to 1000.
      */
     CV_WRAP virtual void  setLambda(float _lambda) = 0;
@@ -107,7 +107,7 @@ public:
     /** @see setUsePostProcessing */
     CV_WRAP virtual bool getUsePostProcessing() = 0;
 
-    /** @brief Sets the respective fastGlobalSmootherFilter() parameter. 
+    /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
     CV_WRAP virtual void  setFGSLambda(float _lambda) = 0;
     /** @see setFGSLambda */

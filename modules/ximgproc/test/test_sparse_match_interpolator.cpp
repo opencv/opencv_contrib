@@ -105,14 +105,14 @@ TEST(InterpolatorTest, ReferenceAccuracy)
     double MAX_DIF = 1.0;
     double MAX_MEAN_DIF = 1.0 / 256.0;
     string dir = getDataDir() + "cv/sparse_match_interpolator";
-    
+
     Mat src = imread(getDataDir() + "cv/optflow/RubberWhale1.png",IMREAD_COLOR);
     ASSERT_FALSE(src.empty());
 
     Mat ref_flow = readOpticalFlow(dir + "/RubberWhale_reference_result.flo");
     ASSERT_FALSE(ref_flow.empty());
 
-    ifstream file(dir + "/RubberWhale_sparse_matches.txt");
+    ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
     float from_x,from_y,to_x,to_y;
     vector<Point2f> from_points;
     vector<Point2f> to_points;
@@ -154,7 +154,7 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 
     Mat from(size, guideType);
     randu(from, 0, 255);
-    
+
     int num_matches = rng.uniform(5,SHRT_MAX-1);
     vector<Point2f> from_points;
     vector<Point2f> to_points;

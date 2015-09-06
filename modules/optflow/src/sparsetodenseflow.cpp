@@ -48,8 +48,8 @@ namespace cv {
 namespace optflow {
 
 CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, OutputArray flow,
-                                               int grid_step, int k, 
-                                               float sigma, bool use_post_proc, 
+                                               int grid_step, int k,
+                                               float sigma, bool use_post_proc,
                                                float fgs_lambda, float fgs_sigma)
 {
     CV_Assert( grid_step>1 && k>3 && sigma>0.0001f && fgs_lambda>1.0f && fgs_sigma>0.01f );

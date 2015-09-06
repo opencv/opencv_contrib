@@ -186,11 +186,11 @@ public:
     void collectGarbage();
 protected:
     int grid_step;
-    int k;        
-    float sigma;  
+    int k;
+    float sigma;
     bool use_post_proc;
-    float fgs_lambda; 
-    float fgs_sigma;  
+    float fgs_lambda;
+    float fgs_sigma;
 };
 
 OpticalFlowSparseToDense::OpticalFlowSparseToDense(int _grid_step, int _k, float _sigma, bool _use_post_proc, float _fgs_lambda, float _fgs_sigma)

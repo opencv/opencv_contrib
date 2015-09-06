@@ -109,7 +109,7 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      double sigma_dist, double sigma_color, int postprocess_window,
                                      double sigma_dist_fix, double sigma_color_fix, double occ_thr,
                                      int upscale_averaging_radius, double upscale_sigma_dist,
-                                     double upscale_sigma_color, double speed_up_thr ); 
+                                     double upscale_sigma_color, double speed_up_thr );
 
 /** @brief Fast dense optical flow based on PyrLK sparse matches interpolation.
 
@@ -122,16 +122,16 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
        model. Lower values can make the algorithm noticeably faster at the cost of
        some quality degradation.
 @param sigma parameter defining how fast the weights decrease in the locally-weighted affine
-       fitting. Higher values can help preserve fine details, lower values can help to get rid 
+       fitting. Higher values can help preserve fine details, lower values can help to get rid
        of the noise in the output flow.
-@param use_post_proc defines whether the ximgproc::fastGlobalSmootherFilter() is used 
+@param use_post_proc defines whether the ximgproc::fastGlobalSmootherFilter() is used
        for post-processing after interpolation
 @param fgs_lambda see the respective parameter of the ximgproc::fastGlobalSmootherFilter()
 @param fgs_sigma  see the respective parameter of the ximgproc::fastGlobalSmootherFilter()
  */
 CV_EXPORTS_W void calcOpticalFlowSparseToDense ( InputArray from, InputArray to, OutputArray flow,
                                                  int grid_step = 8, int k = 128, float sigma = 0.05f,
-                                                 bool use_post_proc = true, float fgs_lambda = 500.0f, 
+                                                 bool use_post_proc = true, float fgs_lambda = 500.0f,
                                                  float fgs_sigma = 1.5f );
 
 /** @brief Read a .flo file

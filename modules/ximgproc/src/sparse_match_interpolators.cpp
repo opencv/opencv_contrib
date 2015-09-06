@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -54,20 +54,18 @@ struct SparseMatch
     SparseMatch(Point2f ref_point, Point2f target_point): reference_image_pos(ref_point), target_image_pos(target_point) {}
 };
 
-bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
-{
-    if((int)(lhs.reference_image_pos.y+0.5f)!=(int)(rhs.reference_image_pos.y+0.5f))
-        return (lhs.reference_image_pos.y<rhs.reference_image_pos.y);
-    else
-        return (lhs.reference_image_pos.x<rhs.reference_image_pos.x);
-}
+bool operator<(const SparseMatch& lhs,const SparseMatch& rhs);
+
+void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst);
+void generateHypothesis(short* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
+void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
 
 struct node
 {
     float dist;
     short label;
     node() {}
-    node(short l,float d): label(l), dist(d) {}
+    node(short l,float d): dist(d), label(l) {}
 };
 
 class EdgeAwareInterpolatorImpl : public EdgeAwareInterpolator
@@ -88,11 +86,11 @@ protected:
 
     //tunable parameters:
     float lambda;
-    int k;      
+    int k;
     float sigma;
     bool use_post_proc;
     float fgs_lambda;
-    float fgs_sigma; 
+    float fgs_sigma;
 
     // static parameters:
     static const int distance_transform_num_iter   = 1;
@@ -149,7 +147,7 @@ public:
     float getFGSSigma() {return fgs_sigma;}
 };
 
-void EdgeAwareInterpolatorImpl::init() 
+void EdgeAwareInterpolatorImpl::init()
 {
     lambda        = 999.0f;
     k             = 128;
@@ -176,14 +174,14 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
 
     w = from_image.cols();
     h = from_image.rows();
-    
+
     vector<Point2f> from_vector = *(const vector<Point2f>*)from_points.getObj();
     vector<Point2f> to_vector   = *(const vector<Point2f>*)to_points  .getObj();
     vector<SparseMatch> matches_vector(from_vector.size());
     for(unsigned int i=0;i<from_vector.size();i++)
         matches_vector[i] = SparseMatch(from_vector[i],to_vector[i]);
     sort(matches_vector.begin(),matches_vector.end());
-    match_num = matches_vector.size();
+    match_num = (int)matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);
 
     Mat src = from_image.getMat();
@@ -306,14 +304,14 @@ void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& c
 
             j=0;
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
             j++;
             for(;j<w-1;j++)
             {
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
             }
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
@@ -340,14 +338,14 @@ void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& c
 
             j=w-1;
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);            
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
             j--;
             for(;j>0;j--)
             {
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j+1]     ,label_row[j+1]     ,cost_row[j+1]     ,c1);
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
                 CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);            
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
             }
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j+1]     ,label_row[j+1]     ,cost_row[j+1]     ,c1);
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
@@ -363,7 +361,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     float *dist_row_prev, *cost_row_prev;
     short *label_row;
     short *label_row_prev;
-    int i,j,n;
+    int i,j;
     const float c1 = 1.0f/2.0f;
     const float c2 = sqrt(2.0f)/2.0f;
     float d;
@@ -406,14 +404,14 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 
         j=0;
         CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
+        CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
         j++;
         for(;j<w-1;j++)
         {
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
             CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
-            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);            
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
         }
         CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
         CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
@@ -432,7 +430,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
         {
             found = false;
 
-            for(n=0;n<(int)g[neighbors[j].label].size();n++)
+            for(unsigned int n=0;n<g[neighbors[j].label].size();n++)
             {
                 if(g[neighbors[j].label][n].label==i)
                 {
@@ -444,7 +442,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 
             if(!found)
                 g[neighbors[j].label].push_back(node((short)i,neighbors[j].dist));
-        }        
+        }
     }
 }
 
@@ -488,7 +486,7 @@ struct nodeHeap
 
     inline void nodeSwap(short idx1, short idx2)
     {
-        heap_pos[heap[idx1].label] = idx2; 
+        heap_pos[heap[idx1].label] = idx2;
         heap_pos[heap[idx2].label] = idx1;
 
         tmp_node   = heap[idx1];
@@ -532,7 +530,7 @@ struct nodeHeap
                 heap[i] = heap[right];
                 heap_pos[heap[i].label] = i;
                 i = right;
-            }        
+            }
         }
 
         if(i==size)
@@ -597,7 +595,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     {
         if(inst->g[i].empty())
             continue;
-        
+
         num_expanded_vertices = 0;
         memset(expanded_flag,0,inst->match_num);
         q.clear();
@@ -629,7 +627,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
 void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
-    Mat A (6, 6, CV_64F, &sa[0][0]), 
+    Mat A (6, 6, CV_64F, &sa[0][0]),
         B (6, 1, CV_64F, sb),
         MM(1, 6, CV_64F);
     Point2f a,b;
@@ -727,7 +725,7 @@ void verifyHypothesis(short* labels, float* weights, int count, SparseMatch* mat
 }
 
 EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, float* _eps, SparseMatch* _matches, int _num_stripes, int _inc):
-inst(&_inst), transforms(_transforms), weighted_inlier_nums(_weighted_inlier_nums), eps(_eps), num_stripes(_num_stripes), matches(_matches), inc(_inc)
+inst(&_inst), transforms(_transforms), weighted_inlier_nums(_weighted_inlier_nums), eps(_eps), matches(_matches), num_stripes(_num_stripes), inc(_inc)
 {
     stripe_sz = (int)ceil(inst->match_num/(double)num_stripes);
 }
@@ -771,7 +769,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         if(inc>0) //forward pass
         {
             hal::exp(KNNdistances,KNNdistances,inst->k);
-            
+
             Point2f average = Point2f(0.0f,0.0f);
             for(int j=0;j<inst->k;j++)
                 average += matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos;
@@ -845,7 +843,6 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
     parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,eps,&matches.front(),ransac_num_stripes,1));
     //backward pass:
     parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,eps,&matches.front(),ransac_num_stripes,-1));
-    
 
     //construct the final piecewise-affine interpolation:
     short* label_row;
@@ -853,7 +850,7 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
     for(int i=0;i<h;i++)
     {
         label_row = labels.ptr<short>(i);
-        Point2f* dst_row = dst_dense_flow.ptr<Point2f>(i); 
+        Point2f* dst_row = dst_dense_flow.ptr<Point2f>(i);
         for(int j=0;j<w;j++)
         {
             tr = transforms[label_row[j]].ptr<float>(0);
@@ -870,6 +867,14 @@ CV_EXPORTS_W
 Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator()
 {
     return Ptr<EdgeAwareInterpolator>(EdgeAwareInterpolatorImpl::create());
+}
+
+bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
+{
+    if((int)(lhs.reference_image_pos.y+0.5f)!=(int)(rhs.reference_image_pos.y+0.5f))
+        return (lhs.reference_image_pos.y<rhs.reference_image_pos.y);
+    else
+        return (lhs.reference_image_pos.x<rhs.reference_image_pos.x);
 }
 
 }
