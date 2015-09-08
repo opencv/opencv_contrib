@@ -44,5 +44,5 @@ Working/Not-Working
 0. Generation of Affinity matrix --tested
 0. Generation of supporting data structures 
 0. Generation of window list --tested
-0. Scoring Function -- working, but slow
+0. Scoring Function -- working, slow, not verified
 
