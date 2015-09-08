@@ -109,7 +109,7 @@ PERF_TEST_P(file_str, detect, testing::Values(IMAGES))
     createMatFromVec( keylines, lines );
   }
 
-  SANITY_CHECK( lines );
+  SANITY_CHECK_NOTHING();
 
 }
 
@@ -133,6 +133,6 @@ PERF_TEST_P(file_str, detect_lsd, testing::Values(IMAGES))
     createMatFromVec( keylines, lines );
   }
 
-  SANITY_CHECK( lines );
+  SANITY_CHECK_NOTHING();
 
 }

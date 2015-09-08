@@ -29,5 +29,5 @@ PERF_TEST_P(daisy, extract, testing::Values(DAISY_IMAGES))
     // compute all daisies in image
     TEST_CYCLE() descriptor->compute(frame, descriptors);
 
-    SANITY_CHECK(descriptors, 1e-4);
+    SANITY_CHECK_NOTHING();
 }

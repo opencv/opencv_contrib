@@ -455,8 +455,8 @@ TEST_P(FastHoughTransformTest, accuracy)
     testFht.run_n_tests(depth, channels, pts_count, n_per_test);
 }
 
-#define FHT_ALL_DEPTHS CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F
-#define FHT_ALL_CHANNELS 1, 2, 3, 4
+#define FHT_ALL_DEPTHS CV_8U, CV_16U, CV_32S, CV_32F, CV_64F
+#define FHT_ALL_CHANNELS 1, 3, 4
 
 INSTANTIATE_TEST_CASE_P(FullSet, FastHoughTransformTest,
                         Combine(Values(FHT_ALL_DEPTHS),

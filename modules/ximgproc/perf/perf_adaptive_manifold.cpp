@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -49,7 +49,7 @@ using namespace cv::ximgproc;
 
 typedef tuple<bool, Size, int, int, MatType> AMPerfTestParam;
 typedef TestBaseWithParam<AMPerfTestParam> AdaptiveManifoldPerfTest;
-    
+
 PERF_TEST_P( AdaptiveManifoldPerfTest, perf,
     Combine(
     Values(true, false),            //adjust_outliers flag
@@ -70,7 +70,7 @@ PERF_TEST_P( AdaptiveManifoldPerfTest, perf,
     Mat joint(sz, CV_MAKE_TYPE(depth, jointCnNum));
     Mat src(sz, CV_MAKE_TYPE(depth, srcCnNum));
     Mat dst(sz, CV_MAKE_TYPE(depth, srcCnNum));
-    
+
     cv::setNumThreads(cv::getNumberOfCPUs());
 
     declare.in(joint, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
@@ -87,7 +87,7 @@ PERF_TEST_P( AdaptiveManifoldPerfTest, perf,
         sigma_r /= 1.38;
     }
 
-    SANITY_CHECK(dst);
+    SANITY_CHECK_NOTHING();
 }
 
 }

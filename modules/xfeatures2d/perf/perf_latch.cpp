@@ -30,5 +30,5 @@ PERF_TEST_P(latch, extract, testing::Values(LATCH_IMAGES))
     vector<uchar> descriptors;
     TEST_CYCLE() descriptor->compute(frame, points, descriptors);
 
-    SANITY_CHECK(descriptors, 1e-4);
+    SANITY_CHECK_NOTHING();
 }
