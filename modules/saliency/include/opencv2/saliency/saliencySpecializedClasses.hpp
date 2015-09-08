@@ -483,7 +483,7 @@ private:
 	  int height;
   } _params;
 
-  void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, std::vector<Vec4i> &box_list, std::vector<double> score_list);
+  void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, Mat &orientationImage, std::vector<Vec4i> &box_list, std::vector<double> &score_list);
 
   void ObjectnessEdgeBoxes::initializeDataStructures(Mat &edgeImage, Mat &orientationImage);
 

@@ -72,10 +72,15 @@ namespace cv
 			//compute edges
 			Mat edgeImage = Mat(inputImg.rows, inputImg.cols, CV_64F);
 
+			Mat orientationImage = Mat(edgeImage.rows, edgeImage.cols, CV_64F);
+			getOrientationImage(edgeImage, orientationImage);
+
+
+
 			//do everything else
 			std::vector<Vec4i> box_list;
 			std::vector<double> score_list;
-			getBoxScores(edgeImage,box_list, score_list);
+			getBoxScores(edgeImage,orientationImage,box_list, score_list);
 			saliencyMap.setTo(_box_list);
 			return true;
 		}
@@ -103,10 +108,16 @@ namespace cv
 						break;
 			}
 
+
+			Mat orientationImage = Mat(edgeImage.rows, edgeImage.cols, CV_64F);
+
+			getOrientationImage(edgeImage, orientationImage);
+
+
 			//do everything else
 			std::vector<Vec4i> box_list;
 			std::vector<double> score_list;
-			getBoxScores(edgeImage, box_list, score_list);
+			getBoxScores(edgeImage, orientationImage, box_list, score_list);
 			saliencyMap.setTo(_box_list);
 			return true;
 		}
@@ -635,6 +646,9 @@ namespace cv
 
 			int counter = 0;
 
+			std::ofstream box_file;
+			box_file.open("C:/Users/hisham/Dropbox/trud/edges-master/box_list.txt");
+
 			int width_step = (end_width - start_width) / num_width;
 			float aspect_step = ((1 / (start_t)) - start_t ) / num_t;
 			for (int width = start_width; width < end_width; width += width_step){
@@ -667,6 +681,15 @@ namespace cv
 							int r1 = box[2];
 							int c0 = box[1];
 							int c1 = box[3];
+
+
+
+							box_file << r0 << " " << r1 << " " << c0 << " " << c1 << std::endl;
+
+							
+
+
+
 
 							//box[0] = 153;
 							//box[2] = 191;
@@ -722,6 +745,7 @@ namespace cv
 			}
 
 			printf("Num windows iterated over: %d \n", counter);
+			box_file.close();
 
 			return;
 
@@ -954,13 +978,11 @@ namespace cv
 				for (int j = 1; j < input.cols - 1; j++){
 					output.at<double>(i, j) = 0.5*(input.at<double>(i, j + 1) - input.at<double>(i, j - 1));
 				}
-			}
 
-			//right and leftmost
-			for (int i = 0; i < input.rows; i++){
-				output.at<double>(i, 0) =  (input.at<double>(i, 1) - input.at<double>(i,0));
+				output.at<double>(i, 0) = (input.at<double>(i, 1) - input.at<double>(i, 0));
 				output.at<double>(i, input.cols - 1) = (input.at<double>(i, input.cols - 1) - input.at<double>(i, input.cols - 2));
 			}
+
 		}
 
 		void ObjectnessEdgeBoxes::gradient_y(Mat &input, Mat &output){
@@ -1038,7 +1060,20 @@ namespace cv
 
 		void ObjectnessEdgeBoxes::getOrientationImage(Mat &edgeImage, Mat &orientationImage){
 
+
+
+
+
+
+
 			Mat oImage = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
+			
+			
+			
+
+			
+			
+			
 			//compute orientation:
 			//Mat triangle = Mat::ones(1,4,CV_64F)/4.0;
 			Mat triangle = Mat::ones(1, 4, CV_64F);
@@ -1048,20 +1083,33 @@ namespace cv
 			triangle.at<double>(0, 3) = 0.0;
 
 			//double triangle[] = { 1.0/4.0, 1.0/4.0, 1.0 / 4.0, 1.0 / 4.0 };
-			sepFilter2D(edgeImage, oImage, -1, triangle, triangle, Point(01, 01), 0, BORDER_DEFAULT);
+			sepFilter2D(edgeImage, oImage, -1, triangle, triangle, Point(-1, -1), 0, BORDER_DEFAULT);
+
+
+
 
 
 			Mat Oxx = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
 			Mat Oyy = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
 			Mat Oxy = Mat(edgeImage.rows, edgeImage.cols, edgeImage.depth());
 
-			gradient_x(edgeImage, Oxx);
+			gradient_x(oImage, Oxx);
 			gradient_x(Oxx, Oxx);
 
-			gradient_y(edgeImage, Oyy);
-			gradient_y(Oyy, Oyy);
 
-			gradient_x(edgeImage, Oxy);
+
+
+
+			gradient_y(oImage, Oyy);
+			gradient_y(Oyy, Oyy);
+			
+
+
+
+
+
+			
+			gradient_x(oImage, Oxy);
 			gradient_y(Oxy, Oxy);
 
 
@@ -1077,11 +1125,17 @@ namespace cv
 				}
 			}
 
+
+
+
 			orientationImage = oImage;
+
+
+
 
 		}
 
-		void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, std::vector<Vec4i> &box_list, std::vector<double> score_list){
+		void ObjectnessEdgeBoxes::getBoxScores(Mat &edgeImage, Mat &orientationImage, std::vector<Vec4i> &box_list, std::vector<double> &score_list){
 
 			int width = edgeImage.cols;
 			int height = edgeImage.rows;
@@ -1093,9 +1147,6 @@ namespace cv
 				}
 			}
 
-			Mat orientationImage = Mat(edgeImage.rows, edgeImage.cols, CV_64F);
-
-			getOrientationImage(edgeImage, orientationImage);
 
 			initializeDataStructures(edgeImage, orientationImage);
 
@@ -1125,7 +1176,7 @@ namespace cv
 			//perform gradient descent:
 			for (int i = 0; i < window_list.size(); i++){
 				Vec4i box = local_optimum_box(window_list[i], aspect_list[i], width_list[i]);
-				printf("Local optimum for window %d; %d, %d, %d, %d \n", i, box[0], box[1], box[2], box[3]);
+				printf("Local optimum for window %d / %d ; %d, %d, %d, %d \n", i, window_list.size(), box[0], box[1], box[2], box[3]);
 				window_list[i] = box;
 			}
 
@@ -1134,15 +1185,19 @@ namespace cv
 			window_list = non_maximal_suppression(window_list, score_list);
 
 			//score the boxes:
+			score_list.clear();
+			box_list.clear();
 			_score_list.clear();
 			_box_list.clear();
 			for (int i = 0; i < window_list.size(); i++){
 				double score = scoreBoxParams(window_list.at(i));
 				_score_list.push_back((float)score);
 				_box_list.push_back(window_list.at(i));
+				box_list.push_back(window_list.at(i));
 				score_list.push_back(score);
 
 			}
+
 
 			return;
 
@@ -1157,76 +1212,17 @@ namespace cv
 			Vec4i box2 = Vec4i(5, 0, 15, 10);
 			float IOU = calculateIOU(box1, box2);
 
-
-			int width = edgeImage.cols;
-			int height = edgeImage.rows;
-
-			//threshold edge image:
-			for (int i = 0; i < edgeImage.rows; i++){
-				for (int j = 0; j < edgeImage.cols; j++){
-					edgeImage.at<double>(i, j) = (edgeImage.at<double>(i, j) > 0.1)*edgeImage.at<double>(i, j);
-				}
-			}
-
-			resultImage = Mat(Size(width, height), CV_64FC1, Scalar(0.0f));
-
-			initializeDataStructures(edgeImage, orientationImage);
-
-
-
-			getOrientationImage(edgeImage, orientationImage);
-
-			//create window list:
-			std::vector<Vec4i> window_list;
-			std::vector<float> aspect_list;
-			std::vector<float> width_list;
-			std::vector<double> score_list;
-			float thresh = .02;
-			float start_t = 0.33f;
-			float end_t = 3.0f;
-			float start_width =40.0f;
-			float end_width = edgeImage.cols;
-			float num_t = 10;
-			float num_width = 10;
-			float iou = 0.65f;
-			get_window_list(window_list, score_list, aspect_list, width_list, iou, thresh, start_t, end_t, num_t, start_width, end_width, num_width);
-			
-			printf("Number of initial windows: %d\n", window_list.size());
-			for (int i = 0; i < window_list.size(); i++){
-				printf("Window %d: [%d, %d, %d, %d] \n", i, window_list.at(i)[0], window_list.at(i)[1], window_list.at(i)[2], window_list.at(i)[3]);
-			}
-
-
-			//perform gradient descent:
-			for (int i = 0; i < window_list.size(); i++){
-				Vec4i box = local_optimum_box(window_list[i], aspect_list[i], width_list[i]);
-				printf("Local optimum for window %d; %d, %d, %d, %d \n", i, box[0], box[1], box[2], box[3]);
-				window_list[i] = box;
-			}
-
-
-			//perform non maximal suppression:
-			window_list = non_maximal_suppression(window_list, score_list);
-
+			std::vector<Vec4i> boxList;
+			std::vector<double> scoreList;
+			getBoxScores(edgeImage, orientationImage, boxList, scoreList);
 
 			//evaluate all windows:
-			for (int bb = 0; bb < window_list.size(); bb++){
-				Vec4i box = window_list[bb];
-				double score = score_list[bb];
-
-				/*
-				double score = scoreBox(box,
-					row_intersection_list,
-					row_intersection_img,
-					column_intersection_list,
-					column_intersection_img,
-					affinity_matrix,
-					group_position,
-					group_sum_magnitude);
-					*/
+			for (int bb = 0; bb < boxList.size(); bb++){
+				Vec4i box = boxList[bb];
+				double score = scoreList[bb];
 
 				//assign all pixels in window to score value:
-				printf("Filling in box: %d %d %d %d \n", box[0], box[1], box[2], box[3]);
+				printf("Filling in box %d of %d: %d %d %d %d \n", bb, boxList.size(), box[0], box[1], box[2], box[3]);
 				for (int rb = box[0]; rb < box[2]; rb++){
 					for (int cb = box[1]; cb < box[3]; cb++){
 						resultImage.at<double>(Point(cb, rb)) = max(score, resultImage.at<double>(Point(cb, rb)));
@@ -1237,11 +1233,6 @@ namespace cv
 			}
 
 
-
-			//resultImage = edgeImage;
-			//resultImage = affinity_matrix;
-			//resultImage = column_intersection_img;
-			//resultImage.convertTo(resultImage, CV_64FC1);
 			return true;
 		}
 

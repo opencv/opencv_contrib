@@ -79,10 +79,10 @@ int main( int argc, char** argv )
 	Ptr<Saliency> saliencyAlgorithm = Saliency::create(saliency_algorithm);
 
 	Mat edgeImage;
-	edgeImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/edge.png", 0);
+	edgeImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/edge_circle.png", 0);
 	edgeImage.convertTo(edgeImage, CV_64F,1/255.0f);
 	Mat orientationImage;
-	orientationImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/orientation.png", 0);
+	orientationImage = imread("C:/Users/hisham/Dropbox/trud/edges-master/orientation_circle.png", 0);
 	orientationImage.convertTo(orientationImage, CV_64F, 1 / 255.0f);
 	
 	
