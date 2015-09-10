@@ -43,7 +43,7 @@
 #ifndef __OPENCV_BITARRAY_HPP
 #define __OPENCV_BITARRAY_HPP
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning( disable : 4267 )
 #endif
 
