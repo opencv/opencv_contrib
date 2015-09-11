@@ -454,7 +454,7 @@ void TransientAreasSegmentationModuleImpl::_run(const std::valarray<float> &inpu
 
     // first square the input in order to increase the signal to noise ratio
     // get motion local energy
-    _squaringSpatiotemporalLPfilter(&inputToSegment[channelIndex*getNBpixels()], &_localMotion[0]);
+    _squaringSpatiotemporalLPfilter(&const_cast<std::valarray<float>&>(inputToSegment)[channelIndex*getNBpixels()], &_localMotion[0]);
 
     // second low pass filter: access to the neighborhood motion energy
     _spatiotemporalLPfilter(&_localMotion[0], &_neighborhoodMotion[0], 1);
