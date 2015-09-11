@@ -129,6 +129,7 @@ void release2DBuffer(T** pBuffer, size_t nElements)
 template <typename InputType>
 BPFlow<InputType>::BPFlow()
 {
+    IsDisplay = false;
     IsDataTermTruncated = false;
     IsTRW = false;
     CTRW = (double)1 / 2;
@@ -159,7 +160,7 @@ BPFlow<InputType>::BPFlow()
     topiterations = 100;
     wsize = 5;
     topwsize = 20;
-    hierarchy = 4;//
+    //hierarchy = 4;//
 }
 
 template <typename InputType>
@@ -196,6 +197,7 @@ void BPFlow<InputType>::release()
     release1DBuffer(pX);
 }
 
+/*
 template <typename InputType>
 void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _flow)
 {
@@ -204,8 +206,23 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
     Mat I1 = _I1.getMat();
     CV_Assert(I0.size() == I1.size());
     CV_Assert(I0.type() == I1.type());
-    CV_Assert(I0.channels() == 1);
+    //CV_Assert(I0.channels() == 1);
     // TODO: currently only grayscale - data term could be computed in color version as well...
+
+    // Set parameters
+    Width = I0.cols;
+    Height = I0.rows;
+    Area = Width*Height;
+    nChannels = _I0.channels();
+    Width2 = I1.cols;
+    Height2 = I1.rows;
+    
+    ls = alpha;
+    ld = d;
+    im_s = Mat(Height, Width, CV_64FC2, ls);
+    im_d = Mat(Height, Width, CV_64FC2, ld);
+    pIm1 = (InputType*)I0.data;
+    pIm2 = (InputType*)I1.data;
 
     // Create flow
     _flow.create(I0.size(), CV_32FC2);
@@ -214,6 +231,88 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
     Mat vy = Mat(Height, Width, CV_32F, 0.0f);
 
     calcOneLevel(I0, I1, W, topwsize, vx, vy);
+
+    // Output flow
+    W.copyTo(_flow);
+}
+*/
+
+template <typename InputType>
+void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _flow)
+{
+    // Get images
+    Mat I0 = _I0.getMat();
+    Mat I1 = _I1.getMat();
+    CV_Assert(I0.size() == I1.size());
+    CV_Assert(I0.type() == I1.type());
+    //CV_Assert(I0.channels() == 1);
+    // TODO: currently only grayscale - data term could be computed in color version as well...
+
+    // Set parameters
+    ls = alpha;
+    ld = d;
+    
+
+    // Create flow
+    _flow.create(I0.size(), CV_32FC2);
+    Mat W = _flow.getMat(); // if any data present - will be discarded
+
+    // Build pyramids
+    std::vector<cv::Mat> pyrd1 = buildPyramid(I0, levels);
+    std::vector<cv::Mat> pyrd2 = buildPyramid(I1, levels);
+
+    // For each level
+    int gammaFact = 1;
+    int r, c;
+    Mat vx, vy;
+    for (int i = levels - 1; i >= 0; --i)
+    {
+        // Set level parameters
+        gammaFact = 1 << i;	// gammaFact = 2^i;
+        Width = pyrd1[i].cols;
+        Height = pyrd1[i].rows;
+        Area = Width*Height;
+        nChannels = pyrd1[i].channels();
+        Width2 = pyrd2[i].cols;
+        Height2 = pyrd2[i].rows;
+        im_s = Mat(Height, Width, CV_64FC2, Scalar(ls, ls));
+        im_d = Mat(Height, Width, CV_64FC2, Scalar(ld, ld));
+        W.create(Height, Width, CV_32FC2);
+
+        if (i == (levels - 1))
+        {
+            vx = cv::Mat(Height, Width, CV_32F, 0.0f);
+            vy = cv::Mat(Height, Width, CV_32F, 0.0f);
+            level_gamma = gamma*gammaFact;
+
+            calcOneLevel(pyrd1[i], pyrd2[i], W, topiterations, topwsize, 2, vx, vy);
+        }
+        else
+        {
+            // Calculate vx, vy
+            downOffset(vx, Width, Height);
+            downOffset(vy, Width, Height);
+
+            level_gamma = gamma*gammaFact;
+
+            calcOneLevel(pyrd1[i], pyrd2[i], W, iterations, wsize + i, levels - (i + 1), vx, vy);
+        }
+
+        // Set vx vy
+        float *vx_data = (float*)vx.data, *vy_data = (float*)vy.data;
+        float* w_data = (float*)W.data;
+        for (int j = 0; j < Area; ++j)
+        {
+            *vx_data++ = *w_data++;
+            *vy_data++ = *w_data++;
+        }
+
+        /*/// Debug ///
+        cv:Mat_<double> vx_debug(height, width, vx.pData), vy_debug(height, width, vy.pData);
+        debug << "vx_c{" << i + 1 << "} = " << vx_debug << ";" << endl;
+        debug << "vy_c{" << i + 1 << "} = " << vy_debug << ";" << endl;
+        /////////////*/
+    }
 
     // Output flow
     W.copyTo(_flow);
@@ -240,8 +339,8 @@ void BPFlow<InputType>::collectGarbage()
 template <typename InputType>
 std::vector<Mat> BPFlow<InputType>::buildPyramid(const Mat& src, int _levels)
 {
-    std::vector<Mat> pyramid;
-    pyramid.push_back(src);
+    std::vector<Mat> pyramid(_levels);
+    pyramid[0] = src;
     Mat tmp;
     int w, h;
 
@@ -252,10 +351,10 @@ std::vector<Mat> BPFlow<InputType>::buildPyramid(const Mat& src, int _levels)
         GaussianBlur(pyramid[i - 1], tmp, Size(5, 5), 0.67, 0, BORDER_REPLICATE);
 
         // Resize image using bicubic interpolation
-        //w = (int)ceil(pyramid[i - 1].cols / 2.0f);
-        //h = (int)ceil(pyramid[i - 1].rows / 2.0f);
-        w = pyramid[i - 1].cols / 2 + (pyramid[i - 1].cols % 2 == 1);
-        h = pyramid[i - 1].rows / 2 + (pyramid[i - 1].rows % 2 == 1);
+        w = (int)ceil(pyramid[i - 1].cols / 2.0f);
+        h = (int)ceil(pyramid[i - 1].rows / 2.0f);
+        //w = pyramid[i - 1].cols / 2 + (pyramid[i - 1].cols % 2 == 1);
+        //h = pyramid[i - 1].rows / 2 + (pyramid[i - 1].rows % 2 == 1);
         resize(tmp, pyramid[i], Size(w, h), 0, 0, INTER_CUBIC);
     }
 
@@ -263,10 +362,28 @@ std::vector<Mat> BPFlow<InputType>::buildPyramid(const Mat& src, int _levels)
 }
 
 template <typename InputType>
-void BPFlow<InputType>::calcOneLevel(const Mat I0, const Mat I1, Mat W,
-    int winsize, const cv::Mat& offsetX, const cv::Mat& offsetY)
+void BPFlow<InputType>::downOffset(cv::Mat& offset, int width, int height)
 {
-    setHomogeneousMRF(wsize);
+    cv::resize(offset, offset, cv::Size(width, height), 0, 0, cv::INTER_CUBIC);
+    float* off_data = (float*)offset.data;
+    int pixels = offset.total();
+    float val;
+    for (int i = 0; i < pixels; ++i)
+    {
+        val = *off_data;
+        *off_data++ = std::round(val * 2);
+    }
+}
+
+template <typename InputType>
+void BPFlow<InputType>::calcOneLevel(const Mat I0, const Mat I1, Mat W,
+    int _iterations, int winsize, int hierarchy,
+    const cv::Mat& offsetX, const cv::Mat& offsetY)
+{
+    pIm1 = (InputType*)I0.data;
+    pIm2 = (InputType*)I1.data;
+
+    setHomogeneousMRF(winsize);
     setOffset(offsetX, offsetY);
 
     Mat_<int> winSizeX(W.rows, W.cols, winsize);
@@ -274,8 +391,8 @@ void BPFlow<InputType>::calcOneLevel(const Mat I0, const Mat I1, Mat W,
     setWinSize(winSizeX, winSizeY);
 
     computeDataTerm();
-    computeRangeTerm(gamma);
-    messagePassing(iterations, 2);
+    computeRangeTerm(level_gamma);
+    messagePassing(_iterations, hierarchy);
     computeVelocity(W);
 }
 
@@ -315,8 +432,7 @@ void BPFlow<InputType>::computeDataTerm()
                     ptrdiff_t index2 = y*Width2 + x;
                     T_message foo = 0;
                     for (int n = 0; n < nChannels; n++)
-                        //foo += abs(pIm1[index*nChannels + n] - pIm2[index2*nChannels + n]); // L1 norm
-                        foo += abs(((double*)im_s.data)[index*nChannels + n] - ((double*)im_d.data)[index*nChannels + n]);
+                        foo += abs(pIm1[index*nChannels + n] - pIm2[index2*nChannels + n]); // L1 norm
                     //#ifdef INTMESSAGE
                     //						foo+=abs(pIm1[index*nChannels+n]-pIm2[index2*nChannels+n]); // L1 norm
                     //#else
@@ -457,7 +573,7 @@ double BPFlow<InputType>::messagePassing(int _iterations, int _hierarchy)
     {
         BPFlow bp;
         generateCoarserLevel(bp);
-        bp.messagePassing(20, hierarchy - 1);
+        bp.messagePassing(20, _hierarchy - 1);
         bp.propagateFinerLevel(*this);
     }
     
@@ -976,12 +1092,12 @@ void BPFlow<InputType>::setOffset(const Mat& offsetX, const Mat& offsetY)
         pOffset[i] = new T_state[Area];
     }
 
-    int* offsetX_data = (int*)offsetX.data;
-    int* offsetY_data = (int*)offsetY.data;
+    float* offsetX_data = (float*)offsetX.data;
+    float* offsetY_data = (float*)offsetY.data;
     for (size_t j = 0; j<Area; j++)
     {
-        pOffset[0][j] = offsetX_data[j];
-        pOffset[1][j] = offsetY_data[j];
+        pOffset[0][j] = (int)offsetX_data[j];
+        pOffset[1][j] = (int)offsetY_data[j];
     }
 }
 
@@ -1062,10 +1178,13 @@ void BPFlow<InputType>::generateCoarserLevel(BPFlow<InputType>& bp)
     //foo.imresize(bp.Im_s, bp.Width, bp.Height);
     //Im_d.smoothing(foo);
     //foo.imresize(bp.Im_d, bp.Width, bp.Height);
-    std::vector<Mat> pyrd_s = buildPyramid(im_s, 2);
-    std::vector<Mat> pyrd_d = buildPyramid(im_d, 2);
-    bp.im_s = pyrd_s[1];
-    bp.im_d = pyrd_d[1];
+
+    int w = im_s.cols / 2 + (im_s.cols % 2 == 1);
+    int h = im_s.rows / 2 + (im_s.rows % 2 == 1);
+    GaussianBlur(im_s, bp.im_s, Size(5, 5), 0.67, 0, BORDER_REPLICATE);
+    resize(bp.im_s, bp.im_s, Size(w, h), 0, 0, INTER_CUBIC);
+    GaussianBlur(im_d, bp.im_d, Size(5, 5), 0.67, 0, BORDER_REPLICATE);
+    resize(bp.im_d, bp.im_d, Size(w, h), 0, 0, INTER_CUBIC);
 
     bp.IsDisplay = IsDisplay;
     bp.nNeighbors = nNeighbors;
@@ -1083,7 +1202,7 @@ void BPFlow<InputType>::generateCoarserLevel(BPFlow<InputType>& bp)
     //------------------------------------------------------------------------------------------------
     // generate data term
     //------------------------------------------------------------------------------------------------
-    bp.nTotalMatches = allocateBuffer(bp.pDataTerm, bp.ptrDataTerm, Area, bp.pWinSize[0], bp.pWinSize[1]);
+    bp.nTotalMatches = allocateBuffer(bp.pDataTerm, bp.ptrDataTerm, bp.Area, bp.pWinSize[0], bp.pWinSize[1]);
     for (int i = 0; i<bp.Height; i++)
         for (int j = 0; j<bp.Width; j++)
         {
@@ -1104,7 +1223,7 @@ void BPFlow<InputType>::generateCoarserLevel(BPFlow<InputType>& bp)
     //------------------------------------------------------------------------------------------------
     // generate range term
     //------------------------------------------------------------------------------------------------
-    bp.computeRangeTerm(gamma / 2);
+    bp.computeRangeTerm(level_gamma / 2);
 }
 
 template <typename InputType>

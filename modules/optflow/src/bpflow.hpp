@@ -164,7 +164,7 @@ namespace cv
             int topiterations;	//!< The number of iterations for the top pyramid level
             int wsize;			//!< The window size for each inner pyramid level
             int topwsize;		//!< The window size for the top pyramid level
-            int hierarchy;      //!< The number of levels for the multi-grid bp
+            //int hierarchy;      //!< The number of levels for the multi-grid bp
 
         protected:
             bool IsDisplay;
@@ -202,6 +202,7 @@ namespace cv
 
             int nNeighbors;
             double ls, ld, level_gamma; // the parameters of regularization
+            int level_hierarchy;
 
             Mat im_s, im_d;
 
@@ -209,7 +210,8 @@ namespace cv
 
         private:
             void calcOneLevel(const Mat I0, const Mat I1, Mat W,
-                int winsize, const cv::Mat& offsetX, const cv::Mat& offsetY);
+                int _iterations, int winsize, int hierarchy,
+                const cv::Mat& offsetX, const cv::Mat& offsetY);
             void computeDataTerm();
             void computeRangeTerm(double _gamma);
             void allocateMessage();
@@ -228,6 +230,7 @@ namespace cv
             void setOffset(const Mat& offsetX, const Mat& offsetY);
             void setWinSize(const Mat& winSizeX, const Mat& winSizeY);
             std::vector<Mat> buildPyramid(const Mat& src, int _levels);
+            void downOffset(cv::Mat& offset, int width, int height);
 
             //------------------------------------------------------------------------
             // multi-grid belief propagation

@@ -111,7 +111,7 @@ namespace optflow
         //!	Default Constructor.
         ScaleMapImpl(bool exponential);
 
-        void compute(InputArray image,
+        void compute(const Mat& image,
             const std::vector<KeyPoint>& keypoints, Mat& scalemap);
 
     private:
@@ -131,7 +131,7 @@ namespace optflow
     {
     }
 
-    void ScaleMapImpl::compute(InputArray image, const std::vector<KeyPoint>& keypoints,
+    void ScaleMapImpl::compute(const Mat& image, const std::vector<KeyPoint>& keypoints,
         Mat& scalemap)
     {
         size_t r, c, i, j, nr, nc, min_row, max_row, min_col, max_col;
@@ -139,8 +139,8 @@ namespace optflow
         std::vector<Eigen::Triplet<float>> coefficients;	// list of non-zeros coefficients
         vector<float> weights(9);
         float m, v, sum;
-        Mat I = image.getMat();
-        size_t pixels = I.total();
+        //Mat I = image.getMat();
+        size_t pixels = image.total();
         int index = -1, nindex;
 
         // Initialization
@@ -148,11 +148,12 @@ namespace optflow
         for (i = 0; i < keypoints.size(); ++i)
         {
             const KeyPoint& feat = keypoints[i];
-            scale[((int)feat.pt.y)*I.cols + (int)feat.pt.x] = true;
+            scale[((int)feat.pt.y)*image.cols + (int)feat.pt.x] = true;
         }
 
         // Adjust image values
-        cv::Mat scaledImg = I.clone();
+        cv::Mat scaledImg;
+        cv::normalize(image, scaledImg, 0, 1, cv::NORM_MINMAX, CV_32F);
         scaledImg += 1;
         scaledImg *= (1 / 32.0f);
 
@@ -230,7 +231,7 @@ namespace optflow
         Eigen::VectorXf x = slu.solve(b);
 
         // Copy to output
-        scalemap.create(I.rows, I.cols, CV_32F);
+        scalemap.create(image.rows, image.cols, CV_32F);
         memcpy(scalemap.data, x.data(), pixels*sizeof(float));
     }
 

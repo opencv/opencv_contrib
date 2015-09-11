@@ -119,6 +119,8 @@ void CV_SiftFlowTest::run(int) {
     const float MAX_RMSE = 0.6f;
     const string frame1_path = ts->get_data_path() + "optflow/RubberWhale1.png";
     const string frame2_path = ts->get_data_path() + "optflow/RubberWhale2.png";
+    //const string frame1_path = "D:\\Dev\\Resources\\MSc\\SceauxCastleReduced8\\images\\100_7100.JPG";
+    //const string frame2_path = "D:\\Dev\\Resources\\MSc\\SceauxCastleReduced8\\images\\100_7101.JPG";
     const string gt_flow_path = ts->get_data_path() + "optflow/RubberWhale.flo";
 
     cv::Mat frame1 = cv::imread(frame1_path);
@@ -168,11 +170,25 @@ void CV_SiftFlowTest::run(int) {
     }
     fclose(gt_flow_file);
 
+    // Convert frames to grayscale
+    cv::Mat frame1_gray, frame2_gray;
+    cv::cvtColor(frame1, frame1_gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(frame2, frame2_gray, cv::COLOR_BGR2GRAY);
+
+    // Resize images
+    //cv::resize(frame1_gray, frame1_gray, cv::Size(), 0.5, 0.5);
+    //cv::resize(frame2_gray, frame2_gray, cv::Size(), 0.5, 0.5);
+
     // Create SIFT images
     cv::Ptr<cv::optflow::SiftImageExtractor> siftImageExtractor =
-        cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_LINEAR);
+        //cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_LINEAR);
+        cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_UNIFORM);
     cv::Mat siftImg1, siftImg2;
-    siftImageExtractor->compute(frame1, frame2, siftImg1, siftImg2);
+    siftImageExtractor->compute(frame1_gray, frame2_gray, siftImg1, siftImg2);
+
+    // Save SIFT images
+    //cv::optflow::siftimwrite(ts->get_data_path() + "optflow/RubberWhale1.sift", siftImg1);
+    //cv::optflow::siftimwrite(ts->get_data_path() + "optflow/RubberWhale2.sift", siftImg2);
 
     // Do SIFT-Flow
     cv::Mat flow;

@@ -43,6 +43,7 @@
 #include "precomp.hpp"
 #include <opencv2/xfeatures2d/nonfree.hpp>
 #include <opencv2\calib3d.hpp>
+#include <fstream>
 
 namespace cv
 {
@@ -95,15 +96,25 @@ namespace optflow
     void SiftImageExtractorImpl::compute(const Mat& img, Mat& siftImg)
     {
         Mat_<float> scalemap(img.rows, img.cols, 3.0f);
-        compute(img, siftImg, scalemap);
+        Mat scaledImg;
+        cv::normalize(img, scaledImg, 0, 1, cv::NORM_MINMAX, CV_32F);
+        compute(scaledImg, siftImg, scalemap);
     }
 
     void SiftImageExtractorImpl::compute(const Mat& img0, const Mat& img1,
         Mat& siftImg0, Mat& siftImg1)
     {
-        std::vector<KeyPoint> keypoints0, keypoints1;
-        findSparseMatches(img0, img1, keypoints0, keypoints1);
-        compute(img0, img1, keypoints0, keypoints1, siftImg0, siftImg1);
+        if (mScaleMap.empty())
+        {
+            compute(img0, siftImg0);
+            compute(img1, siftImg1);
+        }
+        else
+        {
+            std::vector<KeyPoint> keypoints0, keypoints1;
+            findSparseMatches(img0, img1, keypoints0, keypoints1);
+            compute(img0, img1, keypoints0, keypoints1, siftImg0, siftImg1);
+        }
     }
 
     void SiftImageExtractorImpl::compute(const Mat& img0, const Mat& img1,
@@ -252,6 +263,40 @@ namespace optflow
 
             geoMatches.push_back(inliers[i]);
         }
+    }
+
+    Mat siftimread(const std::string& filename)
+    {
+        std::ifstream ifs(filename, std::ios::binary);
+
+        if (!ifs.is_open()) return Mat();
+
+        int cols, rows, channels;
+        ifs.read((char*)&cols, sizeof(int));
+        ifs.read((char*)&rows, sizeof(int));
+        ifs.read((char*)&channels, sizeof(int));
+
+        Mat img(rows, cols, CV_32FC(channels));
+        ifs.read((char*)img.data, img.elemSize() * img.total());
+
+        return img;
+    }
+
+    bool siftimwrite(const std::string& filename, const Mat& img)
+    {
+        if (img.empty()) return false;
+
+        std::ofstream ofs(filename, std::ofstream::binary);
+
+        if (!ofs.is_open()) return false;
+
+        int channels = img.channels();
+        ofs.write((const char*)&img.cols, sizeof(int));
+        ofs.write((const char*)&img.rows, sizeof(int));
+        ofs.write((const char*)&channels, sizeof(int));
+        ofs.write((const char*)img.data, img.elemSize() * img.total());
+
+        return true;
     }
 
 }//optflow

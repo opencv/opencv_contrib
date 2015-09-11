@@ -70,7 +70,7 @@ namespace optflow
             @param keypoints Sparse features to seed from
             @param scalemap Output the scale for each pixel
         */
-        virtual void compute(InputArray image,
+        virtual void compute(const Mat& image,
             const std::vector<KeyPoint>& keypoints, Mat& scalemap) = 0;
     };
 
@@ -94,7 +94,11 @@ namespace optflow
         virtual void compute(const Mat& img0, const Mat& img1,
             const std::vector<KeyPoint>& keypoints0, const std::vector<KeyPoint>& keypoints1,
             Mat& siftImg0, Mat& siftImg1) = 0;
-    };   
+    };
+
+    Mat CV_EXPORTS_W siftimread(const std::string& filename);
+
+    bool CV_EXPORTS_W siftimwrite(const std::string& filename, const Mat& img);
 
     //! Interface to the SIFT-Flow's algorithm
     CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SiftFlow(); 
