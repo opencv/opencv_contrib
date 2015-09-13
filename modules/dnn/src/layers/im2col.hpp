@@ -111,12 +111,14 @@ void col2im_cpu(const Dtype* data_col,
     }
 }
 
+#ifdef HAVE_OPENCL
 void im2col_ocl(UMat &img,
                 int channels, int height, int width,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
                 int stride_h, int stride_w,
                 UMat &col);
+#endif
 
 }
 }

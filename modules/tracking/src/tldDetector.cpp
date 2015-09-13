@@ -104,6 +104,7 @@ namespace cv
 			return splus / (sminus + splus);
 		}
 
+#ifdef HAVE_OPENCL
 		double TLDDetector::ocl_Sr(const Mat_<uchar>& patch)
 		{
 			//int64 e1, e2, e3, e4;
@@ -283,6 +284,7 @@ namespace cv
 			//t = (e2 - e1) / getTickFrequency()*1000.0;
 			//printf("Sr GPU: %f\n\n", t);
 		}
+#endif
 
 		// Calculate Conservative similarity of the patch (NN-Model)
 		double TLDDetector::Sc(const Mat_<uchar>& patch)
@@ -337,6 +339,7 @@ namespace cv
 			return splus / (sminus + splus);
 		}
 
+#ifdef HAVE_OPENCL
 		double TLDDetector::ocl_Sc(const Mat_<uchar>& patch)
 		{
 			//int64 e1, e2, e3, e4;
@@ -415,6 +418,7 @@ namespace cv
 				return 0.0;
 			return splus / (sminus + splus);
 		}
+#endif // HAVE_OPENCL
 
 		// Generate Search Windows for detector from aspect ratio of initial BBs
 		void TLDDetector::generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling)
@@ -565,6 +569,7 @@ namespace cv
 			return true;
 		}
 
+#ifdef HAVE_OPENCL
 		bool TLDDetector::ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize)
 		{
 			patches.clear();
@@ -696,6 +701,7 @@ namespace cv
 			res = maxScRect;
 			return true;
 		}
+#endif // HAVE_OPENCL
 
 		// Computes the variance of subimage given by box, with the help of two integral
 		// images intImgP and intImgP2 (sum of squares), which should be also provided.

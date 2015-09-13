@@ -49,6 +49,7 @@ namespace cv
 namespace dnn
 {
 
+#ifdef HAVE_OPENCL
 void im2col_ocl(UMat &img,
                 int channels, int height, int width,
                 int kernel_h, int kernel_w,
@@ -78,6 +79,7 @@ void im2col_ocl(UMat &img,
 
     CV_Assert(im2col_ker.run(1, &globalSize, &localSize, true));
 }
+#endif // HAVE_OPENCL
 
 }
 }

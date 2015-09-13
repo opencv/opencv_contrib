@@ -153,6 +153,7 @@ namespace dnn
             return;
         }
 
+#ifdef HAVE_OPENCL
         if (useOpenCL && ocl::useOpenCL() && inpBlob.type() == CV_32F && !is1x1())
         {
             std::vector<Range> ranges(4, Range::all());
@@ -165,6 +166,7 @@ namespace dnn
             dst.copyTo(colMat);
             return;
         }
+#endif // HAVE_OPENCL
 
         if (inpBlob.type() == CV_32F)
             im2col_cpu((float *)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float *)colMat.ptr());
