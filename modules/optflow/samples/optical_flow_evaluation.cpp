@@ -10,7 +10,7 @@ using namespace optflow;
 const String keys = "{help h usage ? |      | print this message   }"
         "{@image1        |      | image1               }"
         "{@image2        |      | image2               }"
-        "{@algorithm     |      | [farneback, simpleflow, tvl1 or deepflow] }"
+        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow or sparsetodenseflow] }"
         "{@groundtruth   |      | path to the .flo file  (optional), Middlebury format }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
@@ -249,6 +249,8 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_DualTVL1();
     else if ( method == "deepflow" )
         algorithm = createOptFlow_DeepFlow();
+    else if ( method == "sparsetodenseflow" )
+        algorithm = createOptFlow_SparseToDense();
     else
     {
         printf("Wrong method!\n");
