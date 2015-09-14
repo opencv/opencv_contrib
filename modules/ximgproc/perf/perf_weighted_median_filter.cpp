@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -34,43 +34,55 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#ifndef __OPENCV_XIMGPROC_HPP__
-#define __OPENCV_XIMGPROC_HPP__
+ #include "perf_precomp.hpp"
 
-#include "ximgproc/edge_filter.hpp"
-#include "ximgproc/disparity_filter.hpp"
-#include "ximgproc/sparse_match_interpolator.hpp"
-#include "ximgproc/structured_edge_detection.hpp"
-#include "ximgproc/seeds.hpp"
-#include "ximgproc/segmentation.hpp"
-#include "ximgproc/fast_hough_transform.hpp"
-#include "ximgproc/estimated_covariance.hpp"
-#include "ximgproc/weighted_median_filter.hpp"
-#include "ximgproc/slic.hpp"
-#include "ximgproc/lsc.hpp"
+ namespace cvtest
+ {
 
-/** @defgroup ximgproc Extended Image Processing
-  @{
-    @defgroup ximgproc_edge Structured forests for fast edge detection
+ using std::tr1::tuple;
+ using std::tr1::get;
+ using namespace perf;
+ using namespace testing;
+ using namespace cv;
+ using namespace cv::ximgproc;
 
-This module contains implementations of modern structured edge detection algorithms, i.e. algorithms
-which somehow takes into account pixel affinities in natural images.
+ typedef tuple<Size, MatType, int, int, int, WMFWeightType> WMFTestParam;
+ typedef TestBaseWithParam<WMFTestParam> WeightedMedianFilterTest;
 
-    @defgroup ximgproc_filters Filters
+ PERF_TEST_P(WeightedMedianFilterTest, perf,
+     Combine(
+     Values(szODD, szQVGA),
+     Values(CV_8U, CV_32F),
+     Values(1, 3),
+     Values(1, 3),
+     Values(3, 5),
+     Values(WMF_EXP, WMF_COS))
+ )
+ {
+     RNG rnd(1);
 
-    @defgroup ximgproc_superpixel Superpixels
+     WMFTestParam params = GetParam();
 
-    @defgroup ximgproc_segmentation Image segmentation
-  @}
-*/
+     double sigma   = rnd.uniform(20.0, 30.0);
+     Size sz         = get<0>(params);
+     int srcDepth       = get<1>(params);
+     int jCn         = get<2>(params);
+     int srcCn       = get<3>(params);
+     int r = get<4>(params);
+     WMFWeightType weightType = get<5>(params);
 
-namespace cv {
-namespace ximgproc {
-    CV_EXPORTS_W
-    void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
-            int type, int blockSize, double delta );
+     Mat joint(sz, CV_MAKE_TYPE(CV_8U, jCn));
+     Mat src(sz, CV_MAKE_TYPE(srcDepth, srcCn));
+     Mat dst(sz, src.type());
 
-} // namespace ximgproc
-} //namespace cv
+     cv::setNumThreads(cv::getNumberOfCPUs());
+     declare.in(joint, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
 
-#endif
+     TEST_CYCLE_N(1)
+     {
+         weightedMedianFilter(joint, src, dst, r, sigma, weightType);
+     }
+
+     SANITY_CHECK_NOTHING();
+ }
+ }
