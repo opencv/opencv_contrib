@@ -49,58 +49,30 @@ using namespace std;
 using namespace cv;
 
 
-/**
- */
-static void help() {
-    cout << "Calibration using a ArUco Planar Grid board" << endl;
-    cout << "How to Use:" << endl;
-    cout << "To capture a frame for calibration, press 'c'," << endl;
-    cout << "If input comes from video, press any key for next frame" << endl;
-    cout << "To finish capturing, press 'ESC' key and calibration starts." << endl;
-    cout << "Parameters: " << endl;
-    cout << "-w <nmarkers> # Number of markers in X direction" << endl;
-    cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
-    cout << "-l <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-s <markerSeparation> # Separation between two consecutive"
-         << "markers in the grid (in meters)" << endl;
-    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
-         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
-         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
-         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
-    cout << "-o <outputFile> # Output file with calibrated camera parameters" << endl;
-    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
-    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
-    cout << "[-dp <detectorParams>] # File of marker detector parameters" << endl;
-    cout << "[-rs] # Apply refind strategy" << endl;
-    cout << "[-zt] # Assume zero tangential distortion" << endl;
-    cout << "[-a <aspectRatio>] # Fix aspect ratio (fx/fy)" << endl;
-    cout << "[-p] # Fix the principal point at the center" << endl;
+namespace {
+const char* about =
+        "Calibration using a ArUco Planar Grid board\n"
+        "  To capture a frame for calibration, press 'c',\n"
+        "  If input comes from video, press any key for next frame\n"
+        "  To finish capturing, press 'ESC' key and calibration starts.\n";
+const char* keys  =
+        "{w        |       | Number of squares in X direction }"
+        "{h        |       | Number of squares in Y direction }"
+        "{l        |       | Marker side lenght (in meters) }"
+        "{s        |       | Separation between two consecutive markers in the grid (in meters) }"
+        "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
+        "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+        "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+        "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{@outfile |<none> | Output file with calibrated camera parameters }"
+        "{v        |       | Input from video file, if ommited, input comes from camera }"
+        "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
+        "{dp       |       | File of marker detector parameters }"
+        "{rs       | false | Apply refind strategy }"
+        "{zt       | false | Assume zero tangential distortion }"
+        "{a        |       | Fix aspect ratio (fx/fy) to this value }"
+        "{pc       | false | Fix the principal point at the center }";
 }
-
-
-/**
- */
-static bool isParam(string param, int argc, char **argv) {
-    for(int i = 0; i < argc; i++)
-        if(string(argv[i]) == param) return true;
-    return false;
-}
-
-
-/**
- */
-static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx = -1;
-    for(int i = 0; i < argc && idx == -1; i++)
-        if(string(argv[i]) == param) idx = i;
-    if(idx == -1 || (idx + 1) >= argc)
-        return defvalue;
-    else
-        return argv[idx + 1];
-}
-
-
-
 
 /**
  */
@@ -177,54 +149,64 @@ static bool saveCameraParams(const string &filename, Size imageSize, float aspec
 /**
  */
 int main(int argc, char *argv[]) {
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
 
-    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
-       !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv)) {
-        help();
+    if(argc < 6) {
+        parser.printMessage();
         return 0;
     }
 
-    int markersX = atoi(getParam("-w", argc, argv).c_str());
-    int markersY = atoi(getParam("-h", argc, argv).c_str());
-    float markerLength = (float)atof(getParam("-l", argc, argv).c_str());
-    float markerSeparation = (float)atof(getParam("-s", argc, argv).c_str());
-    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
-    aruco::Dictionary dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
-    string outputFile = getParam("-o", argc, argv);
+    int markersX = parser.get<int>("w");
+    int markersY = parser.get<int>("w");
+    float markerLength = parser.get<float>("l");
+    float markerSeparation = parser.get<float>("s");
+    int dictionaryId = parser.get<int>("d");
+    string outputFile = parser.get<String>(0);
 
     int calibrationFlags = 0;
     float aspectRatio = 1;
-    if(isParam("-a", argc, argv)) {
+    if(parser.has("a")) {
         calibrationFlags |= CALIB_FIX_ASPECT_RATIO;
-        aspectRatio = (float)atof(getParam("-a", argc, argv).c_str());
+        aspectRatio = parser.get<float>("a");
     }
-    if(isParam("-zt", argc, argv)) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
-    if(isParam("-p", argc, argv)) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
+    if(parser.get<bool>("zt")) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
+    if(parser.get<bool>("pc")) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
     aruco::DetectorParameters detectorParams;
-    if(isParam("-dp", argc, argv)) {
-        bool readOk = readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+    if(parser.has("dp")) {
+        bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
         }
     }
 
-    bool refindStrategy = false;
-    if(isParam("-rs", argc, argv)) refindStrategy = true;
+    bool refindStrategy = parser.get<bool>("rs");
+    int camId = parser.get<int>("ci");
+    String video;
+
+    if(parser.has("v")) {
+        video = parser.get<String>("v");
+    }
+
+    if(!parser.check()) {
+        parser.printErrors();
+        return 0;
+    }
 
     VideoCapture inputVideo;
     int waitTime;
-    if(isParam("-v", argc, argv)) {
-        inputVideo.open(getParam("-v", argc, argv));
+    if(!video.empty()) {
+        inputVideo.open(video);
         waitTime = 0;
     } else {
-        int camId = 0;
-        if(isParam("-ci", argc, argv)) camId = atoi(getParam("-ci", argc, argv).c_str());
         inputVideo.open(camId);
         waitTime = 10;
     }
+
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     // create board object
     aruco::GridBoard board =
