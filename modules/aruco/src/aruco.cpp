@@ -71,7 +71,7 @@ DetectorParameters::DetectorParameters()
       markerBorderBits(1),
       perspectiveRemovePixelPerCell(4),
       perspectiveRemoveIgnoredMarginPerCell(0.13),
-      maxErroneousBitsInBorderRate(0.5),
+      maxErroneousBitsInBorderRate(0.35),
       minOtsuStdDev(5.0),
       errorCorrectionRate(0.6) {}
 
@@ -123,7 +123,7 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
     Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     vector< vector< Point > > contours;
-    findContours(contoursImg, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    findContours(contoursImg, contours, RETR_LIST, CHAIN_APPROX_NONE);
     // now filter list of contours
     for(unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter

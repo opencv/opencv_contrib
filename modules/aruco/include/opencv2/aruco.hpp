@@ -114,7 +114,7 @@ namespace aruco {
  *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
- *   number of bits per marker (default 0.5).
+ *   number of bits per marker (default 0.35).
  * - minOtsuStdDev: minimun standard deviation in pixels values during the decodification step to
  *   apply Otsu thresholding (otherwise, all the bits are set to 0 or 1 depending on mean higher
  *   than 128 or not) (default 5.0)
