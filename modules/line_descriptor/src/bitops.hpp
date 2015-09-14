@@ -45,7 +45,7 @@
 
 #include "precomp.hpp"
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 # include <intrin.h>
 # define popcnt __popcnt
 # pragma warning( disable : 4267 )

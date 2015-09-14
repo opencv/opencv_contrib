@@ -45,7 +45,7 @@
 
 #include <sstream>
 
-#ifdef __GNUC__
+#ifndef _WIN32
     #include <unistd.h>
     #include <dirent.h>
     #include <sys/stat.h>
@@ -73,7 +73,7 @@ void split(const string &s, vector<string> &elems, char delim)
 
 void createDirectory(const string &path)
 {
-#ifdef __GNUC__
+#ifndef _WIN32
     mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #else
     mkdir(path.c_str());
@@ -82,7 +82,7 @@ void createDirectory(const string &path)
 
 void getDirList(const string &dirName, vector<string> &fileNames)
 {
-#ifdef __GNUC__
+#ifndef _WIN32
     struct dirent **namelist;
     int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
     for (int i=0; i<n; ++i)
