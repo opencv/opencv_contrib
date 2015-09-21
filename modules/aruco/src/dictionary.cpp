@@ -48,24 +48,6 @@ namespace aruco {
 
 using namespace std;
 
-
-
-/**
-  * Hamming weight look up table from 0 to 255
-  */
-const unsigned char hammingWeightLUT[] = {
-    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-};
-
-
-
 /**
   */
 Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize, int _maxcorr) {
@@ -75,14 +57,9 @@ Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize
     if((markerSize * markerSize) % 8 != 0) nbytes++;
 
     // save bytes in internal format
-    // bytesList.at<Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
+    // bytesList.ptr(i)[k*nbytes + j] is j-th byte of i-th marker, in its k-th rotation
     bytesList = Mat(dictsize, nbytes, CV_8UC4);
-    for(int i = 0; i < dictsize; i++) {
-        for(int j = 0; j < nbytes; j++) {
-            for(int k = 0; k < 4; k++)
-                bytesList.at< Vec4b >(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
-        }
-    }
+    memcpy(bytesList.data, bytes, dictsize*nbytes*4);
 }
 
 
@@ -106,13 +83,10 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
         int currentMinDistance = markerSize * markerSize + 1;
         int currentRotation = -1;
         for(unsigned int r = 0; r < 4; r++) {
-            int currentHamming = 0;
-            // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
-            for(unsigned int b = 0; b < candidateBytes.total(); b++) {
-                unsigned char xorRes =
-                    bytesList.ptr< Vec4b >(m)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
-                currentHamming += hammingWeightLUT[xorRes];
-            }
+            int currentHamming = hal::normHamming(
+                    bytesList.ptr(m)+r*candidateBytes.cols,
+                    candidateBytes.ptr(),
+                    candidateBytes.cols);
 
             if(currentHamming < currentMinDistance) {
                 currentMinDistance = currentHamming;
@@ -147,12 +121,10 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
     Mat candidateBytes = getByteListFromBits(bits.getMat());
     int currentMinDistance = int(bits.total() * bits.total());
     for(unsigned int r = 0; r < nRotations; r++) {
-        int currentHamming = 0;
-        for(unsigned int b = 0; b < candidateBytes.total(); b++) {
-            unsigned char xorRes =
-                bytesList.ptr< Vec4b >(id)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
-            currentHamming += hammingWeightLUT[xorRes];
-        }
+        int currentHamming = hal::normHamming(
+                bytesList.ptr(id) + r*candidateBytes.cols,
+                candidateBytes.ptr(),
+                candidateBytes.cols);
 
         if(currentHamming < currentMinDistance) {
             currentMinDistance = currentHamming;
@@ -202,26 +174,25 @@ Mat Dictionary::getByteListFromBits(const Mat &bits) {
     Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
     unsigned char currentBit = 0;
     int currentByte = 0;
+
+    // the 4 rotations
+    uchar* rot0 = candidateByteList.ptr();
+    uchar* rot1 = candidateByteList.ptr() + 1*nbytes;
+    uchar* rot2 = candidateByteList.ptr() + 2*nbytes;
+    uchar* rot3 = candidateByteList.ptr() + 3*nbytes;
+
     for(int row = 0; row < bits.rows; row++) {
         for(int col = 0; col < bits.cols; col++) {
             // circular shift
-            candidateByteList.ptr< Vec4b >(0)[currentByte][0] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][0] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][1] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][1] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][2] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][2] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][3] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][3] << 1;
-            // increment if bit is 1
-            if(bits.at< unsigned char >(row, col))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][0]++;
-            if(bits.at< unsigned char >(col, bits.cols - 1 - row))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][1]++;
-            if(bits.at< unsigned char >(bits.rows - 1 - row, bits.cols - 1 - col))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][2]++;
-            if(bits.at< unsigned char >(bits.rows - 1 - col, row))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][3]++;
+            rot0[currentByte] <<= 1;
+            rot1[currentByte] <<= 1;
+            rot2[currentByte] <<= 1;
+            rot3[currentByte] <<= 1;
+            // set bit
+            rot0[currentByte] |= bits.at<uchar>(row, col);
+            rot1[currentByte] |= bits.at<uchar>(col, bits.cols - 1 - row);
+            rot2[currentByte] |= bits.at<uchar>(bits.rows - 1 - row, bits.cols - 1 - col);
+            rot3[currentByte] |= bits.at<uchar>(bits.rows - 1 - col, row);
             currentBit++;
             if(currentBit == 8) {
                 // next byte
@@ -247,7 +218,7 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
     unsigned char base2List[] = { 128, 64, 32, 16, 8, 4, 2, 1 };
     int currentByteIdx = 0;
     // we only need the bytes in normal rotation
-    unsigned char currentByte = byteList.ptr< Vec4b >(0)[0][0];
+    unsigned char currentByte = byteList.ptr()[0];
     int currentBit = 0;
     for(int row = 0; row < bits.rows; row++) {
         for(int col = 0; col < bits.cols; col++) {
@@ -258,7 +229,7 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
             currentBit++;
             if(currentBit == 8) {
                 currentByteIdx++;
-                currentByte = byteList.ptr< Vec4b >(0)[currentByteIdx][0];
+                currentByte = byteList.ptr()[currentByteIdx];
                 // if not enough bits for one more byte, we are in the end
                 // update bit position accordingly
                 if(8 * (currentByteIdx + 1) > (int)bits.total())
@@ -369,12 +340,8 @@ static Mat _generateRandomMarker(int markerSize) {
 static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
     int minHamming = (int)marker.total() + 1;
-    for(int i = 1; i < 4; i++) {
-        int currentHamming = 0;
-        for(int j = 0; j < bytes.cols; j++) {
-            unsigned char xorRes = bytes.ptr< Vec4b >()[j][0] ^ bytes.ptr< Vec4b >()[j][i];
-            currentHamming += hammingWeightLUT[xorRes];
-        }
+    for(int r = 1; r < 4; r++) {
+        int currentHamming = hal::normHamming(bytes.ptr(), bytes.ptr() + bytes.cols*r, bytes.cols);
         if(currentHamming < minHamming) minHamming = currentHamming;
     }
     return minHamming;
