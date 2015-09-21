@@ -38,9 +38,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 #include "opencv2/aruco/dictionary.hpp"
-#include "predefined_dictionaries.cpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include "predefined_dictionaries.hpp"
 
 
 namespace cv {
@@ -50,16 +50,10 @@ using namespace std;
 
 /**
   */
-Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize, int _maxcorr) {
+Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
     markerSize = _markerSize;
     maxCorrectionBits = _maxcorr;
-    int nbytes = (markerSize * markerSize) / 8;
-    if((markerSize * markerSize) % 8 != 0) nbytes++;
-
-    // save bytes in internal format
-    // bytesList.ptr(i)[k*nbytes + j] is j-th byte of i-th marker, in its k-th rotation
-    bytesList = Mat(dictsize, nbytes, CV_8UC4);
-    memcpy(bytesList.data, bytes, dictsize*nbytes*4);
+    bytesList = _bytesList;
 }
 
 
@@ -102,10 +96,7 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
         }
     }
 
-    if(idx != -1)
-        return true;
-    else
-        return false;
+    return idx != -1;
 }
 
 
@@ -167,9 +158,8 @@ void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int border
   * @brief Transform matrix of bits to list of bytes in the 4 rotations
   */
 Mat Dictionary::getByteListFromBits(const Mat &bits) {
-
-    int nbytes = (bits.cols * bits.rows) / 8;
-    if((bits.cols * bits.rows) % 8 != 0) nbytes++;
+    // integer ceil
+    int nbytes = (bits.cols * bits.rows + 8 - 1) / 8;
 
     Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
     unsigned char currentBit = 0;
@@ -246,27 +236,27 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
 
 
 // DictionaryData constructors calls
-const Dictionary DICT_ARUCO_DATA = Dictionary(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 0);
+const Dictionary DICT_ARUCO_DATA = Dictionary(Mat(1024, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_ARUCO_BYTES), 5, 0);
 
-const Dictionary DICT_4X4_50_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 50, 1);
-const Dictionary DICT_4X4_100_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 100, 1);
-const Dictionary DICT_4X4_250_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 250, 1);
-const Dictionary DICT_4X4_1000_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 1000, 0);
+const Dictionary DICT_4X4_50_DATA = Dictionary(Mat(50, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_100_DATA = Dictionary(Mat(100, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_250_DATA = Dictionary(Mat(250, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_1000_DATA = Dictionary(Mat(1000, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 0);
 
-const Dictionary DICT_5X5_50_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 50, 3);
-const Dictionary DICT_5X5_100_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 100, 3);
-const Dictionary DICT_5X5_250_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 250, 2);
-const Dictionary DICT_5X5_1000_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 1000, 2);
+const Dictionary DICT_5X5_50_DATA = Dictionary(Mat(50, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+const Dictionary DICT_5X5_100_DATA = Dictionary(Mat(100, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+const Dictionary DICT_5X5_250_DATA = Dictionary(Mat(250, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
+const Dictionary DICT_5X5_1000_DATA = Dictionary(Mat(1000, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
 
-const Dictionary DICT_6X6_50_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 50, 6);
-const Dictionary DICT_6X6_100_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 100, 5);
-const Dictionary DICT_6X6_250_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 250, 5);
-const Dictionary DICT_6X6_1000_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 1000, 4);
+const Dictionary DICT_6X6_50_DATA = Dictionary(Mat(50, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 6);
+const Dictionary DICT_6X6_100_DATA = Dictionary(Mat(100, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+const Dictionary DICT_6X6_250_DATA = Dictionary(Mat(250, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+const Dictionary DICT_6X6_1000_DATA = Dictionary(Mat(1000, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 4);
 
-const Dictionary DICT_7X7_50_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 50, 9);
-const Dictionary DICT_7X7_100_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 100, 8);
-const Dictionary DICT_7X7_250_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 250, 8);
-const Dictionary DICT_7X7_1000_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 1000, 6);
+const Dictionary DICT_7X7_50_DATA = Dictionary(Mat(50, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 9);
+const Dictionary DICT_7X7_100_DATA = Dictionary(Mat(100, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+const Dictionary DICT_7X7_250_DATA = Dictionary(Mat(250, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+const Dictionary DICT_7X7_1000_DATA = Dictionary(Mat(1000, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 6);
 
 
 const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
