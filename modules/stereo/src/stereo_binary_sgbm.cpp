@@ -819,7 +819,7 @@ namespace cv
             Mat Integral[2];
         };
 
-        const char* StereoBinarySGBMImpl::name_ = "StereoMatcher.SGBM";
+        const char* StereoBinarySGBMImpl::name_ = "StereoBinaryMatcher.SGBM";
 
         Ptr<StereoBinarySGBM> StereoBinarySGBM::create(int minDisparity, int numDisparities, int kernelSize,
             int P1, int P2, int disp12MaxDiff,

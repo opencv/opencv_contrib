@@ -514,7 +514,7 @@ namespace cv
             static const char* name_;
         };
 
-        const char* StereoBinaryBMImpl::name_ = "StereoMatcher.BM";
+        const char* StereoBinaryBMImpl::name_ = "StereoBinaryMatcher.BM";
 
         Ptr<StereoBinaryBM> StereoBinaryBM::create(int _numDisparities, int _kernelSize)
         {
