@@ -122,7 +122,7 @@ namespace cv
 			ocl::Kernel k;
 			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
 			String error;
-			ocl::Program prog(src, NULL, error);
+			ocl::Program prog(src, String(), error);
 			k.create("NCC", prog);
 			if (k.empty())
 				printf("Kernel create failed!!!\n");
@@ -198,7 +198,7 @@ namespace cv
 			ocl::Kernel k;
 			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
 			String error;
-			ocl::Program prog(src, NULL, error);
+			ocl::Program prog(src, String(), error);
 			k.create("batchNCC", prog);
 			if (k.empty())
 				printf("Kernel create failed!!!\n");
@@ -355,7 +355,7 @@ namespace cv
 			ocl::Kernel k;
 			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
 			String error;
-			ocl::Program prog(src, NULL, error);
+			ocl::Program prog(src, String(), error);
 			k.create("NCC", prog);
 			if (k.empty())
 				printf("Kernel create failed!!!\n");
