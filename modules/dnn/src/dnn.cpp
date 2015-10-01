@@ -561,34 +561,38 @@ struct LayerFactory::Impl : public std::map<String, LayerFactory::Constuctor>
 {
 };
 
-//allocates on load and cleans on exit
-Ptr<LayerFactory::Impl> LayerFactory::impl(new LayerFactory::Impl());
+Ptr<LayerFactory::Impl> LayerFactory::impl ()
+{
+    // allocate on first use
+    static Ptr<LayerFactory::Impl> impl_(new LayerFactory::Impl());
+    return impl_;
+}
 
 void LayerFactory::registerLayer(const String &_type, Constuctor constructor)
 {
     String type = _type.toLowerCase();
-    Impl::iterator it = impl->find(type);
+    Impl::iterator it = impl()->find(type);
 
-    if (it != impl->end() && it->second != constructor)
+    if (it != impl()->end() && it->second != constructor)
     {
         CV_Error(cv::Error::StsBadArg, "Layer \"" + type + "\" already was registered");
     }
 
-    impl->insert(std::make_pair(type, constructor));
+    impl()->insert(std::make_pair(type, constructor));
 }
 
 void LayerFactory::unregisterLayer(const String &_type)
 {
     String type = _type.toLowerCase();
-    impl->erase(type);
+    impl()->erase(type);
 }
 
 Ptr<Layer> LayerFactory::createLayerInstance(const String &_type, LayerParams& params)
 {
     String type = _type.toLowerCase();
-    Impl::const_iterator it = LayerFactory::impl->find(type);
+    Impl::const_iterator it = LayerFactory::impl()->find(type);
 
-    if (it != impl->end())
+    if (it != impl()->end())
     {
         return it->second(params);
     }

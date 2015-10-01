@@ -77,7 +77,7 @@ private:
     LayerFactory();
 
     struct Impl;
-    static Ptr<Impl> impl;
+    static Ptr<Impl> impl();
 };
 
 /** @brief Registers layer constructor in runtime.
