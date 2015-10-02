@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb ")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-project(sphereview_test)
+project(cnn_3dobj)
 find_package(OpenCV REQUIRED)
 set(SOURCES_generator demo_sphereview_data.cpp)
 include_directories(${OpenCV_INCLUDE_DIRS})
