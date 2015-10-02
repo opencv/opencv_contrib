@@ -37,7 +37,6 @@
  * @brief Feature extraction and classification.
  * @author Yida Wang
  */
-#define HAVE_CAFFE
 #include <opencv2/cnn_3dobj.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <iomanip>

@@ -2,7 +2,6 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <iostream>
 #include <fstream>
-#define HAVE_CAFFE
 #include <opencv2/cnn_3dobj.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <iomanip>

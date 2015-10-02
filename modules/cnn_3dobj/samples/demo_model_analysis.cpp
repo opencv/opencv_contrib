@@ -37,7 +37,6 @@
  * @brief Generating training data for CNN with triplet loss.
  * @author Yida Wang
  */
-#define HAVE_CAFFE
 #include <iostream>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/cnn_3dobj.hpp"
