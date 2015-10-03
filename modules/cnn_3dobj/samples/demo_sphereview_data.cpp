@@ -47,13 +47,15 @@ using namespace cv::cnn_3dobj;
 int main(int argc, char *argv[])
 {
     const String keys = "{help | | demo :$ ./sphereview_test -ite_depth=2 -plymodel=../data/3Dmodel/ape.ply -imagedir=../data/images_all/ -labeldir=../data/label_all.txt -num_class=6 -label_class=0, then press 'q' to run the demo for images generation when you see the gray background and a coordinate.}"
-    "{ite_depth | 2 | Iteration of sphere generation.}"
+    "{ite_depth | 3 | Iteration of sphere generation.}"
     "{plymodel | ../data/3Dmodel/ape.ply | Path of the '.ply' file for image rendering. }"
     "{imagedir | ../data/images_all/ | Path of the generated images for one particular .ply model. }"
     "{labeldir | ../data/label_all.txt | Path of the generated images for one particular .ply model. }"
     "{cam_head_x | 0 | Head of the camera. }"
     "{cam_head_y | 0 | Head of the camera. }"
     "{cam_head_z | -1 | Head of the camera. }"
+    "{semisphere | 1 | Camera only has positions on half of the whole sphere. }"
+    "{center_gen | 0 | Find center from all points. }"
     "{image_size | 128 | Size of captured images. }"
     "{label_class | 1 | Class label of current .ply model. }"
     "{label_item | 1 | Item label of current .ply model. }"
@@ -77,19 +79,32 @@ int main(int argc, char *argv[])
     float cam_head_x = parser.get<float>("cam_head_x");
     float cam_head_y = parser.get<float>("cam_head_y");
     float cam_head_z = parser.get<float>("cam_head_z");
+    int semisphere = parser.get<int>("semisphere");
+    int center_gen = parser.get<int>("center_gen");
     int image_size = parser.get<int>("image_size");
     int rgb_use = parser.get<int>("rgb_use");
     int num_class = parser.get<int>("num_class");
     int binary_out = parser.get<int>("binary_out");
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
-    std::vector<cv::Point3d> campos = ViewSphere.CameraPos;
+    std::vector<cv::Point3d> campos;
+    std::vector<cv::Point3d> campos_temp = ViewSphere.CameraPos;
+    if (semisphere)
+    {
+        for (int pose = 0; pose < (int)campos_temp.size(); pose++)
+        {
+            if (campos_temp.at(pose).z >= 0)
+                campos.push_back(campos_temp.at(pose));
+        }
+    }
+    else
+        campos = campos_temp;
     std::fstream imglabel;
     char* p=(char*)labeldir.data();
     imglabel.open(p, fstream::app|fstream::out);
     bool camera_pov = true;
     /* Create a window using viz. */
     viz::Viz3d myWindow("Coordinate Frame");
-    /* Set window size as 64*64, we use this scale as default. */
+    /* Set window size. */
     myWindow.setWindowSize(Size(image_size,image_size));
     /* Set background color. */
     myWindow.setBackgroundColor(viz::Color::gray());
@@ -98,8 +113,18 @@ int main(int argc, char *argv[])
     myWindow.addLight(Vec3d(0,0,100000), Vec3d(0,0,0), viz::Color::white(), viz::Color::gray(), viz::Color::black(), viz::Color::white());
     /* Create a Mesh widget, loading .ply models. */
     viz::Mesh objmesh = viz::Mesh::load(plymodel);
-    /* Get the center of the generated mesh widget, cause some .ply files.  */
-    Point3d cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
+    /* Get the center of the generated mesh widget, cause some .ply files, this could be ignored if you are using PASCAL database*/
+    Point3d cam_focal_point;
+    if (center_gen)
+        cam_focal_point = ViewSphere.getCenter(objmesh.cloud);
+    else
+        cam_focal_point = Point3d(0,0,0);
+    const char* headerPath = "../data/header_for_";
+    const char* binaryPath = "../data/binary_";
+    if (binary_out)
+    {
+        ViewSphere.createHeader((int)campos.size(), image_size, image_size, headerPath);
+    }
     float radius = ViewSphere.getRadius(objmesh.cloud, cam_focal_point);
     objmesh.cloud = objmesh.cloud/radius*100;
     cam_focal_point = cam_focal_point/radius*100;
@@ -107,13 +132,8 @@ int main(int argc, char *argv[])
     cam_y_dir.x = cam_head_x;
     cam_y_dir.y = cam_head_y;
     cam_y_dir.z = cam_head_z;
-    const char* headerPath = "../data/header_for_";
-    const char* binaryPath = "../data/binary_";
-    if (binary_out)
-    {
-        ViewSphere.createHeader((int)campos.size(), image_size, image_size, headerPath);
-    }
     char* temp = new char;
+    char* bgname = new char;
     /* Images will be saved as .png files. */
     for(int pose = 0; pose < (int)campos.size(); pose++){
         int label_x, label_y, label_z;
@@ -144,8 +164,12 @@ int main(int argc, char *argv[])
         }
 
         /* Visualize widget. */
-        mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
-        myWindow.showWidget("ape", mesh_widget, cloud_pose_global);
+        sprintf(bgname,"/Users/yidawang/Desktop/bg%i.jpg",pose%10+1);
+        cv::Mat img_bg = cv::imread(bgname);
+        cv::viz::WImage3D background_widget(img_bg, Size2d(image_size*4, image_size*4), Vec3d(-campos.at(pose)*380-cam_focal_point), Vec3d(campos.at(pose)*380+cam_focal_point), Vec3d(0,0,100));
+        // mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
+        myWindow.showWidget("targetwidget", mesh_widget, cloud_pose_global);
+        myWindow.showWidget("bgwidget", background_widget, cloud_pose_global);
 
         /* Set the viewer pose to that of camera. */
         if (camera_pov)
