@@ -36,8 +36,7 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-namespace cv {
-namespace aruco {
+namespace {
 
 
 
@@ -53,7 +52,7 @@ namespace aruco {
   * Each rotation implies a 90 degree rotation of the marker in anticlockwise direction.
   */
 
-const unsigned char DICT_ARUCO_BYTES[][4][4] = {
+static unsigned char DICT_ARUCO_BYTES[][4][4] = {
     { { 132, 33, 8, 0 },
       { 0, 0, 15, 1 },
       { 8, 66, 16, 1 },
@@ -4152,7 +4151,7 @@ const unsigned char DICT_ARUCO_BYTES[][4][4] = {
       { 7, 255, 240, 0 }, },
 };
 
-const unsigned char DICT_4X4_1000_BYTES[][4][2] =
+static unsigned char DICT_4X4_1000_BYTES[][4][2] =
     { { { 181, 50 },
         { 235, 72 },
         { 76, 173 },
@@ -8154,7 +8153,7 @@ const unsigned char DICT_4X4_1000_BYTES[][4][2] =
         { 253, 239 },
         { 219, 255 }, }, };
 
-const unsigned char DICT_5X5_1000_BYTES[][4][4] =
+static unsigned char DICT_5X5_1000_BYTES[][4][4] =
     { { { 162, 217, 94, 0 },
         { 82, 46, 217, 1 },
         { 61, 77, 162, 1 },
@@ -12156,7 +12155,7 @@ const unsigned char DICT_5X5_1000_BYTES[][4][4] =
         { 184, 73, 239, 1 },
         { 204, 238, 57, 1 }, }, };
 
-const unsigned char DICT_6X6_1000_BYTES[][4][5] =
+static unsigned char DICT_6X6_1000_BYTES[][4][5] =
     { { { 30, 61, 216, 42, 6 },
         { 227, 186, 70, 49, 9 },
         { 101, 65, 187, 199, 8 },
@@ -16158,7 +16157,7 @@ const unsigned char DICT_6X6_1000_BYTES[][4][5] =
         { 255, 135, 198, 183, 15 },
         { 174, 219, 251, 231, 3 }, }, };
 
-const unsigned char DICT_7X7_1000_BYTES[][4][7] =
+static unsigned char DICT_7X7_1000_BYTES[][4][7] =
     { { { 221, 92, 108, 165, 202, 10, 1 },
         { 99, 179, 173, 228, 49, 180, 0 },
         { 168, 41, 210, 155, 29, 93, 1 },
@@ -20159,5 +20158,4 @@ const unsigned char DICT_7X7_1000_BYTES[][4][7] =
         { 195, 108, 74, 190, 250, 124, 0 },
         { 252, 176, 35, 180, 179, 243, 1 },
         { 31, 47, 190, 169, 27, 97, 1 }, }, };
-}
 }

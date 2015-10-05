@@ -51,6 +51,12 @@ namespace aruco {
 /**
  * @brief Dictionary/Set of markers. It contains the inner codification
  *
+ * bytesList contains the marker codewords where
+ * - bytesList.rows is the dictionary size
+ * - each marker is encoded using `nbytes = ceil(markerSize*markerSize/8.)`
+ * - each row contains all 4 rotations of the marker, so its length is `4*nbytes`
+ *
+ * `bytesList.ptr(i)[k*nbytes + j]` is then the j-th byte of i-th marker, in its k-th rotation.
  */
 class CV_EXPORTS Dictionary {
 
@@ -62,8 +68,7 @@ class CV_EXPORTS Dictionary {
 
     /**
       */
-    Dictionary(const unsigned char *bytes = 0, int _markerSize = 0, int dictsize = 0,
-               int _maxcorr = 0);
+    Dictionary(const Mat &_bytesList = Mat(), int _markerSize = 0, int _maxcorr = 0);
 
 
 
