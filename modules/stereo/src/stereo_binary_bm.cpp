@@ -324,7 +324,6 @@ namespace cv
 
                 int width = left0.cols;
                 int height = left0.rows;
-
                 if(previous_size != width * height)
                 {
                     previous_size = width * height;
@@ -341,6 +340,8 @@ namespace cv
 
                     preFilteredImg0.create(left0.size(), CV_8U);
                     preFilteredImg1.create(left0.size(), CV_8U);
+
+                    aux.create(height,width,CV_8UC1);
                 }
 
                 Mat left = preFilteredImg0, right = preFilteredImg1;
@@ -405,12 +406,12 @@ namespace cv
                 costGathering(hammingDistance, partialSumsLR);
                 blockAgregation(partialSumsLR, params.agregationWindowSize, agregatedHammingLRCost);
                 dispartyMapFormation(agregatedHammingLRCost, disp0, 3);
-                Median1x9Filter(disp0, disp0);
-                Median9x1Filter(disp0,disp0);
+                Median1x9Filter<uint8_t>(disp0, aux);
+                Median9x1Filter<uint8_t>(aux,disp0);
 
                 if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
                 {
-                    smallRegionRemoval(disp0,params.speckleWindowSize,disp0);
+                    smallRegionRemoval<uint8_t>(disp0,params.speckleWindowSize,disp0);
                 }
                 else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
                 {
@@ -511,6 +512,7 @@ namespace cv
             Mat hammingDistance;
             Mat partialSumsLR;
             Mat agregatedHammingLRCost;
+            Mat aux;
             static const char* name_;
         };
 

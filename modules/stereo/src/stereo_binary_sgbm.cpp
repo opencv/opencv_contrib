@@ -701,32 +701,20 @@ namespace cv
                         speckleY.create(height,width,CV_32SC4);
                         puss.create(height,width,CV_32SC4);
                     }
-                    double minVal; double maxVal;
-                    Mat imgDisparity8U2;
-                    imgDisparity8U2.create(height,width,CV_8UC1);
                     Mat aux;
-                    aux.create(height,width,CV_8UC1);
-                    minMaxLoc(disp, &minVal, &maxVal);
-                    disp.convertTo(imgDisparity8U2, CV_8UC1, 255 / (maxVal - minVal));
-                    Median1x9Filter(imgDisparity8U2, aux);
-                    Median9x1Filter(aux,imgDisparity8U2);
-                    smallRegionRemoval(imgDisparity8U2,params.speckleWindowSize,imgDisparity8U2);
-                    imgDisparity8U2.convertTo(disp, CV_16S);
+                    aux.create(height,width,CV_16S);
+                    Median1x9Filter<short>(disp, aux);
+                    Median9x1Filter<short>(aux,disp);
+                    smallRegionRemoval<short>(disp, params.speckleWindowSize, disp);
                 }
                 else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
                 {
                     int width = left.cols;
                     int height = left.rows;
-                    double minVal; double maxVal;
-                    Mat imgDisparity8U2;
-                    imgDisparity8U2.create(height,width,CV_8UC1);
                     Mat aux;
-                    aux.create(height,width,CV_8UC1);
-                    minMaxLoc(disp, &minVal, &maxVal);
-                    disp.convertTo(imgDisparity8U2, CV_8UC1, 255 / (maxVal - minVal));
-                    Median1x9Filter(imgDisparity8U2, aux);
-                    Median9x1Filter(aux,imgDisparity8U2);
-                    imgDisparity8U2.convertTo(disp, CV_16S);
+                    aux.create(height,width,CV_16S);
+                    Median1x9Filter<short>(disp, aux);
+                    Median9x1Filter<short>(aux,disp);
                     if( params.speckleWindowSize > 0 )
                         filterSpeckles(disp, (params.minDisparity - 1) * StereoMatcher::DISP_SCALE, params.speckleWindowSize,
                         StereoMatcher::DISP_SCALE * params.speckleRange, buffer);

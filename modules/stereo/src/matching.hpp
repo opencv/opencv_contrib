@@ -281,20 +281,20 @@ namespace cv
                 }
             };
             //!median 1x9 paralelized filter
+            template <typename T>
             class Median1x9:public ParallelLoopBody
             {
             private:
-                uint8_t *original;
-                uint8_t *filtered;
-                int height, width,_stride;
+                T *original;
+                T *filtered;
+                int height, width;
             public:
                 Median1x9(const Mat &originalImage, Mat &filteredImage)
                 {
-                    original = originalImage.data;
-                    filtered = filteredImage.data;
+                    original = (T *)originalImage.data;
+                    filtered = (T *)filteredImage.data;
                     height = originalImage.rows;
                     width = originalImage.cols;
-                    _stride = (int)originalImage.step;
                 }
                 void operator()(const cv::Range &r) const{
                     for (int m = r.start; m <= r.end; m++)
@@ -302,39 +302,39 @@ namespace cv
                         for (int n = 4; n < width - 4; ++n)
                         {
                             int k = 0;
-                            uint8_t window[9];
+                            T window[9];
                             for (int i = n - 4; i <= n + 4; ++i)
-                                window[k++] = original[m * _stride + i];
+                                window[k++] = original[m * width + i];
                             for (int j = 0; j < 5; ++j)
                             {
                                 int min = j;
                                 for (int l = j + 1; l < 9; ++l)
                                     if (window[l] < window[min])
                                         min = l;
-                                const uint8_t temp = window[j];
+                                const T temp = window[j];
                                 window[j] = window[min];
                                 window[min] = temp;
                             }
-                            filtered[m  * _stride + n] = window[4];
+                            filtered[m  * width + n] = window[4];
                         }
                     }
                 }
             };
             //!median 9x1 paralelized filter
+            template <typename T>
             class Median9x1:public ParallelLoopBody
             {
             private:
-                uint8_t *original;
-                uint8_t *filtered;
-                int height, width, _stride;
+                T *original;
+                T *filtered;
+                int height, width;
             public:
                 Median9x1(const Mat &originalImage, Mat &filteredImage)
                 {
-                    original = originalImage.data;
-                    filtered = filteredImage.data;
+                    original = (T *)originalImage.data;
+                    filtered = (T *)filteredImage.data;
                     height = originalImage.rows;
                     width = originalImage.cols;
-                    _stride = (int)originalImage.step;
                 }
                 void operator()(const Range &r) const{
                     for (int n = r.start; n <= r.end; ++n)
@@ -342,20 +342,20 @@ namespace cv
                         for (int m = 4; m < height - 4; ++m)
                         {
                             int k = 0;
-                            uint8_t window[9];
+                            T window[9];
                             for (int i = m - 4; i <= m + 4; ++i)
-                                window[k++] = original[i * _stride + n];
+                                window[k++] = original[i * width + n];
                             for (int j = 0; j < 5; j++)
                             {
                                 int min = j;
                                 for (int l = j + 1; l < 9; ++l)
                                     if (window[l] < window[min])
                                         min = l;
-                                const uint8_t temp = window[j];
+                                const T temp = window[j];
                                 window[j] = window[min];
                                 window[min] = temp;
                             }
-                            filtered[m  * _stride + n] = window[4];
+                            filtered[m  * width + n] = window[4];
                         }
                     }
                 }
@@ -471,6 +471,7 @@ namespace cv
                 parallel_for_(cv::Range(win + 1,height - win - 1), agregateCost(partialSums,windowSize,maxDisp,cost));
             }
             //!remove small regions that have an area smaller than t, we fill the region with the average of the good pixels around it
+            template <typename T>
             void smallRegionRemoval(const Mat &currentMap, int t, Mat &out)
             {
                 CV_Assert(currentMap.cols == out.cols);
@@ -480,11 +481,11 @@ namespace cv
                 int *specklePointX = (int *)speckleX.data;
                 int *specklePointY = (int *)speckleY.data;
                 memset(pus, 0, previous_size * sizeof(pus[0]));
-                uint8_t *map = currentMap.data;
-                uint8_t *outputMap = out.data;
+                T *map = (T *)currentMap.data;
+                T *outputMap = (T *)out.data;
                 int height = currentMap.rows;
                 int width = currentMap.cols;
-                uint8_t k = 1;
+                T k = 1;
                 int st, dr;
                 int di[] = { -1, -1, -1, 0, 1, 1, 1, 0 },
                     dj[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
@@ -502,8 +503,8 @@ namespace cv
                         }
                         else if (map[iw + j] == 0)
                         {
-                            int nr = 1;
-                            int avg = 0;
+                            T nr = 1;
+                            T avg = 0;
                             speckle_size = dr;
                             specklePointX[dr] = i;
                             specklePointY[dr] = j;
@@ -520,7 +521,7 @@ namespace cv
                                     if (ii + di[d] >= 0 && ii + di[d] < height && jj + dj[d] >= 0 && jj + dj[d] < width &&
                                         pus[(ii + di[d]) * width + jj + dj[d]] == 0)
                                     {
-                                        int val = map[(ii + di[d]) * width + jj + dj[d]];
+                                        T val = map[(ii + di[d]) * width + jj + dj[d]];
                                         if (val == 0)
                                         {
                                             map[(ii + di[d]) * width + jj + dj[d]] = k;
@@ -529,7 +530,7 @@ namespace cv
                                             dr++;
                                             pus[(ii + di[d]) * width + jj + dj[d]] = 1;
                                         }//this means that my point is a good point to be used in computing the final filling value
-                                        else if (val > 2 && val < 250)
+                                        else if (val >= 1 && val < 250)
                                         {
                                             avg += val;
                                             nr++;
@@ -540,7 +541,7 @@ namespace cv
                             }//if hole size is smaller than a specified threshold we fill the respective hole with the average of the good neighbours
                             if (st - speckle_size <= t)
                             {
-                                uint8_t fillValue = (uint8_t)(avg / nr);
+                                T fillValue = (T)(avg / nr);
                                 while (speckle_size < st)
                                 {
                                     int ii = specklePointX[speckle_size];
@@ -573,18 +574,20 @@ namespace cv
         public:
             //!a median filter of 1x9 and 9x1
             //!1x9 median filter
+            template<typename T>
             void Median1x9Filter(const Mat &originalImage, Mat &filteredImage)
             {
                 CV_Assert(originalImage.rows == filteredImage.rows);
                 CV_Assert(originalImage.cols == filteredImage.cols);
-                parallel_for_(Range(1,originalImage.rows - 2), Median1x9(originalImage,filteredImage));
+                parallel_for_(Range(1,originalImage.rows - 2), Median1x9<T>(originalImage,filteredImage));
             }
             //!9x1 median filter
+            template<typename T>
             void Median9x1Filter(const Mat &originalImage, Mat &filteredImage)
             {
                 CV_Assert(originalImage.cols == filteredImage.cols);
                 CV_Assert(originalImage.cols == filteredImage.cols);
-                parallel_for_(Range(1,originalImage.cols - 2), Median9x1(originalImage,filteredImage));
+                parallel_for_(Range(1,originalImage.cols - 2), Median9x1<T>(originalImage,filteredImage));
             }
             //!constructor for the matching class
             //!maxDisp - represents the maximum disparity
