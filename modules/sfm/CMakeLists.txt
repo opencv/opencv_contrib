@@ -6,6 +6,11 @@ set(the_description "SFM algorithms")
 find_package(Ceres QUIET)
 
 if(NOT DEFINED SFM_DEPS_OK)
+
+  if(NOT DEFINED GLOG_LIBRARIES)
+    set(GLOG_LIBRARIES "glog")
+  endif()
+
   set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
   file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
   try_compile(SFM_DEPS_OK "${CMAKE_CURRENT_BINARY_DIR}" "${_fname}"
@@ -60,21 +65,21 @@ endif()
 ### CREATE OPENCV SFM MODULE ###
 
 ocv_add_module(sfm
-    opencv_core
-    opencv_calib3d
-    opencv_features2d
-    opencv_xfeatures2d
+  opencv_core
+  opencv_calib3d
+  opencv_features2d
+  opencv_xfeatures2d
 )
 
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS
-    -Wundef
-    -Wshadow
-    -Wsign-compare
-    -Wmissing-declarations
-    -Wunused-but-set-variable
-    -Wunused-parameter
-    -Wunused-function
+  -Wundef
+  -Wshadow
+  -Wsign-compare
+  -Wmissing-declarations
+  -Wunused-but-set-variable
+  -Wunused-parameter
+  -Wunused-function
 )
 
 if(UNIX)
