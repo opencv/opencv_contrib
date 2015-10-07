@@ -44,133 +44,133 @@ using namespace std;
 
 namespace
 {
-	void shift(InputArray src, OutputArray dst, int shift_x, int shift_y) {
-		Mat S = src.getMat();
-		Mat D = dst.getMat();
+  void shift(InputArray src, OutputArray dst, int shift_x, int shift_y) {
+    Mat S = src.getMat();
+    Mat D = dst.getMat();
 
-		if(S.data == D.data){
-			S = S.clone();
-		}
+    if(S.data == D.data){
+      S = S.clone();
+    }
 
-		D.create(S.size(), S.type());
+    D.create(S.size(), S.type());
 
-		Mat s0(S, Rect(0, 0, S.cols - shift_x, S.rows - shift_y));
-		Mat s1(S, Rect(S.cols - shift_x, 0, shift_x, S.rows - shift_y));
-		Mat s2(S, Rect(0, S.rows - shift_y, S.cols-shift_x, shift_y));
-		Mat s3(S, Rect(S.cols - shift_x, S.rows- shift_y, shift_x, shift_y));
+    Mat s0(S, Rect(0, 0, S.cols - shift_x, S.rows - shift_y));
+    Mat s1(S, Rect(S.cols - shift_x, 0, shift_x, S.rows - shift_y));
+    Mat s2(S, Rect(0, S.rows - shift_y, S.cols-shift_x, shift_y));
+    Mat s3(S, Rect(S.cols - shift_x, S.rows- shift_y, shift_x, shift_y));
 
-		Mat d0(D, Rect(shift_x, shift_y, S.cols - shift_x, S.rows - shift_y));
-		Mat d1(D, Rect(0, shift_y, shift_x, S.rows - shift_y));
-		Mat d2(D, Rect(shift_x, 0, S.cols-shift_x, shift_y));
-		Mat d3(D, Rect(0,0,shift_x, shift_y));
+    Mat d0(D, Rect(shift_x, shift_y, S.cols - shift_x, S.rows - shift_y));
+    Mat d1(D, Rect(0, shift_y, shift_x, S.rows - shift_y));
+    Mat d2(D, Rect(shift_x, 0, S.cols-shift_x, shift_y));
+    Mat d3(D, Rect(0,0,shift_x, shift_y));
 
-		s0.copyTo(d0);
-		s1.copyTo(d1);
-		s2.copyTo(d2);
-		s3.copyTo(d3);
-	}
+    s0.copyTo(d0);
+    s1.copyTo(d1);
+    s2.copyTo(d2);
+    s3.copyTo(d3);
+  }
 
-	// dft after padding imaginary
-	void fft(InputArray src, OutputArray dst) {
-		Mat S = src.getMat();
-		Mat planes[] = {S, Mat::zeros(S.size(), S.type())};
-		merge(planes, 2, dst);
+  // dft after padding imaginary
+  void fft(InputArray src, OutputArray dst) {
+    Mat S = src.getMat();
+    Mat planes[] = {S, Mat::zeros(S.size(), S.type())};
+    merge(planes, 2, dst);
 
-		// compute the result
-		dft(dst, dst);
-	}
+    // compute the result
+    dft(dst, dst);
+  }
 
-	void psf2otf(InputArray src, OutputArray dst, int height, int width){
-		Mat S = src.getMat();
-		Mat D = dst.getMat();
+  void psf2otf(InputArray src, OutputArray dst, int height, int width){
+    Mat S = src.getMat();
+    Mat D = dst.getMat();
 
-		Mat padded;
+    Mat padded;
 
-		if(S.data == D.data){
-			S = S.clone();
-		}
+    if(S.data == D.data){
+      S = S.clone();
+    }
 
-		// add padding
-		copyMakeBorder(S, padded, 0, height - S.rows, 0, width - S.cols,
-					BORDER_CONSTANT, Scalar::all(0));
+    // add padding
+    copyMakeBorder(S, padded, 0, height - S.rows, 0, width - S.cols,
+          BORDER_CONSTANT, Scalar::all(0));
 
-		shift(padded, padded, width - S.cols / 2, height - S.rows / 2);
+    shift(padded, padded, width - S.cols / 2, height - S.rows / 2);
 
-		// convert to frequency domain
-		fft(padded, dst);
-	}
+    // convert to frequency domain
+    fft(padded, dst);
+  }
 
-	void dftMultiChannel(InputArray src, vector<Mat> &dst){
-		Mat S = src.getMat();
+  void dftMultiChannel(InputArray src, vector<Mat> &dst){
+    Mat S = src.getMat();
 
-		split(S, dst);
+    split(S, dst);
 
-		for(int i = 0; i < S.channels(); i++){
-			fft(dst[i], dst[i]);
-		}
-	}
+    for(int i = 0; i < S.channels(); i++){
+      fft(dst[i], dst[i]);
+    }
+  }
 
-	void idftMultiChannel(const vector<Mat> &src, OutputArray dst){
-		Mat *channels = new Mat[src.size()];
+  void idftMultiChannel(const vector<Mat> &src, OutputArray dst){
+    Mat *channels = new Mat[src.size()];
 
-		for(int i = 0 ; unsigned(i) < src.size(); i++){
-			idft(src[i], channels[i]);
-			Mat realImg[2];
-			split(channels[i], realImg);
-			channels[i] = realImg[0] / src[i].cols / src[i].rows;
-		}
+    for(int i = 0 ; unsigned(i) < src.size(); i++){
+      idft(src[i], channels[i]);
+      Mat realImg[2];
+      split(channels[i], realImg);
+      channels[i] = realImg[0] / src[i].cols / src[i].rows;
+    }
 
-		Mat D;
-		merge(channels, src.size(), D);
-		D.copyTo(dst);
+    Mat D;
+    merge(channels, src.size(), D);
+    D.copyTo(dst);
 
-		delete[] channels;
-	}
+    delete[] channels;
+  }
 
-	void addComplex(InputArray aSrc, int bSrc, OutputArray dst){
-		  Mat panels[2];
-		  split(aSrc.getMat(), panels);
-		  panels[0] = panels[0] + bSrc;
-		  merge(panels, 2, dst);
-	}
+  void addComplex(InputArray aSrc, int bSrc, OutputArray dst){
+      Mat panels[2];
+      split(aSrc.getMat(), panels);
+      panels[0] = panels[0] + bSrc;
+      merge(panels, 2, dst);
+  }
 
-	void divComplexByReal(InputArray aSrc, InputArray bSrc, OutputArray dst){
-		Mat aPanels[2];
-		Mat bPanels[2];
-		split(aSrc.getMat(), aPanels);
-		split(bSrc.getMat(), bPanels);
+  void divComplexByReal(InputArray aSrc, InputArray bSrc, OutputArray dst){
+    Mat aPanels[2];
+    Mat bPanels[2];
+    split(aSrc.getMat(), aPanels);
+    split(bSrc.getMat(), bPanels);
 
-		Mat realPart;
-		Mat imaginaryPart;
+    Mat realPart;
+    Mat imaginaryPart;
 
-		divide(aPanels[0], bSrc.getMat(), realPart);
-		divide(aPanels[1],  bSrc.getMat(), imaginaryPart);
+    divide(aPanels[0], bSrc.getMat(), realPart);
+    divide(aPanels[1],  bSrc.getMat(), imaginaryPart);
 
-		aPanels[0] = realPart;
-		aPanels[1] = imaginaryPart;
+    aPanels[0] = realPart;
+    aPanels[1] = imaginaryPart;
 
-		Mat rst;
-		merge(aPanels, 2, dst);
-	}
+    Mat rst;
+    merge(aPanels, 2, dst);
+  }
 
-	void divComplexByRealMultiChannel(const vector<Mat> &numer,
-		const vector<Mat> &denom, vector<Mat> &dst)
-	{
-			for(int i = 0; unsigned(i) < numer.size(); i++)
-			{
-				divComplexByReal(numer[i], denom[i], dst[i]);
-			}
-	}
+  void divComplexByRealMultiChannel(const vector<Mat> &numer,
+    const vector<Mat> &denom, vector<Mat> &dst)
+  {
+      for(int i = 0; unsigned(i) < numer.size(); i++)
+      {
+        divComplexByReal(numer[i], denom[i], dst[i]);
+      }
+  }
 
-	// power of 2 of the absolute value of the complex
-	Mat pow2absComplex(InputArray src){
-		Mat S = src.getMat();
+  // power of 2 of the absolute value of the complex
+  Mat pow2absComplex(InputArray src){
+    Mat S = src.getMat();
 
-		Mat sPanels[2];
-		split(S, sPanels);
+    Mat sPanels[2];
+    split(S, sPanels);
 
-		return sPanels[0].mul(sPanels[0]) + sPanels[1].mul(sPanels[1]);
-	}
+    return sPanels[0].mul(sPanels[0]) + sPanels[1].mul(sPanels[1]);
+  }
 }
 
 namespace cv
@@ -180,129 +180,129 @@ namespace ximgproc
 
 void l0Smooth(InputArray src, OutputArray dst, double lambda, double kappa)
 {
-	Mat S = src.getMat();
+  Mat S = src.getMat();
 
-	CV_Assert(!S.empty());
-	CV_Assert(S.depth() == CV_8U || S.depth() == CV_16U
-		|| S.depth() == CV_32F || S.depth() == CV_64F);
+  CV_Assert(!S.empty());
+  CV_Assert(S.depth() == CV_8U || S.depth() == CV_16U
+    || S.depth() == CV_32F || S.depth() == CV_64F);
 
-	dst.create(src.size(), src.type());
+  dst.create(src.size(), src.type());
 
-	if(S.data == dst.getMat().data){
-		S = S.clone();
-	}
+  if(S.data == dst.getMat().data){
+    S = S.clone();
+  }
 
-	if(S.depth() == CV_8U)
-	{
-		S.convertTo(S, CV_32F, 1/255.0f);
-	}
-	else if(S.depth() == CV_16U)
-	{
-		S.convertTo(S, CV_32F, 1/65535.0f);
-	}else if(S.depth() == CV_64F){
-		S.convertTo(S, CV_32F);
-	}
+  if(S.depth() == CV_8U)
+  {
+    S.convertTo(S, CV_32F, 1/255.0f);
+  }
+  else if(S.depth() == CV_16U)
+  {
+    S.convertTo(S, CV_32F, 1/65535.0f);
+  }else if(S.depth() == CV_64F){
+    S.convertTo(S, CV_32F);
+  }
 
-	const double betaMax = 100000;
+  const double betaMax = 100000;
 
-	// gradient operators in frequency domain
-	Mat otfFx, otfFy;
-	float kernel[2] = {-1, 1};
-	float kernel_inv[2] = {1,-1};
-	psf2otf(Mat(1,2,CV_32FC1, kernel_inv), otfFx, S.rows, S.cols);
-	psf2otf(Mat(2,1,CV_32FC1, kernel_inv), otfFy, S.rows, S.cols);
+  // gradient operators in frequency domain
+  Mat otfFx, otfFy;
+  float kernel[2] = {-1, 1};
+  float kernel_inv[2] = {1,-1};
+  psf2otf(Mat(1,2,CV_32FC1, kernel_inv), otfFx, S.rows, S.cols);
+  psf2otf(Mat(2,1,CV_32FC1, kernel_inv), otfFy, S.rows, S.cols);
 
-	vector<Mat> denomConst;
-	Mat tmp = pow2absComplex(otfFx) + pow2absComplex(otfFy);
+  vector<Mat> denomConst;
+  Mat tmp = pow2absComplex(otfFx) + pow2absComplex(otfFy);
 
-	for(int i = 0; i < S.channels(); i++){
-		denomConst.push_back(tmp);
-	}
+  for(int i = 0; i < S.channels(); i++){
+    denomConst.push_back(tmp);
+  }
 
-	// input image in frequency domain
-	vector<Mat> numerConst;
-	dftMultiChannel(S, numerConst);
+  // input image in frequency domain
+  vector<Mat> numerConst;
+  dftMultiChannel(S, numerConst);
 
-	/*********************************
-	* solver
-	*********************************/
-	double beta = 2 * lambda;
-	while(beta < betaMax){
-		// h, v subproblem
-		Mat h, v;
+  /*********************************
+  * solver
+  *********************************/
+  double beta = 2 * lambda;
+  while(beta < betaMax){
+    // h, v subproblem
+    Mat h, v;
 
-		filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
-			0, BORDER_REPLICATE);
-		filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
-			0, BORDER_REPLICATE);
+    filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
+      0, BORDER_REPLICATE);
+    filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
+      0, BORDER_REPLICATE);
 
-		Mat hvMag = h.mul(h) + v.mul(v);
+    Mat hvMag = h.mul(h) + v.mul(v);
 
-		Mat mask;
-		if(S.channels() == 1)
-		{
-			threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
-		}
-		else if(S.channels() > 1)
-		{
-			Mat *channels = new Mat[S.channels()];
-			split(hvMag, channels);
-			hvMag = channels[0];
+    Mat mask;
+    if(S.channels() == 1)
+    {
+      threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
+    }
+    else if(S.channels() > 1)
+    {
+      Mat *channels = new Mat[S.channels()];
+      split(hvMag, channels);
+      hvMag = channels[0];
 
-			for(int i = 1; i < S.channels(); i++){
-				hvMag = hvMag + channels[i];
-			}
+      for(int i = 1; i < S.channels(); i++){
+        hvMag = hvMag + channels[i];
+      }
 
-			threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
+      threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
 
-			Mat in[] = {mask, mask, mask};
-			merge(in, 3, mask);
+      Mat in[] = {mask, mask, mask};
+      merge(in, 3, mask);
 
-			delete[] channels;
-		}
+      delete[] channels;
+    }
 
-		h = h.mul(mask);
-		v = v.mul(mask);
+    h = h.mul(mask);
+    v = v.mul(mask);
 
-		// S subproblem
-		vector<Mat> denom(S.channels());
-		for(int i = 0; i < S.channels(); i++){
-			denom[i] = beta * denomConst[i] + 1;
-		}
+    // S subproblem
+    vector<Mat> denom(S.channels());
+    for(int i = 0; i < S.channels(); i++){
+      denom[i] = beta * denomConst[i] + 1;
+    }
 
-		Mat hGrad, vGrad;
-		filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
-		filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
+    Mat hGrad, vGrad;
+    filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
+    filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
 
-		vector<Mat> hvGradFreq;
-		dftMultiChannel(hGrad+vGrad, hvGradFreq);
+    vector<Mat> hvGradFreq;
+    dftMultiChannel(hGrad+vGrad, hvGradFreq);
 
-		vector<Mat> numer(S.channels());
-		for(int i = 0; i < S.channels(); i++){
-			numer[i] = numerConst[i] + hvGradFreq[i] * beta;
-		}
+    vector<Mat> numer(S.channels());
+    for(int i = 0; i < S.channels(); i++){
+      numer[i] = numerConst[i] + hvGradFreq[i] * beta;
+    }
 
-		vector<Mat> sFreq(S.channels());
-		divComplexByRealMultiChannel(numer, denom, sFreq);
+    vector<Mat> sFreq(S.channels());
+    divComplexByRealMultiChannel(numer, denom, sFreq);
 
-		idftMultiChannel(sFreq, S);
+    idftMultiChannel(sFreq, S);
 
-		beta = beta * kappa;
-	}
+    beta = beta * kappa;
+  }
 
-	Mat D = dst.getMat();
-	if(D.depth() == CV_8U)
-	{
-		S.convertTo(D, CV_8U, 255);
-	}
-	else if(D.depth() == CV_16U)
-	{
-		S.convertTo(D, CV_16U, 65535);
-	}else if(D.depth() == CV_64F){
-		S.convertTo(D, CV_64F);
-	}else{
-		S.copyTo(D);
-	}
+  Mat D = dst.getMat();
+  if(D.depth() == CV_8U)
+  {
+    S.convertTo(D, CV_8U, 255);
+  }
+  else if(D.depth() == CV_16U)
+  {
+    S.convertTo(D, CV_16U, 65535);
+  }else if(D.depth() == CV_64F){
+    S.convertTo(D, CV_64F);
+  }else{
+    S.copyTo(D);
+  }
 }
 }
 }
