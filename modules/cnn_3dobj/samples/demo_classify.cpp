@@ -48,7 +48,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<string>& files, bool r)
+void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -59,11 +59,11 @@ void listDir(const char *path, std::vector<string>& files, bool r)
     {
         if (ent->d_type & DT_DIR)
         {
-            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0 || strcmp(ent->d_name, ".DS_Store") == 0)
             {
                 continue;
             }
-            if(r)
+            if (r)
             {
                 sprintf(childpath, "%s/%s", path, ent->d_name);
                 listDir(childpath,files,false);
@@ -71,18 +71,40 @@ void listDir(const char *path, std::vector<string>& files, bool r)
         }
         else
         {
-            files.push_back(ent->d_name);
+            if (strcmp(ent->d_name, ".DS_Store") != 0)
+                files.push_back(ent->d_name);
         }
     }
     sort(files.begin(),files.end());
 };
 
 /**
+ * @function featureWrite
+ * @brief Writing features of gallery images into binary files
+ */
+int featureWrite(const Mat &features, const String &fname)
+{
+    ofstream ouF;
+    ouF.open(fname.c_str(), std::ofstream::binary);
+    if (!ouF)
+    {
+        cerr << "failed to open the file : " << fname << endl;
+        return 0;
+    }
+    for (int r = 0; r < features.rows; r++)
+    {
+        ouF.write(reinterpret_cast<const char*>(features.ptr(r)), features.cols*features.elemSize());
+    }
+    ouF.close();
+    return 1;
+}
+
+/**
  * @function main
  */
 int main(int argc, char** argv)
 {
-    const String keys = "{help | | This sample will extract featrues from reference images and target image for classification. You can add a mean_file if there little variance in data such as human faces, otherwise it is not so useful}"
+    const String keys = "{help | | This sample will extract features from reference images and target image for classification. You can add a mean_file if there little variance in data such as human faces, otherwise it is not so useful}"
     "{src_dir | ../data/images_all/ | Source direction of the images ready for being used for extract feature as gallery.}"
     "{caffemodel | ../../testdata/cv/3d_triplet_iter_30000.caffemodel | caffe model for feature exrtaction.}"
     "{network_forIMG | ../../testdata/cv/3d_triplet_testIMG.prototxt | Network definition file used for extracting feature from a single image and making a classification}"
@@ -91,7 +113,8 @@ int main(int argc, char** argv)
     "{feature_blob | feat | Name of layer which will represent as the feature, in this network, ip1 or feat is well.}"
     "{num_candidate | 15 | Number of candidates in gallery as the prediction result.}"
     "{device | CPU | Device type: CPU or GPU}"
-    "{dev_id | 0 | Device id}";
+    "{dev_id | 0 | Device id}"
+    "{gallery_out | 0 | Option on output binary features on gallery images}";
     /* get parameters from comand line */
     cv::CommandLineParser parser(argc, argv, keys);
     parser.about("Feature extraction and classification");
@@ -100,15 +123,16 @@ int main(int argc, char** argv)
         parser.printMessage();
         return 0;
     }
-    string src_dir = parser.get<string>("src_dir");
-    string caffemodel = parser.get<string>("caffemodel");
-    string network_forIMG   = parser.get<string>("network_forIMG");
-    string mean_file    = parser.get<string>("mean_file");
-    string target_img   = parser.get<string>("target_img");
-    string feature_blob = parser.get<string>("feature_blob");
+    String src_dir = parser.get<String>("src_dir");
+    String caffemodel = parser.get<String>("caffemodel");
+    String network_forIMG   = parser.get<String>("network_forIMG");
+    String mean_file    = parser.get<String>("mean_file");
+    String target_img   = parser.get<String>("target_img");
+    String feature_blob = parser.get<String>("feature_blob");
     int num_candidate = parser.get<int>("num_candidate");
-    string device = parser.get<string>("device");
+    String device = parser.get<String>("device");
     int dev_id = parser.get<int>("dev_id");
+    int gallery_out = parser.get<int>("gallery_out");
     /* Initialize a net work with Device */
     cv::cnn_3dobj::descriptorExtractor descriptor(device);
     std::cout << "Using" << descriptor.getDeviceType() << std::endl;
@@ -117,9 +141,16 @@ int main(int argc, char** argv)
         descriptor.loadNet(network_forIMG, caffemodel);
     else
         descriptor.loadNet(network_forIMG, caffemodel, mean_file);
-    std::vector<string> name_gallery;
+    std::vector<String> name_gallery;
     /* List the file names under a given path */
     listDir(src_dir.c_str(), name_gallery, false);
+    if (gallery_out)
+    {
+        ofstream namelist_out("gallelist.txt");
+        /* Writing name of the reference images. */
+        for (unsigned int i = 0; i < name_gallery.size(); i++)
+            namelist_out << name_gallery.at(i) << endl;
+    }
     for (unsigned int i = 0; i < name_gallery.size(); i++)
     {
         name_gallery[i] = src_dir + name_gallery[i];
@@ -128,31 +159,43 @@ int main(int argc, char** argv)
     cv::Mat feature_reference;
     for (unsigned int i = 0; i < name_gallery.size(); i++)
     {
-        img_gallery.push_back(cv::imread(name_gallery[i], -1));
+        img_gallery.push_back(cv::imread(name_gallery[i]));
     }
     /* Extract feature from a set of images */
     descriptor.extract(img_gallery, feature_reference, feature_blob);
-    std::cout << std::endl << "---------- Prediction for " << target_img << " ----------" << std::endl;
-    cv::Mat img = cv::imread(target_img, -1);
-    std::cout << std::endl << "---------- Features of gallery images ----------" << std::endl;
-    std::vector<std::pair<string, float> > prediction;
-    /* Print features of the reference images. */
-    for (unsigned int i = 0; i < feature_reference.rows; i++)
-        std::cout << feature_reference.row(i) << endl;
-    cv::Mat feature_test;
-    descriptor.extract(img, feature_test, feature_blob);
-    /* Initialize a matcher which using L2 distance. */
-    cv::BFMatcher matcher(NORM_L2);
-    std::vector<std::vector<cv::DMatch> > matches;
-    /* Have a KNN match on the target and reference images. */
-    matcher.knnMatch(feature_test, feature_reference, matches, num_candidate);
-    /* Print feature of the target image waiting to be classified. */
-    std::cout << std::endl << "---------- Features of target image: " << target_img << "----------" << endl << feature_test << std::endl;
-    /* Print the top N prediction. */
-    std::cout << std::endl << "---------- Prediction result(Distance - File Name in Gallery) ----------" << std::endl;
-    for (size_t i = 0; i < matches[0].size(); ++i)
+    if (gallery_out)
     {
-        std::cout << i << " - " << std::fixed << std::setprecision(2) << name_gallery[matches[0][i].trainIdx] << " - \""  << matches[0][i].distance << "\"" << std::endl;
+        std::cout << std::endl << "---------- Features of gallery images ----------" << std::endl;
+        /* Print features of the reference images. */
+        for (unsigned int i = 0; i < feature_reference.rows; i++)
+            std::cout << feature_reference.row(i) << endl;
+        std::cout << std::endl << "---------- Saving features of gallery images into feature.bin ----------" << std::endl;
+        featureWrite(feature_reference, "feature.bin");
+    }
+    else
+    {
+        std::cout << std::endl << "---------- Prediction for " << target_img << " ----------" << std::endl;
+        cv::Mat img = cv::imread(target_img);
+        std::cout << std::endl << "---------- Features of gallery images ----------" << std::endl;
+        std::vector<std::pair<String, float> > prediction;
+        /* Print features of the reference images. */
+        for (unsigned int i = 0; i < feature_reference.rows; i++)
+            std::cout << feature_reference.row(i) << endl;
+        cv::Mat feature_test;
+        descriptor.extract(img, feature_test, feature_blob);
+        /* Initialize a matcher which using L2 distance. */
+        cv::BFMatcher matcher(NORM_L2);
+        std::vector<std::vector<cv::DMatch> > matches;
+        /* Have a KNN match on the target and reference images. */
+        matcher.knnMatch(feature_test, feature_reference, matches, num_candidate);
+        /* Print feature of the target image waiting to be classified. */
+        std::cout << std::endl << "---------- Features of target image: " << target_img << "----------" << endl << feature_test << std::endl;
+        /* Print the top N prediction. */
+        std::cout << std::endl << "---------- Prediction result(Distance - File Name in Gallery) ----------" << std::endl;
+        for (size_t i = 0; i < matches[0].size(); ++i)
+        {
+            std::cout << i << " - " << std::fixed << std::setprecision(2) << name_gallery[matches[0][i].trainIdx] << " - \""  << matches[0][i].distance << "\"" << std::endl;
+        }
     }
     return 0;
 }

@@ -12,7 +12,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<string>& files, bool r)
+void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -89,22 +89,22 @@ int main(int argc, char **argv)
         parser.printMessage();
         return 0;
     }
-    string src_dir = parser.get<string>("src_dir");
-    string caffemodellist = parser.get<string>("caffemodellist");
-    string network_forIMG   = parser.get<string>("network_forIMG");
-    string mean_file    = parser.get<string>("mean_file");
-    string target_img1   = parser.get<string>("target_img1");
-    string target_img2   = parser.get<string>("target_img2");
-    string target_img3   = parser.get<string>("target_img3");
-    string target_img4   = parser.get<string>("target_img4");
-    string target_img5   = parser.get<string>("target_img5");
-    string target_img6   = parser.get<string>("target_img6");
-    string feature_blob = parser.get<string>("feature_blob");
+    String src_dir = parser.get<String>("src_dir");
+    String caffemodellist = parser.get<String>("caffemodellist");
+    String network_forIMG   = parser.get<String>("network_forIMG");
+    String mean_file    = parser.get<String>("mean_file");
+    String target_img1   = parser.get<String>("target_img1");
+    String target_img2   = parser.get<String>("target_img2");
+    String target_img3   = parser.get<String>("target_img3");
+    String target_img4   = parser.get<String>("target_img4");
+    String target_img5   = parser.get<String>("target_img5");
+    String target_img6   = parser.get<String>("target_img6");
+    String feature_blob = parser.get<String>("feature_blob");
     int num_candidate = parser.get<int>("num_candidate");
-    string device = parser.get<string>("device");
+    String device = parser.get<String>("device");
     int dev_id = parser.get<int>("dev_id");
     ifstream namelist_model(caffemodellist.c_str(), ios::in);
-    vector<string> caffemodel;
+    vector<String> caffemodel;
     char *buf = new char[512];
     int number_model = 0;
     while (!namelist_model.eof())
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
         number_model++;
     }
     /* List the file names under a given path */
-    std::vector<string> name_gallery;
+    std::vector<String> name_gallery;
     listDir(src_dir.c_str(), name_gallery, false);
     for (unsigned int i = 0; i < name_gallery.size(); i++)
     {
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     int count_pre, num_rotate, max_rotate;
     String titlename, Hint, Pred("prediction: ");
     vector<viz::WImageOverlay> imagepredict;
-    string widgename[24] = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"};
+    String widgename[24] = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"};
     vector<Mat> slide;
     slide.push_back(imread("1.png"));
     slide.push_back(imread("2.png"));

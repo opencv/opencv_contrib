@@ -1,12 +1,11 @@
 #include "precomp.hpp"
 using namespace caffe;
-using std::string;
 
 namespace cv
 {
 namespace cnn_3dobj
 {
-    descriptorExtractor::descriptorExtractor(const string& device_type, int device_id)
+    descriptorExtractor::descriptorExtractor(const String& device_type, int device_id)
     {
         net_ready = 0;
         if (strcmp(device_type.c_str(), "CPU") == 0 || strcmp(device_type.c_str(), "GPU") == 0)
@@ -34,9 +33,9 @@ namespace cnn_3dobj
         }
     };
 
-    string descriptorExtractor::getDeviceType()
+    String descriptorExtractor::getDeviceType()
     {
-        string device_info_out;
+        String device_info_out;
         device_info_out = deviceType;
         return device_info_out;
     };
@@ -48,7 +47,7 @@ namespace cnn_3dobj
         return device_info_out;
     };
 
-    void descriptorExtractor::setDeviceType(const string& device_type)
+    void descriptorExtractor::setDeviceType(const String& device_type)
     {
         if (strcmp(device_type.c_str(), "CPU") == 0 || strcmp(device_type.c_str(), "GPU") == 0)
         {
@@ -85,7 +84,7 @@ namespace cnn_3dobj
         }
     };
 
-    void descriptorExtractor::loadNet(const string& model_file, const string& trained_file, const string& mean_file)
+    void descriptorExtractor::loadNet(const String& model_file, const String& trained_file, const String& mean_file)
     {
         if (net_set)
         {
@@ -119,7 +118,7 @@ namespace cnn_3dobj
     };
 
     /* Load the mean file in binaryproto format. */
-    void descriptorExtractor::setMean(const string& mean_file)
+    void descriptorExtractor::setMean(const String& mean_file)
     {
         BlobProto blob_proto;
         ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
@@ -147,7 +146,7 @@ namespace cnn_3dobj
         mean_ = cv::Mat(input_geometry, mean.type(), channel_mean);
     };
 
-    void descriptorExtractor::extract(InputArrayOfArrays inputimg, OutputArray feature, std::string feature_blob)
+    void descriptorExtractor::extract(InputArrayOfArrays inputimg, OutputArray feature, String feature_blob)
     {
         if (net_ready)
         {

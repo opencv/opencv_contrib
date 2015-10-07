@@ -108,7 +108,7 @@ namespace cnn_3dobj
         subdivide(v12, v23, v31, depth - 1);
     };
 
-    uint32_t icoSphere::swapEndian(uint32_t val)
+    int icoSphere::swapEndian(int val)
     {
         val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
         return (val << 16) | (val >> 16);
@@ -175,7 +175,7 @@ namespace cnn_3dobj
         headerLabel.close();
     };
 
-    void icoSphere::writeBinaryfile(string filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z, int isrgb)
+    void icoSphere::writeBinaryfile(String filenameImg, const char* binaryPath, const char* headerPath, int num_item, int label_class, int x, int y, int z, int isrgb)
     {
         cv::Mat ImgforBin = cv::imread(filenameImg, isrgb);
         char* A0 = (char*)malloc(1024);

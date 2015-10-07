@@ -64,18 +64,18 @@ int main(int argc, char** argv)
         parser.printMessage();
         return 0;
     }
-    string caffemodel = parser.get<string>("caffemodel");
-    string network_forIMG = parser.get<string>("network_forIMG");
-    string mean_file = parser.get<string>("mean_file");
-    string target_img = parser.get<string>("target_img");
-    string ref_img1 = parser.get<string>("ref_img1");
-    string ref_img2 = parser.get<string>("ref_img2");
-    string ref_img3 = parser.get<string>("ref_img3");
-    string feature_blob = parser.get<string>("feature_blob");
-    string device = parser.get<string>("device");
+    String caffemodel = parser.get<String>("caffemodel");
+    String network_forIMG = parser.get<String>("network_forIMG");
+    String mean_file = parser.get<String>("mean_file");
+    String target_img = parser.get<String>("target_img");
+    String ref_img1 = parser.get<String>("ref_img1");
+    String ref_img2 = parser.get<String>("ref_img2");
+    String ref_img3 = parser.get<String>("ref_img3");
+    String feature_blob = parser.get<String>("feature_blob");
+    String device = parser.get<String>("device");
     int dev_id = parser.get<int>("dev_id");
 
-    std::vector<string> ref_img;
+    std::vector<String> ref_img;
     /* Sample which is most closest in pose to reference image
     *and also the same class.
     */
