@@ -44,265 +44,322 @@ using namespace std;
 
 namespace
 {
-  void shift(InputArray src, OutputArray dst, int shift_x, int shift_y) {
-    Mat S = src.getMat();
-    Mat D = dst.getMat();
 
-    if(S.data == D.data){
-      S = S.clone();
+    class ParallelDft : public ParallelLoopBody {
+    private:
+        vector<Mat> src_;
+    public:
+        ParallelDft(vector<Mat> &s)
+        {
+            src_ = s;
+        }
+        void operator() (const Range& range) const
+        {
+            for (int i = range.start; i != range.end; i++)
+            {
+                dft(src_[i], src_[i]);
+            }
+        }
+    };
+
+    class ParallelIdft : public ParallelLoopBody {
+    private:
+        vector<Mat> src_;
+    public:
+        ParallelIdft(vector<Mat> &s)
+        {
+            src_ = s;
+        }
+        void operator() (const Range& range) const
+        {
+            for (int i = range.start; i != range.end; i++){
+                idft(src_[i], src_[i],DFT_SCALE);
+            }
+        }
+    };
+
+    class ParallelDivComplexByReal : public ParallelLoopBody {
+    private:
+        vector<Mat> numer_;
+        vector<Mat> denom_;
+        vector<Mat> dst_;
+
+    public:
+        ParallelDivComplexByReal(vector<Mat> &numer, vector<Mat> &denom, vector<Mat> &dst)
+        {
+            numer_ = numer;
+            denom_ = denom;
+            dst_ = dst;
+        }
+        void operator() (const Range& range) const
+        {
+            for (int i = range.start; i != range.end; i++)
+            {
+                Mat aPanels[2];
+                Mat bPanels[2];
+                split(numer_[i], aPanels);
+                split(denom_[i], bPanels);
+
+                Mat realPart;
+                Mat imaginaryPart;
+
+                divide(aPanels[0], denom_[i], realPart);
+                divide(aPanels[1], denom_[i], imaginaryPart);
+
+                aPanels[0] = realPart;
+                aPanels[1] = imaginaryPart;
+
+                merge(aPanels, 2, dst_[i]);
+            }
+        }
+    };
+
+
+    void shift(InputArray src, OutputArray dst, int shift_x, int shift_y) {
+        Mat S = src.getMat();
+        Mat D = dst.getMat();
+
+        if(S.data == D.data){
+            S = S.clone();
+        }
+
+        D.create(S.size(), S.type());
+
+        Mat s0(S, Rect(0, 0, S.cols - shift_x, S.rows - shift_y));
+        Mat s1(S, Rect(S.cols - shift_x, 0, shift_x, S.rows - shift_y));
+        Mat s2(S, Rect(0, S.rows - shift_y, S.cols-shift_x, shift_y));
+        Mat s3(S, Rect(S.cols - shift_x, S.rows- shift_y, shift_x, shift_y));
+
+        Mat d0(D, Rect(shift_x, shift_y, S.cols - shift_x, S.rows - shift_y));
+        Mat d1(D, Rect(0, shift_y, shift_x, S.rows - shift_y));
+        Mat d2(D, Rect(shift_x, 0, S.cols-shift_x, shift_y));
+        Mat d3(D, Rect(0,0,shift_x, shift_y));
+
+        s0.copyTo(d0);
+        s1.copyTo(d1);
+        s2.copyTo(d2);
+        s3.copyTo(d3);
     }
 
-    D.create(S.size(), S.type());
+    // dft after padding imaginary
+    void fft(InputArray src, OutputArray dst) {
+        Mat S = src.getMat();
+        Mat planes[] = {S.clone(), Mat::zeros(S.size(), S.type())};
+        Mat x;
+        merge(planes, 2, dst);
 
-    Mat s0(S, Rect(0, 0, S.cols - shift_x, S.rows - shift_y));
-    Mat s1(S, Rect(S.cols - shift_x, 0, shift_x, S.rows - shift_y));
-    Mat s2(S, Rect(0, S.rows - shift_y, S.cols-shift_x, shift_y));
-    Mat s3(S, Rect(S.cols - shift_x, S.rows- shift_y, shift_x, shift_y));
-
-    Mat d0(D, Rect(shift_x, shift_y, S.cols - shift_x, S.rows - shift_y));
-    Mat d1(D, Rect(0, shift_y, shift_x, S.rows - shift_y));
-    Mat d2(D, Rect(shift_x, 0, S.cols-shift_x, shift_y));
-    Mat d3(D, Rect(0,0,shift_x, shift_y));
-
-    s0.copyTo(d0);
-    s1.copyTo(d1);
-    s2.copyTo(d2);
-    s3.copyTo(d3);
-  }
-
-  // dft after padding imaginary
-  void fft(InputArray src, OutputArray dst) {
-    Mat S = src.getMat();
-    Mat planes[] = {S, Mat::zeros(S.size(), S.type())};
-    merge(planes, 2, dst);
-
-    // compute the result
-    dft(dst, dst);
-  }
-
-  void psf2otf(InputArray src, OutputArray dst, int height, int width){
-    Mat S = src.getMat();
-    Mat D = dst.getMat();
-
-    Mat padded;
-
-    if(S.data == D.data){
-      S = S.clone();
+        // compute the result
+        dft(dst, dst);
     }
 
-    // add padding
-    copyMakeBorder(S, padded, 0, height - S.rows, 0, width - S.cols,
-          BORDER_CONSTANT, Scalar::all(0));
+    void psf2otf(InputArray src, OutputArray dst, int height, int width) {
+        Mat S = src.getMat();
+        Mat D = dst.getMat();
 
-    shift(padded, padded, width - S.cols / 2, height - S.rows / 2);
+        Mat padded;
 
-    // convert to frequency domain
-    fft(padded, dst);
-  }
+        if(S.data == D.data){
+            S = S.clone();
+        }
 
-  void dftMultiChannel(InputArray src, vector<Mat> &dst){
-    Mat S = src.getMat();
+        // add padding
+        copyMakeBorder(S, padded, 0, height - S.rows, 0, width - S.cols,
+            BORDER_CONSTANT, Scalar::all(0));
 
-    split(S, dst);
+            shift(padded, padded, width - S.cols / 2, height - S.rows / 2);
 
-    for(int i = 0; i < S.channels(); i++){
-      fft(dst[i], dst[i]);
-    }
-  }
+            // convert to frequency domain
+            fft(padded, dst);
+        }
 
-  void idftMultiChannel(const vector<Mat> &src, OutputArray dst){
-    Mat *channels = new Mat[src.size()];
+        void dftMultiChannel(InputArray src, vector<Mat> &dst) {
+            Mat S = src.getMat();
 
-    for(int i = 0 ; unsigned(i) < src.size(); i++){
-      idft(src[i], channels[i]);
-      Mat realImg[2];
-      split(channels[i], realImg);
-      channels[i] = realImg[0] / src[i].cols / src[i].rows;
-    }
+            split(S, dst);
 
-    Mat D;
-    merge(channels, src.size(), D);
-    D.copyTo(dst);
+            for(int i = 0; i < S.channels(); i++){
+                Mat planes[] = {dst[i].clone(), Mat::zeros(dst[i].size(), dst[i].type())};
+                merge(planes, 2, dst[i]);
+            }
 
-    delete[] channels;
-  }
+            parallel_for_(cv::Range(0,S.channels()), ParallelDft(dst));
 
-  void addComplex(InputArray aSrc, int bSrc, OutputArray dst){
-      Mat panels[2];
-      split(aSrc.getMat(), panels);
-      panels[0] = panels[0] + bSrc;
-      merge(panels, 2, dst);
-  }
+        }
 
-  void divComplexByReal(InputArray aSrc, InputArray bSrc, OutputArray dst){
-    Mat aPanels[2];
-    Mat bPanels[2];
-    split(aSrc.getMat(), aPanels);
-    split(bSrc.getMat(), bPanels);
+        void idftMultiChannel(const vector<Mat> &src, OutputArray dst){
+            vector<Mat> channels(src);
 
-    Mat realPart;
-    Mat imaginaryPart;
+            parallel_for_(Range(0, src.size()), ParallelIdft(channels));
 
-    divide(aPanels[0], bSrc.getMat(), realPart);
-    divide(aPanels[1],  bSrc.getMat(), imaginaryPart);
+            for(int i = 0; unsigned(i) < src.size(); i++){
+                Mat panels[2];
+                split(channels[i], panels);
+                channels[i] = panels[0];
+            }
 
-    aPanels[0] = realPart;
-    aPanels[1] = imaginaryPart;
+            Mat D;
+            merge(channels, D);
+            D.copyTo(dst);
+        }
 
-    Mat rst;
-    merge(aPanels, 2, dst);
-  }
+        void addComplex(InputArray aSrc, int bSrc, OutputArray dst){
+            Mat panels[2];
+            split(aSrc.getMat(), panels);
+            panels[0] = panels[0] + bSrc;
+            merge(panels, 2, dst);
+        }
 
-  void divComplexByRealMultiChannel(const vector<Mat> &numer,
-    const vector<Mat> &denom, vector<Mat> &dst)
-  {
-      for(int i = 0; unsigned(i) < numer.size(); i++)
-      {
-        divComplexByReal(numer[i], denom[i], dst[i]);
-      }
-  }
+        void divComplexByRealMultiChannel(vector<Mat> &numer,
+            vector<Mat> &denom, vector<Mat> &dst){
 
-  // power of 2 of the absolute value of the complex
-  Mat pow2absComplex(InputArray src){
-    Mat S = src.getMat();
+            for(int i = 0; unsigned(i) < numer.size(); i++)
+            {
+                dst[i].create(numer[i].size(), numer[i].type());
+            }
+            parallel_for_(Range(0, numer.size()), ParallelDivComplexByReal(numer, denom, dst));
 
-    Mat sPanels[2];
-    split(S, sPanels);
+        }
 
-    return sPanels[0].mul(sPanels[0]) + sPanels[1].mul(sPanels[1]);
-  }
+            // power of 2 of the absolute value of the complex
+        Mat pow2absComplex(InputArray src){
+            Mat S = src.getMat();
+
+            Mat sPanels[2];
+            split(S, sPanels);
+
+            return sPanels[0].mul(sPanels[0]) + sPanels[1].mul(sPanels[1]);
+        }
 }
 
 namespace cv
 {
-namespace ximgproc
-{
-
-void l0Smooth(InputArray src, OutputArray dst, double lambda, double kappa)
-{
-  Mat S = src.getMat();
-
-  CV_Assert(!S.empty());
-  CV_Assert(S.depth() == CV_8U || S.depth() == CV_16U
-    || S.depth() == CV_32F || S.depth() == CV_64F);
-
-  dst.create(src.size(), src.type());
-
-  if(S.data == dst.getMat().data){
-    S = S.clone();
-  }
-
-  if(S.depth() == CV_8U)
-  {
-    S.convertTo(S, CV_32F, 1/255.0f);
-  }
-  else if(S.depth() == CV_16U)
-  {
-    S.convertTo(S, CV_32F, 1/65535.0f);
-  }else if(S.depth() == CV_64F){
-    S.convertTo(S, CV_32F);
-  }
-
-  const double betaMax = 100000;
-
-  // gradient operators in frequency domain
-  Mat otfFx, otfFy;
-  float kernel[2] = {-1, 1};
-  float kernel_inv[2] = {1,-1};
-  psf2otf(Mat(1,2,CV_32FC1, kernel_inv), otfFx, S.rows, S.cols);
-  psf2otf(Mat(2,1,CV_32FC1, kernel_inv), otfFy, S.rows, S.cols);
-
-  vector<Mat> denomConst;
-  Mat tmp = pow2absComplex(otfFx) + pow2absComplex(otfFy);
-
-  for(int i = 0; i < S.channels(); i++){
-    denomConst.push_back(tmp);
-  }
-
-  // input image in frequency domain
-  vector<Mat> numerConst;
-  dftMultiChannel(S, numerConst);
-
-  /*********************************
-  * solver
-  *********************************/
-  double beta = 2 * lambda;
-  while(beta < betaMax){
-    // h, v subproblem
-    Mat h, v;
-
-    filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
-      0, BORDER_REPLICATE);
-    filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
-      0, BORDER_REPLICATE);
-
-    Mat hvMag = h.mul(h) + v.mul(v);
-
-    Mat mask;
-    if(S.channels() == 1)
+    namespace ximgproc
     {
-      threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
+
+        void l0Smooth(InputArray src, OutputArray dst, double lambda, double kappa)
+        {
+            Mat S = src.getMat();
+
+            CV_Assert(!S.empty());
+            CV_Assert(S.depth() == CV_8U || S.depth() == CV_16U
+            || S.depth() == CV_32F || S.depth() == CV_64F);
+
+            dst.create(src.size(), src.type());
+
+            if(S.data == dst.getMat().data){
+                S = S.clone();
+            }
+
+            if(S.depth() == CV_8U)
+            {
+                S.convertTo(S, CV_32F, 1/255.0f);
+            }
+            else if(S.depth() == CV_16U)
+            {
+                S.convertTo(S, CV_32F, 1/65535.0f);
+            }else if(S.depth() == CV_64F){
+                S.convertTo(S, CV_32F);
+            }
+
+            const double betaMax = 100000;
+
+            // gradient operators in frequency domain
+            Mat otfFx, otfFy;
+            float kernel[2] = {-1, 1};
+            float kernel_inv[2] = {1,-1};
+            psf2otf(Mat(1,2,CV_32FC1, kernel_inv), otfFx, S.rows, S.cols);
+            psf2otf(Mat(2,1,CV_32FC1, kernel_inv), otfFy, S.rows, S.cols);
+
+            vector<Mat> denomConst;
+            Mat tmp = pow2absComplex(otfFx) + pow2absComplex(otfFy);
+
+            for(int i = 0; i < S.channels(); i++){
+                denomConst.push_back(tmp);
+            }
+
+            // input image in frequency domain
+            vector<Mat> numerConst;
+            dftMultiChannel(S, numerConst);
+            /*********************************
+            * solver
+            *********************************/
+            double beta = 2 * lambda;
+            while(beta < betaMax){
+                // h, v subproblem
+                Mat h, v;
+
+                filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
+                0, BORDER_REPLICATE);
+                filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
+                0, BORDER_REPLICATE);
+
+                Mat hvMag = h.mul(h) + v.mul(v);
+
+                Mat mask;
+                if(S.channels() == 1)
+                {
+                    threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
+                }
+                else if(S.channels() > 1)
+                {
+                    Mat *channels = new Mat[S.channels()];
+                    split(hvMag, channels);
+                    hvMag = channels[0];
+
+                    for(int i = 1; i < S.channels(); i++){
+                        hvMag = hvMag + channels[i];
+                    }
+
+                    threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
+
+                    Mat in[] = {mask, mask, mask};
+                    merge(in, 3, mask);
+
+                    delete[] channels;
+                }
+
+                h = h.mul(mask);
+                v = v.mul(mask);
+
+                // S subproblem
+                vector<Mat> denom(S.channels());
+                for(int i = 0; i < S.channels(); i++){
+                    denom[i] = beta * denomConst[i] + 1;
+                }
+
+                Mat hGrad, vGrad;
+                filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
+                filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
+
+                vector<Mat> hvGradFreq;
+                dftMultiChannel(hGrad+vGrad, hvGradFreq);
+
+                vector<Mat> numer(S.channels());
+                for(int i = 0; i < S.channels(); i++){
+                    numer[i] = numerConst[i] + hvGradFreq[i] * beta;
+                }
+
+                vector<Mat> sFreq(S.channels());
+                divComplexByRealMultiChannel(numer, denom, sFreq);
+
+                idftMultiChannel(sFreq, S);
+
+                beta = beta * kappa;
+            }
+
+            Mat D = dst.getMat();
+            if(D.depth() == CV_8U)
+            {
+                S.convertTo(D, CV_8U, 255);
+            }
+            else if(D.depth() == CV_16U)
+            {
+                S.convertTo(D, CV_16U, 65535);
+            }else if(D.depth() == CV_64F){
+                S.convertTo(D, CV_64F);
+            }else{
+                S.copyTo(D);
+            }
+        }
     }
-    else if(S.channels() > 1)
-    {
-      Mat *channels = new Mat[S.channels()];
-      split(hvMag, channels);
-      hvMag = channels[0];
-
-      for(int i = 1; i < S.channels(); i++){
-        hvMag = hvMag + channels[i];
-      }
-
-      threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
-
-      Mat in[] = {mask, mask, mask};
-      merge(in, 3, mask);
-
-      delete[] channels;
-    }
-
-    h = h.mul(mask);
-    v = v.mul(mask);
-
-    // S subproblem
-    vector<Mat> denom(S.channels());
-    for(int i = 0; i < S.channels(); i++){
-      denom[i] = beta * denomConst[i] + 1;
-    }
-
-    Mat hGrad, vGrad;
-    filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
-    filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
-
-    vector<Mat> hvGradFreq;
-    dftMultiChannel(hGrad+vGrad, hvGradFreq);
-
-    vector<Mat> numer(S.channels());
-    for(int i = 0; i < S.channels(); i++){
-      numer[i] = numerConst[i] + hvGradFreq[i] * beta;
-    }
-
-    vector<Mat> sFreq(S.channels());
-    divComplexByRealMultiChannel(numer, denom, sFreq);
-
-    idftMultiChannel(sFreq, S);
-
-    beta = beta * kappa;
-  }
-
-  Mat D = dst.getMat();
-  if(D.depth() == CV_8U)
-  {
-    S.convertTo(D, CV_8U, 255);
-  }
-  else if(D.depth() == CV_16U)
-  {
-    S.convertTo(D, CV_16U, 65535);
-  }else if(D.depth() == CV_64F){
-    S.convertTo(D, CV_64F);
-  }else{
-    S.copyTo(D);
-  }
-}
-}
 }
