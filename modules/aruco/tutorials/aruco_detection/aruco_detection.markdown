@@ -256,7 +256,7 @@ The aruco module provides a function to estimate the poses of all the detected m
 ``` c++
     Mat cameraMatrix, distCoeffs;
     ...
-    vector< Mat > rvecs, tvecs;
+    vector< Vec3d > rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 ```
 

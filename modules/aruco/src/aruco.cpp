@@ -821,9 +821,9 @@ void detectMarkers(InputArray _image, Dictionary dictionary, OutputArrayOfArrays
   */
 class SinglePoseEstimationParallel : public ParallelLoopBody {
     public:
-    SinglePoseEstimationParallel(Mat *_markerObjPoints, InputArrayOfArrays _corners,
+    SinglePoseEstimationParallel(Mat& _markerObjPoints, InputArrayOfArrays _corners,
                                  InputArray _cameraMatrix, InputArray _distCoeffs,
-                                 OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs)
+                                 Mat& _rvecs, Mat& _tvecs)
         : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
           distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
 
@@ -832,18 +832,18 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
         const int end = range.end;
 
         for(int i = begin; i < end; i++) {
-            solvePnP(*markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i),
-                     tvecs.getMat(i));
+            solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
+                    rvecs.at<Vec3d>(0, i), tvecs.at<Vec3d>(0, i));
         }
     }
 
     private:
     SinglePoseEstimationParallel &operator=(const SinglePoseEstimationParallel &); // to quiet MSVC
 
-    Mat *markerObjPoints;
+    Mat& markerObjPoints;
     InputArrayOfArrays corners;
     InputArray cameraMatrix, distCoeffs;
-    OutputArrayOfArrays rvecs, tvecs;
+    Mat& rvecs, tvecs;
 };
 
 
@@ -860,13 +860,10 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
     Mat markerObjPoints;
     _getSingleMarkerObjectPoints(markerLength, markerObjPoints);
     int nMarkers = (int)_corners.total();
-    _rvecs.create(nMarkers, 1, CV_32FC1);
-    _tvecs.create(nMarkers, 1, CV_32FC1);
+    _rvecs.create(nMarkers, 1, CV_64FC3);
+    _tvecs.create(nMarkers, 1, CV_64FC3);
 
-    for(int i = 0; i < nMarkers; i++) {
-        _rvecs.create(3, 1, CV_64FC1, i, true);
-        _tvecs.create(3, 1, CV_64FC1, i, true);
-    }
+    Mat rvecs = _rvecs.getMat(), tvecs = _tvecs.getMat();
 
     //// for each marker, calculate its pose
     // for (int i = 0; i < nMarkers; i++) {
@@ -876,8 +873,8 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, nMarkers),
-                  SinglePoseEstimationParallel(&markerObjPoints, _corners, _cameraMatrix,
-                                               _distCoeffs, _rvecs, _tvecs));
+                  SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
+                                               _distCoeffs, rvecs, tvecs));
 }
 
 

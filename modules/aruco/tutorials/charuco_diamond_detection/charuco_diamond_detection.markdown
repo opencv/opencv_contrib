@@ -133,7 +133,7 @@ i.e. using the ```estimatePoseSingleMarkers()``` function. For instance:
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);
 
     // estimate poses
-    std::vector<cv::Mat> rvecs, tvecs;
+    std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix, distCoeffs, rvecs, tvecs);
 
     // draw axis
