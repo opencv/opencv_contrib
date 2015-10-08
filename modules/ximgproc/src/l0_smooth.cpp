@@ -189,7 +189,7 @@ namespace
         void idftMultiChannel(const vector<Mat> &src, OutputArray dst){
             vector<Mat> channels(src);
 
-            parallel_for_(Range(0, src.size()), ParallelIdft(channels));
+            parallel_for_(Range(0, int(src.size())), ParallelIdft(channels));
 
             for(int i = 0; unsigned(i) < src.size(); i++){
                 Mat panels[2];
@@ -216,7 +216,7 @@ namespace
             {
                 dst[i].create(numer[i].size(), numer[i].type());
             }
-            parallel_for_(Range(0, numer.size()), ParallelDivComplexByReal(numer, denom, dst));
+            parallel_for_(Range(0, int(numer.size())), ParallelDivComplexByReal(numer, denom, dst));
 
         }
 
