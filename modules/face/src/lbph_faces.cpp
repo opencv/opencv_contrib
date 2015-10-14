@@ -91,11 +91,8 @@ public:
     // corresponding labels in labels.
     void update(InputArrayOfArrays src, InputArray labels);
 
-    // Predicts the label of a query image in src.
-    int predict(InputArray src) const;
-
-    // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
+    // Send all predict results to caller side for custom result handling
+    void predict(InputArray src, Ptr<PredictCollector> collector, const int state = 0) const;
 
     // See FaceRecognizer::load.
     void load(const FileStorage& fs);
@@ -386,7 +383,7 @@ void LBPH::train(InputArrayOfArrays _in_src, InputArray _in_labels, bool preserv
     }
 }
 
-void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
+void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector, const int state) const {
     if(_histograms.empty()) {
         // throw error if no data (or simply return -1?)
         String error_message = "This LBPH model is not computed yet. Did you call the train method?";
@@ -402,22 +399,12 @@ void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
             _grid_y, /* grid size y */
             true /* normed histograms */);
     // find 1-nearest neighbor
-    minDist = DBL_MAX;
-    minClass = -1;
-    for(size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
+    collector->init((int)_histograms.size(), state);
+    for (size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, HISTCMP_CHISQR_ALT);
-        if((dist < minDist) && (dist < _threshold)) {
-            minDist = dist;
-            minClass = _labels.at<int>((int) sampleIdx);
-        }
+        int label = _labels.at<int>((int)sampleIdx);
+        if (!collector->emit(label, dist, state))return;
     }
-}
-
-int LBPH::predict(InputArray _src) const {
-    int label;
-    double dummy;
-    predict(_src, label, dummy);
-    return label;
 }
 
 Ptr<LBPHFaceRecognizer> createLBPHFaceRecognizer(int radius, int neighbors,
