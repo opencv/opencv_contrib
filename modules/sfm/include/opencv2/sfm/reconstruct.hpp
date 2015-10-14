@@ -69,7 +69,7 @@ namespace sfm
    @note
     - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
 */
-/* CV_EXPORTS_W */ // error: ‘reconstruct’ is not a member of ‘cv::sfm’
+CV_EXPORTS
 void
 reconstruct(InputArrayOfArrays points2d, OutputArray Ps, OutputArray points3d, InputOutputArray K,
             bool is_projective = false);
@@ -88,7 +88,7 @@ reconstruct(InputArrayOfArrays points2d, OutputArray Ps, OutputArray points3d, I
     - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
     - To see a working example for camera motion reconstruction, check the following tutorial: @ref tutorial_sfm_trajectory_estimation.
 */
-/* CV_EXPORTS_W */ // error: ‘reconstruct’ is not a member of ‘cv::sfm’
+CV_EXPORTS
 void
 reconstruct(InputArrayOfArrays points2d, OutputArray Rs, OutputArray Ts, InputOutputArray K,
             OutputArray points3d, bool is_projective = false);
@@ -106,7 +106,7 @@ reconstruct(InputArrayOfArrays points2d, OutputArray Rs, OutputArray Ts, InputOu
     - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
     - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
 */
-/* CV_EXPORTS_W */ // error: ‘vector_string’ was not declared in this scope
+CV_EXPORTS
 void
 reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray points3d,
             InputOutputArray K, bool is_projective = false);
@@ -126,7 +126,7 @@ reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray p
     - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
     - To see a working example for scene reconstruction, check the following tutorial: @ref tutorial_sfm_scene_reconstruction.
 */
-/* CV_EXPORTS_W */ // error: ‘vector_string’ was not declared in this scope
+CV_EXPORTS
 void
 reconstruct(const std::vector<std::string> images, OutputArray Rs, OutputArray Ts,
             InputOutputArray K, OutputArray points3d, bool is_projective = false);
