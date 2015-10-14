@@ -68,7 +68,10 @@ enum {
   In case that the camera model was SFM_DISTORTION_MODEL_DIVISION, it's only needed to provide
   _polynomial_k1 and _polynomial_k2 which will be assigned as division distortion parameters.
  */
-typedef struct libmv_CameraIntrinsicsOptions {
+class CV_EXPORTS_W_SIMPLE libmv_CameraIntrinsicsOptions
+{
+public:
+  CV_WRAP
   libmv_CameraIntrinsicsOptions(const int _distortion_model=0,
                                 const double _focal_length=0,
                                 const double _principal_point_x=0,
@@ -87,8 +90,8 @@ typedef struct libmv_CameraIntrinsicsOptions {
       polynomial_k1(_polynomial_k1),
       polynomial_k2(_polynomial_k2),
       polynomial_k3(_polynomial_k3),
-      division_k1(0),
-      division_k2(0)
+      division_k1(_polynomial_p1),
+      division_k2(_polynomial_p2)
   {
     if ( _distortion_model == SFM_DISTORTION_MODEL_DIVISION )
     {
@@ -98,18 +101,18 @@ typedef struct libmv_CameraIntrinsicsOptions {
   }
 
   // Common settings of all distortion models.
-  int distortion_model;
-  int image_width, image_height;
-  double focal_length;
-  double principal_point_x, principal_point_y;
+  CV_PROP_RW int distortion_model;
+  CV_PROP_RW int image_width, image_height;
+  CV_PROP_RW double focal_length;
+  CV_PROP_RW double principal_point_x, principal_point_y;
 
   // Radial distortion model.
-  double polynomial_k1, polynomial_k2, polynomial_k3;
-  double polynomial_p1, polynomial_p2;
+  CV_PROP_RW double polynomial_k1, polynomial_k2, polynomial_k3;
+  CV_PROP_RW double polynomial_p1, polynomial_p2;
 
   // Division distortion model.
-  double division_k1, division_k2;
-} libmv_CameraIntrinsicsOptions;
+  CV_PROP_RW double division_k1, division_k2;
+};
 
 
 /** @brief All internal camera parameters that libmv is able to refine.
@@ -128,7 +131,10 @@ enum { SFM_REFINE_FOCAL_LENGTH         = (1 << 0),  // libmv::BUNDLE_FOCAL_LENGT
   @param _select_keyframes allows to select automatically the initial keyframes. If 1 then autoselection is enabled. If 0 then is disabled.
   @param _verbosity_level verbosity logs level for Glog. If -1 then logs are disabled, otherwise the log level will be the input integer.
  */
-typedef struct libmv_ReconstructionOptions {
+class CV_EXPORTS_W_SIMPLE libmv_ReconstructionOptions
+{
+public:
+  CV_WRAP
   libmv_ReconstructionOptions(const int _keyframe1=1,
                               const int _keyframe2=2,
                               const int _refine_intrinsics=1,
@@ -138,21 +144,25 @@ typedef struct libmv_ReconstructionOptions {
       refine_intrinsics(_refine_intrinsics),
       select_keyframes(_select_keyframes),
       verbosity_level(_verbosity_level) {}
-  int keyframe1, keyframe2;
-  int refine_intrinsics;
-  int select_keyframes;
-  int verbosity_level;
-} libmv_ReconstructionOptions;
+
+  CV_PROP_RW int keyframe1, keyframe2;
+  CV_PROP_RW int refine_intrinsics;
+  CV_PROP_RW int select_keyframes;
+  CV_PROP_RW int verbosity_level;
+};
 
 
 /** @brief base class BaseSFM declares a common API that would be used in a typical scene reconstruction scenario
  */
-class CV_EXPORTS BaseSFM
+class CV_EXPORTS_W BaseSFM
 {
 public:
   virtual ~BaseSFM() {};
 
+  CV_WRAP
   virtual void run(InputArrayOfArrays points2d) = 0;
+
+  CV_WRAP
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
@@ -160,21 +170,23 @@ public:
   virtual void run(const std::vector <std::string> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
-  virtual double getError() const = 0;
-  virtual void getPoints(OutputArray points3d) = 0;
-  virtual cv::Mat getIntrinsics() const = 0;
-  virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
+  CV_WRAP virtual double getError() const = 0;
+  CV_WRAP virtual void getPoints(OutputArray points3d) = 0;
+  CV_WRAP virtual cv::Mat getIntrinsics() const = 0;
+  CV_WRAP virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
 
+  CV_WRAP
   virtual void
   setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) = 0;
 
+  CV_WRAP
   virtual void
   setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) = 0;
 };
 
 /** @brief SFMLibmvEuclideanReconstruction class provides an interface with the Libmv Structure From Motion pipeline.
  */
-class CV_EXPORTS SFMLibmvEuclideanReconstruction : public BaseSFM
+class CV_EXPORTS_W SFMLibmvEuclideanReconstruction : public BaseSFM
 {
 public:
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
@@ -183,6 +195,7 @@ public:
     @note
       - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
   */
+  CV_WRAP
   virtual void run(InputArrayOfArrays points2d) = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
@@ -195,6 +208,7 @@ public:
     @note
       - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
   */
+  CV_WRAP
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
@@ -205,6 +219,7 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
+  /* CV_WRAP */ // error: ‘vector_string’ was not declared in this scope
   virtual void run(const std::vector <std::string> &images) = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
@@ -218,32 +233,38 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
+  /* CV_WRAP */ // error: ‘vector_string’ was not declared in this scope
   virtual void run(const std::vector <std::string> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
   /** @brief Returns the computed reprojection error.
   */
+  CV_WRAP
   virtual double getError() const = 0;
 
   /** @brief Returns the estimated 3d points.
     @param points3d Output array with estimated 3d points.
   */
+  CV_WRAP
   virtual void getPoints(OutputArray points3d) = 0;
 
   /** @brief Returns the refined camera calibration matrix.
   */
+  CV_WRAP
   virtual cv::Mat getIntrinsics() const = 0;
 
   /** @brief Returns the estimated camera extrinsic parameters.
     @param Rs Output vector of 3x3 rotations of the camera.
     @param Ts Output vector of 3x1 translations of the camera.
   */
+  CV_WRAP
   virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
 
   /** @brief Setter method for reconstruction options.
     @param libmv_reconstruction_options struct with reconstruction options such as initial keyframes,
       automatic keyframe selection, parameters to refine and the verbosity level.
   */
+  CV_WRAP
   virtual void
   setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) = 0;
 
@@ -251,14 +272,16 @@ public:
     @param libmv_camera_intrinsics_options struct with camera intrinsic options such as camera model and
       the internal camera parameters.
   */
+  CV_WRAP
   virtual void
   setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) = 0;
 
   /** @brief Creates an instance of the SFMLibmvEuclideanReconstruction class. Initializes Libmv. */
+  /* CV_WRAP */ // error: ‘SFMLibmvEuclideanReruction’ was not declared in this scope
   static Ptr<SFMLibmvEuclideanReconstruction>
-  create(const libmv_CameraIntrinsicsOptions &camera_instrinsic_options=libmv_CameraIntrinsicsOptions(),
-         const libmv_ReconstructionOptions &reconstruction_options=libmv_ReconstructionOptions());
-};
+    create(const libmv_CameraIntrinsicsOptions &camera_instrinsic_options=libmv_CameraIntrinsicsOptions(),
+           const libmv_ReconstructionOptions &reconstruction_options=libmv_ReconstructionOptions());
+  };
 
 //! @} sfm
 

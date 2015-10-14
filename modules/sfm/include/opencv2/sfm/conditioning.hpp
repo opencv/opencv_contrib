@@ -54,7 +54,7 @@ namespace sfm
   forming an approximately symmetric circular cloud of points of radius 1 about the origin.\n
   Reference: @cite HartleyZ00 4.4.4 pag.109
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 preconditionerFromPoints( InputArray points,
                           OutputArray T );
@@ -67,7 +67,7 @@ preconditionerFromPoints( InputArray points,
   bringing the centroid to the origin with an average centroid \f$(1,1,1)^T\f$.\n
   Reference: @cite HartleyZ00 4.4.4 pag.107.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 isotropicPreconditionerFromPoints( InputArray points,
                                    OutputArray T );
@@ -77,7 +77,7 @@ isotropicPreconditionerFromPoints( InputArray points,
   @param T Input 3x3 transformation matrix such that \f$x = T*X\f$, where \f$X\f$ are the points to transform and \f$x\f$ the transformed points.
   @param transformed_points Output vector of N-dimensional transformed points.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 applyTransformationToPoints( InputArray points,
                              InputArray T,
@@ -92,7 +92,7 @@ applyTransformationToPoints( InputArray points,
   This operation is an essential step before applying the DLT algorithm in order to consider the result as optimal.\n
   Reference: @cite HartleyZ00 4.4.4 pag.109
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 normalizePoints( InputArray points,
                  OutputArray normalized_points,
@@ -107,7 +107,7 @@ normalizePoints( InputArray points,
   This operation is an essential step before applying the DLT algorithm in order to consider the result as optimal.\n
   Reference: @cite HartleyZ00 4.4.4 pag.107.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 normalizeIsotropicPoints( InputArray points,
                           OutputArray normalized_points,

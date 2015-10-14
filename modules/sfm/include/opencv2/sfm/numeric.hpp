@@ -55,7 +55,7 @@ namespace sfm
 
   It computes in the same way as woud do @ref reduce but with \a Variance function.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 meanAndVarianceAlongRows( InputArray A,
                           OutputArray mean,
@@ -66,7 +66,7 @@ meanAndVarianceAlongRows( InputArray A,
 
   Reference: @cite HartleyZ00, p581, equation (A4.5).
 */
-CV_EXPORTS
+CV_EXPORTS_W
 Mat
 skew( InputArray x );
 

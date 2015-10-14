@@ -50,7 +50,7 @@ namespace sfm
   @param src Input vector of N-dimensional points.
   @param dst Output vector of N-1-dimensional points.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 homogeneousToEuclidean(InputArray src, OutputArray dst);
 
@@ -58,7 +58,7 @@ homogeneousToEuclidean(InputArray src, OutputArray dst);
   @param src Input vector of N-dimensional points.
   @param dst Output vector of N+1-dimensional points.
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 euclideanToHomogeneous(InputArray src, OutputArray dst);
 
@@ -71,7 +71,7 @@ euclideanToHomogeneous(InputArray src, OutputArray dst);
   This function estimate the projection matrix by solving the following equation: \f$P = K * [R|t]\f$
 
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 projectionFromKRt(InputArray K, InputArray R, InputArray t, OutputArray P);
 
@@ -83,7 +83,7 @@ projectionFromKRt(InputArray K, InputArray R, InputArray t, OutputArray P);
 
   Reference: @cite HartleyZ00 A4.1.1 pag.579
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 KRtFromProjection( InputArray P, OutputArray K, OutputArray R, OutputArray t );
 
@@ -92,7 +92,7 @@ KRtFromProjection( InputArray P, OutputArray K, OutputArray R, OutputArray t );
   @param t Input 3x1 translation vector.
   @param X Input 3x1 or 4x1 vector with the 3d point.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 double
 depth( InputArray R, InputArray t, InputArray X);
 

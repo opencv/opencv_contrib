@@ -69,6 +69,7 @@ ocv_add_module(sfm
   opencv_calib3d
   opencv_features2d
   opencv_xfeatures2d
+  WRAP python
 )
 
 

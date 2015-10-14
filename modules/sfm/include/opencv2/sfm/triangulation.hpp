@@ -54,7 +54,7 @@ namespace sfm
   Triangulates the 3d position of 2d correspondences between several images.
   Reference: Internally it uses DLT method @cite HartleyZ00 12.2 pag.312
 */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 triangulatePoints(InputArrayOfArrays points2d, InputArrayOfArrays projection_matrices,
                   OutputArray points3d);

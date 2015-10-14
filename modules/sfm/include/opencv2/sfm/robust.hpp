@@ -62,7 +62,7 @@ namespace sfm
 
 The fundamental solver relies on the 8 point solution. Returns the best error (in pixels), associated to the solution F.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 double
 fundamentalFromCorrespondences8PointRobust( InputArray x1,
                                             InputArray x2,
@@ -85,7 +85,7 @@ fundamentalFromCorrespondences8PointRobust( InputArray x1,
 
 The fundamental solver relies on the 7 point solution. Returns the best error (in pixels), associated to the solution F.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 double
 fundamentalFromCorrespondences7PointRobust( InputArray x1,
                                             InputArray x2,

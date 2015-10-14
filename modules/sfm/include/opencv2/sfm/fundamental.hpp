@@ -53,7 +53,7 @@ namespace sfm
   @param P1 Output 3x4 one possible projection matrix.
   @param P2 Output 3x4 another possible projection matrix.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 projectionsFromFundamental( InputArray F,
                             OutputArray P1,
@@ -64,7 +64,7 @@ projectionsFromFundamental( InputArray F,
   @param P2 Input 3x4 second projection matrix.
   @param F Output 3x3 fundamental matrix.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 fundamentalFromProjections( InputArray P1,
                             InputArray P2,
@@ -78,7 +78,7 @@ fundamentalFromProjections( InputArray P1,
   Uses the normalized 8-point fundamental matrix solver.
   Reference: @cite HartleyZ00 11.2 pag.281 (x1 = x, x2 = x')
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 normalizedEightPointSolver( InputArray x1,
                             InputArray x2,
@@ -96,7 +96,7 @@ normalizedEightPointSolver( InputArray x1,
   of the second one assuming the first one to be at the origin.
   If T1 and T2 are the camera motions, the computed relative motion is \f$T = T_2 T_1^{-1}\f$
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 relativeCameraMotion( InputArray R1,
                       InputArray t1,
@@ -112,7 +112,7 @@ relativeCameraMotion( InputArray R1,
 
   Reference: @cite HartleyZ00 9.6 pag 259 (Result 9.19)
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 motionFromEssential( InputArray E,
                      OutputArrayOfArrays Rs,
@@ -131,7 +131,7 @@ motionFromEssential( InputArray E,
 
   Reference: See @cite HartleyZ00 9.6 pag 259 (9.6.3 Geometrical interpretation of the 4 solutions).
  */
-CV_EXPORTS
+CV_EXPORTS_W
 int motionFromEssentialChooseSolution( InputArrayOfArrays Rs,
                                        InputArrayOfArrays ts,
                                        InputArray K1,
@@ -147,7 +147,7 @@ int motionFromEssentialChooseSolution( InputArrayOfArrays Rs,
 
   Reference: @cite HartleyZ00 9.6 pag 257 (formula 9.12) or http://ai.stanford.edu/~birch/projective/node20.html
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 fundamentalFromEssential( InputArray E,
                           InputArray K1,
@@ -162,7 +162,7 @@ fundamentalFromEssential( InputArray E,
 
   Reference: @cite HartleyZ00 9.6 pag 257 (formula 9.12)
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 essentialFromFundamental( InputArray F,
                           InputArray K1,
@@ -178,7 +178,7 @@ essentialFromFundamental( InputArray F,
 
   Reference: @cite HartleyZ00 9.6 pag 257 (formula 9.12)
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 essentialFromRt( InputArray R1,
                  InputArray t1,
@@ -192,7 +192,7 @@ essentialFromRt( InputArray R1,
 
   By default divides the fundamental matrix by its L2 norm.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 normalizeFundamental( InputArray F,
                       OutputArray F_normalized );
@@ -207,7 +207,7 @@ normalizeFundamental( InputArray F,
   Find the best transformation such that xp=projection*(s*R*x+t) (same as Pose Estimation, ePNP).
   The routines below are only for the orthographic case for now.
  */
-CV_EXPORTS
+CV_EXPORTS_W
 void
 computeOrientation( InputArrayOfArrays x1,
                     InputArrayOfArrays x2,
