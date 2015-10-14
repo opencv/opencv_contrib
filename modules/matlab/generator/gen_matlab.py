@@ -29,19 +29,12 @@ class MatlabWrapperGenerator(object):
         # dynamically import the parsers
         from jinja2 import Environment, FileSystemLoader
         import hdr_parser
-        import rst_parser
 
         # parse each of the files and store in a dictionary
         # as a separate "namespace"
         parser = hdr_parser.CppHeaderParser()
-        rst    = rst_parser.RstParser(parser)
-        rst_parser.verbose = False
-        rst_parser.show_warnings = False
-        rst_parser.show_errors = False
-        rst_parser.show_critical_errors = False
 
         ns  = dict((key, []) for key in modules)
-        doc = dict((key, []) for key in modules)
         path_template = Template('${module}/include/opencv2/${module}.hpp')
 
         for module in modules:
@@ -55,10 +48,6 @@ class MatlabWrapperGenerator(object):
 
             # parse the definitions
             ns[module] = parser.parse(header)
-            # parse the documentation
-            rst.parse(module, os.path.join(module_root, module))
-            doc[module] = rst.definitions
-            rst.definitions = {}
 
         for extra in extras:
             module = extra.split("=")[0]
@@ -97,7 +86,6 @@ class MatlabWrapperGenerator(object):
         tfunction  = jtemplate.get_template('template_function_base.cpp')
         tclassm    = jtemplate.get_template('template_class_base.m')
         tclassc    = jtemplate.get_template('template_class_base.cpp')
-        tdoc       = jtemplate.get_template('template_doc_base.m')
         tconst     = jtemplate.get_template('template_map_base.m')
 
         # create the build directory
@@ -121,10 +109,6 @@ class MatlabWrapperGenerator(object):
                 populated = tfunction.render(fun=method, time=time, includes=namespace.name)
                 with open(output_source_dir+'/'+method.name+'.cpp', 'wb') as f:
                     f.write(populated.encode('utf-8'))
-                if namespace.name in doc and method.name in doc[namespace.name]:
-                    populated = tdoc.render(fun=method, doc=doc[namespace.name][method.name], time=time)
-                    with open(output_class_dir+'/'+method.name+'.m', 'wb') as f:
-                        f.write(populated.encode('utf-8'))
             # classes
             for clss in namespace.classes:
                 # cpp converter
@@ -147,7 +131,6 @@ if __name__ == "__main__":
     """
     Usage: python gen_matlab.py --jinja2 /path/to/jinja2/engine
                                 --hdrparser /path/to/hdr_parser/dir
-                                --rstparser /path/to/rst_parser/dir
                                 --moduleroot [ /path/to/opencv/modules /path/to/opencv_contrib/modules etc ]
                                 --modules [core imgproc objdetect etc]
                                 --extra namespace=/path/to/extra/header.hpp
@@ -158,8 +141,7 @@ if __name__ == "__main__":
       1. constructs the headers to parse from the module root and list of modules
       2. parses the headers using CppHeaderParser
       3. refactors the definitions using ParseTree
-      4. parses .rst docs using RstParser
-      5. populates the templates for classes, function, enums and docs from the
+      4. populates the templates for classes, function, enums from the
          definitions
 
     gen_matlab.py requires the following inputs:
@@ -167,8 +149,6 @@ if __name__ == "__main__":
                    e.g. ${CMAKE_SOURCE_DIR}/3rdparty
     --hdrparser    the path to the header parser directory
                    (opencv/modules/python/src2)
-    --rstparser    the path to the rst parser directory
-                   (opencv/modules/java/generator)
     --moduleroot   (optional) paths to the opencv directories containing the modules
     --modules      (optional - required if --moduleroot specified) the modules
                    to produce bindings for. The path to the include directories
@@ -187,17 +167,15 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--jinja2')
     parser.add_argument('--hdrparser')
-    parser.add_argument('--rstparser')
     parser.add_argument('--moduleroot', nargs='*', default=[], required=False)
     parser.add_argument('--modules', nargs='*', default=[], required=False)
     parser.add_argument('--extra', nargs='*', default=[], required=False)
     parser.add_argument('--outdir')
     args = parser.parse_args()
 
-    # add the hdr_parser and rst_parser modules to the path
+    # add the hdr_parser module to the path
     sys.path.append(args.jinja2)
     sys.path.append(args.hdrparser)
-    sys.path.append(args.rstparser)
 
     # create the generator
     mwg = MatlabWrapperGenerator()
