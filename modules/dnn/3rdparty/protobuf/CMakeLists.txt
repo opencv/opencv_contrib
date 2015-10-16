@@ -97,6 +97,7 @@ configure_file("cmake/config.h.in" "config.h")
 if(MSVC)
   add_definitions( -D_CRT_SECURE_NO_WARNINGS=1 )
   ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 /wd4127 /wd4100 /wd4512 /wd4125 /wd4389 /wd4510 /wd4610 /wd4702)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4456) # VS 2015
 else()
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
 endif()
