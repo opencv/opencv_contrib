@@ -515,7 +515,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 }
 
                 // estimate diamond pose
-                vector< Mat > estimatedRvec, estimatedTvec;
+                vector< Vec3d > estimatedRvec, estimatedTvec;
                 aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, cameraMatrix,
                                                  distCoeffs, estimatedRvec, estimatedTvec);
 

@@ -64,7 +64,7 @@ The aruco module provides a specific function, ```estimatePoseBoard()```, to per
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
     // if at least one marker detected
     if(markerIds.size() > 0) {
-        cv::Mat rvec, tvec;
+        cv::Vec3d rvec, tvec;
         int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
     }
 ```
@@ -181,7 +181,7 @@ Finally, a full example of board detection:
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-            cv::Mat rvec, tvec;
+            cv::Vec3d rvec, tvec;
             int valid = estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
             // if at least one board marker detected

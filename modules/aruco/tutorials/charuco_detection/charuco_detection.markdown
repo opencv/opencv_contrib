@@ -294,7 +294,7 @@ A full example of ChArUco detection with pose estimation:
             // if at least one charuco corner detected
             if(charucoIds.size() > 0) {
                 cv::aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, cv::Scalar(255, 0, 0));
-                cv::Mat rvec, tvec;
+                cv::Vec3d rvec, tvec;
                 bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
                 // if charuco pose is valid
                 if(valid)
