@@ -123,8 +123,8 @@ void CV_SiftFlowTest::run(int) {
     //const string frame2_path = "D:\\Dev\\Resources\\MSc\\SceauxCastleReduced8\\images\\100_7101.JPG";
     const string gt_flow_path = ts->get_data_path() + "optflow/RubberWhale.flo";
 
-    cv::Mat frame1 = cv::imread(frame1_path);
-    cv::Mat frame2 = cv::imread(frame2_path);
+    cv::Mat frame1 = cv::imread(frame1_path, cv::IMREAD_GRAYSCALE);
+    cv::Mat frame2 = cv::imread(frame2_path, cv::IMREAD_GRAYSCALE);
 
     if (frame1.empty()) {
       ts->printf(cvtest::TS::LOG, "could not read image %s\n", frame2_path.c_str());
@@ -144,14 +144,14 @@ void CV_SiftFlowTest::run(int) {
       ts->set_failed_test_info(cvtest::TS::FAIL_MISSING_TEST_DATA);
       return;
     }
-
+    /*
     if (frame1.type() != 16 || frame2.type() != 16) {
       ts->printf(cvtest::TS::LOG, "images should be of equal type CV_8UC3 (%s and %s)",
                  frame1_path.c_str(), frame2_path.c_str());
       ts->set_failed_test_info(cvtest::TS::FAIL_MISSING_TEST_DATA);
       return;
     }
-
+    */
     cv::Mat flow_gt;
 
     FILE* gt_flow_file = fopen(gt_flow_path.c_str(), "rb");
@@ -172,8 +172,10 @@ void CV_SiftFlowTest::run(int) {
 
     // Convert frames to grayscale
     cv::Mat frame1_gray, frame2_gray;
-    cv::cvtColor(frame1, frame1_gray, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(frame2, frame2_gray, cv::COLOR_BGR2GRAY);
+    //cv::cvtColor(frame1, frame1_gray, cv::COLOR_BGR2GRAY);
+    //cv::cvtColor(frame2, frame2_gray, cv::COLOR_BGR2GRAY);
+    frame1_gray = frame1;
+    frame2_gray = frame2;
 
     // Resize images
     //cv::resize(frame1_gray, frame1_gray, cv::Size(), 0.5, 0.5);
@@ -181,8 +183,9 @@ void CV_SiftFlowTest::run(int) {
 
     // Create SIFT images
     cv::Ptr<cv::optflow::SiftImageExtractor> siftImageExtractor =
-        //cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_LINEAR);
-        cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_UNIFORM);
+        cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_LINEAR);
+        //cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_EXP);
+        //cv::optflow::SiftImageExtractor::create(cv::optflow::SiftImageExtractor::SCALE_UNIFORM);
     cv::Mat siftImg1, siftImg2;
     siftImageExtractor->compute(frame1_gray, frame2_gray, siftImg1, siftImg2);
 
