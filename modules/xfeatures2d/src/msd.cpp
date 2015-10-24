@@ -138,7 +138,7 @@ namespace cv
             struct MSDSelfDissimilarityScan : ParallelLoopBody
             {
 
-                MSDSelfDissimilarityScan(MSDDetector_Impl& _detector, std::vector<float*>* _saliency, cv::Mat& _img, int _level, int _border, int _split)
+                MSDSelfDissimilarityScan(MSDDetector_Impl& _detector, std::vector< std::vector<float> >* _saliency, cv::Mat& _img, int _level, int _border, int _split)
                 {
                     detector = &_detector;
                     saliency = _saliency;
@@ -162,12 +162,12 @@ namespace cv
                             {
                                 end = img->cols - border;
                             }
-                        detector->contextualSelfDissimilarity(*img, start, end, saliency->at(level));
+                        detector->contextualSelfDissimilarity(*img, start, end, &saliency->at(level)[0]);
                     }
                 }
 
                 MSDDetector_Impl* detector;
-                std::vector<float*>* saliency;
+                std::vector< std::vector<float> >* saliency;
                 cv::Mat* img;
                 int level;
                 int split;
@@ -220,12 +220,13 @@ namespace cv
                 m_scaleSpace = scaleSpacer.getImPyr();
 
                 keypoints.clear();
-                std::vector<float *> saliency;
+                std::vector< std::vector<float> > saliency;
                 saliency.resize(m_cur_n_scales);
 
                 for (int r = 0; r < m_cur_n_scales; r++)
                 {
-                    saliency[r] = new float[m_scaleSpace[r].rows * m_scaleSpace[r].cols];
+                    saliency[r].resize(m_scaleSpace[r].rows * m_scaleSpace[r].cols);
+                    fill(saliency[r].begin(), saliency[r].end(), 0.0f);
                 }
 
                 for (int r = 0; r < m_cur_n_scales; r++)
@@ -236,9 +237,9 @@ namespace cv
 
                 nonMaximaSuppression(saliency, keypoints);
 
-                for (int r = 0; r < m_n_scales; r++)
+                for (int r = 0; r < m_cur_n_scales; r++)
                 {
-                    delete[] saliency[r];
+                    saliency[r].clear();
                 }
 
                 m_scaleSpace.clear();
@@ -316,7 +317,7 @@ namespace cv
              * @param saliency input saliency associated to each element of the image pyramid
              * @param keypoints key-points obtained as local maxima of the saliency
              */
-            void nonMaximaSuppression(std::vector<float *> & saliency, std::vector<cv::KeyPoint> & keypoints);
+            void nonMaximaSuppression(std::vector< std::vector<float> > & saliency, std::vector<cv::KeyPoint> & keypoints);
 
             /**
              * Computes the floating point interpolation of a key-point coordinates
@@ -327,11 +328,11 @@ namespace cv
              * @param p_res interpolated coordinates of the key-point referred to the lowest level of the pyramid (i.e. in the ref. frame of the input image)
              * @return false if the current key-point has to be rejected, true otherwise
              */
-            bool rescalePoint(int x, int y, int scale, std::vector<float *> & saliency, cv::Point2f & p_res);
+            bool rescalePoint(int x, int y, int scale, std::vector< std::vector<float> > & saliency, cv::Point2f & p_res);
 
         };
 
-        bool MSDDetector_Impl::rescalePoint(int i, int j, int scale, std::vector<float *> & saliency, cv::Point2f &p_res)
+        bool MSDDetector_Impl::rescalePoint(int i, int j, int scale, std::vector< std::vector<float> > & saliency, cv::Point2f &p_res)
         {
 
             const float deriv_scale = 0.5f;
@@ -664,7 +665,7 @@ namespace cv
             return bestAngle2;
         }
 
-        void MSDDetector_Impl::nonMaximaSuppression(std::vector<float *> & saliency, std::vector<cv::KeyPoint> & keypoints)
+        void MSDDetector_Impl::nonMaximaSuppression(std::vector< std::vector<float> > & saliency, std::vector<cv::KeyPoint> & keypoints)
         {
             cv::KeyPoint kp_temp;
             int border = m_search_area_radius + m_patch_radius;
