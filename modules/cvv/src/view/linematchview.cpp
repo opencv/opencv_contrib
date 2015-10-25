@@ -45,8 +45,7 @@ LineMatchView::LineMatchView(std::vector<cv::KeyPoint> leftKeyPoints,
 	qtutil::MatchScene *matchscene_ptr = matchscene.get();
 	int updateAreaDelay=std::min(std::max(matches.size(),
 					      std::max(leftKeyPoints.size(),
-						       rightKeyPoints.size()))/std::size_t{10},
-+	                              std::size_t{50});
+                                   rightKeyPoints.size()))/(std::size_t)10,(std::size_t)50);
 	matchscene_ptr->getLeftImage().setUpdateAreaDelay(updateAreaDelay);
 	matchscene_ptr->getRightImage().setUpdateAreaDelay(updateAreaDelay);
 
