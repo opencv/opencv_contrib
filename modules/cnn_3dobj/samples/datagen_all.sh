@@ -83,8 +83,3 @@
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/02.ply -label_class=11 -label_item=2 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/03.ply -label_class=11 -label_item=3 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/04.ply -label_class=11 -label_item=4 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2
-
-./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/01.ply -label_class=12 -label_item=1 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.5
-./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/02.ply -label_class=12 -label_item=2 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.5
-./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/03.ply -label_class=12 -label_item=3 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.5
-./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/04.ply -label_class=12 -label_item=4 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.5

@@ -130,8 +130,11 @@ int main(int argc, char *argv[])
     double obj_dist, bg_dist, y_range;
     if (front_view)
     {
+        if (label_class == 12)
+            obj_dist = 340;
+        else
+            obj_dist = 240;
         ite_depth = ite_depth + 1;
-        obj_dist = 240;
         bg_dist = 700;
         y_range = 0.85;
     }
@@ -193,8 +196,6 @@ int main(int argc, char *argv[])
     /* Set background color. */
     myWindow.setBackgroundColor(viz::Color::gray());
     myWindow.spin();
-    /* Add light. */
-    //myWindow.addLight(Vec3d(0,0,100000), Vec3d(0,0,0), viz::Color::white(), viz::Color::gray(), viz::Color::black(), viz::Color::white());
     /* Create a Mesh widget, loading .ply models. */
     viz::Mesh objmesh = viz::Mesh::load(plymodel);
     /* Get the center of the generated mesh widget, cause some .ply files, this could be ignored if you are using PASCAL database*/
@@ -235,6 +236,11 @@ int main(int argc, char *argv[])
     {
         cnt_img = 0;
         for(int pose = 0; pose < static_cast<int>(campos.size()); pose++){
+            /* Add light. */
+            // double alpha1 = rand()%(314/2)/100;
+            // double alpha2 = rand()%(314*2)/100;
+            // printf("%f %f %f/n", ceil(10000*sqrt(1 - sin(alpha1)*sin(alpha1))*sin(alpha2)), 10000*sqrt(1 - sin(alpha1)*sin(alpha1))*cos(alpha2), sin(alpha1)*10000);
+            // myWindow.addLight(Vec3d(10000*sqrt(1 - sin(alpha1)*sin(alpha1))*sin(alpha2),10000*sqrt(1 - sin(alpha1)*sin(alpha1))*cos(alpha2),sin(alpha1)*10000), Vec3d(0,0,0), viz::Color::white(), viz::Color::white(), viz::Color::black(), viz::Color::white());
             int label_x, label_y, label_z;
             label_x = static_cast<int>(campos.at(pose).x*100);
             label_y = static_cast<int>(campos.at(pose).y*100);
@@ -245,6 +251,10 @@ int main(int argc, char *argv[])
             imglabel << filename << ' ' << label_class << endl;
             filename = imagedir + filename;
             /* Get the pose of the camera using makeCameraPoses. */
+            if (front_view)
+            {
+                cam_focal_point.y = cam_focal_point.y - label_x/30;
+            }
             Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*obj_dist+cam_focal_point, cam_focal_point, cam_y_dir*obj_dist+cam_focal_point);
             /* Get the transformation matrix from camera coordinate system to global. */
             Affine3f transform = viz::makeTransformToGlobal(Vec3f(1.0f,0.0f,0.0f), Vec3f(0.0f,1.0f,0.0f), Vec3f(0.0f,0.0f,1.0f), campos.at(pose));

@@ -16,7 +16,6 @@
 
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/01.ply -label_class=3 -label_item=1 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/02.ply -label_class=3 -label_item=2 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
-./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/03.ply -label_class=3 -label_item=3 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/04.ply -label_class=3 -label_item=4 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/05.ply -label_class=3 -label_item=5 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/boat/06.ply -label_class=3 -label_item=6 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/boat_pascal/ -z_range=0.6 -front_view=1
@@ -49,3 +48,8 @@
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/02.ply -label_class=11 -label_item=2 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/03.ply -label_class=11 -label_item=3 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2 -front_view=1
 ./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/train/04.ply -label_class=11 -label_item=4 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/train_pascal/ -z_range=0.2 -front_view=1
+
+./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/01.ply -label_class=12 -label_item=1 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.3 -front_view=1
+./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/02.ply -label_class=12 -label_item=2 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.3 -front_view=1
+./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/03.ply -label_class=12 -label_item=3 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.3 -front_view=1
+./sphereview_test -plymodel=/Users/yidawang/Downloads/PASCAL3D+_release1.1/CAD/tvmonitor/04.ply -label_class=12 -label_item=4 -bakgrdir=/Users/yidawang/Documents/database/backgrd_pascal/tvmonitor_pascal/ -z_range=0.3 -front_view=1
