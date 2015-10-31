@@ -73,11 +73,7 @@ For all other cases, the sizes of the window will impact the number of samples
 and the number of elements in the estimated covariance matrix. 
 */
 
-CV_EXPORTS_W void covarianceEstimation(InputArray src, OutputArray dst, 
-    int windowRows, int windowCols);
-
-
-
+CV_EXPORTS_W void covarianceEstimation(InputArray src, OutputArray dst, int windowRows, int windowCols);
 
 }
 }
