@@ -65,12 +65,12 @@ window forumlation.
 @param src The source image. Input image must be of a complex type.
 @param windowRows The number of rows in the window.
 @param windowCols The number of cols in the window.
-The window size parameters control the accuracy of the estimation. 
-The sliding window moves over the entire image from the top-left corner 
+The window size parameters control the accuracy of the estimation.
+The sliding window moves over the entire image from the top-left corner
 to the bottom right corner. Each location of the window represents a sample.
 If the window is the size of the image, then this gives the exact covariance matrix.
-For all other cases, the sizes of the window will impact the number of samples 
-and the number of elements in the estimated covariance matrix. 
+For all other cases, the sizes of the window will impact the number of samples
+and the number of elements in the estimated covariance matrix.
 */
 
 CV_EXPORTS_W void covarianceEstimation(InputArray src, OutputArray dst, int windowRows, int windowCols);

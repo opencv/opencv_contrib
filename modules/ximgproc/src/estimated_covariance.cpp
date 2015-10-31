@@ -185,7 +185,7 @@ void EstimateCovariance::iterateCombinations(Mat inputData,Mat outputData)
 
 #ifdef HAVE_OPENMP
     #pragma omp parallel
-#endif  
+#endif
     {
         int idx;
         int combs;
@@ -193,7 +193,7 @@ void EstimateCovariance::iterateCombinations(Mat inputData,Mat outputData)
         int thread_id= omp_get_thread_num();
 #else
         int thread_id=0;
-#endif      
+#endif
         int startComb;
         if (remainder > thread_id){
             combs=combsPerCPU;
@@ -216,7 +216,7 @@ void EstimateCovariance::iterateCombinations(Mat inputData,Mat outputData)
             computeOneCombination(startComb++, inputData, outputData,
                     outputVector,finalMatPosR, finalMatPosC);
         }
-        delete[] finalMatPosR;      
+        delete[] finalMatPosR;
         delete[] finalMatPosC;
     }
 }
@@ -258,7 +258,7 @@ void EstimateCovariance::computeOneCombination(int comb_id,Mat inputData, Mat ou
         }
     }
     outputVector.at<std::complex<float> >(0,0) = temp_res;
-    
+
     // Checking if the first element belongs to the first set of combinatons.
     // The combination that the first element is above the second.
     if (!type2) {
@@ -341,7 +341,7 @@ void EstimateCovariance::computeOneCombination(int comb_id,Mat inputData, Mat ou
             std::complex<float> w = std::complex<float>(0,0),x = std::complex<float>(0,0),
                 y = std::complex<float>(0,0),z = std::complex<float>(0,0),deltaRowSum = std::complex<float>(0,0);
             std::complex<float> tempRes = std::complex<float>(0,0);
-            // Index arithmetic         
+            // Index arithmetic
             int rM1 = r-1;
             int drPr = DR+r;
             int rM1PdeltaR = rM1 + deltaR;
@@ -391,8 +391,8 @@ void covarianceEstimation(InputArray input_, OutputArray output_,int windowRows,
 
     Mat temp=input_.getMat();
     if(temp.channels() == 1){
-        temp.convertTo(temp,CV_32FC2);  
-        Mat zmat = Mat::zeros(temp.size(), CV_32F); 
+        temp.convertTo(temp,CV_32FC2);
+        Mat zmat = Mat::zeros(temp.size(), CV_32F);
         Mat twoChannelsbefore[] = {temp,zmat};
         cv::merge(twoChannelsbefore,2,input);
     }else{
