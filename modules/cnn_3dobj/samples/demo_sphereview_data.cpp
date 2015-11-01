@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     "{rgb_use | 0 | Use RGB image or grayscale. }"
     "{num_class | 6 | Total number of classes of models. }"
     "{binary_out | 0 | Produce binaryfiles for images and label. }"
-    "{front_view | 0 | Take a special view of front angle}";
+    "{view_region | 0 | Take a special view of front or back angle}";
     /* Get parameters from comand line. */
     cv::CommandLineParser parser(argc, argv, keys);
     parser.about("Generating training data for CNN with triplet loss");
@@ -126,54 +126,86 @@ int main(int argc, char *argv[])
     int rgb_use = parser.get<int>("rgb_use");
     int num_class = parser.get<int>("num_class");
     int binary_out = parser.get<int>("binary_out");
-    int front_view = parser.get<int>("front_view");
+    int view_region = parser.get<int>("view_region");
     double obj_dist, bg_dist, y_range;
-    if (front_view)
+    if (view_region == 1 || view_region == 2)
     {
+        /* Set for TV */
         if (label_class == 12)
             obj_dist = 340;
         else
-            obj_dist = 240;
+            obj_dist = 250;
         ite_depth = ite_depth + 1;
         bg_dist = 700;
         y_range = 0.85;
     }
-    else
+    else if (view_region == 0)
     {
         obj_dist = 370;
         bg_dist = 400;
     }
+    if (label_class == 5 | label_class == 10 | label_class == 11 | label_class == 12)
+        ite_depth = ite_depth + 1;
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
     std::vector<cv::Point3d> campos;
     std::vector<cv::Point3d> campos_temp = ViewSphere.CameraPos;
-    if (semisphere)
+    /* Regular objects on the ground using a semisphere view system */
+    if (semisphere == 1)
     {
-        if (front_view)
+        if (view_region == 1)
         {
             for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
             {
-                if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range && (campos_temp.at(pose).y < -y_range || campos_temp.at(pose).y > y_range))
+                if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range && campos_temp.at(pose).y < -y_range)
                     campos.push_back(campos_temp.at(pose));
+            }
+        }
+        else if (view_region == 2)
+        {
+            for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
+            {
+                if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range && campos_temp.at(pose).y > y_range)
+                campos.push_back(campos_temp.at(pose));
             }
         }
         else
         {
-            for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
+            /* Set for sofa */
+            if (label_class == 10)
             {
-                if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range)
+                for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
+                {
+                    if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range && campos_temp.at(pose).y < -0.4)
                     campos.push_back(campos_temp.at(pose));
+                }
+            }
+            else
+            {
+                for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
+                {
+                    if (campos_temp.at(pose).z >= 0 && campos_temp.at(pose).z < z_range)
+                        campos.push_back(campos_temp.at(pose));
+                }
             }
         }
     }
+    /* Special object such as plane using a full space of view sphere */
     else
     {
-        if (front_view)
+        if (view_region == 1)
         {
-            obj_dist = 200;
             for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
             {
-                if (campos_temp.at(pose).z < 0.2 && campos_temp.at(pose).z > -0.2 && (campos_temp.at(pose).y < -y_range || campos_temp.at(pose).y > y_range))
+                if (campos_temp.at(pose).z < 0.2 && campos_temp.at(pose).z > -0.2 && campos_temp.at(pose).y < -y_range)
                     campos.push_back(campos_temp.at(pose));
+            }
+        }
+        else if (view_region == 2)
+        {
+            for (int pose = 0; pose < static_cast<int>(campos_temp.size()); pose++)
+            {
+                if (campos_temp.at(pose).z < 0.2 && campos_temp.at(pose).z > -0.2 && campos_temp.at(pose).y > y_range)
+                campos.push_back(campos_temp.at(pose));
             }
         }
         else
@@ -251,9 +283,9 @@ int main(int argc, char *argv[])
             imglabel << filename << ' ' << label_class << endl;
             filename = imagedir + filename;
             /* Get the pose of the camera using makeCameraPoses. */
-            if (front_view)
+            if (view_region != 0)
             {
-                cam_focal_point.y = cam_focal_point.y - label_x/30;
+                cam_focal_point.x = cam_focal_point.y - label_x/5;
             }
             Affine3f cam_pose = viz::makeCameraPose(campos.at(pose)*obj_dist+cam_focal_point, cam_focal_point, cam_y_dir*obj_dist+cam_focal_point);
             /* Get the transformation matrix from camera coordinate system to global. */
@@ -276,7 +308,8 @@ int main(int argc, char *argv[])
             if (bakgrdir.size() != 0)
             {
                 cv::Mat img_bg = cv::imread(name_bkg.at(rand()%name_bkg.size()));
-                cv::viz::WImage3D background_widget(img_bg, Size2d(image_size*4, image_size*4), Vec3d(-campos.at(pose)*bg_dist-cam_focal_point), Vec3d(campos.at(pose)*bg_dist+cam_focal_point), Vec3d(0,0,-100));
+                /* Back ground images has a distance of 2 times of radius of camera view distance */
+                cv::viz::WImage3D background_widget(img_bg, Size2d(image_size*4.2, image_size*4.2), Vec3d(-campos.at(pose)*bg_dist+cam_focal_point), Vec3d(campos.at(pose)*bg_dist-cam_focal_point), Vec3d(0,0,-1)*bg_dist+Vec3d(0,2*cam_focal_point.y,0));
                 myWindow.showWidget("bgwidget", background_widget, cloud_pose_global);
             }
             // mesh_widget.setRenderingProperty(viz::LINE_WIDTH, 4.0);
