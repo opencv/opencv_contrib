@@ -1,0 +1,8 @@
+{
+  "email" : "mouret@isir.upmc.fr",
+  "wall_time" : "24:00:00",
+  "nb_runs": 3,
+  "bin_dir": "/home/mouret/svn/sferes2/trunk/build/default/examples/",
+  "res_dir": "/home/mouret/svn/sferes2/trunk/res/",
+  "exps" : ["ex_ea"]
+}
