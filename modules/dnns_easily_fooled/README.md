@@ -46,7 +46,3 @@ Please see the [Installation_Guide](https://github.com/Evolving-AI-Lab/fooling/w
 ## Updates
 
 * A fork project [here](https://github.com/Evolving-AI-Lab/innovation-engine) has support for the **latest Caffe** and experiments to create *recognizable* images instead of unrecognizable.
-
-## License
-
-Please refer to the licenses of Sferes and Caffe projects.
