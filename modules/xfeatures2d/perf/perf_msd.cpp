@@ -29,5 +29,5 @@ PERF_TEST_P(msd, detect, testing::Values(MSD_IMAGES))
     TEST_CYCLE() detector->detect(frame, points, mask);
 
     sort(points.begin(), points.end(), comparators::KeypointGreater());
-    SANITY_CHECK_KEYPOINTS(points, 1e-5);
+    SANITY_CHECK_KEYPOINTS(points, 1e-3);
 }
