@@ -219,6 +219,7 @@ namespace cv
 			}
 		}
 
+#ifdef HAVE_OPENCL
 		void TrackerTLDModel::ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
 		{
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
@@ -271,6 +272,7 @@ namespace cv
 				}
 			}
 		}
+#endif // HAVE_OPENCL
 
 		//Push the patch to the model
 		void TrackerTLDModel::pushIntoModel(const Mat_<uchar>& example, bool positive)

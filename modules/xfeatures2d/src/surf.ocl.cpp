@@ -43,6 +43,9 @@
 //
 //M*/
 #include "precomp.hpp"
+
+#ifdef HAVE_OPENCL
+
 #include "surf.hpp"
 
 #include <cstdio>
@@ -461,3 +464,4 @@ bool SURF_OCL::calcOrientation(UMat &keypoints)
 }
 }
 
+#endif // HAVE_OPENCL

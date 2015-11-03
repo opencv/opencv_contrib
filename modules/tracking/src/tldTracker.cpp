@@ -129,9 +129,11 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
 		if (i == 1)
 		{
+#ifdef HAVE_OPENCL
 			if (ocl::haveOpenCL())
 				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 			else
+#endif
 				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 		}
         if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
@@ -199,17 +201,21 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         }
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-		if (ocl::haveOpenCL())
-			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
-		else
-			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
+#ifdef HAVE_OPENCL
+        if (ocl::haveOpenCL())
+            tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
+        else
+#endif
+        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
         examplesForModel.clear(); examplesForEnsemble.clear();
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 
-		if (ocl::haveOpenCL())
-			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
-		else
-			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
+#ifdef HAVE_OPENCL
+        if (ocl::haveOpenCL())
+            tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
+        else
+#endif
+            tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
     }
     else
     {
