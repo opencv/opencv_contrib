@@ -1,0 +1,11 @@
+{
+  "machines" :
+    {
+      "localhost" : 3,
+      "fortaleza" : 2
+    },
+  "nb_runs": 3,
+  "exp" : "examples/ex_ea",
+  "dir" : "res/ex1",
+  "debug" : 0
+}

@@ -1,0 +1,6 @@
+*.pyc
+build/
+.waf-1.5.14*/
+.Totti-*/
+Totti-*/
+.lock-wscript
