@@ -42,40 +42,54 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#ifndef __OPENCV_XOBJDETECT_PRECOMP_HPP__
-#define __OPENCV_XOBJDETECT_PRECOMP_HPP__
+#ifndef _OPENCV_CASCADECLASSIFIER_H_
+#define _OPENCV_CASCADECLASSIFIER_H_
 
-#include <opencv2/xobjdetect.hpp>
+#include "precomp.hpp"
 
-#include <opencv2/core/utility.hpp>
+#define CC_CASCADE_FILENAME "cascade.xml"
+#define CC_PARAMS_FILENAME "params.xml"
 
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
+#define CC_CASCADE_PARAMS "cascadeParams"
+#define CC_STAGE_TYPE "stageType"
+#define CC_FEATURE_TYPE "featureType"
+#define CC_HEIGHT "height"
+#define CC_WIDTH  "width"
 
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
+#define CC_STAGE_NUM    "stageNum"
+#define CC_STAGES       "stages"
+#define CC_STAGE_PARAMS "stageParams"
 
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
+#define CC_BOOST            "BOOST"
+#define CC_BOOST_TYPE       "boostType"
+#define CC_DISCRETE_BOOST   "DAB"
+#define CC_REAL_BOOST       "RAB"
+#define CC_LOGIT_BOOST      "LB"
+#define CC_GENTLE_BOOST     "GAB"
+#define CC_MINHITRATE       "minHitRate"
+#define CC_MAXFALSEALARM    "maxFalseAlarm"
+#define CC_TRIM_RATE        "weightTrimRate"
+#define CC_MAX_DEPTH        "maxDepth"
+#define CC_WEAK_COUNT       "maxWeakCount"
+#define CC_STAGE_THRESHOLD  "stageThreshold"
+#define CC_WEAK_CLASSIFIERS "weakClassifiers"
+#define CC_INTERNAL_NODES   "internalNodes"
+#define CC_LEAF_VALUES      "leafValues"
 
-#include <opencv2/objdetect.hpp>
+#define CC_FEATURES       FEATURES
+#define CC_FEATURE_PARAMS "featureParams"
+#define CC_MAX_CAT_COUNT  "maxCatCount"
+#define CC_FEATURE_SIZE   "featSize"
 
-#include <algorithm>
-#include <vector>
-#include <string>
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-#include <cassert>
-#include <cstdio>
+#define CC_HAAR        "HAAR"
+#define CC_MODE        "mode"
+#define CC_MODE_BASIC  "BASIC"
+#define CC_MODE_CORE   "CORE"
+#define CC_MODE_ALL    "ALL"
+#define CC_RECTS       "rects"
+#define CC_TILTED      "tilted"
 
-#include "cascadeclassifier.h"
-#include "feature_evaluator.hpp"
-#include "lbpfeatures.h"
-#include "waldboost.hpp"
-#include "wbdetector.hpp"
-#include <opencv2/xobjdetect.hpp>
+#define CC_LBP  "LBP"
+#define CC_RECT "rect"
 
-#endif /* __OPENCV_XOBJDETECT_PRECOMP_HPP__ */
+#endif

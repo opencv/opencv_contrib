@@ -39,6 +39,39 @@ the use of this software, even if advised of the possibility of such damage.
 
 */
 
-/** @defgroup adas Advanced Driver Assistance
-*/
+#ifndef __OPENCV_XOBJDETECT_DETECTOR_HPP__
+#define __OPENCV_XOBJDETECT_DETECTOR_HPP__
 
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <vector>
+#include <string>
+#include "precomp.hpp"
+
+namespace cv
+{
+namespace xobjdetect
+{
+
+class WBDetectorImpl : public WBDetector {
+public:
+    virtual void read(const FileNode &node);
+    virtual void write(FileStorage &fs) const;
+
+    virtual void train(
+        const std::string& pos_samples,
+        const std::string& neg_imgs);
+
+    virtual void detect(
+        const Mat& img,
+        std::vector<Rect> &bboxes,
+        std::vector<double> &confidences);
+
+private:
+    WaldBoost boost_;
+};
+
+} /* namespace xobjdetect */
+} /* namespace cv */
+
+#endif /* __OPENCV_XOBJDETECT_DETECTOR_HPP__ */

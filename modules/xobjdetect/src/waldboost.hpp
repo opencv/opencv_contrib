@@ -42,40 +42,53 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#ifndef __OPENCV_XOBJDETECT_PRECOMP_HPP__
-#define __OPENCV_XOBJDETECT_PRECOMP_HPP__
+#ifndef __OPENCV_XOBJDETECT_WALDBOOST_HPP__
+#define __OPENCV_XOBJDETECT_WALDBOOST_HPP__
 
-#include <opencv2/xobjdetect.hpp>
+#include "precomp.hpp"
 
-#include <opencv2/core/utility.hpp>
+namespace cv {
+namespace xobjdetect {
 
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
+class WaldBoost {
+public:
+    WaldBoost(int weak_count);
+    WaldBoost();
+    std::vector<int> get_feature_indices();
 
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
+    void detect(Ptr<CvFeatureEvaluator> eval,
+                const Mat& img,
+                const std::vector<float>& scales,
+                std::vector<Rect>& bboxes,
+                Mat1f& confidences);
 
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
+    void detect(Ptr<CvFeatureEvaluator> eval,
+                const Mat& img,
+                const std::vector<float>& scales,
+                std::vector<Rect>& bboxes,
+                std::vector<double>& confidences);
 
-#include <opencv2/objdetect.hpp>
+    void fit(Mat& data_pos, Mat& data_neg);
+    int predict(Ptr<CvFeatureEvaluator> eval, float *h) const;
+    void save(const std::string& filename);
+    void load(const std::string& filename);
 
-#include <algorithm>
-#include <vector>
-#include <string>
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-#include <cassert>
-#include <cstdio>
+    void read(const FileNode &node);
+    void write(FileStorage &fs) const;
 
-#include "cascadeclassifier.h"
-#include "feature_evaluator.hpp"
-#include "lbpfeatures.h"
-#include "waldboost.hpp"
-#include "wbdetector.hpp"
-#include <opencv2/xobjdetect.hpp>
+    void reset(int weak_count);
+    ~WaldBoost();
 
-#endif /* __OPENCV_XOBJDETECT_PRECOMP_HPP__ */
+private:
+    int weak_count_;
+    std::vector<float> thresholds_;
+    std::vector<float> alphas_;
+    std::vector<int> feature_indices_;
+    std::vector<int> polarities_;
+    std::vector<float> cascade_thresholds_;
+};
+
+}
+}
+
+#endif
