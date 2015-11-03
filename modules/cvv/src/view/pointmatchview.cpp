@@ -30,7 +30,7 @@ PointMatchView::PointMatchView(std::vector<cv::KeyPoint> leftKeyPoints,
 	auto matchmnt = util::make_unique<qtutil::MatchManagement>(matches);
 
 	qtutil::MatchScene *matchscene_ptr = matchscene.get();
-	int updateAreaDelay=std::min(std::max(matches.size(),std::max(leftKeyPoints.size(),rightKeyPoints.size()))/10,50lu);
+	int updateAreaDelay=std::min(std::max(matches.size(),std::max(leftKeyPoints.size(),rightKeyPoints.size()))/(std::size_t)10,(std::size_t)50);
 	matchscene_ptr->getLeftImage().setUpdateAreaDelay(updateAreaDelay);
 	matchscene_ptr->getRightImage().setUpdateAreaDelay(updateAreaDelay);
 
