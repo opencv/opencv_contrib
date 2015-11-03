@@ -7,7 +7,7 @@
 //  copy or use the software.
 //
 //
-//                          License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
@@ -39,20 +39,6 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#ifndef __OPENCV_STEREO_PRECOMP_H__
-#define __OPENCV_STEREO_PRECOMP_H__
+#include "perf_precomp.hpp"
 
-#include "opencv2/stereo.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/core.hpp"
-#include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
-#include "opencv2/core/cvdef.h"
-#include "opencv2/highgui.hpp"
-#include "opencv2/calib3d.hpp"
-
-#include <algorithm>
-#include <cmath>
-
-#endif
+CV_PERF_TEST_MAIN(stereo)
