@@ -47,7 +47,7 @@ The code is ported from the stand-alone implementation available
 at this repository:
 www.github.com/fedassa/msdDetector
 
-AUTHORS:  Federico Tombari (fedassa@gmail.com) (original code), 
+AUTHORS:  Federico Tombari (fedassa@gmail.com) (original code),
           Daniele De Gregorio (degregorio.daniele@gmail.com) (OpenCV porting)
 
 University of Bologna, Open Perception
