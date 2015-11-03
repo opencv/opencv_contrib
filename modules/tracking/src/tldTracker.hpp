@@ -52,12 +52,6 @@
 namespace cv
 {
 
-TrackerTLD::Params::Params(){}
-
-void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
-
-void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
-
 namespace tld
 {
 class TrackerProxy
@@ -128,7 +122,6 @@ public:
 	void read(const FileNode& fn);
 	void write(FileStorage& fs) const;
 
-protected:
 	class Pexpert
 	{
 	public:

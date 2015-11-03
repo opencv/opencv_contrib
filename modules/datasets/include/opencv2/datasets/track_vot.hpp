@@ -10,7 +10,7 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Copyright (C) 2014, Itseez Inc, all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -29,7 +29,7 @@
 // This software is provided by the copyright holders and contributors "as is" and
 // any express or implied warranties, including, but not limited to, the implied
 // warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
+// In no event shall the Itseez Inc or contributors be liable for any direct,
 // indirect, incidental, special, exemplary, or consequential damages
 // (including, but not limited to, procurement of substitute goods or services;
 // loss of use, data, or profits; or business interruption) however caused
@@ -39,18 +39,58 @@
 //
 //M*/
 
-#ifndef OPENCV_TLD_DATASET
-#define OPENCV_TLD_DATASET
+#ifndef OPENCV_DATASETS_TRACK_VOT_HPP
+#define OPENCV_DATASETS_TRACK_VOT_HPP
 
-#include "opencv2/highgui.hpp"
+#include <string>
+#include <vector>
+
+#include "opencv2/datasets/dataset.hpp"
+#include "opencv2/datasets/util.hpp"
+
+using namespace std;
 
 namespace cv
 {
-	namespace tld
-	{
-		CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
-		CV_EXPORTS cv::Mat tld_getNextDatasetFrame();
-	}
+namespace datasets
+{
+
+//! @addtogroup datasets_track
+//! @{
+
+struct TRACK_votObj : public Object
+{
+    int id;
+    std::string imagePath;
+    vector <Point2d> gtbb;
+};
+
+class CV_EXPORTS TRACK_vot : public Dataset
+{
+public:
+    static Ptr<TRACK_vot> create();
+
+    virtual void load(const std::string &path) = 0;
+
+    virtual int getDatasetsNum() = 0;
+
+    virtual int getDatasetLength(int id) = 0;
+
+    virtual bool initDataset(int id) = 0;
+
+    virtual bool getNextFrame(Mat &frame) = 0;
+
+    virtual vector <Point2d> getGT() = 0;
+
+protected:
+    vector <vector <Ptr<TRACK_votObj> > > data;
+    int activeDatasetID;
+    int frameCounter;
+};
+
+//! @}
+
+}
 }
 
 #endif

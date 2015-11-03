@@ -477,6 +477,27 @@ To run benchmark execute:
 ./opencv/build/bin/example_datasets_tr_svt_benchmark -p=/home/user/path_to_unpacked_folders/svt/svt1/
 ~~~
 
+@defgroup datasets_track Tracking
+
+### VOT 2015 Database
+
+Implements loading dataset:
+
+"VOT 2015 dataset comprises 60 short sequences showing various objects in challenging backgrounds.
+The sequences were chosen from a large pool of sequences including the ALOV dataset, OTB2 dataset,
+non-tracking datasets, Computer Vision Online, Professor Bob Fisher’s Image Database, Videezy,
+Center for Research in Computer Vision, University of Central Florida, USA, NYU Center for Genomics
+and Systems Biology, Data Wrangling, Open Access Directory and Learning and Recognition in Vision
+Group, INRIA, France. The VOT sequence selection protocol was applied to obtain a representative
+set of challenging sequences.": <http://box.vicos.si/vot/vot2015.zip>
+
+Usage:
+-# From link above download dataset file: `vot2015.zip`
+-# Unpack `vot2015.zip` into folder: `VOT2015/`
+-# To load data run:
+~~~
+./opencv/build/bin/example_datasets_track_vot -p=/home/user/path_to_unpacked_files/VOT2015/
+~~~
 @}
 
 */
