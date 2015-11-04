@@ -62,7 +62,7 @@ namespace cv {
                     };
 
                     /** @brief Creates a graph based segmentor
-                        @param simga The sigma parameter, used to smooth image
+                        @param sigma The sigma parameter, used to smooth image
                         @param k The k parameter of the algorythm
                         @param min_size The minimum size of segments
                      */
