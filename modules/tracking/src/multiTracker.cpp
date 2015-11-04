@@ -119,9 +119,11 @@ namespace cv
 		//Detect all
 		for (int k = 0; k < targetNum; k++)
 			tmpCandidates[k] = boundingBoxes[k];
+#ifdef HAVE_OPENCL
 		if (ocl::haveOpenCL())
 			ocl_detect_all(imageForDetector, image_blurred, tmpCandidates, detectorResults, detect_flgs, trackers);
 		else
+#endif
 			detect_all(imageForDetector, image_blurred, tmpCandidates, detectorResults, detect_flgs, trackers);
 
 		for (int k = 0; k < targetNum; k++)
@@ -215,16 +217,20 @@ namespace cv
 				}
 				tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults[k]);
 				pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
+#ifdef HAVE_OPENCL
 				if (ocl::haveOpenCL())
 					tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
 				else
+#endif
 					tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
 				examplesForModel.clear(); examplesForEnsemble.clear();
 				nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 
+#ifdef HAVE_OPENCL
 				if (ocl::haveOpenCL())
 					tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
 				else
+#endif
 					tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
 			}
 			else
@@ -434,6 +440,7 @@ namespace cv
 		}
 	}
 
+#ifdef HAVE_OPENCL
 	void ocl_detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch > > &patches, std::vector<bool> &detect_flgs,
 		std::vector<Ptr<Tracker> > &trackers)
 	{
@@ -644,5 +651,6 @@ namespace cv
 			}
 		}
 	}
+#endif
 
 }
