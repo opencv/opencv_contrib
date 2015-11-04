@@ -87,7 +87,7 @@ private:
 
     void iterateCombinations(Mat inputData,Mat outputData);
     void computeOneCombination(int comb_id, Mat inputData , Mat outputData,
-        Mat outputVector,int* finalMatPosR, int* finalMatPosC);
+        Mat outputVector,std::vector<int> finalMatPosR, std::vector<int> finalMatPosC);
 
     inline void complexSubtract(std::complex<float>& src, std::complex<float>& dst){dst-=src;}
     inline void complexAdd(std::complex<float>& src, std::complex<float>& dst){dst+=src;}
@@ -103,7 +103,8 @@ private:
     int pc;
     int threads;
 
-    Combination* combinationsTable;
+//    Combination* combinationsTable;
+    std::vector<Combination> combinationsTable;    
 };
 
 
@@ -120,12 +121,12 @@ EstimateCovariance::EstimateCovariance(int pr_, int pc_){
 }
 
 EstimateCovariance::~EstimateCovariance(){
-    delete[] combinationsTable;
+
 }
 
 void EstimateCovariance::initInternalDataStructures(){
     int combCount = combinationCount();
-    combinationsTable = new Combination[combCount];
+    combinationsTable.resize(combCount);
     buildCombinationsTable();
 }
 
@@ -203,26 +204,27 @@ void EstimateCovariance::iterateCombinations(Mat inputData,Mat outputData)
             combs=combsPerCPU-1;
             startComb=remainder*combsPerCPU+(thread_id-remainder)*(combsPerCPU-1);
         }
-//      stopComb=startComb+combs;
+
         Mat outputVector(pr*pc,1,  DataType<std::complex<float> >::type);
 
-        int* finalMatPosR = new int[pr*pc];
-        int* finalMatPosC = new int[pr*pc];
+        std::vector<int> finalMatPosR(pr*pc,0);
+        std::vector<int> finalMatPosC(pr*pc,0);
 
         for (idx=0; idx<combs; idx++){
             outputVector.setTo(Scalar(0,0));
-            memset(finalMatPosR,0,pr*pc*sizeof(int));
-            memset(finalMatPosC,0,pr*pc*sizeof(int));
+            for (unsigned x=0; x<finalMatPosR.size(); x++)
+                finalMatPosR[x]=0;
+            for (unsigned x=0; x<finalMatPosC.size(); x++)
+                finalMatPosC[x]=0;
             computeOneCombination(startComb++, inputData, outputData,
                     outputVector,finalMatPosR, finalMatPosC);
         }
-        delete[] finalMatPosR;
-        delete[] finalMatPosC;
+
     }
 }
 
 void EstimateCovariance::computeOneCombination(int comb_id,Mat inputData, Mat outputData,
-            Mat outputVector,int* finalMatPosR, int* finalMatPosC)
+            Mat outputVector,std::vector<int> finalMatPosR, std::vector<int> finalMatPosC)
 {
     Combination* comb = &combinationsTable[comb_id];
     int type2 = comb->type2;
