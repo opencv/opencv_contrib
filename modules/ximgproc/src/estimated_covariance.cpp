@@ -103,8 +103,7 @@ private:
     int pc;
     int threads;
 
-//    Combination* combinationsTable;
-    std::vector<Combination> combinationsTable;    
+    std::vector<Combination> combinationsTable;
 };
 
 
