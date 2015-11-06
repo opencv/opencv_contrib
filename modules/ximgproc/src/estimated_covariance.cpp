@@ -50,11 +50,6 @@ A previous and less efficient version of the algorithm can be found:
 */
 
 #include "precomp.hpp"
-//#include <opencv2/opencv.hpp>
-
-#ifdef HAVE_OPENMP
-    #include <omp.h>
-#endif
 
 using namespace cv;
 using namespace std;
@@ -101,7 +96,6 @@ private:
     int nc;
     int pr;
     int pc;
-    int threads;
 
     std::vector<Combination> combinationsTable;
 };
@@ -110,13 +104,6 @@ private:
 
 EstimateCovariance::EstimateCovariance(int pr_, int pc_){
     pr=pr_; pc=pc_;
-
-#ifdef HAVE_OPENMP
-    threads=omp_get_num_procs();
-    omp_set_num_threads(threads);
-#else
-    threads=1;
-#endif
 }
 
 EstimateCovariance::~EstimateCovariance(){
@@ -178,47 +165,19 @@ void EstimateCovariance::computeEstimateCovariance(Mat inputData,Mat outputData)
 
 void EstimateCovariance::iterateCombinations(Mat inputData,Mat outputData)
 {
-    int combsPerCPU = combinationCount()/threads;
-    int remainder = combinationCount()%threads;
-    if(remainder>0)
-        combsPerCPU++;
+    Mat outputVector(pr*pc,1,  DataType<std::complex<float> >::type);
 
-#ifdef HAVE_OPENMP
-    #pragma omp parallel
-#endif
-    {
-        int idx;
-        int combs;
-#ifdef HAVE_OPENMP
-        int thread_id= omp_get_thread_num();
-#else
-        int thread_id=0;
-#endif
-        int startComb;
-        if (remainder > thread_id){
-            combs=combsPerCPU;
-            startComb=(thread_id)*combsPerCPU;
-        }
-        else{
-            combs=combsPerCPU-1;
-            startComb=remainder*combsPerCPU+(thread_id-remainder)*(combsPerCPU-1);
-        }
-
-        Mat outputVector(pr*pc,1,  DataType<std::complex<float> >::type);
-
-        std::vector<int> finalMatPosR(pr*pc,0);
-        std::vector<int> finalMatPosC(pr*pc,0);
-
-        for (idx=0; idx<combs; idx++){
-            outputVector.setTo(Scalar(0,0));
-            for (unsigned x=0; x<finalMatPosR.size(); x++)
-                finalMatPosR[x]=0;
-            for (unsigned x=0; x<finalMatPosC.size(); x++)
-                finalMatPosC[x]=0;
-            computeOneCombination(startComb++, inputData, outputData,
-                    outputVector,finalMatPosR, finalMatPosC);
-        }
-
+    std::vector<int> finalMatPosR(pr*pc,0);
+    std::vector<int> finalMatPosC(pr*pc,0);
+    int combs=combinationCount();
+    for (int idx=0; idx<combs; idx++){
+        outputVector.setTo(Scalar(0,0));
+        for (unsigned x=0; x<finalMatPosR.size(); x++)
+            finalMatPosR[x]=0;
+        for (unsigned x=0; x<finalMatPosC.size(); x++)
+            finalMatPosC[x]=0;
+        computeOneCombination(idx++, inputData, outputData,
+                outputVector,finalMatPosR, finalMatPosC);
     }
 }
 
