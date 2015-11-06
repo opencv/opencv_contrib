@@ -90,6 +90,46 @@ void OCRHMMDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>
         component_confidences->clear();
 }
 
+CV_WRAP String OCRHMMDecoder::run(InputArray image, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        //cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+CV_WRAP cv::String OCRHMMDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    Mat mask_m = mask.getMat();
+    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
 void OCRHMMDecoder::ClassifierCallback::eval( InputArray image, vector<int>& out_class, vector<double>& out_confidence)
 {
     CV_Assert(( image.getMat().type() == CV_8UC3 ) || ( image.getMat().type() == CV_8UC1 ));
@@ -635,6 +675,16 @@ Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback>
 }
 
 
+Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback> _classifier,
+                                          const String& _vocabulary,
+                                          InputArray transition_p,
+                                          InputArray emission_p,
+                                          int _mode)
+{
+    return makePtr<OCRHMMDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
+}
+
+
 class CV_EXPORTS OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
 {
 public:
@@ -867,13 +917,11 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
 }
 
 
-Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string& filename)
+Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& filename)
 
 {
-    return makePtr<OCRHMMClassifierKNN>(filename);
+    return makePtr<OCRHMMClassifierKNN>(std::string(filename));
 }
-
-
 
 class CV_EXPORTS OCRHMMClassifierCNN : public OCRHMMDecoder::ClassifierCallback
 {
@@ -1139,10 +1187,10 @@ double OCRHMMClassifierCNN::eval_feature(Mat& feature, double* prob_estimates)
 }
 
 
-Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const std::string& filename)
+Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const String& filename)
 
 {
-    return makePtr<OCRHMMClassifierCNN>(filename);
+    return makePtr<OCRHMMClassifierCNN>(std::string(filename));
 }
 
 /** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
@@ -1199,6 +1247,18 @@ void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, O
     }
 
     return;
+}
+
+Mat createOCRHMMTransitionsTable(const String& vocabulary, vector<cv::String>& lexicon)
+{
+    std::string voc(vocabulary);
+    vector<string> lex;
+    for(vector<cv::String>::iterator l = lexicon.begin(); l != lexicon.end(); l++)
+      lex.push_back(std::string(*l));
+
+    Mat _transitions;
+    createOCRHMMTransitionsTable(voc, lex, _transitions);
+    return _transitions;
 }
 
 }
