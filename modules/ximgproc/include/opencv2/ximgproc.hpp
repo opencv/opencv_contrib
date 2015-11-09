@@ -39,6 +39,7 @@
 
 #include "ximgproc/edge_filter.hpp"
 #include "ximgproc/disparity_filter.hpp"
+#include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/fast_hough_transform.hpp"

@@ -234,7 +234,8 @@ int main(int argc, char* argv[])
 
 
         frame.copyTo(out_img);
-        float scale_img  = (float)(600.f/frame.rows);
+        int scale = downsize ? 2 : 1;
+        float scale_img  = (float)((600.f/frame.rows)/scale);
         float scale_font = (float)(2-scale_img)/1.4f;
         vector<string> words_detection;
         float min_confidence1 = 0.f, min_confidence2 = 0.f;
@@ -318,13 +319,13 @@ int main(int argc, char* argv[])
 
         t_all = ((double)getTickCount() - t_all)*1000/getTickFrequency();
         char buff[100];
-        sprintf(buff, "%2.1f Fps. @ 640x480", (float)(1000/t_all));
+        sprintf(buff, "%2.1f Fps. @ %dx%d", (float)(1000/t_all), out_img.cols, out_img.rows);
         string fps_info = buff;
-        rectangle(out_img, Point(out_img.rows-160,out_img.rows-70), Point(out_img.cols,out_img.rows), Scalar(255,255,255),-1);
-        putText(out_img, fps_info, Point(10,out_img.rows-10), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
-        putText(out_img, region_types_str[REGION_TYPE], Point(out_img.rows-150,out_img.rows-50), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
-        putText(out_img, grouping_algorithms_str[GROUPING_ALGORITHM], Point(out_img.rows-150,out_img.rows-30), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
-        putText(out_img, recognitions_str[RECOGNITION], Point(out_img.rows-150,out_img.rows-10), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
+        rectangle(out_img, Point( out_img.rows-(160/scale),out_img.rows-(70/scale) ), Point(out_img.cols,out_img.rows), Scalar(255,255,255),-1);
+        putText(out_img, fps_info, Point( 10,out_img.rows-(10/scale) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
+        putText(out_img, region_types_str[REGION_TYPE], Point( out_img.rows-(150/scale),out_img.rows-(50/scale) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
+        putText(out_img, grouping_algorithms_str[GROUPING_ALGORITHM], Point( out_img.rows-(150/scale),out_img.rows-(30/scale) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
+        putText(out_img, recognitions_str[RECOGNITION], Point( out_img.rows-(150/scale),out_img.rows-(10/scale) ), FONT_HERSHEY_DUPLEX, scale_font, Scalar(255,0,0));
 
 
         imshow("recognition", out_img);

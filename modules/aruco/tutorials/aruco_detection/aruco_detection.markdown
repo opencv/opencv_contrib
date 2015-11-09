@@ -256,7 +256,7 @@ The aruco module provides a function to estimate the poses of all the detected m
 ``` c++
     Mat cameraMatrix, distCoeffs;
     ...
-    vector< Mat > rvecs, tvecs;
+    vector< Vec3d > rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 ```
 
@@ -665,7 +665,7 @@ The bits of the marker border should be black. This parameter specifies the allo
 bits in the border, i.e. the maximum number of white bits in the border. It is represented
 relative to the total number of bits in the marker.
 
-Default value: 0.5
+Default value: 0.35
 
 
 - ```double errorCorrectionRate```

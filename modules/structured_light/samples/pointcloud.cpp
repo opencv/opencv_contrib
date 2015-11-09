@@ -45,7 +45,12 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/structured_light.hpp>
+#include <opencv2/opencv_modules.hpp>
+
+// (if you did not build the opencv_viz module, you will only see the disparity images)
+#ifdef HAVE_OPENCV_VIZ
 #include <opencv2/viz.hpp>
+#endif
 
 using namespace std;
 using namespace cv;
@@ -73,13 +78,13 @@ static bool readStringList( const string& filename, vector<string>& l )
   if( !fs.isOpened() )
   {
     cerr << "failed to open " << filename << endl;
-    return -1;
+    return false;
   }
   FileNode n = fs.getFirstTopLevelNode();
   if( n.type() != FileNode::SEQ )
   {
     cerr << "cam 1 images are not a sequence! FAIL" << endl;
-    return -1;
+    return false;
   }
 
   FileNodeIterator it = n.begin(), it_end = n.end();
@@ -92,7 +97,7 @@ static bool readStringList( const string& filename, vector<string>& l )
   if( n.type() != FileNode::SEQ )
   {
     cerr << "cam 2 images are not a sequence! FAIL" << endl;
-    return -1;
+    return false;
   }
 
   it = n.begin(), it_end = n.end();
@@ -104,7 +109,7 @@ static bool readStringList( const string& filename, vector<string>& l )
   if( l.size() % 2 != 0 )
   {
     cout << "Error: the image list contains odd (non-even) number of elements\n";
-    return -1;
+    return false;
   }
   return true;
 }
@@ -133,8 +138,8 @@ int main( int argc, char** argv )
   if( argc == 7 )
   {
     // If passed, setting the white and black threshold, otherwise using default values
-    white_thresh = parser.get<size_t>( 4 );
-    black_thresh = parser.get<size_t>( 5 );
+    white_thresh = parser.get<unsigned>( 4 );
+    black_thresh = parser.get<unsigned>( 5 );
 
     graycode->setWhiteThreshold( white_thresh );
     graycode->setBlackThreshold( black_thresh );
@@ -271,6 +276,7 @@ int main( int argc, char** argv )
     resize( thresholded_disp, dst, Size( 640, 480 ) );
     imshow( "threshold disp otsu", dst );
 
+#ifdef HAVE_OPENCV_VIZ
     // Apply the mask to the point cloud
     Mat pointcloud_tresh, color_tresh;
     pointcloud.copyTo( pointcloud_tresh, thresholded_disp );
@@ -283,6 +289,8 @@ int main( int argc, char** argv )
     myWindow.showWidget( "pointcloud", viz::WCloud( pointcloud_tresh, color_tresh ) );
     myWindow.showWidget( "text2d", viz::WText( "Point cloud", Point(20, 20), 20, viz::Color::green() ) );
     myWindow.spin();
+#endif // HAVE_OPENCV_VIZ
+
   }
 
   waitKey();

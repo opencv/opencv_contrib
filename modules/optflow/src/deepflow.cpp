@@ -152,7 +152,7 @@ Mat OpticalFlowDeepFlow::warpImage( const Mat input, const Mat flow )
             pMapY[i] = j + pFlow[2 * i + 1];
         }
     }
-    remap(input, output, mapX, mapY, interpolationType, BORDER_TRANSPARENT);
+    remap(input, output, mapX, mapY, interpolationType);
     return output;
 }
 void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray _flow )

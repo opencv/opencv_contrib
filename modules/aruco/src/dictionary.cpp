@@ -38,9 +38,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "precomp.hpp"
 #include "opencv2/aruco/dictionary.hpp"
-#include "predefined_dictionaries.cpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include "predefined_dictionaries.hpp"
 
 
 namespace cv {
@@ -48,41 +48,12 @@ namespace aruco {
 
 using namespace std;
 
-
-
-/**
-  * Hamming weight look up table from 0 to 255
-  */
-const unsigned char hammingWeightLUT[] = {
-    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
-};
-
-
-
 /**
   */
-Dictionary::Dictionary(const unsigned char *bytes, int _markerSize, int dictsize, int _maxcorr) {
+Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
     markerSize = _markerSize;
     maxCorrectionBits = _maxcorr;
-    int nbytes = (markerSize * markerSize) / 8;
-    if((markerSize * markerSize) % 8 != 0) nbytes++;
-
-    // save bytes in internal format
-    // bytesList.at<Vec4b>(i, j)[k] is j-th byte of i-th marker, in its k-th rotation
-    bytesList = Mat(dictsize, nbytes, CV_8UC4);
-    for(int i = 0; i < dictsize; i++) {
-        for(int j = 0; j < nbytes; j++) {
-            for(int k = 0; k < 4; k++)
-                bytesList.at< Vec4b >(i, j)[k] = bytes[i * (4 * nbytes) + k * nbytes + j];
-        }
-    }
+    bytesList = _bytesList;
 }
 
 
@@ -106,13 +77,10 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
         int currentMinDistance = markerSize * markerSize + 1;
         int currentRotation = -1;
         for(unsigned int r = 0; r < 4; r++) {
-            int currentHamming = 0;
-            // for each byte, calculate XOR result and then sum the Hamming weight from the LUT
-            for(unsigned int b = 0; b < candidateBytes.total(); b++) {
-                unsigned char xorRes =
-                    bytesList.ptr< Vec4b >(m)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
-                currentHamming += hammingWeightLUT[xorRes];
-            }
+            int currentHamming = hal::normHamming(
+                    bytesList.ptr(m)+r*candidateBytes.cols,
+                    candidateBytes.ptr(),
+                    candidateBytes.cols);
 
             if(currentHamming < currentMinDistance) {
                 currentMinDistance = currentHamming;
@@ -128,10 +96,7 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
         }
     }
 
-    if(idx != -1)
-        return true;
-    else
-        return false;
+    return idx != -1;
 }
 
 
@@ -147,12 +112,10 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
     Mat candidateBytes = getByteListFromBits(bits.getMat());
     int currentMinDistance = int(bits.total() * bits.total());
     for(unsigned int r = 0; r < nRotations; r++) {
-        int currentHamming = 0;
-        for(unsigned int b = 0; b < candidateBytes.total(); b++) {
-            unsigned char xorRes =
-                bytesList.ptr< Vec4b >(id)[b][r] ^ candidateBytes.ptr< Vec4b >(0)[b][0];
-            currentHamming += hammingWeightLUT[xorRes];
-        }
+        int currentHamming = hal::normHamming(
+                bytesList.ptr(id) + r*candidateBytes.cols,
+                candidateBytes.ptr(),
+                candidateBytes.cols);
 
         if(currentHamming < currentMinDistance) {
             currentMinDistance = currentHamming;
@@ -195,33 +158,31 @@ void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int border
   * @brief Transform matrix of bits to list of bytes in the 4 rotations
   */
 Mat Dictionary::getByteListFromBits(const Mat &bits) {
-
-    int nbytes = (bits.cols * bits.rows) / 8;
-    if((bits.cols * bits.rows) % 8 != 0) nbytes++;
+    // integer ceil
+    int nbytes = (bits.cols * bits.rows + 8 - 1) / 8;
 
     Mat candidateByteList(1, nbytes, CV_8UC4, Scalar::all(0));
     unsigned char currentBit = 0;
     int currentByte = 0;
+
+    // the 4 rotations
+    uchar* rot0 = candidateByteList.ptr();
+    uchar* rot1 = candidateByteList.ptr() + 1*nbytes;
+    uchar* rot2 = candidateByteList.ptr() + 2*nbytes;
+    uchar* rot3 = candidateByteList.ptr() + 3*nbytes;
+
     for(int row = 0; row < bits.rows; row++) {
         for(int col = 0; col < bits.cols; col++) {
             // circular shift
-            candidateByteList.ptr< Vec4b >(0)[currentByte][0] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][0] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][1] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][1] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][2] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][2] << 1;
-            candidateByteList.ptr< Vec4b >(0)[currentByte][3] =
-                candidateByteList.ptr< Vec4b >(0)[currentByte][3] << 1;
-            // increment if bit is 1
-            if(bits.at< unsigned char >(row, col))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][0]++;
-            if(bits.at< unsigned char >(col, bits.cols - 1 - row))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][1]++;
-            if(bits.at< unsigned char >(bits.rows - 1 - row, bits.cols - 1 - col))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][2]++;
-            if(bits.at< unsigned char >(bits.rows - 1 - col, row))
-                candidateByteList.ptr< Vec4b >(0)[currentByte][3]++;
+            rot0[currentByte] <<= 1;
+            rot1[currentByte] <<= 1;
+            rot2[currentByte] <<= 1;
+            rot3[currentByte] <<= 1;
+            // set bit
+            rot0[currentByte] |= bits.at<uchar>(row, col);
+            rot1[currentByte] |= bits.at<uchar>(col, bits.cols - 1 - row);
+            rot2[currentByte] |= bits.at<uchar>(bits.rows - 1 - row, bits.cols - 1 - col);
+            rot3[currentByte] |= bits.at<uchar>(bits.rows - 1 - col, row);
             currentBit++;
             if(currentBit == 8) {
                 // next byte
@@ -247,7 +208,7 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
     unsigned char base2List[] = { 128, 64, 32, 16, 8, 4, 2, 1 };
     int currentByteIdx = 0;
     // we only need the bytes in normal rotation
-    unsigned char currentByte = byteList.ptr< Vec4b >(0)[0][0];
+    unsigned char currentByte = byteList.ptr()[0];
     int currentBit = 0;
     for(int row = 0; row < bits.rows; row++) {
         for(int col = 0; col < bits.cols; col++) {
@@ -258,7 +219,7 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
             currentBit++;
             if(currentBit == 8) {
                 currentByteIdx++;
-                currentByte = byteList.ptr< Vec4b >(0)[currentByteIdx][0];
+                currentByte = byteList.ptr()[currentByteIdx];
                 // if not enough bits for one more byte, we are in the end
                 // update bit position accordingly
                 if(8 * (currentByteIdx + 1) > (int)bits.total())
@@ -275,27 +236,27 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
 
 
 // DictionaryData constructors calls
-const Dictionary DICT_ARUCO_DATA = Dictionary(&(DICT_ARUCO_BYTES[0][0][0]), 5, 1024, 1);
+const Dictionary DICT_ARUCO_DATA = Dictionary(Mat(1024, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_ARUCO_BYTES), 5, 0);
 
-const Dictionary DICT_4X4_50_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 50, 1);
-const Dictionary DICT_4X4_100_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 100, 1);
-const Dictionary DICT_4X4_250_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 250, 1);
-const Dictionary DICT_4X4_1000_DATA = Dictionary(&(DICT_4X4_1000_BYTES[0][0][0]), 4, 1000, 0);
+const Dictionary DICT_4X4_50_DATA = Dictionary(Mat(50, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_100_DATA = Dictionary(Mat(100, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_250_DATA = Dictionary(Mat(250, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+const Dictionary DICT_4X4_1000_DATA = Dictionary(Mat(1000, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 0);
 
-const Dictionary DICT_5X5_50_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 50, 3);
-const Dictionary DICT_5X5_100_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 100, 3);
-const Dictionary DICT_5X5_250_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 250, 2);
-const Dictionary DICT_5X5_1000_DATA = Dictionary(&(DICT_5X5_1000_BYTES[0][0][0]), 5, 1000, 2);
+const Dictionary DICT_5X5_50_DATA = Dictionary(Mat(50, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+const Dictionary DICT_5X5_100_DATA = Dictionary(Mat(100, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+const Dictionary DICT_5X5_250_DATA = Dictionary(Mat(250, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
+const Dictionary DICT_5X5_1000_DATA = Dictionary(Mat(1000, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
 
-const Dictionary DICT_6X6_50_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 50, 6);
-const Dictionary DICT_6X6_100_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 100, 5);
-const Dictionary DICT_6X6_250_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 250, 5);
-const Dictionary DICT_6X6_1000_DATA = Dictionary(&(DICT_6X6_1000_BYTES[0][0][0]), 6, 1000, 4);
+const Dictionary DICT_6X6_50_DATA = Dictionary(Mat(50, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 6);
+const Dictionary DICT_6X6_100_DATA = Dictionary(Mat(100, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+const Dictionary DICT_6X6_250_DATA = Dictionary(Mat(250, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+const Dictionary DICT_6X6_1000_DATA = Dictionary(Mat(1000, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 4);
 
-const Dictionary DICT_7X7_50_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 50, 9);
-const Dictionary DICT_7X7_100_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 100, 8);
-const Dictionary DICT_7X7_250_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 250, 8);
-const Dictionary DICT_7X7_1000_DATA = Dictionary(&(DICT_7X7_1000_BYTES[0][0][0]), 7, 1000, 6);
+const Dictionary DICT_7X7_50_DATA = Dictionary(Mat(50, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 9);
+const Dictionary DICT_7X7_100_DATA = Dictionary(Mat(100, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+const Dictionary DICT_7X7_250_DATA = Dictionary(Mat(250, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+const Dictionary DICT_7X7_1000_DATA = Dictionary(Mat(1000, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 6);
 
 
 const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
@@ -369,12 +330,8 @@ static Mat _generateRandomMarker(int markerSize) {
 static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
     int minHamming = (int)marker.total() + 1;
-    for(int i = 1; i < 4; i++) {
-        int currentHamming = 0;
-        for(int j = 0; j < bytes.cols; j++) {
-            unsigned char xorRes = bytes.ptr< Vec4b >()[j][0] ^ bytes.ptr< Vec4b >()[j][i];
-            currentHamming += hammingWeightLUT[xorRes];
-        }
+    for(int r = 1; r < 4; r++) {
+        int currentHamming = hal::normHamming(bytes.ptr(), bytes.ptr() + bytes.cols*r, bytes.cols);
         if(currentHamming < minHamming) minHamming = currentHamming;
     }
     return minHamming;
