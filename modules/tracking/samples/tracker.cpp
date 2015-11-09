@@ -61,6 +61,7 @@ static void help()
        "Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
        "Call:\n"
        "./tracker <tracker_algorithm> <video_name> <start_frame> [<bounding_frame>]\n"
+       "tracker_algorithm can be: MIL, BOOSTING, MEDIANFLOW, TLD\n"
        << endl;
 
   cout << "\n\nHot keys: \n"

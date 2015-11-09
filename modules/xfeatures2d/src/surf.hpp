@@ -64,6 +64,7 @@ public:
     bool upright;
 };
 
+#ifdef HAVE_OPENCL
 class SURF_OCL
 {
 public:
@@ -145,6 +146,7 @@ protected:
 
     int status;
 };
+#endif // HAVE_OPENCL
 
 /*
 template<typename _Tp> void copyVectorToUMat(const std::vector<_Tp>& v, UMat& um)

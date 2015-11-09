@@ -125,7 +125,7 @@ public:
 class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
+    CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID

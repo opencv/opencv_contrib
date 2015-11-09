@@ -45,6 +45,13 @@
 namespace cv
 {
 
+	TrackerTLD::Params::Params(){}
+
+	void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
+
+	void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
+
+
 Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
 {
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
@@ -112,7 +119,6 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
     std::vector<TLDDetector::LabeledPatch> detectorResults;
     //best overlap around 92%
-
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit = false;
@@ -123,12 +129,13 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
 		if (i == 1)
 		{
+#ifdef HAVE_OPENCL
 			if (ocl::haveOpenCL())
 				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 			else
+#endif
 				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
 		}
-
         if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
         {
             candidates.push_back(tmpCandid);
@@ -144,14 +151,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
                 trackerNeedsReInit = true;
         }
     }
-
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
-
-    //dfprintf((stdout, "scale = %f\n", log(1.0 * boundingBox.width / (data->getMinSize()).width) / log(SCALE_STEP)));
-    //for( int i = 0; i < (int)candidatesRes.size(); i++ )
-        //dprintf(("\tcandidatesRes[%d] = %f\n", i, candidatesRes[i]));
-    //data->printme();
-    //tldModel->printme(stdout);
 
     if( it == candidatesRes.end() )
     {
@@ -169,16 +169,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
 #if 1
     if( it != candidatesRes.end() )
-    {
         resample(imageForDetector, candidates[it - candidatesRes.begin()], standardPatch);
-        //dfprintf((stderr, "%d %f %f\n", data->frameNum, tldModel->Sc(standardPatch), tldModel->Sr(standardPatch)));
-        //if( candidatesRes.size() == 2 &&  it == (candidatesRes.begin() + 1) )
-            //dfprintf((stderr, "detector WON\n"));
-    }
-    else
-    {
-        //dfprintf((stderr, "%d x x\n", data->frameNum));
-    }
 #endif
 
     if( *it > CORE_THRESHOLD )
@@ -209,19 +200,22 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
             detectorResults[i].isObject = expertResult;
         }
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
-        //dprintf(("%d relabeled by nExpert\n", negRelabeled));
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
-		if (ocl::haveOpenCL())
-			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
-		else
-			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
+#ifdef HAVE_OPENCL
+        if (ocl::haveOpenCL())
+            tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
+        else
+#endif
+        tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, true);
         examplesForModel.clear(); examplesForEnsemble.clear();
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 
-		if (ocl::haveOpenCL())
-			tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
-		else
-			tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
+#ifdef HAVE_OPENCL
+        if (ocl::haveOpenCL())
+            tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
+        else
+#endif
+            tldModel->integrateAdditional(examplesForModel, examplesForEnsemble, false);
     }
     else
     {
@@ -296,7 +290,6 @@ Data::Data(Rect2d initBox)
     minSize.width = (int)(initBox.width * 20.0 / minDim);
     minSize.height = (int)(initBox.height * 20.0 / minDim);
     frameNum = 0;
-    //dprintf(("minSize = %dx%d\n", minSize.width, minSize.height));
 }
 
 void Data::printme(FILE*  port)

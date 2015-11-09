@@ -48,70 +48,108 @@ namespace cv
 		char tldRootPath[100];
 		int frameNum = 0;
 		bool flagPNG = false;
+		bool flagVOT = false;
 
-		cv::Rect2d tld_InitDataset(int datasetInd,const char* rootPath)
+		//TLD Dataset Parameters
+		const char* tldFolderName[10] = {
+			"01_david",
+			"02_jumping",
+			"03_pedestrian1",
+			"04_pedestrian2",
+			"05_pedestrian3",
+			"06_car",
+			"07_motocross",
+			"08_volkswagen",
+			"09_carchase",
+			"10_panda"
+		};
+		const  char* votFolderName[60] = {
+			"bag", "ball1", "ball2", "basketball", "birds1", "birds2", "blanket", "bmx", "bolt1", "bolt2",
+			"book", "butterfly", "car1", "car2", "crossing", "dinosaur", "fernando", "fish1", "fish2", "fish3",
+			"fish4", "girl", "glove", "godfather", "graduate", "gymnastics1", "gymnastics2	", "gymnastics3", "gymnastics4", "hand",
+			"handball1", "handball2", "helicopter", "iceskater1", "iceskater2", "leaves", "marching", "matrix", "motocross1", "motocross2",
+			"nature", "octopus", "pedestrian1", "pedestrian2", "rabbit", "racing", "road", "shaking", "sheep", "singer1",
+			"singer2", "singer3", "soccer1", "soccer2", "soldier", "sphere", "tiger", "traffic", "tunnel", "wiper"
+		};
+
+		const Rect2d tldInitBB[10] = {
+			Rect2d(165, 93, 51, 54), Rect2d(147, 110, 33, 32), Rect2d(47, 51, 21, 36), Rect2d(130, 134, 21, 53), Rect2d(154, 102, 24, 52),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(337, 219, 54, 37), Rect2d(58, 100, 27, 22)
+		};
+		const Rect2d votInitBB[60] = {
+			Rect2d(142, 125, 90, 39), Rect2d(490, 400, 40, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+			Rect2d(450, 380, 60, 60), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(225, 175, 50, 50), Rect2d(58, 100, 27, 22),
+
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(560, 460, 50, 120),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+			Rect2d(142, 125, 90, 39), Rect2d(290, 43, 23, 40), Rect2d(273, 77, 27, 25), Rect2d(145, 84, 54, 37), Rect2d(58, 100, 27, 22),
+		};
+
+		int tldFrameOffset[10] = { 100, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+		int votFrameOffset[60] = {
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+		};
+		bool tldFlagPNG[10] = { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 };
+		bool votFlagPNG[60] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		};
+
+		cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath, int datasetInd)
 		{
 			char* folderName = (char *)"";
-			int x = 0;
-			int y = 0;
-			int w = 0;
-			int h = 0;
-			flagPNG = false;
+			double x = 0,
+				y = 0,
+				w = 0,
+				h = 0;
 
-			frameNum = 1;
+			//Index range
+			// 1-10 TLD Dataset
+			// 1-60 VOT 2015 Dataset
+			int id = videoInd - 1;
 
-			if (datasetInd == 1) {
-				folderName = (char *)"01_david";
-				x = 165, y = 83;
-				w = 51; h = 54;
-				frameNum = 100;
+			if (datasetInd == 0)
+			{
+				folderName = (char*)tldFolderName[id];
+				x = tldInitBB[id].x;
+				y = tldInitBB[id].y;
+				w = tldInitBB[id].width;
+				h = tldInitBB[id].height;
+				frameNum = tldFrameOffset[id];
+				flagPNG = tldFlagPNG[id];
+				flagVOT = false;
 			}
-			if (datasetInd == 2) {
-				folderName = (char *)"02_jumping";
-				x = 147, y = 110;
-				w = 33; h = 32;
-			}
-			if (datasetInd == 3) {
-				folderName = (char *)"03_pedestrian1";
-				x = 47, y = 51;
-				w = 21; h = 36;
-			}
-			if (datasetInd == 4) {
-				folderName = (char *)"04_pedestrian2";
-				x = 130, y = 134;
-				w = 21; h = 53;
-			}
-			if (datasetInd == 5) {
-				folderName = (char *)"05_pedestrian3";
-				x = 154, y = 102;
-				w = 24; h = 52;
-			}
-			if (datasetInd == 6) {
-				folderName = (char *)"06_car";
-				x = 142, y = 125;
-				w = 90; h = 39;
-			}
-			if (datasetInd == 7) {
-				folderName = (char *)"07_motocross";
-				x = 290, y = 43;
-				w = 23; h = 40;
-				flagPNG = true;
-			}
-			if (datasetInd == 8) {
-				folderName = (char *)"08_volkswagen";
-				x = 273, y = 77;
-				w = 27; h = 25;
-			}
-			if (datasetInd == 9) {
-				folderName = (char *)"09_carchase";
-				x = 145, y = 84;
-				w = 54; h = 37;
-			}
-			if (datasetInd == 10){
-				folderName = (char *)"10_panda";
-				x = 58, y = 100;
-				w = 27; h = 22;
-			}
+			if (datasetInd == 1)
+				{
+					folderName = (char*)votFolderName[id];
+					x = votInitBB[id].x;
+					y = votInitBB[id].y;
+					w = votInitBB[id].width;
+					h = votInitBB[id].height;
+					frameNum = votFrameOffset[id];
+					flagPNG = votFlagPNG[id];
+					flagVOT = true;
+				}
 
 			strcpy(tldRootPath, rootPath);
 			strcat(tldRootPath, "\\");
@@ -127,6 +165,8 @@ namespace cv
 			char numStr[10];
 			strcpy(fullPath, tldRootPath);
 			strcat(fullPath, "\\");
+			if (flagVOT)
+				strcat(fullPath, "000");
 			if (frameNum < 10) strcat(fullPath, "0000");
 			else if (frameNum < 100) strcat(fullPath, "000");
 			else if (frameNum < 1000) strcat(fullPath, "00");

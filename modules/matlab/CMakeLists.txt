@@ -101,7 +101,6 @@ string(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 # set the path to the C++ header and doc parser, and template engine
 set(JINJA2_PATH ${CMAKE_SOURCE_DIR}/3rdparty)
 set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
-set(RST_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/java/generator)
 
 # set mex compiler options
 prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
@@ -158,7 +157,6 @@ if (NOT MEX_WORKS)
                 ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
                 --jinja2    ${JINJA2_PATH}
                 --hdrparser ${HDR_PARSER_PATH}
-                --rstparser ${RST_PARSER_PATH}
                 --extra     "test=${CMAKE_CURRENT_SOURCE_DIR}/test/test_generator.hpp"
                 --outdir    ${CMAKE_BINARY_DIR}/junk
         ERROR_VARIABLE GEN_ERROR
@@ -218,7 +216,6 @@ add_custom_command(
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
             --jinja2     ${JINJA2_PATH}
             --hdrparser  ${HDR_PARSER_PATH}
-            --rstparser  ${RST_PARSER_PATH}
             --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
             --extra      ${opencv_extra_hdrs}

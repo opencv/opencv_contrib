@@ -56,4 +56,3 @@
 #include <cmath>
 
 #endif
-

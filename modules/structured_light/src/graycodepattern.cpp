@@ -89,11 +89,11 @@ class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
 
   // Number between 0-255 that represents the minimum brightness difference
   // between the fully illuminated (white) and the non - illuminated images (black)
-  int blackThreshold;
+  size_t blackThreshold;
 
   // Number between 0-255 that represents the minimum brightness difference
   // between the gray-code pattern and its inverse images
-  int whiteThreshold;
+  size_t whiteThreshold;
 
   // Computes the required number of pattern images, allocating the pattern vector
   void computeNumberOfPatternImages();
@@ -220,8 +220,8 @@ bool GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages, OutputArray
     std::vector<Mat> shadowMasks;
     computeShadowMasks( blackImages, whitheImages, shadowMasks );
 
-    size_t cam_width = acquired_pattern[0][0].cols;
-    size_t cam_height = acquired_pattern[0][0].rows;
+    int cam_width = acquired_pattern[0][0].cols;
+    int cam_height = acquired_pattern[0][0].rows;
 
     Point projPixel;
 
@@ -233,9 +233,9 @@ bool GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages, OutputArray
     for( size_t k = 0; k < acquired_pattern.size(); k++ )
     {
       camsPixels[k].resize( params.height * params.width );
-      for( size_t i = 0; i < cam_width; i++ )
+      for( int i = 0; i < cam_width; i++ )
       {
-        for( size_t j = 0; j < cam_height; j++ )
+        for( int j = 0; j < cam_height; j++ )
         {
           //if the pixel is not shadowed, reconstruct
           if( shadowMasks[k].at<uchar>( j, i ) )
@@ -345,10 +345,10 @@ void GrayCodePattern_Impl::computeShadowMasks( InputArrayOfArrays blackImages, I
     {
       for( int j = 0; j < cam_height; j++ )
       {
-        uchar white = whiteImages_[k].at<uchar>( Point( i, j ) );
-        uchar black = blackImages_[k].at<uchar>( Point( i, j ) );
+        double white = whiteImages_[k].at<uchar>( Point( i, j ) );
+        double black = blackImages_[k].at<uchar>( Point( i, j ) );
 
-        if( white - black > blackThreshold )
+        if( abs(white - black) > blackThreshold )
         {
           shadowMasks_[k].at<uchar>( Point( i, j ) ) = ( uchar ) 1;
         }

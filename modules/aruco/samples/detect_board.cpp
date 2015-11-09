@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
 
         vector< int > ids;
         vector< vector< Point2f > > corners, rejected;
-        Mat rvec, tvec;
+        Vec3d rvec, tvec;
 
         // detect markers
         aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);

@@ -71,7 +71,7 @@ DetectorParameters::DetectorParameters()
       markerBorderBits(1),
       perspectiveRemovePixelPerCell(4),
       perspectiveRemoveIgnoredMarginPerCell(0.13),
-      maxErroneousBitsInBorderRate(0.5),
+      maxErroneousBitsInBorderRate(0.35),
       minOtsuStdDev(5.0),
       errorCorrectionRate(0.6) {}
 
@@ -123,7 +123,7 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
     Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     vector< vector< Point > > contours;
-    findContours(contoursImg, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    findContours(contoursImg, contours, RETR_LIST, CHAIN_APPROX_NONE);
     // now filter list of contours
     for(unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter
@@ -315,57 +315,31 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     int nScales = (params.adaptiveThreshWinSizeMax - params.adaptiveThreshWinSizeMin) /
                       params.adaptiveThreshWinSizeStep + 1;
 
-    // if only one scale
-    if(nScales == 1) {
-        int scale = params.adaptiveThreshWinSizeMin;
-        // treshold
-        Mat thresh;
-        _threshold(grey, thresh, scale, params.adaptiveThreshConstant);
+    vector< vector< vector< Point2f > > > candidatesArrays(nScales);
+    vector< vector< vector< Point > > > contoursArrays(nScales);
 
-        // detect rectangles
-        vector< vector< Point2f > > currentCandidates;
-        vector< vector< Point > > currentContours;
-        _findMarkerContours(thresh, currentCandidates, currentContours,
-                            params.minMarkerPerimeterRate, params.maxMarkerPerimeterRate,
-                            params.polygonalApproxAccuracyRate, params.minCornerDistanceRate,
-                            params.minDistanceToBorder);
+    ////for each value in the interval of thresholding window sizes
+    // for(int i = 0; i < nScales; i++) {
+    //    int currScale = params.adaptiveThreshWinSizeMin + i*params.adaptiveThreshWinSizeStep;
+    //    // treshold
+    //    Mat thresh;
+    //    _threshold(grey, thresh, currScale, params.adaptiveThreshConstant);
+    //    // detect rectangles
+    //    _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
+    // params.minMarkerPerimeterRate,
+    //                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
+    //                        params.minCornerDistance, params.minDistanceToBorder);
+    //}
 
-        // join candidates
-        for(unsigned int i = 0; i < currentCandidates.size(); i++) {
-            candidates.push_back(currentCandidates[i]);
-            contours.push_back(currentContours[i]);
-        }
-    }
+    // this is the parallel call for the previous commented loop (result is equivalent)
+    parallel_for_(Range(0, nScales), DetectInitialCandidatesParallel(&grey, &candidatesArrays,
+                                                                     &contoursArrays, &params));
 
-    // if more than one scale, do it in parallel
-    else {
-
-        vector< vector< vector< Point2f > > > candidatesArrays(nScales);
-        vector< vector< vector< Point > > > contoursArrays(nScales);
-
-        ////for each value in the interval of thresholding window sizes
-        // for(int i = 0; i < nScales; i++) {
-        //    int currScale = params.adaptiveThreshWinSizeMin + i*params.adaptiveThreshWinSizeStep;
-        //    // treshold
-        //    Mat thresh;
-        //    _threshold(grey, thresh, currScale, params.adaptiveThreshConstant);
-        //    // detect rectangles
-        //    _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
-        // params.minMarkerPerimeterRate,
-        //                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
-        //                        params.minCornerDistance, params.minDistanceToBorder);
-        //}
-
-        // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, nScales), DetectInitialCandidatesParallel(&grey, &candidatesArrays,
-                                                                         &contoursArrays, &params));
-
-        // join candidates
-        for(int i = 0; i < nScales; i++) {
-            for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
-                candidates.push_back(candidatesArrays[i][j]);
-                contours.push_back(contoursArrays[i][j]);
-            }
+    // join candidates
+    for(int i = 0; i < nScales; i++) {
+        for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
+            candidates.push_back(candidatesArrays[i][j]);
+            contours.push_back(contoursArrays[i][j]);
         }
     }
 }
@@ -847,9 +821,9 @@ void detectMarkers(InputArray _image, Dictionary dictionary, OutputArrayOfArrays
   */
 class SinglePoseEstimationParallel : public ParallelLoopBody {
     public:
-    SinglePoseEstimationParallel(Mat *_markerObjPoints, InputArrayOfArrays _corners,
+    SinglePoseEstimationParallel(Mat& _markerObjPoints, InputArrayOfArrays _corners,
                                  InputArray _cameraMatrix, InputArray _distCoeffs,
-                                 OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs)
+                                 Mat& _rvecs, Mat& _tvecs)
         : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
           distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
 
@@ -858,18 +832,18 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
         const int end = range.end;
 
         for(int i = begin; i < end; i++) {
-            solvePnP(*markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs, rvecs.getMat(i),
-                     tvecs.getMat(i));
+            solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
+                    rvecs.at<Vec3d>(0, i), tvecs.at<Vec3d>(0, i));
         }
     }
 
     private:
     SinglePoseEstimationParallel &operator=(const SinglePoseEstimationParallel &); // to quiet MSVC
 
-    Mat *markerObjPoints;
+    Mat& markerObjPoints;
     InputArrayOfArrays corners;
     InputArray cameraMatrix, distCoeffs;
-    OutputArrayOfArrays rvecs, tvecs;
+    Mat& rvecs, tvecs;
 };
 
 
@@ -886,13 +860,10 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
     Mat markerObjPoints;
     _getSingleMarkerObjectPoints(markerLength, markerObjPoints);
     int nMarkers = (int)_corners.total();
-    _rvecs.create(nMarkers, 1, CV_32FC1);
-    _tvecs.create(nMarkers, 1, CV_32FC1);
+    _rvecs.create(nMarkers, 1, CV_64FC3);
+    _tvecs.create(nMarkers, 1, CV_64FC3);
 
-    for(int i = 0; i < nMarkers; i++) {
-        _rvecs.create(3, 1, CV_64FC1, i, true);
-        _tvecs.create(3, 1, CV_64FC1, i, true);
-    }
+    Mat rvecs = _rvecs.getMat(), tvecs = _tvecs.getMat();
 
     //// for each marker, calculate its pose
     // for (int i = 0; i < nMarkers; i++) {
@@ -902,8 +873,8 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, nMarkers),
-                  SinglePoseEstimationParallel(&markerObjPoints, _corners, _cameraMatrix,
-                                               _distCoeffs, _rvecs, _tvecs));
+                  SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
+                                               _distCoeffs, rvecs, tvecs));
 }
 
 

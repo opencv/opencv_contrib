@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
 
         vector< int > ids;
         vector< vector< Point2f > > corners, rejected;
-        vector< Mat > rvecs, tvecs;
+        vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
         aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);

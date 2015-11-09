@@ -58,7 +58,9 @@ namespace cv
 			void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
 			void integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches);
 			void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
+#ifdef HAVE_OPENCL
 			void ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
+#endif
 			Size getMinSize(){ return minSize_; }
 			void printme(FILE* port = stdout);
 			Ptr<TLDDetector> detector;

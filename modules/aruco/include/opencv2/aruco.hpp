@@ -114,7 +114,7 @@ namespace aruco {
  *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
- *   number of bits per marker (default 0.5).
+ *   number of bits per marker (default 0.35).
  * - minOtsuStdDev: minimun standard deviation in pixels values during the decodification step to
  *   apply Otsu thresholding (otherwise, all the bits are set to 0 or 1 depending on mean higher
  *   than 128 or not) (default 5.0)
@@ -190,9 +190,9 @@ CV_EXPORTS void detectMarkers(InputArray image, Dictionary dictionary, OutputArr
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Mat>>).
+ * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Vec3d>>).
  * Each element in rvecs corresponds to the specific marker in imgPoints.
- * @param tvecs array of output translation vectors (e.g. std::vector<cv::Mat>>).
+ * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  *
  * This function receives the detected markers and returns their pose estimation respect to

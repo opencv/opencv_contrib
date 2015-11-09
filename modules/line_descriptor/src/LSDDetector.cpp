@@ -179,7 +179,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       kl.sPointInOctaveY = (float) extremes[1];
       kl.ePointInOctaveX = (float) extremes[2];
       kl.ePointInOctaveY = (float) extremes[3];
-      kl.lineLength = (float) sqrt( pow( extremes[0] - extremes[2], 2 ) + pow( extremes[1] - extremes[3], 2 ) );
+      kl.lineLength = (float) sqrt( pow( (float) extremes[0] - extremes[2], 2 ) + pow( (float) extremes[1] - extremes[3], 2 ) );
 
       /* compute number of pixels covered by line */
       LineIterator li( gaussianPyrs[j], Point( extremes[0], extremes[1] ), Point( extremes[2], extremes[3] ) );
