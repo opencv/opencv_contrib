@@ -43,6 +43,7 @@
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
+#include "ximgproc/estimated_covariance.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
