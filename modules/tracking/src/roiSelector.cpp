@@ -91,7 +91,7 @@ namespace cv {
     return select("ROI selector", img, fromCenter);
   }
 
-  Rect2d ROISelector::select(const std::string& windowName, Mat img, bool showCrossair, bool fromCenter){
+  Rect2d ROISelector::select(const cv::String& windowName, Mat img, bool showCrossair, bool fromCenter){
 
     key=0;
 
@@ -149,7 +149,7 @@ namespace cv {
     return selectorParams.box;
   }
 
-  void ROISelector::select(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
+  void ROISelector::select(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
     std::vector<Rect2d> box;
     Rect2d temp;
     key=0;
@@ -172,12 +172,12 @@ namespace cv {
     return _selector.select("ROI selector", img, true, fromCenter);
   };
 
-  Rect2d selectROI(const std::string& windowName, Mat img, bool showCrossair, bool fromCenter){
+  Rect2d selectROI(const cv::String& windowName, Mat img, bool showCrossair, bool fromCenter){
     printf("Select an object to track and then press SPACE or ENTER button!\n" );
     return _selector.select(windowName,img, showCrossair, fromCenter);
   };
 
-  void selectROI(const std::string& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
+  void selectROI(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
     return _selector.select(windowName, img, boundingBox, fromCenter);
   }
 

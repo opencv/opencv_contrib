@@ -58,7 +58,7 @@ namespace cv
 
 class ClfOnlineStump;
 
-class ClfMilBoost
+class CV_EXPORTS ClfMilBoost
 {
  public:
   struct CV_EXPORTS Params
