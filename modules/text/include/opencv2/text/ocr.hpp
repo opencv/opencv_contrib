@@ -1,4 +1,4 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
+/*M//////////////////////////////////////////////////////////////////////////////////////////
 //
 //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
@@ -62,7 +62,7 @@ enum
 };
 
 //base class BaseOCR declares a common API that would be used in a typical text recognition scenario
-class CV_EXPORTS BaseOCR
+class CV_EXPORTS_W BaseOCR
 {
 public:
     virtual ~BaseOCR() {};
@@ -86,7 +86,7 @@ Notice that it is compiled only when tesseract-ocr is correctly installed.
         found at the webcam_demo:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
-class CV_EXPORTS OCRTesseract : public BaseOCR
+class CV_EXPORTS_W OCRTesseract : public BaseOCR
 {
 public:
     /** @brief Recognize text using the tesseract-ocr API.
@@ -113,6 +113,14 @@ public:
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
+    // aliases for scripting
+    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+
+    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
+
+    CV_WRAP virtual void setWhiteList(const String& char_whitelist) = 0;
+
+
     /** @brief Creates an instance of the OCRTesseract class. Initializes Tesseract.
 
     @param datapath the name of the parent directory of tessdata ended with "/", or NULL to use the
@@ -127,7 +135,7 @@ public:
     (fully automatic layout analysis) is used. See the tesseract-ocr API documentation for other
     possible values.
      */
-    static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
+    CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
                                     const char* char_whitelist=NULL, int oem=3, int psmode=3);
 };
 
@@ -146,7 +154,7 @@ enum decoder_mode
         be found at the webcam_demo sample:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
-class CV_EXPORTS OCRHMMDecoder : public BaseOCR
+class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR
 {
 public:
 
@@ -159,7 +167,7 @@ public:
     loadOCRHMMClassifierNM and KNN model provided in
     <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
      */
-    class CV_EXPORTS ClassifierCallback
+    class CV_EXPORTS_W ClassifierCallback
     {
     public:
         virtual ~ClassifierCallback() { }
@@ -227,6 +235,11 @@ public:
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
+    // aliases for scripting
+    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+
+    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
+
     /** @brief Creates an instance of the OCRHMMDecoder class. Initializes HMMDecoder.
 
     @param classifier The character classifier with built in feature extractor.
@@ -252,6 +265,15 @@ public:
                                                                                        //     cols == rows == vocabulari.size()
                                      decoder_mode mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
 
+    CV_WRAP static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
+                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                                                                       //     size() must be equal to the number of classes
+                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
+                                                                                       //     cols == rows == vocabulari.size()
+                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
+                                                                                       //     cols == rows == vocabulari.size()
+                                     int mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
+
 protected:
 
     Ptr<OCRHMMDecoder::ClassifierCallback> classifier;
@@ -272,7 +294,8 @@ based on gradient orientations along the chain-code of its perimeter. Then, the 
 using a KNN model trained with synthetic data of rendered characters with different standard font
 types.
  */
-CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const std::string& filename);
+
+CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& filename);
 
 /** @brief Allow to implicitly load the default character classifier when creating an OCRHMMDecoder object.
 
@@ -283,7 +306,7 @@ Andrew NG in [Coates11a]. The character classifier consists in a Single Layer Co
 a linear classifier. It is applied to the input image in a sliding window fashion, providing a set of recognitions
 at each window location.
  */
-CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const std::string& filename);
+CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const String& filename);
 
 //! @}
 
@@ -299,8 +322,10 @@ CV_EXPORTS Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const 
  * @note
  *    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
  *            <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
- *             */
+ **/
 CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vector<std::string>& lexicon, OutputArray transition_probabilities_table);
+
+CV_EXPORTS_W Mat createOCRHMMTransitionsTable(const String& vocabulary, std::vector<cv::String>& lexicon);
 
 
 /* OCR BeamSearch Decoder */
@@ -312,7 +337,7 @@ CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vecto
         be found at the demo sample:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/word_recognition.cpp>
  */
-class CV_EXPORTS OCRBeamSearchDecoder : public BaseOCR
+class CV_EXPORTS_W OCRBeamSearchDecoder : public BaseOCR
 {
 public:
 
@@ -325,7 +350,7 @@ public:
     loadOCRBeamSearchClassifierCNN with all its parameters provided in
     <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRBeamSearch_CNN_model_data.xml.gz>.
      */
-    class CV_EXPORTS ClassifierCallback
+    class CV_EXPORTS_W ClassifierCallback
     {
     public:
         virtual ~ClassifierCallback() { }
@@ -350,7 +375,7 @@ public:
     provides also the Rects for individual text elements found (e.g. words), and the list of those
     text elements with their confidence values.
 
-    @param image Input image CV_8UC1 with a single text line (or word).
+    @param image Input binary image CV_8UC1 with a single text line (or word).
 
     @param output_text Output text. Most likely character sequence found by the HMM decoder.
 
@@ -372,6 +397,11 @@ public:
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
+
+    // aliases for scripting
+    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+
+    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
 
     /** @brief Creates an instance of the OCRBeamSearchDecoder class. Initializes HMMDecoder.
 
@@ -401,6 +431,16 @@ public:
                                      decoder_mode mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
+    CV_WRAP static Ptr<OCRBeamSearchDecoder> create(const Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier, // The character classifier with built in feature extractor
+                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                                                                       //     size() must be equal to the number of classes
+                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
+                                                                                       //     cols == rows == vocabulari.size()
+                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
+                                                                                       //     cols == rows == vocabulari.size()
+                                     int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
+                                     int beam_size = 500);                              // Size of the beam in Beam Search algorithm
+
 protected:
 
     Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier;
@@ -420,7 +460,8 @@ Andrew NG in [Coates11a]. The character classifier consists in a Single Layer Co
 a linear classifier. It is applied to the input image in a sliding window fashion, providing a set of recognitions
 at each window location.
  */
-CV_EXPORTS Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const std::string& filename);
+
+CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const String& filename);
 
 //! @}
 

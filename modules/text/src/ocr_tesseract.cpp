@@ -86,6 +86,47 @@ void OCRTesseract::run(Mat& image, Mat& mask, string& output_text, vector<Rect>*
         component_confidences->clear();
 }
 
+CV_WRAP String OCRTesseract::run(InputArray image, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        // cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    Mat mask_m = mask.getMat();
+    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+
 class OCRTesseractImpl : public OCRTesseract
 {
 private:
@@ -215,13 +256,20 @@ public:
         run( mask, output, component_rects, component_texts, component_confidences, component_level);
     }
 
-
+    void setWhiteList(const String& char_whitelist)
+    {
+  #ifdef HAVE_TESSERACT
+        tess.SetVariable("tessedit_char_whitelist", char_whitelist.c_str());
+  #else
+        (void)char_whitelist;
+  #endif
+    }
 };
 
 Ptr<OCRTesseract> OCRTesseract::create(const char* datapath, const char* language,
                                        const char* char_whitelist, int oem, int psmode)
 {
-    return makePtr<OCRTesseractImpl>(datapath,language,char_whitelist,oem,psmode);
+    return makePtr<OCRTesseractImpl>(datapath, language, char_whitelist, oem, psmode);
 }
 
 
