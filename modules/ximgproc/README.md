@@ -7,3 +7,4 @@ Extended Image Processing
 4. Adaptive Manifold Filter
 5. Joint Bilateral Filter
 6. Superpixels
+7. Graph segmentation
