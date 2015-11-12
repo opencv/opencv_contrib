@@ -1053,7 +1053,7 @@ private:
 		{
 			return QStringList();
 		}
-		return settings.value(key).value<QStringList>();
+		return settings.value(key).template value<QStringList>();
 	}
 
 	QStringList getStoredCmdsForInput(QString input)
