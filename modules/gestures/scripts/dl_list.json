@@ -1,0 +1,16 @@
+{
+    "Sample0471":
+    {
+        "file": "gestures/Sample0471.zip",
+        "url": "http://awabot.com/OpenCV_extra_data/Sample0471.zip",
+        "sha1": "cfb191b376fd68fcf9eb9c4af9dc5274e125cec6",
+        "action": "unzip"
+    },
+
+    "ModDrop":
+    {
+        "file": "gestures/chalearn_trained.caffemodel",
+        "url": "http://awabot.com/OpenCV_extra_data/chalearn_trained.caffemodel",
+        "sha1": "9d2cd0154e95e6ad60ac2d326866f4807dc2c6d9"
+    }
+}

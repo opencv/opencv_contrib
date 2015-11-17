@@ -57,3 +57,5 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 24. **opencv_hdf**: Hierarchical Data Format I/O.
 
 25. **opencv_fuzzy**: New module focused on the fuzzy image processing.
+
+26. **opencv_gestures**: Implementation of Gestures Recognition based on DNN (using Caffe framework).
