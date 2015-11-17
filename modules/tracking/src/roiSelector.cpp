@@ -158,7 +158,7 @@ namespace cv {
     printf("Select an object to track and then press SPACE to finish one selection and select another.\n" );
     printf("Finish the whole selection process by pressing ENTER button!\n" );
 
-    // while key is not Backspace
+    // while key is not ENTER
     while(key!=13){
       temp=select(windowName, img, true, fromCenter);
       if(temp.width>0 && temp.height>0)
