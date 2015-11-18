@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
+
+if(IOS OR WINRT)
+  ocv_module_disable(dnn)
+endif()
+
 set(the_description "Deep neural network module. It allows to load models from different frameworks and to make forward pass")
 set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 

@@ -151,12 +151,12 @@ namespace cv
             private:
                 int *left, *right;
                 short *c;
-                int v,kernelSize, width, height;
+                int v,kernelSize, width;
                 int MASK;
                 int *hammLut;
             public :
                 hammingDistance(const Mat &leftImage, const Mat &rightImage, short *cost, int maxDisp, int kerSize, int *hammingLUT):
-                    left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), height(leftImage.rows), MASK(65535), hammLut(hammingLUT){}
+                    left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), MASK(65535), hammLut(hammingLUT){}
                 void operator()(const cv::Range &r) const {
                     for (int i = r.start; i <= r.end ; i++)
                     {

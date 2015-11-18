@@ -100,6 +100,7 @@ if(MSVC)
   ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4456) # VS 2015
 else()
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wtautological-undefined-compare)
 endif()
 
 # Easier to support different versions of protobufs
