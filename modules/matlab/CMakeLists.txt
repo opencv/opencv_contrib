@@ -92,6 +92,7 @@ ocv_add_module(matlab   BINDINGS
                                  opencv_calib opencv_calib3d
                                  opencv_stitching opencv_superres
                                  opencv_xfeatures2d
+                                 opencv_hal
 )
 
 # get the commit information
