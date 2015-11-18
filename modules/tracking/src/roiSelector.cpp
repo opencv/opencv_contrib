@@ -47,7 +47,7 @@ namespace cv {
       self->opencv_mouse_callback(event,x,y,flags,param);
   }
 
-  void ROISelector::opencv_mouse_callback( int event, int x, int y, int , void *param ){
+  void ROISelector::opencv_mouse_callback(int event, int x, int y, int , void *param ){
     handlerT * data = (handlerT*)param;
     switch( event ){
       // update the selected bounding box
@@ -91,7 +91,7 @@ namespace cv {
     return select("ROI selector", img, fromCenter);
   }
 
-  Rect2d ROISelector::select(const cv::String& windowName, Mat img, bool showCrossair, bool fromCenter){
+  Rect2d ROISelector::select(const cv::String &windowName, Mat img, bool showCrossair, bool fromCenter){
 
     key=0;
 
@@ -144,23 +144,101 @@ namespace cv {
       //get keyboard event
       key=waitKey(1);
     }
-
-
+    
     return selectorParams.box;
   }
-
-  void ROISelector::select(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
+  
+  void ROISelector::select(const cv::String &windowName, Mat img, std::vector<Rect2d> &boundingBox, bool fromCenter){
     std::vector<Rect2d> box;
     Rect2d temp;
     key=0;
 
     // show notice to user
-    printf("Select an object to track and then press SPACE to finish one selection and select another.\n" );
-    printf("Finish the whole selection process by pressing ENTER button!\n" );
+    printf("Select an object to track and then press SPACE to finish one selection and select another.\n\n" );
+    printf("Finish the whole selection process by pressing ENTER button!\n\n" );
 
     // while key is not ENTER
     while(key!=13){
       temp=select(windowName, img, true, fromCenter);
+      if(temp.width>0 && temp.height>0)
+        box.push_back(temp);
+    }
+    boundingBox=box;
+  }  
+  
+  /*
+   * This function selects and returns one ROI when it keeps the video running.
+   */
+  Rect2d ROISelector::select(const cv::String &windowName, VideoCapture &cap, bool showCrossair, bool fromCenter) {
+	// ASCII 0 means NULL
+	key=0;
+
+    // set the drawing mode
+    selectorParams.drawFromCenter = fromCenter;
+    
+    cap >> selectorParams.image;
+
+    // show the image and give feedback to user
+    imshow(windowName, selectorParams.image);
+
+    // select the object
+    setMouseCallback(windowName, mouseHandler, (void *)&selectorParams );
+
+    // end selection process on SPACE (32) or ENTER (13)
+    while(!(key==32 || key==13)){
+    	cap >> selectorParams.image;
+    	
+      	// draw the selected object
+      	rectangle(
+        	selectorParams.image,
+        	selectorParams.box,
+        	Scalar(255,0,0),2,1
+      	);
+
+      	// draw cross air in the middle of bounding box
+      	if(showCrossair){
+      		// horizontal line
+      		line(
+          		selectorParams.image,
+          		Point((int)selectorParams.box.x,(int)(selectorParams.box.y+selectorParams.box.height/2)),
+         		Point((int)(selectorParams.box.x+selectorParams.box.width),(int)(selectorParams.box.y+selectorParams.box.height/2)),
+          		Scalar(255,0,0),2,1
+          	);
+
+			// vertical line
+        	line(
+          		selectorParams.image,
+          		Point((int)(selectorParams.box.x+selectorParams.box.width/2),(int)selectorParams.box.y),
+          		Point((int)(selectorParams.box.x+selectorParams.box.width/2),(int)(selectorParams.box.y+selectorParams.box.height)),
+          		Scalar(255,0,0),2,1
+        	);
+      	}
+
+      	// show the image bouding box
+      	imshow(windowName,selectorParams.image);
+
+      	// reset the image
+      	//selectorParams.image=img.clone();
+
+      	//get keyboard event
+      	key=waitKey(1);
+    }
+    return selectorParams.box;
+  }
+  
+  /*
+   * Take in the video capture in order to keep video running when users are selecting ROI.
+   */
+  void ROISelector::select(const cv::String &windowName, VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter) {
+  	std::vector<Rect2d> box;
+  	Rect2d temp;
+  	key=0;
+  	printf("Select an object to track and then press SPACE to finish one selection and select another.\n\n" );
+    printf("Finish the whole selection process by pressing ENTER button!\n\n" );
+    
+    // while key is not ENTER
+    while(key!=13){
+      temp=select(windowName, cap, true, fromCenter);
       if(temp.width>0 && temp.height>0)
         box.push_back(temp);
     }
@@ -172,13 +250,18 @@ namespace cv {
     return _selector.select("ROI selector", img, true, fromCenter);
   };
 
-  Rect2d selectROI(const cv::String& windowName, Mat img, bool showCrossair, bool fromCenter){
+  Rect2d selectROI(const cv::String &windowName, Mat img, bool showCrossair, bool fromCenter){
     printf("Select an object to track and then press SPACE or ENTER button!\n" );
     return _selector.select(windowName,img, showCrossair, fromCenter);
   };
 
-  void selectROI(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter){
+  void selectROI(const cv::String &windowName, Mat img, std::vector<Rect2d> &boundingBox, bool fromCenter){
     return _selector.select(windowName, img, boundingBox, fromCenter);
+  }
+  
+  
+  void selectROI(const cv::String &windowName, VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter) {
+  	return _selector.select(windowName, cap, boundingBox, fromCenter);
   }
 
 } /* namespace cv */
