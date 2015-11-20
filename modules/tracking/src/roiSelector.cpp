@@ -248,12 +248,12 @@ namespace cv {
   ROISelector _selector;
   Rect2d selectROI(Mat img, bool fromCenter){
     return _selector.select("ROI selector", img, true, fromCenter);
-  };
+  }
 
   Rect2d selectROI(const cv::String &windowName, Mat img, bool showCrossair, bool fromCenter){
     printf("Select an object to track and then press SPACE or ENTER button!\n" );
     return _selector.select(windowName,img, showCrossair, fromCenter);
-  };
+  }
 
   void selectROI(const cv::String &windowName, Mat img, std::vector<Rect2d> &boundingBox, bool fromCenter){
     return _selector.select(windowName, img, boundingBox, fromCenter);
