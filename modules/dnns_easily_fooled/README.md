@@ -41,12 +41,8 @@ Please see the [Installation_Guide](https://github.com/Evolving-AI-Lab/fooling/w
 * An MNIST experiment (Fig. 4, 5 in the paper) can be run directly on a local machine (4-core) within a reasonable amount of time (around ~5 minutes or less for 200 generations).
 * An ImageNet experiment needs to be run on a cluster environment. It took us ~4 days x 128 cores to run 5000 generations and produce 1000 images (Fig. 8 in the paper). 
 * [How to configure an experiment to test the evolutionary framework quickly](https://github.com/Evolving-AI-Lab/fooling/wiki/How-to-test-the-evolutionary-framework-quickly)
-* To reproduce the gradient ascent fooling images (Figures 13, S3, S4, S5, S6, and S7 from the paper), see the [documentation in the caffe/ascent directory](https://github.com/Evolving-AI-Lab/fooling/tree/ascent/caffe/ascent). You'll need to use the `ascent` branch instead of master, because the two required versions of Caffe are different.
+* To reproduce the gradient ascent fooling images (Figures 13, S3, S4, S5, S6, and S7 from the paper), see the [documentation in the caffe/ascent directory](https://github.com/anguyen8/opencv_contrib/tree/master/modules/dnns_easily_fooled/caffe/ascent). You'll need to use the `ascent` branch instead of master, because the two required versions of Caffe are different.
 
 ## Updates
 
-* Our fork project [here](https://github.com/Evolving-AI-Lab/innovation-engine) has support for the **latest Caffe** and experiments to create *recognizable* images instead of unrecognizable.
-
-## License
-
-Please refer to the licenses of Sferes and Caffe projects.
+* A fork project [here](https://github.com/Evolving-AI-Lab/innovation-engine) has support for the **latest Caffe** and experiments to create *recognizable* images instead of unrecognizable.
