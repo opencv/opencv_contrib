@@ -1372,7 +1372,7 @@ private:
 Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
 Rect2d CV_EXPORTS_W selectROI(const cv::String &windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
 void CV_EXPORTS_W selectROI(const cv::String &windowName, Mat img, std::vector<Rect2d> &boundingBox, bool fromCenter = true);
-void CV_EXPORTS_W selectROI(const cv::String &windowName, cv::VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter = true);
+void CV_EXPORTS selectROI(const cv::String &windowName, cv::VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter = true);
 
 /************************************ Multi-Tracker Classes ---By Tyan Vladimir---************************************/
 
