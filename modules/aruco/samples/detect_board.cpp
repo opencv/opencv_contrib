@@ -45,51 +45,24 @@ the use of this software, even if advised of the possibility of such damage.
 using namespace std;
 using namespace cv;
 
-
-/**
- */
-static void help() {
-    cout << "Pose estimation using a ArUco Planar Grid board" << endl;
-    cout << "Parameters: " << endl;
-    cout << "-w <nmarkers> # Number of markers in X direction" << endl;
-    cout << "-h <nmarkers> # Number of markers in Y direction" << endl;
-    cout << "-l <markerLength> # Marker side lenght (in meters)" << endl;
-    cout << "-s <markerSeparation> # Separation between two consecutive"
-         << "markers in the grid (in meters)" << endl;
-    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
-         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
-         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
-         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
-    cout << "-c <cameraParams> # Camera intrinsic parameters file" << endl;
-    cout << "[-v <videoFile>] # Input from video file, if ommited, input comes from camera" << endl;
-    cout << "[-ci <int>] # Camera id if input doesnt come from video (-v). Default is 0" << endl;
-    cout << "[-dp <detectorParams>] # File of marker detector parameters" << endl;
-    cout << "[-rs] # Apply refind strategy" << endl;
-    cout << "[-r] # show rejected candidates too" << endl;
+namespace {
+const char* about = "Pose estimation using a ArUco Planar Grid board";
+const char* keys  =
+        "{w        |       | Number of squares in X direction }"
+        "{h        |       | Number of squares in Y direction }"
+        "{l        |       | Marker side lenght (in pixels) }"
+        "{s        |       | Separation between two consecutive markers in the grid (in pixels)}"
+        "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
+        "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+        "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+        "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{c        |       | Output file with calibrated camera parameters }"
+        "{v        |       | Input from video file, if ommited, input comes from camera }"
+        "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
+        "{dp       |       | File of marker detector parameters }"
+        "{rs       |       | Apply refind strategy }"
+        "{r        |       | show rejected candidates too }";
 }
-
-
-/**
- */
-static bool isParam(string param, int argc, char **argv) {
-    for(int i = 0; i < argc; i++)
-        if(string(argv[i]) == param) return true;
-    return false;
-}
-
-
-/**
- */
-static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx = -1;
-    for(int i = 0; i < argc && idx == -1; i++)
-        if(string(argv[i]) == param) idx = i;
-    if(idx == -1 || (idx + 1) >= argc)
-        return defvalue;
-    else
-        return argv[idx + 1];
-}
-
 
 /**
  */
@@ -137,27 +110,27 @@ static bool readDetectorParameters(string filename, aruco::DetectorParameters &p
 /**
  */
 int main(int argc, char *argv[]) {
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
 
-    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-l", argc, argv) ||
-       !isParam("-s", argc, argv) || !isParam("-d", argc, argv) || !isParam("-c", argc, argv)) {
-        help();
+    if(argc < 7) {
+        parser.printMessage();
         return 0;
     }
 
-    int markersX = atoi(getParam("-w", argc, argv).c_str());
-    int markersY = atoi(getParam("-h", argc, argv).c_str());
-    float markerLength = (float)atof(getParam("-l", argc, argv).c_str());
-    float markerSeparation = (float)atof(getParam("-s", argc, argv).c_str());
-    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
-    aruco::Dictionary dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    int markersX = parser.get<int>("w");
+    int markersY = parser.get<int>("h");
+    float markerLength = parser.get<float>("l");
+    float markerSeparation = parser.get<float>("s");
+    int dictionaryId = parser.get<int>("d");
+    bool showRejected = parser.has("r");
+    bool refindStrategy = parser.has("rs");
+    int camId = parser.get<int>("ci");
 
-    bool showRejected = false;
-    if(isParam("-r", argc, argv)) showRejected = true;
 
     Mat camMatrix, distCoeffs;
-    if(isParam("-c", argc, argv)) {
-        bool readOk = readCameraParameters(getParam("-c", argc, argv), camMatrix, distCoeffs);
+    if(parser.has("c")) {
+        bool readOk = readCameraParameters(parser.get<string>("c"), camMatrix, distCoeffs);
         if(!readOk) {
             cerr << "Invalid camera file" << endl;
             return 0;
@@ -165,8 +138,8 @@ int main(int argc, char *argv[]) {
     }
 
     aruco::DetectorParameters detectorParams;
-    if(isParam("-dp", argc, argv)) {
-        bool readOk = readDetectorParameters(getParam("-dp", argc, argv), detectorParams);
+    if(parser.has("dp")) {
+        bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -174,17 +147,25 @@ int main(int argc, char *argv[]) {
     }
     detectorParams.doCornerRefinement = true; // do corner refinement in markers
 
-    bool refindStrategy = false;
-    if(isParam("-rs", argc, argv)) refindStrategy = true;
+    String video;
+    if(parser.has("v")) {
+        video = parser.get<String>("v");
+    }
+
+    if(!parser.check()) {
+        parser.printErrors();
+        return 0;
+    }
+
+    aruco::Dictionary dictionary =
+        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     VideoCapture inputVideo;
     int waitTime;
-    if(isParam("-v", argc, argv)) {
-        inputVideo.open(getParam("-v", argc, argv));
+    if(!video.empty()) {
+        inputVideo.open(video);
         waitTime = 0;
     } else {
-        int camId = 0;
-        if(isParam("-ci", argc, argv)) camId = atoi(getParam("-ci", argc, argv).c_str());
         inputVideo.open(camId);
         waitTime = 10;
     }

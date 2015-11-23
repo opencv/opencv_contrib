@@ -45,65 +45,50 @@ the use of this software, even if advised of the possibility of such damage.
 using namespace std;
 using namespace cv;
 
-
-/**
- */
-static void help() {
-    cout << "Create a ChArUco marker image" << endl;
-    cout << "Parameters: " << endl;
-    cout << "-o <image> # Output image" << endl;
-    cout << "-sl <squareLength> # Square side lenght (in pixels)" << endl;
-    cout << "-ml <markerLength> # Marker side lenght (in pixels)" << endl;
-    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
-         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
-         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
-         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
-    cout << "-ids <id1,id2,id3,id4> # Four ids for the ChArUco marker" << endl;
-    cout << "[-m <marginSize>] # Margins size (in pixels). Default is 0" << endl;
-    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << endl;
-    cout << "[-si] # show generated image" << endl;
+namespace {
+const char* about = "Create a ChArUco marker image";
+const char* keys  =
+        "{@outfile |<none> | Output image }"
+        "{sl       |       | Square side lenght (in pixels) }"
+        "{ml       |       | Marker side lenght (in pixels) }"
+        "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
+        "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+        "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+        "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{ids      |<none> | Four ids for the ChArUco marker: id1,id2,id3,id4 }"
+        "{m        | 0     | Margins size (in pixels) }"
+        "{bb       | 1     | Number of bits in marker borders }"
+        "{si       | false | show generated image }";
 }
-
-
-/**
- */
-static bool isParam(string param, int argc, char **argv) {
-    for(int i = 0; i < argc; i++)
-        if(string(argv[i]) == param) return true;
-    return false;
-}
-
-
-/**
- */
-static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx = -1;
-    for(int i = 0; i < argc && idx == -1; i++)
-        if(string(argv[i]) == param) idx = i;
-    if(idx == -1 || (idx + 1) >= argc)
-        return defvalue;
-    else
-        return argv[idx + 1];
-}
-
 
 /**
  */
 int main(int argc, char *argv[]) {
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
 
-    if(!isParam("-sl", argc, argv) || !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) ||
-       !isParam("-ids", argc, argv)) {
-        help();
+    if(argc < 4) {
+        parser.printMessage();
         return 0;
     }
 
-    int squareLength = atoi(getParam("-sl", argc, argv).c_str());
-    int markerLength = atoi(getParam("-ml", argc, argv).c_str());
-    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    int squareLength = parser.get<int>("sl");
+    int markerLength = parser.get<int>("ml");
+    int dictionaryId = parser.get<int>("d");
+    string idsString = parser.get<string>("ids");
+    int margins = parser.get<int>("m");
+    int borderBits = parser.get<int>("bb");
+    bool showImage = parser.get<bool>("si");
+    String out = parser.get<String>(0);
+
+    if(!parser.check()) {
+        parser.printErrors();
+        return 0;
+    }
+
     aruco::Dictionary dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
-    string idsString = getParam("-ids", argc, argv);
     istringstream ss(idsString);
     vector< string > splittedIds;
     string token;
@@ -111,25 +96,12 @@ int main(int argc, char *argv[]) {
         splittedIds.push_back(token);
     if(splittedIds.size() < 4) {
         cerr << "Incorrect ids format" << endl;
-        help();
+        parser.printMessage();
         return 0;
     }
     Vec4i ids;
     for(int i = 0; i < 4; i++)
         ids[i] = atoi(splittedIds[i].c_str());
-
-    int margins = 0;
-    if(isParam("-m", argc, argv)) {
-        margins = atoi(getParam("-m", argc, argv).c_str());
-    }
-
-    int borderBits = 1;
-    if(isParam("-bb", argc, argv)) {
-        borderBits = atoi(getParam("-bb", argc, argv).c_str());
-    }
-
-    bool showImage = false;
-    if(isParam("-si", argc, argv)) showImage = true;
 
     Mat markerImg;
     aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
@@ -140,7 +112,7 @@ int main(int argc, char *argv[]) {
         waitKey(0);
     }
 
-    imwrite(getParam("-o", argc, argv), markerImg);
+    imwrite(out, markerImg);
 
     return 0;
 }
