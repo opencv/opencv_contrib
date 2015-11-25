@@ -48,6 +48,10 @@
 #include "onlineMIL.hpp"
 #include "onlineBoosting.hpp"
 #include <iostream>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
+#include <opencv2/core/eigen.hpp>
 
 
 #define BOILERPLATE_CODE(name,classname) \
@@ -1195,6 +1199,52 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
      */
   BOILERPLATE_CODE("TLD",TrackerTLD);
 };
+
+
+/*
+ * The SRDCF is a DCF based tracker developed att Linköping University
+ */
+class CV_EXPORTS TrackerSRDCF : public Tracker
+{
+public:
+  struct CV_EXPORTS Params{
+    Params() : model_sz(cv::Size(50,50)),target_padding(2.0),
+      reg_power(2),reg_min(0.1),sparsity_treshold(0.05), 
+      update_rate(0.025), sigma_factor(1.0/16.0), scale_step(1.05), 
+      num_scales(1) {}
+  
+  /**
+  * \brief Read parameters from file, currently unused
+  */
+  void read(const FileNode& /*fn*/) { };
+
+  /**
+  * \brief Read parameters from file, currently unused
+  */
+  void write(FileStorage& /*fs*/) const {};
+
+  //filter settings
+  cv::Size model_sz;
+  float target_padding;
+
+  //regularization parameters
+  float reg_power;
+  float reg_min;
+  float sparsity_treshold;
+
+  //learning parameters
+  float update_rate; 
+  float sigma_factor;
+
+  //scale settings
+  float scale_step;
+  int num_scales;
+
+  };
+
+  BOILERPLATE_CODE("SRDCF",TrackerSRDCF)
+};
+
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
  * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).
