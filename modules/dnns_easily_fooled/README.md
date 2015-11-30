@@ -42,3 +42,18 @@ Please see the [Installation_Guide](https://github.com/anguyen8/opencv_contrib/b
 * An ImageNet experiment needs to be run on a cluster environment. It took us ~4 days x 128 cores to run 5000 generations and produce 1000 images (Fig. 8 in the paper). 
 * [How to configure an experiment to test the evolutionary framework quickly](https://github.com/Evolving-AI-Lab/fooling/wiki/How-to-test-the-evolutionary-framework-quickly)
 * To reproduce the gradient ascent fooling images (Figures 13, S3, S4, S5, S6, and S7 from the paper), see the [documentation in the caffe/ascent directory](https://github.com/anguyen8/opencv_contrib/tree/master/modules/dnns_easily_fooled/caffe/ascent). You'll need to download the correct Caffe version for this experiment using `./download_caffe_gradient_ascent.sh` script.
+
+## Troubleshooting
+1. If Sferes (Waf) can't find your CUDA and Caffe dynamic libraries 
+> Add obj.libpath to the wscript for exp/images to find libcudart and libcaffe or you can use LD_LIBRARY_PATH (for Linux).
+
+2. Is there a way to monitor the progress of the experiments?
+> There is a flag for printing out results (fitness + images) every N generations.
+You can adjust the dump_period setting [here](https://github.com/Evolving-AI-Lab/fooling/blob/master/sferes/exp/images/dl_map_elites_images.cpp#L159). 
+
+3. Where do I get the pre-trained Caffe models?
+> For AlexNet, please download on Caffe's Model Zoo.
+> For LeNet, you can grab it [here](https://github.com/anguyen8/opencv_contrib/tree/master/modules/dnns_easily_fooled/model/lenet). 
+
+4. How do I run the experiments on my local machine without MPI?
+> You can enable MPI or non-MPI mode by commenting/uncommenting a line [here](https://github.com/Evolving-AI-Lab/fooling/blob/master/sferes/exp/images/dl_map_elites_images_mnist.cpp#L190-L191). It can be simple eval::Eval (single-core), eval::Mpi (distributed for clusters).
