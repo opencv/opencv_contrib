@@ -35,7 +35,7 @@ This is an installation process that requires two main software packages (includ
 Note: These are patched versions of the two frameworks with our additional work necessary to produce the images as in the paper. They are not the same as their master branches.
 
 ## Installation
-Please see the [Installation_Guide](https://github.com/Evolving-AI-Lab/fooling/wiki/Installation-Guide) for more details.
+Please see the [Installation_Guide](https://github.com/anguyen8/opencv_contrib/blob/master/modules/dnns_easily_fooled/Installation_Guide.pdf) for more details.
 
 ## Usage
 * An MNIST experiment (Fig. 4, 5 in the paper) can be run directly on a local machine (4-core) within a reasonable amount of time (around ~5 minutes or less for 200 generations).
