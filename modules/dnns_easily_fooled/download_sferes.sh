@@ -6,8 +6,8 @@ if [ -d "${path}" ]; then
   exit 1
 fi
 
-# Download the version of Caffe that can be used for generating fooling images via EAs.
-echo "Downloading Caffe ..."
+# Download the version of Sferes that can be used for generating fooling images via EAs.
+echo "Downloading Sferes ..."
 wget https://github.com/Evolving-AI-Lab/fooling/archive/master.zip
 
 echo "Extracting into ${path}"
