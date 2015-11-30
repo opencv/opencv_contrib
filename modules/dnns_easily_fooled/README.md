@@ -33,3 +33,12 @@ This is an installation process that requires two main software packages (includ
   * Use the provided script `./download_sferes.sh` to download the correct version of Sferes.
 
 Note: These are patched versions of the two frameworks with our additional work necessary to produce the images as in the paper. They are not the same as their master branches.
+
+## Installation
+Please see the [Installation_Guide](https://github.com/Evolving-AI-Lab/fooling/wiki/Installation-Guide) for more details.
+
+## Usage
+* An MNIST experiment (Fig. 4, 5 in the paper) can be run directly on a local machine (4-core) within a reasonable amount of time (around ~5 minutes or less for 200 generations).
+* An ImageNet experiment needs to be run on a cluster environment. It took us ~4 days x 128 cores to run 5000 generations and produce 1000 images (Fig. 8 in the paper). 
+* [How to configure an experiment to test the evolutionary framework quickly](https://github.com/Evolving-AI-Lab/fooling/wiki/How-to-test-the-evolutionary-framework-quickly)
+* To reproduce the gradient ascent fooling images (Figures 13, S3, S4, S5, S6, and S7 from the paper), see the [documentation in the caffe/ascent directory](https://github.com/anguyen8/opencv_contrib/tree/master/modules/dnns_easily_fooled/caffe/ascent). You'll need to download the correct Caffe version for this experiment using `./download_caffe_gradient_ascent.sh` script.
