@@ -45,7 +45,7 @@ public:
     int predict(InputArray src) const;
 
     // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
+    std::map<int, double> predict(InputArray _src, int &label, double &dist) const;
 };
 
 //------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ void Eigenfaces::train(InputArrayOfArrays _src, InputArray _local_labels) {
     }
 }
 
-void Eigenfaces::predict(InputArray _src, int &minClass, double &minDist) const {
+std::map<int, double> Eigenfaces::predict(InputArray _src, int &minClass, double &minDist) const {
     // get data
     Mat src = _src.getMat();
     // make sure the user is passing correct data
@@ -119,13 +119,18 @@ void Eigenfaces::predict(InputArray _src, int &minClass, double &minDist) const 
     Mat q = LDA::subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
     minDist = DBL_MAX;
     minClass = -1;
+    std::map<int, double> results;
     for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
+        int label = _labels.at<int>((int)sampleIdx);
         if((dist < minDist) && (dist < _threshold)) {
             minDist = dist;
-            minClass = _labels.at<int>((int)sampleIdx);
+            minClass = label;
         }
+        if (!results.count(label) || results.at(label) > dist)
+            results[label] = dist;
     }
+    return results;
 }
 
 int Eigenfaces::predict(InputArray _src) const {

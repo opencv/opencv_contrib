@@ -292,7 +292,7 @@ public:
     model->predict(img, predicted_label, predicted_confidence);
     @endcode
      */
-    CV_WRAP virtual void predict(InputArray src, CV_OUT int &label, CV_OUT double &confidence) const = 0;
+    CV_WRAP virtual std::map<int, double> predict(InputArray src, CV_OUT int &label, CV_OUT double &confidence) const = 0;
 
     /** @brief Saves a FaceRecognizer and its model state.
 
