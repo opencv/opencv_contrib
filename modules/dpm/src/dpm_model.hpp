@@ -94,11 +94,6 @@ class Model
         // map: pFind[component][part] => part filter index
         std::vector< std::vector<int> > pFind;
 
-    private:
-        // number of part filters and deformation model
-        int numPartFilters;
-        int numDefParams;
-
     public:
         Model () {}
         virtual ~Model () {}

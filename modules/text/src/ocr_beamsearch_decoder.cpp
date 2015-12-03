@@ -88,6 +88,45 @@ void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vecto
         component_confidences->clear();
 }
 
+CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        //cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    Mat mask_m = mask.getMat();
+    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        //cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
 
 void OCRBeamSearchDecoder::ClassifierCallback::eval( InputArray image, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation)
 {
@@ -460,6 +499,16 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create( Ptr<OCRBeamSearchDecoder
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode, _beam_size);
 }
 
+CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
+                                                        const String& _vocabulary,
+                                                        InputArray transition_p,
+                                                        InputArray emission_p,
+                                                        int _mode,
+                                                        int _beam_size)
+{
+    return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
+}
+
 
 class CV_EXPORTS OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
 {
@@ -727,11 +776,10 @@ double OCRBeamSearchClassifierCNN::eval_feature(Mat& feature, double* prob_estim
     return dec_max_idx;
 }
 
-
-Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const std::string& filename)
+Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const String& filename)
 
 {
-    return makePtr<OCRBeamSearchClassifierCNN>(filename);
+    return makePtr<OCRBeamSearchClassifierCNN>(std::string(filename));
 }
 
 }

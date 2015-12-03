@@ -47,24 +47,26 @@ namespace cv
 namespace saliency
 {
 
-float ObjectnessBING::FilterTIG::dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 )
+struct TIGbits
 {
-  int64_t bcT1 = (int64_t) POPCNT64( tig1 );
-  int64_t bcT2 = (int64_t) POPCNT64( tig2 );
-  int64_t bcT4 = (int64_t) POPCNT64( tig4 );
-  int64_t bcT8 = (int64_t) POPCNT64( tig8 );
+  TIGbits() : bc0(0), bc1(0) {}
+  inline void accumulate(int64_t tig, int64_t tigMask0, int64_t tigMask1, uchar shift)
+  {
+    bc0 += ((POPCNT64(tigMask0 & tig) << 1) - POPCNT64(tig)) << shift;
+    bc1 += ((POPCNT64(tigMask1 & tig) << 1) - POPCNT64(tig)) << shift;
+  }
+  int64_t bc0;
+  int64_t bc1;
+};
 
-  int64_t bc01 = (int64_t) ( POPCNT64(_bTIGs[0] & tig1) << 1 ) - bcT1;
-  int64_t bc02 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig2) << 1 ) - bcT2 ) << 1;
-  int64_t bc04 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig4) << 1 ) - bcT4 ) << 2;
-  int64_t bc08 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig8) << 1 ) - bcT8 ) << 3;
-
-  int64_t bc11 = (int64_t) ( POPCNT64(_bTIGs[1] & tig1) << 1 ) - bcT1;
-  int64_t bc12 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig2) << 1 ) - bcT2 ) << 1;
-  int64_t bc14 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig4) << 1 ) - bcT4 ) << 2;
-  int64_t bc18 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig8) << 1 ) - bcT8 ) << 3;
-
-  return _coeffs1[0] * ( bc01 + bc02 + bc04 + bc08 ) + _coeffs1[1] * ( bc11 + bc12 + bc14 + bc18 );
+float ObjectnessBING::FilterTIG::dot( int64_t tig1, int64_t tig2, int64_t tig4, int64_t tig8 )
+{
+  TIGbits x;
+  x.accumulate(tig1, _bTIGs[0], _bTIGs[1], 0);
+  x.accumulate(tig2, _bTIGs[0], _bTIGs[1], 1);
+  x.accumulate(tig4, _bTIGs[0], _bTIGs[1], 2);
+  x.accumulate(tig8, _bTIGs[0], _bTIGs[1], 3);
+  return _coeffs1[0] * x.bc0 + _coeffs1[1] * x.bc1;
 }
 
 void ObjectnessBING::FilterTIG::update( Mat &w1f )

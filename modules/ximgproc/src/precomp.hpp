@@ -34,8 +34,8 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#ifndef _OPENCV_EDGEFILTER_PRECOMP_HPP_
-#define _OPENCV_EDGEFILTER_PRECOMP_HPP_
+#ifndef _OPENCV_XIMGPROC_PRECOMP_HPP_
+#define _OPENCV_XIMGPROC_PRECOMP_HPP_
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -47,5 +47,8 @@
 #include <opencv2/imgproc.hpp>
 
 #include <opencv2/ximgproc.hpp>
+
+#include <algorithm>
+#include <map>
 
 #endif

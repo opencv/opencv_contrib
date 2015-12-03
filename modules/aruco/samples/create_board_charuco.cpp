@@ -39,85 +39,57 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco/charuco.hpp>
-#include <iostream>
 
-using namespace std;
 using namespace cv;
 
-
-/**
- */
-static void help() {
-    cout << "Create a ChArUco board image" << endl;
-    cout << "Parameters: " << endl;
-    cout << "-o <image> # Output image" << endl;
-    cout << "-w <nsquares> # Number of squares in X direction" << endl;
-    cout << "-h <nsquares> # Number of squares in Y direction" << endl;
-    cout << "-sl <squareLength> # Square side lenght (in pixels)" << endl;
-    cout << "-ml <markerLength> # Marker side lenght (in pixels)" << endl;
-    cout << "-d <dictionary> # DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2, "
-         << "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
-         << "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
-         << "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16" << endl;
-    cout << "[-m <marginSize>] # Margins size (in pixels)"
-         << "Default is (squareLength-markerLength)" << endl;
-    cout << "[-bb <int>] # Number of bits in marker borders. Default is 1" << endl;
-    cout << "[-si] # show generated image" << endl;
+namespace {
+const char* about = "Create a ChArUco board image";
+const char* keys  =
+        "{@outfile |<none> | Output image }"
+        "{w        |       | Number of squares in X direction }"
+        "{h        |       | Number of squares in Y direction }"
+        "{sl       |       | Square side lenght (in pixels) }"
+        "{ml       |       | Marker side lenght (in pixels) }"
+        "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
+        "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
+        "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
+        "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{m        |       | Margins size (in pixels). Default is (squareLength-markerLength) }"
+        "{bb       | 1     | Number of bits in marker borders }"
+        "{si       | false | show generated image }";
 }
 
-
-/**
- */
-static bool isParam(string param, int argc, char **argv) {
-    for(int i = 0; i < argc; i++)
-        if(string(argv[i]) == param) return true;
-    return false;
-}
-
-
-/**
- */
-static string getParam(string param, int argc, char **argv, string defvalue = "") {
-    int idx = -1;
-    for(int i = 0; i < argc && idx == -1; i++)
-        if(string(argv[i]) == param) idx = i;
-    if(idx == -1 || (idx + 1) >= argc)
-        return defvalue;
-    else
-        return argv[idx + 1];
-}
-
-
-/**
- */
 int main(int argc, char *argv[]) {
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
 
-    if(!isParam("-w", argc, argv) || !isParam("-h", argc, argv) || !isParam("-sl", argc, argv) ||
-       !isParam("-ml", argc, argv) || !isParam("-d", argc, argv) || !isParam("-o", argc, argv)) {
-        help();
+    if(argc < 7) {
+        parser.printMessage();
         return 0;
     }
 
-    int squaresX = atoi(getParam("-w", argc, argv).c_str());
-    int squaresY = atoi(getParam("-h", argc, argv).c_str());
-    int squareLength = atoi(getParam("-sl", argc, argv).c_str());
-    int markerLength = atoi(getParam("-ml", argc, argv).c_str());
-    int dictionaryId = atoi(getParam("-d", argc, argv).c_str());
+    int squaresX = parser.get<int>("w");
+    int squaresY = parser.get<int>("h");
+    int squareLength = parser.get<int>("sl");
+    int markerLength = parser.get<int>("ml");
+    int dictionaryId = parser.get<int>("d");
+    int margins = squareLength - markerLength;
+    if(parser.has("m")) {
+        margins = parser.get<int>("m");
+    }
+
+    int borderBits = parser.get<int>("bb");
+    bool showImage = parser.get<bool>("si");
+
+    String out = parser.get<String>(0);
+
+    if(!parser.check()) {
+        parser.printErrors();
+        return 0;
+    }
+
     aruco::Dictionary dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
-
-    int margins = squareLength - markerLength;
-    if(isParam("-m", argc, argv)) {
-        margins = atoi(getParam("-m", argc, argv).c_str());
-    }
-
-    int borderBits = 1;
-    if(isParam("-bb", argc, argv)) {
-        borderBits = atoi(getParam("-bb", argc, argv).c_str());
-    }
-
-    bool showImage = false;
-    if(isParam("-si", argc, argv)) showImage = true;
 
     Size imageSize;
     imageSize.width = squaresX * squareLength + 2 * margins;
@@ -135,7 +107,7 @@ int main(int argc, char *argv[]) {
         waitKey(0);
     }
 
-    imwrite(getParam("-o", argc, argv), boardImage);
+    imwrite(out, boardImage);
 
     return 0;
 }
