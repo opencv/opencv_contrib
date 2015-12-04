@@ -71,6 +71,9 @@ ObjectnessBING::ObjectnessBING()
   setColorSpace( _Clr );
 
   className = "BING";
+
+  setTrainingPath(OBJECTNESS_MODELS_PATH);
+  setBBResDir(OBJECTNESS_MODELS_PATH "/Results");
 }
 
 ObjectnessBING::~ObjectnessBING()
