@@ -54,6 +54,20 @@ void getRandQuat(double q[4]);
 void getRandomRotation(double R[9]);
 void meanCovLocalPC(const float* pc, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
 void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
+std::vector<std::string> split(const std::string &text, char sep);
+
+std::vector<std::string> split(const std::string &text, char sep) {
+  std::vector<std::string> tokens;
+  std::size_t start = 0, end = 0;
+  while ((end = text.find(sep, start)) != std::string::npos) {
+    tokens.push_back(text.substr(start, end - start));
+    start = end + 1;
+  }
+  tokens.push_back(text.substr(start));
+  return tokens;
+}
+
+
 
 Mat loadPLYSimple(const char* fileName, int withNormals)
 {
@@ -71,10 +85,17 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
   std::string str;
   while (str.substr(0, 10) !="end_header")
   {
-    std::string entry = str.substr(0, 14);
-    if (entry == "element vertex")
+    std::vector<std::string> tokens = split(str,' ');
+    if (tokens.size() == 3 && tokens[0] == "element" && tokens[1] == "vertex")
     {
-      numVertices = atoi(str.substr(15, str.size()-15).c_str());
+      numVertices = atoi(tokens[2].c_str());
+    }
+    else if (tokens.size() > 1 && tokens[0] == "format")
+    {
+      if (tokens[1]!="ascii"){
+        printf("Cannot read file, only ascii ply format is currently supported...\n");
+        return Mat();
+      }
     }
     std::getline(ifs, str);
   }
