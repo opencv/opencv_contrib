@@ -44,7 +44,6 @@
 *                             The file contains the implemented descriptors                                       *
 \******************************************************************************************************************/
 #include "precomp.hpp"
-#include "descriptor.hpp"
 
 namespace cv
 {
