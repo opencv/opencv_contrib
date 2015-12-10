@@ -378,6 +378,19 @@ it should be 0.25. Setting it to 1.0 may lead to streaking artifacts.
 */
 CV_EXPORTS_W void fastGlobalSmootherFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, double lambda_attenuation=0.25, int num_iter=3);
 
+/** @brief Global image smoothing via L0 gradient minimization.
+
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point depth.
+
+@param dst destination image.
+
+@param lambda parameter defining the smooth term weight.
+
+@param kappa parameter defining the increasing factor of the weight of the gradient data term.
+
+For more details about L0 Smoother, see the original paper @cite xu2011image.
+*/
+CV_EXPORTS_W void l0Smooth(InputArray src, OutputArray dst, double lambda = 0.02, double kappa = 2.0);
 //! @}
 }
 }
