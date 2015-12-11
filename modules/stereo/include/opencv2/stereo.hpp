@@ -47,8 +47,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/core/affine.hpp"
-#include "stereo/descriptor.hpp"
-#include "stereo/matching.hpp"
+#include "opencv2/stereo/descriptor.hpp"
+#include "opencv2/stereo/matching.hpp"
 
 /**
 @defgroup stereo Stereo Correspondance Algorithms
