@@ -44,7 +44,6 @@
 *   The interface contains the main methods for computing the matching between the left and right images	      *
 *                                                                                                                 *
 \******************************************************************************************************************/
-#include "precomp.hpp"
 #include <stdint.h>
 
 #ifndef _OPENCV_MATCHING_HPP_

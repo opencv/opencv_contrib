@@ -44,7 +44,6 @@
 *   The interface contains the main descriptors that will be implemented in the descriptor class                  *
 \*****************************************************************************************************************/
 
-#include "precomp.hpp"
 #include <stdint.h>
 #ifndef _OPENCV_DESCRIPTOR_HPP_
 #define _OPENCV_DESCRIPTOR_HPP_
