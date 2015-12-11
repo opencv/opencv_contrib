@@ -72,32 +72,32 @@ void LSDDetector::computeGaussianPyramid( const Mat& image, int numOctaves, int 
 }
 
 /* check lines' extremes */
-inline void checkLineExtremes( cv::Vec4i& extremes, cv::Size imageSize )
+inline void checkLineExtremes( cv::Vec4f& extremes, cv::Size imageSize )
 {
 
   if( extremes[0] < 0 )
     extremes[0] = 0;
 
   if( extremes[0] >= imageSize.width )
-    extremes[0] = imageSize.width - 1;
+    extremes[0] = (float)imageSize.width - 1.0f;
 
   if( extremes[2] < 0 )
     extremes[2] = 0;
 
   if( extremes[2] >= imageSize.width )
-    extremes[2] = imageSize.width - 1;
+    extremes[2] = (float)imageSize.width - 1.0f;
 
   if( extremes[1] < 0 )
     extremes[1] = 0;
 
   if( extremes[1] >= imageSize.height )
-    extremes[1] = imageSize.height - 1;
+    extremes[1] = (float)imageSize.height - 1.0f;
 
   if( extremes[3] < 0 )
     extremes[3] = 0;
 
   if( extremes[3] >= imageSize.height )
-    extremes[3] = imageSize.height - 1;
+    extremes[3] = (float)imageSize.height - 1.0f;
 }
 
 /* requires line detection (only one image) */
@@ -148,48 +148,49 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
   cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector( cv::LSD_REFINE_ADV );
 
   /* prepare a vector to host extracted segments */
-  std::vector<std::vector<cv::Vec4i> > lines_lsd;
+  std::vector<std::vector<cv::Vec4f> > lines_lsd;
 
   /* extract lines */
   for ( int i = 0; i < numOctaves; i++ )
   {
-    std::vector<Vec4i> octave_lines;
+    std::vector<Vec4f> octave_lines;
     ls->detect( gaussianPyrs[i], octave_lines );
     lines_lsd.push_back( octave_lines );
   }
 
   /* create keylines */
   int class_counter = -1;
-  for ( int j = 0; j < (int) lines_lsd.size(); j++ )
+  for ( int octaveIdx = 0; octaveIdx < (int) lines_lsd.size(); octaveIdx++ )
   {
-    for ( int k = 0; k < (int) lines_lsd[j].size(); k++ )
+    float octaveScale = pow( (float)scale, octaveIdx );
+    for ( int k = 0; k < (int) lines_lsd[octaveIdx].size(); k++ )
     {
       KeyLine kl;
-      cv::Vec4i extremes = lines_lsd[j][k];
+      cv::Vec4f extremes = lines_lsd[octaveIdx][k];
 
       /* check data validity */
-      checkLineExtremes( extremes, gaussianPyrs[j].size() );
+      checkLineExtremes( extremes, gaussianPyrs[octaveIdx].size() );
 
       /* fill KeyLine's fields */
-      kl.startPointX = (float) extremes[0];
-      kl.startPointY = (float) extremes[1];
-      kl.endPointX = (float) extremes[2];
-      kl.endPointY = (float) extremes[3];
-      kl.sPointInOctaveX = (float) extremes[0];
-      kl.sPointInOctaveY = (float) extremes[1];
-      kl.ePointInOctaveX = (float) extremes[2];
-      kl.ePointInOctaveY = (float) extremes[3];
-      kl.lineLength = (float) sqrt( pow( (float) extremes[0] - extremes[2], 2 ) + pow( (float) extremes[1] - extremes[3], 2 ) );
+      kl.startPointX = extremes[0] * octaveScale;
+      kl.startPointY = extremes[1] * octaveScale;
+      kl.endPointX = extremes[2] * octaveScale;
+      kl.endPointY = extremes[3] * octaveScale;
+      kl.sPointInOctaveX = extremes[0];
+      kl.sPointInOctaveY = extremes[1];
+      kl.ePointInOctaveX = extremes[2];
+      kl.ePointInOctaveY = extremes[3];
+      kl.lineLength = (float) sqrt( pow( extremes[0] - extremes[2], 2 ) + pow( extremes[1] - extremes[3], 2 ) );
 
       /* compute number of pixels covered by line */
-      LineIterator li( gaussianPyrs[j], Point( extremes[0], extremes[1] ), Point( extremes[2], extremes[3] ) );
+      LineIterator li( gaussianPyrs[octaveIdx], Point2f( extremes[0], extremes[1] ), Point2f( extremes[2], extremes[3] ) );
       kl.numOfPixels = li.count;
 
       kl.angle = atan2( ( kl.endPointY - kl.startPointY ), ( kl.endPointX - kl.startPointX ) );
       kl.class_id = ++class_counter;
-      kl.octave = j;
+      kl.octave = octaveIdx;
       kl.size = ( kl.endPointX - kl.startPointX ) * ( kl.endPointY - kl.startPointY );
-      kl.response = kl.lineLength / max( gaussianPyrs[j].cols, gaussianPyrs[j].rows );
+      kl.response = kl.lineLength / max( gaussianPyrs[octaveIdx].cols, gaussianPyrs[octaveIdx].rows );
       kl.pt = Point2f( ( kl.endPointX + kl.startPointX ) / 2, ( kl.endPointY + kl.startPointY ) / 2 );
 
       keylines.push_back( kl );
