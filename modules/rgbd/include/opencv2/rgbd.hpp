@@ -290,6 +290,31 @@ namespace rgbd
     mutable void* depth_cleaner_impl_;
   };
 
+
+  /** Registers depth data to an external camera
+   * Registration is performed by creating a depth cloud, transforming the cloud by
+   * the rigid body transformation between the cameras, and then projecting the
+   * transformed points into the RGB camera.
+   *
+   * uv_rgb = K_rgb * [R | t] * z * inv(K_ir) * uv_ir
+   *
+   * Currently does not check for negative depth values.
+   *
+   * @param unregisteredCameraMatrix the camera matrix of the depth camera
+   * @param registeredCameraMatrix the camera matrix of the external camera
+   * @param registeredDistCoeffs the distortion coefficients of the external camera
+   * @param Rt the rigid body transform between the cameras. Transforms points from depth camera frame to external camera frame.
+   * @param unregisteredDepth the input depth data
+   * @param outputImagePlaneSize the image plane dimensions of the external camera (width, height)
+   * @param registeredDepth the result of transforming the depth into the external camera
+   * @param depthDilation whether or not the depth is dilated to avoid holes and occlusion errors (optional)
+   */
+  CV_EXPORTS
+  void
+  registerDepth(InputArray unregisteredCameraMatrix, InputArray registeredCameraMatrix, InputArray registeredDistCoeffs,
+                InputArray Rt, InputArray unregisteredDepth, const Size& outputImagePlaneSize,
+                OutputArray registeredDepth, bool depthDilation=false);
+
   /**
    * @param depth the depth image
    * @param in_K
