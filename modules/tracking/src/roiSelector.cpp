@@ -42,59 +42,56 @@
 #include "precomp.hpp"
 
 namespace cv {
-void ROISelector::mouseHandler(int event, int x, int y, int flags,
-		void *param) {
-	ROISelector *self = static_cast<ROISelector*>(param);
-	self->opencv_mouse_callback(event, x, y, flags, param);
-}
+  void ROISelector::mouseHandler(int event, int x, int y, int flags, void *param){
+      ROISelector *self =static_cast<ROISelector*>(param);
+      self->opencv_mouse_callback(event,x,y,flags,param);
+  }
 
-void ROISelector::opencv_mouse_callback(int event, int x, int y, int,
-		void *param) {
-	handlerT * data = (handlerT*) param;
-	switch (event) {
-	// update the selected bounding box
-	case EVENT_MOUSEMOVE:
-		if (data->isDrawing) {
-			if (data->drawFromCenter) {
-				data->box.width = 2 * (x - data->center.x)/*data->box.x*/;
-				data->box.height = 2 * (y - data->center.y)/*data->box.y*/;
-				data->box.x = data->center.x - data->box.width / 2.0;
-				data->box.y = data->center.y - data->box.height / 2.0;
-			} else {
-				data->box.width = x - data->box.x;
-				data->box.height = y - data->box.y;
-			}
-		}
-		break;
+  void ROISelector::opencv_mouse_callback( int event, int x, int y, int , void *param ){
+    handlerT * data = (handlerT*)param;
+    switch( event ){
+      // update the selected bounding box
+      case EVENT_MOUSEMOVE:
+        if( data->isDrawing ){
+          if(data->drawFromCenter){
+            data->box.width = 2*(x-data->center.x)/*data->box.x*/;
+            data->box.height = 2*(y-data->center.y)/*data->box.y*/;
+            data->box.x = data->center.x-data->box.width/2.0;
+            data->box.y = data->center.y-data->box.height/2.0;
+          }else{
+            data->box.width = x-data->box.x;
+            data->box.height = y-data->box.y;
+          }
+        }
+      break;
 
-		// start to select the bounding box
-	case EVENT_LBUTTONDOWN:
-		data->isDrawing = true;
-		data->box = cvRect(x, y, 0, 0);
-		data->center = Point2f((float) x, (float) y);
-		break;
+      // start to select the bounding box
+      case EVENT_LBUTTONDOWN:
+        data->isDrawing = true;
+        data->box = cvRect( x, y, 0, 0 );
+        data->center = Point2f((float)x,(float)y);
+      break;
 
-		// cleaning up the selected bounding box
-	case EVENT_LBUTTONUP:
-		data->isDrawing = false;
-		if (data->box.width < 0) {
-			data->box.x += data->box.width;
-			data->box.width *= -1;
-		}
-		if (data->box.height < 0) {
-			data->box.y += data->box.height;
-			data->box.height *= -1;
-		}
-		break;
-	}
-}
+      // cleaning up the selected bounding box
+      case EVENT_LBUTTONUP:
+        data->isDrawing = false;
+        if( data->box.width < 0 ){
+          data->box.x += data->box.width;
+          data->box.width *= -1;
+        }
+        if( data->box.height < 0 ){
+          data->box.y += data->box.height;
+          data->box.height *= -1;
+        }
+      break;
+    }
+  }
 
-Rect2d ROISelector::select(Mat img, bool fromCenter) {
-	return select("ROI selector", img, fromCenter);
-}
+  Rect2d ROISelector::select(Mat img, bool fromCenter){
+    return select("ROI selector", img, fromCenter);
+  }
 
-Rect2d ROISelector::select(const cv::String &windowName, Mat img,
-		bool showCrossair, bool fromCenter) {
+Rect2d ROISelector::select(const cv::String &windowName, Mat img, bool showCrossair, bool fromCenter) {
 
 	key = 0;
 
@@ -113,35 +110,29 @@ Rect2d ROISelector::select(const cv::String &windowName, Mat img,
 	// end selection process on SPACE (32) or ENTER (13)
 	while (!(key == 32 || key == 13)) {
 		// draw the selected object
-		rectangle(selectorParams.image, selectorParams.box, Scalar(255, 0, 0),
-				2, 1);
+		rectangle(
+				selectorParams.image,
+				selectorParams.box,
+				Scalar(255, 0, 0), 2, 1
+				);
 
 		// draw cross air in the middle of bounding box
 		if (showCrossair) {
 			// horizontal line
-			line(selectorParams.image,
-					Point((int) selectorParams.box.x,
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height / 2)),
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width),
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height / 2)),
-					Scalar(255, 0, 0), 2, 1);
+			line(
+					selectorParams.image,
+					Point((int) selectorParams.box.x, (int) (selectorParams.box.y + selectorParams.box.height / 2)),
+					Point((int) (selectorParams.box.x + selectorParams.box.width), (int) (selectorParams.box.y + selectorParams.box.height / 2)),
+					Scalar(255, 0, 0), 2, 1
+					);
 
 			// vertical line
-			line(selectorParams.image,
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width / 2),
-							(int) selectorParams.box.y),
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width / 2),
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height)),
-					Scalar(255, 0, 0), 2, 1);
+			line(
+					selectorParams.image,
+					Point((int) (selectorParams.box.x + selectorParams.box.width / 2), (int) selectorParams.box.y),
+					Point((int) (selectorParams.box.x + selectorParams.box.width / 2), (int) (selectorParams.box.y + selectorParams.box.height)),
+					Scalar(255, 0, 0), 2, 1
+					);
 		}
 
 		// show the image bouding box
@@ -164,8 +155,7 @@ void ROISelector::select(const cv::String &windowName, Mat img,
 	key = 0;
 
 	// show notice to user
-	printf(
-			"Select an object to track and then press SPACE to finish one selection and select another.\n\n");
+	printf("Select an object to track and then press SPACE to finish one selection and select another.\n\n");
 	printf("Finish the whole selection process by pressing ENTER button!\n\n");
 
 	// while key is not ENTER
@@ -208,27 +198,15 @@ Rect2d ROISelector::select(const cv::String &windowName, VideoCapture &cap,
 		if (showCrossair) {
 			// horizontal line
 			line(selectorParams.image,
-					Point((int) selectorParams.box.x,
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height / 2)),
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width),
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height / 2)),
+					Point((int) selectorParams.box.x, (int) (selectorParams.box.y + selectorParams.box.height / 2)),
+					Point((int) (selectorParams.box.x + selectorParams.box.width),
+							(int) (selectorParams.box.y + selectorParams.box.height / 2)),
 					Scalar(255, 0, 0), 2, 1);
 
 			// vertical line
 			line(selectorParams.image,
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width / 2),
-							(int) selectorParams.box.y),
-					Point(
-							(int) (selectorParams.box.x
-									+ selectorParams.box.width / 2),
-							(int) (selectorParams.box.y
-									+ selectorParams.box.height)),
+					Point((int) (selectorParams.box.x + selectorParams.box.width / 2), (int) selectorParams.box.y),
+					Point((int) (selectorParams.box.x + selectorParams.box.width / 2), (int) (selectorParams.box.y + selectorParams.box.height)),
 					Scalar(255, 0, 0), 2, 1);
 		}
 
@@ -270,19 +248,16 @@ Rect2d selectROI(Mat img, bool fromCenter) {
 	return _selector.select("ROI selector", img, true, fromCenter);
 }
 
-Rect2d selectROI(const cv::String &windowName, Mat img, bool showCrossair,
-		bool fromCenter) {
+Rect2d selectROI(const cv::String &windowName, Mat img, bool showCrossair, bool fromCenter) {
 	printf("Select an object to track and then press SPACE or ENTER button!\n");
 	return _selector.select(windowName, img, showCrossair, fromCenter);
 }
 
-void selectROI(const cv::String &windowName, Mat img,
-		std::vector<Rect2d> &boundingBox, bool fromCenter) {
+void selectROI(const cv::String &windowName, Mat img, std::vector<Rect2d> &boundingBox, bool fromCenter) {
 	return _selector.select(windowName, img, boundingBox, fromCenter);
 }
 
-void selectROI(const cv::String &windowName, VideoCapture &cap,
-		std::vector<Rect2d> &boundingBox, bool fromCenter) {
+void selectROI(const cv::String &windowName, VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter) {
 	return _selector.select(windowName, cap, boundingBox, fromCenter);
 }
 
