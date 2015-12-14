@@ -100,7 +100,7 @@ ocv_module_include_directories()
 FILE(GLOB OPENCV_SFM_SRC src/*.cpp)
 
 # define the header files (make the headers appear in IDEs.)
-FILE(GLOB OPENCV_SFM_HDRS include/opencv2/sfm/*.hpp)
+FILE(GLOB OPENCV_SFM_HDRS include/opencv2/sfm.hpp include/opencv2/sfm/*.hpp)
 
 ocv_set_module_sources(HEADERS ${OPENCV_SFM_HDRS}
                        SOURCES ${OPENCV_SFM_SRC})
