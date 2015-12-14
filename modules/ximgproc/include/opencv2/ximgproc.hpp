@@ -63,4 +63,13 @@ which somehow takes into account pixel affinities in natural images.
   @}
 */
 
+namespace cv {
+namespace ximgproc {
+    CV_EXPORTS_W
+    void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
+            int type, int blockSize, double delta );
+
+} // namespace ximgproc
+} //namespace cv
+
 #endif
