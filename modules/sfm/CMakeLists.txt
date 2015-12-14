@@ -5,6 +5,10 @@ set(the_description "SFM algorithms")
 
 find_package(Ceres QUIET)
 
+if(NOT DEFINED GFLAGS_LIBRARIES)
+  set(GFLAGS_LIBRARIES "gflags")
+endif()
+
 if(NOT DEFINED SFM_DEPS_OK)
 
   if(NOT DEFINED GLOG_LIBRARIES)
