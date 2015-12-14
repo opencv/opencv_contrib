@@ -9,11 +9,11 @@ if(NOT DEFINED GFLAGS_LIBRARIES)
   set(GFLAGS_LIBRARIES "gflags")
 endif()
 
-if(NOT DEFINED SFM_DEPS_OK)
+if(NOT DEFINED GLOG_LIBRARIES)
+  set(GLOG_LIBRARIES "glog")
+endif()
 
-  if(NOT DEFINED GLOG_LIBRARIES)
-    set(GLOG_LIBRARIES "glog")
-  endif()
+if(NOT DEFINED SFM_DEPS_OK)
 
   set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
   file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
