@@ -41,7 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include "predefined_dictionaries.hpp"
-
+#include "opencv2/core/hal/hal.hpp"
 
 namespace cv {
 namespace aruco {
@@ -77,7 +77,7 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
         int currentMinDistance = markerSize * markerSize + 1;
         int currentRotation = -1;
         for(unsigned int r = 0; r < 4; r++) {
-            int currentHamming = hal::normHamming(
+            int currentHamming = cv::hal::normHamming(
                     bytesList.ptr(m)+r*candidateBytes.cols,
                     candidateBytes.ptr(),
                     candidateBytes.cols);
@@ -112,7 +112,7 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
     Mat candidateBytes = getByteListFromBits(bits.getMat());
     int currentMinDistance = int(bits.total() * bits.total());
     for(unsigned int r = 0; r < nRotations; r++) {
-        int currentHamming = hal::normHamming(
+        int currentHamming = cv::hal::normHamming(
                 bytesList.ptr(id) + r*candidateBytes.cols,
                 candidateBytes.ptr(),
                 candidateBytes.cols);
@@ -331,7 +331,7 @@ static int _getSelfDistance(const Mat &marker) {
     Mat bytes = Dictionary::getByteListFromBits(marker);
     int minHamming = (int)marker.total() + 1;
     for(int r = 1; r < 4; r++) {
-        int currentHamming = hal::normHamming(bytes.ptr(), bytes.ptr() + bytes.cols*r, bytes.cols);
+        int currentHamming = cv::hal::normHamming(bytes.ptr(), bytes.ptr() + bytes.cols*r, bytes.cols);
         if(currentHamming < minHamming) minHamming = currentHamming;
     }
     return minHamming;
