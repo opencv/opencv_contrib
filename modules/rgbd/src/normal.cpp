@@ -527,7 +527,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
 
       // Get the mapping function for SRI
       float min_theta = (float)std::asin(sin_theta(0, 0)), max_theta = (float)std::asin(sin_theta(0, cols_ - 1));
-      float min_phi = (float)std::asin(sin_phi(0, cols_/2-1)), max_phi = (float)	std::asin(sin_phi(rows_ - 1, cols_/2-1));
+      float min_phi = (float)std::asin(sin_phi(0, cols_/2-1)), max_phi = (float)std::asin(sin_phi(rows_ - 1, cols_/2-1));
 
       std::vector<Point3f> points3d(cols_ * rows_);
       R_hat_.create(rows_, cols_);
