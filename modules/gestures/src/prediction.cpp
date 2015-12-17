@@ -46,11 +46,66 @@
 //
 //M*/
 
-#ifndef __OPENCV_GESTURES_HPP__
-#define __OPENCV_GESTURES_HPP__
-
-#include <opencv2/gestures/skeleton_frame.hpp>
 #include <opencv2/gestures/prediction.hpp>
-#include <opencv2/gestures/gestures_classifier.hpp>
 
-#endif // __OPENCV_GESTURES_HPP__
+namespace cv
+{
+    namespace gestures
+    {
+        Prediction::Prediction()
+        {
+        }
+        Prediction::Prediction(int id, std::string label, float proba):
+            mClassId(id),
+            mClassLabel(label),
+            mProbability(proba)
+        {
+        }
+
+        void Prediction::setClassId(int id)
+        {
+            CV_Assert(id > 0);
+            mClassId = id;
+        }
+        int Prediction::getClassId() const
+        {
+            return mClassId;
+        }
+
+        void Prediction::setClassLabel(std::string label)
+        {
+            mClassLabel = label;
+        }
+        std::string Prediction::getClassLabel() const
+        {
+            return mClassLabel;
+        }
+
+        void Prediction::setProbability(float proba)
+        {
+            CV_Assert(proba >= 0.0 && proba <= 1.0);
+            mProbability = proba;
+        }
+        float Prediction::getProbability() const
+        {
+            return mProbability;
+        }
+
+        bool operator<(const Prediction& lhs, const Prediction& rhs)
+        {
+            return lhs.getProbability() < rhs.getProbability();
+        }
+        bool operator>(const Prediction& lhs, const Prediction& rhs)
+        {
+            return rhs < lhs;
+        }
+        bool operator<=(const Prediction& lhs, const Prediction& rhs)
+        {
+            return !(rhs > lhs);
+        }
+        bool operator>=(const Prediction& lhs, const Prediction& rhs)
+        {
+            return !(lhs < rhs);
+        }
+    } // namespace gestures
+} // namespace cv

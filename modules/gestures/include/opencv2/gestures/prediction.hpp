@@ -46,11 +46,81 @@
 //
 //M*/
 
-#ifndef __OPENCV_GESTURES_HPP__
-#define __OPENCV_GESTURES_HPP__
+#ifndef __OPENCV_GESTURES_PREDICTION_HPP__
+#define __OPENCV_GESTURES_PREDICTION_HPP__
 
-#include <opencv2/gestures/skeleton_frame.hpp>
-#include <opencv2/gestures/prediction.hpp>
-#include <opencv2/gestures/gestures_classifier.hpp>
+#ifdef __cplusplus
 
-#endif // __OPENCV_GESTURES_HPP__
+#include <string>
+#include <opencv2/core.hpp>
+
+/** @defgroup gestures Gestures Recognition module
+ */
+
+namespace cv
+{
+    namespace gestures
+    {
+        //! @addtogroup gestures
+        //! @{
+        /* @brief Very simple class to wrap all information about a prediction
+         */
+        class CV_EXPORTS Prediction
+        {
+            public:
+                /**
+                 Default constructor
+                 */
+                CV_WRAP Prediction();
+                /** @overload
+                 Full constructor
+                 */
+                CV_WRAP Prediction(int id, std::string label, float proba = 0.0);
+
+                /**
+                 @param id Id of the class corresponding to the prediction
+                 */
+                CV_WRAP void setClassId(int id);
+                /**
+                 Returns the id of the class corresponding to the prediction
+                 */
+                CV_WRAP int getClassId() const;
+
+                /**
+                 @param label Label of the class corresponding to the prediction
+                 */
+                CV_WRAP void setClassLabel(std::string label);
+                /**
+                 Returns the label of the class corresponding to the prediction
+                 */
+                CV_WRAP std::string getClassLabel() const;
+
+                /**
+                 @param proba Probability of the class
+                 */
+                CV_WRAP void setProbability(float proba);
+                /**
+                 Returns the probability of the class
+                 */
+                CV_WRAP float getProbability() const;
+
+            private:
+                int mClassId;
+                std::string mClassLabel;
+                float mProbability;
+        };
+        //! @} gestures
+
+        /**
+         Comparison operators
+         */
+        bool operator<(const Prediction& lhs, const Prediction& rhs);
+        bool operator>(const Prediction& lhs, const Prediction& rhs);
+        bool operator<=(const Prediction& lhs, const Prediction& rhs);
+        bool operator>=(const Prediction& lhs, const Prediction& rhs);
+
+    } // namespace gestures
+} // namespace cv
+
+#endif // __cpluscplus
+#endif // __OPENCV_GESTURES_CLASSIFIER_HPP__

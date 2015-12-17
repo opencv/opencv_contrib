@@ -37,7 +37,7 @@ namespace cvtest
 
         // Initialization of the network.
         cv::Ptr<cv::gestures::GesturesClassifierDNN> classifier = cv::gestures::GesturesClassifierDNN::create(
-            ts->get_data_path() + "deploy_moddrop.prototxt",
+            ts->get_data_path() + "deploy_chalearn.prototxt",
             ts->get_data_path() + "chalearn_trained.caffemodel",
             ts->get_data_path() + "input_mean/",
             ts->get_data_path() + "chalearn_labels.txt");

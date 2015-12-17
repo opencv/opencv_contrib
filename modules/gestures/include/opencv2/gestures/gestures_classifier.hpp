@@ -54,6 +54,8 @@
 #include <string>
 #include <opencv2/core.hpp>
 
+#include <opencv2/gestures/prediction.hpp>
+
 /** @defgroup gestures Gestures Recognition module
  */
 
@@ -68,11 +70,6 @@ namespace cv
         class CV_EXPORTS GesturesClassifier : public Algorithm
         {
             public:
-                /**
-                 Stores the probabilty of a given class, with its label if available.
-                 */
-                typedef std::pair<float, std::string> Prediction;
-
                 /**
                  Set the labels of the classes output by the classifier.
                  @param labels Vector of string of size equal to the number of classes.

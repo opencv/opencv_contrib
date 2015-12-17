@@ -195,13 +195,13 @@ namespace cv
                     {
                         if(mHasValidLabels)
                         {
-                            prediction.push_back(std::make_pair(output[c], mLabels[c]));
+                            prediction.push_back(Prediction(c, mLabels[c], output[c]));
                         }
                         else
                         {
                             std::stringstream sstream;
                             sstream << c;
-                            prediction.push_back(std::make_pair(output[c], sstream.str()));
+                            prediction.push_back(Prediction(c, sstream.str(), output[c]));
                         }
                     }
 

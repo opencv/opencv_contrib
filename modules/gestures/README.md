@@ -20,7 +20,7 @@ It corresponds to our submission to the CVPR-2015 Vision-Challenge in categorie 
 Deep Neural Network in this module are implemented using the [Caffe](http://caffe.berkeleyvision.org) library.
 
 The support of some required 3D operations has been added on the `nd-pooling-public` branch of our fork of the Caffe repository:
-https://github.com/WGW101/caffe.git
+https://github.com/awabot-dev/caffe.git
 
 Detailled installation instructions can be found here: http://caffe.berkeleyvision.org/installation.html .
 
@@ -33,7 +33,7 @@ apt-get install libgflags-dev libgoogle-glog-dev libprotobuf-dev protobuf-compil
 apt-get install libatlas-base-dev
 apt-get install --no-install-recommends libboost-all-dev
 
-git clone https://github.com/WGW101/caffe.git -b nd-pooling-public
+git clone https://github.com/awabot-dev/caffe.git -b nd-pooling-public
 cd caffe
 mkdir build
 cd build
