@@ -35,6 +35,7 @@
 
 #include "test_precomp.hpp"
 #include <opencv2/rgbd.hpp>
+#include <opencv2/calib3d.hpp>
 
 namespace cv
 {
@@ -77,7 +78,7 @@ void TickMeter::stop()
         return;
 
     ++counter;
-    
+
     sumTime += ( time - startTime );
     startTime = 0;
 }
@@ -128,6 +129,35 @@ float cy = H / 2.f + 0.5f;
 
 Mat K = (Mat_<double>(3, 3) << focal_length, 0, cx, 0, focal_length, cy, 0, 0, 1);
 Mat Kinv = K.inv();
+
+void points3dToDepth16U(const Mat_<Vec3f>& points3d, Mat& depthMap);
+
+void points3dToDepth16U(const Mat_<Vec3f>& points3d, Mat& depthMap)
+{
+  std::vector<Point3f> points3dvec;
+  for(int i = 0; i < H; i++)
+    for(int j = 0; j < W; j++)
+      points3dvec.push_back(Point3f(points3d(i,j)[0], points3d(i,j)[1], points3d(i,j)[2]));
+
+  std::vector<Point2f> img_points;
+  depthMap = Mat::zeros(H, W, CV_32F);
+  Vec3f R(0.0,0.0,0.0);
+  Vec3f T(0.0,0.0,0.0);
+  cv::projectPoints(points3dvec, R, T, K, Mat(), img_points);
+
+  int index = 0;
+  for(int i = 0; i < H; i++)
+  {
+
+    for(int j = 0; j < W; j++)
+    {
+      float value = (points3d.at<Vec3f>(i, j))[2]; // value is the z
+      depthMap.at<float>(cvRound(img_points[index].y), cvRound(img_points[index].x)) = value;
+      index++;
+    }
+  }
+  depthMap.convertTo(depthMap, CV_16U, 1000);
+}
 
 static RNG rng;
 struct Plane
@@ -224,8 +254,8 @@ protected:
         // inner vector: whether it's 1 plane or 3 planes
         // outer vector: float or double
         std::vector<std::vector<float> > errors(2);
-        errors[0].resize(2);
-        errors[1].resize(2);
+        errors[0].resize(4);
+        errors[1].resize(4);
         switch (i)
         {
           case 0:
@@ -241,8 +271,13 @@ protected:
             std::cout << std::endl << "*** LINEMOD" << std::endl;
             errors[0][0] = 0.04f;
             errors[0][1] = 0.07f;
+            errors[0][2] = 0.04f; // depth 16U 1 plane
+            errors[0][3] = 0.07f; // depth 16U 3 planes
+
             errors[1][0] = 0.05f;
             errors[1][1] = 0.08f;
+            errors[1][2] = 0.05f; // depth 16U 1 plane
+            errors[1][3] = 0.08f; // depth 16U 3 planes
             break;
           case 2:
             method = RgbdNormals::RGBD_NORMALS_METHOD_SRI;
@@ -252,9 +287,9 @@ protected:
             errors[1][0] = 0.02f;
             errors[1][1] = 0.04f;
             break;
-		  default:
-			method = (RgbdNormals::RGBD_NORMALS_METHOD)-1;
-			CV_Error(0, "");
+          default:
+            method = (RgbdNormals::RGBD_NORMALS_METHOD)-1;
+            CV_Error(0, "");
         }
 
         for (unsigned char j = 0; j < 2; ++j)
@@ -271,7 +306,7 @@ protected:
           std::vector<Plane> plane_params;
           Mat points3d, ground_normals;
           // 1 plane, continuous scene, very low error..
-          std::cout << "1 plane" << std::endl;
+          std::cout << "1 plane - input 3d points" << std::endl;
           float err_mean = 0;
           for (int ii = 0; ii < 5; ++ii)
           {
@@ -291,6 +326,34 @@ protected:
           }
           std::cout << "mean diff: " << (err_mean / 5) << std::endl;
           EXPECT_LE(err_mean/5, errors[j][1])<< "mean diff: " << (err_mean/5) << " thresh: " << errors[j][1] << std::endl;
+
+          if(method == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
+          {
+            // depth 16U test
+            std::cout << "** depth 16U - 1 plane" << std::endl;
+            err_mean = 0;
+            for (int ii = 0; ii < 5; ++ii)
+            {
+              gen_points_3d(plane_params, plane_mask, points3d, ground_normals, 1);
+              Mat depthMap;
+              points3dToDepth16U(points3d, depthMap);
+              err_mean += testit(depthMap, ground_normals, normals_computer);
+            }
+            std::cout << "mean diff: " << (err_mean / 5) << std::endl;
+            EXPECT_LE(err_mean/5, errors[j][2])<< " thresh: " << errors[j][2] << std::endl;
+
+            std::cout << "** depth 16U - 3 plane" << std::endl;
+            err_mean = 0;
+            for (int ii = 0; ii < 5; ++ii)
+            {
+              gen_points_3d(plane_params, plane_mask, points3d, ground_normals, 3);
+              Mat depthMap;
+              points3dToDepth16U(points3d, depthMap);
+              err_mean += testit(depthMap, ground_normals, normals_computer);
+            }
+            std::cout << "mean diff: " << (err_mean / 5) << std::endl;
+            EXPECT_LE(err_mean/5, errors[j][3])<< "mean diff: " << (err_mean/5) << " thresh: " << errors[j][3] << std::endl;
+          }
         }
       }
 
@@ -309,7 +372,7 @@ protected:
     TickMeter tm;
     tm.start();
     Mat in_normals;
-    if (normals_computer.getMethod() == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
+    if (normals_computer.getMethod() == RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD && points3d.channels() == 3)
     {
       std::vector<Mat> channels;
       split(points3d, channels);
@@ -450,7 +513,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TEST(DISABLED_Rgbd_Normals, compute)
+TEST(Rgbd_Normals, compute)
 {
   cv::rgbd::CV_RgbdNormalsTest test;
   test.safe_run();
