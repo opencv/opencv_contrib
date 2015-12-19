@@ -58,12 +58,12 @@ namespace aruco {
  *
  * `bytesList.ptr(i)[k*nbytes + j]` is then the j-th byte of i-th marker, in its k-th rotation.
  */
-class CV_EXPORTS Dictionary {
+class CV_EXPORTS_W Dictionary {
 
     public:
-    Mat bytesList;         // marker code information
-    int markerSize;        // number of bits per dimension
-    int maxCorrectionBits; // maximum number of bits that can be corrected
+    CV_PROP_RW Mat bytesList;         // marker code information
+    CV_PROP_RW int markerSize;        // number of bits per dimension
+    CV_PROP_RW int maxCorrectionBits; // maximum number of bits that can be corrected
 
 
     /**
@@ -71,6 +71,32 @@ class CV_EXPORTS Dictionary {
     Dictionary(const Mat &_bytesList = Mat(), int _markerSize = 0, int _maxcorr = 0);
 
 
+    /**
+    Dictionary(const Dictionary &_dictionary);
+    */
+
+
+    /**
+      */
+    Dictionary(const Ptr<Dictionary> &_dictionary);
+
+
+    /**
+     * @see generateCustomDictionary
+     */
+    CV_WRAP_AS(create) static Ptr<Dictionary> create(int nMarkers, int markerSize);
+
+
+    /**
+     * @see generateCustomDictionary
+     */
+    CV_WRAP_AS(create_from) static Ptr<Dictionary> create(int nMarkers, int markerSize,
+            Ptr<Dictionary> &baseDictionary);
+
+    /**
+     * @see getPredefinedDictionary
+     */
+    CV_WRAP static Ptr<Dictionary> get(int dict);
 
     /**
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
@@ -109,9 +135,10 @@ class CV_EXPORTS Dictionary {
 /**
  * @brief Predefined markers dictionaries/sets
  * Each dictionary indicates the number of bits and the number of markers contained
- * - DICT_ARUCO: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum distance
+ * - DICT_ARUCO_ORIGINAL: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum
+                          distance
  */
-enum PREDEFINED_DICTIONARY_NAME {
+enum CV_EXPORTS_W_SIMPLE PREDEFINED_DICTIONARY_NAME {
     DICT_4X4_50 = 0,
     DICT_4X4_100,
     DICT_4X4_250,
@@ -135,7 +162,21 @@ enum PREDEFINED_DICTIONARY_NAME {
 /**
   * @brief Returns one of the predefined dictionaries defined in PREDEFINED_DICTIONARY_NAME
   */
-CV_EXPORTS const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+CV_EXPORTS Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name);
+
+
+/**
+  * @brief Returns one of the predefined dictionaries referenced by DICT_*.
+  */
+CV_EXPORTS_W Ptr<Dictionary> getPredefinedDictionary(int dict);
+
+
+/**
+  * @see generateCustomDictionary
+  */
+CV_EXPORTS_AS(custom_dictionary) Ptr<Dictionary> generateCustomDictionary(
+        int nMarkers,
+        int markerSize);
 
 
 /**
@@ -150,8 +191,10 @@ CV_EXPORTS const Dictionary &getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME 
   * included and the rest are generated based on them. If the size of baseDictionary is higher
   * than nMarkers, only the first nMarkers in baseDictionary are taken and no new marker is added.
   */
-CV_EXPORTS Dictionary generateCustomDictionary(int nMarkers, int markerSize,
-                                               const Dictionary &baseDictionary = Dictionary());
+CV_EXPORTS_AS(custom_dictionary_from) Ptr<Dictionary> generateCustomDictionary(
+        int nMarkers,
+        int markerSize,
+        Ptr<Dictionary> &baseDictionary);
 
 
 
