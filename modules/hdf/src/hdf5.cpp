@@ -75,52 +75,81 @@ public:
     // get sizes of dataset
     virtual vector<int> dsgetsize( String dslabel, int dims_flag = H5_GETDIMS ) const;
 
-    // get data type of dataset
+    /* get data type of dataset */
     virtual int dsgettype( String dslabel ) const;
 
-    // overload dscreate()
-    virtual void dscreate( const int rows, const int cols, const int type,
-             String dslabel, const int compresslevel = H5_NONE,
-             const vector<int>& dims_chunks = vector<int>() ) const;
+    // overload dscreate() #1
+    virtual void dscreate( const int rows, const int cols, const int type, String dslabel ) const;
 
-    // create two dimensional single or mutichannel dataset
-    virtual void dscreate( const int rows, const int cols, const int type,
-             String dslabel, const int compresslevel = H5_NONE, const int* dims_chunks = NULL ) const;
+    // overload dscreate() #2
+    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+             const int compresslevel ) const;
 
-    // overload dscreate()
+    // overload dscreate() #3
+    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+             const int compresslevel, const vector<int>& dims_chunks ) const;
+
+    /* create two dimensional single or mutichannel dataset */
+    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+             const int compresslevel, const int* dims_chunks ) const;
+
+    // overload dscreate() #1
+    virtual void dscreate( const int n_dims, const int* sizes, const int type,
+             String dslabel ) const;
+
+    // overload dscreate() #2
+    virtual void dscreate( const int n_dims, const int* sizes, const int type,
+             String dslabel, const int compresslevel ) const;
+
+    // overload dscreate() #3
     virtual void dscreate( const vector<int>& sizes, const int type, String dslabel,
              const int compresslevel = H5_NONE, const vector<int>& dims_chunks = vector<int>() ) const;
 
-    // create n-dimensional single or mutichannel dataset
+    /* create n-dimensional single or mutichannel dataset */
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             String dslabel, const int compresslevel = H5_NONE, const int* dims_chunks = NULL ) const;
+             String dslabel, const int compresslevel, const int* dims_chunks ) const;
 
-    // overload dswrite()
-    virtual void dswrite( InputArray Array, String dslabel,
-             const vector<int>& dims_offset = vector<int>(),
+    // overload dswrite() #1
+    virtual void dswrite( InputArray Array, String dslabel ) const;
+
+    // overload dswrite() #2
+    virtual void dswrite( InputArray Array, String dslabel, const int* dims_offset ) const;
+
+    // overload dswrite() #3
+    virtual void dswrite( InputArray Array, String dslabel, const vector<int>& dims_offset,
              const vector<int>& dims_counts = vector<int>() ) const;
 
-    // write into dataset
+    /* write into dataset */
     virtual void dswrite( InputArray Array, String dslabel,
+             const int* dims_offset, const int* dims_counts ) const;
+
+    // overload dsinsert() #1
+    virtual void dsinsert( InputArray Array, String dslabel ) const;
+
+    // overload dsinsert() #2
+    virtual void dsinsert( InputArray Array, String dslabel, const int* dims_offset ) const;
+
+    // overload dsinsert() #3
+    virtual void dsinsert( InputArray Array, String dslabel,
+             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
+
+    /* append / merge into dataset */
+    virtual void dsinsert( InputArray Array, String dslabel,
              const int* dims_offset = NULL, const int* dims_counts = NULL ) const;
 
-    // overload dsinsert()
-    virtual void dsinsert( InputArray Array, String dslabel,
-             const vector<int>& dims_offset = vector<int>(),
-             const vector<int>& dims_counts = vector<int>() ) const;
+    // overload dsread() #1
+    virtual void dsread( OutputArray Array, String dslabel ) const;
 
-    // append / merge into dataset
-    virtual void dsinsert( InputArray Array, String dslabel,
-             const int* dims_offset = NULL, const int* dims_counts = NULL ) const;
+    // overload dsread() #2
+    virtual void dsread( OutputArray Array, String dslabel, const int* dims_offset ) const;
 
-    // overload dsread()
+    // overload dsread() #3
     virtual void dsread( OutputArray Array, String dslabel,
-             const vector<int>& dims_offset = vector<int>(),
-             const vector<int>& dims_counts = vector<int>() ) const;
+             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
 
     // read from dataset
     virtual void dsread( OutputArray Array, String dslabel,
-             const int* dims_offset = NULL, const int* dims_counts = NULL ) const;
+             const int* dims_offset, const int* dims_counts ) const;
 
     /*
      *  std::vector<cv::KeyPoint>
@@ -353,6 +382,28 @@ int HDF5Impl::dsgettype( String dslabel ) const
 
 // overload
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
+                         String dslabel ) const
+{
+    // dataset dims
+    int dsizes[2] = { rows, cols };
+
+    // create the two dim array
+    dscreate( 2, dsizes, type, dslabel, HDF5::H5_NONE, NULL );
+}
+
+// overload
+void HDF5Impl::dscreate( const int rows, const int cols, const int type,
+                         String dslabel, const int compresslevel ) const
+{
+    // dataset dims
+    int dsizes[2] = { rows, cols };
+
+    // create the two dim array
+    dscreate( 2, dsizes, type, dslabel, compresslevel, NULL );
+}
+
+// overload
+void HDF5Impl::dscreate( const int rows, const int cols, const int type,
                  String dslabel, const int compresslevel,
                  const vector<int>& dims_chunks ) const
 {
@@ -368,6 +419,20 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 
     // create the two dim array
     dscreate( 2, dsizes, type, dslabel, compresslevel, dims_chunks );
+}
+
+// overload
+void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
+                 String dslabel ) const
+{
+    dscreate( n_dims, sizes, type, dslabel, H5_NONE, NULL );
+}
+
+// overload
+void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
+                 String dslabel, const int compresslevel ) const
+{
+    dscreate( n_dims, sizes, type, dslabel, compresslevel, NULL );
 }
 
 // overload
@@ -453,6 +518,19 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
 
     H5Pclose( dsdcpl );
     H5Sclose( dspace );
+}
+
+// overload
+void HDF5Impl::dsread( OutputArray Array, String dslabel ) const
+{
+    dsread( Array, dslabel, NULL, NULL );
+}
+
+// overload
+void HDF5Impl::dsread( OutputArray Array, String dslabel,
+             const int* dims_offset ) const
+{
+    dsread( Array, dslabel, dims_offset );
 }
 
 // overload
@@ -558,6 +636,17 @@ void HDF5Impl::dsread( OutputArray Array, String dslabel,
 }
 
 // overload
+void HDF5Impl::dswrite( InputArray Array, String dslabel ) const
+{
+    dswrite( Array, dslabel, NULL, NULL );
+}
+// overload
+void HDF5Impl::dswrite( InputArray Array, String dslabel,
+             const int* dims_offset ) const
+{
+    dswrite( Array, dslabel, dims_offset, NULL );
+}
+// overload
 void HDF5Impl::dswrite( InputArray Array, String dslabel,
              const vector<int>& dims_offset,
              const vector<int>& dims_counts ) const
@@ -639,6 +728,19 @@ void HDF5Impl::dswrite( InputArray Array, String dslabel,
     H5Sclose( dspace );
     H5Sclose( fspace );
     H5Dclose( dsdata );
+}
+
+// overload
+void HDF5Impl::dsinsert( InputArray Array, String dslabel ) const
+{
+    dsinsert( Array, dslabel, NULL, NULL );
+}
+
+// overload
+void HDF5Impl::dsinsert( InputArray Array, String dslabel,
+             const int* dims_offset ) const
+{
+    dsinsert( Array, dslabel, dims_offset, NULL );
 }
 
 // overload
