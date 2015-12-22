@@ -61,6 +61,10 @@ using namespace cv;
 using namespace cv::sfm;
 using namespace libmv;
 
+using namespace google;
+
+namespace gflags {}
+using namespace gflags;
 
 ////////////////////////////////////////
 // Based on 'libmv_capi' (blender API)
@@ -84,26 +88,26 @@ void libmv_initLogging(const char* argv0) {
   // Make it so FATAL messages are always print into console.
   char severity_fatal[32];
   snprintf(severity_fatal, sizeof(severity_fatal), "%d",
-           google::GLOG_FATAL);
+           GLOG_FATAL);
 
-  google::InitGoogleLogging(argv0);
-  google::SetCommandLineOption("logtostderr", "1");
-  google::SetCommandLineOption("v", "0");
-  google::SetCommandLineOption("stderrthreshold", severity_fatal);
-  google::SetCommandLineOption("minloglevel", severity_fatal);
+  InitGoogleLogging(argv0);
+  SetCommandLineOption("logtostderr", "1");
+  SetCommandLineOption("v", "0");
+  SetCommandLineOption("stderrthreshold", severity_fatal);
+  SetCommandLineOption("minloglevel", severity_fatal);
 }
 
 void libmv_startDebugLogging(void) {
-  google::SetCommandLineOption("logtostderr", "1");
-  google::SetCommandLineOption("v", "2");
-  google::SetCommandLineOption("stderrthreshold", "1");
-  google::SetCommandLineOption("minloglevel", "0");
+  SetCommandLineOption("logtostderr", "1");
+  SetCommandLineOption("v", "2");
+  SetCommandLineOption("stderrthreshold", "1");
+  SetCommandLineOption("minloglevel", "0");
 }
 
 void libmv_setLoggingVerbosity(int verbosity) {
   char val[10];
   snprintf(val, sizeof(val), "%d", verbosity);
-  google::SetCommandLineOption("v", val);
+  SetCommandLineOption("v", val);
 }
 
 
