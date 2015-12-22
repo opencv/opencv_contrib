@@ -1214,7 +1214,7 @@ void SuperpixelSEEDSImpl::getLabelContourMask(OutputArray image, bool thick_line
                 }
             }
             if( neighbors > 1 )
-                *dst.ptr<uchar>(j, k) = (uchar)-1;
+                *dst.ptr<uchar>(j, k) = (uchar)255;
         }
     }
 }

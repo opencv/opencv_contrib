@@ -274,10 +274,10 @@ void SuperpixelLSCImpl::getLabelContourMask(OutputArray _mask, bool _thick_line)
 
     if ( !_thick_line ) line_width = 1;
 
-    _mask.create( m_height, m_width, CV_8SC1 );
+    _mask.create( m_height, m_width, CV_8UC1 );
     Mat mask = _mask.getMat();
 
-    mask.setTo(1);
+    mask.setTo(0);
 
     const int dx8[8] = { -1, -1,  0,  1, 1, 1, 0, -1 };
     const int dy8[8] = {  0, -1, -1, -1, 0, 1, 1,  1 };
@@ -309,7 +309,7 @@ void SuperpixelLSCImpl::getLabelContourMask(OutputArray _mask, bool _thick_line)
         }
         if( np > line_width )
         {
-           mask.at<char>(j,k) = -1;
+           mask.at<char>(j,k) = (uchar)255;
            istaken[mainindex] = true;
         }
         mainindex++;
