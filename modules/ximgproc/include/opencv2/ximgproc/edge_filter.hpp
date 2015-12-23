@@ -319,6 +319,38 @@ void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+/** @brief Applies the rolling guidance filter to an image.
+
+@param src Source 8-bit or floating-point, 1-channel or 3-channel image.
+
+@param dst Destination image of the same size and type as src.
+
+@param d Diameter of each pixel neighborhood that is used during filtering. If it is non-positive,
+it is computed from sigmaSpace .
+
+@param sigmaColor Filter sigma in the color space. A larger value of the parameter means that
+farther colors within the pixel neighborhood (see sigmaSpace ) will be mixed together, resulting in
+larger areas of semi-equal color.
+
+@param sigmaSpace Filter sigma in the coordinate space. A larger value of the parameter means that
+farther pixels will influence each other as long as their colors are close enough (see sigmaColor ).
+When d\>0 , it specifies the neighborhood size regardless of sigmaSpace . Otherwise, d is
+proportional to sigmaSpace .
+
+@param numOfIter Number of iterations of joint edge-preserving filtering applied on the source image.
+
+@param borderType
+
+@note  rollingGuidanceFilter uses jointBilateralFilter as the edge-preserving filter.
+
+@sa jointBilateralFilter, bilateralFilter, amFilter
+*/
+CV_EXPORTS_W
+void rollingGuidanceFilter(InputArray src, OutputArray dst, int d = -1, double sigmaColor = 25, double sigmaSpace = 3, int numOfIter = 4, int borderType = BORDER_DEFAULT);
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 
 /** @brief Interface for implementations of Fast Global Smoother filter.
 
@@ -378,6 +410,19 @@ it should be 0.25. Setting it to 1.0 may lead to streaking artifacts.
 */
 CV_EXPORTS_W void fastGlobalSmootherFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, double lambda_attenuation=0.25, int num_iter=3);
 
+/** @brief Global image smoothing via L0 gradient minimization.
+
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point depth.
+
+@param dst destination image.
+
+@param lambda parameter defining the smooth term weight.
+
+@param kappa parameter defining the increasing factor of the weight of the gradient data term.
+
+For more details about L0 Smoother, see the original paper @cite xu2011image.
+*/
+CV_EXPORTS_W void l0Smooth(InputArray src, OutputArray dst, double lambda = 0.02, double kappa = 2.0);
 //! @}
 }
 }

@@ -1,7 +1,7 @@
 set(name waldboost_detector)
 set(the_target opencv_${name})
 
-set(OPENCV_${the_target}_DEPS opencv_core opencv_imgcodecs opencv_videoio
+set(OPENCV_${the_target}_DEPS opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio
     opencv_highgui opencv_xobjdetect)
 
 ocv_check_dependencies(${OPENCV_${the_target}_DEPS})

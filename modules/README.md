@@ -53,3 +53,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 22. **opencv_xphoto**: Additional photo processing algorithms: Color balance / Denoising / Inpainting.
 
 23. **opencv_stereo**: Stereo Correspondence done with different descriptors: Census / CS-Census / MCT / BRIEF / MV.
+
+24. **opencv_hdf**: Hierarchical Data Format I/O.
+
+25. **opencv_fuzzy**: New module focused on the fuzzy image processing.

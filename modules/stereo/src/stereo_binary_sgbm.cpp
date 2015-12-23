@@ -50,8 +50,6 @@ SGBM (Semi-global block matching)
 
 #include "precomp.hpp"
 #include <limits.h>
-#include <descriptor.hpp>
-#include <matching.hpp>
 
 namespace cv
 {

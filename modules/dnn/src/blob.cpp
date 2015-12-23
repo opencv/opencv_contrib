@@ -57,7 +57,7 @@ namespace dnn
        return (mat.dims <= 2) ? mat.channels() : mat.size[0];
     }
 
-    static BlobShape getBlobShpae(std::vector<Mat> &vmat, int requestedCn = -1)
+    static BlobShape getBlobShape(std::vector<Mat> &vmat, int requestedCn = -1)
     {
         BlobShape shape(4);
         int cnSum = 0, matCn;
@@ -123,7 +123,7 @@ namespace dnn
     {
         CV_Assert(dstCn == -1 || dstCn > 0);
         std::vector<Mat> inMats = extractMatVector(image);
-        BlobShape dstShape = getBlobShpae(inMats, dstCn);
+        BlobShape dstShape = getBlobShape(inMats, dstCn);
 
         m.create(dstShape.dims(), dstShape.ptr(), CV_32F);
 

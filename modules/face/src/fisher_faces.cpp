@@ -36,11 +36,8 @@ public:
     // in labels.
     void train(InputArrayOfArrays src, InputArray labels);
 
-    // Predicts the label of a query image in src.
-    int predict(InputArray src) const;
-
-    // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
+    // Send all predict results to caller side for custom result handling
+    void predict(InputArray src, Ptr<PredictCollector> collector, const int state) const;
 };
 
 // Removes duplicate elements in a given vector.
@@ -123,7 +120,7 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     }
 }
 
-void Fisherfaces::predict(InputArray _src, int &minClass, double &minDist) const {
+void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector, const int state) const {
     Mat src = _src.getMat();
     // check data alignment just for clearer exception messages
     if(_projections.empty()) {
@@ -137,22 +134,12 @@ void Fisherfaces::predict(InputArray _src, int &minClass, double &minDist) const
     // project into LDA subspace
     Mat q = LDA::subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
     // find 1-nearest neighbor
-    minDist = DBL_MAX;
-    minClass = -1;
-    for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
+    collector->init((int)_projections.size(), state);
+    for (size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
-        if((dist < minDist) && (dist < _threshold)) {
-            minDist = dist;
-            minClass = _labels.at<int>((int)sampleIdx);
-        }
+        int label = _labels.at<int>((int)sampleIdx);
+        if (!collector->emit(label, dist, state))return;
     }
-}
-
-int Fisherfaces::predict(InputArray _src) const {
-    int label;
-    double dummy;
-    predict(_src, label, dummy);
-    return label;
 }
 
 Ptr<BasicFaceRecognizer> createFisherFaceRecognizer(int num_components, double threshold)

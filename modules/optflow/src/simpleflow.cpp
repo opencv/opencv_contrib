@@ -42,6 +42,10 @@
 
 #include "precomp.hpp"
 
+#ifdef _MSC_VER
+#   pragma warning(disable: 4512)
+#endif
+
 //
 // 2D dense optical flow algorithm from the following paper:
 // Michael Tao, Jiamin Bai, Pushmeet Kohli, and Sylvain Paris.
@@ -57,15 +61,19 @@ namespace optflow
 
 static const uchar MASK_TRUE_VALUE = (uchar)255;
 
-inline static float dist(const Vec3b& p1, const Vec3b& p2) {
-  return (float)((p1[0] - p2[0]) * (p1[0] - p2[0]) +
-         (p1[1] - p2[1]) * (p1[1] - p2[1]) +
-         (p1[2] - p2[2]) * (p1[2] - p2[2]));
+inline static int dist(const Vec3b &p1, const Vec3b &p2) {
+  int a = p1[0] - p2[0];
+  int b = p1[1] - p2[1];
+  int c = p1[2] - p2[2];
+
+  return a*a+b*b+c*c;
 }
 
-inline static float dist(const Vec2f& p1, const Vec2f& p2) {
-  return (p1[0] - p2[0]) * (p1[0] - p2[0]) +
-         (p1[1] - p2[1]) * (p1[1] - p2[1]);
+inline static float dist(const Vec2f &p1, const Vec2f &p2) {
+  float a = p1[0] - p2[0];
+  float b = p1[1] - p2[1];
+
+  return a*a+b*b;
 }
 
 template<class T>
@@ -93,7 +101,7 @@ static void removeOcclusions(const Mat& flow,
   }
 }
 
-static void wd(Mat& d, int top_shift, int bottom_shift, int left_shift, int right_shift, float sigma) {
+static void wd(Mat& d, int top_shift, int bottom_shift, int left_shift, int right_shift, double sigma) {
   for (int dr = -top_shift, r = 0; dr <= bottom_shift; ++dr, ++r) {
     for (int dc = -left_shift, c = 0; dc <= right_shift; ++dc, ++c) {
       d.at<float>(r, c) = (float)-(dr*dr + dc*dc);
@@ -103,62 +111,115 @@ static void wd(Mat& d, int top_shift, int bottom_shift, int left_shift, int righ
   exp(d, d);
 }
 
-static void wc(const Mat& image, Mat& d, int r0, int c0,
-               int top_shift, int bottom_shift, int left_shift, int right_shift, float sigma) {
-  const Vec3b centeral_point = image.at<Vec3b>(r0, c0);
-  int left_border = c0-left_shift, right_border = c0+right_shift;
-  for (int dr = r0-top_shift, r = 0; dr <= r0+bottom_shift; ++dr, ++r) {
-    const Vec3b *row = image.ptr<Vec3b>(dr);
-    float *d_row = d.ptr<float>(r);
-    for (int dc = left_border, c = 0; dc <= right_border; ++dc, ++c) {
-      d_row[c] = -dist(centeral_point, row[dc]);
+template<typename JointVec, typename SrcVec>
+class CrossBilateralFilter : public ParallelLoopBody {
+    Mat &joint, &confidence, &src;
+    Mat &dst;
+    int radius;
+    bool flag;
+    Mat &spaceWeights;
+    std::vector<double> &expLut;
+
+public:
+    CrossBilateralFilter(Mat &joint_, Mat &confidence_, Mat &src_, Mat &dst_, int radius_, bool flag_, Mat &spaceWeights_, std::vector<double> &expLut_)
+            :
+            joint(joint_),
+            confidence(confidence_),
+            src(src_),
+            dst(dst_),
+            radius(radius_),
+            flag(flag_),
+            spaceWeights(spaceWeights_),
+            expLut(expLut_) {
+      CV_DbgAssert(joint.type() == JointVec::type && confidence.type() == CV_32F && src.type() == dst.type() && src.type() == SrcVec::type);
+      CV_DbgAssert(joint.rows == src.rows && confidence.rows == src.rows && src.rows == dst.rows + 2 * radius);
+      CV_DbgAssert(joint.cols == src.cols && confidence.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }
-  }
-  d *= 1.0 / (2.0 * sigma * sigma);
-  exp(d, d);
-}
 
-static void crossBilateralFilter(const Mat& image,
-                                 const Mat& edge_image,
-                                 const Mat confidence,
-                                 Mat& dst, int d,
-                                 float sigma_color, float sigma_space,
-                                 bool flag=false) {
-  const int rows = image.rows;
-  const int cols = image.cols;
-  Mat image_extended, edge_image_extended, confidence_extended;
-  copyMakeBorder(image, image_extended, d, d, d, d, BORDER_DEFAULT);
-  copyMakeBorder(edge_image, edge_image_extended, d, d, d, d, BORDER_DEFAULT);
-  copyMakeBorder(confidence, confidence_extended, d, d, d, d, BORDER_CONSTANT, Scalar(0));
-  Mat weights_space(2*d+1, 2*d+1, CV_32F);
-  wd(weights_space, d, d, d, d, sigma_space);
-  Mat weights(2*d+1, 2*d+1, CV_32F);
-  Mat weighted_sum(2*d+1, 2*d+1, CV_32F);
+    void operator()(const Range &range) const {
+      const int d = 2*radius +1;
+      for (int i = range.start; i < range.end; i++) {
+        SrcVec* dstRow = dst.ptr<SrcVec>(i);
+        for (int j = 0; j < dst.cols; j++) {
+          const JointVec& centeralPoint = joint.at<JointVec>(i+radius, j+radius);
 
-  std::vector<Mat> image_extended_channels;
-  split(image_extended, image_extended_channels);
+          Scalar totalSum = Scalar::all(0);
+          double weightsSum = 0;
+          for (int dr = i, r = 0; dr < i + d; ++dr, ++r) {
+            const JointVec *jointRow = joint.ptr<JointVec>(dr);
+            const SrcVec *srcRow = src.ptr<SrcVec>(dr);
+            const float *confidenceRow = confidence.ptr<float>(dr);
+            const float *spaceWeightsRow = spaceWeights.ptr<float>(r);
+            for (int dc = j, c = 0; dc < j + d; ++dc, ++c) {
+              double weight = spaceWeightsRow[c]*confidenceRow[dc];
+              for (int cn = 0; cn < JointVec::channels; cn++) {
+                weight *= expLut[std::abs(centeralPoint[cn] - jointRow[dc][cn])];
+              }
+              for (int cn = 0; cn < SrcVec::channels; cn++) {
+                totalSum[cn] += weight * srcRow[dc][cn];
+              }
+              weightsSum += weight;
+            }
+          }
 
-  for (int row = 0; row < rows; ++row) {
-    for (int col = 0; col < cols; ++col) {
-      wc(edge_image_extended, weights, row+d, col+d, d, d, d, d, sigma_color);
-
-      Range window_rows(row,row+2*d+1);
-      Range window_cols(col,col+2*d+1);
-
-      multiply(weights, confidence_extended(window_rows, window_cols), weights);
-      multiply(weights, weights_space, weights);
-      float weights_sum = (float)sum(weights)[0];
-
-      for (int ch = 0; ch < 2; ++ch) {
-        multiply(weights, image_extended_channels[ch](window_rows, window_cols), weighted_sum);
-        float total_sum = (float)sum(weighted_sum)[0];
-
-        dst.at<Vec2f>(row, col)[ch] = (flag && fabs(weights_sum) < 1e-9)
-          ? image.at<float>(row, col)
-          : total_sum / weights_sum;
+          SrcVec& srcSum = dstRow[j];
+          for (int cn = 0; cn < SrcVec::channels; cn++) {
+            srcSum[cn] = (flag && fabs(weightsSum) < 1e-9)
+                         ? src.at<SrcVec>(i+radius, j+radius)[cn]
+                         : static_cast<float>(totalSum[cn] / weightsSum);
+          }
+        }
       }
     }
+};
+
+static void crossBilateralFilter(InputArray joint_,
+                          InputArray confidence_,
+                          InputOutputArray src_,
+                          int radius,
+                          double sigmaColor, double sigmaSpace,
+                          bool flag = false) {
+  CV_Assert(!src_.empty());
+  CV_Assert(!confidence_.empty());
+  CV_Assert(!joint_.empty());
+
+  Mat src = src_.getMat();
+  Mat joint = joint_.getMat();
+  Mat confidence = confidence_.getMat();
+
+  CV_Assert(src.size() == joint.size() && confidence.size() == src.size());
+  CV_Assert(joint.depth() == CV_8U && confidence.type() == CV_32F);
+
+  if (sigmaColor <= 0)
+    sigmaColor = 1;
+  if (sigmaSpace <= 0)
+    sigmaSpace = 1;
+
+  if (radius <= 0)
+    radius = cvRound(sigmaSpace * 1.5);
+  radius = std::max(radius, 1);
+
+  if (src.data == joint.data)
+    joint = joint.clone();
+
+  int d = 2 * radius + 1;
+
+  Mat jointTemp, confidenceTemp, srcTemp;
+  copyMakeBorder(joint, jointTemp, radius, radius, radius, radius, BORDER_DEFAULT);
+  copyMakeBorder(confidence, confidenceTemp, radius, radius, radius, radius, BORDER_CONSTANT, Scalar(0));
+  copyMakeBorder(src, srcTemp, radius, radius, radius, radius, BORDER_DEFAULT);
+
+  Mat spaceWeights(d, d, CV_32F);
+  wd(spaceWeights, radius, radius, radius, radius, sigmaSpace);
+
+  double gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor);
+  std::vector<double> expLut (256);
+  for (size_t i = 0; i < expLut.size(); i++) {
+    expLut[i] = std::exp(i * i * gaussColorCoeff);
   }
+
+  Range range(0, src.rows);
+  parallel_for_(range, CrossBilateralFilter<Vec3b, Vec2f>(jointTemp, confidenceTemp, srcTemp, src, radius, flag, spaceWeights, expLut));
 }
 
 static void calcConfidence(const Mat& prev,
@@ -186,11 +247,11 @@ static void calcConfidence(const Mat& prev,
       const int right_col_shift = std::min(cols - 1 - (c0 + v0), max_flow);
 
       bool first_flow_iteration = true;
-      float sum_e = 0, min_e = 0;
+      int sum_e = 0, min_e = 0;
 
       for (int u = top_row_shift; u <= bottom_row_shift; ++u) {
         for (int v = left_col_shift; v <= right_col_shift; ++v) {
-          float e = dist(prev.at<Vec3b>(r0, c0), next.at<Vec3b>(r0 + u0 + u, c0 + v0 + v));
+          int e = dist(prev.at<Vec3b>(r0, c0), next.at<Vec3b>(r0 + u0 + u, c0 + v0 + v));
           if (first_flow_iteration) {
             sum_e = e;
             min_e = e;
@@ -204,88 +265,144 @@ static void calcConfidence(const Mat& prev,
       int windows_square = (bottom_row_shift - top_row_shift + 1) *
                            (right_col_shift - left_col_shift + 1);
       confidence.at<float>(r0, c0) = (windows_square == 0) ? 0
-                                                           : sum_e / windows_square - min_e;
+                                                           : static_cast<float>(sum_e) / windows_square - min_e;
       CV_Assert(confidence.at<float>(r0, c0) >= 0);
     }
   }
 }
 
-static void calcOpticalFlowSingleScaleSF(const Mat& prev_extended,
-                                         const Mat& next_extended,
-                                         const Mat& mask,
-                                         Mat& flow,
-                                         int averaging_radius,
-                                         int max_flow,
-                                         float sigma_dist,
-                                         float sigma_color) {
-  const int averaging_radius_2 = averaging_radius << 1;
-  const int rows = prev_extended.rows - averaging_radius_2;
-  const int cols = prev_extended.cols - averaging_radius_2;
+template<typename SrcVec, typename DstVec>
+class CalcOpticalFlowSingleScaleSF : public ParallelLoopBody {
+    Mat &prev, &next;
+    Mat &mask;
+    Mat &dst;
+    int radius, maxFlow;
+    Mat &spaceWeights;
+    std::vector<double> &expLut;
 
-  Mat weight_window(averaging_radius_2 + 1, averaging_radius_2 + 1, CV_32F);
-  Mat space_weight_window(averaging_radius_2 + 1, averaging_radius_2 + 1, CV_32F);
+public:
+    CalcOpticalFlowSingleScaleSF(Mat &prev_, Mat &next_, Mat &mask_, Mat &dst_, int radius_, int maxFlow_, Mat &spaceWeights_, std::vector<double> &expLut_)
+            :
+            prev(prev_),
+            next(next_),
+            mask(mask_),
+            dst(dst_),
+            radius(radius_),
+            maxFlow(maxFlow_),
+            spaceWeights(spaceWeights_),
+            expLut(expLut_){
+      CV_DbgAssert(prev.type() == next.type());
+      CV_DbgAssert(prev.rows == next.rows && prev.rows == dst.rows + 2 * radius);
+      CV_DbgAssert(prev.cols == next.cols && next.cols == dst.cols + 2 * radius);
+    }
 
-  wd(space_weight_window, averaging_radius, averaging_radius, averaging_radius, averaging_radius, sigma_dist);
+    void operator()(const Range &range) const {
+      int d = 2 * radius + 1;
+      Mat weights(d, d, CV_32F);
+      for (int i = range.start; i < range.end; i++) {
+        const uchar *maskRow = mask.ptr<uchar>(i);
+        const DstVec *dstRow = dst.ptr<DstVec>(i);
+        for (int j = 0; j < dst.cols; j++) {
+          if (!maskRow[j]) {
+            continue;
+          }
 
-  for (int r0 = 0; r0 < rows; ++r0) {
-    for (int c0 = 0; c0 < cols; ++c0) {
-      if (!mask.at<uchar>(r0, c0)) {
-        continue;
-      }
+          // TODO: do smth with this creepy staff
+          const DstVec &flowAtPoint = dstRow[j];
+          int u0 = cvRound(flowAtPoint[0]);
+          if (i + u0 < 0) {u0 = -i;}
+          if (i + u0 >= dst.rows) {u0 = dst.rows - 1 - i;}
+          int v0 = cvRound(flowAtPoint[1]);
+          if (j + v0 < 0) {v0 = -j;}
+          if (j + v0 >= dst.cols) {v0 = dst.cols - 1 - j;}
 
-      // TODO: do smth with this creepy staff
-      Vec2f flow_at_point = flow.at<Vec2f>(r0, c0);
-      int u0 = cvRound(flow_at_point[0]);
-      if (r0 + u0 < 0) { u0 = -r0; }
-      if (r0 + u0 >= rows) { u0 = rows - 1 - r0; }
-      int v0 = cvRound(flow_at_point[1]);
-      if (c0 + v0 < 0) { v0 = -c0; }
-      if (c0 + v0 >= cols) { v0 = cols - 1 - c0; }
+          const int topRowShift = -std::min(i + u0, maxFlow);
+          const int bottomRowShift = std::min(dst.rows - 1 - (i + u0), maxFlow);
+          const int leftColShift = -std::min(j + v0, maxFlow);
+          const int rightColShift = std::min(dst.cols - 1 - (j + v0), maxFlow);
 
-      const int top_row_shift = -std::min(r0 + u0, max_flow);
-      const int bottom_row_shift = std::min(rows - 1 - (r0 + u0), max_flow);
-      const int left_col_shift = -std::min(c0 + v0, max_flow);
-      const int right_col_shift = std::min(cols - 1 - (c0 + v0), max_flow);
+          float minCost = FLT_MAX, bestU = (float) u0, bestV = (float) v0;
 
-      float min_cost = FLT_MAX, best_u = (float)u0, best_v = (float)v0;
+          const SrcVec& centeralPoint = prev.at<SrcVec>(i+radius, j+radius);
 
-      wc(prev_extended, weight_window, r0 + averaging_radius, c0 + averaging_radius,
-         averaging_radius, averaging_radius, averaging_radius, averaging_radius, sigma_color);
-      multiply(weight_window, space_weight_window, weight_window);
-
-      const int prev_extended_top_window_row = r0;
-      const int prev_extended_left_window_col = c0;
-
-      for (int u = top_row_shift; u <= bottom_row_shift; ++u) {
-        const int next_extended_top_window_row = r0 + u0 + u;
-        for (int v = left_col_shift; v <= right_col_shift; ++v) {
-          const int next_extended_left_window_col = c0 + v0 + v;
-
-          float cost = 0;
-          for (int r = 0; r <= averaging_radius_2; ++r) {
-            const Vec3b *prev_extended_window_row = prev_extended.ptr<Vec3b>(prev_extended_top_window_row + r);
-            const Vec3b *next_extended_window_row = next_extended.ptr<Vec3b>(next_extended_top_window_row + r);
-            const float* weight_window_row = weight_window.ptr<float>(r);
-            for (int c = 0; c <= averaging_radius_2; ++c) {
-              cost += weight_window_row[c] *
-                           dist(prev_extended_window_row[prev_extended_left_window_col + c],
-                                next_extended_window_row[next_extended_left_window_col + c]);
+          int left_border = j, right_border = j + d;
+          for (int dr = i, r = 0; dr < i + d; ++dr, ++r) {
+            const SrcVec *prevRow = prev.ptr<SrcVec>(dr);
+            const float* spaceWeightsRow = spaceWeights.ptr<float>(r);
+            float *weightsRow = weights.ptr<float>(r);
+            for (int dc = left_border, c = 0; dc < right_border; ++dc, ++c) {
+              double weight = spaceWeightsRow[c];
+              for(int cn=0;cn<SrcVec::channels;cn++){
+                weight *= expLut[std::abs(centeralPoint[cn]-prevRow[dc][cn])];
+              }
+              weightsRow[c] = static_cast<float>(weight);
             }
           }
-          // cost should be divided by sum(weight_window), but because
-          // we interested only in min(cost) and sum(weight_window) is constant
-          // for every point - we remove it
 
-          if (cost < min_cost) {
-            min_cost = cost;
-            best_u = (float)(u + u0);
-            best_v = (float)(v + v0);
+          for (int u = topRowShift; u <= bottomRowShift; ++u) {
+            const int next_extended_top_window_row = i + u0 + u;
+            for (int v = leftColShift; v <= rightColShift; ++v) {
+              const int next_extended_left_window_col = j + v0 + v;
+
+              float cost = 0;
+              for (int r = 0; r < d; ++r) {
+                const SrcVec *prev_extended_window_row = prev.ptr<SrcVec>(i + r);
+                const SrcVec *next_extended_window_row = next.ptr<SrcVec>(next_extended_top_window_row + r);
+                const float *weight_window_row = weights.ptr<float>(r);
+                for (int c = 0; c < d; ++c) {
+                  cost += weight_window_row[c] *
+                          dist(prev_extended_window_row[j + c],
+                               next_extended_window_row[next_extended_left_window_col + c]);
+                }
+              }
+              // cost should be divided by sum(weight_window), but because
+              // we interested only in min(cost) and sum(weight_window) is constant
+              // for every point - we remove it
+
+              if (cost < minCost) {
+                minCost = cost;
+                bestU = (float) (u + u0);
+                bestV = (float) (v + v0);
+              }
+            }
           }
+
+          dst.at<DstVec>(i, j) = DstVec(bestU, bestV);
         }
       }
-      flow.at<Vec2f>(r0, c0) = Vec2f(best_u, best_v);
     }
+};
+
+static void calcOpticalFlowSingleScaleSF(InputArray prev_,
+                                  InputArray next_,
+                                  InputArray mask_,
+                                  InputOutputArray dst_,
+                                  int radius,
+                                  int max_flow,
+                                  float sigmaSpace,
+                                  float sigmaColor) {
+  Mat prev = prev_.getMat();
+  Mat next = next_.getMat();
+  Mat mask = mask_.getMat();
+  Mat dst = dst_.getMat();
+
+  Mat prevTemp, nextTemp;
+  copyMakeBorder(prev, prevTemp, radius, radius, radius, radius, BORDER_DEFAULT);
+  copyMakeBorder(next, nextTemp, radius, radius, radius, radius, BORDER_DEFAULT);
+
+  int d = 2 * radius + 1;
+
+  Mat spaceWeights(d, d, CV_32F);
+  wd(spaceWeights, radius, radius, radius, radius, sigmaSpace);
+
+  double gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor);
+  std::vector<double> expLut (256);
+  for (size_t i = 0; i < expLut.size(); i++) {
+    expLut[i] = std::exp(i * i * gaussColorCoeff);
   }
+
+  Range range(0, dst.rows);
+  parallel_for_(range, CalcOpticalFlowSingleScaleSF<Vec3b, Vec2f>(prevTemp, nextTemp, mask, dst, radius, max_flow, spaceWeights, expLut));
 }
 
 static Mat upscaleOpticalFlow(int new_rows,
@@ -296,7 +413,7 @@ static Mat upscaleOpticalFlow(int new_rows,
                                int averaging_radius,
                                float sigma_dist,
                                float sigma_color) {
-  crossBilateralFilter(flow, image, confidence, flow, averaging_radius, sigma_color, sigma_dist, true);
+  crossBilateralFilter(image, confidence, flow, averaging_radius, sigma_color, sigma_dist, true);
   Mat new_flow;
   resize(flow, new_flow, Size(new_cols, new_rows), 0, 0, INTER_NEAREST);
   new_flow *= 2;
@@ -513,17 +630,9 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
   CV_Assert((int)pyr_from_images.size() == layers && (int)pyr_to_images.size() == layers);
 
   Mat curr_from, curr_to, prev_from, prev_to;
-  Mat curr_from_extended, curr_to_extended;
 
   curr_from = pyr_from_images[layers - 1];
   curr_to = pyr_to_images[layers - 1];
-
-  copyMakeBorder(curr_from, curr_from_extended,
-                 averaging_radius, averaging_radius, averaging_radius, averaging_radius,
-                 BORDER_DEFAULT);
-  copyMakeBorder(curr_to, curr_to_extended,
-                 averaging_radius, averaging_radius, averaging_radius, averaging_radius,
-                 BORDER_DEFAULT);
 
   Mat mask = Mat::ones(curr_from.size(), CV_8U);
   Mat mask_inv = Mat::ones(curr_from.size(), CV_8U);
@@ -535,8 +644,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
   Mat confidence_inv;
 
 
-  calcOpticalFlowSingleScaleSF(curr_from_extended,
-                               curr_to_extended,
+  calcOpticalFlowSingleScaleSF(curr_from,
+                               curr_to,
                                mask,
                                flow,
                                averaging_radius,
@@ -544,8 +653,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
                                (float)sigma_dist,
                                (float)sigma_color);
 
-  calcOpticalFlowSingleScaleSF(curr_to_extended,
-                               curr_from_extended,
+  calcOpticalFlowSingleScaleSF(curr_to,
+                               curr_from,
                                mask_inv,
                                flow_inv,
                                averaging_radius,
@@ -571,13 +680,6 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
     curr_to = pyr_to_images[curr_layer];
     prev_from = pyr_from_images[curr_layer + 1];
     prev_to = pyr_to_images[curr_layer + 1];
-
-    copyMakeBorder(curr_from, curr_from_extended,
-                   averaging_radius, averaging_radius, averaging_radius, averaging_radius,
-                   BORDER_DEFAULT);
-    copyMakeBorder(curr_to, curr_to_extended,
-                   averaging_radius, averaging_radius, averaging_radius, averaging_radius,
-                   BORDER_DEFAULT);
 
     const int curr_rows = curr_from.rows;
     const int curr_cols = curr_from.cols;
@@ -624,8 +726,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
                                   (float)upscale_sigma_color);
 
     calcConfidence(curr_from, curr_to, flow, confidence, max_flow);
-    calcOpticalFlowSingleScaleSF(curr_from_extended,
-                                 curr_to_extended,
+    calcOpticalFlowSingleScaleSF(curr_from,
+                                 curr_to,
                                  mask,
                                  flow,
                                  averaging_radius,
@@ -634,8 +736,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
                                  (float)sigma_color);
 
     calcConfidence(curr_to, curr_from, flow_inv, confidence_inv, max_flow);
-    calcOpticalFlowSingleScaleSF(curr_to_extended,
-                                 curr_from_extended,
+    calcOpticalFlowSingleScaleSF(curr_to,
+                                 curr_from,
                                  mask_inv,
                                  flow_inv,
                                  averaging_radius,
@@ -651,7 +753,7 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
     removeOcclusions(flow_inv, flow, (float)occ_thr, confidence_inv);
   }
 
-  crossBilateralFilter(flow, curr_from, confidence, flow,
+  crossBilateralFilter(curr_from, confidence, flow,
                        postprocess_window, (float)sigma_color_fix, (float)sigma_dist_fix);
 
   GaussianBlur(flow, flow, Size(3, 3), 5);

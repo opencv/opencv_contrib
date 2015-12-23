@@ -46,8 +46,6 @@
 \****************************************************************************************/
 
 #include "precomp.hpp"
-#include "descriptor.hpp"
-#include "matching.hpp"
 #include <stdio.h>
 #include <limits>
 

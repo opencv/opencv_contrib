@@ -40,7 +40,7 @@
 #include "opencv2/xphoto.hpp"
 
 #include "opencv2/core.hpp"
-#include "opencv2/hal/intrin.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 
 namespace cv { namespace xphoto {
 

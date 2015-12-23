@@ -106,6 +106,7 @@ void FR_lfwImp::loadDataset(const string &path)
     ifstream infile((path + "pairs.txt").c_str());
     string line;
     getline(infile, line); // should be 10 300
+    CV_Assert(line=="10\t300");
     unsigned int num = 0;
     while (getline(infile, line))
     {
@@ -113,7 +114,6 @@ void FR_lfwImp::loadDataset(const string &path)
         {
             train.push_back(vector< Ptr<Object> >());
             test.push_back(vector< Ptr<Object> >());
-            validation.push_back(vector< Ptr<Object> >());
         }
 
         vector<string> elems;
@@ -143,10 +143,12 @@ void FR_lfwImp::loadDataset(const string &path)
 
         num++;
     }
+    infile.close();
 
     // dev train loading to train[0]
     ifstream infile2((path + "pairsDevTrain.txt").c_str());
     getline(infile2, line); // should 1100
+    CV_Assert(line=="1100");
     while (getline(infile2, line))
     {
         vector<string> elems;
@@ -174,6 +176,41 @@ void FR_lfwImp::loadDataset(const string &path)
 
         train[0].push_back(curr);
     }
+    infile2.close();
+
+    // dev train loading to validation[0]
+    ifstream infile3((path + "pairsDevTest.txt").c_str());
+    getline(infile3, line); // should 500
+    CV_Assert(line=="500");
+    validation.push_back(vector< Ptr<Object> >());
+    while (getline(infile3, line))
+    {
+        vector<string> elems;
+        split(line, elems, '\t');
+
+        Ptr<FR_lfwObj> curr(new FR_lfwObj);
+        string &person1 = elems[0];
+        unsigned int imageNumber1 = atoi(elems[1].c_str())-1;
+        curr->image1 = person1 + "/" + faces[person1][imageNumber1];
+
+        string person2;
+        unsigned int imageNumber2;
+        if (3 == elems.size())
+        {
+            person2 = elems[0];
+            imageNumber2 = atoi(elems[2].c_str())-1;
+            curr->same = true;
+        } else
+        {
+            person2 = elems[2];
+            imageNumber2 = atoi(elems[3].c_str())-1;
+            curr->same = false;
+        }
+        curr->image2 = person2 + "/" + faces[person2][imageNumber2];
+
+        validation[0].push_back(curr);
+    }
+    infile3.close();
 }
 
 Ptr<FR_lfw> FR_lfw::create()
