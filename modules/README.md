@@ -10,7 +10,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 
 1. **opencv_adas**: Advanced Driver Assistance Systems module with Forward Collision Warning.
 
-2. **opencv_bgsegm**: Improved Adaptive Background Mixture Model for Real-time Tracking / Visual Tracking of Human Visitors under Variable-Lighting Conditions.
+2. **opencv_bgsegm**: Background segmentation algorithm combining statistical background image estimation and per-pixel Bayesian segmentation.
 
 3. **opencv_bioinspired**: Biologically inspired vision models and derivated tools.
 
