@@ -48,10 +48,6 @@
 #include "onlineMIL.hpp"
 #include "onlineBoosting.hpp"
 #include <iostream>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/IterativeLinearSolvers>
-#include <opencv2/core/eigen.hpp>
 
 
 #define BOILERPLATE_CODE(name,classname) \
@@ -1201,9 +1197,12 @@ class CV_EXPORTS TrackerTLD : public Tracker
 };
 
 
-/*
- * The SRDCF is a DCF based tracker developed att Linköping University
- */
+/** @brief the SRDCF is an extension to the correlation filter trackers (KCF,DSST etc) that employs a spatial regularization.
+ * This reduces the bounduary effects otherwise present due to the circulant matrix approximation, while allowing a much larger
+ * window to be tracked than would otherwise be possible. This implementation is based on @cite SRDCF_ICCV, with some extensions to
+ * allow for more feature selections. For more information please refer to:
+ * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/regvistrack/index.html>.
+ */ 
 class CV_EXPORTS TrackerSRDCF : public Tracker
 {
 public:
@@ -1244,7 +1243,6 @@ public:
 
   BOILERPLATE_CODE("SRDCF",TrackerSRDCF)
 };
-
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
  * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).

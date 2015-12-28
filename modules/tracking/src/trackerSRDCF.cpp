@@ -3,8 +3,6 @@
 
 namespace cv{
 
-typedef Eigen::Triplet<float> trip;
-
 struct TrackedRegion{
 	TrackedRegion(){ }
 	TrackedRegion(const cv::Point2i init_center, const cv::Size init_size) : center(init_center), size(init_size){ }
@@ -29,6 +27,9 @@ struct TrackedRegion{
 	cv::Point2i center;
 	cv::Size size;
 };
+
+
+
 
 class SRDCF : public TrackerSRDCF{
   public:
@@ -63,23 +64,23 @@ class SRDCF : public TrackerSRDCF{
 
    //internal functions
    int get_num_real_coeff(const cv::Size matrix_sz);
-   std::vector<cv::Mat> assemble_filter(const Eigen::VectorXf& filter_vector, const int nDim, const cv::Size filter_sz);
+   std::vector<cv::Mat> assemble_filter(const cv::Mat& filter_vector, const int nDim, const cv::Size filter_sz);
    void split_spectrum(const cv::Mat fft_matrix, std::vector<float>& real, std::vector<float>& image);
 
    std::vector<cv::Mat> fft2(const cv::Mat featureData);
 
    std::vector<cv::Mat> construct_sample_data(std::vector<cv::Mat> feture_matrices);
 
-   Eigen::SparseMatrix<float> make_sparse_data(const std::vector<cv::Mat>& data);
+   cv::SparseMat make_sparse_data(const std::vector<cv::Mat>& data);
 
-   Eigen::VectorXf make_rhs(const std::vector<cv::Mat>& data, const cv::Mat labels);
+   cv::Mat make_rhs(const std::vector<cv::Mat>& data, const cv::Mat labels);
    
    int shift_index(const int index, const int length) const;
    cv::Mat make_labels(const cv::Size matrix_size, const cv::Size target_size, const float sigma_factor) const;
 
-   Eigen::SparseMatrix<float> make_regularization_matrix(const cv::Size sample_size, const int feature_dims);
+   cv::SparseMat make_regularization_matrix(const cv::Size sample_size, const int feature_dims);
 
-   Eigen::VectorXf compute_filter(const Eigen::SparseMatrix<float>& lhs_data, const Eigen::SparseMatrix<float>& reg_matrix, const Eigen::VectorXf& rhs);
+   cv::Mat compute_filter(const cv::SparseMat& lhs_data, const cv::SparseMat& reg_matrix, const cv::Mat& rhs);
 
    cv::Mat compute_response(const std::vector<cv::Mat>& filter, const std::vector<cv::Mat>& sample);
 
@@ -89,19 +90,22 @@ class SRDCF : public TrackerSRDCF{
    cv::Mat channelMultiply(std::vector<cv::Mat> a, std::vector<cv::Mat> b, int flags, bool conjb);
    
    cv::Mat extractTrackedRegion(const cv::Mat image, const TrackedRegion region, const cv::Size output_sz);
+
+   cv::SparseMat sparse_mat_interpolation(const cv::SparseMat& a, const cv::SparseMat& b, const float interp_factor);
+
    //parameters set on construction
    TrackerSRDCF::Params p;
 
    //internal state variables
    cv::Mat labelsf; //label function
    cv::Mat window; //cos (hann) window
-   Eigen::SparseMatrix<float> regularizer; //regularization marix
+   cv::SparseMat regularizer; //regularization marix
    std::vector<cv::Mat> filterf;
 
    float scale_factor; //downsampling factor from image coordinates to tracker model coordinates
-   Eigen::VectorXf filter_solution;
-   Eigen::VectorXf rhs_state;
-   Eigen::SparseMatrix<float> lhs_state;
+   cv::Mat filter_solution;
+   cv::Mat rhs_state;
+   cv::SparseMat lhs_state;
 
 
    //current estimated position and size in pixel coordinates
@@ -250,12 +254,11 @@ cv::Mat SRDCF::extractTrackedRegion(const cv::Mat image, const TrackedRegion reg
 
     }else{
         cv::Mat dummyRegion = cv::Mat::zeros(region.size,image.type());
-	cv::Mat ds_patch;
-	cv::resize(dummyRegion,ds_patch,output_sz);
+	      cv::Mat ds_patch;
+	      cv::resize(dummyRegion,ds_patch,output_sz);
 
         return ds_patch;
     }
-
 }
 void SRDCF::update_impl(const cv::Mat& image, const TrackedRegion& region, const float update_rate){
   //extract pixels to use for update
@@ -263,20 +266,19 @@ void SRDCF::update_impl(const cv::Mat& image, const TrackedRegion& region, const
   std::vector<cv::Mat> feature_vecf = compute_feature_vec(pixels);
   
   //make lhs
-  Eigen::SparseMatrix<float> lhs = make_sparse_data(feature_vecf);
-  Eigen::VectorXf rhs = make_rhs(feature_vecf,labelsf);
+  cv::SparseMat lhs = make_sparse_data(feature_vecf);
+  cv::Mat rhs = make_rhs(feature_vecf,labelsf);
 
   if(update_rate < 1.0){
      float update_rate_inv = (1.0 - update_rate);
-     rhs_state = rhs * update_rate + rhs_state * update_rate_inv; 
-     lhs_state = lhs * update_rate + lhs_state * update_rate_inv;
-     //TODO klura ut vart exakt autokorrelationen hamnade nu 
+     rhs_state = rhs * update_rate + rhs_state * update_rate_inv;
+     lhs_state = sparse_mat_interpolation(lhs,lhs_state,update_rate);
   }else{
      rhs_state = rhs;
      lhs_state = lhs;
   }
 
-  Eigen::VectorXf hf = compute_filter(lhs_state,regularizer,rhs_state);
+  Mat hf = compute_filter(lhs_state,regularizer,rhs_state);
   filterf = assemble_filter(hf,feature_vecf.size(),p.model_sz); 
 
 }
@@ -304,7 +306,7 @@ void SRDCF::detect(const cv::Mat& image){
   //TODO remove me
   
   cv::Point2i translation(round(shift_index(maxpos.x,response.cols)*scale_factor),
-		          round(shift_index(maxpos.y,response.rows)*scale_factor));
+		                      round(shift_index(maxpos.y,response.rows)*scale_factor));
 
   target.center = target.center + translation;
 }
@@ -330,7 +332,7 @@ int SRDCF::get_num_real_coeff(const cv::Size matrix_sz){
     return num_pos_coeff + num_sym_coeff;
 }
 
-std::vector<cv::Mat> SRDCF::assemble_filter(const Eigen::VectorXf& filter_vector, const int nDim, const cv::Size filter_sz){
+std::vector<cv::Mat> SRDCF::assemble_filter(const Mat& filter_vector, const int nDim, const cv::Size filter_sz){
     std::vector<cv::Mat> filter_matrix(nDim);
     int filter_index = 0;
     const int nRows = filter_sz.height;
@@ -340,36 +342,36 @@ std::vector<cv::Mat> SRDCF::assemble_filter(const Eigen::VectorXf& filter_vector
     for(int d=0; d < nDim; d++){
         filter_index = num_real_coeff*2*d;
         filter_matrix[d] = cv::Mat(filter_sz,CV_32FC1);
-        filter_matrix[d].at<float>(0,0) = filter_vector(filter_index);
+        filter_matrix[d].at<float>(0,0) = filter_vector.at<float>(filter_index,0);
         filter_index += 1;
         for(int row = 1; row < nRows-1; row += 2){
-            filter_matrix[d].at<float>(row,0) = filter_vector(filter_index);
-            filter_matrix[d].at<float>(row+1,0) = filter_vector(filter_index+num_real_coeff);
+            filter_matrix[d].at<float>(row,0) = filter_vector.at<float>(filter_index,0);
+            filter_matrix[d].at<float>(row+1,0) = filter_vector.at<float>(filter_index+num_real_coeff,0);
             filter_index += 1;
         }
         if(nRows % 2 == 0){
-            filter_matrix[d].at<float>(nRows-1,0) = filter_vector(filter_index);
+            filter_matrix[d].at<float>(nRows-1,0) = filter_vector.at<float>(filter_index,0);
             filter_index += 1;
         }
 
         for(int row = 0; row < nRows; row++){
             for(int col=1; col < nCols-1; col += 2){
-                filter_matrix[d].at<float>(row,col) = filter_vector(filter_index);
-                filter_matrix[d].at<float>(row,col+1) = filter_vector(filter_index + num_real_coeff);
+                filter_matrix[d].at<float>(row,col) = filter_vector.at<float>(filter_index,0);
+                filter_matrix[d].at<float>(row,col+1) = filter_vector.at<float>(filter_index + num_real_coeff,0);
                 filter_index += 1;
             }
         }
 
         if(nCols % 2 == 0){
-            filter_matrix[d].at<float>(0,nCols-1) = filter_vector(filter_index);
+            filter_matrix[d].at<float>(0,nCols-1) = filter_vector.at<float>(filter_index,0);
             filter_index += 1;
             for(int row = 1; row < nRows-1; row+= 2){
-                filter_matrix[d].at<float>(row,nCols-1) = filter_vector(filter_index);
-                filter_matrix[d].at<float>(row+1,nCols-1) = filter_vector(filter_index + num_real_coeff);
+                filter_matrix[d].at<float>(row,nCols-1) = filter_vector.at<float>(filter_index,0);
+                filter_matrix[d].at<float>(row+1,nCols-1) = filter_vector.at<float>(filter_index + num_real_coeff,0);
                 filter_index += 1;
             }
             if(nRows % 2 == 0){
-                filter_matrix[d].at<float>(nRows-1,nCols-1) = filter_vector(filter_index);
+                filter_matrix[d].at<float>(nRows-1,nCols-1) = filter_vector.at<float>(filter_index,0);
                 filter_index += 1;
             }
         }
@@ -431,11 +433,9 @@ std::vector<cv::Mat> SRDCF::fft2(const cv::Mat featureData){
     cv::split(featureData,channels);
 
     for(size_t i=0; i < channels.size(); ++i){
-	
-	cv::Mat windowed;
-	cv::multiply(channels[i],window,windowed);
-
-        cv::dft(windowed,channelsf[i],0);
+      cv::Mat windowed;
+      cv::multiply(channels[i],window,windowed);
+      cv::dft(windowed,channelsf[i],0);
     }
 
     return channelsf;
@@ -456,14 +456,17 @@ std::vector<cv::Mat> SRDCF::construct_sample_data(std::vector<cv::Mat> feature_m
     return outer_products;
 }
 
-Eigen::SparseMatrix<float> SRDCF::make_sparse_data(const std::vector<cv::Mat>& data){
+SparseMat SRDCF::make_sparse_data(const std::vector<cv::Mat>& data){
     const int feature_dim = data.size();
 
     std::vector<cv::Mat> outer_products = construct_sample_data(data);
-    std::vector<trip> triplet_list;
-    //Dont ask...
-    triplet_list.reserve((outer_products.size()*(outer_products[0].total()+10))*2);
     std::vector<float> real,imag;
+
+    int sparse_mat_size = 2 * real.size() * feature_dim;
+    //cv::SparseMat sparse_data(sparse_mat_size,sparse_mat_size);
+    int sparse_dims[] = {sparse_mat_size,sparse_mat_size};
+    cv::SparseMat sparse_data = cv::SparseMat(2,sparse_dims,CV_32FC1);
+
     for(size_t i=0; i < outer_products.size(); i++){
 
         int block_i = i % feature_dim;
@@ -476,26 +479,24 @@ Eigen::SparseMatrix<float> SRDCF::make_sparse_data(const std::vector<cv::Mat>& d
         int diag_length = real.size();
         for(int ii=0; ii < diag_length; ii++){
             //real coefficents
-            triplet_list.push_back(trip(block_start_i+ii, block_start_j+ii,real[ii]));
-            triplet_list.push_back(trip(diag_length+block_start_i+ii, diag_length+block_start_j+ii,real[ii]));
+            int idx1[] = {block_start_i+ii, block_start_j+ii};
+            sparse_data.ref<float>(idx1) = real[ii];
+            int idx2[] = {diag_length+block_start_i+ii, diag_length+block_start_j+ii};
+            sparse_data.ref<float>(idx2) = real[ii];
 
             //imaginary coefficents
-            triplet_list.push_back(trip(block_start_i+ii,block_start_j+diag_length+ii,-imag[ii]));
-            triplet_list.push_back(trip(block_start_i+ii+diag_length,block_start_j+ii,imag[ii]));
+            int idx3[] = {block_start_i+ii,block_start_j+diag_length+ii};
+            sparse_data.ref<float>(idx3) = -imag[ii];
+            int idx4[] = {block_start_i+ii+diag_length,block_start_j+ii};
+            sparse_data.ref<float>(idx4) = imag[ii];
+
         }
     }
-
-    int matrix_size = 2 * real.size() * feature_dim;
-
-    std::vector<clock_t> times;
-    Eigen::SparseMatrix<float> sparse_data(matrix_size,matrix_size);
-    sparse_data.reserve(triplet_list.size());
-    sparse_data.setFromTriplets(triplet_list.begin(),triplet_list.end());
 
     return sparse_data;
 }
 
-Eigen::VectorXf SRDCF::make_rhs(const std::vector<cv::Mat>& data, const cv::Mat labels){
+cv::Mat SRDCF::make_rhs(const std::vector<cv::Mat>& data, const cv::Mat labels){
 
     std::vector<cv::Mat> products(data.size());
 
@@ -504,20 +505,20 @@ Eigen::VectorXf SRDCF::make_rhs(const std::vector<cv::Mat>& data, const cv::Mat 
     }
 
     std::vector<float> real,imag;
-    Eigen::VectorXf rhs;
+    cv::Mat rhs;
     int element_index = 0;
     for(size_t i=0; i < products.size(); i++){
         split_spectrum(products[i],real,imag);
         if(i == 0){
-            rhs = Eigen::VectorXf(real.size()*2*data.size());
+            rhs = cv::Mat(real.size()*2*data.size(),0,CV_32FC1);
         }
 
         for(size_t jj = 0; jj < real.size(); jj++){
-            rhs(element_index) = real[jj];
+            rhs.at<float>(element_index,0) = real[jj];
             element_index += 1;
         }
         for(size_t j =0; j < imag.size(); j++){
-            rhs(element_index) = imag[j];
+            rhs.at<float>(element_index,0) = imag[j];
             element_index += 1;
         }
     }
@@ -550,7 +551,6 @@ int SRDCF::shift_index(const int index, const int length) const{
 cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_size ,const float sigma_factor) const{
     cv::Mat new_labels(matrix_size.height,matrix_size.width,CV_32F);
 
-    std::cout << "matrix size " << matrix_size << " target_size " << target_size << std::endl;
 
     const float sigma = std::sqrt(target_size.area()) * sigma_factor;
     const float constant = -0.5 / pow(sigma,2);
@@ -572,26 +572,46 @@ cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_siz
     return labels_dft;
 }
 
-Eigen::SparseMatrix<float> SRDCF::make_regularization_matrix(const cv::Size sample_size, const int feature_dims){
+cv::SparseMat SRDCF::make_regularization_matrix(const cv::Size sample_size, const int feature_dims){
     //const float reg_power = 2;
     const float reg_min = 0.1;
     //const float sparsity_treshold = 0.05;
 
     const int mat_size = get_num_real_coeff(sample_size) * 2 * feature_dims;
 
-    Eigen::SparseMatrix<float> reg_matrix(mat_size, mat_size);
-    reg_matrix.setIdentity();
+    cv::Mat reg_matrix_template = cv::Mat::eye(mat_size,mat_size,CV_32FC1);
+    reg_matrix_template = reg_matrix_template * (float)pow(reg_min,2);
 
-    return reg_matrix * (reg_min * reg_min);
+    cv::SparseMat reg_matrix(reg_matrix_template);
+
+    return reg_matrix;
 }
 
 
-Eigen::VectorXf SRDCF::compute_filter(const Eigen::SparseMatrix<float>& lhs_data, const Eigen::SparseMatrix<float>& reg_matrix, const Eigen::VectorXf& rhs){
+cv::SparseMat SRDCF::sparse_mat_interpolation(const cv::SparseMat& a, const cv::SparseMat& b, float interp_factor){
+  cv::SparseMat result(2,a.size(),CV_32FC1);
 
-    Eigen::SparseMatrix<float> lhs = lhs_data + reg_matrix;
+  cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
+
+  for(; a_elem != a_end; ++a_elem){
+    //value from the a-matrix
+    float a_val = a_elem.value<float>();
+    const cv::SparseMat::Node *n = a_elem.node();
+    float b_val = b.value<float>(n->idx,&n->hashval);
+
+    result.value<float>(n->idx,&n->hashval) = a_val * interp_factor + (1.0 - interp_factor) * b_val;
+  }
+
+  return result;
+}
+
+cv::Mat SRDCF::compute_filter(const cv::SparseMat& lhs_data, const cv::SparseMat& reg_matrix, const cv::Mat& rhs){
+
+    cv::SparseMat lhs = lhs_data + reg_matrix;
 
 
-
+    // TODO Implement steepest decent solver for sparse opencv matrices
+    /*
     if(filter_solution.rows() > 0 && filter_solution.cols() > 0){
       Eigen::ConjugateGradient< Eigen::SparseMatrix<float> > solver;
       solver.setMaxIterations(10);
@@ -606,6 +626,7 @@ Eigen::VectorXf SRDCF::compute_filter(const Eigen::SparseMatrix<float>& lhs_data
     }
 
     return filter_solution;
+    */
 }
 
 cv::Mat SRDCF::compute_response(const std::vector<cv::Mat>& filter, const std::vector<cv::Mat>& sample) {
