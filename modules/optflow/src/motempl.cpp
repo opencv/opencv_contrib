@@ -41,6 +41,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/core/utility.hpp"
+#include "opencv2/core/hal/hal.hpp"
 #include "opencl_kernels_optflow.hpp"
 
 namespace  cv {
@@ -212,7 +213,7 @@ void calcMotionGradient( InputArray _mhi, OutputArray _mask,
         float* orient_row = orient.ptr<float>(y);
         uchar* mask_row = mask.ptr<uchar>(y);
 
-        hal::fastAtan2(dY_max_row, dX_min_row, orient_row, size.width, true);
+        cv::hal::fastAtan2(dY_max_row, dX_min_row, orient_row, size.width, true);
 
         // make orientation zero where the gradient is very small
         for( x = 0; x < size.width; x++ )

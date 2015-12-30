@@ -195,6 +195,7 @@ public:
 
     Mat getProcessNoiseCov() const;
     Mat getMeasurementNoiseCov() const;
+    Mat getErrorCov() const;
 
     Mat getState() const;
 
@@ -423,6 +424,11 @@ Mat AugmentedUnscentedKalmanFilterImpl::getProcessNoiseCov() const
 Mat AugmentedUnscentedKalmanFilterImpl::getMeasurementNoiseCov() const
 {
     return measurementNoiseCov.clone();
+}
+
+Mat AugmentedUnscentedKalmanFilterImpl::getErrorCov() const
+{
+    return errorCov.clone();
 }
 
 Mat AugmentedUnscentedKalmanFilterImpl::getState() const

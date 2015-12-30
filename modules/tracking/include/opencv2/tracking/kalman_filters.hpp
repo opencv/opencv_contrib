@@ -81,6 +81,11 @@ public:
     virtual Mat getMeasurementNoiseCov() const = 0;
 
     /**
+    * @return the error cross-covariance matrix.
+    */
+    virtual Mat getErrorCov() const = 0;
+
+    /**
     * @return the current estimate of the state.
     */
     virtual Mat getState() const = 0;

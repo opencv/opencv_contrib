@@ -47,8 +47,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/core/affine.hpp"
-#include "../../stereo/src/descriptor.hpp"
-#include "../../stereo/src/matching.hpp"
+#include "opencv2/stereo/descriptor.hpp"
+#include "opencv2/stereo/matching.hpp"
 
 /**
 @defgroup stereo Stereo Correspondance Algorithms
@@ -277,9 +277,4 @@ namespace cv
     }//stereo
 } // cv
 
-#ifndef DISABLE_OPENCV_24_COMPATIBILITY
-#include "opencv2/stereo/stereo_c.h"
 #endif
-
-#endif
-
