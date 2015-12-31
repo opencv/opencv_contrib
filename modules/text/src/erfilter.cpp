@@ -2820,12 +2820,12 @@ bool guo_hall_thinning(const Mat1b & img, Mat& skeleton)
             p8 = (skeleton.data[row     * skeleton.cols + col-1]) > 0;
             p9 = (skeleton.data[(row-1) * skeleton.cols + col-1]) > 0;
 
-            int C  = (!p2 & (p3 | p4)) + (!p4 & (p5 | p6)) +
-                    (!p6 & (p7 | p8)) + (!p8 & (p9 | p2));
-            int N1 = (p9 | p2) + (p3 | p4) + (p5 | p6) + (p7 | p8);
-            int N2 = (p2 | p3) + (p4 | p5) + (p6 | p7) + (p8 | p9);
+            int C  = (!p2 && (p3 || p4)) + (!p4 && (p5 || p6)) +
+                    (!p6 && (p7 || p8)) + (!p8 && (p9 || p2));
+            int N1 = (p9 || p2) + (p3 || p4) + (p5 || p6) + (p7 || p8);
+            int N2 = (p2 || p3) + (p4 || p5) + (p6 || p7) + (p8 || p9);
             int N  = N1 < N2 ? N1 : N2;
-            int m  = iter == 0 ? ((p6 | p7 | !p9) & p8) : ((p2 | p3 | !p5) & p4);
+            int m  = iter == 0 ? ((p6 || p7 || !p9) && p8) : ((p2 || p3 || !p5) && p4);
 
             if ((C == 1) && (N >= 2) && (N <= 3) && (m == 0))
             {
