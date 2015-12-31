@@ -559,6 +559,10 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
 
     -   "MIL" -- TrackerMIL
     -   "BOOSTING" -- TrackerBoosting
+    -   "MEDIANFLOW" -- TrackerMedianFlow
+    -   "TLD" -- TrackerTLD
+    -   "KCF" -- TrackerKCF
+    -   "STRUCK" -- TrackerStruck
      */
   CV_WRAP static Ptr<Tracker> create( const String& trackerType );
 
@@ -1255,6 +1259,39 @@ public:
 	@param parameters KCF parameters TrackerKCF::Params
 	*/
 	BOILERPLATE_CODE("KCF", TrackerKCF);
+};
+
+/** @brief TODO documentar sobre o algoritmo Struck.
+ */
+class CV_EXPORTS TrackerStruck : public Tracker
+{
+public:
+    struct CV_EXPORTS Params
+    {
+        /**
+        * \brief Constructor
+        */
+        Params();
+        
+        /*
+        TODO aqui vai ter os parametros do struck
+        */
+        
+        /**
+            * \brief Read parameters from file
+            */
+        void read( const FileNode& fn );
+
+        /**
+            * \brief Write parameters in a file
+            */
+        void write( FileStorage& fs ) const;        
+    }  
+
+    /** @brief Constructor
+    @param parameters STRUCK parameters TrackerStruck::Params
+    */
+    BOILERPLATE_CODE("STRUCK",TrackerStruck);
 };
 
 /************************************ MultiTracker Class ---By Laksono Kurnianggoro---) ************************************/
