@@ -266,14 +266,16 @@ HDF5Impl::HDF5Impl( String _hdf5_filename )
     // restore previous error handler
     H5Eset_auto( stackid, errfunc, errdata );
 
-    if ( check == 1 )
+    if ( check == 1 || check == 0 )
       // open the HDF5 file
       m_h5_file_id = H5Fopen( m_hdf5_filename.c_str(),
                             H5F_ACC_RDWR, H5P_DEFAULT );
-    else
-      // create the HDF5 file
+    else if ( check == -1 )
+      // file does not exist
       m_h5_file_id = H5Fcreate( m_hdf5_filename.c_str(),
                      H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    else
+      CV_Error( Error::StsInternal, "Unknown file state." );
 }
 
 void HDF5Impl::close()
@@ -282,8 +284,6 @@ void HDF5Impl::close()
       H5Fclose( m_h5_file_id );
     // mark closed
     m_h5_file_id = -1;
-
-    H5close( );
 }
 
 /*
@@ -328,17 +328,41 @@ vector<int> HDF5Impl::dsgetsize( String dslabel, int dims_flag ) const
     // fetch rank
     int n_dims = H5Sget_simple_extent_ndims( fspace );
 
+    // dims storage
+    hsize_t dims[n_dims];
+
+    // output storage
+    vector<int> SizeVect(0);
+
     // fetch dims
-    hsize_t dsdims[n_dims];
-    if ( dims_flag == H5_GETDIMS )
-      H5Sget_simple_extent_dims( fspace, dsdims, NULL );
+    if ( dims_flag == H5_GETDIMS ||
+         dims_flag == H5_GETMAXDIMS )
+    {
+      if ( dims_flag == H5_GETDIMS )
+        H5Sget_simple_extent_dims( fspace, dims, NULL );
+      else
+        H5Sget_simple_extent_dims( fspace, NULL, dims );
+      SizeVect.resize( n_dims );
+    }
+    else if ( dims_flag == H5_GETCHUNKDIMS )
+    {
+      // rank size
+      int rank_chunk = -1;
+      // fetch chunk size
+      hid_t cparms = H5Dget_create_plist( dsdata );
+      if ( H5D_CHUNKED == H5Pget_layout ( cparms ) )
+      {
+         rank_chunk = H5Pget_chunk ( cparms, n_dims, dims );
+      }
+      if ( rank_chunk > 0 )
+        SizeVect.resize( n_dims );
+    }
     else
-      H5Sget_simple_extent_dims( fspace, NULL, dsdims );
+      CV_Error( Error::StsInternal, "Unknown dimension flag." );
 
     // fill with size data
-    vector<int> SizeVect( n_dims );
-    for ( int d = 0; d < n_dims; d++ )
-      SizeVect[d] = (int) dsdims[d];
+    for ( size_t d = 0; d < SizeVect.size(); d++ )
+      SizeVect[d] = (int) dims[d];
 
     H5Dclose( dsdata );
     H5Sclose( fspace );

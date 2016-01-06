@@ -63,7 +63,7 @@ public:
 
     CV_WRAP enum
     {
-      H5_UNLIMITED = -1, H5_NONE = -1, H5_GETDIMS = 100, H5_GETMAXDIMS = 101,
+      H5_UNLIMITED = -1, H5_NONE = -1, H5_GETDIMS = 100, H5_GETMAXDIMS = 101, H5_GETCHUNKDIMS = 102,
     };
 
     virtual ~HDF5() {}
@@ -278,7 +278,9 @@ public:
     actual dataset dimensions. Using H5_GETMAXDIM flag will get maximum allowed dimension which normally match
     actual dataset dimension but can hold H5_UNLIMITED value if dataset was prepared in **unlimited** mode on
     some of its dimension. It can be useful to check existing dataset dimensions before overwrite it as whole or subset.
-    Trying to write with oversized source data into dataset target will thrown exception.
+    Trying to write with oversized source data into dataset target will thrown exception. The H5_GETCHUNKDIMS will
+    return the dimension of chunk if dataset was created with chunking options otherwise returned vector size
+    will be zero.
      */
     CV_WRAP virtual vector<int> dsgetsize( String dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
@@ -488,7 +490,8 @@ public:
     Using H5_GETMAXDIM flag will get maximum allowed dimension which normally match actual dataset dimension but can hold
     H5_UNLIMITED value if dataset was prepared in **unlimited** mode. It can be useful to check existing dataset dimension
     before overwrite it as whole or subset. Trying to write with oversized source data into dataset target will thrown
-    exception.
+    exception. The H5_GETCHUNKDIMS will return the dimension of chunk if dataset was created with chunking options otherwise
+    returned vector size will be zero.
      */
     CV_WRAP virtual int kpgetsize( String kplabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
