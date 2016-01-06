@@ -313,7 +313,7 @@ static Mat _generateRandomMarker(int markerSize) {
     Mat marker(markerSize, markerSize, CV_8UC1, Scalar::all(0));
     for(int i = 0; i < markerSize; i++) {
         for(int j = 0; j < markerSize; j++) {
-            unsigned char bit = rand() % 2;
+            unsigned char bit = (unsigned char) (rand() % 2);
             marker.at< unsigned char >(i, j) = bit;
         }
     }

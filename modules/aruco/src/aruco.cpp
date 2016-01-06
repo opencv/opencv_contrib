@@ -206,7 +206,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
 
             int minimumPerimeter = min((int)contoursIn[i].size(), (int)contoursIn[j].size() );
 
-            // fc is the first corner considered on one of the markers, 4 combinatios are posible
+            // fc is the first corner considered on one of the markers, 4 combinations are possible
             for(int fc = 0; fc < 4; fc++) {
                 double distSq = 0;
                 for(int c = 0; c < 4; c++) {
@@ -244,7 +244,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
 
     // remove extra candidates
     candidatesOut.clear();
-    int totalRemaining = 0;
+    unsigned long totalRemaining = 0;
     for(unsigned int i = 0; i < toRemove.size(); i++)
         if(!toRemove[i]) totalRemaining++;
     candidatesOut.resize(totalRemaining);
@@ -315,8 +315,8 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     int nScales = (params.adaptiveThreshWinSizeMax - params.adaptiveThreshWinSizeMin) /
                       params.adaptiveThreshWinSizeStep + 1;
 
-    vector< vector< vector< Point2f > > > candidatesArrays(nScales);
-    vector< vector< vector< Point > > > contoursArrays(nScales);
+    vector< vector< vector< Point2f > > > candidatesArrays((size_t) nScales);
+    vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
 
     ////for each value in the interval of thresholding window sizes
     // for(int i = 0; i < nScales; i++) {
@@ -450,7 +450,7 @@ static Mat _extractBits(InputArray _image, InputArray _corners, int markerSize,
             Mat square = resultImg(Rect(Xstart, Ystart, cellSize - 2 * cellMarginPixels,
                                         cellSize - 2 * cellMarginPixels));
             // count white pixels on each cell to assign its value
-            unsigned int nZ = countNonZero(square);
+            size_t nZ = (size_t) countNonZero(square);
             if(nZ > square.total() / 2) bits.at< unsigned char >(y, x) = 1;
         }
     }
@@ -890,7 +890,7 @@ static void _getBoardObjectAndImagePoints(const Board &board, InputArray _detect
     CV_Assert(board.ids.size() == board.objPoints.size());
     CV_Assert(_detectedIds.total() == _detectedCorners.total());
 
-    int nDetectedMarkers = (int)_detectedIds.total();
+    size_t nDetectedMarkers = _detectedIds.total();
 
     vector< Point3f > objPnts;
     objPnts.reserve(nDetectedMarkers);
@@ -899,7 +899,7 @@ static void _getBoardObjectAndImagePoints(const Board &board, InputArray _detect
     imgPnts.reserve(nDetectedMarkers);
 
     // look for detected markers that belong to the board and get their information
-    for(int i = 0; i < nDetectedMarkers; i++) {
+    for(unsigned int i = 0; i < nDetectedMarkers; i++) {
         int currentId = _detectedIds.getMat().ptr< int >(0)[i];
         for(unsigned int j = 0; j < board.ids.size(); j++) {
             if(currentId == board.ids[j]) {
@@ -1299,13 +1299,14 @@ GridBoard GridBoard::create(int markersX, int markersY, float markerLength, floa
     res._markerSeparation = markerSeparation;
     res.dictionary = _dictionary;
 
-    int totalMarkers = markersX * markersY;
+    size_t totalMarkers = (size_t) markersX * markersY;
     res.ids.resize(totalMarkers);
     res.objPoints.reserve(totalMarkers);
 
     // fill ids with first identifiers
-    for(int i = 0; i < totalMarkers; i++)
+    for(unsigned int i = 0; i < totalMarkers; i++) {
         res.ids[i] = i;
+    }
 
     // calculate Board objPoints
     float maxY = (float)markersY * markerLength + (markersY - 1) * markerSeparation;
@@ -1515,15 +1516,15 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     vector< Mat > processedObjectPoints, processedImagePoints;
-    int nFrames = (int)_counter.total();
-    int markerCounter = 0;
-    for(int frame = 0; frame < nFrames; frame++) {
-        int nMarkersInThisFrame = _counter.getMat().ptr< int >()[frame];
+    size_t nFrames = _counter.total();
+    unsigned int markerCounter = 0;
+    for(unsigned int frame = 0; frame < nFrames; frame++) {
+        size_t nMarkersInThisFrame = (size_t) _counter.getMat().ptr< int >()[frame];
         vector< Mat > thisFrameCorners;
         vector< int > thisFrameIds;
         thisFrameCorners.reserve(nMarkersInThisFrame);
         thisFrameIds.reserve(nMarkersInThisFrame);
-        for(int j = markerCounter; j < markerCounter + nMarkersInThisFrame; j++) {
+        for(unsigned int j = markerCounter; j < markerCounter + nMarkersInThisFrame; j++) {
             thisFrameCorners.push_back(_corners.getMat(j));
             thisFrameIds.push_back(_ids.getMat().ptr< int >()[j]);
         }
