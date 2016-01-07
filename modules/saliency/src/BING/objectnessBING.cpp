@@ -475,7 +475,7 @@ bool ObjectnessBING::computeSaliencyImpl( InputArray image, OutputArray objectne
   unsigned long int valIdxesSize = (unsigned long int) finalBoxes.getvalIdxes().size();
   objectnessValues.resize( valIdxesSize );
   for ( uint i = 0; i < valIdxesSize; i++ )
-    objectnessValues[i] = finalBoxes.getvalIdxes()[i].first;
+    objectnessValues[finalBoxes.getvalIdxes()[i].second] = finalBoxes.getvalIdxes()[i].first;
 
   return true;
 }
