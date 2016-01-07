@@ -1517,14 +1517,17 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
     // function
     vector< Mat > processedObjectPoints, processedImagePoints;
     size_t nFrames = _counter.total();
-    unsigned int markerCounter = 0;
-    for(unsigned int frame = 0; frame < nFrames; frame++) {
-        size_t nMarkersInThisFrame = (size_t) _counter.getMat().ptr< int >()[frame];
+    int markerCounter = 0;
+    for(size_t frame = 0; frame < nFrames; frame++) {
+        int nMarkersInThisFrame =  _counter.getMat().ptr< int >()[frame];
         vector< Mat > thisFrameCorners;
         vector< int > thisFrameIds;
-        thisFrameCorners.reserve(nMarkersInThisFrame);
-        thisFrameIds.reserve(nMarkersInThisFrame);
-        for(unsigned int j = markerCounter; j < markerCounter + nMarkersInThisFrame; j++) {
+
+        CV_Assert(nMarkersInThisFrame > 0);
+
+        thisFrameCorners.reserve((size_t) nMarkersInThisFrame);
+        thisFrameIds.reserve((size_t) nMarkersInThisFrame);
+        for(int j = markerCounter; j < markerCounter + nMarkersInThisFrame; j++) {
             thisFrameCorners.push_back(_corners.getMat(j));
             thisFrameIds.push_back(_ids.getMat().ptr< int >()[j]);
         }
