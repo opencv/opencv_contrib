@@ -3,6 +3,19 @@
 
 namespace cv{
 
+   /**
+  * \brief implementation stub for the SRDCF model, not actually used but required by the API
+  * TODO: Possibly move apperance data into this class?
+  */
+class TrackerSRDCFModel : public TrackerModel{
+  public:
+    TrackerSRDCFModel(TrackerSRDCF::Params /*params*/){}
+    ~TrackerSRDCFModel(){}
+  protected:
+    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
+    void modelUpdateImpl(){}
+};
+
 struct TrackedRegion{
 	TrackedRegion(){ }
 	TrackedRegion(const cv::Point2i init_center, const cv::Size init_size) : center(init_center), size(init_size){ }
@@ -27,17 +40,30 @@ struct TrackedRegion{
 	cv::Point2i center;
 	cv::Size size;
 };
+/*
+class SRDCFcost : public cv::MinProblemSolver::Function{
+	//TODO write proper cost function and include passing proper data to it
+	public:
+		int getDims() const { return 2;};
+		double calc(const double* x ) const{
+			return x[0];
+		}
 
+		void getGradient(const double* x, double* grad){
+			grad[0] = x[0];
+		}
 
-
+	private:
+};
+*/
 
 class SRDCF : public TrackerSRDCF{
   public:
-   SRDCF(const TrackerSRDCF::Params parameters) : p(parameters) {}
+   SRDCF(const TrackerSRDCF::Params parameters) : p(parameters) {
+     isInit = false;
+   }
    ~SRDCF() {}
 
-   bool initImpl(const Mat& image, const Rect2d& boundingBox);
-   bool updateImpl(const Mat& image, Rect2d& boundingBox);
    void read( const cv::FileNode& fn );
    void write( cv::FileStorage& fs ) const;
 
@@ -60,6 +86,9 @@ class SRDCF : public TrackerSRDCF{
     */
    void update(const cv::Mat& image);
 
+  protected:
+   bool initImpl(const Mat& image, const Rect2d& boundingBox);
+   bool updateImpl(const Mat& image, Rect2d& boundingBox);
   private:
 
    //internal functions
@@ -93,6 +122,21 @@ class SRDCF : public TrackerSRDCF{
 
    cv::SparseMat sparse_mat_interpolation(const cv::SparseMat& a, const cv::SparseMat& b, const float interp_factor);
 
+   //TODO move into opencv_core
+   float sparse_scalar_product(const cv::SparseMat& a, const cv::SparseMat& b) const;
+
+   //TODO move into opencv_core
+   cv::SparseMat sparse_dense_mult(const cv::SparseMat& a, const cv::Mat& b) const;
+
+   //TODO move into opencv_core
+   cv::SparseMat scale_sparse_mat(const cv::SparseMat& a, const float sf) const;
+
+   //TODO move into opencv_core
+   cv::SparseMat sparse_matrix_sum(const cv::SparseMat& a, const cv::SparseMat&b) const;
+
+   //TODO move into opencv_core
+   cv::Mat sparse_mat_vector_product(const cv::SparseMat& a, const cv::Mat& v);
+
    //parameters set on construction
    TrackerSRDCF::Params p;
 
@@ -115,29 +159,31 @@ class SRDCF : public TrackerSRDCF{
 
 
 
-  Ptr<TrackerSRDCF> TrackerSRDCF::createTracker(const TrackerSRDCF::Params &parameters){
-    return Ptr<SRDCF>(new SRDCF(parameters));
-  }
+Ptr<TrackerSRDCF> TrackerSRDCF::createTracker(const TrackerSRDCF::Params &parameters){
+  return Ptr<SRDCF>(new SRDCF(parameters));
+}
 
-  void SRDCF::read( const cv::FileNode& fn ){
-    p.read( fn );
-  }
+void SRDCF::read( const cv::FileNode& fn ){
+  p.read( fn );
+}
 
-  void SRDCF::write( cv::FileStorage& fs ) const {
-    p.write( fs );
-  }
+void SRDCF::write( cv::FileStorage& fs ) const {
+  p.write( fs );
+}
 
 
 bool SRDCF::initImpl(const Mat& image, const Rect2d& boundingBox){
-    initialize(image,boundingBox);
-	return true;
+  model = Ptr<TrackerSRDCFModel>(new TrackerSRDCFModel(p));
+  initialize(image,boundingBox);
+  return true;
 }
+
 bool SRDCF::updateImpl(const Mat& image, Rect2d& boundingBox){
-	detect(image);
-	cv::Rect new_bounding_box = getBoundingBox();
-	update(image);
-	boundingBox = new_bounding_box;
-	return true;
+  detect(image);
+  cv::Rect new_bounding_box = getBoundingBox();
+  update(image);
+  boundingBox = new_bounding_box;
+  return true;
 }
 
 //public functions
@@ -169,7 +215,13 @@ void SRDCF::update(const cv::Mat& image){
 
 //private functions
 std::vector<cv::Mat> SRDCF::compute_feature_vec(const cv::Mat& patch){
-  std::vector<cv::Mat> feature_vec = fft2(patch);
+
+  //convert the data type to float
+  cv::Mat feature_data;
+
+  patch.convertTo(feature_data,CV_32FC1,1.0/255.0,-0.5);
+
+  std::vector<cv::Mat> feature_vec = fft2(feature_data);
 
   return feature_vec;
 }
@@ -304,9 +356,8 @@ void SRDCF::detect(const cv::Mat& image){
   cv::minMaxLoc(response,NULL,NULL,NULL,&maxpos);
 
   //TODO remove me
-  
   cv::Point2i translation(round(shift_index(maxpos.x,response.cols)*scale_factor),
-		                      round(shift_index(maxpos.y,response.rows)*scale_factor));
+		          round(shift_index(maxpos.y,response.rows)*scale_factor));
 
   target.center = target.center + translation;
 }
@@ -441,8 +492,6 @@ std::vector<cv::Mat> SRDCF::fft2(const cv::Mat featureData){
     return channelsf;
 }
 
-
-
 std::vector<cv::Mat> SRDCF::construct_sample_data(std::vector<cv::Mat> feature_matrices){
 
     const int nFeat = feature_matrices.size();
@@ -460,9 +509,8 @@ SparseMat SRDCF::make_sparse_data(const std::vector<cv::Mat>& data){
     const int feature_dim = data.size();
 
     std::vector<cv::Mat> outer_products = construct_sample_data(data);
-    std::vector<float> real,imag;
 
-    int sparse_mat_size = 2 * real.size() * feature_dim;
+    int sparse_mat_size = outer_products.size();
     //cv::SparseMat sparse_data(sparse_mat_size,sparse_mat_size);
     int sparse_dims[] = {sparse_mat_size,sparse_mat_size};
     cv::SparseMat sparse_data = cv::SparseMat(2,sparse_dims,CV_32FC1);
@@ -471,6 +519,7 @@ SparseMat SRDCF::make_sparse_data(const std::vector<cv::Mat>& data){
 
         int block_i = i % feature_dim;
         int block_j = i / feature_dim;
+        std::vector<float> real,imag;
         split_spectrum(outer_products[i],real,imag);
 
         int block_start_i = real.size() * 2 * block_i;
@@ -510,15 +559,15 @@ cv::Mat SRDCF::make_rhs(const std::vector<cv::Mat>& data, const cv::Mat labels){
     for(size_t i=0; i < products.size(); i++){
         split_spectrum(products[i],real,imag);
         if(i == 0){
-            rhs = cv::Mat(real.size()*2*data.size(),0,CV_32FC1);
+            rhs = cv::Mat(real.size()*2*data.size(),1,CV_32FC1);
         }
 
         for(size_t jj = 0; jj < real.size(); jj++){
-            rhs.at<float>(element_index,0) = real[jj];
+            rhs.at<float>(element_index) = real[jj];
             element_index += 1;
         }
         for(size_t j =0; j < imag.size(); j++){
-            rhs.at<float>(element_index,0) = imag[j];
+            rhs.at<float>(element_index) = imag[j];
             element_index += 1;
         }
     }
@@ -549,12 +598,11 @@ int SRDCF::shift_index(const int index, const int length) const{
  *  @params sigma_factor, sigma scale factor (tracker parameter)
  */
 cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_size ,const float sigma_factor) const{
-    cv::Mat new_labels(matrix_size.height,matrix_size.width,CV_32F);
 
+    cv::Mat new_labels(matrix_size.height,matrix_size.width,CV_32F);
 
     const float sigma = std::sqrt(target_size.area()) * sigma_factor;
     const float constant = -0.5 / pow(sigma,2);
-    std::cout << "constant is" << constant << std::endl;
     for(int x = 0; x < matrix_size.width; x++){
         for(int y = 0; y < matrix_size.height; y++){
             int shift_x = shift_index(x,matrix_size.width);
@@ -565,7 +613,6 @@ cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_siz
     }
 
     cv::Mat labels_dft;
-
 
     cv::dft(new_labels, labels_dft);
 
@@ -593,40 +640,117 @@ cv::SparseMat SRDCF::sparse_mat_interpolation(const cv::SparseMat& a, const cv::
 
   cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
 
+  const float interp_factor_inverse = 1.0 - interp_factor;
+
   for(; a_elem != a_end; ++a_elem){
     //value from the a-matrix
     float a_val = a_elem.value<float>();
     const cv::SparseMat::Node *n = a_elem.node();
-    float b_val = b.value<float>(n->idx,&n->hashval);
+    float b_val = b.value<float>(n);
 
-    result.value<float>(n->idx,&n->hashval) = a_val * interp_factor + (1.0 - interp_factor) * b_val;
+    const float interp_value  = a_val * interp_factor_inverse + b_val * interp_factor;
+
+    result.ref<float>(n->idx) = interp_value;
+  }
+
+  return result;
+}
+
+float SRDCF::sparse_scalar_product(const cv::SparseMat& a, const cv::SparseMat& b) const{
+  //FIXME add error checking of input data
+  //TODO special case for a = b
+  float sum = 0;
+
+  cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
+
+  for(; a_elem != a_end; ++a_elem){
+    float a_val = a_elem.value<float>();
+    const cv::SparseMat::Node *n = a_elem.node();
+
+    float b_val = b.value<float>(n);
+    sum += a_val * b_val;
+  }
+
+  return sum;
+}
+
+
+cv::SparseMat SRDCF::scale_sparse_mat(const cv::SparseMat& a, const float sf) const{
+  cv::SparseMat result;
+  cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
+
+  for(; a_elem != a_end; ++a_elem){
+    const cv::SparseMat::Node *n = a_elem.node();
+    const float a_val = a_elem.value<float>();
+    result.ref<float>(n->idx) = a_val * sf;
+  }
+
+  return result;
+}
+
+cv::SparseMat SRDCF::sparse_matrix_sum(const cv::SparseMat& a, const cv::SparseMat& b) const{
+  //FIXME add error handling
+  cv::SparseMat sum;
+  cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
+  for(; a_elem != a_end; ++a_elem){
+    const cv::SparseMat::Node *n = a_elem.node();
+    const float a_val = a_elem.value<float>();
+    const float b_val = b.value<float>(n);
+
+    sum.ref<float>(n->idx) = a_val + b_val;
+  }
+
+  return sum;
+}
+
+cv::Mat SRDCF::sparse_mat_vector_product(const cv::SparseMat& a, const cv::Mat& v){
+  cv::Mat result = cv::Mat::zeros(v.rows,1,CV_32FC1);
+
+  cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
+  for(; a_elem != a_end; ++a_elem){
+    const cv::SparseMat::Node *n = a_elem.node();
+    const float a_val = a_elem.value<float>();
+    const int row = n->idx[0];
+    const int col = n->idx[1];
+    const float current_value = result.at<float>(col,0);
+
+    result.at<float>(col,0) = current_value + a_val * v.at<float>(row,0);
   }
 
   return result;
 }
 
 cv::Mat SRDCF::compute_filter(const cv::SparseMat& lhs_data, const cv::SparseMat& reg_matrix, const cv::Mat& rhs){
+  //TODO implement correct error function
+  //TODO include proper initial guess from previous optimization
+  cv::Mat initial_guess = cv::Mat::eye(rhs.rows,1,CV_32FC1);
+  cv::Mat current_guess;
 
-    cv::SparseMat lhs = lhs_data + reg_matrix;
+  int iterations = 0;
+  int i_max = 100;
+  cv::Mat residual = rhs - sparse_mat_vector_product(lhs_data,initial_guess);
 
+  cv::Mat delta_matrix = rhs * rhs.t();
 
-    // TODO Implement steepest decent solver for sparse opencv matrices
-    /*
-    if(filter_solution.rows() > 0 && filter_solution.cols() > 0){
-      Eigen::ConjugateGradient< Eigen::SparseMatrix<float> > solver;
-      solver.setMaxIterations(10);
-      solver.compute(lhs);
-      //filter_solution = solver.solveWithGuess(rhs,filter_solution);
-      filter_solution = solver.solve(rhs);
-    }else{
-      Eigen::ConjugateGradient< Eigen::SparseMatrix<float> > solver;
-      solver.setMaxIterations(50);
-      solver.compute(lhs);
-      filter_solution = solver.solve(rhs);
-    }
+  float delta = delta_matrix.at<float>(0,0);
+  float delta_0 = delta;
+  float error_term_crit = delta_0*pow(std::numeric_limits<float>::epsilon(),2);
 
-    return filter_solution;
-    */
+  while(iterations < i_max && delta > error_term_crit){
+    cv::Mat q = sparse_mat_vector_product(lhs_data,residual);
+    cv::Mat qr_mat = q.t() * residual;
+    float alpha = delta / q.at<float>(0,0) ;
+    current_guess = current_guess + alpha * residual;
+
+    residual = residual - alpha * q;
+
+    delta_matrix = residual.t() * residual;
+    delta = delta_matrix.at<float>(0,0);
+
+    iterations += 1;
+  }
+
+  return current_guess;
 }
 
 cv::Mat SRDCF::compute_response(const std::vector<cv::Mat>& filter, const std::vector<cv::Mat>& sample) {

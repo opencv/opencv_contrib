@@ -66,12 +66,14 @@ bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
     return false;
   }
 
-  if( image.empty() )
+  if( image.empty() ){
     return false;
+  }
 
   sampler = Ptr<TrackerSampler>( new TrackerSampler() );
   featureSet = Ptr<TrackerFeatureSet>( new TrackerFeatureSet() );
   model = Ptr<TrackerModel>();
+
 
   bool initTracker = initImpl( image, boundingBox );
 
@@ -115,4 +117,4 @@ Ptr<Tracker> Tracker::create( const String& trackerType )
   return Ptr<Tracker>();
 }
 
-} /* namespace cv */
+}/* namespace cv */
