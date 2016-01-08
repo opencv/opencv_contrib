@@ -24,3 +24,11 @@ Structure From Motion {#tutorial_table_of_content_sfm}
     *Author:* Edgar Riba
 
     Sparse scene reconstruction from a given set of images.
+
+-   @subpage tutorial_sfm_import_reconstruction
+
+    *Compatibility:* \> OpenCV 3.0
+
+    *Author:* Edgar Riba
+
+    Import a scene reconstruction.
