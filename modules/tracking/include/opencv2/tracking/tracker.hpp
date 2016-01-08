@@ -1271,22 +1271,25 @@ public:
         /**
         * \brief Constructor
         */
-        Params();
-        
-        /*
-        TODO aqui vai ter os parametros do struck
-        */
+        Params(); 
         
         /**
-            * \brief Read parameters from file
-            */
+        * \brief Read parameters from file
+        */
         void read( const FileNode& fn );
 
         /**
-            * \brief Write parameters in a file
-            */
-        void write( FileStorage& fs ) const;        
-    }  
+        * \brief Write parameters in a file
+        */
+        void write( FileStorage& fs ) const;
+        
+        /*
+        * Struck algorithm specific parameters
+        */
+        int     searchRadius;
+        double	svmC;
+        int		svmBudgetSize;               
+	};
 
     /** @brief Constructor
     @param parameters STRUCK parameters TrackerStruck::Params

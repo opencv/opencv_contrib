@@ -40,23 +40,8 @@
  //M*/
 
 #include "precomp.hpp"
+#include "TrackerStruckModel.hpp" 
 
-/*---------------------------
-|  TrackerStruckModel
-|---------------------------*/
-namespace cv{
-   /**
-  * \brief Implementation of TrackerModel for MIL algorithm
-  */
-  class TrackerStruckModel : public TrackerModel{
-  public:
-    TrackerStruckModel(TrackerStruck::Params /*params*/){}
-    ~TrackerStruckModel(){}
-  protected:
-    void modelEstimationImpl( const std::vector<Mat>& responses ){}
-    void modelUpdateImpl(){}
-  };
-} /* namespace cv */
 
 /*---------------------------
 |  TrackerStruck
@@ -81,7 +66,7 @@ namespace cv
         bool updateImpl( const Mat& image, Rect2d& boundingBox );
 
         TrackerStruck::Params params;
-    }
+	};
     
     /*
     * Constructor
@@ -103,16 +88,36 @@ namespace cv
         params.write( fs );
     }
 
-
+    /* ----- INIT Implementation -------------------------------------------------------------*/
     bool TrackerStruckImpl::initImpl( const Mat& image, const Rect2d& boundingBox )
     {
+        //compute HAAR features
+        TrackerFeatureHAAR::Params HAARParams;
+        
+        // static const int kSystematicFeatureCount = 192;
+		HAARParams.numFeatures = 192;
+        HAARParams.isIntegral = true;
+        HAARParams.rectSize = Size( static_cast<int>(boundingBox.width), static_cast<int>(boundingBox.height) );
+        
+        Ptr<TrackerFeature> trackerFeature = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARParams ) );
+        if( !featureSet->addTrackerFeature( trackerFeature ) )
+            return false;
+        
         model=Ptr<TrackerStruckModel>(new TrackerStruckModel(params));
+            
         
         return true;
     }
     
+    /* ----- UPDATE Implementation -----------------------------------------------------------*/    
     bool TrackerStruckImpl::updateImpl( const Mat& image, Rect2d& boundingBox ) 
     {
+        TrackerStruckModel* struckModel = ((TrackerStruckModel*)static_cast<TrackerModel*>(model));
+        
+        
+        //model update
+        model->modelUpdate();
+        
         return true;
     }
 
@@ -121,7 +126,10 @@ namespace cv
     * Parameters
     */
     TrackerStruck::Params::Params(){
-        // TODO definir aqui os valores default dos params
+        // default values of the params
+        searchRadius = 30; // px
+        svmC = 1.0;
+        svmBudgetSize = 0;
     }
 
     void TrackerStruck::Params::read( const cv::FileNode& fn ){

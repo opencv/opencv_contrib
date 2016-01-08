@@ -44,12 +44,13 @@ Explanation
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp create
 
-    There are at least 5 types of tracker algorithms that can be used:
+    There are at least 6 types of tracker algorithms that can be used:
     + MIL
     + BOOSTING
     + MEDIANFLOW
     + TLD
     + KCF
+    + STRUCK
 
     Each tracker algorithm has their own advantages and disadvantages, please refer the documentation of @ref cv::Tracker for more detailed information.
 
