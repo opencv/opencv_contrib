@@ -28,7 +28,20 @@ struct TrackedRegion{
 	cv::Size size;
 };
 
+class SRDCFcost : public cv::MinProblemSolver::Function{
+	//TODO write proper cost function and include passing proper data to it
+	public:
+		int getDims() const { return 2;};
+		double calc(const double* x ) const{
+			return x[0];
+		}
 
+		void getGradient(const double* x, double* grad){
+			grad[0] = x[0];
+		}
+
+	private:
+};
 
 
 class SRDCF : public TrackerSRDCF{
@@ -593,40 +606,34 @@ cv::SparseMat SRDCF::sparse_mat_interpolation(const cv::SparseMat& a, const cv::
 
   cv::SparseMatConstIterator a_elem = a.begin(), a_end = a.end();
 
+  const float interp_factor_inverse = 1.0 - interp_factor;
+
   for(; a_elem != a_end; ++a_elem){
     //value from the a-matrix
     float a_val = a_elem.value<float>();
     const cv::SparseMat::Node *n = a_elem.node();
-    float b_val = b.value<float>(n->idx,&n->hashval);
+    float b_val = b.value<float>(n);
 
-    result.value<float>(n->idx,&n->hashval) = a_val * interp_factor + (1.0 - interp_factor) * b_val;
+    const float interp_value  = a_val * interp_factor_inverse + b_val * interp_factor;
+
+    result.ref<float>(n->idx) = interp_value;
   }
 
   return result;
 }
 
 cv::Mat SRDCF::compute_filter(const cv::SparseMat& lhs_data, const cv::SparseMat& reg_matrix, const cv::Mat& rhs){
+  //TODO implement correct error function
+  //TODO include proper initial guess from previous optimization
+  cv::Mat filter;
 
-    cv::SparseMat lhs = lhs_data + reg_matrix;
+  cv::Ptr<cv::ConjGradSolver> solver = cv::ConjGradSolver::create();
+  cv::Ptr<cv::MinProblemSolver::Function> filter_cost = makePtr<SRDCFcost>();
+  solver->setFunction(filter_cost);
 
+  solver->minimize(filter);
 
-    // TODO Implement steepest decent solver for sparse opencv matrices
-    /*
-    if(filter_solution.rows() > 0 && filter_solution.cols() > 0){
-      Eigen::ConjugateGradient< Eigen::SparseMatrix<float> > solver;
-      solver.setMaxIterations(10);
-      solver.compute(lhs);
-      //filter_solution = solver.solveWithGuess(rhs,filter_solution);
-      filter_solution = solver.solve(rhs);
-    }else{
-      Eigen::ConjugateGradient< Eigen::SparseMatrix<float> > solver;
-      solver.setMaxIterations(50);
-      solver.compute(lhs);
-      filter_solution = solver.solve(rhs);
-    }
-
-    return filter_solution;
-    */
+  return filter;
 }
 
 cv::Mat SRDCF::compute_response(const std::vector<cv::Mat>& filter, const std::vector<cv::Mat>& sample) {
