@@ -171,10 +171,15 @@ namespace cv
                                 j2 = (0 > j - d) ? (0) : (j - d);
                                 xorul = left[(iwj)] ^ right[(iw + j2)];
 #if CV_POPCNT
-                                c[(iwj)* (v + 1) + d] = (short)_mm_popcnt_u32(xorul);
-#else
-                                c[(iwj)* (v + 1) + d] = (short)(hammLut[xorul & MASK] + hammLut[(xorul >> 16) & MASK]);
+                                if (checkHardwareSupport(CV_CPU_POPCNT))
+                                {
+                                    c[(iwj)* (v + 1) + d] = (short)_mm_popcnt_u32(xorul);
+                                }
+                                else
 #endif
+                                {
+                                    c[(iwj)* (v + 1) + d] = (short)(hammLut[xorul & MASK] + hammLut[(xorul >> 16) & MASK]);
+                                }
                             }
                         }
                     }
