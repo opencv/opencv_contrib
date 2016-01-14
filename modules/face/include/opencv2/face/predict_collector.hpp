@@ -47,6 +47,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <cfloat>
 #include "opencv2/core/cvdef.h"
 #include "opencv2/core/cvstd.hpp"
+#undef emit  //fix for qt
 namespace cv {
 namespace face {
 //! @addtogroup face
