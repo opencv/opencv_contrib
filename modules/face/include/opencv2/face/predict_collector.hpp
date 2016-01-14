@@ -85,7 +85,7 @@ private:
 public:
     /** @brief creates new MinDistancePredictCollector with given threshhold */
     CV_WRAP MinDistancePredictCollector(double threshhold = DBL_MAX) : PredictCollector(threshhold) {
-        _label = 0;
+        _label = -1;
         _dist = DBL_MAX;
     };
     CV_WRAP bool emit(const int label, const double dist, const int state = 0);
