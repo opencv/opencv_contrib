@@ -79,30 +79,30 @@ static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeff
 
 /**
  */
-static bool readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameters> &params) {
     FileStorage fs(filename, FileStorage::READ);
     if(!fs.isOpened())
         return false;
-    fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
-    fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
-    fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
-    fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
-    fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
-    fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
-    fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
-    fs["minCornerDistanceRate"] >> params.minCornerDistanceRate;
-    fs["minDistanceToBorder"] >> params.minDistanceToBorder;
-    fs["minMarkerDistanceRate"] >> params.minMarkerDistanceRate;
-    fs["doCornerRefinement"] >> params.doCornerRefinement;
-    fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
-    fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
-    fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
-    fs["markerBorderBits"] >> params.markerBorderBits;
-    fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
-    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
-    fs["minOtsuStdDev"] >> params.minOtsuStdDev;
-    fs["errorCorrectionRate"] >> params.errorCorrectionRate;
+    fs["adaptiveThreshWinSizeMin"] >> params->adaptiveThreshWinSizeMin;
+    fs["adaptiveThreshWinSizeMax"] >> params->adaptiveThreshWinSizeMax;
+    fs["adaptiveThreshWinSizeStep"] >> params->adaptiveThreshWinSizeStep;
+    fs["adaptiveThreshConstant"] >> params->adaptiveThreshConstant;
+    fs["minMarkerPerimeterRate"] >> params->minMarkerPerimeterRate;
+    fs["maxMarkerPerimeterRate"] >> params->maxMarkerPerimeterRate;
+    fs["polygonalApproxAccuracyRate"] >> params->polygonalApproxAccuracyRate;
+    fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
+    fs["minDistanceToBorder"] >> params->minDistanceToBorder;
+    fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
+    fs["doCornerRefinement"] >> params->doCornerRefinement;
+    fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
+    fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
+    fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
+    fs["markerBorderBits"] >> params->markerBorderBits;
+    fs["perspectiveRemovePixelPerCell"] >> params->perspectiveRemovePixelPerCell;
+    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params->perspectiveRemoveIgnoredMarginPerCell;
+    fs["maxErroneousBitsInBorderRate"] >> params->maxErroneousBitsInBorderRate;
+    fs["minOtsuStdDev"] >> params->minOtsuStdDev;
+    fs["errorCorrectionRate"] >> params->errorCorrectionRate;
     return true;
 }
 
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    aruco::DetectorParameters detectorParams;
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
         if(!readOk) {
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    aruco::Dictionary dictionary =
+    Ptr<aruco::Dictionary> dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     VideoCapture inputVideo;
@@ -171,8 +171,9 @@ int main(int argc, char *argv[]) {
     float axisLength = 0.5f * ((float)min(squaresX, squaresY) * (squareLength));
 
     // create charuco board object
-    aruco::CharucoBoard board =
+    Ptr<aruco::CharucoBoard> charucoboard =
         aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
+    Ptr<aruco::Board> board = charucoboard.staticCast<aruco::Board>();
 
     double totalTime = 0;
     int totalIterations = 0;
@@ -201,13 +202,13 @@ int main(int argc, char *argv[]) {
         int interpolatedCorners = 0;
         if(markerIds.size() > 0)
             interpolatedCorners =
-                aruco::interpolateCornersCharuco(markerCorners, markerIds, image, board,
+                aruco::interpolateCornersCharuco(markerCorners, markerIds, image, charucoboard,
                                                  charucoCorners, charucoIds, camMatrix, distCoeffs);
 
         // estimate charuco board pose
         bool validPose = false;
         if(camMatrix.total() != 0)
-            validPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board,
+            validPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
                                                         camMatrix, distCoeffs, rvec, tvec);
 
 

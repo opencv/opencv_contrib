@@ -93,15 +93,15 @@ int main(int argc, char *argv[]) {
     imageSize.height =
         markersY * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
 
-    aruco::Dictionary dictionary =
+    Ptr<aruco::Dictionary> dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
-    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
+    Ptr<aruco::GridBoard> board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
                                                       float(markerSeparation), dictionary);
 
     // show created board
     Mat boardImage;
-    board.draw(imageSize, boardImage, margins, borderBits);
+    board->draw(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);
