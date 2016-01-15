@@ -47,6 +47,7 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include "saliencyBaseClasses.hpp"
 #include "opencv2/core.hpp"
 
 namespace cv
