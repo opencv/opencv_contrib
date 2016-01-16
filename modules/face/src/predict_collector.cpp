@@ -46,40 +46,112 @@ the use of this software, even if advised of the possibility of such damage.
 namespace cv {
 namespace face {
 
+
 void PredictCollector::init(const int size, const int state) {
     //reserve for some-how usage in descendants
     _size = size;
     _state = state;
 }
 
-bool PredictCollector::emit(const int, const double, const int state) {
-    if (_state == state) {
-        return false; // if it's own session - terminate it while default PredictCollector does nothing
+CV_WRAP bool PredictCollector::defaultFilter(int * label, double * dist, const int state)
+{
+    // if state provided we should compare it with current state
+    if (_state != 0 && _state != state) {
+        return false;
+    }
+
+    // if exclude label provided we can test it first
+    if (_excludeLabel != 0 && _excludeLabel == *label) {
+        return false;
+    }
+
+    // initially we must recalculate distance by koef iv given
+    if (_distanceKoef != 1) {
+        *dist = *dist * _distanceKoef;
+    }
+    // check upper threshold
+    if (*dist > _threshold) {
+        return false;
+    }
+    //check inner threshold
+    if (*dist < _minthreshold) {
+        return false;
+    }
+
+    return true;
+}
+
+CV_WRAP bool PredictCollector::filter(int* label, double* dist, const int state)
+{
+    ((void)label);
+    ((void)dist);
+    ((void)state);
+    return true; //no custom logic at base level
+}
+
+bool PredictCollector::emit(const int label, const double dist, const int state) {
+    ((void)label);
+    ((void)dist);
+    ((void)state);
+    return false; // terminate prediction - no any behavior in base PredictCollector
+}
+
+CV_WRAP bool PredictCollector::collect(int label, double dist, const int state)
+{
+    if (defaultFilter(&label, &dist, state) && filter(&label,&dist,state)) {
+        return emit(label, dist, state);
     }
     return true;
 }
 
-bool MinDistancePredictCollector::emit(const int label, const double dist, const int state) {
-    if (_state != state) {
-        return true; // it works only in one (same) session doesn't accept values for other states
-    }
-    if (dist < _threshhold && dist < _dist) {
-        _label = label;
-        _dist = dist;
-    }
-    return true;
+CV_WRAP int PredictCollector::getSize()
+{
+    return _size;
 }
 
-int MinDistancePredictCollector::getLabel() const {
-    return _label;
+CV_WRAP void PredictCollector::setSize(int size)
+{
+    _size = size;
 }
 
-double MinDistancePredictCollector::getDist() const {
-    return _dist;
+CV_WRAP int PredictCollector::getState()
+{
+    return _state;
 }
 
-Ptr<MinDistancePredictCollector> MinDistancePredictCollector::create(double threshold) {
-    return Ptr<MinDistancePredictCollector>(new MinDistancePredictCollector(threshold));
+CV_WRAP void PredictCollector::setState(int state)
+{
+    _state = state;
+}
+
+CV_WRAP int PredictCollector::getExcludeLabel()
+{
+    return _excludeLabel;
+}
+
+CV_WRAP void PredictCollector::setExcludeLabel(int excludeLabel)
+{
+    _excludeLabel = excludeLabel;
+}
+
+CV_WRAP double PredictCollector::getDistanceKoef()
+{
+    return _distanceKoef;
+}
+
+CV_WRAP void PredictCollector::setDistanceKoef(double distanceKoef)
+{
+    _distanceKoef = distanceKoef;
+}
+
+CV_WRAP double PredictCollector::getMinThreshold()
+{
+    return _minthreshold;
+}
+
+CV_WRAP void PredictCollector::setMinThreshold(double minthreshold)
+{
+    _minthreshold = minthreshold;
 }
 
 }

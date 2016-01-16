@@ -138,7 +138,7 @@ void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector, cons
     for (size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
         int label = _labels.at<int>((int)sampleIdx);
-        if (!collector->emit(label, dist, state))return;
+        if (!collector->collect(label, dist, state))return;
     }
 }
 
