@@ -442,4 +442,589 @@ void TrackerStateEstimatorSVM::updateImpl( std::vector<ConfidenceMap>& /*confide
 
 }
 
+/**
+* TrackerStateEstimatorStruckSVM::SVMSupportPattern
+*/
+
+Rect2f cv::TrackerStateEstimatorStruckSVM::SVMSupportPattern::rectY()
+{
+	return rects[y];
+}
+
+/**
+* TrackerStateEstimatorStruckSVM::SVMSupportVector
+*/
+
+Mat cv::TrackerStateEstimatorStruckSVM::SVMSupportVector::xy()
+{
+	return x->x.at(y);
+}
+
+Rect2f cv::TrackerStateEstimatorStruckSVM::SVMSupportVector::rectY()
+{
+	return x->rects[y];
+}
+
+/**
+* TrackerStateEstimatorStruckSVM::TrackerStruckTargetState
+*/
+
+cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::TrackerStruckTargetState(const Point2f & position, int width, int height, Mat responses)
+{
+	setTargetPosition(position);
+	setTargetWidth(width);
+	setTargetHeight(height);
+
+	y = Rect2d(position.x, position.y, width, height);
+
+	setResp(responses);
+	_centre = false;
+	_updateOnly = false;
+}
+
+Mat cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::getResp()
+{
+	return x;
+}
+
+void cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::setResp(Mat value)
+{
+	x = value;
+}
+
+Rect2d cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::getBoundingBox()
+{
+	return y;
+}
+
+bool cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::isCentre()
+{
+	return _centre;
+}
+
+bool cv::TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::isCentre(bool value)
+{
+	_centre = value;
+	return _centre;
+}
+
+bool TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::isUpdateOnly()
+{
+	return _updateOnly;
+}
+
+bool TrackerStateEstimatorStruckSVM::TrackerStruckTargetState::isUpdateOnly(bool value)
+{
+	return _updateOnly = value;
+}
+
+/**
+* TrackerStateEstimatorStruckSVM
+*/
+
+cv::TrackerStateEstimatorStruckSVM::Params::Params() {
+	svmBudgetSize = 100;
+	svmC = 100.0;
+}
+
+cv::TrackerStateEstimatorStruckSVM::TrackerStateEstimatorStruckSVM()
+{
+	className = "StruckSVM";
+	svmBudgetSize = 100;
+	svmC = 100.0;
+	currentBestIndex = -1;
+	searchRadius = 30;
+}
+
+cv::TrackerStateEstimatorStruckSVM::TrackerStateEstimatorStruckSVM(Params params) :
+	TrackerStateEstimatorStruckSVM()
+{
+	svmBudgetSize = params.svmBudgetSize;
+	svmC = params.svmC;
+}
+
+void cv::TrackerStateEstimatorStruckSVM::setCurrentConfidenceMap(ConfidenceMap & confidenceMap)
+{
+	currentConfidenceMap.clear();
+	currentConfidenceMap = confidenceMap;
+}
+
+void cv::TrackerStateEstimatorStruckSVM::setCurrentCentre(Rect2d rect)
+{
+	centre = rect;
+}
+
+void TrackerStateEstimatorStruckSVM::setSearchRadius(int radius)
+{
+	searchRadius = radius;
+}
+
+double LossFunc(Rect2d y1, Rect2d y2) {
+	Rect2d overlap = y1 & y2;
+	double coeff = overlap.area() / (y1.area() + y2.area() - overlap.area());
+	//double coeff = 2 * overlap.area() / (y1.area() + y2.area() - overlap.area());
+	return 1 - coeff;
+}
+
+double GaussianKernelEval(const Mat x1, const Mat x2)
+{
+	/*
+	std::vector<float> v1, v2;
+	for (int i = 0; i < x1.rows; i++) v1.push_back(x1.at<float>(i, 0));
+	for (int i = 0; i < x2.rows; i++) v2.push_back(x2.at<float>(i, 0));
+	double normSub = norm(Mat(v1) - Mat(v2));
+	*/
+	double normSub = norm(x1 - x2);
+	return exp(-0.2 * (normSub*normSub));
+}
+
+int delta(int y1, int y2) {
+	return (int)(y1 == y2);
+}
+
+double TrackerStateEstimatorStruckSVM::F(Mat x, Rect2d /*y*/) {
+
+	double f = 0.0;
+
+//#pragma omp parallel for reduction (+:f)
+	for (int i = 0; i < (int)supportVectors.size(); ++i) {
+		Ptr<SVMSupportVector> sv = supportVectors.at(i);		
+		f += sv->beta * GaussianKernelEval(x, sv->x->x[sv->y]);
+	}
+
+	return f;
+}
+
+void TrackerStateEstimatorStruckSVM::Evaluate(ConfidenceMap& map) {
+	const int size = map.size();
+
+	for (int i = 0; i < (int)size; i++) {
+
+		Ptr<TrackerStruckTargetState> targetState = 
+			map[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();
+
+		if (targetState->isUpdateOnly()) {
+			map[i].second = -DBL_MAX;
+			continue;
+		}
+
+		Rect2d r(targetState->getBoundingBox());
+		r.x -= centre.x;
+		r.y -= centre.y;
+
+		// 2 : yt = arg max F ( xt^pt-1, y)
+		map[i].second = (float) F(targetState->getResp(), r);
+	}
+}
+
+Ptr<TrackerTargetState> TrackerStateEstimatorStruckSVM::estimateImpl(const std::vector<ConfidenceMap>& /*confidenceMaps*/)
+{
+	/*ConfidenceMap currentConfidenceMap = confidenceMaps.back();*/
+
+	// 1 : Estimate change in object location
+	Evaluate(currentConfidenceMap);
+
+	// finding arg max y
+	double bestScore = -DBL_MAX;
+	int bestIndex = -1;
+	for (int i = 0; i < (int)currentConfidenceMap.size(); ++i)
+	{
+		if (currentConfidenceMap.at(i).second > bestScore)
+		{
+			bestScore = currentConfidenceMap.at(i).second;
+			bestIndex = i;
+		}
+	}
+	
+	currentBestIndex = bestIndex;
+	return currentConfidenceMap.at(bestIndex).first;
+}
+
+void cv::TrackerStateEstimatorStruckSVM::RemoveSupportVector(Ptr<SVMSupportVector> sv)
+{
+	Ptr<SVMSupportPattern> pattern = sv->x;
+
+	pattern->refCount--;
+	if (pattern->refCount == 0)
+	{
+		// remove the support pattern
+		supportPatterns.erase(std::remove(supportPatterns.begin(), supportPatterns.end(), pattern));
+		pattern.release();
+	}
+
+	// remove the support vector
+	supportVectors.erase(std::remove(supportVectors.begin(), supportVectors.end(), sv));
+	sv.release();
+}
+
+Ptr<TrackerStateEstimatorStruckSVM::SVMSupportVector> cv::TrackerStateEstimatorStruckSVM::AddSupportVector(Ptr<SVMSupportPattern> sp, int y, double g)
+{
+	if (!sp) return Ptr<SVMSupportVector>();
+
+	Ptr<SVMSupportVector> new_sv = Ptr<SVMSupportVector>(new SVMSupportVector());
+
+	new_sv->beta = 0.0;
+	new_sv->x = sp;
+	new_sv->x->refCount++;
+	
+	assert(y >= 0);
+	new_sv->y = y;
+	new_sv->g = g;
+
+	supportVectors.push_back(new_sv);
+
+	return new_sv;
+}
+
+void cv::TrackerStateEstimatorStruckSVM::MinGrad(Ptr<SVMSupportPattern> sp, int &y, double &g)
+{
+	y = -1;
+	g = DBL_MAX;
+
+//#pragma omp parallel for
+	for (int i = 0; i < (int)sp->rects.size(); i++) {
+		double gradient = -LossFunc(sp->rects[i], sp->rects[sp->y]) - F(sp->x[i], sp->rects[i]);
+		
+		//#pragma omp critical
+		{
+			if (gradient < g) {
+				y = i;
+				g = gradient;
+			}
+		}
+	}
+}
+
+void cv::TrackerStateEstimatorStruckSVM::ProcessNew(Ptr<SVMSupportPattern> sp, Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg)
+{
+	// for positive support vector, loss is zero
+	ypos = AddSupportVector(sp, sp->y, -F(sp->x[sp->y], sp->rects[sp->y]));
+
+	int ymin;
+	double gmin;
+	MinGrad(sp, ymin, gmin);
+
+	yneg = AddSupportVector(sp, ymin, gmin);
+
+	// link between support vectors
+	ypos->relative = Ptr<SVMSupportVector>(yneg);
+	yneg->relative = Ptr<SVMSupportVector>(ypos);
+}
+
+void cv::TrackerStateEstimatorStruckSVM::ProcessOld(Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg)
+{
+	if (supportPatterns.size() == 0) return;
+
+	// choose ramdomically
+	int ind = rand() % supportPatterns.size();
+	Ptr<SVMSupportPattern> pattern = supportPatterns.at(ind);
+
+	double maxGrad = -DBL_MAX;
+	ypos = Ptr<SVMSupportVector>();
+
+	for (size_t i = 0; i < supportVectors.size(); i++) {		
+		Ptr<SVMSupportVector> sv = supportVectors.at(i);
+
+		if (supportVectors[i]->x != pattern) continue;
+		
+		if ((sv->g > maxGrad) && (sv->beta < (delta(sv->y, pattern->y) * svmC))) {
+			maxGrad = sv->g;
+			ypos = sv;
+		}
+	}
+
+	if (!ypos) return;
+
+	int ymin;
+	double gmin;
+	MinGrad(pattern, ymin, gmin);
+
+	yneg = Ptr<SVMSupportVector>();
+	for (size_t i = 0; i < supportVectors.size(); i++) {
+		Ptr<SVMSupportVector> sv = supportVectors.at(i);
+
+		if (supportVectors.at(i)->x != pattern) continue;
+
+		if (sv->y == ymin) {
+			yneg = sv;
+			break;
+		}
+	}
+
+	if (!yneg)
+		yneg = AddSupportVector(pattern, ymin, gmin);
+}
+
+void cv::TrackerStateEstimatorStruckSVM::Optimize(Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg)
+{
+	if (supportPatterns.size() == 0) return;
+
+	// choose ramdomically
+	int ind = rand() % supportPatterns.size();
+	Ptr<SVMSupportPattern> pattern = supportPatterns[ind];
+
+	double maxGrad = -DBL_MAX;
+	double minGrad = DBL_MAX;
+
+	ypos = Ptr<SVMSupportVector>();
+	yneg = Ptr<SVMSupportVector>();
+
+	for (int i = 0; i < (int)supportVectors.size(); i++) {
+		const Ptr<SVMSupportVector> sv = supportVectors[i];
+
+		if (sv->x != pattern) continue;
+
+		bool restr = sv->beta < (delta(sv->y, pattern->y) * svmC);
+		
+		if (sv->g > maxGrad && restr) {
+			maxGrad = sv->g;
+			ypos = sv;
+		}
+
+		if (sv->g < minGrad) {
+			minGrad = sv->g;
+			yneg = sv;
+		}
+
+	}
+
+	assert(yneg);
+	assert(ypos);
+}
+
+void cv::TrackerStateEstimatorStruckSVM::SMOStep(Ptr<SVMSupportVector> svPos, Ptr<SVMSupportVector> svNeg)
+{
+	if (svPos == svNeg) return;
+
+	if ((svPos->g - svNeg->g) >= 1e-5)
+	{
+		// 1: k00 = <fi(xi, y+), fi(xi, y+)>
+		double k00 = GaussianKernelEval(svPos->x->x[svPos->y], svPos->x->x[svPos->y]);
+
+		// 2: k11 = <fi(xi, y-), fi(xi, y-)>
+		double k11 = GaussianKernelEval(svNeg->x->x[svNeg->y], svNeg->x->x[svNeg->y]);
+
+		// 3: k01 = <fi(xi, y+), fi(xi, y-)>
+		double k01 = GaussianKernelEval(svPos->x->x[svPos->y], svNeg->x->x[svNeg->y]);
+
+		// 4: lu = gi(y+) - gi(y-)/k00+k11-2*k01
+		double lu = (svPos->g - svNeg->g) / (k00 + k11 - 2.0 * k01);
+
+		// 5: l = max(0, min(lu, C*delta(y+, yi) - beta-y+-i))
+		double l = max(0.0, min(lu, svmC * delta(svPos->y, svPos->x->y) - svPos->beta));
+
+		// 6: *** Update coefficients
+		// 7: betai-ypos = betai-ypos + lambda
+		svPos->beta += l;
+
+		// 8: betai-ypos = betai-yneg + lambda
+		svNeg->beta -= l;
+
+		// 9: *** Update gradients
+		// 10: for (xj,y) in S do
+//#pragma omp parallel for
+		for (int j = 0; j < (int)supportVectors.size(); j++) {
+			Ptr<SVMSupportVector> sv = supportVectors.at(j);
+
+			// 11: k0 = <fi(xj, y), fi(xi, y++)>
+			double k0 = GaussianKernelEval(sv->x->x[sv->y], svPos->x->x[svPos->y]);
+
+			// 12: k1 = <fi(xj, y), fi(xi, y++)> 
+			double k1 = GaussianKernelEval(sv->x->x[sv->y], svNeg->x->x[svNeg->y]);
+
+			// 13: gi(y) = gj(y) - l * (k0 - k1)
+			sv->g -= l * (k0 - k1);
+		}
+	}
+
+	// so, maybe we should remove it
+	if (fabs(svPos->beta) < 1e-8) {
+		RemoveSupportVector(svPos);
+	}
+	if (fabs(svNeg->beta) < 1e-8) {
+		RemoveSupportVector(svNeg);
+	}
+}
+
+void cv::TrackerStateEstimatorStruckSVM::BudgetMaintenance()
+{
+	// if budget exceeded
+	if (supportVectors.size() > (size_t)svmBudgetSize) {
+
+		// remove the excess
+		while (supportVectors.size() > (size_t)svmBudgetSize) {
+
+			double minGrad = DBL_MAX;
+			Ptr<SVMSupportVector> svPos, svNeg;
+
+			// search min ||delta w|| ^ 2 (grad)
+			for (int i = 0; i < (int)supportVectors.size(); ++i)
+			{
+				// find negative support vectors
+				Ptr<SVMSupportVector> sv = supportVectors[i];
+				if (sv->beta < 0.0)
+				{
+					// get the relative (positive support vector)
+					Ptr<SVMSupportVector> svr = sv->relative;
+					//Ptr<SVMSupportVector> svr = Ptr<SVMSupportVector>();
+
+					if (!svr) {
+						for (int k = 0; k < (int)supportVectors.size(); ++k)
+						{
+							if (supportVectors[k]->beta > 0.0 && supportVectors[k]->x == sv->x)
+							{
+								svr = supportVectors[k];
+								break;
+							}
+						}
+					}
+
+					//if (svr) 
+					//{
+						assert(svr);
+
+						double grad = (sv->beta * sv->beta) * (
+							GaussianKernelEval(sv->xy(), sv->xy())
+							+ GaussianKernelEval(svr->xy(), svr->xy())
+							- 2.0 * GaussianKernelEval(sv->xy(), svr->xy()));
+						
+						if (grad < minGrad) {
+
+							minGrad = grad;
+							svPos = svr;
+							svNeg = sv;
+
+						}
+					//}
+				}
+			} // end for
+
+			assert(svPos);
+			assert(svNeg);
+
+			svPos->beta += svNeg->beta;
+
+			// remove vectors
+			RemoveSupportVector(svNeg);
+			if (svPos->beta < 1e-8)
+			{
+				RemoveSupportVector(svPos);
+			}
+
+			// update g of remaining vectors
+			for (int i = 0; i < (int)supportVectors.size(); ++i)
+			{
+				Ptr<SVMSupportVector> sv = supportVectors.at(i);
+				sv->g = -LossFunc(sv->rectY(), sv->x->rectY()) -F(sv->xy(), sv->x->rects[sv->y]);
+			}
+
+		} // end while
+	}
+
+}
+
+void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& confidenceMaps)
+{
+	ConfidenceMap lastConfidenceMap = confidenceMaps.back();
+	
+	// create the support pattern
+	Ptr<SVMSupportPattern> sp = Ptr<SVMSupportPattern>(new SVMSupportPattern());
+
+	sp->y = lastConfidenceMap.size() / 2;
+	sp->refCount = 0;
+
+
+	
+	// RADIAL SAMPLES
+	Point2f point;
+
+	int nr = 5, nt = 16;
+	
+	std::vector<Point2f> points;
+	points.push_back(Point2f(centre.x, centre.y));
+
+	float rstep = (float) 2*searchRadius / nr;
+	float tstep = 2 * (float)3.14159265358979323846 / nt;
+
+	for (int ir = 1; ir <= nr; ++ir)
+	{
+		float phase = (ir % 2)*tstep / 2;
+		for (int it = 0; it < nt; ++it)
+		{
+			float dx = ir*rstep*cosf(it*tstep + phase);
+			float dy = ir*rstep*sinf(it*tstep + phase);
+			point.x = centre.x + dx;
+			point.y = centre.y + dy;
+			points.push_back(point);
+		}
+	}
+	
+
+//#pragma omp parallel for
+	for (int i = 0; i < (int)lastConfidenceMap.size(); ++i)
+	{
+		Ptr<TrackerStruckTargetState> targetState =
+			lastConfidenceMap[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();
+		
+		
+		// RADIAL SAMPLES (check)
+		bool found = false;
+		for (int k = 0; k < (int)points.size(); k++) {
+			if (targetState->getTargetPosition().x == points[k].x &&
+				targetState->getTargetPosition().y == points[k].y) {
+				points.erase(std::remove(points.begin(), points.end(), points[k]));
+				found = true;
+				break;
+			}
+		}
+		if (!found) continue;
+		
+		
+		//if (!targetState->isCentre() && ((int)targetState->getTargetPosition().x % 2 ||
+		//	                             (int)targetState->getTargetPosition().y % 2)) 
+		//	continue;
+
+		Rect2d r(targetState->getBoundingBox());
+		r.x -= centre.x;
+		r.y -= centre.y;
+
+		//#pragma omp critical
+		{
+			sp->x.push_back(targetState->getResp());
+			sp->rects.push_back(r);
+			//sp->rect = targetState->getBoundingBox();
+
+			if (targetState->isCentre())
+				sp->y = i;
+		}
+	}
+	
+	supportPatterns.push_back(sp);	
+
+	// 4: *** Update discriminant function
+
+	Ptr<SVMSupportVector> ypos, yneg;
+
+	ProcessNew(sp, ypos, yneg);
+
+	SMOStep(ypos, yneg);
+
+	BudgetMaintenance();
+
+	for (int j = 0; j < 10; j++) {
+
+		ProcessOld(ypos, yneg);
+		SMOStep(ypos, yneg);
+
+		BudgetMaintenance();
+
+		for (int k = 0; k < 10; k++) {
+
+			Optimize(ypos, yneg);
+			SMOStep(ypos, yneg);
+		} // end for
+
+	} // end for
+}
+
 } /* namespace cv */

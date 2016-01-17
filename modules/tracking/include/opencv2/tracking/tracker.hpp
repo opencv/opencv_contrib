@@ -789,6 +789,122 @@ class CV_EXPORTS TrackerStateEstimatorSVM : public TrackerStateEstimator
   void updateImpl( std::vector<ConfidenceMap>& confidenceMaps );
 };
 
+
+/**
+* \brief TrackerStateEstimator for Struck SVM
+*/
+class CV_EXPORTS TrackerStateEstimatorStruckSVM : public TrackerStateEstimator {
+public:
+	/*
+	* Struck SVM estimator algorithm specific parameters
+	*/
+	struct CV_EXPORTS Params
+	{
+		/**
+		* \brief Constructor
+		*/
+		Params();
+
+		double	svmC;
+		int		svmBudgetSize;
+	};
+
+	class SVMSupportPattern {
+	public:
+		std::vector<Mat> x;
+		std::vector<Rect2f> rects;
+		int y;
+		int refCount;
+
+		Rect2f rectY();
+	};
+
+	class SVMSupportVector {
+	public:
+		Ptr<SVMSupportPattern> x;
+		int y;
+		double beta;
+		double g;
+		Ptr<SVMSupportVector> relative;
+
+		Mat xy();
+		Rect2f rectY();
+	};
+
+	/** @brief Implementation of the target state for TrackerAdaBoostingTargetState
+	*/
+	class TrackerStruckTargetState : public TrackerTargetState
+	{
+	public:
+		/**
+		* \brief Constructor
+		* \param position Top left corner of the bounding box
+		* \param width Width of the bounding box
+		* \param height Height of the bounding box
+		* \param responses list of features
+		*/
+		TrackerStruckTargetState(const Point2f& position, int width, int height, Mat responses);
+
+		/**
+		* \brief Destructor
+		*/
+		~TrackerStruckTargetState() { };
+
+		Mat getResp();
+		void setResp(Mat value);
+
+		Rect2d getBoundingBox();
+		
+		bool isCentre();
+		bool isCentre(bool value);
+		bool isUpdateOnly();
+		bool isUpdateOnly(bool value);
+
+	private:
+		Rect2d y;
+		Mat x;
+		bool _centre;
+		bool _updateOnly;
+	};
+
+	TrackerStateEstimatorStruckSVM();
+	TrackerStateEstimatorStruckSVM(Params params);
+	~TrackerStateEstimatorStruckSVM() { };
+
+	void setCurrentConfidenceMap(ConfidenceMap& confidenceMap);
+	void setCurrentCentre(Rect2d rect);
+	void setSearchRadius(int radius);
+private:
+	int svmBudgetSize;
+	double svmC;
+	
+	ConfidenceMap currentConfidenceMap;
+	int currentBestIndex;
+	Rect2f centre;
+	int searchRadius;
+
+	std::vector<Ptr<SVMSupportPattern>> supportPatterns;
+	std::vector<Ptr<SVMSupportVector>> supportVectors;
+
+	void Evaluate(ConfidenceMap & map);
+	
+	double F(Mat x, Rect2d y);
+	void MinGrad(Ptr<SVMSupportPattern> sp, int &y, double &g);
+	Ptr<SVMSupportVector> AddSupportVector(Ptr<SVMSupportPattern> sp, int y, double g);
+	void RemoveSupportVector(Ptr<SVMSupportVector> sv);
+
+	void SMOStep(Ptr<SVMSupportVector> svPos, Ptr<SVMSupportVector> svNeg);
+	void ProcessNew(Ptr<SVMSupportPattern> sp, Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg);
+	void ProcessOld(Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg);
+	void Optimize(Ptr<SVMSupportVector> & ypos, Ptr<SVMSupportVector> & yneg);
+
+	void BudgetMaintenance();
+
+protected:
+	Ptr<TrackerTargetState> estimateImpl(const std::vector<ConfidenceMap>& confidenceMaps);
+	void updateImpl(std::vector<ConfidenceMap>& confidenceMaps);
+};
+
 /************************************ Specific TrackerSamplerAlgorithm Classes ************************************/
 
 /** @brief TrackerSampler based on CSC (current state centered), used by MIL algorithm TrackerMIL
@@ -1266,6 +1382,9 @@ public:
 class CV_EXPORTS TrackerStruck : public Tracker
 {
 public:
+	/*
+	* Struck algorithm specific parameters
+	*/
     struct CV_EXPORTS Params
     {
         /**
@@ -1283,12 +1402,10 @@ public:
         */
         void write( FileStorage& fs ) const;
         
-        /*
-        * Struck algorithm specific parameters
-        */
-        int     searchRadius;
+        float   searchRadius;
         double	svmC;
-        int		svmBudgetSize;               
+        int		svmBudgetSize;
+		int		customSeed;
 	};
 
     /** @brief Constructor

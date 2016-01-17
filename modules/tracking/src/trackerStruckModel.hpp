@@ -47,18 +47,28 @@
 /*---------------------------
 |  TrackerStruckModel
 |---------------------------*/
-namespace cv{
-   /**
-  * \brief Implementation of TrackerModel for Struck algorithm
-  */
-  class TrackerStruckModel : public TrackerModel{
-  public:
-    TrackerStruckModel(TrackerStruck::Params params);
-    ~TrackerStruckModel(){}
-  protected:
-    void modelEstimationImpl( const std::vector<Mat>& responses );
-    void modelUpdateImpl();
-  };
+namespace cv {
+	/**
+   * \brief Implementation of TrackerModel for Struck algorithm
+   */
+	class TrackerStruckModel : public TrackerModel {
+	public:
+		TrackerStruckModel(const Rect& boundingBox);
+		~TrackerStruckModel() {}
+
+		void setCurrentBoundingBox(const Rect& value);
+		void setCurrentSamples(const std::vector<Mat> &samples);
+		void setSearchRadius(int radius);
+		ConfidenceMap getCurrentConfidenceMap();
+
+	protected:
+		Rect bb;
+		std::vector<Mat> currentSamples;
+		int searchRadius;
+
+		void modelEstimationImpl(const std::vector<Mat>& responses);
+		void modelUpdateImpl();
+	};
 } /* namespace cv */
 
 #endif

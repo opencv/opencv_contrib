@@ -49,19 +49,76 @@ namespace cv
 {
 
     /* Constructor */
-    TrackerStruckModel::TrackerStruckModel(TrackerStruck::Params params){
-        // TODO implementation
-    }    
+    TrackerStruckModel::TrackerStruckModel(const Rect& boundingBox){
+		bb = boundingBox;
+
+		Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState> initState = Ptr<TrackerStateEstimatorMILBoosting::TrackerMILTargetState>(
+			new TrackerStateEstimatorMILBoosting::TrackerMILTargetState(Point2f((float)bb.x, (float)bb.y), bb.width, bb.height,
+				true, Mat()));
+
+		trajectory.push_back(initState);
+    }
+
+	void TrackerStruckModel::setCurrentBoundingBox(const Rect & value)
+	{
+		bb = value;
+	}
+
+	void TrackerStruckModel::setCurrentSamples(const std::vector<Mat>& samples)
+	{
+		currentSamples.clear();
+		currentSamples = samples;
+	}
+
+	void TrackerStruckModel::setSearchRadius(int radius)
+	{
+		searchRadius = radius;
+	}
+
+	ConfidenceMap TrackerStruckModel::getCurrentConfidenceMap()
+	{
+		return currentConfidenceMap;
+	}
         
     void TrackerStruckModel::modelEstimationImpl( const std::vector<Mat>& responses )
     {
-        // TODO implementation
+		// set currentConfidenceMap 
+		for (int i = 0; i < (int)responses.size(); i++) {
+
+			for (int j = 0; j < responses.at(i).cols; j++) {
+				
+				Size currentSize;
+				Point currentOfs;
+				currentSamples.at(j).locateROI(currentSize, currentOfs);
+
+				Point2f pos((float)currentOfs.x, (float)currentOfs.y);
+
+				Mat resp = responses.at(i).col(j);
+
+				Ptr<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState> state = Ptr<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>(
+					new TrackerStateEstimatorStruckSVM::TrackerStruckTargetState(pos, bb.width, bb.height, resp));
+				
+				state->isCentre(bb.x == pos.x && bb.y == pos.y);
+
+				if (!state->isCentre()) {
+					currentConfidenceMap.push_back(std::make_pair(state, 0.0f));
+
+					double dist = norm(Point2f((bb.x + bb.width) / 2.0, (bb.y + bb.height)/2.0) - 
+									   Point2f((pos.x + bb.width) / 2.0, (pos.y + bb.height) / 2.0));
+					state->isUpdateOnly(dist > searchRadius);					
+				}
+				else
+					// bb state stays at top
+					currentConfidenceMap.insert(currentConfidenceMap.begin(), std::make_pair(state, 0.0f));
+			}
+		}
 
     }
 
     void TrackerStruckModel::modelUpdateImpl()
     {
-        // TODO implementation
+
+
     }    
     
 }
