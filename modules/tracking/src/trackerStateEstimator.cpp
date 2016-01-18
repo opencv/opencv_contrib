@@ -602,11 +602,11 @@ void TrackerStateEstimatorStruckSVM::Evaluate(ConfidenceMap& map) {
 
 		Ptr<TrackerStruckTargetState> targetState = 
 			map[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();
-
+		/*
 		if (targetState->isUpdateOnly()) {
-			map[i].second = -DBL_MAX;
+			map[i].second = -FLT_MAX;
 			continue;
-		}
+		}*/
 
 		Rect2d r(targetState->getBoundingBox());
 		r.x -= centre.x;
@@ -925,24 +925,22 @@ void cv::TrackerStateEstimatorStruckSVM::BudgetMaintenance()
 
 void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& confidenceMaps)
 {
-	ConfidenceMap lastConfidenceMap = confidenceMaps.back();
+	ConfidenceMap lastConfidenceMap = /*currentConfidenceMap;*/ confidenceMaps.back();
 	
 	// create the support pattern
 	Ptr<SVMSupportPattern> sp = Ptr<SVMSupportPattern>(new SVMSupportPattern());
-
-	sp->y = lastConfidenceMap.size() / 2;
-	sp->refCount = 0;
-
-
+	sp->refCount = 0;	
 	
 	// RADIAL SAMPLES
-	Point2f point;
-
-	int nr = 5, nt = 16;
-	
 	std::vector<Point2f> points;
-	points.push_back(Point2f(centre.x, centre.y));
+	if (currentBestIndex == -1)
+		points.push_back(Point2f(centre.x, centre.y));
+	else {
+		points.push_back(lastConfidenceMap[currentBestIndex].first.staticCast<TrackerStruckTargetState>()->getTargetPosition());
+	}	
 
+	Point2f point;
+	int nr = 5, nt = 16;
 	float rstep = (float) 2*searchRadius / nr;
 	float tstep = 2 * (float)3.14159265358979323846 / nt;
 
@@ -958,31 +956,32 @@ void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& conf
 			points.push_back(point);
 		}
 	}
-	
 
 //#pragma omp parallel for
 	for (int i = 0; i < (int)lastConfidenceMap.size(); ++i)
 	{
 		Ptr<TrackerStruckTargetState> targetState =
-			lastConfidenceMap[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();
-		
-		
+			lastConfidenceMap[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();		
+		/*
 		// RADIAL SAMPLES (check)
 		bool found = false;
-		for (int k = 0; k < (int)points.size(); k++) {
-			if (targetState->getTargetPosition().x == points[k].x &&
-				targetState->getTargetPosition().y == points[k].y) {
-				points.erase(std::remove(points.begin(), points.end(), points[k]));
-				found = true;
-				break;
+		//#pragma omp critical
+		{
+			for (int k = 0; k < (int)points.size(); k++) {
+				if (targetState->getTargetPosition().x == points[k].x &&
+					targetState->getTargetPosition().y == points[k].y) {
+					points.erase(std::remove(points.begin(), points.end(), points[k]));
+					found = true;
+					break;
+				}
 			}
 		}
-		if (!found) continue;
+		if (!found) continue;*/
 		
-		
-		//if (!targetState->isCentre() && ((int)targetState->getTargetPosition().x % 2 ||
-		//	                             (int)targetState->getTargetPosition().y % 2)) 
-		//	continue;
+		bool canSkip = (currentBestIndex == -1 && !targetState->isCentre()) || (currentBestIndex != -1 && currentBestIndex != i);
+		if (canSkip && ((int)targetState->getTargetPosition().x % 2 ||
+						(int)targetState->getTargetPosition().y % 2)) 
+			continue;
 
 		Rect2d r(targetState->getBoundingBox());
 		r.x -= centre.x;
@@ -993,20 +992,17 @@ void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& conf
 			sp->x.push_back(targetState->getResp());
 			sp->rects.push_back(r);
 			//sp->rect = targetState->getBoundingBox();
-
-			if (targetState->isCentre())
-				sp->y = i;
+			if ((currentBestIndex == -1 && targetState->isCentre()) || (currentBestIndex != -1 && currentBestIndex == i))
+				sp->y = (sp->x.size() - 1);				
 		}
 	}
 	
 	supportPatterns.push_back(sp);	
 
 	// 4: *** Update discriminant function
-
 	Ptr<SVMSupportVector> ypos, yneg;
 
 	ProcessNew(sp, ypos, yneg);
-
 	SMOStep(ypos, yneg);
 
 	BudgetMaintenance();

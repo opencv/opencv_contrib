@@ -174,6 +174,7 @@ namespace cv
 		// CSC sampler
 		TrackerSamplerCSC::Params CSCparameters;
 		CSCparameters.initInRad = 2*params.searchRadius;
+		CSCparameters.trackInPosRad = params.searchRadius;
 		Ptr<TrackerSamplerAlgorithm> CSCSampler = Ptr<TrackerSamplerCSC>(new TrackerSamplerCSC(CSCparameters));
 		sampler->addTrackerSamplerAlgorithm(CSCSampler);
 
@@ -210,8 +211,8 @@ namespace cv
 
 		featureSet->extraction(samples);
 		std::vector<Mat> resps = featureSet->getResponses();
-
 		normalizeResps(resps);
+
 /*		
 		GenerateSystematic();
 
@@ -243,8 +244,11 @@ namespace cv
 
 		model.staticCast<TrackerStruckModel>()->setCurrentSamples(samples);
 		model.staticCast<TrackerStruckModel>()->setCurrentBoundingBox(boundingBox);
-		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentCentre(boundingBox);
 		model->modelEstimation(resps);
+		ConfidenceMap currentMap = model.staticCast<TrackerStruckModel>()->getCurrentConfidenceMap();
+
+		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentConfidenceMap(currentMap);
+		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentCentre(boundingBox);
 
 		model->modelUpdate();
         
@@ -253,9 +257,8 @@ namespace cv
     
     /* ----- UPDATE Implementation -----------------------------------------------------------*/    
     bool TrackerStruckImpl::updateImpl( const Mat& image, Rect2d& boundingBox ) 
-    {
-        //TrackerStruckModel* struckModel = ((TrackerStruckModel*)static_cast<TrackerModel*>(model));
-        
+    {       
+		// tracking phase
 		Ptr<TrackerTargetState> lastTargetState = model->getLastTargetState();
 		Rect2d lastbb(lastTargetState->getTargetPosition().x, lastTargetState->getTargetPosition().y, lastTargetState->getTargetWidth(), lastTargetState->getTargetHeight());
 
@@ -264,12 +267,12 @@ namespace cv
 		Mat intImage(tmp.rows + 1, tmp.cols + 1, CV_32SC1);
 		integral(tmp, intImage);
 
+		//(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCSC>()->setMode(TrackerSamplerCSC::MODE_TRACK_POS);
 		sampler->sampling(intImage, lastbb);
 		std::vector<Mat> samples = sampler->getSamples();
 
 		featureSet->extraction(samples);
 		std::vector<Mat> resps = featureSet->getResponses();
-
 		normalizeResps(resps);
 
 /*
@@ -289,11 +292,33 @@ namespace cv
 			return false;
 		}
 
-        model->modelUpdate();
-
+		// update model phase
+		/*
+		samples.clear();
+		resps.clear();
+		currentMap.clear();
+		*/
 		Ptr<TrackerTargetState> currentState = model->getLastTargetState();
-		boundingBox = Rect((int)currentState->getTargetPosition().x, (int)currentState->getTargetPosition().y, currentState->getTargetWidth(),
+		boundingBox = Rect((int)currentState->getTargetPosition().x, (int)currentState->getTargetPosition().y, 
+			currentState->getTargetWidth(),
 			currentState->getTargetHeight());
+		/*
+		//(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCSC>()->setMode(TrackerSamplerCSC::MODE_INIT_POS);
+		sampler->sampling(intImage, boundingBox);
+		samples = sampler->getSamples();
+
+		featureSet->extraction(samples);
+		resps = featureSet->getResponses();
+		normalizeResps(resps);
+
+		model.staticCast<TrackerStruckModel>()->setCurrentSamples(samples);
+		model.staticCast<TrackerStruckModel>()->setCurrentBoundingBox(boundingBox);
+		model.staticCast<TrackerStruckModel>()->responseToConfidenceMap(resps, currentMap);
+		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentConfidenceMap(currentMap);
+		*/
+		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentCentre(boundingBox);
+
+        model->modelUpdate();
         
         return true;
     }
@@ -303,7 +328,7 @@ namespace cv
     */
     TrackerStruck::Params::Params(){
         // default values of the params
-        searchRadius = 20; // px
+        searchRadius = 10; // px
         svmC = 100.0;
         svmBudgetSize = 100;
 		customSeed = -1;

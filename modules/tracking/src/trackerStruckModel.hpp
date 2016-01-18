@@ -60,6 +60,7 @@ namespace cv {
 		void setCurrentSamples(const std::vector<Mat> &samples);
 		void setSearchRadius(int radius);
 		ConfidenceMap getCurrentConfidenceMap();
+		void responseToConfidenceMap(const const std::vector<Mat>& resps, ConfidenceMap& map);
 
 	protected:
 		Rect bb;
