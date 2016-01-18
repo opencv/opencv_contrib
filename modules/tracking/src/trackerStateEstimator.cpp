@@ -561,19 +561,13 @@ void TrackerStateEstimatorStruckSVM::setSearchRadius(int radius)
 
 double LossFunc(Rect2d y1, Rect2d y2) {
 	Rect2d overlap = y1 & y2;
-	double coeff = overlap.area() / (y1.area() + y2.area() - overlap.area());
-	//double coeff = 2 * overlap.area() / (y1.area() + y2.area() - overlap.area());
+	//double coeff = overlap.area() / (y1.area() + y2.area() - overlap.area());
+	double coeff = 2 * overlap.area() / (y1.area() + y2.area() - overlap.area());
 	return 1 - coeff;
 }
 
 double GaussianKernelEval(const Mat x1, const Mat x2)
 {
-	/*
-	std::vector<float> v1, v2;
-	for (int i = 0; i < x1.rows; i++) v1.push_back(x1.at<float>(i, 0));
-	for (int i = 0; i < x2.rows; i++) v2.push_back(x2.at<float>(i, 0));
-	double normSub = norm(Mat(v1) - Mat(v2));
-	*/
 	double normSub = norm(x1 - x2);
 	return exp(-0.2 * (normSub*normSub));
 }
@@ -598,15 +592,11 @@ double TrackerStateEstimatorStruckSVM::F(Mat x, Rect2d /*y*/) {
 void TrackerStateEstimatorStruckSVM::Evaluate(ConfidenceMap& map) {
 	const int size = map.size();
 
+#pragma omp parallel for
 	for (int i = 0; i < (int)size; i++) {
 
 		Ptr<TrackerStruckTargetState> targetState = 
 			map[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();
-		/*
-		if (targetState->isUpdateOnly()) {
-			map[i].second = -FLT_MAX;
-			continue;
-		}*/
 
 		Rect2d r(targetState->getBoundingBox());
 		r.x -= centre.x;
@@ -627,6 +617,7 @@ Ptr<TrackerTargetState> TrackerStateEstimatorStruckSVM::estimateImpl(const std::
 	// finding arg max y
 	double bestScore = -DBL_MAX;
 	int bestIndex = -1;
+
 	for (int i = 0; i < (int)currentConfidenceMap.size(); ++i)
 	{
 		if (currentConfidenceMap.at(i).second > bestScore)
@@ -923,78 +914,32 @@ void cv::TrackerStateEstimatorStruckSVM::BudgetMaintenance()
 
 }
 
-void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& confidenceMaps)
+void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& /*confidenceMaps*/)
 {
-	ConfidenceMap lastConfidenceMap = /*currentConfidenceMap;*/ confidenceMaps.back();
+	ConfidenceMap lastConfidenceMap = currentConfidenceMap; /*confidenceMaps.back();*/
 	
 	// create the support pattern
 	Ptr<SVMSupportPattern> sp = Ptr<SVMSupportPattern>(new SVMSupportPattern());
 	sp->refCount = 0;	
-	
-	// RADIAL SAMPLES
-	std::vector<Point2f> points;
-	if (currentBestIndex == -1)
-		points.push_back(Point2f(centre.x, centre.y));
-	else {
-		points.push_back(lastConfidenceMap[currentBestIndex].first.staticCast<TrackerStruckTargetState>()->getTargetPosition());
-	}	
-
-	Point2f point;
-	int nr = 5, nt = 16;
-	float rstep = (float) 2*searchRadius / nr;
-	float tstep = 2 * (float)3.14159265358979323846 / nt;
-
-	for (int ir = 1; ir <= nr; ++ir)
-	{
-		float phase = (ir % 2)*tstep / 2;
-		for (int it = 0; it < nt; ++it)
-		{
-			float dx = ir*rstep*cosf(it*tstep + phase);
-			float dy = ir*rstep*sinf(it*tstep + phase);
-			point.x = centre.x + dx;
-			point.y = centre.y + dy;
-			points.push_back(point);
-		}
-	}
 
 //#pragma omp parallel for
 	for (int i = 0; i < (int)lastConfidenceMap.size(); ++i)
 	{
 		Ptr<TrackerStruckTargetState> targetState =
 			lastConfidenceMap[i].first.staticCast<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>();		
-		/*
-		// RADIAL SAMPLES (check)
-		bool found = false;
-		//#pragma omp critical
-		{
-			for (int k = 0; k < (int)points.size(); k++) {
-				if (targetState->getTargetPosition().x == points[k].x &&
-					targetState->getTargetPosition().y == points[k].y) {
-					points.erase(std::remove(points.begin(), points.end(), points[k]));
-					found = true;
-					break;
-				}
-			}
-		}
-		if (!found) continue;*/
-		
-		bool canSkip = (currentBestIndex == -1 && !targetState->isCentre()) || (currentBestIndex != -1 && currentBestIndex != i);
-		if (canSkip && ((int)targetState->getTargetPosition().x % 2 ||
-						(int)targetState->getTargetPosition().y % 2)) 
-			continue;
-
+	
 		Rect2d r(targetState->getBoundingBox());
 		r.x -= centre.x;
 		r.y -= centre.y;
 
-		//#pragma omp critical
-		{
-			sp->x.push_back(targetState->getResp());
-			sp->rects.push_back(r);
-			//sp->rect = targetState->getBoundingBox();
-			if ((currentBestIndex == -1 && targetState->isCentre()) || (currentBestIndex != -1 && currentBestIndex == i))
-				sp->y = (sp->x.size() - 1);				
-		}
+	//#pragma omp critical
+	//{
+		sp->x.push_back(targetState->getResp());
+		sp->rects.push_back(r);
+
+		if (targetState->isCentre())
+			sp->y = (sp->x.size() - 1);				
+	//}
 	}
 	
 	supportPatterns.push_back(sp);	

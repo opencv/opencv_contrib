@@ -80,7 +80,7 @@ namespace cv
 		return currentConfidenceMap;
 	}
 
-	void TrackerStruckModel::responseToConfidenceMap(const const std::vector<Mat>& resps, ConfidenceMap & map)
+	void TrackerStruckModel::responseToConfidenceMap(const std::vector<Mat>& resps, ConfidenceMap & map)
 	{
 		for (int i = 0; i < (int)resps.size(); i++) {
 
@@ -92,7 +92,7 @@ namespace cv
 
 				Point2f pos((float)currentOfs.x, (float)currentOfs.y);
 
-				Mat resp = resps.at(i).col(j);
+				Mat resp = resps[i].col(j);
 
 				Ptr<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState> state = Ptr<TrackerStateEstimatorStruckSVM::TrackerStruckTargetState>(
 					new TrackerStateEstimatorStruckSVM::TrackerStruckTargetState(pos, bb.width, bb.height, resp));
@@ -101,10 +101,12 @@ namespace cv
 
 				if (!state->isCentre()) {
 					map.push_back(std::make_pair(state, 0.0f));
-
+					
+					/*
 					double dist = norm(Point2f((bb.x + bb.width) / 2.0, (bb.y + bb.height) / 2.0) -
 						Point2f((pos.x + bb.width) / 2.0, (pos.y + bb.height) / 2.0));
 					state->isUpdateOnly(dist > searchRadius);
+					*/
 				}
 				else
 					// bb state stays at top

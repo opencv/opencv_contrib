@@ -172,11 +172,16 @@ namespace cv
 			srand(time(NULL));
 
 		// CSC sampler
-		TrackerSamplerCSC::Params CSCparameters;
+		/*TrackerSamplerCSC::Params CSCparameters;
 		CSCparameters.initInRad = 2*params.searchRadius;
 		CSCparameters.trackInPosRad = params.searchRadius;
 		Ptr<TrackerSamplerAlgorithm> CSCSampler = Ptr<TrackerSamplerCSC>(new TrackerSamplerCSC(CSCparameters));
-		sampler->addTrackerSamplerAlgorithm(CSCSampler);
+		sampler->addTrackerSamplerAlgorithm(CSCSampler);*/
+		TrackerSamplerCircular::Params samplerParams;
+		samplerParams.radius = params.searchRadius;
+		Ptr<TrackerSamplerAlgorithm> circularSampler = Ptr<TrackerSamplerCircular>(new TrackerSamplerCircular(samplerParams));
+		if (!sampler->addTrackerSamplerAlgorithm(circularSampler))
+			return false;
 
 		// HAAR features
 		TrackerFeatureHAAR::Params HAARParams;
@@ -206,41 +211,13 @@ namespace cv
 		Mat intImage(tmp.rows + 1, tmp.cols + 1, CV_32SC1);
 		integral(tmp, intImage);
 
+		circularSampler.staticCast<TrackerSamplerCircular>()->setMode(TrackerSamplerCircular::MODE_RADIAL);
 		sampler->sampling(intImage, boundingBox);
 		std::vector<Mat> samples = sampler->getSamples();
 
 		featureSet->extraction(samples);
 		std::vector<Mat> resps = featureSet->getResponses();
 		normalizeResps(resps);
-
-/*		
-		GenerateSystematic();
-
-		std::vector<Mat> resps;
-		Mat r;
-		ExtractFeatures(intImage, samples, r);
-		resps.push_back(r);
-		*/
-/*
-		for (int i = 0; i < resps[0].rows; i++) {
-			float result2 = (float)norm(resps[0].row(i));
-
-			for (int j = 0; j < resps[0].cols; j++) {
-
-				float f = resps[0].at<float>(i, j);
-				f = f / result2;
-				Mat_<float>(resps[0])(i, j) = f;
-				//float result1 = f / (float) norm(resps.at(0).col(j));				
-
-				//std::vector<Rect> areas = trackerFeature.staticCast<TrackerFeatureHAAR>()->getFeatureAt(i).getAreas();
-				//float mean = trackerFeature.staticCast<TrackerFeatureHAAR>()->getFeatureAt(i).getInitMean();
-				//float sigma = trackerFeature.staticCast<TrackerFeatureHAAR>()->getFeatureAt(i).getInitSigma();
-				//int numAreas = trackerFeature.staticCast<TrackerFeatureHAAR>()->getFeatureAt(i).getNumAreas();
-				//std::vector<float> weights = trackerFeature.staticCast<TrackerFeatureHAAR>()->getFeatureAt(i).getWeights();
-
-			}
-		}
-*/
 
 		model.staticCast<TrackerStruckModel>()->setCurrentSamples(samples);
 		model.staticCast<TrackerStruckModel>()->setCurrentBoundingBox(boundingBox);
@@ -267,7 +244,7 @@ namespace cv
 		Mat intImage(tmp.rows + 1, tmp.cols + 1, CV_32SC1);
 		integral(tmp, intImage);
 
-		//(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCSC>()->setMode(TrackerSamplerCSC::MODE_TRACK_POS);
+		(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCircular>()->setMode(TrackerSamplerCircular::MODE_PIXELS);
 		sampler->sampling(intImage, lastbb);
 		std::vector<Mat> samples = sampler->getSamples();
 
@@ -275,12 +252,6 @@ namespace cv
 		std::vector<Mat> resps = featureSet->getResponses();
 		normalizeResps(resps);
 
-/*
-		std::vector<Mat> resps;
-		Mat r;
-		ExtractFeatures(intImage, samples, r);
-		resps.push_back(r);
-*/
 		model.staticCast<TrackerStruckModel>()->setCurrentSamples(samples);
 		model.staticCast<TrackerStruckModel>()->setCurrentBoundingBox(lastbb);
 		model->modelEstimation(resps);
@@ -293,17 +264,16 @@ namespace cv
 		}
 
 		// update model phase
-		/*
 		samples.clear();
 		resps.clear();
 		currentMap.clear();
-		*/
+
 		Ptr<TrackerTargetState> currentState = model->getLastTargetState();
 		boundingBox = Rect((int)currentState->getTargetPosition().x, (int)currentState->getTargetPosition().y, 
 			currentState->getTargetWidth(),
 			currentState->getTargetHeight());
-		/*
-		//(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCSC>()->setMode(TrackerSamplerCSC::MODE_INIT_POS);
+
+		(sampler->getSamplers().at(0).second).staticCast<TrackerSamplerCircular>()->setMode(TrackerSamplerCircular::MODE_RADIAL);
 		sampler->sampling(intImage, boundingBox);
 		samples = sampler->getSamples();
 
@@ -315,7 +285,7 @@ namespace cv
 		model.staticCast<TrackerStruckModel>()->setCurrentBoundingBox(boundingBox);
 		model.staticCast<TrackerStruckModel>()->responseToConfidenceMap(resps, currentMap);
 		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentConfidenceMap(currentMap);
-		*/
+
 		model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorStruckSVM>()->setCurrentCentre(boundingBox);
 
         model->modelUpdate();
@@ -328,7 +298,7 @@ namespace cv
     */
     TrackerStruck::Params::Params(){
         // default values of the params
-        searchRadius = 10; // px
+        searchRadius = 30; // px
         svmC = 100.0;
         svmBudgetSize = 100;
 		customSeed = -1;
@@ -342,124 +312,4 @@ namespace cv
 
     }
 
-	/*
-	//int TrackerStruckImpl::HaarFeature::Sum(const Mat & s, const Size & imageSize, Rect2i& rect, int channel) const
-	int TrackerStruckImpl::HaarFeature::Sum(const Mat & s, const Size & imageSize, int x, int y, int width, int height) const
-	{
-		//assert(rect.x >= 0 && rect.y >= 0 && (rect.x + rect.width) <= imageSize.width && (rect.y + rect.height) <= imageSize.height);
-		//return s.at<int>(rect.y, rect.x) +
-		//	s.at<int>((rect.y + rect.height), (rect.x + rect.width)) -
-		//	s.at<int>((rect.y + rect.height), rect.x) -
-		//	s.at<int>(rect.y, (rect.x + rect.width));
-
-		assert(x >= 0 && y >= 0 && (x + width) <= imageSize.width && (y + height) <= imageSize.height);
-		return s.at<int>(y, x) +
-			s.at<int>((y + height), (x + width)) -
-			s.at<int>((y + height), x) -
-			s.at<int>(y, (x + width));
-	}
-
-	TrackerStruckImpl::HaarFeature::HaarFeature(const Rect2d & bb, int type) :
-		m_bb(bb)
-	{
-		assert(type < 6);
-
-		switch (type)
-		{
-			case 0:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width, bb.height / 2));
-				m_rects.push_back(Rect2f(bb.x, bb.y + bb.height / 2, bb.width, bb.height / 2));
-				m_weights.push_back(1.f);
-				m_weights.push_back(-1.f);
-				m_factor = 255 * 1.f / 2;
-				break;
-			}
-			case 1:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width / 2, bb.height));
-				m_rects.push_back(Rect2f(bb.x + bb.width / 2, bb.y, bb.width / 2, bb.height));
-				m_weights.push_back(1.f);
-				m_weights.push_back(-1.f);
-				m_factor = 255 * 1.f / 2;
-				break;
-			}
-			case 2:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width / 3, bb.height));
-				m_rects.push_back(Rect2f(bb.x + bb.width / 3, bb.y, bb.width / 3, bb.height));
-				m_rects.push_back(Rect2f(bb.x + 2 * bb.width / 3, bb.y, bb.width / 3, bb.height));
-				m_weights.push_back(1.f);
-				m_weights.push_back(-2.f);
-				m_weights.push_back(1.f);
-				m_factor = 255 * 2.f / 3;
-				break;
-			}
-			case 3:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width, bb.height / 3));
-				m_rects.push_back(Rect2f(bb.x, bb.y + bb.height / 3, bb.width, bb.height / 3));
-				m_rects.push_back(Rect2f(bb.x, bb.y + 2 * bb.height / 3, bb.width, bb.height / 3));
-				m_weights.push_back(1.f);
-				m_weights.push_back(-2.f);
-				m_weights.push_back(1.f);
-				m_factor = 255 * 2.f / 3;
-				break;
-			}
-			case 4:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width / 2, bb.height / 2));
-				m_rects.push_back(Rect2f(bb.x + bb.width / 2, bb.y + bb.height / 2, bb.width / 2, bb.height / 2));
-				m_rects.push_back(Rect2f(bb.x, bb.y + bb.height / 2, bb.width / 2, bb.height / 2));
-				m_rects.push_back(Rect2f(bb.x + bb.width / 2, bb.y, bb.width / 2, bb.height / 2));
-				m_weights.push_back(1.f);
-				m_weights.push_back(1.f);
-				m_weights.push_back(-1.f);
-				m_weights.push_back(-1.f);
-				m_factor = 255 * 1.f / 2;
-				break;
-			}
-			case 5:
-			{
-				m_rects.push_back(Rect2f(bb.x, bb.y, bb.width, bb.height));
-				m_rects.push_back(Rect2f(bb.x + bb.width / 4, bb.y + bb.height / 4, bb.width / 2, bb.height / 2));
-				m_weights.push_back(1.f);
-				m_weights.push_back(-4.f);
-				m_factor = 255 * 3.f / 4;
-				break;
-			}
-		}
-	}
-
-	TrackerStruckImpl::HaarFeature::~HaarFeature()
-	{
-	}
-
-	float TrackerStruckImpl::HaarFeature::Eval(const Mat& intImage, const Mat & s) const
-	{
-		Size currentSize;
-		Point currentOfs;
-		s.locateROI(currentSize, currentOfs);
-		const Rect2d roi(currentOfs.x, currentOfs.y, s.cols, s.rows);
-
-		float value = 0.f;
-		for (int i = 0; i < (int)m_rects.size(); ++i)
-		{
-			const Rect2f& r = m_rects[i];
-			
-			//Rect2i sampleRect(
-			//	(int)(roi.x + r.x*roi.width + 0.5f),
-			//	(int)(roi.y + r.y*roi.height + 0.5f),
-			//	(int)(r.width*roi.width), 
-			//	(int)(r.height*roi.height));
-
-			value += m_weights[i] * Sum(intImage, currentSize, 
-				(int)(roi.x + r.x*roi.width + 0.5f),
-				(int)(roi.y + r.y*roi.height + 0.5f),
-				(int)(r.width*roi.width),
-				(int)(r.height*roi.height));
-		}
-		return value / (m_factor*roi.area()*m_bb.area());
-	}
-*/
 } /* namespace cv */

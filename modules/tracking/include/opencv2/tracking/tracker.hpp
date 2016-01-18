@@ -1064,6 +1064,46 @@ private:
   Ptr<MinProblemSolver::Function> _function;
 };
 
+class CV_EXPORTS TrackerSamplerCircular : public TrackerSamplerAlgorithm
+{
+public:
+	enum
+	{
+		MODE_RADIAL = 1,
+		MODE_PIXELS = 2
+	};
+
+	struct CV_EXPORTS Params
+	{
+		Params();
+		int radius;
+		int translations;
+		int rotations;
+		bool half;
+	};
+	TrackerSamplerCircular(const TrackerSamplerCircular::Params &parameters = TrackerSamplerCircular::Params());
+	~TrackerSamplerCircular();
+
+	/** @brief Set the sampling mode of TrackerSamplerCircular
+	@param samplingMode The sampling mode
+
+	The modes are:
+
+	-   "MODE_RADIAL = 1" -- for the radial sampling
+	-   "MODE_PIXELS = 2" -- for the pixels sampling
+	*/
+	void setMode(int samplingMode);
+protected:
+	bool samplingImpl(const Mat& image, Rect boundingBox, std::vector<Mat>& sample);
+private:
+	Params params;
+	int mode;
+	Rect center;
+
+	bool radialSamples(const Mat& image, std::vector<Mat>& sample);
+	bool pixelSamples(const Mat& image, std::vector<Mat>& sample);
+};
+
 /************************************ Specific TrackerFeature Classes ************************************/
 
 /**
@@ -1402,7 +1442,7 @@ public:
         */
         void write( FileStorage& fs ) const;
         
-        float   searchRadius;
+        int   searchRadius;
         double	svmC;
         int		svmBudgetSize;
 		int		customSeed;
