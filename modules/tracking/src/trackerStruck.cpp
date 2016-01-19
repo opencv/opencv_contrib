@@ -59,29 +59,7 @@ namespace cv
         void write( FileStorage& fs ) const;
 
     protected:
-/*		
-		class HaarFeature {
-		private:
-			std::vector<Rect2f> m_rects;
-			std::vector<float> m_weights;
-			float m_factor;
-			Rect2d m_bb;
-			//int Sum(const Mat & s, const Size & imageSize, Rect2i& rect, int channel = 0) const;
-			int Sum(const Mat & s, const Size & imageSize, int x, int y, int width, int height) const;
-		public:
-			HaarFeature(const Rect2d& bb, int type);
-			~HaarFeature();
-			float HaarFeature::Eval(const Mat& intImage, const Mat& s) const;
-		};
-*/
-
 		void normalizeResps(std::vector<Mat>& resps);
-
-/*
-		std::vector<HaarFeature> m_features;
-		void GenerateSystematic();
-		void ExtractFeatures(const Mat & intImage, const std::vector<Mat>& images, Mat& response);
-*/
 		
 		/*
         * basic functions and vars
@@ -122,45 +100,7 @@ namespace cv
 				Mat_<float>(resps[0])(i, j) /= n;
 			}
 		}
-	}
-
-	/*
-	void TrackerStruckImpl::GenerateSystematic()
-	{
-		float x[] = { 0.2f, 0.4f, 0.6f, 0.8f };
-		float y[] = { 0.2f, 0.4f, 0.6f, 0.8f };
-		float s[] = { 0.2f, 0.4f };
-		for (int iy = 0; iy < 4; ++iy)
-		{
-			for (int ix = 0; ix < 4; ++ix)
-			{
-				for (int is = 0; is < 2; ++is)
-				{
-					Rect2d r(x[ix] - s[is] / 2, y[iy] - s[is] / 2, s[is], s[is]);
-					for (int it = 0; it < 6; ++it)
-					{
-						m_features.push_back(HaarFeature(r, it));
-					}
-				}
-			}
-		}
-	}
-
-	void TrackerStruckImpl::ExtractFeatures(const Mat & intImage, const std::vector<Mat>& images, Mat & response)
-	{
-		response = Mat_<double>(Size((int)images.size(), m_features.size()));
-
-//#pragma omp parallel for
-		for (int i = 0; i < (int)images.size(); i++) {
-
-			for (int j = 0; j < (int)m_features.size(); j++) {
-
-				//response.at<double>(j, i) =
-				double f = m_features[j].Eval(intImage, images[i]);
-			}
-		}
-	}
-*/
+	}	
 
 	/* ----- INIT Implementation -------------------------------------------------------------*/
 	bool TrackerStruckImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
@@ -171,12 +111,7 @@ namespace cv
 		else
 			srand(time(NULL));
 
-		// CSC sampler
-		/*TrackerSamplerCSC::Params CSCparameters;
-		CSCparameters.initInRad = 2*params.searchRadius;
-		CSCparameters.trackInPosRad = params.searchRadius;
-		Ptr<TrackerSamplerAlgorithm> CSCSampler = Ptr<TrackerSamplerCSC>(new TrackerSamplerCSC(CSCparameters));
-		sampler->addTrackerSamplerAlgorithm(CSCSampler);*/
+		// Struck Sampler
 		TrackerSamplerCircular::Params samplerParams;
 		samplerParams.radius = params.searchRadius;
 		Ptr<TrackerSamplerAlgorithm> circularSampler = Ptr<TrackerSamplerCircular>(new TrackerSamplerCircular(samplerParams));
@@ -206,8 +141,11 @@ namespace cv
 		stateEstimator->setSearchRadius(params.searchRadius);
 		model->setTrackerStateEstimator(stateEstimator);
 
-		Mat tmp(image.rows, image.cols, CV_8UC1);
-		image.copyTo(tmp);
+		Mat frame;
+		image.copyTo(frame);
+		cvtColor(frame, frame, CV_BGR2GRAY);
+		Mat tmp(frame.rows, frame.cols, CV_8UC1);
+		frame.copyTo(tmp);
 		Mat intImage(tmp.rows + 1, tmp.cols + 1, CV_32SC1);
 		integral(tmp, intImage);
 
@@ -239,8 +177,11 @@ namespace cv
 		Ptr<TrackerTargetState> lastTargetState = model->getLastTargetState();
 		Rect2d lastbb(lastTargetState->getTargetPosition().x, lastTargetState->getTargetPosition().y, lastTargetState->getTargetWidth(), lastTargetState->getTargetHeight());
 
-		Mat tmp(image.rows, image.cols, CV_8UC1);
-		image.copyTo(tmp);
+		Mat frame;
+		image.copyTo(frame);
+		cvtColor(frame, frame, CV_BGR2GRAY);
+		Mat tmp(frame.rows, frame.cols, CV_8UC1);
+		frame.copyTo(tmp);
 		Mat intImage(tmp.rows + 1, tmp.cols + 1, CV_32SC1);
 		integral(tmp, intImage);
 
