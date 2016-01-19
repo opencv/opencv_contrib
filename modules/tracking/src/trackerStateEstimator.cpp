@@ -922,7 +922,7 @@ void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& /*co
 	Ptr<SVMSupportPattern> sp = Ptr<SVMSupportPattern>(new SVMSupportPattern());
 	sp->refCount = 0;	
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < (int)lastConfidenceMap.size(); ++i)
 	{
 		Ptr<TrackerStruckTargetState> targetState =
@@ -932,14 +932,14 @@ void TrackerStateEstimatorStruckSVM::updateImpl(std::vector<ConfidenceMap>& /*co
 		r.x -= centre.x;
 		r.y -= centre.y;
 
-	//#pragma omp critical
-	//{
+	#pragma omp critical
+	{
 		sp->x.push_back(targetState->getResp());
 		sp->rects.push_back(r);
 
 		if (targetState->isCentre())
 			sp->y = (sp->x.size() - 1);				
-	//}
+	}
 	}
 	
 	supportPatterns.push_back(sp);	
