@@ -982,7 +982,7 @@ OCRHMMClassifierCNN::OCRHMMClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = (int)sqrt(kernels.cols);
+    patch_size  = (int)sqrt((float)kernels.cols);
     // algorithm internal parameters
     window_size = 32;
     num_quads   = 25;
