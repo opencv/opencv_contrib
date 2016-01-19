@@ -672,11 +672,11 @@ void cv::TrackerStateEstimatorStruckSVM::MinGrad(Ptr<SVMSupportPattern> sp, int 
 	y = -1;
 	g = DBL_MAX;
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < (int)sp->rects.size(); i++) {
 		double gradient = -LossFunc(sp->rects[i], sp->rects[sp->y]) - F(sp->x[i], sp->rects[i]);
 		
-		//#pragma omp critical
+		#pragma omp critical
 		{
 			if (gradient < g) {
 				y = i;
@@ -857,7 +857,6 @@ void cv::TrackerStateEstimatorStruckSVM::BudgetMaintenance()
 				{
 					// get the relative (positive support vector)
 					Ptr<SVMSupportVector> svr = sv->relative;
-					//Ptr<SVMSupportVector> svr = Ptr<SVMSupportVector>();
 
 					if (!svr) {
 						for (int k = 0; k < (int)supportVectors.size(); ++k)
@@ -870,23 +869,20 @@ void cv::TrackerStateEstimatorStruckSVM::BudgetMaintenance()
 						}
 					}
 
-					//if (svr) 
-					//{
-						assert(svr);
+					assert(svr);
 
-						double grad = (sv->beta * sv->beta) * (
-							GaussianKernelEval(sv->xy(), sv->xy())
-							+ GaussianKernelEval(svr->xy(), svr->xy())
-							- 2.0 * GaussianKernelEval(sv->xy(), svr->xy()));
+					double grad = (sv->beta * sv->beta) * (
+						GaussianKernelEval(sv->xy(), sv->xy())
+						+ GaussianKernelEval(svr->xy(), svr->xy())
+						- 2.0 * GaussianKernelEval(sv->xy(), svr->xy()));
 						
-						if (grad < minGrad) {
+					if (grad < minGrad) {
 
-							minGrad = grad;
-							svPos = svr;
-							svNeg = sv;
+						minGrad = grad;
+						svPos = svr;
+						svNeg = sv;
 
-						}
-					//}
+					}
 				}
 			} // end for
 
