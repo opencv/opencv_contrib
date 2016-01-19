@@ -8,3 +8,4 @@ Extended Image Processing
 5. Joint Bilateral Filter
 6. Superpixels
 7. Graph segmentation
+8. Selective search from segmentation
