@@ -223,3 +223,34 @@ TrackerSampler diagram
 
   }
 @enduml
+
+MultiTracker diagram
+======================
+
+@startuml{tracking_uml_multiple.png}
+  package "MultiTracker"
+  package "Tracker"
+
+  MultiTracker -> Tracker: create
+
+  note top of Tracker: Several classes can be generated.
+@enduml
+
+@startuml{multi_tracker_uml.png}
+
+  class MultiTracker{
+    MultiTracker(const String& trackerType = "" );
+    ~MultiTracker();
+    +bool add( const Mat& image, const Rect2d& boundingBox );
+    +bool add( const String& trackerType, const Mat& image, const Rect2d& boundingBox );
+    +bool add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox);
+    +bool add(const Mat& image, std::vector<Rect2d> boundingBox);
+    +bool update( const Mat& image, std::vector<Rect2d> & boundingBox );
+    +std::vector<Rect2d> objects;
+    ---
+    #std::vector< Ptr<Tracker> > trackerList;
+    #String defaultAlgorithm;
+  }
+
+
+@enduml

@@ -47,7 +47,13 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 19. **opencv_xfeatures2d**: Extra 2D Features Framework containing experimental and non-free 2D feature algorithms.
 
 20. **opencv_ximgproc**: Extended Image Processing: Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels.
- 
+
 21. **opencv_xobjdetect**: Integral Channel Features Detector Framework.
 
 22. **opencv_xphoto**: Additional photo processing algorithms: Color balance / Denoising / Inpainting.
+
+23. **opencv_stereo**: Stereo Correspondence done with different descriptors: Census / CS-Census / MCT / BRIEF / MV.
+
+24. **opencv_hdf**: Hierarchical Data Format I/O.
+
+25. **opencv_fuzzy**: New module focused on the fuzzy image processing.

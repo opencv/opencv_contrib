@@ -70,6 +70,63 @@ void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_
         component_confidences->clear();
 }
 
+void OCRTesseract::run(Mat& image, Mat& mask, string& output_text, vector<Rect>* component_rects,
+                       vector<string>* component_texts, vector<float>* component_confidences,
+                       int component_level)
+{
+    CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
+    CV_Assert( mask.type() == CV_8UC1 );
+    CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
+    output_text.clear();
+    if (component_rects != NULL)
+        component_rects->clear();
+    if (component_texts != NULL)
+        component_texts->clear();
+    if (component_confidences != NULL)
+        component_confidences->clear();
+}
+
+CV_WRAP String OCRTesseract::run(InputArray image, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        // cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+{
+    std::string output1;
+    std::string output2;
+    vector<string> component_texts;
+    vector<float> component_confidences;
+    Mat image_m = image.getMat();
+    Mat mask_m = mask.getMat();
+    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    for(unsigned int i = 0; i < component_texts.size(); i++)
+    {
+        cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+
+        if(component_confidences[i] > min_confidence)
+        {
+            output2 += component_texts[i];
+        }
+    }
+    return String(output2);
+}
+
+
 class OCRTesseractImpl : public OCRTesseract
 {
 private:
@@ -127,7 +184,7 @@ public:
              int component_level=0)
     {
 
-        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC1) );
+        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
 
 #ifdef HAVE_TESSERACT
 
@@ -140,7 +197,10 @@ public:
 
         tess.SetImage((uchar*)image.data, image.size().width, image.size().height, image.channels(), image.step1());
         tess.Recognize(0);
-        output = string(tess.GetUTF8Text());
+        char *outText;
+        outText = tess.GetUTF8Text();
+        output = string(outText);
+        delete [] outText;
 
         if ( (component_rects != NULL) || (component_texts != NULL) || (component_confidences != NULL) )
         {
@@ -186,13 +246,30 @@ public:
 #endif
     }
 
+    void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=NULL,
+             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+             int component_level=0)
+    {
+        CV_Assert( mask.type() == CV_8UC1 );
+        CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
 
+        run( mask, output, component_rects, component_texts, component_confidences, component_level);
+    }
+
+    void setWhiteList(const String& char_whitelist)
+    {
+  #ifdef HAVE_TESSERACT
+        tess.SetVariable("tessedit_char_whitelist", char_whitelist.c_str());
+  #else
+        (void)char_whitelist;
+  #endif
+    }
 };
 
 Ptr<OCRTesseract> OCRTesseract::create(const char* datapath, const char* language,
                                        const char* char_whitelist, int oem, int psmode)
 {
-    return makePtr<OCRTesseractImpl>(datapath,language,char_whitelist,oem,psmode);
+    return makePtr<OCRTesseractImpl>(datapath, language, char_whitelist, oem, psmode);
 }
 
 

@@ -125,7 +125,7 @@ public:
 class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
-    static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
+    CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
@@ -159,16 +159,16 @@ LATCH is a binary descriptor based on learned comparisons of triplets of image p
 * half_ssd_size - the size of half of the mini-patches size. For example, if we would like to compare triplets of patches of size 7x7x
     then the half_ssd_size should be (7-1)/2 = 3.
 
-Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then 
+Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then
     you will have to use an extractor which estimates the patch orientation (in degrees). Examples for such extractors are ORB and SIFT.
 
 Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures2D/latch_match.cpp
 
 */
-class CV_EXPORTS LATCH : public DescriptorExtractor
+class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
-	static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+	CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
@@ -187,14 +187,14 @@ DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 bu
 @param use_orientation sample patterns using keypoints orientation, disabled by default.
 
  */
-class CV_EXPORTS DAISY : public DescriptorExtractor
+class CV_EXPORTS_W DAISY : public Feature2D
 {
 public:
     enum
     {
         NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
     };
-    static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
+    CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
                 int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
                 bool interpolation = true, bool use_orientation = false );
 
@@ -258,6 +258,27 @@ public:
 
 };
 
+/** @brief Class implementing the MSD (*Maximal Self-Dissimilarity*) keypoint detector, described in @cite Tombari14.
+
+The algorithm implements a novel interest point detector stemming from the intuition that image patches
+which are highly dissimilar over a relatively large extent of their surroundings hold the property of
+being repeatable and distinctive. This concept of "contextual self-dissimilarity" reverses the key
+paradigm of recent successful techniques such as the Local Self-Similarity descriptor and the Non-Local
+Means filter, which build upon the presence of similar - rather than dissimilar - patches. Moreover,
+it extends to contextual information the local self-dissimilarity notion embedded in established
+detectors of corner-like interest points, thereby achieving enhanced repeatability, distinctiveness and
+localization accuracy.
+
+*/
+
+class CV_EXPORTS_W MSDDetector : public Feature2D {
+
+public:
+
+    static Ptr<MSDDetector> create(int m_patch_radius = 3, int m_search_area_radius = 5,
+            int m_nms_radius = 5, int m_nms_scale_radius = 0, float m_th_saliency = 250.0f, int m_kNN = 4,
+            float m_scale_factor = 1.25f, int m_n_scales = -1, bool m_compute_orientation = false);
+};
 
 //! @}
 

@@ -63,7 +63,7 @@ namespace cv
 /*
  * TODO:
  * add "non-detected" answer in algo --> test it with 2 rects --> frame-by-frame debug in TLD --> test it!!
- * take all parameters out 
+ * take all parameters out
  *              asessment framework
  *
  *

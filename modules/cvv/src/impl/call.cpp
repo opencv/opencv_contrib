@@ -1,4 +1,5 @@
 #include "call.hpp"
+#include <atomic>
 
 namespace cvv
 {
@@ -7,7 +8,7 @@ namespace impl
 
 size_t newCallId()
 {
-	thread_local size_t nextId = 1;
+	static std::atomic_size_t nextId (1);
 	return nextId++;
 }
 

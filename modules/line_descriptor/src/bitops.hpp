@@ -45,7 +45,7 @@
 
 #include "precomp.hpp"
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 # include <intrin.h>
 # define popcnt __popcnt
 # pragma warning( disable : 4267 )
@@ -101,7 +101,7 @@ inline void split( UINT64 *chunks, UINT8 *code, int m, int mplus, int b )
   UINT64 temp = 0x0;
   int nbits = 0;
   int nbyte = 0;
-  UINT64 mask = b == 64 ? 0xFFFFFFFFFFFFFFFFLLU : ( ( UINT64_1 << b ) - UINT64_1 );
+  UINT64 mask = (b == 64) ? 0xFFFFFFFFFFFFFFFFull : ( ( UINT64_1 << b ) - UINT64_1 );
 
   for ( int i = 0; i < m; i++ )
   {

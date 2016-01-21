@@ -138,7 +138,7 @@ PERF_TEST(matching, single_match)
   TEST_CYCLE()
     bd->match( query, train, dm );
 
-  SANITY_CHECK_MATCHES( dm );
+  SANITY_CHECK_NOTHING();
 
 }
 
@@ -160,7 +160,7 @@ PERF_TEST(knn_matching, knn_match_distances_test)
     }
   }
 
-  SANITY_CHECK( distances );
+  SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(radius_match, radius_match_distances_test)
@@ -181,7 +181,7 @@ PERF_TEST(radius_match, radius_match_distances_test)
     }
   }
 
-  SANITY_CHECK( distances );
+  SANITY_CHECK_NOTHING();
 
 }
 

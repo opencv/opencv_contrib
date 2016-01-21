@@ -660,7 +660,7 @@ TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
     test.safe_run();
 }
 
-TEST(Features2d_RotationInvariance_Descriptor_DAISY, regression)
+TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
 {
     DescriptorRotationInvarianceTest test(BRISK::create(),
                                           DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
@@ -754,7 +754,7 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     ASSERT_LT( fabs(keypoints[1].response - keypoints[4].response), 1e-6);
 }
 
-TEST(Features2d_ScaleInvariance_Descriptor_DAISY, regression)
+TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
 {
     DescriptorScaleInvarianceTest test(BRISK::create(),
                                        DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),

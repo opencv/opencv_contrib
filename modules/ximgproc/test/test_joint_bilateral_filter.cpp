@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -204,18 +204,18 @@ void jointBilateralFilterNaive(InputArray joint, InputArray src, OutputArray dst
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-typedef tuple<double, string, string, int, int, int> JBFTestParam;
+typedef tuple<string, string> JBFTestParam;
 typedef TestWithParam<JBFTestParam> JointBilateralFilterTest_NaiveRef;
 
 TEST_P(JointBilateralFilterTest_NaiveRef, Accuracy)
 {
     JBFTestParam param = GetParam();
-    double sigmaS       = get<0>(param);
-    string jointPath    = get<1>(param);
-    string srcPath      = get<2>(param);
-    int depth           = get<3>(param);
-    int jCn             = get<4>(param);
-    int srcCn           = get<5>(param);
+    double sigmaS       = 8.0;
+    string jointPath    = get<0>(param);
+    string srcPath      = get<1>(param);
+    int depth           = CV_8U;
+    int jCn             = 3;
+    int srcCn           = 1;
     int jointType       = CV_MAKE_TYPE(depth, jCn);
     int srcType         = CV_MAKE_TYPE(depth, srcCn);
 
@@ -242,26 +242,22 @@ TEST_P(JointBilateralFilterTest_NaiveRef, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(Set2, JointBilateralFilterTest_NaiveRef,
     Combine(
-    Values(4.0, 6.0, 8.0),
     Values("/cv/shared/airplane.png", "/cv/shared/fruits.png"),
-    Values("/cv/shared/airplane.png", "/cv/shared/lena.png", "/cv/shared/fruits.png"),
-    Values(CV_8U, CV_32F),
-    Values(1, 3),
-    Values(1, 3))
+    Values("/cv/shared/airplane.png", "/cv/shared/fruits.png"))
 );
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-typedef tuple<double, string, int> BFTestParam;
+typedef tuple<string, int> BFTestParam;
 typedef TestWithParam<BFTestParam> JointBilateralFilterTest_BilateralRef;
 
 TEST_P(JointBilateralFilterTest_BilateralRef, Accuracy)
 {
     BFTestParam param   = GetParam();
-    double sigmaS       = get<0>(param);
-    string srcPath      = get<1>(param);
-    int srcType         = get<2>(param);
+    double sigmaS       = 4.0;
+    string srcPath      = get<0>(param);
+    int srcType         = get<1>(param);
 
     Mat src = imread(getOpenCVExtraDir() + srcPath);
     ASSERT_TRUE(!src.empty());
@@ -283,9 +279,8 @@ TEST_P(JointBilateralFilterTest_BilateralRef, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(Set1, JointBilateralFilterTest_BilateralRef,
     Combine(
-    Values(4.0, 6.0, 8.0),
-    Values("/cv/shared/pic2.png", "/cv/shared/lena.png", "cv/shared/box_in_scene.png"),
-    Values(CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3)
+    Values("/cv/shared/lena.png", "cv/shared/box_in_scene.png"),
+    Values(CV_8UC3, CV_32FC1)
     )
 );
 

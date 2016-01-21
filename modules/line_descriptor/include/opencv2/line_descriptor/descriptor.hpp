@@ -143,6 +143,30 @@ struct CV_EXPORTS KeyLine
   /** number of pixels covered by the line */
   int numOfPixels;
 
+  /** Returns the start point of the line in the original image */
+  Point2f getStartPoint() const
+  {
+    return Point2f(startPointX, startPointY);
+  }
+
+  /** Returns the end point of the line in the original image */
+  Point2f getEndPoint() const
+  {
+    return Point2f(endPointX, endPointY);
+  }
+
+  /** Returns the start point of the line in the octave it was extracted from */
+  Point2f getStartPointInOctave() const
+  {
+    return Point2f(sPointInOctaveX, sPointInOctaveY);
+  }
+
+  /** Returns the end point of the line in the octave it was extracted from */
+  Point2f getEndPointInOctave() const
+  {
+    return Point2f(ePointInOctaveX, ePointInOctaveY);
+  }
+
   /** constructor */
   KeyLine()
   {

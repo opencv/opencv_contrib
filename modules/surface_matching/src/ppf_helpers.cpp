@@ -163,6 +163,62 @@ void writePLY(Mat PC, const char* FileName)
   return;
 }
 
+void writePLYVisibleNormals(Mat PC, const char* FileName)
+{
+  std::ofstream outFile(FileName);
+
+  if (!outFile)
+  {
+    //cerr << "Error opening output file: " << FileName << "!" << endl;
+    printf("Error opening output file: %s!\n", FileName);
+    exit(1);
+  }
+
+  ////
+  // Header
+  ////
+
+  const int pointNum = (int)PC.rows;
+  const int vertNum = (int)PC.cols;
+  const bool hasNormals = vertNum == 6;
+
+  outFile << "ply" << std::endl;
+  outFile << "format ascii 1.0" << std::endl;
+  outFile << "element vertex " << (hasNormals? 2*pointNum:pointNum) << std::endl;
+  outFile << "property float x" << std::endl;
+  outFile << "property float y" << std::endl;
+  outFile << "property float z" << std::endl;
+  if (hasNormals)
+  {
+    outFile << "property uchar red" << std::endl;
+    outFile << "property uchar green" << std::endl;
+    outFile << "property uchar blue" << std::endl;
+  }
+  outFile << "end_header" << std::endl;
+
+  ////
+  // Points
+  ////
+
+  for (int pi = 0; pi < pointNum; ++pi)
+  {
+    const float* point = (float*)(&PC.data[pi*PC.step]);
+
+    outFile << point[0] << " " << point[1] << " " << point[2];
+
+    if (hasNormals)
+    {
+      outFile << " 127 127 127" << std::endl;
+      outFile << point[0]+point[3] << " " << point[1]+point[4] << " " << point[2]+point[5];
+      outFile << " 255 0 0";
+    }
+
+    outFile << std::endl;
+  }
+
+  return;
+}
+
 Mat samplePCUniform(Mat PC, int sampleStep)
 {
   int numRows = PC.rows/sampleStep;
@@ -208,9 +264,14 @@ void destroyFlann(void* flannIndex)
 // For speed purposes this function assumes that PC, Indices and Distances are created with continuous structures
 void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances)
 {
+  queryPCFlann(flannIndex, pc, indices, distances, 1);
+}
+
+void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const int numNeighbors)
+{
   Mat obj_32f;
-  pc.colRange(0,3).copyTo(obj_32f);
-  ((FlannIndex*)flannIndex)->knnSearch(obj_32f, indices, distances, 1, cvflann::SearchParams(32) );
+  pc.colRange(0, 3).copyTo(obj_32f);
+  ((FlannIndex*)flannIndex)->knnSearch(obj_32f, indices, distances, numNeighbors, cvflann::SearchParams(32));
 }
 
 // uses a volume instead of an octree
@@ -499,17 +560,21 @@ Mat transformPCPose(Mat pc, double Pose[16])
       pcDataT[2] = (float)(p2[2]/p2[3]);
     }
 
-    // Rotate the normals, too
-    double n[3] = {(double)n1[0], (double)n1[1], (double)n1[2]}, n2[3];
-
-    matrixProduct331(R, n, n2);
-    double nNorm = sqrt(n2[0]*n2[0]+n2[1]*n2[1]+n2[2]*n2[2]);
-
-    if (nNorm>EPS)
+    // If the point cloud has normals,
+    // then rotate them as well
+    if (pc.cols == 6)
     {
-      nT[0]=(float)(n2[0]/nNorm);
-      nT[1]=(float)(n2[1]/nNorm);
-      nT[2]=(float)(n2[2]/nNorm);
+      double n[3] = { (double)n1[0], (double)n1[1], (double)n1[2] }, n2[3];
+
+      matrixProduct331(R, n, n2);
+      double nNorm = sqrt(n2[0]*n2[0]+n2[1]*n2[1]+n2[2]*n2[2]);
+
+      if (nNorm>EPS)
+      {
+        nT[0]=(float)(n2[0]/nNorm);
+        nT[1]=(float)(n2[1]/nNorm);
+        nT[2]=(float)(n2[2]/nNorm);
+      }
     }
   }
 
@@ -688,7 +753,7 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
   Mat Indices(2, sizesResult, CV_32S, indices, 0);
   Mat Distances(2, sizesResult, CV_32F, distances, 0);
 
-  queryPCFlann(flannIndex, PCInput, Indices, Distances);
+  queryPCFlann(flannIndex, PCInput, Indices, Distances, NumNeighbors);
   destroyFlann(flannIndex);
   flannIndex = 0;
 
@@ -707,7 +772,25 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
     meanCovLocalPCInd(dataset, indLocal, 3, NumNeighbors, C, mu);
 
     // eigenvectors of covariance matrix
-    eigenLowest33(C, nr);
+    Mat cov(3, 3, CV_64F), eigVect, eigVal;
+    double* covData = (double*)cov.data;
+    covData[0] = C[0][0];
+    covData[1] = C[0][1];
+    covData[2] = C[0][2];
+    covData[3] = C[1][0];
+    covData[4] = C[1][1];
+    covData[5] = C[1][2];
+    covData[6] = C[2][0];
+    covData[7] = C[2][1];
+    covData[8] = C[2][2];
+    eigen(cov, eigVal, eigVect);
+    Mat lowestEigVec;
+    //the eigenvector for the lowest eigenvalue is in the last row
+    eigVect.row(eigVect.rows - 1).copyTo(lowestEigVec);
+    double* eigData = (double*)lowestEigVec.data;
+    nr[0] = eigData[0];
+    nr[1] = eigData[1];
+    nr[2] = eigData[2];
 
     pcr[0] = pci[0];
     pcr[1] = pci[1];
