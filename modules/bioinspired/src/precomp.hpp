@@ -51,8 +51,9 @@
 
 #include <valarray>
 
-#ifdef HAVE_OPENCV_OCL
-    #include "opencv2/ocl/private/util.hpp"
+#ifdef HAVE_OPENCL
+	// TODO: Not sure if there's a replacement in OpenCV3 for this; remove this line if unneeded.
+//    #include "opencv2/ocl/private/util.hpp"
 #endif
 
 namespace cv

@@ -68,7 +68,7 @@
 /**
 * @class MagnoRetinaFilter
 * @brief class which describes the magnocellular channel of the retina:
-* -> performs a moving contours extraction with powerfull local data enhancement
+* -> performs a moving contours extraction with powerful local data enhancement
 *
 * TYPICAL USE:
 *
