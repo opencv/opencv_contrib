@@ -98,7 +98,7 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
 
   /** @brief Sets the value for white threshold, needed for decoding.
    *
-   *  White threshold is a number between 0-255 that represents the minimum brightness difference required for valid pixels, between the graycode pattern and its inverse images; used in getProjPixel method.
+   *  White threshold is a number between 0-255 (default is 5) that represents the minimum brightness difference required for valid pixels, between the graycode pattern and its inverse images; used in getProjPixel method.
    *
    *  @param value The desired white threshold value.
    *
@@ -108,7 +108,7 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
 
   /** @brief Sets the value for black threshold, needed for decoding (shadowsmasks computation).
    *
-   *  Black threshold is a number between 0-255 that represents the minimum brightness difference required for valid pixels, between the fully illuminated (white) and the not illuminated images (black); used in computeShadowMasks method.
+   *  Black threshold is a number between 0-255 (default is 40) that represents the minimum brightness difference required for valid pixels, between the fully illuminated (white) and the not illuminated images (black); used in computeShadowMasks method.
    *
    *  @param value The desired black threshold value.
    *
@@ -146,3 +146,4 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
 }
 }
 #endif
+
