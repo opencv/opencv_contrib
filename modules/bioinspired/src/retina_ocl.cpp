@@ -592,7 +592,8 @@ void BasicRetinaFilter::_localLuminanceAdaptation(const UMat &inputFrame, const 
     size_t localSize[]  = {16, 16, 1};
 
     Kernel kernel("localLuminanceAdaptation", retina_kernel_source);
-    kernel.args(localLuminance, inputFrame, outputFrame, _NBcols, _NBrows, elements_per_row, _localLuminanceAddon, _localLuminanceFactor, _maxInputValue);
+    kernel.args(KernelArg::PtrReadOnly(localLuminance), KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrWriteOnly(outputFrame),
+                _NBcols, _NBrows, elements_per_row, _localLuminanceAddon, _localLuminanceFactor, _maxInputValue);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -642,7 +643,7 @@ void BasicRetinaFilter::_horizontalAnticausalFilter(UMat &outputFrame)
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("horizontalAnticausalFilter", retina_kernel_source);
-    kernel.args(outputFrame, _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -655,7 +656,7 @@ void BasicRetinaFilter::_verticalCausalFilter(UMat &outputFrame)
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("verticalCausalFilter", retina_kernel_source);
-    kernel.args(outputFrame, _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -668,7 +669,7 @@ void BasicRetinaFilter::_verticalAnticausalFilter_multGain(UMat &outputFrame)
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("verticalAnticausalFilter_multGain", retina_kernel_source);
-    kernel.args(outputFrame, _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a, _gain);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a, _gain);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -681,7 +682,7 @@ void BasicRetinaFilter::_horizontalAnticausalFilter_Irregular(UMat &outputFrame,
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("horizontalAnticausalFilter_Irregular", retina_kernel_source);
-    kernel.args(outputFrame, spatialConstantBuffer, outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), KernelArg::PtrReadWrite(spatialConstantBuffer), outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -695,7 +696,7 @@ void BasicRetinaFilter::_verticalCausalFilter_Irregular(UMat &outputFrame, const
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("verticalCausalFilter_Irregular", retina_kernel_source);
-    kernel.args(outputFrame, spatialConstantBuffer, outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), KernelArg::PtrReadWrite(spatialConstantBuffer), outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -727,7 +728,7 @@ void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensi
     int elements_per_row = static_cast<int>(out.step / out.elemSize());
 
     Kernel kernel("normalizeGrayOutputCentredSigmoide", retina_kernel_source);
-    kernel.args(in, out, in.cols, in.rows, elements_per_row, meanValue, X0);
+    kernel.args(KernelArg::PtrReadOnly(in), KernelArg::PtrWriteOnly(out), in.cols, in.rows, elements_per_row, meanValue, X0);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -742,7 +743,7 @@ void normalizeGrayOutputNearZeroCentreredSigmoide(UMat &inputPicture, UMat &outp
     int elements_per_row = static_cast<int>(inputPicture.step / inputPicture.elemSize());
 
     Kernel kernel("normalizeGrayOutputNearZeroCentreredSigmoide", retina_kernel_source);
-    kernel.args(inputPicture, outputBuffer, inputPicture.cols, inputPicture.rows, elements_per_row, maxOutputValue, X0cube);
+    kernel.args(KernelArg::PtrReadOnly(inputPicture), KernelArg::PtrWriteOnly(outputBuffer), inputPicture.cols, inputPicture.rows, elements_per_row, maxOutputValue, X0cube);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -761,7 +762,7 @@ void centerReductImageLuminance(UMat &inputoutput)
     int elements_per_row = static_cast<int>(inputoutput.step / inputoutput.elemSize());
 
     Kernel kernel("centerReductImageLuminance", retina_kernel_source);
-    kernel.args(inputoutput, inputoutput.cols, inputoutput.rows, elements_per_row, f_mean, f_stddev);
+    kernel.args(KernelArg::PtrReadWrite(inputoutput), inputoutput.cols, inputoutput.rows, elements_per_row, f_mean, f_stddev);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -857,8 +858,10 @@ void ParvoRetinaFilter::_OPL_OnOffWaysComputing()
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("OPL_OnOffWaysComputing", retina_kernel_source);
-    kernel.args(_photoreceptorsOutput, _horizontalCellsOutput, _bipolarCellsOutputON, _bipolarCellsOutputOFF, _parvocellularOutputON, _parvocellularOutputOFF,
-        _photoreceptorsOutput.cols, _photoreceptorsOutput.rows, elements_per_row);
+    kernel.args(KernelArg::PtrReadOnly(_photoreceptorsOutput), KernelArg::PtrReadOnly(_horizontalCellsOutput),
+                KernelArg::PtrWriteOnly(_bipolarCellsOutputON), KernelArg::PtrWriteOnly(_bipolarCellsOutputOFF),
+                KernelArg::PtrWriteOnly(_parvocellularOutputON), KernelArg::PtrWriteOnly(_parvocellularOutputOFF),
+                _photoreceptorsOutput.cols, _photoreceptorsOutput.rows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -939,7 +942,10 @@ void MagnoRetinaFilter::_amacrineCellsComputing(
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("amacrineCellsComputing", retina_kernel_source);
-    kernel.args(OPL_ON, OPL_OFF, _previousInput_ON, _previousInput_OFF, _amacrinCellsTempOutput_ON, _amacrinCellsTempOutput_OFF, OPL_ON.cols, OPL_ON.rows, elements_per_row, _temporalCoefficient);
+    kernel.args(KernelArg::PtrReadOnly(OPL_ON), KernelArg::PtrReadOnly(OPL_OFF),
+                KernelArg::PtrReadWrite(_previousInput_ON), KernelArg::PtrReadWrite(_previousInput_OFF),
+                KernelArg::PtrReadWrite(_amacrinCellsTempOutput_ON), KernelArg::PtrReadWrite(_amacrinCellsTempOutput_OFF),
+                OPL_ON.cols, OPL_ON.rows, elements_per_row, _temporalCoefficient);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1057,7 +1063,7 @@ static void inverseValue(UMat &input)
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("inverseValue", retina_kernel_source);
-    kernel.args(input, input.cols, input.rows, elements_per_row);
+    kernel.args(KernelArg::PtrReadWrite(input), input.cols, input.rows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1099,7 +1105,7 @@ static void demultiplex(const UMat &input, UMat &ouput)
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("runColorDemultiplexingBayer", retina_kernel_source);
-    kernel.args(input, ouput, input.cols, input.rows, elements_per_row);
+    kernel.args(KernelArg::PtrReadOnly(input), KernelArg::PtrWriteOnly(ouput), input.cols, input.rows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1119,7 +1125,8 @@ static void normalizePhotoDensity(
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("normalizePhotoDensity", retina_kernel_source);
-    kernel.args(chroma, colorDensity, multiplex, ocl_luma, demultiplex, ocl_luma.cols, ocl_luma.rows, elements_per_row, pG);
+    kernel.args(KernelArg::PtrReadOnly(chroma), KernelArg::PtrReadOnly(colorDensity), KernelArg::PtrReadOnly(multiplex),
+                KernelArg::PtrWriteOnly(ocl_luma), KernelArg::PtrWriteOnly(demultiplex), ocl_luma.cols, ocl_luma.rows, elements_per_row, pG);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1138,7 +1145,7 @@ static void substractResidual(
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("substractResidual", retina_kernel_source);
-    kernel.args(colorDemultiplex, cols, rows, elements_per_row, pR, pG, pB);
+    kernel.args(KernelArg::PtrReadWrite(colorDemultiplex), cols, rows, elements_per_row, pR, pG, pB);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1153,7 +1160,7 @@ static void demultiplexAssign(const UMat& input, const UMat& output)
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("demultiplexAssign", retina_kernel_source);
-    kernel.args(input, output, cols, rows, elements_per_row);
+    kernel.args(KernelArg::PtrReadOnly(input), KernelArg::PtrWriteOnly(output), cols, rows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1234,7 +1241,7 @@ void RetinaColor::runColorMultiplexing(const UMat &demultiplexedInputFrame, UMat
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("runColorMultiplexingBayer", retina_kernel_source);
-    kernel.args(demultiplexedInputFrame, multiplexedFrame, multiplexedFrame.cols, multiplexedFrame.rows, elements_per_row);
+    kernel.args(KernelArg::PtrReadOnly(demultiplexedInputFrame), KernelArg::PtrWriteOnly(multiplexedFrame), multiplexedFrame.cols, multiplexedFrame.rows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1250,7 +1257,7 @@ void RetinaColor::clipRGBOutput_0_maxInputValue(UMat &inputOutputBuffer, const f
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("clipRGBOutput_0_maxInputValue", retina_kernel_source);
-    kernel.args(inputOutputBuffer, _NBcols, inputOutputBuffer.rows, elements_per_row, maxInputValue);
+    kernel.args(KernelArg::PtrReadWrite(inputOutputBuffer), _NBcols, inputOutputBuffer.rows, elements_per_row, maxInputValue);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1277,7 +1284,8 @@ void RetinaColor::_adaptiveHorizontalCausalFilter_addInput(const UMat &inputFram
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("adaptiveHorizontalCausalFilter_addInput", retina_kernel_source);
-    kernel.args(inputFrame, gradient, outputFrame, _NBcols, _NBrows, elements_per_row, inputFrame.offset, gradient.offset, outputFrame.offset);
+    kernel.args(KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrReadOnly(gradient), KernelArg::PtrWriteOnly(outputFrame),
+                _NBcols, _NBrows, elements_per_row, inputFrame.offset, gradient.offset, outputFrame.offset);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1292,7 +1300,7 @@ void RetinaColor::_adaptiveVerticalAnticausalFilter_multGain(const UMat &gradien
     int gradOffset = gradient.offset + static_cast<int>(gradient.step * _NBrows);
 
     Kernel kernel("adaptiveVerticalAnticausalFilter_multGain", retina_kernel_source);
-    kernel.args(gradient, outputFrame, _NBcols, _NBrows, elements_per_row, gradOffset, outputFrame.offset, _gain);
+    kernel.args(KernelArg::PtrReadOnly(gradient), KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, gradOffset, outputFrame.offset, _gain);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 void RetinaColor::_computeGradient(const UMat &luminance, UMat &gradient)
@@ -1304,7 +1312,7 @@ void RetinaColor::_computeGradient(const UMat &luminance, UMat &gradient)
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("computeGradient", retina_kernel_source);
-    kernel.args(luminance, gradient, _NBcols, _NBrows, elements_per_row);
+    kernel.args(KernelArg::PtrReadOnly(luminance), KernelArg::PtrWriteOnly(gradient), _NBcols, _NBrows, elements_per_row);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
@@ -1510,7 +1518,7 @@ void RetinaFilter::_processRetinaParvoMagnoMapping()
     size_t localSize[] = { 16, 16, 1 };
 
     Kernel kernel("processRetinaParvoMagnoMapping", retina_kernel_source);
-    kernel.args(parvo, magno, parvo.cols, parvo.rows, halfCols, halfRows, elements_per_row, minDistance);
+    kernel.args(KernelArg::PtrReadOnly(parvo), KernelArg::PtrReadOnly(magno), parvo.cols, parvo.rows, halfCols, halfRows, elements_per_row, minDistance);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 }  /* namespace ocl */
