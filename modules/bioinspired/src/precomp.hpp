@@ -46,7 +46,6 @@
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/bioinspired.hpp"
 #include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
 #include "opencv2/core/ocl.hpp"
 
 #include <valarray>

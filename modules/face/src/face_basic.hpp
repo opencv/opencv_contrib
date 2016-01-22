@@ -1,8 +1,9 @@
 #ifndef __OPENCV_FACE_BASIC_HPP
 #define __OPENCV_FACE_BASIC_HPP
 
+#include "opencv2/core/private.hpp"
+
 #include "opencv2/face.hpp"
-#include "precomp.hpp"
 
 #include <set>
 #include <limits>

@@ -28,12 +28,7 @@ else()
 endif()
 
 set(the_description "Hierarchical Data Format I/O")
-ocv_define_module(hdf opencv_core WRAP python)
-
-if(HDF5_FOUND)
-  include_directories(${HDF5_INCLUDE_DIRS})
-endif()
-
-if(HDF5_FOUND)
-  target_link_libraries(opencv_hdf ${HDF5_LIBRARIES})
+ocv_define_module(hdf opencv_core PRIVATE_REQUIRED ${HDF5_LIBRARIES} WRAP python)
+if(${HDF5_FOUND})
+  ocv_target_include_directories(${the_module_target} ${HDF5_INCLUDE_DIRS})
 endif()

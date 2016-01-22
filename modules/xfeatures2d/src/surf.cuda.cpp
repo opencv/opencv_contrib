@@ -41,6 +41,7 @@
 //M*/
 
 #include "precomp.hpp"
+#include "opencv2/core/private.cuda.hpp"
 
 #if 1
 

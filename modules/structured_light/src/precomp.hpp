@@ -44,6 +44,5 @@
 
 #include "opencv2/structured_light.hpp"
 #include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
 
 #endif
