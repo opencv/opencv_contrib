@@ -61,6 +61,11 @@ namespace
     {
         return N;
     }
+
+    inline void ensureSizeIsEnough(int rows, int cols, int type, cv::UMat &m)
+    {
+        m.create(rows, cols, type, m.usageFlags);
+    }
 }
 
 namespace cv
@@ -424,8 +429,8 @@ bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
     input.convertTo(convert_input, CV_32F);
     if(convert_input.channels() == 3 || convert_input.channels() == 4)
     {
-        ocl::ensureSizeIsEnough(int(_retinaFilter->getInputNBrows() * 4),
-                                int(_retinaFilter->getInputNBcolumns()), CV_32FC1, output);
+        ensureSizeIsEnough(int(_retinaFilter->getInputNBrows() * 4),
+                           int(_retinaFilter->getInputNBcolumns()), CV_32FC1, output);
         UMat channel_splits[4] =
         {
             output(Rect(Point(0, _retinaFilter->getInputNBrows() * 2), getInputSize())),
