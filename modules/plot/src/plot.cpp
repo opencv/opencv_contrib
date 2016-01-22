@@ -182,7 +182,7 @@ namespace cv
             void render(Mat &_plotResult)
             {
                 //create the plot result
-                plotResult = Mat::zeros(plotSizeHeight, plotSizeWidth, CV_8UC3);
+                plotResult = Mat(plotSizeHeight, plotSizeWidth, CV_8UC3, plotBackgroundColor);
 
                 int NumVecElements = plotDataX.rows;
 
