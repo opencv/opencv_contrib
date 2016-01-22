@@ -629,7 +629,7 @@ void BasicRetinaFilter::_horizontalCausalFilter_addInput(const UMat &inputFrame,
     size_t localSize[] = { 256, 1, 1 };
 
     Kernel kernel("horizontalCausalFilter_addInput", retina_kernel_source);
-    kernel.args(inputFrame, outputFrame, _NBcols, _NBrows, elements_per_row, inputFrame.offset, inputFrame.offset, _tau, _a);
+    kernel.args(KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrWriteOnly(outputFrame), _NBcols, _NBrows, elements_per_row, inputFrame.offset, inputFrame.offset, _tau, _a);
     kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
