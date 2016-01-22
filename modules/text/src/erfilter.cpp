@@ -1161,7 +1161,7 @@ Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb, float minProb
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM1.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM1(const string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM1(const String& filename)
 
 {
     return makePtr<ERClassifierNM1>(filename);
@@ -1172,7 +1172,7 @@ Ptr<ERFilter::Callback> loadClassifierNM1(const string& filename)
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM2.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM2(const string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename)
 {
     return makePtr<ERClassifierNM2>(filename);
 }
@@ -4165,6 +4165,56 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
     mask(cser.rect) = 0;
     mtmp(cser.rect) = 0;
   }
+}
+
+// Utility funtion for scripting
+void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT vector< vector<Point> >& regions)
+{
+    // assert correct image type
+    CV_Assert( image.getMat().type() == CV_8UC1 );
+    // at least one ERFilter must be passed
+    CV_Assert( !er_filter1.empty() );
+
+    vector<ERStat> ers;
+
+    er_filter1->run(image, ers);
+
+    if (!er_filter2.empty())
+    {
+      er_filter2->run(image, ers);
+    }
+
+    //Convert each ER to vector<Point> and push it to output regions
+    Mat src = image.getMat();
+    Mat region_mask = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
+    for (size_t i=0; i < ers.size(); i++)
+    {
+      ERStat* stat = &ers[i];
+
+      //Fill the region and calculate 2nd stage features
+      Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x+2,stat->rect.br().y+2)));
+      region = Scalar(0);
+      int newMaskVal = 255;
+      int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
+      Rect rect;
+
+      floodFill( src(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
+                 region, Point(stat->pixel%src.cols - stat->rect.x, stat->pixel/src.cols - stat->rect.y),
+                 Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
+      rect.width += 2;
+      rect.height += 2;
+      region = region(rect);
+
+      vector<vector<Point> > contours;
+      vector<Vec4i> hierarchy;
+      findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
+
+      for (size_t j=0; j < contours[0].size(); j++)
+        contours[0][j] += stat->rect.tl();
+
+      regions.push_back(contours[0]);
+    }
+
 }
 
 }

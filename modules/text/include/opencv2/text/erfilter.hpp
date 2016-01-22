@@ -115,7 +115,7 @@ public:
 
 Extracts the component tree (if needed) and filter the extremal regions (ER's) by using a given classifier.
  */
-class CV_EXPORTS ERFilter : public Algorithm
+class CV_EXPORTS_W ERFilter : public Algorithm
 {
 public:
 
@@ -124,7 +124,7 @@ public:
     By doing it we hide SVM, Boost etc. Developers can provide their own classifiers to the
     ERFilter algorithm.
      */
-    class CV_EXPORTS Callback
+    class CV_EXPORTS_W Callback
     {
     public:
         virtual ~Callback() { }
@@ -207,7 +207,7 @@ the probability P(er|character) are selected (if the local maximum of the probab
 global limit pmin and the difference between local maximum and local minimum is greater than
 minProbabilityDiff).
  */
-CV_EXPORTS Ptr<ERFilter> createERFilterNM1(const Ptr<ERFilter::Callback>& cb,
+CV_EXPORTS_W Ptr<ERFilter> createERFilterNM1(const Ptr<ERFilter::Callback>& cb,
                                                   int thresholdDelta = 1, float minArea = 0.00025,
                                                   float maxArea = 0.13, float minProbability = 0.4,
                                                   bool nonMaxSuppression = true,
@@ -224,7 +224,7 @@ non-character classes using more informative but also more computationally expen
 classifier uses all the features calculated in the first stage and the following additional
 features: hole area ratio, convex hull ratio, and number of outer inflexion points.
  */
-CV_EXPORTS Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
+CV_EXPORTS_W Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
                                                   float minProbability = 0.3);
 
 
@@ -234,7 +234,7 @@ CV_EXPORTS Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
 
 returns a pointer to ERFilter::Callback.
  */
-CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM1(const std::string& filename);
+CV_EXPORTS_W Ptr<ERFilter::Callback> loadClassifierNM1(const String& filename);
 
 /** @brief Allow to implicitly load the default classifier when creating an ERFilter object.
 
@@ -242,7 +242,7 @@ CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM1(const std::string& filename
 
 returns a pointer to ERFilter::Callback.
  */
-CV_EXPORTS Ptr<ERFilter::Callback> loadClassifierNM2(const std::string& filename);
+CV_EXPORTS_W Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename);
 
 
 //! computeNMChannels operation modes
@@ -342,6 +342,9 @@ An example of MSERsToERStats in use can be found in the text detection webcam_de
  */
 CV_EXPORTS void MSERsToERStats(InputArray image, std::vector<std::vector<Point> > &contours,
                                std::vector<std::vector<ERStat> > &regions);
+
+// Utility funtion for scripting
+CV_EXPORTS_W void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT std::vector< std::vector<Point> >& regions);
 
 //! @}
 
