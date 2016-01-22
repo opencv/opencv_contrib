@@ -431,14 +431,14 @@ bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
     {
         ensureSizeIsEnough(int(_retinaFilter->getInputNBrows() * 4),
                            int(_retinaFilter->getInputNBcolumns()), CV_32FC1, output);
-        UMat channel_splits[4] =
-        {
-            output(Rect(Point(0, _retinaFilter->getInputNBrows() * 2), getInputSize())),
-            output(Rect(Point(0, _retinaFilter->getInputNBrows()), getInputSize())),
-            output(Rect(Point(0, 0), getInputSize())),
-            output(Rect(Point(0, _retinaFilter->getInputNBrows() * 3), getInputSize()))
-        };
-        ocl::split(convert_input, channel_splits);
+        std::vector<UMat> channel_splits;
+        channel_splits.reserve(4);
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows() * 2), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows()), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, 0), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows() * 3), getInputSize())));
+
+        cv::split(convert_input, channel_splits);
         return true;
     }
     else if(convert_input.channels() == 1)
