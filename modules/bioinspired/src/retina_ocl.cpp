@@ -1498,20 +1498,13 @@ void RetinaFilter::_processRetinaParvoMagnoMapping()
 
     int elements_per_row = static_cast<int>(parvo.step / parvo.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {parvo.cols, parvo.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &parvo.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &magno.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &parvo.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &parvo.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &halfCols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &halfRows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &minDistance));
-    openCLExecuteKernel(ctx, &retina_kernel, "processRetinaParvoMagnoMapping", globalSize, localSize, args, -1, -1);
+    Kernel kernel("processRetinaParvoMagnoMapping", retina_kernel_source);
+    kernel.args(parvo, magno, parvo.cols, parvo.rows, halfCols, halfRows, elements_per_row, minDistance);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 }  /* namespace ocl */
 
