@@ -577,7 +577,7 @@ void BasicRetinaFilter::_localLuminanceAdaptation(const UMat &inputFrame, const 
 {
     if (updateLuminanceMean)
     {
-        float meanLuminance = saturate_cast<float>(ocl::sum(inputFrame)[0]) / getNBpixels();
+        float meanLuminance = saturate_cast<float>(cv::sum(inputFrame)[0]) / getNBpixels();
         updateCompressionParameter(meanLuminance);
     }
     int elements_per_row = static_cast<int>(inputFrame.step / inputFrame.elemSize());
@@ -697,11 +697,11 @@ void BasicRetinaFilter::_verticalCausalFilter_Irregular(UMat &outputFrame, const
 void normalizeGrayOutput_0_maxOutputValue(UMat &inputOutputBuffer, const float maxOutputValue)
 {
     double min_val, max_val;
-    ocl::minMax(inputOutputBuffer, &min_val, &max_val);
+    cv::minMaxLoc(inputOutputBuffer, &min_val, &max_val);
     float factor = maxOutputValue / static_cast<float>(max_val - min_val);
     float offset = - static_cast<float>(min_val) * factor;
-    ocl::multiply(factor, inputOutputBuffer, inputOutputBuffer);
-    ocl::add(inputOutputBuffer, offset, inputOutputBuffer);
+    cv::multiply(factor, inputOutputBuffer, inputOutputBuffer);
+    cv::add(inputOutputBuffer, offset, inputOutputBuffer);
 }
 
 void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensitivity, UMat &in, UMat &out, const float maxValue)
@@ -838,7 +838,7 @@ const UMat &ParvoRetinaFilter::runFilter(const UMat &inputFrame, const bool useP
         _localLuminanceAdaptation(_parvocellularOutputON, _localAdaptationON);
         _spatiotemporalLPfilter(_bipolarCellsOutputOFF, _localAdaptationOFF, 2);
         _localLuminanceAdaptation(_parvocellularOutputOFF, _localAdaptationOFF);
-        ocl::subtract(_parvocellularOutputON, _parvocellularOutputOFF, _parvocellularOutputONminusOFF);
+        cv::subtract(_parvocellularOutputON, _parvocellularOutputOFF, _parvocellularOutputONminusOFF);
     }
 
     return _parvocellularOutputONminusOFF;
