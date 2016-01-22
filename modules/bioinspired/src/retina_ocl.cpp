@@ -959,7 +959,7 @@ const UMat &MagnoRetinaFilter::runFilter(const UMat &OPL_ON, const UMat &OPL_OFF
     _spatiotemporalLPfilter(_magnoXOutputOFF, _localProcessBufferOFF, 1);
     _localLuminanceAdaptation(_magnoXOutputOFF, _localProcessBufferOFF);
 
-    _magnoYOutput = _magnoXOutputON + _magnoXOutputOFF;
+    add(_magnoXOutputON, _magnoXOutputOFF, _magnoYOutput);
 
     return _magnoYOutput;
 }
@@ -1201,18 +1201,20 @@ void RetinaColor::runColorDemultiplexing(
         _adaptiveSpatialLPfilter(_demultiplexedTempBuffer_slices[1], _imageGradient, _demultiplexedColorFrame_slices[1]);
         _adaptiveSpatialLPfilter(_demultiplexedTempBuffer_slices[2], _imageGradient, _demultiplexedColorFrame_slices[2]);
 
-        _demultiplexedColorFrame /= _chrominance; // per element division
+        divide(_demultiplexedColorFrame, _chrominance, _demultiplexedColorFrame);
         substractResidual(_demultiplexedColorFrame, _pR, _pG, _pB);
         runColorMultiplexing(_demultiplexedColorFrame, _tempMultiplexedFrame);
 
         _demultiplexedTempBuffer.setTo(0);
-        _luminance = ocl_multiplexed_input - _tempMultiplexedFrame;
+        subtract(ocl_multiplexed_input, _tempMultiplexedFrame, _luminance);
         demultiplexAssign(_demultiplexedColorFrame, _demultiplexedTempBuffer);
 
         for(int i = 0; i < 3; i ++)
         {
             _spatiotemporalLPfilter(_demultiplexedTempBuffer_slices[i], _demultiplexedTempBuffer_slices[i]);
-            _demultiplexedColorFrame_slices[i] = _demultiplexedTempBuffer_slices[i] * _colorLocalDensity_slices[i] + _luminance;
+            //_demultiplexedColorFrame_slices[i] = _demultiplexedTempBuffer_slices[i] * _colorLocalDensity_slices[i] + _luminance;
+            multiply(_demultiplexedTempBuffer_slices[i], _colorLocalDensity_slices[i], _demultiplexedColorFrame_slices[i]);
+            add(_demultiplexedColorFrame_slices[i], _luminance, _demultiplexedColorFrame_slices[i]);
         }
     }
     // eliminate saturated colors by simple clipping values to the input range
