@@ -1075,7 +1075,7 @@ void RetinaColor::_initColorSampling()
     {
         tmp_mat_ptr[bayerSampleOffset(index)] = 1.0;
     }
-    tmp_mat.copyTo(_RGBmosaic);
+    _RGBmosaic = tmp_mat.getUMat(ACCESS_RW);
     // computing photoreceptors local density
     MAKE_OCLMAT_SLICES(_RGBmosaic, 3);
     MAKE_OCLMAT_SLICES(_colorLocalDensity, 3);
