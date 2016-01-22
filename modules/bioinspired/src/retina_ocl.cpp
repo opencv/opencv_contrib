@@ -749,7 +749,7 @@ void normalizeGrayOutputNearZeroCentreredSigmoide(UMat &inputPicture, UMat &outp
 void centerReductImageLuminance(UMat &inputoutput)
 {
     Scalar mean, stddev;
-    cv::meanStdDev((Mat)inputoutput, mean, stddev);
+    cv::meanStdDev(inputoutput.getMat(ACCESS_READ), mean, stddev);
 
     Context ctx = Context::getDefault();
     std::vector<std::pair<size_t, const void *> > args;
@@ -1075,7 +1075,7 @@ void RetinaColor::_initColorSampling()
     {
         tmp_mat_ptr[bayerSampleOffset(index)] = 1.0;
     }
-    _RGBmosaic.upload(tmp_mat);
+    _RGBmosaic.setTo(tmp_mat);
     // computing photoreceptors local density
     MAKE_OCLMAT_SLICES(_RGBmosaic, 3);
     MAKE_OCLMAT_SLICES(_colorLocalDensity, 3);
