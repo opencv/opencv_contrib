@@ -208,10 +208,10 @@ global limit pmin and the difference between local maximum and local minimum is 
 minProbabilityDiff).
  */
 CV_EXPORTS_W Ptr<ERFilter> createERFilterNM1(const Ptr<ERFilter::Callback>& cb,
-                                                  int thresholdDelta = 1, float minArea = 0.00025,
-                                                  float maxArea = 0.13, float minProbability = 0.4,
+                                                  int thresholdDelta = 1, float minArea = (float)0.00025,
+                                                  float maxArea = (float)0.13, float minProbability = (float)0.4,
                                                   bool nonMaxSuppression = true,
-                                                  float minProbabilityDiff = 0.1);
+                                                  float minProbabilityDiff = (float)0.1);
 
 /** @brief Create an Extremal Region Filter for the 2nd stage classifier of N&M algorithm [Neumann12].
 
