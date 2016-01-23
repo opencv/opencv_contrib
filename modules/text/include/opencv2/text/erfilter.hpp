@@ -225,7 +225,7 @@ classifier uses all the features calculated in the first stage and the following
 features: hole area ratio, convex hull ratio, and number of outer inflexion points.
  */
 CV_EXPORTS_W Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
-                                                  float minProbability = 0.3);
+                                                  float minProbability = (float)0.3);
 
 
 /** @brief Allow to implicitly load the default classifier when creating an ERFilter object.
