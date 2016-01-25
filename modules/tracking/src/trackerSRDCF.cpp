@@ -64,6 +64,7 @@ class SRDCF : public TrackerSRDCF{
    }
    ~SRDCF() {}
 
+
    void read( const cv::FileNode& fn );
    void write( cv::FileStorage& fs ) const;
 
@@ -355,7 +356,6 @@ void SRDCF::detect(const cv::Mat& image){
   cv::Point2i maxpos;
   cv::minMaxLoc(response,NULL,NULL,NULL,&maxpos);
 
-  //TODO remove me
   cv::Point2i translation(round(shift_index(maxpos.x,response.cols)*scale_factor),
 		          round(shift_index(maxpos.y,response.rows)*scale_factor));
 
@@ -492,6 +492,8 @@ std::vector<cv::Mat> SRDCF::fft2(const cv::Mat featureData){
     return channelsf;
 }
 
+
+
 std::vector<cv::Mat> SRDCF::construct_sample_data(std::vector<cv::Mat> feature_matrices){
 
     const int nFeat = feature_matrices.size();
@@ -509,6 +511,7 @@ SparseMat SRDCF::make_sparse_data(const std::vector<cv::Mat>& data){
     const int feature_dim = data.size();
 
     std::vector<cv::Mat> outer_products = construct_sample_data(data);
+    std::vector<float> real,imag;
 
     int sparse_mat_size = outer_products.size();
     //cv::SparseMat sparse_data(sparse_mat_size,sparse_mat_size);
@@ -598,11 +601,12 @@ int SRDCF::shift_index(const int index, const int length) const{
  *  @params sigma_factor, sigma scale factor (tracker parameter)
  */
 cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_size ,const float sigma_factor) const{
-
     cv::Mat new_labels(matrix_size.height,matrix_size.width,CV_32F);
+
 
     const float sigma = std::sqrt(target_size.area()) * sigma_factor;
     const float constant = -0.5 / pow(sigma,2);
+    std::cout << "constant is" << constant << std::endl;
     for(int x = 0; x < matrix_size.width; x++){
         for(int y = 0; y < matrix_size.height; y++){
             int shift_x = shift_index(x,matrix_size.width);
@@ -613,6 +617,7 @@ cv::Mat SRDCF::make_labels(const cv::Size matrix_size, const cv::Size target_siz
     }
 
     cv::Mat labels_dft;
+
 
     cv::dft(new_labels, labels_dft);
 
