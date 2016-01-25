@@ -49,7 +49,6 @@
 #include "onlineBoosting.hpp"
 #include <iostream>
 
-
 #define BOILERPLATE_CODE(name,classname) \
     static Ptr<classname> createTracker(const classname::Params &parameters=classname::Params());\
     virtual ~classname(){};
