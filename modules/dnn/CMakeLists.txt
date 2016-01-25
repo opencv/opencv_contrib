@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-if(IOS OR WINRT)
+if(APPLE_FRAMEWORK OR WINRT)
   ocv_module_disable(dnn)
 endif()
 
