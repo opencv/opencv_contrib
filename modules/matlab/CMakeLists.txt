@@ -23,6 +23,20 @@
 #  them with mex.
 # ----------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------
+#  Architecture checks
+# ----------------------------------------------------------------------------
+# make sure we're on a supported architecture with Matlab and python installed
+if(APPLE_FRAMEWORK OR ANDROID OR NOT MATLAB_FOUND)
+    ocv_module_disable(matlab)
+    return()
+elseif (NOT PYTHON_DEFAULT_AVAILABLE)
+    message(WARNING "A required dependency of the matlab module (Python) was not found. Disabling Matlab bindings...")
+    ocv_module_disable(matlab)
+    return()
+endif()
+
+
 # PREPEND
 # Given a list of strings IN and a TOKEN, prepend the token to each string
 # and append to OUT. This is used for passing command line "-I", "-L" and "-l"
@@ -43,19 +57,6 @@ macro(WARN_MIXED_PRECISION COMPILER_BITNESS MATLAB_BITNESS)
     set(MSG "${MSG} To build Matlab bindings, please switch to a ${MATLAB_BITNESS}-bit compiler.")
     message(WARNING ${MSG})
 endmacro()
-
-# ----------------------------------------------------------------------------
-#  Architecture checks
-# ----------------------------------------------------------------------------
-# make sure we're on a supported architecture with Matlab and python installed
-if (IOS OR ANDROID OR NOT MATLAB_FOUND)
-    ocv_module_disable(matlab)
-    return()
-elseif (NOT PYTHON_DEFAULT_AVAILABLE)
-    message(WARNING "A required dependency of the matlab module (PythonLibs) was not found. Disabling Matlab bindings...")
-    ocv_module_disable(matlab)
-    return()
-endif()
 
 
 # If the user built OpenCV as X-bit, but they have a Y-bit version of Matlab,
