@@ -380,7 +380,7 @@ void RetinaOCLImpl::run(InputArray input)
 
 void RetinaOCLImpl::getParvo(OutputArray output)
 {
-    UMat &retinaOutput_parvo = output.getUMat();
+    UMat &retinaOutput_parvo = output.getUMatRef();
     if (_retinaFilter->getColorMode())
     {
         // reallocate output buffer (if necessary)
@@ -395,7 +395,7 @@ void RetinaOCLImpl::getParvo(OutputArray output)
 }
 void RetinaOCLImpl::getMagno(OutputArray output)
 {
-    UMat &retinaOutput_magno = output.getUMat();
+    UMat &retinaOutput_magno = output.getUMatRef();
     // reallocate output buffer (if necessary)
     convertToInterleaved(_retinaFilter->getMovingContours(), false, retinaOutput_magno);
     //retinaOutput_magno/=255.0;
