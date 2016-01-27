@@ -43,6 +43,7 @@
 #define __OPENCV_TRACKER_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/videoio.hpp"
 #include "opencv2/imgproc/types_c.h"
 #include "feature.hpp"
 #include "onlineMIL.hpp"
@@ -1338,7 +1339,9 @@ class ROISelector {
 public:
 	Rect2d select(Mat img, bool fromCenter = true);
 	Rect2d select(const cv::String& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
+	Rect2d select(const cv::String &windowName, cv::VideoCapture &cap, bool showCrossair = true, bool fromCenter = true);
 	void select(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
+	void select(const cv::String &windowName, cv::VideoCapture &cap, std::vector<Rect2d> &boundingBox, bool fromCenter = true);
 
 	struct handlerT{
 		// basic parameters
@@ -1368,7 +1371,8 @@ private:
 Rect2d CV_EXPORTS_W selectROI(Mat img, bool fromCenter = true);
 Rect2d CV_EXPORTS_W selectROI(const cv::String& windowName, Mat img, bool showCrossair = true, bool fromCenter = true);
 void CV_EXPORTS_W selectROI(const cv::String& windowName, Mat img, std::vector<Rect2d> & boundingBox, bool fromCenter = true);
-
+void CV_EXPORTS selectROI(const cv::String &windowName, cv::VideoCapture &cap,
+		std::vector<Rect2d> &boundingBox, bool fromCenter = true);
 
 /************************************ Multi-Tracker Classes ---By Tyan Vladimir---************************************/
 
