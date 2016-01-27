@@ -34,7 +34,7 @@
 
 #include "precomp.hpp"
 
-
+#include <hdf5.h>
 
 using namespace std;
 
