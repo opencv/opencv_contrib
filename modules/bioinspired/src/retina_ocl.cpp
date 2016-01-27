@@ -368,7 +368,7 @@ void RetinaOCLImpl::setupIPLMagnoChannel(const bool normaliseOutput, const float
 
 void RetinaOCLImpl::run(InputArray input)
 {
-    UMat &inputMatToConvert = input.getUMat();
+    UMat inputMatToConvert = input.getUMat();
     bool colorMode = convertToColorPlanes(inputMatToConvert, _inputBuffer);
     // first convert input image to the compatible format : std::valarray<float>
     // process the retina
