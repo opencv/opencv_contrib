@@ -37,16 +37,12 @@
 
 #include <vector>
 
-#include <hdf5.h>
-
-
-
-using namespace std;
 
 namespace cv
 {
 namespace hdf
 {
+using namespace std;
 
 //! @addtogroup hdf5
 //! @{
