@@ -291,12 +291,12 @@ namespace cv
                 //setting the min and max values for each axis
                 plotMinX = MinX;
                 plotMaxX = MaxX;
-                plotMinY = MinY;
-                plotMaxY = MaxY;
+                plotMinY = MaxY;
+                plotMaxY = MinY;
                 plotMinX_plusZero = MinX_plusZero;
                 plotMaxX_plusZero = MaxX_plusZero;
-                plotMinY_plusZero = MinY_plusZero;
-                plotMaxY_plusZero = MaxY_plusZero;
+                plotMinY_plusZero = MaxY_plusZero;
+                plotMaxY_plusZero = MinY_plusZero;
 
                 //setting the default size of a plot figure
                 setPlotSize(600, 400);
