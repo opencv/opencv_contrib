@@ -1,49 +1,41 @@
 /*
- * Sample C++ to demonstrate Niblack thresholding.
- *
+ * C++ sample to demonstrate Niblack thresholding.
  */
 
 #include <iostream>
-#include <cstdio>
-
-#include "opencv2/highgui.hpp"
 #include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-
 #include "opencv2/ximgproc.hpp"
 
 using namespace std;
 using namespace cv;
 using namespace cv::ximgproc;
 
-Mat_<uchar> src, dst;
-
-const int k_max_value = 10;
-int k_from_slider = 0;
-double k_actual = 0.0;
+Mat_<uchar> src;
+int k_ = 8;
+int blockSize_ = 11;
+int type_ = THRESH_BINARY;
 
 void on_trackbar(int, void*);
 
 int main(int argc, char** argv)
 {
-    /*
-     * Read filename from the command-line and load
-     * corresponding gray-scale image.
-     */
+    // read gray-scale image
     if(argc != 2)
     {
         cout << "Usage: ./niblack_thresholding [IMAGE]\n";
         return 1;
     }
     const char* filename = argv[1];
-    src = imread(filename, 1);
-
-    namedWindow("k-slider", 1);
-    string trackbar_name = "k";
-    createTrackbar(trackbar_name, "k-slider", &k_from_slider, k_max_value, on_trackbar);
-    on_trackbar(k_from_slider, 0);
-
+    src = imread(filename, IMREAD_GRAYSCALE);
     imshow("Source", src);
+
+    namedWindow("Niblack", WINDOW_AUTOSIZE);
+    createTrackbar("k", "Niblack", &k_, 20, on_trackbar);
+    createTrackbar("blockSize", "Niblack", &blockSize_, 30, on_trackbar);
+    createTrackbar("threshType", "Niblack", &type_, 4, on_trackbar);
+    on_trackbar(0, 0);
     waitKey(0);
 
     return 0;
@@ -51,8 +43,11 @@ int main(int argc, char** argv)
 
 void on_trackbar(int, void*)
 {
-    k_actual = (double)k_from_slider/k_max_value;
-    niBlackThreshold(src, dst, 255, THRESH_BINARY, 3, k_actual);
-
-    imshow("Destination", dst);
+    double k = static_cast<double>(k_-10)/10;                 // [-1.0, 1.0]
+    int blockSize = 2*(blockSize_ >= 1 ? blockSize_ : 1) + 1; // 3,5,7,...,61
+    int type = type_;  // THRESH_BINARY, THRESH_BINARY_INV,
+                       // THRESH_TRUNC, THRESH_TOZERO, THRESH_TOZERO_INV
+    Mat dst;
+    niBlackThreshold(src, dst, 255, type, blockSize, k);
+    imshow("Niblack", dst);
 }
