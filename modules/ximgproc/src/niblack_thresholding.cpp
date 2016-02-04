@@ -70,9 +70,9 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
     if( src.data != dst.data )
         mean = dst;
 
-    boxFilter( src, mean, CV_64F, Size(blockSize, blockSize),
+    boxFilter( src, mean, CV_32F, Size(blockSize, blockSize),
             Point(-1,-1), true, BORDER_REPLICATE );
-    sqrBoxFilter( src, sqmean, CV_64F, Size(blockSize, blockSize),
+    sqrBoxFilter( src, sqmean, CV_32F, Size(blockSize, blockSize),
             Point(-1,-1), true, BORDER_REPLICATE );
 
     // Compute (k * standard deviation) in the neighborhood of each pixel
