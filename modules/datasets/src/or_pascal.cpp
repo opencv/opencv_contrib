@@ -61,8 +61,8 @@ public:
 
 private:
     void loadDataset(const string &path, const string &nameImageSet, vector< Ptr<Object> > &imageSet);
-    Ptr<Object> parseAnnotation(const string path, const string id);
-    const char*  parseNodeText(XMLElement* node, const string nodeName, const string defaultValue);
+    Ptr<Object> parseAnnotation(const string &path, const string &id);
+    const char*  parseNodeText(XMLElement* node, const string &nodeName, const string &defaultValue);
 };
 
 
@@ -105,17 +105,20 @@ void OR_pascalImp::loadDataset(const string &path, const string &nameImageSet, v
     }
 }
 
-const char* OR_pascalImp::parseNodeText(XMLElement* node, const string nodeName, const string defaultValue)
+const char* OR_pascalImp::parseNodeText(XMLElement* node, const string &nodeName, const string &defaultValue)
 {
-    const char* e = node->FirstChildElement(nodeName.c_str())->GetText();
-
-    if( e != 0 )
-        return e ;
-    else
+    XMLElement* child = node->FirstChildElement(nodeName.c_str());
+    if ( child == 0 )
         return defaultValue.c_str();
+
+    const char* e = child->GetText();
+    if( e == 0 )
+        return defaultValue.c_str();
+
+    return e ;
 }
 
-Ptr<Object> OR_pascalImp::parseAnnotation(const string path, const string id)
+Ptr<Object> OR_pascalImp::parseAnnotation(const string &path, const string &id)
 {
     string pathAnnotations(path + "Annotations/");
     string pathImages(path + "JPEGImages/");
