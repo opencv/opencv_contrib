@@ -187,11 +187,11 @@ namespace cv
                 int NumVecElements = plotDataX.rows;
 
                 Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
-                Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
+                Mat InterpYdata = linearInterpolation(plotMaxY, plotMinY, 0, plotSizeHeight, plotDataY);
 
                 //Find the zeros in image coordinates
                 Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
-                Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
+                Mat InterpYdataFindZero = linearInterpolation(plotMaxY_plusZero, plotMinY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
 
                 int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
                 int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
@@ -291,12 +291,12 @@ namespace cv
                 //setting the min and max values for each axis
                 plotMinX = MinX;
                 plotMaxX = MaxX;
-                plotMinY = MaxY;
-                plotMaxY = MinY;
+                plotMinY = MinY;
+                plotMaxY = MaxY;
                 plotMinX_plusZero = MinX_plusZero;
                 plotMaxX_plusZero = MaxX_plusZero;
-                plotMinY_plusZero = MaxY_plusZero;
-                plotMaxY_plusZero = MinY_plusZero;
+                plotMinY_plusZero = MinY_plusZero;
+                plotMaxY_plusZero = MaxY_plusZero;
 
                 //setting the default size of a plot figure
                 setPlotSize(600, 400);
