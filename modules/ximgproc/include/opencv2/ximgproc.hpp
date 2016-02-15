@@ -45,6 +45,7 @@
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
 #include "ximgproc/estimated_covariance.hpp"
+#include "ximgproc/weighted_median_filter.hpp"
 #include "ximgproc/slic.hpp"
 #include "ximgproc/lsc.hpp"
 
