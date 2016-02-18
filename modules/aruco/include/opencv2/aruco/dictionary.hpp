@@ -61,9 +61,9 @@ namespace aruco {
 class CV_EXPORTS_W Dictionary {
 
     public:
-    CV_PROP_RW Mat bytesList;         // marker code information
-    CV_PROP_RW int markerSize;        // number of bits per dimension
-    CV_PROP_RW int maxCorrectionBits; // maximum number of bits that can be corrected
+    CV_PROP Mat bytesList;         // marker code information
+    CV_PROP int markerSize;        // number of bits per dimension
+    CV_PROP int maxCorrectionBits; // maximum number of bits that can be corrected
 
 
     /**
@@ -114,7 +114,7 @@ class CV_EXPORTS_W Dictionary {
     /**
      * @brief Draw a canonical marker image
      */
-    void drawMarker(int id, int sidePixels, OutputArray _img, int borderBits = 1) const;
+    CV_WRAP void drawMarker(int id, int sidePixels, OutputArray _img, int borderBits = 1) const;
 
 
     /**

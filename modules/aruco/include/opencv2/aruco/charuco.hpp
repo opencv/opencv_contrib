@@ -63,11 +63,11 @@ class CV_EXPORTS_W CharucoBoard : public Board {
 
     public:
     // vector of chessboard 3D corners precalculated
-    std::vector< Point3f > chessboardCorners;
+    CV_PROP std::vector< Point3f > chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
-    std::vector< std::vector< int > > nearestMarkerIdx;
-    std::vector< std::vector< int > > nearestMarkerCorners;
+    CV_PROP std::vector< std::vector< int > > nearestMarkerIdx;
+    CV_PROP std::vector< std::vector< int > > nearestMarkerCorners;
 
     /**
      * @brief Draw a ChArUco board
@@ -80,7 +80,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
      *
      * This function return the image of the ChArUco board, ready to be printed.
      */
-    void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -103,17 +103,17 @@ class CV_EXPORTS_W CharucoBoard : public Board {
     /**
       *
       */
-    Size getChessboardSize() const { return Size(_squaresX, _squaresY); }
+    CV_WRAP Size getChessboardSize() const { return Size(_squaresX, _squaresY); }
 
     /**
       *
       */
-    float getSquareLength() const { return _squareLength; }
+    CV_WRAP float getSquareLength() const { return _squareLength; }
 
     /**
       *
       */
-    float getMarkerLength() const { return _markerLength; }
+    CV_WRAP float getMarkerLength() const { return _markerLength; }
 
     private:
     void _getNearestMarkerCorners();
