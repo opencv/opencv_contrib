@@ -268,16 +268,16 @@ class CV_EXPORTS_W GridBoard : public Board {
      * @param markersX number of markers in X direction
      * @param markersY number of markers in Y direction
      * @param markerLength marker side length (normally in meters)
-     * @param markerSeparation separation between two markers (same unit than markerLenght)
-     * @param dictionary dictionary of markers indicating the type of markers.
-     * The first markersX*markersY markers in the dictionary are used.
+     * @param markerSeparation separation between two markers (same unit as markerLength)
+     * @param dictionary dictionary of markers indicating the type of markers
+     * @param firstMarker id of first marker in dictionary to use on board.
      * @return the output GridBoard object
      *
      * This functions creates a GridBoard object given the number of markers in each direction and
      * the marker size and marker separation.
      */
     CV_WRAP static Ptr<GridBoard> create(int markersX, int markersY, float markerLength,
-                                         float markerSeparation, Ptr<Dictionary> &dictionary);
+                                         float markerSeparation, Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
     /**
       *

@@ -1329,11 +1329,10 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 }
 
 
-
 /**
  */
 Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength, float markerSeparation,
-                            Ptr<Dictionary> &dictionary) {
+                            Ptr<Dictionary> &dictionary, int firstMarker) {
 
     CV_Assert(markersX > 0 && markersY > 0 && markerLength > 0 && markerSeparation > 0);
 
@@ -1351,7 +1350,7 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
 
     // fill ids with first identifiers
     for(unsigned int i = 0; i < totalMarkers; i++) {
-        res->ids[i] = i;
+        res->ids[i] = i + firstMarker;
     }
 
     // calculate Board objPoints
