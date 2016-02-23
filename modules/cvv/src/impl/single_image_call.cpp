@@ -14,8 +14,8 @@ namespace impl
 SingleImageCall::SingleImageCall(cv::InputArray img, impl::CallMetaData data,
                                  QString type, QString description,
                                  QString requestedView)
-    : Call{ data,                   std::move(type),
-	    std::move(description), std::move(requestedView) },
+    : Call( data,                   std::move(type),
+	    std::move(description), std::move(requestedView) ),
       img{ img.getMat().clone() }
 {
 }

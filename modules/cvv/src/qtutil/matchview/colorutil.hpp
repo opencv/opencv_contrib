@@ -1,6 +1,7 @@
 #ifndef CVVISUAL_COLOR_UTIL
 #define CVVISUAL_COLOR_UTIL
 
+#include <cstdint>
 #include <vector>
 
 #include <QColor>
