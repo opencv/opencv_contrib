@@ -20,7 +20,7 @@ namespace view
 
 SingleFilterView::SingleFilterView(const std::vector<cv::Mat> &images,
 				   QWidget *parent)
-    : FilterView{ parent }
+    : FilterView( parent )
 {
 	auto imwid = util::make_unique<QWidget>();
 	auto accor = util::make_unique<qtutil::Accordion>();
