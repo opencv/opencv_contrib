@@ -447,11 +447,6 @@ the log scale that is applied
  */
 CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
-#ifdef HAVE_OPENCL
-CV_EXPORTS_W Ptr<Retina> createRetina_OCL(Size inputSize);
-CV_EXPORTS_W Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0f, const double samplingStrenght = 10.0f);
-#endif
-
 //! @}
 
 //! @}

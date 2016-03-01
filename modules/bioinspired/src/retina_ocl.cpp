@@ -79,54 +79,6 @@ namespace ocl
 {
 using namespace cv::ocl;
 
-class RetinaOCLImpl : public Retina
-{
-public:
-    RetinaOCLImpl(Size getInputSize);
-    RetinaOCLImpl(Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
-    virtual ~RetinaOCLImpl();
-
-    Size getInputSize();
-    Size getOutputSize();
-
-    void setup(String retinaParameterFile = "", const bool applyDefaultSetupOnFailure = true);
-    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure = true);
-    void setup(RetinaParameters newParameters);
-
-    RetinaParameters getParameters();
-
-    const String printSetup();
-    virtual void write( String fs ) const;
-    virtual void write( FileStorage& fs ) const;
-
-    void setupOPLandIPLParvoChannel(const bool colorMode = true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity = 0.7, const float photoreceptorsTemporalConstant = 0.5, const float photoreceptorsSpatialConstant = 0.53, const float horizontalCellsGain = 0, const float HcellsTemporalConstant = 1, const float HcellsSpatialConstant = 7, const float ganglionCellsSensitivity = 0.7);
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta = 0, const float parasolCells_tau = 0, const float parasolCells_k = 7, const float amacrinCellsTemporalCutFrequency = 1.2, const float V0CompressionParameter = 0.95, const float localAdaptintegration_tau = 0, const float localAdaptintegration_k = 7);
-
-    void run(InputArray inputImage);
-    void getParvo(OutputArray retinaOutput_parvo);
-    void getMagno(OutputArray retinaOutput_magno);
-
-    void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0);
-    void clearBuffers();
-    void activateMovingContoursProcessing(const bool activate);
-    void activateContoursProcessing(const bool activate);
-
-    // unimplemented interfaces:
-    void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
-    void getParvoRAW(OutputArray /*retinaOutput_parvo*/) { NOT_IMPLEMENTED; }
-    void getMagnoRAW(OutputArray /*retinaOutput_magno*/) { NOT_IMPLEMENTED; }
-    const Mat getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-    const Mat getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-
-protected:
-    RetinaParameters _retinaParameters;
-    UMat _inputBuffer;
-    RetinaFilter* _retinaFilter;
-    bool convertToColorPlanes(const UMat& input, UMat &output);
-    void convertToInterleaved(const UMat& input, bool colorMode, UMat &output);
-    void _init(const Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
-};
-
 RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz)
 {
     _retinaFilter = 0;
@@ -486,6 +438,13 @@ void RetinaOCLImpl::activateContoursProcessing(const bool activate)
 {
     _retinaFilter->activateContoursProcessing(activate);
 }
+
+// unimplemented interfaces:
+void RetinaOCLImpl::applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
+void RetinaOCLImpl::getParvoRAW(OutputArray /*retinaOutput_parvo*/) { NOT_IMPLEMENTED; }
+void RetinaOCLImpl::getMagnoRAW(OutputArray /*retinaOutput_magno*/) { NOT_IMPLEMENTED; }
+const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
+const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
 
 ///////////////////////////////////////
 ///////// BasicRetinaFilter ///////////
