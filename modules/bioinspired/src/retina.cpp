@@ -299,13 +299,13 @@ private:
 Ptr<Retina> createRetina(Size inputSize)
 {
     if (cv::ocl::useOpenCL())
-        return makePtr<ocl::RetinaOCLImpl>(inputSize);
+        return makePtr<cv::bioinspired::ocl::RetinaOCLImpl>(inputSize);
     return makePtr<RetinaImpl>(inputSize);
 }
 Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
     if (cv::ocl::useOpenCL())
-        return makePtr<ocl::RetinaOCLImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+        return makePtr<cv::bioinspired::ocl::RetinaOCLImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
     return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
 
