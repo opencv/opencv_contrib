@@ -190,8 +190,15 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     std::vector<Point2f> pointsToTrackOld,pointsToTrackNew;
 
     Mat oldImage_gray,newImage_gray;
-    cvtColor( oldImage, oldImage_gray, COLOR_BGR2GRAY );
-    cvtColor( newImage, newImage_gray, COLOR_BGR2GRAY );
+    if (oldImage.channels() != 1)
+        cvtColor( oldImage, oldImage_gray, COLOR_BGR2GRAY );
+    else
+        oldImage.copyTo(oldImage_gray);
+
+    if (newImage.channels() != 1)
+        cvtColor( newImage, newImage_gray, COLOR_BGR2GRAY );
+    else
+        newImage.copyTo(newImage_gray);
 
     //"open ended" grid
     for(int i=0;i<params.pointsInGrid;i++){
