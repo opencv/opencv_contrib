@@ -367,7 +367,7 @@ vector<int> HDF5Impl::dsgetsize( String dslabel, int dims_flag ) const
     H5Dclose( dsdata );
     H5Sclose( fspace );
 
-    delete dims;
+    delete [] dims;
 
     return SizeVect;
 }
@@ -542,9 +542,9 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
     if ( channs > 1 )
       H5Tclose( dstype );
 
-    delete chunks;
-    delete dsdims;
-    delete maxdim;
+    delete [] chunks;
+    delete [] dsdims;
+    delete [] maxdim;
 
     H5Pclose( dsdcpl );
     H5Sclose( dspace );
@@ -659,9 +659,9 @@ void HDF5Impl::dsread( OutputArray Array, String dslabel,
     Mat matrix = Array.getMat();
     H5Dread( dsdata, dstype, dspace, fspace, H5P_DEFAULT, matrix.data );
 
-    delete dsdims;
-    delete mxdims;
-    delete foffset;
+    delete [] dsdims;
+    delete [] mxdims;
+    delete [] foffset;
 
     H5Tclose( dstype );
     H5Sclose( dspace );
@@ -759,9 +759,9 @@ void HDF5Impl::dswrite( InputArray Array, String dslabel,
     if ( matrix.channels() > 1 )
       H5Tclose( dstype );
 
-    delete dsizes;
-    delete dsdims;
-    delete offset;
+    delete [] dsizes;
+    delete [] dsdims;
+    delete [] offset;
 
     H5Sclose( dspace );
     H5Sclose( fspace );
@@ -894,10 +894,10 @@ void HDF5Impl::dsinsert( InputArray Array, String dslabel,
     if ( matrix.channels() > 1 )
       H5Tclose( dstype );
 
-    delete dsdims;
-    delete offset;
-    delete fsdims;
-    delete nwdims;
+    delete [] dsdims;
+    delete [] offset;
+    delete [] fsdims;
+    delete [] nwdims;
 
     H5Sclose( dspace );
     H5Sclose( fspace );
@@ -1122,7 +1122,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, String kplabel,
     // write into dataset
     H5Dwrite( dsdata, mmtype, dspace, fspace, H5P_DEFAULT, &keypoints[0] );
 
-    delete fsdims;
+    delete [] fsdims;
 
     H5Tclose( mmtype );
     H5Sclose( dspace );
