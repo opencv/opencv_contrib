@@ -632,11 +632,11 @@ philipp@mango:~/facerec/data/at$ tree
 |   |-- 10.pgm
 @endcode
 
-Then simply call `create_csv.py` with the path to the folder, just like this and you could save the
+Then simply call `create_csv.py at` , here 'at' being the basepath to the folder, just like this and you could save the
 output:
 
 @code{.sh}
-philipp@mango:~/facerec/data$ python create_csv.py
+philipp@mango:~/facerec/data$ python create_csv.py at
 at/s13/2.pgm;0
 at/s13/7.pgm;0
 at/s13/6.pgm;0
