@@ -206,34 +206,6 @@ Mat PhaseShiftCoefficientRealPart(Mat laplevel, Mat rieszXLevel, Mat rieszYLevel
 int main(int argc, char **argv)
 {
 
-	if (0==1)
-	{
-        std::vector<double> pb={36,62};
-        IIRFilter f("butterworth",4,300,pb);
-        Mat x=(Mat_<float>(1,1) << 1);
-        Mat x0=(Mat_<float>(1,1) << 0);
-        Mat x1=(Mat_<float>(1,1) << 0);
-        Mat x2=(Mat_<float>(1,1) << 0);
-        Mat x3=(Mat_<float>(1,1) << 0);
-        Mat x4=(Mat_<float>(1,1) << 0);
-        Mat x5=(Mat_<float>(1,1) << 0);
-        Mat x6=(Mat_<float>(1,1) << 0);
-        Mat x7=(Mat_<float>(1,1) << 0);
-        Mat x8=(Mat_<float>(1,1) << 0);
-        Mat x9=(Mat_<float>(1,1) << 0);
-        Mat x10=(Mat_<float>(1,1) << 0);
-        vector<Mat> ri = {x0,x1,x2,x3,x4,x5,x6,x7,x8};
-
-        Mat y;
-        for (int i = 2; i < 20; i++)
-        {
-            y=IIRtemporalFilter(f,x,ri);
-            cout<<"x ="<<x<<" y="<<y<<endl;
-            x=(Mat_<float>(1,1) << float(i));
-
-        }
-
-    }
     vector<string> listeVideo;
     vector<vector<double> > frequencyBand;
     std::vector<double> pb(3);

@@ -25,7 +25,7 @@ Pyramid& Pyramid::operator=(Pyramid &x)
 	return *this;
 }
 
-Pyramid& Pyramid::operator+=(Pyramid& a)
+Pyramid Pyramid::operator+=(Pyramid& a)
 {
 	if (pyr.size() != a.size() )
 	{
@@ -123,10 +123,16 @@ GaussianPyramid::GaussianPyramid(Mat m):Pyramid()
 
 }
 
-LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p):Pyramid(static_cast<Pyramid> (p))
+LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p)
 {
  
     type=p.type;
+    nbBand = p.NbBand();
+	pyr.resize(p.size());
+	for (int i = 0; i < p.size(); i++)
+	{
+	    pyr[i].resize(p[i].size());
+	}
     if (type==LAPLACIAN_LIKE_PYRAMID)
         InitFilters();
 
@@ -225,21 +231,21 @@ LaplacianPyramid::LaplacianPyramid(Mat &m,int laplacianType)
 }
 
 
-Mat LaplacianPyramid::Collapse(int nbLevel)
+Mat LaplacianPyramid::Collapse()
 {
 	Mat x, y;
 
 	y = pyr[pyr.size() - 1][0];
     switch (type){
     case  BURT_ADELSON_PYRAMID :
-	    for (int i = pyr.size() - 2; i >= 0; i--)
+	    for (int i = static_cast<int>(pyr.size()) - 2; i >= 0; i--)
 	    {
 		    pyrUp(y, x);
 		    add(x, pyr[i][0], y);
 	    }
         break;
     case  LAPLACIAN_LIKE_PYRAMID :
-        for (int i = pyr.size()-2; i>=0;i--)
+        for (int i = static_cast<int>(pyr.size())-2; i>=0;i--)
         {   
             Mat tmp1,tmp2;
             resize(y,x,pyr[i][0].size(),-1,-1,0);

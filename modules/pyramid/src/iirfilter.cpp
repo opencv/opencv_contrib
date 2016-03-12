@@ -126,11 +126,11 @@ complex<double>  bessel_poles[] =
     complex<double> ( -7.837694e-01, -5.759148e-01 ),	 complex<double> ( -6.417514e-01, -8.175836e-01 ),	 complex<double> ( -4.083221e-01, -1.081275e+00 )
   };
 
-complex<double>  cmone( -1.0, 0.0 );
-complex<double>  czero = {	 0.0, 0.0 };
-complex<double>  cone  = {	 1.0, 0.0 };
-complex<double>  ctwo  = {	 2.0, 0.0 };
-complex<double>  chalf = {	 0.5, 0.0 };
+complex<double>  cmone(-1.0, 0.0);
+complex<double>  czero(0.0, 0.0);
+complex<double>  cone(1.0, 0.0);
+complex<double>  ctwo(2.0, 0.0);
+complex<double>  chalf(0.5, 0.0);
 
 
 

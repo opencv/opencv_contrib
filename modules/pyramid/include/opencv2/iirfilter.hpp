@@ -1,5 +1,5 @@
 #ifndef __IIRFILTER__
-#define IIRFILTER__
+#define __IIRFILTER__
 
 #include <vector>
 #include <string>
