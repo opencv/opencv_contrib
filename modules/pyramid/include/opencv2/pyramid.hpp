@@ -27,12 +27,12 @@ public :
 	Pyramid() {nbBand=0;type=GAUSSIAN_PYRAMID;};
 	Pyramid(Mat m,int level=-1);
 	Pyramid(Pyramid &p, bool zero,int idxBand=-1);
-    Pyramid(Pyramid &p);
+    Pyramid(Pyramid const &p);
     std::vector <std::vector<Mat> > &get(){return pyr;};
 
     void push_back(Mat m){ pyr.push_back(m);return; };
-	int size() { return static_cast<int> (pyr.size()); };
-	int NbBand() { if (pyr.size() == 0) return 0; return static_cast<int> (pyr[0].size()); };// A REVOIR 
+	size_t size() { return static_cast<int> (pyr.size()); };
+	int NbBand() { if (pyr.size() == 0) return 0; return static_cast<int> (pyr[0].size()); };// A REVOIR
 
     std::vector<Mat> & operator [](int i) {return pyr[i];}
 	Pyramid& operator=(Pyramid &x);

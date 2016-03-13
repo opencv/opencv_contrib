@@ -19,13 +19,7 @@
 /* Header file */
 
 
-/*
-#define uint	    unsigned int
-#define bool	    int
-#define true	    1
-#define false	    0
-#define word	    int		    
-*/
+
 #define EPS	    1e-10
 
 #define seq(s1,s2)  (strcmp(s1,s2) == 0)
@@ -47,7 +41,7 @@ IIRFilter::IIRFilter(string ftype, int o, double fs, vector<double> frequency)
         e.code = -2;
         e.msg = "only butterworth filter is implemented";
     }
-    // Frequency Bande passante où le gain du filtre est de 1 : 
+    // Frequency Bande passante où le gain du filtre est de 1 :
     // 0 f1 passebas
     // f1 f2 passebande
     // f1 fs/2 passe haut
@@ -63,11 +57,11 @@ IIRFilter::IIRFilter(string ftype, int o, double fs, vector<double> frequency)
     raw_alpha1 = frequency[0]/fs;
     raw_alpha2 = frequency[1]/fs;;
     if (abs(raw_alpha2-0.5)<0.000001)
-        opts =  opt_hp|opt_bu; 
+        opts =  opt_hp|opt_bu;
     else if (raw_alpha2==0)
-        opts =  opt_lp|opt_bu; 
+        opts =  opt_lp|opt_bu;
     else
-        opts =  opt_bp|opt_bu; 
+        opts =  opt_bp|opt_bu;
 
     order=o;
     compute_s();
@@ -80,14 +74,14 @@ IIRFilter::IIRFilter(string ftype, int o, double fs, vector<double> frequency)
     b.resize(numpoles+1);
     a.resize(numpoles+1);
     for (i=0; i < numpoles+1; i++)
-    { 
+    {
         if (i > 0) printf("     + ");
         printf("(%3g * x[n-%2d])\n", xcoeffs[i], numpoles-i);
         b[ numpoles-i]= xcoeffs[i]/abs(fc_gain);
     }
     putchar('\n');
     for (i=0; i < numpoles; i++)
-    { 
+    {
         printf("     + (%14.10f * y[n-%2d])\n", ycoeffs[i], numpoles-i);
         a[numpoles-i]=ycoeffs[i];
     }
@@ -114,32 +108,28 @@ complex<double>  IIRFilter::evaluate(complex<double>  topco[],complex<double>  b
 
 complex<double>  bessel_poles[] =
   { /* table produced by /usr/fisher/bessel --	N.B. only one member of each C.Conj. pair is listed */
-    complex<double> ( -1.000000e+00,  0.000000e+00 ),	 complex<double> ( -8.660254e-01, -5.000000e-01 ),	 complex<double> ( -9.416000e-01,	0.000000e+00),	 
-    complex<double> ( -7.456404e-01, -7.113666e-01 ),	 complex<double> (-9.047588e-01, -2.709187e-01 ),	     complex<double> ( -6.572112e-01, -8.301614e-01 ),
-    complex<double> (-9.264421e-01,  0.000000e+00 ),	 complex<double> ( -8.515536e-01, -4.427175e-01 ),	 complex<double> ( -5.905759e-01, -9.072068e-01 ),	 
-    complex<double> (-9.093907e-01, -1.856964e-01 ),	 complex<double> ( -7.996542e-01, -5.621717e-01 ),	 complex<double> ( -5.385527e-01, -9.616877e-01),
-    complex<double> ( -9.194872e-01,  0.000000e+00 ),	 complex<double> ( -8.800029e-01, -3.216653e-01 ),	 complex<double> ( -7.527355e-01, -6.504696e-01 ),
-    complex<double> ( -4.966917e-01, -1.002509e+00 ),	 complex<double> ( -9.096832e-01, -1.412438e-01 ),	 complex<double> (-8.473251e-01, -4.259018e-01 ),	 
-    complex<double> ( -7.111382e-01, -7.186517e-01 ),	 complex<double> ( -4.621740e-01, -1.034389e+00 ),	 complex<double> ( -9.154958e-01,	0.000000e+00 ),	 
-    complex<double> ( -8.911217e-01, -2.526581e-01 ),	 complex<double> ( -8.148021e-01, -5.085816e-01),	 complex<double> ( -6.743623e-01, -7.730546e-01 ),	 
-    complex<double> ( -4.331416e-01, -1.060074e+00 ),	 complex<double> ( -9.091347e-01, -1.139583e-01 ),	 complex<double> ( -8.688460e-01, -3.430008e-01 ),
-    complex<double> ( -7.837694e-01, -5.759148e-01 ),	 complex<double> ( -6.417514e-01, -8.175836e-01 ),	 complex<double> ( -4.083221e-01, -1.081275e+00 )
+    complex<double> (-1.000000e+00,0.000000e+00),complex<double> (-8.660254e-01,-5.000000e-01),complex<double> (-9.416000e-01,0.000000e+00),
+    complex<double> (-7.456404e-01,-7.113666e-01),complex<double> (-9.047588e-01,-2.709187e-01),complex<double> (-6.572112e-01,-8.301614e-01),
+    complex<double> (-9.264421e-01,0.000000e+00),complex<double> (-8.515536e-01,-4.427175e-01),complex<double> (-5.905759e-01,-9.072068e-01),
+    complex<double> (-9.093907e-01,-1.856964e-01),complex<double> (-7.996542e-01,-5.621717e-01),complex<double> (-5.385527e-01,-9.616877e-01),
+    complex<double> (-9.194872e-01,0.000000e+00),complex<double> (-8.800029e-01,-3.216653e-01),complex<double> (-7.527355e-01,-6.504696e-01),
+    complex<double> (-4.966917e-01,-1.002509e+00),complex<double> (-9.096832e-01,-1.412438e-01),complex<double> (-8.473251e-01,-4.259018e-01),
+    complex<double> (-7.111382e-01,-7.186517e-01),complex<double> (-4.621740e-01,-1.034389e+00),complex<double> (-9.154958e-01,0.000000e+00),
+    complex<double> (-8.911217e-01,-2.526581e-01),complex<double> (-8.148021e-01,-5.085816e-01),complex<double> (-6.743623e-01,-7.730546e-01),
+    complex<double> (-4.331416e-01,-1.060074e+00),complex<double> (-9.091347e-01,-1.139583e-01),complex<double> (-8.688460e-01,-3.430008e-01),
+    complex<double> (-7.837694e-01,-5.759148e-01),complex<double> (-6.417514e-01,-8.175836e-01),complex<double> (-4.083221e-01,-1.081275e+00)
   };
 
-complex<double>  cmone(-1.0, 0.0);
-complex<double>  czero(0.0, 0.0);
-complex<double>  cone(1.0, 0.0);
-complex<double>  ctwo(2.0, 0.0);
-complex<double>  chalf(0.5, 0.0);
-
-
+complex<double>  cmone(-1.0,0.0);
+complex<double>  czero(0.0,0.0);
+complex<double>  cone(1.0,0.0);
+complex<double>  ctwo(2.0,0.0);
+complex<double>  chalf(0.5,0.0);
 
 int decodeopts();
 double getfarg();
 
 #define cneg(z) csub(czero, z)
-
-
 
 void IIRFilter::choosepole(complex<double>  z)
   { if (z.real() < 0.0)
@@ -148,12 +138,8 @@ void IIRFilter::choosepole(complex<double>  z)
       }
   }
 
-
-
-
-
 void  IIRFilter::compute_s() /* compute S-plane poles for prototype LP filter */
-  { 
+  {
     polemask=1;
     numpoles =0;
     if (opts & opt_be)
@@ -191,7 +177,7 @@ void  IIRFilter::compute_s() /* compute S-plane poles for prototype LP filter */
 	    exit(1);
 	  }
 	for (i=0; i < numpoles; i++)
-	  { 
+	  {
           spoles[i] = complex<double> (spoles[i].real() * sinh(y),spoles[i].imag()* cosh(y));
 	  }
       }
@@ -260,7 +246,7 @@ void IIRFilter::compute_z() /* given S-plane poles, compute Z-plane poles */
 
 void IIRFilter::multin(complex<double>  w, complex<double>  coeffs[])
   { /* multiply factor (z-w) into coeffs */
-    complex<double>  nw; 
+    complex<double>  nw;
     int i;
     nw = -w;
     for (i=numpoles; i >= 1; i--)
@@ -320,5 +306,5 @@ void IIRFilter::printrecurrence() /* given (real) Z-plane poles & zeros, compute
 
 
 void IIRFilter::printfilter()
-{ 
-  }
+{
+}

@@ -9,6 +9,18 @@ using namespace pyramid;
 2 In "Supplemental for Riesz Pyramids for Fast Phase-Based Video Magnification" supplemental material : http://people.csail.mit.edu/nwadhwa/riesz-pyramid/RieszPyrSupplemental.zip
 */
 
+Pyramid::Pyramid(Pyramid const &p)
+{
+    type=p.type;
+    nbBand = p.nbBand;
+	pyr.resize(p.pyr.size());
+	for (int i = 0; i < p.pyr.size(); i++)
+	{
+	    pyr[i].resize(p.pyr[i].size());
+	}
+
+}
+
 
 #define MIN_ROW_COL_PYRAMID 32
 Mat Pyramid::collapse()
@@ -56,9 +68,9 @@ Pyramid Pyramid::operator+=(Pyramid& a)
 		throw e;
 	}
 	Pyramid p(a, false);
-	for (int i = 0; i < pyr.size(); i++)
+	for (int i = 0; i < static_cast<int>(pyr.size()); i++)
 	{
-		for (int j=0; j<a.get()[i].size();j++)
+		for (int j=0; j<static_cast<int>(a.get()[i].size());j++)
 			p.get()[i][j] = pyr[i][j] + a.get()[i][j];
 	}
     p.type=a.type;
@@ -67,7 +79,7 @@ Pyramid Pyramid::operator+=(Pyramid& a)
 
 
 
-Pyramid::Pyramid(Pyramid &p, bool zero, int idxBand) 
+Pyramid::Pyramid(Pyramid &p, bool zero, int idxBand)
 {
     type=p.type;
     nbBand = p.NbBand();
@@ -80,10 +92,10 @@ Pyramid::Pyramid(Pyramid &p, bool zero, int idxBand)
         throw e;
     }
 	pyr.resize(p.size());
-	for (int i = 0; i < p.size(); i++)
+	for (int i = 0; i < static_cast<int>(p.size()); i++)
 	{
         if (idxBand==-1)
-            for (int j = 0; j < p.get()[i].size(); j++)
+            for (int j = 0; j < static_cast<int>(p.get()[i].size()); j++)
 		    {
 			    Mat m;
 			    if (zero)
@@ -106,20 +118,6 @@ Pyramid::Pyramid(Pyramid &p, bool zero, int idxBand)
 }
 
 
-Pyramid::Pyramid(Pyramid &p)
-{
-    type=p.type;
-    nbBand = p.NbBand();
-	pyr.resize(p.size());
-	for (int i = 0; i < p.size(); i++)
-	{
-	    pyr[i].resize(p[i].size());
-	}
-
-}
-
-
-
 GaussianPyramid::GaussianPyramid(Mat m):Pyramid()
 {
     Mat x=m;
@@ -139,7 +137,6 @@ GaussianPyramid::GaussianPyramid(Mat m):Pyramid()
 
 LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p)
 {
- 
     type=p.type;
     nbBand = p.NbBand();
 	pyr.resize(p.size());
@@ -149,7 +146,6 @@ LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p)
 	}
     if (type==LAPLACIAN_LIKE_PYRAMID)
         InitFilters();
-
 }
 
 LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p, bool zero, int idxBand) :Pyramid(p,zero,idxBand)
@@ -168,7 +164,7 @@ LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p, bool zero, int idxBand) 
 	for (int i = 0; i < p.size(); i++)
 	{
         if (idxBand==-1)
-            for (int j = 0; j < p.get()[i].size(); j++)
+            for (int j = 0; j < static_cast<int>(p.get()[i].size()); j++)
 		    {
 			    Mat m;
 			    if (zero)
@@ -206,11 +202,11 @@ LaplacianPyramid::LaplacianPyramid(Mat &m,int laplacianType)
         InitFilters();
 
     type=laplacianType;
-    Mat tmp=m;
     if (laplacianType == LAPLACIAN_LIKE_PYRAMID)
     {
+        Mat tmp=m;
         while (tmp.rows >= MIN_ROW_COL_PYRAMID && tmp.cols > MIN_ROW_COL_PYRAMID)
-        {   
+        {
 	        Mat tmpLow,tmpHigh;
             filter2D(tmp,tmpHigh,CV_32F,highPassFilter);
             vector<Mat> v;
@@ -228,7 +224,7 @@ LaplacianPyramid::LaplacianPyramid(Mat &m,int laplacianType)
     {
         Mat tmp=m;
         while (tmp.rows >= MIN_ROW_COL_PYRAMID && tmp.cols > MIN_ROW_COL_PYRAMID)
-        {   
+        {
             Mat tmp1,tmp2;
             pyrDown(tmp,tmp1);
             pyrUp(tmp1,tmp2);
@@ -238,7 +234,7 @@ LaplacianPyramid::LaplacianPyramid(Mat &m,int laplacianType)
             pyr.push_back(v);
             tmp=tmp1;
         }
-        vector<Mat> v; 
+        vector<Mat> v;
         v.push_back(tmp);
         pyr.push_back(v);
     }
@@ -260,7 +256,7 @@ Mat LaplacianPyramid::Collapse()
         break;
     case  LAPLACIAN_LIKE_PYRAMID :
         for (int i = static_cast<int>(pyr.size())-2; i>=0;i--)
-        {   
+        {
             Mat tmp1,tmp2;
             resize(y,x,pyr[i][0].size(),-1,-1,0);
             filter2D(x,tmp1,CV_32F,lowPassFilter);
@@ -276,7 +272,7 @@ Mat LaplacianPyramid::Collapse()
 
 void LaplacianPyramid::InitFilters()
 {
-    // Ref 2 
+    // Ref 2
     lowPassFilter = (Mat_<float>(9,9)<< -0.0001,   -0.0007,  -0.0023,  -0.0046,  -0.0057,  -0.0046,  -0.0023,  -0.0007,  -0.0001,
 	                                    -0.0007,   -0.0030,  -0.0047,  -0.0025,  -0.0003,  -0.0025,  -0.0047,  -0.0030,  -0.0007,
 	                                    -0.0023,   -0.0047,   0.0054,   0.0272,   0.0387,   0.0272,   0.0054,  -0.0047,  -0.0023,
@@ -312,7 +308,7 @@ PyramidRiesz::PyramidRiesz(LaplacianPyramid &p)
 	//    Mat xKernel=yKernel.t();
 
 	for (int i = 0; i<p.size()-1;i++)
-    {   
+    {
 		vector<Mat> v;
         Mat tmp1,tmp2;
         filter2D(p[i][0],tmp1,CV_32F,xKernel);
@@ -323,6 +319,5 @@ PyramidRiesz::PyramidRiesz(LaplacianPyramid &p)
     }
 
 }
-
 
 

@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <string>
 
 #include <opencv2/iirfilter.hpp>
 #include <opencv2/pyramid.hpp>
@@ -18,27 +19,8 @@ using namespace cv::pyramid;
 using namespace cv::iirfilter;
 
 
-void DisplayImage(Mat x,string s)
-{
-	vector<Mat> sx;
-	split(x, sx);
-	vector<double> minVal(3), maxVal(3);
-	for (int i = 0; i < sx.size(); i++)
-	{
-		minMaxLoc(sx[i], &minVal[i], &maxVal[i]);
 
-	}
-	maxVal[0] = *max_element(maxVal.begin(), maxVal.end());
-	minVal[0] = *min_element(minVal.begin(), minVal.end());
-	Mat uc;
-	x.convertTo(uc, CV_8U,255/(maxVal[0]-minVal[0]),-0*minVal[0]/(maxVal[0]-minVal[0]));
-	imshow(s, uc);
-	waitKey(); 
-
-}
-
-
-Mat ArcCos(Mat m)
+static Mat ArcCos(Mat m)
 {
     if (m.depth() != CV_32F )
     {
@@ -72,7 +54,7 @@ Mat ArcCos(Mat m)
     return t;
 }
 
-Mat Cos(Mat m)
+static Mat Cos(Mat m)
 {
     if (m.depth() != CV_32F )
     {
@@ -96,7 +78,7 @@ Mat Cos(Mat m)
     return t;
 }
 
-Mat Sin(Mat m)
+static Mat Sin(Mat m)
 {
     if (m.depth() != CV_32F )
     {
@@ -121,7 +103,7 @@ Mat Sin(Mat m)
 }
 
 
-vector<Mat> DifferencePhaseAmplitude(Mat &c_real, Mat &cRzX, Mat &cRzY, Mat &p_real, Mat &pRzX, Mat &pRzY )
+static vector<Mat> DifferencePhaseAmplitude(Mat &c_real, Mat &cRzX, Mat &cRzY, Mat &p_real, Mat &pRzX, Mat &pRzY )
 {
     vector<Mat> v(3);
 
@@ -142,7 +124,6 @@ vector<Mat> DifferencePhaseAmplitude(Mat &c_real, Mat &cRzX, Mat &cRzY, Mat &p_r
         divide(qconjY,num,sinAngle);
         Mat diffPhaseCos=diffPhase.mul(cosAngle);
         Mat diffPhaseSin=diffPhase.mul(sinAngle);
-       
         Mat amplitude;
         sqrt(qconjAmplitude,amplitude);
         v[0]=diffPhaseCos;
@@ -152,18 +133,18 @@ vector<Mat> DifferencePhaseAmplitude(Mat &c_real, Mat &cRzX, Mat &cRzY, Mat &p_r
 return v;
 }
 
-Mat IIRtemporalFilter(IIRFilter &f, Mat phase, vector<Mat> ri)
+static Mat IIRtemporalFilter(IIRFilter &f, Mat phase, vector<Mat> ri)
 {
     Mat tmp;
     tmp = f.b[0] * phase + (ri[0]);
-    for (int i = 0; i<ri.size()-2;i++)
+    for (int i = 0; i<static_cast<int>(ri.size())-2;i++)
         ri[i] = f.b[i+1] * phase + (ri[i+1]) + f.a[i+1]*tmp;
     ri[ri.size()-2] = f.b[ri.size()-1] * phase  + f.a[ri.size()-1]*tmp;
     return tmp;
 }
 
 
-Mat AmplitudeWeightedblur(Mat img,Mat weighted,Mat kernelx,Mat kernely)
+static Mat AmplitudeWeightedblur(Mat img,Mat weighted,Mat kernelx,Mat kernely)
 {
 Mat num,den;
 Mat m;
@@ -178,7 +159,7 @@ return m;
 }
 
 
-Mat PhaseShiftCoefficientRealPart(Mat laplevel, Mat rieszXLevel, Mat rieszYLevel, Mat phaseMagnifiedCos, Mat phaseMagnifiedSin)
+static Mat PhaseShiftCoefficientRealPart(Mat laplevel, Mat rieszXLevel, Mat rieszYLevel, Mat phaseMagnifiedCos, Mat phaseMagnifiedSin)
 {
     Mat r;
     Mat pm,expPhaseReal,expPhaseImag;
@@ -199,7 +180,7 @@ Mat PhaseShiftCoefficientRealPart(Mat laplevel, Mat rieszXLevel, Mat rieszYLevel
 
 
 
-int main(int argc, char **argv)
+int main()
 {
 
     vector<string> listeVideo;
@@ -214,11 +195,11 @@ int main(int argc, char **argv)
     listeVideo.push_back("../Video/drum.avi");pb[0]=74;pb[1]=78;pb[2]=1900; frequencyBand.push_back(pb);
     listeVideo.push_back("../Video/guitar.avi");pb[0]=78;pb[1]=86;pb[2]=600; frequencyBand.push_back(pb);
     listeVideo.push_back("../Video/smoke.avi");pb[0]=9;pb[1]=15;pb[2]=200; frequencyBand.push_back(pb);
-    for (int i = 0; i<listeVideo.size();i++)
+    for (int i = 0; i<static_cast<int>(listeVideo.size());i++)
         cout << i << " for " << listeVideo[i] << " with butterworth band pass filter ["<<frequencyBand[i][0]<<","<<frequencyBand[i][1]<<"]\n";
 
     string nomFichier,codeFichier;
-    int fileIndx=-1; 
+    int fileIndx=-1;
     VideoCapture vid;
     do
     {
@@ -227,7 +208,7 @@ int main(int argc, char **argv)
         if (codeFichier.length() == 1)
         {
             fileIndx = stoi(codeFichier);
-            if (fileIndx>=0 && fileIndx<listeVideo.size())
+            if (fileIndx>=0 && fileIndx<static_cast<int>(listeVideo.size()))
             {
                 nomFichier = listeVideo[fileIndx];
                 pb = frequencyBand[fileIndx];
@@ -255,20 +236,20 @@ int main(int argc, char **argv)
     cout << "Example high pass at [3Hz,15 give 3 for f1 and 15 for f2 (fs=30hz=30images per second)\n";
     if (fileIndx!=-1)
         cout << "give -1 for f1 for default values\n";
-    double x;
+    double xx;
     cout << "f1 = ";
-    cin>>x;
-    if (x != -1)
+    cin>>xx;
+    if (xx != -1)
     {
-        pb[0]=x;
+        pb[0]=xx;
         cout << "f2 = ";
-        cin>>x;
-        if (x!=-1)
-            pb[1]=x;
+        cin>>xx;
+        if (xx!=-1)
+            pb[1]=xx;
         cout << "Sampling frequency = ";
-        cin>>x;
-        if (x!=-1)
-            pb[2]=x;
+        cin>>xx;
+        if (xx!=-1)
+            pb[2]=xx;
 
     }
     int ordre;
@@ -277,7 +258,8 @@ int main(int argc, char **argv)
     double fs = pb[2];
     pb.resize(2);
     double amplificationfactor=50;
-    double kernelSize, std;
+    int kernelSize;
+    double std;
     cout << "Amplification factor = ";
     cin>>amplificationfactor;
     cout << "Kernel size = ";
@@ -295,9 +277,9 @@ int main(int argc, char **argv)
     vid.read(m1);
     Mat mc;
     cvtColor(m1,mc,COLOR_BGR2HSV);
-    vector<Mat> sx;
-    split(mc,sx);
-    m = sx[2];
+    vector<Mat> sxo;
+    split(mc,sxo);
+    m = sxo[2];
     vidWrite.open("write.avi",CV_FOURCC('P','I','M','1'),30,m.size());
     LaplacianPyramid plPre(m,LAPLACIAN_LIKE_PYRAMID);
 
@@ -307,7 +289,7 @@ int main(int argc, char **argv)
 	Pyramid phaseSin(prPre,true,0);
     vector<Pyramid> rCos(std::max(f.a.size(),f.b.size()));
     vector<Pyramid> rSin(std::max(f.a.size(),f.b.size()));
-    for (int i = 0; i < std::max(f.a.size(), f.b.size()); i++)
+    for (int i = 0; i < std::max(static_cast<int>(f.a.size()), static_cast<int>(f.b.size())); i++)
     {
         Pyramid r0( prPre, true,0);
         Pyramid r1( prPre, true,0);
@@ -321,10 +303,9 @@ int main(int argc, char **argv)
     vector<Mat> riSin(std::max(f.a.size(), f.b.size()));
 	kernelx =  getGaussianKernel(kernelSize, std);
     kernely = kernelx.t();
-    int numLevels = plPre.size()-1;
+    int numLevels = static_cast<int>(plPre.size())-1;
 	while (vid.read(m1))
 	{
-        
         cvtColor(m1,mc,COLOR_BGR2HSV);
         vector<Mat> sx;
         split(mc,sx);
@@ -333,13 +314,12 @@ int main(int argc, char **argv)
         LaplacianPyramid plAct(m,LAPLACIAN_LIKE_PYRAMID);
 		PyramidRiesz prAct(plAct);
 		LaplacianPyramid prMotionMagnifiedLap(plAct);
-        
-		for (int i = 0; i < numLevels; i++)
+        for (int i = 0; i < numLevels; i++)
 		{
             vector<Mat> w=DifferencePhaseAmplitude(plAct[i][0],prAct[i][0],prAct[i][1],plPre[i][0],prPre[i][0],prPre[i][1]);
 			phaseCos[i][0] += w[0];
 			phaseSin[i][0] += w[1];
-            for (int j = 0;j < riCos.size(); j++)
+            for (int j = 0;j < static_cast<int>(riCos.size()); j++)
             {
                 riCos[j] = rCos[j][i][0];
                 riSin[j] = rSin[j][i][0];

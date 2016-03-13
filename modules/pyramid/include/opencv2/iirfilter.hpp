@@ -35,7 +35,7 @@ namespace iirfilter
 
     /* H(z) =\frac{Y(z)}{X(z)}= \frac{\sum_{k=0}^{N}b_k z^{-k}}{\sum_{k=0}^{M}a_k z^{-k}} */
     /* y(n)=b_0x(n)+...b_N x(n-N)-a_1 y(n-1)-...-a_M y(n-M) */
-class CV_EXPORTS_W  IIRFilter 
+class CV_EXPORTS_W  IIRFilter
 {
 public :
     int order, numpoles;
@@ -50,8 +50,8 @@ public :
     std::complex<double>  spoles[MAXPOLES];
     std::complex<double>  zpoles[MAXPOLES], zzeros[MAXPOLES];
     double xcoeffs[MAXPOLES+1], ycoeffs[MAXPOLES+1];
-    std::vector <double> a; // denominator  
-    std::vector <double> b; // Numerator 
+    std::vector <double> a; // denominator
+    std::vector <double> b; // Numerator
     int n;                  // Filter order y= bx-ay Y=B/A
 
     double fLow,fHigh;
