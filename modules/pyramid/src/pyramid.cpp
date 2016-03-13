@@ -14,7 +14,7 @@ Pyramid::Pyramid(Pyramid const &p)
     type=p.type;
     nbBand = p.nbBand;
 	pyr.resize(p.pyr.size());
-	for (int i = 0; i < p.pyr.size(); i++)
+	for (int i = 0; i < static_cast<int>(p.pyr.size()); i++)
 	{
 	    pyr[i].resize(p.pyr[i].size());
 	}
@@ -44,7 +44,7 @@ Pyramid& Pyramid::operator=(Pyramid &x)
     nbBand = x.NbBand();
     type= x.type;
 
-    for (int i = 0; i < x.size(); i++)
+    for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
         pyr.push_back(x[i]);
     }
@@ -135,12 +135,12 @@ GaussianPyramid::GaussianPyramid(Mat m):Pyramid()
 
 }
 
-LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p)
+LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p) :Pyramid(p)
 {
     type=p.type;
     nbBand = p.NbBand();
 	pyr.resize(p.size());
-	for (int i = 0; i < p.size(); i++)
+	for (int i = 0; i < static_cast<int>(p.size()); i++)
 	{
 	    pyr[i].resize(p[i].size());
 	}
@@ -161,7 +161,7 @@ LaplacianPyramid::LaplacianPyramid(LaplacianPyramid &p, bool zero, int idxBand) 
         throw e;
     }
 	pyr.resize(p.size());
-	for (int i = 0; i < p.size(); i++)
+	for (int i = 0; i < static_cast<int>(p.size()); i++)
 	{
         if (idxBand==-1)
             for (int j = 0; j < static_cast<int>(p.get()[i].size()); j++)
@@ -307,7 +307,7 @@ PyramidRiesz::PyramidRiesz(LaplacianPyramid &p)
 	//    Mat yKernel=(Mat_<float>(3,3) << -0.12, -0.34, -0.12, 0,0,0, 0.12, 0.34, 0.12);
 	//    Mat xKernel=yKernel.t();
 
-	for (int i = 0; i<p.size()-1;i++)
+	for (int i = 0; i<static_cast<int>(p.size())-1;i++)
     {
 		vector<Mat> v;
         Mat tmp1,tmp2;
@@ -319,5 +319,3 @@ PyramidRiesz::PyramidRiesz(LaplacianPyramid &p)
     }
 
 }
-
-
