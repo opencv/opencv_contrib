@@ -11,4 +11,3 @@ find_package(OpenCV REQUIRED) # http://opencv.org
 # probably you should loop through the sample files here
 add_executable(phase_based_video_magnify phase_based_video_magnify.cpp)
 target_link_libraries(phase_based_video_magnify opencv_core opencv_pyramid opencv_imgproc opencv_highgui)
-

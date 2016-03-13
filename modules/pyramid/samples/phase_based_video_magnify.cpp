@@ -197,17 +197,17 @@ int main()
     listeVideo.push_back("../Video/smoke.avi");pb[0]=9;pb[1]=15;pb[2]=200; frequencyBand.push_back(pb);
     for (int i = 0; i<static_cast<int>(listeVideo.size());i++)
         cout << i << " for " << listeVideo[i] << " with butterworth band pass filter ["<<frequencyBand[i][0]<<","<<frequencyBand[i][1]<<"]\n";
-
-    string nomFichier,codeFichier;
+    char codeFichier[1024];
+    string nomFichier;
     int fileIndx=-1;
     VideoCapture vid;
     do
     {
         cout << "Video file or number : ";
         cin>>codeFichier;
-        if (codeFichier.length() == 1)
+        if (strlen(codeFichier) == 1)
         {
-            fileIndx = stoi(codeFichier);
+            fileIndx = atoi(codeFichier);
             if (fileIndx>=0 && fileIndx<static_cast<int>(listeVideo.size()))
             {
                 nomFichier = listeVideo[fileIndx];

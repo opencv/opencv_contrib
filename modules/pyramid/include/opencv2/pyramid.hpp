@@ -61,7 +61,7 @@ public:
     LaplacianPyramid(LaplacianPyramid &p);
     LaplacianPyramid(LaplacianPyramid &p, bool zero, int idxBand=-1);
 	Mat Collapse();
-	void Reduce();
+    void Reduce(){return;};
     ~LaplacianPyramid(){}
 
 };
@@ -72,8 +72,8 @@ class PyramidRiesz:public Pyramid {
 
 public :
     PyramidRiesz(LaplacianPyramid &p); // construct Riesz pyramid using laplacian pyramid
-	Mat Collapse();
-    void Reduce();
+	Mat Collapse(){return Mat();};
+    void Reduce(){return;};
 
 };
 
