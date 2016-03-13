@@ -11,6 +11,20 @@ using namespace pyramid;
 
 
 #define MIN_ROW_COL_PYRAMID 32
+Mat Pyramid::collapse()
+{
+    cv::Exception e;
+	e.code = -2;
+	e.msg = "Not implemented for base class";
+	throw e;
+}
+void Pyramid::reduce()
+{
+    cv::Exception e;
+	e.code = -2;
+	e.msg = "Not implemented for base class";
+	throw e;
+}
 
 
 Pyramid& Pyramid::operator=(Pyramid &x)

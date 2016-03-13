@@ -37,8 +37,8 @@ public :
     std::vector<Mat> & operator [](int i) {return pyr[i];}
 	Pyramid& operator=(Pyramid &x);
 	Pyramid operator+=(Pyramid &a);
-    virtual Mat collapse(){return Mat();};
-	virtual void reduce(){return;};
+    Mat collapse();
+	void reduce();
     ~Pyramid(){}
 };
 

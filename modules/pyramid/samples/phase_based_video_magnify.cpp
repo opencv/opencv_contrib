@@ -20,7 +20,6 @@ using namespace cv::iirfilter;
 
 void DisplayImage(Mat x,string s)
 {
-    return;
 	vector<Mat> sx;
 	split(x, sx);
 	vector<double> minVal(3), maxVal(3);
@@ -149,9 +148,6 @@ vector<Mat> DifferencePhaseAmplitude(Mat &c_real, Mat &cRzX, Mat &cRzY, Mat &p_r
         v[0]=diffPhaseCos;
         v[1]=diffPhaseSin;
         v[2]=amplitude;
-		DisplayImage(c_real, "phasecos");
-		DisplayImage(cRzX, "phaseSion");
-		DisplayImage(cRzY, "p");
 	}
 return v;
 }
