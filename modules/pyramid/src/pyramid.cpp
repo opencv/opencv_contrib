@@ -1,8 +1,10 @@
 #include "precomp.hpp"
 
 using namespace std;
-using namespace cv;
-using namespace pyramid;
+namespace cv
+{
+namespace pyramid
+{
 
 /* Reference
 1 ICCP 2014 Riesz Pyramids for Fast Phase-Based Video Magnification  http://people.csail.mit.edu/nwadhwa/riesz-pyramid/
@@ -318,4 +320,6 @@ PyramidRiesz::PyramidRiesz(LaplacianPyramid &p)
 		pyr.push_back(v);
     }
 
+}
+}
 }
