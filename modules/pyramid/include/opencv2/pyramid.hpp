@@ -43,7 +43,7 @@ public :
 };
 
 /* Not ready */
-class GaussianPyramid:public Pyramid {
+class CV_EXPORTS_W GaussianPyramid:public Pyramid {
 public :
     GaussianPyramid(Mat m);
     ~GaussianPyramid(){}
@@ -51,7 +51,7 @@ public :
 };
 
 
-class LaplacianPyramid :public Pyramid {
+class CV_EXPORTS_W LaplacianPyramid :public Pyramid {
     Mat lowPassFilter;
     Mat highPassFilter;
 
@@ -68,7 +68,7 @@ public:
 
 
 
-class PyramidRiesz:public Pyramid {
+class CV_EXPORTS_W PyramidRiesz:public Pyramid {
 
 public :
     PyramidRiesz(LaplacianPyramid &p); // construct Riesz pyramid using laplacian pyramid

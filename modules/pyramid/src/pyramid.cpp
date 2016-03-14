@@ -7,8 +7,11 @@ namespace pyramid
 {
 
 /* Reference
+This code is patented http://www.google.com/patents/US20140072229
 1 ICCP 2014 Riesz Pyramids for Fast Phase-Based Video Magnification  http://people.csail.mit.edu/nwadhwa/riesz-pyramid/
 2 In "Supplemental for Riesz Pyramids for Fast Phase-Based Video Magnification" supplemental material : http://people.csail.mit.edu/nwadhwa/riesz-pyramid/RieszPyrSupplemental.zip
+
+
 */
 
 Pyramid::Pyramid(Pyramid const &p)
