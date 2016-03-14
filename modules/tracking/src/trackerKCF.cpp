@@ -40,6 +40,7 @@
  //M*/
 
 #include "precomp.hpp"
+#include "opencl_kernels_tracking.hpp"
 #include <complex>
 
 /*---------------------------
@@ -94,7 +95,7 @@ namespace cv{
     void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
     void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
     void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix,float pca_rate, int compressed_sz,
-                                       std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat v) const;
+                                       std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat v);
     void inline compress(const Mat proj_matrix, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc = GRAY) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, void (*f)(const Mat, const Rect, Mat& )) const;
@@ -107,6 +108,9 @@ namespace cv{
     void shiftRows(Mat& mat) const;
     void shiftRows(Mat& mat, int n) const;
     void shiftCols(Mat& mat, int n) const;
+#ifdef HAVE_OPENCL
+    bool inline oclTransposeMM(const Mat src, float alpha, UMat &dst);
+#endif
 
   private:
     float output_sigma;
@@ -153,6 +157,10 @@ namespace cv{
     std::vector<void(*)(const Mat img, const Rect roi, Mat& output)> extractor_npca;
 
     bool resizeImage; // resize the image whenever needed and the patch size is large
+
+#ifdef HAVE_OPENCL
+    ocl::Kernel transpose_mm_ker; // OCL kernel to compute transpose matrix multiply matrix.
+#endif
 
     int frame;
   };
@@ -255,6 +263,14 @@ namespace cv{
       || use_custom_extractor_pca
       || use_custom_extractor_npca
     );
+
+#ifdef HAVE_OPENCL
+      // For update proj matrix's multiplication
+    cv::String err;
+    ocl::ProgramSource tmmSrc = ocl::tracking::tmm_oclsrc;
+    ocl::Program tmmProg(tmmSrc, String(), err);
+    transpose_mm_ker.create("tmm", tmmProg);
+#endif
 
     // TODO: return true only if roi inside the image
     return true;
@@ -522,11 +538,36 @@ namespace cv{
     }
   }
 
+#ifdef HAVE_OPENCL
+  bool inline TrackerKCFImpl::oclTransposeMM(const Mat src, float alpha, UMat &dst){
+    // Current kernel only support matrix's rows is multiple of 4.
+    // And if one line is less than 512KB, CPU will likely be faster.
+    if (transpose_mm_ker.empty() ||
+        src.rows % 4 != 0 ||
+        (src.rows * 10) < (512 * 1024 / 4))
+      return false;
+    Size s(src.rows, src.cols);
+    const Mat tmp = src.t();
+    const UMat uSrc = tmp.getUMat(ACCESS_READ);
+    transpose_mm_ker.args(
+        ocl::KernelArg::PtrReadOnly(uSrc),
+        (int)uSrc.rows,
+        (int)uSrc.cols,
+        alpha,
+        ocl::KernelArg::PtrWriteOnly(dst));
+    size_t globSize[2] = {src.cols * 64, src.cols};
+    size_t localSize[2] = {64, 1};
+    if (!transpose_mm_ker.run(2, globSize, localSize, true))
+      return false;
+    return true;
+  }
+#endif
+
   /*
    * obtains the projection matrix using PCA
    */
   void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix, float pca_rate, int compressed_sz,
-                                                     std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat vt) const {
+                                                     std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat vt) {
     CV_Assert(compressed_sz<=src.channels());
 
     split(src,layers_pca);
@@ -540,12 +581,28 @@ namespace cv{
     merge(layers_pca,pca_data);
     pca_data=pca_data.reshape(1,src.rows*src.cols);
 
+#ifdef HAVE_OPENCL
+    bool oclSucceed = false;
+    Size s(pca_data.cols, pca_data.cols);
+    UMat result(s, pca_data.type());
+    if (oclTransposeMM(pca_data, 1.0/(float)(src.rows*src.cols-1), result)) {
+      if(old_cov.rows==0) old_cov=result.getMat(ACCESS_RW).clone();
+      SVD::compute((1.0-pca_rate)*old_cov + pca_rate * result.getMat(ACCESS_RW), w, u, vt);
+      oclSucceed = true;
+    }
+
+    if (oclSucceed == false) {
+      new_cov=1.0f/(float)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
+      if(old_cov.rows==0)old_cov=new_cov.clone();
+      SVD::compute((1.0f - pca_rate) * old_cov + pca_rate * new_cov, w, u, vt);
+    }
+#else
     new_cov=1.0/(float)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
     if(old_cov.rows==0)old_cov=new_cov.clone();
 
     // calc PCA
     SVD::compute((1.0-pca_rate)*old_cov+pca_rate*new_cov, w, u, vt);
-
+#endif
     // extract the projection matrix
     proj_matrix=u(Rect(0,0,compressed_sz,src.channels())).clone();
     Mat proj_vars=Mat::eye(compressed_sz,compressed_sz,proj_matrix.type());
