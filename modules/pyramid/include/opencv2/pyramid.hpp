@@ -42,7 +42,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/core.hpp"
 #include <vector>
 
-/** @defgroup pyramid hierarchical pyramid @cite Wadhwa2014RieszPyramid @cite Burt:87
+/** 
+@defgroup pyramid hierarchical pyramid 
+@ref pyramid 
 */
 
 namespace cv
