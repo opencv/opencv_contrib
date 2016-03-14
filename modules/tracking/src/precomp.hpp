@@ -42,6 +42,7 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
+#include "cvconfig.h"
 #include "opencv2/tracking.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/ocl.hpp"
