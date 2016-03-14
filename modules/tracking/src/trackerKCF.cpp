@@ -93,13 +93,13 @@ namespace cv{
     void inline ifft2(const Mat src, Mat & dest) const;
     void inline pixelWiseMult(const std::vector<Mat> src1, const std::vector<Mat>  src2, std::vector<Mat>  & dest, const int flags, const bool conjB=false) const;
     void inline sumChannels(std::vector<Mat> src, Mat & dest) const;
-    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix,double pca_rate, int compressed_sz,
+    void inline updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix,float pca_rate, int compressed_sz,
                                        std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat v) const;
     void inline compress(const Mat proj_matrix, const Mat src, Mat & dest, Mat & data, Mat & compressed) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc = GRAY) const;
     bool getSubWindow(const Mat img, const Rect roi, Mat& feat, void (*f)(const Mat, const Rect, Mat& )) const;
     void extractCN(Mat patch_data, Mat & cnFeatures) const;
-    void denseGaussKernel(const double sigma, const Mat , const Mat y_data, Mat & k_data,
+    void denseGaussKernel(const float sigma, const Mat , const Mat y_data, Mat & k_data,
                           std::vector<Mat> & layers_data,std::vector<Mat> & xf_data,std::vector<Mat> & yf_data, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const;
     void calcResponse(const Mat alphaf_data, const Mat kf_data, Mat & response_data, Mat & spec_data) const;
     void calcResponse(const Mat alphaf_data, const Mat alphaf_den_data, const Mat kf_data, Mat & response_data, Mat & spec_data, Mat & spec2_data) const;
@@ -109,7 +109,7 @@ namespace cv{
     void shiftCols(Mat& mat, int n) const;
 
   private:
-    double output_sigma;
+    float output_sigma;
     Rect2d roi;
     Mat hann; 	//hann window filter
     Mat hann_cn; //10 dimensional hann-window filter for CN features,
@@ -215,21 +215,21 @@ namespace cv{
     roi.height*=2;
 
     // initialize the hann window filter
-    createHanningWindow(hann, roi.size(), CV_64F);
+    createHanningWindow(hann, roi.size(), CV_32F);
 
     // hann window filter for CN feature
     Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
     merge(_layer, 10, hann_cn);
 
     // create gaussian response
-    y=Mat::zeros((int)roi.height,(int)roi.width,CV_64F);
-    for(unsigned i=0;i<(unsigned)roi.height;i++){
-      for(unsigned j=0;j<(unsigned)roi.width;j++){
-        y.at<double>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
+    y=Mat::zeros((int)roi.height,(int)roi.width,CV_32F);
+    for(int i=0;i<roi.height;i++){
+      for(int j=0;j<roi.width;j++){
+        y.at<float>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
       }
     }
 
-    y*=(double)output_sigma;
+    y*=(float)output_sigma;
     cv::exp(y,y);
 
     // perform fourier transfor to the gaussian response
@@ -331,7 +331,7 @@ namespace cv{
 
       // compute the fourier transform of the kernel
       fft2(k,kf);
-      if(frame==1)spec2=Mat_<Vec2d >(kf.rows, kf.cols);
+      if(frame==1)spec2=Mat_<Vec2f >(kf.rows, kf.cols);
 
       // calculate filter response
       if(params.split_coeff)
@@ -411,7 +411,7 @@ namespace cv{
       vxf.resize(x.channels());
       vyf.resize(x.channels());
       vxyf.resize(vyf.size());
-      new_alphaf=Mat_<Vec2d >(yf.rows, yf.cols);
+      new_alphaf=Mat_<Vec2f >(yf.rows, yf.cols);
     }
 
     // Kernel Regularized Least-Squares, calculate alphas
@@ -421,19 +421,19 @@ namespace cv{
     fft2(k,kf);
     kf_lambda=kf+params.lambda;
 
-    double den;
+    float den;
     if(params.split_coeff){
       mulSpectrums(yf,kf,new_alphaf,0);
       mulSpectrums(kf,kf_lambda,new_alphaf_den,0);
     }else{
       for(int i=0;i<yf.rows;i++){
         for(int j=0;j<yf.cols;j++){
-          den = 1.0/(kf_lambda.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[0]+kf_lambda.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[1]);
+          den = 1.0/(kf_lambda.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[0]+kf_lambda.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[1]);
 
-          new_alphaf.at<Vec2d>(i,j)[0]=
-          (yf.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[0]+yf.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[1])*den;
-          new_alphaf.at<Vec2d>(i,j)[1]=
-          (yf.at<Vec2d>(i,j)[1]*kf_lambda.at<Vec2d>(i,j)[0]-yf.at<Vec2d>(i,j)[0]*kf_lambda.at<Vec2d>(i,j)[1])*den;
+          new_alphaf.at<Vec2f>(i,j)[0]=
+          (yf.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[0]+yf.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[1])*den;
+          new_alphaf.at<Vec2f>(i,j)[1]=
+          (yf.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[0]-yf.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[1])*den;
         }
       }
     }
@@ -467,17 +467,17 @@ namespace cv{
 
       int rows = dst.rows, cols = dst.cols;
 
-      AutoBuffer<double> _wc(cols);
-      double * const wc = (double *)_wc;
+      AutoBuffer<float> _wc(cols);
+      float * const wc = (float *)_wc;
 
-      double coeff0 = 2.0 * CV_PI / (double)(cols - 1), coeff1 = 2.0f * CV_PI / (double)(rows - 1);
+      float coeff0 = 2.0 * CV_PI / (float)(cols - 1), coeff1 = 2.0f * CV_PI / (float)(rows - 1);
       for(int j = 0; j < cols; j++)
         wc[j] = 0.5 * (1.0 - cos(coeff0 * j));
 
       if(dst.depth() == CV_32F){
         for(int i = 0; i < rows; i++){
           float* dstData = dst.ptr<float>(i);
-          double wr = 0.5 * (1.0 - cos(coeff1 * i));
+          float wr = 0.5 * (1.0 - cos(coeff1 * i));
           for(int j = 0; j < cols; j++)
             dstData[j] = (float)(wr * wc[j]);
         }
@@ -538,7 +538,7 @@ namespace cv{
   /*
    * obtains the projection matrix using PCA
    */
-  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix, double pca_rate, int compressed_sz,
+  void inline TrackerKCFImpl::updateProjectionMatrix(const Mat src, Mat & old_cov,Mat &  proj_matrix, float pca_rate, int compressed_sz,
                                                      std::vector<Mat> & layers_pca,std::vector<Scalar> & average, Mat pca_data, Mat new_cov, Mat w, Mat u, Mat vt) const {
     CV_Assert(compressed_sz<=src.channels());
 
@@ -553,7 +553,7 @@ namespace cv{
     merge(layers_pca,pca_data);
     pca_data=pca_data.reshape(1,src.rows*src.cols);
 
-    new_cov=1.0/(double)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
+    new_cov=1.0/(float)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
     if(old_cov.rows==0)old_cov=new_cov.clone();
 
     // calc PCA
@@ -563,7 +563,7 @@ namespace cv{
     proj_matrix=u(Rect(0,0,compressed_sz,src.channels())).clone();
     Mat proj_vars=Mat::eye(compressed_sz,compressed_sz,proj_matrix.type());
     for(int i=0;i<compressed_sz;i++){
-      proj_vars.at<double>(i,i)=w.at<double>(i);
+      proj_vars.at<float>(i,i)=w.at<float>(i);
     }
 
     // update the covariance matrix
@@ -622,8 +622,9 @@ namespace cv{
           cvtColor(patch,feat, CV_BGR2GRAY);
         else
           feat=patch;
-        feat.convertTo(feat,CV_64F);
-        feat=feat/255.0-0.5; // normalize to range -0.5 .. 0.5
+        //feat.convertTo(feat,CV_32F);
+        feat.convertTo(feat,CV_32F, 1.0/255.0, -0.5);
+        //feat=feat/255.0-0.5; // normalize to range -0.5 .. 0.5
         feat=feat.mul(hann); // hann window filter
         break;
     }
@@ -670,8 +671,8 @@ namespace cv{
     Vec3b & pixel = patch_data.at<Vec3b>(0,0);
     unsigned index;
 
-    if(cnFeatures.type() != CV_64FC(10))
-      cnFeatures = Mat::zeros(patch_data.rows,patch_data.cols,CV_64FC(10));
+    if(cnFeatures.type() != CV_32FC(10))
+      cnFeatures = Mat::zeros(patch_data.rows,patch_data.cols,CV_32FC(10));
 
     for(int i=0;i<patch_data.rows;i++){
       for(int j=0;j<patch_data.cols;j++){
@@ -680,7 +681,7 @@ namespace cv{
 
         //copy the values
         for(int _k=0;_k<10;_k++){
-          cnFeatures.at<Vec<double,10> >(i,j)[_k]=ColorNames[index][_k];
+          cnFeatures.at<Vec<float,10> >(i,j)[_k]=ColorNames[index][_k];
         }
       }
     }
@@ -690,7 +691,7 @@ namespace cv{
   /*
    *  dense gauss kernel function
    */
-  void TrackerKCFImpl::denseGaussKernel(const double sigma, const Mat x_data, const Mat y_data, Mat & k_data,
+  void TrackerKCFImpl::denseGaussKernel(const float sigma, const Mat x_data, const Mat y_data, Mat & k_data,
                                         std::vector<Mat> & layers_data,std::vector<Mat> & xf_data,std::vector<Mat> & yf_data, std::vector<Mat> xyf_v, Mat xy, Mat xyf ) const {
     double normX, normY;
 
@@ -718,11 +719,11 @@ namespace cv{
     //threshold(xy,xy,0.0,0.0,THRESH_TOZERO);//max(0, (xx + yy - 2 * xy) / numel(x))
     for(int i=0;i<xy.rows;i++){
       for(int j=0;j<xy.cols;j++){
-        if(xy.at<double>(i,j)<0.0)xy.at<double>(i,j)=0.0;
+        if(xy.at<float>(i,j)<0.0)xy.at<float>(i,j)=0.0;
       }
     }
 
-    double sig=-1.0/(sigma*sigma);
+    float sig=-1.0/(sigma*sigma);
     xy=sig*xy;
     exp(xy,k_data);
 
@@ -796,14 +797,14 @@ namespace cv{
     mulSpectrums(alphaf_data,kf_data,spec_data,0,false);
 
     //z=(a+bi)/(c+di)=[(ac+bd)+i(bc-ad)]/(c^2+d^2)
-    double den;
+    float den;
     for(int i=0;i<kf_data.rows;i++){
       for(int j=0;j<kf_data.cols;j++){
-        den=1.0/(_alphaf_den.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+_alphaf_den.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1]);
-        spec2_data.at<Vec2d>(i,j)[0]=
-          (spec_data.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[0]+spec_data.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
-        spec2_data.at<Vec2d>(i,j)[1]=
-          (spec_data.at<Vec2d>(i,j)[1]*_alphaf_den.at<Vec2d>(i,j)[0]-spec_data.at<Vec2d>(i,j)[0]*_alphaf_den.at<Vec2d>(i,j)[1])*den;
+        den=1.0/(_alphaf_den.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[0]+_alphaf_den.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[1]);
+        spec2_data.at<Vec2f>(i,j)[0]=
+          (spec_data.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[0]+spec_data.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[1])*den;
+        spec2_data.at<Vec2f>(i,j)[1]=
+          (spec_data.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[0]-spec_data.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[1])*den;
       }
     }
 
