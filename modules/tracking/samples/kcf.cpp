@@ -14,6 +14,10 @@
 #include <iostream>
 #include <cstring>
 
+#ifdef HAVE_OPENCV
+#include <opencv2/flann.hpp>
+#endif
+
 using namespace std;
 using namespace cv;
 
@@ -72,7 +76,18 @@ int main( int argc, char** argv ){
   tracker->init(frame,roi);
 
   // do the tracking
+#ifdef HAVE_OPENCV
+  cvflann::StartStopTimer timer;
+#else
+  clock_t timer;
+#endif
+  double fps = 0;
+  char buffer [50];
+  std::string text;
+
   printf("Start the tracking process, press ESC to quit.\n");
+
+  int frameCnt = 0;
   for ( ;; ){
     // get frame from the video
     cap >> frame;
@@ -80,9 +95,35 @@ int main( int argc, char** argv ){
     // stop the program if no more images
     if(frame.rows==0 || frame.cols==0)
       break;
-
+    if (frameCnt == 0) {
+#ifdef HAVE_OPENCV
+      timer.start();
+#else
+      timer=clock();
+#endif
+    }
     // update the tracking result
     tracker->update(frame,roi);
+    frameCnt++;
+
+    if (frameCnt == 10) {
+#ifdef HAVE_OPENCV
+      timer.stop();
+      fps=10.0/timer.value;
+      timer.reset();
+#else
+      timer=clock()-timer;
+      fps=(double)CLOCKS_PER_SEC * 10./(double)timer;
+#endif
+      frameCnt = 0;
+    }
+
+    if (fps > 0)
+      sprintf (buffer, "speed: %.0f fps", fps);
+    else
+      sprintf (buffer, "speed: calculating");
+    text = buffer;
+    putText(frame, text, Point(20,20), FONT_HERSHEY_PLAIN, 1, Scalar(255,255,255));
 
     // draw the tracked object
     rectangle( frame, roi, Scalar( 255, 0, 0 ), 2, 1 );
