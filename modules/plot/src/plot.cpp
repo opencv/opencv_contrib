@@ -199,23 +199,35 @@ namespace cv
                 double CurrentX = plotDataX.at<double>(NumVecElements-1,0);
                 double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
 
-                //Draw the plot by connecting lines between the points
-                Point p1;
-                p1.x = (int)InterpXdata.at<double>(0,0);
-                p1.y = (int)InterpYdata.at<double>(0,0);
-
                 drawAxis(ImageXzero,ImageYzero, CurrentX, CurrentY, plotAxisColor, plotGridColor);
 
-                for (int r=1; r<InterpXdata.rows; r++){
+                if(plotLineWidth > 0)
+                {
+                  //Draw the plot by connecting lines between the points
+                  Point p1;
+                  p1.x = (int)InterpXdata.at<double>(0,0);
+                  p1.y = (int)InterpYdata.at<double>(0,0);
 
-                    Point p2;
-                    p2.x = (int)InterpXdata.at<double>(r,0);
-                    p2.y = (int)InterpYdata.at<double>(r,0);
+                  for (int r=1; r<InterpXdata.rows; r++){
 
-                    line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
+                      Point p2;
+                      p2.x = (int)InterpXdata.at<double>(r,0);
+                      p2.y = (int)InterpYdata.at<double>(r,0);
 
-                    p1 = p2;
+                      line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
 
+                      p1 = p2;
+                  }
+                }
+                else
+                {
+                  for (int r=0; r<InterpXdata.rows; r++){
+                      Point p;
+                      p.x = (int)InterpXdata.at<double>(r,0);
+                      p.y = (int)InterpYdata.at<double>(r,0);
+
+                      circle(plotResult, p, 1, plotLineColor, plotLineWidth, 8, 0);
+                  }
                 }
 
                 _plotResult = plotResult.clone();
