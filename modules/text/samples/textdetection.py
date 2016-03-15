@@ -20,7 +20,8 @@ pathname = os.path.dirname(sys.argv[0])
 
 
 img      = cv2.imread(str(sys.argv[1]))
-vis      = img.copy() # for visualization 
+# for visualization
+vis      = img.copy()
 
 
 # Extract channels to be processed individually
