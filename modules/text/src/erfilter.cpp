@@ -1236,7 +1236,7 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
                            ERFILTER_NM_RGBLGrad and ERFILTER_NM_IHSGrad.
 
 */
-void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels, int _mode)
+void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, int _mode)
 {
 
     CV_Assert( ( _mode == ERFILTER_NM_RGBLGrad ) || ( _mode == ERFILTER_NM_IHSGrad ) );
@@ -4094,6 +4094,22 @@ void erGrouping(InputArray image, InputArrayOfArrays channels, vector<vector<ERS
 
 }
 
+void erGrouping(InputArray image, InputArray channel, vector<vector<Point> > contours, CV_OUT std::vector<Rect> &groups_rects, int method, const String& filename, float minProbability)
+{
+    CV_Assert( image.getMat().type() == CV_8UC3 );
+    CV_Assert( channel.getMat().type() == CV_8UC1 );
+    CV_Assert( !((method == ERGROUPING_ORIENTATION_ANY) && (filename.empty())) );
+
+    vector<Mat> channels;
+    channels.push_back(channel.getMat());
+    vector<vector<ERStat> > regions;
+    MSERsToERStats(channel, contours, regions);
+    regions.pop_back();
+    std::vector<std::vector<Vec2i> > groups;
+
+    erGrouping(image, channels, regions,  groups,  groups_rects, method, filename, minProbability);
+}
+
 /*!
  * MSERsToERStats function converts MSER contours (vector<Point>) to ERStat regions.
  * It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors
@@ -4187,7 +4203,7 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
     //Convert each ER to vector<Point> and push it to output regions
     Mat src = image.getMat();
     Mat region_mask = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
-    for (size_t i=0; i < ers.size(); i++)
+    for (size_t i=1; i < ers.size(); i++) //start from 1 to deprecate root region
     {
       ERStat* stat = &ers[i];
 
@@ -4210,7 +4226,7 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
       findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
 
       for (size_t j=0; j < contours[0].size(); j++)
-        contours[0][j] += stat->rect.tl();
+        contours[0][j] += (stat->rect.tl()-Point(1,1));
 
       regions.push_back(contours[0]);
     }

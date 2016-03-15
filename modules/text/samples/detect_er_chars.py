@@ -7,13 +7,13 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-print '\ndetect_er_chars.py'
-print '       A simple demo script using the Extremal Region Filter algorithm described in:'
-print '       Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012\n'
+print('\ndetect_er_chars.py')
+print('       A simple demo script using the Extremal Region Filter algorithm described in:')
+print('       Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012\n')
 
 
 if (len(sys.argv) < 2):
-  print ' (ERROR) You must call this script with an argument (path_to_image_to_be_processed)\n'
+  print(' (ERROR) You must call this script with an argument (path_to_image_to_be_processed)\n')
   quit()
 
 pathname = os.path.dirname(sys.argv[0])

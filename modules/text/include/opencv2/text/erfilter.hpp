@@ -264,7 +264,7 @@ channels (Grad) are used in order to obtain high localization recall. This imple
 provides an alternative combination of red (R), green (G), blue (B), lightness (L), and gradient
 magnitude (Grad).
  */
-CV_EXPORTS void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels, int _mode = ERFILTER_NM_RGBLGrad);
+CV_EXPORTS_W void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, int _mode = ERFILTER_NM_RGBLGrad);
 
 
 
@@ -323,6 +323,13 @@ CV_EXPORTS void erGrouping(InputArray img, InputArrayOfArrays channels,
                                            int method = ERGROUPING_ORIENTATION_HORIZ,
                                            const std::string& filename = std::string(),
                                            float minProbablity = 0.5);
+
+CV_EXPORTS_W void erGrouping(InputArray image, InputArray channel,
+                                           std::vector<std::vector<Point> > regions,
+                                           CV_OUT std::vector<Rect> &groups_rects,
+                                           int method = ERGROUPING_ORIENTATION_HORIZ,
+                                           const String& filename = String(),
+                                           float minProbablity = (float)0.5);
 
 /** @brief Converts MSER contours (vector\<Point\>) to ERStat regions.
 
