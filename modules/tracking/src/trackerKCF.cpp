@@ -603,9 +603,16 @@ namespace cv{
       SVD::compute((1.0-pca_rate)*old_cov + pca_rate * result.getMat(ACCESS_RW), w, u, vt);
       oclSucceed = true;
     }
+#define TMM_VERIFICATION 0
 
-    if (oclSucceed == false) {
+    if (oclSucceed == false || TMM_VERIFICATION) {
       new_cov=1.0f/(float)(src.rows*src.cols-1)*(pca_data.t()*pca_data);
+#if TMM_VERIFICATION
+      for(int i = 0; i < new_cov.rows; i++)
+        for(int j = 0; j < new_cov.cols; j++)
+          if (abs(new_cov.at<float>(i, j) - result.getMat(ACCESS_RW).at<float>(i , j)) > abs(new_cov.at<float>(i, j)) * 1e-3)
+            printf("error @ i %d j %d got %G expected %G \n", i, j, result.getMat(ACCESS_RW).at<float>(i , j), new_cov.at<float>(i, j));
+#endif
       if(old_cov.rows==0)old_cov=new_cov.clone();
       SVD::compute((1.0f - pca_rate) * old_cov + pca_rate * new_cov, w, u, vt);
     }
