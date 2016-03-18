@@ -2,6 +2,7 @@
 #include "opencv2/video.hpp"
 #include "opencv2/optflow.hpp"
 #include <fstream>
+#include <limits>
 
 using namespace std;
 using namespace cv;
@@ -40,7 +41,7 @@ static Mat endpointError( const Mat_<Point2f>& flow1, const Mat_<Point2f>& flow2
                 const Point2f diff = u1 - u2;
                 result.at<float>(i, j) = sqrt((float)diff.ddot(diff)); //distance
             } else
-                result.at<float>(i, j) = NAN;
+                result.at<float>(i, j) = std::numeric_limits<float>::quiet_NaN();
         }
     }
     return result;
@@ -61,7 +62,7 @@ static Mat angularError( const Mat_<Point2f>& flow1, const Mat_<Point2f>& flow2 
             if ( isFlowCorrect(u1) && isFlowCorrect(u2) )
                 result.at<float>(i, j) = acos((float)(u1.ddot(u2) / norm(u1) * norm(u2)));
             else
-                result.at<float>(i, j) = NAN;
+                result.at<float>(i, j) = std::numeric_limits<float>::quiet_NaN();
         }
     }
     return result;
