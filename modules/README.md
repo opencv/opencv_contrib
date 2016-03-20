@@ -22,7 +22,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 
 7. **opencv_datasettools**: Tools for working with different datasets.
 
-8. **opencv_face**: Recently added face recognition software which is not yet stabalized.
+8. **opencv_face**: Recently added face recognition software which is not yet stabilized.
 
 9. **opencv_latentsvm**: Implementation of the LatentSVM detector algorithm.
 
