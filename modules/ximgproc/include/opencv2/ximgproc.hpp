@@ -45,6 +45,7 @@
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
 #include "ximgproc/estimated_covariance.hpp"
+#include "ximgproc/weighted_median_filter.hpp"
 #include "ximgproc/slic.hpp"
 #include "ximgproc/lsc.hpp"
 
@@ -52,8 +53,8 @@
   @{
     @defgroup ximgproc_edge Structured forests for fast edge detection
 
-This module contains implementations of modern structured edge detection algorithms, i.e. algorithms
-which somehow takes into account pixel affinities in natural images.
+This module contains implementations of modern structured edge detection algorithms,
+i.e. algorithms which somehow takes into account pixel affinities in natural images.
 
     @defgroup ximgproc_filters Filters
 
@@ -63,13 +64,47 @@ which somehow takes into account pixel affinities in natural images.
   @}
 */
 
-namespace cv {
-namespace ximgproc {
-    CV_EXPORTS_W
-    void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
-            int type, int blockSize, double delta );
+namespace cv
+{
+namespace ximgproc
+{
 
-} // namespace ximgproc
-} //namespace cv
+//! @addtogroup ximgproc
+//! @{
 
-#endif
+/** @brief Applies Niblack thresholding to input image.
+
+The function transforms a grayscale image to a binary image according to the formulae:
+-   **THRESH_BINARY**
+    \f[dst(x,y) =  \fork{\texttt{maxValue}}{if \(src(x,y) > T(x,y)\)}{0}{otherwise}\f]
+-   **THRESH_BINARY_INV**
+    \f[dst(x,y) =  \fork{0}{if \(src(x,y) > T(x,y)\)}{\texttt{maxValue}}{otherwise}\f]
+where \f$T(x,y)\f$ is a threshold calculated individually for each pixel.
+
+The threshold value \f$T(x, y)\f$ is the mean minus \f$ delta \f$ times standard deviation
+of \f$\texttt{blockSize} \times\texttt{blockSize}\f$ neighborhood of \f$(x, y)\f$.
+
+The function can't process the image in-place.
+
+@param _src Source 8-bit single-channel image.
+@param _dst Destination image of the same size and the same type as src.
+@param maxValue Non-zero value assigned to the pixels for which the condition is satisfied,
+used with the THRESH_BINARY and THRESH_BINARY_INV thresholding types.
+@param type Thresholding type, see cv::ThresholdTypes.
+@param blockSize Size of a pixel neighborhood that is used to calculate a threshold value
+for the pixel: 3, 5, 7, and so on.
+@param delta Constant multiplied with the standard deviation and subtracted from the mean.
+Normally, it is taken to be a real number between 0 and 1.
+
+@sa  threshold, adaptiveThreshold
+ */
+CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
+                                    double maxValue, int type,
+                                    int blockSize, double delta );
+
+//! @}
+
+}
+}
+
+#endif // __OPENCV_XIMGPROC_HPP__

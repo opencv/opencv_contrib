@@ -6,7 +6,7 @@ Goal
 
 In this tutorial you will learn how to use the reconstruction api for camera motion estimation:
 
--   Load and file with the tracked 2d points and build the container over all the frames.
+-   Load a file with the tracked 2d points and build the container over all the frames.
 -   Run libmv reconstruction pipeline.
 -   Show obtained results using Viz.
 

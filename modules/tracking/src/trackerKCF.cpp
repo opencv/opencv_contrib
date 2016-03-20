@@ -666,7 +666,7 @@ namespace cv{
     for(int i=0;i<patch_data.rows;i++){
       for(int j=0;j<patch_data.cols;j++){
         pixel=patch_data.at<Vec3b>(i,j);
-        index=(unsigned)(floor(pixel[2]/8)+32*floor(pixel[1]/8)+32*32*floor(pixel[0]/8));
+        index=(unsigned)(floor((float)pixel[2]/8)+32*floor((float)pixel[1]/8)+32*32*floor((float)pixel[0]/8));
 
         //copy the values
         for(int _k=0;_k<10;_k++){

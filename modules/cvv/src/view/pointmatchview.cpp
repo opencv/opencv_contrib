@@ -21,7 +21,7 @@ PointMatchView::PointMatchView(std::vector<cv::KeyPoint> leftKeyPoints,
 			       std::vector<cv::DMatch> matches, cv::Mat leftIm,
 			       cv::Mat rightIm, bool usetrainIdx,
 			       QWidget *parent)
-    : MatchView{ parent }
+    : MatchView( parent )
 {
 	auto layout = util::make_unique<QHBoxLayout>();
 	auto accor = util::make_unique<qtutil::Accordion>();

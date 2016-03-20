@@ -403,7 +403,7 @@ void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector, const int s
     for (size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, HISTCMP_CHISQR_ALT);
         int label = _labels.at<int>((int)sampleIdx);
-        if (!collector->emit(label, dist, state))return;
+        if (!collector->collect(label, dist, state))return;
     }
 }
 

@@ -40,6 +40,7 @@
 //M*/
 
 #include "dpm_nms.hpp"
+#include <algorithm>
 
 using namespace std;
 

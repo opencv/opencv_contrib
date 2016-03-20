@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <thread>
 #include <functional>
+#include <memory>
 
 #include <QDesktopServices>
 #include <QUrl>

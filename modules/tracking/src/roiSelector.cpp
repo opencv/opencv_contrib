@@ -107,7 +107,7 @@ namespace cv {
     // select the object
     setMouseCallback( windowName, mouseHandler, (void *)&selectorParams );
 
-    // end selection process on SPACE (32) BACKSPACE (27) or ENTER (13)
+    // end selection process on SPACE (32) ESC (27) or ENTER (13)
     while(!(key==32 || key==27 || key==13)){
       // draw the selected object
       rectangle(
@@ -156,9 +156,9 @@ namespace cv {
 
     // show notice to user
     printf("Select an object to track and then press SPACE or ENTER button!\n" );
-    printf("Finish the selection process by pressing BACKSPACE button!\n" );
+    printf("Finish the selection process by pressing ESC button!\n" );
 
-    // while key is not Backspace
+    // while key is not ESC (27)
     while(key!=27){
       temp=select(windowName, img, true, fromCenter);
       if(temp.width>0 && temp.height>0)
