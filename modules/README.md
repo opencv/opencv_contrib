@@ -1,4 +1,4 @@
-An overview of the contrib modules and a small explanation
+An overview of the opencv_contrib modules and a small explanation
 ----------------------------------------------------------
 
 This list gives an overview of all modules available inside the contrib repository.
@@ -8,7 +8,7 @@ These are also the correct names for disabling the building of a specific module
 $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_reponame=OFF <opencv_source_directory>
 ```
 
-1. **opencv_adas**: Advanced Driver Assistance Systems module with Forward Collision Warning.
+1. **aruco**: Creation, detection and 3D pose of fiducial markers for AR, VR & camera calibration boards. Also includes Charuco boards.
 
 2. **opencv_bgsegm**: Improved Adaptive Background Mixture Model for Real-time Tracking / Visual Tracking of Human Visitors under Variable-Lighting Conditions.
 
