@@ -134,7 +134,7 @@ namespace xphoto
                                 n2 -= hist[p2--];
                                 maxValue -= interval;
                             }
-                            p2 = p2*bins - 1;
+                            p2 = (p2+1)*bins - 1;
 
                             interval /= bins;
                         }
