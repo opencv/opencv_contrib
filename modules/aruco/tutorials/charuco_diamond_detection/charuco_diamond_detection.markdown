@@ -154,6 +154,8 @@ as in a simple ArUco marker pose estimation.
 
 Sample video:
 
-[![Diamond markers detection video](http://img.youtube.com/vi/OqKpBnglH7k/0.jpg)](https://youtu.be/OqKpBnglH7k)
+@htmlonly
+<iframe width="420" height="315" src="https://www.youtube.com/embed/OqKpBnglH7k" frameborder="0" allowfullscreen></iframe>
+@endhtmlonly
 
 A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.
