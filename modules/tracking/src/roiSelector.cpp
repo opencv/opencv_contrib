@@ -161,8 +161,9 @@ namespace cv {
     printf("Finish the selection process by pressing ESC button!\n" );
 
     // while key is not ESC (27)
-    while(key!=27){
+    for(;;) {
       temp=select(windowName, img, true, fromCenter);
+      if(key==27) break;
       if(temp.width>0 && temp.height>0)
         box.push_back(temp);
     }
