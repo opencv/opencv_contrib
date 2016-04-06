@@ -148,7 +148,7 @@ superpixel algorithm, which are: region_size and ruler. It preallocate some buff
 computing iterations over the given image. An example of SLIC versus SLICO is ilustrated in the
 following picture.
 
-![image](pics/slic_slico_kermit.png)
+![image](pics/superpixels_slic.png)
 
  */
 

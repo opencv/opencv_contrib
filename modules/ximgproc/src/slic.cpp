@@ -226,11 +226,12 @@ void SuperpixelSLICImpl::initialize()
     else
       CV_Error( Error::StsInternal, "No such algorithm" );
 
+    // update amount of labels now
+    m_numlabels = (int)m_kseeds[0].size();
+
     // perturb seeds given edges
     if ( perturbseeds ) PerturbSeeds( edgemag );
 
-    // update amount of labels now
-    m_numlabels = (int)m_kseeds[0].size();
 }
 
 void SuperpixelSLICImpl::iterate( int num_iterations )
