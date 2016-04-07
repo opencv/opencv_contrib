@@ -101,7 +101,7 @@ uchar invertSingleBits( uchar dividend_char, int numBits )
   /* reconvert to decimal */
   uchar result = 0;
   for ( int i = (int) bin_vector.size() - 1; i >= 0; i-- )
-    result += (uchar) ( bin_vector[i] * pow( 2, i ) );
+    result += (uchar) ( bin_vector[i] * ( 1 << i ) );
 
   return result;
 }
@@ -138,7 +138,7 @@ PERF_TEST(matching, single_match)
   TEST_CYCLE()
     bd->match( query, train, dm );
 
-  SANITY_CHECK_MATCHES( dm );
+  SANITY_CHECK_NOTHING();
 
 }
 
@@ -160,7 +160,7 @@ PERF_TEST(knn_matching, knn_match_distances_test)
     }
   }
 
-  SANITY_CHECK( distances );
+  SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(radius_match, radius_match_distances_test)
@@ -181,7 +181,7 @@ PERF_TEST(radius_match, radius_match_distances_test)
     }
   }
 
-  SANITY_CHECK( distances );
+  SANITY_CHECK_NOTHING();
 
 }
 

@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -339,18 +339,18 @@ void GuidedFilterRefImpl::applyTransform(int cNum, Mat *Ichannels, Mat *beta, Ma
     }
 }
 
-typedef tuple<int, int, string, string> GFParams;
+typedef tuple<int, string, string> GFParams;
 typedef TestWithParam<GFParams> GuidedFilterTest;
 
 TEST_P(GuidedFilterTest, accuracy)
 {
     GFParams params = GetParam();
 
-    int guideCnNum = get<0>(params);
-    int srcCnNum = get<1>(params);
+    int guideCnNum = 3;
+    int srcCnNum = get<0>(params);
 
-    string guideFileName = get<2>(params);
-    string srcFileName = get<3>(params);
+    string guideFileName = get<1>(params);
+    string srcFileName = get<2>(params);
 
     int seed = 100 * guideCnNum + 50 * srcCnNum + 5*(int)guideFileName.length() + (int)srcFileName.length();
     RNG rng(seed);
@@ -364,7 +364,7 @@ TEST_P(GuidedFilterTest, accuracy)
     guide = convertTypeAndSize(guide, CV_MAKE_TYPE(guide.depth(), guideCnNum), dstSize);
     src = convertTypeAndSize(src, CV_MAKE_TYPE(src.depth(), srcCnNum), dstSize);
 
-    for (int iter = 0; iter < 3; iter++)
+    for (int iter = 0; iter < 2; iter++)
     {
         int radius = rng.uniform(0, 50);
         double eps = rng.uniform(0.0, SQR(255.0));
@@ -387,12 +387,11 @@ TEST_P(GuidedFilterTest, accuracy)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(TypicalSet, GuidedFilterTest, 
+INSTANTIATE_TEST_CASE_P(TypicalSet, GuidedFilterTest,
     Combine(
-    Values(1, 2, 3),
-    Values(1, 2, 3), 
-    Values("cv/shared/lena.png", "cv/shared/baboon.png", "cv/npr/test2.png"),
-    Values("cv/shared/lena.png", "cv/shared/baboon.png", "cv/npr/test2.png")
+    Values(1, 3),
+    Values("cv/shared/lena.png", "cv/shared/baboon.png"),
+    Values("cv/shared/lena.png", "cv/shared/baboon.png")
 ));
 
 }

@@ -19,7 +19,7 @@ TranslationMatchView::TranslationMatchView(
     std::vector<cv::KeyPoint> leftKeyPoints,
     std::vector<cv::KeyPoint> rightKeyPoints, std::vector<cv::DMatch> matches,
     cv::Mat leftIm, cv::Mat rightIm, bool usetrainIdx, QWidget *parent)
-    : MatchView{ parent }
+    : MatchView( parent )
 {
 	std::vector<cv::KeyPoint> allkeypoints;
 	for(auto key:rightKeyPoints)
@@ -39,7 +39,7 @@ TranslationMatchView::TranslationMatchView(
 	auto keyPointmnt = util::make_unique<qtutil::KeyPointManagement>(allkeypoints);
 
 	qtutil::MatchScene *matchscene_ptr = matchscene.get();
-	int updateAreaDelay=std::min(std::max(matches.size(),std::max(leftKeyPoints.size(),rightKeyPoints.size()))/10,50lu);
+	int updateAreaDelay=std::min(std::max(matches.size(),std::max(leftKeyPoints.size(),rightKeyPoints.size()))/(std::size_t)10,(std::size_t)50);
 	matchscene_ptr->getLeftImage().setUpdateAreaDelay(updateAreaDelay);
 	matchscene_ptr->getRightImage().setUpdateAreaDelay(updateAreaDelay);
 

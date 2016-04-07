@@ -23,6 +23,20 @@
 #  them with mex.
 # ----------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------
+#  Architecture checks
+# ----------------------------------------------------------------------------
+# make sure we're on a supported architecture with Matlab and python installed
+if(APPLE_FRAMEWORK OR ANDROID OR NOT MATLAB_FOUND)
+    ocv_module_disable(matlab)
+    return()
+elseif (NOT PYTHON_DEFAULT_AVAILABLE)
+    message(WARNING "A required dependency of the matlab module (Python) was not found. Disabling Matlab bindings...")
+    ocv_module_disable(matlab)
+    return()
+endif()
+
+
 # PREPEND
 # Given a list of strings IN and a TOKEN, prepend the token to each string
 # and append to OUT. This is used for passing command line "-I", "-L" and "-l"
@@ -43,19 +57,6 @@ macro(WARN_MIXED_PRECISION COMPILER_BITNESS MATLAB_BITNESS)
     set(MSG "${MSG} To build Matlab bindings, please switch to a ${MATLAB_BITNESS}-bit compiler.")
     message(WARNING ${MSG})
 endmacro()
-
-# ----------------------------------------------------------------------------
-#  Architecture checks
-# ----------------------------------------------------------------------------
-# make sure we're on a supported architecture with Matlab and python installed
-if (IOS OR ANDROID OR NOT MATLAB_FOUND)
-    ocv_module_disable(matlab)
-    return()
-elseif (NOT PYTHON_DEFAULT_AVAILABLE)
-    message(WARNING "A required dependency of the matlab module (PythonLibs) was not found. Disabling Matlab bindings...")
-    ocv_module_disable(matlab)
-    return()
-endif()
 
 
 # If the user built OpenCV as X-bit, but they have a Y-bit version of Matlab,
@@ -92,6 +93,7 @@ ocv_add_module(matlab   BINDINGS
                                  opencv_calib opencv_calib3d
                                  opencv_stitching opencv_superres
                                  opencv_xfeatures2d
+                                 opencv_hal
 )
 
 # get the commit information
@@ -101,7 +103,6 @@ string(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 # set the path to the C++ header and doc parser, and template engine
 set(JINJA2_PATH ${CMAKE_SOURCE_DIR}/3rdparty)
 set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
-set(RST_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/java/generator)
 
 # set mex compiler options
 prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
@@ -158,7 +159,6 @@ if (NOT MEX_WORKS)
                 ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
                 --jinja2    ${JINJA2_PATH}
                 --hdrparser ${HDR_PARSER_PATH}
-                --rstparser ${RST_PARSER_PATH}
                 --extra     "test=${CMAKE_CURRENT_SOURCE_DIR}/test/test_generator.hpp"
                 --outdir    ${CMAKE_BINARY_DIR}/junk
         ERROR_VARIABLE GEN_ERROR
@@ -218,7 +218,6 @@ add_custom_command(
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
             --jinja2     ${JINJA2_PATH}
             --hdrparser  ${HDR_PARSER_PATH}
-            --rstparser  ${RST_PARSER_PATH}
             --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
             --extra      ${opencv_extra_hdrs}

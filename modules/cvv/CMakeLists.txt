@@ -4,7 +4,12 @@ if(NOT HAVE_QT5)
 endif()
 
 # we need C++11 and want warnings:
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qstd=c++11 /W4")
+  add_definitions(/D__func__=__FUNCTION__)
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
+endif()
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshadow -Wmissing-declarations)
 
 # Qt5

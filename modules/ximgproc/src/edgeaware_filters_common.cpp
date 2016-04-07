@@ -48,7 +48,16 @@ using namespace std;
 #endif
 
 #if CV_SSE
-static volatile bool CPU_SUPPORT_SSE1 = cv::checkHardwareSupport(CV_CPU_SSE);
+namespace
+{
+
+inline bool CPU_SUPPORT_SSE1()
+{
+    static const bool is_supported = cv::checkHardwareSupport(CV_CPU_SSE);
+    return is_supported;
+}
+
+}  // end
 #endif
 
 namespace cv
@@ -146,7 +155,7 @@ void add_(register float *dst, register float *src1, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b;
         for (; j < w - 3; j += 4)
@@ -166,7 +175,7 @@ void mul(register float *dst, register float *src1, register float *src2, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b;
         for (; j < w - 3; j += 4)
@@ -186,7 +195,7 @@ void mul(register float *dst, register float *src1, float src2, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b;
         b = _mm_set_ps1(src2);
@@ -206,7 +215,7 @@ void mad(register float *dst, register float *src1, float alpha, float beta, int
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b, c;
         a = _mm_set_ps1(alpha);
@@ -228,7 +237,7 @@ void sqr_(register float *dst, register float *src1, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a;
         for (; j < w - 3; j += 4)
@@ -247,7 +256,7 @@ void sqr_dif(register float *dst, register float *src1, register float *src2, in
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 d;
         for (; j < w - 3; j += 4)
@@ -266,7 +275,7 @@ void add_mul(register float *dst, register float *src1, register float *src2, in
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b, c;
         for (; j < w - 3; j += 4)
@@ -290,7 +299,7 @@ void add_sqr(register float *dst, register float *src1, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, c;
         for (; j < w - 3; j += 4)
@@ -313,7 +322,7 @@ void add_sqr_dif(register float *dst, register float *src1, register float *src2
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, d;
         for (; j < w - 3; j += 4)
@@ -336,7 +345,7 @@ void sub_mul(register float *dst, register float *src1, register float *src2, in
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b, c;
         for (; j < w - 3; j += 4)
@@ -358,7 +367,7 @@ void sub_mad(register float *dst, register float *src1, register float *src2, fl
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b, c;
         __m128 cnst = _mm_set_ps1(c0);
@@ -382,7 +391,7 @@ void det_2x2(register float *dst, register float *a00, register float *a01, regi
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b;
         for (; j < w - 3; j += 4)
@@ -402,7 +411,7 @@ void div_det_2x2(register float *a00, register float *a01, register float *a11, 
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         const __m128 SIGN_MASK = _mm_set_ps1(getFloatSignBit());
 
@@ -442,7 +451,7 @@ void div_1x(register float *a1, register float *b1, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 _a1, _b1;
         for (; j < w - 3; j += 4)
@@ -463,7 +472,7 @@ void inv_self(register float *src, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a;
         for (; j < w - 3; j += 4)
@@ -483,7 +492,7 @@ void sqrt_(register float *dst, register float *src, int w)
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a;
         for (; j < w - 3; j += 4)
@@ -501,7 +510,7 @@ void min_(register float *dst, register float *src1, register float *src2, int w
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 a, b;
         for (; j < w - 3; j += 4)
@@ -522,7 +531,7 @@ void rf_vert_row_pass(register float *curRow, register float *prevRow, float alp
 {
     register int j = 0;
 #if CV_SSE
-    if (CPU_SUPPORT_SSE1)
+    if (CPU_SUPPORT_SSE1())
     {
         __m128 cur, prev, res;
         __m128 alpha = _mm_set_ps1(alphaVal);
@@ -543,5 +552,5 @@ void rf_vert_row_pass(register float *curRow, register float *prevRow, float alp
 
 } //end of cv::ximgproc::intrinsics
 
-} //end of cv::ximgproc 
-} //end of cv 
+} //end of cv::ximgproc
+} //end of cv

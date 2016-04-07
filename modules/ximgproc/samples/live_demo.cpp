@@ -189,7 +189,7 @@ int main()
     
     //Thread trackbar
     cv::setNumThreads(g_numberOfCPUs); //speedup filtering
-    createTrackbar("Threads", NULL, &g_numberOfCPUs, cv::getNumberOfCPUs(), changeNumberOfCpuCallback);
+    createTrackbar("Threads", String(), &g_numberOfCPUs, cv::getNumberOfCPUs(), changeNumberOfCpuCallback);
 
     //Buttons to choose different modes
     createButton("Mode Details Enhancement", changeModeCallback, (void*)filterDetailEnhancement, QT_RADIOBOX, true);
@@ -199,15 +199,15 @@ int main()
 
     //sliders for Details Enhancement mode
     g_filterOp = filterDetailEnhancement; //set Details Enhancement as default filter
-    createTrackbar("Detail contrast", NULL, &g_contrastBase, 200);
-    createTrackbar("Detail level" , NULL, &g_detailsLevel, 200);
+    createTrackbar("Detail contrast", String(), &g_contrastBase, 200);
+    createTrackbar("Detail level" , String(), &g_detailsLevel, 200);
     
     //sliders for Stylizing mode
-    createTrackbar("Style gamma", NULL, &g_edgesGamma, 300);
+    createTrackbar("Style gamma", String(), &g_edgesGamma, 300);
 
     //sliders for every mode
-    createTrackbar("Sigma Spatial", NULL, &g_sigmaSpatial, 200);
-    createTrackbar("Sigma Color"  , NULL, &g_sigmaColor, 200);
+    createTrackbar("Sigma Spatial", String(), &g_sigmaSpatial, 200);
+    createTrackbar("Sigma Color"  , String(), &g_sigmaColor, 200);
 
     Mat rawFrame, outputFrame;
     Mat srcFrame, processedFrame;

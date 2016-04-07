@@ -42,7 +42,7 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning( disable : 4267 )
 #endif
 

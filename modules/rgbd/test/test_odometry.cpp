@@ -175,8 +175,8 @@ protected:
 
 bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
 {
-    std::string imageFilename = std::string(ts->get_data_path()) + "/odometry/rgb.png";
-    std::string depthFilename = std::string(ts->get_data_path()) + "/odometry/depth.png";
+    std::string imageFilename = ts->get_data_path() + "rgbd/rgb.png";
+    std::string depthFilename = ts->get_data_path() + "rgbd/depth.png";
     
     image = imread(imageFilename,  0);
     depth = imread(depthFilename, -1);
@@ -286,7 +286,7 @@ void CV_OdometryTest::run(int)
         Rodrigues(calcR, calcRvec);
         calcRvec = calcRvec.reshape(rvec.channels(), rvec.rows);
         Mat calcTvec = calcRt(Rect(3,0,1,3));
-        
+
 #if SHOW_DEBUG_IMAGES
         imshow("image", image);
         imshow("warpedImage", warpedImage);
@@ -296,7 +296,7 @@ void CV_OdometryTest::run(int)
         waitKey();
 #endif
 
-    
+
         // compare rotation
         double rdiffnorm = norm(rvec - calcRvec),
                rnorm = norm(rvec);
@@ -338,18 +338,18 @@ void CV_OdometryTest::run(int)
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.RgbdOdometry"), 0.99, 0.94);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
     test.safe_run();
 }
 
-TEST(RGBD_Odometry_ICP, algorithmic)
+TEST(DISABLED_RGBD_Odometry_ICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.ICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
-TEST(RGBD_Odometry_RgbdICP, algorithmic)
+TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RGBD.RgbdICPOdometry"), 0.99, 0.99);
+    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
