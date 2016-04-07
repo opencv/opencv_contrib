@@ -47,7 +47,7 @@
 #define WIDTH_MULTIPLE (32 >> 2)
 
 /////////////////////////////////////////////////////////
-//*******************************************************
+//------------------------------------------------------
 // basicretinafilter
 //////////////// _spatiotemporalLPfilter ////////////////
 //_horizontalCausalFilter_addInput
@@ -380,13 +380,13 @@ kernel void localLuminanceAdaptation(
     output[offset] = (_maxInputValue + X0) * input_val / (input_val + X0 + 0.00000000001f);
 }
 // end of basicretinafilter
-//*******************************************************
+//------------------------------------------------------
 /////////////////////////////////////////////////////////
 
 
 
 /////////////////////////////////////////////////////////
-//******************************************************
+//------------------------------------------------------
 // magno
 // TODO: this kernel has too many buffer accesses, better to make it
 //   vector read/write for fetch efficiency
@@ -427,7 +427,7 @@ kernel void amacrineCellsComputing(
 }
 
 /////////////////////////////////////////////////////////
-//******************************************************
+//------------------------------------------------------
 // parvo
 // TODO: this kernel has too many buffer accesses, needs optimization
 kernel void OPL_OnOffWaysComputing(
@@ -473,7 +473,7 @@ kernel void OPL_OnOffWaysComputing(
 }
 
 /////////////////////////////////////////////////////////
-//******************************************************
+//------------------------------------------------------
 // retinacolor
 inline int bayerSampleOffset(int step, int rows, int x, int y)
 {
