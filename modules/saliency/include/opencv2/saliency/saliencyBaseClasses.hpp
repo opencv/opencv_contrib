@@ -128,7 +128,7 @@ class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 };
 
 /************************************ Objectness Base Class ************************************/
-class CV_EXPORTS Objectness : public virtual Saliency
+class CV_EXPORTS_W Objectness : public virtual Saliency
 {
 
  protected:

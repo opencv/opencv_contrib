@@ -201,11 +201,11 @@ private:
 
 /** @brief the Binarized normed gradients algorithm from @cite BING
  */
-class CV_EXPORTS ObjectnessBING : public Objectness
+class CV_EXPORTS_W ObjectnessBING : public Objectness
 {
 public:
 
-  ObjectnessBING();
+  CV_WRAP ObjectnessBING();
   virtual ~ObjectnessBING();
 
   void read();
