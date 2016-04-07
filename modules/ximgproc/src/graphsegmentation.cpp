@@ -244,7 +244,7 @@ namespace cv {
                     }
                 }
 
-                free(thresholds);
+                delete [] thresholds;
             }
 
             void GraphSegmentationImpl::filterSmallAreas(Edge *edges, const int &nb_edges, PointSet *es) {
@@ -300,7 +300,7 @@ namespace cv {
                     }
                 }
 
-                free(mapped_id);
+                delete [] mapped_id;
             }
 
             void GraphSegmentationImpl::processImage(InputArray src, OutputArray dst) {
@@ -332,7 +332,7 @@ namespace cv {
                 // Map to final output
                 finalMapping(es, output);
 
-                free(edges);
+                delete [] edges;
                 delete es;
 
             }
@@ -359,7 +359,7 @@ namespace cv {
             }
 
             PointSet::~PointSet() {
-                free(mapping);
+                delete [] mapping;
             }
 
             int PointSet::getBasePoint( int p) {
