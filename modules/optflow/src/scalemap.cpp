@@ -48,7 +48,7 @@
 #include <algorithm>
 
 // Eigen (for solving the sparse linear system)
-#include <Eigen/SparseCore>
+//#include <Eigen/SparseCore>
 #include <Eigen/Sparse>
 
 /************************************************************************************
