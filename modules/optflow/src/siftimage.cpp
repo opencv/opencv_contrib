@@ -145,8 +145,8 @@ namespace optflow
                 for (c = 0; c < img.cols; c += 1)
                 {
                     cv::KeyPoint& key = keypoints[index++];
-                    key.pt.x = c;
-                    key.pt.y = r;
+                    key.pt.x = (float)c;
+                    key.pt.y = (float)r;
                     key.size = 3.0f;
                 }
             }
@@ -159,8 +159,8 @@ namespace optflow
                 for (c = 0; c < img.cols; c += 1)
                 {
                     cv::KeyPoint& key = keypoints[index++];
-                    key.pt.x = c;
-                    key.pt.y = r;
+                    key.pt.x = (float)c;
+                    key.pt.y = (float)r;
                     key.size = *scalemap_data++;
                 }
             }

@@ -59,7 +59,7 @@ using std::vector;
 /************************************************************************************
 *									 Declarations									*
 ************************************************************************************/
-const float EPS = 1e-7;
+const float EPS = 1e-7f;
 
 /************************************************************************************
 *									Implementation									*
@@ -73,7 +73,7 @@ namespace optflow
     template <typename T>
     void getStat(const vector<T>& values, size_t size, T& mean, T& var)
     {
-        T sum = std::accumulate(values.begin(), values.begin() + size, 0.0);
+        T sum = (T)std::accumulate(values.begin(), values.begin() + size, 0.0);
         mean = sum / size;
 
         T accum = 0.0;
@@ -95,7 +95,7 @@ namespace optflow
     }
 
     // weights(1:n) = exp(-(weights(1:n) - image(i, j)) .^ 2 / (0.6 * var))
-    void weight_exp(vector<float>& weights, size_t weightSize, float center, float mean, float var)
+    void weight_exp(vector<float>& weights, size_t weightSize, float center, float /*mean*/, float var)
     {
         float diff;
         for (size_t i = 0; i < weightSize; ++i)
@@ -134,8 +134,8 @@ namespace optflow
     void ScaleMapImpl::compute(const Mat& image, const std::vector<KeyPoint>& keypoints,
         Mat& scalemap)
     {
-        size_t r, c, i, j, nr, nc, min_row, max_row, min_col, max_col;
-        size_t neighborCount, coefficientCount = 0;
+        size_t r, c, i, nr, nc, min_row, max_row, min_col, max_col;
+        size_t neighborCount;
         std::vector<Eigen::Triplet<float>> coefficients;	// list of non-zeros coefficients
         vector<float> weights(9);
         float m, v, sum;
@@ -181,18 +181,18 @@ namespace optflow
                         for (nc = min_col; nc <= max_col; ++nc)
                         {
                             if (nr == r && nc == c) continue;
-                            weights[neighborCount++] = scaledImg.at<float>(nr, nc);
+                            weights[neighborCount++] = scaledImg.at<float>((int)nr, (int)nc);
                         }
                     }
-                    weights[neighborCount] = scaledImg.at<float>(r, c);
+                    weights[neighborCount] = scaledImg.at<float>((int)r, (int)c);
 
                     // Calculate the weights statistics
                     getStat(weights, neighborCount + 1, m, v);
-                    m *= 0.6;
+                    m *= 0.6f;
                     if (v < EPS) v = EPS;	// Avoid division by 0
 
                     // Apply weight function
-                    mWeightFunc(weights, neighborCount, scaledImg.at<float>(r, c), m, v);
+                    mWeightFunc(weights, neighborCount, scaledImg.at<float>((int)r, (int)c), m, v);
 
                     // Normalize the weights and set to coefficients
                     sum = std::accumulate(weights.begin(), weights.begin() + neighborCount, 0.0f);
@@ -202,7 +202,7 @@ namespace optflow
                         for (nc = min_col; nc <= max_col; ++nc)
                         {
                             if (nr == r && nc == c) continue;
-                            nindex = nr*scaledImg.cols + nc;
+                            nindex = (int)nr*scaledImg.cols + (int)nc;
                             coefficients.push_back(Eigen::Triplet<float>(
                                 index, nindex, -weights[i++] / sum));
                         }
@@ -223,7 +223,7 @@ namespace optflow
         }
 
         // Build left side equation matrix
-        Eigen::SparseMatrix<float> A(pixels, pixels);
+        Eigen::SparseMatrix<float> A((int)pixels, (int)pixels);
         A.setFromTriplets(coefficients.begin(), coefficients.end());
 
         // Solving

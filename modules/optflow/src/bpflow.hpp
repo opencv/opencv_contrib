@@ -77,7 +77,7 @@ namespace cv
             }
             void allocate(int ndims)
             {
-                nDim = ndims;
+                nDim = (short)ndims;
             }
             ~PixelBuffer1D()
             {
@@ -118,8 +118,8 @@ namespace cv
             }
             void allocate(int ndimx, int ndimy)
             {
-                nDimX = ndimx;
-                nDimY = ndimy;
+                nDimX = (short)ndimx;
+                nDimY = (short)ndimy;
                 pData = NULL;
             }
             ~PixelBuffer2D()

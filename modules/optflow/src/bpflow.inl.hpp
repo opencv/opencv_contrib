@@ -64,10 +64,10 @@ size_t allocateBuffer(T1*& pBuffer, size_t area, size_t factor, T2*& ptrData, co
 {
     pBuffer = new T1[area*factor];
     size_t totalElements = 0;
-    for (ptrdiff_t i = 0; i < area; i++)
+    for (size_t i = 0; i < area; i++)
     {
         totalElements += pWinSize[i] * 2 + 1;
-        for (ptrdiff_t j = 0; j<factor; j++)
+        for (size_t j = 0; j<factor; j++)
             pBuffer[i*factor + j].allocate(pWinSize[i] * 2 + 1);
     }
     totalElements *= factor;
@@ -76,7 +76,7 @@ size_t allocateBuffer(T1*& pBuffer, size_t area, size_t factor, T2*& ptrData, co
 
     T2* ptrDynamic = ptrData;
     size_t total = 0;
-    for (ptrdiff_t i = 0; i<area*factor; i++)
+    for (size_t i = 0; i<area*factor; i++)
     {
         pBuffer[i].data() = ptrDynamic;
         ptrDynamic += pBuffer[i].nElements();
@@ -90,7 +90,7 @@ size_t allocateBuffer(T1*& pBuffer, T2*& ptrData, size_t area, const int* pWinSi
 {
     pBuffer = new T1[area];
     size_t totalElements = 0;
-    for (ptrdiff_t i = 0; i<area; i++)
+    for (size_t i = 0; i<area; i++)
     {
         totalElements += (pWinSize1[i] * 2 + 1)*(pWinSize2[i] * 2 + 1);
         pBuffer[i].allocate(pWinSize1[i] * 2 + 1, pWinSize2[i] * 2 + 1);
@@ -100,7 +100,7 @@ size_t allocateBuffer(T1*& pBuffer, T2*& ptrData, size_t area, const int* pWinSi
 
     T2* ptrDynamic = ptrData;
     size_t total = 0;
-    for (ptrdiff_t i = 0; i < area; i++)
+    for (size_t i = 0; i < area; i++)
     {
         pBuffer[i].data() = ptrDynamic;
         ptrDynamic += pBuffer[i].nElements();
@@ -263,7 +263,7 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
 
     // For each level
     int gammaFact = 1;
-    int r, c;
+    //int r, c;
     Mat vx, vy;
     for (int i = levels - 1; i >= 0; --i)
     {
@@ -275,14 +275,14 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
         nChannels = pyrd1[i].channels();
         Width2 = pyrd2[i].cols;
         Height2 = pyrd2[i].rows;
-        im_s = Mat(Height, Width, CV_64FC2, Scalar(ls, ls));
-        im_d = Mat(Height, Width, CV_64FC2, Scalar(ld, ld));
-        W.create(Height, Width, CV_32FC2);
+        im_s = Mat((int)Height, (int)Width, CV_64FC2, Scalar(ls, ls));
+        im_d = Mat((int)Height, (int)Width, CV_64FC2, Scalar(ld, ld));
+        W.create((int)Height, (int)Width, CV_32FC2);
 
         if (i == (levels - 1))
         {
-            vx = cv::Mat(Height, Width, CV_32F, 0.0f);
-            vy = cv::Mat(Height, Width, CV_32F, 0.0f);
+            vx = cv::Mat((int)Height, (int)Width, CV_32F, 0.0f);
+            vy = cv::Mat((int)Height, (int)Width, CV_32F, 0.0f);
             level_gamma = gamma*gammaFact;
 
             calcOneLevel(pyrd1[i], pyrd2[i], W, topiterations, topwsize, 2, vx, vy);
@@ -290,8 +290,8 @@ void BPFlow<InputType>::calc(InputArray _I0, InputArray _I1, InputOutputArray _f
         else
         {
             // Calculate vx, vy
-            downOffset(vx, Width, Height);
-            downOffset(vy, Width, Height);
+            downOffset(vx, (int)Width, (int)Height);
+            downOffset(vy, (int)Width, (int)Height);
 
             level_gamma = gamma*gammaFact;
 
@@ -366,7 +366,7 @@ void BPFlow<InputType>::downOffset(cv::Mat& offset, int width, int height)
 {
     cv::resize(offset, offset, cv::Size(width, height), 0, 0, cv::INTER_CUBIC);
     float* off_data = (float*)offset.data;
-    int pixels = offset.total();
+    int pixels = (int)offset.total();
     float val;
     for (int i = 0; i < pixels; ++i)
     {
@@ -414,8 +414,8 @@ void BPFlow<InputType>::computeDataTerm()
     //--------------------------------------------------------------------------------------------------
     // step 1. the first sweep to compute the data term for the visible matches
     //--------------------------------------------------------------------------------------------------
-    for (ptrdiff_t i = 0; i<Height; i++)			// index over y
-        for (ptrdiff_t j = 0; j<Width; j++)		// index over x
+    for (size_t i = 0; i<Height; i++)			// index over y
+        for (size_t j = 0; j<Width; j++)		// index over x
         {
             size_t index = i*Width + j;
             int XWinLength = pWinSize[0][index] * 2 + 1;
@@ -440,7 +440,7 @@ void BPFlow<InputType>::computeDataTerm()
                     //#endif
 
 
-                    pDataTerm[index][(k + pWinSize[1][index])*XWinLength + l + pWinSize[0][index]] = foo;
+                    pDataTerm[index][((int)k + pWinSize[1][index])*XWinLength + (int)l + pWinSize[0][index]] = foo;
                     HistMin = __min(HistMin, foo);
                     HistMax = __max(HistMax, foo);
                     total++;
@@ -453,8 +453,8 @@ void BPFlow<InputType>::computeDataTerm()
     //--------------------------------------------------------------------------------------------------
     // step 2. get the histogram of the matching
     //--------------------------------------------------------------------------------------------------
-    for (ptrdiff_t i = 0; i<Height; i++)			// index over y
-        for (ptrdiff_t j = 0; j<Width; j++)		// index over x
+    for (size_t i = 0; i<Height; i++)			// index over y
+        for (size_t j = 0; j<Width; j++)		// index over x
         {
             size_t index = i*Width + j;
             int XWinLength = pWinSize[0][index] * 2 + 1;
@@ -468,14 +468,14 @@ void BPFlow<InputType>::computeDataTerm()
                     // if the point is outside the image boundary then continue
                     if (!isInsideImage(x, y))
                         continue;
-                    int foo = __min(pDataTerm[index][(k + pWinSize[1][index])*XWinLength + l + pWinSize[0][index]] / HistInterval, nBins - 1);
+                    int foo = (int)__min(pDataTerm[index][((int)k + pWinSize[1][index])*XWinLength + (int)l + pWinSize[0][index]] / HistInterval, nBins - 1);
                     pHistogramBuffer[foo]++;
                 }
         }
     for (size_t i = 0; i<nBins; i++) // normalize the histogram
         pHistogramBuffer[i] /= total;
 
-    T_message DefaultMatchingScore;
+    T_message DefaultMatchingScore = 0.0;
     double Prob = 0;
     for (size_t i = 0; i<nBins; i++)
     {
@@ -498,8 +498,8 @@ void BPFlow<InputType>::computeDataTerm()
     //--------------------------------------------------------------------------------------------------
     // step 3. assigning the default matching score to the outside matches
     //--------------------------------------------------------------------------------------------------
-    for (ptrdiff_t i = 0; i<Height; i++)			// index over y
-        for (ptrdiff_t j = 0; j<Width; j++)		// index over x
+    for (size_t i = 0; i<Height; i++)			// index over y
+        for (size_t j = 0; j<Width; j++)		// index over x
         {
             size_t index = i*Width + j;
             int XWinLength = pWinSize[0][index] * 2 + 1;
@@ -510,7 +510,7 @@ void BPFlow<InputType>::computeDataTerm()
                     ptrdiff_t x = j + pOffset[0][index] + l;
                     ptrdiff_t y = i + pOffset[1][index] + k;
 
-                    int _ptr = (k + pWinSize[1][index])*XWinLength + l + pWinSize[0][index];
+                    int _ptr = ((int)k + pWinSize[1][index])*XWinLength + (int)l + pWinSize[0][index];
                     // if the point is outside the image boundary then continue
                     if (!isInsideImage(x, y))
                         pDataTerm[index][_ptr] = DefaultMatchingScore;
@@ -531,9 +531,9 @@ void BPFlow<InputType>::computeRangeTerm(double _gamma)
         release1DBuffer(ptrRangeTerm[i]);
         allocateBuffer(pRangeTerm[i], Area, 1, ptrRangeTerm[i], pWinSize[i]);
     }
-    for (ptrdiff_t offset = 0; offset<Area; offset++)
+    for (size_t offset = 0; offset<Area; offset++)
     {
-        for (ptrdiff_t plane = 0; plane<2; plane++)
+        for (size_t plane = 0; plane<2; plane++)
         {
             int winsize = pWinSize[plane][offset];
             for (ptrdiff_t j = -winsize; j <= winsize; j++)
@@ -580,7 +580,7 @@ double BPFlow<InputType>::messagePassing(int _iterations, int _hierarchy)
     if (pX != NULL)
         release1DBuffer(pX);
     pX = new int[Area * 2];
-    double energy;
+    double energy = 0.0;
     for (int count = 0; count<_iterations; count++)
     {
         //Bipartite(count);
@@ -606,7 +606,7 @@ double BPFlow<InputType>::messagePassing(int _iterations, int _hierarchy)
 template <typename InputType>
 bool BPFlow<InputType>::isInsideImage(ptrdiff_t x, ptrdiff_t y)
 {
-    return (x >= 0 && x < Width2 && y >= 0 && y < Height2);
+    return (x >= 0 && x < (ptrdiff_t)Width2 && y >= 0 && y < (ptrdiff_t)Height2);
 }
 
 //void bipartite(int count);
@@ -628,8 +628,8 @@ void BPFlow<InputType>::bp_s(int count)
     }     
     else // backward update
     {
-        for (int i = Height - 1; i >= 0; i--)
-            for (int j = Width - 1; j >= 0; j--)
+        for (int i = (int)Height - 1; i >= 0; i--)
+            for (int j = (int)Width - 1; j >= 0; j--)
             {
                 updateSpatialMessage(j, i, k, 1);
                 updateSpatialMessage(j, i, k, 3);
@@ -738,7 +738,7 @@ void BPFlow<InputType>::updateSpatialMessage(int x, int y, int plane, int direct
     if (direction == 3 && y == 0)
         return;
 
-    int offset = y*Width + x;
+    int offset = y*(int)Width + x;
     int nStates = pWinSize[plane][offset] * 2 + 1;
 
 
@@ -771,7 +771,7 @@ void BPFlow<InputType>::updateSpatialMessage(int x, int y, int plane, int direct
     }
     //s=m_s;
     //d=m_d;
-    int offset1 = y1*Width + x1;
+    int offset1 = y1*(int)Width + x1;
     int nStates1 = pWinSize[plane][offset1] * 2 + 1; // get the number of states for the destination node
     int wsize = pWinSize[plane][offset];
     int wsize1 = pWinSize[plane][offset1];
@@ -879,7 +879,7 @@ void BPFlow<InputType>::updateSpatialMessage(int x, int y, int plane, int direct
 template <typename InputType>
 void BPFlow<InputType>::updateDualMessage(int x, int y, int plane)
 {
-    int offset = y*Width + x;
+    int offset = y*(int)Width + x;
     int offset1 = offset;
     int wsize = pWinSize[plane][offset];
     int nStates = wsize * 2 + 1;
@@ -1014,8 +1014,8 @@ void BPFlow<InputType>::computeVelocity(Mat& flow)
     float* flow_data = (float*)flow.data;
     for (int i = 0; i<Area; i++)
     {
-        flow_data[i * 2] = pX[i * 2] + pOffset[0][i] - pWinSize[0][i];
-        flow_data[i * 2 + 1] = pX[i * 2 + 1] + pOffset[1][i] - pWinSize[1][i];
+        flow_data[i * 2] = float(pX[i * 2] + pOffset[0][i] - pWinSize[0][i]);
+        flow_data[i * 2 + 1] = float(pX[i * 2 + 1] + pOffset[1][i] - pWinSize[1][i]);
     }
 }
 
@@ -1196,8 +1196,8 @@ void BPFlow<InputType>::generateCoarserLevel(BPFlow<InputType>& bp)
     {
         bp.pOffset[i] = new int[bp.Area];
         bp.pWinSize[i] = new int[bp.Area];
-        reduceImage(bp.pOffset[i], Width, Height, pOffset[i]);
-        reduceImage(bp.pWinSize[i], Width, Height, pWinSize[i]);
+        reduceImage(bp.pOffset[i], (int)Width, (int)Height, pOffset[i]);
+        reduceImage(bp.pWinSize[i], (int)Width, (int)Height, pWinSize[i]);
     }
     //------------------------------------------------------------------------------------------------
     // generate data term
@@ -1206,7 +1206,7 @@ void BPFlow<InputType>::generateCoarserLevel(BPFlow<InputType>& bp)
     for (int i = 0; i<bp.Height; i++)
         for (int j = 0; j<bp.Width; j++)
         {
-            int offset = i*bp.Width + j;
+            int offset = i*(int)bp.Width + j;
             for (int ii = 0; ii<2; ii++)
                 for (int jj = 0; jj<2; jj++)
                 {
@@ -1234,8 +1234,8 @@ void BPFlow<InputType>::propagateFinerLevel(BPFlow<InputType>& bp)
         {
             int y = i / 2;
             int x = j / 2;
-            int nStates1 = pWinSize[0][y*Width + x] * 2 + 1;
-            int nStates2 = pWinSize[1][y*Width + x] * 2 + 1;
+            //int nStates1 = pWinSize[0][y*Width + x] * 2 + 1;
+            //int nStates2 = pWinSize[1][y*Width + x] * 2 + 1;
             for (int k = 0; k<2; k++)
             {
                 memcpy(bp.pDualMessage[k][i*bp.Width + j].data(), pDualMessage[k][y*Width + x].data(), sizeof(T_message)*(pWinSize[k][y*Width + x] * 2 + 1));
