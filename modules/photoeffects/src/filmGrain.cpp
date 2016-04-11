@@ -10,7 +10,6 @@ void filmGrain(InputArray src, OutputArray dst, int grainValue, int seed)
     Mat image=src.getMat();
     Mat noise;
     noise.create(image.size(), CV_8UC1);
-    
     RNG rng(seed);
     rng.fill(noise, RNG::UNIFORM, 0, grainValue);
     dst.create(src.size(), src.type());

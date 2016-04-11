@@ -7,10 +7,10 @@ using namespace std;
 
 TEST(photoeffects_antique, test)
 {
-    Mat srcUCThreeChannels(10, 10, CV_8UC3); 
-     srcUCThreeChannels = Mat::zeros(10, 10, CV_8UC3);
+    Mat srcUCThreeChannels(10, 10, CV_8UC3);
+    srcUCThreeChannels = Mat::zeros(10, 10, CV_8UC3);
     Mat textureUCThreeChannels(10, 10, CV_8UC3);
-     textureUCThreeChannels = Mat::zeros(10, 10, CV_8UC3);
+    textureUCThreeChannels = Mat::zeros(10, 10, CV_8UC3);
     Mat dst;
     EXPECT_ERROR(CV_StsAssert, antique(srcUCThreeChannels, dst, textureUCThreeChannels, -0.5f));
     Mat srcFCThreeChannels(10, 10, CV_32FC3);
