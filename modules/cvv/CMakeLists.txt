@@ -3,6 +3,9 @@ if(NOT HAVE_QT5)
   return()
 endif()
 
+set(the_description "Debug visualization framework")
+ocv_define_module(cvv opencv_core opencv_imgproc opencv_features2d ${CVV_LIBRARIES} WRAP python)
+
 # we need C++11 and want warnings:
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qstd=c++11 /W4")
@@ -20,6 +23,3 @@ foreach(dt5_dep Core Gui Widgets)
   include_directories(${Qt5${dt5_dep}_INCLUDE_DIRS})
   list(APPEND CVV_LIBRARIES ${Qt5${dt5_dep}_LIBRARIES})
 endforeach()
-
-set(the_description "Debug visualization framework")
-ocv_define_module(cvv opencv_core opencv_imgproc opencv_features2d ${CVV_LIBRARIES} WRAP python)
