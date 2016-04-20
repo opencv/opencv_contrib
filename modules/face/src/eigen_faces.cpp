@@ -42,7 +42,7 @@ public:
     void train(InputArrayOfArrays src, InputArray labels);
 
     // Send all predict results to caller side for custom result handling
-    void predict(InputArray src, Ptr<PredictCollector> collector, const int state) const;
+    void predict(InputArray src, Ptr<PredictCollector> collector) const;
 };
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ void Eigenfaces::train(InputArrayOfArrays _src, InputArray _local_labels) {
     }
 }
 
-void Eigenfaces::predict(InputArray _src, Ptr<PredictCollector> collector, const int state) const {
+void Eigenfaces::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     // get data
     Mat src = _src.getMat();
     // make sure the user is passing correct data
@@ -114,11 +114,11 @@ void Eigenfaces::predict(InputArray _src, Ptr<PredictCollector> collector, const
     }
     // project into PCA subspace
     Mat q = LDA::subspaceProject(_eigenvectors, _mean, src.reshape(1, 1));
-    collector->init((int)_projections.size(), state);
+    collector->init(_projections.size());
     for (size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
         int label = _labels.at<int>((int)sampleIdx);
-        if (!collector->collect(label, dist, state))return;
+        if (!collector->collect(label, dist))return;
     }
 }
 
