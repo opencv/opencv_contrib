@@ -243,7 +243,6 @@ private:
     Mat &img;
     Mat &dst;
     double alphaMoyenne;
-    double alphaDerive;
     bool verbose;
 
 public:
