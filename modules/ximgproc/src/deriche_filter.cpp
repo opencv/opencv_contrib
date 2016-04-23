@@ -146,12 +146,12 @@ public:
         case CV_64F :
              break;
         default :
-            delete g1;
-            delete g2;
+            delete []g1;
+            delete []g2;
             return ;
             }
-        delete g1;
-        delete g2;
+        delete []g1;
+        delete []g2;
     };
     ParallelGradientDericheYCols& operator=(const ParallelGradientDericheYCols &) {
          return *this;
@@ -231,8 +231,8 @@ public:
                     *f2 = (float)(g1[j]+g2[j]);
                 }
             }
-        delete g1;
-        delete g2;
+        delete []g1;
+        delete []g2;
 
     };
     ParallelGradientDericheYRows& operator=(const ParallelGradientDericheYRows &) {
@@ -295,9 +295,7 @@ public:
                 i++;
                 f1+=cols;
                 for (i=2;i<rows;i++,f1+=cols)
-                    g1[i] = a5 * *f1 + a6 * f1[-cols] +b3*g1[i-1]+
-                            b4 *g1[i-2];
-                    
+                    g1[i] = a5 * *f1 + a6 * f1[-cols] +b3*g1[i-1]+b4 *g1[i-2];
                 f1 = (float*)img.ptr(0)+(nb);
                 f1 += (rows-1)*cols+j;
                 i = rows-1;
@@ -319,8 +317,8 @@ public:
                 }
             }
         }
-        delete g1;
-        delete g2;
+        delete []g1;
+        delete []g2;
     };
     ParallelGradientDericheXCols& operator=(const ParallelGradientDericheXCols &) {
          return *this;
@@ -451,8 +449,8 @@ public:
         default :
             return ;
             }
-        delete g1;
-        delete g2;
+        delete []g1;
+        delete []g2;
     };
     ParallelGradientDericheXRows& operator=(const ParallelGradientDericheXRows &) {
          return *this;
@@ -485,8 +483,5 @@ UMat GradientDericheX(UMat op, double alphaDerive,double alphaMean)
     return imRes;
 }
 
-
 }
 }
-
-
