@@ -17,14 +17,12 @@ class ParallelGradientDericheYCols: public ParallelLoopBody
 private:
     Mat &img;
     Mat &im1;
-    double alphaMoyenne;
     double alphaDerive;
     bool verbose;
 public:
-    ParallelGradientDericheYCols(Mat& imgSrc, Mat &d,double alm,double ald):
+    ParallelGradientDericheYCols(Mat& imgSrc, Mat &d,double ald):
         img(imgSrc),
         im1(d),
-        alphaMoyenne(alm),
         alphaDerive(ald),
         verbose(false)
     {}
@@ -165,15 +163,13 @@ private:
     Mat &img;
     Mat &dst;
     double alphaMoyenne;
-    double alphaDerive;
     bool verbose;
 
 public:
-    ParallelGradientDericheYRows(Mat& imgSrc, Mat &d,double alm,double ald):
+    ParallelGradientDericheYRows(Mat& imgSrc, Mat &d,double alm):
         img(imgSrc),
         dst(d),
         alphaMoyenne(alm),
-        alphaDerive(ald),
         verbose(false)
     {}
     void Verbose(bool b){verbose=b;}
@@ -251,11 +247,10 @@ private:
     bool verbose;
 
 public:
-    ParallelGradientDericheXCols(Mat& imgSrc, Mat &d,double alm,double ald):
+    ParallelGradientDericheXCols(Mat& imgSrc, Mat &d,double alm):
         img(imgSrc),
         dst(d),
         alphaMoyenne(alm),
-        alphaDerive(ald),
         verbose(false)
     {}
     void Verbose(bool b){verbose=b;}
@@ -331,15 +326,13 @@ class ParallelGradientDericheXRows: public ParallelLoopBody
 private:
     Mat &img;
     Mat &dst;
-    double alphaMoyenne;
     double alphaDerive;
     bool verbose;
 
 public:
-    ParallelGradientDericheXRows(Mat& imgSrc, Mat &d,double alm,double ald):
+    ParallelGradientDericheXRows(Mat& imgSrc, Mat &d,double ald):
         img(imgSrc),
         dst(d),
-        alphaMoyenne(alm),
         alphaDerive(ald),
         verbose(false)
     {}
@@ -463,9 +456,9 @@ UMat GradientDericheY(UMat op, double alphaDerive,double alphaMean)
     UMat imRes(op.rows,op.cols,CV_32FC(op.channels()));
     cv::Mat mThis = op.getMat(cv::ACCESS_RW);
     cv::Mat m2 = imRes.getMat(cv::ACCESS_RW);
-    ParallelGradientDericheYCols x(mThis,im1,alphaMean,alphaDerive);
+    ParallelGradientDericheYCols x(mThis,im1,alphaDerive);
     parallel_for_(Range(0,mThis.cols), x,getNumThreads());
-    ParallelGradientDericheYRows xr(im1,m2,alphaMean,alphaDerive);
+    ParallelGradientDericheYRows xr(im1,m2,alphaMean);
     parallel_for_(Range(0,mThis.rows), xr,getNumThreads());
     return imRes;
 }
@@ -476,9 +469,9 @@ UMat GradientDericheX(UMat op, double alphaDerive,double alphaMean)
     UMat imRes(op.rows,op.cols,CV_32FC(op.channels()));
     cv::Mat mThis = op.getMat(cv::ACCESS_RW);
     cv::Mat m2 = imRes.getMat(cv::ACCESS_RW);
-    ParallelGradientDericheXRows x(mThis,im1,alphaMean,alphaDerive);
+    ParallelGradientDericheXRows x(mThis,im1,alphaDerive);
     parallel_for_(Range(0,mThis.rows), x,getNumThreads());
-    ParallelGradientDericheXCols xr(im1,m2,alphaMean,alphaDerive);
+    ParallelGradientDericheXCols xr(im1,m2,alphaMean);
     parallel_for_(Range(0,mThis.cols), xr,getNumThreads());
     return imRes;
 }
