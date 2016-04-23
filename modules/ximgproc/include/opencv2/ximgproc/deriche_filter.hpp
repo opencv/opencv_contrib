@@ -49,21 +49,16 @@ namespace ximgproc {
 /**
 * @brief   Applies Deriche filter to an image.
 *
-* For more details about this implementation, please see @cite zhang2014100+
+* For more details about this implementation, please see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.476.5736&rep=rep1&type=pdf
 *
-* @param   joint       Joint 8-bit, 1-channel or 3-channel image.
-* @param   src         Source 8-bit or floating-point, 1-channel or 3-channel image.
-* @param   dst         Destination image.
-* @param   r           Radius of filtering kernel, should be a positive integer.
-* @param   sigma       Filter range standard deviation for the joint image.
-* @param   weightType  weightType The type of weight definition, see WMFWeightType
-* @param   mask        A 0-1 mask that has the same size with I. This mask is used to ignore the effect of some pixels. If the pixel value on mask is 0,
-*                           the pixel will be ignored when maintaining the joint-histogram. This is useful for applications like optical flow occlusion handling.
+* @param   op          Source 8-bit or 16bit image, 1-channel or 3-channel image.
+* @param   alphaDerive double see paper
+* @param   alphaMean   double see paper
 *
-* @sa medianBlur, jointBilateralFilter
+* @sa GradientDericheX, GradientDericheY
 */
-CV_EXPORTS UMat GradientDericheY(UMat op, double alphaDerive,double alphaMoyenne);
-CV_EXPORTS UMat GradientDericheX(UMat op, double alphaDerive,double alphaMoyenne);
+CV_EXPORTS UMat GradientDericheY(UMat op, double alphaDerive,double alphaMean);
+CV_EXPORTS UMat GradientDericheX(UMat op, double alphaDerive,double alphaMean);
 
 }
 }
