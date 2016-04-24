@@ -93,7 +93,7 @@ static void DericheFilter(int, void*)
 int main(int argc, char* argv[])
 {
     if (argc==2)
-        imread(argv[1],IMREAD_GRAYSCALE).copyTo(img);
+        imread(argv[1]).copyTo(img);
     if (img.empty())
     {
         cout << "File not found or empty image\n";
