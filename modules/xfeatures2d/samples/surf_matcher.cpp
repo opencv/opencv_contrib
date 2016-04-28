@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i <= LOOP_NUM; i++)
     {
-        if(i == 1) workBegin();
+        if(i == 0) workBegin();
         surf(img1.getMat(ACCESS_READ), Mat(), keypoints1, descriptors1);
         surf(img2.getMat(ACCESS_READ), Mat(), keypoints2, descriptors2);
         matcher.match(descriptors1, descriptors2, matches);
