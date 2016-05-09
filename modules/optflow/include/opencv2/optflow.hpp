@@ -43,6 +43,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/core.hpp"
 #include "opencv2/video.hpp"
 
+#include "opencv2/optflow/pcaflow.hpp"
+
 /**
 @defgroup optflow Optical Flow Algorithms
 
@@ -192,8 +194,6 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_BlockMatching();
-
-CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_PCAFlow();
 
 //! @}
 
