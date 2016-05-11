@@ -38,7 +38,7 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/ximgproc.hpp>
-#include "opencv2/ximgproc/deriche_filter.hpp"
+#include "opencv2/ximgproc/paillou_filter.hpp"
 
 using namespace cv;
 using namespace cv::ximgproc;
@@ -46,11 +46,7 @@ using namespace cv::ximgproc;
 #include <iostream>
 using namespace std;
 
-int lowThreshold=20;
-int maxThreshold=20;
-int const max_lowThreshold = 500;
-int alDerive=100;
-int alMean=100;
+int aa = 100, ww = 10;
 Mat dx, dy;
 UMat img;
 const char* window_name = "Gradient Modulus";
@@ -73,15 +69,15 @@ static void DisplayImage(UMat x,string s)
 
 
 /**
- * @function DericheFilter
+ * @function paillouFilter
  * @brief Trackbar callback
  */
-static void DericheFilter(int, void*)
+static void PaillouFilter(int, void*)
 {
     UMat dst;
-    double d=alDerive/100.0,m=alMean/100.0;
-    UMat rx=  GradientDericheX(img,d,m);
-    UMat ry=  GradientDericheY(img,d,m);
+    double a=aa/100.0,w=ww/100.0;
+    UMat rx=  GradientPaillouX(img,a,w);
+    UMat ry=  GradientPaillouY(img,a,w);
     DisplayImage(rx, "Gx");
     DisplayImage(ry, "Gy");
     add(rx.mul(rx),ry.mul(ry),dst);
@@ -102,9 +98,9 @@ int main(int argc, char* argv[])
     namedWindow( window_name, WINDOW_AUTOSIZE );
 
     /// Create a Trackbar for user to enter threshold
-    createTrackbar( "Derive:",window_name, &alDerive, 400, DericheFilter );
-    createTrackbar( "Mean:", window_name, &alMean, 400, DericheFilter );
-    DericheFilter(0,NULL);
+    createTrackbar( "a:",window_name, &aa, 400, PaillouFilter );
+    createTrackbar( "w:", window_name, &ww, 400, PaillouFilter );
+    PaillouFilter(0,NULL);
     waitKey();
     return 0;
 }

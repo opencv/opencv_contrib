@@ -57,8 +57,8 @@ namespace ximgproc {
 *
 * @sa GradientDericheX, GradientDericheY
 */
-CV_EXPORTS UMat GradientDericheY(UMat op, double alphaDerive,double alphaMean);
-CV_EXPORTS UMat GradientDericheX(UMat op, double alphaDerive,double alphaMean);
+CV_EXPORTS UMat GradientPaillouY(UMat op, double alphaDerive,double alphaMean);
+CV_EXPORTS UMat GradientPaillouX(UMat op, double alphaDerive,double alphaMean);
 
 }
 }
