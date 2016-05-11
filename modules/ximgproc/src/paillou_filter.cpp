@@ -49,7 +49,7 @@ public:
         {
             for (int j=range.start;j<range.end;j++)
             {
-                // Formule 26 p194 
+                // Formule 26 p194
                 unsigned char *c1 = (unsigned char*)img.ptr(0)+j;// c1 pointeur sur x(i-1)
                 f2 = ((float*)im1.ptr(0))+j;
                 double border=*c1;
@@ -59,7 +59,7 @@ public:
                 c1+=cols;
                 for (int i=2;i<rows;i++,c1+=cols)
                     yp[i] = *c1-b1*yp[i-1]-b2*yp[i-2];
-                // Formule 27 p194 
+                // Formule 27 p194
                 c1 = (unsigned char*)img.ptr(rows-1)+j;
                 border=*c1;
 				ym[rows - 1] = *c1;
