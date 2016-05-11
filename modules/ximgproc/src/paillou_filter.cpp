@@ -17,15 +17,15 @@ class ParallelGradientPaillouYCols: public ParallelLoopBody
 private:
     Mat &img;
     Mat &im1;
-    double w;
     double a;
+    double w;
     bool verbose;
 public:
     ParallelGradientPaillouYCols(Mat& imgSrc, Mat &d,double aa,double ww):
         img(imgSrc),
         im1(d),
-        w(ww),
         a(aa),
+        w(ww),
         verbose(false)
     {}
     void Verbose(bool b){verbose=b;}
@@ -224,8 +224,8 @@ class ParallelGradientPaillouXCols: public ParallelLoopBody
 private:
     Mat &img;
     Mat &dst;
-    double w;
 	double a;
+    double w;
     bool verbose;
 
 public:
