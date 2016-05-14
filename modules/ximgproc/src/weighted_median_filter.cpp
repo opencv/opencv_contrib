@@ -669,7 +669,7 @@ void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int
     //The mapping of floating value to integer value is stored in iMap (for each channel).
     //"Is" stores each channel of "I". The channels are converted to CV_32S type after this step.
     vector<float *> iMap(I.channels());
-    vector<Mat> Is;
+    vector<Mat> Is(I.channels());
     split(I,Is);
     for(int i=0;i<(int)Is.size();i++)
     {
