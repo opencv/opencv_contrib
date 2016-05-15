@@ -50,7 +50,7 @@ namespace cv
 namespace optflow
 {
 
-OpticalFlowPCAFlow::OpticalFlowPCAFlow( Size _basisSize, float _sparseRate, float _retainedCornersFraction,
+OpticalFlowPCAFlow::OpticalFlowPCAFlow( const Size _basisSize, float _sparseRate, float _retainedCornersFraction,
                                         float _occlusionsThreshold )
     : basisSize( _basisSize ), sparseRate( _sparseRate ), retainedCornersFraction( _retainedCornersFraction ),
       occlusionsThreshold( _occlusionsThreshold )
@@ -68,6 +68,110 @@ inline float eDistSq( const Point2f &p1, const Point2f &p2 )
 }
 
 inline float eNormSq( const Point2f &v ) { return v.x * v.x + v.y * v.y; }
+
+template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
+
+static inline void symOrtho( double a, double b, double &c, double &s, double &r )
+{
+  if ( b == 0 )
+  {
+    c = mathSign( a );
+    s = 0;
+    r = std::abs( a );
+  }
+  else if ( a == 0 )
+  {
+    c = 0;
+    s = mathSign( b );
+    r = std::abs( b );
+  }
+  else if ( std::abs( b ) > std::abs( a ) )
+  {
+    const double tau = a / b;
+    s = mathSign( b ) / sqrt( 1 + tau * tau );
+    c = s * tau;
+    r = b / s;
+  }
+  else
+  {
+    const double tau = b / a;
+    c = mathSign( a ) / sqrt( 1 + tau * tau );
+    s = c * tau;
+    r = a / c;
+  }
+}
+
+static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0,
+                       const unsigned iter_lim = 10 )
+{
+  int m = A.size().height;
+  int n = A.size().width;
+  CV_Assert( m == b.size().height );
+  CV_Assert( A.type() == CV_32F );
+  CV_Assert( b.type() == CV_32F );
+  xOut.create( n, 1, CV_32F );
+
+  Mat v( n, 1, CV_32F, 0.0f );
+  Mat u = b;
+  Mat x = xOut.getMat();
+  x = Mat::zeros( x.size(), x.type() );
+  double alfa = 0;
+  double beta = cv::norm( u, NORM_L2 );
+  Mat w( n, 1, CV_32F, 0.0f );
+  const Mat AT = A.t();
+
+  if ( beta > 0 )
+  {
+    u *= 1 / beta;
+    v = AT * u;
+    alfa = cv::norm( v, NORM_L2 );
+  }
+
+  if ( alfa > 0 )
+  {
+    v *= 1 / alfa;
+    w = v.clone();
+  }
+
+  double rhobar = alfa;
+  double phibar = beta;
+  if ( alfa * beta == 0 )
+    return;
+
+  for ( unsigned itn = 0; itn < iter_lim; ++itn )
+  {
+    u = A * v - alfa * u;
+    beta = cv::norm( u, NORM_L2 );
+
+    if ( beta > 0 )
+    {
+      u *= 1 / beta;
+      v = AT * u - beta * v;
+      alfa = cv::norm( v, NORM_L2 );
+      if ( alfa > 0 )
+        v = ( 1 / alfa ) * v;
+    }
+
+    double rhobar1 = sqrt( rhobar * rhobar + damp * damp );
+    double cs1 = rhobar / rhobar1;
+    phibar = cs1 * phibar;
+
+    double cs, sn, rho;
+    symOrtho( rhobar1, beta, cs, sn, rho );
+
+    double theta = sn * alfa;
+    rhobar = -cs * alfa;
+    double phi = cs * phibar;
+    phibar = sn * phibar;
+
+    double t1 = phi / rho;
+    double t2 = -theta / rho;
+
+    x += t1 * w;
+    w *= t2;
+    w += v;
+  }
+}
 
 void OpticalFlowPCAFlow::findSparseFeatures( Mat &from, Mat &to, std::vector<Point2f> &features,
                                              std::vector<Point2f> &predictedFeatures ) const
@@ -140,161 +244,57 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
   Mat A = AOut.getMat();
   Mat b1 = b1Out.getMat();
   Mat b2 = b2Out.getMat();
-  const Point2f scale =
-    Point2f( (float)basisSize.width / (float)size.width, (float)basisSize.height / (float)size.height );
   for ( size_t i = 0; i < features.size(); ++i )
   {
-    const Point2f p = Point2f( features[i].x * scale.x, features[i].y * scale.y );
+    const Point2f &p = features[i];
+    float *row = A.ptr<float>( i );
     for ( int n1 = 0; n1 < basisSize.width; ++n1 )
       for ( int n2 = 0; n2 < basisSize.height; ++n2 )
-      {
-        const float c = cos( ( n1 * M_PI / basisSize.width ) * ( p.x + 0.5 ) ) *
-                        cos( ( n2 * M_PI / basisSize.height ) * ( p.y + 0.5 ) );
-        A.at<float>( i, n1 * basisSize.height + n2 ) = c;
-      }
+        row[n1 * basisSize.height + n2] =
+          cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
     const Point2f flow = predictedFeatures[i] - features[i];
     b1.at<float>( i ) = flow.x;
     b2.at<float>( i ) = flow.y;
   }
 }
 
-template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
-
-static inline void symOrtho( double a, double b, double &c, double &s, double &r )
+static void applyCLAHE( Mat &img )
 {
-  if ( b == 0 )
-  {
-    c = mathSign( a );
-    s = 0;
-    r = std::abs( a );
-  }
-  else if ( a == 0 )
-  {
-    c = 0;
-    s = mathSign( b );
-    r = std::abs( b );
-  }
-  else if ( std::abs( b ) > std::abs( a ) )
-  {
-    const double tau = a / b;
-    s = mathSign( b ) / sqrt( 1 + tau * tau );
-    c = s * tau;
-    r = b / s;
-  }
-  else
-  {
-    const double tau = b / a;
-    c = mathSign( a ) / sqrt( 1 + tau * tau );
-    s = c * tau;
-    r = a / c;
-  }
+  Ptr<CLAHE> clahe = createCLAHE();
+  clahe->setClipLimit( 8 );
+  clahe->apply( img, img );
 }
 
-static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0,
-                       const unsigned iter_lim = 10 )
+static void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSize )
 {
-  int m = A.size().height;
-  int n = A.size().width;
-  CV_Assert( m == b.size().height );
-  CV_Assert( A.type() == CV_32F );
-  CV_Assert( b.type() == CV_32F );
-  xOut.create( n, 1, CV_32F );
+  const Size size = flow.size();
+  Mat flowX( size, CV_32F, 0.0f );
+  Mat flowY( size, CV_32F, 0.0f );
 
-  double anorm = 0;
-  const double dampsq = damp * damp;
-  double ddnorm = 0;
-  double res2 = 0;
-  double xxnorm = 0;
-  double z = 0;
-  double cs2 = -1;
-  double sn2 = 0;
+  const float mult = sqrt( size.area() ) * 0.5;
 
-  Mat v( n, 1, CV_32F, 0.0f );
-  Mat u = b;
-  Mat x = xOut.getMat();
-  x = Mat::zeros( x.size(), x.type() );
-  double alfa = 0;
-  double beta = cv::norm( u, NORM_L2 );
-  Mat w( n, 1, CV_32F, 0.0f );
-
-  if ( beta > 0 )
-  {
-    u *= 1 / beta;
-    v = A.t() * u;
-    alfa = cv::norm( v, NORM_L2 );
-  }
-
-  if ( alfa > 0 )
-  {
-    v *= 1 / alfa;
-    w = v.clone();
-  }
-
-  double rhobar = alfa;
-  double phibar = beta;
-  double rnorm = beta;
-  double r1norm = rnorm;
-  double arnorm = alfa * beta;
-  if ( arnorm == 0 )
-    return;
-
-  for ( unsigned itn = 0; itn < iter_lim; ++itn )
-  {
-    u = A * v - alfa * u;
-    beta = cv::norm( u, NORM_L2 );
-
-    if ( beta > 0 )
+  for ( int i = 0; i < basisSize.width; ++i )
+    for ( int j = 0; j < basisSize.height; ++j )
     {
-      u *= 1 / beta;
-      anorm = sqrt( anorm * anorm + alfa * alfa + beta * beta + damp * damp );
-      v = A.t() * u - beta * v;
-      alfa = cv::norm( v, NORM_L2 );
-      if ( alfa > 0 )
-        v = ( 1 / alfa ) * v;
+      flowX.at<float>( j, i ) = w1.at<float>( i * basisSize.height + j ) * mult;
+      flowY.at<float>( j, i ) = w2.at<float>( i * basisSize.height + j ) * mult;
     }
-
-    double rhobar1 = sqrt( rhobar * rhobar + damp * damp );
-    double cs1 = rhobar / rhobar1;
-    double sn1 = damp / rhobar1;
-    double psi = sn1 * phibar;
-    phibar = cs1 * phibar;
-
-    double cs, sn, rho;
-    symOrtho( rhobar1, beta, cs, sn, rho );
-
-    double theta = sn * alfa;
-    rhobar = -cs * alfa;
-    double phi = cs * phibar;
-    phibar = sn * phibar;
-    double tau = sn * phi;
-
-    double t1 = phi / rho;
-    double t2 = -theta / rho;
-    Mat dk = ( 1 / rho ) * w;
-
-    x = x + t1 * w;
-    w = v + t2 * w;
-    ddnorm += cv::norm( dk, NORM_L2SQR );
-
-    double delta = sn2 * rho;
-    double gambar = -cs2 * rho;
-    double rhs = phi - delta * z;
-    double gamma = sqrt( gambar * gambar + theta * theta );
-    cs2 = gambar / gamma;
-    sn2 = theta / gamma;
-    z = rhs / gamma;
-    xxnorm = xxnorm + z * z;
-
-    double res1 = phibar * phibar;
-    res2 = res2 + psi * psi;
-    rnorm = sqrt( res1 + res2 );
-    arnorm = alfa * std::abs( tau );
-
-    double r1sq = rnorm * rnorm - dampsq * xxnorm;
-    r1norm = sqrt( std::abs( r1sq ) );
-    if ( r1sq < 0 )
-      r1norm = -r1norm;
+  for ( int i = 0; i < basisSize.height; ++i )
+  {
+    flowX.at<float>( i, 0 ) *= M_SQRT2;
+    flowY.at<float>( i, 0 ) *= M_SQRT2;
   }
+  for ( int i = 0; i < basisSize.width; ++i )
+  {
+    flowX.at<float>( 0, i ) *= M_SQRT2;
+    flowY.at<float>( 0, i ) *= M_SQRT2;
+  }
+
+  dct( flowX, flowX, DCT_INVERSE );
+  dct( flowY, flowY, DCT_INVERSE );
+  for ( int i = 0; i < size.height; ++i )
+    for ( int j = 0; j < size.width; ++j )
+      flow.at<Point2f>( i, j ) = Point2f( flowX.at<float>( i, j ), flowY.at<float>( i, j ) );
 }
 
 void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray flowOut )
@@ -325,6 +325,9 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( from.channels() == 1 );
   CV_Assert( to.channels() == 1 );
 
+  // applyCLAHE(from);
+  // applyCLAHE(to);
+
   std::vector<Point2f> features, predictedFeatures;
   findSparseFeatures( from, to, features, predictedFeatures );
   removeOcclusions( from, to, features, predictedFeatures );
@@ -340,26 +343,13 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
 
   Mat A, b1, b2, w1, w2;
   getSystem( A, b1, b2, features, predictedFeatures, size );
-  // solve( A, b1, w1, DECOMP_CHOLESKY | DECOMP_NORMAL );
-  // solve( A, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
+  // solve( A1, b1, w1, DECOMP_CHOLESKY | DECOMP_NORMAL );
+  // solve( A2, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
   solveLSQR( A, b1, w1, 2 );
   solveLSQR( A, b2, w2, 2 );
-  Mat flowSmall( basisSize, CV_32FC2 );
-  for ( int y = 0; y < basisSize.height; ++y )
-    for ( int x = 0; x < basisSize.width; ++x )
-    {
-      float sumX = 0, sumY = 0;
-      for ( int n1 = 0; n1 < basisSize.width; ++n1 )
-        for ( int n2 = 0; n2 < basisSize.height; ++n2 )
-        {
-          const float c = cos( ( n1 * M_PI / basisSize.width ) * ( x + 0.5 ) ) *
-                          cos( ( n2 * M_PI / basisSize.height ) * ( y + 0.5 ) );
-          sumX += c * w1.at<float>( n1 * basisSize.height + n2 );
-          sumY += c * w2.at<float>( n1 * basisSize.height + n2 );
-        }
-      flowSmall.at<Point2f>( y, x ) = Point2f( sumX, sumY );
-    }
-  resize( flowSmall, flow, size, 0, 0, INTER_CUBIC );
+  Mat flowSmall( basisSize * 16, CV_32FC2 );
+  reduceToFlow( w1, w2, flowSmall, basisSize );
+  resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );
 }
 
 void OpticalFlowPCAFlow::collectGarbage() {}
