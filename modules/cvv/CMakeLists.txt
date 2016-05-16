@@ -4,7 +4,7 @@ if(NOT HAVE_QT5)
 endif()
 
 set(the_description "Debug visualization framework")
-ocv_define_module(cvv opencv_core opencv_imgproc opencv_features2d ${CVV_LIBRARIES} WRAP python)
+ocv_add_module(cvv opencv_core opencv_imgproc opencv_features2d WRAP python)
 
 # we need C++11 and want warnings:
 if(MSVC)
@@ -23,3 +23,10 @@ foreach(dt5_dep Core Gui Widgets)
   include_directories(${Qt5${dt5_dep}_INCLUDE_DIRS})
   list(APPEND CVV_LIBRARIES ${Qt5${dt5_dep}_LIBRARIES})
 endforeach()
+
+ocv_glob_module_sources()
+ocv_module_include_directories()
+ocv_create_module(${CVV_LIBRARIES})
+ocv_add_accuracy_tests()
+ocv_add_perf_tests()
+ocv_add_samples()
