@@ -42,117 +42,73 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 #include "opencv2/face/predict_collector.hpp"
-#include "opencv2/core/cvstd.hpp"
-namespace cv {
-namespace face {
 
+namespace cv {namespace face {
 
-void PredictCollector::init(const int size, const int state) {
-    //reserve for some-how usage in descendants
-    _size = size;
-    _state = state;
+static std::pair<int, double> toPair(const StandardCollector::PredictResult & val) {
+    return std::make_pair(val.label, val.distance);
 }
 
-CV_WRAP bool PredictCollector::defaultFilter(int * label, double * dist, const int state)
-{
-    // if state provided we should compare it with current state
-    if (_state != 0 && _state != state) {
-        return false;
-    }
-
-    // if exclude label provided we can test it first
-    if (_excludeLabel != 0 && _excludeLabel == *label) {
-        return false;
-    }
-
-    // initially we must recalculate distance by koef iv given
-    if (_distanceKoef != 1) {
-        *dist = *dist * _distanceKoef;
-    }
-    // check upper threshold
-    if (*dist > _threshold) {
-        return false;
-    }
-    //check inner threshold
-    if (*dist < _minthreshold) {
-        return false;
-    }
-
-    return true;
+static bool pairLess(const std::pair<int, double> & lhs, const std::pair<int, double> & rhs) {
+    return lhs.second < rhs.second;
 }
 
-CV_WRAP bool PredictCollector::filter(int* label, double* dist, const int state)
-{
-    ((void)label);
-    ((void)dist);
-    ((void)state);
-    return true; //no custom logic at base level
+//===================================
+
+StandardCollector::StandardCollector(double threshold_) : threshold(threshold_) {
+    init(0);
 }
 
-bool PredictCollector::emit(const int label, const double dist, const int state) {
-    ((void)label);
-    ((void)dist);
-    ((void)state);
-    return false; // terminate prediction - no any behavior in base PredictCollector
+void StandardCollector::init(size_t size) {
+    minRes = PredictResult();
+    data.clear();
+    data.reserve(size);
 }
 
-CV_WRAP bool PredictCollector::collect(int label, double dist, const int state)
-{
-    if (defaultFilter(&label, &dist, state) && filter(&label,&dist,state)) {
-        return emit(label, dist, state);
+bool StandardCollector::collect(int label, double dist) {
+    if (dist < threshold)
+    {
+        PredictResult res(label, dist);
+        if (res.distance < minRes.distance)
+            minRes = res;
+        data.push_back(res);
     }
     return true;
 }
 
-CV_WRAP int PredictCollector::getSize()
-{
-    return _size;
+int StandardCollector::getMinLabel() const {
+    return minRes.label;
 }
 
-CV_WRAP void PredictCollector::setSize(int size)
-{
-    _size = size;
+double StandardCollector::getMinDist() const {
+    return minRes.distance;
 }
 
-CV_WRAP int PredictCollector::getState()
-{
-    return _state;
+std::vector< std::pair<int, double> > StandardCollector::getResults(bool sorted) const {
+    std::vector< std::pair<int, double> > res(data.size());
+    std::transform(data.begin(), data.end(), res.begin(), &toPair);
+    if (sorted)
+    {
+        std::sort(res.begin(), res.end(), &pairLess);
+    }
+    return res;
 }
 
-CV_WRAP void PredictCollector::setState(int state)
-{
-    _state = state;
+std::map<int, double> StandardCollector::getResultsMap() const {
+    std::map<int, double> res;
+    for (std::vector<PredictResult>::const_iterator i = data.begin(); i != data.end(); ++i) {
+        std::map<int, double>::iterator j = res.find(i->label);
+        if (j == res.end()) {
+            res.insert(toPair(*i));
+        } else if (i->distance < j->second) {
+            j->second = i->distance;
+        }
+    }
+    return res;
 }
 
-CV_WRAP int PredictCollector::getExcludeLabel()
-{
-    return _excludeLabel;
+Ptr<StandardCollector> StandardCollector::create(double threshold) {
+    return makePtr<StandardCollector>(threshold);
 }
 
-CV_WRAP void PredictCollector::setExcludeLabel(int excludeLabel)
-{
-    _excludeLabel = excludeLabel;
-}
-
-CV_WRAP double PredictCollector::getDistanceKoef()
-{
-    return _distanceKoef;
-}
-
-CV_WRAP void PredictCollector::setDistanceKoef(double distanceKoef)
-{
-    _distanceKoef = distanceKoef;
-}
-
-CV_WRAP double PredictCollector::getMinThreshold()
-{
-    return _minthreshold;
-}
-
-CV_WRAP void PredictCollector::setMinThreshold(double minthreshold)
-{
-    _minthreshold = minthreshold;
-}
-
-}
-}
+}} // cv::face::
