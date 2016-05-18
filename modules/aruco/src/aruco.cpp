@@ -876,7 +876,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
 
         for(int i = begin; i < end; i++) {
             solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
-                    rvecs.at<Vec3d>(0, i), tvecs.at<Vec3d>(0, i));
+                    rvecs.at<Vec3d>(i), tvecs.at<Vec3d>(i));
         }
     }
 
@@ -896,7 +896,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
   */
 void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
-                               OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
+                               OutputArray _rvecs, OutputArray _tvecs) {
 
     CV_Assert(markerLength > 0);
 

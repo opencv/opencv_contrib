@@ -192,9 +192,9 @@ CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, O
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Vec3d>>).
+ * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Vec3d>).
  * Each element in rvecs corresponds to the specific marker in imgPoints.
- * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>>).
+ * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  *
  * This function receives the detected markers and returns their pose estimation respect to
@@ -209,7 +209,7 @@ CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, O
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
-                                            OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
+                                            OutputArray rvecs, OutputArray tvecs);
 
 
 
