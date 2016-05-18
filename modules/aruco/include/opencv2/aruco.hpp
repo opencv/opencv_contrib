@@ -336,7 +336,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                   OutputArray tvec);
+                                   OutputArray tvec,bool useInitialGuess=false,int flags=0);
 
 
 

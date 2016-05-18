@@ -1298,12 +1298,12 @@ void refineDetectedMarkers(InputArray _image, Ptr<Board> &_board,
   */
 int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, Ptr<Board> &board,
                       InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                      OutputArray _tvec) {
+                      OutputArray _tvec,bool useInitialGuess,int flags) {
 
     CV_Assert(_corners.total() == _ids.total());
 
     // get object and image points for the solvePnP function
-    Mat objPoints, imgPoints;
+    Mat objPoints, imgPoints,reprojectedPoints;
     _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
 
     CV_Assert(imgPoints.total() == objPoints.total());
@@ -1313,11 +1313,14 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, Ptr<Board> &
 
     _rvec.create(3, 1, CV_64FC1);
     _tvec.create(3, 1, CV_64FC1);
-    solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec);
 
+    solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec,useInitialGuess,flags);
     // divide by four since all the four corners are concatenated in the array for each marker
     return (int)objPoints.total() / 4;
 }
+
+
+
 
 
 
