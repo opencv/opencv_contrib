@@ -324,7 +324,27 @@ class CV_EXPORTS_W GridBoard : public Board {
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
  * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
- *
+ * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses 
+ * the provided rvec and tvec values as initial approximations of the rotation and translation vectors,
+ * respectively, and further optimizes them (default false).
+ * @param flags Method for solving a PnP problem:
+ * -   **SOLVEPNP_ITERATIVE** Iterative method is based on Levenberg-Marquardt optimization. In
+ * this case the function finds such a pose that minimizes reprojection error, that is the sum
+ * of squared distances between the observed projections imagePoints and the projected (using
+ * projectPoints ) objectPoints (default).
+ * -   **SOLVEPNP_P3P** Method is based on the paper of X.S. Gao, X.-R. Hou, J. Tang, H.-F. Chang
+ * "Complete Solution Classification for the Perspective-Three-Point Problem". In this case the
+ * function requires exactly four object and image points.
+ * -   **SOLVEPNP_EPNP** Method has been introduced by F.Moreno-Noguer, V.Lepetit and P.Fua in the
+ * paper "EPnP: Efficient Perspective-n-Point Camera Pose Estimation".
+ * -   **SOLVEPNP_DLS** Method is based on the paper of Joel A. Hesch and Stergios I. Roumeliotis.
+ * "A Direct Least-Squares (DLS) Method for PnP".
+ * -   **SOLVEPNP_UPNP** Method is based on the paper of A.Penate-Sanchez, J.Andrade-Cetto,
+ * F.Moreno-Noguer. "Exhaustive Linearization for Robust Camera Pose and Focal Length
+ * Estimation". In this case the function also estimates the parameters \f$f_x\f$ and \f$f_y\f$
+ * assuming that both have the same value. Then the cameraMatrix is updated with the estimated
+ * focal length.
+ * 
  * This function receives the detected markers and returns the pose of a marker board composed
  * by those markers.
  * A Board of marker has a single world coordinate system which is defined by the board layout.
@@ -336,7 +356,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                   OutputArray tvec,bool useInitialGuess=false,int flags=0);
+                                   OutputArray tvec,bool useExtrinsicGuess=false,int flags=0);
 
 
 
