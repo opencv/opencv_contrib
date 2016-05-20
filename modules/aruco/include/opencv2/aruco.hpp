@@ -228,14 +228,14 @@ class CV_EXPORTS_W Board {
     public:
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
-    std::vector< std::vector< Point3f > > objPoints;
+    CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
     // the dictionary of markers employed for this board
-    Ptr<Dictionary> dictionary;
+    CV_PROP Ptr<Dictionary> dictionary;
 
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
-    std::vector< int > ids;
+    CV_PROP std::vector< int > ids;
 };
 
 
@@ -259,7 +259,7 @@ class CV_EXPORTS_W GridBoard : public Board {
      *
      * This function return the image of the GridBoard, ready to be printed.
      */
-    void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -282,17 +282,17 @@ class CV_EXPORTS_W GridBoard : public Board {
     /**
       *
       */
-    Size getGridSize() const { return Size(_markersX, _markersY); }
+    CV_WRAP Size getGridSize() const { return Size(_markersX, _markersY); }
 
     /**
       *
       */
-    float getMarkerLength() const { return _markerLength; }
+    CV_WRAP float getMarkerLength() const { return _markerLength; }
 
     /**
       *
       */
-    float getMarkerSeparation() const { return _markerSeparation; }
+    CV_WRAP float getMarkerSeparation() const { return _markerSeparation; }
 
 
     private:
