@@ -360,7 +360,6 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
 
 
 
-
 /**
  * @brief Refind not detected markers based on the already detected and the board layout
  *
