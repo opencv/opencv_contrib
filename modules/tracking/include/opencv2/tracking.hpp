@@ -238,7 +238,7 @@ And add it in your Tracker : :
     bool TrackerMIL::initImpl( const Mat& image, const Rect2d& boundingBox )
     {
       ...
-      //model is the general TrackerModel field od the general Tracker
+      //model is the general TrackerModel field of the general Tracker
       model = new TrackerMILModel( boundingBox );
       ...
     }
@@ -306,6 +306,7 @@ The first argument is the name of the tracker and the second is a video source.
 
 */
 
-#include "opencv2/tracking/tracker.hpp"
+#include <opencv2/tracking/tracker.hpp>
+#include <opencv2/tracking/tldDataset.hpp>
 
 #endif //__OPENCV_TRACKING_LENLEN

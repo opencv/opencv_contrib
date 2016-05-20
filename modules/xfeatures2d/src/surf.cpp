@@ -892,6 +892,7 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
     CV_Assert(!_img.empty() && CV_MAT_DEPTH(imgtype) == CV_8U && (imgcn == 1 || imgcn == 3 || imgcn == 4));
     CV_Assert(_descriptors.needed() || !useProvidedKeypoints);
 
+#ifdef HAVE_OPENCL
     if( ocl::useOpenCL() )
     {
         SURF_OCL ocl_surf;
@@ -918,6 +919,7 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
             return;
         }
     }
+#endif // HAVE_OPENCL
 
     Mat img = _img.getMat(), mask = _mask.getMat(), mask1, sum, msum;
 

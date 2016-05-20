@@ -51,7 +51,7 @@ using std::tr1::get;
 typedef perf::TestBaseWithParam<std::string> file_str;
 
 #define IMAGES \
-  "line_descriptor_data/cameraman.jpg", "line_descriptor_data/lena.bmp"
+  "cv/line_descriptor/cameraman.jpg", "cv/shared/lena.png"
 
 void createMatFromVec( const std::vector<KeyLine>& linesVec, Mat& output );
 
@@ -109,7 +109,7 @@ PERF_TEST_P(file_str, detect, testing::Values(IMAGES))
     createMatFromVec( keylines, lines );
   }
 
-  SANITY_CHECK( lines );
+  SANITY_CHECK_NOTHING();
 
 }
 
@@ -133,6 +133,6 @@ PERF_TEST_P(file_str, detect_lsd, testing::Values(IMAGES))
     createMatFromVec( keylines, lines );
   }
 
-  SANITY_CHECK( lines );
+  SANITY_CHECK_NOTHING();
 
 }

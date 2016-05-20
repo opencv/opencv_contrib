@@ -43,4 +43,4 @@
 
 #include "test_precomp.hpp"
 
-CV_TEST_MAIN("reg")
+CV_TEST_MAIN("cv")

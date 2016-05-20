@@ -38,6 +38,7 @@
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
 #include <algorithm>
 #include <vector>
+#include "opencv2/core/hal/hal.hpp"
 
 using namespace std;
 
@@ -768,7 +769,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         KNNdistances = inst->NNdistances.ptr<float>(i);
         if(inc>0) //forward pass
         {
-            hal::exp(KNNdistances,KNNdistances,inst->k);
+            cv::hal::exp32f(KNNdistances,KNNdistances,inst->k);
 
             Point2f average = Point2f(0.0f,0.0f);
             for(int j=0;j<inst->k;j++)

@@ -72,6 +72,20 @@ void FaceRecognizer::save(const String &filename) const
     fs.release();
 }
 
+int FaceRecognizer::predict(InputArray src) const {
+    int _label;
+    double _dist;
+    predict(src, _label, _dist);
+    return _label;
+}
+
+void FaceRecognizer::predict(InputArray src, CV_OUT int &label, CV_OUT double &confidence) const {
+    Ptr<StandardCollector> collector = StandardCollector::create(getThreshold());
+    predict(src, collector);
+    label = collector->getMinLabel();
+    confidence = collector->getMinDist();
+}
+
 }
 }
 

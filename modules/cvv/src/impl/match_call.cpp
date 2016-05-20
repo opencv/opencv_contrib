@@ -18,8 +18,8 @@ MatchCall::MatchCall(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                      std::vector<cv::DMatch> matches, impl::CallMetaData data,
                      QString type, QString description, QString requestedView,
                      bool useTrainDescriptor)
-    : Call{ data,                   std::move(type),
-	    std::move(description), std::move(requestedView) },
+    : Call( data,                   std::move(type),
+	    std::move(description), std::move(requestedView) ),
       img1_{ img1.getMat().clone() }, keypoints1_{ std::move(keypoints1) },
       img2_{ img2.getMat().clone() }, keypoints2_{ std::move(keypoints2) },
       matches_{ std::move(matches) }, usesTrainDescriptor_{ useTrainDescriptor }

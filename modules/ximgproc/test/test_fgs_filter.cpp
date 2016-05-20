@@ -51,7 +51,7 @@ static string getDataDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-CV_ENUM(SrcTypes, CV_8UC1, CV_8UC2, CV_8UC3, CV_8UC4, CV_16SC1, CV_16SC2, CV_16SC3, CV_16SC4, CV_32FC1, CV_32FC2, CV_32FC3, CV_32FC4);
+CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_8UC4, CV_16SC1, CV_16SC3, CV_32FC1);
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)
 typedef tuple<Size, SrcTypes, GuideTypes> FGSParams;
 typedef TestWithParam<FGSParams> FastGlobalSmootherTest;
@@ -60,7 +60,7 @@ TEST(FastGlobalSmootherTest, SplatSurfaceAccuracy)
 {
     RNG rnd(0);
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 5; i++)
     {
         Size sz(rnd.uniform(512, 1024), rnd.uniform(512, 1024));
 

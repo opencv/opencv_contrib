@@ -273,8 +273,8 @@ void SuperpixelSEEDSImpl::initialize(int num_superpixels, int num_levels)
     parent_pre_init.resize(seeds_nr_levels);
     nr_wh.resize(2 * seeds_nr_levels);
     int level = 0;
-    int nr_seeds_w = (int)floor(width / seeds_w);
-    int nr_seeds_h = (int)floor(height / seeds_h);
+    int nr_seeds_w = (width / seeds_w);
+    int nr_seeds_h = (height / seeds_h);
     nr_wh[2 * level] = nr_seeds_w;
     nr_wh[2 * level + 1] = nr_seeds_h;
     parent_mat.push_back(Mat(nr_seeds_h, nr_seeds_w, CV_32SC1));
@@ -375,7 +375,31 @@ void SuperpixelSEEDSImpl::initImageBins<float>(const Mat& img, int)
 
 void SuperpixelSEEDSImpl::initImage(InputArray img)
 {
-    Mat src = img.getMat();
+    Mat src;
+
+    if ( img.isMat() )
+    {
+      // get Mat
+      src = img.getMat();
+
+      // image should be valid
+      CV_Assert( !src.empty() );
+    }
+    else if ( img.isMatVector() )
+    {
+      vector<Mat> vec;
+      // get vector Mat
+      img.getMatVector( vec );
+
+      // array should be valid
+      CV_Assert( !vec.empty() );
+
+      // merge into Mat
+      merge( vec, src );
+    }
+    else
+      CV_Error( Error::StsInternal, "Invalid InputArray." );
+
     int depth = src.depth();
     seeds_current_level = seeds_nr_levels - 2;
     forwardbackward = true;
@@ -1214,7 +1238,7 @@ void SuperpixelSEEDSImpl::getLabelContourMask(OutputArray image, bool thick_line
                 }
             }
             if( neighbors > 1 )
-                *dst.ptr<uchar>(j, k) = (uchar)-1;
+                *dst.ptr<uchar>(j, k) = (uchar)255;
         }
     }
 }

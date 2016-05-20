@@ -11,7 +11,7 @@
  **
  ** Maintainers : Listic lab (code author current affiliation & applications) and Gipsa Lab (original research origins & applications)
  **
- **  Creation - enhancement process 2007-2011
+ **  Creation - enhancement process 2007-2015
  **      Author: Alexandre Benoit (benoit.alexandre.vision@gmail.com), LISTIC lab, Annecy le vieux, France
  **
  ** Theses algorithm have been developped by Alexandre BENOIT since his thesis with Alice Caplier at Gipsa-Lab (www.gipsa-lab.inpg.fr) and the research he pursues at LISTIC Lab (www.listic.univ-savoie.fr).
@@ -30,7 +30,7 @@
  **               For Open Source Computer Vision Library
  **
  ** Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
- ** Copyright (C) 2008-2011, Willow Garage Inc., all rights reserved.
+ ** Copyright (C) 2008-2015, Willow Garage Inc., all rights reserved.
  **
  **               For Human Visual System tools (bioinspired)
  ** Copyright (C) 2007-2011, LISTIC Lab, Annecy le Vieux and GIPSA Lab, Grenoble, France, all rights reserved.
@@ -97,7 +97,7 @@ public:
      * @param reductionFactor: only usefull if param useRetinaLogSampling=true, specifies the reduction factor of the output frame (as the center (fovea) is high resolution and corners can be underscaled, then a reduction of the output is allowed without precision leak
      * @param samplingStrenght: only usefull if param useRetinaLogSampling=true, specifies the strenght of the log scale that is applied
      */
-    RetinaImpl(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+    RetinaImpl(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
     virtual ~RetinaImpl();
     /**
@@ -136,12 +136,12 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
          * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(Retina::RetinaParameters newParameters);
+    void setup(RetinaParameters newParameters);
 
     /**
     * @return the current parameters setup
     */
-    struct Retina::RetinaParameters getParameters();
+    struct RetinaParameters getParameters();
 
     /**
      * parameters setup display method
@@ -177,7 +177,7 @@ public:
      * @param HcellsSpatialConstant: the spatial constant of the first order low pass filter of the horizontal cells, use it to cut low spatial frequencies (local luminance), unit is pixels, typical value is 5 pixel, this value is also used for local contrast computing when computing the local contrast adaptation at the ganglion cells level (Inner Plexiform Layer parvocellular channel model)
      * @param ganglionCellsSensitivity: the compression strengh of the ganglion cells local adaptation output, set a value between 160 and 250 for best results, a high value increases more the low value sensitivity... and the output saturates faster, recommended value: 230
      */
-    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7, const float photoreceptorsTemporalConstant=0.5, const float photoreceptorsSpatialConstant=0.53, const float horizontalCellsGain=0, const float HcellsTemporalConstant=1, const float HcellsSpatialConstant=7, const float ganglionCellsSensitivity=0.7);
+    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f);
 
     /**
      * set parameters values for the Inner Plexiform Layer (IPL) magnocellular channel
@@ -191,7 +191,7 @@ public:
      * @param localAdaptintegration_tau: specifies the temporal constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      * @param localAdaptintegration_k: specifies the spatial constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      */
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0, const float parasolCells_tau=0, const float parasolCells_k=7, const float amacrinCellsTemporalCutFrequency=1.2, const float V0CompressionParameter=0.95, const float localAdaptintegration_tau=0, const float localAdaptintegration_k=7);
+    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f);
 
     /**
      * method which allows retina to be applied on an input image, after run, encapsulated retina module is ready to deliver its outputs using dedicated acccessors, see getParvo and getMagno methods
@@ -241,7 +241,7 @@ public:
      * @param saturateColors: boolean that activates color saturation (if true) or desactivate (if false)
      * @param colorSaturationValue: the saturation factor
      */
-    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0);
+    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f);
 
     /**
      * clear all retina buffers (equivalent to opening the eyes after a long period of eye close ;o)
@@ -271,7 +271,7 @@ private:
     RetinaFilter* _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
 
     //! private method called by constructors, gathers their parameters and use them in a unified way
-    void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+    void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
     /**
      * exports a valarray buffer outing from bioinspired objects to a cv::Mat in CV_8UC1 (gray level picture) or CV_8UC3 (color) format
@@ -296,7 +296,7 @@ private:
 
 // smart pointers allocation :
 Ptr<Retina> createRetina(Size inputSize){ return makePtr<RetinaImpl>(inputSize); }
-Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght){
+Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght){
     return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
 
@@ -308,7 +308,7 @@ RetinaImpl::RetinaImpl(const cv::Size inputSz)
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 }
 
-RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
     _retinaFilter = 0;
     _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
@@ -336,7 +336,7 @@ void RetinaImpl::setColorSaturation(const bool saturateColors, const float color
     _retinaFilter->setColorSaturation(saturateColors, colorSaturationValue);
 }
 
-struct Retina::RetinaParameters RetinaImpl::getParameters(){return _retinaParameters;}
+struct RetinaParameters RetinaImpl::getParameters(){return _retinaParameters;}
 
 void RetinaImpl::setup(String retinaParameterFile, const bool applyDefaultSetupOnFailure)
 {
@@ -416,10 +416,10 @@ void RetinaImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailur
     printf("%s\n", printSetup().c_str());
 }
 
-void RetinaImpl::setup(Retina::RetinaParameters newConfiguration)
+void RetinaImpl::setup(RetinaParameters newConfiguration)
 {
     // simply copy structures
-    memcpy(&_retinaParameters, &newConfiguration, sizeof(Retina::RetinaParameters));
+    memcpy(&_retinaParameters, &newConfiguration, sizeof(RetinaParameters));
     // apply setup
     setupOPLandIPLParvoChannel(_retinaParameters.OPLandIplParvo.colorMode, _retinaParameters.OPLandIplParvo.normaliseOutput, _retinaParameters.OPLandIplParvo.photoreceptorsLocalAdaptationSensitivity, _retinaParameters.OPLandIplParvo.photoreceptorsTemporalConstant, _retinaParameters.OPLandIplParvo.photoreceptorsSpatialConstant, _retinaParameters.OPLandIplParvo.horizontalCellsGain, _retinaParameters.OPLandIplParvo.hcellsTemporalConstant, _retinaParameters.OPLandIplParvo.hcellsSpatialConstant, _retinaParameters.OPLandIplParvo.ganglionCellsSensitivity);
     setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency,_retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
@@ -616,7 +616,7 @@ const Mat RetinaImpl::getParvoRAW() const {
 }
 
 // private method called by constructirs
-void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
     // basic error check
     if (inputSz.height*inputSz.width <= 0)

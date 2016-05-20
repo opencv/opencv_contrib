@@ -1,7 +1,6 @@
 /*
-
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
+By downloading, copying, installing or using the software you agree to this license.
+If you do not agree to this license, do not download, install,
 copy or use the software.
 
 
@@ -9,7 +8,12 @@ copy or use the software.
                For Open Source Computer Vision Library
                        (3-clause BSD License)
 
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+Copyright (C) 2000-2015, Intel Corporation, all rights reserved.
+Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
+Copyright (C) 2009-2015, NVIDIA Corporation, all rights reserved.
+Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+Copyright (C) 2015, OpenCV Foundation, all rights reserved.
+Copyright (C) 2015, Itseez Inc., all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -28,360 +32,416 @@ are permitted provided that the following conditions are met:
 
 This software is provided by the copyright holders and contributors "as is" and
 any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
+warranties of merchantability and fitness for a particular purpose are disclaimed.
+In no event shall copyright holders or contributors be liable for any direct,
+indirect, incidental, special, exemplary, or consequential damages
 (including, but not limited to, procurement of substitute goods or services;
 loss of use, data, or profits; or business interruption) however caused
 and on any theory of liability, whether in contract, strict liability,
 or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
-
 */
 
 #include "precomp.hpp"
 
-using std::swap;
+namespace cv {
+namespace xobjdetect {
 
-using std::vector;
-
-#include <iostream>
-using std::cout;
-using std::endl;
-
-
-
-
-
-
-namespace cv
+static void compute_cdf(const Mat1b& data,
+                        const Mat1f& weights,
+                        Mat1f& cdf)
 {
+    for (int i = 0; i < cdf.cols; ++i)
+        cdf(0, i) = 0;
 
-namespace xobjdetect
-{
-  //sort in-place of columns of the input matrix
-  void sort_columns_without_copy(Mat& m, Mat indices)
-  {
-    
-    if(indices.data == 0)
-      sortIdx(m, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
-    
-    Mat indices_of_indices;
-    sortIdx(indices, indices_of_indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
-      
-    std::vector<bool> visited;
-    for(int c = 0; c<m.cols; c++)
-      visited.push_back(false);
-      
-    int ind_v = 0;
-    Mat temp_column = Mat();
-    int next = 0;
-    Mat column;
-    while(ind_v < m.cols)
-    {
-
-      if(temp_column.data == 0)
-      {
-        (m.col(indices_of_indices.at<int>(0,ind_v))).copyTo(column);
-      }
-      else
-      {
-        temp_column.copyTo(column);
-      }
-      
-      
-      if(indices_of_indices.at<int>(0,next) != next) //value is in the right place
-      {
-        //store the next value to change
-        (m.col(indices_of_indices.at<int>(0,next))).copyTo(temp_column);
-        //insert the value to change at the right place
-        column.copyTo(m.col(indices_of_indices.at<int>(0,next)));
-        
-        //find the index of the next value to change
-        next = indices_of_indices.at<int>(0,next);
-        //if the idenx is not visited yet
-        if(visited[next] == false)
-        {
-          //then mark it as visited, it will be computed in the next round
-          visited[next] = true;
-        }
-        else
-        {
-          //find first non visited index
-          int i = 0;
-          while(i<(int)visited.size() && visited[i] == true)
-          {
-            i++;
-          }
-          ind_v = i;
-          next = i;
-          temp_column = Mat();
-          
-        }
-      }
-      else // value is already at the right place
-      {
-        visited[next] = true;
-        int i = 0;
-        while(i<(int)visited.size() && visited[i] == true)
-        {
-          i++;
-        }
-        next = i;
-        temp_column = Mat();
-        ind_v = i;
-      }
-      
-      
-    }
-    
-    
-  }
-
-class WaldBoostImpl : public WaldBoost
-{
-public:
-    /* Initialize WaldBoost cascade with default of specified parameters */
-    WaldBoostImpl(const WaldBoostParams& params):
-        params_(params)
-    {}
-
-    virtual std::vector<int> train(Mat& data,
-                                   const Mat& labels, bool use_fast_log=false);
-
-    virtual float predict(
-        const Ptr<FeatureEvaluator>& feature_evaluator) const;
-
-    virtual void write(FileStorage& fs) const;
-
-    virtual void read(const FileNode& node);
-
-private:
-    /* Parameters for cascade training */
-    WaldBoostParams params_;
-    /* Stumps in cascade */
-    std::vector<Stump> stumps_;
-    /* Rejection thresholds for linear combination at every stump evaluation */
-    std::vector<float> thresholds_;
-};
-
-static int count(const Mat_<int> &m, int elem)
-{
-    int res = 0;
-    for( int row = 0; row < m.rows; ++row )
-        for( int col = 0; col < m.cols; ++col )
-            if( m(row, col) == elem)
-                res += 1;
-    return res;
-}
-
-void WaldBoostImpl::read(const FileNode& node)
-{
-    FileNode params = node["waldboost_params"];
-    params_.weak_count = (int)(params["weak_count"]);
-    params_.alpha = (float)(params["alpha"]);
-
-    FileNode stumps = node["waldboost_stumps"];
-    stumps_.clear();
-    for( FileNodeIterator n = stumps.begin(); n != stumps.end(); ++n )
-    {
-        Stump s;
-        *n >> s;
-        stumps_.push_back(s);
+    for (int i = 0; i < weights.cols; ++i) {
+        cdf(0, data(0, i)) += weights(0, i);
     }
 
-    FileNode thresholds = node["waldboost_thresholds"];
-    thresholds_.clear();
-    for( FileNodeIterator n = thresholds.begin(); n != thresholds.end(); ++n )
-    {
-        float t;
-        *n >> t;
-        thresholds_.push_back(t);
+    for (int i = 1; i < cdf.cols; ++i) {
+        cdf(0, i) += cdf(0, i - 1);
     }
 }
 
-void WaldBoostImpl::write(FileStorage& fs) const
+static void compute_min_step(const Mat &data_pos, const Mat &data_neg, size_t n_bins,
+                      Mat &data_min, Mat &data_step)
 {
-    fs << "{";
-    fs << "waldboost_params" << "{"
-        << "weak_count" << params_.weak_count
-        << "alpha" << params_.alpha
-        << "}";
+    // Check that quantized data will fit in unsigned char
+    assert(n_bins <= 256);
 
-    fs << "waldboost_stumps" << "[";
-    for( size_t i = 0; i < stumps_.size(); ++i )
-        fs << stumps_[i];
-    fs << "]";
+    assert(data_pos.rows == data_neg.rows);
 
-    fs << "waldboost_thresholds" << "[";
-    for( size_t i = 0; i < thresholds_.size(); ++i )
-        fs << thresholds_[i];
-    fs << "]";
-    fs << "}";
+    Mat reduced_pos, reduced_neg;
 
+    reduce(data_pos, reduced_pos, 1, CV_REDUCE_MIN);
+    reduce(data_neg, reduced_neg, 1, CV_REDUCE_MIN);
+    min(reduced_pos, reduced_neg, data_min);
+    data_min -= 0.01;
+
+    Mat data_max;
+    reduce(data_pos, reduced_pos, 1, CV_REDUCE_MAX);
+    reduce(data_neg, reduced_neg, 1, CV_REDUCE_MAX);
+    max(reduced_pos, reduced_neg, data_max);
+    data_max += 0.01;
+
+    data_step = (data_max - data_min) / (double)(n_bins - 1);
 }
 
-vector<int> WaldBoostImpl::train(Mat& data, const Mat& labels_, bool use_fast_log)
+static void quantize_data(Mat &data, Mat1f &data_min, Mat1f &data_step)
 {
-    CV_Assert(labels_.rows == 1 && labels_.cols == data.cols);    
-    CV_Assert(data.rows >= params_.weak_count);
-
-    Mat labels;
-    labels_.copyTo(labels);
-
-    bool null_data = true;
-    for( int row = 0; row < data.rows; ++row )
-    {
-        for( int col = 0; col < data.cols; ++col )
-            if( data.at<int>(row, col) )
-                null_data = false;
+//#pragma omp parallel for
+    for (int col = 0; col < data.cols; ++col) {
+        data.col(col) -= data_min;
+        data.col(col) /= data_step;
     }
-    CV_Assert(!null_data);
+    data.convertTo(data, CV_8U);
+}
 
-    int pos_count = count(labels, +1);
-    int neg_count = count(labels, -1);
+WaldBoost::WaldBoost(int weak_count):
+    weak_count_(weak_count),
+    thresholds_(),
+    alphas_(),
+    feature_indices_(),
+    polarities_(),
+    cascade_thresholds_() {}
 
-    Mat_<float> weights(labels.rows, labels.cols);
-    float pos_weight = 1.0f / (2 * pos_count);
-    float neg_weight = 1.0f / (2 * neg_count);
-    for( int col = 0; col < weights.cols; ++col )
-    {
-        if( labels.at<int>(0, col) == +1 )
-            weights.at<float>(0, col) = pos_weight;
-        else
-            weights.at<float>(0, col) = neg_weight;
+WaldBoost::WaldBoost():
+    weak_count_(),
+    thresholds_(),
+    alphas_(),
+    feature_indices_(),
+    polarities_(),
+    cascade_thresholds_() {}
+
+std::vector<int> WaldBoost::get_feature_indices()
+{
+    return feature_indices_;
+}
+
+void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
+            const Mat& img, const std::vector<float>& scales,
+            std::vector<Rect>& bboxes, Mat1f& confidences)
+{
+    bboxes.clear();
+    confidences.release();
+
+    Mat resized_img;
+    int step = 4;
+    float h;
+    for (size_t i = 0; i < scales.size(); ++i) {
+        float scale = scales[i];
+        resize(img, resized_img, Size(), scale, scale);
+        eval->setImage(resized_img, 0, 0, feature_indices_);
+        int n_rows = (int)(24 / scale);
+        int n_cols = (int)(24 / scale);
+        for (int r = 0; r + 24 < resized_img.rows; r += step) {
+            for (int c = 0; c + 24 < resized_img.cols; c += step) {
+                //eval->setImage(resized_img(Rect(c, r, 24, 24)), 0, 0);
+                eval->setWindow(Point(c, r));
+                if (predict(eval, &h) == +1) {
+                    int row = (int)(r / scale);
+                    int col = (int)(c / scale);
+                    bboxes.push_back(Rect(col, row, n_cols, n_rows));
+                    confidences.push_back(h);
+                }
+            }
+        }
+    }
+    groupRectangles(bboxes, 3, 0.7);
+}
+
+void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
+            const Mat& img, const std::vector<float>& scales,
+            std::vector<Rect>& bboxes, std::vector<double>& confidences)
+{
+    bboxes.clear();
+    confidences.clear();
+
+    Mat resized_img;
+    int step = 4;
+    float h;
+    for (size_t i = 0; i < scales.size(); ++i) {
+        float scale = scales[i];
+        resize(img, resized_img, Size(), scale, scale);
+        eval->setImage(resized_img, 0, 0, feature_indices_);
+        int n_rows = (int)(24 / scale);
+        int n_cols = (int)(24 / scale);
+        for (int r = 0; r + 24 < resized_img.rows; r += step) {
+            for (int c = 0; c + 24 < resized_img.cols; c += step) {
+                eval->setWindow(Point(c, r));
+                if (predict(eval, &h) == +1) {
+                    int row = (int)(r / scale);
+                    int col = (int)(c / scale);
+                    bboxes.push_back(Rect(col, row, n_cols, n_rows));
+                    confidences.push_back(h);
+                }
+            }
+        }
+    }
+    std::vector<int> levels(bboxes.size(), 0);
+    groupRectangles(bboxes, levels, confidences, 3, 0.7);
+}
+
+void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
+{
+    // data_pos: F x N_pos
+    // data_neg: F x N_neg
+    // every feature corresponds to row
+    // every sample corresponds to column
+    assert(data_pos.rows >= weak_count_);
+    assert(data_pos.rows == data_neg.rows);
+
+    std::vector<bool> feature_ignore;
+    for (int i = 0; i < data_pos.rows; ++i) {
+        feature_ignore.push_back(false);
     }
 
-    vector<int> feature_indices_pool;
-    for( int ind = 0; ind < data.rows; ++ind )
-        feature_indices_pool.push_back(ind);
+    Mat1f pos_weights(1, data_pos.cols, 1.0f / (2 * data_pos.cols));
+    Mat1f neg_weights(1, data_neg.cols, 1.0f / (2 * data_neg.cols));
+    Mat1f pos_trace(1, data_pos.cols, 0.0f);
+    Mat1f neg_trace(1, data_neg.cols, 0.0f);
 
-    vector<int> feature_indices;
-    vector<int> visited_features;
-    Mat_<float> trace = Mat_<float>::zeros(labels.rows, labels.cols);
-    stumps_.clear();
-    thresholds_.clear();
-    for( int i = 0; i < params_.weak_count; ++i)
-    {        
-        Stump s;
-        int feature_ind = s.train(data, labels, weights, visited_features, use_fast_log);
-        stumps_.push_back(s);
-        int ind = feature_indices_pool[feature_ind];
-        //we don't need to erase the feature index anymore, because we ignore them if already visited
-        //feature_indices_pool.erase(feature_indices_pool.begin() + feature_ind);
-        feature_indices.push_back(ind);
+    bool quantize = false;
+    if (data_pos.type() != CV_8U) {
+        std::cerr << "quantize" << std::endl;
+        quantize = true;
+    }
 
-        // Recompute weights
-        for( int col = 0; col < weights.cols; ++col )
-        {
-            float h = s.predict(data.at<int>(feature_ind, col));
-            trace(0, col) += h;
-            int label = labels.at<int>(0, col);
-            weights.at<float>(0, col) *= exp(-label * h);
+    Mat1f data_min, data_step;
+    int n_bins = 256;
+    if (quantize) {
+        compute_min_step(data_pos, data_neg, n_bins, data_min, data_step);
+        quantize_data(data_pos, data_min, data_step);
+        quantize_data(data_neg, data_min, data_step);
+    }
+
+    std::cerr << "pos=" << data_pos.cols << " neg=" << data_neg.cols << std::endl;
+    for (int i = 0; i < weak_count_; ++i) {
+        // Train weak learner with lowest error using weights
+        double min_err = DBL_MAX;
+        int min_feature_ind = -1;
+        int min_polarity = 0;
+        int threshold_q = 0;
+        float min_threshold = 0;
+//#pragma omp parallel for
+        for (int feat_i = 0; feat_i < data_pos.rows; ++feat_i) {
+            if (feature_ignore[feat_i])
+                continue;
+
+            // Construct cdf
+            Mat1f pos_cdf(1, n_bins), neg_cdf(1, n_bins);
+            compute_cdf(data_pos.row(feat_i), pos_weights, pos_cdf);
+            compute_cdf(data_neg.row(feat_i), neg_weights, neg_cdf);
+
+            float neg_total = (float)sum(neg_weights)[0];
+            Mat1f err_direct = pos_cdf + neg_total - neg_cdf;
+            Mat1f err_backward = 1.0f - err_direct;
+
+            int idx1[2], idx2[2];
+            double err1, err2;
+            minMaxIdx(err_direct, &err1, NULL, idx1);
+            minMaxIdx(err_backward, &err2, NULL, idx2);
+//#pragma omp critical
+            {
+            if (min(err1, err2) < min_err) {
+                if (err1 < err2) {
+                    min_err = err1;
+                    min_polarity = +1;
+                    threshold_q = idx1[1];
+                } else {
+                    min_err = err2;
+                    min_polarity = -1;
+                    threshold_q = idx2[1];
+                }
+                min_feature_ind = feat_i;
+                if (quantize) {
+                    min_threshold = data_min(feat_i, 0) + data_step(feat_i, 0) *
+                        (threshold_q + .5f);
+                } else {
+                    min_threshold = threshold_q + .5f;
+                }
+            }
+            }
         }
 
-        // set to zero row for feature in data
-        for(int jc = 0; jc<data.cols; jc++)
-        {
-          data.at<int>(feature_ind, jc) = 0;
-        }
-        visited_features.push_back(feature_ind);
 
+        float alpha = .5f * (float)log((1 - min_err) / min_err);
+        alphas_.push_back(alpha);
+        feature_indices_.push_back(min_feature_ind);
+        thresholds_.push_back(min_threshold);
+        polarities_.push_back(min_polarity);
+        feature_ignore[min_feature_ind] = true;
 
-
-        // Normalize weights
-        float z = (float)sum(weights)[0];
-        for( int col = 0; col < weights.cols; ++col)
-        {
-            weights.at<float>(0, col) /= z;
-        }
-
-        // Sort trace
-        Mat indices;
-        sortIdx(trace, indices, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
-        Mat new_weights = Mat_<float>::zeros(weights.rows, weights.cols);
-        Mat new_labels = Mat_<int>::zeros(labels.rows, labels.cols);
-        Mat new_trace;
-        for( int col = 0; col < new_weights.cols; ++col )
-        {
-            new_weights.at<float>(0, col) =
-                weights.at<float>(0, indices.at<int>(0, col));
-            new_labels.at<int>(0, col) =
-                labels.at<int>(0, indices.at<int>(0, col));
-        }
-        
-        //sort in-place to save memory
-        sort_columns_without_copy(data, indices);
-        sort(trace, new_trace, cv::SORT_EVERY_ROW | cv::SORT_ASCENDING);
-
-        // Compute threshold for trace
-        /*
-        int col = 0;
-        for( int pos_i = 0;
-             pos_i < pos_count * params_.alpha && col < new_labels.cols;
-             ++col )
-        {
-            if( new_labels.at<int>(0, col) == +1 )
-                ++pos_i;
-        }
-        */
-
-        int cur_pos = 0, cur_neg = 0;
-        int max_col = 0;
-        for( int col = 0; col < new_labels.cols - 1; ++col ) {
-            if (new_labels.at<int>(0, col) == +1 )
-                ++cur_pos;
-            else
-                ++cur_neg;
-
-            float p_neg = cur_neg / (float)neg_count;
-            float p_pos = cur_pos / (float)pos_count;
-            if( params_.alpha * p_neg > p_pos )
-                max_col = col;
+        double loss = 0;
+        // Update positive weights
+        for (int j = 0; j < data_pos.cols; ++j) {
+            int val = data_pos.at<unsigned char>(min_feature_ind, j);
+            int label = min_polarity * (val - threshold_q) >= 0 ? +1 : -1;
+            pos_weights(0, j) *= exp(-alpha * label);
+            pos_trace(0, j) += alpha * label;
+            loss += exp(-pos_trace(0, j)) / (2.0f * data_pos.cols);
         }
 
-        thresholds_.push_back(new_trace.at<float>(0, max_col));
+        // Update negative weights
+        for (int j = 0; j < data_neg.cols; ++j) {
+            int val = data_neg.at<unsigned char>(min_feature_ind, j);
+            int label = min_polarity * (val - threshold_q) >= 0 ? +1 : -1;
+            neg_weights(0, j) *= exp(alpha * label);
+            neg_trace(0, j) += alpha * label;
+            loss += exp(+neg_trace(0, j)) / (2.0f * data_neg.cols);
+        }
+        double cascade_threshold = -1;
+        minMaxIdx(pos_trace, &cascade_threshold);
+        cascade_thresholds_.push_back((float)cascade_threshold);
 
-        // Drop samples below threshold
-        //uses Rois instead of copyTo to save memory
-        data = data(Rect(max_col, 0, data.cols - max_col, data.rows));
-        new_trace.colRange(max_col, new_trace.cols).copyTo(trace);
-        new_weights.colRange(max_col, new_weights.cols).copyTo(weights);
-        new_labels.colRange(max_col, new_labels.cols).copyTo(labels);
+        std::cerr << "i=" << std::setw(4) << i;
+        std::cerr << " feat=" << std::setw(5) << min_feature_ind;
+        std::cerr << " thr=" << std::setw(3) << threshold_q;
+        std::cerr << " casthr=" << std::fixed << std::setprecision(3)
+             << cascade_threshold;
+        std::cerr <<  " alpha=" << std::fixed << std::setprecision(3)
+             << alpha << " err=" << std::fixed << std::setprecision(3) << min_err
+             << " loss=" << std::scientific << loss << std::endl;
 
-        pos_count = count(labels, +1);
-        neg_count = count(labels, -1);
+        //int pos = 0;
+        //for (int j = 0; j < data_pos.cols; ++j) {
+        //    if (pos_trace(0, j) > cascade_threshold - 0.5) {
+        //        pos_trace(0, pos) = pos_trace(0, j);
+        //        data_pos.col(j).copyTo(data_pos.col(pos));
+        //        pos_weights(0, pos) = pos_weights(0, j);
+        //        pos += 1;
+        //    }
+        //}
+        //std::cerr << "pos " << data_pos.cols << "/" << pos << std::endl;
+        //pos_trace = pos_trace.colRange(0, pos);
+        //data_pos = data_pos.colRange(0, pos);
+        //pos_weights = pos_weights.colRange(0, pos);
 
-        if( data.cols < 2 || neg_count == 0)
-        {
+        int pos = 0;
+        for (int j = 0; j < data_neg.cols; ++j) {
+            if (neg_trace(0, j) > cascade_threshold - 0.5) {
+                neg_trace(0, pos) = neg_trace(0, j);
+                data_neg.col(j).copyTo(data_neg.col(pos));
+                neg_weights(0, pos) = neg_weights(0, j);
+                pos += 1;
+            }
+        }
+        std::cerr << "neg " << data_neg.cols << "/" << pos << std::endl;
+        neg_trace = neg_trace.colRange(0, pos);
+        data_neg = data_neg.colRange(0, pos);
+        neg_weights = neg_weights.colRange(0, pos);
+
+
+        if (loss < 1e-50 || min_err > 0.5) {
+            std::cerr << "Stopping early" << std::endl;
+            weak_count_ = i + 1;
             break;
         }
+
+        // Normalize weights
+        double z = (sum(pos_weights) + sum(neg_weights))[0];
+        pos_weights /= z;
+        neg_weights /= z;
     }
-    return feature_indices;
 }
 
-float WaldBoostImpl::predict(
-    const Ptr<FeatureEvaluator>& feature_evaluator) const
+int WaldBoost::predict(Ptr<CvFeatureEvaluator> eval, float *h) const
 {
-    float trace = 0;
-    CV_Assert(stumps_.size() == thresholds_.size());
-    for( size_t i = 0; i < stumps_.size(); ++i )
-    {
-        int value = feature_evaluator->evaluate(i);
-        trace += stumps_[i].predict(value);
-        
-        if( trace < thresholds_[i] )
+    assert(feature_indices_.size() == size_t(weak_count_));
+    assert(cascade_thresholds_.size() == size_t(weak_count_));
+    float res = 0;
+    int count = weak_count_;
+    for (int i = 0; i < count; ++i) {
+        float val = (*eval)(feature_indices_[i]);
+        int label = polarities_[i] * (val - thresholds_[i]) > 0 ? +1: -1;
+        res += alphas_[i] * label;
+        if (res < cascade_thresholds_[i]) {
             return -1;
+        }
     }
-    return trace;
+    *h = res;
+    return res > cascade_thresholds_[count - 1] ? +1 : -1;
 }
 
-Ptr<WaldBoost>
-createWaldBoost(const WaldBoostParams& params)
+void WaldBoost::write(FileStorage &fs) const
 {
-    return Ptr<WaldBoost>(new WaldBoostImpl(params));
+    fs << "{";
+    fs << "waldboost_params"
+       << "{" << "weak_count" << weak_count_ << "}";
+
+    fs << "thresholds" << "[";
+    for (size_t i = 0; i < thresholds_.size(); ++i)
+        fs << thresholds_[i];
+    fs << "]";
+
+    fs << "alphas" << "[";
+    for (size_t i = 0; i < alphas_.size(); ++i)
+        fs << alphas_[i];
+    fs << "]";
+
+    fs << "polarities" << "[";
+    for (size_t i = 0; i < polarities_.size(); ++i)
+        fs << polarities_[i];
+    fs << "]";
+
+    fs << "cascade_thresholds" << "[";
+    for (size_t i = 0; i < cascade_thresholds_.size(); ++i)
+        fs << cascade_thresholds_[i];
+    fs << "]";
+
+    fs << "feature_indices" << "[";
+    for (size_t i = 0; i < feature_indices_.size(); ++i)
+        fs << feature_indices_[i];
+    fs << "]";
+
+    fs << "}";
 }
 
+void WaldBoost::read(const FileNode &node)
+{
+    weak_count_ = (int)(node["waldboost_params"]["weak_count"]);
+    thresholds_.resize(weak_count_);
+    alphas_.resize(weak_count_);
+    polarities_.resize(weak_count_);
+    cascade_thresholds_.resize(weak_count_);
+    feature_indices_.resize(weak_count_);
 
-} /* namespace xobjdetect */
-} /* namespace cv */
+    FileNodeIterator n;
+
+    n = node["thresholds"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> thresholds_[i];
+
+    n = node["alphas"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> alphas_[i];
+
+    n = node["polarities"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> polarities_[i];
+
+    n = node["cascade_thresholds"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> cascade_thresholds_[i];
+
+    n = node["feature_indices"].begin();
+    for (int i = 0; i < weak_count_; ++i, ++n)
+        *n >> feature_indices_[i];
+}
+
+void WaldBoost::reset(int weak_count)
+{
+    weak_count_ = weak_count;
+    thresholds_.clear();
+    alphas_.clear();
+    feature_indices_.clear();
+    polarities_.clear();
+    cascade_thresholds_.clear();
+}
+
+WaldBoost::~WaldBoost()
+{
+}
+
+}
+}

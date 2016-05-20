@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  *Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -69,7 +69,7 @@ TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
 
     cv::setNumThreads(cv::getNumberOfCPUs());
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 5; i++)
     {
         Size sz(rnd.uniform(512, 1024), rnd.uniform(512, 1024));
 
@@ -96,7 +96,7 @@ TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
 TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
 {
     String srcImgPath = "cv/edgefilter/kodim23.png";
-    
+
     String refPaths[] =
     {
         "cv/edgefilter/amf/kodim23_amf_ss5_sr0.3_ref.png",
@@ -104,14 +104,14 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
         "cv/edgefilter/amf/kodim23_amf_ss50_sr0.3_ref.png"
     };
 
-    pair<double, double> refParams[] = 
+    pair<double, double> refParams[] =
     {
         make_pair(5.0, 0.3),
         make_pair(30.0, 0.1),
         make_pair(50.0, 0.3)
     };
 
-    String refOutliersPaths[] = 
+    String refOutliersPaths[] =
     {
         "cv/edgefilter/amf/kodim23_amf_ss5_sr0.1_outliers_ref.png",
         "cv/edgefilter/amf/kodim23_amf_ss15_sr0.3_outliers_ref.png",
@@ -188,7 +188,7 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     resize(guide, guide, dstSize);
     resize(src, src, dstSize);
 
-    for (int iter = 0; iter < 6; iter++)
+    for (int iter = 0; iter < 4; iter++)
     {
         double sigma_s = rnd.uniform(1.0, 50.0);
         double sigma_r = rnd.uniform(0.1, 0.9);
@@ -210,10 +210,10 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(TypicalSet, AdaptiveManifoldRefImplTest, 
+INSTANTIATE_TEST_CASE_P(TypicalSet, AdaptiveManifoldRefImplTest,
     Combine(
-    Values("cv/shared/lena.png", "cv/edgefilter/kodim23.png", "cv/npr/test4.png"),
-    Values("cv/shared/lena.png", "cv/edgefilter/kodim23.png", "cv/npr/test4.png")
+    Values("cv/edgefilter/kodim23.png", "cv/npr/test4.png"),
+    Values("cv/edgefilter/kodim23.png", "cv/npr/test4.png")
 ));
 
 }

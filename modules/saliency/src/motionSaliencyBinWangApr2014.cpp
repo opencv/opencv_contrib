@@ -39,6 +39,7 @@
  //
  //M*/
 
+#include <limits>
 #include "precomp.hpp"
 //TODO delete highgui include
 //#include <opencv2/highgui.hpp>
@@ -81,7 +82,7 @@ bool MotionSaliencyBinWangApr2014::init()
   // Since data is even, the median is estimated using two values ​​that occupy
   // the position (n / 2) and ((n / 2) +1) (choose their arithmetic mean).
 
-  potentialBackground = Mat( imgSize.height, imgSize.width, CV_32FC2, Scalar( NAN, 0 ) );
+  potentialBackground = Mat( imgSize.height, imgSize.width, CV_32FC2, Scalar( std::numeric_limits<float>::quiet_NaN(), 0 ) );
 
   backgroundModel.resize( K + 1 );
 
@@ -89,7 +90,7 @@ bool MotionSaliencyBinWangApr2014::init()
   {
     Mat* tmpm = new Mat;
     tmpm->create( imgSize.height, imgSize.width, CV_32FC2 );
-    tmpm->setTo( Scalar( NAN, 0 ) );
+    tmpm->setTo( Scalar( std::numeric_limits<float>::quiet_NaN(), 0 ) );
     Ptr<Mat> tmp = Ptr<Mat>( tmpm );
     backgroundModel[i] = tmp;
   }
@@ -418,50 +419,50 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               if( i > 0 && j > 0 && i < ( backgroundModel[z]->rows - 1 ) && j < ( backgroundModel[z]->cols - 1 ) )
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j - (int) floor( roiSize / 2 ), i - (int) floor( roiSize / 2 ), roiSize, roiSize ) );
+                backgroundModelROI = mv[0]( Rect( j - (int) floor((float) roiSize / 2 ), i - (int) floor((float) roiSize / 2 ), roiSize, roiSize ) );
               }
               else if( i == 0 && j == 0 )  // upper leftt
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i, (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j, i, (int) ceil((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ) ) );
               }
               else if( j == 0 && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle left
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), roiSize ) );
+                backgroundModelROI = mv[0]( Rect( j, i - (int) floor((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ), roiSize ) );
               }
               else if( i == ( backgroundModel[z]->rows - 1 ) && j == 0 )  //down left
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j, i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j, i - (int) floor((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ) ) );
               }
               else if( i == 0 && j > 0 && j < ( backgroundModel[z]->cols - 1 ) )  // upper - middle
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( ( j - (int) floor( roiSize / 2 ) ), i, roiSize, (int) ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( ( j - (int) floor((float) roiSize / 2 ) ), i, roiSize, (int) ceil((float) roiSize / 2 ) ) );
               }
               else if( i == ( backgroundModel[z]->rows - 1 ) && j > 0 && j < ( backgroundModel[z]->cols - 1 ) )  //down middle
               {
                 split( *backgroundModel[z], mv );
                 backgroundModelROI = mv[0](
-                    Rect( j - (int) floor( roiSize / 2 ), i - (int) floor( roiSize / 2 ), roiSize, (int) ceil( roiSize / 2 ) ) );
+                    Rect( j - (int) floor((float) roiSize / 2 ), i - (int) floor((float) roiSize / 2 ), roiSize, (int) ceil((float) roiSize / 2 ) ) );
               }
               else if( i == 0 && j == ( backgroundModel[z]->cols - 1 ) )  // upper right
               {
                 split( *backgroundModel[z], mv );
-                backgroundModelROI = mv[0]( Rect( j - (int) floor( roiSize / 2 ), i, (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
+                backgroundModelROI = mv[0]( Rect( j - (int) floor((float) roiSize / 2 ), i, (int) ceil((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ) ) );
               }
               else if( j == ( backgroundModel[z]->cols - 1 ) && i > 0 && i < ( backgroundModel[z]->rows - 1 ) )  // middle - right
               {
                 split( *backgroundModel[z], mv );
                 backgroundModelROI = mv[0](
-                    Rect( j - (int) floor( roiSize / 2 ), i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), roiSize ) );
+                    Rect( j - (int) floor((float) roiSize / 2 ), i - (int) floor((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ), roiSize ) );
               }
               else if( i == ( backgroundModel[z]->rows - 1 ) && j == ( backgroundModel[z]->cols - 1 ) )  // down right
               {
                 split( *backgroundModel[z], mv );
                 backgroundModelROI = mv[0](
-                    Rect( j - (int) floor( roiSize / 2 ), i - (int) floor( roiSize / 2 ), (int) ceil( roiSize / 2 ), (int) ceil( roiSize / 2 ) ) );
+                    Rect( j - (int) floor((float) roiSize / 2 ), i - (int) floor((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ), (int) ceil((float) roiSize / 2 ) ) );
               }
 
               /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
@@ -479,7 +480,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
                 /////////////////// REPLACEMENT of backgroundModel template ///////////////////
                 //replace TA with current TK
                 backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-                potentialBackground.at<Vec2f>( i, j )[0] = NAN;
+                potentialBackground.at<Vec2f>( i, j )[0] = std::numeric_limits<float>::quiet_NaN();
                 potentialBackground.at<Vec2f>( i, j )[1] = 0;
 
                 break;
@@ -489,7 +490,7 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
           else
           {
             backgroundModel[backgroundModel.size() - 1]->at<Vec2f>( i, j ) = potentialBackground.at<Vec2f>( i, j );
-            potentialBackground.at<Vec2f>( i, j )[0] = NAN;
+            potentialBackground.at<Vec2f>( i, j )[0] = std::numeric_limits<float>::quiet_NaN();
             potentialBackground.at<Vec2f>( i, j )[1] = 0;
           }
         }  // close if of EVALUATION

@@ -50,7 +50,6 @@ using namespace cv::line_descriptor;
 
 const std::string LINE_DESCRIPTOR_DIR = "line_descriptor";
 const std::string IMAGE_FILENAME = "cameraman.jpg";
-const std::string DETECTOR_DIR = LINE_DESCRIPTOR_DIR + "/detectors";
 
 class CV_BinaryDescriptorDetectorTest : public cvtest::BaseTest
 {
@@ -256,7 +255,7 @@ void CV_BinaryDescriptorDetectorTest::regressionTest()
 {
   assert( bd );
   std::string imgFilename = std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/" + IMAGE_FILENAME;
-  std::string resFilename = std::string( ts->get_data_path() ) + DETECTOR_DIR + "/" + fs_name + ".yaml";
+  std::string resFilename = std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/" + fs_name + ".yaml";
 
   // Read the test image.
   Mat image = imread( imgFilename );

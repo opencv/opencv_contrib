@@ -1010,6 +1010,13 @@ TEST( Features2d_DescriptorExtractor_SURF, regression )
     test.safe_run();
 }
 
+TEST( Features2d_DescriptorExtractor_DAISY, regression )
+{
+    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-daisy",  0.05f,
+                                                DAISY::create() );
+    test.safe_run();
+}
+
 TEST( Features2d_DescriptorExtractor_FREAK, regression )
 {
     // TODO adjust the parameters below

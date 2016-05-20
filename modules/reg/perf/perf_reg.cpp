@@ -205,7 +205,7 @@ PERF_TEST_P(Size_MatType, Registration_Shift,
 
     TEST_CYCLE() shift = perfShift(frame);
 
-    SANITY_CHECK(shift);
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST_P(Size_MatType, Registration_Euclidean,
@@ -223,7 +223,7 @@ PERF_TEST_P(Size_MatType, Registration_Euclidean,
 
     TEST_CYCLE() result = perfEuclidean(frame);
 
-    SANITY_CHECK(result);
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST_P(Size_MatType, Registration_Similarity,
@@ -241,7 +241,7 @@ PERF_TEST_P(Size_MatType, Registration_Similarity,
 
     TEST_CYCLE() result = perfSimilarity(frame);
 
-    SANITY_CHECK(result);
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST_P(Size_MatType, Registration_Affine,
@@ -259,7 +259,7 @@ PERF_TEST_P(Size_MatType, Registration_Affine,
 
     TEST_CYCLE() result = perfAffine(frame);
 
-    SANITY_CHECK(result);
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST_P(Size_MatType, Registration_Projective,
@@ -277,5 +277,5 @@ PERF_TEST_P(Size_MatType, Registration_Projective,
 
     TEST_CYCLE() result = perfProjective(frame);
 
-    SANITY_CHECK(result);
+    SANITY_CHECK_NOTHING();
 }

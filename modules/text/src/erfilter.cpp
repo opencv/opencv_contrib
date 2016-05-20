@@ -287,7 +287,11 @@ void ERFilterNM::er_tree_extract( InputArray image )
     quads[1][3] = (1<<3)|(1<<2)|(1<<1);
     quads[2][0] = (1<<2)|(1<<1);
     quads[2][1] = (1<<3)|(1);
-    quads[2][3] = 255;
+    // quads[2][2] and quads[2][3] are never used so no need to initialize them.
+    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns 
+    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper 
+    // (see in page 4 at the end of first column). 
+    // Q_1 and Q_2 have four patterns, while Q_3 has only two.
 
 
     // masks to know if a pixel is accessible and if it has been already added to some region
@@ -1157,7 +1161,7 @@ Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb, float minProb
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM1.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM1(const string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM1(const String& filename)
 
 {
     return makePtr<ERClassifierNM1>(filename);
@@ -1168,7 +1172,7 @@ Ptr<ERFilter::Callback> loadClassifierNM1(const string& filename)
     The function takes as parameter the XML or YAML file with the classifier model
     (e.g. trained_classifierNM2.xml) returns a pointer to ERFilter::Callback.
 */
-Ptr<ERFilter::Callback> loadClassifierNM2(const string& filename)
+Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename)
 {
     return makePtr<ERClassifierNM2>(filename);
 }
@@ -1232,7 +1236,7 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
                            ERFILTER_NM_RGBLGrad and ERFILTER_NM_IHSGrad.
 
 */
-void computeNMChannels(InputArray _src, OutputArrayOfArrays _channels, int _mode)
+void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, int _mode)
 {
 
     CV_Assert( ( _mode == ERFILTER_NM_RGBLGrad ) || ( _mode == ERFILTER_NM_IHSGrad ) );
@@ -1701,7 +1705,7 @@ public:
     }
 };
 
-
+#if 0
 /* Functions for the update of the dissimilarity array */
 
 inline static void f_single( double * const b, const double a )
@@ -1844,7 +1848,7 @@ static void NN_chain_core(const int_fast32_t N, double * const D, t_members * co
         }
     }
 }
-
+#endif
 
 /*
    Clustering methods for vector data
@@ -4090,6 +4094,22 @@ void erGrouping(InputArray image, InputArrayOfArrays channels, vector<vector<ERS
 
 }
 
+void erGrouping(InputArray image, InputArray channel, vector<vector<Point> > contours, CV_OUT std::vector<Rect> &groups_rects, int method, const String& filename, float minProbability)
+{
+    CV_Assert( image.getMat().type() == CV_8UC3 );
+    CV_Assert( channel.getMat().type() == CV_8UC1 );
+    CV_Assert( !((method == ERGROUPING_ORIENTATION_ANY) && (filename.empty())) );
+
+    vector<Mat> channels;
+    channels.push_back(channel.getMat());
+    vector<vector<ERStat> > regions;
+    MSERsToERStats(channel, contours, regions);
+    regions.pop_back();
+    std::vector<std::vector<Vec2i> > groups;
+
+    erGrouping(image, channels, regions,  groups,  groups_rects, method, filename, minProbability);
+}
+
 /*!
  * MSERsToERStats function converts MSER contours (vector<Point>) to ERStat regions.
  * It takes as input the contours provided by the OpenCV MSER feature detector and returns as output two vectors
@@ -4161,6 +4181,56 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
     mask(cser.rect) = 0;
     mtmp(cser.rect) = 0;
   }
+}
+
+// Utility funtion for scripting
+void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT vector< vector<Point> >& regions)
+{
+    // assert correct image type
+    CV_Assert( image.getMat().type() == CV_8UC1 );
+    // at least one ERFilter must be passed
+    CV_Assert( !er_filter1.empty() );
+
+    vector<ERStat> ers;
+
+    er_filter1->run(image, ers);
+
+    if (!er_filter2.empty())
+    {
+      er_filter2->run(image, ers);
+    }
+
+    //Convert each ER to vector<Point> and push it to output regions
+    Mat src = image.getMat();
+    Mat region_mask = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
+    for (size_t i=1; i < ers.size(); i++) //start from 1 to deprecate root region
+    {
+      ERStat* stat = &ers[i];
+
+      //Fill the region and calculate 2nd stage features
+      Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x+2,stat->rect.br().y+2)));
+      region = Scalar(0);
+      int newMaskVal = 255;
+      int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
+      Rect rect;
+
+      floodFill( src(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
+                 region, Point(stat->pixel%src.cols - stat->rect.x, stat->pixel/src.cols - stat->rect.y),
+                 Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
+      rect.width += 2;
+      rect.height += 2;
+      region = region(rect);
+
+      vector<vector<Point> > contours;
+      vector<Vec4i> hierarchy;
+      findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
+
+      for (size_t j=0; j < contours[0].size(); j++)
+        contours[0][j] += (stat->rect.tl()-Point(1,1));
+
+      regions.push_back(contours[0]);
+    }
+
 }
 
 }

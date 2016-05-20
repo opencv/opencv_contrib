@@ -166,7 +166,7 @@ void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& 
   {
     /* decide lines' color  */
     Scalar lineColor;
-    if( color != Scalar::all( -1 ) )
+    if( color == Scalar::all( -1 ) )
     {
       int R = ( rand() % (int) ( 255 + 1 ) );
       int G = ( rand() % (int) ( 255 + 1 ) );

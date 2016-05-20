@@ -49,7 +49,7 @@
 #ifndef __OPENCV_TYPES_HPP
 #define __OPENCV_TYPES_HPP
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning( disable : 4267 )
 #endif
 

@@ -50,7 +50,6 @@ using namespace cv::line_descriptor;
 
 const std::string LINE_DESCRIPTOR_DIR = "line_descriptor";
 const std::string IMAGE_FILENAME = "cameraman.jpg";
-const std::string DESCRIPTORS_DIR = LINE_DESCRIPTOR_DIR + "/descriptors";
 
 template<class Distance>
 class CV_BD_DescriptorsTest : public cvtest::BaseTest
@@ -120,7 +119,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
   Mat readDescriptors()
   {
     Mat descriptors;
-    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/descriptors/" + fs_name, FileStorage::READ );
+    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/" + fs_name, FileStorage::READ );
     fs["descriptors"] >> descriptors;
 
     return descriptors;
@@ -128,7 +127,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
 
   bool writeDescriptors( Mat& descs )
   {
-    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/descriptors/" + fs_name, FileStorage::WRITE );
+    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/" + fs_name, FileStorage::WRITE );
     fs << "descriptors" << descs;
 
     return true;
@@ -270,7 +269,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
     }
 
     std::vector<KeyLine> keylines;
-    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/detectors/edl_detector_keylines_cameraman.yaml", FileStorage::READ );
+    FileStorage fs( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/edl_detector_keylines_cameraman.yaml", FileStorage::READ );
     if( fs.isOpened() )
     {
       //read( fs.getFirstTopLevelNode(), keypoints );
@@ -326,7 +325,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
     else
     {
       ts->printf( cvtest::TS::LOG, "Compute and write keylines.\n" );
-      fs.open( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/detectors/edl_detector_keylines_cameraman.yaml", FileStorage::WRITE );
+      fs.open( std::string( ts->get_data_path() ) + LINE_DESCRIPTOR_DIR + "/edl_detector_keylines_cameraman.yaml", FileStorage::WRITE );
       if( fs.isOpened() )
       {
         bd->detect( img, keylines );
