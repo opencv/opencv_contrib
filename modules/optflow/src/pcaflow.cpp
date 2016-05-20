@@ -261,7 +261,7 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
 static void applyCLAHE( Mat &img )
 {
   Ptr<CLAHE> clahe = createCLAHE();
-  clahe->setClipLimit( 8 );
+  clahe->setClipLimit( 14 );
   clahe->apply( img, img );
 }
 
@@ -325,8 +325,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( from.channels() == 1 );
   CV_Assert( to.channels() == 1 );
 
-  // applyCLAHE(from);
-  // applyCLAHE(to);
+  applyCLAHE(from);
+  applyCLAHE(to);
 
   std::vector<Point2f> features, predictedFeatures;
   findSparseFeatures( from, to, features, predictedFeatures );
@@ -345,8 +345,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   getSystem( A, b1, b2, features, predictedFeatures, size );
   // solve( A1, b1, w1, DECOMP_CHOLESKY | DECOMP_NORMAL );
   // solve( A2, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
-  solveLSQR( A, b1, w1, 2 );
-  solveLSQR( A, b2, w2, 2 );
+  solveLSQR( A, b1, w1, 0.00002 * size.area() );
+  solveLSQR( A, b2, w2, 0.00002 * size.area() );
   Mat flowSmall( basisSize * 16, CV_32FC2 );
   reduceToFlow( w1, w2, flowSmall, basisSize );
   resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );
