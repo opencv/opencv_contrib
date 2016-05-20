@@ -324,7 +324,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
  * (@sa Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
- * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses 
+ * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses
  * the provided rvec and tvec values as initial approximations of the rotation and translation vectors,
  * respectively, and further optimizes them (default false).
  * @param flags Method for solving a PnP problem:
@@ -344,7 +344,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * Estimation". In this case the function also estimates the parameters \f$f_x\f$ and \f$f_y\f$
  * assuming that both have the same value. Then the cameraMatrix is updated with the estimated
  * focal length.
- * 
+ *
  * This function receives the detected markers and returns the pose of a marker board composed
  * by those markers.
  * A Board of marker has a single world coordinate system which is defined by the board layout.
