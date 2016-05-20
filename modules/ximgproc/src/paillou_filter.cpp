@@ -1,4 +1,4 @@
-﻿#include "precomp.hpp"
+#include "precomp.hpp"
 #include "opencv2/highgui.hpp"
 #include <math.h>
 #include <vector>
