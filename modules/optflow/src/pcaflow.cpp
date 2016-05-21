@@ -51,9 +51,9 @@ namespace optflow
 {
 
 OpticalFlowPCAFlow::OpticalFlowPCAFlow( const Size _basisSize, float _sparseRate, float _retainedCornersFraction,
-                                        float _occlusionsThreshold )
+                                        float _occlusionsThreshold, float _dampingFactor )
     : basisSize( _basisSize ), sparseRate( _sparseRate ), retainedCornersFraction( _retainedCornersFraction ),
-      occlusionsThreshold( _occlusionsThreshold )
+      occlusionsThreshold( _occlusionsThreshold ), dampingFactor( _dampingFactor )
 {
   CV_Assert( sparseRate > 0 && sparseRate <= 0.1 );
   CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );
@@ -216,13 +216,13 @@ void OpticalFlowPCAFlow::removeOcclusions( Mat &from, Mat &to, std::vector<Point
   calcOpticalFlowPyrLK( to, from, predictedFeatures, backwardFeatures, predictedStatus, predictedError );
 
   size_t j = 0;
-  const float threshold = occlusionsThreshold * from.size().area();
+  const float threshold = occlusionsThreshold * sqrt( from.size().area() );
   for ( size_t i = 0; i < predictedFeatures.size(); ++i )
   {
     if ( predictedStatus[i] )
     {
       Point2f flowDiff = features[i] - backwardFeatures[i];
-      if ( eNormSq( flowDiff ) < threshold )
+      if ( eNormSq( flowDiff ) <= threshold )
       {
         features[j] = features[i];
         predictedFeatures[j] = predictedFeatures[i];
@@ -325,8 +325,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( from.channels() == 1 );
   CV_Assert( to.channels() == 1 );
 
-  applyCLAHE(from);
-  applyCLAHE(to);
+  applyCLAHE( from );
+  applyCLAHE( to );
 
   std::vector<Point2f> features, predictedFeatures;
   findSparseFeatures( from, to, features, predictedFeatures );
@@ -337,7 +337,6 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
 
   flowOut.create( size, CV_32FC2 );
   Mat flow = flowOut.getMat();
-  // interpolateSparseFlow(flow, features, predictedFeatures);
   // for ( size_t i = 0; i < features.size(); ++i )
   //  flow.at<Point2f>( features[i].y, features[i].x ) = /*Point2f(10,10);*/ predictedFeatures[i] - features[i];
 
@@ -345,8 +344,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   getSystem( A, b1, b2, features, predictedFeatures, size );
   // solve( A1, b1, w1, DECOMP_CHOLESKY | DECOMP_NORMAL );
   // solve( A2, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
-  solveLSQR( A, b1, w1, 0.00002 * size.area() );
-  solveLSQR( A, b2, w2, 0.00002 * size.area() );
+  solveLSQR( A, b1, w1, dampingFactor * size.area() );
+  solveLSQR( A, b2, w2, dampingFactor * size.area() );
   Mat flowSmall( basisSize * 16, CV_32FC2 );
   reduceToFlow( w1, w2, flowSmall, basisSize );
   resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );

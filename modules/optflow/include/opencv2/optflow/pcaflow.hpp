@@ -172,10 +172,12 @@ protected:
   const float sparseRate;              // (0 .. 0.1)
   const float retainedCornersFraction; // [0 .. 1]
   const float occlusionsThreshold;
+  const float dampingFactor;
 
 public:
   OpticalFlowPCAFlow( const Size _basisSize = Size( 18, 14 ), float _sparseRate = 0.02,
-                      float _retainedCornersFraction = 1.0, float _occlusionsThreshold = 0.00002 );
+                      float _retainedCornersFraction = 0.7, float _occlusionsThreshold = 0.0003,
+                      float _dampingFactor = 0.00002 );
 
   void calc( InputArray I0, InputArray I1, InputOutputArray flow );
   void collectGarbage();
