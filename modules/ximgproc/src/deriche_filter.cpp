@@ -8,8 +8,7 @@ namespace cv {
 namespace ximgproc {
 
 /*
-Using Canny's Criteria to Derive a Recursively Implemented Optimal Edge Detector International Journal of Computer Vision,167-187 (1987)
-http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.476.5736&rep=rep1&type=pdf
+If you use this code please cite this @cite deriche1987using
 */
 
 	class ParallelGradientDericheYCols : public ParallelLoopBody
