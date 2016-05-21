@@ -8,6 +8,7 @@ namespace cv {
 namespace ximgproc {
 
 /*
+If you use this code please cite this @cite paillou1997detecting
 Detecting step edges in noisy SAR images: a new linear operator  IEEE Transactions on Geoscience and Remote Sensing  (Volume:35 ,  Issue: 1 )  1997
 */
 
