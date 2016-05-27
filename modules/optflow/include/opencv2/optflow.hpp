@@ -191,6 +191,44 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 //! Additional interface to the SparseToDenseFlow algorithm - calcOpticalFlowSparseToDense()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
+/** @brief DIS optical flow algorithm.
+
+This class implements the Dense Inverse Search (DIS) optical flow algorithm. More
+details about the algorithm can be found at @cite Kroeger2016 .
+*/
+class CV_EXPORTS_W DISOpticalFlow : public DenseOpticalFlow
+{
+public:
+    /** @brief Finest level of the gaussian pyramid on which the flow is computed (zero level
+        corresponds to the original image resolution).The final flow is obtained by bilinear upscaling.
+        @see setFinestScale */
+    virtual int getFinestScale() const = 0;
+    /** @copybrief getFinestScale @see getFinestScale */
+    virtual void setFinestScale(int val) = 0;
+
+    /** @brief Size of an image patch for matching (in pixels)
+        @see setPatchSize */
+    virtual int getPatchSize() const = 0;
+    /** @copybrief getPatchSize @see getPatchSize */
+    virtual void setPatchSize(int val) = 0;
+
+    /** @brief Stride between neighbor patches. Must be less than patch size.
+        @see setPatchStride */
+    virtual int getPatchStride() const = 0;
+    /** @copybrief getPatchStride @see getPatchStride */
+    virtual void setPatchStride(int val) = 0;
+
+    /** @brief number of gradient descent iterations in the patch inverse search stage
+        @see setGradientDescentIterations */
+    virtual int getGradientDescentIterations() const = 0;
+    /** @copybrief getGradientDescentIterations @see getGradientDescentIterations */
+    virtual void setGradientDescentIterations(int val) = 0;
+};
+
+/** @brief Creates an instance of DISOpticalFlow
+*/
+CV_EXPORTS_W Ptr<DISOpticalFlow> createOptFlow_DIS();
+
 //! @}
 
 } //optflow
