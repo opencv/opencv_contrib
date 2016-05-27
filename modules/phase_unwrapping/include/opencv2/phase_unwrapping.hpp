@@ -39,30 +39,23 @@
  //
  //M*/
 
-/*#ifdef __OPENCV_BUILD
- #error this is a compatibility header which should not be used inside the OpenCV library
- #endif*/
+#include "opencv2/phase_unwrapping/phase_unwrapping.hpp"
+#include "opencv2/phase_unwrapping/histogramphaseunwrapping.hpp"
 
-#include "opencv2/structured_light/structured_light.hpp"
-#include "opencv2/structured_light/graycodepattern.hpp"
-#include "opencv2/structured_light/sinusoidalpattern.hpp"
+/** @defgroup phase_unwrapping Phase Unwrapping API
 
-/** @defgroup structured_light Structured Light API
+Two-dimensional phase unwrapping is found in different applications like terrain elevation estimation
+in synthetic aperture radar (SAR), field mapping in magnetic resonance imaging or as a way of finding
+corresponding pixels in structured light reconstruction with sinusoidal patterns.
 
- Structured light is considered one of the most effective techniques to acquire 3D models.
- This technique is based on projecting a light pattern and capturing the illuminated scene
- from one or more points of view. Since the pattern is coded, correspondences between image
- points and points of the projected pattern can be quickly found and 3D information easily
- retrieved.
+Given a phase map, wrapped between [-pi; pi], phase unwrapping aims at finding the "true" phase map
+by adding the right number of 2*pi to each pixel.
 
- One of the most commonly exploited coding strategies is based on trmatime-multiplexing. In this
- case, a set of patterns  are successively projected onto the measuring surface.
- The codeword for a given pixel is usually formed by  the sequence of illuminance values for that
- pixel across the projected patterns. Thus, the codification is called  temporal because the bits
- of the codewords are multiplexed in time @cite pattern .
+The problem is straightforward for perfect wrapped phase map, but real data are usually not noise-free.
+Among the different algorithms that were developed, quality-guided phase unwrapping methods are fast
+and efficient. They follow a path that unwraps high quality pixels first,
+avoiding error propagation from the start.
 
- In this module a time-multiplexing coding strategy based on Gray encoding is implemented following the
- (stereo) approach described in 3DUNDERWORLD algorithm @cite UNDERWORLD .
- For more details, see @ref tutorial_structured_light.
+In this module, a quality-guided phase unwrapping is implemented following the approach described in @cite histogramUnwrapping .
 
- */
+*/

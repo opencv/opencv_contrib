@@ -39,30 +39,65 @@
  //
  //M*/
 
-/*#ifdef __OPENCV_BUILD
- #error this is a compatibility header which should not be used inside the OpenCV library
- #endif*/
+#include "test_precomp.hpp"
 
-#include "opencv2/structured_light/structured_light.hpp"
-#include "opencv2/structured_light/graycodepattern.hpp"
-#include "opencv2/structured_light/sinusoidalpattern.hpp"
+using namespace std;
+using namespace cv;
 
-/** @defgroup structured_light Structured Light API
+class CV_Unwrapping : public cvtest::BaseTest
+{
+public:
+    CV_Unwrapping();
+    ~CV_Unwrapping();
+protected:
+    void run(int);
+};
 
- Structured light is considered one of the most effective techniques to acquire 3D models.
- This technique is based on projecting a light pattern and capturing the illuminated scene
- from one or more points of view. Since the pattern is coded, correspondences between image
- points and points of the projected pattern can be quickly found and 3D information easily
- retrieved.
+CV_Unwrapping::CV_Unwrapping(){}
 
- One of the most commonly exploited coding strategies is based on trmatime-multiplexing. In this
- case, a set of patterns  are successively projected onto the measuring surface.
- The codeword for a given pixel is usually formed by  the sequence of illuminance values for that
- pixel across the projected patterns. Thus, the codification is called  temporal because the bits
- of the codewords are multiplexed in time @cite pattern .
+CV_Unwrapping::~CV_Unwrapping(){}
 
- In this module a time-multiplexing coding strategy based on Gray encoding is implemented following the
- (stereo) approach described in 3DUNDERWORLD algorithm @cite UNDERWORLD .
- For more details, see @ref tutorial_structured_light.
+void CV_Unwrapping::run( int )
+{
+    int rows = 600;
+    int cols = 800;
+    int max = 50;
 
- */
+    Mat ramp(rows, cols, CV_32FC1);
+    Mat wrappedRamp(rows, cols, CV_32FC1);
+    Mat unwrappedRamp;
+    Mat rowValues(1, cols, CV_32FC1);
+    Mat wrappedRowValues(1, cols, CV_32FC1);
+
+    for( int i = 0; i < cols; ++i )
+    {
+        float v = (float)i*(float)max/(float)cols;
+        rowValues.at<float>(0, i) = v;
+        wrappedRowValues.at<float>(0, i) = atan2(sin(v), cos(v));
+    }
+    for( int i = 0; i < rows; ++i )
+    {
+        rowValues.row(0).copyTo(ramp.row(i));
+        wrappedRowValues.row(0).copyTo(wrappedRamp.row(i));
+    }
+
+    phase_unwrapping::HistogramPhaseUnwrapping::Params params;
+    params.width = cols;
+    params.height = rows;
+    Ptr<phase_unwrapping::HistogramPhaseUnwrapping> phaseUnwrapping = phase_unwrapping::HistogramPhaseUnwrapping::create(params);
+    phaseUnwrapping->unwrapPhaseMap(wrappedRamp, unwrappedRamp);
+
+    for(int i = 0; i < rows; ++i )
+    {
+        for( int j = 0; j < cols; ++ j )
+        {
+            EXPECT_NEAR(ramp.at<float>(i, j), unwrappedRamp.at<float>(i, j), 0.001);
+        }
+    }
+}
+
+TEST( HistogramPhaseUnwrapping, unwrapPhaseMap )
+{
+    CV_Unwrapping test;
+    test.safe_run();
+}
