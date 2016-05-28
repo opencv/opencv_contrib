@@ -41,8 +41,6 @@
 
 #include "precomp.hpp"
 
-#include <opencv2/imgproc.hpp>
-
 #include <iostream>
 
 namespace cv{
@@ -56,7 +54,7 @@ void pHash(cv::Mat const &input, cv::Mat &hash)
 
     cv::Mat resize;
     cv::resize(input, resize, cv::Size(32,32));
-    cv::Mat gray;
+    cv::Mat gray;    
     if(input.type() == CV_8UC3)
     {
         cv::cvtColor(resize, gray, CV_BGR2GRAY);
