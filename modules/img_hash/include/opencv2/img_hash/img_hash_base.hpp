@@ -55,7 +55,7 @@ namespace cv
         */
         /** @brief The base class for image hash algorithms
         */
-        class CV_EXPORTS_W ImgHashBase : public Algorithm
+        class ImgHashBase : public Algorithm
         {
         public:            
             /** @brief Computes hash of the input image
