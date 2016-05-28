@@ -61,12 +61,11 @@ void averageHash(cv::Mat const &input, cv::Mat &hash)
     {
         cv::cvtColor(resize, gray, CV_BGR2GRAY);
     }
-    else
-    {
+    else{
         gray = resize;
     }
 
-    uchar const imgMean = static_cast<uchar>(cv::mean(gray)[0]);
+    uchar const imgMean = static_cast<uchar>(cvRound(cv::mean(gray)[0]));
     cv::Mat const bits = (gray > imgMean)/255;
     hash.create(1, 16, CV_8U);
     uchar *hash_ptr = hash.ptr<uchar>(0);
