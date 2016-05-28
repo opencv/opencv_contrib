@@ -61,6 +61,26 @@ namespace ihash
      */
     CV_EXPORTS void pHash(cv::Mat const &input, cv::Mat &hash);
 
+    class PHash : public ImgHashBase
+    {
+    public:
+      /** @brief Computes PHash of the input image
+          @param input input CV_8UC3, CV_8UC1 array
+          @param hash hash of the image
+      */
+      virtual void compute(cv::Mat const &input, cv::Mat &hash);
+
+      CV_EXPORTS static Ptr<PHash> create();
+
+    private:
+        cv::Mat bitsImg;
+        cv::Mat dctImg;
+        cv::Mat grayFImg;
+        cv::Mat grayImg;
+        cv::Mat resizeImg;
+        cv::Mat topLeftDCT;
+    };
+
     //! @}
 }
 }

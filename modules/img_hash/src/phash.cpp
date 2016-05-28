@@ -47,40 +47,48 @@ namespace cv{
 
 namespace ihash{
 
-void pHash(cv::Mat const &input, cv::Mat &hash)
+void PHash::compute(const Mat &input, Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
-    cv::Mat resize;
-    cv::resize(input, resize, cv::Size(32,32));
-    cv::Mat gray;    
+    cv::resize(input, resizeImg, cv::Size(32,32));
     if(input.type() == CV_8UC3)
     {
-        cv::cvtColor(resize, gray, CV_BGR2GRAY);
+        cv::cvtColor(resizeImg, grayImg, CV_BGR2GRAY);
     }
     else
     {
-        gray = resize;
+        grayImg = resizeImg;
     }
 
-    gray.convertTo(gray, CV_32F);
-    cv::dct(gray, gray);
-    //clone the dct result to make sure the memory is continuous
-    cv::Mat topLeftDCT = gray(cv::Rect(0, 0, 8, 8)).clone();
+    grayImg.convertTo(grayFImg, CV_32F);
+    cv::dct(grayFImg, dctImg);
+    dctImg(cv::Rect(0, 0, 8, 8)).copyTo(topLeftDCT);
     topLeftDCT.at<float>(0, 0) = 0;
     float const imgMean = static_cast<float>(cv::mean(topLeftDCT)[0]);
 
-    cv::Mat const bits = (topLeftDCT > imgMean)/255;
+    cv::compare(topLeftDCT, imgMean, bitsImg, CMP_GT);
+    bitsImg /= 255;
     hash.create(1, 16, CV_8U);
     uchar *hash_ptr = hash.ptr<uchar>(0);
-    uchar const *bits_ptr = bits.ptr<uchar>(0);
+    uchar const *bits_ptr = bitsImg.ptr<uchar>(0);
     for(size_t i = 0, j = 0; i != 64; i+=4, ++j)
     {
         hash_ptr[j] = bits_ptr[i] + bits_ptr[i+1] * 2 +
                 bits_ptr[i+2] * 2 * 2 +
                 bits_ptr[i+3] * 2 * 2 * 2;
     }
+}
+
+Ptr<PHash> PHash::create()
+{
+    return makePtr<PHash>();
+}
+
+void pHash(cv::Mat const &input, cv::Mat &hash)
+{
+    PHash().compute(input, hash);
 }
 
 }
