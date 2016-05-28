@@ -57,9 +57,12 @@ void pHash(cv::Mat const &input, cv::Mat &hash)
     cv::Mat resize;
     cv::resize(input, resize, cv::Size(32,32));
     cv::Mat gray;
-    if(input.type() == CV_8UC3){
+    if(input.type() == CV_8UC3)
+    {
         cv::cvtColor(resize, gray, CV_BGR2GRAY);
-    }else{
+    }
+    else
+    {
         gray = resize;
     }
 
@@ -74,7 +77,8 @@ void pHash(cv::Mat const &input, cv::Mat &hash)
     hash.create(1, 16, CV_8U);
     uchar *hash_ptr = hash.ptr<uchar>(0);
     uchar const *bits_ptr = bits.ptr<uchar>(0);
-    for(size_t i = 0, j = 0; i != 64; i+=4, ++j){
+    for(size_t i = 0, j = 0; i != 64; i+=4, ++j)
+    {
         hash_ptr[j] = bits_ptr[i] + bits_ptr[i+1] * 2 +
                 bits_ptr[i+2] * 2 * 2 +
                 bits_ptr[i+3] * 2 * 2 * 2;
