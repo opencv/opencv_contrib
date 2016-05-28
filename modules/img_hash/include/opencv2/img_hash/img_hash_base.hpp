@@ -39,30 +39,34 @@
 //
 //M*/
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#ifndef __OPENCV_FUZZY_F0_MATH_H__
+#define __OPENCV_FUZZY_F0_MATH_H__
 
-#include "opencv2/img_hash/img_hash_base.hpp"
-#include "opencv2/img_hash/average_hash.hpp"
-#include "opencv2/img_hash/phash.hpp"
+#include "opencv2/core.hpp"
 
-/**
-@defgroup ihash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+namespace cv
+{
 
-Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
+    namespace ihash
+    {
+        //! @addtogroup ihash
+        //! @{
+        /** @brief Collections of image hash algorithms        
+        */
+        /** @brief The base class for image hash algorithms
+        */
+        class CV_EXPORTS_W ImgHashBase : public Algorithm
+        {
+        public:            
+            /** @brief Computes hash of the input image
 
-  @{
-    @defgroup averageHash Simple and fast perceptual hash algorithm
+            @param input input image want to compute hash value
+			@param hash hash of the image
+            */
+            virtual void compute(cv::Mat const &input, cv::Mat &hash) = 0;
+        };
+		//! @}
+    }//ihash
+}//cv
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please 
-	refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-
-    @defgroup pHash Slower than average_hash, but tolerant of minor modifications
-
-    This algorithm can combat more variation than averageHash, for more details please refer to 
-	http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-   @}
-
-*/
-
-#endif // __OPENCV_IMG_HASH_H__
+#endif // __OPENCV_FUZZY_F0_MATH_H__
