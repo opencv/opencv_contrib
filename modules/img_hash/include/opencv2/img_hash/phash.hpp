@@ -39,29 +39,30 @@
 //
 //M*/
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#ifndef __OPENCV_PHASH_HPP__
+#define __OPENCV_PHASH_HPP__
 
-#include "opencv2/img_hash/average_hash.hpp"
-#include "opencv2/img_hash/phash.hpp"
+#include "opencv2/core.hpp"
 
-/**
-@defgroup ihash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+namespace cv
+{
 
-Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
+namespace ihash
+{
+    //! @addtogroup ihash
+    //! @{
 
-  @{
-    @defgroup averageHash Simple and fast perceptual hash algorithm
+    /** @brief Computes pHash value of the input image
+    @param input Input CV_8UC3, CV_8UC1 array.
+    @param hash Hash value of input, it will contain 16 hex
+    decimal number, return type is CV_8U
+    
+    The function computes average hash value of the input image.    
+     */
+    CV_EXPORTS void pHash(cv::Mat const &input, cv::Mat &hash);
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please 
-	refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+    //! @}
+}
+}
 
-    @defgroup pHash Slower than average_hash, but tolerant of minor modifications
-
-    This algorithm can combat more variation than averageHash, for more details please refer to 
-	http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-   @}
-
-*/
-
-#endif // __OPENCV_IMG_HASH_H__
+#endif // __OPENCV_FUZZY_F0_MATH_H__

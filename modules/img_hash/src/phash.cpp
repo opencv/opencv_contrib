@@ -39,29 +39,48 @@
 //
 //M*/
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#include "precomp.hpp"
 
-#include "opencv2/img_hash/average_hash.hpp"
-#include "opencv2/img_hash/phash.hpp"
+#include <opencv2/imgproc.hpp>
 
-/**
-@defgroup ihash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+#include <iostream>
 
-Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
+namespace cv{
 
-  @{
-    @defgroup averageHash Simple and fast perceptual hash algorithm
+namespace ihash{
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please 
-	refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+void pHash(cv::Mat const &input, cv::Mat &hash)
+{
+    CV_Assert(input.type() == CV_8UC3 ||
+              input.type() == CV_8U);
 
-    @defgroup pHash Slower than average_hash, but tolerant of minor modifications
+    cv::Mat resize;
+    cv::resize(input, resize, cv::Size(32,32));
+    cv::Mat gray;
+    if(input.type() == CV_8UC3){
+        cv::cvtColor(resize, gray, CV_BGR2GRAY);
+    }else{
+        gray = resize;
+    }
 
-    This algorithm can combat more variation than averageHash, for more details please refer to 
-	http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-   @}
+    gray.convertTo(gray, CV_32F);
+    cv::dct(gray, gray);
+    //clone the dct result to make sure the memory is continuous
+    cv::Mat topLeftDCT = gray(cv::Rect(0, 0, 8, 8)).clone();
+    topLeftDCT.at<float>(0, 0) = 0;
+    float const imgMean = static_cast<float>(cv::mean(topLeftDCT)[0]);
 
-*/
+    cv::Mat const bits = (topLeftDCT > imgMean)/255;
+    hash.create(1, 16, CV_8U);
+    uchar *hash_ptr = hash.ptr<uchar>(0);
+    uchar const *bits_ptr = bits.ptr<uchar>(0);
+    for(size_t i = 0, j = 0; i != 64; i+=4, ++j){
+        hash_ptr[j] = bits_ptr[i] + bits_ptr[i+1] * 2 +
+                bits_ptr[i+2] * 2 * 2 +
+                bits_ptr[i+3] * 2 * 2 * 2;
+    }
+}
 
-#endif // __OPENCV_IMG_HASH_H__
+}
+
+}
