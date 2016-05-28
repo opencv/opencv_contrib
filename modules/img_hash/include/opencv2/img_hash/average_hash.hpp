@@ -43,25 +43,43 @@
 #define __OPENCV_AVERAGE_HASH_HPP__
 
 #include "opencv2/core.hpp"
+#include "img_hash_base.hpp"
 
 namespace cv
 {
 
 namespace ihash
 {
-    //! @addtogroup ihash
-    //! @{
+//! @addtogroup ihash
+//! @{
 
-    /** @brief Computes average hash value of the input image
+/** @brief Computes average hash value of the input image
     @param input Input CV_8UC3, CV_8UC1 array.
     @param hash Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     
-    The function computes average hash value of the input image.    
+    The function computes average hash value of the input image.
      */
-    CV_EXPORTS void averageHash(cv::Mat const &input, cv::Mat &hash);
+CV_EXPORTS void averageHash(cv::Mat const &input, cv::Mat &hash);
 
-    //! @}
+class AverageHash : public ImgHashBase
+{
+public:
+  /** @brief Computes average hash of the input image
+      @param input input image want to compute hash value
+      @param hash hash of the image
+  */
+  virtual void compute(cv::Mat const &input, cv::Mat &hash);
+
+  CV_EXPORTS static Ptr<AverageHash> create();
+
+private:
+  cv::Mat bitsImg;
+  cv::Mat grayImg;
+  cv::Mat resizeImg;
+};
+
+//! @}
 }
 }
 
