@@ -65,12 +65,12 @@ void CV_AverageHashTest::run(int )
                            8, 7, 2, 3, 6, 4, 5, 1,
                            3, 4, 1, 2, 9, 8, 4, 2,
                            6, 7, 8, 9, 7, 4, 3, 2,
-                           8, 7, 6, 5, 4, 3, 2, 1);    
+                           8, 7, 6, 5, 4, 3, 2, 1);
     cv::Mat hash;
-    cv::ihash::averageHash(input, hash);    
+    cv::ihash::averageHash(input, hash);
     uchar const expectResult[] =
     {
-        8, 12, 12, 0,  8, 15, 0, 14, 
+        8, 12, 12, 0,  8, 15, 0, 14,
         3,  1,  0, 3, 15,  1, 7,  0
     };
     uchar const *hashPtr = hash.ptr<uchar>(0);
