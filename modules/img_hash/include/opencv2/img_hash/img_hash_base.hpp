@@ -51,10 +51,8 @@ namespace cv
     {
         //! @addtogroup ihash
         //! @{
-        /** @brief Collections of image hash algorithms
-        */
-        /** @brief The base class for image hash algorithms
-        */
+        /**@brief The base class for image hash algorithms
+         */
         class ImgHashBase : public Algorithm
         {
         public:
