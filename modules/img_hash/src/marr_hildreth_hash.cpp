@@ -123,7 +123,7 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
                 }
             }
         }
-    }    
+    }
 }
 
 }
