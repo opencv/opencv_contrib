@@ -101,35 +101,29 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
         {
             cv::Rect const roi(col,row,3,3);
             cv::Mat const blockROI = blocks(roi);
-            float const subvec[] = {blockROI.at<float>(0,0),
-                                    blockROI.at<float>(0,1),
-                                    blockROI.at<float>(0,2),
-                                    blockROI.at<float>(1,0),
-                                    blockROI.at<float>(1,1),
-                                    blockROI.at<float>(1,2),
-                                    blockROI.at<float>(2,0),
-                                    blockROI.at<float>(2,1),
-                                    blockROI.at<float>(2,2)};
             float const avg =
                     static_cast<float>(cv::sum(blockROI)[0]/9.0);
-            for(size_t i = 0; i != 9; ++i)
+            for(int i = 0; i != blockROI.rows; ++i)
             {
-                hashbyte <<= 1;
-                if (subvec[i] > avg)
+                float const *bptr = blockROI.ptr<float>(i);
+                for(int j = 0; j != blockROI.cols; ++j)
                 {
-                    hashbyte |= 0x01;
-                }
-                ++bit_index;
-                if ((bit_index%8) == 0)
-                {
-                    hash_index = (bit_index/8) - 1;
-                    hashPtr[hash_index] = hashbyte;
-                    hashbyte = 0x00;
+                    hashbyte <<= 1;
+                    if (bptr[j] > avg)
+                    {
+                        hashbyte |= 0x01;
+                    }
+                    ++bit_index;
+                    if ((bit_index%8) == 0)
+                    {
+                        hash_index = (bit_index/8) - 1;
+                        hashPtr[hash_index] = hashbyte;
+                        hashbyte = 0x00;
+                    }
                 }
             }
         }
-    }
-    //std::cout<<hash<<std::endl;
+    }    
 }
 
 }
