@@ -51,21 +51,20 @@ namespace cv
     {
         //! @addtogroup ihash
         //! @{
-        /** @brief Collections of image hash algorithms        
+        /** @brief Collections of image hash algorithms
         */
         /** @brief The base class for image hash algorithms
         */
         class ImgHashBase : public Algorithm
         {
-        public:            
+        public:
             /** @brief Computes hash of the input image
-
             @param input input image want to compute hash value
-			@param hash hash of the image
+            @param hash hash of the image
             */
             virtual void compute(cv::Mat const &input, cv::Mat &hash) = 0;
         };
-		//! @}
+        //! @}
     }//ihash
 }//cv
 
