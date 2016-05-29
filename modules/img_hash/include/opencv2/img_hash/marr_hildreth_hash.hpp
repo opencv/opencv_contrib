@@ -59,8 +59,6 @@ namespace ihash
     decimal number, return type is CV_8U
     @param alpha int scale factor for marr wavelet (default=2).
     @param scale int level of scale factor (default = 1)
-    
-    The function computes average hash value of the input image.
 */
 CV_EXPORTS void marrHildrethHash(cv::Mat const &input, cv::Mat &hash,
                                  float alpha = 2.0f, float scale = 1.0f);
@@ -70,11 +68,11 @@ class MarrHildrethHash : public ImgHashBase
 public:
   
     /** @brief Constructor
-          @param alpha int scale factor for marr wavelet (default=2).
+        @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
     MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
-  
+
     /** @brief Computes marr hildreth operator based hash of the input image
         @param input Input CV_8UC3, CV_8UC1 array.
         @param hash hash of the image
