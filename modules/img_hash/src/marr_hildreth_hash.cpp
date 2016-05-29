@@ -123,12 +123,13 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
                 if ((bit_index%8) == 0)
                 {
                     hash_index = (bit_index/8) - 1;
-                    hashPtr[hash_index] = hashbyte;
+                    hashPtr[hash_index] = hashbyte;                    
                     hashbyte = 0x00;
                 }
             }
         }
     }
+    //std::cout<<hash<<std::endl;
 }
 
 }
@@ -157,8 +158,7 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
     cv::equalizeHist(resizeImg, equalizeImg);
 
     //extract frequency info by mh kernel
-    cv::filter2D(equalizeImg, freImg, equalizeImg.depth(), mhKernel);
-    //cv::transpose(freImg, freImg);
+    cv::filter2D(equalizeImg, freImg, CV_32F, mhKernel);
     fillBlocks(freImg, blocks);
 
     createHash(blocks, hash);
