@@ -81,19 +81,17 @@ void fillBlocks(cv::Mat const &freImg, cv::Mat &blocks)
         int const rOffset = row*16;
         for(int col = 0; col != blocks.cols; ++col)
         {
-            cv::Rect const roi(rOffset,col*16,15,15);
+            cv::Rect const roi(rOffset,col*16,16,16);
             bptr[col] =
                     static_cast<float>(cv::sum(freImg(roi))[0]);
         }
-    }
-    cv::transpose(blocks, blocks);
+    }    
 }
 
 void createHash(cv::Mat const &blocks, cv::Mat &hash)
 {
     hash.create(1, 72, CV_8U);
     int hash_index = 0;
-    int nb_ones = 0, nb_zeros = 0;
     int bit_index = 0;
     uchar hashbyte = 0;
     uchar *hashPtr = hash.ptr<uchar>(0);
@@ -101,28 +99,29 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
     {
         for (int col=0; col < 29; col += 4)
         {
-            cv::Rect const roi(col,row,2,2);
+            cv::Rect const roi(col,row,3,3);
             cv::Mat const blockROI = blocks(roi);
-            float subvec[] = {blockROI.at<float>(0,0),
-                              blockROI.at<float>(1,0),
-                              blockROI.at<float>(0,1),
-                              blockROI.at<float>(1,1)};
+            float const subvec[] = {blockROI.at<float>(0,0),
+                                    blockROI.at<float>(0,1),
+                                    blockROI.at<float>(0,2),
+                                    blockROI.at<float>(1,0),
+                                    blockROI.at<float>(1,1),
+                                    blockROI.at<float>(1,2),
+                                    blockROI.at<float>(2,0),
+                                    blockROI.at<float>(2,1),
+                                    blockROI.at<float>(2,2)};
             float const avg =
-                    static_cast<float>(cv::sum(cv::Mat_<float>(2,2,subvec))[0]/4.0);
-            for(size_t i = 0; i != 4; ++i)
+                    static_cast<float>(cv::sum(blockROI)[0]/9.0);
+            for(size_t i = 0; i != 9; ++i)
             {
-                hashbyte *= 2;
+                hashbyte <<= 1;
                 if (subvec[i] > avg)
                 {
                     hashbyte |= 0x01;
-                    ++nb_ones;
-                }
-                else
-                {
-                    ++nb_zeros;
                 }
                 ++bit_index;
-                if ((bit_index%8) == 0){
+                if ((bit_index%8) == 0)
+                {
                     hash_index = (bit_index/8) - 1;
                     hashPtr[hash_index] = hashbyte;
                     hashbyte = 0x00;
@@ -159,6 +158,7 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
 
     //extract frequency info by mh kernel
     cv::filter2D(equalizeImg, freImg, equalizeImg.depth(), mhKernel);
+    //cv::transpose(freImg, freImg);
     fillBlocks(freImg, blocks);
 
     createHash(blocks, hash);
