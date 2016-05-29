@@ -26,7 +26,7 @@ void test_by_function(cv::Mat const &input, cv::Mat const &target);
 void test_by_class(cv::Mat const &input, cv::Mat const &target);
 
 int main(int argc, char **argv)
-{    
+{
     if(argc != 3){
         std::cerr<<"must input the path of input "
                    "image and target image. ex : \n"
@@ -35,10 +35,10 @@ int main(int argc, char **argv)
 
     Mat input = imread(argv[1]);
 	Mat target = imread(argv[2]);
-	
+
     test_by_function(input, target);
     test_by_class(input, target);
-	
+
     return 0;
 }
 
