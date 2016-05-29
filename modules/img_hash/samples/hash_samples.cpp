@@ -22,6 +22,26 @@
 
 using namespace cv;
 
+void test_by_function(cv::Mat const &input, cv::Mat const &target);
+void test_by_class(cv::Mat const &input, cv::Mat const &target);
+
+int main(int argc, char **argv)
+{    
+    if(argc != 3){
+        std::cerr<<"must input the path of input "
+                   "image and target image. ex : \n"
+                   "hash_samples lena.jpg lena2.jpg\n";
+    }
+
+    Mat input = imread(argv[1]);
+	Mat target = imread(argv[2]);
+	
+    test_by_function(input, target);
+    test_by_class(input, target);
+	
+    return 0;
+}
+
 void test_by_function(cv::Mat const &input, cv::Mat const &target)
 {
     cv::Mat inHash;
@@ -69,15 +89,4 @@ void test_by_class(cv::Mat const &input, cv::Mat const &target)
     hashFunc->compute(target, outHash);
     double const marrMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"marrMismatch : "<<marrMismatch<<std::endl;
-}
-
-int main(int argc, char **argv)
-{    
-    Mat input = imread(argv[1]);
-	Mat target = imread(argv[2]);
-	
-    test_by_function(input, target);
-    test_by_class(input, target);
-	
-    return 0;
 }
