@@ -164,15 +164,16 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
     createHash(blocks, hash);
 }
 
-//Ptr<MarrHildrethHash> MarrHildrethHash::create()
-//{
-//    return makePtr<MarrHildrethHash>();
-//}
-
-/*void MarrHildrethHash(cv::Mat const &input, cv::Mat &hash)
+Ptr<MarrHildrethHash> MarrHildrethHash::create(float alpha, float scale)
 {
-    MarrHildrethHash().compute(input, hash);
-}//*/
+    return makePtr<MarrHildrethHash>(alpha, scale);
+}
+
+void marrHildrethHash(cv::Mat const &input, cv::Mat &hash,
+                      float alpha, float scale)
+{
+    MarrHildrethHash(alpha, scale).compute(input, hash);
+}
 
 }
 
