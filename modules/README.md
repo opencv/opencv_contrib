@@ -57,3 +57,5 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_re
 24. **opencv_hdf**: Hierarchical Data Format I/O.
 
 25. **opencv_fuzzy**: New module focused on the fuzzy image processing.
+
+26. **opencv_img_hash**: New module focused on the image hash algorithms.
