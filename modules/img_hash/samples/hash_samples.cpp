@@ -16,7 +16,9 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/img_hash.hpp
+#include "opencv2/img_hash.hpp"
+
+#include <iostream>
 
 using namespace cv;
 
@@ -75,7 +77,7 @@ int main(int argc, char **argv)
 	Mat target = imread(argv[2]);
 	
     test_by_function(input, target);
-    
+    test_by_class(input, target);
 	
     return 0;
 }
