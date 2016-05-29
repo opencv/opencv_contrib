@@ -55,12 +55,12 @@ Namespace for all functions is **ihash**. The module brings implementations of d
   @{
     @defgroup averageHash Simple and fast perceptual hash algorithm
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please 
+    This is a fast image hashing algorithm, but only work on simple case.For more details, please
     refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 
     @defgroup pHash Slower than average_hash, but tolerant of minor modifications
 
-    This algorithm can combat more variation than averageHash, for more details please refer to 
+    This algorithm can combat more variation than averageHash, for more details please refer to
     http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
    @}
 

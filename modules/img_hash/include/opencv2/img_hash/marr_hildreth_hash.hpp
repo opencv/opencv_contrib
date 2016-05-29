@@ -66,7 +66,7 @@ CV_EXPORTS void marrHildrethHash(cv::Mat const &input, cv::Mat &hash,
 class MarrHildrethHash : public ImgHashBase
 {
 public:
-  
+
     /** @brief Constructor
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
@@ -103,7 +103,7 @@ private:
     cv::Mat grayImg;
     cv::Mat mhKernel;
     cv::Mat resizeImg;
-    float scaleVal;  
+    float scaleVal;
 };
 
 //! @}
