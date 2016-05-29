@@ -39,31 +39,78 @@
 //
 //M*/
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#ifndef __OPENCV_MARR_HILDRETH_HASH_HPP__
+#define __OPENCV_MARR_HILDRETH_HASH_HPP__
 
-#include "opencv2/img_hash/img_hash_base.hpp"
-#include "opencv2/img_hash/average_hash.hpp"
-#include "opencv2/img_hash/marr_hildreth_hash.hpp"
-#include "opencv2/img_hash/phash.hpp"
+#include "opencv2/core.hpp"
+#include "img_hash_base.hpp"
 
-/**
-@defgroup ihash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+namespace cv
+{
 
-Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
+namespace ihash
+{
+//! @addtogroup ihash
+//! @{
 
-  @{
-    @defgroup averageHash Simple and fast perceptual hash algorithm
-
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please 
-	refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-
-    @defgroup pHash Slower than average_hash, but tolerant of minor modifications
-
-    This algorithm can combat more variation than averageHash, for more details please refer to 
-	http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
-   @}
-
+/** @brief Computes average hash value of the input image
+    @param input Input CV_8UC3, CV_8UC1 array.
+    @param hash Hash value of input, it will contain 16 hex
+    decimal number, return type is CV_8U
+    
+    The function computes average hash value of the input image.
 */
+//CV_EXPORTS void marrHildrethHash(cv::Mat const &input, cv::Mat &hash);
 
-#endif // __OPENCV_IMG_HASH_H__
+class MarrHildrethHash : public ImgHashBase
+{
+public:
+  
+  /** @brief Constructor
+        @param alpha int scale factor for marr wavelet (default=2).
+        @param scale int level of scale factor (default = 1)
+    */
+  MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
+  
+  /** @brief Computes marr hildreth operator based hash of the input image
+        @param input Input CV_8UC3, CV_8UC1 array.
+        @param hash hash of the image
+    */
+  virtual void compute(cv::Mat const &input, cv::Mat &hash);
+
+  float getAlpha() const;
+  float getScale() const;
+
+  /** @brief Set Mh kernel parameters
+      @param alpha int scale factor for marr wavelet (default=2).
+      @param scale int level of scale factor (default = 1)
+  */
+  void setKernelParam(float alpha, float scale);
+
+  /**
+      @param alpha int scale factor for marr wavelet (default=2).
+      @param scale int level of scale factor (default = 1)
+    */
+  CV_EXPORTS static Ptr<MarrHildrethHash> create(float alpha = 2.0f, float scale = 1.0f);
+
+private:
+  float alphaVal;
+  cv::Mat blocks;
+  cv::Mat blurImg;
+  cv::Mat equalizeImg;
+  cv::Mat freImg; //frequency response image
+  cv::Mat grayImg;
+  cv::Mat mhKernel;
+  cv::Mat resizeImg;
+  float scaleVal;
+  //Ptr<Pimpl> pimpl;
+  //cv::Mat bitsImg;
+  //cv::Mat grayImg;
+  //cv::Mat resizeImg;
+};
+
+//! @}
+}
+}
+
+#endif // __OPENCV_MARR_HILDRETH_HASH_HPP__
