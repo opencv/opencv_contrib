@@ -123,7 +123,7 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
                 if ((bit_index%8) == 0)
                 {
                     hash_index = (bit_index/8) - 1;
-                    hashPtr[hash_index] = hashbyte;                    
+                    hashPtr[hash_index] = hashbyte;
                     hashbyte = 0x00;
                 }
             }
@@ -143,7 +143,7 @@ MarrHildrethHash::MarrHildrethHash(float alpha, float scale) :
 }
 
 void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
-{    
+{
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
