@@ -85,7 +85,7 @@ void fillBlocks(cv::Mat const &freImg, cv::Mat &blocks)
             bptr[col] =
                     static_cast<float>(cv::sum(freImg(roi))[0]);
         }
-    }    
+    }
 }
 
 void createHash(cv::Mat const &blocks, cv::Mat &hash)
@@ -162,6 +162,23 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
     fillBlocks(freImg, blocks);
 
     createHash(blocks, hash);
+}
+
+float MarrHildrethHash::getAlpha() const
+{
+    return alphaVal;
+}
+
+float MarrHildrethHash::getScale() const
+{
+    return scaleVal;
+}
+
+void MarrHildrethHash::setKernelParam(float alpha, float scale)
+{
+    alphaVal = alpha;
+    scaleVal = scale;
+    getMHKernel(alphaVal, scaleVal, mhKernel);
 }
 
 Ptr<MarrHildrethHash> MarrHildrethHash::create(float alpha, float scale)

@@ -88,7 +88,7 @@ public:
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    void setKernelParam(float alpha = 2.0f, float scale = 1.0f);
+    void setKernelParam(float alpha, float scale);
 
     /**
         @param alpha int scale factor for marr wavelet (default=2).
