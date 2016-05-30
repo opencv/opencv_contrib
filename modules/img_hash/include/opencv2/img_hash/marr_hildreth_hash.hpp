@@ -71,7 +71,7 @@ public:
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
+    explicit MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
 
     /** @brief Computes marr hildreth operator based hash of the input image
         @param input Input CV_8UC3, CV_8UC1 array.
