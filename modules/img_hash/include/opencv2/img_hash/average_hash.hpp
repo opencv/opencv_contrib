@@ -81,4 +81,4 @@ private:
 }
 }
 
-#endif // __OPENCV_FUZZY_F0_MATH_H__
+#endif // __OPENCV_AVERAGE_HASH_HPP__

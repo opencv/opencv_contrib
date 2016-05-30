@@ -39,8 +39,8 @@
 //
 //M*/
 
-#ifndef __OPENCV_FUZZY_F0_MATH_H__
-#define __OPENCV_FUZZY_F0_MATH_H__
+#ifndef __OPENCV_IMG_HASH_BASE_HPP__
+#define __OPENCV_IMG_HASH_BASE_HPP__
 
 #include "opencv2/core.hpp"
 
@@ -66,4 +66,4 @@ namespace cv
     }//ihash
 }//cv
 
-#endif // __OPENCV_FUZZY_F0_MATH_H__
+#endif // __OPENCV_IMG_HASH_BASE_HPP__

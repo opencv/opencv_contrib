@@ -83,4 +83,4 @@ namespace img_hash
 }
 }
 
-#endif // __OPENCV_FUZZY_F0_MATH_H__
+#endif // __OPENCV_PHASH_HPP__
