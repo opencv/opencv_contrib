@@ -48,9 +48,9 @@
 #include "opencv2/img_hash/phash.hpp"
 
 /**
-@defgroup ihash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+@defgroup img_hash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
 
-Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
+Namespace for all functions is **img_hash**. The module brings implementations of different image hashing.
 
   @{
     @defgroup avg_hash Simple and fast perceptual hash algorithm
