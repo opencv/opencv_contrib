@@ -53,15 +53,18 @@
 Namespace for all functions is **ihash**. The module brings implementations of different image hashing.
 
   @{
-    @defgroup averageHash Simple and fast perceptual hash algorithm
+    @defgroup ihash Simple and fast perceptual hash algorithm
 
     This is a fast image hashing algorithm, but only work on simple case.For more details, please
     refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
 
-    @defgroup pHash Slower than average_hash, but tolerant of minor modifications
+    @defgroup ihash Slower than average_hash, but tolerant of minor modifications
 
     This algorithm can combat more variation than averageHash, for more details please refer to
     http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+
+    @defgroup ihash Marr-Hildreth Operator Based Hash, slowest but more discriminative
+    http://www.phash.org/docs/pubs/thesis_zauner.pdf
    @}
 
 */
