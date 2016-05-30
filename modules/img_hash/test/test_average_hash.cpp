@@ -67,7 +67,7 @@ void CV_AverageHashTest::run(int )
                            6, 7, 8, 9, 7, 4, 3, 2,
                            8, 7, 6, 5, 4, 3, 2, 1);
     cv::Mat hash;
-    cv::ihash::averageHash(input, hash);
+    cv::img_hash::averageHash(input, hash);
     uchar const expectResult[] =
     {
         8, 12, 12, 0,  8, 15, 0, 14,

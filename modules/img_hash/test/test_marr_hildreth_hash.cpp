@@ -69,7 +69,7 @@ void CV_MarrHildrethTest::run(int )
     }
 
     cv::Mat hash;
-    cv::ihash::marrHildrethHash(input, hash);
+    cv::img_hash::marrHildrethHash(input, hash);
     uchar const expectResult[] =
     {
         252, 126,  63,  31, 143, 199, 227, 241,

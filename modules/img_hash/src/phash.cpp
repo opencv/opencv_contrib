@@ -45,7 +45,7 @@
 
 namespace cv{
 
-namespace ihash{
+namespace img_hash{
 
 void PHash::compute(const Mat &input, Mat &hash)
 {

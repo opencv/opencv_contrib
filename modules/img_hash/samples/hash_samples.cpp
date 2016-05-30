@@ -47,19 +47,19 @@ void test_by_function(cv::Mat const &input, cv::Mat const &target)
     cv::Mat inHash;
     cv::Mat outHash;
 
-    ihash::averageHash(input, inHash);
-    ihash::averageHash(target, outHash);
+    img_hash::averageHash(input, inHash);
+    img_hash::averageHash(target, outHash);
     //the lower the mismatch value, the better
     double const averageMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"averageMismatch : "<<averageMismatch<<std::endl;
 
-    ihash::pHash(input, inHash);
-    ihash::pHash(target, outHash);
+    img_hash::pHash(input, inHash);
+    img_hash::pHash(target, outHash);
     double const pHashMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"pHashMismatch : "<<pHashMismatch<<std::endl;
 
-    ihash::marrHildrethHash(input, inHash);
-    ihash::marrHildrethHash(target, outHash);
+    img_hash::marrHildrethHash(input, inHash);
+    img_hash::marrHildrethHash(target, outHash);
     double const marrMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"marrMismatch : "<<marrMismatch<<std::endl;
 }
@@ -72,19 +72,19 @@ void test_by_class(cv::Mat const &input, cv::Mat const &target)
     cv::Mat inHash;
     cv::Mat outHash;
 
-    Ptr<ihash::ImgHashBase> hashFunc = ihash::AverageHash::create();
+    Ptr<img_hash::ImgHashBase> hashFunc = img_hash::AverageHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
     double const averageMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"averageMismatch : "<<averageMismatch<<std::endl;
 
-    hashFunc = ihash::PHash::create();
+    hashFunc = img_hash::PHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
     double const pHashMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"pHashMismatch : "<<pHashMismatch<<std::endl;
 
-    hashFunc = ihash::MarrHildrethHash::create();
+    hashFunc = img_hash::MarrHildrethHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
     double const marrMismatch = norm(inHash, outHash, NORM_HAMMING);

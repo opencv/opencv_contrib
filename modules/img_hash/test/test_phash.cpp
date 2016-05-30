@@ -67,7 +67,7 @@ void CV_PHashTest::run(int )
         inPtr[i] = value++;
     }
 
-    cv::ihash::pHash(input, hash);
+    cv::img_hash::pHash(input, hash);
     uchar const expectResult[] =
     {
         13, 15, 14, 15, 15, 15, 14, 15,

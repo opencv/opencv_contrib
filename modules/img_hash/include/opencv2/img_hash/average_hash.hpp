@@ -48,7 +48,7 @@
 namespace cv
 {
 
-namespace ihash
+namespace img_hash
 {
 //! @addtogroup avg_hash
 //! @{

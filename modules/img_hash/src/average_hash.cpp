@@ -45,7 +45,7 @@
 
 namespace cv{
 
-namespace ihash{
+namespace img_hash{
 
 void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
 {
