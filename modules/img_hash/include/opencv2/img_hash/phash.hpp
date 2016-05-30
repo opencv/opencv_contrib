@@ -49,7 +49,7 @@ namespace cv
 
 namespace ihash
 {
-    //! @addtogroup ihash
+    //! @addtogroup p_hash
     //! @{
 
     /** @brief Computes pHash value of the input image

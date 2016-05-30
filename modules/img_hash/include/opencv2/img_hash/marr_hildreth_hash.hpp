@@ -50,7 +50,7 @@ namespace cv
 
 namespace ihash
 {
-//! @addtogroup ihash
+//! @addtogroup marr_hash
 //! @{
 
 /** @brief Computes average hash value of the input image
