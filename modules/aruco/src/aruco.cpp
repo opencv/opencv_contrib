@@ -1099,7 +1099,7 @@ static void _projectUndetectedMarkers(Ptr<Board> &_board, InputOutputArrayOfArra
   */
 void refineDetectedMarkers(InputArray _image, Ptr<Board> &_board,
                            InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
-                           InputOutputArray _rejectedCorners, InputArray _cameraMatrix,
+                           InputOutputArrayOfArrays _rejectedCorners, InputArray _cameraMatrix,
                            InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
                            bool checkAllOrders, OutputArray _recoveredIdxs,
                            const Ptr<DetectorParameters> &_params) {
