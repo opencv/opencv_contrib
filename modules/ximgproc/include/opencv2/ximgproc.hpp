@@ -48,7 +48,7 @@
 #include "ximgproc/weighted_median_filter.hpp"
 #include "ximgproc/slic.hpp"
 #include "ximgproc/lsc.hpp"
-#include "ximgproc/deriche_filter.hpp"
+#include "ximgproc/paillou_filter.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
