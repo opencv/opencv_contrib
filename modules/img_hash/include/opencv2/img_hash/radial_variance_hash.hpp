@@ -39,38 +39,66 @@
 //
 //M*/
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#ifndef __OPENCV_RADIAL_VARIANCE_HASH_HPP__
+#define __OPENCV_RADIAL_VARIANCE_HASH_HPP__
 
-#include "opencv2/img_hash/img_hash_base.hpp"
-#include "opencv2/img_hash/average_hash.hpp"
-#include "opencv2/img_hash/marr_hildreth_hash.hpp"
-#include "opencv2/img_hash/phash.hpp"
-#include "opencv2/img_hash/radial_variance_hash.hpp"
+#include "opencv2/core.hpp"
+#include "img_hash_base.hpp"
 
-/**
-@defgroup img_hash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+namespace cv
+{
 
-Namespace for all functions is **img_hash**. The module brings implementations of different image hashing.
+namespace img_hash
+{
+//! @addtogroup radial_var_hash
+//! @{
 
-  @{
-    @defgroup avg_hash Simple and fast perceptual hash algorithm
+/** @brief Computes radial variance hash of the input image
+    @param input Input CV_8UC3, CV_8UC1 array.
+    @param hash Hash value of input
+     */
+CV_EXPORTS void radialVarianceHash(cv::Mat const &input, cv::Mat &hash);
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please
-    refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+class RadialVarianceHash : public ImgHashBase
+{
+public:
+  /** @brief Constructor
+      @param sigma Gaussian kernel standard deviation
+      @param gamma Gamma correction on the input image
+      @param numOfAngleLine The number of angles to consider
+   */
+  explicit RadialVarianceHash(double sigma = 1,
+                              float gamma = 1.0f,
+                              int numOfAngleLine = 180);
 
-    @defgroup p_hash Slower than average_hash, but tolerant of minor modifications
+  /** @brief Computes average hash of the input image
+      @param input input image want to compute hash value
+      @param hash hash of the image
+  */
+  virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
-    This algorithm can combat more variation than averageHash, for more details please refer to
-    http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+  CV_EXPORTS static Ptr<RadialVarianceHash> create();
 
-    @defgroup marr_hash Marr-Hildreth Operator Based Hash, slowest but more discriminative
-    http://www.phash.org/docs/pubs/thesis_zauner.pdf
-	
-	@defgroup radial_var_hash Image hash based on Radon transform.
-	http://www.phash.org/docs/pubs/thesis_zauner.pdf
-   @}
+private:
+  void afterHalfProjections(cv::Mat const &input, int D,
+                            int xOff, int yOff);
+  void firstHalfProjections(cv::Mat const &input, int D,
+                            int xOff, int yOff);
+  void radialProjections(cv::Mat const &input);
 
-*/
+  float gamma_;
+  cv::Mat blurImg_;
+  cv::Mat gammaImg_;
+  cv::Mat grayImg_;
+  cv::Mat normalizeImg_;
+  int numOfAngelLine_;
+  cv::Mat pixPerLine_;
+  cv::Mat projections_;
+  double sigma_;
+};
 
-#endif // __OPENCV_IMG_HASH_H__
+//! @}
+}
+}
+
+#endif // __OPENCV_RADIAL_VARIANCE_HASH_HPP__
