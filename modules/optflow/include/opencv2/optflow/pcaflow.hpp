@@ -47,127 +47,32 @@ namespace cv
 {
 namespace optflow
 {
-/*
-class PCAFlowBasis
+namespace pcaflow
 {
-public:
-  Size size;
 
-  PCAFlowBasis( Size basisSize = Size( 0, 0 ) ) : size( basisSize ) {}
-
-  virtual ~PCAFlowBasis(){};
-
-  virtual int getNumberOfComponents() const = 0;
-
-  virtual void getBasisAtPoint( const Point2f &p, const Size &maxSize, float *outX, float *outY ) const = 0;
-
-  virtual Point2f reduceAtPoint( const Point2f &p, const Size &maxSize, const float *w1, const float *w2 ) const = 0;
-};*/
-
-/*
- * Orthogonal basis from Discrete Cosine Transform.
- * Can be used without any learning or assumptions about flow structure for general purpose.
- * Gives low quality estimation.
- */
-/*class PCAFlowGeneralBasis : public PCAFlowBasis
-{
-public:
-  PCAFlowGeneralBasis( Size basisSize = Size( 18, 14 ) ) : PCAFlowBasis( basisSize ) {}
-
-  int getNumberOfComponents() const { return size.area(); }
-
-  void getBasisAtPoint( const Point2f &p, const Size &maxSize, float *outX, float *outY ) const
-  {
-    for ( int n1 = 0; n1 < size.width; ++n1 )
-      for ( int n2 = 0; n2 < size.height; ++n2 )
-        outX[n1 * size.height + n2] =
-          cosf( ( n1 * M_PI / maxSize.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / maxSize.height ) * ( p.y + 0.5 )
-);
-    memcpy( outY, outX, getNumberOfComponents() * sizeof( *outY ) );
-  }
-
-  Point2f reduceAtPoint( const Point2f &p, const Size &maxSize, const float *w1, const float *w2 ) const
-  {
-    Point2f res( 0, 0 );
-    for ( int n1 = 0; n1 < size.width; ++n1 )
-      for ( int n2 = 0; n2 < size.height; ++n2 )
-      {
-        const float c =
-          cosf( ( n1 * M_PI / maxSize.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / maxSize.height ) * ( p.y + 0.5 )
-);
-        res.x += c * w1[n1 * size.height + n2];
-        res.y += c * w2[n1 * size.height + n2];
-      }
-    return res;
-  }
-};*/
-/*
-class PCAFlowLearnedBasis : public PCAFlowBasis
+class Prior
 {
 private:
-  float *basisData;
-  unsigned numberOfComponents;
+  Mat L1;
+  Mat L2;
+  Mat c1;
+  Mat c2;
 
 public:
-  PCAFlowLearnedBasis( const char *filename )
-  {
-    basisData = 0;
-    FILE *f = fopen( filename, "r" );
-    CV_Assert( f );
+  Prior( const char *pathToPrior );
 
-    numberOfComponents = 0;
-    CV_Assert( fread( &numberOfComponents, sizeof( numberOfComponents ), 1, f ) == 1 );
-    CV_Assert( fread( &size.height, sizeof( size.height ), 1, f ) == 1 );
-    CV_Assert( fread( &size.width, sizeof( size.width ), 1, f ) == 1 );
-    CV_Assert( ( numberOfComponents > 0 ) && ( numberOfComponents % 2 == 0 ) );
+  int getPadding() const { return L1.size().height; }
 
-    basisData = new float[size.width * size.height * numberOfComponents];
-    CV_Assert( fread( basisData, size.width * size.height * sizeof( *basisData ), numberOfComponents, f ) ==
-               numberOfComponents );
-    fclose( f );
+  int getBasisSize() const { return L1.size().width; }
 
-    numberOfComponents /= 2;
-  }
-
-  ~PCAFlowLearnedBasis()
-  {
-    if ( basisData )
-      delete[] basisData;
-  }
-
-  int getNumberOfComponents() const { return numberOfComponents; }
-
-  void getBasisAtPoint( const Point2f &p, const Size &maxSize, float *outX, float *outY ) const
-  {
-    const size_t chunk = size.width * size.height;
-    size_t offset = size_t( p.y * float(size.height) / maxSize.height ) * size.width + size_t( p.x * float(size.width) /
-maxSize.width );
-    for ( unsigned i = 0; i < numberOfComponents; ++i )
-      outX[i] = basisData[i * chunk + offset];
-    offset += numberOfComponents * chunk;
-    for ( unsigned i = 0; i < numberOfComponents; ++i )
-      outY[i] = basisData[i * chunk + offset];
-  }
-
-  Point2f reduceAtPoint( const Point2f &p, const Size &maxSize, const float *w1, const float *w2 ) const
-  {
-    Point2f res( 0, 0 );
-    const size_t chunk = size.width * size.height;
-    const size_t offset = size_t( p.y * float(size.height) / maxSize.height ) * size.width + size_t( p.x *
-float(size.width) / maxSize.width );
-    for ( unsigned i = 0; i < numberOfComponents; ++i )
-    {
-      const float c = basisData[i * chunk + offset];
-      res.x += c * w1[i];
-      res.y += c * w2[i];
-    }
-    return res;
-  }
-};*/
+  void fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const;
+};
+}
 
 class OpticalFlowPCAFlow : public DenseOpticalFlow
 {
 protected:
+  const pcaflow::Prior *prior;
   const Size basisSize;
   const float sparseRate;              // (0 .. 0.1)
   const float retainedCornersFraction; // [0 .. 1]
@@ -175,9 +80,9 @@ protected:
   const float dampingFactor;
 
 public:
-  OpticalFlowPCAFlow( const Size _basisSize = Size( 18, 14 ), float _sparseRate = 0.02,
-                      float _retainedCornersFraction = 0.7, float _occlusionsThreshold = 0.0003,
-                      float _dampingFactor = 0.00002 );
+  OpticalFlowPCAFlow( const pcaflow::Prior *_prior = 0, const Size _basisSize = Size( 18, 14 ),
+                      float _sparseRate = 0.02, float _retainedCornersFraction = 0.7,
+                      float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002 );
 
   void calc( InputArray I0, InputArray I1, InputOutputArray flow );
   void collectGarbage();
@@ -191,6 +96,10 @@ private:
 
   void getSystem( OutputArray AOut, OutputArray b1Out, OutputArray b2Out, const std::vector<Point2f> &features,
                   const std::vector<Point2f> &predictedFeatures, const Size size );
+
+  void getSystem( OutputArray A1Out, OutputArray A2Out, OutputArray b1Out, OutputArray b2Out,
+                  const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
+                  const Size size );
 };
 
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_PCAFlow();

@@ -40,18 +40,20 @@
  //
  //M*/
 
-#include "precomp.hpp"
 #include "opencv2/ximgproc/edge_filter.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
 namespace optflow
 {
 
-OpticalFlowPCAFlow::OpticalFlowPCAFlow( const Size _basisSize, float _sparseRate, float _retainedCornersFraction,
-                                        float _occlusionsThreshold, float _dampingFactor )
-    : basisSize( _basisSize ), sparseRate( _sparseRate ), retainedCornersFraction( _retainedCornersFraction ),
-      occlusionsThreshold( _occlusionsThreshold ), dampingFactor( _dampingFactor )
+OpticalFlowPCAFlow::OpticalFlowPCAFlow( const pcaflow::Prior *_prior, const Size _basisSize, float _sparseRate,
+                                        float _retainedCornersFraction, float _occlusionsThreshold,
+                                        float _dampingFactor )
+    : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
+      retainedCornersFraction( _retainedCornersFraction ), occlusionsThreshold( _occlusionsThreshold ),
+      dampingFactor( _dampingFactor )
 {
   CV_Assert( sparseRate > 0 && sparseRate <= 0.1 );
   CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );
@@ -256,6 +258,38 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
   }
 }
 
+void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, OutputArray b1Out, OutputArray b2Out,
+                                    const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
+                                    const Size size )
+{
+  CV_Assert( prior->getBasisSize() == basisSize.area() );
+
+  A1Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32F );
+  A2Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32F );
+  b1Out.create( features.size() + prior->getPadding(), 1, CV_32F );
+  b2Out.create( features.size() + prior->getPadding(), 1, CV_32F );
+  Mat A1 = A1Out.getMat();
+  Mat A2 = A2Out.getMat();
+  Mat b1 = b1Out.getMat();
+  Mat b2 = b2Out.getMat();
+  for ( size_t i = 0; i < features.size(); ++i )
+  {
+    const Point2f &p = features[i];
+    float *row = A1.ptr<float>( i );
+    for ( int n1 = 0; n1 < basisSize.width; ++n1 )
+      for ( int n2 = 0; n2 < basisSize.height; ++n2 )
+        row[n1 * basisSize.height + n2] =
+          cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
+    const Point2f flow = predictedFeatures[i] - features[i];
+    b1.at<float>( i ) = flow.x;
+    b2.at<float>( i ) = flow.y;
+  }
+
+  memcpy( A2.ptr<float>(), A1.ptr<float>(), features.size() * basisSize.area() * sizeof( float ) );
+  prior->fillConstraints( A1.ptr<float>( features.size(), 0 ), A2.ptr<float>( features.size(), 0 ),
+                          b1.ptr<float>( features.size(), 0 ), b2.ptr<float>( features.size(), 0 ) );
+}
+
 static void applyCLAHE( Mat &img )
 {
   Ptr<CLAHE> clahe = createCLAHE();
@@ -335,20 +369,63 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   flowOut.create( size, CV_32FC2 );
   Mat flow = flowOut.getMat();
 
-  Mat A, b1, b2, w1, w2;
-  getSystem( A, b1, b2, features, predictedFeatures, size );
-  // solve( A1, b1, w1, DECOMP_CHOLESKY | DECOMP_NORMAL );
-  // solve( A2, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
-  solveLSQR( A, b1, w1, dampingFactor * size.area() );
-  solveLSQR( A, b2, w2, dampingFactor * size.area() );
-  Mat flowSmall( (size / 8) * 2, CV_32FC2 );
+  Mat w1, w2;
+  if ( prior )
+  {
+    Mat A1, A2, b1, b2;
+    getSystem( A1, A2, b1, b2, features, predictedFeatures, size );
+    solveLSQR( A1, b1, w1, dampingFactor * size.area() );
+    solveLSQR( A2, b2, w2, dampingFactor * size.area() );
+  }
+  else
+  {
+    Mat A, b1, b2;
+    getSystem( A, b1, b2, features, predictedFeatures, size );
+    solveLSQR( A, b1, w1, dampingFactor * size.area() );
+    solveLSQR( A, b2, w2, dampingFactor * size.area() );
+  }
+  Mat flowSmall( ( size / 8 ) * 2, CV_32FC2 );
   reduceToFlow( w1, w2, flowSmall, basisSize );
   resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );
-  ximgproc::fastGlobalSmootherFilter(fromOrig, flow, flow, 500, 2);
+  ximgproc::fastGlobalSmootherFilter( fromOrig, flow, flow, 500, 2 );
 }
 
 void OpticalFlowPCAFlow::collectGarbage() {}
 
 Ptr<DenseOpticalFlow> createOptFlow_PCAFlow() { return makePtr<OpticalFlowPCAFlow>(); }
+
+namespace pcaflow
+{
+
+Prior::Prior( const char *pathToPrior )
+{
+  FILE *f = fopen( pathToPrior, "r" );
+  CV_Assert( f );
+
+  unsigned n = 0, m = 0;
+  CV_Assert( fread( &n, sizeof( n ), 1, f ) == 1 );
+  CV_Assert( fread( &m, sizeof( m ), 1, f ) == 1 );
+
+  L1.create( n, m, CV_32F );
+  L2.create( n, m, CV_32F );
+  c1.create( n, 1, CV_32F );
+  c2.create( n, 1, CV_32F );
+
+  CV_Assert( fread( L1.ptr<float>(), n * m * sizeof( float ), 1, f ) == 1 );
+  CV_Assert( fread( L2.ptr<float>(), n * m * sizeof( float ), 1, f ) == 1 );
+  CV_Assert( fread( c1.ptr<float>(), n * sizeof( float ), 1, f ) == 1 );
+  CV_Assert( fread( c2.ptr<float>(), n * sizeof( float ), 1, f ) == 1 );
+
+  fclose( f );
+}
+
+void Prior::fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const
+{
+  memcpy( A1, L1.ptr<float>(), L1.size().area() * sizeof( float ) );
+  memcpy( A2, L2.ptr<float>(), L2.size().area() * sizeof( float ) );
+  memcpy( b1, c1.ptr<float>(), c1.size().area() * sizeof( float ) );
+  memcpy( b2, c2.ptr<float>(), c2.size().area() * sizeof( float ) );
+}
+}
 }
 }
