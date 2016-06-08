@@ -41,9 +41,7 @@
  //M*/
 
 #include "precomp.hpp"
-//#include <iostream>
-// using std::cout;
-// using std::endl;
+#include "opencv2/ximgproc/edge_filter.hpp"
 
 namespace cv
 {
@@ -325,6 +323,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( from.channels() == 1 );
   CV_Assert( to.channels() == 1 );
 
+  const Mat fromOrig = from.clone();
+
   applyCLAHE( from );
   applyCLAHE( to );
 
@@ -332,13 +332,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   findSparseFeatures( from, to, features, predictedFeatures );
   removeOcclusions( from, to, features, predictedFeatures );
 
-  // from.convertTo( from, CV_32F );
-  // to.convertTo( to, CV_32F );
-
   flowOut.create( size, CV_32FC2 );
   Mat flow = flowOut.getMat();
-  // for ( size_t i = 0; i < features.size(); ++i )
-  //  flow.at<Point2f>( features[i].y, features[i].x ) = /*Point2f(10,10);*/ predictedFeatures[i] - features[i];
 
   Mat A, b1, b2, w1, w2;
   getSystem( A, b1, b2, features, predictedFeatures, size );
@@ -346,9 +341,10 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   // solve( A2, b2, w2, DECOMP_CHOLESKY | DECOMP_NORMAL );
   solveLSQR( A, b1, w1, dampingFactor * size.area() );
   solveLSQR( A, b2, w2, dampingFactor * size.area() );
-  Mat flowSmall( basisSize * 16, CV_32FC2 );
+  Mat flowSmall( (size / 8) * 2, CV_32FC2 );
   reduceToFlow( w1, w2, flowSmall, basisSize );
   resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );
+  ximgproc::fastGlobalSmootherFilter(fromOrig, flow, flow, 500, 2);
 }
 
 void OpticalFlowPCAFlow::collectGarbage() {}
