@@ -87,6 +87,10 @@ namespace dnn
         DeConvolutionLayer(LayerParams &params);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
+
+    void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double beta, int flags = 0);
+
+    void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int flags = 0);
 }
 }
 #endif

@@ -46,6 +46,10 @@
 #include "im2col.hpp"
 #include <iostream>
 
+#if HAVE_CBLAS
+#include "cblas.h"
+#endif
+
 namespace cv
 {
 namespace dnn
@@ -73,6 +77,20 @@ namespace dnn
 
         //TBD
         useOpenCL = params.has("use_opencl");
+
+        //init BLAS
+        #if HAVE_CBLAS
+        {
+            #ifdef OPENBLAS_VERSION
+            if (openblas_get_num_threads() != cv::getNumThreads())
+            {
+                openblas_set_num_threads(cv::getNumThreads());
+                goto_set_num_threads(cv::getNumThreads());
+            }
+            //std::cout << "OpenBLAS threads " << openblas_get_num_threads() << "/" << openblas_get_num_procs() << "\n";
+            #endif
+        }
+        #endif
     }
 
     void ConvolutionLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -109,7 +127,7 @@ namespace dnn
 
     inline bool ConvolutionLayer::is1x1() const
     {
-        return (kerH == 1 && kerW == 1);
+        return (kerH == 1 && kerW == 1) && (strideW == 1 && strideH == 1); //hotfix with stride
     }
 
     void ConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -130,13 +148,13 @@ namespace dnn
                     Mat kerMat(outGroupCn, ksize, wgtBlob.type(), wgtBlob.ptr(g*outGroupCn));
                     Mat dstMat(outGroupCn, outH*outW, outBlob.type(), outBlob.ptr(n, g*outGroupCn));
 
-                    cv::gemm(kerMat, colMat, 1, noArray(), 0, dstMat);
-
+                    gemmCPU(kerMat, colMat, 1, dstMat, 0);
+                    
                     if (bias)
                     {
                         float *biasPtr = blobs[1].ptrf() + g*outGroupCn;
                         Mat biasMat(outGroupCn, 1, CV_32F, biasPtr);
-                        cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
+                        gemmCPU(biasMat, biasOnesMat, 1, dstMat, 1); //TODO: gemv
                     }
                 }
             }
@@ -223,7 +241,7 @@ namespace dnn
 
                     Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptr(n, g*outGroupCn));
                     Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptr(g*outGroupCn));
-                    cv::gemm(wghtMat, convMat, 1, noArray(), 0, colMat, GEMM_1_T);
+                    gemmCPU(wghtMat, convMat, 1, colMat, 0, GEMM_1_T);
 
                     col2im(dstMat);
 
@@ -231,7 +249,7 @@ namespace dnn
                     {
                         float *biasPtr = blobs[1].ptrf() + g*inpGroupCn;
                         Mat biasMat(inpGroupCn, 1, CV_32F, biasPtr);
-                        cv::gemm(biasMat, biasOnesMat, 1, dstMat, 1, dstMat);
+                        gemmCPU(biasMat, biasOnesMat, 1, dstMat, 1); //TODO: gemv
                     }
                 }
             }
@@ -247,5 +265,57 @@ namespace dnn
         if (dstMat.type() == CV_64F)
             col2im_cpu((double*)colMat.ptr(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)dstMat.ptr());
     }
+
+    void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double beta, int flags /*= 0*/)
+    {
+        cv::gemm(A, B, alpha, C, beta, C, flags);
+    }
+
+    inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool transA = false)
+    {
+        rows = (transA) ? A.cols : A.rows;
+        cols = (transA) ? A.rows : A.cols;
+    }
+
+    void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int flags /*= 0*/)
+    {
+        #if HAVE_CBLAS
+        bool transA = flags & GEMM_1_T;
+        bool transB = flags & GEMM_2_T;
+        bool transC = flags & GEMM_3_T;
+
+        int Arows, Acols, Brows, Bcols, Crows, Ccols;
+        SwapRowCols(A, Arows, Acols, transA);
+        SwapRowCols(B, Brows, Bcols, transB);
+        SwapRowCols(C, Crows, Ccols, transC);
+
+        CV_DbgAssert(!(flags & GEMM_3_T));
+        CV_Assert(Acols == Brows && Arows == Crows && Bcols == Ccols);
+        CV_DbgAssert(A.isContinuous() && B.isContinuous() && C.isContinuous());
+        CV_DbgAssert(A.type() == CV_32F || A.type() == CV_64F);
+        CV_DbgAssert(A.type() == B.type() && B.type() == C.type());
+
+        if (C.type() == CV_32F)
+        {
+            cblas_sgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans, transB ? CblasTrans : CblasNoTrans,
+                        Arows, Bcols, Acols,
+                        (float)alpha, A.ptr<float>(), A.cols,
+                        B.ptr<float>(), B.cols,
+                        (float)beta, C.ptr<float>(), C.cols);
+        }
+        else if (C.type() == CV_64F)
+        {
+            //TODO: Should be tested
+            cblas_dgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans, transB ? CblasTrans : CblasNoTrans,
+                        Arows, Bcols, Acols,
+                        alpha, A.ptr<double>(), A.cols,
+                        B.ptr<double>(), B.cols,
+                        beta, C.ptr<double>(), C.cols);
+        }
+        #else
+        cv::gemm(A, B, alpha, C, beta, C, flags);
+        #endif
+    }
+
 }
 }
