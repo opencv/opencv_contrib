@@ -8,7 +8,7 @@ copy or use the software.
                For Open Source Computer Vision Library
                        (3-clause BSD License)
 
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+Copyright (C) 2016, OpenCV Foundation, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -37,6 +37,19 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
+/*
+Implementation of the PCAFlow algorithm from the following paper:
+http://files.is.tue.mpg.de/black/papers/cvpr2015_pcaflow.pdf
+
+@inproceedings{Wulff:CVPR:2015,
+  title = {Efficient Sparse-to-Dense Optical Flow Estimation using a Learned Basis and Layers},
+  author = {Wulff, Jonas and Black, Michael J.},
+  booktitle = { IEEE Conf. on Computer Vision and Pattern Recognition (CVPR) 2015},
+  month = jun,
+  year = {2015}
+}
+*/
+
 #ifndef __OPENCV_OPTFLOW_PCAFLOW_HPP__
 #define __OPENCV_OPTFLOW_PCAFLOW_HPP__
 
@@ -47,10 +60,13 @@ namespace cv
 {
 namespace optflow
 {
-namespace pcaflow
-{
 
-class Prior
+/*
+ * This class can be used for imposing a learned prior on the resulting optical flow.
+ * Solution will be regularized according to this prior.
+ * You need to generate appropriate prior file with "learn_prior.py" script beforehand.
+ */
+class PCAPrior
 {
 private:
   Mat L1;
@@ -59,7 +75,7 @@ private:
   Mat c2;
 
 public:
-  Prior( const char *pathToPrior );
+  PCAPrior( const char *pathToPrior );
 
   int getPadding() const { return L1.size().height; }
 
@@ -67,12 +83,11 @@ public:
 
   void fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const;
 };
-}
 
 class OpticalFlowPCAFlow : public DenseOpticalFlow
 {
 protected:
-  const pcaflow::Prior *prior;
+  const PCAPrior *prior;
   const Size basisSize;
   const float sparseRate;              // (0 .. 0.1)
   const float retainedCornersFraction; // [0 .. 1]
@@ -80,7 +95,7 @@ protected:
   const float dampingFactor;
 
 public:
-  OpticalFlowPCAFlow( const pcaflow::Prior *_prior = 0, const Size _basisSize = Size( 18, 14 ),
+  OpticalFlowPCAFlow( const PCAPrior *_prior = 0, const Size _basisSize = Size( 18, 14 ),
                       float _sparseRate = 0.02, float _retainedCornersFraction = 0.7,
                       float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002 );
 

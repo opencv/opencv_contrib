@@ -48,7 +48,7 @@ namespace cv
 namespace optflow
 {
 
-OpticalFlowPCAFlow::OpticalFlowPCAFlow( const pcaflow::Prior *_prior, const Size _basisSize, float _sparseRate,
+OpticalFlowPCAFlow::OpticalFlowPCAFlow( const PCAPrior *_prior, const Size _basisSize, float _sparseRate,
                                         float _retainedCornersFraction, float _occlusionsThreshold,
                                         float _dampingFactor )
     : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
@@ -59,15 +59,6 @@ OpticalFlowPCAFlow::OpticalFlowPCAFlow( const pcaflow::Prior *_prior, const Size
   CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );
   CV_Assert( occlusionsThreshold > 0 );
 }
-
-inline float eDistSq( const Point2f &p1, const Point2f &p2 )
-{
-  const float dx = p1.x - p2.x;
-  const float dy = p1.y - p2.y;
-  return dx * dx + dy * dy;
-}
-
-inline float eNormSq( const Point2f &v ) { return v.x * v.x + v.y * v.y; }
 
 template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
 
@@ -224,7 +215,7 @@ void OpticalFlowPCAFlow::removeOcclusions( UMat &from, UMat &to, std::vector<Poi
     if ( predictedStatus[i] )
     {
       Point2f flowDiff = features[i] - backwardFeatures[i];
-      if ( eNormSq( flowDiff ) <= threshold )
+      if ( flowDiff.dot( flowDiff ) <= threshold )
       {
         features[j] = features[i];
         predictedFeatures[j] = predictedFeatures[i];
@@ -462,10 +453,7 @@ void OpticalFlowPCAFlow::collectGarbage() {}
 
 Ptr<DenseOpticalFlow> createOptFlow_PCAFlow() { return makePtr<OpticalFlowPCAFlow>(); }
 
-namespace pcaflow
-{
-
-Prior::Prior( const char *pathToPrior )
+PCAPrior::PCAPrior( const char *pathToPrior )
 {
   FILE *f = fopen( pathToPrior, "r" );
   CV_Assert( f );
@@ -487,13 +475,12 @@ Prior::Prior( const char *pathToPrior )
   fclose( f );
 }
 
-void Prior::fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const
+void PCAPrior::fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const
 {
   memcpy( A1, L1.ptr<float>(), L1.size().area() * sizeof( float ) );
   memcpy( A2, L2.ptr<float>(), L2.size().area() * sizeof( float ) );
   memcpy( b1, c1.ptr<float>(), c1.size().area() * sizeof( float ) );
   memcpy( b2, c2.ptr<float>(), c2.size().area() * sizeof( float ) );
-}
 }
 }
 }

@@ -193,8 +193,6 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 //! Additional interface to the SparseToDenseFlow algorithm - calcOpticalFlowSparseToDense()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
-CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_BlockMatching();
-
 //! @}
 
 } //optflow
