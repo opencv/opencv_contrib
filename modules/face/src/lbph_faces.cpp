@@ -92,7 +92,7 @@ public:
     void update(InputArrayOfArrays src, InputArray labels);
 
     // Send all predict results to caller side for custom result handling
-    void predict(InputArray src, Ptr<PredictCollector> collector, const int state = 0) const;
+    void predict(InputArray src, Ptr<PredictCollector> collector) const;
 
     // See FaceRecognizer::load.
     void load(const FileStorage& fs);
@@ -383,7 +383,7 @@ void LBPH::train(InputArrayOfArrays _in_src, InputArray _in_labels, bool preserv
     }
 }
 
-void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector, const int state) const {
+void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     if(_histograms.empty()) {
         // throw error if no data (or simply return -1?)
         String error_message = "This LBPH model is not computed yet. Did you call the train method?";
@@ -399,11 +399,11 @@ void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector, const int s
             _grid_y, /* grid size y */
             true /* normed histograms */);
     // find 1-nearest neighbor
-    collector->init((int)_histograms.size(), state);
+    collector->init((int)_histograms.size());
     for (size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, HISTCMP_CHISQR_ALT);
         int label = _labels.at<int>((int)sampleIdx);
-        if (!collector->collect(label, dist, state))return;
+        if (!collector->collect(label, dist))return;
     }
 }
 

@@ -122,8 +122,8 @@ Section 8  Interpretation.
 <opencv_storage>
 <cascade type_id="opencv-cascade-classifier"><stageType>BOOST</stageType>
   <featureType>HAAR</featureType>
-  <height>25</height>
-  <width>15</width>
+  <height>15</height>
+  <width>25</width>
   <stageParams>
     <maxWeakCount>218</maxWeakCount></stageParams>
   <featureParams>

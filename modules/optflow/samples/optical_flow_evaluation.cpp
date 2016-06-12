@@ -12,7 +12,7 @@ using namespace optflow;
 const String keys = "{help h usage ? |      | print this message   }"
         "{@image1        |      | image1               }"
         "{@image2        |      | image2               }"
-        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow, pcaflow or sparsetodenseflow] }"
+        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow, sparsetodenseflow, pcaflow or DISflow] }"
         "{@groundtruth   |      | path to the .flo file  (optional), Middlebury format }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
@@ -235,7 +235,7 @@ int main( int argc, char** argv )
     if ( i2.depth() != CV_8U )
         i2.convertTo(i2, CV_8U);
 
-    if ( (method == "farneback" || method == "tvl1" || method == "deepflow") && i1.channels() == 3 )
+    if ( (method == "farneback" || method == "tvl1" || method == "deepflow" || method == "DISflow") && i1.channels() == 3 )
     {   // 1-channel images are expected
         cvtColor(i1, i1, COLOR_BGR2GRAY);
         cvtColor(i2, i2, COLOR_BGR2GRAY);
@@ -260,6 +260,8 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_SparseToDense();
     else if ( method == "pcaflow" )
         algorithm = createOptFlow_PCAFlow();
+    else if ( method == "DISflow" )
+        algorithm = createOptFlow_DIS();
     else
     {
         printf("Wrong method!\n");
