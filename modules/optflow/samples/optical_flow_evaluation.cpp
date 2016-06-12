@@ -1,6 +1,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/optflow.hpp"
+#include "opencv2/core/ocl.hpp"
 #include <fstream>
 #include <limits>
 
@@ -15,7 +16,8 @@ const String keys = "{help h usage ? |      | print this message   }"
         "{@groundtruth   |      | path to the .flo file  (optional), Middlebury format }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
-        "{d display      |      | display additional info images (pauses program execution) }";
+        "{d display      |      | display additional info images (pauses program execution) }"
+        "{g gpu          |      | use OpenCL}";
 
 inline bool isFlowCorrect( const Point2f u )
 {
@@ -200,12 +202,16 @@ int main( int argc, char** argv )
     String error_measure = parser.get<String>("measure");
     String region = parser.get<String>("region");
     bool display_images = parser.has("display");
+    const bool useGpu = parser.has("gpu");
 
     if ( !parser.check() )
     {
         parser.printErrors();
         return 0;
     }
+
+    cv::ocl::setUseOpenCL(useGpu);
+    printf("OpenCL Enabled: %u\n", useGpu && cv::ocl::haveOpenCL());
 
     Mat i1, i2;
     Mat_<Point2f> flow, ground_truth;

@@ -140,13 +140,15 @@ static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const doubl
 
   for ( unsigned itn = 0; itn < iter_lim; ++itn )
   {
-    u = A * v - alfa * u;
+    u *= -alfa;
+    u += A * v;
     beta = cv::norm( u, NORM_L2 );
 
     if ( beta > 0 )
     {
       u *= 1 / beta;
-      v = AT * u - beta * v;
+      v *= -beta;
+      v += AT * u;
       alfa = cv::norm( v, NORM_L2 );
       if ( alfa > 0 )
         v = ( 1 / alfa ) * v;
@@ -173,7 +175,7 @@ static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const doubl
   }
 }
 
-void OpticalFlowPCAFlow::findSparseFeatures( Mat &from, Mat &to, std::vector<Point2f> &features,
+void OpticalFlowPCAFlow::findSparseFeatures( UMat &from, UMat &to, std::vector<Point2f> &features,
                                              std::vector<Point2f> &predictedFeatures ) const
 {
   Size size = from.size();
@@ -207,7 +209,7 @@ void OpticalFlowPCAFlow::findSparseFeatures( Mat &from, Mat &to, std::vector<Poi
   predictedFeatures.resize( j );
 }
 
-void OpticalFlowPCAFlow::removeOcclusions( Mat &from, Mat &to, std::vector<Point2f> &features,
+void OpticalFlowPCAFlow::removeOcclusions( UMat &from, UMat &to, std::vector<Point2f> &features,
                                            std::vector<Point2f> &predictedFeatures ) const
 {
   std::vector<uchar> predictedStatus;
@@ -234,6 +236,27 @@ void OpticalFlowPCAFlow::removeOcclusions( Mat &from, Mat &to, std::vector<Point
   predictedFeatures.resize( j );
 }
 
+static inline void _cpu_fillDCTSampledPoints( float *row, const Point2f &p, const Size &basisSize, const Size &size )
+{
+  for ( int n1 = 0; n1 < basisSize.width; ++n1 )
+    for ( int n2 = 0; n2 < basisSize.height; ++n2 )
+      row[n1 * basisSize.height + n2] =
+        cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
+}
+
+static ocl::ProgramSource _ocl_fillDCTSampledPointsSource(
+  "__kernel void fillDCTSampledPoints(__global const uchar* features, int fstep, int foff, __global "
+  "uchar* A, int Astep, int Aoff, int fs, int bsw, int bsh, int sw, int sh) {"
+  "const int i = get_global_id(0);"
+  "const int n1 = get_global_id(1);"
+  "const int n2 = get_global_id(2);"
+  "if (i >= fs || n1 >= bsw || n2 >= bsh) return;"
+  "__global const float2* f = features + (fstep * i + foff);"
+  "__global float* a = A + (Astep * i + Aoff + (n1 * bsh + n2) * 4);"
+  "const float2 p = f[0];"
+  "a[0] = cos((n1 * M_PI / sw) * (p.x + 0.5)) * cos((n2 * M_PI / sh) * (p.y + 0.5));"
+  "}" );
+
 void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputArray b2Out,
                                     const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
                                     const Size size )
@@ -241,20 +264,40 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
   AOut.create( features.size(), basisSize.area(), CV_32F );
   b1Out.create( features.size(), 1, CV_32F );
   b2Out.create( features.size(), 1, CV_32F );
-  Mat A = AOut.getMat();
-  Mat b1 = b1Out.getMat();
-  Mat b2 = b2Out.getMat();
-  for ( size_t i = 0; i < features.size(); ++i )
+  if ( ocl::useOpenCL() )
   {
-    const Point2f &p = features[i];
-    float *row = A.ptr<float>( i );
-    for ( int n1 = 0; n1 < basisSize.width; ++n1 )
-      for ( int n2 = 0; n2 < basisSize.height; ++n2 )
-        row[n1 * basisSize.height + n2] =
-          cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
-    const Point2f flow = predictedFeatures[i] - features[i];
-    b1.at<float>( i ) = flow.x;
-    b2.at<float>( i ) = flow.y;
+    UMat A = AOut.getUMat();
+    Mat b1 = b1Out.getMat();
+    Mat b2 = b2Out.getMat();
+
+    ocl::Kernel kernel( "fillDCTSampledPoints", _ocl_fillDCTSampledPointsSource );
+    size_t globSize[] = {features.size(), basisSize.width, basisSize.height};
+    kernel
+      .args( cv::ocl::KernelArg::ReadOnlyNoSize( Mat( features ).getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::WriteOnlyNoSize( A ), (int)features.size(), (int)basisSize.width,
+             (int)basisSize.height, (int)size.width, (int)size.height )
+      .run( 3, globSize, 0, true );
+
+    for ( size_t i = 0; i < features.size(); ++i )
+    {
+      const Point2f flow = predictedFeatures[i] - features[i];
+      b1.at<float>( i ) = flow.x;
+      b2.at<float>( i ) = flow.y;
+    }
+  }
+  else
+  {
+    Mat A = AOut.getMat();
+    Mat b1 = b1Out.getMat();
+    Mat b2 = b2Out.getMat();
+
+    for ( size_t i = 0; i < features.size(); ++i )
+    {
+      _cpu_fillDCTSampledPoints( A.ptr<float>( i ), features[i], basisSize, size );
+      const Point2f flow = predictedFeatures[i] - features[i];
+      b1.at<float>( i ) = flow.x;
+      b2.at<float>( i ) = flow.y;
+    }
   }
 }
 
@@ -268,29 +311,54 @@ void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, Output
   A2Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32F );
   b1Out.create( features.size() + prior->getPadding(), 1, CV_32F );
   b2Out.create( features.size() + prior->getPadding(), 1, CV_32F );
+
+  if ( ocl::useOpenCL() )
+  {
+    UMat A = A1Out.getUMat();
+    Mat b1 = b1Out.getMat();
+    Mat b2 = b2Out.getMat();
+
+    ocl::Kernel kernel( "fillDCTSampledPoints", _ocl_fillDCTSampledPointsSource );
+    size_t globSize[] = {features.size(), basisSize.width, basisSize.height};
+    kernel
+      .args( cv::ocl::KernelArg::ReadOnlyNoSize( Mat( features ).getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::WriteOnlyNoSize( A ), (int)features.size(), (int)basisSize.width,
+             (int)basisSize.height, (int)size.width, (int)size.height )
+      .run( 3, globSize, 0, true );
+
+    for ( size_t i = 0; i < features.size(); ++i )
+    {
+      const Point2f flow = predictedFeatures[i] - features[i];
+      b1.at<float>( i ) = flow.x;
+      b2.at<float>( i ) = flow.y;
+    }
+  }
+  else
+  {
+    Mat A1 = A1Out.getMat();
+    Mat b1 = b1Out.getMat();
+    Mat b2 = b2Out.getMat();
+
+    for ( size_t i = 0; i < features.size(); ++i )
+    {
+      _cpu_fillDCTSampledPoints( A1.ptr<float>( i ), features[i], basisSize, size );
+      const Point2f flow = predictedFeatures[i] - features[i];
+      b1.at<float>( i ) = flow.x;
+      b2.at<float>( i ) = flow.y;
+    }
+  }
+
   Mat A1 = A1Out.getMat();
   Mat A2 = A2Out.getMat();
   Mat b1 = b1Out.getMat();
   Mat b2 = b2Out.getMat();
-  for ( size_t i = 0; i < features.size(); ++i )
-  {
-    const Point2f &p = features[i];
-    float *row = A1.ptr<float>( i );
-    for ( int n1 = 0; n1 < basisSize.width; ++n1 )
-      for ( int n2 = 0; n2 < basisSize.height; ++n2 )
-        row[n1 * basisSize.height + n2] =
-          cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
-    const Point2f flow = predictedFeatures[i] - features[i];
-    b1.at<float>( i ) = flow.x;
-    b2.at<float>( i ) = flow.y;
-  }
 
   memcpy( A2.ptr<float>(), A1.ptr<float>(), features.size() * basisSize.area() * sizeof( float ) );
   prior->fillConstraints( A1.ptr<float>( features.size(), 0 ), A2.ptr<float>( features.size(), 0 ),
                           b1.ptr<float>( features.size(), 0 ), b2.ptr<float>( features.size(), 0 ) );
 }
 
-static void applyCLAHE( Mat &img )
+static void applyCLAHE( UMat &img )
 {
   Ptr<CLAHE> clahe = createCLAHE();
   clahe->setClipLimit( 14 );
@@ -334,7 +402,7 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   const Size size = I0.size();
   CV_Assert( size == I1.size() );
 
-  Mat from, to;
+  UMat from, to;
   if ( I0.channels() == 3 )
   {
     cvtColor( I0, from, COLOR_BGR2GRAY );
@@ -357,7 +425,7 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( from.channels() == 1 );
   CV_Assert( to.channels() == 1 );
 
-  const Mat fromOrig = from.clone();
+  const Mat fromOrig = from.getMat( ACCESS_READ ).clone();
 
   applyCLAHE( from );
   applyCLAHE( to );

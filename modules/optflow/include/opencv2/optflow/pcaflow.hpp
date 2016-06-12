@@ -88,10 +88,10 @@ public:
   void collectGarbage();
 
 private:
-  void findSparseFeatures( Mat &from, Mat &to, std::vector<Point2f> &features,
+  void findSparseFeatures( UMat &from, UMat &to, std::vector<Point2f> &features,
                            std::vector<Point2f> &predictedFeatures ) const;
 
-  void removeOcclusions( Mat &from, Mat &to, std::vector<Point2f> &features,
+  void removeOcclusions( UMat &from, UMat &to, std::vector<Point2f> &features,
                          std::vector<Point2f> &predictedFeatures ) const;
 
   void getSystem( OutputArray AOut, OutputArray b1Out, OutputArray b2Out, const std::vector<Point2f> &features,
