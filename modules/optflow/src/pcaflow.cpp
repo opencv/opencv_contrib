@@ -62,6 +62,16 @@ OpticalFlowPCAFlow::OpticalFlowPCAFlow( const PCAPrior *_prior, const Size _basi
 
 template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
 
+/* Stable symmetric Householder reflection that gives c and s such that
+ *   [ c  s ][a] = [d],
+ *   [ s -c ][b]   [0]
+ *
+ * Output:
+ *   c -- cosine(theta), where theta is the implicit angle of rotation
+ *        (counter-clockwise) in a plane-rotation
+ *   s -- sine(theta)
+ *   r -- two-norm of [a; b]
+ */
 static inline void symOrtho( double a, double b, double &c, double &s, double &r )
 {
   if ( b == 0 )
@@ -92,6 +102,18 @@ static inline void symOrtho( double a, double b, double &c, double &s, double &r
   }
 }
 
+/* Iterative LSQR algorithm for solving least squares problems.
+ *
+ * [1] Paige, C. C. and M. A. Saunders,
+ * LSQR: An Algorithm for Sparse Linear Equations And Sparse Least Squares
+ * ACM Trans. Math. Soft., Vol.8, 1982, pp. 43-71.
+ *
+ * Solves the following problem:
+ *   argmin_x ||Ax - b|| + damp||x||
+ *
+ * Output:
+ *   x -- approximate solution
+ */
 static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0,
                        const unsigned iter_lim = 10 )
 {
