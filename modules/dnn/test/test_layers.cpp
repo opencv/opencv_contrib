@@ -43,6 +43,7 @@
 #include <opencv2/core/ocl.hpp>
 #include <iostream>
 #include "npy_blob.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cvtest
 {
@@ -172,6 +173,63 @@ TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
     Blob output = net.getBlob("output");
 
     normAssert(input, output);
+}
+
+class Layer_LSTM_Test : public ::testing::Test
+{
+public:
+    int Nx, Nc;
+    Blob Wh, Wx, b;
+    Ptr<LSTMLayer> lstm;
+
+    std::vector<Blob> inputs;
+    std::vector<Blob> outputs;
+    std::vector<Blob*> inputsPtr;
+
+    Layer_LSTM_Test(int _Nx = 31, int _Nc = 100)
+    {
+        Nx = _Nx;
+        Nc = _Nc;
+
+        Wh = Blob(BlobShape(Vec2i(4 * Nc, Nc)));
+        Wx = Blob(BlobShape(Vec2i(4 * Nc, Nx)));
+        b  = Blob(BlobShape(Vec2i(4 * Nc, 1)));
+
+        lstm = LSTMLayer::create();
+        lstm->setWeights(Wh, Wx, b);
+    }
+
+    void allocateAndForward()
+    {
+        inputsPtr.clear();
+        for (size_t i = 0; i < inputs.size(); i++)
+            inputsPtr.push_back(&inputs[i]);
+
+        lstm->allocate(inputsPtr, outputs);
+        lstm->forward(inputsPtr, outputs);
+    }
+};
+
+TEST_F(Layer_LSTM_Test, BasicTest_1)
+{
+    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
+    allocateAndForward();
+
+    EXPECT_EQ(outputs.size(), 2);
+    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, Nc));
+    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nc));
+}
+
+TEST_F(Layer_LSTM_Test, BasicTest_2)
+{
+    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
+    inputs.push_back(Blob(BlobShape(1, 2, 3, Nc)));
+    inputs.push_back(Blob(BlobShape(1, 2, 3, Nc)));
+    allocateAndForward();
+
+    EXPECT_EQ(outputs.size(), 2);
+    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, Nc));
+    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nc));
 }
 
 }

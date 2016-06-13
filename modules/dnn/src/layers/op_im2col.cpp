@@ -39,54 +39,47 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/core/ocl.hpp>
+#include "op_im2col.hpp"
+#include "opencl_kernels_dnn.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-    //TODO: simultaneously convolution and bias addition for cache optimization
-    class ConvolutionLayer : public Layer
-    {
-    protected:
-        bool bias;
-        int numOutput, group;
-        int padH, padW;
-        int kerH, kerW;
-        int strideH, strideW;
 
-        int inpH, inpW, inpCn;
-        int outH, outW, outCn;
-        int topH, topW, topCn; //switched between inp/out on deconv/conv
-        int inpGroupCn, outGroupCn;
-        int ksize;
+#ifdef HAVE_OPENCL
+void im2col_ocl(UMat &img,
+                int channels, int height, int width,
+                int kernel_h, int kernel_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                UMat &col)
+{
+    int h_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+    int w_out = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-        bool useOpenCL;
-        Mat colMat, biasOnesMat;
+    CV_Assert(img.isContinuous() && col.isContinuous());
+    CV_Assert(img.total() == (size_t)channels * height * width);
+    CV_Assert(col.total() == (size_t)channels * kernel_h * kernel_w * h_out * w_out);
 
-        inline bool is1x1() const;
-        virtual void computeInpOutShape(const Blob &inpBlob);
-        void im2col(Blob &inpBlob, int imNum, int cnGroup);
+    ocl::Kernel im2col_ker("im2col", ocl::dnn::im2col_oclsrc);
+    CV_Assert(!im2col_ker.empty());
 
-    public:
-        ConvolutionLayer() {}
-        ConvolutionLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+    im2col_ker.args(ocl::KernelArg::PtrReadOnly(img), (int)img.offset,
+             channels, height, width,
+             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
+             h_out, w_out,
+             ocl::KernelArg::PtrWriteOnly(col), (int)col.offset
+        );
 
-    class DeConvolutionLayer : public ConvolutionLayer
-    {
-    protected:
-        void computeInpOutShape(const Blob &inpBlob);
-        void col2im(Mat &dstMat);
+    size_t localSize = ocl::Device::getDefault().maxWorkGroupSize();
+    size_t globalSize = (size_t)channels * h_out * w_out;
 
-    public:
-        DeConvolutionLayer(LayerParams &params);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+    CV_Assert(im2col_ker.run(1, &globalSize, &localSize, true));
+}
+#endif // HAVE_OPENCL
+
 }
 }
-#endif
