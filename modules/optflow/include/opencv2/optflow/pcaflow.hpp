@@ -66,7 +66,7 @@ namespace optflow
  * Solution will be regularized according to this prior.
  * You need to generate appropriate prior file with "learn_prior.py" script beforehand.
  */
-class PCAPrior
+class CV_EXPORTS_W PCAPrior
 {
 private:
   Mat L1;
@@ -84,10 +84,10 @@ public:
   void fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const;
 };
 
-class OpticalFlowPCAFlow : public DenseOpticalFlow
+class CV_EXPORTS_W OpticalFlowPCAFlow : public DenseOpticalFlow
 {
 protected:
-  const PCAPrior *prior;
+  const Ptr<const PCAPrior> prior;
   const Size basisSize;
   const float sparseRate;              // (0 .. 0.1)
   const float retainedCornersFraction; // [0 .. 1]
@@ -95,7 +95,7 @@ protected:
   const float dampingFactor;
 
 public:
-  OpticalFlowPCAFlow( const PCAPrior *_prior = 0, const Size _basisSize = Size( 18, 14 ),
+  OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior = Ptr<const PCAPrior>(), const Size _basisSize = Size( 18, 14 ),
                       float _sparseRate = 0.02, float _retainedCornersFraction = 0.7,
                       float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002 );
 

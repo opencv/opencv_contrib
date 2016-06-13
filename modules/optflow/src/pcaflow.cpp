@@ -48,7 +48,7 @@ namespace cv
 namespace optflow
 {
 
-OpticalFlowPCAFlow::OpticalFlowPCAFlow( const PCAPrior *_prior, const Size _basisSize, float _sparseRate,
+OpticalFlowPCAFlow::OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior, const Size _basisSize, float _sparseRate,
                                         float _retainedCornersFraction, float _occlusionsThreshold,
                                         float _dampingFactor )
     : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
@@ -451,7 +451,7 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   Mat flow = flowOut.getMat();
 
   Mat w1, w2;
-  if ( prior )
+  if ( prior.get() )
   {
     Mat A1, A2, b1, b2;
     getSystem( A1, A2, b1, b2, features, predictedFeatures, size );

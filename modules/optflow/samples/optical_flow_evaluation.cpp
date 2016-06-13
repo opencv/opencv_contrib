@@ -17,7 +17,8 @@ const String keys = "{help h usage ? |      | print this message   }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
         "{d display      |      | display additional info images (pauses program execution) }"
-        "{g gpu          |      | use OpenCL}";
+        "{g gpu          |      | use OpenCL}"
+        "{prior          |      | path to a prior file for PCAFlow}";
 
 inline bool isFlowCorrect( const Point2f u )
 {
@@ -258,8 +259,15 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_DeepFlow();
     else if ( method == "sparsetodenseflow" )
         algorithm = createOptFlow_SparseToDense();
-    else if ( method == "pcaflow" )
-        algorithm = createOptFlow_PCAFlow();
+    else if ( method == "pcaflow" ) {
+        if ( parser.has("prior") ) {
+            String prior = parser.get<String>("prior");
+            printf("Using prior file: %s\n", prior.c_str());
+            algorithm = makePtr<OpticalFlowPCAFlow>(makePtr<PCAPrior>(prior.c_str()));
+        }
+        else
+            algorithm = createOptFlow_PCAFlow();
+    }
     else if ( method == "DISflow" )
         algorithm = createOptFlow_DIS();
     else
