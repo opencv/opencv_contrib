@@ -122,6 +122,7 @@ public:
     Mat ep, em;
     void tanh(Mat &x, Mat &d)
     {
+        //TODO: two exp() is bad idea
         cv::exp(-x, em);
         cv::exp( x, ep);
         cv::divide(ep - em, ep + em, d);
@@ -183,16 +184,18 @@ Ptr<LSTMLayer> LSTMLayer::create()
     return Ptr<LSTMLayer>(new LSTMLayerImpl());
 }
 
-void LSTMLayer::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
+void LSTMLayer::forward(std::vector<Blob*>&, std::vector<Blob>&)
 {
-    CV_Error(Error::StsNotImplemented, "This function should be unreached");
+    CV_Error(Error::StsInternal, "This function should be unreached");
 }
+
 
 class RNNLayerImpl : public RNNLayer
 {
-    int nX, nH;
+    int nX, nH, nO, nSamples;
     Mat Whh, Wxh, bh;
     Mat Who, bo;
+    Mat hPrevInternal, dummyBiasOnes;
 
 public:
 
@@ -201,36 +204,114 @@ public:
         type = "RNN";
     }
 
-    void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo)
+    void setWeights(const Blob &W_hh, const Blob &W_xh, const Blob &b_h, const Blob &W_ho, const Blob &b_o)
     {
-        CV_Assert(Whh.dims() == 2 && Wxh.dims() == 2);
-        CV_Assert(Whh.size(0) == Wxh.size(0) && Whh.size(0) == Whh.size(1) && bh.total() == Wxh.size(0));
-        CV_Assert(Who.size(0) == bo.total());
-        CV_Assert(Who.size(1) == Whh.size(1));
+        CV_Assert(W_hh.dims() == 2 && W_xh.dims() == 2);
+        CV_Assert(W_hh.size(0) == W_xh.size(0) && W_hh.size(0) == W_hh.size(1) && b_h.total() == W_xh.size(0));
+        CV_Assert(W_ho.size(0) == b_o.total());
+        CV_Assert(W_ho.size(1) == W_hh.size(1));
+        //TODO: Check type
 
-        blobs.reserve(5);
-        blobs[0] = Whh;
-        blobs[1] = Wxh;
-        blobs[2] = bh;
-        blobs[3] = Who;
-        blobs[4] = bo;
+        blobs.resize(5);
+        blobs[0] = W_hh;
+        blobs[1] = W_xh;
+        blobs[2] = b_h;
+        blobs[3] = W_ho;
+        blobs[4] = b_o;
     }
 
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
     {
+        CV_Assert(input.size() >= 1 && input.size() <= 2);
 
+        Whh = blobs[0].matRefConst();
+        Wxh = blobs[1].matRefConst();
+        bh  = blobs[2].matRefConst();
+        Who = blobs[3].matRefConst();
+        bo  = blobs[4].matRefConst();
+
+        nH = Wxh.rows;
+        nX = Wxh.cols;
+        nO = Who.rows;
+
+        CV_Assert(input[0]->size(-1) == Wxh.cols);
+        nSamples = input[0]->total(0, input[0]->dims() - 1);
+        BlobShape xShape = input[0]->shape();
+        BlobShape hShape = xShape;
+        BlobShape oShape = xShape;
+        hShape[-1] = nH;
+        oShape[-1] = nO;
+
+        if (input.size() == 2)
+        {
+            CV_Assert(input[1]->shape() == hShape);
+        }
+        else
+        {
+            hPrevInternal.create(nSamples, nH, input[0]->type());
+            hPrevInternal.setTo(0);
+        }
+
+        output.resize(2);
+        output[0].create(oShape, input[0]->type());
+        output[1].create(hShape, input[0]->type());
+
+        dummyBiasOnes.create(nSamples, 1, bh.type());
+        dummyBiasOnes.setTo(1);
+        bh = bh.reshape(1, 1); //is 1 x nH mat
+        bo = bo.reshape(1, 1); //is 1 x nO mat
     }
 
-    void tanh(Mat &x)
+    //in-place tanh function
+    static void tanh(Mat &x) // 2 / (1 + e^(-2x)) - 1
     {
-
+        x.convertTo(x, x.type(), -2);   // -2x
+        cv::exp(x, x);                  // e^(-2x)
+        x.convertTo(x, x.type(), 1, 1); // 1 + e^(-2x)
+        cv::pow(x, -1, x);              // 1 / (1 + e^(-2x))
+        x.convertTo(x, x.type(), 2, -1);// 2 / (1 + e^(-2x)) - 1
     }
 
     void forward(std::vector<Blob*> &input, std::vector<Blob> &output)
     {
+        Mat xCurr = input[0]->matRefConst();
+        Mat hPrev = (input.size() >= 2) ? input[1]->matRefConst() : hPrevInternal;
+        Mat oCurr = output[0].matRef();
+        Mat hCurr = output[1].matRef();
 
+        //TODO: Check types
+
+        int xsz[] = {nSamples, nX};
+        int hsz[] = {nSamples, nH};
+        int osz[] = {nSamples, nO};
+        if (xCurr.dims != 2) xCurr = xCurr.reshape(1, 2, xsz);
+        if (hPrev.dims != 2) hPrev = hPrev.reshape(1, 2, hsz);
+        if (oCurr.dims != 2) oCurr = oCurr.reshape(1, 2, osz);
+        if (hCurr.dims != 2) hCurr = hCurr.reshape(1, 2, hsz);
+
+        gemmCPU(hPrev, Whh, 1, hCurr, 0, GEMM_2_T); // W_{hh} * h_{prev}
+        gemmCPU(xCurr, Wxh, 1, hCurr, 1, GEMM_2_T); //+W_{xh} * x_{curr}
+        gemmCPU(dummyBiasOnes, bh, 1, hCurr, 1);      //+bh
+        tanh(hCurr);
+
+        gemmCPU(hPrev, Who, 1, oCurr, 0, GEMM_2_T); // W_{ho} * h_{prev}
+        gemmCPU(dummyBiasOnes, bo, 1, oCurr, 1);      //+b_o
+        tanh(oCurr);
+
+        if (input.size() < 2) //save h_{prev}
+            hCurr.copyTo(hPrevInternal);
     }
 };
+
+void RNNLayer::forward(std::vector<Blob*>&, std::vector<Blob>&)
+{
+    CV_Error(Error::StsInternal, "This function should be unreached");
+}
+
+CV_EXPORTS_W Ptr<RNNLayer> RNNLayer::create()
+{
+    return Ptr<RNNLayer>(new RNNLayerImpl());
+}
 
 }
 }

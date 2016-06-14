@@ -49,10 +49,10 @@ namespace dnn
 {
 
     //! LSTM recurrent layer
-    CV_EXPORTS class LSTMLayer : public Layer
+    class LSTMLayer : public Layer
     {
     public:
-        CV_EXPORTS static Ptr<LSTMLayer> create();
+        CV_EXPORTS_W static Ptr<LSTMLayer> create();
 
         /** Set trained weights for LSTM layer.
         LSTM behavior on each step is defined by current input, previous output, previous cell state and learned weights.
@@ -91,15 +91,15 @@ namespace dnn
 
         @param output computed outputs: h_t and c_t.
         */
-        CV_EXPORTS void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+        CV_EXPORTS_W void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
 
     //! Classical recurrent layer
-    CV_EXPORTS class RNNLayer : public Layer
+    class RNNLayer : public Layer
     {
     public:
 
-        CV_EXPORTS Ptr<RNNLayer> create();
+        CV_EXPORTS_W static Ptr<RNNLayer> create();
 
         /** Setups learned weights.
 
@@ -113,16 +113,17 @@ namespace dnn
         @param Who is W_xo matrix
         @param bo  is b_o vector
         */
-        CV_EXPORTS virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
+        CV_EXPORTS_W virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
 
-        /** Accept two inputs x_t and h_{t-1} and compute two outputs o_t and h_t.
+        /** Accepts two inputs x_t and h_{t-1} and compute two outputs o_t and h_t.
 
-        @param input should contain x_t and h_{t-1}
-        @param output should contain o_t and h_t
+        @param input could contain inputs x_t and h_{t-1}.  x_t is required whereas h_{t-1} is optional.
+        If the second input h_{t-1} isn't specified a layer will use internal h_{t-1} from the previous calls, at the first call h_{t-1} will be filled by zeros.
+
+        @param output should contain outputs o_t and h_t
         */
-        virtual void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+        void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
-
 }
 }
 #endif
