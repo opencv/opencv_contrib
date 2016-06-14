@@ -42,6 +42,7 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "fully_connected_layer.hpp"
+#include "op_blas.hpp"
 
 namespace cv
 {
@@ -99,14 +100,14 @@ namespace dnn
             Mat weight(N, K, blobs[0].type(), blobs[0].ptrf());
             Mat dstMat(M, N, output[i].type(), output[i].ptrf());
 
-            //important: Caffe stores weights as transposed array
-            cv::gemm(srcMat, weight, 1, noArray(), 0, dstMat, GEMM_2_T);
+            //important: for perfomance purposes Caffe stores weights as transposed array
+            gemmCPU(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
 
             if (bias)
             {
                 Mat biasOnesMat = Mat::ones(M, 1, CV_32F);
                 Mat biasMat(1, N, CV_32F, blobs[1].ptrf());
-                cv::gemm(biasOnesMat, biasMat, 1, dstMat, 1, dstMat);
+                gemmCPU(biasOnesMat, biasMat, 1, dstMat, 1);
             }
         }
     }
