@@ -97,7 +97,8 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
     gammaImg_ *= 255;
     gammaImg_.convertTo(normalizeImg_, CV_8U);
 
-    //radialProjection(normalizeImg);
+    radialProjections(normalizeImg_);
+    findFeatureVector();
 }
 
 Ptr<RadialVarianceHash> RadialVarianceHash::create()
@@ -135,6 +136,11 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
         }
         j+=2;
     }
+}
+
+void RadialVarianceHash::findFeatureVector()
+{
+
 }
 
 void RadialVarianceHash::

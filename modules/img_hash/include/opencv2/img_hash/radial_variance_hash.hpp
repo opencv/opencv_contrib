@@ -61,6 +61,9 @@ CV_EXPORTS void radialVarianceHash(cv::Mat const &input, cv::Mat &hash);
 
 class RadialVarianceHash : public ImgHashBase
 {
+  //This friend class is design for unit test, please do not
+  //use it under normal case
+  friend class RadialVarHashTester;
 public:
   /** @brief Constructor
       @param sigma Gaussian kernel standard deviation
@@ -77,11 +80,12 @@ public:
   */
   virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create();
+  CV_EXPORTS static Ptr<RadialVarianceHash> create();  
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
+  void findFeatureVector();
   void firstHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
   void radialProjections(cv::Mat const &input);
