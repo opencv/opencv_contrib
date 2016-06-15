@@ -59,6 +59,14 @@ public:
         rvh.findFeatureVector();
         return rvh.features_;
     }
+    
+    cv::Mat getHash(RadialVarianceHash &rvh) const
+    {
+        cv::Mat hash;
+        rvh.hashCalculate(hash);
+
+        return hash;
+    }
 
     Mat getPixPerLine(Mat const &input,
                       RadialVarianceHash &rvh) const
@@ -91,6 +99,7 @@ protected:
     //of pHash library, I add a small value to nb_pixels in
     //the function "ph_feature_vector" to avoid NaN value
     void testFeatures();
+    void testHash();
     void testPixPerLine();
     void testProjection();
 
@@ -119,6 +128,26 @@ void CV_RadialVarianceHashTest::testFeatures()
     for(size_t i = 0; i != features.size(); ++i)
     {
         ASSERT_NEAR(features[i], expectResult[i], 0.0001);
+    }
+}
+
+void CV_RadialVarianceHashTest::testHash()
+{
+    cv::Mat const hash = tester.getHash(rvh);
+    uchar const expectResult[] =
+    {
+        127,  92,   0, 158, 101,
+         88,  14, 136, 227, 160,
+        127,  94,  27, 118, 240,
+        166, 153,  96, 254, 162,
+        127, 162, 254,  96, 153,
+        166, 240, 118,  27,  94,
+        127, 160, 227, 136,  14,
+        88, 101, 158,   0,  92
+    };
+    for(int i = 0; i != hash.cols; ++i)
+    {
+        EXPECT_EQ(hash.at<uchar>(0, i), expectResult[i]);
     }
 }
 
