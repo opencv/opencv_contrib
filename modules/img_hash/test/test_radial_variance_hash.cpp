@@ -47,7 +47,7 @@ using namespace cv;
 namespace cv
 {
 
-namespace img_hash 
+namespace img_hash
 {
 
 class RadialVarHashTester
@@ -76,19 +76,19 @@ public:
 class CV_RadialVarianceHashTest : public cvtest::BaseTest
 {
 public:
-    CV_RadialVarianceHashTest();    
+    CV_RadialVarianceHashTest();
 protected:
     void run(int /* idx */);
 
     void testPixPerLine();
-    void testProjection();    
-    
+    void testProjection();
+
     cv::Mat input;
     cv::img_hash::RadialVarianceHash rvh;
     cv::img_hash::RadialVarHashTester tester;
 };
 
-CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() : 
+CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
     rvh(1,1,10)
 {
     uchar *inPtr = input.ptr<uchar>(0);
@@ -99,7 +99,7 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
 }
 
 void CV_RadialVarianceHashTest::testPixPerLine()
-{  
+{
   tester.getPixPerLine(input, rvh);
   uchar const expectResult[] =
   {
@@ -140,7 +140,7 @@ void CV_RadialVarianceHashTest::testProjection()
 }
 
 void CV_RadialVarianceHashTest::run(int )
-{    
+{
     testPixPerLine();
 }
 
