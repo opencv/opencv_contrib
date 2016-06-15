@@ -89,6 +89,7 @@ private:
   CV_EXPORTS void findFeatureVector();
   void firstHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
+  CV_EXPORTS void hashCalculate(cv::Mat &hash);
   CV_EXPORTS void radialProjections(cv::Mat const &input);
 
   float gamma_;

@@ -104,6 +104,7 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
 
     radialProjections(normalizeImg_);
     findFeatureVector();
+    hashCalculate(hash);
 }
 
 Ptr<RadialVarianceHash> RadialVarianceHash::create()
@@ -203,6 +204,50 @@ firstHalfProjections(Mat const &input, int D, int xOff, int yOff)
                 pplPtr[numOfAngelLine_/2-k] += 1;
             }
         }
+    }
+}
+
+void RadialVarianceHash::hashCalculate(cv::Mat &hash)
+{
+    hash.create(1, 40, CV_8U);
+    double temp[40];
+    double max = 0;
+    double min = 0;
+    size_t const featureSize = features_.size();
+    //constexpr is a better choice
+    double const sqrtTwo = 1.4142135623730950488016887242097;
+    for(int k = 0; k < hash.cols; ++k)
+    {
+        double sum = 0;
+        for(size_t n = 0; n < featureSize; ++n)
+        {
+            double temp = features_[n]*std::cos((3.14159*(2*n+1)*k)/(2*featureSize));
+            sum += temp;
+        }
+        if (k == 0)
+        {
+            temp[k] = sum/std::sqrt(featureSize);
+        }
+        else
+        {
+            temp[k] = sum*sqrtTwo/std::sqrt(featureSize);
+        }
+        if(temp[k] > max)
+        {
+            max = temp[k];
+        }
+        if(temp[k] < min)
+        {
+            min = temp[k];
+        }
+    }
+
+    double const range = max - min + 0.0001;
+    //std::transform is a better choice if lambda exist
+    uchar *hashPtr = hash.ptr<uchar>(0);
+    for(int i = 0; i < hash.cols; ++i)
+    {
+        hashPtr[i] = static_cast<uchar>((255*(temp[i] - min)/range));
     }
 }
 
