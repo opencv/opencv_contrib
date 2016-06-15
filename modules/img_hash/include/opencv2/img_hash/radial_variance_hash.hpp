@@ -73,6 +73,7 @@ public:
   CV_EXPORTS explicit RadialVarianceHash(double sigma = 1,
                                          float gamma = 1.0f,
                                          int numOfAngleLine = 180);
+  CV_EXPORTS ~RadialVarianceHash();
 
   /** @brief Computes average hash of the input image
       @param input input image want to compute hash value
@@ -85,7 +86,7 @@ public:
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
-  void findFeatureVector();
+  CV_EXPORTS void findFeatureVector();
   void firstHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
   CV_EXPORTS void radialProjections(cv::Mat const &input);

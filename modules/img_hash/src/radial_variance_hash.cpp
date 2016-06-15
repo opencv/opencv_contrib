@@ -74,6 +74,11 @@ RadialVarianceHash::RadialVarianceHash(double sigma,
 {
 }
 
+~RadialVarianceHash()
+{
+
+}
+
 void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
@@ -140,7 +145,7 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
 
 void RadialVarianceHash::findFeatureVector()
 {
-
+    features_.resize(numOfAngelLine_);
 }
 
 void RadialVarianceHash::
