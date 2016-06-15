@@ -108,7 +108,7 @@ void CV_RadialVarianceHashTest::testPixPerLine()
 
 void CV_RadialVarianceHashTest::testProjection()
 {
-	auto const proj = tester.getProjection(rvh);
+	cv::Mat const proj = tester.getProjection(rvh);
 	uchar const expectResult[] =
     {
       32,  16,   0,   0,   2,   4,   0,   0,  56,  40,
