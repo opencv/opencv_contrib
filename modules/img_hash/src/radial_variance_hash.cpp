@@ -146,6 +146,36 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
 void RadialVarianceHash::findFeatureVector()
 {
     features_.resize(numOfAngelLine_);
+    double sum = 0.0;
+    double sumSqd = 0.0;
+    int const *pplPtr = pixPerLine_.ptr<int>(0);
+    for(int k=0; k < numOfAngelLine_; ++k)
+    {
+        double lineSum = 0.0;
+        double lineSumSqd = 0.0;
+        //original implementation of pHash may generate zero pixNum, this
+        //will cause NaN value and make the features become less discriminative
+        //to avoid this problem, I add a small value--0.00001
+        double const pixNum = pplPtr[k] + 0.00001;
+        double const pixNumPow2 = pixNum * pixNum;
+        for(int i = 0; i < projections_.rows; ++i)
+        {
+            double const value = projections_.at<uchar>(i,k);
+            lineSum += value;
+            lineSumSqd += value * value;
+        }
+        features_[k] = (lineSumSqd/pixNum) -
+                (lineSum*lineSum)/(pixNumPow2);
+        sum += features_[k];
+        sumSqd += features_[k]*features_[k];
+    }
+    double const numOfALPow2 = numOfAngelLine_ * numOfAngelLine_;
+    double const mean = sum/numOfAngelLine_;
+    double const var  = std::sqrt((sumSqd/numOfAngelLine_) - (sum*sum)/(numOfALPow2));
+    for(int i = 0; i < numOfAngelLine_; ++i)
+    {
+        features_[i] = (features_[i] - mean)/var;
+    }
 }
 
 void RadialVarianceHash::
