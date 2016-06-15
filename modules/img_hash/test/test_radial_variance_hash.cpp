@@ -43,13 +43,12 @@
 
 using namespace cv;
 
-/**
- *The expected results of this test case are come from the phash library,
- *I use it as golden model
- */
 class cv::img_hash::RadialVarHashTester
 {
 public:
+    RadialVarHashTester(){}
+    ~RadialVarHashTester(){}	
+
     cv::Mat getPixPerLine(cv::Mat const &input,
                           cv::img_hash::RadialVarianceHash &rvh) const
     {
@@ -63,6 +62,10 @@ public:
     }
 };
 
+/**
+ *The expected results of this test case are come from the phash library,
+ *I use it as golden model
+ */
 class CV_RadialVarianceHashTest : public cvtest::BaseTest
 {
 public:
@@ -72,7 +75,7 @@ protected:
     void run(int /* idx */);
 
     void testPixPerLine();
-    void testProjection();
+    void testProjection();    
     
     cv::Mat input;
     cv::img_hash::RadialVarianceHash rvh;
@@ -85,7 +88,7 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
     uchar *inPtr = input.ptr<uchar>(0);
     for(size_t i = 0; i != input.total(); ++i)
     {
-        inPtr[i] = i;
+        inPtr[i] = static_cast<uchar>(i);
     }
 }
 CV_RadialVarianceHashTest::~CV_RadialVarianceHashTest(){}
