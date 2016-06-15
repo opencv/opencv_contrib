@@ -66,9 +66,9 @@ Namespace for all functions is **img_hash**. The module brings implementations o
 
     @defgroup marr_hash Marr-Hildreth Operator Based Hash, slowest but more discriminative
     http://www.phash.org/docs/pubs/thesis_zauner.pdf
-	
-	@defgroup radial_var_hash Image hash based on Radon transform.
-	http://www.phash.org/docs/pubs/thesis_zauner.pdf
+
+    @defgroup radial_var_hash Image hash based on Radon transform.
+    http://www.phash.org/docs/pubs/thesis_zauner.pdf
    @}
 
 */
