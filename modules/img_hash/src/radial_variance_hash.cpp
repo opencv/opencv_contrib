@@ -221,8 +221,7 @@ void RadialVarianceHash::hashCalculate(cv::Mat &hash)
         double sum = 0;
         for(size_t n = 0; n < featureSize; ++n)
         {
-            double temp = features_[n]*std::cos((3.14159*(2*n+1)*k)/(2*featureSize));
-            sum += temp;
+            sum += features_[n]*std::cos((3.14159*(2*n+1)*k)/(2*featureSize));
         }
         if (k == 0)
         {
