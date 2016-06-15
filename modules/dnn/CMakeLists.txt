@@ -37,6 +37,7 @@ if(${the_module}_WITH_BLAS)
         set(BLAS_CBLAS_H        "mkl_cblas.h"      )
         set(BLAS_LIBRARIES      ${MKL_LIBRARIES}   )
         set(BLAS_BINARIES       ""                 )
+        add_definitions(${MKL_CXX_FLAGS})
     endif()
 
     set(BLAS_PREF ${the_module}_BLAS)
@@ -54,7 +55,6 @@ if(${the_module}_WITH_BLAS)
     list(APPEND OPENCV_MODULE_${the_module}_DEPS_EXT ${${the_module}_BLAS_LIBRARIES})
     target_link_libraries(${the_module} ${${the_module}_BLAS_LIBRARIES})
     add_definitions(-DHAVE_CBLAS)
-    add_definitions(-DCBLAS_H_INCLUDE=<${${BLAS_PREF}_CBLAS_H}>)
     message(CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command(TARGET ${the_module} PRE_BUILD #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cblas.h 
                        COMMAND ${CMAKE_COMMAND} ARGS -E echo \"\#include <${${BLAS_PREF}_CBLAS_H}>\" > ${CMAKE_CURRENT_BINARY_DIR}/cblas.h

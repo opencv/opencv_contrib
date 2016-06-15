@@ -47,6 +47,11 @@ namespace cv
 {
 namespace dnn
 {
+//! @addtogroup dnn
+//! @{
+//!
+//! @defgroup LayerList Partial List of Implemented Layers
+//! @{
 
     //! LSTM recurrent layer
     class LSTMLayer : public Layer
@@ -124,6 +129,10 @@ namespace dnn
         */
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
+
+//! @}
+//! @}
+
 }
 }
 #endif

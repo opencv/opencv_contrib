@@ -41,7 +41,7 @@ PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
     BlobShape inpShape = get<1>(params).first;
     int outCn   = get<1>(params).second;
     int groups  = get<2>(params);
-    int stride  = (ksz >= 11) ? 4 : get<3>(params);
+    int stride  = (ksz >= 11) ? 4 : (int)get<3>(params);
 
     int inpCn = inpShape[1];
     Blob wgtBlob(BlobShape(outCn, inpCn/groups, ksz, ksz)), biasBlob(BlobShape(outCn, 1, 1, 1));
