@@ -57,8 +57,8 @@ public:
     getFeatures(RadialVarianceHash &rvh) const
     {
         rvh.findFeatureVector();
-        return rvh.features_;		
-    }	
+        return rvh.features_;
+    }
 
     Mat getPixPerLine(Mat const &input,
                       RadialVarianceHash &rvh) const
@@ -102,6 +102,7 @@ protected:
 CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
     rvh(1,1,10)
 {
+    input.create(8, 8, CV_8U);
     uchar *inPtr = input.ptr<uchar>(0);
     for(size_t i = 0; i != input.total(); ++i)
     {
@@ -112,7 +113,7 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
 void CV_RadialVarianceHashTest::testFeatures()
 {
     std::vector<double> const &features = tester.getFeatures(rvh);
-    double const expectResult[] = 
+    double const expectResult[] =
     {-1.35784,-0.42703,0.908487,-1.39327,1.17313,
      1.47515,-0.0156121,0.774335,-0.116755,-1.02059};
     for(size_t i = 0; i != features.size(); ++i)
@@ -123,14 +124,14 @@ void CV_RadialVarianceHashTest::testFeatures()
 
 void CV_RadialVarianceHashTest::testPixPerLine()
 {
-  tester.getPixPerLine(input, rvh);
+  cv::Mat const pixPerLine = tester.getPixPerLine(input, rvh);
   uchar const expectResult[] =
   {
     8,8,8,0,8,15,7,5,8,8,
   };
   bool const equal =
-          std::equal(expectResult, expectResult + input.total(),
-                     input.ptr<uchar>(0));
+          std::equal(expectResult, expectResult + pixPerLine.total(),
+          pixPerLine.ptr<int>(0));
   if(equal == false)
   {
     ts->printf(cvtest::TS::LOG, "Wrong pixel per line value \n");
