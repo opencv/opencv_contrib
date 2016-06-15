@@ -43,24 +43,34 @@
 
 using namespace cv;
 
-class cv::img_hash::RadialVarHashTester
+
+namespace cv
+{
+
+namespace img_hash 
+{
+
+class RadialVarHashTester
 {
 public:
     RadialVarHashTester(){}
-    ~RadialVarHashTester(){}	
+    ~RadialVarHashTester(){}
 
-    cv::Mat getPixPerLine(cv::Mat const &input,
-                          cv::img_hash::RadialVarianceHash &rvh) const
+    Mat getPixPerLine(Mat const &input,
+                      RadialVarianceHash &rvh) const
     {
         rvh.radialProjections(input);
         return rvh.pixPerLine_;
     }
 
-    cv::Mat getProjection(cv::img_hash::RadialVarianceHash const &rvh) const
+    Mat getProjection(RadialVarianceHash const &rvh) const
     {
         return rvh.projections_;
     }
 };
+
+}
+}
 
 /**
  *The expected results of this test case are come from the phash library,
