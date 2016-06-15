@@ -53,9 +53,6 @@ namespace img_hash
 class RadialVarHashTester
 {
 public:
-    RadialVarHashTester(){}
-    ~RadialVarHashTester(){}
-
     Mat getPixPerLine(Mat const &input,
                       RadialVarianceHash &rvh) const
     {
@@ -79,8 +76,7 @@ public:
 class CV_RadialVarianceHashTest : public cvtest::BaseTest
 {
 public:
-    CV_RadialVarianceHashTest();
-    ~CV_RadialVarianceHashTest();
+    CV_RadialVarianceHashTest();    
 protected:
     void run(int /* idx */);
 
@@ -101,7 +97,6 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
         inPtr[i] = static_cast<uchar>(i);
     }
 }
-CV_RadialVarianceHashTest::~CV_RadialVarianceHashTest(){}
 
 void CV_RadialVarianceHashTest::testPixPerLine()
 {  
