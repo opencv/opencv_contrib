@@ -59,7 +59,7 @@ public:
         rvh.findFeatureVector();
         return rvh.features_;
     }
-    
+
     cv::Mat getHash(RadialVarianceHash &rvh) const
     {
         cv::Mat hash;
