@@ -81,7 +81,7 @@ public:
   */
   virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create();  
+  CV_EXPORTS static Ptr<RadialVarianceHash> create();
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
