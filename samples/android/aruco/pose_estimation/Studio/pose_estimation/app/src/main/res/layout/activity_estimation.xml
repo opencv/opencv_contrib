@@ -1,0 +1,107 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout android:layout_weight="1" android:layout_height="fill_parent" android:layout_width="fill_parent">
+        <org.opencv.android.JavaCameraView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/camera_view" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_weight="1"
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+                <Button
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Start"
+                    android:id="@+id/button_start" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+                <Button
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Stop"
+                    android:id="@+id/button_stop" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:orientation="vertical">
+                <RadioGroup
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Aruco Board"
+                        android:id="@+id/radioButton_aruco_b" />
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Charuco Board"
+                        android:id="@+id/radioButton_charuco_b"
+                        android:checked="false" />
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Charuco Diamond"
+                        android:checked="true"
+                        android:id="@+id/radioButton_charuco_d" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_width="fill_parent"
+            android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:text="LOG"
+                    android:layout_gravity="center"
+                    android:id="@+id/textView_log_heading" />
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/scrollView_log_container"
+                     >
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:text="Log"
+                        android:layout_gravity="center_horizontal"
+                        android:id="@+id/textView_log_content" />
+                </ScrollView>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+
+
+
+</LinearLayout>
