@@ -53,6 +53,13 @@ namespace img_hash
 class RadialVarHashTester
 {
 public:
+    std::vector<double> const&
+    getFeatures(RadialVarianceHash &rvh) const
+    {
+        rvh.findFeatureVector();
+        return rvh.features_;		
+    }	
+
     Mat getPixPerLine(Mat const &input,
                       RadialVarianceHash &rvh) const
     {
@@ -80,6 +87,10 @@ public:
 protected:
     void run(int /* idx */);
 
+    //this test case do not use the original "golden data"
+    //of pHash library, I add a small value to nb_pixels in
+    //the function "ph_feature_vector" to avoid NaN value
+    void testFeatures();
     void testPixPerLine();
     void testProjection();
 
@@ -95,6 +106,18 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
     for(size_t i = 0; i != input.total(); ++i)
     {
         inPtr[i] = static_cast<uchar>(i);
+    }
+}
+
+void CV_RadialVarianceHashTest::testFeatures()
+{
+    std::vector<double> const &features = tester.getFeatures(rvh);
+    double const expectResult[] = 
+    {-1.35784,-0.42703,0.908487,-1.39327,1.17313,
+     1.47515,-0.0156121,0.774335,-0.116755,-1.02059};
+    for(size_t i = 0; i != features.size(); ++i)
+    {
+        ASSERT_NEAR(features[i], expectResult[i], 0.0001);
     }
 }
 
@@ -139,9 +162,11 @@ void CV_RadialVarianceHashTest::testProjection()
     }
 }
 
-void CV_RadialVarianceHashTest::run(int )
+void CV_RadialVarianceHashTest::run(int)
 {
     testPixPerLine();
+    testProjection();
+    testFeatures();
 }
 
 TEST(radial_variance_hash_test, accuracy) { CV_RadialVarianceHashTest test; test.safe_run(); }
