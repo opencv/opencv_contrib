@@ -70,9 +70,9 @@ public:
       @param gamma Gamma correction on the input image
       @param numOfAngleLine The number of angles to consider
    */
-  explicit RadialVarianceHash(double sigma = 1,
-                              float gamma = 1.0f,
-                              int numOfAngleLine = 180);
+  CV_EXPORTS explicit RadialVarianceHash(double sigma = 1,
+                                         float gamma = 1.0f,
+                                         int numOfAngleLine = 180);
 
   /** @brief Computes average hash of the input image
       @param input input image want to compute hash value
@@ -88,10 +88,11 @@ private:
   void findFeatureVector();
   void firstHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
-  void radialProjections(cv::Mat const &input);
+  CV_EXPORTS void radialProjections(cv::Mat const &input);
 
   float gamma_;
   cv::Mat blurImg_;
+  std::vector<double> features_;
   cv::Mat gammaImg_;
   cv::Mat grayImg_;
   cv::Mat normalizeImg_;
