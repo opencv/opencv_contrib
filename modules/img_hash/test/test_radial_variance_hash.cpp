@@ -56,8 +56,8 @@ public:
         rvh.radialProjections(input);
         return rvh.pixPerLine_;
     }
-	
-	cv::Mat getProjection(cv::img_hash::RadialVarianceHash const &rvh) const
+
+    cv::Mat getProjection(cv::img_hash::RadialVarianceHash const &rvh) const
     {
         return rvh.projections_;
     }
@@ -70,46 +70,47 @@ public:
     ~CV_RadialVarianceHashTest();
 protected:
     void run(int /* idx */);
-	
-	void testPixPerLine();
-	void testProjection();
-	
-	cv::Mat input;
+
+    void testPixPerLine();
+    void testProjection();
+    
+    cv::Mat input;
+    cv::img_hash::RadialVarianceHash rvh;
+    cv::img_hash::RadialVarHashTester tester;
 };
 
-CV_RadialVarianceHashTest::CV_RadialVarianceHashTest()
+CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() : 
+    rvh(1,1,10)
 {
-	uchar *inPtr = input.ptr<uchar>(0);
-	for(size_t i = 0; i != input.total(); ++i)
-	{
-	  inPtr[i] = i;
-	}
+    uchar *inPtr = input.ptr<uchar>(0);
+    for(size_t i = 0; i != input.total(); ++i)
+    {
+        inPtr[i] = i;
+    }
 }
 CV_RadialVarianceHashTest::~CV_RadialVarianceHashTest(){}
 
 void CV_RadialVarianceHashTest::testPixPerLine()
-{
-  cv::img_hash::RadialVarianceHash rvh(1,1,10);
-  cv::img_hash::RadialVarHashTester tester;
+{  
   tester.getPixPerLine(input, rvh);
   uchar const expectResult[] =
   {
-    8,8,8,0,8,15,7,5,8,8,        
-  };    
+    8,8,8,0,8,15,7,5,8,8,
+  };
   bool const equal =
           std::equal(expectResult, expectResult + input.total(),
                      input.ptr<uchar>(0));
   if(equal == false)
   {
     ts->printf(cvtest::TS::LOG, "Wrong pixel per line value \n");
-    ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);      
+    ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
   }
 }
 
 void CV_RadialVarianceHashTest::testProjection()
 {
-	cv::Mat const proj = tester.getProjection(rvh);
-	uchar const expectResult[] =
+    cv::Mat const proj = tester.getProjection(rvh);
+    uchar const expectResult[] =
     {
       32,  16,   0,   0,   2,   4,   0,   0,  56,  40,
       33,  17,   9,   0,  10,  59,  58,   0,  49,  41,
@@ -119,15 +120,14 @@ void CV_RadialVarianceHashTest::testProjection()
       37,  37,  45,   0,  44,  29,  30,  21,  21,  29,
       38,  46,  46,   0,  53,  22,  22,   6,  22,  22,
       39,  47,  55,   0,  61,  14,  15,   0,  15,  23
-	  
-    }; 
+    };
     bool const equal =
             std::equal(expectResult, expectResult + proj.total(),
                        proj.ptr<uchar>(0));
     if(equal == false)
     {
       ts->printf(cvtest::TS::LOG, "Wrong projection value \n");
-      ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);      
+      ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
     }
 }
 
