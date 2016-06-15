@@ -374,7 +374,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
  */
 CV_EXPORTS_W void refineDetectedMarkers(
     InputArray image, Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
-    InputOutputArray detectedIds, InputOutputArray rejectedCorners,
+    InputOutputArray detectedIds, InputOutputArrayOfArrays rejectedCorners,
     InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
     float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
     OutputArray recoveredIdxs = noArray(), const Ptr<DetectorParameters> &parameters = DetectorParameters::create());
