@@ -74,7 +74,7 @@ RadialVarianceHash::RadialVarianceHash(double sigma,
 {
 }
 
-~RadialVarianceHash()
+RadialVarianceHash::~RadialVarianceHash()
 {
 
 }
