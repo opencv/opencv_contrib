@@ -47,7 +47,7 @@ using namespace cv;
  *The expected results of this test case are come from the phash library,
  *I use it as golden model
  */
-class img_hash::RadialVarHashTester
+class cv::img_hash::RadialVarHashTester
 {
 public:
     cv::Mat getPixPerLine(cv::Mat const &input,
