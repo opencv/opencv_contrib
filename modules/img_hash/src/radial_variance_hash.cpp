@@ -223,30 +223,31 @@ void RadialVarianceHash::hashCalculate(cv::Mat &hash)
         {
             sum += features_[n]*std::cos((3.14159*(2*n+1)*k)/(2*featureSize));
         }
-        if (k == 0)
-        {
-            temp[k] = sum/std::sqrt(featureSize);
-        }
-        else
-        {
-            temp[k] = sum*sqrtTwo/std::sqrt(featureSize);
-        }
+        temp[k] = k == 0 ? sum/std::sqrt(featureSize) :
+                           sum*sqrtTwo/std::sqrt(featureSize);
         if(temp[k] > max)
         {
             max = temp[k];
         }
-        if(temp[k] < min)
+        else if(temp[k] < min)
         {
             min = temp[k];
         }
     }
 
-    double const range = max - min + 0.0001;
-    //std::transform is a better choice if lambda exist
-    uchar *hashPtr = hash.ptr<uchar>(0);
-    for(int i = 0; i < hash.cols; ++i)
+    double const range = max - min;
+    if(range != 0)
     {
-        hashPtr[i] = static_cast<uchar>((255*(temp[i] - min)/range));
+        //std::transform is a better choice if lambda supported
+        uchar *hashPtr = hash.ptr<uchar>(0);
+        for(int i = 0; i < hash.cols; ++i)
+        {
+            hashPtr[i] = static_cast<uchar>((255*(temp[i] - min)/range));
+        }
+    }
+    else
+    {
+        hash = 0;
     }
 }
 
