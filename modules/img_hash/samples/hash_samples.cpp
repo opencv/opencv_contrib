@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     }
 
     Mat input = imread(argv[1]);
-	Mat target = imread(argv[2]);
+    Mat target = imread(argv[2]);
 
     test_by_function(input, target);
     test_by_class(input, target);
