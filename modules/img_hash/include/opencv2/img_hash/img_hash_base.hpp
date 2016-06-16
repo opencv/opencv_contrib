@@ -63,12 +63,12 @@ namespace cv
             CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash) = 0;
 
             /** @brief Compare the hash value between inOne and inTwo
-            @param inOne Hash value one
-            @param inTwo Hash value two
+            @param hashOne Hash value one
+            @param hashTwo Hash value two
             @return value indicate similarity between inOne and inTwo, the meaning
             of the value vary from algorithms to algorithms
             */
-            CV_EXPORTS virtual double compare(cv::Mat const &inOne, cv::Mat const &inTwo) const = 0;
+            CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const = 0;
         };
         //! @}
     }//ihash

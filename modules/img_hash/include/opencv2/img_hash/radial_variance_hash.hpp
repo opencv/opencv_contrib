@@ -81,7 +81,16 @@ public:
   */
   virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create();
+  /** @brief Compare the hash value between inOne and inTwo
+  @param hashOne Hash value one
+  @param hashTwo Hash value two
+  @return cross correlation of two hash, the closer the value to 1,
+  the more similar the hash values. We could assume the threshold is 0.9
+  by default
+  */
+  CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+
+  CV_EXPORTS static Ptr<RadialVarianceHash> create();    
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
@@ -101,7 +110,7 @@ private:
   int numOfAngelLine_;
   cv::Mat pixPerLine_;
   cv::Mat projections_;
-  double sigma_;
+  double sigma_;  
 };
 
 //! @}

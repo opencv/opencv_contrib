@@ -67,7 +67,16 @@ public:
       @param input input image want to compute hash value
       @param hash hash of the image
   */
-  virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
+
+  /** @brief Compare the hash value between inOne and inTwo
+  @param hashOne Hash value one
+  @param hashTwo Hash value two
+  @return zero means the images are likely very similar;
+  5 means a few things maybe different; 10 or more means
+  they maybe are very different image
+  */
+  CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
   CV_EXPORTS static Ptr<AverageHash> create();
 

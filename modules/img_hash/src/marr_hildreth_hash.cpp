@@ -158,6 +158,11 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
     createHash(blocks, hash);
 }
 
+double MarrHildrethHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+{
+    return norm(hashOne, hashTwo, NORM_HAMMING);
+}
+
 float MarrHildrethHash::getAlpha() const
 {
     return alphaVal;

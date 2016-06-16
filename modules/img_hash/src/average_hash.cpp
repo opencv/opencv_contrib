@@ -75,6 +75,11 @@ void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
     }
 }
 
+double AverageHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+{
+    return norm(hashOne, hashTwo, NORM_HAMMING);
+}
+
 Ptr<AverageHash> AverageHash::create()
 {
     return makePtr<AverageHash>();

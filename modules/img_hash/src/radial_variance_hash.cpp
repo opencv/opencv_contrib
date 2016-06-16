@@ -42,6 +42,7 @@
 #include "precomp.hpp"
 
 #include <iostream>
+#include <numeric>
 
 namespace cv{
 
@@ -105,6 +106,14 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
     radialProjections(normalizeImg_);
     findFeatureVector();
     hashCalculate(hash);
+}
+
+double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+{
+    cv::Mat result;
+    cv::matchTemplate(hashOne, hashTwo, result, CV_TM_CCORR_NORMED);
+
+    return result.at<float>(0, 0);
 }
 
 Ptr<RadialVarianceHash> RadialVarianceHash::create()

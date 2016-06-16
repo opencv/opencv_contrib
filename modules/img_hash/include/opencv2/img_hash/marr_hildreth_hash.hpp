@@ -71,22 +71,30 @@ public:
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    explicit MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
+    CV_EXPORTS explicit MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
 
     /** @brief Computes marr hildreth operator based hash of the input image
         @param input Input CV_8UC3, CV_8UC1 array.
-        @param hash hash of the image
+        @param hash hash of the image, store 72 uchar hash value
     */
-    virtual void compute(cv::Mat const &input, cv::Mat &hash);
+    CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
-    float getAlpha() const;
-    float getScale() const;
+    /** @brief Compare the hash value between inOne and inTwo
+    @param hashOne Hash value one
+    @param hashTwo Hash value two
+    @return value indicate similarity of two hash, smaller mean the
+    hash values are more similar to each other
+    */
+    CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+
+    CV_EXPORTS float getAlpha() const;
+    CV_EXPORTS float getScale() const;
 
     /** @brief Set Mh kernel parameters
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    void setKernelParam(float alpha, float scale);
+    CV_EXPORTS void setKernelParam(float alpha, float scale);
 
     /**
         @param alpha int scale factor for marr wavelet (default=2).

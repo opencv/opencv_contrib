@@ -81,6 +81,11 @@ void PHash::compute(const Mat &input, Mat &hash)
     }
 }
 
+double PHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+{
+    return norm(hashOne, hashTwo, NORM_HAMMING);
+}
+
 Ptr<PHash> PHash::create()
 {
     return makePtr<PHash>();
