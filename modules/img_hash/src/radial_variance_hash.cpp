@@ -114,11 +114,10 @@ Ptr<RadialVarianceHash> RadialVarianceHash::create()
 
 void RadialVarianceHash::
 afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
-{
-    int j= 0;
+{    
     int *pplPtr = pixPerLine_.ptr<int>(0);
     int const init = 3*numOfAngelLine_/4;
-    for(int k = init; k < numOfAngelLine_; ++k)
+    for(int k = init, j = 0; k < numOfAngelLine_; ++k, j += 2)
     {
         float const theta = k*3.14159f/numOfAngelLine_;
         float const alpha = std::tan(theta);
@@ -139,8 +138,7 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
                         input.at<uchar>(-(x-yOff)+yOff, -yd+yOff);
                 pplPtr[k-j] += 1;
             }
-        }
-        j+=2;
+        }        
     }
 }
 
