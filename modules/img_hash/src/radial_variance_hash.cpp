@@ -52,6 +52,12 @@ namespace img_hash{
 
 namespace{
 
+enum{
+
+hashSize = 40,
+
+};
+
 inline
 float roundingFactor(float val)
 {
@@ -101,9 +107,13 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
 
 double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
 {
-    cv::Mat hashFloatOne;
+    CV_Assert(hashOne.cols == hashSize && hashOne.cols == hashTwo.cols);
+
+    float bufferOne[hashSize];
+    cv::Mat hashFloatOne(1, hashSize, CV_32F, bufferOne);
     hashOne.convertTo(hashFloatOne, CV_32F);
-    cv::Mat hashFloatTwo;
+    float bufferTwo[hashSize];
+    cv::Mat hashFloatTwo(1, hashSize, CV_32F, bufferTwo);
     hashTwo.convertTo(hashFloatTwo, CV_32F);
 
     int const pixNum = hashFloatOne.rows * hashFloatOne.cols;
@@ -221,8 +231,8 @@ firstHalfProjections(Mat const &input, int D, int xOff, int yOff)
 
 void RadialVarianceHash::hashCalculate(cv::Mat &hash)
 {
-    hash.create(1, 40, CV_8U);
-    double temp[40];
+    hash.create(1, hashSize, CV_8U);
+    double temp[hashSize];
     double max = 0;
     double min = 0;
     size_t const featureSize = features_.size();
