@@ -57,44 +57,51 @@ namespace dnn
     class LSTMLayer : public Layer
     {
     public:
+        /** Creates instance of LSTM layer */
         CV_EXPORTS_W static Ptr<LSTMLayer> create();
 
         /** Set trained weights for LSTM layer.
         LSTM behavior on each step is defined by current input, previous output, previous cell state and learned weights.
-        Let x_t be current input, h_t be current output, c_t be current state.
 
-        Current output and current cell state is computed as follows:
-        h_t = o_t (*) tanh(c_t),
-        c_t = f_t (*) c_{t-1} + i_t (*) g_t,
-        where (*) is per-element multiply operation and i_t, f_t, o_t, g_t is internal gates that are computed using learned wights.
+        Let @f$x_t@f$ be current input, @f$h_t@f$ be current output, @f$c_t@f$ be current state.
+        Than current output and current cell state is computed as follows:
+        @f{eqnarray*}{
+        h_t &= o_t \odot tanh(c_t),               \\
+        c_t &= f_t \odot c_{t-1} + i_t \odot g_t, \\
+        @f}
+        where @f$\odot@f$ is per-element multiply operation and @f$i_t, f_t, o_t, g_t@f$ is internal gates that are computed using learned wights.
 
         Gates are computed as follows:
-        i_t = sigmoid(W_xi*x_t + W_hi*h_{t-1} + b_i)
-        f_t = sigmoid(W_xf*x_t + W_hf*h_{t-1} + b_f)
-        o_t = sigmoid(W_xo*x_t + W_ho*h_{t-1} + b_o)
-        g_t = tanh   (W_xg*x_t + W_hg*h_{t-1} + b_g)
-        where W_x?, W_h? and b_? are learned weights represented as matrices: W_x? \in R^{N_c x N_x}, W_h? \in R^{N_c x N_h}, b_? \in \R^{N_c}.
+        @f{eqnarray*}{
+        i_t &= sigmoid&(W_{xi} x_t + W_{hi} h_{t-1} + b_i), \\
+        f_t &= sigmoid&(W_{xf} x_t + W_{hf} h_{t-1} + b_f), \\
+        o_t &= sigmoid&(W_{xo} x_t + W_{ho} h_{t-1} + b_o), \\
+        g_t &= tanh   &(W_{xg} x_t + W_{hg} h_{t-1} + b_g), \\
+        @f}
+        where @f$W_{x?}@f$, @f$W_{h?}@f$ and @f$b_{?}@f$ are learned weights represented as matrices:
+        @f$W_{x?} \in R^{N_c \times N_x}@f$, @f$W_h? \in R^{N_c \times N_h}@f$, @f$b_? \in R^{N_c}@f$.
 
-        For simplicity and performance purposes we use W_x = [W_xi; W_xf; W_xo, W_xg] (i.e. W_x is vertical contacentaion of W_x?), W_x \in R^{4N_c x N_x}.
-        The same for W_h = [W_hi; W_hf; W_ho, W_hg], W_h \in R^{4N_c x N_h}
-        and for b = [b_i; b_f, b_o, b_g], b \in R^{4N_c}.
+        For simplicity and performance purposes we use @f$ W_x = [W_{xi}; W_{xf}; W_{xo}, W_{xg}] @f$
+        (i.e. @f$W_x@f$ is vertical contacentaion of @f$ W_{x?} @f$), @f$ W_x \in R^{4N_c x N_x} @f$.
+        The same for @f$ W_h = [W_{hi}; W_{hf}; W_{ho}, W_{hg}], W_h \in R^{4N_c x N_h} @f$
+        and for @f$ b = [b_i; b_f, b_o, b_g]@f$, @f$b \in R^{4N_c} @f$.
 
-        @param Wh is matrix defining how previous output is transformed to internal gates (i.e. according to abovemtioned notation is W_h)
-        @param Wx is matrix defining how current input is transformed to internal gates (i.e. according to abovemtioned notation is W_x)
-        @param Wb is bias vector (i.e. according to abovemtioned notation is b)
+        @param Wh is matrix defining how previous output is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_h @f$)
+        @param Wx is matrix defining how current input is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_x @f$)
+        @param b  is bias vector (i.e. according to abovemtioned notation is @f$ b @f$)
         */
-        virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &bias) = 0;
+        virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
 
-        /** In common cas it use three inputs (x_t, h_{t-1} and c_{t-1}) to compute compute two outputs: h_t and c_t.
+        /** In common case it uses three inputs (@f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$) to compute compute two outputs (@f$h_t@f$ and @f$c_t@f$).
 
-        @param input could contain three inputs: x_t, h_{t-1} and c_{t-1}.
-        The first x_t input is required.
-        The second and third inputs are optional: if they weren't set than layer will use internal h_{t-1} and c_{t-1} from previous calls,
+        @param input could contain three inputs: @f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$.
+        @param output contains computed outputs: @f$h_t@f$ and @f$c_t@f$.
+
+        The first input @f$x_t@f$ is required.
+        The second and third inputs are optional: if they weren't set than layer will use internal @f$h_{t-1}@f$ and @f$c_{t-1}@f$ from previous calls,
         but at the first call they will be filled by zeros.
-        Size of the last dimension of x_t must be N_x, (N_h for h_{t-1} and N_c for c_{t-1}).
-        Sizes of remainder dimensions could be any, but thay must be consistent among x_t, h_{t-1} and c_{t-1}.
-
-        @param output computed outputs: h_t and c_t.
+        Size of the last dimension of @f$x_t@f$ must be @f$N_x@f$, (@f$N_h@f$ for @f$h_{t-1}@f$ and @f$N_c@f$ for @f$c_{t-1}@f$).
+        Sizes of remainder dimensions could be any, but thay must be consistent among @f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$.
         */
         CV_EXPORTS_W void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
@@ -103,29 +110,33 @@ namespace dnn
     class RNNLayer : public Layer
     {
     public:
-
+        /** Creates instance of RNNLayer */
         CV_EXPORTS_W static Ptr<RNNLayer> create();
 
         /** Setups learned weights.
 
         Recurrent-layer behavior on each step is defined by current input x_t, previous state h_t and learned weights as follows:
-        h_t = tanh(W_{hh} h_{t-1} + W_{xh} x_t + b_h),
-        o_t = tanh(W_{ho} h_t + b_o),
+        @f{eqnarray*}{
+        h_t &= tanh&(W_{hh} h_{t-1} + W_{xh} x_t + b_h),  \\
+        o_t &= tanh&(W_{ho} h_t + b_o),
+        @f}
 
-        @param Whh is W_hh matrix
-        @param Wxh is W_xh matrix
-        @param bh  is b_h vector
-        @param Who is W_xo matrix
-        @param bo  is b_o vector
+        @param Whh is @f$ W_{hh} @f$ matrix
+        @param Wxh is @f$ W_{xh} @f$ matrix
+        @param bh  is @f$ b_{h}  @f$ vector
+        @param Who is @f$ W_{xo} @f$ matrix
+        @param bo  is @f$ b_{o}  @f$ vector
         */
         CV_EXPORTS_W virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
 
-        /** Accepts two inputs x_t and h_{t-1} and compute two outputs o_t and h_t.
+        /** Accepts two inputs @f$x_t@f$ and @f$h_{t-1}@f$ and compute two outputs @f$o_t@f$ and @f$h_t@f$.
 
-        @param input could contain inputs x_t and h_{t-1}.  x_t is required whereas h_{t-1} is optional.
-        If the second input h_{t-1} isn't specified a layer will use internal h_{t-1} from the previous calls, at the first call h_{t-1} will be filled by zeros.
+        @param input could contain inputs @f$x_t@f$ and @f$h_{t-1}@f$.
+        @param output should contain outputs @f$o_t@f$ and @f$h_t@f$.
 
-        @param output should contain outputs o_t and h_t
+        The first input @f$x_t@f$ is required whereas @f$h_{t-1}@f$ is optional.
+        If the second input @f$h_{t-1}@f$ isn't specified a layer will use internal @f$h_{t-1}@f$ from the previous calls, at the first call @f$h_{t-1}@f$ will be filled by zeros.
+
         */
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
