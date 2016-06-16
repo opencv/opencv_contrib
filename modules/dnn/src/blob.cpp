@@ -59,7 +59,7 @@ namespace dnn
 
     static BlobShape getBlobShape(std::vector<Mat> &vmat, int requestedCn = -1)
     {
-        BlobShape shape(4);
+        BlobShape shape(BlobShape::all(4));
         int cnSum = 0, matCn;
 
         CV_Assert(vmat.size() > 0);

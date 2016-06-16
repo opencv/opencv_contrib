@@ -76,7 +76,8 @@ void setBlasThreads(int numThreads)
     openblas_set_num_threads(numThreads);
     goto_set_num_threads(numThreads);
     #else
-    numThreads = 0; //suppress compiler's warning
+    (void)numThreads;   //suppress compilers' warning
+    numThreads = 0;
     #endif
 }
 

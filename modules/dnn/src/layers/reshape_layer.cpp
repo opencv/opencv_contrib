@@ -58,12 +58,12 @@ ReshapeLayer::ReshapeLayer(LayerParams &params) : Layer(params)
 
     if (!params.has("dim"))
     {
-        shapeDesc = BlobShape(0);
+        shapeDesc = BlobShape::all(0);
         return;
     }
 
     DictValue paramShape = params.get("dim");
-    shapeDesc = BlobShape(paramShape.size());
+    shapeDesc = BlobShape::all(paramShape.size());
 
     for (int i = 0; i < paramShape.size(); i++)
     {
@@ -97,7 +97,7 @@ void ReshapeLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
         CV_Assert(0 <= endAxis && endAxis <= inpShape.dims());
 
         int newDims = inpShape.dims() - (endAxis - startAxis) + shapeDesc.dims();
-        BlobShape outShape(newDims);
+        BlobShape outShape = BlobShape::all(newDims);
 
         computeOutputShape(startAxis, endAxis, inpShape, outShape);
 

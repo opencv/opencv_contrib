@@ -55,12 +55,20 @@ namespace dnn
     /** @brief Lightweight class for storing and processing a shape of blob (or anything else). */
     struct BlobShape
     {
-        explicit BlobShape(int ndims = 4, int fill = 1);    //!< Creates n-dim shape and fill its by @p fill
+        BlobShape();                                        //!< Returns @ref all(4, 1)
+        BlobShape(int s0);                                  //!< Creates 1-dim shape [@p s0]
+        BlobShape(int s0, int s1);                          //!< @overload
+        BlobShape(int s0, int s1, int s2);                  //!< @overload
         BlobShape(int num, int cn, int rows, int cols);     //!< Creates 4-dim shape [@p num, @p cn, @p rows, @p cols]
-        BlobShape(int ndims, const int *sizes);             //!< Creates n-dim shape from the @p sizes array
+
+        //! Creates n-dim shape from the @p sizes array; if @p sizes is NULL then shape will contain unspecified data
+        BlobShape(int ndims, const int *sizes);
         BlobShape(const std::vector<int> &sizes);           //!< Creates n-dim shape from the @p sizes vector
         template<int n>
         BlobShape(const Vec<int, n> &shape);                //!< Creates n-dim shape from @ref cv::Vec
+
+        //! Creates n-dim shape and fill its by @p fill
+        static BlobShape all(int ndims, int fill = 1);
 
         /** @brief Returns number of dimensions. */
         int dims() const;

@@ -48,18 +48,48 @@ namespace cv
 namespace dnn
 {
 
-inline BlobShape::BlobShape(int ndims, int fill) : sz( (size_t)std::max(ndims, 0) )
+inline BlobShape::BlobShape()
+{
+    sz.allocate(4);
+    for (size_t i = 0; i < sz.size(); i++)
+        sz[i] = 1;
+}
+
+inline BlobShape BlobShape::all(int ndims, int fill)
 {
     CV_Assert(ndims >= 0);
+    BlobShape res;
+    res.sz.allocate(ndims);
     for (int i = 0; i < ndims; i++)
-        sz[i] = fill;
+        res.sz[i] = fill;
+    return res;
 }
 
 inline BlobShape::BlobShape(int ndims, const int *sizes) : sz( (size_t)std::max(ndims, 0) )
 {
     CV_Assert(ndims >= 0);
+    if (!sizes)
+        return;
     for (int i = 0; i < ndims; i++)
         sz[i] = sizes[i];
+}
+
+inline BlobShape::BlobShape(int s0) : sz(1)
+{
+    sz[0] = s0;
+}
+
+inline BlobShape::BlobShape(int s0, int s1) : sz(2)
+{
+    sz[0] = s0;
+    sz[1] = s1;
+}
+
+inline BlobShape::BlobShape(int s0, int s1, int s2) : sz(3)
+{
+    sz[0] = s0;
+    sz[1] = s1;
+    sz[2] = s2;
 }
 
 inline BlobShape::BlobShape(int num, int cn, int rows, int cols) : sz(4)

@@ -190,9 +190,9 @@ public:
         Nx = _Nx;
         Nc = _Nc;
 
-        Wh = Blob(BlobShape(Vec2i(4 * Nc, Nc)));
-        Wx = Blob(BlobShape(Vec2i(4 * Nc, Nx)));
-        b  = Blob(BlobShape(Vec2i(4 * Nc, 1)));
+        Wh = Blob(BlobShape(4 * Nc, Nc));
+        Wx = Blob(BlobShape(4 * Nc, Nx));
+        b  = Blob(BlobShape(4 * Nc, 1));
 
         layer = LSTMLayer::create();
         layer->setWeights(Wh, Wx, b);
@@ -248,11 +248,11 @@ public:
         Nh = _Nh;
         No = _No;
 
-        Whh = Blob(BlobShape(Vec2i(Nh, Nh)));
-        Wxh = Blob(BlobShape(Vec2i(Nh, Nx)));
-        bh  = Blob(BlobShape(Vec2i(Nh, 1)));
-        Who = Blob(BlobShape(Vec2i(No, Nh)));
-        bo  = Blob(BlobShape(Vec2i(No, 1)));
+        Whh = Blob(BlobShape(Nh, Nh));
+        Wxh = Blob(BlobShape(Nh, Nx));
+        bh  = Blob(BlobShape(Nh, 1));
+        Who = Blob(BlobShape(No, Nh));
+        bo  = Blob(BlobShape(No, 1));
 
         layer = RNNLayer::create();
         layer->setWeights(Whh, Wxh, bh, Who, bo);
