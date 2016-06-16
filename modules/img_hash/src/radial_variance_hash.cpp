@@ -110,10 +110,11 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
 
 double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
 {
-    cv::Mat result;
+    float buffer[1];
+    cv::Mat result(1,1,CV_32F,buffer);
     cv::matchTemplate(hashOne, hashTwo, result, CV_TM_CCORR_NORMED);
 
-    return result.at<float>(0, 0);
+    return buffer[0];
 }
 
 Ptr<RadialVarianceHash> RadialVarianceHash::create()
