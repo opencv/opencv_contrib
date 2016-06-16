@@ -107,6 +107,10 @@ double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTw
 {
     CV_Assert(hashOne.cols == hashSize && hashOne.cols == hashTwo.cols);
 
+    //PHash slip through all of the N of cross-correlation, but
+    //this function only compute the n at 0.
+    //The cross-correlation function is f[m]*g[m+n], range of m
+    //is [0, hashSize)
     float bufferOne[hashSize];
     cv::Mat hashFloatOne(1, hashSize, CV_32F, bufferOne);
     hashOne.convertTo(hashFloatOne, CV_32F);
