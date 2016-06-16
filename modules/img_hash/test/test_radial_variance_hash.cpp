@@ -109,7 +109,7 @@ protected:
 };
 
 CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
-    rvh(1,1,10)
+    rvh(1,10)
 {
     input.create(8, 8, CV_8U);
     uchar *inPtr = input.ptr<uchar>(0);
