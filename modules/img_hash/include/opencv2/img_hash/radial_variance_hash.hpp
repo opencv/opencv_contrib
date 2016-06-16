@@ -90,7 +90,7 @@ public:
   */
   CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create();    
+  CV_EXPORTS static Ptr<RadialVarianceHash> create();
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
@@ -110,7 +110,7 @@ private:
   int numOfAngelLine_;
   cv::Mat pixPerLine_;
   cv::Mat projections_;
-  double sigma_;  
+  double sigma_;
 };
 
 //! @}
