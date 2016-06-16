@@ -67,11 +67,9 @@ class RadialVarianceHash : public ImgHashBase
 public:
   /** @brief Constructor
       @param sigma Gaussian kernel standard deviation
-      @param gamma Gamma correction on the input image
       @param numOfAngleLine The number of angles to consider
    */
   CV_EXPORTS explicit RadialVarianceHash(double sigma = 1,
-                                         float gamma = 1.0f,
                                          int numOfAngleLine = 180);
   CV_EXPORTS ~RadialVarianceHash();
 
@@ -90,7 +88,8 @@ public:
   */
   CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create();
+  CV_EXPORTS static Ptr<RadialVarianceHash> create(double sigma = 1,
+                                                   int numOfAngleLine = 180);
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
@@ -101,12 +100,9 @@ private:
   CV_EXPORTS void hashCalculate(cv::Mat &hash);
   CV_EXPORTS void radialProjections(cv::Mat const &input);
 
-  float gamma_;
   cv::Mat blurImg_;
   std::vector<double> features_;
-  cv::Mat gammaImg_;
   cv::Mat grayImg_;
-  cv::Mat normalizeImg_;
   int numOfAngelLine_;
   cv::Mat pixPerLine_;
   cv::Mat projections_;

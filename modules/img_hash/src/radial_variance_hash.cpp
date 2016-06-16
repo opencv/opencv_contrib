@@ -44,6 +44,8 @@
 #include <iostream>
 #include <numeric>
 
+#include <opencv2/highgui.hpp>
+
 namespace cv{
 
 namespace img_hash{
@@ -67,9 +69,7 @@ int createOffSet(int length)
 }
 
 RadialVarianceHash::RadialVarianceHash(double sigma,
-                                       float gamma,
                                        int numOfAngleLine) :
-    gamma_(gamma),
     numOfAngelLine_(numOfAngleLine),
     sigma_(sigma)
 {
@@ -94,32 +94,36 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
     }
 
     cv::GaussianBlur(grayImg_, blurImg_, cv::Size(0,0), sigma_, sigma_);
-    //same as : gammaImg = grayImg / 255.0;
-    cv::addWeighted(grayImg_, 1/255.0, cv::Mat(), 0,
-                    0, gammaImg_, CV_32F);
-
-    float const invGamma = 1.0f/(gamma_ + 0.0001f);
-    cv::pow(gammaImg_, invGamma, gammaImg_);
-    gammaImg_ *= 255;
-    gammaImg_.convertTo(normalizeImg_, CV_8U);
-
-    radialProjections(normalizeImg_);
+    radialProjections(blurImg_);
     findFeatureVector();
     hashCalculate(hash);
 }
 
 double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
 {
-    float buffer[1];
-    cv::Mat result(1,1,CV_32F,buffer);
-    cv::matchTemplate(hashOne, hashTwo, result, CV_TM_CCORR_NORMED);
+    cv::Mat hashFloatOne;
+    hashOne.convertTo(hashFloatOne, CV_32F);
+    cv::Mat hashFloatTwo;
+    hashTwo.convertTo(hashFloatTwo, CV_32F);
 
-    return buffer[0];
+    int const pixNum = hashFloatOne.rows * hashFloatOne.cols;
+    cv::Scalar hOneMean, hOneStd, hTwoMean, hTwoStd;
+    cv::meanStdDev(hashFloatOne, hOneMean, hOneStd);
+    cv::meanStdDev(hashFloatTwo, hTwoMean, hTwoStd);
+
+    // Compute covariance and correlation coefficient
+    hashFloatOne -= hOneMean;
+    hashFloatTwo -= hTwoMean;
+    double const covar = (hashFloatOne).dot(hashFloatTwo) / pixNum;
+
+    //return correlation coefficient
+    return covar / (hOneStd[0] * hTwoStd[0] + 1e-20);
 }
 
-Ptr<RadialVarianceHash> RadialVarianceHash::create()
+Ptr<RadialVarianceHash> RadialVarianceHash::create(double sigma,
+                                                   int numOfAngleLine)
 {
-    return makePtr<RadialVarianceHash>();
+    return makePtr<RadialVarianceHash>(sigma, numOfAngleLine);
 }
 
 void RadialVarianceHash::
