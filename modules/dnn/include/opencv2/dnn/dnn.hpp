@@ -66,8 +66,10 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      * It includes dictionary with scalar params (which can be readed by using Dict interface),
      * blob params #blobs and optional meta information: #name and #type of layer instance.
     */
-    struct CV_EXPORTS LayerParams : public Dict
+    class CV_EXPORTS LayerParams : public Dict
     {
+    public:
+        //TODO: Add ability to name blob params
         std::vector<Blob> blobs; //!< List of learned parameters stored as blobs.
 
         String name; //!< Name of the layer instance (optional, can be used internal purposes).
@@ -77,10 +79,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     /** @brief This interface class allows to build new Layers - are building blocks of networks.
      *
      * Each class, derived from Layer, must implement allocate() methods to declare own outputs and forward() to compute outputs.
-     * Also before using the new layer into networks you must register your layer by using one of @ref LayerFactoryModule "LayerFactory" macros.
+     * Also before using the new layer into networks you must register your layer by using one of @ref dnnLayerFactory "LayerFactory" macros.
      */
-    struct CV_EXPORTS Layer
+    class CV_EXPORTS Layer
     {
+    public:
+
         //! List of learned parameters must be stored here to allow read them by using Net::getParam().
         std::vector<Blob> blobs;
 
@@ -267,10 +271,10 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *  @param isBinary specifies whether the network was serialized in ascii mode or binary.
      *  @returns Pointer to the created importer, NULL in failure cases.
      *
-     *  @warning Torch7 importer is experimental now, you need explicitly set CMake opencv_dnn_BUILD_TORCH_IMPORTER flag to compile its.
+     *  @warning Torch7 importer is experimental now, you need explicitly set CMake `opencv_dnn_BUILD_TORCH_IMPORTER` flag to compile its.
      *
-     *  @note Ascii mode of Torch serializer is more preferable, because binary mode extensively use long type of C language,
-     *  which has different bit-length on different systems.
+     *  @note Ascii mode of Torch serializer is more preferable, because binary mode extensively use `long` type of C language,
+     *  which has various bit-length on different systems.
      *
      * The loading file must contain serialized <a href="https://github.com/torch/nn/blob/master/doc/module.md">nn.Module</a> object
      * with importing network. Try to eliminate a custom objects from serialazing data to avoid importing errors.
