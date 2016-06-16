@@ -77,7 +77,7 @@ public:
 
   /** @brief Computes average hash of the input image
       @param input input image want to compute hash value
-      @param hash hash of the image
+      @param hash hash of the image, contain 40 uchar value
   */
   virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
