@@ -44,8 +44,6 @@
 #include <iostream>
 #include <numeric>
 
-#include <opencv2/highgui.hpp>
-
 namespace cv{
 
 namespace img_hash{
