@@ -17,6 +17,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/img_hash.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include <iostream>
 
@@ -62,6 +63,9 @@ void test_by_function(cv::Mat const &input, cv::Mat const &target)
     img_hash::marrHildrethHash(target, outHash);
     double const marrMismatch = norm(inHash, outHash, NORM_HAMMING);
     std::cout<<"marrMismatch : "<<marrMismatch<<std::endl;
+
+    //Please use the class version to compare the similarity
+    //of the hash values of radialVarianceHash
 }
 
 //benefits of using class is potential performance gain, because
@@ -75,18 +79,24 @@ void test_by_class(cv::Mat const &input, cv::Mat const &target)
     Ptr<img_hash::ImgHashBase> hashFunc = img_hash::AverageHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
-    double const averageMismatch = norm(inHash, outHash, NORM_HAMMING);
+    double const averageMismatch = hashFunc->compare(inHash, outHash);
     std::cout<<"averageMismatch : "<<averageMismatch<<std::endl;
 
     hashFunc = img_hash::PHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
-    double const pHashMismatch = norm(inHash, outHash, NORM_HAMMING);
+    double const pHashMismatch = hashFunc->compare(inHash, outHash);
     std::cout<<"pHashMismatch : "<<pHashMismatch<<std::endl;
 
     hashFunc = img_hash::MarrHildrethHash::create();
     hashFunc->compute(input, inHash);
     hashFunc->compute(target, outHash);
-    double const marrMismatch = norm(inHash, outHash, NORM_HAMMING);
+    double const marrMismatch = hashFunc->compare(inHash, outHash);
     std::cout<<"marrMismatch : "<<marrMismatch<<std::endl;
+
+    hashFunc = img_hash::RadialVarianceHash::create();
+    hashFunc->compute(input, inHash);
+    hashFunc->compute(target, outHash);
+    double const radialMismatch = hashFunc->compare(inHash, outHash);
+    std::cout<<"radialMismatch : "<<radialMismatch<<std::endl;
 }
