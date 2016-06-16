@@ -114,7 +114,7 @@ Ptr<RadialVarianceHash> RadialVarianceHash::create()
 
 void RadialVarianceHash::
 afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
-{    
+{
     int *pplPtr = pixPerLine_.ptr<int>(0);
     int const init = 3*numOfAngelLine_/4;
     for(int k = init, j = 0; k < numOfAngelLine_; ++k, j += 2)
@@ -138,7 +138,7 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
                         input.at<uchar>(-(x-yOff)+yOff, -yd+yOff);
                 pplPtr[k-j] += 1;
             }
-        }        
+        }
     }
 }
 
