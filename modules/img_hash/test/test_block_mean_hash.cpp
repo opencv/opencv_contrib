@@ -88,10 +88,10 @@ protected:
 CV_BlockMeanHashTest::CV_BlockMeanHashTest()
 {
     input.create(256, 256, CV_8U);
-    for(size_t row = 0; row != input.rows; ++row)
+    for(int row = 0; row != input.rows; ++row)
     {
         uchar value = static_cast<uchar>(row);
-        for(size_t col = 0; col != input.cols; ++col)
+        for(int col = 0; col != input.cols; ++col)
         {
             input.at<uchar>(row, col) = value++;
         }
