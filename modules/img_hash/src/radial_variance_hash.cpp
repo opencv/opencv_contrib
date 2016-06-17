@@ -296,6 +296,28 @@ void RadialVarianceHash::radialProjections(const Mat &input)
     afterHalfProjections(input, D, xOff, yOff);
 }
 
+int RadialVarianceHash::getNumOfAngleLine() const
+{
+    return numOfAngelLine_;
+}
+
+double RadialVarianceHash::getSigma() const
+{
+    return sigma_;
+}
+
+void RadialVarianceHash::setNumOfAngleLine(int value)
+{
+    CV_Assert(value > 0);
+    numOfAngelLine_ = value;
+}
+
+void RadialVarianceHash::setSigma(double value)
+{
+    CV_Assert(value >= 1.0);
+    sigma_ = value;
+}
+
 void radialVarianceHash(cv::Mat const &input, cv::Mat &hash,
                         double sigma, int numOfAngleLine)
 {

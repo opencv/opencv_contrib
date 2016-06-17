@@ -95,6 +95,12 @@ public:
   CV_EXPORTS static Ptr<RadialVarianceHash> create(double sigma = 1,
                                                    int numOfAngleLine = 180);
 
+  CV_EXPORTS int getNumOfAngleLine() const;
+  CV_EXPORTS double getSigma() const;
+
+  CV_EXPORTS void setNumOfAngleLine(int value);
+  CV_EXPORTS void setSigma(double value);
+
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
