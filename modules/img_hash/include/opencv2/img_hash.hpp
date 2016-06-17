@@ -44,6 +44,7 @@
 
 #include "opencv2/img_hash/img_hash_base.hpp"
 #include "opencv2/img_hash/average_hash.hpp"
+#include "opencv2/img_hash/block_mean_hash.hpp"
 #include "opencv2/img_hash/marr_hildreth_hash.hpp"
 #include "opencv2/img_hash/phash.hpp"
 #include "opencv2/img_hash/radial_variance_hash.hpp"
@@ -68,6 +69,9 @@ Namespace for all functions is **img_hash**. The module brings implementations o
     http://www.phash.org/docs/pubs/thesis_zauner.pdf
 
     @defgroup radial_var_hash Image hash based on Radon transform.
+    http://www.phash.org/docs/pubs/thesis_zauner.pdf
+
+    @defgroup block_mean_hash Image hash based on block mean.
     http://www.phash.org/docs/pubs/thesis_zauner.pdf
    @}
 
