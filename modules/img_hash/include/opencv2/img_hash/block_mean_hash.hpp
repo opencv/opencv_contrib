@@ -71,6 +71,7 @@ public:
         mode 1 : use block blocks(step sizes/2), generate 31*31 uchar hash value
     */
     CV_EXPORTS explicit BlockMeanHash(size_t mode = 0);
+    CV_EXPORTS ~BlockMeanHash();
 
     /** @brief Computes Block mean hash of the input image
           @param input input CV_8UC3, CV_8UC1 array
@@ -94,7 +95,7 @@ public:
     */
     CV_EXPORTS static Ptr<BlockMeanHash> create(size_t mode = 0);
 
-    CV_EXPORTS void setMode(int mode);
+    CV_EXPORTS void setMode(size_t mode);
 
 private:
     void createHash(cv::Mat &hash);

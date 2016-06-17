@@ -68,6 +68,11 @@ BlockMeanHash::BlockMeanHash(size_t mode)
     setMode(mode);
 }
 
+BlockMeanHash::~BlockMeanHash()
+{
+
+}
+
 void BlockMeanHash::compute(const Mat &input, Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
@@ -112,7 +117,7 @@ Ptr<BlockMeanHash> BlockMeanHash::create(size_t mode)
     return makePtr<BlockMeanHash>(mode);
 }
 
-void BlockMeanHash::setMode(int mode)
+void BlockMeanHash::setMode(size_t mode)
 {
     CV_Assert(mode == 0 || mode == 1);
     mode_ = mode;
