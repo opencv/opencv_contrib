@@ -153,14 +153,14 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
             int const yd = static_cast<int>(std::floor(y + roundingFactor(y)));
             if((yd + yOff >= 0)&&(yd + yOff < input.rows) && (x < input.cols))
             {
-                projections_.at<uchar>(x, k) = input.at<uchar>(yd+yOff, x);
+                projections_.at<uchar>(k, x) = input.at<uchar>(yd+yOff, x);
                 pplPtr[k] += 1;
             }
             if ((yOff - yd >= 0)&&(yOff - yd < input.cols)&&
                     (2*yOff - x >= 0)&&(2*yOff- x < input.rows)&&
                     (k != init))
             {
-                projections_.at<uchar>(x,k-j) =
+                projections_.at<uchar>(k-j,x) =
                         input.at<uchar>(-(x-yOff)+yOff, -yd+yOff);
                 pplPtr[k-j] += 1;
             }
@@ -183,9 +183,9 @@ void RadialVarianceHash::findFeatureVector()
         //to avoid this problem, I add a small value--0.00001
         double const pixNum = pplPtr[k] + 0.00001;
         double const pixNumPow2 = pixNum * pixNum;
-        for(int i = 0; i < projections_.rows; ++i)
+        for(int i = 0; i < projections_.cols; ++i)
         {
-            double const value = projections_.at<uchar>(i,k);
+            double const value = projections_.at<uchar>(k,i);
             lineSum += value;
             lineSumSqd += value * value;
         }
@@ -217,13 +217,13 @@ firstHalfProjections(Mat const &input, int D, int xOff, int yOff)
             int const yd = static_cast<int>(std::floor(y + roundingFactor(y)));
             if((yd + yOff >= 0)&&(yd + yOff < input.rows) && (x < input.cols))
             {
-                projections_.at<uchar>(x, k) = input.at<uchar>(yd+yOff, x);
+                projections_.at<uchar>(k, x) = input.at<uchar>(yd+yOff, x);
                 pplPtr[k] += 1;
             }
             if((yd + xOff >= 0) && (yd + xOff < input.cols) &&
                     (k != numOfAngelLine_/4) && (x < input.rows))
             {
-                projections_.at<uchar>(x, numOfAngelLine_/2-k) =
+                projections_.at<uchar>(numOfAngelLine_/2-k, x) =
                         input.at<uchar>(x, yd+xOff);
                 pplPtr[numOfAngelLine_/2-k] += 1;
             }
@@ -278,7 +278,9 @@ void RadialVarianceHash::hashCalculate(cv::Mat &hash)
 void RadialVarianceHash::radialProjections(const Mat &input)
 {
     int const D = (input.cols > input.rows) ? input.cols : input.rows;
-    projections_.create(D, numOfAngelLine_, CV_8U);
+    //Different with PHash, this part reverse the row size and col size,
+    //because cv::Mat is row major but not column major
+    projections_.create(numOfAngelLine_, D, CV_8U);
     projections_ = 0;
     pixPerLine_.create(1, numOfAngelLine_, CV_32S);
     pixPerLine_ = 0;
