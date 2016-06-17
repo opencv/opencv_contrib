@@ -57,7 +57,7 @@ public:
     getMean(BlockMeanHash &input) const
     {
         return input.mean_;
-    }       
+    }
 };
 
 }
@@ -167,7 +167,7 @@ void CV_BlockMeanHashTest::testMeanMode1()
 
 void CV_BlockMeanHashTest::testHashMode0()
 {
-    uchar const expectResult[] = 
+    uchar const expectResult[] =
     {0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,
      0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,
      0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,
@@ -194,7 +194,7 @@ void CV_BlockMeanHashTest::testHashMode0()
 
 void CV_BlockMeanHashTest::testHashMode1()
 {
-    uchar const expectResult[] = 
+    uchar const expectResult[] =
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
      0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
      0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
