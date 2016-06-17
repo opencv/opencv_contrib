@@ -56,8 +56,12 @@ namespace img_hash
 /** @brief Computes radial variance hash of the input image
     @param input Input CV_8UC3, CV_8UC1 array.
     @param hash Hash value of input
+    @param sigma Gaussian kernel standard deviation
+    @param numOfAngleLine The number of angles to consider
      */
-CV_EXPORTS void radialVarianceHash(cv::Mat const &input, cv::Mat &hash);
+CV_EXPORTS void radialVarianceHash(cv::Mat const &input, cv::Mat &hash,
+                                   double sigma = 1,
+                                   int numOfAngleLine = 180);
 
 class RadialVarianceHash : public ImgHashBase
 {

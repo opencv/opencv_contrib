@@ -296,9 +296,10 @@ void RadialVarianceHash::radialProjections(const Mat &input)
     afterHalfProjections(input, D, xOff, yOff);
 }
 
-void radialVarianceHash(cv::Mat const &input, cv::Mat &hash)
+void radialVarianceHash(cv::Mat const &input, cv::Mat &hash,
+                        double sigma, int numOfAngleLine)
 {
-    RadialVarianceHash().compute(input, hash);
+    RadialVarianceHash(sigma, numOfAngleLine).compute(input, hash);
 }
 
 }
