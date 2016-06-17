@@ -147,20 +147,22 @@ afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
     {
         float const theta = k*3.14159f/numOfAngelLine_;
         float const alpha = std::tan(theta);
+        uchar *projDown = projections_.ptr<uchar>(k);
+        uchar *projUp = projections_.ptr<uchar>(k-j);
         for(int x = 0; x < D; ++x)
         {
             float const y = alpha*(x-xOff);
             int const yd = static_cast<int>(std::floor(y + roundingFactor(y)));
             if((yd + yOff >= 0)&&(yd + yOff < input.rows) && (x < input.cols))
             {
-                projections_.at<uchar>(k, x) = input.at<uchar>(yd+yOff, x);
+                projDown[x] = input.at<uchar>(yd+yOff, x);
                 pplPtr[k] += 1;
             }
             if ((yOff - yd >= 0)&&(yOff - yd < input.cols)&&
                     (2*yOff - x >= 0)&&(2*yOff- x < input.rows)&&
                     (k != init))
             {
-                projections_.at<uchar>(k-j,x) =
+                projUp[x] =
                         input.at<uchar>(-(x-yOff)+yOff, -yd+yOff);
                 pplPtr[k-j] += 1;
             }
@@ -183,9 +185,10 @@ void RadialVarianceHash::findFeatureVector()
         //to avoid this problem, I add a small value--0.00001
         double const pixNum = pplPtr[k] + 0.00001;
         double const pixNumPow2 = pixNum * pixNum;
+        uchar const *projPtr = projections_.ptr<uchar>(k);
         for(int i = 0; i < projections_.cols; ++i)
         {
-            double const value = projections_.at<uchar>(k,i);
+            double const value = projPtr[i];
             lineSum += value;
             lineSumSqd += value * value;
         }
@@ -211,19 +214,21 @@ firstHalfProjections(Mat const &input, int D, int xOff, int yOff)
     {
         float const theta = k*3.14159f/numOfAngelLine_;
         float const alpha = std::tan(theta);
+        uchar *projOne = projections_.ptr<uchar>(k);
+        uchar *projTwo = projections_.ptr<uchar>(numOfAngelLine_/2-k);
         for(int x = 0; x < D; ++x)
         {
             float const y = alpha*(x-xOff);
             int const yd = static_cast<int>(std::floor(y + roundingFactor(y)));
             if((yd + yOff >= 0)&&(yd + yOff < input.rows) && (x < input.cols))
             {
-                projections_.at<uchar>(k, x) = input.at<uchar>(yd+yOff, x);
+                projOne[x] = input.at<uchar>(yd+yOff, x);
                 pplPtr[k] += 1;
             }
             if((yd + xOff >= 0) && (yd + xOff < input.cols) &&
                     (k != numOfAngelLine_/4) && (x < input.rows))
             {
-                projections_.at<uchar>(numOfAngelLine_/2-k, x) =
+                projTwo[x] =
                         input.at<uchar>(x, yd+xOff);
                 pplPtr[numOfAngelLine_/2-k] += 1;
             }
