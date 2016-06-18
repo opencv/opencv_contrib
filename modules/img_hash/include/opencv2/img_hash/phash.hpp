@@ -54,8 +54,7 @@ namespace img_hash
 
     /** @brief Computes pHash value of the input image
     @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input, it will contain 16 hex
-    decimal number, return type is CV_8U
+    @param hash Hash value of input, it will contain 8 uchar value
      */
     CV_EXPORTS void pHash(cv::Mat const &input, cv::Mat &hash);
 

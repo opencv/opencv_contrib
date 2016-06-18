@@ -41,6 +41,8 @@
 
 #include "test_precomp.hpp"
 
+#include <bitset>
+
 using namespace cv;
 
 class CV_PHashTest : public cvtest::BaseTest
@@ -68,19 +70,24 @@ void CV_PHashTest::run(int )
     }
 
     cv::img_hash::pHash(input, hash);
-    uchar const expectResult[] =
+    bool const expectResult[] =
     {
-        13, 15, 14, 15, 15, 15, 14, 15,
-        15, 15, 14, 15, 15, 15, 14, 15
+        1,0,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,
     };
     uchar const *hashPtr = hash.ptr<uchar>(0);
-    for(int i = 0; i != 16; ++i)
+    for(int i = 0; i != hash.cols; ++i)
     {
-        if(hashPtr[i] != expectResult[i])
+        std::bitset<8> const bits = hashPtr[i];
+        for(int j = 0; j != 8; ++j)
         {
-            ts->printf(cvtest::TS::LOG, "Wrong hash value \n");
-            ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
-            return;
+            EXPECT_EQ(bits[j], expectResult[i*8+j]);
         }
     }
 }
