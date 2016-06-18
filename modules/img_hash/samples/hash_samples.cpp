@@ -66,6 +66,13 @@ void test_by_function(cv::Mat const &input, cv::Mat const &target)
 
     //Please use the class version to compare the similarity
     //of the hash values of radialVarianceHash
+    img_hash::radialVarianceHash(input, inHash);
+    img_hash::radialVarianceHash(target, outHash);
+
+    img_hash::blockMeanHash(input, inHash);
+    img_hash::blockMeanHash(target, outHash);
+    double const blockMisMatch = norm(inHash, outHash, NORM_HAMMING);
+    std::cout<<"blockMisMatch : "<<blockMisMatch<<std::endl;
 }
 
 //benefits of using class is potential performance gain, because
@@ -99,4 +106,10 @@ void test_by_class(cv::Mat const &input, cv::Mat const &target)
     hashFunc->compute(target, outHash);
     double const radialMismatch = hashFunc->compare(inHash, outHash);
     std::cout<<"radialMismatch : "<<radialMismatch<<std::endl;
+
+    hashFunc = img_hash::BlockMeanHash::create();
+    hashFunc->compute(input, inHash);
+    hashFunc->compute(target, outHash);
+    double const blockMeanMismatch = hashFunc->compare(inHash, outHash);
+    std::cout<<"blockMeanMismatch : "<<blockMeanMismatch<<std::endl;
 }
