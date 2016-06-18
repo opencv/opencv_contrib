@@ -41,6 +41,7 @@
 
 #include "precomp.hpp"
 
+#include <bitset>
 #include <iostream>
 
 namespace cv{
@@ -91,19 +92,27 @@ void BlockMeanHash::compute(const Mat &input, Mat &hash)
     int pixColStep = blockWidth;
     int pixRowStep = blockHeigth;
     int numOfBlocks = 0;
-    if(mode_ == 1)
+    switch(mode_)
+    {
+    case 0:
+    {
+        numOfBlocks = blockPerCol * blockPerRow;
+        break;
+    }
+    case 1:
     {
         pixColStep /= 2;
         pixRowStep /= 2;
         numOfBlocks = (blockPerCol*2-1) * (blockPerRow*2-1);
+        break;
     }
-    else
-    {
-        numOfBlocks = blockPerCol * blockPerRow;
+    default:
+        break;
     }
+
     mean_.resize(numOfBlocks);
     findMean(pixRowStep, pixColStep);
-    hash.create(1, numOfBlocks, CV_8U);
+    hash.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
     createHash(hash);
 }
 
@@ -127,9 +136,19 @@ void BlockMeanHash::createHash(Mat &hash)
 {
     double const median = cv::mean(grayImg_)[0];
     uchar *hashPtr = hash.ptr<uchar>(0);
-    for(int i = 0; i < hash.cols; i++)
+    std::bitset<8> bits = 0;
+    for(size_t i = 0; i < mean_.size(); ++i)
     {
-        hashPtr[i] = mean_[i] < median ? 0 : 1;
+        size_t const residual = i%8;
+        bits[residual] = mean_[i] < median ? 0 : 1;
+        if(residual == 7)
+        {
+            *hashPtr = static_cast<uchar>(bits.to_ulong());
+            ++hashPtr;
+        }else if(i == mean_.size() - 1)
+        {
+            *hashPtr = bits[residual];
+        }
     }
 }
 

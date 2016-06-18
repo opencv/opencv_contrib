@@ -41,6 +41,8 @@
 
 #include "test_precomp.hpp"
 
+#include <bitset>
+
 using namespace cv;
 
 
@@ -188,7 +190,11 @@ void CV_BlockMeanHashTest::testHashMode0()
 
     for(int i = 0; i != hash.cols; ++i)
     {
-        EXPECT_EQ(expectResult[i], hash.at<uchar>(0, i));
+        std::bitset<8> const bits = hash.at<uchar>(0, i);
+        for(size_t j = 0; j != bits.size(); ++j)
+        {
+    EXPECT_EQ(expectResult[i*8+j], bits[j]);
+}
     }
 }
 
@@ -230,7 +236,20 @@ void CV_BlockMeanHashTest::testHashMode1()
 
     for(int i = 0; i != hash.cols; ++i)
     {
-        EXPECT_EQ(expectResult[i], hash.at<uchar>(0, i));
+        std::bitset<8> const bits = hash.at<uchar>(0, i);
+        if(i != hash.cols-1)
+        {
+            for(size_t j = 0; j != bits.size(); ++j)
+            {
+                EXPECT_EQ(expectResult[i*8+j], bits[j]);
+            }
+        }
+        else
+        {
+            //when mode == 1, there will be 961 block mean
+            //that is why we only check one bit at here
+            EXPECT_EQ(expectResult[i*8], bits[0]);
+        }
     }
 }
 
