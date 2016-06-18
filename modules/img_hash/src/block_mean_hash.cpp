@@ -164,9 +164,10 @@ void BlockMeanHash::findMean(int pixRowStep, int pixColStep)
     }
 }
 
-void blockMeanHash(cv::Mat const &input, cv::Mat &hash)
+void blockMeanHash(cv::Mat const &input, cv::Mat &hash,
+                   size_t mode)
 {
-    BlockMeanHash().compute(input, hash);
+    BlockMeanHash(mode).compute(input, hash);
 }
 
 }

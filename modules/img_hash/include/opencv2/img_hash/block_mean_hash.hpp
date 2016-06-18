@@ -56,8 +56,12 @@ namespace img_hash
     @param input Input CV_8UC3, CV_8UC1 array.
     @param hash Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
+    @param mode By now only support mode 0 and mode 1.
+    mode 0 : use fewer block and generate 16*16 uchar hash value
+    mode 1 : use block blocks(step sizes/2), generate 31*31 uchar hash value
      */
-CV_EXPORTS void blockMeanHash(cv::Mat const &input, cv::Mat &hash);
+CV_EXPORTS void blockMeanHash(cv::Mat const &input, cv::Mat &hash,
+                              size_t mode = 0);
 
 class BlockMeanHash : public ImgHashBase
 {
