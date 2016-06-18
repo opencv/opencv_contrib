@@ -103,12 +103,15 @@ public:
 
 private:
     void createHash(cv::Mat &hash);
-    void findMean(int pixRowStep, int pixColStep);
+    void findMean(cv::Mat &hash, int pixRowStep, int pixColStep);
+    uchar *createHash(uchar *hashPtr, double median,
+                      int beg, int end);
 
     cv::Mat grayImg_;
     std::vector<double> mean_;
     size_t mode_;
     cv::Mat resizeImg_;
+    cv::Mat rotateMean_;
 };
 
 //! @}

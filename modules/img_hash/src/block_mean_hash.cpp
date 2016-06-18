@@ -92,11 +92,13 @@ void BlockMeanHash::compute(const Mat &input, Mat &hash)
     int pixColStep = blockWidth;
     int pixRowStep = blockHeigth;
     int numOfBlocks = 0;
+    int hashSize = 0;
     switch(mode_)
     {
     case 0:
     {
         numOfBlocks = blockPerCol * blockPerRow;
+        hashSize = numOfBlocks/8;
         break;
     }
     case 1:
@@ -104,16 +106,24 @@ void BlockMeanHash::compute(const Mat &input, Mat &hash)
         pixColStep /= 2;
         pixRowStep /= 2;
         numOfBlocks = (blockPerCol*2-1) * (blockPerRow*2-1);
+        hashSize = numOfBlocks/8 + 1;
         break;
+    }
+    case 2:
+    {
+       numOfBlocks = blockPerCol * blockPerRow * 24;
+       hashSize =  (numOfBlocks/8) * 24;
+       break;
     }
     default:
         break;
     }
 
     mean_.resize(numOfBlocks);
-    findMean(pixRowStep, pixColStep);
-    hash.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
-    createHash(hash);
+    hash.create(1, hashSize, CV_8U);
+    findMean(hash, pixRowStep, pixColStep);
+    //hash.create(1, hashSize, CV_8U);
+    //createHash(hash);
 }
 
 double BlockMeanHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
@@ -128,7 +138,7 @@ Ptr<BlockMeanHash> BlockMeanHash::create(size_t mode)
 
 void BlockMeanHash::setMode(size_t mode)
 {
-    CV_Assert(mode == 0 || mode == 1);
+    CV_Assert(mode == 0 || mode == 1 || mode == 2);
     mode_ = mode;
 }
 
@@ -149,18 +159,63 @@ void BlockMeanHash::createHash(Mat &hash)
         {
             *hashPtr = bits[residual];
         }
-    }
+    }   
 }
 
-void BlockMeanHash::findMean(int pixRowStep, int pixColStep)
+uchar *BlockMeanHash::createHash(uchar *hashPtr, double median,
+                                 int beg, int end)
 {
-    size_t blockIdx = 0;
-    for(int row = 0; row <= rowSize; row += pixRowStep)
+    std::bitset<8> bits = 0;
+    for(int i = beg; i < end; ++i)
     {
-        for(int col = 0; col <= colSize; col += pixColStep)
+        size_t const residual = i%8;
+        bits[residual] = mean_[i] < median ? 0 : 1;
+        if(residual == 7)
         {
-            mean_[blockIdx++] = cv::mean(grayImg_(cv::Rect(col, row, blockWidth, blockHeigth)))[0];
+            *hashPtr = static_cast<uchar>(bits.to_ulong());
+            ++hashPtr;
         }
+    }
+
+    return hashPtr;
+}
+
+void BlockMeanHash::findMean(cv::Mat &hash, int pixRowStep, int pixColStep)
+{
+    int const maxEngle = mode_ < 2 ? 15 : 360;
+    int blockIdx = 0;
+    uchar *hashPtr = hash.ptr<uchar>(0);
+    int meanBeg = 0;
+    for(int angle = 0; angle != maxEngle; angle += 15)
+    {
+        cv::Mat rotateRef;
+        if(angle == 0)
+        {
+            rotateRef = grayImg_;
+        }
+        else
+        {
+            cv::Point2f const center(static_cast<float>(grayImg_.cols),
+                                     static_cast<float>(grayImg_.rows));
+            cv::Mat const rotMat =
+                    cv::getRotationMatrix2D(center,
+                                            angle, 1.0);
+            cv::warpAffine(grayImg_, rotateMean_, rotMat, grayImg_.size());
+            rotateRef = rotateMean_;
+        }
+
+        for(int row = 0; row <= rowSize; row += pixRowStep)
+        {
+            for(int col = 0; col <= colSize; col += pixColStep)
+            {
+                mean_[blockIdx++] =
+                        cv::mean(rotateRef(cv::Rect(col, row,
+                                                    blockWidth, blockHeigth)))[0];
+            }
+        }
+        createHash(hashPtr, cv::mean(rotateRef)[0],
+                   meanBeg, blockIdx);
+        meanBeg = blockIdx;
     }
 }
 
