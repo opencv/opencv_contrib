@@ -193,8 +193,8 @@ void CV_BlockMeanHashTest::testHashMode0()
         std::bitset<8> const bits = hash.at<uchar>(0, i);
         for(size_t j = 0; j != bits.size(); ++j)
         {
-    EXPECT_EQ(expectResult[i*8+j], bits[j]);
-}
+            EXPECT_EQ(expectResult[i*8+j], static_cast<uchar>(bits[j]));
+        }
     }
 }
 
@@ -241,14 +241,14 @@ void CV_BlockMeanHashTest::testHashMode1()
         {
             for(size_t j = 0; j != bits.size(); ++j)
             {
-                EXPECT_EQ(expectResult[i*8+j], bits[j]);
+                EXPECT_EQ(expectResult[i*8+j], static_cast<uchar>(bits[j]));
             }
         }
         else
         {
             //when mode == 1, there will be 961 block mean
             //that is why we only check one bit at here
-            EXPECT_EQ(expectResult[i*8], bits[0]);
+            EXPECT_EQ(expectResult[i*8], static_cast<uchar>(bits[0]));
         }
     }
 }
