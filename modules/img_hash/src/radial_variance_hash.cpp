@@ -107,10 +107,6 @@ double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTw
 {
     CV_Assert(hashOne.cols == hashSize && hashOne.cols == hashTwo.cols);
 
-    //PHash slip through all of the N of cross-correlation, but
-    //this function only compute the n at 0.
-    //The cross-correlation function is f[m]*g[m+n], range of m
-    //is [0, hashSize)
     float bufferOne[hashSize];
     cv::Mat hashFloatOne(1, hashSize, CV_32F, bufferOne);
     hashOne.convertTo(hashFloatOne, CV_32F);
@@ -126,10 +122,21 @@ double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTw
     // Compute covariance and correlation coefficient
     hashFloatOne -= hOneMean;
     hashFloatTwo -= hTwoMean;
-    double const covar = (hashFloatOne).dot(hashFloatTwo) / pixNum;
+    double max = std::numeric_limits<double>::min();
+    for(int i = 0; i != hashSize; ++i)
+    {
+        double const covar = (hashFloatOne).dot(hashFloatTwo) / pixNum;
+        double const corre = covar / (hOneStd[0] * hTwoStd[0] + 1e-20);
+        max = std::max(corre, max);
+        //move last value to first position, first value to second position,
+        //second value to third position and so on
+        float const preValue = bufferTwo[hashSize-1];
+        std::copy_backward(bufferTwo, bufferTwo + hashSize - 1, bufferTwo + hashSize);
+        bufferTwo[0] = preValue;
+    }
 
-    //return correlation coefficient
-    return covar / (hOneStd[0] * hTwoStd[0] + 1e-20);
+    //return peak correlation coefficient
+    return max;
 }
 
 Ptr<RadialVarianceHash> RadialVarianceHash::create(double sigma,

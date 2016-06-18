@@ -98,6 +98,7 @@ protected:
     //this test case do not use the original "golden data"
     //of pHash library, I add a small value to nb_pixels in
     //the function "ph_feature_vector" to avoid NaN value
+    void testComputeHash();
     void testFeatures();
     void testHash();
     void testPixPerLine();
@@ -117,6 +118,27 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest() :
     {
         inPtr[i] = static_cast<uchar>(i);
     }
+}
+
+void CV_RadialVarianceHashTest::testComputeHash()
+{
+    cv::Mat hashOne(1, 40, CV_8U);
+    uchar buffer[] =
+    {
+      52,  41,  49,  64,  40,  67,  76,  71,  69,
+      55,  58,  68,  72,  78,  63,  73,  66,  77,
+      60,  57,  48,  59,  62,  74,  70,  47,  46,
+      51,  45,  44,  42,  61,  54,  75,  50,  79,
+      65,  43,  53,  56
+    };
+    cv::Mat hashTwo(1, 40, CV_8U, buffer);
+    for(uchar i = 0; i != 40; ++i)
+    {
+      hashOne.at<uchar>(0, i) = i;
+    }
+
+    double const actual = rvh.compare(hashOne, hashTwo);
+    ASSERT_NEAR(0.481051, actual, 0.0001);
 }
 
 void CV_RadialVarianceHashTest::testFeatures()
@@ -199,6 +221,7 @@ void CV_RadialVarianceHashTest::run(int)
     testPixPerLine();
     testProjection();
     testFeatures();
+    testComputeHash();
 }
 
 TEST(radial_variance_hash_test, accuracy) { CV_RadialVarianceHashTest test; test.safe_run(); }
