@@ -41,6 +41,7 @@
 
 #include "precomp.hpp"
 
+#include <bitset>
 #include <iostream>
 
 namespace cv{
@@ -64,14 +65,18 @@ void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
     uchar const imgMean = static_cast<uchar>(cvRound(cv::mean(grayImg)[0]));
     cv::compare(grayImg, imgMean, bitsImg, CMP_GT);
     bitsImg /= 255;
-    hash.create(1, 16, CV_8U);
+    hash.create(1, 8, CV_8U);
     uchar *hash_ptr = hash.ptr<uchar>(0);
     uchar const *bits_ptr = bitsImg.ptr<uchar>(0);
-    for(size_t i = 0, j = 0; i != 64; i+=4, ++j)
+    std::bitset<8> bits;
+    for(size_t i = 0, j = 0; i != bitsImg.total(); ++j)
     {
-        hash_ptr[j] = bits_ptr[i] + bits_ptr[i+1] * 2 +
-                bits_ptr[i+2] * 2 * 2 +
-                bits_ptr[i+3] * 2 * 2 * 2;
+        for(size_t k = 0; k != 8; ++k)
+        {
+            //avoid warning C4800, casting do not work
+            bits[k] = bits_ptr[i++] != 0;
+        }
+        hash_ptr[j] = static_cast<uchar>(bits.to_ulong());
     }
 }
 

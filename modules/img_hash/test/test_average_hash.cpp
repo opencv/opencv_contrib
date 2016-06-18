@@ -41,6 +41,8 @@
 
 #include "test_precomp.hpp"
 
+#include <bitset>
+
 using namespace cv;
 
 class CV_AverageHashTest : public cvtest::BaseTest
@@ -68,19 +70,24 @@ void CV_AverageHashTest::run(int )
                            8, 7, 6, 5, 4, 3, 2, 1);
     cv::Mat hash;
     cv::img_hash::averageHash(input, hash);
-    uchar const expectResult[] =
+    bool const expectResult[] =
     {
-        8, 12, 12, 0,  8, 15, 0, 14,
-        3,  1,  0, 3, 15,  1, 7,  0
+        0,0,0,1,0,0,1,1,
+        0,0,1,1,0,0,0,0,
+        0,0,0,1,1,1,1,1,
+        0,0,0,0,0,1,1,1,
+        1,1,0,0,1,0,0,0,
+        0,0,0,0,1,1,0,0,
+        1,1,1,1,1,0,0,0,
+        1,1,1,0,0,0,0,0
     };
     uchar const *hashPtr = hash.ptr<uchar>(0);
-    for(int i = 0; i != 16; ++i)
+    for(int i = 0; i != hash.cols; ++i)
     {
-        if(hashPtr[i] != expectResult[i])
+        std::bitset<8> const bits = hashPtr[i];
+        for(int j = 0; j != 8; ++j)
         {
-            ts->printf(cvtest::TS::LOG, "Wrong hash value \n");
-            ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
-			return;
+            EXPECT_EQ(bits[j], expectResult[i*8+j]);
         }
     }
 }
