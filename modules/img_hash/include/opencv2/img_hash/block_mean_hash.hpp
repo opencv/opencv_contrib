@@ -57,8 +57,8 @@ namespace img_hash
     @param hash Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     @param mode By now only support mode 0 and mode 1.
-    mode 0 : use fewer block and generate 16*16 uchar hash value
-    mode 1 : use block blocks(step sizes/2), generate 31*31 uchar hash value
+    mode 0 : use fewer block and generate 16*16/8 uchar hash value
+    mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
      */
 CV_EXPORTS void blockMeanHash(cv::Mat const &input, cv::Mat &hash,
                               size_t mode = 0);
@@ -71,8 +71,8 @@ class BlockMeanHash : public ImgHashBase
 public:
    /** @brief Constructor
         @param mode By now only support mode 0 and mode 1.
-        mode 0 : use fewer block and generate 16*16 uchar hash value
-        mode 1 : use block blocks(step sizes/2), generate 31*31 uchar hash value
+        mode 0 : use fewer block and generate 16*16/8 uchar hash value
+        mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
     */
     CV_EXPORTS explicit BlockMeanHash(size_t mode = 0);
     CV_EXPORTS ~BlockMeanHash();
@@ -94,8 +94,8 @@ public:
 
     /** @brief Create BLockMeanHash object
         @param mode By now only support mode 0 and mode 1.
-        mode 0 : use fewer block and generate 16*16 uchar hash value
-        mode 1 : use block blocks(step sizes/2), generate 31*31 uchar hash value
+        mode 0 : use fewer block and generate 16*16/8 uchar hash value
+        mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
     */
     CV_EXPORTS static Ptr<BlockMeanHash> create(size_t mode = 0);
 
