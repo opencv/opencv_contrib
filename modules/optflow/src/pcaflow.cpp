@@ -117,9 +117,8 @@ static inline void symOrtho( double a, double b, double &c, double &s, double &r
 static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0,
                        const unsigned iter_lim = 10 )
 {
-  int m = A.size().height;
-  int n = A.size().width;
-  CV_Assert( m == b.size().height );
+  const int n = A.size().width;
+  CV_Assert( A.size().height == b.size().height );
   CV_Assert( A.type() == CV_32F );
   CV_Assert( b.type() == CV_32F );
   xOut.create( n, 1, CV_32F );
@@ -164,7 +163,7 @@ static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const doubl
       v += AT * u;
       alfa = cv::norm( v, NORM_L2 );
       if ( alfa > 0 )
-        v = ( 1 / alfa ) * v;
+        v *= 1 / alfa;
     }
 
     double rhobar1 = sqrt( rhobar * rhobar + damp * damp );

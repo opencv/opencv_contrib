@@ -16,7 +16,7 @@ Gamma should be selected experimentally.''')
 argparser.add_argument('-f',
                        '--files',
                        nargs='+',
-                       help='List of optical flow .flo files for learning',
+                       help='List of optical flow .flo files for learning. You can pass a directory here and it will be scanned recursively for .flo files.',
                        required=True)
 argparser.add_argument('-o',
                        '--output',
