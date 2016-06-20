@@ -93,11 +93,12 @@ protected:
   const float retainedCornersFraction; // [0 .. 1]
   const float occlusionsThreshold;
   const float dampingFactor;
+  const float claheClip;
 
 public:
   OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior = Ptr<const PCAPrior>(), const Size _basisSize = Size( 18, 14 ),
                       float _sparseRate = 0.024, float _retainedCornersFraction = 0.2,
-                      float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002 );
+                      float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002, float _claheClip = 14 );
 
   void calc( InputArray I0, InputArray I1, InputOutputArray flow );
   void collectGarbage();

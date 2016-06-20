@@ -47,20 +47,10 @@ namespace cv
 {
 namespace optflow
 {
-
-OpticalFlowPCAFlow::OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior, const Size _basisSize, float _sparseRate,
-                                        float _retainedCornersFraction, float _occlusionsThreshold,
-                                        float _dampingFactor )
-    : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
-      retainedCornersFraction( _retainedCornersFraction ), occlusionsThreshold( _occlusionsThreshold ),
-      dampingFactor( _dampingFactor )
+namespace
 {
-  CV_Assert( sparseRate > 0 && sparseRate <= 0.1 );
-  CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );
-  CV_Assert( occlusionsThreshold > 0 );
-}
 
-template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
+template <typename T> inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
 
 /* Stable symmetric Householder reflection that gives c and s such that
  *   [ c  s ][a] = [d],
@@ -72,7 +62,7 @@ template <typename T> static inline int mathSign( T val ) { return ( T( 0 ) < va
  *   s -- sine(theta)
  *   r -- two-norm of [a; b]
  */
-static inline void symOrtho( double a, double b, double &c, double &s, double &r )
+inline void symOrtho( double a, double b, double &c, double &s, double &r )
 {
   if ( b == 0 )
   {
@@ -114,8 +104,7 @@ static inline void symOrtho( double a, double b, double &c, double &s, double &r
  * Output:
  *   x -- approximate solution
  */
-static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0,
-                       const unsigned iter_lim = 10 )
+void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp = 0.0, const unsigned iter_lim = 10 )
 {
   const int n = A.size().width;
   CV_Assert( A.size().height == b.size().height );
@@ -187,6 +176,67 @@ static void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const doubl
   }
 }
 
+inline void _cpu_fillDCTSampledPoints( float *row, const Point2f &p, const Size &basisSize, const Size &size )
+{
+  for ( int n1 = 0; n1 < basisSize.width; ++n1 )
+    for ( int n2 = 0; n2 < basisSize.height; ++n2 )
+      row[n1 * basisSize.height + n2] =
+        cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
+}
+
+ocl::ProgramSource _ocl_fillDCTSampledPointsSource(
+  "__kernel void fillDCTSampledPoints(__global const uchar* features, int fstep, int foff, __global "
+  "uchar* A, int Astep, int Aoff, int fs, int bsw, int bsh, int sw, int sh) {"
+  "const int i = get_global_id(0);"
+  "const int n1 = get_global_id(1);"
+  "const int n2 = get_global_id(2);"
+  "if (i >= fs || n1 >= bsw || n2 >= bsh) return;"
+  "__global const float2* f = features + (fstep * i + foff);"
+  "__global float* a = A + (Astep * i + Aoff + (n1 * bsh + n2) * 4);"
+  "const float2 p = f[0];"
+  "a[0] = cos((n1 * M_PI / sw) * (p.x + 0.5)) * cos((n2 * M_PI / sh) * (p.y + 0.5));"
+  "}" );
+
+void applyCLAHE( UMat &img, float claheClip )
+{
+  Ptr<CLAHE> clahe = createCLAHE();
+  clahe->setClipLimit( claheClip );
+  clahe->apply( img, img );
+}
+
+void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSize )
+{
+  const Size size = flow.size();
+  Mat flowX( size, CV_32F, 0.0f );
+  Mat flowY( size, CV_32F, 0.0f );
+
+  const float mult = sqrt( size.area() ) * 0.5;
+
+  for ( int i = 0; i < basisSize.width; ++i )
+    for ( int j = 0; j < basisSize.height; ++j )
+    {
+      flowX.at<float>( j, i ) = w1.at<float>( i * basisSize.height + j ) * mult;
+      flowY.at<float>( j, i ) = w2.at<float>( i * basisSize.height + j ) * mult;
+    }
+  for ( int i = 0; i < basisSize.height; ++i )
+  {
+    flowX.at<float>( i, 0 ) *= M_SQRT2;
+    flowY.at<float>( i, 0 ) *= M_SQRT2;
+  }
+  for ( int i = 0; i < basisSize.width; ++i )
+  {
+    flowX.at<float>( 0, i ) *= M_SQRT2;
+    flowY.at<float>( 0, i ) *= M_SQRT2;
+  }
+
+  dct( flowX, flowX, DCT_INVERSE );
+  dct( flowY, flowY, DCT_INVERSE );
+  for ( int i = 0; i < size.height; ++i )
+    for ( int j = 0; j < size.width; ++j )
+      flow.at<Point2f>( i, j ) = Point2f( flowX.at<float>( i, j ), flowY.at<float>( i, j ) );
+}
+}
+
 void OpticalFlowPCAFlow::findSparseFeatures( UMat &from, UMat &to, std::vector<Point2f> &features,
                                              std::vector<Point2f> &predictedFeatures ) const
 {
@@ -247,27 +297,6 @@ void OpticalFlowPCAFlow::removeOcclusions( UMat &from, UMat &to, std::vector<Poi
   features.resize( j );
   predictedFeatures.resize( j );
 }
-
-static inline void _cpu_fillDCTSampledPoints( float *row, const Point2f &p, const Size &basisSize, const Size &size )
-{
-  for ( int n1 = 0; n1 < basisSize.width; ++n1 )
-    for ( int n2 = 0; n2 < basisSize.height; ++n2 )
-      row[n1 * basisSize.height + n2] =
-        cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
-}
-
-static ocl::ProgramSource _ocl_fillDCTSampledPointsSource(
-  "__kernel void fillDCTSampledPoints(__global const uchar* features, int fstep, int foff, __global "
-  "uchar* A, int Astep, int Aoff, int fs, int bsw, int bsh, int sw, int sh) {"
-  "const int i = get_global_id(0);"
-  "const int n1 = get_global_id(1);"
-  "const int n2 = get_global_id(2);"
-  "if (i >= fs || n1 >= bsw || n2 >= bsh) return;"
-  "__global const float2* f = features + (fstep * i + foff);"
-  "__global float* a = A + (Astep * i + Aoff + (n1 * bsh + n2) * 4);"
-  "const float2 p = f[0];"
-  "a[0] = cos((n1 * M_PI / sw) * (p.x + 0.5)) * cos((n2 * M_PI / sh) * (p.y + 0.5));"
-  "}" );
 
 void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputArray b2Out,
                                     const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
@@ -370,45 +399,6 @@ void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, Output
                           b1.ptr<float>( features.size(), 0 ), b2.ptr<float>( features.size(), 0 ) );
 }
 
-static void applyCLAHE( UMat &img )
-{
-  Ptr<CLAHE> clahe = createCLAHE();
-  clahe->setClipLimit( 14 );
-  clahe->apply( img, img );
-}
-
-static void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSize )
-{
-  const Size size = flow.size();
-  Mat flowX( size, CV_32F, 0.0f );
-  Mat flowY( size, CV_32F, 0.0f );
-
-  const float mult = sqrt( size.area() ) * 0.5;
-
-  for ( int i = 0; i < basisSize.width; ++i )
-    for ( int j = 0; j < basisSize.height; ++j )
-    {
-      flowX.at<float>( j, i ) = w1.at<float>( i * basisSize.height + j ) * mult;
-      flowY.at<float>( j, i ) = w2.at<float>( i * basisSize.height + j ) * mult;
-    }
-  for ( int i = 0; i < basisSize.height; ++i )
-  {
-    flowX.at<float>( i, 0 ) *= M_SQRT2;
-    flowY.at<float>( i, 0 ) *= M_SQRT2;
-  }
-  for ( int i = 0; i < basisSize.width; ++i )
-  {
-    flowX.at<float>( 0, i ) *= M_SQRT2;
-    flowY.at<float>( 0, i ) *= M_SQRT2;
-  }
-
-  dct( flowX, flowX, DCT_INVERSE );
-  dct( flowY, flowY, DCT_INVERSE );
-  for ( int i = 0; i < size.height; ++i )
-    for ( int j = 0; j < size.width; ++j )
-      flow.at<Point2f>( i, j ) = Point2f( flowX.at<float>( i, j ), flowY.at<float>( i, j ) );
-}
-
 void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray flowOut )
 {
   const Size size = I0.size();
@@ -439,8 +429,8 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
 
   const Mat fromOrig = from.getMat( ACCESS_READ ).clone();
 
-  applyCLAHE( from );
-  applyCLAHE( to );
+  applyCLAHE( from, claheClip );
+  applyCLAHE( to, claheClip );
 
   std::vector<Point2f> features, predictedFeatures;
   findSparseFeatures( from, to, features, predictedFeatures );
@@ -468,6 +458,18 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   reduceToFlow( w1, w2, flowSmall, basisSize );
   resize( flowSmall, flow, size, 0, 0, INTER_LINEAR );
   ximgproc::fastGlobalSmootherFilter( fromOrig, flow, flow, 500, 2 );
+}
+
+OpticalFlowPCAFlow::OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior, const Size _basisSize, float _sparseRate,
+                                        float _retainedCornersFraction, float _occlusionsThreshold,
+                                        float _dampingFactor, float _claheClip )
+    : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
+      retainedCornersFraction( _retainedCornersFraction ), occlusionsThreshold( _occlusionsThreshold ),
+      dampingFactor( _dampingFactor ), claheClip( _claheClip )
+{
+  CV_Assert( sparseRate > 0 && sparseRate <= 0.1 );
+  CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );
+  CV_Assert( occlusionsThreshold > 0 );
 }
 
 void OpticalFlowPCAFlow::collectGarbage() {}
