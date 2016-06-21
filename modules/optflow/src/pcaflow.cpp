@@ -50,6 +50,14 @@ namespace optflow
 namespace
 {
 
+#ifndef M_PI
+const float M_PI = 3.14159265358979323846;
+#endif
+
+#ifndef M_SQRT2
+const float M_SQRT2 = 1.41421356237309504880;
+#endif
+
 template <typename T> inline int mathSign( T val ) { return ( T( 0 ) < val ) - ( val < T( 0 ) ); }
 
 /* Stable symmetric Householder reflection that gives c and s such that
