@@ -43,6 +43,17 @@
 #include "opencv2/ximgproc/edge_filter.hpp"
 #include "precomp.hpp"
 
+/* Disable "from double to float" and "from size_t to int" warnings.
+ * Fixing these would make the code look ugly by introducing explicit cast all around.
+ * Here these warning are pointless anyway.
+ */
+#ifdef _MSC_VER
+#pragma warning( disable : 4305 4244 4267 4838 )
+#endif
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
+
 namespace cv
 {
 namespace optflow

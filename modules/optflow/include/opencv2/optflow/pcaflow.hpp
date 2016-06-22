@@ -116,6 +116,8 @@ private:
   void getSystem( OutputArray A1Out, OutputArray A2Out, OutputArray b1Out, OutputArray b2Out,
                   const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
                   const Size size );
+
+  OpticalFlowPCAFlow& operator=( const OpticalFlowPCAFlow& ); // make it non-assignable
 };
 
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_PCAFlow();
