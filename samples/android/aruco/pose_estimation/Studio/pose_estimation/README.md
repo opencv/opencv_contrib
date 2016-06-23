@@ -5,6 +5,8 @@ This is a sample Android app that uses OpenCV Aruco module showcasing all it's s
 - *Open Parameter Panel*: You can edit parameter from the settings directly. You can also edit the camera parameters and the Aruco API level parameters by editing files created in the application folder.
 - *Live Analysis with Logs*: You can test the application on all three - Charuco board, Aruco board and Charuco diamond in real time and view a log of events.
 
+Checkout the APK [here](https://drive.google.com/file/d/0B6sTEEC-di3sUGpaZWQzZmNQRVE/view?usp=sharing)
+
 ## Setup
 
 **Target SDK** - Android 23
