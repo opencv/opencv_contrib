@@ -179,9 +179,9 @@ namespace dnn
 #endif // HAVE_OPENCL
 
         if (inpBlob.type() == CV_32F)
-            im2col_cpu((float *)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float *)colMat.ptr());
+            im2col_CpuPBody<float>::run((float*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float *)colMat.ptr());
         if (inpBlob.type() == CV_64F)
-            im2col_cpu((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)colMat.ptr());
+            im2col_CpuPBody<double>::run((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)colMat.ptr());
     }
 
     void ConvolutionLayer::computeInpOutShape(const Blob &inpBlob)
@@ -253,9 +253,9 @@ namespace dnn
         if (is1x1()) return;
 
         if (dstMat.type() == CV_32F)
-            col2im_cpu((float*)colMat.ptr(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float*)dstMat.ptr());
+            col2im_cpu(colMat.ptr<float>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<float>());
         if (dstMat.type() == CV_64F)
-            col2im_cpu((double*)colMat.ptr(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)dstMat.ptr());
+            col2im_cpu(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<double>());
     }
 }
 }

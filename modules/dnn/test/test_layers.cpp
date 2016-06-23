@@ -65,6 +65,8 @@ static void testLayer(String basename, bool useCaffeModel = false, bool useCommo
     String inpfile = (useCommonInputBlob) ? _tf("blob.npy") : _tf(basename + ".input.npy");
     String outfile = _tf(basename + ".npy");
 
+    cv::setNumThreads(cv::getNumberOfCPUs());
+
     Net net;
     {
         Ptr<Importer> importer = createCaffeImporter(prototxt, (useCaffeModel) ? caffemodel : String());

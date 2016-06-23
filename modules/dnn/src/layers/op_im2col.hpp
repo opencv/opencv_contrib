@@ -41,6 +41,8 @@
 
 #ifndef __OPENCV_DNN_LAYERS_IM2COL_HPP__
 #define __OPENCV_DNN_LAYERS_IM2COL_HPP__
+#include <opencv2/core.hpp>
+#include <iostream>
 
 namespace cv
 {
@@ -48,33 +50,67 @@ namespace dnn
 {
 
 template <typename Dtype>
-void im2col_cpu(const Dtype* data_im,
-                int channels, int height, int width,
-                int kernel_h, int kernel_w,
-                int pad_h, int pad_w,
-                int stride_h, int stride_w,
-                Dtype* data_col)
+class im2col_CpuPBody : public cv::ParallelLoopBody
 {
-    int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-    int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
-    int channels_col = channels * kernel_h * kernel_w;
-    for (int c = 0; c < channels_col; ++c) {
-        int w_offset = c % kernel_w;
-        int h_offset = (c / kernel_w) % kernel_h;
-        int c_im = c / kernel_h / kernel_w;
-        for (int h = 0; h < height_col; ++h) {
-            for (int w = 0; w < width_col; ++w) {
-                int h_pad = h * stride_h - pad_h + h_offset;
-                int w_pad = w * stride_w - pad_w + w_offset;
-                if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
-                    data_col[(c * height_col + h) * width_col + w] =
-                    data_im[(c_im * height + h_pad) * width + w_pad];
-                else
-                    data_col[(c * height_col + h) * width_col + w] = 0;
+    const Dtype* data_im;
+    int channels, height, width;
+    int kernel_h, kernel_w;
+    int pad_h, pad_w;
+    int stride_h, stride_w;
+    Dtype* data_col;
+    int height_col, width_col, channels_col;
+
+public:
+
+    im2col_CpuPBody(const Dtype* data_im_,
+                     int channels_, int height_, int width_,
+                     int kernel_h_, int kernel_w_,
+                     int pad_h_, int pad_w_,
+                     int stride_h_, int stride_w_,
+                     Dtype* data_col_) :
+        data_im(data_im_),
+        channels(channels_), height(height_), width(width_),
+        kernel_h(kernel_h_), kernel_w(kernel_w_),
+        pad_h(pad_h_), pad_w(pad_w_),
+        stride_h(stride_h_), stride_w(stride_w_),
+        data_col(data_col_)
+    {
+        height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+        width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+        channels_col = channels * kernel_h * kernel_w;
+    }
+
+    static void run(const Dtype* data_im,
+                    int channels, int height, int width,
+                    int kernel_h, int kernel_w,
+                    int pad_h, int pad_w,
+                    int stride_h, int stride_w,
+                    Dtype* data_col)
+    {
+        im2col_CpuPBody<Dtype> pb(data_im, channels, height, width, kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w, data_col);
+        cv::parallel_for_(Range(0, pb.channels_col), pb);
+    }
+
+    virtual void operator ()(const Range &r) const
+    {
+        for (int c = r.start; c < r.end; ++c) {
+            int w_offset = c % kernel_w;
+            int h_offset = (c / kernel_w) % kernel_h;
+            int c_im = c / kernel_h / kernel_w;
+            for (int h = 0; h < height_col; ++h) {
+                for (int w = 0; w < width_col; ++w) {
+                    int h_pad = h * stride_h - pad_h + h_offset;
+                    int w_pad = w * stride_w - pad_w + w_offset;
+                    if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
+                        data_col[(c * height_col + h) * width_col + w] =
+                        data_im[(c_im * height + h_pad) * width + w_pad];
+                    else
+                        data_col[(c * height_col + h) * width_col + w] = 0;
+                }
             }
         }
     }
-}
+};
 
 template <typename Dtype>
 void col2im_cpu(const Dtype* data_col,

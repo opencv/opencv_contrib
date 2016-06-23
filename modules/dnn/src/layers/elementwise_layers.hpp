@@ -55,130 +55,147 @@ using std::exp;
 using std::tanh;
 using std::pow;
 
-    template<typename Func>
-    class ElementWiseLayer : public Layer
+template<typename Func>
+class ElementWiseLayer : public Layer
+{
+    Func func;
+
+    template<typename Dtype>
+    class PBody : public cv::ParallelLoopBody
     {
-        Func func;
+        Dtype *data;
+        Func &func;
     public:
 
-        ElementWiseLayer(LayerParams &_params) : func(_params) {}
+        PBody(Blob &blob, Func &func_) :
+            func(func_), data(blob.ptr<Dtype>())
+        {}
 
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+        void operator()(const Range &r) const
         {
-            outputs.resize(inputs.size());
-            for (size_t i = 0; i < inputs.size(); i++)
-                outputs[i].shareFrom(*inputs[i]); //no data copy
+            for (int i = r.start; i < r.end; i++)
+                data[i] = func(data[i]);
         }
+    };
 
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+public:
+
+    ElementWiseLayer(LayerParams &_params) : func(_params) {}
+
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        outputs.resize(inputs.size());
+        for (size_t i = 0; i < inputs.size(); i++)
+            outputs[i].shareFrom(*inputs[i]); //no data copy
+    }
+
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        for (size_t i = 0; i < inputs.size(); i++)
         {
-            for (size_t i = 0; i < inputs.size(); i++)
+            CV_Assert(inputs[i]->ptr() == outputs[i].ptr() && inputs[i]->type() == outputs[i].type());
+            CV_Assert(inputs[i]->matRefConst().isContinuous());
+
+            Range sizeRange = Range(0, outputs[i].total());
+
+            if (outputs[i].type() == CV_32F)
             {
-                CV_Assert(inputs[i]->ptr() == outputs[i].ptr() && inputs[i]->type() == outputs[i].type());
-
-                size_t size = outputs[i].total();
-
-                if (outputs[i].type() == CV_32F)
-                {
-                    float *data = outputs[i].ptrf();
-                    for (size_t j = 0; j < size; j++)
-                        data[j] = func(data[j]);
-                }
-                else if (outputs[i].type() == CV_64F)
-                {
-                    double *data = outputs[i].ptr<double>();
-                    for (size_t j = 0; j < size; j++)
-                        data[j] = func(data[j]);
-                }
-                else
-                {
-                    CV_Error(Error::StsNotImplemented, "Only CV_32F and CV_64F blobs are supported");
-                }
+                cv::parallel_for_(sizeRange, PBody<float>(outputs[i], func));
+            }
+            else if (outputs[i].type() == CV_64F)
+            {
+                cv::parallel_for_(sizeRange, PBody<double>(outputs[i], func));
+            }
+            else
+            {
+                CV_Error(Error::StsNotImplemented, "Only CV_32F and CV_64F blobs are supported");
             }
         }
-    };
+    }
+};
 
 
-    struct ReLUFunctor
+struct ReLUFunctor
+{
+    float negative_slope;
+
+    ReLUFunctor(LayerParams &params)
     {
-        float negative_slope;
+        if (params.has("negative_slope"))
+            negative_slope = params.get<float>("negative_slope");
+        else
+            negative_slope = 0.f;
+    }
 
-        ReLUFunctor(LayerParams &params)
-        {
-            if (params.has("negative_slope"))
-                negative_slope = params.get<float>("negative_slope");
-            else
-                negative_slope = 0.f;
-        }
-
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return (x >= (TFloat)0) ? x : negative_slope * x;
-        }
-    };
-
-    struct TanHFunctor
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        TanHFunctor(LayerParams&) {}
+        return (x >= (TFloat)0) ? x : negative_slope * x;
+    }
+};
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return tanh(x);
-        }
-    };
+struct TanHFunctor
+{
+    TanHFunctor(LayerParams&) {}
 
-    struct SigmoidFunctor
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        SigmoidFunctor(LayerParams&) {}
+        return tanh(x);
+    }
+};
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return (TFloat)1 / ((TFloat)1 + exp(-x));
-        }
-    };
+struct SigmoidFunctor
+{
+    SigmoidFunctor(LayerParams&) {}
 
-    struct AbsValFunctor
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        AbsValFunctor(LayerParams&) {}
+        return (TFloat)1 / ((TFloat)1 + exp(-x));
+    }
+};
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return abs(x);
-        }
-    };
+struct AbsValFunctor
+{
+    AbsValFunctor(LayerParams&) {}
 
-    struct PowerFunctor
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        float power, scale, shift;
+        return abs(x);
+    }
+};
 
-        PowerFunctor(LayerParams &params)
-        {
-            power = params.get<float>("power", 1.0f);
-            scale = params.get<float>("scale", 1.0f);
-            shift = params.get<float>("shift", 0.0f);
-        }
+struct PowerFunctor
+{
+    float power, scale, shift;
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
-        }
-    };
-
-    struct BNLLFunctor
+    PowerFunctor(LayerParams &params)
     {
-        BNLLFunctor(LayerParams&) {}
+        power = params.get<float>("power", 1.0f);
+        scale = params.get<float>("scale", 1.0f);
+        shift = params.get<float>("shift", 0.0f);
+    }
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return log((TFloat)1 + exp(-abs(x)));
-        }
-    };
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
+    }
+};
+
+struct BNLLFunctor
+{
+    BNLLFunctor(LayerParams&) {}
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return log((TFloat)1 + exp(-abs(x)));
+    }
+};
+
 }
 }
 #endif
