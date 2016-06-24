@@ -152,7 +152,7 @@ static cv::Mat rgb2luv(const cv::Mat &src)
 
         for (int j = 0; j < src.cols*nchannels; j += nchannels)
         {
-            const float rgb[] = {pSrc[j + 0], pSrc[j + 1], pSrc[j + 2]};
+            const float rgb[] = {pSrc[j + 2], pSrc[j + 1], pSrc[j + 0]};
 
             const float xyz[] = {mX[0]*rgb[0] + mX[1]*rgb[1] + mX[2]*rgb[2],
                                  mY[0]*rgb[0] + mY[1]*rgb[1] + mY[2]*rgb[2],
