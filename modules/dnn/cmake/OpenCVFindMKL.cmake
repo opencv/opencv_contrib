@@ -69,7 +69,7 @@ set(MKL_INCLUDE_HEADERS ${MKL_INCLUDE_DIRS}/mkl.h ${MKL_INCLUDE_DIRS}/mkl_versio
 if(CMAKE_CXX_SIZEOF_DATA_PTR EQUAL 8)
     set(MKL_X64 1)
     set(MKL_ARCH "intel64")
-    
+
     include(CheckTypeSize)
     CHECK_TYPE_SIZE(int _sizeof_int)
     if (_sizeof_int EQUAL 4)
@@ -107,7 +107,7 @@ find_package_handle_standard_args(MKL MKL_INCLUDE_HEADERS MKL_LIBRARIES)
 if(MKL_FOUND)
     get_mkl_version(${MKL_INCLUDE_DIRS}/mkl_version.h)
     message(STATUS "Found MKL ${MKL_VERSION_STR} at: ${MKL_ROOT_DIR}")
-    
+
     set(HAVE_MKL ON CACHE BOOL "True if MKL found")
     set(MKL_ROOT_DIR ${MKL_ROOT_DIR} CACHE PATH "Path to MKL directory")
     set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIRS} CACHE PATH "Path to MKL include directory")

@@ -86,7 +86,7 @@ inline DictValue DictValue::get<DictValue>(int idx) const
 template<>
 inline int64 DictValue::get<int64>(int idx) const
 {
-    CV_Assert(idx == -1 && size() == 1 || idx >= 0 && idx < size());
+    CV_Assert((idx == -1 && size() == 1) || (idx >= 0 && idx < size()));
     idx = (idx == -1) ? 0 : idx;
 
     if (type == Param::INT)
@@ -131,7 +131,7 @@ inline bool DictValue::get<bool>(int idx) const
 template<>
 inline double DictValue::get<double>(int idx) const
 {
-    CV_Assert(idx == -1 && size() == 1 || idx >= 0 && idx < size());
+    CV_Assert((idx == -1 && size() == 1) || (idx >= 0 && idx < size()));
     idx = (idx == -1) ? 0 : idx;
 
     if (type == Param::REAL)
@@ -159,7 +159,7 @@ template<>
 inline String DictValue::get<String>(int idx) const
 {
     CV_Assert(isString());
-    CV_Assert(idx == -1 && ps->size() == 1 || idx >= 0 && idx < (int)ps->size());
+    CV_Assert((idx == -1 && ps->size() == 1) || (idx >= 0 && idx < (int)ps->size()));
     return (*ps)[(idx == -1) ? 0 : idx];
 }
 

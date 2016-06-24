@@ -63,8 +63,8 @@ class ElementWiseLayer : public Layer
     template<typename Dtype>
     class PBody : public cv::ParallelLoopBody
     {
-        Dtype *data;
         Func &func;
+        Dtype *data;
     public:
 
         PBody(Blob &blob, Func &func_) :

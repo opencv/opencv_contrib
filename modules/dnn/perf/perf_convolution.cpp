@@ -26,12 +26,12 @@ typedef tuple<Size, InpShapeNumOut, GroupSize, StrideSize> ConvParam; //kernel_s
 typedef TestBaseWithParam<ConvParam> ConvolutionPerfTest;
 
 PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
-    Values(Size(1, 1), Size(3, 3), Size(5, 5), Size(11, 11)), 
-    Values(make_pair(BlobShape(1,   4, 224, 224),  64), 
+    Values(Size(1, 1), Size(3, 3), Size(5, 5), Size(11, 11)),
+    Values(make_pair(BlobShape(1,   4, 224, 224),  64),
            make_pair(BlobShape(1,  64, 112, 122), 128),
            make_pair(BlobShape(1, 256,  28,  28), 512)),
     GroupSize::all(),
-    StrideSize::all()) 
+    StrideSize::all())
 )
 {
     RNG rng(0);

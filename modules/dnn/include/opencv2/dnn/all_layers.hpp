@@ -73,11 +73,11 @@ namespace dnn
 */
 
     //! LSTM recurrent layer
-    class LSTMLayer : public Layer
+    class CV_EXPORTS_W LSTMLayer : public Layer
     {
     public:
         /** Creates instance of LSTM layer */
-        CV_EXPORTS_W static Ptr<LSTMLayer> create();
+        static Ptr<LSTMLayer> create();
 
         /** Set trained weights for LSTM layer.
         LSTM behavior on each step is defined by current input, previous output, previous cell state and learned weights.
@@ -122,15 +122,15 @@ namespace dnn
         Size of the last dimension of @f$x_t@f$ must be @f$N_x@f$, (@f$N_h@f$ for @f$h_{t-1}@f$ and @f$N_c@f$ for @f$c_{t-1}@f$).
         Sizes of remainder dimensions could be any, but thay must be consistent among @f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$.
         */
-        CV_EXPORTS_W void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+        void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
 
     //! Classical recurrent layer
-    class RNNLayer : public Layer
+    class CV_EXPORTS_W RNNLayer : public Layer
     {
     public:
         /** Creates instance of RNNLayer */
-        CV_EXPORTS_W static Ptr<RNNLayer> create();
+        static Ptr<RNNLayer> create();
 
         /** Setups learned weights.
 
@@ -146,7 +146,7 @@ namespace dnn
         @param Who is @f$ W_{xo} @f$ matrix
         @param bo  is @f$ b_{o}  @f$ vector
         */
-        CV_EXPORTS_W virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
+        virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
 
         /** Accepts two inputs @f$x_t@f$ and @f$h_{t-1}@f$ and compute two outputs @f$o_t@f$ and @f$h_t@f$.
 

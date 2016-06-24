@@ -226,11 +226,11 @@ inline size_t Blob::total(int startAxis, int endAxis) const
 
     CV_Assert(0 <= startAxis && startAxis <= endAxis && endAxis <= dims());
 
-    size_t size = 1; //fix: assume that slice isn't empty
+    size_t cnt = 1; //fix: assume that slice isn't empty
     for (int i = startAxis; i < endAxis; i++)
-        size *= (size_t)sizes()[i];
+        cnt *= (size_t)sizes()[i];
 
-    return size;
+    return cnt;
 }
 
 
@@ -360,9 +360,9 @@ inline Blob &Blob::shareFrom(const Blob &blob)
     return *this;
 }
 
-inline Blob &Blob::reshape(const BlobShape &shape)
+inline Blob &Blob::reshape(const BlobShape &newShape)
 {
-    m = m.reshape(1, shape.dims(), shape.ptr());
+    m = m.reshape(1, newShape.dims(), newShape.ptr());
     return *this;
 }
 

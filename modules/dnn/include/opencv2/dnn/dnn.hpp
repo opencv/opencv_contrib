@@ -59,7 +59,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      * This function automatically called on most of OpenCV builds,
      * but you need to call it manually on some specific configurations (iOS for example).
      */
-    CV_EXPORTS void initModule();
+    CV_EXPORTS_W void initModule();
 
     /** @brief This class provides all data needed to initialize layer.
      *
@@ -81,7 +81,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      * Each class, derived from Layer, must implement allocate() methods to declare own outputs and forward() to compute outputs.
      * Also before using the new layer into networks you must register your layer by using one of @ref dnnLayerFactory "LayerFactory" macros.
      */
-    class CV_EXPORTS Layer
+    class CV_EXPORTS_W Layer
     {
     public:
 
@@ -134,7 +134,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *
      * This class supports reference counting of its instances, i. e. copies point to the same instance.
      */
-    class CV_EXPORTS Net
+    class CV_EXPORTS_W Net
     {
     public:
 
@@ -178,6 +178,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @see setNetInputs(), Layer::inputNameToIndex(), Layer::outputNameToIndex()
          */
         void connect(String outPin, String inpPin);
+
         /** @brief Connects #@p outNum output of the first layer to #@p inNum input of the second layer.
          *  @param outLayerId identifier of the first layer
          *  @param inpLayerId identifier of the second layer
@@ -185,6 +186,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @param inpNum number of the second layer input
          */
         void connect(int outLayerId, int outNum, int inpLayerId, int inpNum);
+
         /** @brief Sets ouputs names of the network input pseudo layer.
          *
          * Each net always has special own the network input pseudo layer with id=0.

@@ -131,10 +131,10 @@ class _LayerStaticRegisterer
     String type;
 public:
 
-    _LayerStaticRegisterer(const String &type, LayerFactory::Constuctor constuctor)
+    _LayerStaticRegisterer(const String &layerType, LayerFactory::Constuctor layerConstuctor)
     {
-        this->type = type;
-        LayerFactory::registerLayer(type, constuctor);
+        this->type = layerType;
+        LayerFactory::registerLayer(layerType, layerConstuctor);
     }
 
     ~_LayerStaticRegisterer()

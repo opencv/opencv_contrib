@@ -15,55 +15,35 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4701)
 # Resolve libprotobuf dependency
 # ----------------------------------------------------------------------------
 include(cmake/OpenCVFindLibProtobuf.cmake)
-ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_source_group("Src\\protobuf" FILES ${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
+# ----------------------------------------------------------------------------
+# Try to find BLAS libraries
+# ----------------------------------------------------------------------------
+OCV_OPTION(${the_module}_WITH_BLAS "Use external BLAS library to speedup processing" OFF)
+include(cmake/OpenCVFindCBLAS.cmake)
+
+ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PATH})
 ocv_create_module(${PROTOBUF_LIBRARIES})
 ocv_add_samples()
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
 
 # ----------------------------------------------------------------------------
-# Find BLAS library
+# Link BLAS
 # ----------------------------------------------------------------------------
-OCV_OPTION(${the_module}_WITH_BLAS "Use external BLAS library to speedup processing" OFF)
-if(${the_module}_WITH_BLAS)
-    set(BLAS_CBLAS_H "cblas.h")
-    
-    include(cmake/OpenCVFindMKL.cmake)
-    if(MKL_FOUND)
-        set(BLAS_INCLUDE_DIR    ${MKL_INCLUDE_DIRS})
-        set(BLAS_CBLAS_H        "mkl_cblas.h"      )
-        set(BLAS_LIBRARIES      ${MKL_LIBRARIES}   )
-        set(BLAS_BINARIES       ""                 )
-        add_definitions(${MKL_CXX_FLAGS})
-    endif()
-
-    set(BLAS_PREF ${the_module}_BLAS)
-    set(${BLAS_PREF}_INCLUDE_DIR    ${BLAS_INCLUDE_DIR} CACHE PATH      "Path to BLAS include dir")
-    set(${BLAS_PREF}_CBLAS_H        ${BLAS_CBLAS_H}     CACHE STRING    "Name of cblas.h")
-    set(${BLAS_PREF}_LIBRARIES      ${BLAS_LIBRARIES}   CACHE FILEPATH  "Path to BLAS libraries that will be linked with ${the_module} module")
-    set(${BLAS_PREF}_BINARIES       ${BLAS_BINARIES}    CACHE FILEPATH  "Path to BLAS binaries (.so, .dll) that will be installed with ${the_module} module")
-    
-    set(CBLAS_H ${${the_module}_BLAS_INCLUDE_DIR}/${${BLAS_PREF}_CBLAS_H})
-    if(${BLAS_PREF}_INCLUDE_DIR AND NOT EXISTS ${CBLAS_H})
-        message(WARNING "cblas.h at \"${CBLAS_H}\" not found")
-    endif()
-    
+if(${the_module}_WITH_BLAS AND HAVE_BLAS)
+    add_definitions(-DHAVE_CBLAS=1)
     ocv_module_include_directories(${${the_module}_BLAS_INCLUDE_DIR})
-    list(APPEND OPENCV_MODULE_${the_module}_DEPS_EXT ${${the_module}_BLAS_LIBRARIES})
-    target_link_libraries(${the_module} ${${the_module}_BLAS_LIBRARIES})
-    add_definitions(-DHAVE_CBLAS)
-    message(CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR})
-    add_custom_command(TARGET ${the_module} PRE_BUILD #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cblas.h 
-                       COMMAND ${CMAKE_COMMAND} ARGS -E echo \"\#include <${${BLAS_PREF}_CBLAS_H}>\" > ${CMAKE_CURRENT_BINARY_DIR}/cblas.h
-                       COMMENT "Adding proxy cblas.h header")
-    
+    ocv_add_dependencies(${the_module} ${${the_module}_BLAS_LIBRARIES})
+
     if(${the_module}_BLAS_BINARIES)
         ocv_install_target(${the_module} EXPORT ${the_module}_BLAS_BINARIES
                            RUNTIME DESTINATION ${OPENCV_BIN_INSTALL_PATH} COMPONENT libs)
     endif()
+else()
+    add_definitions(-DHAVE_CBLAS=0)
 endif()
 
 # ----------------------------------------------------------------------------

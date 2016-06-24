@@ -95,10 +95,10 @@ private:
         AutoBuffer<int64, 1> *pi;
         AutoBuffer<double, 1> *pd;
         AutoBuffer<String, 1> *ps;
-        void *p;
+        void *pv;
     };
 
-    DictValue(int _type, void *_p) : type(_type), p(_p) {}
+    DictValue(int _type, void *_p) : type(_type), pv(_p) {}
     void release();
 };
 

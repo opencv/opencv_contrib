@@ -55,7 +55,7 @@ namespace dnn
     /** @brief Lightweight class for storing and processing a shape of blob (or anything else). */
     struct BlobShape
     {
-        BlobShape();                                        //!< Returns @ref all(4, 1)
+        BlobShape();                                        //!< Creates [1, 1, 1, 1] shape @todo Make more clearer behavior.
         BlobShape(int s0);                                  //!< Creates 1-dim shape [@p s0]
         BlobShape(int s0, int s1);                          //!< @overload
         BlobShape(int s0, int s1, int s2);                  //!< @overload
@@ -117,7 +117,7 @@ namespace dnn
      * The class is realized as a wrapper over @ref cv::Mat and @ref cv::UMat.
      * It will support methods for switching and logical synchronization between CPU and GPU.
     */
-    class CV_EXPORTS Blob
+    class CV_EXPORTS_W Blob
     {
     public:
         explicit Blob();

@@ -141,7 +141,7 @@ namespace dnn
                     Mat dstMat(outGroupCn, outH*outW, outBlob.type(), outBlob.ptr(n, g*outGroupCn));
 
                     gemmCPU(kerMat, colMat, 1, dstMat, 0);
-                    
+
                     if (bias)
                     {
                         float *biasPtr = blobs[1].ptrf() + g*outGroupCn;
@@ -179,9 +179,9 @@ namespace dnn
 #endif // HAVE_OPENCL
 
         if (inpBlob.type() == CV_32F)
-            im2col_CpuPBody<float>::run((float*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (float *)colMat.ptr());
+            im2col_CpuPBody<float>::run((float*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, colMat.ptr<float>());
         if (inpBlob.type() == CV_64F)
-            im2col_CpuPBody<double>::run((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, (double*)colMat.ptr());
+            im2col_CpuPBody<double>::run((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, colMat.ptr<double>());
     }
 
     void ConvolutionLayer::computeInpOutShape(const Blob &inpBlob)

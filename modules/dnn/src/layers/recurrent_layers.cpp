@@ -66,7 +66,7 @@ public:
     {
         CV_Assert(Wh.dims() == 2 && Wx.dims() == 2);
         CV_Assert(Wh.size(0) == Wx.size(0) && Wh.size(0) % 4 == 0);
-        CV_Assert(Wh.size(0) == bias.total());
+        CV_Assert(Wh.size(0) == (int)bias.total());
 
         blobs.resize(3);
         blobs[0] = Wh;
@@ -78,14 +78,14 @@ public:
     {
         CV_Assert(blobs.size() == 3);
         Blob &Wh = blobs[0], &Wx = blobs[1];
-        
+
         nH = Wh.size(1);
         nX = Wx.size(1);
         nC = Wh.size(0) / 4;
 
         CV_Assert(input.size() >= 1 && input.size() <= 3);
         CV_Assert(input[0]->size(-1) == nX);
-        
+
         BlobShape inpShape = input[0]->shape();
         numSamples = input[0]->total(0, input[0]->dims()-1);
 
@@ -162,12 +162,12 @@ public:
         Mat gateF = gatesDiv(Range(1*numSamples, 2*numSamples), Range::all());
         Mat gateO = gatesDiv(Range(2*numSamples, 3*numSamples), Range::all());
         Mat gateG = gatesDiv(Range(3*numSamples, 4*numSamples), Range::all());
-        
+
         sigmoid(getesIFO);
         tanh(gateG, gateG);
 
         cv::add(gateF.mul(cPrev), gateI.mul(gateG), cCurr);
-        
+
         tanh(cCurr, hCurr);
         cv::multiply(gateO, hCurr, hCurr);
 
@@ -207,8 +207,8 @@ public:
     void setWeights(const Blob &W_hh, const Blob &W_xh, const Blob &b_h, const Blob &W_ho, const Blob &b_o)
     {
         CV_Assert(W_hh.dims() == 2 && W_xh.dims() == 2);
-        CV_Assert(W_hh.size(0) == W_xh.size(0) && W_hh.size(0) == W_hh.size(1) && b_h.total() == W_xh.size(0));
-        CV_Assert(W_ho.size(0) == b_o.total());
+        CV_Assert(W_hh.size(0) == W_xh.size(0) && W_hh.size(0) == W_hh.size(1) && (int)b_h.total() == W_xh.size(0));
+        CV_Assert(W_ho.size(0) == (int)b_o.total());
         CV_Assert(W_ho.size(1) == W_hh.size(1));
         //TODO: Check type
 
