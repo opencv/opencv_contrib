@@ -4,7 +4,7 @@
 #include "precomp.hpp"
 #include <vector>
 #include "opencv2/highgui.hpp"
-#include <opencv2\datasets\track_alov.hpp>
+#include <opencv2/datasets/track_alov.hpp>
 
 namespace cv
 {
