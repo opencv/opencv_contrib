@@ -81,13 +81,13 @@ namespace cv
 			//Crop Target Patch
 
 			//Previous frame GTBBs center
-			prevCenter.x = prevBB.x + prevBB.width / 2.0;
-			prevCenter.y = prevBB.y + prevBB.height / 2.0;
+			prevCenter.x = prevBB.x + prevBB.width / 2;
+			prevCenter.y = prevBB.y + prevBB.height / 2;
 
-			targetPatchRect.x = prevCenter.x - prevBB.width*padTarget/2.0;
-			targetPatchRect.y = prevCenter.y - prevBB.height*padTarget / 2.0;
-			targetPatchRect.width = prevBB.width*padTarget;
-			targetPatchRect.height = prevBB.height*padTarget;
+			targetPatchRect.x = prevCenter.x - prevBB.width*padTarget/2;
+			targetPatchRect.y = prevCenter.y - prevBB.height*padTarget / 2;
+			targetPatchRect.width = (float)(prevBB.width*padTarget);
+			targetPatchRect.height = (float)(prevBB.height*padTarget);
 
 			targetPatch = prevFrame(targetPatchRect);
 
@@ -97,8 +97,8 @@ namespace cv
 				TrainingSample sample;
 
 				//Current frame GTBBs center
-				currCenter.x = currBB.x + currBB.width / 2.0;
-				currCenter.y = currBB.y + currBB.height / 2.0;
+				currCenter.x = (float)(currBB.x + currBB.width / 2.0);
+				currCenter.y = (float)(currBB.y + currBB.height / 2.0);
 
 				//Generate and add random Laplacian distribution (Scaling from target size)
 				double dx, dy, ds;
@@ -112,10 +112,10 @@ namespace cv
 
 				//cout << dx << " " << dy << " " << ds << endl;
 
-				searchPatchRect.width = prevBB.width*padSearch*ds;
-				searchPatchRect.height = prevBB.height*padSearch*ds;
-				searchPatchRect.x = currCenter.x + dx - searchPatchRect.width / 2;
-				searchPatchRect.y = currCenter.y + dy - searchPatchRect.height / 2;
+				searchPatchRect.width = (float)(prevBB.width*padSearch*ds);
+				searchPatchRect.height = (float)(prevBB.height*padSearch*ds);
+				searchPatchRect.x = (float)(currCenter.x + dx - searchPatchRect.width / 2.0);
+				searchPatchRect.y = (float)(currCenter.y + dy - searchPatchRect.height / 2.0);
 
 				searchPatch = currFrame(searchPatchRect);
 

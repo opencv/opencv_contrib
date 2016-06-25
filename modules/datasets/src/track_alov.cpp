@@ -167,7 +167,7 @@ namespace cv
 					//Make a list of datasets lengths
 					int currFrameID = 0;
 
-					do
+					for (;;)
 					{
 						currFrameID++;
 						string fullPath = fullFramePath(rootPath, i, k, currFrameID);
@@ -187,7 +187,7 @@ namespace cv
 						//Add object to storage
 						objects.push_back(currObj);
 
-					} while (1);
+					}
 
 					datasetsLengths.push_back(currFrameID - 1);
 					data.push_back(objects);
@@ -214,7 +214,8 @@ namespace cv
 					}
 
 					//Ground Truth data
-					double	n = 0, x1 = 0, y1 = 0,
+					int n = 0;
+					double	x1 = 0, y1 = 0,
 						x2 = 0, y2 = 0,
 						x3 = 0, y3 = 0,
 						x4 = 0, y4 = 0;
@@ -278,7 +279,8 @@ namespace cv
 						framesNum++;
 
 						//Ground Truth data
-						double	n = 0, x1 = 0, y1 = 0,
+						int	n = 0;
+						double x1 = 0, y1 = 0,
 							x2 = 0, y2 = 0,
 							x3 = 0, y3 = 0,
 							x4 = 0, y4 = 0;
