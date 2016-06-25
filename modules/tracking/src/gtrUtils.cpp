@@ -84,8 +84,8 @@ namespace cv
 			prevCenter.x = prevBB.x + prevBB.width / 2;
 			prevCenter.y = prevBB.y + prevBB.height / 2;
 
-			targetPatchRect.x = prevCenter.x - prevBB.width*padTarget/2;
-			targetPatchRect.y = prevCenter.y - prevBB.height*padTarget / 2;
+			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTarget / 2.0);
+			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTarget / 2.0);
 			targetPatchRect.width = (float)(prevBB.width*padTarget);
 			targetPatchRect.height = (float)(prevBB.height*padTarget);
 
