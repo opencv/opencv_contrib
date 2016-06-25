@@ -76,8 +76,8 @@ public:
     static Ptr<TRACK_alov> create();
 
     virtual void load(const std::string &path) = 0;
-	
-	//Load only frames with annotations (~every 5-th frame) 
+
+	//Load only frames with annotations (~every 5-th frame)
 	virtual void loadAnnotatedOnly(const std::string &path) = 0;
 
     virtual int getDatasetsNum() = 0;
@@ -89,8 +89,8 @@ public:
     virtual bool getNextFrame(Mat &frame) = 0;
 	virtual vector <Point2f> getNextGT() = 0;
 
-	//Get frame/GT by datasetID (1..N) frameID (1..K) 
-	virtual bool getFrame(Mat &frame, int datasetID, int frameID) = 0;    
+	//Get frame/GT by datasetID (1..N) frameID (1..K)
+	virtual bool getFrame(Mat &frame, int datasetID, int frameID) = 0;
 	virtual vector <Point2f> getGT(int datasetID, int frameID) = 0;
 
 protected:

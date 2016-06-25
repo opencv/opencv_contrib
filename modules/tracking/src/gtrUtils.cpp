@@ -47,7 +47,7 @@ namespace cv
 	namespace gtr
 	{
 		double generateRandomLaplacian(double b, double m)
-		{		
+		{
 			double t = (double)rand() / (RAND_MAX);
 			double n = (double)rand() / (RAND_MAX);
 
@@ -78,7 +78,7 @@ namespace cv
 			Rect2f targetPatchRect, searchPatchRect;
 			Mat targetPatch, searchPatch;
 
-			//Crop Target Patch			
+			//Crop Target Patch
 
 			//Previous frame GTBBs center
 			prevCenter.x = prevBB.x + prevBB.width / 2.0;
@@ -88,7 +88,7 @@ namespace cv
 			targetPatchRect.y = prevCenter.y - prevBB.height*padTarget / 2.0;
 			targetPatchRect.width = prevBB.width*padTarget;
 			targetPatchRect.height = prevBB.height*padTarget;
-						
+
 			targetPatch = prevFrame(targetPatchRect);
 
 
@@ -116,7 +116,7 @@ namespace cv
 				searchPatchRect.height = prevBB.height*padSearch*ds;
 				searchPatchRect.x = currCenter.x + dx - searchPatchRect.width / 2;
 				searchPatchRect.y = currCenter.y + dy - searchPatchRect.height / 2;
-				
+
 				searchPatch = currFrame(searchPatchRect);
 
 				//Calculate Relative GTBB in search patch
@@ -136,8 +136,7 @@ namespace cv
 
 			return trainingSamples;
 		}
-						
+
 		vector <TrainingSample> gatherImageSamples();
 	}
 }
- 

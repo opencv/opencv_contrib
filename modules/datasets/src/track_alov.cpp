@@ -158,12 +158,12 @@ namespace cv
 			//Load frames
 			//Loop for all sections of ALOV300++ (14 sections)
 			for (int i = 0; i < 14; i++)
-			{		
+			{
 				//Loop for all videos in section
 				for (int k = 0; k < sectionSizes[i]; k++)
 				{
 					vector <Ptr<TRACK_alovObj> > objects;
-					
+
 					//Make a list of datasets lengths
 					int currFrameID = 0;
 
@@ -177,8 +177,8 @@ namespace cv
 						//Make ALOV300++ Object
 						Ptr<TRACK_alovObj> currObj(new TRACK_alovObj);
 						currObj->imagePath = fullPath;
-						currObj->id = currFrameID;												
-						
+						currObj->id = currFrameID;
+
 						currObj->gtbb.push_back(Point2d(0, 0));
 						currObj->gtbb.push_back(Point2d(0, 0));
 						currObj->gtbb.push_back(Point2d(0, 0));
@@ -222,7 +222,7 @@ namespace cv
 					do
 					{
 						//Make ALOV300++ Object
-						string tmp;					
+						string tmp;
 
 						getline(annoList, tmp);
 						std::istringstream in(tmp);
@@ -239,7 +239,7 @@ namespace cv
 					} while (!annoList.eof());
 				}
 			}
-            
+
             return;
         }
 
@@ -266,13 +266,12 @@ namespace cv
 					{
 						printf("Error: Can't open annotation file *.ANN!!!\n");
 						break;
-					}					
-					
-					bool trFLG = true;
+					}
+
 					int framesNum = 0;
 
 					do
-					{						
+					{
 						//Make  ALOV300++ Object
 						Ptr<TRACK_alovObj> currObj(new TRACK_alovObj);
 						string tmp;
@@ -344,7 +343,7 @@ namespace cv
         }
 
         bool  TRACK_alovImpl::getNextFrame(Mat &frame)
-        {			
+        {
             if (frameCounter >= (int)data[activeDatasetID - 1].size())
                 return false;
             string imgPath = data[activeDatasetID - 1][frameCounter]->imagePath;

@@ -23,7 +23,7 @@ namespace cv
 		const double padTarget = 2.0;
 		const double padSearch = 2.0;
 
-		//Scale parameters for Lablace distribution for Translation/Scale 
+		//Scale parameters for Lablace distribution for Translation/Scale
 		const double bX = 1.0/5;
 		const double bY = 1.0 / 5;
 		const double bS = 1.0/15;
@@ -54,7 +54,7 @@ namespace cv
 		//Make a batch for training
 		vector <TrainingSample> makeBatch();
 
-		//Gather samples from random video frame 
+		//Gather samples from random video frame
 		vector <TrainingSample> gatherFrameSamples(Mat prevFrame, Mat currFrame, Rect2f prevBB, Rect2f currBB);
 
 		//Gather samples from random still image
