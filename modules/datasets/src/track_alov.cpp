@@ -103,9 +103,9 @@ namespace cv
         {
 			string out;
 			char videoNum[9];
-			sprintf_s(videoNum, "%u", videoID+1);
+			sprintf(videoNum, "%u", videoID+1);
 			char frameNum[9];
-			sprintf_s(frameNum, "%u", frameID);
+			sprintf(frameNum, "%u", frameID);
 			out = rootPath + "/imagedata++/" + sectionNames[sectionID] + "/" + sectionNames[sectionID] + "_video";
 
 			for (unsigned int i = 0; i < 5 - strlen(videoNum); ++i)
