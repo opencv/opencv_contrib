@@ -130,7 +130,7 @@ namespace cv
 		{
 			string out;
 			char videoNum[9];
-			sprintf_s(videoNum, "%u", videoID+1);
+			sprintf(videoNum, "%u", videoID+1);
 			out = rootPath + "/alov300++_rectangleAnnotation_full/" + sectionNames[sectionID] + "/" + sectionNames[sectionID] + "_video";
 
 			for (unsigned int i = 0; i < 5 - strlen(videoNum); ++i)
