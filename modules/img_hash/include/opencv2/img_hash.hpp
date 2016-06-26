@@ -45,6 +45,7 @@
 #include "opencv2/img_hash/img_hash_base.hpp"
 #include "opencv2/img_hash/average_hash.hpp"
 #include "opencv2/img_hash/block_mean_hash.hpp"
+#include "opencv2/img_hash/color_moment_hash.hpp"
 #include "opencv2/img_hash/marr_hildreth_hash.hpp"
 #include "opencv2/img_hash/phash.hpp"
 #include "opencv2/img_hash/radial_variance_hash.hpp"
@@ -73,6 +74,9 @@ Namespace for all functions is **img_hash**. The module brings implementations o
 
     @defgroup block_mean_hash Image hash based on block mean.
     http://www.phash.org/docs/pubs/thesis_zauner.pdf
+
+    @defgroup color_moment_hash Image hash based on color moments.
+    http://www.naturalspublishing.com/files/published/54515x71g3omq1.pdf
    @}
 
 */
