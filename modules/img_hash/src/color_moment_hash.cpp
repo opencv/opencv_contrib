@@ -85,7 +85,6 @@ void ColorMomentHash::computeMoments(double *inout)
 {
   for(size_t i = 0; i != channels_.size(); ++i)
   {
-    auto mm = cv::moments(channels_[i]);
     cv::HuMoments(cv::moments(channels_[i]), inout);
     inout += 7;
   }
