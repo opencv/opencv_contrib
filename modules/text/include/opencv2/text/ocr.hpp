@@ -46,6 +46,11 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <sstream>
+
+//To supress the warning of unused parameters
+#define TOUCH(var) if(1){std::stringstream()<<&(var);}
 
 namespace cv
 {
@@ -464,6 +469,105 @@ at each window location.
 CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const String& filename);
 
 //! @}
+
+
+/** @brief OCRDictnet class provides an interface caffe in C++.
+
+Notice that it is compiled only when caffe is correctly installed.
+
+ */
+
+class CV_EXPORTS_W OCRDictnet : public BaseOCR
+{
+public:
+    /** @brief Recognize text using a word-spotting/classifier cnn.
+
+    Takes image on input and returns recognized text in the output_text parameter. Optionally
+    provides also the Rects for individual text elements found (e.g. words), and the list of those
+    text elements with their confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3
+    @param output_text Output text of the tesseract-ocr.
+    @param component_rects If provided the method will output a list of Rects for the individual
+    text elements found (e.g. words or text lines).
+    @param component_texts If provided the method will output a list of text strings for the
+    recognition of individual text elements found (e.g. words or text lines).
+    @param component_confidences If provided the method will output a list of confidence values
+    for the recognition of individual text elements found (e.g. words or text lines).
+    @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
+     */
+    virtual CV_WRAP void setComputation(bool useGpu){
+        TOUCH(useGpu);
+        std::cerr<<"CNN support is not compiled\n";
+        throw Exception();
+    }
+    virtual CV_WRAP void setVocabulary(const std::vector<String>& dictionary){
+        TOUCH(dictionary);
+        std::cerr<<"CNN support is not compiled\n";
+        throw Exception();
+    }
+    virtual CV_WRAP std::vector<String> getVocabulary(){
+        std::cerr<<"CNN support is not compiled\n";
+        throw Exception();
+    }
+    virtual CV_WRAP void setMean(InputArray mean){
+        TOUCH(mean);
+        std::cerr<<"Caffe support is not compiled\n";
+        throw Exception();
+    }
+    virtual CV_WRAP void getMean(OutputArray mean){
+        TOUCH(mean);
+        std::cerr<<"Caffe support is not compiled\n";
+        throw Exception();
+    }
+
+    virtual CV_WRAP Size getInputShape(){
+        std::cerr<<"Caffe support is not compiled\n";
+        throw Exception();
+    }
+
+    virtual CV_WRAP int getInputChannels(){
+        std::cerr<<"Caffe support is not compiled\n";
+        throw Exception();
+    }
+
+    virtual CV_WRAP  std::vector<String> classify(InputArrayOfArrays inputImages,OutputArray outProbabillities){
+        TOUCH(inputImages);
+        TOUCH(outProbabillities);
+        std::cerr<<"Caffe support is not compiled\n";
+        throw Exception();
+    }
+
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=0);
+
+    // aliases for scripting
+    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+
+    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
+
+
+    /** @brief Creates an instance of the OCRTesseract class. Initializes Tesseract.
+
+    @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
+    @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.
+    @param dictionaryFilename the relative or absolute path to a text file containing every word in the outputs of the classifier at every line.
+    @param modelAverageFilename
+    tesseract::OEM_DEFAULT is used. See the tesseract-ocr API documentation for other possible
+    values.
+    @param psmode tesseract-ocr offers different Page Segmentation Modes (PSM) tesseract::PSM_AUTO
+    (fully automatic layout analysis) is used. See the tesseract-ocr API documentation for other
+    possible values.
+     */
+    CV_WRAP static Ptr<OCRDictnet> create(String modelArchFilename, String modelWeightsFilename, String dictionaryFilename,
+                                                      String modelAverageFilename, int minibatchSize,bool useGpu,bool standarizePixels);
+};
+
 
 }
 }
