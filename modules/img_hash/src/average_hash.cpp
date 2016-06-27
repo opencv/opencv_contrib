@@ -48,6 +48,11 @@ namespace cv{
 
 namespace img_hash{
 
+AverageHash::~AverageHash()
+{
+
+}
+
 void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
