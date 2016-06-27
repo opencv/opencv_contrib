@@ -48,6 +48,11 @@ namespace cv{
 
 namespace img_hash{
 
+PHash::~PHash()
+{
+
+}
+
 void PHash::compute(const Mat &input, Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
