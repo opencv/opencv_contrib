@@ -58,16 +58,18 @@ namespace img_hash
     @param hash Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
      */
-CV_EXPORTS void averageHash(cv::Mat const &input, cv::Mat &hash);
+CV_EXPORTS_W void averageHash(CV_IN_OUT cv::Mat const &input,
+                              CV_OUT cv::Mat &hash);
 
-class AverageHash : public ImgHashBase
+class CV_EXPORTS_W AverageHash : public ImgHashBase
 {
 public:
   /** @brief Computes average hash of the input image
       @param input input image want to compute hash value
       @param hash hash of the image
   */
-  CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_WRAP ~AverageHash();
 
   /** @brief Compare the hash value between inOne and inTwo
   @param hashOne Hash value one
@@ -76,9 +78,9 @@ public:
   5 means a few things maybe different; 10 or more means
   they maybe are very different image
   */
-  CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+  CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-  CV_EXPORTS static Ptr<AverageHash> create();
+  CV_WRAP static Ptr<AverageHash> create();
 
 private:
   cv::Mat bitsImg;
