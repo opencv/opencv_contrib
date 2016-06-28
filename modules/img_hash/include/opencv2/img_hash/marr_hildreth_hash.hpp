@@ -60,10 +60,11 @@ namespace img_hash
     @param alpha int scale factor for marr wavelet (default=2).
     @param scale int level of scale factor (default = 1)
 */
-CV_EXPORTS void marrHildrethHash(cv::Mat const &input, cv::Mat &hash,
-                                 float alpha = 2.0f, float scale = 1.0f);
+CV_EXPORTS_W void marrHildrethHash(CV_IN_OUT cv::Mat const &input,
+                                   CV_OUT cv::Mat &hash,
+                                   float alpha = 2.0f, float scale = 1.0f);
 
-class MarrHildrethHash : public ImgHashBase
+class CV_EXPORTS_W MarrHildrethHash : public ImgHashBase
 {
 public:
 
@@ -71,13 +72,15 @@ public:
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    CV_EXPORTS explicit MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
+    CV_WRAP explicit MarrHildrethHash(float alpha = 2.0f, float scale = 1.0f);
+
+    CV_WRAP ~MarrHildrethHash();
 
     /** @brief Computes marr hildreth operator based hash of the input image
         @param input Input CV_8UC3, CV_8UC1 array.
         @param hash hash of the image, store 72 uchar hash value
     */
-    CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
+    CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
     /** @brief Compare the hash value between inOne and inTwo
     @param hashOne Hash value one
@@ -85,22 +88,29 @@ public:
     @return value indicate similarity of two hash, smaller mean the
     hash values are more similar to each other
     */
-    CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+    CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-    CV_EXPORTS float getAlpha() const;
-    CV_EXPORTS float getScale() const;
+    /**
+     * @brief self explain
+     */
+    CV_WRAP float getAlpha() const;
+
+    /**
+     * @brief self explain
+     */
+    CV_WRAP float getScale() const;
 
     /** @brief Set Mh kernel parameters
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    CV_EXPORTS void setKernelParam(float alpha, float scale);
+    CV_WRAP void setKernelParam(float alpha, float scale);
 
     /**
         @param alpha int scale factor for marr wavelet (default=2).
         @param scale int level of scale factor (default = 1)
     */
-    CV_EXPORTS static Ptr<MarrHildrethHash> create(float alpha = 2.0f, float scale = 1.0f);
+    CV_WRAP static Ptr<MarrHildrethHash> create(float alpha = 2.0f, float scale = 1.0f);
 
 private:
     float alphaVal;

@@ -136,6 +136,11 @@ MarrHildrethHash::MarrHildrethHash(float alpha, float scale) :
     blocks.create(31,31, CV_32F);
 }
 
+MarrHildrethHash::~MarrHildrethHash()
+{
+
+}
+
 void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
 {
     CV_Assert(input.type() == CV_8UC3 ||
