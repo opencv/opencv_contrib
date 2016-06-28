@@ -59,11 +59,12 @@ namespace img_hash
     @param sigma Gaussian kernel standard deviation
     @param numOfAngleLine The number of angles to consider
      */
-CV_EXPORTS void radialVarianceHash(cv::Mat const &input, cv::Mat &hash,
-                                   double sigma = 1,
-                                   int numOfAngleLine = 180);
+CV_EXPORTS_W void radialVarianceHash(CV_IN_OUT cv::Mat const &input,
+                                     CV_OUT cv::Mat &hash,
+                                     double sigma = 1,
+                                     int numOfAngleLine = 180);
 
-class RadialVarianceHash : public ImgHashBase
+class CV_EXPORTS_W RadialVarianceHash : public ImgHashBase
 {
   //This friend class is design for unit test, please do not
   //use it under normal case
@@ -73,15 +74,15 @@ public:
       @param sigma Gaussian kernel standard deviation
       @param numOfAngleLine The number of angles to consider
    */
-  CV_EXPORTS explicit RadialVarianceHash(double sigma = 1,
-                                         int numOfAngleLine = 180);
-  CV_EXPORTS ~RadialVarianceHash();
+  CV_WRAP explicit RadialVarianceHash(double sigma = 1,
+                                      int numOfAngleLine = 180);
+  CV_WRAP ~RadialVarianceHash();
 
   /** @brief Computes average hash of the input image
       @param input input image want to compute hash value
       @param hash hash of the image, contain 40 uchar value
   */
-  virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
   /** @brief Compare the hash value between inOne and inTwo
   @param hashOne Hash value one
@@ -90,25 +91,25 @@ public:
   the more similar the hash values. We could assume the threshold is 0.9
   by default
   */
-  CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+  CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-  CV_EXPORTS static Ptr<RadialVarianceHash> create(double sigma = 1,
-                                                   int numOfAngleLine = 180);
+  CV_WRAP static Ptr<RadialVarianceHash> create(double sigma = 1,
+                                                int numOfAngleLine = 180);
 
-  CV_EXPORTS int getNumOfAngleLine() const;
-  CV_EXPORTS double getSigma() const;
+  CV_WRAP int getNumOfAngleLine() const;
+  CV_WRAP double getSigma() const;
 
-  CV_EXPORTS void setNumOfAngleLine(int value);
-  CV_EXPORTS void setSigma(double value);
+  CV_WRAP void setNumOfAngleLine(int value);
+  CV_WRAP void setSigma(double value);
 
 private:
   void afterHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
-  CV_EXPORTS void findFeatureVector();
+  CV_WRAP void findFeatureVector();
   void firstHalfProjections(cv::Mat const &input, int D,
                             int xOff, int yOff);
-  CV_EXPORTS void hashCalculate(cv::Mat &hash);
-  CV_EXPORTS void radialProjections(cv::Mat const &input);
+  CV_WRAP void hashCalculate(cv::Mat &hash);
+  CV_WRAP void radialProjections(cv::Mat const &input);
 
   cv::Mat blurImg_;
   std::vector<double> features_;

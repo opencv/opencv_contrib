@@ -60,10 +60,11 @@ namespace img_hash
     mode 0 : use fewer block and generate 16*16/8 uchar hash value
     mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
      */
-CV_EXPORTS void blockMeanHash(cv::Mat const &input, cv::Mat &hash,
-                              size_t mode = 0);
+CV_EXPORTS_W void blockMeanHash(CV_IN_OUT cv::Mat const &input,
+                                CV_OUT cv::Mat &hash,
+                                size_t mode = 0);
 
-class BlockMeanHash : public ImgHashBase
+class CV_EXPORTS_W BlockMeanHash : public ImgHashBase
 {
   //This friend class is design for unit test only, please do not
   //use it under normal case
@@ -74,14 +75,14 @@ public:
         mode 0 : use fewer block and generate 16*16/8 uchar hash value
         mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
     */
-    CV_EXPORTS explicit BlockMeanHash(size_t mode = 0);
-    CV_EXPORTS ~BlockMeanHash();
+    CV_WRAP explicit BlockMeanHash(size_t mode = 0);
+    CV_WRAP ~BlockMeanHash();
 
     /** @brief Computes Block mean hash of the input image
           @param input input CV_8UC3, CV_8UC1 array
           @param hash hash of the image
       */
-    CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
+    CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
 
     /** @brief Compare the hash value between inOne and inTwo
       @param hashOne Hash value one
@@ -90,16 +91,16 @@ public:
       5 means a few things maybe different; 10 or more means
       they maybe are very different image
       */
-    CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+    CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
     /** @brief Create BLockMeanHash object
         @param mode By now only support mode 0 and mode 1.
         mode 0 : use fewer block and generate 16*16/8 uchar hash value
         mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
     */
-    CV_EXPORTS static Ptr<BlockMeanHash> create(size_t mode = 0);
+    CV_WRAP static Ptr<BlockMeanHash> create(size_t mode = 0);
 
-    CV_EXPORTS void setMode(size_t mode);
+    CV_WRAP void setMode(size_t mode);
 
 private:
     void createHash(cv::Mat &hash);

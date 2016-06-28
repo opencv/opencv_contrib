@@ -58,9 +58,10 @@ namespace img_hash
     @param input Input CV_8UC3
     @param hash 42 hash values with type CV_64F(double)
      */
-    CV_EXPORTS void colorMomentHash(cv::Mat const &input, cv::Mat &hash);
+    CV_EXPORTS_W void colorMomentHash(CV_IN_OUT cv::Mat const &input,
+                                      CV_OUT cv::Mat &hash);
 
-    class ColorMomentHash : public ImgHashBase
+    class CV_EXPORTS_W ColorMomentHash : public ImgHashBase
     {
     public:
       /** @brief Computes color moment hash of the input, the algorithm
@@ -69,8 +70,8 @@ namespace img_hash
       @param input Input CV_8UC3
       @param hash 42 hash values with type CV_64F(double)
        */
-      CV_EXPORTS virtual void compute(cv::Mat const &input, cv::Mat &hash);
-      CV_EXPORTS ~ColorMomentHash();
+      CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+      CV_WRAP ~ColorMomentHash();
 
       /** @brief Compare the hash value between inOne and inTwo
       @param hashOne Hash value one
@@ -78,9 +79,9 @@ namespace img_hash
       @return The smaller the value, more similar the hash.
       Recommend threshold is 10
       */
-      CV_EXPORTS virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+      CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
 
-      CV_EXPORTS static Ptr<ColorMomentHash> create();
+      CV_WRAP static Ptr<ColorMomentHash> create();
 
     private:
       void computeMoments(double *inout);
