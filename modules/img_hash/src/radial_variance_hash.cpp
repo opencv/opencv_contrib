@@ -85,8 +85,10 @@ RadialVarianceHash::~RadialVarianceHash()
 
 }
 
-void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
+void RadialVarianceHash::compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr)
 {
+    cv::Mat const input = inputArr.getMat();
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
@@ -101,19 +103,25 @@ void RadialVarianceHash::compute(cv::Mat const &input, cv::Mat &hash)
     cv::GaussianBlur(grayImg_, blurImg_, cv::Size(0,0), sigma_, sigma_);
     radialProjections(blurImg_);
     findFeatureVector();
+    outputArr.create(1, hashSize, CV_8U);
+    cv::Mat hash = outputArr.getMat();
     hashCalculate(hash);
 }
 
-double RadialVarianceHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double RadialVarianceHash::compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const
 {
-    CV_Assert(hashOne.cols == hashSize && hashOne.cols == hashTwo.cols);
+    cv::Mat const hashOneF = hashOne.getMat();
+    cv::Mat const hashTwoF = hashTwo.getMat();
+    CV_Assert(hashOneF.cols == hashSize && hashOneF.cols == hashTwoF.cols);
 
     float bufferOne[hashSize];
     cv::Mat hashFloatOne(1, hashSize, CV_32F, bufferOne);
-    hashOne.convertTo(hashFloatOne, CV_32F);
+    hashOneF.convertTo(hashFloatOne, CV_32F);
+
     float bufferTwo[hashSize];
     cv::Mat hashFloatTwo(1, hashSize, CV_32F, bufferTwo);
-    hashTwo.convertTo(hashFloatTwo, CV_32F);
+    hashTwoF.convertTo(hashFloatTwo, CV_32F);
 
     int const pixNum = hashFloatOne.rows * hashFloatOne.cols;
     cv::Scalar hOneMean, hOneStd, hTwoMean, hTwoStd;
@@ -246,7 +254,6 @@ firstHalfProjections(Mat const &input, int D, int xOff, int yOff)
 
 void RadialVarianceHash::hashCalculate(cv::Mat &hash)
 {
-    hash.create(1, hashSize, CV_8U);
     double temp[hashSize];
     double max = 0;
     double min = 0;
@@ -326,10 +333,11 @@ void RadialVarianceHash::setSigma(double value)
     sigma_ = value;
 }
 
-void radialVarianceHash(cv::Mat const &input, cv::Mat &hash,
+void radialVarianceHash(cv::InputArray inputArr,
+                        cv::OutputArray outputArr,
                         double sigma, int numOfAngleLine)
 {
-    RadialVarianceHash(sigma, numOfAngleLine).compute(input, hash);
+    RadialVarianceHash(sigma, numOfAngleLine).compute(inputArr, outputArr);
 }
 
 }

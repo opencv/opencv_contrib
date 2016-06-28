@@ -53,8 +53,10 @@ AverageHash::~AverageHash()
 
 }
 
-void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
+void AverageHash::compute(cv::InputArray inputArr,
+                          cv::OutputArray outputArr)
 {
+    cv::Mat const input = inputArr.getMat();
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
@@ -70,7 +72,8 @@ void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
     uchar const imgMean = static_cast<uchar>(cvRound(cv::mean(grayImg)[0]));
     cv::compare(grayImg, imgMean, bitsImg, CMP_GT);
     bitsImg /= 255;
-    hash.create(1, 8, CV_8U);
+    outputArr.create(1, 8, CV_8U);
+    cv::Mat hash = outputArr.getMat();
     uchar *hash_ptr = hash.ptr<uchar>(0);
     uchar const *bits_ptr = bitsImg.ptr<uchar>(0);
     std::bitset<8> bits;
@@ -85,7 +88,8 @@ void AverageHash::compute(cv::Mat const &input, cv::Mat &hash)
     }
 }
 
-double AverageHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double AverageHash::compare(cv::InputArray hashOne,
+                            cv::InputArray hashTwo) const
 {
     return norm(hashOne, hashTwo, NORM_HAMMING);
 }
@@ -95,9 +99,10 @@ Ptr<AverageHash> AverageHash::create()
     return makePtr<AverageHash>();
 }
 
-void averageHash(cv::Mat const &input, cv::Mat &hash)
+void averageHash(cv::InputArray inputArr,
+                 cv::OutputArray outputArr)
 {
-    AverageHash().compute(input, hash);
+    AverageHash().compute(inputArr, outputArr);
 }
 
 }

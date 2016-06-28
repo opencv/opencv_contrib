@@ -54,13 +54,13 @@ namespace img_hash
 //! @{
 
 /** @brief Computes radial variance hash of the input image
-    @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input
+    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param outputArr Hash value of input
     @param sigma Gaussian kernel standard deviation
     @param numOfAngleLine The number of angles to consider
      */
-CV_EXPORTS_W void radialVarianceHash(CV_IN_OUT cv::Mat const &input,
-                                     CV_OUT cv::Mat &hash,
+CV_EXPORTS_W void radialVarianceHash(cv::InputArray inputArr,
+                                     cv::OutputArray outputArr,
                                      double sigma = 1,
                                      int numOfAngleLine = 180);
 
@@ -79,10 +79,11 @@ public:
   CV_WRAP ~RadialVarianceHash();
 
   /** @brief Computes average hash of the input image
-      @param input input image want to compute hash value
-      @param hash hash of the image, contain 40 uchar value
+      @param inputArr input image want to compute hash value
+      @param outputArr hash of the image, contain 40 uchar value
   */
-  CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_WRAP virtual void compute(cv::InputArray inputArr,
+                               cv::OutputArray outputArr);
 
   /** @brief Compare the hash value between inOne and inTwo
   @param hashOne Hash value one
@@ -91,7 +92,8 @@ public:
   the more similar the hash values. We could assume the threshold is 0.9
   by default
   */
-  CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+  CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                 cv::InputArray hashTwo) const;
 
   CV_WRAP static Ptr<RadialVarianceHash> create(double sigma = 1,
                                                 int numOfAngleLine = 180);

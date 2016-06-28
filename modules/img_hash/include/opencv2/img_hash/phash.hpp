@@ -53,11 +53,11 @@ namespace img_hash
     //! @{
 
     /** @brief Computes pHash value of the input image
-    @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input, it will contain 8 uchar value
+    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param outputArr Hash value of input, it will contain 8 uchar value
      */
-    CV_EXPORTS_W void pHash(CV_IN_OUT cv::Mat const &input,
-                            CV_OUT cv::Mat &hash);
+    CV_EXPORTS_W void pHash(cv::InputArray inputArr,
+                            cv::OutputArray outputArr);
 
     class CV_EXPORTS_W PHash : public ImgHashBase
     {
@@ -65,10 +65,11 @@ namespace img_hash
       CV_WRAP ~PHash();
 
       /** @brief Computes PHash of the input image
-          @param input input CV_8UC3, CV_8UC1 array
-          @param hash hash of the image
+          @param inputArr input CV_8UC3, CV_8UC1 array
+          @param outputArr hash of the image
       */
-      CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+      CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                   cv::OutputArray outputArr);
 
       /** @brief Compare the hash value between inOne and inTwo
       @param hashOne Hash value one
@@ -77,7 +78,8 @@ namespace img_hash
       5 means a few things maybe different; 10 or more means
       they maybe are very different image
       */
-      CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+      CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                     cv::InputArray hashTwo) const;
 
       CV_WRAP static Ptr<PHash> create();
 

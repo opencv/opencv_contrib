@@ -52,8 +52,10 @@ ColorMomentHash::~ColorMomentHash()
 
 }
 
-void ColorMomentHash::compute(const Mat &input, Mat &hash)
+void ColorMomentHash::compute(cv::InputArray inputArr,
+                              cv::OutputArray outputArr)
 {
+  cv::Mat const input = inputArr.getMat();
   CV_Assert(input.type() == CV_8UC3);
 
   cv::resize(input, resizeImg_, cv::Size(512,512), 0, 0,
@@ -62,7 +64,8 @@ void ColorMomentHash::compute(const Mat &input, Mat &hash)
 
   cv::cvtColor(blurImg_, colorSpace_, CV_BGR2HSV);
   cv::split(colorSpace_, channels_);
-  hash.create(1, 42, CV_64F);
+  outputArr.create(1, 42, CV_64F);
+  cv::Mat hash = outputArr.getMat();
   hash.setTo(0);
   computeMoments(hash.ptr<double>(0));
 
@@ -71,7 +74,8 @@ void ColorMomentHash::compute(const Mat &input, Mat &hash)
   computeMoments(hash.ptr<double>(0) + 21);
 }
 
-double ColorMomentHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double ColorMomentHash::compare(cv::InputArray hashOne,
+                                cv::InputArray hashTwo) const
 {
   return norm(hashOne, hashTwo, NORM_L2) * 10000;
 }
@@ -90,9 +94,10 @@ void ColorMomentHash::computeMoments(double *inout)
   }
 }
 
-void colorMomentHash(cv::Mat const &input, cv::Mat &hash)
+void colorMomentHash(cv::InputArray inputArr,
+                     cv::OutputArray outputArr)
 {
-  ColorMomentHash().compute(input, hash);
+  ColorMomentHash().compute(inputArr, outputArr);
 }
 
 }

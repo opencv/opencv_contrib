@@ -90,7 +90,6 @@ void fillBlocks(cv::Mat const &freImg, cv::Mat &blocks)
 
 void createHash(cv::Mat const &blocks, cv::Mat &hash)
 {
-    hash.create(1, 72, CV_8U);
     int hash_index = 0;
     int bit_index = 0;
     uchar hashbyte = 0;
@@ -141,8 +140,10 @@ MarrHildrethHash::~MarrHildrethHash()
 
 }
 
-void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
+void MarrHildrethHash::compute(cv::InputArray inputArr,
+                               cv::OutputArray outputArr)
 {
+    cv::Mat const input = inputArr.getMat();
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
@@ -160,10 +161,13 @@ void MarrHildrethHash::compute(cv::Mat const &input, cv::Mat &hash)
     cv::filter2D(equalizeImg, freImg, CV_32F, mhKernel);
     fillBlocks(freImg, blocks);
 
+    outputArr.create(1, 72, CV_8U);
+    cv::Mat hash = outputArr.getMat();
     createHash(blocks, hash);
 }
 
-double MarrHildrethHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double MarrHildrethHash::compare(cv::InputArray hashOne,
+                                 cv::InputArray hashTwo) const
 {
     return norm(hashOne, hashTwo, NORM_HAMMING);
 }
@@ -190,10 +194,11 @@ Ptr<MarrHildrethHash> MarrHildrethHash::create(float alpha, float scale)
     return makePtr<MarrHildrethHash>(alpha, scale);
 }
 
-void marrHildrethHash(cv::Mat const &input, cv::Mat &hash,
+void marrHildrethHash(cv::InputArray inputArr,
+                      cv::OutputArray outputArr,
                       float alpha, float scale)
 {
-    MarrHildrethHash(alpha, scale).compute(input, hash);
+    MarrHildrethHash(alpha, scale).compute(inputArr, outputArr);
 }
 
 }

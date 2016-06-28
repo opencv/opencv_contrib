@@ -53,8 +53,10 @@ PHash::~PHash()
 
 }
 
-void PHash::compute(const Mat &input, Mat &hash)
+void PHash::compute(cv::InputArray inputArr,
+                    cv::OutputArray outputArr)
 {
+    cv::Mat const input = inputArr.getMat();
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
@@ -76,7 +78,8 @@ void PHash::compute(const Mat &input, Mat &hash)
 
     cv::compare(topLeftDCT, imgMean, bitsImg, CMP_GT);
     bitsImg /= 255;
-    hash.create(1, 8, CV_8U);
+    outputArr.create(1, 8, CV_8U);
+    cv::Mat hash = outputArr.getMat();
     uchar *hash_ptr = hash.ptr<uchar>(0);
     uchar const *bits_ptr = bitsImg.ptr<uchar>(0);
     std::bitset<8> bits;
@@ -91,7 +94,8 @@ void PHash::compute(const Mat &input, Mat &hash)
     }
 }
 
-double PHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double PHash::compare(cv::InputArray hashOne,
+                      cv::InputArray hashTwo) const
 {
     return norm(hashOne, hashTwo, NORM_HAMMING);
 }
@@ -101,9 +105,10 @@ Ptr<PHash> PHash::create()
     return makePtr<PHash>();
 }
 
-void pHash(cv::Mat const &input, cv::Mat &hash)
+void pHash(cv::InputArray inputArr,
+           cv::OutputArray outputArr)
 {
-    PHash().compute(input, hash);
+    PHash().compute(inputArr, outputArr);
 }
 
 }

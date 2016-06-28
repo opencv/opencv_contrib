@@ -53,15 +53,15 @@ namespace img_hash
 //! @{
 
 /** @brief Computes block mean hash of the input image
-    @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input, it will contain 16 hex
+    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     @param mode By now only support mode 0 and mode 1.
     mode 0 : use fewer block and generate 16*16/8 uchar hash value
     mode 1 : use block blocks(step sizes/2), generate 31*31/8 + 1 uchar hash value
      */
-CV_EXPORTS_W void blockMeanHash(CV_IN_OUT cv::Mat const &input,
-                                CV_OUT cv::Mat &hash,
+CV_EXPORTS_W void blockMeanHash(cv::InputArray inputArr,
+                                cv::OutputArray outputArr,
                                 size_t mode = 0);
 
 class CV_EXPORTS_W BlockMeanHash : public ImgHashBase
@@ -79,10 +79,11 @@ public:
     CV_WRAP ~BlockMeanHash();
 
     /** @brief Computes Block mean hash of the input image
-          @param input input CV_8UC3, CV_8UC1 array
-          @param hash hash of the image
+        @param inputArr input CV_8UC3, CV_8UC1 array
+        @param outputArr hash of the image
       */
-    CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
 
     /** @brief Compare the hash value between inOne and inTwo
       @param hashOne Hash value one
@@ -91,7 +92,8 @@ public:
       5 means a few things maybe different; 10 or more means
       they maybe are very different image
       */
-    CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
     /** @brief Create BLockMeanHash object
         @param mode By now only support mode 0 and mode 1.

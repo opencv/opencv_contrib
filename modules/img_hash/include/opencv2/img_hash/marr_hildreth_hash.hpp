@@ -54,14 +54,14 @@ namespace img_hash
 //! @{
 
 /** @brief Computes average hash value of the input image
-    @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input, it will contain 16 hex
+    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     @param alpha int scale factor for marr wavelet (default=2).
     @param scale int level of scale factor (default = 1)
 */
-CV_EXPORTS_W void marrHildrethHash(CV_IN_OUT cv::Mat const &input,
-                                   CV_OUT cv::Mat &hash,
+CV_EXPORTS_W void marrHildrethHash(cv::InputArray inputArr,
+                                   cv::OutputArray outputArr,
                                    float alpha = 2.0f, float scale = 1.0f);
 
 class CV_EXPORTS_W MarrHildrethHash : public ImgHashBase
@@ -77,10 +77,11 @@ public:
     CV_WRAP ~MarrHildrethHash();
 
     /** @brief Computes marr hildreth operator based hash of the input image
-        @param input Input CV_8UC3, CV_8UC1 array.
-        @param hash hash of the image, store 72 uchar hash value
+        @param inputArr Input CV_8UC3, CV_8UC1 array.
+        @param outputArr hash of the image, store 72 uchar hash value
     */
-    CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
 
     /** @brief Compare the hash value between inOne and inTwo
     @param hashOne Hash value one
@@ -88,7 +89,8 @@ public:
     @return value indicate similarity of two hash, smaller mean the
     hash values are more similar to each other
     */
-    CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
     /**
      * @brief self explain

@@ -54,21 +54,22 @@ namespace img_hash
 //! @{
 
 /** @brief Computes average hash value of the input image
-    @param input Input CV_8UC3, CV_8UC1 array.
-    @param hash Hash value of input, it will contain 16 hex
+    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
      */
-CV_EXPORTS_W void averageHash(CV_IN_OUT cv::Mat const &input,
-                              CV_OUT cv::Mat &hash);
+CV_EXPORTS_W void averageHash(cv::InputArray inputArr,
+                              cv::OutputArray outputArr);
 
 class CV_EXPORTS_W AverageHash : public ImgHashBase
 {
 public:
   /** @brief Computes average hash of the input image
-      @param input input image want to compute hash value
-      @param hash hash of the image
+      @param inputArr input image want to compute hash value
+      @param outputArr hash of the image
   */
-  CV_WRAP virtual void compute(cv::Mat const &input, cv::Mat &hash);
+  CV_WRAP virtual void compute(cv::InputArray inputArr,
+                               cv::OutputArray outputArr);
   CV_WRAP ~AverageHash();
 
   /** @brief Compare the hash value between inOne and inTwo
@@ -78,7 +79,8 @@ public:
   5 means a few things maybe different; 10 or more means
   they maybe are very different image
   */
-  CV_WRAP virtual double compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const;
+  CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                 cv::InputArray hashTwo) const;
 
   CV_WRAP static Ptr<AverageHash> create();
 

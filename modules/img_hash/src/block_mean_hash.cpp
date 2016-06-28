@@ -74,8 +74,10 @@ BlockMeanHash::~BlockMeanHash()
 
 }
 
-void BlockMeanHash::compute(const Mat &input, Mat &hash)
+void BlockMeanHash::compute(cv::InputArray inputArr,
+                            cv::OutputArray outputArr)
 {
+    cv::Mat const input = inputArr.getMat();
     CV_Assert(input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
@@ -112,11 +114,13 @@ void BlockMeanHash::compute(const Mat &input, Mat &hash)
 
     mean_.resize(numOfBlocks);
     findMean(pixRowStep, pixColStep);
-    hash.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
+    outputArr.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
+    cv::Mat hash = outputArr.getMat();
     createHash(hash);
 }
 
-double BlockMeanHash::compare(cv::Mat const &hashOne, cv::Mat const &hashTwo) const
+double BlockMeanHash::compare(cv::InputArray hashOne,
+                              cv::InputArray hashTwo) const
 {
     return norm(hashOne, hashTwo, NORM_HAMMING);
 }
@@ -164,10 +168,11 @@ void BlockMeanHash::findMean(int pixRowStep, int pixColStep)
     }
 }
 
-void blockMeanHash(cv::Mat const &input, cv::Mat &hash,
+void blockMeanHash(cv::InputArray inputArr,
+                   cv::OutputArray outputArr,
                    size_t mode)
 {
-    BlockMeanHash(mode).compute(input, hash);
+    BlockMeanHash(mode).compute(inputArr, outputArr);
 }
 
 }
