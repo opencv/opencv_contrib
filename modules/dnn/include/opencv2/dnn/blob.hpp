@@ -107,6 +107,18 @@ namespace dnn
 
         bool operator== (const BlobShape &r) const;
 
+        /** @brief Contacenates two shapes */
+        BlobShape operator+ (const BlobShape &r) const;
+
+        /** @brief Returns shape of passed Mat. */
+        static BlobShape like(const Mat &m);
+        /** @brief Returns shape of passed Mat. */
+        static BlobShape like(const UMat &m);
+
+#ifdef CV_CXX_MOVE_SEMANTICS
+        //TBD
+#endif
+
     private:
         cv::AutoBuffer<int,4> sz;
     };
@@ -227,6 +239,11 @@ namespace dnn
          * @returns *this
          */
         Blob &reshape(const BlobShape &shape);
+
+        /** @brief Changes shape of the blob without copying the data.
+         * @returns shallow copy of original blob with new shape.
+         */
+        Blob reshaped(const BlobShape &newShape) const;
 
         /** @brief Returns type of the blob. */
         int type() const;

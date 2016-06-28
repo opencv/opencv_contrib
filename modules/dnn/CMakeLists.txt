@@ -24,7 +24,7 @@ ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 OCV_OPTION(${the_module}_WITH_BLAS "Use external BLAS library to speedup processing" OFF)
 include(cmake/OpenCVFindCBLAS.cmake)
 
-ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PATH})
+ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PROXY_PATH})
 ocv_create_module(${PROTOBUF_LIBRARIES})
 ocv_add_samples()
 ocv_add_accuracy_tests()
@@ -37,6 +37,7 @@ if(${the_module}_WITH_BLAS AND HAVE_BLAS)
     add_definitions(-DHAVE_CBLAS=1)
     ocv_module_include_directories(${${the_module}_BLAS_INCLUDE_DIR})
     ocv_add_dependencies(${the_module} ${${the_module}_BLAS_LIBRARIES})
+    target_link_libraries(${the_module} ${${the_module}_BLAS_LIBRARIES})
 
     if(${the_module}_BLAS_BINARIES)
         ocv_install_target(${the_module} EXPORT ${the_module}_BLAS_BINARIES

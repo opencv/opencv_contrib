@@ -101,8 +101,8 @@ namespace dnn
         @f$W_{x?} \in R^{N_c \times N_x}@f$, @f$W_h? \in R^{N_c \times N_h}@f$, @f$b_? \in R^{N_c}@f$.
 
         For simplicity and performance purposes we use @f$ W_x = [W_{xi}; W_{xf}; W_{xo}, W_{xg}] @f$
-        (i.e. @f$W_x@f$ is vertical contacentaion of @f$ W_{x?} @f$), @f$ W_x \in R^{4N_c x N_x} @f$.
-        The same for @f$ W_h = [W_{hi}; W_{hf}; W_{ho}, W_{hg}], W_h \in R^{4N_c x N_h} @f$
+        (i.e. @f$W_x@f$ is vertical contacentaion of @f$ W_{x?} @f$), @f$ W_x \in R^{4N_c \times N_x} @f$.
+        The same for @f$ W_h = [W_{hi}; W_{hf}; W_{ho}, W_{hg}], W_h \in R^{4N_c \times N_h} @f$
         and for @f$ b = [b_i; b_f, b_o, b_g]@f$, @f$b \in R^{4N_c} @f$.
 
         @param Wh is matrix defining how previous output is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_h @f$)
@@ -111,16 +111,44 @@ namespace dnn
         */
         virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
 
-        /** In common case it uses three inputs (@f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$) to compute compute two outputs (@f$h_t@f$ and @f$c_t@f$).
+        /** @brief Set @f$ h_{t-1} @f$ value that will be used in next forward() calls.
+          * @details By-default @f$ h_{t-1} @f$ is inited by zeros and updated after each forward() call.
+          */
+        virtual void setH(const Blob &H) = 0;
+        /** @brief Returns current @f$ h_{t-1} @f$ value (deep copy). */
+        virtual Blob getH() const = 0;
 
-        @param input could contain three inputs: @f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$.
-        @param output contains computed outputs: @f$h_t@f$ and @f$c_t@f$.
+        /** @brief Set @f$ c_{t-1} @f$ value that will be used in next forward() calls.
+          * @details By-default @f$ c_{t-1} @f$ is inited by zeros and updated after each forward() call.
+          */
+        virtual void setC(const Blob &C) = 0;
+        /** @brief Returns current @f$ c_{t-1} @f$ value (deep copy). */
+        virtual Blob getC() const = 0;
 
-        The first input @f$x_t@f$ is required.
-        The second and third inputs are optional: if they weren't set than layer will use internal @f$h_{t-1}@f$ and @f$c_{t-1}@f$ from previous calls,
-        but at the first call they will be filled by zeros.
-        Size of the last dimension of @f$x_t@f$ must be @f$N_x@f$, (@f$N_h@f$ for @f$h_{t-1}@f$ and @f$N_c@f$ for @f$c_{t-1}@f$).
-        Sizes of remainder dimensions could be any, but thay must be consistent among @f$x_t@f$, @f$h_{t-1}@f$ and @f$c_{t-1}@f$.
+        /** @brief Specifies either interpet first dimension of input blob as timestamp dimenion either as sample.
+          *
+          * If flag is set to true then shape of input blob will be interpeted as [`T`, `N`, `[data dims]`] where `T` specifies number of timpestamps, `N` is number of independent streams.
+          * In this case each forward() call will iterate through `T` timestamps and update layer's state `T` times.
+          *
+          * If flag is set to false then shape of input blob will be interpeted as [`N`, `[data dims]`].
+          * In this case each forward() call will make one iteration and produce one timestamp with shape [`N`, `[out dims]`].
+          */
+        virtual void setUseTimstampsDim(bool use = true) = 0;
+
+        /** @brief If this flag is set to true then layer will produce @f$ c_t @f$ as second output.
+         * @details Shape of the second output is the same as first output.
+         */
+        virtual void setProduceCellOutput(bool produce = false) = 0;
+
+        /** In common case it use single input with @f$x_t@f$ values to compute output(s) @f$h_t@f$ (and @f$c_t@f$).
+         * @param input should contain packed values @f$x_t@f$
+         * @param output contains computed outputs: @f$h_t@f$ (and @f$c_t@f$ if setProduceCellOutput() flag was set to true).
+         *
+         * If setUseTimstampsDim() is set to true then @p input[0] should has at least two dimensions with the following shape: [`T`, `N`, `[data dims]`],
+         * where `T` specifies number of timpestamps, `N` is number of independent streams (i.e. x_{t_0 + t}^{stream} is @p input[0][t, stream, ...]).
+         *
+         * If setUseTimstampsDim() is set to fase then @p input[0] should contain single timestamp, its shape should has form [`N`, `[data dims]`] with at least one dimension.
+         * (i.e. x_{t}^{stream} = @p input[0][stream, ...]).
         */
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };

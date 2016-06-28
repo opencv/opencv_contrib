@@ -177,6 +177,23 @@ TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
     normAssert(input, output);
 }
 
+enum RunLayerMode
+{
+    ALLOC_ONLY          = 1,
+    FORWARD_ONLY        = 2,
+    ALLOC_AND_FORWARD   = 3
+};
+
+void runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode=ALLOC_AND_FORWARD)
+{
+    std::vector<Blob*> inpPtrs(inpBlobs.size());
+    for (size_t i = 0; i < inpBlobs.size(); i++)
+        inpPtrs[i] = &inpBlobs[i];
+
+    if (mode & ALLOC_ONLY) layer->allocate(inpPtrs, outBlobs);
+    if (mode & FORWARD_ONLY) layer->forward(inpPtrs, outBlobs);
+}
+
 class Layer_LSTM_Test : public ::testing::Test
 {
 public:
@@ -231,6 +248,28 @@ TEST_F(Layer_LSTM_Test, BasicTest_2)
     EXPECT_EQ(outputs.size(), 2);
     EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, Nc));
     EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nc));
+}
+
+TEST(Layer_LSTM_Test_Accuracy_Reference_with_, CaffeRecurrent)
+{
+
+    Ptr<LSTMLayer> layer = LSTMLayer::create();
+
+    Blob Wx = blobFromNPY(_tf("lstm.prototxt.w_0.npy"));
+    Blob Wh = blobFromNPY(_tf("lstm.prototxt.w_2.npy"));
+    Blob b  = blobFromNPY(_tf("lstm.prototxt.w_1.npy"));
+    layer->setWeights(Wh, Wx, b);
+
+    Blob inp = blobFromNPY(_tf("blob.npy"));
+    std::vector<Blob> inputs(1, inp), outputs;
+    runLayer(layer, inputs, outputs, ALLOC_ONLY | FORWARD_ONLY);
+
+    Blob &h_t_gathered = outputs[0];
+    Blob h_t_reference = blobFromNPY(_tf("lstm.prototxt.h_1.npy"));
+
+    //h_t_gathered.reshape(h_t_reference.shape());
+
+    normAssert(h_t_reference, h_t_gathered);
 }
 
 

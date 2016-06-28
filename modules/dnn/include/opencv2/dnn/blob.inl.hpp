@@ -185,6 +185,16 @@ inline bool BlobShape::operator==(const BlobShape &r) const
     return this->equal(r);
 }
 
+inline BlobShape BlobShape::like(const Mat &m)
+{
+    return BlobShape(m.dims, (const int*)m.size);
+}
+
+inline BlobShape BlobShape::like(const UMat &m)
+{
+    return BlobShape(m.dims, (const int*)m.size);
+}
+
 CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
 
 /////////////////////////////////////////////////////////////////////
@@ -277,6 +287,17 @@ inline BlobShape Blob::shape() const
     return BlobShape(dims(), sizes());
 }
 
+
+inline BlobShape BlobShape::operator+(const BlobShape &r) const
+{
+    BlobShape newShape(this->dims() + r.dims(), (int*)NULL);
+    for (int i = 0; i < this->dims(); i++)
+        newShape[i] = (*this)[i];
+    for (int i = 0; i < r.dims(); i++)
+        newShape[this->dims() + i] = r[i];
+    return newShape;
+}
+
 inline bool Blob::equalShape(const Blob &other) const
 {
     if (this->dims() != other.dims())
@@ -364,6 +385,13 @@ inline Blob &Blob::reshape(const BlobShape &newShape)
 {
     m = m.reshape(1, newShape.dims(), newShape.ptr());
     return *this;
+}
+
+inline Blob Blob::reshaped(const BlobShape &newShape) const
+{
+    Blob res(*this); //also, res.shareFrom(*this) could be used
+    res.reshape(newShape);
+    return res;
 }
 
 }

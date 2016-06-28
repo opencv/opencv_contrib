@@ -43,35 +43,118 @@
 #include "recurrent_layers.hpp"
 #include "op_blas.hpp"
 #include <iostream>
+#include <cmath>
 
 namespace cv
 {
 namespace dnn
 {
 
+template<typename Dtype>
+static void tanh(const Mat &src, Mat &dst)
+{
+    MatConstIterator_<Dtype> itSrc = src.begin<Dtype>();
+    MatIterator_<Dtype> itDst = dst.begin<Dtype>();
+
+    for (; itSrc != src.end<Dtype>(); itSrc++, itDst++)
+        *itDst = std::tanh(*itSrc);
+}
+
+static void tanh(const Mat &src, Mat &dst)
+{
+    dst.create(src.dims, (const int*)src.size, src.type());
+
+    if (src.type() == CV_32F)
+        tanh<float>(src, dst);
+    else if (src.type() == CV_64F)
+        tanh<double>(src, dst);
+    else
+        CV_Error(Error::StsUnsupportedFormat, "Functions supports only floating point types");
+}
+
+static void sigmoid(const Mat &src, Mat &dst)
+{
+    cv::exp(-src, dst);
+    cv::pow(1 + dst, -1, dst);
+}
+
 class LSTMLayerImpl : public LSTMLayer
 {
+    int numOut, numTimeStamps, numSamples, numInp;
+    Mat hInternal, cInternal;
+    Mat gates, dummyOnes;
+    int dtype;
+    bool allocated;
+
+    bool useTimestampDim;
+    bool produceCellOutput;
+
 public:
 
     LSTMLayerImpl()
     {
         type = "LSTM";
+        useTimestampDim = true;
+        produceCellOutput = false;
+        allocated = false;
     }
 
-    int nH, nX, nC, numSamples;
-    Mat prevH, prevC;
-    Mat gates, dummyOnes;
+    void setUseTimstampsDim(bool use)
+    {
+        CV_Assert(!allocated);
+        useTimestampDim = use;
+    }
+
+    void setProduceCellOutput(bool produce)
+    {
+        CV_Assert(!allocated);
+        produceCellOutput = produce;
+    }
+
+    void setC(const Blob &C)
+    {
+        CV_Assert(!allocated || C.total() == cInternal.total());
+        C.matRefConst().copyTo(cInternal);
+    }
+
+    void setH(const Blob &H)
+    {
+        CV_Assert(!allocated || H.total() == hInternal.total());
+        H.matRefConst().copyTo(hInternal);
+    }
+
+    Blob getC() const
+    {
+        CV_Assert(!cInternal.empty());
+
+        //TODO: add convinient Mat -> Blob constructor
+        Blob res;
+        res.fill(BlobShape::like(cInternal), cInternal.type(), cInternal.data);
+        return res;
+    }
+
+    Blob getH() const
+    {
+        CV_Assert(!hInternal.empty());
+
+        Blob res;
+        res.fill(BlobShape::like(hInternal), hInternal.type(), hInternal.data);
+        return res;
+    }
 
     void setWeights(const Blob &Wh, const Blob &Wx, const Blob &bias)
     {
         CV_Assert(Wh.dims() == 2 && Wx.dims() == 2);
-        CV_Assert(Wh.size(0) == Wx.size(0) && Wh.size(0) % 4 == 0);
+        CV_Assert(Wh.size(0) == Wx.size(0));
+        CV_Assert(Wh.size(0) == 4*Wh.size(1));
         CV_Assert(Wh.size(0) == (int)bias.total());
+        CV_Assert(Wh.type() == Wx.type() && Wx.type() == bias.type());
 
         blobs.resize(3);
         blobs[0] = Wh;
         blobs[1] = Wx;
         blobs[2] = bias;
+        blobs[2].reshape(BlobShape(1, (int)bias.total()));
     }
 
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
@@ -79,103 +162,83 @@ public:
         CV_Assert(blobs.size() == 3);
         Blob &Wh = blobs[0], &Wx = blobs[1];
 
-        nH = Wh.size(1);
-        nX = Wx.size(1);
-        nC = Wh.size(0) / 4;
+        numOut = Wh.size(1);
+        numInp = Wx.size(1);
 
-        CV_Assert(input.size() >= 1 && input.size() <= 3);
-        CV_Assert(input[0]->size(-1) == nX);
+        CV_Assert(input.size() == 1);
+        CV_Assert(input[0]->dims() > 2 && (int)input[0]->total(2) == numInp);
 
-        BlobShape inpShape = input[0]->shape();
-        numSamples = input[0]->total(0, input[0]->dims()-1);
+        numTimeStamps = input[0]->size(0);
+        numSamples = input[0]->size(1);
+        dtype = input[0]->type();
 
-        BlobShape hShape = inpShape;
-        hShape[-1] = nH;
-        BlobShape cShape = inpShape;
-        cShape[-1] = nC;
+        CV_Assert(dtype == CV_32F || dtype == CV_64F);
+        CV_Assert(Wh.type() == dtype);
 
+        BlobShape outShape(numTimeStamps, numSamples, numOut);
         output.resize(2);
-        output[0].create(hShape, input[0]->type());
-        output[1].create(cShape, input[0]->type());
+        output[0].create(outShape, dtype);
+        output[1].create(outShape, dtype);
 
-        if (input.size() < 2)
-        {
-            prevH.create(numSamples, nH, input[0]->type());
-            prevH.setTo(0);
-        }
-        else
-            CV_Assert(input[1]->shape() == hShape);
+        hInternal.create(numSamples, numOut, dtype);
+        hInternal.setTo(0);
 
-        if (input.size() < 3)
-        {
-            prevC.create(numSamples, nC, input[0]->type());
-            prevC.setTo(0);
-        }
-        else
-            CV_Assert(input[2]->shape() == cShape);
+        cInternal.create(numSamples, numOut, dtype);
+        cInternal.setTo(0);
 
-        gates.create(numSamples, 4*nC, input[0]->type());
-        dummyOnes.create(numSamples, 1, input[0]->type());
+        gates.create(numSamples, 4*numOut, dtype);
+
+        dummyOnes.create(numSamples, 1, dtype);
         dummyOnes.setTo(1);
-    }
 
-    Mat ep, em;
-    void tanh(Mat &x, Mat &d)
-    {
-        //TODO: two exp() is bad idea
-        cv::exp(-x, em);
-        cv::exp( x, ep);
-        cv::divide(ep - em, ep + em, d);
-    }
-
-    void sigmoid(Mat &x)
-    {
-        cv::exp(-x, x);
-        cv::pow(1 + x, -1, x);
+        allocated = true;
     }
 
     void forward(std::vector<Blob*> &input, std::vector<Blob> &output)
     {
-        CV_DbgAssert(blobs.size() == 3);
-        const Mat &Wh = blobs[0].matRefConst(), &Wx = blobs[1].matRefConst();
-        Mat bias = blobs[2].matRefConst().reshape(1, 1);
-        CV_DbgAssert(Wh.type() == CV_32F && Wx.type() == CV_32F && bias.type() == CV_32F);
+        const Mat &Wh = blobs[0].matRefConst();
+        const Mat &Wx = blobs[1].matRefConst();
+        const Mat &bias = blobs[2].matRefConst();
 
-        int szx[] = { numSamples, nX };
-        int szc[] = { numSamples, nC };
-        Mat xCurr = input[0]->matRefConst().reshape(1, 2, szx);
-        Mat hPrev = (input.size() >= 2) ? input[1]->matRefConst().reshape(1, 2, szc) : prevH;
-        Mat cPrev = (input.size() >= 3) ? input[2]->matRefConst().reshape(1, 2, szc) : prevC;
-        CV_Assert(xCurr.type() == CV_32F && hPrev.type() == CV_32F && cPrev.type() == CV_32F);
+        int numSamplesTotal = numTimeStamps*numSamples;
+        Mat xTs = input[0]->reshaped(BlobShape(numSamplesTotal, numInp)).matRefConst();
 
-        Mat hCurr = output[0].matRef().reshape(1, 2, szc);
-        Mat cCurr = output[1].matRef().reshape(1, 2, szc);
-        CV_Assert(hCurr.type() == CV_32F && cCurr.type() == CV_32F);
+        BlobShape outMatShape(numSamplesTotal, numOut);
+        Mat hOutTs = output[0].reshaped(outMatShape).matRef();
+        Mat cOutTs = (produceCellOutput) ? output[1].reshaped(outMatShape).matRef() : Mat();
 
-        gemmCPU(xCurr, Wx, 1, gates, 0, GEMM_2_T); // Wx * x_t
-        gemmCPU(hPrev, Wh, 1, gates, 1, GEMM_2_T); //+Wh * h_{t-1}
-        gemmCPU(dummyOnes, bias, 1, gates, 1);     //+b
+        for (int ts = 0; ts < numTimeStamps; ts++)
+        {
+            Range curRowRange(ts*numSamples, (ts + 1)*numSamples);
+            Mat xCurr = xTs.rowRange(curRowRange);
 
-        Mat gatesDiv = gates.reshape(1, 4*numSamples);
-        Mat getesIFO = gatesDiv(Range(0, 3*numSamples), Range::all());
-        Mat gateI = gatesDiv(Range(0*numSamples, 1*numSamples), Range::all());
-        Mat gateF = gatesDiv(Range(1*numSamples, 2*numSamples), Range::all());
-        Mat gateO = gatesDiv(Range(2*numSamples, 3*numSamples), Range::all());
-        Mat gateG = gatesDiv(Range(3*numSamples, 4*numSamples), Range::all());
+            gemmCPU(xCurr, Wx, 1, gates, 0, GEMM_2_T);      // Wx * x_t
+            gemmCPU(hInternal, Wh, 1, gates, 1, GEMM_2_T);  //+Wh * h_{t-1}
+            gemmCPU(dummyOnes, bias, 1, gates, 1);          //+b
 
-        sigmoid(getesIFO);
-        tanh(gateG, gateG);
+            Mat getesIFO = gates.colRange(0, 3*numOut);
+            Mat gateI = gates.colRange(0*numOut, 1*numOut);
+            Mat gateF = gates.colRange(1*numOut, 2*numOut);
+            Mat gateO = gates.colRange(2*numOut, 3*numOut);
+            Mat gateG = gates.colRange(3*numOut, 4*numOut);
 
-        cv::add(gateF.mul(cPrev), gateI.mul(gateG), cCurr);
+            sigmoid(getesIFO, getesIFO);
+            tanh(gateG, gateG);
 
-        tanh(cCurr, hCurr);
-        cv::multiply(gateO, hCurr, hCurr);
+            //compute c_t
+            cv::multiply(gateF, cInternal, gateF);  // f_t (*) c_{t-1}
+            cv::multiply(gateI, gateG, gateI);      // i_t (*) g_t
+            cv::add(gateF, gateI, cInternal);       // c_t = f_t (*) c_{t-1} + i_t (*) g_t
 
-        //save answers for next iteration
-        if (input.size() <= 2)
-            hCurr.copyTo(hPrev);
-        if (input.size() <= 3)
-            cCurr.copyTo(cPrev);
+            //compute h_t
+            tanh(cInternal, hInternal);
+            cv::multiply(gateO, hInternal, hInternal);
+
+            //save results in output blobs
+            hInternal.copyTo(hOutTs.rowRange(curRowRange));
+            if (produceCellOutput)
+                cInternal.copyTo(cOutTs.rowRange(curRowRange));
+        }
     }
 };
 
@@ -193,6 +256,7 @@ void LSTMLayer::forward(std::vector<Blob*>&, std::vector<Blob>&)
 class RNNLayerImpl : public RNNLayer
 {
     int nX, nH, nO, nSamples;
+    int dtype;
     Mat Whh, Wxh, bh;
     Mat Who, bo;
     Mat hPrevInternal, dummyBiasOnes;
@@ -210,7 +274,6 @@ public:
         CV_Assert(W_hh.size(0) == W_xh.size(0) && W_hh.size(0) == W_hh.size(1) && (int)b_h.total() == W_xh.size(0));
         CV_Assert(W_ho.size(0) == (int)b_o.total());
         CV_Assert(W_ho.size(1) == W_hh.size(1));
-        //TODO: Check type
 
         blobs.resize(5);
         blobs[0] = W_hh;
@@ -262,16 +325,6 @@ public:
         bo = bo.reshape(1, 1); //is 1 x nO mat
     }
 
-    //in-place tanh function
-    static void tanh(Mat &x) // 2 / (1 + e^(-2x)) - 1
-    {
-        x.convertTo(x, x.type(), -2);   // -2x
-        cv::exp(x, x);                  // e^(-2x)
-        x.convertTo(x, x.type(), 1, 1); // 1 + e^(-2x)
-        cv::pow(x, -1, x);              // 1 / (1 + e^(-2x))
-        x.convertTo(x, x.type(), 2, -1);// 2 / (1 + e^(-2x)) - 1
-    }
-
     void forward(std::vector<Blob*> &input, std::vector<Blob> &output)
     {
         Mat xCurr = input[0]->matRefConst();
@@ -291,12 +344,12 @@ public:
 
         gemmCPU(hPrev, Whh, 1, hCurr, 0, GEMM_2_T); // W_{hh} * h_{prev}
         gemmCPU(xCurr, Wxh, 1, hCurr, 1, GEMM_2_T); //+W_{xh} * x_{curr}
-        gemmCPU(dummyBiasOnes, bh, 1, hCurr, 1);      //+bh
-        tanh(hCurr);
+        gemmCPU(dummyBiasOnes, bh, 1, hCurr, 1);    //+bh
+        tanh(hCurr, hCurr);
 
         gemmCPU(hPrev, Who, 1, oCurr, 0, GEMM_2_T); // W_{ho} * h_{prev}
-        gemmCPU(dummyBiasOnes, bo, 1, oCurr, 1);      //+b_o
-        tanh(oCurr);
+        gemmCPU(dummyBiasOnes, bo, 1, oCurr, 1);    //+b_o
+        tanh(oCurr, oCurr);
 
         if (input.size() < 2) //save h_{prev}
             hCurr.copyTo(hPrevInternal);

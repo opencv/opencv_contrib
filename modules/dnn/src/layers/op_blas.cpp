@@ -1,8 +1,10 @@
 #include "op_blas.hpp"
 
 #if HAVE_CBLAS
-#include "cblas.h"
+#include "opencv_cblas.hpp"
 #endif
+
+#include <iostream>
 
 namespace cv
 {
@@ -14,18 +16,19 @@ void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double b
     cv::gemm(A, B, alpha, C, beta, C, flags);
 }
 
-inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool transA)
+inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool isTrans)
 {
-    rows = (transA) ? A.cols : A.rows;
-    cols = (transA) ? A.rows : A.cols;
+    CV_DbgAssert(A.dims == 2);
+    rows = (isTrans) ? A.cols : A.rows;
+    cols = (isTrans) ? A.rows : A.cols;
 }
 
 void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int flags /*= 0*/)
 {
     #if HAVE_CBLAS
-    int transA = flags & GEMM_1_T;
-    int transB = flags & GEMM_2_T;
-    int transC = flags & GEMM_3_T;
+    bool transA = static_cast<bool>(flags & GEMM_1_T);
+    bool transB = static_cast<bool>(flags & GEMM_2_T);
+    bool transC = static_cast<bool>(flags & GEMM_3_T);
 
     int Arows, Acols, Brows, Bcols, Crows, Ccols;
     SwapRowCols(A, Arows, Acols, transA);
@@ -34,9 +37,9 @@ void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int 
 
     CV_DbgAssert(!(flags & GEMM_3_T));
     CV_Assert(Acols == Brows && Arows == Crows && Bcols == Ccols);
-    CV_DbgAssert(A.isContinuous() && B.isContinuous() && C.isContinuous());
-    CV_DbgAssert(A.type() == CV_32F || A.type() == CV_64F);
-    CV_DbgAssert(A.type() == B.type() && B.type() == C.type());
+    CV_Assert(A.isContinuous() && B.isContinuous() && C.isContinuous());
+    CV_Assert(A.type() == CV_32F || A.type() == CV_64F);
+    CV_Assert(A.type() == B.type() && B.type() == C.type());
 
     if (C.type() == CV_32F)
     {
