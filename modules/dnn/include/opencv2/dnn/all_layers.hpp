@@ -98,18 +98,24 @@ namespace dnn
         g_t &= tanh   &(W_{xg} x_t + W_{hg} h_{t-1} + b_g), \\
         @f}
         where @f$W_{x?}@f$, @f$W_{h?}@f$ and @f$b_{?}@f$ are learned weights represented as matrices:
-        @f$W_{x?} \in R^{N_c \times N_x}@f$, @f$W_h? \in R^{N_c \times N_h}@f$, @f$b_? \in R^{N_c}@f$.
+        @f$W_{x?} \in R^{N_h \times N_x}@f$, @f$W_{h?} \in R^{N_h \times N_h}@f$, @f$b_? \in R^{N_h}@f$.
 
         For simplicity and performance purposes we use @f$ W_x = [W_{xi}; W_{xf}; W_{xo}, W_{xg}] @f$
-        (i.e. @f$W_x@f$ is vertical contacentaion of @f$ W_{x?} @f$), @f$ W_x \in R^{4N_c \times N_x} @f$.
-        The same for @f$ W_h = [W_{hi}; W_{hf}; W_{ho}, W_{hg}], W_h \in R^{4N_c \times N_h} @f$
-        and for @f$ b = [b_i; b_f, b_o, b_g]@f$, @f$b \in R^{4N_c} @f$.
+        (i.e. @f$W_x@f$ is vertical contacentaion of @f$ W_{x?} @f$), @f$ W_x \in R^{4N_h \times N_x} @f$.
+        The same for @f$ W_h = [W_{hi}; W_{hf}; W_{ho}, W_{hg}], W_h \in R^{4N_h \times N_h} @f$
+        and for @f$ b = [b_i; b_f, b_o, b_g]@f$, @f$b \in R^{4N_h} @f$.
 
         @param Wh is matrix defining how previous output is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_h @f$)
         @param Wx is matrix defining how current input is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_x @f$)
         @param b  is bias vector (i.e. according to abovemtioned notation is @f$ b @f$)
         */
         virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
+
+        /** @brief Specifies shape of output blob which will be [[`T`], `N`] + @p outTailShape.
+          * @details If this parameter is empty or unset then @p outTailShape = [`Wh`.size(0)] will be used,
+          * where `Wh` is parameter from setWeights().
+          */
+        virtual void setOutShape(const BlobShape &outTailShape = BlobShape::empty()) = 0;
 
         /** @brief Set @f$ h_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ h_{t-1} @f$ is inited by zeros and updated after each forward() call.
@@ -145,12 +151,16 @@ namespace dnn
          * @param output contains computed outputs: @f$h_t@f$ (and @f$c_t@f$ if setProduceCellOutput() flag was set to true).
          *
          * If setUseTimstampsDim() is set to true then @p input[0] should has at least two dimensions with the following shape: [`T`, `N`, `[data dims]`],
-         * where `T` specifies number of timpestamps, `N` is number of independent streams (i.e. x_{t_0 + t}^{stream} is @p input[0][t, stream, ...]).
+         * where `T` specifies number of timpestamps, `N` is number of independent streams (i.e. @f$ x_{t_0 + t}^{stream} @f$ is stored inside @p input[0][t, stream, ...]).
          *
          * If setUseTimstampsDim() is set to fase then @p input[0] should contain single timestamp, its shape should has form [`N`, `[data dims]`] with at least one dimension.
-         * (i.e. x_{t}^{stream} = @p input[0][stream, ...]).
+         * (i.e. @f$ x_{t}^{stream} @f$ is stored inside @p input[0][stream, ...]).
         */
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+
+        int inputNameToIndex(String inputName);
+
+        int outputNameToIndex(String outputName);
     };
 
     //! Classical recurrent layer

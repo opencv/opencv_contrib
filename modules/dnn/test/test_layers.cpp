@@ -181,78 +181,81 @@ enum RunLayerMode
 {
     ALLOC_ONLY          = 1,
     FORWARD_ONLY        = 2,
-    ALLOC_AND_FORWARD   = 3
+    ALLOC_AND_FORWARD   = ALLOC_ONLY | FORWARD_ONLY
 };
 
-void runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode=ALLOC_AND_FORWARD)
-{
-    std::vector<Blob*> inpPtrs(inpBlobs.size());
-    for (size_t i = 0; i < inpBlobs.size(); i++)
-        inpPtrs[i] = &inpBlobs[i];
+typedef Ptr<std::vector<Blob*> > PtrToVecPtrBlob;
 
-    if (mode & ALLOC_ONLY) layer->allocate(inpPtrs, outBlobs);
-    if (mode & FORWARD_ONLY) layer->forward(inpPtrs, outBlobs);
+PtrToVecPtrBlob
+runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode=ALLOC_AND_FORWARD)
+{
+    PtrToVecPtrBlob inpPtrs( new std::vector<Blob*>() );
+    inpPtrs->reserve(inpBlobs.size());
+    for (size_t i = 0; i < inpBlobs.size(); i++)
+        inpPtrs->push_back(&inpBlobs[i]);
+
+    if (mode & ALLOC_ONLY) layer->allocate(*inpPtrs, outBlobs);
+    if (mode & FORWARD_ONLY) layer->forward(*inpPtrs, outBlobs);
+
+    return inpPtrs;
 }
 
 class Layer_LSTM_Test : public ::testing::Test
 {
 public:
-    int Nx, Nc;
+    int numInp, numOut;
     Blob Wh, Wx, b;
     Ptr<LSTMLayer> layer;
-
     std::vector<Blob> inputs, outputs;
-    std::vector<Blob*> inputsPtr;
 
-    Layer_LSTM_Test(int _Nx = 31, int _Nc = 100)
+    Layer_LSTM_Test() {}
+
+    void init(const BlobShape &inpShape_, const BlobShape &outShape_)
     {
-        Nx = _Nx;
-        Nc = _Nc;
+        numInp = inpShape_.total();
+        numOut = outShape_.total();
 
-        Wh = Blob(BlobShape(4 * Nc, Nc));
-        Wx = Blob(BlobShape(4 * Nc, Nx));
-        b  = Blob(BlobShape(4 * Nc, 1));
+        Wh = Blob(BlobShape(4 * numOut, numOut));
+        Wx = Blob(BlobShape(4 * numOut, numInp));
+        b  = Blob(BlobShape(4 * numOut, 1));
 
         layer = LSTMLayer::create();
         layer->setWeights(Wh, Wx, b);
-    }
-
-    void allocateAndForward()
-    {
-        inputsPtr.clear();
-        for (size_t i = 0; i < inputs.size(); i++)
-            inputsPtr.push_back(&inputs[i]);
-
-        layer->allocate(inputsPtr, outputs);
-        layer->forward(inputsPtr, outputs);
+        layer->setOutShape(outShape_);
     }
 };
 
-TEST_F(Layer_LSTM_Test, BasicTest_1)
+TEST_F(Layer_LSTM_Test, get_set_test)
 {
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
-    allocateAndForward();
+    BlobShape TN(4);
+    BlobShape inpShape(5, 3, 2), inpResShape = TN + inpShape;
+    BlobShape outShape(3, 1, 2), outResShape = TN + outShape;
 
-    EXPECT_EQ(outputs.size(), 2);
-    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, Nc));
-    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nc));
-}
+    init(inpShape, outShape);
+    layer->setProduceCellOutput(true);
+    layer->setUseTimstampsDim(false);
+    layer->setOutShape(outShape);
 
-TEST_F(Layer_LSTM_Test, BasicTest_2)
-{
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nc)));
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nc)));
-    allocateAndForward();
+    layer->setC(Blob(outResShape));
+    layer->setH(Blob(outResShape));
 
-    EXPECT_EQ(outputs.size(), 2);
-    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, Nc));
-    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nc));
+    inputs.push_back(Blob(inpResShape));
+    runLayer(layer, inputs, outputs);
+
+    EXPECT_EQ(2, outputs.size());
+    EXPECT_EQ(outResShape, outputs[0].shape());
+    EXPECT_EQ(outResShape, outputs[1].shape());
+
+    EXPECT_EQ(outResShape, layer->getC().shape());
+    EXPECT_EQ(outResShape, layer->getH().shape());
+
+    EXPECT_EQ(0, layer->inputNameToIndex("x"));
+    EXPECT_EQ(0, layer->outputNameToIndex("h"));
+    EXPECT_EQ(1, layer->outputNameToIndex("c"));
 }
 
 TEST(Layer_LSTM_Test_Accuracy_Reference_with_, CaffeRecurrent)
 {
-
     Ptr<LSTMLayer> layer = LSTMLayer::create();
 
     Blob Wx = blobFromNPY(_tf("lstm.prototxt.w_0.npy"));
@@ -262,12 +265,10 @@ TEST(Layer_LSTM_Test_Accuracy_Reference_with_, CaffeRecurrent)
 
     Blob inp = blobFromNPY(_tf("blob.npy"));
     std::vector<Blob> inputs(1, inp), outputs;
-    runLayer(layer, inputs, outputs, ALLOC_ONLY | FORWARD_ONLY);
+    runLayer(layer, inputs, outputs);
 
     Blob &h_t_gathered = outputs[0];
     Blob h_t_reference = blobFromNPY(_tf("lstm.prototxt.h_1.npy"));
-
-    //h_t_gathered.reshape(h_t_reference.shape());
 
     normAssert(h_t_reference, h_t_gathered);
 }

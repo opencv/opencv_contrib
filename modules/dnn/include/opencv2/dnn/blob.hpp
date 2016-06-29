@@ -44,6 +44,7 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <ostream>
+#include <iostream>
 
 namespace cv
 {
@@ -56,7 +57,7 @@ namespace dnn
     struct BlobShape
     {
         BlobShape();                                        //!< Creates [1, 1, 1, 1] shape @todo Make more clearer behavior.
-        BlobShape(int s0);                                  //!< Creates 1-dim shape [@p s0]
+        explicit BlobShape(int s0);                         //!< Creates 1-dim shape [@p s0]
         BlobShape(int s0, int s1);                          //!< @overload
         BlobShape(int s0, int s1, int s2);                  //!< @overload
         BlobShape(int num, int cn, int rows, int cols);     //!< Creates 4-dim shape [@p num, @p cn, @p rows, @p cols]
@@ -96,24 +97,35 @@ namespace dnn
          */
         int xsize(int axis) const;
 
+        /** @brief Converts @p axis index to canonical format (where 0 <= @p axis < dims()). */
+        int canonicalAxis(int axis) const;
+
         /** @brief Returns the product of all sizes of axes. */
-        ptrdiff_t total();
+        ptrdiff_t total() const;
+
+        /** @brief Computes the product of sizes of axes among the specified axes range [@p startAxis; @p endAxis).
+         * @details Negative axis indexing can be used. @sa Blob::total(int,int)
+         */
+        ptrdiff_t total(int startAxis, int endAxis = INT_MAX) const;
+
+        /** @brief Constructs new shape from axes in range [@p startAxis; @p endAxis).
+         * @details Negative axis indexing can be used. @sa Blob::total(int,int)
+         */
+        BlobShape slice(int startAxis, int endAxis = INT_MAX) const;
 
         /** @brief Returns pointer to the first element of continuous size array. */
         const int *ptr() const;
 
-        /** @brief Checks equality of two shapes. */
-        bool equal(const BlobShape &other) const;
+        bool equal(const BlobShape &other) const;       //!< Checks equality of two shapes.
+        bool operator== (const BlobShape &r) const;     //!< @sa equal()
 
-        bool operator== (const BlobShape &r) const;
+        BlobShape operator+ (const BlobShape &r) const; //!< Contacenates two shapes.
 
-        /** @brief Contacenates two shapes */
-        BlobShape operator+ (const BlobShape &r) const;
+        static BlobShape like(const Mat &m);    //!< Returns shape of passed Mat.
+        static BlobShape like(const UMat &m);   //!< Returns shape of passed UMat.
 
-        /** @brief Returns shape of passed Mat. */
-        static BlobShape like(const Mat &m);
-        /** @brief Returns shape of passed Mat. */
-        static BlobShape like(const UMat &m);
+        static BlobShape empty();               //!< Returns empty shape [].
+        bool isEmpty() const;                   //!< Returns true if shape is empty (i.e []).
 
 #ifdef CV_CXX_MOVE_SEMANTICS
         //TBD
@@ -183,7 +195,7 @@ namespace dnn
          */
         size_t total(int startAxis = 0, int endAxis = INT_MAX) const;
 
-        /** @brief Converts @p axis index to canonical format (where 0 <= axis < dims()). */
+        /** @brief Converts @p axis index to canonical format (where 0 <= @p axis < dims()). */
         int canonicalAxis(int axis) const;
 
         /** @brief Returns shape of the blob. */

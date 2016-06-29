@@ -150,7 +150,13 @@ inline int &BlobShape::operator[] (int axis)
     return sz[(axis < 0) ? axis + dims() : axis];
 }
 
-inline ptrdiff_t BlobShape::total()
+inline int BlobShape::canonicalAxis(int axis) const
+{
+    CV_Assert(-dims() <= axis && axis < dims());
+    return (axis < 0) ? axis + dims() : axis;
+}
+
+inline ptrdiff_t BlobShape::total() const
 {
     if (dims() == 0)
         return 0;
@@ -158,6 +164,42 @@ inline ptrdiff_t BlobShape::total()
     ptrdiff_t res = 1;
     for (int i = 0; i < dims(); i++)
         res *= sz[i];
+    return res;
+}
+
+inline ptrdiff_t BlobShape::total(int startAxis, int endAxis) const
+{
+    if (isEmpty())
+        return 0;
+
+    if (endAxis == INT_MAX)
+        endAxis = dims();
+    else if (endAxis < 0)
+        endAxis += dims();
+    startAxis = (startAxis < 0) ? startAxis + dims() : startAxis;
+    CV_Assert(0 <= startAxis && startAxis <= endAxis && endAxis <= dims());
+
+    ptrdiff_t res = 1;
+    for (int i = startAxis; i < endAxis; i++)
+        res *= sz[i];
+    return res;
+}
+
+inline BlobShape BlobShape::slice(int startAxis, int endAxis) const
+{
+    if (isEmpty())
+        return BlobShape::empty();
+
+    if (endAxis == INT_MAX)
+        endAxis = dims();
+    else if (endAxis < 0)
+        endAxis += dims();
+    startAxis = (startAxis < 0) ? startAxis + dims() : startAxis;
+    CV_Assert(0 <= startAxis && startAxis <= endAxis && endAxis <= dims());
+
+    BlobShape res(endAxis - startAxis, (const int*)NULL);
+    for (int i = startAxis; i < endAxis; i++)
+        res[i - startAxis] = sz[i];
     return res;
 }
 
@@ -193,6 +235,16 @@ inline BlobShape BlobShape::like(const Mat &m)
 inline BlobShape BlobShape::like(const UMat &m)
 {
     return BlobShape(m.dims, (const int*)m.size);
+}
+
+inline BlobShape BlobShape::empty()
+{
+    return BlobShape(0, (const int*)NULL);
+}
+
+inline bool BlobShape::isEmpty() const
+{
+    return dims() == 0;
 }
 
 CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
