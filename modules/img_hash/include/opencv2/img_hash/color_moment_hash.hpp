@@ -55,7 +55,8 @@ namespace img_hash
     /** @brief Computes color moment hash of the input, the algorithm
      is come from the paper "Perceptual  Hashing  for  Color  Images
      Using  Invariant Moments"
-    @param inputArr Input CV_8UC3
+    @param inputArr input image want to compute hash value,
+    type should be CV_8UC4, CV_8UC3 or CV_8UC1.
     @param outputArr 42 hash values with type CV_64F(double)
      */
     CV_EXPORTS_W void colorMomentHash(cv::InputArray inputArr,
@@ -67,8 +68,9 @@ namespace img_hash
       /** @brief Computes color moment hash of the input, the algorithm
        is come from the paper "Perceptual  Hashing  for  Color  Images
        Using  Invariant Moments"
-      @param inputArr Input CV_8UC3
-      @param outputArr 42 hash values with type CV_64F(double)
+       @param inputArr input image want to compute hash value,
+       type should be CV_8UC4, CV_8UC3, CV_8UC1.
+       @param outputArr 42 hash values with type CV_64F(double)
        */
       CV_WRAP virtual void compute(cv::InputArray inputArr,
                                    cv::OutputArray outputArr);
@@ -89,6 +91,7 @@ namespace img_hash
       void computeMoments(double *inout);
 
       cv::Mat blurImg_;
+      cv::Mat colorImg_;
       std::vector<cv::Mat> channels_;
       cv::Mat colorSpace_;
       cv::Mat resizeImg_;

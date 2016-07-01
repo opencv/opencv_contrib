@@ -56,9 +56,24 @@ void ColorMomentHash::compute(cv::InputArray inputArr,
                               cv::OutputArray outputArr)
 {
   cv::Mat const input = inputArr.getMat();
-  CV_Assert(input.type() == CV_8UC3);
+  CV_Assert(input.type() == CV_8UC4 ||
+            input.type() == CV_8UC3 ||
+            input.type() == CV_8U);
 
-  cv::resize(input, resizeImg_, cv::Size(512,512), 0, 0,
+  if(input.type() == CV_8UC3)
+  {
+      colorImg_ = input;
+  }
+  else if(input.type() == CV_8UC4)
+  {
+      cv::cvtColor(input, colorImg_, CV_BGRA2BGR);
+  }
+  else
+  {
+      cv::cvtColor(input, colorImg_, CV_GRAY2BGR);
+  }
+
+  cv::resize(colorImg_, resizeImg_, cv::Size(512,512), 0, 0,
              INTER_CUBIC);
   cv::GaussianBlur(resizeImg_, blurImg_, cv::Size(3,3), 0, 0);
 

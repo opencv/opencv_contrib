@@ -54,7 +54,8 @@ namespace img_hash
 //! @{
 
 /** @brief Computes radial variance hash of the input image
-    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param inputArr input image want to compute hash value,
+    type should be CV_8UC4, CV_8UC3, CV_8UC1.
     @param outputArr Hash value of input
     @param sigma Gaussian kernel standard deviation
     @param numOfAngleLine The number of angles to consider
@@ -79,7 +80,8 @@ public:
   CV_WRAP ~RadialVarianceHash();
 
   /** @brief Computes average hash of the input image
-      @param inputArr input image want to compute hash value
+      @param inputArr input image want to compute hash value,
+      type should be CV_8UC4, CV_8UC3, CV_8UC1.
       @param outputArr hash of the image, contain 40 uchar value
   */
   CV_WRAP virtual void compute(cv::InputArray inputArr,

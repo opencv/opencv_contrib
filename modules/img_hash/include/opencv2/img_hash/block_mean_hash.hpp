@@ -53,7 +53,8 @@ namespace img_hash
 //! @{
 
 /** @brief Computes block mean hash of the input image
-    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param inputArr input image want to compute hash value,
+    type should be CV_8UC4, CV_8UC3 or CV_8UC1.
     @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     @param mode By now only support mode 0 and mode 1.
@@ -79,7 +80,8 @@ public:
     CV_WRAP ~BlockMeanHash();
 
     /** @brief Computes Block mean hash of the input image
-        @param inputArr input CV_8UC3, CV_8UC1 array
+        @param inputArr input image want to compute hash value,
+        type should be CV_8UC4, CV_8UC3 or CV_8UC1.
         @param outputArr hash of the image
       */
     CV_WRAP virtual void compute(cv::InputArray inputArr,

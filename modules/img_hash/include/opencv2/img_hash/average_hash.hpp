@@ -54,7 +54,8 @@ namespace img_hash
 //! @{
 
 /** @brief Computes average hash value of the input image
-    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param inputArr input image want to compute hash value,
+    type should be CV_8UC4, CV_8UC3 or CV_8UC1.
     @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
      */
@@ -65,7 +66,8 @@ class CV_EXPORTS_W AverageHash : public ImgHashBase
 {
 public:
   /** @brief Computes average hash of the input image
-      @param inputArr input image want to compute hash value
+      @param inputArr input image want to compute hash value,
+      type should be CV_8UC4, CV_8UC3 or CV_8UC1.
       @param outputArr hash of the image
   */
   CV_WRAP virtual void compute(cv::InputArray inputArr,

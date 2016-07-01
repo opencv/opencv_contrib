@@ -57,7 +57,8 @@ void AverageHash::compute(cv::InputArray inputArr,
                           cv::OutputArray outputArr)
 {
     cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC3 ||
+    CV_Assert(input.type() == CV_8UC4 ||
+              input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
     cv::resize(input, resizeImg, cv::Size(8,8));
@@ -65,7 +66,12 @@ void AverageHash::compute(cv::InputArray inputArr,
     {
         cv::cvtColor(resizeImg, grayImg, CV_BGR2GRAY);
     }
-    else{
+    else if(input.type() == CV_8UC4)
+    {
+        cv::cvtColor(resizeImg, grayImg, CV_BGRA2GRAY);
+    }
+    else
+    {
         grayImg = resizeImg;
     }
 

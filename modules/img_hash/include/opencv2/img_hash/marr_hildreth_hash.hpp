@@ -54,7 +54,8 @@ namespace img_hash
 //! @{
 
 /** @brief Computes average hash value of the input image
-    @param inputArr Input CV_8UC3, CV_8UC1 array.
+    @param inputArr input image want to compute hash value,
+    type should be CV_8UC4, CV_8UC3, CV_8UC1.
     @param outputArr Hash value of input, it will contain 16 hex
     decimal number, return type is CV_8U
     @param alpha int scale factor for marr wavelet (default=2).
@@ -77,7 +78,8 @@ public:
     CV_WRAP ~MarrHildrethHash();
 
     /** @brief Computes marr hildreth operator based hash of the input image
-        @param inputArr Input CV_8UC3, CV_8UC1 array.
+        @param inputArr input image want to compute hash value,
+        type should be CV_8UC4, CV_8UC3, CV_8UC1.
         @param outputArr hash of the image, store 72 uchar hash value
     */
     CV_WRAP virtual void compute(cv::InputArray inputArr,

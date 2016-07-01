@@ -53,8 +53,9 @@ namespace img_hash
     //! @{
 
     /** @brief Computes pHash value of the input image
-    @param inputArr Input CV_8UC3, CV_8UC1 array.
-    @param outputArr Hash value of input, it will contain 8 uchar value
+       @param inputArr input image want to compute hash value,
+       type should be CV_8UC4, CV_8UC3, CV_8UC1.
+       @param outputArr Hash value of input, it will contain 8 uchar value
      */
     CV_EXPORTS_W void pHash(cv::InputArray inputArr,
                             cv::OutputArray outputArr);
@@ -65,7 +66,8 @@ namespace img_hash
       CV_WRAP ~PHash();
 
       /** @brief Computes PHash of the input image
-          @param inputArr input CV_8UC3, CV_8UC1 array
+          @param inputArr input image want to compute hash value,
+           type should be CV_8UC4, CV_8UC3, CV_8UC1.
           @param outputArr hash of the image
       */
       CV_WRAP virtual void compute(cv::InputArray inputArr,

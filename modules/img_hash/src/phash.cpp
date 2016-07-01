@@ -57,13 +57,18 @@ void PHash::compute(cv::InputArray inputArr,
                     cv::OutputArray outputArr)
 {
     cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC3 ||
+    CV_Assert(input.type() == CV_8UC4 ||
+              input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
     cv::resize(input, resizeImg, cv::Size(32,32));
     if(input.type() == CV_8UC3)
     {
         cv::cvtColor(resizeImg, grayImg, CV_BGR2GRAY);
+    }
+    else if(input.type() == CV_8UC4)
+    {
+        cv::cvtColor(resizeImg, grayImg, CV_BGRA2GRAY);
     }
     else
     {

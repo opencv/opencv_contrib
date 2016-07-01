@@ -78,13 +78,18 @@ void BlockMeanHash::compute(cv::InputArray inputArr,
                             cv::OutputArray outputArr)
 {
     cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC3 ||
+    CV_Assert(input.type() == CV_8UC4 ||
+              input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
     cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight));
     if(input.type() == CV_8UC3)
     {
         cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);
+    }
+    else if(input.type() == CV_8UC4)
+    {
+        cv::cvtColor(resizeImg_, grayImg_, CV_BGRA2GRAY);
     }
     else
     {

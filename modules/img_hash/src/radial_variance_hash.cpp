@@ -89,14 +89,20 @@ void RadialVarianceHash::compute(cv::InputArray inputArr,
                                  cv::OutputArray outputArr)
 {
     cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC3 ||
+    CV_Assert(input.type() == CV_8UC4 ||
+              input.type() == CV_8UC3 ||
               input.type() == CV_8U);
 
     if(input.type() == CV_8UC3)
     {
         cv::cvtColor(input, grayImg_, CV_BGR2GRAY);
     }
-    else{
+    else if(input.type() == CV_8UC4)
+    {
+        cv::cvtColor(input, grayImg_, CV_BGRA2GRAY);
+    }
+    else
+    {
         grayImg_ = input;
     }
 
