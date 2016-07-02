@@ -48,9 +48,8 @@ void computeHash(cv::Ptr<cv::img_hash::ImgHashBase> algo)
 
 int main()
 {
-    //disable opencl acceleration may boost up speed of img_hash
-    //however, in this post I do not disable the optimization of opencl
-    //cv::ocl::setUseOpenCL(false);
+    //disable opencl acceleration may(or may not) boost up speed of img_hash
+    cv::ocl::setUseOpenCL(false);
 
     computeHash(img_hash::AverageHash::create());
     computeHash(img_hash::PHash::create());
