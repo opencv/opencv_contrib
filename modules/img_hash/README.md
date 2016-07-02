@@ -107,6 +107,3 @@ You can learn more about img_hash modules from following links, these links show
 ## Contributors
 
 Tham Ngap Wei, thamngapwei@gmail.com
-
-
-
