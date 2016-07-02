@@ -32,7 +32,7 @@ void computeHash(cv::Ptr<cv::img_hash::ImgHashBase> algo)
 {
     cv::Mat const input = cv::imread("lena.png");
     cv::Mat const target = cv::imread("lena_blur.png");
-    
+
     cv::Mat inHash; //hash of input image
     cv::Mat targetHash; //hash of target image
 
@@ -49,14 +49,14 @@ void computeHash(cv::Ptr<cv::img_hash::ImgHashBase> algo)
 int main()
 {
     //disable opencl acceleration may boost up speed of img_hash
-    //however, in this post I do not disable the optimization of opencl    
+    //however, in this post I do not disable the optimization of opencl
     //cv::ocl::setUseOpenCL(false);
 
     computeHash(img_hash::AverageHash::create());
     computeHash(img_hash::PHash::create());
     computeHash(img_hash::MarrHildrethHash::create());
     computeHash(img_hash::RadialVarianceHash::create());
-    //BlockMeanHash support mode 0 and mode 1, they associate to 
+    //BlockMeanHash support mode 0 and mode 1, they associate to
     //mode 1 and mode 2 of PHash library
     computeHash(img_hash::BlockMeanHash::create(0));
     computeHash(img_hash::BlockMeanHash::create(1));
@@ -73,7 +73,7 @@ int main()
 ![Hash Computation chart](https://3.bp.blogspot.com/-XIs-olyuK9Q/V3NKRDRzUiI/AAAAAAAAAwU/k99xuDGlCBYwO3ZDZNHcLweuaAt_cpHtwCLcB/s1600/Capture.JPG)
 ![Hash comparison chart](https://1.bp.blogspot.com/-anqfh2Awky4/V3NOOKvrQKI/AAAAAAAAAwo/pZjGDDnAPKooOZCCVnzGO4lJjKo7-KjlACLcB/s1600/Capture.JPG)
 
-As you can see, hash computation speed of img_hash module outperform [PHash library](http://www.phash.org/) a lot. 
+As you can see, hash computation speed of img_hash module outperform [PHash library](http://www.phash.org/) a lot.
 
 PS : I do not list out the comparison of Average hash, PHash and Color Moment hash, because I cannot find them in PHash.
 
