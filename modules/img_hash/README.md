@@ -1,13 +1,18 @@
 ## Synopsis
 
-This module intend to port the algorithms from PHash library and implement other image hash algorithm do not exist in PHash library yet.By now img_hash module support 6 algorithms
+This module intend to port the algorithms from PHash library and implement other image hash algorithm do not exist in PHash library yet.
 
-* [Average hash(somebody call it Different hash)]
-* [PHash(Perceptual hash)]
-* [Marr Hildreth Hash]
-* [Radial Variance Hash]
-* [Block Mean Hash(support mode 0 and mode 1)]
-* [Color Moment Hash(resist to rotation attack)]
+##Support Algorithms
+- Average hash
+    - somebody call it Different hash
+- PHash
+    - somebody call it Perceptual hash
+- Marr Hildreth Hash
+- Radial Variance Hash
+- Block Mean Hash
+    - support mode 0 and mode 1
+- Color Moment Hash
+    - This is the one and only hash algorithm resist to rotation attack(-90~90 degree) in img_hash
 
 You can study more about image hashing from following paper and websites
 
