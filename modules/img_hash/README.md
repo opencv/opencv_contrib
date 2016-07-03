@@ -99,7 +99,7 @@ To study more details about those git commands, please go to [stack overflow](ht
 
 You can learn more about img_hash modules from following links, these links show you how to find similar image from ukbench dataset, provide thorough benchmark of different attacks(contrast, blur, noise(gaussion,pepper and salt), jpeg compression, watermark, resize).
 
-* [Introduction to image hash module of opencv](Introduction to image hash module of opencv)
+* [Introduction to image hash module of opencv](http://qtandopencv.blogspot.my/2016/06/introduction-to-image-hash-module-of.html)
 * [Speed up image hashing of opencv(img_hash) and introduce color moment hash](http://qtandopencv.blogspot.my/2016/06/speed-up-image-hashing-of-opencvimghash.html)
 
 
