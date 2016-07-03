@@ -67,7 +67,7 @@ int main()
 
 ![Performance chart](https://3.bp.blogspot.com/-Li-zoGXC6-I/V3Wnp5tbFwI/AAAAAAAAA1Y/iVQkZmI6wWQcpxynuzW4FngJYVdXw3AtgCLcB/s1600/overall_result.JPG)
 
-#Speed comparison with PHash library
+#Speed comparison with PHash library(100 images from ukbench)
 
 ![Hash Computation chart](https://3.bp.blogspot.com/-XIs-olyuK9Q/V3NKRDRzUiI/AAAAAAAAAwU/k99xuDGlCBYwO3ZDZNHcLweuaAt_cpHtwCLcB/s1600/Capture.JPG)
 ![Hash comparison chart](https://1.bp.blogspot.com/-anqfh2Awky4/V3NOOKvrQKI/AAAAAAAAAwo/pZjGDDnAPKooOZCCVnzGO4lJjKo7-KjlACLcB/s1600/Capture.JPG)
