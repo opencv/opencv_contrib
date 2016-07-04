@@ -254,7 +254,7 @@ TEST_F(Layer_LSTM_Test, get_set_test)
     EXPECT_EQ(1, layer->outputNameToIndex("c"));
 }
 
-TEST(Layer_LSTM_Test_Accuracy_Reference_with_, CaffeRecurrent)
+TEST(Layer_LSTM_Test_Accuracy_with_, CaffeRecurrent)
 {
     Ptr<LSTMLayer> layer = LSTMLayer::create();
 
@@ -263,73 +263,70 @@ TEST(Layer_LSTM_Test_Accuracy_Reference_with_, CaffeRecurrent)
     Blob b  = blobFromNPY(_tf("lstm.prototxt.w_1.npy"));
     layer->setWeights(Wh, Wx, b);
 
-    Blob inp = blobFromNPY(_tf("blob.npy"));
+    Blob inp = blobFromNPY(_tf("recurrent.input.npy"));
     std::vector<Blob> inputs(1, inp), outputs;
     runLayer(layer, inputs, outputs);
 
-    Blob &h_t_gathered = outputs[0];
     Blob h_t_reference = blobFromNPY(_tf("lstm.prototxt.h_1.npy"));
+    normAssert(h_t_reference, outputs[0]);
+}
 
-    normAssert(h_t_reference, h_t_gathered);
+TEST(Layer_RNN_Test_Accuracy_with_, CaffeRecurrent)
+{
+    Ptr<RNNLayer> layer = RNNLayer::create();
+
+    layer->setWeights(
+                blobFromNPY(_tf("rnn.prototxt.w_0.npy")),
+                blobFromNPY(_tf("rnn.prototxt.w_1.npy")),
+                blobFromNPY(_tf("rnn.prototxt.w_2.npy")),
+                blobFromNPY(_tf("rnn.prototxt.w_3.npy")),
+                blobFromNPY(_tf("rnn.prototxt.w_4.npy")) );
+
+    std::vector<Blob> output, input(1, blobFromNPY(_tf("recurrent.input.npy")));
+    runLayer(layer, input, output);
+
+    Blob h_ref = blobFromNPY(_tf("rnn.prototxt.h_1.npy"));
+    normAssert(h_ref, output[0]);
 }
 
 
 class Layer_RNN_Test : public ::testing::Test
 {
 public:
-    int Nx, Nh, No;
+    int nX, nH, nO, nT, nS;
     Blob Whh, Wxh, bh, Who, bo;
     Ptr<RNNLayer> layer;
 
     std::vector<Blob> inputs, outputs;
-    std::vector<Blob*> inputsPtr;
 
-    Layer_RNN_Test(int _Nx = 31, int _Nh = 64, int _No = 100)
+    Layer_RNN_Test()
     {
-        Nx = _Nx;
-        Nh = _Nh;
-        No = _No;
+        nT = 3;
+        nS = 5;
+        nX = 31;
+        nH = 64;
+        nO = 100;
 
-        Whh = Blob(BlobShape(Nh, Nh));
-        Wxh = Blob(BlobShape(Nh, Nx));
-        bh  = Blob(BlobShape(Nh, 1));
-        Who = Blob(BlobShape(No, Nh));
-        bo  = Blob(BlobShape(No, 1));
+        Whh = Blob(BlobShape(nH, nH));
+        Wxh = Blob(BlobShape(nH, nX));
+        bh  = Blob(BlobShape(nH, 1));
+        Who = Blob(BlobShape(nO, nH));
+        bo  = Blob(BlobShape(nO, 1));
 
         layer = RNNLayer::create();
-        layer->setWeights(Whh, Wxh, bh, Who, bo);
-    }
-
-    void allocateAndForward()
-    {
-        inputsPtr.clear();
-        for (size_t i = 0; i < inputs.size(); i++)
-            inputsPtr.push_back(&inputs[i]);
-
-        layer->allocate(inputsPtr, outputs);
-        layer->forward(inputsPtr, outputs);
+        layer->setProduceHiddenOutput(true);
+        layer->setWeights(Wxh, bh, Whh, Who, bo);
     }
 };
 
-TEST_F(Layer_RNN_Test, BasicTest_1)
+TEST_F(Layer_RNN_Test, get_set_test)
 {
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
-    allocateAndForward();
+    inputs.push_back(Blob(BlobShape(nT, nS, 1, nX)));
+    runLayer(layer, inputs, outputs);
 
     EXPECT_EQ(outputs.size(), 2);
-    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, No));
-    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nh));
-}
-
-TEST_F(Layer_RNN_Test, BasicTest_2)
-{
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nx)));
-    inputs.push_back(Blob(BlobShape(1, 2, 3, Nh)));
-    allocateAndForward();
-
-    EXPECT_EQ(outputs.size(), 2);
-    EXPECT_EQ(outputs[0].shape(), BlobShape(1, 2, 3, No));
-    EXPECT_EQ(outputs[1].shape(), BlobShape(1, 2, 3, Nh));
+    EXPECT_EQ(outputs[0].shape(), BlobShape(nT, nS, nO));
+    EXPECT_EQ(outputs[1].shape(), BlobShape(nT, nS, nH));
 }
 
 }

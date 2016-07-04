@@ -172,28 +172,35 @@ namespace dnn
 
         /** Setups learned weights.
 
-        Recurrent-layer behavior on each step is defined by current input x_t, previous state h_t and learned weights as follows:
+        Recurrent-layer behavior on each step is defined by current input @f$ x_t @f$, previous state @f$ h_t @f$ and learned weights as follows:
         @f{eqnarray*}{
         h_t &= tanh&(W_{hh} h_{t-1} + W_{xh} x_t + b_h),  \\
         o_t &= tanh&(W_{ho} h_t + b_o),
         @f}
 
-        @param Whh is @f$ W_{hh} @f$ matrix
         @param Wxh is @f$ W_{xh} @f$ matrix
         @param bh  is @f$ b_{h}  @f$ vector
+        @param Whh is @f$ W_{hh} @f$ matrix
         @param Who is @f$ W_{xo} @f$ matrix
         @param bo  is @f$ b_{o}  @f$ vector
         */
-        virtual void setWeights(const Blob &Whh, const Blob &Wxh, const Blob &bh, const Blob &Who, const Blob &bo) = 0;
+        virtual void setWeights(const Blob &Wxh, const Blob &bh, const Blob &Whh, const Blob &Who, const Blob &bo) = 0;
+
+        /** @brief If this flag is set to true then layer will produce @f$ h_t @f$ as second output.
+         * @details Shape of the second output is the same as first output.
+         */
+        virtual void setProduceHiddenOutput(bool produce = false) = 0;
 
         /** Accepts two inputs @f$x_t@f$ and @f$h_{t-1}@f$ and compute two outputs @f$o_t@f$ and @f$h_t@f$.
 
-        @param input could contain inputs @f$x_t@f$ and @f$h_{t-1}@f$.
-        @param output should contain outputs @f$o_t@f$ and @f$h_t@f$.
+        @param input should contain packed input @f$x_t@f$.
+        @param output should contain output @f$o_t@f$ (and @f$h_t@f$ if setProduceHiddenOutput() is set to true).
 
-        The first input @f$x_t@f$ is required whereas @f$h_{t-1}@f$ is optional.
-        If the second input @f$h_{t-1}@f$ isn't specified a layer will use internal @f$h_{t-1}@f$ from the previous calls, at the first call @f$h_{t-1}@f$ will be filled by zeros.
+        @p input[0] should have shape [`T`, `N`, `data_dims`] where `T` and `N` is number of timestamps and number of independent samples of @f$x_t@f$ respectively.
 
+        @p output[0] will have shape [`T`, `N`, @f$N_o@f$], where @f$N_o@f$ is number of rows in @f$ W_{xo} @f$ matrix.
+
+        If setProduceHiddenOutput() is set to true then @p output[1] will contain a Blob with shape [`T`, `N`, @f$N_h@f$], where @f$N_h@f$ is number of rows in @f$ W_{hh} @f$ matrix.
         */
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };

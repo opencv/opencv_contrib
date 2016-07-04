@@ -40,6 +40,7 @@ void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int 
     CV_Assert(A.isContinuous() && B.isContinuous() && C.isContinuous());
     CV_Assert(A.type() == CV_32F || A.type() == CV_64F);
     CV_Assert(A.type() == B.type() && B.type() == C.type());
+    CV_Assert(A.data != C.data && B.data != C.data);
 
     if (C.type() == CV_32F)
     {
