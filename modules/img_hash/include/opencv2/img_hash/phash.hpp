@@ -49,52 +49,55 @@ namespace cv
 
 namespace img_hash
 {
-    //! @addtogroup p_hash
-    //! @{
+//! @addtogroup p_hash
+//! @{
 
-    /** @brief Computes pHash value of the input image
-       @param inputArr input image want to compute hash value,
-       type should be CV_8UC4, CV_8UC3, CV_8UC1.
-       @param outputArr Hash value of input, it will contain 8 uchar value
-     */
-    CV_EXPORTS_W void pHash(cv::InputArray inputArr,
-                            cv::OutputArray outputArr);
+/** @brief Computes pHash value of the input image
+    @param inputArr input image want to compute hash value,
+     type should be CV_8UC4, CV_8UC3, CV_8UC1.
+    @param outputArr Hash value of input, it will contain 8 uchar value
+*/
+CV_EXPORTS_W void pHash(cv::InputArray inputArr,
+                        cv::OutputArray outputArr);
 
-    class CV_EXPORTS_W PHash : public ImgHashBase
-    {
-    public:
-      CV_WRAP ~PHash();
+class CV_EXPORTS_W PHash : public ImgHashBase
+{
+public:
+    CV_WRAP ~PHash();
 
-      /** @brief Computes PHash of the input image
-          @param inputArr input image want to compute hash value,
-           type should be CV_8UC4, CV_8UC3, CV_8UC1.
-          @param outputArr hash of the image
-      */
-      CV_WRAP virtual void compute(cv::InputArray inputArr,
-                                   cv::OutputArray outputArr);
+    /** @brief Computes PHash of the input image
+        @param inputArr input image want to compute hash value,
+         type should be CV_8UC4, CV_8UC3, CV_8UC1.
+        @param outputArr hash of the image
+    */
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
 
-      /** @brief Compare the hash value between inOne and inTwo
-      @param hashOne Hash value one
-      @param hashTwo Hash value two
-      @return zero means the images are likely very similar;
-      5 means a few things maybe different; 10 or more means
-      they maybe are very different image
-      */
-      CV_WRAP virtual double compare(cv::InputArray hashOne,
-                                     cv::InputArray hashTwo) const;
+    /** @brief Compare the hash value between inOne and inTwo
+        @param hashOne Hash value one
+        @param hashTwo Hash value two
+        @return zero means the images are likely very similar;
+        5 means a few things maybe different; 10 or more means
+        they maybe are very different image
+    */
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
-      CV_WRAP static Ptr<PHash> create();
+    CV_WRAP static Ptr<PHash> create();
 
-    private:
-        cv::Mat bitsImg;
-        cv::Mat dctImg;
-        cv::Mat grayFImg;
-        cv::Mat grayImg;
-        cv::Mat resizeImg;
-        cv::Mat topLeftDCT;
-    };
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
 
-    //! @}
+private:
+    cv::Mat bitsImg;
+    cv::Mat dctImg;
+    cv::Mat grayFImg;
+    cv::Mat grayImg;
+    cv::Mat resizeImg;
+    cv::Mat topLeftDCT;
+};
+
+//! @}
 }
 }
 

@@ -135,6 +135,11 @@ Ptr<BlockMeanHash> BlockMeanHash::create(size_t mode)
     return makePtr<BlockMeanHash>(mode);
 }
 
+String BlockMeanHash::getDefaultName() const
+{
+    return "BlockMeanHash";
+}
+
 void BlockMeanHash::setMode(size_t mode)
 {
     CV_Assert(mode == 0 || mode == 1);

@@ -105,6 +105,11 @@ Ptr<AverageHash> AverageHash::create()
     return makePtr<AverageHash>();
 }
 
+String AverageHash::getDefaultName() const
+{
+    return "AverageHash";
+}
+
 void averageHash(cv::InputArray inputArr,
                  cv::OutputArray outputArr)
 {

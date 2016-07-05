@@ -104,6 +104,9 @@ public:
     */
     CV_WRAP static Ptr<BlockMeanHash> create(size_t mode = 0);
 
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
+
     CV_WRAP void setMode(size_t mode);
 
 private:

@@ -110,6 +110,11 @@ Ptr<PHash> PHash::create()
     return makePtr<PHash>();
 }
 
+String PHash::getDefaultName() const
+{
+    return "PHash";
+}
+
 void pHash(cv::InputArray inputArr,
            cv::OutputArray outputArr)
 {

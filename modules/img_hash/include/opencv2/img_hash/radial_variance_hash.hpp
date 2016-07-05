@@ -71,57 +71,60 @@ class CV_EXPORTS_W RadialVarianceHash : public ImgHashBase
   //use it under normal case
   friend class RadialVarHashTester;
 public:
-  /** @brief Constructor
-      @param sigma Gaussian kernel standard deviation
-      @param numOfAngleLine The number of angles to consider
-   */
-  CV_WRAP explicit RadialVarianceHash(double sigma = 1,
-                                      int numOfAngleLine = 180);
-  CV_WRAP ~RadialVarianceHash();
+    /** @brief Constructor
+        @param sigma Gaussian kernel standard deviation
+        @param numOfAngleLine The number of angles to consider
+     */
+    CV_WRAP explicit RadialVarianceHash(double sigma = 1,
+                                        int numOfAngleLine = 180);
+    CV_WRAP ~RadialVarianceHash();
 
-  /** @brief Computes average hash of the input image
-      @param inputArr input image want to compute hash value,
-      type should be CV_8UC4, CV_8UC3, CV_8UC1.
-      @param outputArr hash of the image, contain 40 uchar value
-  */
-  CV_WRAP virtual void compute(cv::InputArray inputArr,
-                               cv::OutputArray outputArr);
+    /** @brief Computes average hash of the input image
+        @param inputArr input image want to compute hash value,
+        type should be CV_8UC4, CV_8UC3, CV_8UC1.
+        @param outputArr hash of the image, contain 40 uchar value
+    */
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
 
-  /** @brief Compare the hash value between inOne and inTwo
-  @param hashOne Hash value one
-  @param hashTwo Hash value two
-  @return cross correlation of two hash, the closer the value to 1,
-  the more similar the hash values. We could assume the threshold is 0.9
-  by default
-  */
-  CV_WRAP virtual double compare(cv::InputArray hashOne,
-                                 cv::InputArray hashTwo) const;
+    /** @brief Compare the hash value between inOne and inTwo
+    @param hashOne Hash value one
+    @param hashTwo Hash value two
+    @return cross correlation of two hash, the closer the value to 1,
+    the more similar the hash values. We could assume the threshold is 0.9
+    by default
+    */
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
-  CV_WRAP static Ptr<RadialVarianceHash> create(double sigma = 1,
-                                                int numOfAngleLine = 180);
+    CV_WRAP static Ptr<RadialVarianceHash> create(double sigma = 1,
+                                                  int numOfAngleLine = 180);
 
-  CV_WRAP int getNumOfAngleLine() const;
-  CV_WRAP double getSigma() const;
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
 
-  CV_WRAP void setNumOfAngleLine(int value);
-  CV_WRAP void setSigma(double value);
+    CV_WRAP int getNumOfAngleLine() const;
+    CV_WRAP double getSigma() const;
+
+    CV_WRAP void setNumOfAngleLine(int value);
+    CV_WRAP void setSigma(double value);
 
 private:
-  void afterHalfProjections(cv::Mat const &input, int D,
-                            int xOff, int yOff);
-  CV_WRAP void findFeatureVector();
-  void firstHalfProjections(cv::Mat const &input, int D,
-                            int xOff, int yOff);
-  CV_WRAP void hashCalculate(cv::Mat &hash);
-  CV_WRAP void radialProjections(cv::Mat const &input);
+    void afterHalfProjections(cv::Mat const &input, int D,
+                              int xOff, int yOff);
+    CV_WRAP void findFeatureVector();
+    void firstHalfProjections(cv::Mat const &input, int D,
+                              int xOff, int yOff);
+    CV_WRAP void hashCalculate(cv::Mat &hash);
+    CV_WRAP void radialProjections(cv::Mat const &input);
 
-  cv::Mat blurImg_;
-  std::vector<double> features_;
-  cv::Mat grayImg_;
-  int numOfAngelLine_;
-  cv::Mat pixPerLine_;
-  cv::Mat projections_;
-  double sigma_;
+    cv::Mat blurImg_;
+    std::vector<double> features_;
+    cv::Mat grayImg_;
+    int numOfAngelLine_;
+    cv::Mat pixPerLine_;
+    cv::Mat projections_;
+    double sigma_;
 };
 
 //! @}

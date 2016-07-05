@@ -97,7 +97,12 @@ double ColorMomentHash::compare(cv::InputArray hashOne,
 
 Ptr<ColorMomentHash> ColorMomentHash::create()
 {
-  return makePtr<ColorMomentHash>();
+    return makePtr<ColorMomentHash>();
+}
+
+String ColorMomentHash::getDefaultName() const
+{
+    return "ColorMomentHash";
 }
 
 void ColorMomentHash::computeMoments(double *inout)

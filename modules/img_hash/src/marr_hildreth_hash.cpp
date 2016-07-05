@@ -185,6 +185,11 @@ float MarrHildrethHash::getAlpha() const
     return alphaVal;
 }
 
+String MarrHildrethHash::getDefaultName() const
+{
+    return "MarrHildrethHash";
+}
+
 float MarrHildrethHash::getScale() const
 {
     return scaleVal;

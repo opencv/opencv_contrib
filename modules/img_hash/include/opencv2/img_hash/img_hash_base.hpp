@@ -47,33 +47,37 @@
 namespace cv
 {
 
-    namespace img_hash
-    {
-        //! @addtogroup ihash
-        //! @{
-        /**@brief The base class for image hash algorithms
-         */
-        class ImgHashBase : public Algorithm
-        {
-        public:
-            /** @brief Computes hash of the input image
-            @param inputArr input image want to compute hash value
-            @param outputArr hash of the image
-            */
-            CV_EXPORTS virtual void compute(cv::InputArray inputArr,
-                                            cv::OutputArray outputArr) = 0;
+namespace img_hash
+{
 
-            /** @brief Compare the hash value between inOne and inTwo
-            @param hashOne Hash value one
-            @param hashTwo Hash value two
-            @return value indicate similarity between inOne and inTwo, the meaning
-            of the value vary from algorithms to algorithms
-            */
-            CV_EXPORTS virtual double compare(cv::InputArray hashOne,
-                                              cv::InputArray hashTwo) const = 0;
-        };
-        //! @}
-    }//ihash
+//! @addtogroup ihash
+//! @{
+/**@brief The base class for image hash algorithms
+         */
+class ImgHashBase : public Algorithm
+{
+public:
+    /** @brief Computes hash of the input image
+        @param inputArr input image want to compute hash value
+        @param outputArr hash of the image
+    */
+    CV_EXPORTS virtual void compute(cv::InputArray inputArr,
+                                    cv::OutputArray outputArr) = 0;
+
+    /** @brief Compare the hash value between inOne and inTwo
+        @param hashOne Hash value one
+        @param hashTwo Hash value two
+        @return value indicate similarity between inOne and inTwo, the meaning
+        of the value vary from algorithms to algorithms
+    */
+    CV_EXPORTS virtual double compare(cv::InputArray hashOne,
+                                      cv::InputArray hashTwo) const = 0;
+
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const = 0;
+};
+//! @}
+}//ihash
 }//cv
 
 #endif // __OPENCV_IMG_HASH_BASE_HPP__

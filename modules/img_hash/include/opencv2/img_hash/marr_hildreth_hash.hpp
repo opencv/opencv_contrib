@@ -99,6 +99,9 @@ public:
      */
     CV_WRAP float getAlpha() const;
 
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
+
     /**
      * @brief self explain
      */

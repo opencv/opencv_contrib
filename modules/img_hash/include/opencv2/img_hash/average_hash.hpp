@@ -65,31 +65,34 @@ CV_EXPORTS_W void averageHash(cv::InputArray inputArr,
 class CV_EXPORTS_W AverageHash : public ImgHashBase
 {
 public:
-  /** @brief Computes average hash of the input image
-      @param inputArr input image want to compute hash value,
-      type should be CV_8UC4, CV_8UC3 or CV_8UC1.
-      @param outputArr hash of the image
-  */
-  CV_WRAP virtual void compute(cv::InputArray inputArr,
-                               cv::OutputArray outputArr);
-  CV_WRAP ~AverageHash();
+    /** @brief Computes average hash of the input image
+        @param inputArr input image want to compute hash value,
+        type should be CV_8UC4, CV_8UC3 or CV_8UC1.
+        @param outputArr hash of the image
+    */
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
+    CV_WRAP ~AverageHash();
 
-  /** @brief Compare the hash value between inOne and inTwo
-  @param hashOne Hash value one
-  @param hashTwo Hash value two
-  @return zero means the images are likely very similar;
-  5 means a few things maybe different; 10 or more means
-  they maybe are very different image
-  */
-  CV_WRAP virtual double compare(cv::InputArray hashOne,
-                                 cv::InputArray hashTwo) const;
+    /** @brief Compare the hash value between inOne and inTwo
+    @param hashOne Hash value one
+    @param hashTwo Hash value two
+    @return zero means the images are likely very similar;
+    5 means a few things maybe different; 10 or more means
+    they maybe are very different image
+    */
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
-  CV_WRAP static Ptr<AverageHash> create();
+    CV_WRAP static Ptr<AverageHash> create();
+
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
 
 private:
-  cv::Mat bitsImg;
-  cv::Mat grayImg;
-  cv::Mat resizeImg;
+    cv::Mat bitsImg;
+    cv::Mat grayImg;
+    cv::Mat resizeImg;
 };
 
 //! @}

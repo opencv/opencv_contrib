@@ -49,55 +49,59 @@ namespace cv
 
 namespace img_hash
 {
-    //! @addtogroup color_moment_hash
-    //! @{
 
-    /** @brief Computes color moment hash of the input, the algorithm
-     is come from the paper "Perceptual  Hashing  for  Color  Images
-     Using  Invariant Moments"
+//! @addtogroup color_moment_hash
+//! @{
+
+/** @brief Computes color moment hash of the input, the algorithm
+    is come from the paper "Perceptual  Hashing  for  Color  Images
+    Using  Invariant Moments"
     @param inputArr input image want to compute hash value,
     type should be CV_8UC4, CV_8UC3 or CV_8UC1.
     @param outputArr 42 hash values with type CV_64F(double)
      */
-    CV_EXPORTS_W void colorMomentHash(cv::InputArray inputArr,
-                                      cv::OutputArray outputArr);
+CV_EXPORTS_W void colorMomentHash(cv::InputArray inputArr,
+                                  cv::OutputArray outputArr);
 
-    class CV_EXPORTS_W ColorMomentHash : public ImgHashBase
-    {
-    public:
-      /** @brief Computes color moment hash of the input, the algorithm
-       is come from the paper "Perceptual  Hashing  for  Color  Images
-       Using  Invariant Moments"
-       @param inputArr input image want to compute hash value,
-       type should be CV_8UC4, CV_8UC3, CV_8UC1.
-       @param outputArr 42 hash values with type CV_64F(double)
-       */
-      CV_WRAP virtual void compute(cv::InputArray inputArr,
-                                   cv::OutputArray outputArr);
-      CV_WRAP ~ColorMomentHash();
+class CV_EXPORTS_W ColorMomentHash : public ImgHashBase
+{
+public:
+    /** @brief Computes color moment hash of the input, the algorithm
+         is come from the paper "Perceptual  Hashing  for  Color  Images
+         Using  Invariant Moments"
+         @param inputArr input image want to compute hash value,
+         type should be CV_8UC4, CV_8UC3, CV_8UC1.
+         @param outputArr 42 hash values with type CV_64F(double)
+    */
+    CV_WRAP virtual void compute(cv::InputArray inputArr,
+                                 cv::OutputArray outputArr);
+    CV_WRAP ~ColorMomentHash();
 
-      /** @brief Compare the hash value between inOne and inTwo
-      @param hashOne Hash value one
-      @param hashTwo Hash value two
-      @return The smaller the value, more similar the hash.
-      Recommend threshold is 10
-      */
-      CV_WRAP virtual double compare(cv::InputArray hashOne,
-                                     cv::InputArray hashTwo) const;
+    /** @brief Compare the hash value between inOne and inTwo
+        @param hashOne Hash value one
+        @param hashTwo Hash value two
+        @return The smaller the value, more similar the hash.
+        Recommend threshold is 10
+     */
+    CV_WRAP virtual double compare(cv::InputArray hashOne,
+                                   cv::InputArray hashTwo) const;
 
-      CV_WRAP static Ptr<ColorMomentHash> create();
+    CV_WRAP static Ptr<ColorMomentHash> create();
 
-    private:
-      void computeMoments(double *inout);
+    /** Returns the algorithm string identifier.*/
+    CV_WRAP virtual String getDefaultName() const;
 
-      cv::Mat blurImg_;
-      cv::Mat colorImg_;
-      std::vector<cv::Mat> channels_;
-      cv::Mat colorSpace_;
-      cv::Mat resizeImg_;
-    };
+private:
+    void computeMoments(double *inout);
 
-    //! @}
+    cv::Mat blurImg_;
+    cv::Mat colorImg_;
+    std::vector<cv::Mat> channels_;
+    cv::Mat colorSpace_;
+    cv::Mat resizeImg_;
+};
+
+//! @}
 }
 }
 

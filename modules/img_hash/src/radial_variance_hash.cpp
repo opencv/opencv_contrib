@@ -160,6 +160,11 @@ Ptr<RadialVarianceHash> RadialVarianceHash::create(double sigma,
     return makePtr<RadialVarianceHash>(sigma, numOfAngleLine);
 }
 
+String RadialVarianceHash::getDefaultName() const
+{
+    return "RadialVarianceHash";
+}
+
 void RadialVarianceHash::
 afterHalfProjections(const Mat &input, int D, int xOff, int yOff)
 {
