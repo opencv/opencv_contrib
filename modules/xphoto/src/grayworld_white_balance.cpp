@@ -37,177 +37,301 @@
 //
 //M*/
 
-#include "opencv2/xphoto.hpp"
-
 #include "opencv2/core.hpp"
 #include "opencv2/core/hal/intrin.hpp"
+#include "opencv2/xphoto.hpp"
 
-namespace cv { namespace xphoto {
+namespace cv
+{
+namespace xphoto
+{
 
-    void autowbGrayworld(InputArray _src, OutputArray _dst, float thresh)
+void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, int src_len, float thresh);
+void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_data, int src_len, float thresh);
+
+/* Computes sums for each channel, while ignoring saturated pixels which are determined by thresh
+ * (version for CV_8UC3)
+ */
+void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, int src_len, float thresh)
+{
+    sumB = sumG = sumR = 0;
+    ushort thresh255 = (ushort)cvRound(thresh * 255);
+    int i = 0;
+#if CV_SIMD128
+    v_uint8x16 v_inB, v_inG, v_inR, v_min_val, v_max_val;
+    v_uint16x8 v_iB1, v_iB2, v_iG1, v_iG2, v_iR1, v_iR2;
+    v_uint16x8 v_min1, v_min2, v_max1, v_max2, v_m1, v_m2;
+    v_uint16x8 v_255 = v_setall_u16(255), v_thresh = v_setall_u16(thresh255);
+    v_uint32x4 v_uint1, v_uint2;
+    v_uint32x4 v_SB = v_setzero_u32(), v_SG = v_setzero_u32(), v_SR = v_setzero_u32();
+
+    for (; i < src_len - 47; i += 48)
     {
+        // Load 3x uint8x16 and deinterleave into vectors of each channel
+        v_load_deinterleave(&src_data[i], v_inB, v_inG, v_inR);
 
-        Mat src = _src.getMat();
-        CV_Assert(!src.empty());
-        CV_Assert(src.isContinuous());
+        // Get min and max
+        v_min_val = v_min(v_inB, v_min(v_inG, v_inR));
+        v_max_val = v_max(v_inB, v_max(v_inG, v_inR));
 
-        // TODO: Handle CV_8UC1
-        // TODO: Handle types other than CV_8U
-        CV_Assert(src.type() == CV_8UC3);
+        // Split into two ushort vectors per channel
+        v_expand(v_inB, v_iB1, v_iB2);
+        v_expand(v_inG, v_iG1, v_iG2);
+        v_expand(v_inR, v_iR1, v_iR2);
+        v_expand(v_min_val, v_min1, v_min2);
+        v_expand(v_max_val, v_max1, v_max2);
 
-        _dst.create(src.size(), src.type());
-        Mat dst = _dst.getMat();
-        CV_Assert(dst.isContinuous());
+        // Calculate masks
+        v_m1 = ~((v_max1 - v_min1) * v_255 > v_thresh * v_max1);
+        v_m2 = ~((v_max2 - v_min2) * v_255 > v_thresh * v_max2);
 
-        int width  = src.cols,
-            height = src.rows,
-            N      = width*height,
-            N3     = N*3;
+        // Apply masks
+        v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
+        v_iG1 = (v_iG1 & v_m1) + (v_iG2 & v_m2);
+        v_iR1 = (v_iR1 & v_m1) + (v_iR2 & v_m2);
 
-        // Calculate sum of pixel values of each channel
-        const uchar* src_data = src.ptr<uchar>(0);
-        unsigned long sum1 = 0, sum2 = 0, sum3 = 0;
-        unsigned int thresh255 = cvRound(thresh * 255);
-        int i = 0;
+        // Split and add to the sums:
+        v_expand(v_iB1, v_uint1, v_uint2);
+        v_SB += v_uint1 + v_uint2;
+        v_expand(v_iG1, v_uint1, v_uint2);
+        v_SG += v_uint1 + v_uint2;
+        v_expand(v_iR1, v_uint1, v_uint2);
+        v_SR += v_uint1 + v_uint2;
+    }
+
+    sumB = v_reduce_sum(v_SB);
+    sumG = v_reduce_sum(v_SG);
+    sumR = v_reduce_sum(v_SR);
+#endif
+    unsigned int minRGB, maxRGB;
+    for (; i < src_len; i += 3)
+    {
+        minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
+        maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
+        if ((maxRGB - minRGB) * 255 > thresh255 * maxRGB)
+            continue;
+        sumB += src_data[i];
+        sumG += src_data[i + 1];
+        sumR += src_data[i + 2];
+    }
+}
+
+/* Computes sums for each channel, while ignoring saturated pixels which are determined by thresh
+ * (version for CV_16UC3)
+ */
+void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_data, int src_len, float thresh)
+{
+    sumB = sumG = sumR = 0;
+    uint thresh65535 = cvRound(thresh * 65535);
+    int i = 0;
+#if CV_SIMD128
+    v_uint16x8 v_inB, v_inG, v_inR, v_min_val, v_max_val;
+    v_uint32x4 v_iB1, v_iB2, v_iG1, v_iG2, v_iR1, v_iR2;
+    v_uint32x4 v_min1, v_min2, v_max1, v_max2, v_m1, v_m2;
+    v_uint32x4 v_65535 = v_setall_u32(65535), v_thresh = v_setall_u32(thresh65535);
+    v_uint64x2 v_u64_1, v_u64_2;
+    v_uint64x2 v_SB = v_setzero_u64(), v_SG = v_setzero_u64(), v_SR = v_setzero_u64();
+
+    for (; i < src_len - 23; i += 24)
+    {
+        // Load 3x uint16x8 and deinterleave into vectors of each channel
+        v_load_deinterleave(&src_data[i], v_inB, v_inG, v_inR);
+
+        // Get min and max
+        v_min_val = v_min(v_inB, v_min(v_inG, v_inR));
+        v_max_val = v_max(v_inB, v_max(v_inG, v_inR));
+
+        // Split into two uint vectors per channel
+        v_expand(v_inB, v_iB1, v_iB2);
+        v_expand(v_inG, v_iG1, v_iG2);
+        v_expand(v_inR, v_iR1, v_iR2);
+        v_expand(v_min_val, v_min1, v_min2);
+        v_expand(v_max_val, v_max1, v_max2);
+
+        // Calculate masks
+        v_m1 = ~((v_max1 - v_min1) * v_65535 > v_thresh * v_max1);
+        v_m2 = ~((v_max2 - v_min2) * v_65535 > v_thresh * v_max2);
+
+        // Apply masks
+        v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
+        v_iG1 = (v_iG1 & v_m1) + (v_iG2 & v_m2);
+        v_iR1 = (v_iR1 & v_m1) + (v_iR2 & v_m2);
+
+        // Split and add to the sums:
+        v_expand(v_iB1, v_u64_1, v_u64_2);
+        v_SB += v_u64_1 + v_u64_2;
+        v_expand(v_iG1, v_u64_1, v_u64_2);
+        v_SG += v_u64_1 + v_u64_2;
+        v_expand(v_iR1, v_u64_1, v_u64_2);
+        v_SR += v_u64_1 + v_u64_2;
+    }
+
+    // Perform final reduction
+    uint64 sum_arr[2];
+    v_store(sum_arr, v_SB);
+    sumB = sum_arr[0] + sum_arr[1];
+    v_store(sum_arr, v_SG);
+    sumG = sum_arr[0] + sum_arr[1];
+    v_store(sum_arr, v_SR);
+    sumR = sum_arr[0] + sum_arr[1];
+#endif
+    unsigned int minRGB, maxRGB;
+    for (; i < src_len; i += 3)
+    {
+        minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
+        maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
+        if ((maxRGB - minRGB) * 65535 > thresh65535 * maxRGB)
+            continue;
+        sumB += src_data[i];
+        sumG += src_data[i + 1];
+        sumR += src_data[i + 2];
+    }
+}
+
+void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gainG, float gainR)
+{
+    Mat src = _src.getMat();
+    CV_Assert(!src.empty());
+    CV_Assert(src.isContinuous());
+    CV_Assert(src.type() == CV_8UC3 || src.type() == CV_16UC3);
+
+    _dst.create(src.size(), src.type());
+    Mat dst = _dst.getMat();
+    int N3 = 3 * src.cols * src.rows;
+    int i = 0;
+
+    // Scale gains by their maximum (fixed point approximation works only when all gains are <=1)
+    float gain_max = max(gainB, max(gainG, gainR));
+    if (gain_max > 0)
+    {
+        gainB /= gain_max;
+        gainG /= gain_max;
+        gainR /= gain_max;
+    }
+
+    if (src.type() == CV_8UC3)
+    {
+        // Fixed point arithmetic, mul by 2^8 then shift back 8 bits
+        int i_gainB = cvRound(gainB * (1 << 8)), i_gainG = cvRound(gainG * (1 << 8)),
+            i_gainR = cvRound(gainR * (1 << 8));
+        const uchar *src_data = src.ptr<uchar>();
+        uchar *dst_data = dst.ptr<uchar>();
 #if CV_SIMD128
         v_uint8x16 v_inB, v_inG, v_inR;
-        v_uint16x8 v_s1, v_s2;
-        v_uint32x4 v_iB1, v_iB2, v_iB3, v_iB4,
-                   v_iG1, v_iG2, v_iG3, v_iG4,
-                   v_iR1, v_iR2, v_iR3, v_iR4,
-                   v_255 = v_setall_u32(255),
-                   v_thresh = v_setall_u32(thresh255),
-                   v_min1, v_min2, v_min3, v_min4,
-                   v_max1, v_max2, v_max3, v_max4,
-                   v_m1, v_m2, v_m3, v_m4,
-                   v_SB = v_setzero_u32(),
-                   v_SG = v_setzero_u32(),
-                   v_SR = v_setzero_u32();
+        v_uint8x16 v_outB, v_outG, v_outR;
+        v_uint16x8 v_sB1, v_sB2, v_sG1, v_sG2, v_sR1, v_sR2;
+        v_uint16x8 v_gainB = v_setall_u16((ushort)i_gainB), v_gainG = v_setall_u16((ushort)i_gainG),
+                   v_gainR = v_setall_u16((ushort)i_gainR);
 
-        for ( ; i < N3 - 47; i += 48 )
+        for (; i < N3 - 47; i += 48)
         {
-            // NOTE: This block assumes BGR channels in naming variables
-
             // Load 3x uint8x16 and deinterleave into vectors of each channel
             v_load_deinterleave(&src_data[i], v_inB, v_inG, v_inR);
 
-            // Split into four int vectors per channel
-            v_expand(v_inB, v_s1, v_s2);
-            v_expand(v_s1, v_iB1, v_iB2);
-            v_expand(v_s2, v_iB3, v_iB4);
+            // Split into two ushort vectors per channel
+            v_expand(v_inB, v_sB1, v_sB2);
+            v_expand(v_inG, v_sG1, v_sG2);
+            v_expand(v_inR, v_sR1, v_sR2);
 
-            v_expand(v_inG, v_s1, v_s2);
-            v_expand(v_s1, v_iG1, v_iG2);
-            v_expand(v_s2, v_iG3, v_iG4);
+            // Multiply by gains
+            v_sB1 = (v_sB1 * v_gainB) >> 8;
+            v_sB2 = (v_sB2 * v_gainB) >> 8;
+            v_sG1 = (v_sG1 * v_gainG) >> 8;
+            v_sG2 = (v_sG2 * v_gainG) >> 8;
+            v_sR1 = (v_sR1 * v_gainR) >> 8;
+            v_sR2 = (v_sR2 * v_gainR) >> 8;
 
-            v_expand(v_inR, v_s1, v_s2);
-            v_expand(v_s1, v_iR1, v_iR2);
-            v_expand(v_s2, v_iR3, v_iR4);
-
-            // Get mins and maxs
-            v_min1 = v_min(v_iB1, v_min(v_iG1, v_iR1));
-            v_min2 = v_min(v_iB2, v_min(v_iG2, v_iR2));
-            v_min3 = v_min(v_iB3, v_min(v_iG3, v_iR3));
-            v_min4 = v_min(v_iB4, v_min(v_iG4, v_iR4));
-
-            v_max1 = v_max(v_iB1, v_max(v_iG1, v_iR1));
-            v_max2 = v_max(v_iB2, v_max(v_iG2, v_iR2));
-            v_max3 = v_max(v_iB3, v_max(v_iG3, v_iR3));
-            v_max4 = v_max(v_iB4, v_max(v_iG4, v_iR4));
-
-            // Calculate masks
-            v_m1 = ~((v_max1 - v_min1) * v_255 > v_thresh * v_max1);
-            v_m2 = ~((v_max2 - v_min2) * v_255 > v_thresh * v_max2);
-            v_m3 = ~((v_max3 - v_min3) * v_255 > v_thresh * v_max3);
-            v_m4 = ~((v_max4 - v_min4) * v_255 > v_thresh * v_max4);
-
-            // Apply mask
-            v_SB += (v_iB1 & v_m1) + (v_iB2 & v_m2) + (v_iB3 & v_m3) + (v_iB4 & v_m4);
-            v_SG += (v_iG1 & v_m1) + (v_iG2 & v_m2) + (v_iG3 & v_m3) + (v_iG4 & v_m4);
-            v_SR += (v_iR1 & v_m1) + (v_iR2 & v_m2) + (v_iR3 & v_m3) + (v_iR4 & v_m4);
+            // Pack into vectors of v_uint8x16
+            v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2), v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));
         }
-
-        // Perform final reduction
-        sum1 = v_reduce_sum(v_SB);
-        sum2 = v_reduce_sum(v_SG);
-        sum3 = v_reduce_sum(v_SR);
 #endif
-        unsigned int minRGB, maxRGB;
-        for ( ; i < N3; i += 3 )
+        for (; i < N3; i += 3)
         {
-            minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
-            maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
-            if ( (maxRGB - minRGB) * 255 > thresh255 * maxRGB ) continue;
-            sum1 += src_data[i];
-            sum2 += src_data[i + 1];
-            sum3 += src_data[i + 2];
+            dst_data[i] = (uchar)((src_data[i] * i_gainB) >> 8);
+            dst_data[i + 1] = (uchar)((src_data[i + 1] * i_gainG) >> 8);
+            dst_data[i + 2] = (uchar)((src_data[i + 2] * i_gainR) >> 8);
         }
-
-        // Find inverse of averages
-        double dinv1 = sum1 == 0 ? 0.f : (double)N / (double)sum1,
-               dinv2 = sum2 == 0 ? 0.f : (double)N / (double)sum2,
-               dinv3 = sum3 == 0 ? 0.f : (double)N / (double)sum3;
-
-        // Find maximum
-        double inv_max = max(dinv1, max(dinv2, dinv3));
-
-        // Convert to floats
-        float inv1 = (float) dinv1,
-              inv2 = (float) dinv2,
-              inv3 = (float) dinv3;
-
-        // Scale by maximum
-        if ( inv_max > 0 )
-        {
-            inv1 = (float)((double)inv1 / inv_max);
-            inv2 = (float)((double)inv2 / inv_max);
-            inv3 = (float)((double)inv3 / inv_max);
-        }
-
-        // Fixed point arithmetic, mul by 2^8 then shift back 8 bits
-        int i_inv1 = cvRound(inv1 * (1 << 8)),
-            i_inv2 = cvRound(inv2 * (1 << 8)),
-            i_inv3 = cvRound(inv3 * (1 << 8));
-
-        // Scale input pixel values
-        uchar* dst_data = dst.ptr<uchar>(0);
-        i = 0;
+    }
+    else if (src.type() == CV_16UC3)
+    {
+        // Fixed point arithmetic, mul by 2^16 then shift back 16 bits
+        int i_gainB = cvRound(gainB * (1 << 16)), i_gainG = cvRound(gainG * (1 << 16)),
+            i_gainR = cvRound(gainR * (1 << 16));
+        const ushort *src_data = src.ptr<ushort>();
+        ushort *dst_data = dst.ptr<ushort>();
 #if CV_SIMD128
-        v_uint8x16 v_outB, v_outG, v_outR;
-        v_uint16x8 v_sB1, v_sB2, v_sG1, v_sG2, v_sR1, v_sR2,
-                   v_invB = v_setall_u16((unsigned short) i_inv1),
-                   v_invG = v_setall_u16((unsigned short) i_inv2),
-                   v_invR = v_setall_u16((unsigned short) i_inv3);
+        v_uint16x8 v_inB, v_inG, v_inR;
+        v_uint16x8 v_outB, v_outG, v_outR;
+        v_uint32x4 v_sB1, v_sB2, v_sG1, v_sG2, v_sR1, v_sR2;
+        v_uint32x4 v_gainB = v_setall_u32((uint)i_gainB), v_gainG = v_setall_u32((uint)i_gainG),
+                   v_gainR = v_setall_u32((uint)i_gainR);
 
-        for ( ; i < N3 - 47; i += 48 )
+        for (; i < N3 - 23; i += 24)
         {
-            // Load 16 x 8bit uchars
+            // Load 3x uint16x8 and deinterleave into vectors of each channel
             v_load_deinterleave(&src_data[i], v_inB, v_inG, v_inR);
 
-            // Split into four int vectors per channel
+            // Split into two uint vectors per channel
             v_expand(v_inB, v_sB1, v_sB2);
             v_expand(v_inG, v_sG1, v_sG2);
             v_expand(v_inR, v_sR1, v_sR2);
 
             // Multiply by scaling factors
-            v_sB1 = (v_sB1 * v_invB) >> 8;
-            v_sB2 = (v_sB2 * v_invB) >> 8;
-            v_sG1 = (v_sG1 * v_invG) >> 8;
-            v_sG2 = (v_sG2 * v_invG) >> 8;
-            v_sR1 = (v_sR1 * v_invR) >> 8;
-            v_sR2 = (v_sR2 * v_invR) >> 8;
+            v_sB1 = (v_sB1 * v_gainB) >> 16;
+            v_sB2 = (v_sB2 * v_gainB) >> 16;
+            v_sG1 = (v_sG1 * v_gainG) >> 16;
+            v_sG2 = (v_sG2 * v_gainG) >> 16;
+            v_sR1 = (v_sR1 * v_gainR) >> 16;
+            v_sR2 = (v_sR2 * v_gainR) >> 16;
 
-            // Pack into vectors of v_uint8x16
-            v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2),
-                v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));
+            // Pack into vectors of v_uint16x8
+            v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2), v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));
         }
 #endif
-        for ( ; i < N3; i += 3 )
+        for (; i < N3; i += 3)
         {
-            dst_data[i]     = (uchar)((src_data[i]     * i_inv1) >> 8);
-            dst_data[i + 1] = (uchar)((src_data[i + 1] * i_inv2) >> 8);
-            dst_data[i + 2] = (uchar)((src_data[i + 2] * i_inv3) >> 8);
+            dst_data[i] = (ushort)((src_data[i] * i_gainB) >> 16);
+            dst_data[i + 1] = (ushort)((src_data[i + 1] * i_gainG) >> 16);
+            dst_data[i + 2] = (ushort)((src_data[i + 2] * i_gainR) >> 16);
         }
     }
+}
 
-}}
+void autowbGrayworld(InputArray _src, OutputArray _dst, float thresh)
+{
+    Mat src = _src.getMat();
+    CV_Assert(!src.empty());
+    CV_Assert(src.isContinuous());
+    CV_Assert(src.type() == CV_8UC3 || src.type() == CV_16UC3);
+
+    int N = src.cols * src.rows, N3 = N * 3;
+
+    double dsumB = 0.0, dsumG = 0.0, dsumR = 0.0;
+    if (src.type() == CV_8UC3)
+    {
+        uint sumB = 0, sumG = 0, sumR = 0;
+        calculateChannelSums(sumB, sumG, sumR, src.ptr<uchar>(), N3, thresh);
+        dsumB = (double)sumB;
+        dsumG = (double)sumG;
+        dsumR = (double)sumR;
+    }
+    else if (src.type() == CV_16UC3)
+    {
+        uint64 sumB = 0, sumG = 0, sumR = 0;
+        calculateChannelSums(sumB, sumG, sumR, src.ptr<ushort>(), N3, thresh);
+        dsumB = (double)sumB;
+        dsumG = (double)sumG;
+        dsumR = (double)sumR;
+    }
+
+    // Find inverse of averages
+    double max_sum = max(dsumB, max(dsumR, dsumG));
+    const double eps = 0.1;
+    float dinvB = dsumB < eps ? 0.f : (float)(max_sum / dsumB), dinvG = dsumG < eps ? 0.f : (float)(max_sum / dsumG),
+          dinvR = dsumR < eps ? 0.f : (float)(max_sum / dsumR);
+
+    // Use the inverse of averages as channel gains:
+    applyChannelGains(src, _dst, dinvB, dinvG, dinvR);
+}
+}
+}
