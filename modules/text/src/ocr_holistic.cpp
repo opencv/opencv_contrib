@@ -15,13 +15,7 @@
 #include <utility>
 #include <vector>
 
-//Lluis:DONT KNOW WHY ITS NOT VISIBLE HERE
-#define CV_StsNotImplemented (-213)
-#define CV_StsError (-2)
-
-
-
-//Luis: should this be moved elsewhere?
+//should this be moved elsewhere?
 //In precomp.hpp It doesn't work
 #ifdef HAVE_CAFFE
 #include "caffe/caffe.hpp"
@@ -30,7 +24,7 @@
 
 namespace cv { namespace text {
 
-//Lluis: Maybe OpenCV has a routine better suited
+//Maybe OpenCV has a routine better suited
 inline bool fileExists (String filename) {
     std::ifstream f(filename.c_str());
     return f.good();
@@ -55,7 +49,7 @@ protected:
                 input.convertTo(output, CV_32FC1);
             }
         }else{
-            CV_Error(CV_StsError,"Expecting images with either 1 or 3 channels");
+            CV_Error(Error::StsError,"Expecting images with either 1 or 3 channels");
         }
         resize(output,output,this->inputGeometry_);
         Scalar dev,mean;
@@ -120,7 +114,7 @@ public:
         this->outputSize_=net_->output_blobs()[0]->channels();
 
 #else
-        CV_Error(CV_StsError,"Caffe not available during compilation!");
+        CV_Error(Error::StsError,"Caffe not available during compilation!");
 #endif
     }
 
@@ -166,7 +160,7 @@ Ptr<DictNet> DictNet::create(String archFilename,String weightsFilename,int mini
         break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:
-        CV_Error(CV_StsError,"DictNet::create backend not implemented");
+        CV_Error(Error::StsError,"DictNet::create backend not implemented");
         return Ptr<DictNet>();
         break;
     }
@@ -208,7 +202,7 @@ public:
         CV_Assert(fileExists(vocabullaryFilename));//this fails for some rason
         std::ifstream labelsFile(vocabullaryFilename.c_str());
         if(!labelsFile){
-            CV_Error(CV_StsError,"Could not read Labels from file");
+            CV_Error(Error::StsError,"Could not read Labels from file");
         }
         std::string line;
         while (std::getline(labelsFile, line)){

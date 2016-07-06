@@ -24,7 +24,7 @@ if(${Tesseract_FOUND})
   target_link_libraries(opencv_text ${Tesseract_LIBS})
 endif()
 
-#anguelos: Principal source from which adaptation came is the cnn_3dobj module
+#Principal source from which adaptation came is the cnn_3dobj module
 find_package(Caffe)
 
 if(Caffe_FOUND)
