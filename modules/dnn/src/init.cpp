@@ -42,6 +42,16 @@
 #include "precomp.hpp"
 #include "caffe/layer_loaders.hpp"
 #include "layers/blank_layer.hpp"
+#include "layers/elementwise_layers.hpp"
+#include "layers/fully_connected_layer.hpp"
+#include "layers/lrn_layer.hpp"
+#include "layers/mvn_layer.hpp"
+#include "layers/pooling_layer.hpp"
+#include "layers/reshape_layer.hpp"
+#include "layers/slice_layer.hpp"
+#include "layers/softmax_layer.hpp"
+#include "layers/split_layer.hpp"
+#include "layers/crop_layer.hpp"
 
 namespace cv
 {
@@ -85,7 +95,9 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer)
+    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
+
+    REG_RUNTIME_LAYER_CLASS(Crop,           CropLayer);
 
     init.status = true;
 }
