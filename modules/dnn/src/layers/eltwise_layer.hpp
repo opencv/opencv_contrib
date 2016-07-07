@@ -39,72 +39,30 @@
 //
 //M*/
 
-#include "precomp.hpp"
-
-#include "layers/concat_layer.hpp"
-#include "layers/convolution_layer.hpp"
-#include "layers/blank_layer.hpp"
-#include "layers/elementwise_layers.hpp"
-#include "layers/fully_connected_layer.hpp"
-#include "layers/lrn_layer.hpp"
-#include "layers/mvn_layer.hpp"
-#include "layers/pooling_layer.hpp"
-#include "layers/reshape_layer.hpp"
-#include "layers/slice_layer.hpp"
-#include "layers/softmax_layer.hpp"
-#include "layers/split_layer.hpp"
-#include "layers/crop_layer.hpp"
-#include "layers/eltwise_layer.hpp"
+#ifndef __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-struct AutoInitializer
-{
-    bool status;
-
-    AutoInitializer() : status(false)
+    class EltwiseLayer : public Layer
     {
-        cv::dnn::initModule();
-    }
-};
+        enum EltwiseOp
+        {
+            PROD = 0,
+            SUM = 1,
+            MAX = 2,
+        };
 
-static AutoInitializer init;
-
-void initModule()
-{
-    if (init.status)
-        return;
-
-    REG_RUNTIME_LAYER_CLASS(Slice, SliceLayer)
-    REG_RUNTIME_LAYER_CLASS(Softmax, SoftMaxLayer)
-    REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
-    REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
-    REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)
-    REG_RUNTIME_LAYER_CLASS(Pooling, PoolingLayer)
-    REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
-    REG_RUNTIME_LAYER_CLASS(LRN, LRNLayer)
-    REG_RUNTIME_LAYER_CLASS(InnerProduct, FullyConnectedLayer)
-
-    REG_RUNTIME_LAYER_CLASS(ReLU, ElementWiseLayer<ReLUFunctor>)
-    REG_RUNTIME_LAYER_CLASS(TanH, ElementWiseLayer<TanHFunctor>)
-    REG_RUNTIME_LAYER_CLASS(BNLL, ElementWiseLayer<BNLLFunctor>)
-    REG_RUNTIME_LAYER_CLASS(Power, ElementWiseLayer<PowerFunctor>)
-    REG_RUNTIME_LAYER_CLASS(AbsVal, ElementWiseLayer<AbsValFunctor>)
-    REG_RUNTIME_LAYER_CLASS(Sigmoid, ElementWiseLayer<SigmoidFunctor>)
-    REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
-
-    REG_RUNTIME_LAYER_CLASS(Convolution, ConvolutionLayer)
-    REG_RUNTIME_LAYER_CLASS(Deconvolution, DeConvolutionLayer)
-    REG_RUNTIME_LAYER_CLASS(Concat, ConcatLayer)
-
-    REG_RUNTIME_LAYER_CLASS(Crop, CropLayer)
-    REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
-
-    init.status = true;
-}
-
+        EltwiseOp op;
+        std::vector<int> coeffs;
+    public:
+        EltwiseLayer(LayerParams& params);
+        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    };
 }
 }
+#endif
