@@ -52,15 +52,15 @@ namespace dnn
         start_axis = params.get<int>("axis");
         if (4 <= start_axis)
             CV_Error(Error::StsBadArg, "crop axis bigger than input dim");
-        
+
         DictValue paramOffset = params.get("offset");
-        
+
         offset.resize(4, 0);
         if (1 < paramOffset.size())
         {
             if (4 - start_axis != paramOffset.size())
                 CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
-            for (int i = start_axis; i < offset.size(); i++)
+            for (size_t i = start_axis; i < offset.size(); i++)
             {
                 offset[i] = paramOffset.get<int>(i);
             }
@@ -68,7 +68,7 @@ namespace dnn
         else
         {
             const int offset_val = paramOffset.get<int>(0);
-            for (int i = start_axis; i < offset.size(); i++)
+            for (size_t i = start_axis; i < offset.size(); i++)
             {
                 offset[i] = offset_val;
             }
@@ -81,7 +81,7 @@ namespace dnn
 
         const Blob &inpBlob = *inputs[0];
         CV_Assert(inpBlob.dims() == 4 && inpBlob.type() == CV_32F);
-        
+
         const Blob &inpSzBlob = *inputs[1];
 
         outSizes.resize(4, 0);

@@ -9,26 +9,28 @@ using namespace cv::dnn;
 #include <cstdlib>
 using namespace std;
 
-static std::vector<cv::Vec3b> readColors(const string &filename = "d:/dnn_opencv/pascal-classes.txt")
-{
-    std::vector<cv::Vec3b> colors;
+static const string fcnType = "fcn8s";
 
-    std::ifstream fp(filename);
+static vector<cv::Vec3b> readColors(const string &filename = "pascal-classes.txt")
+{
+    vector<cv::Vec3b> colors;
+
+    ifstream fp(filename.c_str());
     if (!fp.is_open())
     {
-        std::cerr << "File with colors not found: " << filename << std::endl;
+        cerr << "File with colors not found: " << filename << endl;
         exit(-1);
     }
 
-    std::string line;
+    string line;
     while (!fp.eof())
     {
-        std::getline(fp, line);
+        getline(fp, line);
         if (line.length())
         {
-            std::stringstream ss(line);
+            stringstream ss(line);
 
-            std::string name; ss >> name;
+            string name; ss >> name;
             int temp;
             cv::Vec3b color;
             ss >> temp; color[0] = temp;
@@ -42,7 +44,7 @@ static std::vector<cv::Vec3b> readColors(const string &filename = "d:/dnn_opencv
     return colors;
 }
 
-static void colorizeSegmentation(dnn::Blob &score, const std::vector<cv::Vec3b> &colors, cv::Mat &segm)
+static void colorizeSegmentation(dnn::Blob &score, const vector<cv::Vec3b> &colors, cv::Mat &segm)
 {
     const int rows = score.rows();
     const int cols = score.cols();
@@ -83,11 +85,11 @@ static void colorizeSegmentation(dnn::Blob &score, const std::vector<cv::Vec3b> 
 
 int main(int argc, char **argv)
 {
-    String modelTxt = "d:/dnn_opencv/fcn32s-heavy-pascal.prototxt";
-    String modelBin = "d:/dnn_opencv/fcn32s-heavy-pascal.caffemodel";
-    String imageFile = (argc > 1) ? argv[1] : "d:/dnn_opencv/rgb.jpg";
+    String modelTxt = fcnType + "-heavy-pascal.prototxt";
+    String modelBin = fcnType + "-heavy-pascal.caffemodel";
+    String imageFile = (argc > 1) ? argv[1] : "rgb.jpg";
 
-    std::vector<cv::Vec3b> colors = readColors();
+    vector<cv::Vec3b> colors = readColors();
 
     //! [Create the importer of Caffe model]
     Ptr<dnn::Importer> importer;
@@ -97,17 +99,17 @@ int main(int argc, char **argv)
     }
     catch (const cv::Exception &err)        //Importer can throw errors, we will catch them
     {
-        std::cerr << err.msg << std::endl;
+        cerr << err.msg << endl;
     }
     //! [Create the importer of Caffe model]
 
     if (!importer)
     {
-        std::cerr << "Can't load network by using the following files: " << std::endl;
-        std::cerr << "prototxt:   " << modelTxt << std::endl;
-        std::cerr << "caffemodel: " << modelBin << std::endl;
-        std::cerr << "fcn32s-heavy-pascal.caffemodel can be downloaded here:" << std::endl;
-        std::cerr << "http://dl.caffe.berkeleyvision.org/fcn32s-heavy-pascal.caffemodel" << std::endl;
+        cerr << "Can't load network by using the following files: " << endl;
+        cerr << "prototxt:   " << modelTxt << endl;
+        cerr << "caffemodel: " << modelBin << endl;
+        cerr << fcnType << "-heavy-pascal.caffemodel can be downloaded here:" << endl;
+        cerr << "http://dl.caffe.berkeleyvision.org/" << fcnType << "-heavy-pascal.caffemodel" << endl;
         exit(-1);
     }
 
@@ -121,7 +123,7 @@ int main(int argc, char **argv)
     Mat img = imread(imageFile);
     if (img.empty())
     {
-        std::cerr << "Can't read image from the file: " << imageFile << std::endl;
+        cerr << "Can't read image from the file: " << imageFile << endl;
         exit(-1);
     }
 

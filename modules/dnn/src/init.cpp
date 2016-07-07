@@ -52,6 +52,7 @@
 #include "layers/softmax_layer.hpp"
 #include "layers/split_layer.hpp"
 #include "layers/crop_layer.hpp"
+#include "layers/eltwise_layer.hpp"
 
 namespace cv
 {
@@ -97,7 +98,12 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
     REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
 
+<<<<<<< 6a30193997f5c26f5dde7d0831d4dcfa2f4e9b81
     REG_RUNTIME_LAYER_CLASS(Crop,           CropLayer);
+=======
+    REG_RUNTIME_LAYER_CLASS(Crop, CropLayer)
+    REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
+>>>>>>> Add Eltwise layer. Add case of FCN8s into sample for semantic segmentation
 
     init.status = true;
 }
