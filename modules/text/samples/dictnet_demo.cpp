@@ -17,7 +17,7 @@
 #include  <iomanip>
 #include  <fstream>
 
-std::string getHelpStr(std::string progFname){
+inline std::string getHelpStr(std::string progFname){
     std::stringstream out;
     out << "    Demo of wordspotting CNN for text recognition." << std::endl;
     out << "    Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015"<<std::endl<<std::endl;
@@ -83,7 +83,7 @@ int main(int argc, const char * argv[]){
 
     std::ofstream out;
     out.open(argv[1]);
-    for(int imgIdx=0;imgIdx<imageList.size();imgIdx++){
+    for(int imgIdx=0;imgIdx<int(imageList.size());imgIdx++){
         out<<argv[imgIdx+2]<<","<<wordList[imgIdx]<<","<<outProbabillities[imgIdx]<<std::endl;
     }
     out.close();
