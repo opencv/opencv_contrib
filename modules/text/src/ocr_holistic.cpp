@@ -60,9 +60,9 @@ protected:
 
     void classifyMiniBatch(std::vector<Mat> inputImageList, Mat outputMat){
         //Classifies a list of images containing at most minibatchSz_ images
-        CV_Assert(inputImageList.size()<=this->minibatchSz_);
+        CV_Assert(int(inputImageList.size())<=this->minibatchSz_);
         CV_Assert(outputMat.isContinuous());
-        float* ouputPtr= (float*)(outputMat.data);
+#ifdef HAVE_CAFFE
         net_->input_blobs()[0]->Reshape(inputImageList.size(), 1,this->inputGeometry_.height,this->inputGeometry_.width);
         net_->Reshape();
         float* inputBuffer=net_->input_blobs()[0]->mutable_cpu_data();
@@ -78,6 +78,7 @@ protected:
         const float* outputNetData=net_->output_blobs()[0]->cpu_data();
         float*outputMatData=(float*)(outputMat.data);
         memcpy(outputMatData,outputNetData,sizeof(float)*this->outputSize_*inputImageList.size());
+#endif
     }
 
 #ifdef HAVE_CAFFE
@@ -129,7 +130,7 @@ public:
         inputImageList.getMatVector(allImageVector);
         classProbabilities.create(Size(this->outputSize_,allImageVector.size()),CV_32F);
         Mat outputMat = classProbabilities.getMat();
-        for(int imgNum=0;imgNum<allImageVector.size();imgNum+=this->minibatchSz_){
+        for(int imgNum=0;imgNum<int(allImageVector.size());imgNum+=this->minibatchSz_){
             int rangeEnd=imgNum+std::min<int>(allImageVector.size()-imgNum,this->minibatchSz_);
             std::vector<Mat>::const_iterator from=allImageVector.begin()+imgNum;
             std::vector<Mat>::const_iterator to=allImageVector.begin()+rangeEnd;
@@ -208,7 +209,7 @@ public:
         while (std::getline(labelsFile, line)){
             labels_.push_back(std::string(line));
         }
-        CV_Assert(this->classifier_->getOutputSize()==this->labels_.size());
+        CV_Assert(this->classifier_->getOutputSize()==int(this->labels_.size()));
     }
 
     void recogniseImage(InputArray inputImage,CV_OUT String& transcription,CV_OUT double& confidence){
