@@ -48,8 +48,57 @@ namespace dnn
 
     Blob::Blob()
     {
-        int zeros[4] = { 0, 0, 0, 0 };
-        m = Mat(4, zeros, CV_32F, NULL);
+        CV_DNN_UMAT_ONLY(state = UNINITIALIZED);
+    }
+
+    Blob::Blob(const BlobShape &shape, int type, int allocFlags)
+    {
+        CV_DNN_UMAT_ONLY(state = UNINITIALIZED);
+        this->create(shape, type, allocFlags);
+    }
+
+    Blob::Blob(InputArray data)
+    {
+#ifndef CV_DNN_UMAT
+        m = data.getMat();
+#else
+        CV_Assert(data.isMat() || data.isUMat());
+        if (data.isMat())
+        {
+            m = data.getMat();
+            state = HEAD_AT_MAT;
+        }
+        else
+        {
+            um = data.getUMat();
+            state = HEAD_AT_UMAT;
+        }
+#endif
+    }
+
+    void Blob::create(const BlobShape &shape, int type, int allocFlags)
+    {
+#ifndef CV_DNN_UMAT
+        CV_Assert(allocFlags & ALLOC_MAT);
+        m.create(shape.dims(), shape.ptr(), type);
+#else
+        CV_Assert(allocFlags & ALLOC_MAT || allocFlags & ALLOC_UMAT);
+
+        if (allocFlags & ALLOC_MAT)
+            m.create(shape.dims(), shape.ptr(), type);
+        if (allocFlags & ALLOC_UMAT)
+            um.create(shape.dims(), shape.ptr(), type);
+
+        if (state == UNINITIALIZED)
+        {
+            if (allocFlags & ALLOC_MAT && allocFlags & ALLOC_UMAT)
+                state = SYNCED;
+            else if (allocFlags & ALLOC_MAT)
+                state = HEAD_AT_MAT;
+            else
+                state = HEAD_AT_UMAT;
+        }
+#endif
     }
 
     static inline int getMatChannels(const Mat &mat)
@@ -119,83 +168,115 @@ namespace dnn
         }
     }
 
-    Blob::Blob(InputArray image, int dstCn)
+    void Blob::batchFromImages(InputArray image, int dstCn)
     {
         CV_Assert(dstCn == -1 || dstCn > 0);
         std::vector<Mat> inMats = extractMatVector(image);
         BlobShape dstShape = getBlobShape(inMats, dstCn);
 
-        m.create(dstShape.dims(), dstShape.ptr(), CV_32F);
+        int dtype = CV_32F;
+        this->create(dstShape, dtype, ALLOC_MAT);
+        uchar *dstPtr = this->matRef().ptr();
+        int elemSize = CV_ELEM_SIZE(dtype);
 
         std::vector<Mat> wrapBuf(dstShape[-3]);
-        int elemSize = (int)m.elemSize();
-        uchar *ptr = this->ptr();
         for (size_t i = 0; i < inMats.size(); i++)
         {
             Mat inMat = inMats[i];
 
             if (inMat.dims <= 2)
             {
-                inMat.convertTo(inMat, m.type());
+                inMat.convertTo(inMat, dtype);
 
                 wrapBuf.resize(0);
                 for (int cn = 0; cn < inMat.channels(); cn++)
                 {
-                    wrapBuf.push_back(Mat(inMat.rows, inMat.cols, m.type(), ptr));
-                    ptr += elemSize * inMat.total();
+                    wrapBuf.push_back(Mat(inMat.rows, inMat.cols, dtype, dstPtr));
+                    dstPtr += elemSize * inMat.total();
                 }
 
                 cv::split(inMat, wrapBuf);
             }
             else
             {
-                inMat.convertTo(Mat(inMat.dims, inMat.size, m.type(), ptr), m.type());
-                ptr += elemSize * inMat.total();
+                inMat.convertTo(Mat(inMat.dims, inMat.size, dtype, dstPtr), dtype);
+                dstPtr += elemSize * inMat.total();
             }
         }
     }
 
-    Blob::Blob(const BlobShape &shape, int type)
+    Blob Blob::fromImages(InputArray image, int dstCn)
     {
-        this->create(shape, type);
+        Blob res;
+        res.batchFromImages(image, dstCn);
+        return res;
     }
 
     void Blob::fill(const BlobShape &shape, int type, void *data, bool deepCopy)
     {
-        CV_Assert(type == CV_32F || type == CV_64F);
-
         if (deepCopy)
         {
-            m.create(shape.dims(), shape.ptr(), type);
-            memcpy(m.data, data, m.total() * m.elemSize());
+            create(shape, type);
+            memcpy(ptr(), data, this->total() * CV_ELEM_SIZE(type));
         }
         else
         {
             m = Mat(shape.dims(), shape.ptr(), type, data);
         }
+        CV_DNN_UMAT_ONLY(state = HEAD_AT_MAT);
     }
 
-    void Blob::create(const BlobShape &shape, int type)
+    void Blob::updateMat(bool syncData) const
     {
-        CV_Assert(type == CV_32F || type == CV_64F);
-        m.create(shape.dims(), shape.ptr(), type);
+#ifdef CV_DNN_UMAT
+        if (state == UNINITIALIZED || state == SYNCED || state == HEAD_AT_MAT)
+        {
+            return;
+        }
+        else if (state == HEAD_AT_UMAT)
+        {
+            if (syncData)
+                um.copyTo(m);
+            else
+                m.create(dims(), sizes(), type());
+            state = SYNCED;
+        }
+        else
+        {
+            CV_Error(Error::StsInternal, "");
+        }
+#else
+        (void)syncData;
+#endif
     }
 
-    inline void squeezeShape(const int srcDims, const int *srcSizes, const int dstDims, int *dstSizes)
+    void Blob::updateUMat(bool syncData) const
     {
-        const int m = std::min(dstDims, srcDims);
+#ifdef CV_DNN_UMAT
+        if (state == UNINITIALIZED || state == SYNCED || state == HEAD_AT_UMAT)
+        {
+            return;
+        }
+        else if (state == HEAD_AT_MAT)
+        {
+            if (syncData)
+                m.copyTo(um);
+            else
+                um.create(dims(), sizes(), type());
+        }
+        else
+        {
+            CV_Error(Error::StsInternal, "");
+        }
+#else
+        (void)syncData;
+#endif
+    }
 
-        //copy common(last) dimensions
-        for (int i = 0; i < m; i++)
-            dstSizes[dstDims - 1 - i] = srcSizes[srcDims - 1 - i];
-
-        //either flatten extra dimensions
-        for (int i = m; i < srcDims; i++)
-            dstSizes[0] *= srcSizes[srcDims - 1 - i];
-
-        //either fill gaps
-        for (int i = m; i < dstDims; i++)
-            dstSizes[dstDims - 1 - i] = 1;
+    void Blob::sync() const
+    {
+        updateMat();
+        updateUMat();
     }
 
     Vec4i Blob::shape4() const

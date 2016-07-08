@@ -144,19 +144,25 @@ namespace dnn
     class CV_EXPORTS_W Blob
     {
     public:
-        explicit Blob();
+        Blob();
 
         /** @brief Constructs blob with specified @p shape and @p type. */
-        explicit Blob(const BlobShape &shape, int type = CV_32F);
+        explicit Blob(const BlobShape &shape, int type = CV_32F, int allocFlags = ALLOC_MAT);
+
+        /** @brief Constructs Blob from existing Mat or UMat. */
+        Blob(InputArray data);
 
         /** @brief Constucts 4-dimensional blob (so-called batch) from image or array of images.
-         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of images)
-         * @param dstCn specify size of second axis of ouptut blob
-        */
-        explicit Blob(InputArray image, int dstCn = -1);
+         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of such images)
+         * @param dstCn specifies size of second axis of ouptut blob
+         */
+        static Blob fromImages(InputArray image, int dstCn = -1);
+
+        /** @brief Works like Blob::fromImages() but in-place. */
+        void batchFromImages(InputArray image, int dstCn = -1);
 
         /** @brief Creates blob with specified @p shape and @p type. */
-        void create(const BlobShape &shape, int type = CV_32F);
+        void create(const BlobShape &shape, int type = CV_32F, int allocFlags = ALLOC_MAT);
 
         /** @brief Creates blob from cv::Mat or cv::UMat without copying the data */
         void fill(InputArray in);
@@ -165,10 +171,19 @@ namespace dnn
          */
         void fill(const BlobShape &shape, int type, void *data, bool deepCopy = true);
 
-        Mat& matRef();                      //!< Returns reference to cv::Mat, containing blob data.
-        const Mat& matRefConst() const;     //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.
-        UMat &umatRef();                    //!< Returns reference to cv::UMat, containing blob data (not implemented yet).
-        const UMat &umatRefConst() const;   //!< Returns reference to cv::UMat, containing blob data, for read-only purposes (not implemented yet).
+        Mat& matRef(bool writeOnly = true);     //!< Returns reference to cv::Mat, containing blob data.
+        const Mat& matRefConst() const;         //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.
+        UMat &umatRef(bool writeOnly = true);   //!< Returns reference to cv::UMat, containing blob data.
+        const UMat &umatRefConst() const;       //!< Returns reference to cv::UMat, containing blob data, for read-only purposes.
+
+        template<typename XMat>
+        XMat &getRef(bool writeOnly = true);
+        template<typename XMat>
+        const XMat &getRefConst() const;
+
+        void updateMat(bool syncData = true) const;     //!< Actualizes data stored inside Mat of Blob; if @p syncData is false then only shape will be actualized.
+        void updateUMat(bool syncData = true) const;    //!< Actualizes data stored inside Mat of Blob; if @p syncData is false then only shape will be actualized.
+        void sync() const;                              //!< Updates Mat and UMat of Blob.
 
         /** @brief Returns number of blob dimensions. */
         int dims() const;
@@ -204,11 +219,6 @@ namespace dnn
         /** @brief Checks equality of two blobs shapes. */
         bool equalShape(const Blob &other) const;
 
-        /** @brief Returns slice of first two dimensions.
-         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
-         */
-        Mat getPlane(int n, int cn);
-
         /* Shape getters of 4-dimensional blobs. */
         int cols() const;       //!< Returns size of the fourth axis blob.
         int rows() const;       //!< Returns size of the thrid  axis blob.
@@ -236,11 +246,16 @@ namespace dnn
          */
         uchar *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         /** @overload */
-        template<typename TFloat>
-        TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+        template<typename Type>
+        Type *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         /** @overload ptr<float>() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
+
+        /** @brief Returns slice of first two dimensions.
+         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
+         */
+        Mat getPlane(int n, int cn);
 
         /** @brief Shares data from other @p blob.
          * @returns *this
@@ -257,13 +272,45 @@ namespace dnn
          */
         Blob reshaped(const BlobShape &newShape) const;
 
-        /** @brief Returns type of the blob. */
-        int type() const;
+        int type() const;       //!< Returns type of the blob.
+        int elemSize() const;   //!< Returns size of single element in bytes.
 
     private:
         const int *sizes() const;
 
+#   define CV_DNN_UMAT //DBG
+#ifdef HAVE_OPENCL
+#   define CV_DNN_UMAT
+#endif
+
+#ifdef CV_DNN_UMAT
+#   define CV_DNN_UMAT_ONLY(expr) (expr)
+#else
+#   define CV_DNN_UMAT_ONLY(expr)
+#endif
+
+#ifndef CV_DNN_UMAT
         Mat m;
+#else
+        mutable Mat m;
+        mutable UMat um;
+        mutable uchar state;
+#endif
+
+        enum DataState
+        {
+            UNINITIALIZED,
+            HEAD_AT_MAT,
+            HEAD_AT_UMAT,
+            SYNCED
+        };
+
+        enum AllocFlag
+        {
+            ALLOC_MAT  = 1,
+            ALLOC_UMAT = 2,
+            ALLOC_BOTH = 3
+        };
     };
 
 //! @}

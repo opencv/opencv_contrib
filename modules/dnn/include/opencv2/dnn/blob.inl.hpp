@@ -247,19 +247,63 @@ inline bool BlobShape::isEmpty() const
     return dims() == 0;
 }
 
+inline BlobShape BlobShape::operator+(const BlobShape &r) const
+{
+    BlobShape newShape(this->dims() + r.dims(), (int*)NULL);
+    for (int i = 0; i < this->dims(); i++)
+        newShape[i] = (*this)[i];
+    for (int i = 0; i < r.dims(); i++)
+        newShape[this->dims() + i] = r[i];
+    return newShape;
+}
+
 CV_EXPORTS std::ostream &operator<< (std::ostream &stream, const BlobShape &shape);
 
 /////////////////////////////////////////////////////////////////////
+
+#ifndef CV_DNN_UMAT
+#   define CV_DNN_SWITCH_MU(cpu_expr, gpu_expr) (cpu_expr)
+#else
+#   define CV_DNN_SWITCH_MU(cpu_expr, gpu_expr) ((state == HEAD_AT_UMAT) ? (gpu_expr) : (cpu_expr))
+#endif
+
+
+inline int Blob::dims() const
+{
+    return CV_DNN_SWITCH_MU(m.dims, um.dims);
+}
+
+inline const int * Blob::sizes() const
+{
+    return CV_DNN_SWITCH_MU((const int*)m.size, (const int*)um.size);
+}
+
+inline int Blob::type() const
+{
+    return CV_DNN_SWITCH_MU(m.type(), um.type());
+}
+
+template<int n>
+inline size_t Blob::offset(const Vec<int, n> &pos) const
+{
+    const MatStep &step = CV_DNN_SWITCH_MU(m.step, um.step);
+    size_t ofs = 0;
+    int i;
+    for (i = 0; i < std::min(n, dims()); i++)
+    {
+        CV_DbgAssert(pos[i] >= 0 && pos[i] < size(i));
+        ofs += step[i] * pos[i];
+    }
+    for (; i < dims(); i++)
+        CV_DbgAssert(pos[i] == 0);
+    CV_DbgAssert(ofs % elemSize() == 0);
+    return ofs / elemSize();
+}
 
 inline int Blob::canonicalAxis(int axis) const
 {
     CV_Assert(-dims() <= axis && axis < dims());
     return (axis < 0) ? axis + dims() : axis;
-}
-
-inline int Blob::dims() const
-{
-    return m.dims;
 }
 
 inline int Blob::xsize(int axis) const
@@ -295,22 +339,6 @@ inline size_t Blob::total(int startAxis, int endAxis) const
     return cnt;
 }
 
-
-template<int n>
-inline size_t Blob::offset(const Vec<int, n> &pos) const
-{
-    size_t ofs = 0;
-    int i;
-    for (i = 0; i < std::min(n, dims()); i++)
-    {
-        CV_DbgAssert(pos[i] >= 0 && pos[i] < size(i));
-        ofs = ofs * (size_t)size(i) + pos[i];
-    }
-    for (; i < dims(); i++)
-        ofs *= (size_t)size(i);
-    return ofs;
-}
-
 inline size_t Blob::offset(int n, int cn, int row, int col) const
 {
     return offset(Vec4i(n, cn, row, col));
@@ -318,36 +346,25 @@ inline size_t Blob::offset(int n, int cn, int row, int col) const
 
 inline float *Blob::ptrf(int n, int cn, int row, int col)
 {
-    CV_Assert(type() == CV_32F);
-    return (float*)m.data + offset(n, cn, row, col);
+    return matRef().ptr<float>() + offset(n, cn, row, col);
 }
 
 inline uchar *Blob::ptr(int n, int cn, int row, int col)
 {
-    return m.data + m.elemSize() * offset(n, cn, row, col);
+    Mat &mat = matRef();
+    return mat.ptr() + mat.elemSize() * offset(n, cn, row, col);
 }
 
-template<typename TFloat>
-inline TFloat* Blob::ptr(int n, int cn, int row, int col)
+template<typename Dtype>
+inline Dtype* Blob::ptr(int n, int cn, int row, int col)
 {
-    CV_Assert(type() == cv::DataDepth<TFloat>::value);
-    return (TFloat*) ptr(n, cn, row, col);
+    CV_Assert(type() == cv::DataDepth<Dtype>::value);
+    return (Dtype*) ptr(n, cn, row, col);
 }
 
 inline BlobShape Blob::shape() const
 {
     return BlobShape(dims(), sizes());
-}
-
-
-inline BlobShape BlobShape::operator+(const BlobShape &r) const
-{
-    BlobShape newShape(this->dims() + r.dims(), (int*)NULL);
-    for (int i = 0; i < this->dims(); i++)
-        newShape[i] = (*this)[i];
-    for (int i = 0; i < r.dims(); i++)
-        newShape[this->dims() + i] = r[i];
-    return newShape;
 }
 
 inline bool Blob::equalShape(const Blob &other) const
@@ -363,26 +380,69 @@ inline bool Blob::equalShape(const Blob &other) const
     return true;
 }
 
-inline Mat& Blob::matRef()
+inline Mat& Blob::matRef(bool writeOnly)
 {
+#ifdef CV_DNN_UMAT
+    updateMat(!writeOnly);
+    state = HEAD_AT_MAT;
+#else
+    (void)writeOnly;
+#endif
     return m;
 }
 
 inline const Mat& Blob::matRefConst() const
 {
+    CV_DNN_UMAT_ONLY( updateMat() );
     return m;
 }
 
-inline UMat &Blob::umatRef()
+inline UMat &Blob::umatRef(bool writeOnly)
 {
-    CV_Error(Error::StsNotImplemented, "");
+#ifndef CV_DNN_UMAT
+    CV_Error(Error::GpuNotSupported, "");
+    (void)writeOnly;
     return *(new UMat());
+#else
+    updateUMat(!writeOnly);
+    state = HEAD_AT_UMAT;
+    return um;
+#endif
 }
 
 inline const UMat &Blob::umatRefConst() const
 {
-    CV_Error(Error::StsNotImplemented, "");
+#ifndef CV_DNN_UMAT
+    CV_Error(Error::GpuNotSupported, "");
     return *(new UMat());
+#else
+    updateUMat();
+    return um;
+#endif
+}
+
+template<>
+inline Mat &Blob::getRef<Mat>(bool writeOnly)
+{
+    return matRef(writeOnly);
+}
+
+template<>
+inline UMat &Blob::getRef<UMat>(bool writeOnly)
+{
+    return umatRef(writeOnly);
+}
+
+template<>
+inline const Mat &Blob::getRefConst<Mat>() const
+{
+    return matRefConst();
+}
+
+template<>
+inline const UMat &Blob::getRefConst<UMat>() const
+{
+    return umatRefConst();
 }
 
 inline Mat Blob::getPlane(int n, int cn)
@@ -416,26 +476,22 @@ inline Size Blob::size2() const
     return Size(cols(), rows());
 }
 
-inline int Blob::type() const
-{
-    return m.depth();
-}
-
-inline const int * Blob::sizes() const
-{
-    return &m.size[0];
-}
-
-
 inline Blob &Blob::shareFrom(const Blob &blob)
 {
     this->m = blob.m;
+#ifdef CV_DNN_UMAT
+    this->um = blob.um;
+    this->state = blob.state;
+#endif
     return *this;
 }
 
 inline Blob &Blob::reshape(const BlobShape &newShape)
 {
-    m = m.reshape(1, newShape.dims(), newShape.ptr());
+    if (!m.empty()) m = m.reshape(1, newShape.dims(), newShape.ptr());
+#ifdef CV_DNN_UMAT
+    if (!um.empty()) um = um.reshape(1, newShape.dims(), newShape.ptr());
+#endif
     return *this;
 }
 
@@ -444,6 +500,11 @@ inline Blob Blob::reshaped(const BlobShape &newShape) const
     Blob res(*this); //also, res.shareFrom(*this) could be used
     res.reshape(newShape);
     return res;
+}
+
+inline int Blob::elemSize() const
+{
+    return CV_ELEM_SIZE(type());
 }
 
 }

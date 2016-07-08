@@ -69,7 +69,7 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob(".data", Blob(inpMats));
+    net.setBlob(".data", Blob::fromImages(inpMats));
     net.forward();
 
     Blob out = net.getBlob("prob");
