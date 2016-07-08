@@ -48,6 +48,12 @@ http://files.is.tue.mpg.de/black/papers/cvpr2015_pcaflow.pdf
   month = jun,
   year = {2015}
 }
+
+There are some key differences which distinguish this algorithm from the original PCAFlow (see paper):
+  - Discrete Cosine Transform basis is used instead of basis extracted with PCA.
+    Reasoning: DCT basis has comparable performance and it doesn't require additional storage space.
+    Also, this decision helps to avoid overloading the algorithm with a lot of external input.
+  - Usage of built-in OpenCV feature tracking instead of libviso.
 */
 
 #ifndef __OPENCV_OPTFLOW_PCAFLOW_HPP__
