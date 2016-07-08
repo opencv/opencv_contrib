@@ -57,7 +57,7 @@ def find_flo(pp):
 
 
 def load_flo(flo):
-    with open(flo) as f:
+    with open(flo, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)[0]
         if 202021.25 != magic:
             print('Magic number incorrect. Invalid .flo file')

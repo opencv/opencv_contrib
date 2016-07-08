@@ -61,10 +61,6 @@ namespace optflow
 namespace
 {
 
-#ifndef M_PI
-const float M_PI = 3.14159265358979323846;
-#endif
-
 #ifndef M_SQRT2
 const float M_SQRT2 = 1.41421356237309504880;
 #endif
@@ -98,14 +94,14 @@ inline void symOrtho( double a, double b, double &c, double &s, double &r )
   else if ( std::abs( b ) > std::abs( a ) )
   {
     const double tau = a / b;
-    s = mathSign( b ) / sqrt( 1 + tau * tau );
+    s = mathSign( b ) / std::sqrt( 1 + tau * tau );
     c = s * tau;
     r = b / s;
   }
   else
   {
     const double tau = b / a;
-    c = mathSign( a ) / sqrt( 1 + tau * tau );
+    c = mathSign( a ) / std::sqrt( 1 + tau * tau );
     s = c * tau;
     r = a / c;
   }
@@ -200,7 +196,7 @@ inline void _cpu_fillDCTSampledPoints( float *row, const Point2f &p, const Size 
   for ( int n1 = 0; n1 < basisSize.width; ++n1 )
     for ( int n2 = 0; n2 < basisSize.height; ++n2 )
       row[n1 * basisSize.height + n2] =
-        cosf( ( n1 * M_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * M_PI / size.height ) * ( p.y + 0.5 ) );
+        cosf( ( n1 * CV_PI / size.width ) * ( p.x + 0.5 ) ) * cosf( ( n2 * CV_PI / size.height ) * ( p.y + 0.5 ) );
 }
 
 ocl::ProgramSource _ocl_fillDCTSampledPointsSource(
@@ -210,10 +206,11 @@ ocl::ProgramSource _ocl_fillDCTSampledPointsSource(
   "const int n1 = get_global_id(1);"
   "const int n2 = get_global_id(2);"
   "if (i >= fs || n1 >= bsw || n2 >= bsh) return;"
-  "__global const float2* f = features + (fstep * i + foff);"
-  "__global float* a = A + (Astep * i + Aoff + (n1 * bsh + n2) * 4);"
+  "__global const float2* f = (__global const float2*)(features + (fstep * i + foff));"
+  "__global float* a = (__global float*)(A + (Astep * i + Aoff + (n1 * bsh + n2) * sizeof(float)));"
   "const float2 p = f[0];"
-  "a[0] = cos((n1 * M_PI / sw) * (p.x + 0.5)) * cos((n2 * M_PI / sh) * (p.y + 0.5));"
+  "const float pi = 3.14159265358979323846;"
+  "a[0] = cos((n1 * pi / sw) * (p.x + 0.5)) * cos((n2 * pi / sh) * (p.y + 0.5));"
   "}" );
 
 void applyCLAHE( UMat &img, float claheClip )
@@ -497,7 +494,7 @@ Ptr<DenseOpticalFlow> createOptFlow_PCAFlow() { return makePtr<OpticalFlowPCAFlo
 
 PCAPrior::PCAPrior( const char *pathToPrior )
 {
-  FILE *f = fopen( pathToPrior, "r" );
+  FILE *f = fopen( pathToPrior, "rb" );
   CV_Assert( f );
 
   unsigned n = 0, m = 0;
