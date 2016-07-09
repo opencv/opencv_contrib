@@ -346,12 +346,12 @@ inline size_t Blob::offset(int n, int cn, int row, int col) const
 
 inline float *Blob::ptrf(int n, int cn, int row, int col)
 {
-    return matRef().ptr<float>() + offset(n, cn, row, col);
+    return matRef(false).ptr<float>() + offset(n, cn, row, col);
 }
 
 inline uchar *Blob::ptr(int n, int cn, int row, int col)
 {
-    Mat &mat = matRef();
+    Mat &mat = matRef(false);
     return mat.ptr() + mat.elemSize() * offset(n, cn, row, col);
 }
 

@@ -297,6 +297,7 @@ namespace dnn
         mutable uchar state;
 #endif
 
+public:
         enum DataState
         {
             UNINITIALIZED,

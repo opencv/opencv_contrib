@@ -42,6 +42,7 @@
 #if defined(ENABLE_CAFFE_MODEL_TESTS)
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
+#include <opencv2/core/ocl.hpp>
 
 namespace cvtest
 {

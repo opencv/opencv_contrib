@@ -11,9 +11,15 @@ namespace cv
 namespace dnn
 {
 
-void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double beta, int flags /*= 0*/)
+void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double beta, int flags)
 {
-    cv::gemm(A, B, alpha, C, beta, C, flags);
+    if (C.isMat())
+        gemmCPU(A.getMat(), B.getMat(), alpha, C.getMatRef(), beta, flags);
+    else
+    {
+        cv::gemm(A, B, alpha, C, beta, C, flags);
+        std::cout << "OCL gemm\n";
+    }
 }
 
 inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool isTrans)
@@ -35,10 +41,9 @@ void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int 
     SwapRowCols(B, Brows, Bcols, transB);
     SwapRowCols(C, Crows, Ccols, transC);
 
-    CV_DbgAssert(!(flags & GEMM_3_T));
+    CV_Assert(!(flags & GEMM_3_T));
     CV_Assert(Acols == Brows && Arows == Crows && Bcols == Ccols);
     CV_Assert(A.isContinuous() && B.isContinuous() && C.isContinuous());
-    CV_Assert(A.type() == CV_32F || A.type() == CV_64F);
     CV_Assert(A.type() == B.type() && B.type() == C.type());
     CV_Assert(A.data != C.data && B.data != C.data);
 
@@ -59,6 +64,10 @@ void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int 
                     B.ptr<double>(), B.cols,
                     beta, C.ptr<double>(), C.cols);
     }
+    else
+    {
+        CV_Error(Error::BadDepth, "Only floating point types are supported");
+    }
     #else
     cv::gemm(A, B, alpha, C, beta, C, flags);
     #endif
@@ -70,7 +79,6 @@ int getBlasThreads()
     return openblas_get_num_threads();
     #else
     return 1;
-
     #endif
 }
 
@@ -81,7 +89,6 @@ void setBlasThreads(int numThreads)
     goto_set_num_threads(numThreads);
     #else
     (void)numThreads;   //suppress compilers' warning
-    numThreads = 0;
     #endif
 }
 

@@ -63,18 +63,23 @@ namespace dnn
         int inpGroupCn, outGroupCn;
         int ksize;
 
-        bool useOpenCL;
+        bool tryUseOpenCL, useOpenCL;
+
+        Blob colBlob, biasOnesBlob;
         Mat colMat, biasOnesMat;
 
         inline bool is1x1() const;
         virtual void computeInpOutShape(const Blob &inpBlob);
-        void im2col(Blob &inpBlob, int imNum, int cnGroup);
+        void im2col(Blob &inpBlob, int imNum, int cnGroup, Blob &colBlob);
 
     public:
         ConvolutionLayer() {}
         ConvolutionLayer(LayerParams &params);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+        template<typename XMat>
+        void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
 
     class DeConvolutionLayer : public ConvolutionLayer
