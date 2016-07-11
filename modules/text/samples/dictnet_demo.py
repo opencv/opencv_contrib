@@ -3,7 +3,7 @@
 import cv2
 import sys
 import os.path
- 
+
 #Global variable shared between the Mouse callback and main
 refPt = []
 cropping = False

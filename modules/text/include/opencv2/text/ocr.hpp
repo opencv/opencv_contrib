@@ -573,6 +573,8 @@ public:
 
     @param image Input image CV_8UC1 or CV_8UC3
 
+    @param mask is totally ignored and is only available for compatibillity reasons
+
     @param output_text Output text of the the word spoting, always one that exists in the dictionary.
 
     @param component_rects Not applicable for word spotting can be be NULL if not, a single elemnt will
@@ -585,8 +587,6 @@ public:
         be put in the vector.
 
     @param component_level must be OCR_LEVEL_WORD.
-
-    @param mask is totally ignored and is only available for compatibillity reasons
      */
 
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
@@ -613,7 +613,7 @@ public:
     @brief Method that provides a quick and simple interface to a multiple word image classifcation taking advantage
     the classifiers parallel capabilities.
 
-    @param inputImage an list of images expected to be a CV_U8C1 or CV_U8C3 each image can be of any size and is assumed
+    @param inputImageList an list of images expected to be a CV_U8C1 or CV_U8C3 each image can be of any size and is assumed
     to contain a single word.
 
     @param transcriptions a vector of opencv strings that will store the detected word transcriptions, one for each
