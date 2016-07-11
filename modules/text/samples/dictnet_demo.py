@@ -38,14 +38,14 @@ def mouseCallback(event, x, y, flags, param):
         cv2.rectangle(drawImage, refPt[0], refPt[1], (0, 255, 0), 2)
         cv2.putText(drawImage,"%s:%f"%(res[0],res[1]),refPt[0],cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2)
         cv2.imshow("Select A Region", drawImage)
-        
+
 
 if __name__=='__main__':
     USEGPU=False
-    helpStr="""    Usage: """+sys.argv[0]+""" IMAGE_FILENAME
-    
+    helpStr="""Usage: """+sys.argv[0]+""" IMAGE_FILENAME
+
     Press 'q' or 'Q' exit
-    
+
     The modelFiles must be available in the current directory.
     In linux shell they can be downloaded (~2GB) with the following commands:
     wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg.caffemodel
@@ -56,7 +56,7 @@ if __name__=='__main__':
         print helpStr
         print 'No image file given Aborting!'
         sys.exit(1)
-    if not (os.path.isfile('dictnet_vgg_deploy.prototxt') and 
+    if not (os.path.isfile('dictnet_vgg_deploy.prototxt') and
         os.path.isfile('dictnet_vgg.caffemodel') and
         os.path.isfile('dictnet_vgg_labels.txt')):
         print helpStr

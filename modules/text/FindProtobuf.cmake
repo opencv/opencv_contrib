@@ -1,4 +1,4 @@
-# Protobuf package required for Caffe 
+#Protobuf package required for Caffe
 unset(Protobuf_FOUND)
 
 find_library(Protobuf_LIBS NAMES protobuf

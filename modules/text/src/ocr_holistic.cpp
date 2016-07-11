@@ -67,7 +67,7 @@ protected:
         net_->Reshape();
         float* inputBuffer=net_->input_blobs()[0]->mutable_cpu_data();
         float* inputData=inputBuffer;
-        for(int imgNum=0;imgNum<inputImageList.size();imgNum++){
+        for(size_t imgNum=0;imgNum<inputImageList.size();imgNum++){
             Mat preprocessed;
             cv::Mat netInputWraped(this->inputGeometry_.height, this->inputGeometry_.width, CV_32FC1, inputData);
             this->preprocess(inputImageList[imgNum],preprocessed);
@@ -87,11 +87,16 @@ protected:
     Size inputGeometry_;
     const int minibatchSz_;
     const bool gpuBackend_;
-    Ptr<Mat> meanImage_;
-    bool standarize_;
-    std::vector<std::string> labels_;
     int outputSize_;
 public:
+    DictNetCaffeImpl(const DictNetCaffeImpl& dn):inputGeometry_(dn.inputGeometry_),minibatchSz_(dn.minibatchSz_),
+        gpuBackend_(dn.gpuBackend_),outputSize_(dn.outputSize_){
+        //Implemented to supress Visual Studio warning
+#ifdef HAVE_CAFFE
+        this->net_=dn.net_;
+#endif
+    }
+
     DictNetCaffeImpl(String modelArchFilename, String modelWeightsFilename, int maxMinibatchSz, bool useGpu)
         :minibatchSz_(maxMinibatchSz), gpuBackend_(useGpu){
         CV_Assert(this->minibatchSz_>0);
@@ -128,9 +133,9 @@ public:
     void classifyBatch(InputArrayOfArrays inputImageList, OutputArray classProbabilities){
         std::vector<Mat> allImageVector;
         inputImageList.getMatVector(allImageVector);
-        classProbabilities.create(Size(this->outputSize_,allImageVector.size()),CV_32F);
+        classProbabilities.create(Size(unsigned int(this->outputSize_),allImageVector.size()),CV_32F);
         Mat outputMat = classProbabilities.getMat();
-        for(int imgNum=0;imgNum<int(allImageVector.size());imgNum+=this->minibatchSz_){
+        for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=this->minibatchSz_){
             int rangeEnd=imgNum+std::min<int>(allImageVector.size()-imgNum,this->minibatchSz_);
             std::vector<Mat>::const_iterator from=allImageVector.begin()+imgNum;
             std::vector<Mat>::const_iterator to=allImageVector.begin()+rangeEnd;
@@ -250,7 +255,7 @@ public:
         }
         if(component_confidences!=NULL){
             component_confidences->resize(1);
-            (*component_confidences)[0]=confidence;
+            (*component_confidences)[0]=float(confidence);
         }
     }
     void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
@@ -261,13 +266,7 @@ public:
     }
     std::vector<String>& getVocabulary(){
         return this->labels_;
-    }/*
-    void getVocabulary(CV_OUT const std::vector<String>& voc){
-        voc.reshape(this->labels_.size());
-        for(int k =0;k<voc.size();k++){
-            voc[k]=this->labels_[k];
-        }
-    }*/
+    }
 };
 
 Ptr<OCRHolisticWordRecognizer> OCRHolisticWordRecognizer::create(Ptr<TextImageClassifier> classifierPtr,String vocabullaryFilename ){
