@@ -565,6 +565,10 @@ public:
 class CV_EXPORTS_W OCRHolisticWordRecognizer : public BaseOCR
 {
 public:
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=OCR_LEVEL_WORD)=0;
+
     /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
 
     Takes image on input and returns recognized text in the output_text parameter. Optionally
@@ -588,10 +592,6 @@ public:
 
     @param component_level must be OCR_LEVEL_WORD.
      */
-
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=OCR_LEVEL_WORD)=0;
 
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
