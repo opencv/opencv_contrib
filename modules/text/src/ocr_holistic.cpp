@@ -133,7 +133,7 @@ public:
     void classifyBatch(InputArrayOfArrays inputImageList, OutputArray classProbabilities){
         std::vector<Mat> allImageVector;
         inputImageList.getMatVector(allImageVector);
-        classProbabilities.create(Size(unsigned int(this->outputSize_),allImageVector.size()),CV_32F);
+        classProbabilities.create(Size((size_t)(this->outputSize_),allImageVector.size()),CV_32F);
         Mat outputMat = classProbabilities.getMat();
         for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=this->minibatchSz_){
             int rangeEnd=imgNum+std::min<int>(allImageVector.size()-imgNum,this->minibatchSz_);

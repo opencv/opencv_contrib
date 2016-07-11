@@ -61,7 +61,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 if(${Caffe_FOUND})
 
   include_directories(${Caffe_INCLUDE_DIR})
-  #Anguelos: taken from caffe's cmake
+  #taken from caffe's cmake
   find_package(HDF5 COMPONENTS HL REQUIRED)
   include_directories(SYSTEM ${HDF5_INCLUDE_DIRS} ${HDF5_HL_INCLUDE_DIR})
   list(APPEND Caffe_LINKER_LIBS ${HDF5_LIBRARIES})
@@ -74,7 +74,7 @@ endif()
 
 
 if(${Caffe_FOUND})
-  #Anguelos: taken from caffe's cmake
+  #taken from caffe's cmake
   target_link_libraries(opencv_text ${Caffe_LIBS} ${Glog_LIBS} ${Protobuf_LIBS} ${HDF5_LIBRARIES} ${Boost_LIBRARIES})
 endif()
 endif()
