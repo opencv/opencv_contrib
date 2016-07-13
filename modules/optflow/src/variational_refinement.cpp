@@ -1074,9 +1074,10 @@ void VariationalRefinementImpl::RedBlackSOR_ParBody::operator()(const Range &ran
 
 void VariationalRefinementImpl::calc(InputArray I0, InputArray I1, InputOutputArray flow)
 {
-    CV_Assert(!I0.empty() && I0.depth() == CV_8U && I0.channels() == 1);
-    CV_Assert(!I1.empty() && I1.depth() == CV_8U && I1.channels() == 1);
+    CV_Assert(!I0.empty() && I0.channels() == 1);
+    CV_Assert(!I1.empty() && I1.channels() == 1);
     CV_Assert(I0.sameSize(I1));
+    CV_Assert((I0.depth() == CV_8U && I1.depth() == CV_8U) || (I0.depth() == CV_32F && I1.depth() == CV_32F));
     CV_Assert(!flow.empty() && flow.depth() == CV_32F && flow.channels() == 2);
     CV_Assert(I0.sameSize(flow));
 
@@ -1089,9 +1090,10 @@ void VariationalRefinementImpl::calc(InputArray I0, InputArray I1, InputOutputAr
 
 void VariationalRefinementImpl::calcUV(InputArray I0, InputArray I1, InputOutputArray flow_u, InputOutputArray flow_v)
 {
-    CV_Assert(!I0.empty() && I0.depth() == CV_8U && I0.channels() == 1);
-    CV_Assert(!I1.empty() && I1.depth() == CV_8U && I1.channels() == 1);
+    CV_Assert(!I0.empty() && I0.channels() == 1);
+    CV_Assert(!I1.empty() && I1.channels() == 1);
     CV_Assert(I0.sameSize(I1));
+    CV_Assert((I0.depth() == CV_8U && I1.depth() == CV_8U) || (I0.depth() == CV_32F && I1.depth() == CV_32F));
     CV_Assert(!flow_u.empty() && flow_u.depth() == CV_32F && flow_u.channels() == 1);
     CV_Assert(!flow_v.empty() && flow_v.depth() == CV_32F && flow_v.channels() == 1);
     CV_Assert(I0.sameSize(flow_u));
