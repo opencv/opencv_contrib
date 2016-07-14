@@ -70,7 +70,9 @@ namespace dnn
 
         inline bool is1x1() const;
         virtual void computeInpOutShape(const Blob &inpBlob);
-        void im2col(Blob &inpBlob, int imNum, int cnGroup, Blob &colBlob);
+
+        void im2col(const  Mat &srcImg,  Mat &dstCol);
+        void im2col(const UMat &srcImg, UMat &dstCol);
 
     public:
         ConvolutionLayer() {}

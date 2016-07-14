@@ -44,6 +44,7 @@
 #include <iostream>
 #include "npy_blob.hpp"
 #include <opencv2/dnn/all_layers.hpp>
+#include <opencv2/ts/ocl_test.hpp>
 
 namespace cvtest
 {
@@ -57,7 +58,7 @@ static String _tf(TString filename)
     return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
 }
 
-static void testLayer(String basename, bool useCaffeModel = false, bool useCommonInputBlob = true)
+void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool useCommonInputBlob = true)
 {
     String prototxt = _tf(basename + ".prototxt");
     String caffemodel = _tf(basename + ".caffemodel");
@@ -86,58 +87,62 @@ static void testLayer(String basename, bool useCaffeModel = false, bool useCommo
 
 TEST(Layer_Test_Softmax, Accuracy)
 {
-     testLayer("layer_softmax");
+     testLayerUsingCaffeModels("layer_softmax");
+}
+OCL_TEST(Layer_Test_Softmax, Accuracy)
+{
+     OCL_ON(testLayerUsingCaffeModels("layer_softmax"));
+     OCL_OFF();
 }
 
 TEST(Layer_Test_LRN_spatial, Accuracy)
 {
-     testLayer("layer_lrn_spatial");
+     testLayerUsingCaffeModels("layer_lrn_spatial");
 }
 
 TEST(Layer_Test_LRN_channels, Accuracy)
 {
-     testLayer("layer_lrn_channels");
+     testLayerUsingCaffeModels("layer_lrn_channels");
 }
 
 TEST(Layer_Test_Convolution, Accuracy)
 {
-     testLayer("layer_convolution", true);
+     testLayerUsingCaffeModels("layer_convolution", true);
 }
-
-//TODO: move this test into separate file
-TEST(Layer_Test_Convolution, AccuracyOCL)
+OCL_TEST(Layer_Test_Convolution, Accuracy)
 {
-    if (cv::ocl::haveOpenCL())
-    {
-        cv::ocl::setUseOpenCL(true);
-        testLayer("layer_convolution", true);
-        cv::ocl::setUseOpenCL(false);
-    }
-}
-
-TEST(Layer_Test_InnerProduct, Accuracy)
-{
-     testLayer("layer_inner_product", true);
-}
-
-TEST(Layer_Test_Pooling_max, Accuracy)
-{
-     testLayer("layer_pooling_max");
-}
-
-TEST(Layer_Test_Pooling_ave, Accuracy)
-{
-     testLayer("layer_pooling_ave");
+     OCL_ON(testLayerUsingCaffeModels("layer_convolution", true));
+     OCL_OFF();
 }
 
 TEST(Layer_Test_DeConvolution, Accuracy)
 {
-     testLayer("layer_deconvolution", true, false);
+     testLayerUsingCaffeModels("layer_deconvolution", true, false);
+}
+OCL_TEST(Layer_Test_DeConvolution, Accuracy)
+{
+     OCL_ON(testLayerUsingCaffeModels("layer_deconvolution", true, false););
+     OCL_OFF();
+}
+
+TEST(Layer_Test_InnerProduct, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_inner_product", true);
+}
+
+TEST(Layer_Test_Pooling_max, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_pooling_max");
+}
+
+TEST(Layer_Test_Pooling_ave, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_pooling_ave");
 }
 
 TEST(Layer_Test_MVN, Accuracy)
 {
-     testLayer("layer_mvn");
+     testLayerUsingCaffeModels("layer_mvn");
 }
 
 TEST(Layer_Test_Reshape, squeeze)

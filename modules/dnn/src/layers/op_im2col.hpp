@@ -148,7 +148,7 @@ void col2im_cpu(const Dtype* data_col,
 }
 
 #ifdef HAVE_OPENCL
-void im2col_ocl(UMat &img,
+void im2col_ocl(const UMat &img,
                 int channels, int height, int width,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,

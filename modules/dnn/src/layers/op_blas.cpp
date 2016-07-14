@@ -16,10 +16,7 @@ void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double b
     if (C.isMat())
         gemmCPU(A.getMat(), B.getMat(), alpha, C.getMatRef(), beta, flags);
     else
-    {
         cv::gemm(A, B, alpha, C, beta, C, flags);
-        std::cout << "OCL gemm\n";
-    }
 }
 
 inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool isTrans)

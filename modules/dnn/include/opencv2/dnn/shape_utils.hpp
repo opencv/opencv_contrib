@@ -39,46 +39,97 @@
 //
 //M*/
 
-#include "../precomp.hpp"
-#include "opencl_kernels_dnn.hpp"
-#include "op_im2col.hpp"
+#ifndef __OPENCV_DNN_DNN_SHAPE_UTILS_HPP__
+#define __OPENCV_DNN_DNN_SHAPE_UTILS_HPP__
 
-namespace cv
+#include <opencv2/core.hpp>
+#include <ostream>
+
+namespace cv {
+namespace dnn {
+
+std::ostream &operator<< (std::ostream &s, cv::Range &r)
 {
-namespace dnn
-{
-
-#ifdef HAVE_OPENCL
-void im2col_ocl(const UMat &img,
-                int channels, int height, int width,
-                int kernel_h, int kernel_w,
-                int pad_h, int pad_w,
-                int stride_h, int stride_w,
-                UMat &col)
-{
-    int h_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-    int w_out = (width + 2 * pad_w - kernel_w) / stride_w + 1;
-
-    CV_Assert(img.isContinuous() && col.isContinuous());
-    CV_Assert(img.total() == (size_t)channels * height * width);
-    CV_Assert(col.total() == (size_t)channels * kernel_h * kernel_w * h_out * w_out);
-
-    ocl::Kernel im2col_ker("im2col", ocl::dnn::im2col_oclsrc);
-    CV_Assert(!im2col_ker.empty());
-
-    im2col_ker.args(ocl::KernelArg::PtrReadOnly(img), (int)img.offset,
-             channels, height, width,
-             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
-             h_out, w_out,
-             ocl::KernelArg::PtrWriteOnly(col), (int)col.offset
-        );
-
-    size_t localSize = ocl::Device::getDefault().maxWorkGroupSize();
-    size_t globalSize = (size_t)channels * h_out * w_out;
-
-    CV_Assert(im2col_ker.run(1, &globalSize, &localSize, true));
+    return s << "[" << r.start << ", " << r.end << ")";
 }
+
+//Reshaping
+
+template<typename Mat>
+void reshape(Mat &m, const BlobShape &shape)
+{
+    m = m.reshape(1, shape.dims(), shape.ptr());
+}
+
+template<typename Mat>
+Mat reshaped(const Mat &m, const BlobShape &shape)
+{
+    return m.reshape(1, shape.dims(), shape.ptr());
+}
+
+
+//Slicing
+
+struct _Range : public cv::Range
+{
+    _Range(const Range &r) : cv::Range(r) {}
+    _Range(int start, int size = 1) : cv::Range(start, start + size) {}
+};
+
+template<typename Mat>
+Mat slice(const Mat &m, const _Range &r0)
+{
+    //CV_Assert(m.dims >= 1);
+    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    for (int i = 1; i < m.dims; i++)
+        ranges[i] = Range::all();
+    ranges[0] = r0;
+    return m(&ranges[0]);
+}
+
+template<typename Mat>
+Mat slice(const Mat &m, const _Range &r0, const _Range &r1)
+{
+    CV_Assert(m.dims >= 2);
+    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    for (int i = 2; i < m.dims; i++)
+        ranges[i] = Range::all();
+    ranges[0] = r0;
+    ranges[1] = r1;
+//    for (int i = 0; i < m.dims; i++)
+//        std::cout << ranges[i] << "\n";
+    return m(&ranges[0]);
+}
+
+template<typename Mat>
+Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2)
+{
+    CV_Assert(m.dims <= 3);
+    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    for (int i = 3; i < m.dims; i++)
+        ranges[i] = Range::all();
+    ranges[0] = r0;
+    ranges[1] = r1;
+    ranges[2] = r2;
+    return m(&ranges[0]);
+}
+
+template<typename Mat>
+Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, const _Range &r3)
+{
+    CV_Assert(m.dims <= 4);
+    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    for (int i = 4; i < m.dims; i++)
+        ranges[i] = Range::all();
+    ranges[0] = r0;
+    ranges[1] = r1;
+    ranges[2] = r2;
+    ranges[3] = r3;
+    return m(&ranges[0]);
+}
+
+}
+
+}
+
 #endif
-
-}
-}
