@@ -71,7 +71,7 @@ class NormalizeBBoxLayer : public Layer
     size_t _channelSize;
     size_t _imageSize;
 
-    static const size_t _num_axes = 4;
+    static const size_t _numAxes = 4;
 
 public:
     NormalizeBBoxLayer(LayerParams &params);

@@ -76,7 +76,7 @@ void NormalizeBBoxLayer::checkInputs(const std::vector<Blob*> &inputs)
     CV_Assert(inputs.size() > 0);
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _num_axes; j++)
+        for (size_t j = 0; j < _numAxes; j++)
         {
             CV_Assert(inputs[i]->shape[j] == inputs[0]->shape[j]);
         }

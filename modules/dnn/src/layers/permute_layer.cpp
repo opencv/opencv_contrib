@@ -57,7 +57,7 @@ PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
     }
     else
     {
-        for (size_t i = 0; i < _num_axes; i++)
+        for (size_t i = 0; i < _numAxes; i++)
         {
             size_t current_order = params.order(i);
 
@@ -69,7 +69,7 @@ PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
         }
 
         _needsPermute = false;
-        for (int i = 0; i < _num_axes; ++i)
+        for (int i = 0; i < _numAxes; ++i)
         {
             if (_order[i] != i)
             {
@@ -86,7 +86,7 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
 
     _oldDimensionSize = inputs[0]->shape();
 
-    for (size_t i = 0; i < _num_axes; i++)
+    for (size_t i = 0; i < _numAxes; i++)
     {
         _newDimensionSize[i] = _oldDimensionSize[order[i]];
     }
@@ -99,8 +99,8 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
         outputs[i].create(BlobShape(_newDimensionSize));
     }
 
-    _oldStride.resize(_num_axes);
-    _newStride.resize(_num_axes);
+    _oldStride.resize(_numAxes);
+    _newStride.resize(_numAxes);
 
     _oldStride[3] = 1;
     _newStride[3] = 1;
@@ -135,7 +135,7 @@ void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
             int oldPosition = 0;
             int newPosition = i;
 
-            for (int j = 0; j < _num_axes; ++j)
+            for (int j = 0; j < _numAxes; ++j)
             {
                 oldPosition += (newPosition / _newStride[j]) * _oldStride[_order[j]];
                 newPosition %= _newStride[j];

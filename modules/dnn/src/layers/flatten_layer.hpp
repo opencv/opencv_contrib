@@ -52,7 +52,7 @@ class FlattenLayer : public Layer
     size_t _startAxis;
     size_t _endAxis;
 
-    static const size_t _num_axes = 4;
+    static const size_t _numAxes = 4;
 
 public:
     FlattenLayer(LayerParams &params);

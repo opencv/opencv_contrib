@@ -71,7 +71,7 @@ FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
     }
     else
     {
-        _endAxis = _num_axes + params.end_axis;
+        _endAxis = _numAxes + params.end_axis;
     }
 }
 
@@ -80,7 +80,7 @@ void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
     CV_Assert(inputs.size() > 0);
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _num_axes; j++)
+        for (size_t j = 0; j < _numAxes; j++)
         {
             CV_Assert(inputs[i]->shape[j] == inputs[0]->shape[j]);
         }
@@ -110,7 +110,7 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
         outputShape[i] = inputs[0]->shape()[i - interval];
     }
     outputShape[_endAxis] = flattenedDimensionSize;
-    for (size_t i = _endAxis + 1; i < _num_axes; i++)
+    for (size_t i = _endAxis + 1; i < _numAxes; i++)
     {
         outputShape[i] = inputs[0]->shape()[i];
     }
