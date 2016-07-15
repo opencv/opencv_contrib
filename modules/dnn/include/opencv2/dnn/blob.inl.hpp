@@ -456,6 +456,12 @@ inline Mat Blob::getPlane(int n, int cn)
     return Mat(dims() - 2, sizes() + 2, type(), ptr(n, cn));
 }
 
+inline Mat Blob::getPlanes(int n)
+{
+    CV_Assert(dims() > 3);
+    return Mat(dims() - 1, sizes() + 1, type(), ptr(n));
+}
+
 inline int Blob::cols() const
 {
     return xsize(3);
