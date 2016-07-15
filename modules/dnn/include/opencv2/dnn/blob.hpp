@@ -209,6 +209,13 @@ namespace dnn
          */
         Mat getPlane(int n, int cn);
 
+        /** @brief Returns slice of first dimension.
+         *  @details The behaviour is similar to getPlane(), but returns all
+         * channels * rows * cols values, corresponding to the n-th value
+         * of the first dimension.
+         */
+        Mat getPlanes(int n);
+
         /* Shape getters of 4-dimensional blobs. */
         int cols() const;       //!< Returns size of the fourth axis blob.
         int rows() const;       //!< Returns size of the thrid  axis blob.

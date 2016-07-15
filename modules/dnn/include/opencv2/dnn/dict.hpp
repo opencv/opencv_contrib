@@ -111,7 +111,7 @@ class CV_EXPORTS Dict
 public:
 
     //! Checks a presence of the @p key in the dictionary.
-    bool has(const String &key);
+    bool has(const String &key) const;
 
     //! If the @p key in the dictionary then returns pointer to its value, else returns NULL.
     DictValue *ptr(const String &key);
