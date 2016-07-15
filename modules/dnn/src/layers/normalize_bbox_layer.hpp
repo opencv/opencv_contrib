@@ -59,8 +59,8 @@ class NormalizeBBoxLayer : public Layer
 
     Blob _scale;
 
+    float _eps;
     bool _across_spatial;
-    double _eps;
     bool _channel_shared;
 
     size_t _num;
@@ -72,13 +72,21 @@ class NormalizeBBoxLayer : public Layer
     size_t _imageSize;
 
     static const size_t _numAxes = 4;
+    static const std::string _layerName;
 
 public:
     NormalizeBBoxLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void checkParameter(const LayerParams &params, const string &parameterName);
+
     void checkInputs(const std::vector<Blob*> &inputs);
+
+    template<typename T>
+    T getParameter(const LayerParams &params, const std::string &parameterName,
+                   const size_t &idx = 0);
+
+    DictValue getParameterDict(const LayerParams &params,
+                               const std::string &parameterName);
 };
 }
 }

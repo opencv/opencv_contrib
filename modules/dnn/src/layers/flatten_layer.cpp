@@ -50,28 +50,49 @@ namespace cv
 namespace dnn
 {
 
-void FlattenLayer::checkParameter(const LayerParams &params, const string &parameterName)
+const std::string FlattenLayer::_layerName = std::string("Flatten");
+
+DictValue FlattenLayer::getParameterDict(const LayerParams &params,
+                                          const std::string &parameterName)
 {
     if (!params.has(parameterName))
     {
-        CV_Error(Error::StsBadArg, "Flatten layer parameter does not contain " + parameterName + " index.");
+        std::string message = _layerName;
+        message += " layer parameter does not contain ";
+        message += parameterName;
+        message += " index.";
+        CV_Error(Error::StsBadArg, message);
     }
+
+    DictValue parameter = params.get(parameterName);
+    if(parameter.size() != 1)
+    {
+        std::string message = parameterName;
+        message += " field in ";
+        message += _layerName;
+        message += " layer parameter is required";
+        CV_Error(Error::StsBadArg, message);
+    }
+
+    return parameter;
+}
+
+template<typename T>
+T FlattenLayer::getParameter(const LayerParams &params,
+                              const std::string &parameterName,
+                              const size_t &idx)
+{
+    return getParameterDict(params, parameterName).get<T>(idx);
 }
 
 FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
 {
-    checkParameter(params, "start_axis");
-    checkParameter(params, "end_axis");
+    _startAxis = getParameter<size_t>(params, "start_axis");
+    _endAxis = getParameter<size_t>(params, "end_axis");
 
-    _startAxis = params.start_axis;
-
-    if(params.end_axis > 0)
+    if(_endAxis <= 0)
     {
-        _endAxis = params.end_axis;
-    }
-    else
-    {
-        _endAxis = _numAxes + params.end_axis;
+        _endAxis += _numAxes;
     }
 }
 
@@ -82,7 +103,7 @@ void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
     {
         for (size_t j = 0; j < _numAxes; j++)
         {
-            CV_Assert(inputs[i]->shape[j] == inputs[0]->shape[j]);
+            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
         }
     }
 }
@@ -125,10 +146,7 @@ void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
 {
     for (size_t j = 0; j < inputs.size(); j++)
     {
-        float *srcData = inputs[j]->ptrf();
-        float *dstData = outputs[j]->ptrf();
-
-        dstData = srcData;
+        outputs[j].matRef() = inputs[j]->matRef();
     }
 }
 }

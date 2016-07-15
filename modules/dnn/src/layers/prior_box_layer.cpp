@@ -51,40 +51,58 @@ namespace cv
 namespace dnn
 {
 
-void PriorBoxLayer::checkParameter(const LayerParams &params, const string &parameterName)
+const std::string PriorBoxLayer::_layerName = std::string("PriorBox");
+
+DictValue PriorBoxLayer::getParameterDict(const LayerParams &params,
+                                          const std::string &parameterName)
 {
     if (!params.has(parameterName))
     {
-        CV_Error(Error::StsBadArg, "PriorBox layer parameter does not contain " + parameterName + " index.");
+        std::string message = _layerName;
+        message += " layer parameter does not contain ";
+        message += parameterName;
+        message += " index.";
+        CV_Error(Error::StsBadArg, message);
     }
+
+    DictValue parameter = params.get(parameterName);
+    if(parameter.size() != 1)
+    {
+        std::string message = parameterName;
+        message += " field in ";
+        message += _layerName;
+        message += " layer parameter is required";
+        CV_Error(Error::StsBadArg, message);
+    }
+
+    return parameter;
 }
 
-PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
+template<typename T>
+T PriorBoxLayer::getParameter(const LayerParams &params,
+                              const std::string &parameterName,
+                              const size_t &idx)
 {
-    checkParameter(params, "min_size");
+    return getParameterDict(params, parameterName).get<T>(idx);
+}
 
-    _minSize = params.min_size();
-    CV_Assert(_minSize > 0);
-
-    _aspectRatios.clear();
-    _aspectRatios.push_back(1.);
-
-    _flip = params.flip();
-
-    for (int i = 0; i < params.aspect_ratio_size(); ++i)
+void PriorBoxLayer::getAspectRatios(const LayerParams &params)
+{
+    DictValue aspectRatioParameter = getParameterDict(params, "aspect_ratio");
+    for (int i = 0; i < aspectRatioParameter.size(); ++i)
     {
-        float aspectRatio = params.aspect_ratio(i);
-        bool already_exist = false;
+        float aspectRatio = aspectRatioParameter.get<float>(i);
+        bool alreadyExists = false;
 
-        for (int j = 0; j < _aspectRatios.size(); ++j)
+        for (size_t j = 0; j < _aspectRatios.size(); ++j)
         {
             if (fabs(aspectRatio - _aspectRatios[j]) < 1e-6)
             {
-                already_exist = true;
+                alreadyExists = true;
                 break;
             }
         }
-        if (!already_exist)
+        if (!alreadyExists)
         {
             _aspectRatios.push_back(aspectRatio);
             if (_flip)
@@ -93,21 +111,12 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
             }
         }
     }
+}
 
-    _numPriors = _aspectRatios.size();
-
-    _maxSize = -1;
-    if (params.has(max_size))
-    {
-        _maxSize = params.max_size();
-        CV_Assert(_maxSize > _minSize);
-
-        _numPriors += 1;
-    }
-
-    _clip = params.clip();
-
-    int varianceSize = params.variance_size();
+void PriorBoxLayer::getVariance(const LayerParams &params)
+{
+    DictValue varianceParameter = getParameterDict(params, "variance");
+    int varianceSize = varianceParameter.size();
     if (varianceSize > 1)
     {
         // Must and only provide 4 variance.
@@ -115,7 +124,7 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
 
         for (int i = 0; i < varianceSize; ++i)
         {
-            float variance = params.variance(i);
+            float variance = varianceParameter.get<float>(i);
             CV_Assert(variance > 0);
             _variance.push_back(variance);
         }
@@ -124,7 +133,7 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
     {
         if (varianceSize == 1)
         {
-            float variance = params.variance(0);
+            float variance = varianceParameter.get<float>(0);
             CV_Assert(variance > 0);
             _variance.push_back(variance);
         }
@@ -136,15 +145,41 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
     }
 }
 
+PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
+{
+    _minSize = getParameter<size_t>(params, "min_size");
+    CV_Assert(_minSize > 0);
+
+    _flip = getParameter<bool>(params, "flip");
+    _clip = getParameter<bool>(params, "clip");
+
+    _aspectRatios.clear();
+    _aspectRatios.push_back(1.);
+
+    getAspectRatios(params);
+    getVariance(params);
+
+    _numPriors = _aspectRatios.size();
+
+    _maxSize = -1;
+    if (params.has("max_size"))
+    {
+        _maxSize = params.get("max_size").get<float>(0);
+        CV_Assert(_maxSize > _minSize);
+
+        _numPriors += 1;
+    }
+}
+
 void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 2);
 
-    _layerWidth = inputs[0]->width();
-    _layerHeight = inputs[0]->height();
+    _layerWidth = inputs[0]->cols();
+    _layerHeight = inputs[0]->rows();
 
-    _imageWidth = inputs[1]->width();
-    _imageHeight = inputs[1]->height();
+    _imageWidth = inputs[1]->cols();
+    _imageHeight = inputs[1]->rows();
 
     _stepX = static_cast<float>(_imageWidth) / _layerWidth;
     _stepY = static_cast<float>(_imageHeight) / _layerHeight;
@@ -171,9 +206,9 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
     _boxWidth = _boxHeight = _minSize;
 
     int idx = 0;
-    for (int h = 0; h < _layerHeight; ++h)
+    for (size_t h = 0; h < _layerHeight; ++h)
     {
-        for (int w = 0; w < _layerWidth; ++w)
+        for (size_t w = 0; w < _layerWidth; ++w)
         {
             float center_x = (w + 0.5) * _stepX;
             float center_y = (h + 0.5) * _stepY;
@@ -201,7 +236,7 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
             }
 
             // rest of priors
-            for (int r = 0; r < _aspectRatios.size(); ++r)
+            for (size_t r = 0; r < _aspectRatios.size(); ++r)
             {
                 float ar = _aspectRatios[r];
                 if (fabs(ar - 1.) < 1e-6)
@@ -224,7 +259,7 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
     // clip the prior's coordidate such that it is within [0, 1]
     if (_clip)
     {
-        for (int d = 0; d < _outChannelSize; ++d)
+        for (size_t d = 0; d < _outChannelSize; ++d)
         {
             outputPtr[d] = std::min<float>(std::max<float>(outputPtr[d], 0.), 1.);
         }
@@ -233,17 +268,17 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
     outputPtr = outputs[0].ptrf(0, 1);
     if(_variance.size() == 1)
     {
-        Mat secondChannel(outputs[0].height(), outputs[0].width(), CV_32F, outputPtr);
+        Mat secondChannel(outputs[0].rows(), outputs[0].cols(), CV_32F, outputPtr);
         secondChannel.setTo(Scalar(_variance[0]));
     }
     else
     {
         int count = 0;
-        for (int h = 0; h < _layerHeight; ++h)
+        for (size_t h = 0; h < _layerHeight; ++h)
         {
-            for (int w = 0; w < _layerWidth; ++w)
+            for (size_t w = 0; w < _layerWidth; ++w)
             {
-                for (int i = 0; i < _numPriors; ++i)
+                for (size_t i = 0; i < _numPriors; ++i)
                 {
                     for (int j = 0; j < 4; ++j)
                     {
