@@ -61,6 +61,10 @@ class PermuteLayer : public Layer
 
     static const size_t _numAxes = 4;
 
+    void checkCurrentOrder(int currentOrder);
+    void checkNeedForPermutation();
+    void computeStrides();
+
 public:
     PermuteLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);

@@ -49,63 +49,71 @@ namespace cv
 {
 namespace dnn
 {
+void PermuteLayer::checkCurrentOrder(int currentOrder)
+{
+    if(currentOrder < 0 || currentOrder > 3)
+    {
+        CV_Error(
+            Error::StsBadArg,
+            "Orders of dimensions in Permute layer parameter"
+            "must be in [0...3] interval");
+    }
+
+    if(std::find(_order.begin(), _order.end(), currentOrder) != _order.end())
+    {
+        CV_Error(Error::StsBadArg,
+                 "Permute layer parameter contains duplicated orders.");
+    }
+}
+
+void PermuteLayer::checkNeedForPermutation()
+{
+    _needsPermute = false;
+    for (size_t i = 0; i < _numAxes; ++i)
+    {
+        if (_order[i] != i)
+        {
+            _needsPermute = true;
+            break;
+        }
+    }
+}
+
 PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
 {
     if (!params.has("order"))
     {
         _needsPermute = false;
+        return;
     }
-    else
+
+    DictValue paramOrder = params.get("order");
+    if(paramOrder.size() != 4)
     {
-        for (size_t i = 0; i < _numAxes; i++)
-        {
-            size_t current_order = params.order(i);
-
-            if(std::find(_order.begin(), _order.end(), current_order) != _order.end())
-            {
-                CV_Error(Error::StsBadArg, "Permute layer parameter contains duplicated orders.");
-            }
-            _order.push_back(current_order);
-        }
-
-        _needsPermute = false;
-        for (int i = 0; i < _numAxes; ++i)
-        {
-            if (_order[i] != i)
-            {
-                _needsPermute = true;
-                break;
-            }
-        }
+        CV_Error(
+            Error::StsBadArg,
+            "4 orders of dimensions in Permute layer parameter is required");
     }
-}
-
-void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    CV_Assert(inputs.size() > 0);
-
-    _oldDimensionSize = inputs[0]->shape();
 
     for (size_t i = 0; i < _numAxes; i++)
     {
-        _newDimensionSize[i] = _oldDimensionSize[order[i]];
+        int currentOrder = paramOrder.get<int>(i);
+        checkCurrentOrder(currentOrder);
+        _order.push_back(currentOrder);
     }
 
-    outputs.resize(inputs.size());
+    checkNeedForPermutation();
+}
 
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        CV_Assert(inputs[i]->rows() == _oldDimensionSize[2] && inputs[i]->cols() == _oldDimensionSize[3]);
-        outputs[i].create(BlobShape(_newDimensionSize));
-    }
-
+void PermuteLayer::computeStrides()
+{
     _oldStride.resize(_numAxes);
     _newStride.resize(_numAxes);
 
     _oldStride[3] = 1;
     _newStride[3] = 1;
 
-    for(size_t i = 2; i >= 0; i--)
+    for(int i = 2; i >= 0; i--)
     {
         _oldStride[i] = _oldStride[i - 1] * _oldDimensionSize[i - 1];
         _newStride[i] = _newStride[i - 1] * _newDimensionSize[i - 1];
@@ -114,28 +122,53 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     _count = _oldStride[0] * _oldDimensionSize[0];
 }
 
+void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    if(!_needsPermute)
+    {
+        return;
+    }
+
+    CV_Assert(inputs.size() > 0);
+    outputs.resize(inputs.size());
+
+    _oldDimensionSize = inputs[0]->shape();
+    for (size_t i = 0; i < _numAxes; i++)
+    {
+        _newDimensionSize[i] = _oldDimensionSize[_order[i]];
+    }
+
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        CV_Assert(inputs[i]->rows() == _oldDimensionSize[2] && inputs[i]->cols() == _oldDimensionSize[3]);
+        outputs[i].create(BlobShape(_newDimensionSize));
+    }
+
+    computeStrides();
+}
+
 void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     if(!_needsPermute)
     {
-        float *srcData = inputs[j]->ptrf();
-        float *dstData = outputs[j]->ptrf();
-
-        dstData = srcData;
+        for (size_t j = 0; j < inputs.size(); j++)
+        {
+            outputs[j].matRef() = inputs[j]->matRef();
+        }
         return;
     }
 
     for (size_t j = 0; j < inputs.size(); j++)
     {
         float *srcData = inputs[j]->ptrf();
-        float *dstData = outputs[j]->ptrf();
+        float *dstData = outputs[j].ptrf();
 
-        for (int i = 0; i < _count; ++i)
+        for (size_t i = 0; i < _count; ++i)
         {
             int oldPosition = 0;
             int newPosition = i;
 
-            for (int j = 0; j < _numAxes; ++j)
+            for (size_t j = 0; j < _numAxes; ++j)
             {
                 oldPosition += (newPosition / _newStride[j]) * _oldStride[_order[j]];
                 newPosition %= _newStride[j];
