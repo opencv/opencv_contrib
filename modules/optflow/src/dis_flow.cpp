@@ -65,6 +65,9 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     int patch_stride;
     int grad_descent_iter;
     int variational_refinement_iter;
+    float variational_refinement_alpha;
+    float variational_refinement_gamma;
+    float variational_refinement_delta;
     bool use_mean_normalization;
     bool use_spatial_propagation;
 
@@ -84,6 +87,13 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     void setGradientDescentIterations(int val) { grad_descent_iter = val; }
     int getVariationalRefinementIterations() const { return variational_refinement_iter; }
     void setVariationalRefinementIterations(int val) { variational_refinement_iter = val; }
+    float getVariationalRefinementAlpha() const { return variational_refinement_alpha; }
+    void setVariationalRefinementAlpha(float val) { variational_refinement_alpha = val; }
+    float getVariationalRefinementDelta() const { return variational_refinement_delta; }
+    void setVariationalRefinementDelta(float val) { variational_refinement_delta = val; }
+    float getVariationalRefinementGamma() const { return variational_refinement_gamma; }
+    void setVariationalRefinementGamma(float val) { variational_refinement_gamma = val; }
+
     bool getUseMeanNormalization() const { return use_mean_normalization; }
     void setUseMeanNormalization(bool val) { use_mean_normalization = val; }
     bool getUseSpatialPropagation() const { return use_spatial_propagation; }
@@ -161,6 +171,10 @@ DISOpticalFlowImpl::DISOpticalFlowImpl()
     patch_stride = 4;
     grad_descent_iter = 16;
     variational_refinement_iter = 5;
+    variational_refinement_alpha = 20.f;
+    variational_refinement_gamma = 10.f;
+    variational_refinement_delta = 5.f;
+
     border_size = 16;
     use_mean_normalization = true;
     use_spatial_propagation = true;
@@ -234,9 +248,9 @@ void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1)
             spatialGradient(I0s[i], I0xs[i], I0ys[i]);
             Ux[i].create(cur_rows, cur_cols);
             Uy[i].create(cur_rows, cur_cols);
-            variational_refinement_processors[i]->setAlpha(20.0f);
-            variational_refinement_processors[i]->setDelta(5.0f);
-            variational_refinement_processors[i]->setGamma(10.0f);
+            variational_refinement_processors[i]->setAlpha(variational_refinement_alpha);
+            variational_refinement_processors[i]->setDelta(variational_refinement_delta);
+            variational_refinement_processors[i]->setGamma(variational_refinement_gamma);
             variational_refinement_processors[i]->setSorIterations(5);
             variational_refinement_processors[i]->setFixedPointIterations(variational_refinement_iter);
         }
