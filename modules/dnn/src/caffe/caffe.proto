@@ -98,19 +98,6 @@ message PermuteParameter {
   repeated uint32 order = 1;
 }
 
-/// Message that stores parameters used by FlattenLayer
-message FlattenParameter {
-  // The first axis to flatten: all preceding axes are retained in the output.
-  // May be negative to index from the end (e.g., -1 for the last axis).
-  optional int32 axis = 1 [default = 1];
-
-  // The last axis to flatten: all following axes are retained in the output.
-  // May be negative to index from the end (e.g., the default -1 for the last
-  // axis).
-  optional int32 end_axis = 2 [default = -1];
-}
-
-
 // Message that stores parameters used by NormalizeBBoxLayer
 message NormalizeBBoxParameter {
   optional bool across_spatial = 1 [default = true];
@@ -146,18 +133,6 @@ message PriorBoxParameter {
   repeated float variance = 6;
 }
 
-// The normalized bounding box [0, 1] w.r.t. the input image size.
-message NormalizedBBox {
-  optional float xmin = 1;
-  optional float ymin = 2;
-  optional float xmax = 3;
-  optional float ymax = 4;
-  optional int32 label = 5;
-  optional bool difficult = 6;
-  optional float score = 7;
-  optional float size = 8;
-}
-
 // Message that store parameters used by DetectionOutputLayer
 message DetectionOutputParameter {
   // Number of classes to be predicted. Required!
@@ -184,6 +159,13 @@ message DetectionOutputParameter {
   optional bool visualize = 10 [default = false];
   // The threshold used to visualize the detection results.
   optional float visualize_threshold = 11;
+}
+
+message NonMaximumSuppressionParameter {
+  // Threshold to be used in nms.
+  optional float nms_threshold = 1 [default = 0.3];
+  // Maximum number of results to be kept.
+  optional int32 top_k = 2;
 }
 
 message Datum {
@@ -484,13 +466,12 @@ message LayerParameter {
   optional ConvolutionParameter convolution_param = 106;
   optional CropParameter crop_param = 137;
   optional DataParameter data_param = 107;
-  optional DetectionOutputParameter detection_output_param = 142;
+  optional DetectionOutputParameter detection_output_param = 141;
   optional DropoutParameter dropout_param = 108;
   optional DummyDataParameter dummy_data_param = 109;
   optional EltwiseParameter eltwise_param = 110;
   optional ExpParameter exp_param = 111;
   optional FlattenParameter flatten_param = 135;
-  optional FlattenParameter flatten_param = 139;
   optional HDF5DataParameter hdf5_data_param = 112;
   optional HDF5OutputParameter hdf5_output_param = 113;
   optional HingeLossParameter hinge_loss_param = 114;
@@ -501,12 +482,12 @@ message LayerParameter {
   optional LRNParameter lrn_param = 118;
   optional MemoryDataParameter memory_data_param = 119;
   optional MVNParameter mvn_param = 120;
-  optional NormalizeBBoxParameter normalize_bbox_param = 140;
+  optional NormalizeBBoxParameter normalize_bbox_param = 139;
   optional PermuteParameter permute_param = 138;
   optional PoolingParameter pooling_param = 121;
   optional PowerParameter power_param = 122;
   optional PReLUParameter prelu_param = 131;
-  optional PriorBoxParameter prior_box_param = 141;
+  optional PriorBoxParameter prior_box_param = 140;
   optional PythonParameter python_param = 130;
   optional ReductionParameter reduction_param = 136;
   optional ReLUParameter relu_param = 123;
