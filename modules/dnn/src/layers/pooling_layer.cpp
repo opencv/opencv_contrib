@@ -60,13 +60,14 @@ PoolingLayerImpl::PoolingLayerImpl()
     globalPooling = false;
 }
 
-PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_)
+PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_, const String &padMode_)
 {
     globalPooling = false;
     type = type_;
     kernel = kernel_;
     pad = pad_;
     stride = stride_;
+    padMode = padMode_;
 }
 
 void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -251,26 +252,36 @@ void PoolingLayerImpl::avePooling_cpu(Blob &src, Blob &dst)
 
 void PoolingLayerImpl::computeOutputShape(Size inpSz)
 {
-    //Yeah, something strange Caffe scheme-)
-    out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height - kernel.height) / stride.height)) + 1;
-    out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width - kernel.width) / stride.width)) + 1;
+    if (padMode.empty()) {
+        //Yeah, something strange Caffe scheme-)
+        out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height -
+                                                              kernel.height) / stride.height)) + 1;
+        out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width -
+                                                             kernel.width) / stride.width)) + 1;
 
-    if (pad.height || pad.width)
+        if (pad.height || pad.width)
+        {
+            // If we have padding, ensure that the last pooling starts strictly
+            // inside the image (instead of at the padding); otherwise clip the last.
+            if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
+                --out.height;
+            if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
+                --out.width;
+            CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
+            CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+        }
+    }
+    else
     {
-        // If we have padding, ensure that the last pooling starts strictly
-        // inside the image (instead of at the padding); otherwise clip the last.
-        if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
-            --out.height;
-        if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
-            --out.width;
-        CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
-        CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+        getConvPoolOutParams(inpSz.height, inpSz.width, kernel, stride, pad,
+                             padMode, out.height, out.width);
     }
 }
 
-Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad)
+Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad,
+                                       const String& padMode)
 {
-    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad));
+    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad, padMode));
 }
 
 Ptr<PoolingLayer> PoolingLayer::createGlobal(int type)

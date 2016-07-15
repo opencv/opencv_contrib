@@ -15,7 +15,9 @@ namespace dnn
 static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParams &params)
 {
     l->setParamsFrom(params);
-    getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height, l->pad.width, l->stride.height, l->stride.width, l->dilation.height, l->dilation.width);
+    getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height,
+                               l->pad.width, l->stride.height, l->stride.width, l->dilation.height,
+                               l->dilation.width, l->padMode);
 
     bool bias = params.get<bool>("bias_term", true);
     int numOutput = params.get<int>("num_output");
@@ -47,6 +49,7 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
     int type = PoolingLayer::MAX;
     Size kernel, stride, pad;
     bool globalPooling;
+    cv::String padMode;
 
     if (params.has("pool"))
     {
@@ -61,11 +64,12 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
             CV_Error(Error::StsBadArg, "Unknown pooling type \"" + pool + "\"");
     }
 
-    getPoolingKernelParams(params, kernel.height, kernel.width, globalPooling, pad.height, pad.width, stride.height, stride.width);
+    getPoolingKernelParams(params, kernel.height, kernel.width, globalPooling,
+                           pad.height, pad.width, stride.height, stride.width, padMode);
     //getCaffeConvParams(params, kernel, pad, stride);
 
     if (!globalPooling)
-        return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
+        return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad, padMode));
     else
         return Ptr<Layer>(PoolingLayer::createGlobal(type));
 }
@@ -118,8 +122,10 @@ Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams& params)
 
     double alpha = params.get<double>("alpha", 1);
     double beta = params.get<double>("beta", 0.75);
+    double bias = params.get<double>("bias", 1);
+    bool normBySize = params.get<bool>("norm_by_size", true);
 
-    return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta));
+    return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta, bias, normBySize));
 }
 
 template<>
@@ -139,6 +145,7 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
 {
     int axis = params.get<int>("axis", 0);
     int numAxes = params.get<int>("num_axes", -1);
+    bool enableReordering = params.get<bool>("reorder_dims", false);
     CV_Assert(numAxes >= -1);
     Range applyingRange = (numAxes == -1) ? Range(axis, INT_MAX) : Range(axis, axis + numAxes);
 
@@ -153,7 +160,7 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     else
         newShape = Shape::all(0);
 
-    return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange));
+    return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange, enableReordering));
 }
 
 template<>

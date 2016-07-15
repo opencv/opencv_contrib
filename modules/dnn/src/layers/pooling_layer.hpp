@@ -1,4 +1,4 @@
-﻿/*M///////////////////////////////////////////////////////////////////////////////////////
+/*M///////////////////////////////////////////////////////////////////////////////////////
 //
 //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
@@ -69,7 +69,7 @@ class PoolingLayerImpl : public PoolingLayer
 public:
 
     PoolingLayerImpl();
-    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
+    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
@@ -77,4 +77,5 @@ public:
 
 }
 }
+
 #endif

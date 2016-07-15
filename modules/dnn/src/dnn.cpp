@@ -159,6 +159,7 @@ struct Net::Impl
         inpl.name = "_input";
         inpl.type = "__NetInputLayer__";
         inpl.layerInstance = netInputLayer;
+        layerNameToId.insert(std::make_pair(inpl.name, inpl.id));
 
         lastLayerId = 1;
         netWasAllocated = false;
