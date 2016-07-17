@@ -107,7 +107,7 @@ TEST(Layer_Test_LRN_channels, Accuracy)
 
 TEST(Layer_Test_Convolution, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_convolution", true);
+     OCL_OFF(testLayerUsingCaffeModels("layer_convolution", true));
 }
 OCL_TEST(Layer_Test_Convolution, Accuracy)
 {
@@ -117,7 +117,7 @@ OCL_TEST(Layer_Test_Convolution, Accuracy)
 
 TEST(Layer_Test_DeConvolution, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_deconvolution", true, false);
+     OCL_OFF(testLayerUsingCaffeModels("layer_deconvolution", true, false));
 }
 OCL_TEST(Layer_Test_DeConvolution, Accuracy)
 {

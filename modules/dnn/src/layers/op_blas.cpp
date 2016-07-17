@@ -16,7 +16,9 @@ void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double b
     if (C.isMat())
         gemmCPU(A.getMat(), B.getMat(), alpha, C.getMatRef(), beta, flags);
     else
-        cv::gemm(A, B, alpha, C, beta, C, flags);
+    {
+        cv::gemm(A, B, alpha, (beta == 0) ? noArray() : C, beta, C, flags);
+    }
 }
 
 inline void SwapRowCols(const Mat &A, int &rows, int &cols, bool isTrans)

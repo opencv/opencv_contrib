@@ -117,14 +117,12 @@ void ConvolutionLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
     if (!is1x1())
     {
         colBlob.create(Shape(ksize, outH * outW), inpBlob.type(), allocFlags);
-        colMat = colBlob.matRef();
     }
 
     if (bias)
     {
         biasOnesBlob.create(Shape(1, topH * topW), inpBlob.type(), allocFlags);
         biasOnesBlob.matRef().setTo(1);
-        biasOnesMat = biasOnesBlob.matRefConst();
     }
 }
 
@@ -141,12 +139,11 @@ void ConvolutionLayer::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &o
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-        Blob &inpBlob = *inputs[ii];
-        Blob &outBlob = outputs[ii];
-        XMat inpMat = inpBlob.getRefConst<XMat>();
-        XMat outMat = reshaped(outBlob.getRef<XMat>(), Shape(inpBlob.num()*group*outGroupCn, outH*outW));
+        int numImg = inputs[ii]->size(0);
+        XMat inpMat = inputs[ii]->getRefConst<XMat>();
+        XMat outMat = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*group*outGroupCn, outH*outW));
 
-        for (int n = 0; n < inpBlob.num(); n++)
+        for (int n = 0; n < numImg; n++)
         {
             for (int g = 0; g < group; g++)
             {
@@ -163,7 +160,7 @@ void ConvolutionLayer::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &o
 
                 if (bias)
                 {
-                    dnn::gemm(biasesMat.rowRange(kerRange), biasOnesMat, 1, dstMat, 1);
+                    dnn::gemm(biasesMat.rowRange(kerRange), biasOnesBlob.getRefConst<XMat>(), 1, dstMat, 1);
                 }
             }
         }
@@ -180,16 +177,14 @@ void ConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
 
 void ConvolutionLayer::im2col(const UMat &srcImg, UMat &dstCol)
 {
-#ifdef HAVE_OPENCL
-    if (!is1x1())
-    {
-        im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, this->colBlob.umatRef());
-        dstCol = this->colBlob.umatRefConst();
-    }
-    else
+    if (is1x1())
     {
         dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
+        return;
     }
+#ifdef HAVE_OPENCL
+    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, this->colBlob.umatRef()));
+    dstCol = this->colBlob.umatRefConst();
 #else
     CV_Error(Error::StsInternal, "");
     dstCol = srcImg; //supress warning
@@ -244,47 +239,75 @@ void DeConvolutionLayer::computeInpOutShape(const Blob &inpBlob)
 
 void DeConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    Blob &wghtBlob = blobs[0];
+    if (!useOpenCL)
+        forward_<Mat>(inputs, outputs);
+    else
+        forward_<UMat>(inputs, outputs);
+}
+
+template<typename XMat>
+void DeConvolutionLayer::forward_(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
+    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-        Blob &convBlob = *inputs[ii];
-        Blob &decnBlob = outputs[ii];
+        int numImg = inputs[ii]->size(0);
+        XMat convBlob = reshaped(inputs[ii]->getRefConst<XMat>(), Shape(numImg*outCn, outH*outW));
+        XMat decnBlob = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*inpCn, inpH*inpW));
 
-        for (int n = 0; n < convBlob.num(); n++)
+        for (int n = 0; n < numImg; n++)
         {
             for (int g = 0; g < group; g++)
             {
-                Mat dstMat(inpGroupCn, inpH*inpW, decnBlob.type(), decnBlob.ptr(n, g*inpGroupCn));
+                XMat dstMat = decnBlob.rowRange(_Range((g + n * group) * inpGroupCn, inpGroupCn));
+                XMat &colMat = (is1x1()) ? dstMat : colBlob.getRef<XMat>();
 
-                if (is1x1())
-                    colMat = dstMat;
+                XMat convMat = convBlob.rowRange(_Range((g + n * group) * outGroupCn, outGroupCn));
+                XMat wghtMat = weightsMat.rowRange(_Range(g * outGroupCn, outGroupCn));
 
-                Mat convMat(outGroupCn, outH*outW, convBlob.type(), convBlob.ptr(n, g*outGroupCn));
-                Mat wghtMat(outGroupCn, ksize, wghtBlob.type(), wghtBlob.ptr(g*outGroupCn));
-                gemmCPU(wghtMat, convMat, 1, colMat, 0, GEMM_1_T);
+                dnn::gemm(wghtMat, convMat, 1, colMat, 0, GEMM_1_T);
 
-                col2im(dstMat);
+                if (!is1x1())
+                    col2im(colMat, dstMat);
 
                 if (bias)
                 {
-                    float *biasPtr = blobs[1].ptrf() + g*inpGroupCn;
-                    Mat biasMat(inpGroupCn, 1, CV_32F, biasPtr);
-                    gemmCPU(biasMat, biasOnesMat, 1, dstMat, 1); //TODO: gemv
+                    XMat curBiasMat = biasesMat.rowRange(_Range(g * outGroupCn, outGroupCn));
+                    dnn::gemm(curBiasMat, biasOnesBlob.getRefConst<XMat>(), 1, dstMat, 1);
                 }
             }
         }
     }
 }
 
-void DeConvolutionLayer::col2im(Mat &dstMat)
+void DeConvolutionLayer::col2im(const Mat &colMat, Mat &dstImg)
 {
-    if (is1x1()) return;
+    if (is1x1())
+    {
+        dstImg = colMat;
+        return;
+    }
+    if (dstImg.type() == CV_32F)
+        col2im_CpuPBody<float>::run(colMat.ptr<float>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstImg.ptr<float>());
+    if (dstImg.type() == CV_64F)
+        col2im_CpuPBody<double>::run(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstImg.ptr<double>());
+}
 
-    if (dstMat.type() == CV_32F)
-        col2im_cpu(colMat.ptr<float>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<float>());
-    if (dstMat.type() == CV_64F)
-        col2im_cpu(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<double>());
+void DeConvolutionLayer::col2im(const UMat &colMat, UMat &dstImg)
+{
+    if (is1x1())
+    {
+        dstImg = colMat;
+        return;
+    }
+#ifdef HAVE_OPENCL
+    CV_Assert(col2im_ocl(colMat, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstImg));
+#else
+    CV_Error(Error::StsInternal, "");
+    dstImg = colMat;
+#endif
 }
 
 }

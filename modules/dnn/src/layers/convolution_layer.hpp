@@ -66,7 +66,6 @@ namespace dnn
         bool tryUseOpenCL, useOpenCL;
 
         Blob colBlob, biasOnesBlob;
-        Mat colMat, biasOnesMat;
 
         inline bool is1x1() const;
         virtual void computeInpOutShape(const Blob &inpBlob);
@@ -88,11 +87,15 @@ namespace dnn
     {
     protected:
         void computeInpOutShape(const Blob &inpBlob);
-        void col2im(Mat &dstMat);
+        void col2im(const  Mat &colMat, Mat  &dstImg);
+        void col2im(const UMat &colMat, UMat &dstImg);
 
     public:
         DeConvolutionLayer(LayerParams &params);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+        template<typename XMat>
+        void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
 }
 }

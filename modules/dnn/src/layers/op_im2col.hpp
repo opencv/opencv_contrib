@@ -41,7 +41,7 @@
 
 #ifndef __OPENCV_DNN_LAYERS_IM2COL_HPP__
 #define __OPENCV_DNN_LAYERS_IM2COL_HPP__
-#include <opencv2/core.hpp>
+#include "../precomp.hpp"
 #include <iostream>
 
 namespace cv
@@ -60,25 +60,8 @@ class im2col_CpuPBody : public cv::ParallelLoopBody
     Dtype* data_col;
     int height_col, width_col, channels_col;
 
+    im2col_CpuPBody() {}
 public:
-
-    im2col_CpuPBody(const Dtype* data_im_,
-                     int channels_, int height_, int width_,
-                     int kernel_h_, int kernel_w_,
-                     int pad_h_, int pad_w_,
-                     int stride_h_, int stride_w_,
-                     Dtype* data_col_) :
-        data_im(data_im_),
-        channels(channels_), height(height_), width(width_),
-        kernel_h(kernel_h_), kernel_w(kernel_w_),
-        pad_h(pad_h_), pad_w(pad_w_),
-        stride_h(stride_h_), stride_w(stride_w_),
-        data_col(data_col_)
-    {
-        height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-        width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
-        channels_col = channels * kernel_h * kernel_w;
-    }
 
     static void run(const Dtype* data_im,
                     int channels, int height, int width,
@@ -87,8 +70,18 @@ public:
                     int stride_h, int stride_w,
                     Dtype* data_col)
     {
-        im2col_CpuPBody<Dtype> pb(data_im, channels, height, width, kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w, data_col);
-        cv::parallel_for_(Range(0, pb.channels_col), pb);
+        im2col_CpuPBody<Dtype> t;
+        t.data_im = data_im;
+        t.data_col = data_col;
+        t.channels = channels; t.height = height; t.width = width;
+        t.kernel_h = kernel_h; t.kernel_w = kernel_w;
+        t.pad_h = pad_h; t.pad_w = pad_w;
+        t.stride_h = stride_h; t.stride_w = stride_w;
+        t.height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+        t.width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+        t.channels_col = channels * kernel_h * kernel_w;
+
+        cv::parallel_for_(Range(0, t.channels_col), t);
     }
 
     virtual void operator ()(const Range &r) const
@@ -113,24 +106,93 @@ public:
 };
 
 template <typename Dtype>
+class col2im_CpuPBody : public cv::ParallelLoopBody
+{
+    const Dtype* data_col;
+    int channels, height, width;
+    int kernel_h, kernel_w;
+    int pad_h, pad_w;
+    int stride_h, stride_w;
+    Dtype* data_im;
+    int height_col, width_col;
+
+    col2im_CpuPBody() {}
+
+public:
+
+    static void run(const Dtype* data_col,
+                    int channels, int height, int width,
+                    int kernel_h, int kernel_w,
+                    int pad_h, int pad_w,
+                    int stride_h, int stride_w,
+                    Dtype* data_im)
+    {
+        //TODO: single-threaded version switch
+
+        col2im_CpuPBody t;
+        t.data_col = data_col;
+        t.data_im = data_im;
+        t.channels = channels; t.height = height; t.width = width;
+        t.kernel_h = kernel_h; t.kernel_w = kernel_w;
+        t.pad_h = pad_h; t.pad_w = pad_w;
+        t.stride_h = stride_h; t.stride_w = stride_w;
+        t.height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+        t.width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+        int img_total = channels * height * width;
+
+        cv::parallel_for_(Range(0, img_total), t);
+    }
+
+    virtual void operator ()(const Range &r) const
+    {
+        for (int index = r.start; index < r.end; index++)
+        {
+            Dtype val = 0;
+            int w = index % width + pad_w;
+            int h = (index / width) % height + pad_h;
+            int c = index / (width * height);
+
+            // compute the start and end of the output
+            int w_col_start = (w < kernel_w) ? 0 : (w - kernel_w) / stride_w + 1;
+            int w_col_end = std::min(w / stride_w + 1, width_col);
+            int h_col_start = (h < kernel_h) ? 0 : (h - kernel_h) / stride_h + 1;
+            int h_col_end = std::min(h / stride_h + 1, height_col);
+
+            // equivalent implementation
+            int offset =
+            (c * kernel_h * kernel_w + h * kernel_w + w) * height_col * width_col;
+            int coeff_h_col = (1 - stride_h * kernel_w * height_col) * width_col;
+            int coeff_w_col = (1 - stride_w * height_col * width_col);
+            for (int h_col = h_col_start; h_col < h_col_end; ++h_col) {
+              for (int w_col = w_col_start; w_col < w_col_end; ++w_col) {
+                val += data_col[offset + h_col * coeff_h_col + w_col * coeff_w_col];
+              }
+            }
+            data_im[index] = val;
+        }
+    }
+};
+
+//single-threaded version
+template <typename Dtype>
 void col2im_cpu(const Dtype* data_col,
                 int channels, int height, int width,
-                int patch_h, int patch_w,
+                int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
                 int stride_h, int stride_w,
                 Dtype* data_im)
 {
-    memset(data_im, 0, height * width * channels * sizeof(Dtype));
+    int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+    int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+    int channels_col = channels * kernel_h * kernel_w;
 
-    int height_col = (height + 2 * pad_h - patch_h) / stride_h + 1;
-    int width_col = (width + 2 * pad_w - patch_w) / stride_w + 1;
-    int channels_col = channels * patch_h * patch_w;
+    std::memset(data_im, 0, height * width * channels * sizeof(Dtype));
 
     for (int c = 0; c < channels_col; ++c)
     {
-        int w_offset = c % patch_w;
-        int h_offset = (c / patch_w) % patch_h;
-        int c_im = c / patch_h / patch_w;
+        int w_offset = c % kernel_w;
+        int h_offset = (c / kernel_w) % kernel_h;
+        int c_im = c / kernel_h / kernel_w;
 
         for (int h = 0; h < height_col; ++h)
         {
@@ -148,12 +210,19 @@ void col2im_cpu(const Dtype* data_col,
 }
 
 #ifdef HAVE_OPENCL
-void im2col_ocl(const UMat &img,
+bool im2col_ocl(const UMat &img,
                 int channels, int height, int width,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
                 int stride_h, int stride_w,
                 UMat &col);
+
+bool col2im_ocl(const UMat &col,
+                int channels, int height, int width,
+                int kernel_h, int kernel_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                UMat &img);
 #endif
 
 }
