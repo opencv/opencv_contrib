@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-if(APPLE_FRAMEWORK OR WINRT)
+if(APPLE_FRAMEWORK OR WINRT
+    OR AARCH64 # protobuf doesn't know this platform
+)
   ocv_module_disable(dnn)
 endif()
 
