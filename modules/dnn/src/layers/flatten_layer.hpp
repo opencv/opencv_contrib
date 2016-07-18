@@ -50,7 +50,7 @@ namespace dnn
 class FlattenLayer : public Layer
 {
     size_t _startAxis;
-    size_t _endAxis;
+    int _endAxis;
 
     static const size_t _numAxes = 4;
     static const std::string _layerName;

@@ -41,7 +41,9 @@
 
 #ifndef __OPENCV_DNN_LAYERS_DETECTION_OUTPUT_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_DETECTION_OUTPUT_LAYER_HPP__
+
 #include "../precomp.hpp"
+#include "caffe.pb.h"
 
 namespace cv
 {
@@ -54,7 +56,10 @@ class DetectionOutputLayer : public Layer
     int _numLocClasses;
 
     int _backgroundLabelId;
+
+    typedef caffe::PriorBoxParameter_CodeType CodeType;
     CodeType _codeType;
+
     bool _varianceEncodedInTarget;
     int _keepTopK;
     float _confidenceThreshold;
@@ -66,38 +71,45 @@ class DetectionOutputLayer : public Layer
     int _topK;
 
     static const size_t _numAxes = 4;
+    static const std::string _layerName;
 
 public:
     DetectionOutputLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void checkParameter(const LayerParams &params, const std::string &parameterName);
+
     void checkInputs(const std::vector<Blob*> &inputs);
 
-    typedef std::map<int, std::vector<NormalizedBBox> > LabelBBox;
-    typedef PriorBoxParameter_CodeType CodeType;
+    template<typename T>
+    T getParameter(const LayerParams &params, const std::string &parameterName,
+                   const size_t &idx = 0);
 
-    // Clip the NormalizedBBox such that the range for each corner is [0, 1].
-    void ClipBBox(const NormalizedBBox& bbox, NormalizedBBox* clip_bbox);
+    DictValue getParameterDict(const LayerParams &params,
+                               const std::string &parameterName);
+
+    typedef std::map<int, std::vector<caffe::NormalizedBBox> > LabelBBox;
+
+    // Clip the caffe::NormalizedBBox such that the range for each corner is [0, 1].
+    void ClipBBox(const caffe::NormalizedBBox& bbox, caffe::NormalizedBBox* clip_bbox);
 
     // Decode a bbox according to a prior bbox.
-    void DecodeBBox(const NormalizedBBox& prior_bbox,
+    void DecodeBBox(const caffe::NormalizedBBox& prior_bbox,
                     const std::vector<float>& prior_variance, const CodeType code_type,
-                    const bool variance_encoded_in_target, const NormalizedBBox& bbox,
-                    NormalizedBBox* decode_bbox);
+                    const bool variance_encoded_in_target, const caffe::NormalizedBBox& bbox,
+                    caffe::NormalizedBBox* decode_bbox);
 
     // Decode a set of bboxes according to a set of prior bboxes.
-    void DecodeBBoxes(const std::vector<NormalizedBBox>& prior_bboxes,
+    void DecodeBBoxes(const std::vector<caffe::NormalizedBBox>& prior_bboxes,
                       const std::vector<std::vector<float> >& prior_variances,
                       const CodeType code_type, const bool variance_encoded_in_target,
-                      const std::vector<NormalizedBBox>& bboxes,
-                      std::vector<NormalizedBBox>* decode_bboxes);
+                      const std::vector<caffe::NormalizedBBox>& bboxes,
+                      std::vector<caffe::NormalizedBBox>* decode_bboxes);
 
     // Decode all bboxes in a batch.
     void DecodeBBoxesAll(const std::vector<LabelBBox>& all_loc_pred,
-                         const std::vector<NormalizedBBox>& prior_bboxes,
+                         const std::vector<caffe::NormalizedBBox>& prior_bboxes,
                          const std::vector<std::vector<float> >& prior_variances,
-                         const int num, const bool share_location,
+                         const size_t num, const bool share_location,
                          const int num_loc_classes, const int background_label_id,
                          const CodeType code_type, const bool variance_encoded_in_target,
                          std::vector<LabelBBox>* all_decode_bboxes);
@@ -105,16 +117,15 @@ public:
     // Get prior bounding boxes from prior_data.
     //    prior_data: 1 x 2 x num_priors * 4 x 1 blob.
     //    num_priors: number of priors.
-    //    prior_bboxes: stores all the prior bboxes in the format of NormalizedBBox.
+    //    prior_bboxes: stores all the prior bboxes in the format of caffe::NormalizedBBox.
     //    prior_variances: stores all the variances needed by prior bboxes.
-    template <typename Dtype>
-    void GetPriorBBoxes(const Dtype* prior_data, const int num_priors,
-                        std::vector<NormalizedBBox>* prior_bboxes,
-                        std::vector<std::vector<float> >* prior_variances);
+    void GetPriorBBoxes(const float* priorData, const int& numPriors,
+                        std::vector<caffe::NormalizedBBox>* priorBBoxes,
+                        std::vector<std::vector<float> >* priorVariances);
 
-    // Scale the NormalizedBBox w.r.t. height and width.
-    void ScaleBBox(const NormalizedBBox& bbox, const int height, const int width,
-                   NormalizedBBox* scale_bbox);
+    // Scale the caffe::NormalizedBBox w.r.t. height and width.
+    void ScaleBBox(const caffe::NormalizedBBox& bbox, const int height, const int width,
+                   caffe::NormalizedBBox* scale_bbox);
 
     // Do non maximum suppression given bboxes and scores.
     // Inspired by Piotr Dollar's NMS implementation in EdgeBox.
@@ -125,7 +136,7 @@ public:
     //    nms_threshold: a threshold used in non maximum suppression.
     //    top_k: if not -1, keep at most top_k picked indices.
     //    indices: the kept indices of bboxes after nms.
-    void ApplyNMSFast(const std::vector<NormalizedBBox>& bboxes,
+    void ApplyNMSFast(const std::vector<caffe::NormalizedBBox>& bboxes,
                       const std::vector<float>& scores, const float score_threshold,
                       const float nms_threshold, const int top_k, std::vector<int>* indices);
 
@@ -140,7 +151,8 @@ public:
     //    overlaps: a temp place to optionally store the overlaps between pairs of
     //      bboxes if reuse_overlaps is true.
     //    indices: the kept indices of bboxes after nms.
-    void ApplyNMS(const std::vector<NormalizedBBox>& bboxes, const std::vector<float>& scores,
+    void ApplyNMS(const std::vector<caffe::NormalizedBBox>& bboxes,
+                  const std::vector<float>& scores,
                   const float threshold, const int top_k, const bool reuse_overlaps,
                   std::map<int, std::map<int, float> >* overlaps, std::vector<int>* indices);
 
@@ -153,8 +165,7 @@ public:
     //    num_classes: number of classes.
     //    conf_preds: stores the confidence prediction, where each item contains
     //      confidence prediction for an image.
-    template <typename Dtype>
-    void GetConfidenceScores(const Dtype* conf_data, const int num,
+    void GetConfidenceScores(const float* conf_data, const int num,
                              const int num_preds_per_class, const int num_classes,
                              std::vector<std::map<int, std::vector<float> > >* conf_scores);
 
@@ -168,10 +179,10 @@ public:
     //      num x num_preds_per_class * num_classes.
     //    conf_preds: stores the confidence prediction, where each item contains
     //      confidence prediction for an image.
-    template <typename Dtype>
-    void GetConfidenceScores(const Dtype* conf_data, const int num,
+    void GetConfidenceScores(const float* conf_data, const int num,
                              const int num_preds_per_class, const int num_classes,
-                             const bool class_major, std::vector<std::map<int, std::vector<float> > >* conf_scores);
+                             const bool class_major,
+                             std::vector<std::map<int, std::vector<float> > >* conf_scores);
 
     // Get location predictions from loc_data.
     //    loc_data: num x num_preds_per_class * num_loc_classes * 4 blob.
@@ -182,8 +193,7 @@ public:
     //    share_location: if true, all classes share the same location prediction.
     //    loc_preds: stores the location prediction, where each item contains
     //      location prediction for an image.
-    template <typename Dtype>
-    void GetLocPredictions(const Dtype* loc_data, const int num,
+    void GetLocPredictions(const float* loc_data, const int num,
                            const int num_preds_per_class, const int num_loc_classes,
                            const bool share_location, std::vector<LabelBBox>* loc_preds);
 
@@ -195,20 +205,16 @@ public:
     void GetMaxScoreIndex(const std::vector<float>& scores, const float threshold,
                           const int top_k, std::vector<std::pair<float, int> >* score_index_vec);
 
-    template <typename T>
-    bool SortScorePairDescend(const std::pair<float, T>& pair1,
-                              const std::pair<float, T>& pair2);
-
     // Compute the jaccard (intersection over union IoU) overlap between two bboxes.
-    float JaccardOverlap(const NormalizedBBox& bbox1, const NormalizedBBox& bbox2,
+    float JaccardOverlap(const caffe::NormalizedBBox& bbox1, const caffe::NormalizedBBox& bbox2,
                          const bool normalized = true);
 
     // Compute the intersection between two bboxes.
-    void IntersectBBox(const NormalizedBBox& bbox1, const NormalizedBBox& bbox2,
-                       NormalizedBBox* intersect_bbox);
+    void IntersectBBox(const caffe::NormalizedBBox& bbox1, const caffe::NormalizedBBox& bbox2,
+                       caffe::NormalizedBBox* intersect_bbox);
 
     // Compute bbox size.
-    float BBoxSize(const NormalizedBBox& bbox, const bool normalized = true);
+    float BBoxSize(const caffe::NormalizedBBox& bbox, const bool normalized = true);
 };
 }
 }

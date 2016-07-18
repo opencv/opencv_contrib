@@ -147,7 +147,7 @@ void PriorBoxLayer::getVariance(const LayerParams &params)
 
 PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
 {
-    _minSize = getParameter<size_t>(params, "min_size");
+    _minSize = getParameter<unsigned>(params, "min_size");
     CV_Assert(_minSize > 0);
 
     _flip = getParameter<bool>(params, "flip");
