@@ -1,0 +1,14 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+before_script:
+  - cd ../
+  - git clone https://github.com/Itseez/opencv.git
+  - mkdir build-opencv
+  - cd build-opencv
+  - cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv
+script:
+  - make -j5
+notifications:
+  email: false
