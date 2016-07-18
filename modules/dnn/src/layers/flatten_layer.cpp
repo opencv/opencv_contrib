@@ -87,8 +87,8 @@ T FlattenLayer::getParameter(const LayerParams &params,
 
 FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
 {
-    _startAxis = getParameter<size_t>(params, "start_axis");
-    _endAxis = getParameter<size_t>(params, "end_axis");
+    _startAxis = getParameter<int>(params, "start_axis");
+    _endAxis = getParameter<int>(params, "end_axis");
 
     if(_endAxis <= 0)
     {
@@ -113,7 +113,7 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     checkInputs(inputs);
 
     size_t flattenedDimensionSize = 1;
-    for (size_t i = _startAxis; i <= _endAxis; i++)
+    for (int i = _startAxis; i <= _endAxis; i++)
     {
         flattenedDimensionSize *= inputs[0]->shape()[i];
     }
@@ -126,7 +126,7 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     {
         outputShape[i] = 1;
     }
-    for (size_t i = interval; i < _endAxis; i++)
+    for (int i = interval; i < _endAxis; i++)
     {
         outputShape[i] = inputs[0]->shape()[i - interval];
     }

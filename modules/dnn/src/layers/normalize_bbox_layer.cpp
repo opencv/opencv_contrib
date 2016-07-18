@@ -134,13 +134,13 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
     }
 
     // add eps to avoid overflow
-    _norm.fill(Scalar(_eps));
+    _norm.matRef() = Scalar(_eps);
 
     _sumChannelMultiplier = Blob(BlobShape(1, _channels, 1, 1));
-    _sumChannelMultiplier.fill(Scalar(1.0));
+    _sumChannelMultiplier.matRef() = Scalar(1.0);
 
     _sumSpatialMultiplier = Blob(BlobShape(1, 1, _rows, _cols));
-    _sumSpatialMultiplier.fill(Scalar(1.0));
+    _sumSpatialMultiplier.matRef() = Scalar(1.0);
 
     if (_channel_shared)
     {

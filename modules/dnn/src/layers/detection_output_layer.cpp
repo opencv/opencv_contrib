@@ -43,46 +43,95 @@
 #include "layers_common.hpp"
 #include "detection_output_layer.hpp"
 #include <float.h>
-#include <algorithm>
+#include <string>
+#include <iostream>
 
 namespace cv
 {
 namespace dnn
 {
 
-void DetectionOutputLayer::checkParameter(const LayerParams &params,
-                                          const std::string &parameterName)
+namespace util
+{
+template <typename T>
+std::string to_string(T value)
+{
+    std::ostringstream stream;
+    stream << value;
+    return stream.str();
+}
+
+template <typename T>
+void make_error(const std::string& message1, const T& message2)
+{
+    std::string error(message1);
+    error += std::string(util::to_string<int>(message2));
+    CV_Error(Error::StsBadArg, error.c_str());
+}
+
+template <typename T>
+bool SortScorePairDescend(const std::pair<float, T>& pair1,
+                          const std::pair<float, T>& pair2)
+{
+    return pair1.first > pair2.first;
+}
+}
+
+const std::string DetectionOutputLayer::_layerName = std::string("DetectionOutput");
+
+DictValue DetectionOutputLayer::getParameterDict(const LayerParams &params,
+                                                 const std::string &parameterName)
 {
     if (!params.has(parameterName))
     {
-        CV_Error(Error::StsBadArg,
-                 "DetectionOutput layer parameter does not contain " +
-                 parameterName + " index.");
+        std::string message = _layerName;
+        message += " layer parameter does not contain ";
+        message += parameterName;
+        message += " index.";
+        CV_Error(Error::StsBadArg, message);
     }
+
+    DictValue parameter = params.get(parameterName);
+    if(parameter.size() != 1)
+    {
+        std::string message = parameterName;
+        message += " field in ";
+        message += _layerName;
+        message += " layer parameter is required";
+        CV_Error(Error::StsBadArg, message);
+    }
+
+    return parameter;
+}
+
+template<typename T>
+T DetectionOutputLayer::getParameter(const LayerParams &params,
+                                     const std::string &parameterName,
+                                     const size_t &idx)
+{
+    return getParameterDict(params, parameterName).get<T>(idx);
 }
 
 DetectionOutputLayer::DetectionOutputLayer(LayerParams &params) : Layer(params)
 {
-    checkParameter(params, "numClasses");
-
-    _numClasses = params.num_classes();
-    _shareLocation = params.share_location();
+    _numClasses = getParameter<int>(params, "num_classes");
+    _shareLocation = getParameter<int>(params, "share_location");
     _numLocClasses = _shareLocation ? 1 : _numClasses;
-    _backgroundLabelId = params.background_label_id();
-    _codeType = params.code_type();
-    _varianceEncodedInTarget = params.variance_encoded_in_target();
-    _keepTopK = params.keep_top_k();
-    _confidenceThreshold = params.has_confidence_threshold() ?
-                           params.confidence_threshold() : -FLT_MAX;
+    _backgroundLabelId = getParameter<int>(params, "background_label_id");
+    _codeType = static_cast<CodeType>(getParameter<int>(params, "code_type"));
+    _varianceEncodedInTarget = getParameter<int>(params, "variance_encoded_in_target");
+    _keepTopK = getParameter<int>(params, "keep_top_k");
+    _confidenceThreshold = params.has("confidence_threshold") ?
+                           getParameter<int>(params, "confidence_threshold") : -FLT_MAX;
 
     // Parameters used in nms.
-    _nmsThreshold = params.nms_param().nms_threshold();
+    _nmsThreshold = getParameter<float>(params, "nms_threshold");
     CV_Assert(_nmsThreshold > 0.);
 
     _topK = -1;
-    if (params.nms_param().has_top_k())
+    if (params.has("top_k"))
     {
-        _topK = params.nms_param().top_k();
+        _topK = getParameter<int>(params, "top_k");
     }
 }
 
@@ -92,7 +141,7 @@ void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
     {
         for (size_t j = 0; j < _numAxes; j++)
         {
-            CV_Assert(inputs[i]->shape[j] == inputs[0]->shape[j]);
+            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
         }
     }
 }
@@ -104,7 +153,7 @@ void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
     CV_Assert(inputs[0]->num() == inputs[1]->num());
     _num = inputs[0]->num();
 
-    _numPriors = inputs[2]->height() / 4;
+    _numPriors = inputs[2]->rows() / 4;
     CV_Assert(_numPriors * _numLocClasses * 4 == inputs[0]->channels());
     CV_Assert(_numPriors * _numClasses == inputs[1]->channels());
 
@@ -120,9 +169,9 @@ void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
 void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
                                    std::vector<Blob> &outputs)
 {
-    const Mat locationData = inputs[0]->ptrf();
-    const Mat confidenceData = inputs[1]->ptrf();
-    const Mat priorData = inputs[2]->ptrf();
+    const float* locationData = inputs[0]->ptrf();
+    const float* confidenceData = inputs[1]->ptrf();
+    const float* priorData = inputs[2]->ptrf();
 
     // Retrieve all location predictions.
     std::vector<LabelBBox> allLocationPredictions;
@@ -136,7 +185,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
 
     // Retrieve all prior bboxes. It is same within a batch since we assume all
     // images in a batch are of same dimension.
-    std::vector<NormalizedBBox> priorBBoxes;
+    std::vector<caffe::NormalizedBBox> priorBBoxes;
     std::vector<std::vector<float> > priorVariances;
     GetPriorBBoxes(priorData, _numPriors, &priorBBoxes, &priorVariances);
 
@@ -165,9 +214,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             if (confidenceScores.find(c) == confidenceScores.end())
             {
                 // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find confidence predictions for label ");
-                error += std::string(c);
-                CV_StsError(error.c_str());
+                util::make_error<int>("Could not find confidence predictions for label ", c);
             }
 
             const std::vector<float>& scores = confidenceScores.find(c)->second;
@@ -175,12 +222,10 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             if (decodeBBoxes.find(label) == decodeBBoxes.end())
             {
                 // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find location predictions for label ");
-                error += std::string(label);
-                CV_StsError(error.c_str());
+                util::make_error<int>("Could not find location predictions for label ", label);
                 continue;
             }
-            const std::vector<NormalizedBBox>& bboxes =
+            const std::vector<caffe::NormalizedBBox>& bboxes =
                 decodeBBoxes.find(label)->second;
             ApplyNMSFast(bboxes, scores, _confidenceThreshold, _nmsThreshold,
                          _topK, &(indices[c]));
@@ -197,16 +242,13 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
                 if (confidenceScores.find(label) == confidenceScores.end())
                 {
                     // Something bad happened for current label.
-                    std::string error("Could not find location predictions for label ");
-                    error += std::string(label);
-                    CV_StsError(error.c_str());
+                    util::make_error<int>("Could not find location predictions for label ", label);
                     continue;
                 }
-                const std::vector<float>& scores =
-                    confidenceScores.find(label)->second;
-                for (int j = 0; j < labelIndices.size(); ++j)
+                const std::vector<float>& scores = confidenceScores.find(label)->second;
+                for (size_t j = 0; j < labelIndices.size(); ++j)
                 {
-                    int idx = labelIndices[j];
+                    size_t idx = labelIndices[j];
                     CV_Assert(idx < scores.size());
                     scoreIndexPairs.push_back(
                         std::make_pair(scores[idx], std::make_pair(label, idx)));
@@ -214,11 +256,11 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             }
             // Keep outputs k results per image.
             std::sort(scoreIndexPairs.begin(), scoreIndexPairs.end(),
-                      SortScorePairDescend<std::pair<int, int> >);
+                      util::SortScorePairDescend<std::pair<int, int> >);
             scoreIndexPairs.resize(_keepTopK);
             // Store the new indices.
             std::map<int, std::vector<int> > newIndices;
-            for (int j = 0; j < scoreIndexPairs.size(); ++j)
+            for (size_t j = 0; j < scoreIndexPairs.size(); ++j)
             {
                 int label = scoreIndexPairs[j].second.first;
                 int idx = scoreIndexPairs[j].second.second;
@@ -242,8 +284,8 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
     std::vector<int> outputsShape(2, 1);
     outputsShape.push_back(numKept);
     outputsShape.push_back(7);
-    outputs[0]->reshape(outputsShape);
-    float* outputsData = outputs[0]->ptrf();
+    outputs[0].reshape(outputsShape);
+    float* outputsData = outputs[0].ptrf();
 
     int count = 0;
     for (int i = 0; i < _num; ++i)
@@ -258,9 +300,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             if (confidenceScores.find(label) == confidenceScores.end())
             {
                 // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find confidence predictions for label ");
-                error += std::string(label);
-                CV_StsError(error.c_str());
+                util::make_error<int>("Could not find confidence predictions for label ", label);
                 continue;
             }
             const std::vector<float>& scores = confidenceScores.find(label)->second;
@@ -268,22 +308,20 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             if (decodeBBoxes.find(locLabel) == decodeBBoxes.end())
             {
                 // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find location predictions for label ");
-                error += std::string(locLabel);
-                CV_StsError(error.c_str());
+                util::make_error<int>("Could not find location predictions for label ", locLabel);
                 continue;
             }
-            const std::vector<NormalizedBBox>& bboxes =
+            const std::vector<caffe::NormalizedBBox>& bboxes =
                 decodeBBoxes.find(locLabel)->second;
             std::vector<int>& indices = it->second;
 
-            for (int j = 0; j < indices.size(); ++j)
+            for (size_t j = 0; j < indices.size(); ++j)
             {
                 int idx = indices[j];
                 outputsData[count * 7] = i;
                 outputsData[count * 7 + 1] = label;
                 outputsData[count * 7 + 2] = scores[idx];
-                NormalizedBBox clipBBox;
+                caffe::NormalizedBBox clipBBox;
                 ClipBBox(bboxes[idx], &clipBBox);
                 outputsData[count * 7 + 3] = clipBBox.xmin();
                 outputsData[count * 7 + 4] = clipBBox.ymin();
@@ -296,7 +334,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
     }
 }
 
-float DetectionOutputLayer::BBoxSize(const NormalizedBBox& bbox,
+float DetectionOutputLayer::BBoxSize(const caffe::NormalizedBBox& bbox,
                                      const bool normalized)
 {
     if (bbox.xmax() < bbox.xmin() || bbox.ymax() < bbox.ymin())
@@ -327,8 +365,8 @@ float DetectionOutputLayer::BBoxSize(const NormalizedBBox& bbox,
     }
 }
 
-void DetectionOutputLayer::ClipBBox(const NormalizedBBox& bbox,
-                                    NormalizedBBox* clipBBox)
+void DetectionOutputLayer::ClipBBox(const caffe::NormalizedBBox& bbox,
+                                    caffe::NormalizedBBox* clipBBox)
 {
     clipBBox->set_xmin(std::max(std::min(bbox.xmin(), 1.f), 0.f));
     clipBBox->set_ymin(std::max(std::min(bbox.ymin(), 1.f), 0.f));
@@ -340,11 +378,11 @@ void DetectionOutputLayer::ClipBBox(const NormalizedBBox& bbox,
 }
 
 void DetectionOutputLayer::DecodeBBox(
-    const NormalizedBBox& priorBBox, const std::vector<float>& priorVariance,
+    const caffe::NormalizedBBox& priorBBox, const std::vector<float>& priorVariance,
     const CodeType codeType, const bool varianceEncodedInTarget,
-    const NormalizedBBox& bbox, NormalizedBBox* decodeBBox)
+    const caffe::NormalizedBBox& bbox, caffe::NormalizedBBox* decodeBBox)
 {
-    if (codeType == PriorBoxParameter_CodeType_CORNER)
+    if (codeType == caffe::PriorBoxParameter_CodeType_CORNER)
     {
         if (varianceEncodedInTarget)
         {
@@ -369,7 +407,7 @@ void DetectionOutputLayer::DecodeBBox(
         }
     }
     else
-    if (codeType == PriorBoxParameter_CodeType_CENTER_SIZE)
+    if (codeType == caffe::PriorBoxParameter_CodeType_CENTER_SIZE)
     {
         float priorWidth = priorBBox.xmax() - priorBBox.xmin();
         CV_Assert(priorWidth > 0);
@@ -411,18 +449,18 @@ void DetectionOutputLayer::DecodeBBox(
     }
     else
     {
-        CV_StsError("Unknown LocLossType.");
+        CV_Error(Error::StsBadArg, "Unknown LocLossType.");
     }
     float bboxSize = BBoxSize(*decodeBBox);
     decodeBBox->set_size(bboxSize);
 }
 
 void DetectionOutputLayer::DecodeBBoxes(
-    const std::vector<NormalizedBBox>& priorBBoxes,
+    const std::vector<caffe::NormalizedBBox>& priorBBoxes,
     const std::vector<std::vector<float> >& priorVariances,
     const CodeType codeType, const bool varianceEncodedInTarget,
-    const std::vector<NormalizedBBox>& bboxes,
-    std::vector<NormalizedBBox>* decodeBBoxes)
+    const std::vector<caffe::NormalizedBBox>& bboxes,
+    std::vector<caffe::NormalizedBBox>* decodeBBoxes)
 {
     CV_Assert(priorBBoxes.size() == priorVariances.size());
     CV_Assert(priorBBoxes.size() == bboxes.size());
@@ -434,7 +472,7 @@ void DetectionOutputLayer::DecodeBBoxes(
     decodeBBoxes->clear();
     for (int i = 0; i < numBBoxes; ++i)
     {
-        NormalizedBBox decodeBBox;
+        caffe::NormalizedBBox decodeBBox;
         DecodeBBox(priorBBoxes[i], priorVariances[i], codeType,
                    varianceEncodedInTarget, bboxes[i], &decodeBBox);
         decodeBBoxes->push_back(decodeBBox);
@@ -443,9 +481,9 @@ void DetectionOutputLayer::DecodeBBoxes(
 
 void DetectionOutputLayer::DecodeBBoxesAll(
     const std::vector<LabelBBox>& allLocPreds,
-    const std::vector<NormalizedBBox>& priorBBoxes,
+    const std::vector<caffe::NormalizedBBox>& priorBBoxes,
     const std::vector<std::vector<float> >& priorVariances,
-    const int num, const bool shareLocation,
+    const size_t num, const bool shareLocation,
     const int numLocClasses, const int backgroundLabelId,
     const CodeType codeType, const bool varianceEncodedInTarget,
     std::vector<LabelBBox>* allDecodeBBoxes)
@@ -453,7 +491,7 @@ void DetectionOutputLayer::DecodeBBoxesAll(
     CV_Assert(allLocPreds.size() == num);
     allDecodeBBoxes->clear();
     allDecodeBBoxes->resize(num);
-    for (int i = 0; i < num; ++i)
+    for (size_t i = 0; i < num; ++i)
     {
         // Decode predictions into bboxes.
         LabelBBox& decodeBBoxes = (*allDecodeBBoxes)[i];
@@ -468,11 +506,9 @@ void DetectionOutputLayer::DecodeBBoxesAll(
             if (allLocPreds[i].find(label) == allLocPreds[i].end())
             {
                 // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find location predictions for label ");
-                error += std::string(label);
-                CV_StsError(error.c_str());
+                util::make_error<int>("Could not find location predictions for label ", label);
             }
-            const std::vector<NormalizedBBox>& labelLocPreds =
+            const std::vector<caffe::NormalizedBBox>& labelLocPreds =
                 allLocPreds[i].find(label)->second;
             DecodeBBoxes(priorBBoxes, priorVariances,
                          codeType, varianceEncodedInTarget,
@@ -481,17 +517,16 @@ void DetectionOutputLayer::DecodeBBoxesAll(
     }
 }
 
-void DetectionOutputLayer::GetPriorBBoxes(
-    const float* priorData, const int numPriors,
-    std::vector<NormalizedBBox>* priorBBoxes,
-    std::vector<std::vector<float> >* priorVariances)
+void DetectionOutputLayer::GetPriorBBoxes(const float* priorData, const int& numPriors,
+                                          std::vector<caffe::NormalizedBBox>* priorBBoxes,
+                                          std::vector<std::vector<float> >* priorVariances)
 {
     priorBBoxes->clear();
     priorVariances->clear();
     for (int i = 0; i < numPriors; ++i)
     {
         int startIdx = i * 4;
-        NormalizedBBox bbox;
+        caffe::NormalizedBBox bbox;
         bbox.set_xmin(priorData[startIdx]);
         bbox.set_ymin(priorData[startIdx + 1]);
         bbox.set_xmax(priorData[startIdx + 2]);
@@ -513,9 +548,9 @@ void DetectionOutputLayer::GetPriorBBoxes(
     }
 }
 
-void DetectionOutputLayer::ScaleBBox(const NormalizedBBox& bbox,
+void DetectionOutputLayer::ScaleBBox(const caffe::NormalizedBBox& bbox,
                                      const int height, const int width,
-                                     NormalizedBBox* scaleBBox)
+                                     caffe::NormalizedBBox* scaleBBox)
 {
     scaleBBox->set_xmin(bbox.xmin() * width);
     scaleBBox->set_ymin(bbox.ymin() * height);
@@ -584,154 +619,14 @@ void DetectionOutputLayer::GetConfidenceScores(
     }
 }
 
-void DetectionOutputLayer::DecodeBBox(
-    const NormalizedBBox& prior_bbox, const vector<float>& prior_variance,
-    const CodeType code_type, const bool variance_encoded_in_target,
-    const NormalizedBBox& bbox, NormalizedBBox* decode_bbox) {
-    if (code_type == PriorBoxParameter_CodeType_CORNER)
-    {
-        if (variance_encoded_in_target)
-        {
-            // variance is encoded in target, we simply need to add the offset
-            // predictions.
-            decode_bbox->set_xmin(prior_bbox.xmin() + bbox.xmin());
-            decode_bbox->set_ymin(prior_bbox.ymin() + bbox.ymin());
-            decode_bbox->set_xmax(prior_bbox.xmax() + bbox.xmax());
-            decode_bbox->set_ymax(prior_bbox.ymax() + bbox.ymax());
-        }
-        else
-        {
-            // variance is encoded in bbox, we need to scale the offset accordingly.
-            decode_bbox->set_xmin(
-                prior_bbox.xmin() + prior_variance[0] * bbox.xmin());
-            decode_bbox->set_ymin(
-                prior_bbox.ymin() + prior_variance[1] * bbox.ymin());
-            decode_bbox->set_xmax(
-                prior_bbox.xmax() + prior_variance[2] * bbox.xmax());
-            decode_bbox->set_ymax(
-                prior_bbox.ymax() + prior_variance[3] * bbox.ymax());
-        }
-    }
-    else
-    if (code_type == PriorBoxParameter_CodeType_CENTER_SIZE)
-    {
-        float prior_width = prior_bbox.xmax() - prior_bbox.xmin();
-        CHECK_GT(prior_width, 0);
-        float prior_height = prior_bbox.ymax() - prior_bbox.ymin();
-        CHECK_GT(prior_height, 0);
-        float prior_center_x = (prior_bbox.xmin() + prior_bbox.xmax()) / 2.;
-        float prior_center_y = (prior_bbox.ymin() + prior_bbox.ymax()) / 2.;
-
-        float decode_bbox_center_x, decode_bbox_center_y;
-        float decode_bbox_width, decode_bbox_height;
-        if (variance_encoded_in_target)
-        {
-            // variance is encoded in target, we simply need to retore the offset
-            // predictions.
-            decode_bbox_center_x = bbox.xmin() * prior_width + prior_center_x;
-            decode_bbox_center_y = bbox.ymin() * prior_height + prior_center_y;
-            decode_bbox_width = exp(bbox.xmax()) * prior_width;
-            decode_bbox_height = exp(bbox.ymax()) * prior_height;
-        }
-        else
-        {
-            // variance is encoded in bbox, we need to scale the offset accordingly.
-            decode_bbox_center_x =
-                prior_variance[0] * bbox.xmin() * prior_width + prior_center_x;
-            decode_bbox_center_y =
-                prior_variance[1] * bbox.ymin() * prior_height + prior_center_y;
-            decode_bbox_width =
-                exp(prior_variance[2] * bbox.xmax()) * prior_width;
-            decode_bbox_height =
-                exp(prior_variance[3] * bbox.ymax()) * prior_height;
-        }
-
-        decode_bbox->set_xmin(decode_bbox_center_x - decode_bbox_width / 2.);
-        decode_bbox->set_ymin(decode_bbox_center_y - decode_bbox_height / 2.);
-        decode_bbox->set_xmax(decode_bbox_center_x + decode_bbox_width / 2.);
-        decode_bbox->set_ymax(decode_bbox_center_y + decode_bbox_height / 2.);
-    }
-    else
-    {
-        LOG(FATAL) << "Unknown LocLossType.";
-    }
-    float bbox_size = BBoxSize(*decode_bbox);
-    decode_bbox->set_size(bbox_size);
-}
-
-void DetectionOutputLayer::DecodeBBoxes(
-    const std::vector<NormalizedBBox>& priorBBoxes,
-    const std::vector<std::vector<float> >& priorVariances,
-    const CodeType code_type, const bool variance_encoded_in_target,
-    const std::vector<NormalizedBBox>& bboxes,
-    std::vector<NormalizedBBox>* decode_bboxes)
-{
-    CV_Assert(priorBBoxes.size() == priorVariances.size());
-    CV_Assert(priorBBoxes.size() == bboxes.size());
-    int num_bboxes = priorBBoxes.size();
-    if (num_bboxes >= 1)
-    {
-        CV_Assert(priorVariances[0].size() == 4);
-    }
-    decode_bboxes->clear();
-    for (int i = 0; i < num_bboxes; ++i)
-    {
-        NormalizedBBox decode_bbox;
-        DecodeBBox(priorBBoxes[i], priorVariances[i], code_type,
-                   variance_encoded_in_target, bboxes[i], &decode_bbox);
-        decode_bboxes->push_back(decode_bbox);
-    }
-}
-
-void DetectionOutputLayer::DecodeBBoxesAll(
-    const std::vector<LabelBBox>& all_loc_preds,
-    const std::vector<NormalizedBBox>& priorBBoxes,
-    const std::vector<std::vector<float> >& priorVariances,
-    const int num, const bool share_location,
-    const int num_loc_classes, const int background_label_id,
-    const CodeType code_type, const bool variance_encoded_in_target,
-    std::vector<LabelBBox>* all_decode_bboxes)
-{
-    CV_Assert(all_loc_preds.size() == num);
-    all_decode_bboxes->clear();
-    all_decode_bboxes->resize(num);
-    for (int i = 0; i < num; ++i)
-    {
-        // Decode predictions into bboxes.
-        LabelBBox& decode_bboxes = (*all_decode_bboxes)[i];
-        for (int c = 0; c < num_loc_classes; ++c)
-        {
-            int label = share_location ? -1 : c;
-            if (label == background_label_id)
-            {
-                // Ignore background class.
-                continue;
-            }
-            if (all_loc_preds[i].find(label) == all_loc_preds[i].end())
-            {
-                // Something bad happened if there are no predictions for current label.
-                std::string error("Could not find location predictions for label ");
-                error += std::string(label);
-                CV_StsError(error.c_str());
-            }
-            const std::vector<NormalizedBBox>& label_loc_preds =
-                all_loc_preds[i].find(label)->second;
-            DecodeBBoxes(priorBBoxes, priorVariances,
-                         code_type, variance_encoded_in_target,
-                         label_loc_preds, &(decode_bboxes[label]));
-        }
-    }
-}
-
-void DetectionOutputLayer::ApplyNMSFast(const std::vector<NormalizedBBox>& bboxes,
+void DetectionOutputLayer::ApplyNMSFast(const std::vector<caffe::NormalizedBBox>& bboxes,
                                         const std::vector<float>& scores,
                                         const float score_threshold,
                                         const float nms_threshold, const int top_k,
                                         std::vector<int>* indices)
 {
     // Sanity check.
-    CHECK_EQ(bboxes.size(), scores.size())
-    << "bboxes and scores have different size.";
+    CV_Assert(bboxes.size() == scores.size());
 
     // Get top_k scores (with corresponding indices).
     std::vector<std::pair<float, int> > score_index_vec;
@@ -743,7 +638,7 @@ void DetectionOutputLayer::ApplyNMSFast(const std::vector<NormalizedBBox>& bboxe
     {
         const int idx = score_index_vec.front().second;
         bool keep = true;
-        for (int k = 0; k < indices->size(); ++k)
+        for (size_t k = 0; k < indices->size(); ++k)
         {
             if (keep)
             {
@@ -770,7 +665,7 @@ void DetectionOutputLayer::GetMaxScoreIndex(
     std::vector<std::pair<float, int> >* score_index_vec)
 {
     // Generate index score pairs.
-    for (int i = 0; i < scores.size(); ++i)
+    for (size_t i = 0; i < scores.size(); ++i)
     {
         if (scores[i] > threshold)
         {
@@ -780,26 +675,18 @@ void DetectionOutputLayer::GetMaxScoreIndex(
 
     // Sort the score pair according to the scores in descending order
     std::stable_sort(score_index_vec->begin(), score_index_vec->end(),
-                     SortScorePairDescend<int>);
+                     util::SortScorePairDescend<int>);
 
     // Keep top_k scores if needed.
-    if (top_k > -1 && top_k < score_index_vec->size())
+    if (top_k > -1 && top_k < (int)score_index_vec->size())
     {
         score_index_vec->resize(top_k);
     }
 }
 
-template <typename T>
-bool DetectionOutputLayer::SortScorePairDescend(const std::pair<float, T>& pair1,
-                                                const std::pair<float, T>& pair2)
-{
-    return pair1.first > pair2.first;
-}
-
-
-void DetectionOutputLayer::IntersectBBox(const NormalizedBBox& bbox1,
-                                         const NormalizedBBox& bbox2,
-                                         NormalizedBBox* intersect_bbox) {
+void DetectionOutputLayer::IntersectBBox(const caffe::NormalizedBBox& bbox1,
+                                         const caffe::NormalizedBBox& bbox2,
+                                         caffe::NormalizedBBox* intersect_bbox) {
     if (bbox2.xmin() > bbox1.xmax() || bbox2.xmax() < bbox1.xmin() ||
         bbox2.ymin() > bbox1.ymax() || bbox2.ymax() < bbox1.ymin())
     {
@@ -818,10 +705,10 @@ void DetectionOutputLayer::IntersectBBox(const NormalizedBBox& bbox1,
     }
 }
 
-float DetectionOutputLayer::JaccardOverlap(const NormalizedBBox& bbox1,
-                                           const NormalizedBBox& bbox2,
+float DetectionOutputLayer::JaccardOverlap(const caffe::NormalizedBBox& bbox1,
+                                           const caffe::NormalizedBBox& bbox2,
                                            const bool normalized) {
-    NormalizedBBox intersect_bbox;
+    caffe::NormalizedBBox intersect_bbox;
     IntersectBBox(bbox1, bbox2, &intersect_bbox);
     float intersect_width, intersect_height;
     if (normalized)
