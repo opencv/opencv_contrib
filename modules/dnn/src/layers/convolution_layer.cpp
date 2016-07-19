@@ -53,7 +53,7 @@ namespace dnn
 {
     ConvolutionLayer::ConvolutionLayer(LayerParams &params) : Layer(params)
     {
-        getKernelParams(params, kerH, kerW, padH, padW, strideH, strideW);
+        getKernelParams(params, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW);
 
         numOutput = params.get<int>("num_output");
         bias = params.get<bool>("bias_term", true);
@@ -119,7 +119,7 @@ namespace dnn
 
     inline bool ConvolutionLayer::is1x1() const
     {
-        return (kerH == 1 && kerW == 1) && (strideW == 1 && strideH == 1); //hotfix with stride
+        return (kerH == 1 && kerW == 1) && (strideW == 1 && strideH == 1) && (dilationW == 1 && dilationH == 1); //hotfix with stride
     }
 
     void ConvolutionLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -179,9 +179,9 @@ namespace dnn
 #endif // HAVE_OPENCL
 
         if (inpBlob.type() == CV_32F)
-            im2col_CpuPBody<float>::run((float*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, colMat.ptr<float>());
+            im2col_CpuPBody<float>::run((float*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW, colMat.ptr<float>());
         if (inpBlob.type() == CV_64F)
-            im2col_CpuPBody<double>::run((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, colMat.ptr<double>());
+            im2col_CpuPBody<double>::run((double*)srcPtr, inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW, colMat.ptr<double>());
     }
 
     void ConvolutionLayer::computeInpOutShape(const Blob &inpBlob)
@@ -253,9 +253,9 @@ namespace dnn
         if (is1x1()) return;
 
         if (dstMat.type() == CV_32F)
-            col2im_cpu(colMat.ptr<float>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<float>());
+            col2im_cpu(colMat.ptr<float>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW,  dstMat.ptr<float>());
         if (dstMat.type() == CV_64F)
-            col2im_cpu(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dstMat.ptr<double>());
+            col2im_cpu(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW, dstMat.ptr<double>());
     }
 }
 }

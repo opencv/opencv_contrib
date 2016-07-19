@@ -56,6 +56,7 @@ namespace dnn
         int padH, padW;
         int kerH, kerW;
         int strideH, strideW;
+        int dilationH, dilationW;
 
         int inpH, inpW, inpCn;
         int outH, outW, outCn;

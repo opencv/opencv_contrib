@@ -72,7 +72,8 @@ namespace dnn
             type = MAX;
         }
 
-        getKernelParams(params, kernelH, kernelW, padH, padW, strideH, strideW);
+        int defaultDilation = 1;
+        getKernelParams(params, kernelH, kernelW, padH, padW, strideH, strideW, defaultDilation, defaultDilation);
     }
 
     void PoolingLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)

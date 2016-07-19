@@ -46,7 +46,7 @@ namespace cv
 namespace dnn
 {
 
-void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW)
+void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW)
 {
     if (params.has("kernel_h") && params.has("kernel_w"))
     {
@@ -82,7 +82,17 @@ void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH,
         strideH = strideW = params.get<int>("stride", 1);
     }
 
-    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0);
+    if (params.has("dilation_h") && params.has("dilation_w"))
+    {
+        dilationH = params.get<int>("dilation_h");
+        dilationW = params.get<int>("dilation_w");
+    }
+    else
+    {
+        dilationH = dilationW = params.get<int>("dilation", 1);
+    }
+
+    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0 && dilationH > 0 && dilationW > 0);
 }
 
 }
