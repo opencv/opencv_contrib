@@ -53,6 +53,7 @@ class PoolingLayerImpl : public PoolingLayer
 {
     bool useOpenCL;
     Size inp, out;
+    bool globalPooling;
 
     void computeOutputShape(Size inpSz);
 
@@ -67,7 +68,6 @@ class PoolingLayerImpl : public PoolingLayer
     bool avePooling_ocl(Blob &src, Blob &dst);
 
 public:
-
     PoolingLayerImpl();
     PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
 

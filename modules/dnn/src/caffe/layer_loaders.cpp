@@ -103,6 +103,7 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
 {
     int type;
     Size kernel, stride, pad;
+    bool globalPooling;
 
     if (params.has("pool"))
     {
@@ -122,6 +123,20 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
     }
 
     getCaffeConvParams(params, kernel, pad, stride);
+
+    globalPooling = params.has("global_pooling");
+
+    if (globalPooling)
+    {
+        if(params.has("kernel_h") || params.has("kernel_w") || params.has("kernel_size"))
+        {
+            CV_Error(cv::Error::StsBadArg, "In global_pooling mode, kernel_size (or kernel_h and kernel_w) cannot be specified");
+        }
+        if(pad.height != 0 || pad.width != 0 || stride.height != 1 || stride.width != 1)
+        {
+            CV_Error(cv::Error::StsBadArg, "In global_pooling mode, pad_h and pad_w must be = 0, and stride_h and stride_w must be = 1");
+        }
+    }
 
     return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
 }

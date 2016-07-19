@@ -72,6 +72,13 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
     CV_Assert(inputs.size() > 0);
 
     inp = inputs[0]->size2();
+
+    if(globalPooling)
+    {
+        kernel.height = inp.height;
+        kernel.width = inp.width;
+    }
+
     computeOutputShape(inp);
 
     useOpenCL = ocl::useOpenCL();
