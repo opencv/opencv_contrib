@@ -45,6 +45,5 @@ namespace cv
 {
 namespace dnn
 {
-
 }
 }

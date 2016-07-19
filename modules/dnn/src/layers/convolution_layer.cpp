@@ -59,12 +59,12 @@ ConvolutionLayerImpl::ConvolutionLayerImpl()
     numOutput = -1;
     group = -1;
 
-    #if HAVE_CBLAS
-        if (getBlasThreads() != cv::getThreadNum())
-        {
-            setBlasThreads(cv::getThreadNum());
-        }
-    #endif
+#if HAVE_CBLAS
+    if (getBlasThreads() != cv::getThreadNum())
+    {
+        setBlasThreads(cv::getThreadNum());
+    }
+#endif
 }
 
 void ConvolutionLayerImpl::init()
@@ -127,7 +127,8 @@ void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vecto
 bool ConvolutionLayerImpl::is1x1() const
 {
     return (kernel.height == 1 && kernel.width == 1) &&
-           (stride.height == 1 && stride.width == 1);
+           (stride.height == 1 && stride.width == 1) &&
+           (dilation.height == 1 && dilation.width == 1);
 }
 
 template<typename XMat>
@@ -140,7 +141,7 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
     {
         int numImg = inputs[ii]->size(0);
         XMat inpMat = inputs[ii]->getRefConst<XMat>();
-        XMat outMat = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*group*outGroupCn, outH*outW));
+        XMat outMat = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg * group * outGroupCn, outH * outW));
 
         for (int n = 0; n < numImg; n++)
         {
@@ -178,11 +179,11 @@ void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
 {
     if (is1x1())
     {
-        dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
+        dstCol = reshaped(srcImg, Shape(ksize, outH * outW));
         return;
     }
 #ifdef HAVE_OPENCL
-    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, this->colBlob.umatRef()));
+    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, this->colBlob.umatRef()));
     dstCol = this->colBlob.umatRefConst();
 #else
     CV_Error(Error::StsInternal, "");
@@ -194,15 +195,15 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
 {
     if (is1x1())
     {
-        dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
+        dstCol = reshaped(srcImg, Shape(ksize, outH * outW));
         return;
     }
 
     Mat &colMat = colBlob.matRef();
     if (srcImg.type() == CV_32F)
-        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, colMat.ptr<float>());
+        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<float>());
     if (srcImg.type() == CV_64F)
-        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, colMat.ptr<double>());
+        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<double>());
 
     dstCol = colMat;
 }
@@ -213,8 +214,8 @@ void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
     inpW = input.cols();
     inpCn = input.channels();
 
-    outH = (inpH + 2 * pad.height - kernel.height) / stride.height + 1;
-    outW = (inpW + 2 * pad.width - kernel.width) / stride.width + 1;
+    outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+    outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
     outCn = numOutput;
 
     topH = outH; topW = outW; topCn = outCn;
@@ -257,8 +258,8 @@ void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<B
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
         int numImg = inputs[ii]->size(0);
-        XMat convBlob = reshaped(inputs[ii]->getRefConst<XMat>(), Shape(numImg*outCn, outH*outW));
-        XMat decnBlob = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*inpCn, inpH*inpW));
+        XMat convBlob = reshaped(inputs[ii]->getRefConst<XMat>(), Shape(numImg * outCn, outH * outW));
+        XMat decnBlob = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg * inpCn, inpH * inpW));
 
         for (int n = 0; n < numImg; n++)
         {
@@ -315,12 +316,13 @@ void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
 
 //Initializers
 
-Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad)
+Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad, Size dilation)
 {
     ConvolutionLayerImpl *l = new ConvolutionLayerImpl();
     l->kernel = kernel;
     l->pad = pad;
     l->stride = stride;
+    l->dilation = dilation;
     return Ptr<BaseConvolutionLayer>(l);
 }
 

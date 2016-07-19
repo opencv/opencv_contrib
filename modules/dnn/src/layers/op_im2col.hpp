@@ -57,17 +57,18 @@ class im2col_CpuPBody : public cv::ParallelLoopBody
     int kernel_h, kernel_w;
     int pad_h, pad_w;
     int stride_h, stride_w;
+    int dilation_h, dilation_w;
     Dtype* data_col;
     int height_col, width_col, channels_col;
 
     im2col_CpuPBody() {}
 public:
-
     static void run(const Dtype* data_im,
                     int channels, int height, int width,
                     int kernel_h, int kernel_w,
                     int pad_h, int pad_w,
                     int stride_h, int stride_w,
+                    int dilation_h, int dilation_w,
                     Dtype* data_col)
     {
         im2col_CpuPBody<Dtype> t;
@@ -77,26 +78,31 @@ public:
         t.kernel_h = kernel_h; t.kernel_w = kernel_w;
         t.pad_h = pad_h; t.pad_w = pad_w;
         t.stride_h = stride_h; t.stride_w = stride_w;
-        t.height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-        t.width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+        t.height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
+        t.width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
         t.channels_col = channels * kernel_h * kernel_w;
+        t.dilation_h = dilation_h;
+        t.dilation_w = dilation_w;
 
         cv::parallel_for_(Range(0, t.channels_col), t);
     }
 
     virtual void operator ()(const Range &r) const
     {
-        for (int c = r.start; c < r.end; ++c) {
+        for (int c = r.start; c < r.end; ++c)
+        {
             int w_offset = c % kernel_w;
             int h_offset = (c / kernel_w) % kernel_h;
             int c_im = c / kernel_h / kernel_w;
-            for (int h = 0; h < height_col; ++h) {
-                for (int w = 0; w < width_col; ++w) {
-                    int h_pad = h * stride_h - pad_h + h_offset;
-                    int w_pad = w * stride_w - pad_w + w_offset;
+            for (int h = 0; h < height_col; ++h)
+            {
+                for (int w = 0; w < width_col; ++w)
+                {
+                    int h_pad = h * (stride_h + dilation_h) - pad_h + h_offset;
+                    int w_pad = w * (stride_w + dilation_w) - pad_w + w_offset;
                     if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
                         data_col[(c * height_col + h) * width_col + w] =
-                        data_im[(c_im * height + h_pad) * width + w_pad];
+                            data_im[(c_im * height + h_pad) * width + w_pad];
                     else
                         data_col[(c * height_col + h) * width_col + w] = 0;
                 }
@@ -180,10 +186,11 @@ void col2im_cpu(const Dtype* data_col,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
                 int stride_h, int stride_w,
+                int dilation_h, int dilation_w,
                 Dtype* data_im)
 {
-    int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-    int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+    int height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
+    int width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
     int channels_col = channels * kernel_h * kernel_w;
 
     std::memset(data_im, 0, height * width * channels * sizeof(Dtype));
@@ -198,12 +205,12 @@ void col2im_cpu(const Dtype* data_col,
         {
             for (int w = 0; w < width_col; ++w)
             {
-                int h_pad = h * stride_h - pad_h + h_offset;
-                int w_pad = w * stride_w - pad_w + w_offset;
+                int h_pad = h * (stride_h + dilation_h) - pad_h + h_offset;
+                int w_pad = w * (stride_w + dilation_w) - pad_w + w_offset;
 
                 if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
                     data_im[(c_im * height + h_pad) * width + w_pad] +=
-                    data_col[(c * height_col + h) * width_col + w];
+                        data_col[(c * height_col + h) * width_col + w];
             }
         }
     }
@@ -215,6 +222,7 @@ bool im2col_ocl(const UMat &img,
                 int kernel_h, int kernel_w,
                 int pad_h, int pad_w,
                 int stride_h, int stride_w,
+                int dilation_h, int dilation_w,
                 UMat &col);
 
 bool col2im_ocl(const UMat &col,

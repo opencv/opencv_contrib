@@ -51,6 +51,20 @@ static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Siz
     CV_Assert(stride.height > 0 && stride.width > 0);
 }
 
+static void getCaffeConvDilation(LayerParams &params, Size &dilation)
+{
+    if (params.has("dilation_h") && params.has("dilation_w"))
+    {
+        dilation.height = params.get<int>("dilation_h");
+        dilation.width = params.get<int>("dilation_w");
+    }
+    else
+    {
+        dilation.height = dilation.width = params.get<int>("dilation", 1);
+    }
+    CV_Assert(dilation.height > 0 && dilation.width > 0);
+}
+
 //Layers
 
 //Convolution and Deconvolution
@@ -72,6 +86,7 @@ Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams &params)
 {
     Ptr<BaseConvolutionLayer> l = ConvolutionLayer::create();
     initConvDeconvLayerFromCaffe(l, params);
+    getCaffeConvDilation(params, l->dilation);
     return Ptr<Layer>(l);
 }
 
@@ -167,10 +182,10 @@ template<>
 Ptr<Layer> createLayerFromCaffe<MVNLayer>(LayerParams &params)
 {
     return Ptr<Layer>(MVNLayer::create(
-        params.get<bool>("normalize_variance", true),
-        params.get<bool>("across_channels", false),
-        params.get<double>("eps", 1e-9)
-    ));
+                          params.get<bool>("normalize_variance", true),
+                          params.get<bool>("across_channels", false),
+                          params.get<double>("eps", 1e-9)
+                      ));
 }
 
 /* Reshape layers */

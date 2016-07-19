@@ -57,7 +57,6 @@ namespace dnn
 
 PoolingLayerImpl::PoolingLayerImpl()
 {
-
 }
 
 PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_)

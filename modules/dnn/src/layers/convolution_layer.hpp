@@ -48,12 +48,10 @@ namespace cv
 {
 namespace dnn
 {
-
 //TODO: simultaneously convolution and bias addition for cache optimization
 class ConvolutionLayerImpl : public ConvolutionLayer
 {
 public:
-
     ConvolutionLayerImpl();
     virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
