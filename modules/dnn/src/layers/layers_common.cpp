@@ -46,53 +46,101 @@ namespace cv
 namespace dnn
 {
 
-void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW)
+namespace util
 {
-    if (params.has("kernel_h") && params.has("kernel_w"))
+std::string makeName(const std::string& str1, const std::string& str2)
+{
+    return str1 + str2;
+}
+
+bool getParameter(LayerParams &params, const std::string& nameBase, const std::string& nameAll, int &parameterH, int &parameterW, bool hasDefault = false, const int& defaultValue = 0)
+{
+    std::string nameH = makeName(nameBase, std::string("_h"));
+    std::string nameW = makeName(nameBase, std::string("_w"));
+    std::string nameAll_ = nameAll;
+    if(nameAll_ == "")
     {
-        kernelH = params.get<int>("kernel_h");
-        kernelW = params.get<int>("kernel_w");
+        nameAll_ = nameBase;
     }
-    else if (params.has("kernel_size"))
+
+    if (params.has(nameH) && params.has(nameW))
     {
-        kernelH = kernelW = params.get<int>("kernel_size");
+        parameterH = params.get<int>(nameH);
+        parameterW = params.get<int>(nameW);
+        return true;
     }
     else
+    {
+        if (params.has(nameAll_))
+        {
+            if(hasDefault)
+            {
+                parameterH = parameterW = params.get<int>(nameAll_, defaultValue);
+            }
+            else
+            {
+                parameterH = parameterW = params.get<int>(nameAll_);
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+void getKernelSize(LayerParams &params, int &kernelH, int &kernelW)
+{
+    if(!util::getParameter(params, "kernel", "kernel_size", kernelH, kernelW))
     {
         CV_Error(cv::Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
     }
 
-    if (params.has("pad_h") && params.has("pad_w"))
+    CV_Assert(kernelH > 0 && kernelW > 0);
+}
+
+void getStrideAndPadding(LayerParams &params, int &padH, int &padW, int &strideH, int &strideW)
+{
+    util::getParameter(params, "pad", "pad", padH, padW, true, 0);
+    util::getParameter(params, "stride", "stride", strideH, strideW, true, 1);
+
+    CV_Assert(padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0);
+}
+}
+
+
+void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling, int &padH, int &padW, int &strideH, int &strideW)
+{
+    util::getStrideAndPadding(params, padH, padW, strideH, strideW);
+
+    globalPooling = params.has("global_pooling");
+
+    if (globalPooling)
     {
-        padH = params.get<int>("pad_h");
-        padW = params.get<int>("pad_w");
+        if(params.has("kernel_h") || params.has("kernel_w") || params.has("kernel_size"))
+        {
+            CV_Error(cv::Error::StsBadArg, "In global_pooling mode, kernel_size (or kernel_h and kernel_w) cannot be specified");
+        }
+        if(padH != 0 || padW != 0 || strideH != 1 || strideW != 1)
+        {
+            CV_Error(cv::Error::StsBadArg, "In global_pooling mode, pad_h and pad_w must be = 0, and stride_h and stride_w must be = 1");
+        }
     }
     else
     {
-        padH = padW = params.get<int>("pad", 0);
+        util::getKernelSize(params, kernelH, kernelW);
     }
+}
 
-    if (params.has("stride_h") && params.has("stride_w"))
-    {
-        strideH = params.get<int>("stride_h");
-        strideW = params.get<int>("stride_w");
-    }
-    else
-    {
-        strideH = strideW = params.get<int>("stride", 1);
-    }
+void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW)
+{
+    util::getKernelSize(params, kernelH, kernelW);
+    util::getStrideAndPadding(params, padH, padW, strideH, strideW);
 
-    if (params.has("dilation_h") && params.has("dilation_w"))
-    {
-        dilationH = params.get<int>("dilation_h");
-        dilationW = params.get<int>("dilation_w");
-    }
-    else
-    {
-        dilationH = dilationW = params.get<int>("dilation", 1);
-    }
+    util::getParameter(params, "dilation", "dilation", dilationH, dilationW, true, 1);
 
-    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0 && dilationH > 0 && dilationW > 0);
+    CV_Assert(dilationH > 0 && dilationW > 0);
 }
 
 }

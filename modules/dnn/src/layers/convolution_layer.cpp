@@ -53,7 +53,7 @@ namespace dnn
 {
     ConvolutionLayer::ConvolutionLayer(LayerParams &params) : Layer(params)
     {
-        getKernelParams(params, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW);
+        getConvolutionKernelParams(params, kerH, kerW, padH, padW, strideH, strideW, dilationH, dilationW);
 
         numOutput = params.get<int>("num_output");
         bias = params.get<bool>("bias_term", true);

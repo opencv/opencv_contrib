@@ -60,6 +60,7 @@ namespace dnn
         int padH, padW;
         int strideH, strideW;
         int kernelH, kernelW;
+        bool globalPooling;
 
         int inpH, inpW;
         int outH, outW;
