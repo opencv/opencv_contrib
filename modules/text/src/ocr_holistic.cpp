@@ -145,11 +145,11 @@ public:
         std::vector<Mat> allImageVector;
         inputImageList.getMatVector(allImageVector);
         size_t outputSize=size_t(this->outputSize_);//temporary variable to avoid int to size_t arithmentic
-        size_t minibatchSize=this->minibatchSz_;//temporary variable to avoid int to size_t arithmentic
-        classProbabilities.create(Size(outputSize,allImageVector.size()),CV_32F);
+        size_t minibatchSize=size_t(this->minibatchSz_);//temporary variable to avoid int to size_t arithmentic
+        classProbabilities.create(Size(int(outputSize),int(allImageVector.size())),CV_32F);
         Mat outputMat = classProbabilities.getMat();
         for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=minibatchSize){
-            int rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
+            size_t rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
             std::vector<Mat>::const_iterator from=allImageVector.begin()+imgNum;
             std::vector<Mat>::const_iterator to=allImageVector.begin()+rangeEnd;
             std::vector<Mat> minibatchInput(from,to);
