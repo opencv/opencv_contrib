@@ -100,7 +100,7 @@ public:
     DictNetCaffeImpl(String modelArchFilename, String modelWeightsFilename, int maxMinibatchSz, bool useGpu)
         :minibatchSz_(maxMinibatchSz), gpuBackend_(useGpu){
         CV_Assert(this->minibatchSz_>0);
-        CV_Assert(fileExists(modelArchFilename));
+        CV_Assert(fileExists(modelArchFilename) );
         CV_Assert(fileExists(modelWeightsFilename));
 #ifdef HAVE_CAFFE
         if(this->gpuBackend_){
