@@ -49,10 +49,10 @@ namespace dnn
 {
 class FlattenLayer : public Layer
 {
-    size_t _startAxis;
+    int _startAxis;
     int _endAxis;
 
-    static const size_t _numAxes = 4;
+    size_t _numAxes;
     static const std::string _layerName;
 
 public:
@@ -63,11 +63,14 @@ public:
     void checkInputs(const std::vector<Blob*> &inputs);
 
     template<typename T>
-    T getParameter(const LayerParams &params, const std::string &parameterName,
-                   const size_t &idx = 0);
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
 
-    DictValue getParameterDict(const LayerParams &params,
-                               const std::string &parameterName);
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName, DictValue &result);
 };
 }
 }

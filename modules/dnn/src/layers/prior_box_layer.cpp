@@ -53,42 +53,52 @@ namespace dnn
 
 const std::string PriorBoxLayer::_layerName = std::string("PriorBox");
 
-DictValue PriorBoxLayer::getParameterDict(const LayerParams &params,
-                                          const std::string &parameterName)
+bool PriorBoxLayer::getParameterDict(const LayerParams &params,
+                                     const std::string &parameterName,
+                                     DictValue& result)
 {
     if (!params.has(parameterName))
     {
-        std::string message = _layerName;
-        message += " layer parameter does not contain ";
-        message += parameterName;
-        message += " index.";
-        CV_Error(Error::StsBadArg, message);
+        return false;
     }
 
-    DictValue parameter = params.get(parameterName);
-    if(parameter.size() != 1)
-    {
-        std::string message = parameterName;
-        message += " field in ";
-        message += _layerName;
-        message += " layer parameter is required";
-        CV_Error(Error::StsBadArg, message);
-    }
-
-    return parameter;
+    result = params.get(parameterName);
+    return true;
 }
 
 template<typename T>
 T PriorBoxLayer::getParameter(const LayerParams &params,
                               const std::string &parameterName,
-                              const size_t &idx)
+                              const size_t &idx,
+                              const bool required,
+                              const T& defaultValue)
 {
-    return getParameterDict(params, parameterName).get<T>(idx);
+    DictValue dictValue;
+    bool success = getParameterDict(params, parameterName, dictValue);
+    if(!success)
+    {
+        if(required)
+        {
+            std::string message = _layerName;
+            message += " layer parameter does not contain ";
+            message += parameterName;
+            message += " parameter.";
+            CV_Error(Error::StsBadArg, message);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+    return dictValue.get<T>(idx);
 }
 
 void PriorBoxLayer::getAspectRatios(const LayerParams &params)
 {
-    DictValue aspectRatioParameter = getParameterDict(params, "aspect_ratio");
+    DictValue aspectRatioParameter;
+    bool aspectRatioRetieved = getParameterDict(params, "aspect_ratio", aspectRatioParameter);
+    CV_Assert(aspectRatioRetieved);
+
     for (int i = 0; i < aspectRatioParameter.size(); ++i)
     {
         float aspectRatio = aspectRatioParameter.get<float>(i);
@@ -115,7 +125,10 @@ void PriorBoxLayer::getAspectRatios(const LayerParams &params)
 
 void PriorBoxLayer::getVariance(const LayerParams &params)
 {
-    DictValue varianceParameter = getParameterDict(params, "variance");
+    DictValue varianceParameter;
+    bool varianceParameterRetrieved = getParameterDict(params, "variance", varianceParameter);
+    CV_Assert(varianceParameterRetrieved);
+
     int varianceSize = varianceParameter.size();
     if (varianceSize > 1)
     {
@@ -190,12 +203,9 @@ void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob>
     // 2 channels. First channel stores the mean of each prior coordinate.
     // Second channel stores the variance of each prior coordinate.
     size_t outChannels = 2;
-    size_t outHeight = _layerHeight;
-    size_t outWidth = _layerWidth * _numPriors * 4;
-
     _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
-    outputs[0].create(BlobShape(outNum, outChannels, outHeight, outWidth));
+    outputs[0].create(BlobShape(outNum, outChannels, _outChannelSize));
 }
 
 void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)

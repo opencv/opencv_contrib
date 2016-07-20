@@ -52,54 +52,56 @@ namespace dnn
 
 const std::string FlattenLayer::_layerName = std::string("Flatten");
 
-DictValue FlattenLayer::getParameterDict(const LayerParams &params,
-                                          const std::string &parameterName)
+bool FlattenLayer::getParameterDict(const LayerParams &params,
+                                    const std::string &parameterName,
+                                    DictValue& result)
 {
     if (!params.has(parameterName))
     {
-        std::string message = _layerName;
-        message += " layer parameter does not contain ";
-        message += parameterName;
-        message += " index.";
-        CV_Error(Error::StsBadArg, message);
+        return false;
     }
 
-    DictValue parameter = params.get(parameterName);
-    if(parameter.size() != 1)
-    {
-        std::string message = parameterName;
-        message += " field in ";
-        message += _layerName;
-        message += " layer parameter is required";
-        CV_Error(Error::StsBadArg, message);
-    }
-
-    return parameter;
+    result = params.get(parameterName);
+    return true;
 }
 
 template<typename T>
 T FlattenLayer::getParameter(const LayerParams &params,
-                              const std::string &parameterName,
-                              const size_t &idx)
+                             const std::string &parameterName,
+                             const size_t &idx,
+                             const bool required,
+                             const T& defaultValue)
 {
-    return getParameterDict(params, parameterName).get<T>(idx);
+    DictValue dictValue;
+    bool success = getParameterDict(params, parameterName, dictValue);
+    if(!success)
+    {
+        if(required)
+        {
+            std::string message = _layerName;
+            message += " layer parameter does not contain ";
+            message += parameterName;
+            message += " parameter.";
+            CV_Error(Error::StsBadArg, message);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+    return dictValue.get<T>(idx);
 }
 
 FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
 {
-    _startAxis = getParameter<int>(params, "start_axis");
-    _endAxis = getParameter<int>(params, "end_axis");
-
-    if(_endAxis <= 0)
-    {
-        _endAxis += _numAxes;
-    }
+    _startAxis = getParameter<int>(params, "axis");
+    _endAxis = getParameter<int>(params, "end_axis", 0, false, -1);
 }
 
 void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
-    for (size_t i = 0; i < inputs.size(); i++)
+    for (size_t i = 1; i < inputs.size(); i++)
     {
         for (size_t j = 0; j < _numAxes; j++)
         {
@@ -112,29 +114,31 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
 {
     checkInputs(inputs);
 
+    _numAxes = inputs[0]->shape().dims();
+    if(_endAxis <= 0)
+    {
+        _endAxis += _numAxes;
+    }
+    CV_Assert(_startAxis >= 0);
+    CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
+
     size_t flattenedDimensionSize = 1;
     for (int i = _startAxis; i <= _endAxis; i++)
     {
         flattenedDimensionSize *= inputs[0]->shape()[i];
     }
 
-    BlobShape outputShape;
-    size_t interval = _endAxis - _startAxis;
-
-    // imitate flexible number of axes: make first dimension sizes = 1
-    for (size_t i = 0; i < interval; i++)
+    std::vector<int> outputShape;
+    for (int i = 0; i < _startAxis; i++)
     {
-        outputShape[i] = 1;
+        outputShape.push_back(inputs[0]->shape()[i]);
     }
-    for (int i = interval; i < _endAxis; i++)
-    {
-        outputShape[i] = inputs[0]->shape()[i - interval];
-    }
-    outputShape[_endAxis] = flattenedDimensionSize;
+    outputShape.push_back(flattenedDimensionSize);
     for (size_t i = _endAxis + 1; i < _numAxes; i++)
     {
-        outputShape[i] = inputs[0]->shape()[i];
+        outputShape.push_back(inputs[0]->shape()[i]);
     }
+    CV_Assert(outputShape.size() <= 4);
 
     for (size_t i = 0; i < inputs.size(); i++)
     {

@@ -51,7 +51,7 @@ namespace dnn
 {
 class DetectionOutputLayer : public Layer
 {
-    int _numClasses;
+    unsigned _numClasses;
     bool _shareLocation;
     int _numLocClasses;
 
@@ -79,13 +79,18 @@ public:
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void checkInputs(const std::vector<Blob*> &inputs);
+    void getCodeType(LayerParams &params);
 
     template<typename T>
-    T getParameter(const LayerParams &params, const std::string &parameterName,
-                   const size_t &idx = 0);
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
 
-    DictValue getParameterDict(const LayerParams &params,
-                               const std::string &parameterName);
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName,
+                          DictValue& result);
 
     typedef std::map<int, std::vector<caffe::NormalizedBBox> > LabelBBox;
 
