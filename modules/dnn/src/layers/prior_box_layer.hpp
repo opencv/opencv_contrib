@@ -83,11 +83,15 @@ public:
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     template<typename T>
-    T getParameter(const LayerParams &params, const std::string &parameterName,
-                   const size_t &idx = 0);
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
 
-    DictValue getParameterDict(const LayerParams &params,
-                               const std::string &parameterName);
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName,
+                          DictValue& result);
 
     void getAspectRatios(const LayerParams &params);
     void getVariance(const LayerParams &params);

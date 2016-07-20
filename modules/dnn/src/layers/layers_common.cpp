@@ -73,19 +73,20 @@ bool getParameter(LayerParams &params, const std::string& nameBase, const std::s
     {
         if (params.has(nameAll_))
         {
-            if(hasDefault)
-            {
-                parameterH = parameterW = params.get<int>(nameAll_, defaultValue);
-            }
-            else
-            {
-                parameterH = parameterW = params.get<int>(nameAll_);
-            }
+            parameterH = parameterW = params.get<int>(nameAll_);
             return true;
         }
         else
         {
-            return false;
+            if(hasDefault)
+            {
+                parameterH = parameterW = defaultValue;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

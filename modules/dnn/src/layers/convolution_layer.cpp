@@ -190,8 +190,9 @@ namespace dnn
         inpW = inpBlob.cols();
         inpCn = inpBlob.channels();
 
-        outH = (inpH + 2 * padH - kerH) / strideH + 1;
-        outW = (inpW + 2 * padW - kerW) / strideW + 1;
+        outH = (inpH + 2 * padH - (dilationH * (kerH - 1) + 1)) / strideH + 1;
+        outW = (inpW + 2 * padW - (dilationW * (kerW - 1) + 1)) / strideW + 1;
+
         outCn = numOutput;
 
         topH = outH; topW = outW; topCn = outCn;

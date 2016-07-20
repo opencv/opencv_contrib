@@ -54,43 +54,49 @@ namespace dnn
 
 const std::string NormalizeBBoxLayer::_layerName = std::string("NormalizeBBox");
 
-DictValue NormalizeBBoxLayer::getParameterDict(const LayerParams &params,
-                                               const std::string &parameterName)
+bool NormalizeBBoxLayer::getParameterDict(const LayerParams &params,
+                                          const std::string &parameterName,
+                                          DictValue& result)
 {
     if (!params.has(parameterName))
     {
-        std::string message = _layerName;
-        message += " layer parameter does not contain ";
-        message += parameterName;
-        message += " index.";
-        CV_Error(Error::StsBadArg, message);
+        return false;
     }
 
-    DictValue parameter = params.get(parameterName);
-    if(parameter.size() != 1)
-    {
-        std::string message = parameterName;
-        message += " field in ";
-        message += _layerName;
-        message += " layer parameter is required";
-        CV_Error(Error::StsBadArg, message);
-    }
-
-    return parameter;
+    result = params.get(parameterName);
+    return true;
 }
 
 template<typename T>
 T NormalizeBBoxLayer::getParameter(const LayerParams &params,
                                    const std::string &parameterName,
-                                   const size_t &idx)
+                                   const size_t &idx,
+                                   const bool required,
+                                   const T& defaultValue)
 {
-    return getParameterDict(params, parameterName).get<T>(idx);
+    DictValue dictValue;
+    bool success = getParameterDict(params, parameterName, dictValue);
+    if(!success)
+    {
+        if(required)
+        {
+            std::string message = _layerName;
+            message += " layer parameter does not contain ";
+            message += parameterName;
+            message += " parameter.";
+            CV_Error(Error::StsBadArg, message);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+    return dictValue.get<T>(idx);
 }
-
 
 NormalizeBBoxLayer::NormalizeBBoxLayer(LayerParams &params) : Layer(params)
 {
-    _eps = getParameter<float>(params, "eps");
+    _eps = getParameter<float>(params, "eps", 0, false, 1e-10);
     _across_spatial = getParameter<bool>(params, "across_spatial");
     _channel_shared = getParameter<bool>(params, "channel_shared");
 }
@@ -98,7 +104,7 @@ NormalizeBBoxLayer::NormalizeBBoxLayer(LayerParams &params) : Layer(params)
 void NormalizeBBoxLayer::checkInputs(const std::vector<Blob*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
-    for (size_t i = 0; i < inputs.size(); i++)
+    for (size_t i = 1; i < inputs.size(); i++)
     {
         for (size_t j = 0; j < _numAxes; j++)
         {

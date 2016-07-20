@@ -9,48 +9,46 @@ using namespace cv::dnn;
 #include <cstdlib>
 using namespace std;
 
-static const string fcnType = "fcn8s";
 
+//static void colorizeSegmentation(dnn::Blob& score,
+//                                 const vector<cv::Vec3b>& colors,
+//                                 cv::Mat& segm)
+//{
+//    const int rows = score.rows();
+//    const int cols = score.cols();
+//    const int chns = score.channels();
 
-static void colorizeSegmentation(dnn::Blob& score,
-                                 const vector<cv::Vec3b>& colors,
-                                 cv::Mat& segm)
-{
-    const int rows = score.rows();
-    const int cols = score.cols();
-    const int chns = score.channels();
+//    cv::Mat maxCl(rows, cols, CV_8UC1);
+//    cv::Mat maxVal(rows, cols, CV_32FC1);
+//    for (int ch = 0; ch < chns; ch++)
+//    {
+//        for (int row = 0; row < rows; row++)
+//        {
+//            const float* ptrScore = score.ptrf(0, ch, row);
+//            uchar* ptrMaxCl = maxCl.ptr<uchar>(row);
+//            float* ptrMaxVal = maxVal.ptr<float>(row);
+//            for (int col = 0; col < cols; col++)
+//            {
+//                if (ptrScore[col] > ptrMaxVal[col])
+//                {
+//                    ptrMaxVal[col] = ptrScore[col];
+//                    ptrMaxCl[col] = ch;
+//                }
+//            }
+//        }
+//    }
 
-    cv::Mat maxCl(rows, cols, CV_8UC1);
-    cv::Mat maxVal(rows, cols, CV_32FC1);
-    for (int ch = 0; ch < chns; ch++)
-    {
-        for (int row = 0; row < rows; row++)
-        {
-            const float* ptrScore = score.ptrf(0, ch, row);
-            uchar* ptrMaxCl = maxCl.ptr<uchar>(row);
-            float* ptrMaxVal = maxVal.ptr<float>(row);
-            for (int col = 0; col < cols; col++)
-            {
-                if (ptrScore[col] > ptrMaxVal[col])
-                {
-                    ptrMaxVal[col] = ptrScore[col];
-                    ptrMaxCl[col] = ch;
-                }
-            }
-        }
-    }
-
-    segm.create(rows, cols, CV_8UC3);
-    for (int row = 0; row < rows; row++)
-    {
-        const uchar* ptrMaxCl = maxCl.ptr<uchar>(row);
-        cv::Vec3b* ptrSegm = segm.ptr<cv::Vec3b>(row);
-        for (int col = 0; col < cols; col++)
-        {
-            ptrSegm[col] = colors[ptrMaxCl[col]];
-        }
-    }
-}
+//    segm.create(rows, cols, CV_8UC3);
+//    for (int row = 0; row < rows; row++)
+//    {
+//        const uchar* ptrMaxCl = maxCl.ptr<uchar>(row);
+//        cv::Vec3b* ptrSegm = segm.ptr<cv::Vec3b>(row);
+//        for (int col = 0; col < cols; col++)
+//        {
+//            ptrSegm[col] = colors[ptrMaxCl[col]];
+//        }
+//    }
+//}
 
 const char* about = "This sample uses Single-Shot Detector to detect objects "
                     "from camera\n"; // TODO: link
@@ -111,6 +109,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    size_t i = 0;
     for (;; )
     {
         Mat frame;
@@ -118,11 +117,14 @@ int main(int argc, char** argv)
         if (frame.empty())
             break;
 
-
         //! [Prepare blob]
         resize(frame, frame, Size(300, 300));       //SSD accepts 300x300 RGB-images
         dnn::Blob inputBlob = dnn::Blob(frame);       //Convert Mat to dnn::Blob image
         //! [Prepare blob]
+
+        std::ostringstream stream;
+        stream << "folder/" << i << ".jpg";
+        imwrite(stream.str(), frame);
 
         //! [Set input blob]
         net.setBlob(".data", inputBlob);            //set the network input
@@ -132,20 +134,20 @@ int main(int argc, char** argv)
         net.forward();                              //compute output
         //! [Make forward pass]
 
-        //! [Gather output]
-        dnn::Blob detection = net.getBlob("detection_out");
+//        //! [Gather output]
+//        dnn::Blob detection = net.getBlob("detection_out");
 
-        //    cv::Mat colorize;
-        //    colorizeSegmentation(score, colors, colorize);
-        //    cv::Mat show;
-        //    cv::addWeighted(img, 0.4, colorize, 0.6, 0.0, show);
-        //    cv::imshow("show", show);
-        //    cv::waitKey(0);
-        //    return 0;
+//        //    cv::Mat colorize;
+//        //    colorizeSegmentation(score, colors, colorize);
+//        //    cv::Mat show;
+//        //    cv::addWeighted(img, 0.4, colorize, 0.6, 0.0, show);
+//        //    cv::imshow("show", show);
+//        //    cv::waitKey(0);
+//        //    return 0;
 
-        imshow("frame", frame);
-        if (waitKey(1) == 27)
-            break;  // stop capturing by pressing ESC
+//        imshow("frame", frame);
+//        if (waitKey(1) == 27)
+//            break;  // stop capturing by pressing ESC
     }
 
     camera.release();

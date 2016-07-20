@@ -79,65 +79,78 @@ bool SortScorePairDescend(const std::pair<float, T>& pair1,
 
 const std::string DetectionOutputLayer::_layerName = std::string("DetectionOutput");
 
-DictValue DetectionOutputLayer::getParameterDict(const LayerParams &params,
-                                                 const std::string &parameterName)
+bool DetectionOutputLayer::getParameterDict(const LayerParams &params,
+                                    const std::string &parameterName,
+                                    DictValue& result)
 {
     if (!params.has(parameterName))
     {
-        std::string message = _layerName;
-        message += " layer parameter does not contain ";
-        message += parameterName;
-        message += " index.";
-        CV_Error(Error::StsBadArg, message);
+        return false;
     }
 
-    DictValue parameter = params.get(parameterName);
-    if(parameter.size() != 1)
-    {
-        std::string message = parameterName;
-        message += " field in ";
-        message += _layerName;
-        message += " layer parameter is required";
-        CV_Error(Error::StsBadArg, message);
-    }
-
-    return parameter;
+    result = params.get(parameterName);
+    return true;
 }
 
 template<typename T>
 T DetectionOutputLayer::getParameter(const LayerParams &params,
-                                     const std::string &parameterName,
-                                     const size_t &idx)
+                             const std::string &parameterName,
+                             const size_t &idx,
+                             const bool required,
+                             const T& defaultValue)
 {
-    return getParameterDict(params, parameterName).get<T>(idx);
+    DictValue dictValue;
+    bool success = getParameterDict(params, parameterName, dictValue);
+    if(!success)
+    {
+        if(required)
+        {
+            std::string message = _layerName;
+            message += " layer parameter does not contain ";
+            message += parameterName;
+            message += " parameter.";
+            CV_Error(Error::StsBadArg, message);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+    return dictValue.get<T>(idx);
+}
+
+void DetectionOutputLayer::getCodeType(LayerParams &params)
+{
+    String codeTypeString = params.get<String>("code_type").toLowerCase();
+    if (codeTypeString == "corner")
+        _codeType = caffe::PriorBoxParameter_CodeType_CORNER;
+    else if (codeTypeString == "center_size")
+        _codeType = caffe::PriorBoxParameter_CodeType_CENTER_SIZE;
+    else
+        _codeType = caffe::PriorBoxParameter_CodeType_CORNER;
 }
 
 DetectionOutputLayer::DetectionOutputLayer(LayerParams &params) : Layer(params)
 {
-    _numClasses = getParameter<int>(params, "num_classes");
-    _shareLocation = getParameter<int>(params, "share_location");
+    _numClasses = getParameter<unsigned>(params, "num_classes");
+    _shareLocation = getParameter<bool>(params, "share_location");
     _numLocClasses = _shareLocation ? 1 : _numClasses;
     _backgroundLabelId = getParameter<int>(params, "background_label_id");
-    _codeType = static_cast<CodeType>(getParameter<int>(params, "code_type"));
-    _varianceEncodedInTarget = getParameter<int>(params, "variance_encoded_in_target");
+    _varianceEncodedInTarget = getParameter<bool>(params, "variance_encoded_in_target", 0, false, false);
     _keepTopK = getParameter<int>(params, "keep_top_k");
-    _confidenceThreshold = params.has("confidence_threshold") ?
-                           getParameter<int>(params, "confidence_threshold") : -FLT_MAX;
+    _confidenceThreshold = getParameter<float>(params, "confidence_threshold", 0, false, -FLT_MAX);
+    _topK = getParameter<int>(params, "top_k", 0, false, -1);
+
+    getCodeType(params);
 
     // Parameters used in nms.
     _nmsThreshold = getParameter<float>(params, "nms_threshold");
     CV_Assert(_nmsThreshold > 0.);
-
-    _topK = -1;
-    if (params.has("top_k"))
-    {
-        _topK = getParameter<int>(params, "top_k");
-    }
 }
 
 void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
 {
-    for (size_t i = 0; i < inputs.size(); i++)
+    for (size_t i = 1; i < inputs.size(); i++)
     {
         for (size_t j = 0; j < _numAxes; j++)
         {

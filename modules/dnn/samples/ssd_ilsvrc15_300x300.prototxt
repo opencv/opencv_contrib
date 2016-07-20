@@ -500,7 +500,7 @@ layer {
       type: "constant"
       value: 0
     }
-    # dilation: 6
+    dilation: 6
   }
 }
 layer {
@@ -750,7 +750,7 @@ layer {
 }
 layer {
   name: "conv4_3_norm"
-  type: "Normalize"
+  type: "NormalizeBBox"
   bottom: "conv4_3"
   top: "conv4_3_norm"
   normalize_bbox_param {

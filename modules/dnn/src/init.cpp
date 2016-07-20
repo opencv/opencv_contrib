@@ -55,6 +55,11 @@
 #include "layers/split_layer.hpp"
 #include "layers/crop_layer.hpp"
 #include "layers/eltwise_layer.hpp"
+#include "layers/flatten_layer.hpp"
+#include "layers/permute_layer.hpp"
+#include "layers/prior_box_layer.hpp"
+#include "layers/detection_output_layer.hpp"
+#include "layers/normalize_bbox_layer.hpp"
 
 namespace cv
 {
@@ -82,7 +87,7 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(Softmax, SoftMaxLayer)
     REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
     REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
-    REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)
+//    REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)
     REG_RUNTIME_LAYER_CLASS(Pooling, PoolingLayer)
     REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
     REG_RUNTIME_LAYER_CLASS(LRN, LRNLayer)
@@ -102,6 +107,12 @@ void initModule()
 
     REG_RUNTIME_LAYER_CLASS(Crop, CropLayer)
     REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
+
+    REG_RUNTIME_LAYER_CLASS(Permute, PermuteLayer)
+    REG_RUNTIME_LAYER_CLASS(Flatten, FlattenLayer)
+    REG_RUNTIME_LAYER_CLASS(PriorBox, PriorBoxLayer)
+    REG_RUNTIME_LAYER_CLASS(DetectionOutput, DetectionOutputLayer)
+    REG_RUNTIME_LAYER_CLASS(NormalizeBBox, NormalizeBBoxLayer)
 
     init.status = true;
 }
