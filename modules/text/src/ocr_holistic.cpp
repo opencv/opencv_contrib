@@ -42,14 +42,16 @@ protected:
             }else{//Assuming values are at the desired [0,1] range
                 tmpInput.convertTo(output, CV_32FC1);
             }
-        }else if(input.channels()==1){
-            if(input.depth()==CV_8U){
-                input.convertTo(output, CV_32FC1,1/255.0);
-            }else{//Assuming values are at the desired [0,1] range
-                input.convertTo(output, CV_32FC1);
-            }
         }else{
-            CV_Error(Error::StsError,"Expecting images with either 1 or 3 channels");
+            if(input.channels()==1){
+                if(input.depth()==CV_8U){
+                    input.convertTo(output, CV_32FC1,1/255.0);
+                }else{//Assuming values are at the desired [0,1] range
+                    input.convertTo(output, CV_32FC1);
+                }
+            }else{
+                CV_Error(Error::StsError,"Expecting images with either 1 or 3 channels");
+            }
         }
         resize(output,output,this->inputGeometry_);
         Scalar dev,mean;
@@ -150,8 +152,8 @@ public:
         Mat outputMat = classProbabilities.getMat();
         for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=minibatchSize){
             size_t rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
-            std::vector<Mat>::const_iterator from=allImageVector.begin()+imgNum;
-            std::vector<Mat>::const_iterator to=allImageVector.begin()+rangeEnd;
+            std::vector<Mat>::const_iterator from=std::vector<Mat>::const_iterator(allImageVector.begin()+imgNum);
+            std::vector<Mat>::const_iterator to=std::vector<Mat>::const_iterator(allImageVector.begin()+rangeEnd);
             std::vector<Mat> minibatchInput(from,to);
             classifyMiniBatch(minibatchInput,outputMat.rowRange(imgNum,rangeEnd));
         }

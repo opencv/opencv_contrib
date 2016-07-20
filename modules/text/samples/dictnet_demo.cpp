@@ -44,8 +44,8 @@ int main(int argc, const char * argv[]){
 
     if (argc < 3){
         std::cout<<getHelpStr(argv[0]);
-        exit(1);
         std::cout<<"Insufiecient parameters. Aborting!"<<std::endl;
+        exit(1);
     }
 
     if (!fileExists("dictnet_vgg.caffemodel") ||
