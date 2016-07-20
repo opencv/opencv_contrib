@@ -85,22 +85,33 @@ protected:
     Ptr<caffe::Net<float> > net_;
 #endif
     Size inputGeometry_;
-    const int minibatchSz_;
-    const bool gpuBackend_;
+    int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
+    bool gpuBackend_;//The existence of the assignment operator mandates this to be nonconst
     int outputSize_;
 public:
     DictNetCaffeImpl(const DictNetCaffeImpl& dn):inputGeometry_(dn.inputGeometry_),minibatchSz_(dn.minibatchSz_),
         gpuBackend_(dn.gpuBackend_),outputSize_(dn.outputSize_){
-        //Implemented to supress Visual Studio warning
+        //Implemented to supress Visual Studio warning "assignment operator could not be generated"
 #ifdef HAVE_CAFFE
         this->net_=dn.net_;
 #endif
+    }
+    DictNetCaffeImpl& operator=(const DictNetCaffeImpl &dn){
+#ifdef HAVE_CAFFE
+        this->net_=dn.net_;
+#endif
+        this->inputGeometry_=dn.inputGeometry_;
+        this->minibatchSz_=dn.minibatchSz_;
+        this->gpuBackend_=dn.gpuBackend_;
+        this->outputSize_=dn.outputSize_;
+        return *this;
+        //Implemented to supress Visual Studio warning "assignment operator could not be generated"
     }
 
     DictNetCaffeImpl(String modelArchFilename, String modelWeightsFilename, int maxMinibatchSz, bool useGpu)
         :minibatchSz_(maxMinibatchSz), gpuBackend_(useGpu){
         CV_Assert(this->minibatchSz_>0);
-        CV_Assert(fileExists(modelArchFilename) );
+        CV_Assert(fileExists(modelArchFilename));
         CV_Assert(fileExists(modelWeightsFilename));
 #ifdef HAVE_CAFFE
         if(this->gpuBackend_){
@@ -133,10 +144,12 @@ public:
     void classifyBatch(InputArrayOfArrays inputImageList, OutputArray classProbabilities){
         std::vector<Mat> allImageVector;
         inputImageList.getMatVector(allImageVector);
-        classProbabilities.create(Size((size_t)(this->outputSize_),allImageVector.size()),CV_32F);
+        size_t outputSize=size_t(this->outputSize_);//temporary variable to avoid int to size_t arithmentic
+        size_t minibatchSize=this->minibatchSz_;//temporary variable to avoid int to size_t arithmentic
+        classProbabilities.create(Size(outputSize,allImageVector.size()),CV_32F);
         Mat outputMat = classProbabilities.getMat();
-        for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=this->minibatchSz_){
-            int rangeEnd=imgNum+std::min<int>(allImageVector.size()-imgNum,this->minibatchSz_);
+        for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=minibatchSize){
+            int rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
             std::vector<Mat>::const_iterator from=allImageVector.begin()+imgNum;
             std::vector<Mat>::const_iterator to=allImageVector.begin()+rangeEnd;
             std::vector<Mat> minibatchInput(from,to);
