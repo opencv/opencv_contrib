@@ -100,15 +100,16 @@ void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &ou
 template<typename XMat>
 void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    XMat& outMat = outputs[0].getRef<XMat>();
-    std::vector<Range> ranges(outputs[0].dims(), Range::all());
+    // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten.
 
-    ranges[axisIdx].start = 0;
+    size_t usedSize = 0;
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size(axisIdx);
-        inputs[i]->getRefConst<XMat>().copyTo(outMat(&ranges[0]));
-        ranges[axisIdx].start = ranges[axisIdx].end;
+        Mat inMat(1, inputs[i]->total(), CV_32F, inputs[i]->ptrf());
+        Mat outMat(1, inputs[i]->total(), CV_32F, outputs[0].ptrf() + usedSize);
+
+        inMat.copyTo(outMat);
+        usedSize += inputs[i]->total();
     }
 }
 
