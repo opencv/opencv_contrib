@@ -62,6 +62,7 @@ namespace dnn
         CV_Assert(axis < refShape.dims());
 
         int axisSum = 0;
+
         for (size_t i = 0; i < inputs.size(); i++)
         {
             BlobShape curShape = inputs[i]->shape();
@@ -83,18 +84,16 @@ namespace dnn
 
     void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
     {
-        const Mat& outMat = outputs[0].matRef();
-        std::vector<Range> ranges(outputs[0].dims(), Range::all());
-        int sizeStart = 0;
+        // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten.
+
+        size_t usedSize = 0;
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            int sizeEnd = sizeStart + inputs[i]->size(axis);
-            ranges[axis] = Range(sizeStart, sizeEnd);
+            Mat inMat(1, inputs[i]->total(), CV_32F, inputs[i]->ptrf());
+            Mat outMat(1, inputs[i]->total(), CV_32F, outputs[0].ptrf() + usedSize);
 
-            Mat outSubMat = outMat(&ranges[0]);
-            inputs[i]->matRef().copyTo(outSubMat);
-
-            sizeStart = sizeEnd;
+            inMat.copyTo(outMat);
+            usedSize += inputs[i]->total();
         }
     }
 }
