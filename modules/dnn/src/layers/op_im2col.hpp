@@ -42,7 +42,6 @@
 #ifndef __OPENCV_DNN_LAYERS_IM2COL_HPP__
 #define __OPENCV_DNN_LAYERS_IM2COL_HPP__
 #include <opencv2/core.hpp>
-#include <iostream>
 
 namespace cv
 {
