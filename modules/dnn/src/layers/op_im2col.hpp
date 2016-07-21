@@ -108,8 +108,8 @@ public:
             {
                 for (int w = 0; w < width_col; ++w)
                 {
-                    int h_pad = h * (stride_h + dilation_h) - pad_h + h_offset;
-                    int w_pad = w * (stride_w + dilation_w) - pad_w + w_offset;
+                    int h_pad = h * stride_h - pad_h + h_offset * dilation_h;
+                    int w_pad = w * stride_w - pad_w + w_offset * dilation_w;
                     if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
                         data_col[(c * height_col + h) * width_col + w] =
                             data_im[(c_im * height + h_pad) * width + w_pad];
@@ -146,8 +146,8 @@ void col2im_cpu(const Dtype* data_col,
         {
             for (int w = 0; w < width_col; ++w)
             {
-                int h_pad = h * (stride_h + dilation_h) - pad_h + h_offset;
-                int w_pad = w * (stride_w + dilation_w) - pad_w + w_offset;
+                int h_pad = h * stride_h - pad_h + h_offset * dilation_h;
+                int w_pad = w * stride_w - pad_w + w_offset * dilation_w;
 
                 if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
                     data_im[(c_im * height + h_pad) * width + w_pad] +=

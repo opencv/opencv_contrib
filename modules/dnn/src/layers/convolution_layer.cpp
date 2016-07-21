@@ -45,7 +45,6 @@
 #include "convolution_layer.hpp"
 #include "op_im2col.hpp"
 #include "op_blas.hpp"
-#include <iostream>
 
 namespace cv
 {
