@@ -126,36 +126,12 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
     _channelSize = _rows * _cols;
     _imageSize = _channelSize * _channels;
 
-    _buffer = Blob(BlobShape(1, _channels, _rows, _cols));
-    _buffer_channel = Blob(BlobShape(1, _channels, 1, 1));
-    _buffer_spatial = Blob(BlobShape(1, 1, _rows, _cols));
+    _buffer = Mat(_channels, _channelSize, CV_32F);
 
-    if (_across_spatial)
-    {
-        _norm = Blob(BlobShape(_num, 1, 1, 1));
-    }
-    else
-    {
-        _norm = Blob(BlobShape(_num, 1, _rows, _cols));
-    }
+    _sumChannelMultiplier = Mat(_channels, 1, CV_32F, Scalar(1.0));
+    _sumSpatialMultiplier = Mat(1, _channelSize, CV_32F, Scalar(1.0));
 
-    // add eps to avoid overflow
-    _norm.matRef() = Scalar(_eps);
-
-    _sumChannelMultiplier = Blob(BlobShape(1, _channels, 1, 1));
-    _sumChannelMultiplier.matRef() = Scalar(1.0);
-
-    _sumSpatialMultiplier = Blob(BlobShape(1, 1, _rows, _cols));
-    _sumSpatialMultiplier.matRef() = Scalar(1.0);
-
-    if (_channel_shared)
-    {
-        _scale = Blob(BlobShape(1, 1, 1, 1));
-    }
-    else
-    {
-        _scale = Blob(BlobShape(1, 1, 1, _channels));
-    }
+    _scale = blobs[0];
 
     for(size_t i = 0; i < inputs.size(); i++)
     {
@@ -165,54 +141,59 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
 
 void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    Mat zeroBuffer = Mat(_buffer.matRef().rows, _buffer.matRef().cols,
-                         _buffer.matRef().type(), Scalar(0));
-    Mat sumAbs;
+    Mat zeroBuffer(_channels, _channelSize, CV_32F, Scalar(0));
+    Mat absDiff;
 
     for (size_t j = 0; j < inputs.size(); j++)
     {
         for (size_t n = 0; n < _num; ++n)
         {
-            Mat src = inputs[j]->getPlanes(n);
-            Mat dst = outputs[j].getPlanes(n);
+            Mat src = Mat(_channels, _channelSize, CV_32F, inputs[j]->ptrf(n));
+            Mat dst = Mat(_channels, _channelSize, CV_32F, outputs[j].ptrf(n));
 
-            Mat normCurrent = _norm.getPlanes(n);
-
-            cv::sqrt(src, _buffer.matRef());
+            _buffer = src.mul(src);
 
             if (_across_spatial)
             {
-                absdiff(_buffer.matRef(), zeroBuffer, sumAbs);
+                absdiff(_buffer, zeroBuffer, absDiff);
+
                 // add eps to avoid overflow
-                sumAbs += _eps;
+                double absSum = sum(absDiff)[0] + _eps;
 
-                pow(sumAbs, 0.5f, normCurrent);
-
-                dst = src / normCurrent;
+                float norm = sqrt(absSum);
+                dst = src / norm;
             }
             else
             {
-                gemmCPU(_buffer.matRef(), _sumChannelMultiplier.matRef(), 1, normCurrent, GEMM_1_T & GEMM_2_T);
+                Mat norm; // 1 x _channelSize
+
+                // (_channels x_channelSize)T * _channels x 1 -> _channelSize x 1
+                gemmCPU(_buffer, _sumChannelMultiplier, 1, norm, 0, GEMM_1_T);
 
                 // compute norm
-                pow(normCurrent, 0.5f, normCurrent);
+                pow(norm, 0.5f, norm);
 
                 // scale the layer
-                gemmCPU(_sumChannelMultiplier.matRef(), normCurrent, 1, _buffer.matRef(), 0);
+                // _channels x 1 * (_channelSize x 1)T -> _channels x _channelSize
+                gemmCPU(_sumChannelMultiplier, norm, 1, _buffer, 0, GEMM_2_T);
 
-                dst = src / _buffer.matRef().at<float>(0, 0);
+                dst = src / _buffer;
             }
 
             // scale the output
             if (_channel_shared)
             {
-                dst *= _scale.matRef();
+                // _scale: 1 x 1
+                dst *= _scale.matRef().at<float>(0, 0);
             }
             else
             {
-                gemmCPU(_scale.matRef(), _sumSpatialMultiplier.matRef(), 1, _buffer.matRef(), 0);
-                dst *= _buffer.matRef();
-            }
+                // _scale: _channels x 1
+                // _channels x 1 * 1 x _channelSize -> _channels x _channelSize
+                gemmCPU(_scale.matRef(), _sumSpatialMultiplier, 1, _buffer, 0);
+
+                dst = dst.mul(_buffer);
+           }
         }
     }
 }
