@@ -297,7 +297,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
     std::vector<int> outputsShape(2, 1);
     outputsShape.push_back(numKept);
     outputsShape.push_back(7);
-    outputs[0].reshape(outputsShape);
+    outputs[0].create(outputsShape);
     float* outputsData = outputs[0].ptrf();
 
     int count = 0;
