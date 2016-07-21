@@ -88,12 +88,14 @@ PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
     }
 
     DictValue paramOrder = params.get("order");
-    if(paramOrder.size() != 4)
+    if(paramOrder.size() > 4)
     {
         CV_Error(
             Error::StsBadArg,
-            "4 orders of dimensions in Permute layer parameter is required");
+            "Too many (> 4) orders of dimensions in Permute layer");
     }
+
+    _numAxes = paramOrder.size();
 
     for (size_t i = 0; i < _numAxes; i++)
     {
@@ -110,13 +112,13 @@ void PermuteLayer::computeStrides()
     _oldStride.resize(_numAxes);
     _newStride.resize(_numAxes);
 
-    _oldStride[3] = 1;
-    _newStride[3] = 1;
+    _oldStride[_numAxes - 1] = 1;
+    _newStride[_numAxes - 1] = 1;
 
-    for(int i = 2; i >= 0; i--)
+    for(int i = _numAxes - 2; i >= 0; i--)
     {
-        _oldStride[i] = _oldStride[i - 1] * _oldDimensionSize[i - 1];
-        _newStride[i] = _newStride[i - 1] * _newDimensionSize[i - 1];
+        _oldStride[i] = _oldStride[i + 1] * _oldDimensionSize[i + 1];
+        _newStride[i] = _newStride[i + 1] * _newDimensionSize[i + 1];
     }
 
     _count = _oldStride[0] * _oldDimensionSize[0];
@@ -130,6 +132,8 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     }
 
     CV_Assert(inputs.size() > 0);
+    CV_Assert((int)_numAxes == inputs[0]->shape().dims());
+
     outputs.resize(inputs.size());
 
     _oldDimensionSize = inputs[0]->shape();
@@ -158,10 +162,10 @@ void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
         return;
     }
 
-    for (size_t j = 0; j < inputs.size(); j++)
+    for (size_t k = 0; k < inputs.size(); k++)
     {
-        float *srcData = inputs[j]->ptrf();
-        float *dstData = outputs[j].ptrf();
+        float *srcData = inputs[k]->ptrf();
+        float *dstData = outputs[k].ptrf();
 
         for (size_t i = 0; i < _count; ++i)
         {
