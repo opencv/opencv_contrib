@@ -44,7 +44,6 @@
 #include "detection_output_layer.hpp"
 #include <float.h>
 #include <string>
-#include <iostream>
 
 namespace cv
 {
@@ -167,8 +166,8 @@ void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
     _num = inputs[0]->num();
 
     _numPriors = inputs[2]->rows() / 4;
-    CV_Assert(_numPriors * _numLocClasses * 4 == inputs[0]->channels());
-    CV_Assert(_numPriors * _numClasses == inputs[1]->channels());
+    CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->channels());
+    CV_Assert(int(_numPriors * _numClasses) == inputs[1]->channels());
 
     // num() and channels() are 1.
     // Since the number of bboxes to be kept is unknown before nms, we manually
@@ -217,7 +216,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
             allConfidenceScores[i];
         std::map<int, std::vector<int> > indices;
         int numDetections = 0;
-        for (int c = 0; c < _numClasses; ++c)
+        for (int c = 0; c < (int)_numClasses; ++c)
         {
             if (c == _backgroundLabelId)
             {
@@ -291,7 +290,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
 
     if (numKept == 0)
     {
-        std::cout << "Couldn't find any detections" << std::endl;
+        CV_ErrorNoReturn(Error::StsError, "Couldn't find any detections");
         return;
     }
     std::vector<int> outputsShape(2, 1);
