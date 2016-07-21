@@ -59,7 +59,7 @@ class PermuteLayer : public Layer
     std::vector<size_t> _newStride;
     bool _needsPermute;
 
-    static const size_t _numAxes = 4;
+    size_t _numAxes;
 
     void checkCurrentOrder(int currentOrder);
     void checkNeedForPermutation();
