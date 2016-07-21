@@ -155,7 +155,7 @@ public:
             std::vector<Mat>::const_iterator from=std::vector<Mat>::const_iterator(allImageVector.begin()+imgNum);
             std::vector<Mat>::const_iterator to=std::vector<Mat>::const_iterator(allImageVector.begin()+rangeEnd);
             std::vector<Mat> minibatchInput(from,to);
-            classifyMiniBatch(minibatchInput,outputMat.rowRange(imgNum,rangeEnd));
+            classifyMiniBatch(minibatchInput,outputMat.rowRange(int(imgNum),int(rangeEnd)));
         }
     }
 
