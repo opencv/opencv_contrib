@@ -49,13 +49,10 @@ namespace dnn
 {
 class NormalizeBBoxLayer : public Layer
 {
-    Blob _buffer;
-    Blob _buffer_channel;
-    Blob _buffer_spatial;
+    Mat _buffer;
 
-    Blob _norm;
-    Blob _sumChannelMultiplier;
-    Blob _sumSpatialMultiplier;
+    Mat _sumChannelMultiplier;
+    Mat _sumSpatialMultiplier;
 
     Blob _scale;
 
