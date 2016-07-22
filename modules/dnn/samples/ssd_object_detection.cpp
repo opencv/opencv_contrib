@@ -27,13 +27,16 @@ Mat getMean(const size_t& height, const size_t& width)
     return mean;
 }
 
-void preprocess(Mat& frame)
+Mat preprocess(const Mat& frame)
 {
-    frame.convertTo(frame, CV_32FC3);
-    resize(frame, frame, Size(width, height)); //SSD accepts 300x300 RGB-images
+    Mat preprocessed;
+    frame.convertTo(preprocessed, CV_32FC3);
+    resize(preprocessed, preprocessed, Size(width, height)); //SSD accepts 300x300 RGB-images
 
     Mat mean = getMean(width, height);
-    cv::subtract(frame, mean, frame);
+    cv::subtract(preprocessed, mean, preprocessed);
+
+    return preprocessed;
 }
 
 const char* about = "This sample uses Single-Shot Detector "
@@ -41,10 +44,11 @@ const char* about = "This sample uses Single-Shot Detector "
                     "to detect objects on image\n"; // TODO: link
 
 const char* params
-    = "{ help   | help                | false | print usage         }"
-      "{ proto  | model prototxt file |       | model configuration }"
-      "{ model  | caffemodel file     |       | model weights       }"
-      "{ image  | image file          |       | image for detection }";
+    = "{ help           | false | print usage         }"
+      "{ proto          |       | model configuration }"
+      "{ model          |       | model weights       }"
+      "{ image          |       | image for detection }"
+      "{ min_confidence | 0.5   | min confidence      }";
 
 int main(int argc, char** argv)
 {
@@ -93,9 +97,9 @@ int main(int argc, char** argv)
     cv::Mat frame = cv::imread(parser.get<string>("image"), -1);
 
     //! [Prepare blob]
-    preprocess(frame);
+    Mat preprocessedFrame = preprocess(frame);
 
-    dnn::Blob inputBlob = dnn::Blob(frame);           //Convert Mat to dnn::Blob image
+    dnn::Blob inputBlob = dnn::Blob(preprocessedFrame); //Convert Mat to dnn::Blob image
     //! [Prepare blob]
 
     //! [Set input blob]
@@ -110,26 +114,34 @@ int main(int argc, char** argv)
     dnn::Blob detection = net.getBlob("detection_out");
     Mat detectionMat(detection.rows(), detection.cols(), CV_32F, detection.ptrf());
 
+    float confidenceThreshold = parser.get<float>("min_confidence");
     for(size_t i = 0; i < detectionMat.rows; i++)
     {
-        std::cout << "Class: " << detectionMat.at<float>(i, 1) << std::endl;
-        std::cout << "Confidence: " << detectionMat.at<float>(i, 2) << std::endl;
+        float confidence = detectionMat.at<float>(i, 2);
 
-        std::cout << " " << detectionMat.at<float>(i, 3) * width;
-        std::cout << " " << detectionMat.at<float>(i, 4) * height;
-        std::cout << " " << detectionMat.at<float>(i, 5) * width;
-        std::cout << " " << detectionMat.at<float>(i, 6) * height;
+        if(confidence > confidenceThreshold)
+        {
+            size_t objectClass = detectionMat.at<float>(i, 1);
 
-        float xLeftBottom = detectionMat.at<float>(i, 3) * width;
-        float yLeftBottom = detectionMat.at<float>(i, 4) * height;
-        float xRightTop = detectionMat.at<float>(i, 5) * width;
-        float yRightTop = detectionMat.at<float>(i, 6) * height;
+            float xLeftBottom = detectionMat.at<float>(i, 3) * frame.cols;
+            float yLeftBottom = detectionMat.at<float>(i, 4) * frame.rows;
+            float xRightTop = detectionMat.at<float>(i, 5) * frame.cols;
+            float yRightTop = detectionMat.at<float>(i, 6) * frame.rows;
 
-        Rect object(xLeftBottom, yLeftBottom,
-                    xRightTop - xLeftBottom,
-                    yRightTop - yLeftBottom);
+            std::cout << "Class: " << objectClass << std::endl;
+            std::cout << "Confidence: " << confidence << std::endl;
 
-        rectangle(frame, object, Scalar(0, 255, 0));
+            std::cout << " " << xLeftBottom
+                      << " " << yLeftBottom
+                      << " " << xRightTop
+                      << " " << yRightTop << std::endl;
+
+            Rect object(xLeftBottom, yLeftBottom,
+                        xRightTop - xLeftBottom,
+                        yRightTop - yLeftBottom);
+
+            rectangle(frame, object, Scalar(0, 255, 0));
+        }
     }
 
     imshow("detections", frame);
