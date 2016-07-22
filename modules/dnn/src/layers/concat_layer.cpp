@@ -84,7 +84,7 @@ void ConcatLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> 
 
 void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
-    // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten more optimally.
+    // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation needs to be rewritten more optimally.
 
     if (inputs.size() == 1)
     {
@@ -96,7 +96,7 @@ void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &output
     size_t outputStride = outputs[0].total(axis);
 
     size_t offset = 0;
-    for (int i = 0; i < inputs.size(); ++i)
+    for (size_t i = 0; i < inputs.size(); ++i)
     {
         size_t inputSliceSize = inputs[i]->total(axis);
         const float* inputData = inputs[i]->ptrf();
@@ -105,7 +105,6 @@ void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &output
         {
             const float* src = inputData + n * inputSliceSize;
             float* dst = outputData + n * outputStride + offset;
-//            memcpy(dst, src, inputSliceSize);
             for(size_t k = 0; k < inputSliceSize; k++)
             {
                 dst[k] = src[k];

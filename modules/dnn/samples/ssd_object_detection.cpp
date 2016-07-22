@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     Mat detectionMat(detection.rows(), detection.cols(), CV_32F, detection.ptrf());
 
     float confidenceThreshold = parser.get<float>("min_confidence");
-    for(size_t i = 0; i < detectionMat.rows; i++)
+    for(int i = 0; i < detectionMat.rows; i++)
     {
         float confidence = detectionMat.at<float>(i, 2);
 
