@@ -48,6 +48,7 @@ namespace cv
 {
 namespace dnn
 {
+<<<<<<< 964fe6961468e8f11603f4d4e232af6d5b35c038
 
 ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
 {
@@ -86,7 +87,6 @@ void ConcatLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Bl
     outputs[0].create(refShape, inputs[0]->type(), allocFlags);
 }
 
-
 void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     #ifdef HAVE_OPENCL
@@ -100,16 +100,31 @@ void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &ou
 template<typename XMat>
 void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten.
-
-    size_t usedSize = 0;
-    for (size_t i = 0; i < inputs.size(); i++)
+    if (inputs.size() == 1)
     {
-        Mat inMat(1, inputs[i]->total(), CV_32F, inputs[i]->ptrf());
-        Mat outMat(1, inputs[i]->total(), CV_32F, outputs[0].ptrf() + usedSize);
+        return;
+    }
+    float* outputData = outputs[0].ptrf();
 
-        inMat.copyTo(outMat);
-        usedSize += inputs[i]->total();
+    size_t numConcats = inputs[0]->total(0, axis);
+    size_t outputStride = outputs[0].total(axis);
+
+    size_t offset = 0;
+    for (int i = 0; i < inputs.size(); ++i)
+    {
+        size_t inputSliceSize = inputs[i]->total(axis);
+        const float* inputData = inputs[i]->ptrf();
+
+        for (size_t n = 0; n < numConcats; ++n)
+        {
+            const float* src = inputData + n * inputSliceSize;
+            float* dst = outputData + n * outputStride + offset;
+            for(size_t k = 0; k < inputSliceSize; k++)
+            {
+                dst[k] = src[k];
+            }
+        }
+        offset += inputSliceSize;
     }
 }
 
@@ -118,5 +133,6 @@ Ptr<ConcatLayer> ConcatLayer::create(int axis)
     return Ptr<ConcatLayer>(new ConcatLayerImpl(axis));
 }
 
+}
 }
 }
