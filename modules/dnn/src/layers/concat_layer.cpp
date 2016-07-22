@@ -48,7 +48,6 @@ namespace cv
 {
 namespace dnn
 {
-<<<<<<< 964fe6961468e8f11603f4d4e232af6d5b35c038
 
 ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
 {
@@ -110,7 +109,7 @@ void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &ou
     size_t outputStride = outputs[0].total(axis);
 
     size_t offset = 0;
-    for (int i = 0; i < inputs.size(); ++i)
+    for (size_t i = 0; i < inputs.size(); ++i)
     {
         size_t inputSliceSize = inputs[i]->total(axis);
         const float* inputData = inputs[i]->ptrf();

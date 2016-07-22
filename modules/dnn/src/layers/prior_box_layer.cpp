@@ -211,6 +211,8 @@ void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob>
 
 void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
+    (void)inputs; // to suppress unused parameter warning
+
     float* outputPtr = outputs[0].ptrf();
 
     // first prior: aspect_ratio = 1, size = min_size
