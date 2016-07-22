@@ -206,6 +206,7 @@ void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob>
     _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
     outputs[0].create(BlobShape(outNum, outChannels, _outChannelSize));
+    outputs[0].matRef() = 0;
 }
 
 void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -213,13 +214,13 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
     float* outputPtr = outputs[0].ptrf();
 
     // first prior: aspect_ratio = 1, size = min_size
-    _boxWidth = _boxHeight = _minSize;
-
     int idx = 0;
     for (size_t h = 0; h < _layerHeight; ++h)
     {
         for (size_t w = 0; w < _layerWidth; ++w)
         {
+            _boxWidth = _boxHeight = _minSize;
+
             float center_x = (w + 0.5) * _stepX;
             float center_y = (h + 0.5) * _stepY;
             // xmin
