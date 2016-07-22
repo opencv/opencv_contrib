@@ -47,54 +47,72 @@ namespace cv
 {
 namespace dnn
 {
-    ConcatLayer::ConcatLayer(LayerParams &params) : Layer(params)
+ConcatLayer::ConcatLayer(LayerParams &params) : Layer(params)
+{
+    axis = params.get<int>("axis", 1);
+    CV_Assert(axis >= 0);
+}
+
+void ConcatLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    CV_Assert(inputs.size() > 0);
+
+    int refType = inputs[0]->type();
+    BlobShape refShape = inputs[0]->shape();
+    CV_Assert(axis < refShape.dims());
+
+    int axisSum = 0;
+
+    for (size_t i = 0; i < inputs.size(); i++)
     {
-        axis = params.get<int>("axis", 1);
-        CV_Assert(axis >= 0);
+        BlobShape curShape = inputs[i]->shape();
+
+        CV_Assert(curShape.dims() == refShape.dims() && inputs[i]->type() == refType);
+        for (int axisId = 0; axisId < refShape.dims(); axisId++)
+        {
+            if (axisId != axis && refShape[axisId] != curShape[axisId])
+                CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
+        }
+
+        axisSum += curShape[axis];
     }
 
-    void ConcatLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    refShape[axis] = axisSum;
+    outputs.resize(1);
+    outputs[0].create(refShape);
+}
+
+void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten more optimally.
+
+    if (inputs.size() == 1)
     {
-        CV_Assert(inputs.size() > 0);
+        return;
+    }
+    float* outputData = outputs[0].ptrf();
 
-        int refType = inputs[0]->type();
-        BlobShape refShape = inputs[0]->shape();
-        CV_Assert(axis < refShape.dims());
+    size_t numConcats = inputs[0]->total(0, axis);
+    size_t outputStride = outputs[0].total(axis);
 
-        int axisSum = 0;
+    size_t offset = 0;
+    for (int i = 0; i < inputs.size(); ++i)
+    {
+        size_t inputSliceSize = inputs[i]->total(axis);
+        const float* inputData = inputs[i]->ptrf();
 
-        for (size_t i = 0; i < inputs.size(); i++)
+        for (size_t n = 0; n < numConcats; ++n)
         {
-            BlobShape curShape = inputs[i]->shape();
-
-            CV_Assert(curShape.dims() == refShape.dims() && inputs[i]->type() == refType);
-            for (int axisId = 0; axisId < refShape.dims(); axisId++)
+            const float* src = inputData + n * inputSliceSize;
+            float* dst = outputData + n * outputStride + offset;
+//            memcpy(dst, src, inputSliceSize);
+            for(size_t k = 0; k < inputSliceSize; k++)
             {
-                if (axisId != axis && refShape[axisId] != curShape[axisId])
-                    CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
+                dst[k] = src[k];
             }
-
-            axisSum += curShape[axis];
         }
-
-        refShape[axis] = axisSum;
-        outputs.resize(1);
-        outputs[0].create(refShape);
+        offset += inputSliceSize;
     }
-
-    void ConcatLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
-    {
-        // In case when Blob shape used in allocation and inner matrix shape do not match, this layer did not work in previous implementation. This implementation is just a fix and needs to be rewritten.
-
-        size_t usedSize = 0;
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            Mat inMat(1, inputs[i]->total(), CV_32F, inputs[i]->ptrf());
-            Mat outMat(1, inputs[i]->total(), CV_32F, outputs[0].ptrf() + usedSize);
-
-            inMat.copyTo(outMat);
-            usedSize += inputs[i]->total();
-        }
-    }
+}
 }
 }
