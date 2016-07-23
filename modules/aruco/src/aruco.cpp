@@ -876,7 +876,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
 
         for(int i = begin; i < end; i++) {
             solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
-                    rvecs.at<Vec3d>(0, i), tvecs.at<Vec3d>(0, i));
+                    rvecs.at<Vec3d>(i), tvecs.at<Vec3d>(i));
         }
     }
 
@@ -896,7 +896,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
   */
 void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
-                               OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs) {
+                               OutputArray _rvecs, OutputArray _tvecs) {
 
     CV_Assert(markerLength > 0);
 
@@ -1099,7 +1099,7 @@ static void _projectUndetectedMarkers(Ptr<Board> &_board, InputOutputArrayOfArra
   */
 void refineDetectedMarkers(InputArray _image, Ptr<Board> &_board,
                            InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
-                           InputOutputArray _rejectedCorners, InputArray _cameraMatrix,
+                           InputOutputArrayOfArrays _rejectedCorners, InputArray _cameraMatrix,
                            InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
                            bool checkAllOrders, OutputArray _recoveredIdxs,
                            const Ptr<DetectorParameters> &_params) {

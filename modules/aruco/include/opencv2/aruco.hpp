@@ -192,9 +192,9 @@ CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, O
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Vec3d>>).
+ * @param rvecs array of output rotation vectors (@sa Rodrigues) (e.g. std::vector<cv::Vec3d>).
  * Each element in rvecs corresponds to the specific marker in imgPoints.
- * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>>).
+ * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  *
  * This function receives the detected markers and returns their pose estimation respect to
@@ -209,7 +209,7 @@ CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, O
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
-                                            OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
+                                            OutputArray rvecs, OutputArray tvecs);
 
 
 
@@ -228,14 +228,14 @@ class CV_EXPORTS_W Board {
     public:
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
-    std::vector< std::vector< Point3f > > objPoints;
+    CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
     // the dictionary of markers employed for this board
-    Ptr<Dictionary> dictionary;
+    CV_PROP Ptr<Dictionary> dictionary;
 
     // vector of the identifiers of the markers in the board (same size than objPoints)
     // The identifiers refers to the board dictionary
-    std::vector< int > ids;
+    CV_PROP std::vector< int > ids;
 };
 
 
@@ -259,7 +259,7 @@ class CV_EXPORTS_W GridBoard : public Board {
      *
      * This function return the image of the GridBoard, ready to be printed.
      */
-    void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
     /**
@@ -282,17 +282,17 @@ class CV_EXPORTS_W GridBoard : public Board {
     /**
       *
       */
-    Size getGridSize() const { return Size(_markersX, _markersY); }
+    CV_WRAP Size getGridSize() const { return Size(_markersX, _markersY); }
 
     /**
       *
       */
-    float getMarkerLength() const { return _markerLength; }
+    CV_WRAP float getMarkerLength() const { return _markerLength; }
 
     /**
       *
       */
-    float getMarkerSeparation() const { return _markerSeparation; }
+    CV_WRAP float getMarkerSeparation() const { return _markerSeparation; }
 
 
     private:
@@ -374,7 +374,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
  */
 CV_EXPORTS_W void refineDetectedMarkers(
     InputArray image, Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
-    InputOutputArray detectedIds, InputOutputArray rejectedCorners,
+    InputOutputArray detectedIds, InputOutputArrayOfArrays rejectedCorners,
     InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
     float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
     OutputArray recoveredIdxs = noArray(), const Ptr<DetectorParameters> &parameters = DetectorParameters::create());
