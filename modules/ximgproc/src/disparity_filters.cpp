@@ -517,7 +517,7 @@ int readGT(String src_path,OutputArray dst)
 double computeMSE(InputArray GT, InputArray src, Rect ROI)
 {
     CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S || GT.depth()  == CV_32F) && (GT.channels()  == 1) );
-    CV_Assert( !src.empty() && (src.depth() == CV_16S || GT.depth()  == CV_32F) && (src.channels() == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     CV_Assert( src.rows() == GT.rows() && src.cols() == GT.cols() );
     double res = 0;
     Mat GT_ROI (GT.getMat(), ROI);
@@ -539,7 +539,7 @@ double computeMSE(InputArray GT, InputArray src, Rect ROI)
 double computeBadPixelPercent(InputArray GT, InputArray src, Rect ROI, int thresh)
 {
     CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S || GT.depth()  == CV_32F) && (GT.channels()  == 1) );
-    CV_Assert( !src.empty() && (src.depth() == CV_16S || GT.depth()  == CV_32F) && (src.channels() == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     CV_Assert( src.rows() == GT.rows() && src.cols() == GT.cols() );
     int bad_pixel_num = 0;
     Mat GT_ROI (GT.getMat(), ROI);
@@ -560,7 +560,7 @@ double computeBadPixelPercent(InputArray GT, InputArray src, Rect ROI, int thres
 
 void getDisparityVis(InputArray src,OutputArray dst,double scale)
 {
-    CV_Assert( !src.empty() && (src.depth() == CV_16S || GT.depth()  == CV_32F) && (src.channels() == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     Mat srcMat = src.getMat();
     dst.create(srcMat.rows,srcMat.cols,CV_8UC1);
     Mat& dstMat = dst.getMatRef();
