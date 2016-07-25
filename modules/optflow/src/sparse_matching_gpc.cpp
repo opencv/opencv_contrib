@@ -67,7 +67,7 @@ struct Magnitude
   Magnitude( float _val, int _i, int _j ) : val( _val ), i( _i ), j( _j ) {}
   Magnitude() {}
 
-  bool operator<( const Magnitude &m ) { return val > m.val; }
+  bool operator<( const Magnitude &m ) const { return val > m.val; }
 };
 
 struct PartitionPredicate1
