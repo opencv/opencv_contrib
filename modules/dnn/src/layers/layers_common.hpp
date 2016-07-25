@@ -48,7 +48,7 @@ namespace cv
 namespace dnn
 {
 
-void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW);
+void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride);
 
 }
 }

@@ -72,22 +72,21 @@ namespace dnn
             type = MAX;
         }
 
-        getKernelParams(params, kernelH, kernelW, padH, padW, strideH, strideW);
+        getCaffeConvParams(params, kernel, pad, stride);
     }
 
     void PoolingLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
         CV_Assert(inputs.size() > 0);
 
-        inpW = inputs[0]->cols();
-        inpH = inputs[0]->rows();
-        computeOutputShape(inpH, inpW);
+        inp = inputs[0]->size2();
+        computeOutputShape(inp);
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            CV_Assert(inputs[i]->rows() == inpH && inputs[i]->cols() == inpW);
-            outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), outH, outW));
+            CV_Assert(inputs[i]->rows() == inp.height && inputs[i]->cols() == inp.width);
+            outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
         }
     }
 
@@ -104,7 +103,7 @@ namespace dnn
                 avePooling(*inputs[ii], outputs[ii]);
                 break;
             default:
-                CV_Error(cv::Error::StsNotImplemented, "Not implemented");
+                CV_Error(Error::StsNotImplemented, "Not implemented");
                 break;
             }
         }
@@ -112,7 +111,7 @@ namespace dnn
 
     void PoolingLayer::maxPooling(Blob &input, Blob &output)
     {
-        CV_DbgAssert(output.rows() == outH && output.cols() == outW);
+        CV_DbgAssert(output.rows() == out.height && output.cols() == out.width);
 
         for (int n = 0; n < input.num(); ++n)
         {
@@ -121,23 +120,23 @@ namespace dnn
                 float *srcData = input.ptrf(n, c);
                 float *dstData = output.ptrf(n, c);
 
-                for (int ph = 0; ph < outH; ++ph)
+                for (int ph = 0; ph < out.height; ++ph)
                 {
-                    for (int pw = 0; pw < outW; ++pw)
+                    for (int pw = 0; pw < out.width; ++pw)
                     {
-                        int hstart = ph * strideH - padH;
-                        int wstart = pw * strideW - padW;
-                        int hend = min(hstart + kernelH, inpH);
-                        int wend = min(wstart + kernelW, inpW);
+                        int hstart = ph * stride.height - pad.height;
+                        int wstart = pw * stride.width - pad.width;
+                        int hend = min(hstart + kernel.height, inp.height);
+                        int wend = min(wstart + kernel.width, inp.width);
                         hstart = max(hstart, 0);
                         wstart = max(wstart, 0);
-                        const int poolIndex = ph * outW + pw;
+                        const int poolIndex = ph * out.width + pw;
                         float max_val = -FLT_MAX;
 
                         for (int h = hstart; h < hend; ++h)
                             for (int w = wstart; w < wend; ++w)
                             {
-                                const int index = h * inpW + w;
+                                const int index = h * inp.width + w;
                                 if (srcData[index] > max_val)
                                     max_val = srcData[index];
                             }
@@ -158,49 +157,49 @@ namespace dnn
                 float *srcData = input.ptrf(n, c);
                 float *dstData = output.ptrf(n, c);
 
-                for (int ph = 0; ph < outH; ++ph)
+                for (int ph = 0; ph < out.height; ++ph)
                 {
-                    for (int pw = 0; pw < outW; ++pw)
+                    for (int pw = 0; pw < out.width; ++pw)
                     {
-                        int hstart = ph * strideH - padH;
-                        int wstart = pw * strideW - padW;
-                        int hend = min(hstart + kernelH, inpH + padH);
-                        int wend = min(wstart + kernelW, inpW + padW);
+                        int hstart = ph * stride.height - pad.height;
+                        int wstart = pw * stride.width - pad.width;
+                        int hend = min(hstart + kernel.height, inp.height + pad.height);
+                        int wend = min(wstart + kernel.width, inp.width + pad.width);
                         int poolSize = (hend - hstart) * (wend - wstart);
                         hstart = max(hstart, 0);
                         wstart = max(wstart, 0);
-                        hend = min(hend, inpH);
-                        wend = min(wend, inpW);
+                        hend = min(hend, inp.height);
+                        wend = min(wend, inp.width);
 
-                        dstData[ph * outW + pw] = 0.f;
+                        dstData[ph * out.width + pw] = 0.f;
 
                         for (int h = hstart; h < hend; ++h)
                             for (int w = wstart; w < wend; ++w)
-                                dstData[ph * outW + pw] += srcData[h * inpW + w];
+                                dstData[ph * out.width + pw] += srcData[h * inp.width + w];
 
-                        dstData[ph * outW + pw] /= poolSize;
+                        dstData[ph * out.width + pw] /= poolSize;
                     }
                 }
           }
         }
     }
 
-    void PoolingLayer::computeOutputShape(int inH, int inW)
+    void PoolingLayer::computeOutputShape(Size inpSz)
     {
         //Yeah, something strange Caffe scheme-)
-        outH = static_cast<int>(ceil(static_cast<float>(inH + 2 * padH - kernelH) / strideH)) + 1;
-        outW = static_cast<int>(ceil(static_cast<float>(inW + 2 * padW - kernelW) / strideW)) + 1;
+        out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height - kernel.height) / stride.height)) + 1;
+        out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width - kernel.width) / stride.width)) + 1;
 
-        if (padH || padW)
+        if (pad.height || pad.width)
         {
             // If we have padding, ensure that the last pooling starts strictly
             // inside the image (instead of at the padding); otherwise clip the last.
-            if ((outH - 1) * strideH >= inH + padH)
-                --outH;
-            if ((outW - 1) * strideW >= inW + padW)
-                --outW;
-            CV_Assert((outH - 1) * strideH < inH + padH);
-            CV_Assert((outW - 1) * strideW < inW + padW);
+            if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
+                --out.height;
+            if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
+                --out.width;
+            CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
+            CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
         }
     }
 }

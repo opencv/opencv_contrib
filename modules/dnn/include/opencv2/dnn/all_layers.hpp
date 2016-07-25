@@ -205,6 +205,46 @@ namespace dnn
         void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
     };
 
+    class CV_EXPORTS_W BaseConvolutionLayer : public Layer
+    {
+    public:
+
+        Size kernel, pad, stride;
+    };
+
+    class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
+    {
+    public:
+
+        static Ptr<BaseConvolutionLayer> create();
+        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size pad = Size(0, 0), Size stride = Size(1, 1));
+    };
+
+    class CV_EXPORTS_W DeconvolutionLayer : public BaseConvolutionLayer
+    {
+    public:
+
+        static Ptr<BaseConvolutionLayer> create();
+        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size pad = Size(0, 0), Size stride = Size(1, 1));
+    };
+
+    class CV_EXPORTS_W LRNLayer : public Layer
+    {
+    public:
+
+        enum
+        {
+            CHANNEL_NRM,
+            SPATIAL_NRM
+        };
+        int type;
+
+        int size;
+        double alpha, beta;
+    };
+
+
+
 //! @}
 //! @}
 

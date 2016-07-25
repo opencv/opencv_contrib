@@ -97,12 +97,22 @@ OCL_TEST(Layer_Test_Softmax, Accuracy)
 
 TEST(Layer_Test_LRN_spatial, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_lrn_spatial");
+     OCL_OFF(testLayerUsingCaffeModels("layer_lrn_spatial"));
+}
+OCL_TEST(Layer_Test_LRN_spatial, Accuracy)
+{
+     OCL_ON(testLayerUsingCaffeModels("layer_lrn_spatial"));
+     OCL_OFF();
 }
 
 TEST(Layer_Test_LRN_channels, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_lrn_channels");
+     OCL_OFF(testLayerUsingCaffeModels("layer_lrn_channels"));
+}
+OCL_TEST(Layer_Test_LRN_channels, Accuracy)
+{
+    OCL_ON(testLayerUsingCaffeModels("layer_lrn_channels"));
+    OCL_OFF();
 }
 
 TEST(Layer_Test_Convolution, Accuracy)

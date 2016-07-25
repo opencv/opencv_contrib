@@ -46,43 +46,44 @@ namespace cv
 namespace dnn
 {
 
-void getKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW)
+void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride)
 {
     if (params.has("kernel_h") && params.has("kernel_w"))
     {
-        kernelH = params.get<int>("kernel_h");
-        kernelW = params.get<int>("kernel_w");
+        kernel.height = params.get<int>("kernel_h");
+        kernel.width = params.get<int>("kernel_w");
     }
     else if (params.has("kernel_size"))
     {
-        kernelH = kernelW = params.get<int>("kernel_size");
+        kernel.height = kernel.width = params.get<int>("kernel_size");
     }
     else
     {
-        CV_Error(cv::Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
+        CV_Error(Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
     }
+    CV_Assert(kernel.height > 0 && kernel.width > 0);
 
     if (params.has("pad_h") && params.has("pad_w"))
     {
-        padH = params.get<int>("pad_h");
-        padW = params.get<int>("pad_w");
+        pad.height = params.get<int>("pad_h");
+        pad.width = params.get<int>("pad_w");
     }
     else
     {
-        padH = padW = params.get<int>("pad", 0);
+        pad.height = pad.width = params.get<int>("pad", 0);
     }
+    CV_Assert(pad.height >= 0 && pad.width >= 0);
 
     if (params.has("stride_h") && params.has("stride_w"))
     {
-        strideH = params.get<int>("stride_h");
-        strideW = params.get<int>("stride_w");
+        stride.height = params.get<int>("stride_h");
+        stride.width = params.get<int>("stride_w");
     }
     else
     {
-        strideH = strideW = params.get<int>("stride", 1);
+        stride.height = stride.width = params.get<int>("stride", 1);
     }
-
-    CV_Assert(kernelH > 0 && kernelW > 0 && padH >= 0 && padW >= 0 && strideH > 0 && strideW > 0);
+    CV_Assert(stride.height > 0 && stride.width > 0);
 }
 
 }

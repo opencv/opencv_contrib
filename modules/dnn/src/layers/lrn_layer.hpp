@@ -42,34 +42,36 @@
 #ifndef __OPENCV_DNN_LAYERS_LRN_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_LRN_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class LRNLayer : public Layer
+    class LRNLayerImpl : public LRNLayer
     {
-        enum
-        {
-            CHANNEL_NRM,
-            SPATIAL_NRM,
-            SPATIAL_CONTRAST_NRM //cuda-convnet feature
-        } type;
-
-        int size;
-        double alpha, beta;
-
-        Blob bufBlob;
+        bool useOpenCL;
+        Blob buf;
 
         void channelNoramlization(Blob &src, Blob &dst);
+        template<typename XMat>
+        void channelNoramlization_(Blob &src, Blob &dst);
+        bool channelNoramlization_ocl(const UMat &src, UMat &dst);
+
         void spatialNormalization(Blob &src, Blob &dst);
+        template<typename XMat>
+        void spatialNormalization_(Blob &src, Blob &dst);
 
     public:
 
-        LRNLayer(LayerParams &params);
+        LRNLayerImpl();
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
+
+
+Ptr<Layer> createLRNLayerFromCaffe(LayerParams &params);
+
 }
 }
 #endif

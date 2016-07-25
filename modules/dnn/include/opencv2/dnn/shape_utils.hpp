@@ -48,7 +48,10 @@
 namespace cv {
 namespace dnn {
 
-std::ostream &operator<< (std::ostream &s, cv::Range &r)
+//Useful shortcut
+typedef BlobShape Shape;
+
+inline std::ostream &operator<< (std::ostream &s, cv::Range &r)
 {
     return s << "[" << r.start << ", " << r.end << ")";
 }
@@ -96,8 +99,6 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1)
         ranges[i] = Range::all();
     ranges[0] = r0;
     ranges[1] = r1;
-//    for (int i = 0; i < m.dims; i++)
-//        std::cout << ranges[i] << "\n";
     return m(&ranges[0]);
 }
 
@@ -128,8 +129,32 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, co
     return m(&ranges[0]);
 }
 
-}
+//Traits for switching in ploymorphic implementations
+template<typename XMat>
+struct MatTraits
+{
+};
+
+template<>
+struct MatTraits<cv::Mat>
+{
+    enum
+    {
+        IS_MAT  = 1,
+        IS_UMAT = 0,
+    };
+};
+
+template<>
+struct MatTraits<cv::UMat>
+{
+    enum
+    {
+        IS_MAT  = 0,
+        IS_UMAT = 1,
+    };
+};
 
 }
-
+}
 #endif

@@ -120,7 +120,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         String type; //!< Type name which was used for creating layer by layer factory.
 
         Layer();
-        explicit Layer(const LayerParams &params); //!< Initializes only #name, #type and #blobs fields.
+        explicit Layer(const LayerParams &params);      //!< Initializes only #name, #type and #blobs fields.
+        void setParamsFrom(const LayerParams &params);  //!< Initializes only #name, #type and #blobs fields.
         virtual ~Layer();
     };
 

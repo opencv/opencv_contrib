@@ -81,9 +81,9 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
     REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
     REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)
-    REG_RUNTIME_LAYER_CLASS(Pooling, PoolingLayer)
+    REG_RUNTIME_LAYER_CLASS(Pooling, PoolingLayerImpl)
     REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
-    REG_RUNTIME_LAYER_CLASS(LRN, LRNLayer)
+    REG_RUNTIME_LAYER_FUNC(LRN, createLRNLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(InnerProduct, FullyConnectedLayer)
 
     REG_RUNTIME_LAYER_CLASS(ReLU, ElementWiseLayer<ReLUFunctor>)
@@ -94,8 +94,8 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(Sigmoid, ElementWiseLayer<SigmoidFunctor>)
     REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
 
-    REG_RUNTIME_LAYER_CLASS(Convolution, ConvolutionLayer)
-    REG_RUNTIME_LAYER_CLASS(Deconvolution, DeConvolutionLayer)
+    REG_RUNTIME_LAYER_FUNC(Convolution, createConvolutionLayerFromCaffe)
+    REG_RUNTIME_LAYER_FUNC(Deconvolution, createDeconvolutionLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(Concat, ConcatLayer)
 
     init.status = true;

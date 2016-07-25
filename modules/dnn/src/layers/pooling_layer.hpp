@@ -57,14 +57,10 @@ namespace dnn
         };
 
         int type;
-        int padH, padW;
-        int strideH, strideW;
-        int kernelH, kernelW;
+        Size kernel, pad, stride;
+        Size inp, out;
 
-        int inpH, inpW;
-        int outH, outW;
-
-        void computeOutputShape(int inpH, int inpW);
+        void computeOutputShape(Size inpSz);
         void maxPooling(Blob &input, Blob &output);
         void avePooling(Blob &input, Blob &output);
 
