@@ -56,7 +56,7 @@ const double thresholdMagnitudeFrac = 0.6666666666;
 const int globalIters = 3;
 const int localIters = 500;
 const unsigned minNumberOfSamples = 2;
-const bool debugOutput = true;
+//const bool debugOutput = true;
 
 struct Magnitude
 {
@@ -116,8 +116,8 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
       mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
 
-  size_t n = mag.size() * thresholdMagnitudeFrac; // As suggested in the paper, we discard part of the training samples
-                                                  // with a small displacement and train to better distinguish hard pairs.
+  size_t n = size_t(mag.size() * thresholdMagnitudeFrac); // As suggested in the paper, we discard part of the training samples
+                                                          // with a small displacement and train to better distinguish hard pairs.
   std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
   mag.resize( n );
   std::random_shuffle( mag.begin(), mag.end() );
@@ -242,14 +242,14 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         node.coef = coef;
         node.rhs = median;
 
-        if ( debugOutput )
+        /*if ( debugOutput )
         {
           printf( "[%u] Updating weights: correct %.2f (%u/%ld)\n", depth, double( correct ) / std::distance( begin, end ), correct,
                   std::distance( begin, end ) );
           for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
             printf( "%.3f ", coef[k] );
           printf( "\n" );
-        }
+        }*/
       }
     }
   }
@@ -260,8 +260,8 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   SIter rightBegin =
     std::partition( leftEnd, end, PartitionPredicate2( node.coef, node.rhs ) ); // Separate undefined samples from right subtree samples.
 
-  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1 ) ) ? nodeId * 2 + 1 : 0;
-  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1 ) ) ? nodeId * 2 + 2 : 0;
+  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1 ) ) ? unsigned(nodeId * 2 + 1) : 0;
+  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1 ) ) ? unsigned(nodeId * 2 + 2) : 0;
 
   return true;
 }
