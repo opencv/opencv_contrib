@@ -81,10 +81,10 @@ Notice that it is compiled only when tesseract-ocr is correctly installed.
 @note
    -   (C++) An example of OCRTesseract recognition combined with scene text detection can be found
         at the end_to_end_recognition demo:
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp>
     -   (C++) Another example of OCRTesseract recognition combined with scene text detection can be
         found at the webcam_demo:
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
 class CV_EXPORTS_W OCRTesseract : public BaseOCR
 {
@@ -152,7 +152,7 @@ enum decoder_mode
 @note
    -   (C++) An example on using OCRHMMDecoder recognition combined with scene text detection can
         be found at the webcam_demo sample:
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
 class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR
 {
@@ -165,7 +165,7 @@ public:
 
     The default character classifier and feature extractor can be loaded using the utility funtion
     loadOCRHMMClassifierNM and KNN model provided in
-    <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
+    <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
      */
     class CV_EXPORTS_W ClassifierCallback
     {
@@ -321,7 +321,7 @@ CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(cons
  * The function calculate frequency statistics of character pairs from the given lexicon and fills the output transition_probabilities_table with them. The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
  * @note
  *    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
- *            <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+ *            <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
  **/
 CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vector<std::string>& lexicon, OutputArray transition_probabilities_table);
 
@@ -335,7 +335,7 @@ CV_EXPORTS_W Mat createOCRHMMTransitionsTable(const String& vocabulary, std::vec
 @note
    -   (C++) An example on using OCRBeamSearchDecoder recognition combined with scene text detection can
         be found at the demo sample:
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/word_recognition.cpp>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/word_recognition.cpp>
  */
 class CV_EXPORTS_W OCRBeamSearchDecoder : public BaseOCR
 {
@@ -348,7 +348,7 @@ public:
 
     The default character classifier and feature extractor can be loaded using the utility funtion
     loadOCRBeamSearchClassifierCNN with all its parameters provided in
-    <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRBeamSearch_CNN_model_data.xml.gz>.
+    <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRBeamSearch_CNN_model_data.xml.gz>.
      */
     class CV_EXPORTS_W ClassifierCallback
     {
