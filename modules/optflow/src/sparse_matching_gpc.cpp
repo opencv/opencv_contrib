@@ -55,7 +55,7 @@ const int patchRadius = 10;
 const double thresholdMagnitudeFrac = 0.6666666666;
 const int globalIters = 3;
 const int localIters = 500;
-const unsigned minNumberOfSamples = 2;
+const int minNumberOfSamples = 2;
 //const bool debugOutput = true;
 
 struct Magnitude
