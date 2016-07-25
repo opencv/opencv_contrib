@@ -81,7 +81,7 @@ struct PartitionPredicate1
   {
     const bool direction1 = ( coef.dot( sample.first.feature ) < rhs );
     const bool direction2 = ( coef.dot( sample.second.feature ) < rhs );
-    return direction1 == false && direction1 == direction2;
+    return direction1 == false && direction2 == false;
   }
 };
 
@@ -189,7 +189,9 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
 
 bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 {
-  if ( std::distance( begin, end ) < minNumberOfSamples )
+  const int nSamples = (int) std::distance( begin, end );
+
+  if ( nSamples < minNumberOfSamples )
     return false;
 
   if ( nodeId >= nodes.size() )
@@ -200,6 +202,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   // Select the best hyperplane
   unsigned globalBestScore = 0;
   std::vector< double > values;
+  values.reserve(nSamples * 2);
 
   for ( int j = 0; j < globalIters; ++j )
   { // Global search step
@@ -224,6 +227,12 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
       const double median = values[values.size() / 2];
       unsigned correct = 0;
 
+      // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
+      // Most likely this won't happen with samples collected from a good dataset.
+      // Happens in case dataset contains plain (or close to plain) images.
+      if ( std::count( values.begin(), values.end(), median ) > std::max( 1, nSamples / 8 ) )
+        continue;
+
       for ( SIter iter = begin; iter != end; ++iter )
       {
         const bool direction = ( coef.dot( iter->first.feature ) < median );
@@ -244,8 +253,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
         /*if ( debugOutput )
         {
-          printf( "[%u] Updating weights: correct %.2f (%u/%ld)\n", depth, double( correct ) / std::distance( begin, end ), correct,
-                  std::distance( begin, end ) );
+          printf( "[%u] Updating weights: correct %.2f (%u/%ld)\n", depth, double( correct ) / nSamples, correct, nSamples );
           for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
             printf( "%.3f ", coef[k] );
           printf( "\n" );
@@ -253,6 +261,10 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
       }
     }
   }
+
+  if (globalBestScore == 0)
+    return false;
+
   // Partition vector with samples according to the hyperplane in QuickSort-like manner.
   // Unlike QuickSort, we need to partition it into 3 parts (left subtree samples; undefined samples; right subtree
   // samples), so we call it two times.
