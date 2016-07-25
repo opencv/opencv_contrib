@@ -72,10 +72,10 @@ struct Magnitude
 
 struct PartitionPredicate1
 {
-  Vec<double, GPCPatchDescriptor::nFeatures> coef;
+  Vec< double, GPCPatchDescriptor::nFeatures > coef;
   double rhs;
 
-  PartitionPredicate1( const Vec<double, GPCPatchDescriptor::nFeatures> &_coef, double _rhs ) : coef( _coef ), rhs( _rhs ) {}
+  PartitionPredicate1( const Vec< double, GPCPatchDescriptor::nFeatures > &_coef, double _rhs ) : coef( _coef ), rhs( _rhs ) {}
 
   bool operator()( const GPCPatchSample &sample ) const
   {
@@ -87,10 +87,10 @@ struct PartitionPredicate1
 
 struct PartitionPredicate2
 {
-  Vec<double, GPCPatchDescriptor::nFeatures> coef;
+  Vec< double, GPCPatchDescriptor::nFeatures > coef;
   double rhs;
 
-  PartitionPredicate2( const Vec<double, GPCPatchDescriptor::nFeatures> &_coef, double _rhs ) : coef( _coef ), rhs( _rhs ) {}
+  PartitionPredicate2( const Vec< double, GPCPatchDescriptor::nFeatures > &_coef, double _rhs ) : coef( _coef ), rhs( _rhs ) {}
 
   bool operator()( const GPCPatchSample &sample ) const
   {
@@ -110,13 +110,14 @@ bool checkBounds( int i, int j, Size sz )
 void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSamplesVector &samples )
 {
   const Size sz = gt.size();
-  std::vector<Magnitude> mag;
+  std::vector< Magnitude > mag;
 
   for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
-      mag.push_back( Magnitude( normL2Sqr( gt.at<Vec2f>( i, j ) ), i, j ) );
+      mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
 
-  size_t n = mag.size() * thresholdMagnitudeFrac;
+  size_t n = mag.size() * thresholdMagnitudeFrac; // As suggested in the paper, we discard part of the training samples
+                                                  // with a small displacement and train to better distinguish hard pairs.
   std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
   mag.resize( n );
   std::random_shuffle( mag.begin(), mag.end() );
@@ -131,8 +132,8 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
   {
     int i0 = mag[k].i;
     int j0 = mag[k].j;
-    int i1 = i0 + cvRound( gt.at<Vec2f>( i0, j0 )[1] );
-    int j1 = j0 + cvRound( gt.at<Vec2f>( i0, j0 )[0] );
+    int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
+    int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
     if ( checkBounds( i1, j1, sz ) )
       samples.push_back( std::make_pair( GPCPatchDescriptor( fromCh, i0, j0 ), GPCPatchDescriptor( toCh, i1, j1 ) ) );
   }
@@ -149,7 +150,7 @@ double getRandomCauchyScalar()
 
 /* Sample random vector from Cauchy distribution (pointwise, i.e. vector whose components are independent random
  * variables from Cauchy distribution) */
-void getRandomCauchyVector( Vec<double, GPCPatchDescriptor::nFeatures> &v )
+void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
 {
   for ( unsigned i = 0; i < GPCPatchDescriptor::nFeatures; ++i )
     v[i] = getRandomCauchyScalar();
@@ -162,25 +163,25 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   Mat freqDomain;
   dct( imgCh[0]( roi ), freqDomain );
 
-  feature[0] = freqDomain.at<float>( 0, 0 );
-  feature[1] = freqDomain.at<float>( 0, 1 );
-  feature[2] = freqDomain.at<float>( 0, 2 );
-  feature[3] = freqDomain.at<float>( 0, 3 );
+  feature[0] = freqDomain.at< float >( 0, 0 );
+  feature[1] = freqDomain.at< float >( 0, 1 );
+  feature[2] = freqDomain.at< float >( 0, 2 );
+  feature[3] = freqDomain.at< float >( 0, 3 );
 
-  feature[4] = freqDomain.at<float>( 1, 0 );
-  feature[5] = freqDomain.at<float>( 1, 1 );
-  feature[6] = freqDomain.at<float>( 1, 2 );
-  feature[7] = freqDomain.at<float>( 1, 3 );
+  feature[4] = freqDomain.at< float >( 1, 0 );
+  feature[5] = freqDomain.at< float >( 1, 1 );
+  feature[6] = freqDomain.at< float >( 1, 2 );
+  feature[7] = freqDomain.at< float >( 1, 3 );
 
-  feature[8] = freqDomain.at<float>( 2, 0 );
-  feature[9] = freqDomain.at<float>( 2, 1 );
-  feature[10] = freqDomain.at<float>( 2, 2 );
-  feature[11] = freqDomain.at<float>( 2, 3 );
+  feature[8] = freqDomain.at< float >( 2, 0 );
+  feature[9] = freqDomain.at< float >( 2, 1 );
+  feature[10] = freqDomain.at< float >( 2, 2 );
+  feature[11] = freqDomain.at< float >( 2, 3 );
 
-  feature[12] = freqDomain.at<float>( 3, 0 );
-  feature[13] = freqDomain.at<float>( 3, 1 );
-  feature[14] = freqDomain.at<float>( 3, 2 );
-  feature[15] = freqDomain.at<float>( 3, 3 );
+  feature[12] = freqDomain.at< float >( 3, 0 );
+  feature[13] = freqDomain.at< float >( 3, 1 );
+  feature[14] = freqDomain.at< float >( 3, 2 );
+  feature[15] = freqDomain.at< float >( 3, 3 );
 
   feature[16] = cv::sum( imgCh[1]( roi ) )[0] / ( 2 * patchRadius );
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
@@ -198,11 +199,11 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
   // Select the best hyperplane
   unsigned globalBestScore = 0;
-  std::vector<double> values;
+  std::vector< double > values;
 
   for ( int j = 0; j < globalIters; ++j )
   { // Global search step
-    Vec<double, GPCPatchDescriptor::nFeatures> coef;
+    Vec< double, GPCPatchDescriptor::nFeatures > coef;
     unsigned localBestScore = 0;
     getRandomCauchyVector( coef );
 
@@ -280,13 +281,13 @@ void GPCTree::write( FileStorage &fs ) const
 
 void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
 
-Ptr<GPCTrainingSamples> GPCTrainingSamples::create( const std::vector<String> &imagesFrom, const std::vector<String> &imagesTo,
-                                                    const std::vector<String> &gt )
+Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
+                                                      const std::vector< String > &gt )
 {
   CV_Assert( imagesFrom.size() == imagesTo.size() );
   CV_Assert( imagesFrom.size() == gt.size() );
 
-  Ptr<GPCTrainingSamples> ts = makePtr<GPCTrainingSamples>();
+  Ptr< GPCTrainingSamples > ts = makePtr< GPCTrainingSamples >();
   for ( size_t i = 0; i < imagesFrom.size(); ++i )
   {
     Mat from = imread( imagesFrom[i] );

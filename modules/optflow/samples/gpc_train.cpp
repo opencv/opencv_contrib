@@ -14,7 +14,7 @@ int main( int argc, const char **argv )
   }
 
   nSequences /= 3;
-  std::vector<cv::String> img1, img2, gt;
+  std::vector< cv::String > img1, img2, gt;
 
   for ( int i = 0; i < nSequences; ++i )
   {
@@ -23,12 +23,8 @@ int main( int argc, const char **argv )
     gt.push_back( argv[1 + i * 3 + 2] );
   }
 
-  cv::Ptr<cv::optflow::GPCTrainingSamples> ts = cv::optflow::GPCTrainingSamples::create( img1, img2, gt );
-
-  std::cout << "Got " << ts->size() << " samples." << std::endl;
-
-  cv::Ptr< cv::optflow::GPCForest<nTrees> > forest = cv::optflow::GPCForest<nTrees>::create();
-  forest->train( *ts );
+  cv::Ptr< cv::optflow::GPCForest< nTrees > > forest = cv::optflow::GPCForest< nTrees >::create();
+  forest->train( img1, img2, gt );
   forest->save( "forest.dump" );
 
   return 0;
