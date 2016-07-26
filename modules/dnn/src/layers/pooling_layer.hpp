@@ -68,7 +68,7 @@ namespace dnn
     public:
 
         PoolingLayerImpl();
-        PoolingLayerImpl(int type, Size kernel, Size pad, Size stride);
+        PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
 
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);

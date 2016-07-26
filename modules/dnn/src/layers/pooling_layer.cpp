@@ -60,7 +60,7 @@ PoolingLayerImpl::PoolingLayerImpl()
 
 }
 
-PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size pad_, Size stride_)
+PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_)
 {
     type = type_;
     kernel = kernel_;
@@ -261,9 +261,9 @@ void PoolingLayerImpl::computeOutputShape(Size inpSz)
     }
 }
 
-Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size pad, Size stride)
+Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad)
 {
-    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, pad, stride));
+    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad));
 }
 
 Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params)
@@ -290,7 +290,7 @@ Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params)
 
     getCaffeConvParams(params, kernel, pad, stride);
 
-    return Ptr<Layer>(new PoolingLayerImpl(type, kernel, pad, stride));
+    return Ptr<Layer>(new PoolingLayerImpl(type, kernel, stride, pad));
 }
 
 }

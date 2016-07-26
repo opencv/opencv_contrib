@@ -315,12 +315,7 @@ void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
 
 //Initializers
 
-Ptr<BaseConvolutionLayer> ConvolutionLayer::create()
-{
-    return Ptr<BaseConvolutionLayer>(new ConvolutionLayerImpl());
-}
-
-Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size pad, Size stride)
+Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad)
 {
     ConvolutionLayerImpl *l = new ConvolutionLayerImpl();
     l->kernel = kernel;
@@ -329,12 +324,7 @@ Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size pad, Size s
     return Ptr<BaseConvolutionLayer>(l);
 }
 
-Ptr<BaseConvolutionLayer> DeconvolutionLayer::create()
-{
-    return Ptr<BaseConvolutionLayer>(new DeConvolutionLayerImpl());
-}
-
-Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size pad, Size stride)
+Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size stride, Size pad)
 {
     DeConvolutionLayerImpl *l = new DeConvolutionLayerImpl();
     l->kernel = kernel;

@@ -216,16 +216,14 @@ namespace dnn
     {
     public:
 
-        static Ptr<BaseConvolutionLayer> create();
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size pad = Size(0, 0), Size stride = Size(1, 1));
+        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
     };
 
     class CV_EXPORTS_W DeconvolutionLayer : public BaseConvolutionLayer
     {
     public:
 
-        static Ptr<BaseConvolutionLayer> create();
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size pad = Size(0, 0), Size stride = Size(1, 1));
+        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
     };
 
     class CV_EXPORTS_W LRNLayer : public Layer
@@ -259,7 +257,7 @@ namespace dnn
         int type;
         Size kernel, stride, pad;
 
-        static Ptr<PoolingLayer> create(int type = MAX, Size kernel = Size(2, 2), Size pad = Size(0, 0), Size stride = Size(1, 1));
+        static Ptr<PoolingLayer> create(int type = MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
     };
 
 //! @}
