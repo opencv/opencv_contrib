@@ -209,7 +209,7 @@ namespace dnn
     {
     public:
 
-        Size kernel, pad, stride;
+        Size kernel, stride, pad;
     };
 
     class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
@@ -232,7 +232,7 @@ namespace dnn
     {
     public:
 
-        enum
+        enum Type
         {
             CHANNEL_NRM,
             SPATIAL_NRM
@@ -241,9 +241,26 @@ namespace dnn
 
         int size;
         double alpha, beta;
+
+        static Ptr<LRNLayer> create(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
     };
 
+    class CV_EXPORTS_W PoolingLayer : public Layer
+    {
+    public:
 
+        enum Type
+        {
+            MAX,
+            AVE,
+            STOCHASTIC
+        };
+
+        int type;
+        Size kernel, stride, pad;
+
+        static Ptr<PoolingLayer> create(int type = MAX, Size kernel = Size(2, 2), Size pad = Size(0, 0), Size stride = Size(1, 1));
+    };
 
 //! @}
 //! @}

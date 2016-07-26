@@ -64,7 +64,7 @@ namespace dnn
 
     public:
 
-        LRNLayerImpl();
+        LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };

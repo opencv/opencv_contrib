@@ -142,12 +142,24 @@ TEST(Layer_Test_InnerProduct, Accuracy)
 
 TEST(Layer_Test_Pooling_max, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_pooling_max");
+     OCL_OFF(testLayerUsingCaffeModels("layer_pooling_max"));
+     OCL_ON();
+}
+OCL_TEST(Layer_Test_Pooling_max, Accuracy)
+{
+     OCL_ON(testLayerUsingCaffeModels("layer_pooling_max"));
+     OCL_OFF();
 }
 
 TEST(Layer_Test_Pooling_ave, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_pooling_ave");
+     OCL_OFF(testLayerUsingCaffeModels("layer_pooling_ave"));
+     OCL_ON();
+}
+OCL_TEST(Layer_Test_Pooling_ave, Accuracy)
+{
+     OCL_ON(testLayerUsingCaffeModels("layer_pooling_ave"));
+     OCL_OFF();
 }
 
 TEST(Layer_Test_MVN, Accuracy)

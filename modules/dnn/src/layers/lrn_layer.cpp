@@ -53,17 +53,18 @@ namespace cv
 namespace dnn
 {
 
-LRNLayerImpl::LRNLayerImpl()
+LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_)
 {
-    size = 5;
-    alpha = 1;
-    beta = 0.75;
-    type = CHANNEL_NRM;
+    type = type_;
+    size = size_;
+    alpha = alpha_;
+    beta = beta_;
 }
 
 void LRNLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 1 && inputs[0]->dims() == 4);
+    CV_Assert(type == CHANNEL_NRM || type == SPATIAL_NRM);
     useOpenCL = cv::ocl::useOpenCL();
 
     if (type == SPATIAL_NRM && !useOpenCL)
@@ -154,6 +155,7 @@ void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
 
 bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
 {
+#ifdef HAVE_OPENCL
     if (src.offset != 0 || dst.offset != 0) //TODO: add offset
         return false;
 
@@ -187,6 +189,9 @@ bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
         return false;
 
     return true;
+#else
+    return false;
+#endif
 }
 
 void LRNLayerImpl::spatialNormalization(Blob &src, Blob &dst)
@@ -232,27 +237,31 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
     }
 }
 
+
+Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta)
+{
+    return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta));
+}
+
 Ptr<Layer> createLRNLayerFromCaffe(LayerParams &params)
 {
-    LRNLayerImpl *l = new LRNLayerImpl();
-
+    int type;
     String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
     if (nrmType == "ACROSS_CHANNELS")
-        l->type = LRNLayer::CHANNEL_NRM;
+        type = LRNLayer::CHANNEL_NRM;
     else if (nrmType == "WITHIN_CHANNEL")
-        l->type = LRNLayer::SPATIAL_NRM;
+        type = LRNLayer::SPATIAL_NRM;
     else
         CV_Error(Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
 
     int size = params.get<int>("local_size", 5);
     if (size % 2 != 1 || size <= 0)
         CV_Error(Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
-    l->size = size;
 
-    l->alpha = params.get<double>("alpha", 1);
-    l->beta = params.get<double>("beta", 0.75);
+    double alpha = params.get<double>("alpha", 1);
+    double beta = params.get<double>("beta", 0.75);
 
-    return Ptr<Layer>(l);
+    return Ptr<Layer>(new LRNLayerImpl(type, size, alpha, beta));
 }
 
 }

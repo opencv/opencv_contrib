@@ -1,4 +1,4 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
+﻿/*M///////////////////////////////////////////////////////////////////////////////////////
 //
 //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
@@ -42,33 +42,40 @@
 #ifndef __OPENCV_DNN_LAYERS_POOLING_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_POOLING_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class PoolingLayer : public Layer
+    class PoolingLayerImpl : public PoolingLayer
     {
-        enum
-        {
-            MAX,
-            AVE,
-            STOCHASTIC
-        };
-
-        int type;
-        Size kernel, pad, stride;
+        bool useOpenCL;
         Size inp, out;
 
         void computeOutputShape(Size inpSz);
-        void maxPooling(Blob &input, Blob &output);
-        void avePooling(Blob &input, Blob &output);
+
+        bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
+
+        void maxPooling(Blob &src, Blob &dst);
+        void maxPooling_cpu(Blob &src, Blob &dst);
+        bool maxPooling_ocl(Blob &src, Blob &dst);
+
+        void avePooling(Blob &src, Blob &dst);
+        void avePooling_cpu(Blob &src, Blob &dst);
+        bool avePooling_ocl(Blob &src, Blob &dst);
 
     public:
-        PoolingLayer(LayerParams &params);
+
+        PoolingLayerImpl();
+        PoolingLayerImpl(int type, Size kernel, Size pad, Size stride);
+
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };
+
+Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params);
+
 }
 }
 #endif
