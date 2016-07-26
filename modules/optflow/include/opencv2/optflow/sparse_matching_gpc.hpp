@@ -119,6 +119,8 @@ public:
 
   void read( const FileNode &fn );
 
+  unsigned findLeafForPatch( GPCPatchDescriptor &descr ) const;
+
   static Ptr< GPCTree > create() { return makePtr< GPCTree >(); }
 
   bool operator==( const GPCTree &t ) const { return nodes == t.nodes; }
@@ -127,6 +129,20 @@ public:
 template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
 {
 private:
+  struct Trail
+  {
+    unsigned leaf[T];
+    int x, y;
+
+    unsigned getHash( unsigned mod ) const
+    {
+      uint64 hash = 23;
+      for ( int i = 0; i < T; ++i )
+        hash = (hash * 31 + leaf[i]) % uint64(mod);
+      return hash;
+    }
+  };
+
   GPCTree tree[T];
 
 public:

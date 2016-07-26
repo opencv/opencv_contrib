@@ -253,7 +253,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
         /*if ( debugOutput )
         {
-          printf( "[%u] Updating weights: correct %.2f (%u/%ld)\n", depth, double( correct ) / nSamples, correct, nSamples );
+          printf( "[%u] Updating weights: correct %.2f (%u/%d)\n", depth, double( correct ) / nSamples, correct, nSamples );
           for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
             printf( "%.3f ", coef[k] );
           printf( "\n" );
@@ -292,6 +292,18 @@ void GPCTree::write( FileStorage &fs ) const
 }
 
 void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
+
+unsigned GPCTree::findLeafForPatch( GPCPatchDescriptor &descr ) const {
+  unsigned id = 0, prevId;
+  do {
+    prevId = id;
+    if ( nodes[id].coef.dot( descr.feature ) < nodes[id].rhs )
+      id = nodes[id].right;
+    else
+      id = nodes[id].left;
+  } while ( id );
+  return prevId;
+}
 
 Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
                                                       const std::vector< String > &gt )
