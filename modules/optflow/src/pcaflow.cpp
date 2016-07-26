@@ -321,7 +321,7 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
   AOut.create( features.size(), basisSize.area(), CV_32F );
   b1Out.create( features.size(), 1, CV_32F );
   b2Out.create( features.size(), 1, CV_32F );
-  if ( ocl::useOpenCL() )
+  if ( useOpenCL )
   {
     UMat A = AOut.getUMat();
     Mat b1 = b1Out.getMat();
@@ -369,7 +369,7 @@ void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, Output
   b1Out.create( features.size() + prior->getPadding(), 1, CV_32F );
   b2Out.create( features.size() + prior->getPadding(), 1, CV_32F );
 
-  if ( ocl::useOpenCL() )
+  if ( useOpenCL )
   {
     UMat A = A1Out.getUMat();
     Mat b1 = b1Out.getMat();
@@ -444,6 +444,7 @@ void OpticalFlowPCAFlow::calc( InputArray I0, InputArray I1, InputOutputArray fl
   CV_Assert( to.channels() == 1 );
 
   const Mat fromOrig = from.getMat( ACCESS_READ ).clone();
+  useOpenCL = flowOut.isUMat() && ocl::useOpenCL();
 
   applyCLAHE( from, claheClip );
   applyCLAHE( to, claheClip );
@@ -481,7 +482,7 @@ OpticalFlowPCAFlow::OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior, const Size _
                                         float _dampingFactor, float _claheClip )
     : prior( _prior ), basisSize( _basisSize ), sparseRate( _sparseRate ),
       retainedCornersFraction( _retainedCornersFraction ), occlusionsThreshold( _occlusionsThreshold ),
-      dampingFactor( _dampingFactor ), claheClip( _claheClip )
+      dampingFactor( _dampingFactor ), claheClip( _claheClip ), useOpenCL( false )
 {
   CV_Assert( sparseRate > 0 && sparseRate <= 0.1 );
   CV_Assert( retainedCornersFraction >= 0 && retainedCornersFraction <= 1.0 );

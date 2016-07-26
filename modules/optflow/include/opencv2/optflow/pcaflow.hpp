@@ -100,6 +100,7 @@ protected:
   const float occlusionsThreshold;
   const float dampingFactor;
   const float claheClip;
+  bool useOpenCL;
 
 public:
   OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior = Ptr<const PCAPrior>(), const Size _basisSize = Size( 18, 14 ),

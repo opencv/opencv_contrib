@@ -283,7 +283,12 @@ int main( int argc, char** argv )
 
     double startTick, time;
     startTick = (double) getTickCount(); // measure time
-    algorithm->calc(i1, i2, flow);
+
+    if (useGpu)
+        algorithm->calc(i1, i2, flow.getUMat(ACCESS_RW));
+    else
+        algorithm->calc(i1, i2, flow);
+
     time = ((double) getTickCount() - startTick) / getTickFrequency();
     printf("\nTime [s]: %.3f\n", time);
     if(display_images)
