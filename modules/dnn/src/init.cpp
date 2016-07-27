@@ -77,7 +77,7 @@ void initModule()
         return;
 
     REG_RUNTIME_LAYER_CLASS(Slice, SliceLayer)
-    REG_RUNTIME_LAYER_CLASS(Softmax, SoftMaxLayer)
+    REG_STATIC_LAYER_FUNC(Softmax, createSoftmaxLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
     REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
     REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)

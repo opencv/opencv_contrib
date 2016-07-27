@@ -269,7 +269,7 @@ Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size 
 Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params)
 {
     int type;
-    Size kernel, pad, stride;
+    Size kernel, stride, pad;
 
     if (params.has("pool"))
     {

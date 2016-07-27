@@ -260,6 +260,13 @@ namespace dnn
         static Ptr<PoolingLayer> create(int type = MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
     };
 
+    class CV_EXPORTS_W SoftmaxLayer : public Layer
+    {
+    public:
+
+        static Ptr<SoftmaxLayer> create(int axis = 1);
+    };
+
 //! @}
 //! @}
 

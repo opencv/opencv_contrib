@@ -87,7 +87,7 @@ void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool
 
 TEST(Layer_Test_Softmax, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_softmax");
+     OCL_OFF(testLayerUsingCaffeModels("layer_softmax"));
 }
 OCL_TEST(Layer_Test_Softmax, Accuracy)
 {
