@@ -267,6 +267,14 @@ namespace dnn
         static Ptr<SoftmaxLayer> create(int axis = 1);
     };
 
+    class CV_EXPORTS_W InnerProductLayer : public Layer
+    {
+    public:
+        int axis;
+
+        static Ptr<InnerProductLayer> create(int axis = 1);
+    };
+
 //! @}
 //! @}
 

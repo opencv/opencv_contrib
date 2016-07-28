@@ -84,7 +84,7 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(Pooling, createPoolingLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
     REG_RUNTIME_LAYER_FUNC(LRN, createLRNLayerFromCaffe)
-    REG_RUNTIME_LAYER_CLASS(InnerProduct, FullyConnectedLayer)
+    REG_RUNTIME_LAYER_FUNC(InnerProduct, createInnerProductLayerFromCaffe)
 
     REG_RUNTIME_LAYER_CLASS(ReLU, ElementWiseLayer<ReLUFunctor>)
     REG_RUNTIME_LAYER_CLASS(TanH, ElementWiseLayer<TanHFunctor>)

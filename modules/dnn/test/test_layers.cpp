@@ -181,7 +181,7 @@ TEST(Layer_Test_Reshape, squeeze)
     rl->allocate(inpVec, outVec);
     rl->forward(inpVec, outVec);
 
-    EXPECT_EQ(outVec[0].shape(), BlobShape(Vec3i(4, 3, 2)));
+    EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
 }
 
 TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
