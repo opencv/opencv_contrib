@@ -86,7 +86,11 @@ public:
     {
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
+        {
             outputs[i].shareFrom(*inputs[i]); //no data copy
+            //hotfix: shareFrom doesn't provide properly Mat/UMat switching
+            outputs[i].matRef() = inputs[i]->matRefConst();
+        }
     }
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)

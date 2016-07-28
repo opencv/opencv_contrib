@@ -53,8 +53,6 @@ namespace cv
 namespace dnn
 {
 
-typedef BlobShape Shape;
-
 ConvolutionLayerImpl::ConvolutionLayerImpl()
 {
     tryUseOpenCL = true;
@@ -104,7 +102,7 @@ void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vecto
         CV_Assert(inputs[i]->rows() == input.rows() && inputs[i]->cols() == input.cols());
     }
 
-    int allocFlags = useOpenCL ? Blob::ALLOC_BOTH : Blob::ALLOC_MAT;
+    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
     if (!is1x1())
     {
@@ -114,13 +112,13 @@ void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vecto
     if (bias)
     {
         biasOnesBlob.create(Shape(1, topH * topW), input.type(), allocFlags);
-        biasOnesBlob.matRef().setTo(1);
+        biasOnesBlob.setTo(1);
     }
 
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[i].create(Shape(inputs[i]->num(), topCn, topH, topW));
+        outputs[i].create(Shape(inputs[i]->num(), topCn, topH, topW), input.type(), allocFlags);
     }
 }
 

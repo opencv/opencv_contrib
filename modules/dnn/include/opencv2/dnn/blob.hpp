@@ -164,12 +164,20 @@ namespace dnn
         /** @brief Creates blob with specified @p shape and @p type. */
         void create(const BlobShape &shape, int type = CV_32F, int allocFlags = ALLOC_MAT);
 
-        /** @brief Creates blob from cv::Mat or cv::UMat without copying the data */
+        /** @brief Creates blob from Mat or UMat without copying the data.
+          * @details If in is Mat then Mat data is populated, otherwise - UMat.
+          */
         void fill(InputArray in);
+
         /** @brief Creates blob from user data.
          *  @details If @p deepCopy is false then CPU data will not be allocated.
          */
         void fill(const BlobShape &shape, int type, void *data, bool deepCopy = true);
+
+        /** @brief Sets @p value to the last used data (if @p allocFlags = -1).
+         * @details If @p allocFlags != -1 then destination data (Mat or UMat) is determined by flags from AllocFlag enum like in create().
+         */
+        void setTo(InputArray value, int allocFlags = -1);
 
         Mat& matRef(bool writeOnly = true);     //!< Returns reference to cv::Mat, containing blob data.
         const Mat& matRefConst() const;         //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.

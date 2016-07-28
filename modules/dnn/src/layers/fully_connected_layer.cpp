@@ -76,10 +76,7 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
     int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_UMAT;
 
     biasOnesBlob.create(Shape(outerSize, 1), dtype, allocFlags);
-    if (useOpenCL)
-        biasOnesBlob.getRef<UMat>().setTo(1);
-    else
-        biasOnesBlob.getRef<Mat>().setTo(1);
+    biasOnesBlob.setTo(1);
 
     output.resize(input.size());
     for (size_t i = 0; i < input.size(); i++)

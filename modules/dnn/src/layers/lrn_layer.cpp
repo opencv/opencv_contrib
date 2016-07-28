@@ -261,7 +261,7 @@ Ptr<Layer> createLRNLayerFromCaffe(LayerParams &params)
     double alpha = params.get<double>("alpha", 1);
     double beta = params.get<double>("beta", 0.75);
 
-    return Ptr<Layer>(new LRNLayerImpl(type, size, alpha, beta));
+    return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta));
 }
 
 }

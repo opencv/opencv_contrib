@@ -101,6 +101,26 @@ namespace dnn
 #endif
     }
 
+    void Blob::fill(InputArray in)
+    {
+#ifdef CV_DNN_UMAT
+        CV_Assert(in.isMat() || in.isUMat());
+        if (in.isMat())
+        {
+            m = in.getMat();
+            state = HEAD_AT_MAT;
+        }
+        else
+        {
+            um = in.getUMat();
+            state = HEAD_AT_UMAT;
+        }
+#else
+        CV_Assert(in.isMat());
+        m = in.getMat();
+#endif
+    }
+
     static inline int getMatChannels(const Mat &mat)
     {
        return (mat.dims <= 2) ? mat.channels() : mat.size[0];
@@ -224,6 +244,47 @@ namespace dnn
             m = Mat(shape.dims(), shape.ptr(), type, data);
         }
         CV_DNN_UMAT_ONLY(state = HEAD_AT_MAT);
+    }
+
+    void Blob::setTo(InputArray value, int allocFlags)
+    {
+#ifdef CV_DNN_UMAT
+        if (allocFlags == -1)
+        {
+            if (state == HEAD_AT_UMAT)
+                um.setTo(value);
+            else if (state == HEAD_AT_MAT)
+                m.setTo(value);
+            else //SYNCED or UNINITIALIZED
+            {
+                um.setTo(value);
+                m.setTo(value);
+
+                if (state == UNINITIALIZED)
+                    state = SYNCED;
+            }
+        }
+        else if (allocFlags == ALLOC_BOTH)
+        {
+            m.setTo(value);
+            um.setTo(value);
+            state = SYNCED;
+        }
+        else if (allocFlags == ALLOC_MAT)
+        {
+            matRef().setTo(value);
+        }
+        else if (allocFlags == ALLOC_UMAT)
+        {
+            umatRef().setTo(value);
+        }
+        else
+        {
+            CV_Error(Error::StsBadArg, "allocFlags sholud be -1 or one of Blob::AllocFlag values");
+        }
+#else
+        m.setTo(value);
+#endif
     }
 
     void Blob::updateMat(bool syncData) const
