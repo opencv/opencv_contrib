@@ -55,7 +55,7 @@ const int patchRadius = 10;
 const int globalIters = 3;
 const int localIters = 500;
 const double thresholdOutliers = 0.98;
-const double thresholdMagnitudeFrac = 0.6666666666;
+const double thresholdMagnitudeFrac = 0.8;
 
 struct Magnitude
 {
