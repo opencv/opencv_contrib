@@ -54,6 +54,7 @@ http://research.microsoft.com/en-us/um/people/pkohli/papers/wfrik_cvpr2016.pdf
 #define __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 
 namespace cv
 {
@@ -66,6 +67,10 @@ struct CV_EXPORTS_W GPCPatchDescriptor
   Vec< double, nFeatures > feature;
 
   GPCPatchDescriptor( const Mat *imgCh, int i, int j );
+
+  static void getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr );
+
+  static void getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y );
 };
 
 typedef std::pair< GPCPatchDescriptor, GPCPatchDescriptor > GPCPatchSample;
@@ -92,6 +97,22 @@ public:
   operator GPCSamplesVector &() { return samples; }
 };
 
+/** @brief Class encapsulating training parameters.
+ */
+struct GPCTrainingParams
+{
+  const unsigned maxTreeDepth;  // Maximum tree depth to stop partitioning.
+  const int minNumberOfSamples; // Minimum number of samples in the node to stop partitioning.
+  const bool printProgress;
+
+  GPCTrainingParams( unsigned _maxTreeDepth = 21, int _minNumberOfSamples = 3, bool _printProgress = true )
+      : maxTreeDepth( _maxTreeDepth ), minNumberOfSamples( _minNumberOfSamples ), printProgress( _printProgress )
+  {
+    CV_Assert( _maxTreeDepth > 0 );
+    CV_Assert( _minNumberOfSamples >= 2 );
+  }
+};
+
 class CV_EXPORTS_W GPCTree : public Algorithm
 {
 public:
@@ -110,10 +131,10 @@ private:
 
   std::vector< Node > nodes;
 
-  bool trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth );
+  bool trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, const GPCTrainingParams &params );
 
 public:
-  void train( GPCSamplesVector &samples );
+  void train( GPCSamplesVector &samples, const GPCTrainingParams params = GPCTrainingParams() );
 
   void write( FileStorage &fs ) const;
 
@@ -131,16 +152,18 @@ template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
 private:
   struct Trail
   {
-    unsigned leaf[T];
-    int x, y;
+    unsigned leaf[T]; // Inside which leaf of the tree 0..T the patch fell?
+    Point2i coord;    // Patch coordinates.
 
-    unsigned getHash( unsigned mod ) const
+    unsigned getHash( size_t mod ) const
     {
-      uint64 hash = 23;
+      uint64 hash = 0;
       for ( int i = 0; i < T; ++i )
-        hash = (hash * 31 + leaf[i]) % uint64(mod);
+        hash = ( hash * 67421 + leaf[i] ) % mod;
       return hash;
     }
+
+    bool operator==( const Trail &trail ) const { return memcmp( leaf, trail.leaf, sizeof( leaf ) ) == 0; }
   };
 
   GPCTree tree[T];
@@ -149,21 +172,22 @@ public:
   /** @brief Train the forest using one sample set for every tree.
    * Please, consider using the next method instead of this one for better quality.
    */
-  void train( GPCSamplesVector &samples )
+  void train( GPCSamplesVector &samples, const GPCTrainingParams params = GPCTrainingParams() )
   {
     for ( int i = 0; i < T; ++i )
-      tree[i].train( samples );
+      tree[i].train( samples, params );
   }
 
   /** @brief Train the forest using individual samples for each tree.
    * It is generally better to use this instead of the first method.
    */
-  void train( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo, const std::vector< String > &gt )
+  void train( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo, const std::vector< String > &gt,
+              const GPCTrainingParams params = GPCTrainingParams() )
   {
     for ( int i = 0; i < T; ++i )
     {
       Ptr< GPCTrainingSamples > samples = GPCTrainingSamples::create( imagesFrom, imagesTo, gt ); // Create training set for the tree
-      tree[i].train( *samples );
+      tree[i].train( *samples, params );
     }
   }
 
@@ -188,8 +212,69 @@ public:
       tree[i].read( *it );
   }
 
+  /** @brief Find correspondences between two images.
+   * @param[in] imgFrom First image in a sequence.
+   * @param[in] imgTo Second image in a sequence.
+   * @param[out] corr Output vector with pairs of corresponding points.
+   */
+  void findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr ) const;
+
   static Ptr< GPCForest > create() { return makePtr< GPCForest >(); }
 };
+
+class CV_EXPORTS_W GPCDetails
+{
+public:
+  static void dropOutliers( std::vector< std::pair< Point2i, Point2i > > &corr );
+};
+
+template < int T >
+void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr ) const
+{
+  CV_Assert( imgFrom.channels() == 3 );
+  CV_Assert( imgTo.channels() == 3 );
+
+  Mat from, to;
+  imgFrom.getMat().convertTo( from, CV_32FC3 );
+  imgTo.getMat().convertTo( to, CV_32FC3 );
+  cvtColor( from, from, COLOR_BGR2YCrCb );
+  cvtColor( to, to, COLOR_BGR2YCrCb );
+
+  Mat fromCh[3], toCh[3];
+  split( from, fromCh );
+  split( to, toCh );
+
+  std::vector< GPCPatchDescriptor > descr;
+  GPCPatchDescriptor::getAllDescriptorsForImage( fromCh, descr );
+  std::vector< std::vector< Trail > > hashTable1( from.size().area() * 73 ), hashTable2( from.size().area() * 73 );
+
+  for ( size_t i = 0; i < descr.size(); ++i )
+  {
+    Trail trail;
+    for ( int t = 0; t < T; ++t )
+      trail.leaf[t] = tree[t].findLeafForPatch( descr[i] );
+    GPCPatchDescriptor::getCoordinatesFromIndex( i, from.size(), trail.coord.x, trail.coord.y );
+    hashTable1[trail.getHash( hashTable1.size() )].push_back( trail );
+  }
+
+  descr.clear();
+  GPCPatchDescriptor::getAllDescriptorsForImage( toCh, descr );
+
+  for ( size_t i = 0; i < descr.size(); ++i )
+  {
+    Trail trail;
+    for ( int t = 0; t < T; ++t )
+      trail.leaf[t] = tree[t].findLeafForPatch( descr[i] );
+    GPCPatchDescriptor::getCoordinatesFromIndex( i, to.size(), trail.coord.x, trail.coord.y );
+    hashTable2[trail.getHash( hashTable2.size() )].push_back( trail );
+  }
+
+  for ( size_t i = 0; i < hashTable1.size(); ++i )
+    if ( hashTable1[i].size() == 1 && hashTable2[i].size() == 1 && hashTable1[i][0] == hashTable2[i][0] )
+      corr.push_back( std::make_pair( hashTable1[i][0].coord, hashTable2[i][0].coord ) );
+
+  GPCDetails::dropOutliers( corr );
+}
 }
 
 CV_EXPORTS void write( FileStorage &fs, const String &name, const optflow::GPCTree::Node &node );

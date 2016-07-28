@@ -52,11 +52,10 @@ namespace
 {
 
 const int patchRadius = 10;
-const double thresholdMagnitudeFrac = 0.6666666666;
 const int globalIters = 3;
 const int localIters = 500;
-const int minNumberOfSamples = 2;
-//const bool debugOutput = true;
+const double thresholdOutliers = 0.98;
+const double thresholdMagnitudeFrac = 0.6666666666;
 
 struct Magnitude
 {
@@ -102,6 +101,8 @@ struct PartitionPredicate2
 
 float normL2Sqr( const Vec2f &v ) { return v[0] * v[0] + v[1] * v[1]; }
 
+int normL2Sqr( const Point2i &v ) { return v.x * v.x + v.y * v.y; }
+
 bool checkBounds( int i, int j, Size sz )
 {
   return i >= patchRadius && j >= patchRadius && i + patchRadius < sz.height && j + patchRadius < sz.width;
@@ -116,8 +117,8 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
       mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
 
-  size_t n = size_t(mag.size() * thresholdMagnitudeFrac); // As suggested in the paper, we discard part of the training samples
-                                                          // with a small displacement and train to better distinguish hard pairs.
+  size_t n = size_t( mag.size() * thresholdMagnitudeFrac ); // As suggested in the paper, we discard part of the training samples
+                                                            // with a small displacement and train to better distinguish hard pairs.
   std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
   mag.resize( n );
   std::random_shuffle( mag.begin(), mag.end() );
@@ -187,11 +188,28 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
 }
 
-bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
+void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr )
 {
-  const int nSamples = (int) std::distance( begin, end );
+  const Size sz = imgCh[0].size();
 
-  if ( nSamples < minNumberOfSamples )
+  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
+    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
+      descr.push_back( GPCPatchDescriptor( imgCh, i, j ) );
+}
+
+void GPCPatchDescriptor::getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y )
+{
+  const size_t stride = sz.width - patchRadius * 2;
+  y = int( index / stride );
+  x = int( index - y * stride + patchRadius );
+  y += patchRadius;
+}
+
+bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, const GPCTrainingParams &params )
+{
+  const int nSamples = (int)std::distance( begin, end );
+
+  if ( nSamples < params.minNumberOfSamples || depth >= params.maxTreeDepth )
     return false;
 
   if ( nodeId >= nodes.size() )
@@ -202,7 +220,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   // Select the best hyperplane
   unsigned globalBestScore = 0;
   std::vector< double > values;
-  values.reserve(nSamples * 2);
+  values.reserve( nSamples * 2 );
 
   for ( int j = 0; j < globalIters; ++j )
   { // Global search step
@@ -223,8 +241,8 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         values.push_back( coef.dot( iter->second.feature ) );
       }
 
-      std::nth_element( values.begin(), values.begin() + values.size() / 2, values.end() );
-      const double median = values[values.size() / 2];
+      std::nth_element( values.begin(), values.begin() + (nSamples + (nSamples & 1)), values.end() );
+      const double median = values[nSamples + (nSamples & 1)];
       unsigned correct = 0;
 
       // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
@@ -250,20 +268,20 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         globalBestScore = correct;
         node.coef = coef;
         node.rhs = median;
-
-        /*if ( debugOutput )
-        {
-          printf( "[%u] Updating weights: correct %.2f (%u/%d)\n", depth, double( correct ) / nSamples, correct, nSamples );
-          for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
-            printf( "%.3f ", coef[k] );
-          printf( "\n" );
-        }*/
       }
     }
   }
 
-  if (globalBestScore == 0)
+  if ( globalBestScore == 0 )
     return false;
+
+  if ( params.printProgress )
+  {
+    printf( "[%u] Correct %.2f (%u/%d)\nWeights:", depth, double( globalBestScore ) / nSamples, globalBestScore, nSamples );
+    for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
+      printf( " %.3f", node.coef[k] );
+    printf( "\n" );
+  }
 
   // Partition vector with samples according to the hyperplane in QuickSort-like manner.
   // Unlike QuickSort, we need to partition it into 3 parts (left subtree samples; undefined samples; right subtree
@@ -272,16 +290,17 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   SIter rightBegin =
     std::partition( leftEnd, end, PartitionPredicate2( node.coef, node.rhs ) ); // Separate undefined samples from right subtree samples.
 
-  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1 ) ) ? unsigned(nodeId * 2 + 1) : 0;
-  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1 ) ) ? unsigned(nodeId * 2 + 2) : 0;
+  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1, params ) ) ? unsigned( nodeId * 2 + 1 ) : 0;
+  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1, params ) ) ? unsigned( nodeId * 2 + 2 ) : 0;
 
   return true;
 }
 
-void GPCTree::train( GPCSamplesVector &samples )
+void GPCTree::train( GPCSamplesVector &samples, const GPCTrainingParams params )
 {
+  nodes.clear();
   nodes.reserve( samples.size() * 2 - 1 ); // set upper bound for the possible number of nodes so all subsequent resize() will be no-op
-  trainNode( 0, samples.begin(), samples.end(), 0 );
+  trainNode( 0, samples.begin(), samples.end(), 0, params );
 }
 
 void GPCTree::write( FileStorage &fs ) const
@@ -293,9 +312,11 @@ void GPCTree::write( FileStorage &fs ) const
 
 void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
 
-unsigned GPCTree::findLeafForPatch( GPCPatchDescriptor &descr ) const {
+unsigned GPCTree::findLeafForPatch( GPCPatchDescriptor &descr ) const
+{
   unsigned id = 0, prevId;
-  do {
+  do
+  {
     prevId = id;
     if ( nodes[id].coef.dot( descr.feature ) < nodes[id].rhs )
       id = nodes[id].right;
@@ -332,6 +353,31 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
   }
 
   return ts;
+}
+
+void GPCDetails::dropOutliers( std::vector< std::pair< Point2i, Point2i > > &corr )
+{
+  std::vector< float > mag( corr.size() );
+
+  for ( size_t i = 0; i < corr.size(); ++i )
+    mag[i] = normL2Sqr( corr[i].first - corr[i].second );
+
+  const size_t threshold = size_t( mag.size() * thresholdOutliers );
+  std::nth_element( mag.begin(), mag.begin() + threshold, mag.end() );
+  const float percentile = mag[threshold];
+  size_t i = 0, j = 0;
+
+  while ( i < corr.size() )
+  {
+    if ( normL2Sqr( corr[i].first - corr[i].second ) <= percentile )
+    {
+      corr[j] = corr[i];
+      ++j;
+    }
+    ++i;
+  }
+
+  corr.resize( j );
 }
 
 } // namespace optflow
