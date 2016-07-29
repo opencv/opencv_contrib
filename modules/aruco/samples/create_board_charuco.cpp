@@ -48,8 +48,8 @@ const char* keys  =
         "{@outfile |<none> | Output image }"
         "{w        |       | Number of squares in X direction }"
         "{h        |       | Number of squares in Y direction }"
-        "{sl       |       | Square side lenght (in pixels) }"
-        "{ml       |       | Marker side lenght (in pixels) }"
+        "{sl       |       | Square side length (in pixels) }"
+        "{ml       |       | Marker side length (in pixels) }"
         "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
         "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
@@ -88,19 +88,19 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    aruco::Dictionary dictionary =
+    Ptr<aruco::Dictionary> dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     Size imageSize;
     imageSize.width = squaresX * squareLength + 2 * margins;
     imageSize.height = squaresY * squareLength + 2 * margins;
 
-    aruco::CharucoBoard board = aruco::CharucoBoard::create(squaresX, squaresY, (float)squareLength,
+    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(squaresX, squaresY, (float)squareLength,
                                                             (float)markerLength, dictionary);
 
     // show created board
     Mat boardImage;
-    board.draw(imageSize, boardImage, margins, borderBits);
+    board->draw(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);

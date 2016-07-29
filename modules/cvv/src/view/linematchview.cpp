@@ -24,7 +24,7 @@ LineMatchView::LineMatchView(std::vector<cv::KeyPoint> leftKeyPoints,
 			     std::vector<cv::KeyPoint> rightKeyPoints,
 			     std::vector<cv::DMatch> matches, cv::Mat leftIm,
 			     cv::Mat rightIm, bool usetrainIdx, QWidget *parent)
-    : MatchView{ parent }
+    : MatchView( parent )
 {
 	std::vector<cv::KeyPoint> allkeypoints;
 	for(auto key:rightKeyPoints)

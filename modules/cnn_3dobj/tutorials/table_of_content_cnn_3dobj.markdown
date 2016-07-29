@@ -23,4 +23,4 @@ CNN for 3D Object Classification and Pose Estimation {#tutorial_table_of_content
 
     *Author:* Yida Wang
 
-    You will learn how to have an analysis on performance of the trained Model.
+    You will learn how to analyze performance of a trained Model.

@@ -49,52 +49,59 @@ namespace ximgproc {
 void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
         int type, int blockSize, double delta )
 {
+    // Input grayscale image
     Mat src = _src.getMat();
-    CV_Assert( src.type() == CV_8UC1 );
-    CV_Assert( blockSize % 2 == 1 && blockSize > 1 );
-    Size size = src.size();
+    CV_Assert(src.channels() == 1);
+    CV_Assert(blockSize % 2 == 1 && blockSize > 1);
+    type &= THRESH_MASK;
 
-    _dst.create( size, src.type() );
+    // Compute local threshold (T = mean + k * stddev)
+    // using mean and standard deviation in the neighborhood of each pixel
+    // (intermediate calculations are done with floating-point precision)
+    Mat thresh;
+    {
+        // note that: Var[X] = E[X^2] - E[X]^2
+        Mat mean, sqmean, stddev;
+        boxFilter(src, mean, CV_32F, Size(blockSize, blockSize),
+                Point(-1,-1), true, BORDER_REPLICATE);
+        sqrBoxFilter(src, sqmean, CV_32F, Size(blockSize, blockSize),
+                Point(-1,-1), true, BORDER_REPLICATE);
+        sqrt(sqmean - mean.mul(mean), stddev);
+        thresh = mean + stddev * static_cast<float>(delta);
+        thresh.convertTo(thresh, src.depth());
+    }
+
+    // Prepare output image
+    _dst.create(src.size(), src.type());
     Mat dst = _dst.getMat();
+    CV_Assert(src.data != dst.data);  // no inplace processing
 
-    if( maxValue < 0 )
+    // Apply thresholding: ( pixel > threshold ) ? foreground : background
+    Mat mask;
+    switch (type)
     {
-        dst = Scalar(0);
-        return;
+    case THRESH_BINARY:      // dst = (src > thresh) ? maxval : 0
+    case THRESH_BINARY_INV:  // dst = (src > thresh) ? 0 : maxval
+        compare(src, thresh, mask, (type == THRESH_BINARY ? CMP_GT : CMP_LE));
+        dst.setTo(0);
+        dst.setTo(maxValue, mask);
+        break;
+    case THRESH_TRUNC:       // dst = (src > thresh) ? thresh : src
+        compare(src, thresh, mask, CMP_GT);
+        src.copyTo(dst);
+        thresh.copyTo(dst, mask);
+        break;
+    case THRESH_TOZERO:      // dst = (src > thresh) ? src : 0
+    case THRESH_TOZERO_INV:  // dst = (src > thresh) ? 0 : src
+        compare(src, thresh, mask, (type == THRESH_TOZERO ? CMP_GT : CMP_LE));
+        dst.setTo(0);
+        src.copyTo(dst, mask);
+        break;
+    default:
+        CV_Error( CV_StsBadArg, "Unknown threshold type" );
+        break;
     }
-
-    // Calculate and store the mean and mean of squares in the neighborhood
-    // of each pixel and store them in Mat mean and sqmean.
-    Mat_<float> mean(size), sqmean(size);
-
-    if( src.data != dst.data )
-        mean = dst;
-
-    boxFilter( src, mean, CV_64F, Size(blockSize, blockSize),
-            Point(-1,-1), true, BORDER_REPLICATE );
-    sqrBoxFilter( src, sqmean, CV_64F, Size(blockSize, blockSize),
-            Point(-1,-1), true, BORDER_REPLICATE );
-
-    // Compute (k * standard deviation) in the neighborhood of each pixel
-    // and store in Mat stddev. Also threshold the values in the src matrix to compute dst matrix.
-    Mat_<float> stddev(size);
-    int i, j, threshold;
-    uchar imaxval = saturate_cast<uchar>(maxValue);
-    for(i = 0; i < size.height; ++i)
-    {
-        for(j = 0; j < size.width; ++j)
-        {
-            stddev.at<float>(i, j) = saturate_cast<float>(delta) * cvRound( sqrt(sqmean.at<float>(i, j) -
-                        mean.at<float>(i, j)*mean.at<float>(i, j)) );
-            threshold = cvRound(mean.at<float>(i, j) + stddev.at<float>(i, j));
-            if(src.at<uchar>(i, j) > threshold)
-                dst.at<uchar>(i, j) = (type == THRESH_BINARY) ? imaxval : 0;
-            else
-                dst.at<uchar>(i, j) = (type == THRESH_BINARY) ? 0 : imaxval;
-        }
-    }
-
 }
 
 } // namespace ximgproc
-} //namespace cv
+} // namespace cv

@@ -321,6 +321,8 @@ void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int
 
 /** @brief Applies the rolling guidance filter to an image.
 
+For more details, please see @cite zhang2014rolling
+
 @param src Source 8-bit or floating-point, 1-channel or 3-channel image.
 
 @param dst Destination image of the same size and type as src.

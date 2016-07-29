@@ -76,6 +76,5 @@ the use of this software, even if advised of the possibility of such damage.
 #include "lbpfeatures.h"
 #include "waldboost.hpp"
 #include "wbdetector.hpp"
-#include <opencv2/xobjdetect.hpp>
 
 #endif /* __OPENCV_XOBJDETECT_PRECOMP_HPP__ */

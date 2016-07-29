@@ -375,7 +375,31 @@ void SuperpixelSEEDSImpl::initImageBins<float>(const Mat& img, int)
 
 void SuperpixelSEEDSImpl::initImage(InputArray img)
 {
-    Mat src = img.getMat();
+    Mat src;
+
+    if ( img.isMat() )
+    {
+      // get Mat
+      src = img.getMat();
+
+      // image should be valid
+      CV_Assert( !src.empty() );
+    }
+    else if ( img.isMatVector() )
+    {
+      vector<Mat> vec;
+      // get vector Mat
+      img.getMatVector( vec );
+
+      // array should be valid
+      CV_Assert( !vec.empty() );
+
+      // merge into Mat
+      merge( vec, src );
+    }
+    else
+      CV_Error( Error::StsInternal, "Invalid InputArray." );
+
     int depth = src.depth();
     seeds_current_level = seeds_nr_levels - 2;
     forwardbackward = true;
@@ -1214,7 +1238,7 @@ void SuperpixelSEEDSImpl::getLabelContourMask(OutputArray image, bool thick_line
                 }
             }
             if( neighbors > 1 )
-                *dst.ptr<uchar>(j, k) = (uchar)-1;
+                *dst.ptr<uchar>(j, k) = (uchar)255;
         }
     }
 }

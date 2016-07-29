@@ -32,58 +32,29 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "opencv2/ximgproc/segmentation.hpp"
 #include "opencv2/highgui.hpp"
-#include <opencv2/core/utility.hpp>
-#include <opencv2/opencv.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 #include <iostream>
+#include <ctime>
 
 using namespace cv;
 using namespace cv::ximgproc::segmentation;
 
 static void help() {
     std::cout << std::endl <<
-    "A program demonstrating the use and capabilities of a particular graph based image" << std::endl <<
-    "segmentation algorithm described in P. Felzenszwalb, D. Huttenlocher," << std::endl <<
-    "             \"Efficient Graph-Based Image Segmentation\"" << std::endl <<
-    "International Journal of Computer Vision, Vol. 59, No. 2, September 2004" << std::endl << std::endl <<
+    "A program demonstrating the use and capabilities of a particular image segmentation algorithm described" << std::endl <<
+    " in Jasper R. R. Uijlings, Koen E. A. van de Sande, Theo Gevers, Arnold W. M. Smeulders: " << std::endl <<
+    "                       \"Selective Search for Object Recognition\"" << std::endl <<
+    "International Journal of Computer Vision, Volume 104 (2), page 154-171, 2013" << std::endl << std::endl <<
     "Usage:" << std::endl <<
-    "./graphsegmentation_demo input_image output_image [simga=0.5] [k=300] [min_size=100]" << std::endl;
+    "./selectivesearchsegmentation_demo input_image (single|fast|quality)" << std::endl <<
+    "Use a to display less rects, d to display more rects, q to quit" << std::endl;
 }
 
-Scalar hsv_to_rgb(Scalar c) {
-    Mat in(1, 1, CV_32FC3);
-    Mat out(1, 1, CV_32FC3);
-
-    float * p = in.ptr<float>(0);
-
-    p[0] = c[0] * 360;
-    p[1] = c[1];
-    p[2] = c[2];
-
-    cvtColor(in, out, COLOR_HSV2RGB);
-
-    Scalar t;
-
-    Vec3f p2 = out.at<Vec3f>(0, 0);
-
-    t[0] = (int)(p2[0] * 255);
-    t[1] = (int)(p2[1] * 255);
-    t[2] = (int)(p2[2] * 255);
-
-    return t;
-
-}
-
-Scalar color_mapping(int segment_id) {
-
-    double base = (double)(segment_id) * 0.618033988749895 + 0.24443434;
-
-    return hsv_to_rgb(Scalar(fmod(base, 1.2), 0.95, 0.80));
-
-}
 
 int main(int argc, char** argv) {
 
-    if (argc < 2 || argc > 6) {
+    if (argc < 3) {
         help();
         return -1;
     }
@@ -91,61 +62,54 @@ int main(int argc, char** argv) {
     setUseOptimized(true);
     setNumThreads(8);
 
-    Ptr<GraphSegmentation> gs = createGraphSegmentation();
+    std::srand((int)std::time(0));
 
-    if (argc > 3)
-        gs->setSigma(atof(argv[3]));
+    Mat img = imread(argv[1]);
 
-    if (argc > 4)
-        gs->setK(atoi(argv[4]));
+    Ptr<SelectiveSearchSegmentation> gs = createSelectiveSearchSegmentation();
+    gs->setBaseImage(img);
 
-    if (argc > 5)
-        gs->setMinSize(atoi(argv[5]));
-
-    if (!gs) {
-        std::cerr << "Failed to create GraphSegmentation Algorithm." << std::endl;
+    if (argv[2][0] == 's') {
+        gs->switchToSingleStrategy();
+    } else if (argv[2][0] == 'f') {
+        gs->switchToSelectiveSearchFast();
+    } else if (argv[2][0] == 'q') {
+        gs->switchToSelectiveSearchQuality();
+    } else {
+        help();
         return -2;
     }
 
-    Mat input, output, output_image;
+    std::vector<Rect> rects;
+    gs->process(rects);
 
-    input = imread(argv[1]);
+    int nb_rects = 10;
 
-    if (!input.data) {
-        std::cerr << "Failed to load input image" << std::endl;
-        return -3;
-    }
+    char c = (char)waitKey();
 
-    gs->processImage(input, output);
+    while(c != 'q') {
 
-    double min, max;
-    minMaxLoc(output, &min, &max);
+        Mat wimg = img.clone();
 
-    int nb_segs = (int)max + 1;
+        int i = 0;
 
-    std::cout << nb_segs << " segments" << std::endl;
+        for(std::vector<Rect>::iterator it = rects.begin(); it != rects.end(); ++it) {
+            if (i++ < nb_rects) {
+                rectangle(wimg, *it, Scalar(0, 0, 255));
+            }
+        }
 
-    output_image = Mat::zeros(output.rows, output.cols, CV_8UC3);
+        imshow("Output", wimg);
+        c = (char)waitKey();
 
-    uint* p;
-    uchar* p2;
+        if (c == 'd') {
+            nb_rects += 10;
+        }
 
-    for (int i = 0; i < output.rows; i++) {
-
-        p = output.ptr<uint>(i);
-        p2 = output_image.ptr<uchar>(i);
-
-        for (int j = 0; j < output.cols; j++) {
-            Scalar color = color_mapping(p[j]);
-            p2[j*3] = color[0];
-            p2[j*3 + 1] = color[1];
-            p2[j*3 + 2] = color[2];
+        if (c == 'a' && nb_rects > 10) {
+            nb_rects -= 10;
         }
     }
-
-    imwrite(argv[2], output_image);
-
-    std::cout << "Image written to " << argv[2] << std::endl;
 
     return 0;
 }

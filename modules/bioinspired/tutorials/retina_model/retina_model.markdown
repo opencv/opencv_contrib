@@ -1,4 +1,4 @@
-Discovering the human retina and its use for image processing {#tutorial_bioinspired_retina_model}
+Retina and real-world vision {#tutorial_bioinspired_retina_model}
 =============================================================
 
 Goal
@@ -414,9 +414,9 @@ and high frequency noise canceling.
     objects are blurred and can disappear while static object are favored. But when starting the
     retina processing, stable state is reached later.
 -   **photoreceptorsSpatialConstant** specifies the spatial constant related to photo-receptors' low
-    pass filter's effect. Those parameters specify the minimum value of the spatial signal period allowed 
-    in what follows. Typically, this filter should cut high frequency noise. On the other hand, a 0 value 
-    cuts none of the noise while higher values start to cut high spatial frequencies, and progressively 
+    pass filter's effect. Those parameters specify the minimum value of the spatial signal period allowed
+    in what follows. Typically, this filter should cut high frequency noise. On the other hand, a 0 value
+    cuts none of the noise while higher values start to cut high spatial frequencies, and progressively
     lower frequencies... Be aware to not go to high levels if you want to see some details of the input images !
     A good compromise for color images is a 0.53 value since such choice won't affect too much the color spectrum.
     Higher values would lead to gray and blurred output images.
@@ -428,7 +428,7 @@ It modulates photo-receptors sensitivity and completes the processing for final 
 (part of the spatial band pass effect thus favoring visual details enhancement).
 
 -   **horizontalCellsGain** here is a critical parameter ! If you are not interested with the mean
-    luminance and want just to focus on details enhancement, then, set this parameterto zero. However, if 
+    luminance and want just to focus on details enhancement, then, set this parameterto zero. However, if
     you want to keep some environment luminance's data, let some low spatial frequencies pass into the system and set a
     higher value (\<1).
 -   **hcellsTemporalConstant** similar to photo-receptors, this parameter acts on the temporal constant of a
@@ -457,7 +457,7 @@ the visual scene, even in bright areas.
 
 #### IPL Magno (motion/transient channel) parameters
 
-Once image's information are cleaned, this channel acts as a high pass temporal filter that  
+Once image's information are cleaned, this channel acts as a high pass temporal filter that
 selects only the signals related to transient signals (events, motion, etc.). A low pass spatial filter
 smoothes extracted transient data while a final logarithmic compression enhances low transient events
 thus enhancing event sensitivity.
@@ -471,8 +471,7 @@ thus enhancing event sensitivity.
     High values let slow transient events to be selected.
 -   **V0CompressionParameter** specifies the strength of the log compression. Similar behaviors to
     previous description but here  enforces sensitivity of transient events.
--   **localAdaptintegration_tau** generally set to 0, has no real use actually in here. 
+-   **localAdaptintegration_tau** generally set to 0, has no real use actually in here.
 -   **localAdaptintegration_k** specifies the size of the area on which local adaptation is
     performed. Low values lead to short range local adaptation (higher sensitivity to noise), high
     values secure log compression.
-

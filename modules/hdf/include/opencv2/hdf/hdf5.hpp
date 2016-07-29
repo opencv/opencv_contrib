@@ -37,16 +37,12 @@
 
 #include <vector>
 
-#include <hdf5.h>
-
-
-
-using namespace std;
 
 namespace cv
 {
 namespace hdf
 {
+using namespace std;
 
 //! @addtogroup hdf5
 //! @{
@@ -63,7 +59,7 @@ public:
 
     CV_WRAP enum
     {
-      H5_UNLIMITED = -1, H5_NONE = -1, H5_GETDIMS = 100, H5_GETMAXDIMS = 101,
+      H5_UNLIMITED = -1, H5_NONE = -1, H5_GETDIMS = 100, H5_GETMAXDIMS = 101, H5_GETCHUNKDIMS = 102,
     };
 
     virtual ~HDF5() {}
@@ -115,14 +111,19 @@ public:
 
     /* @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel = HDF5::H5_NONE,
-                 const vector<int>& dims_chunks = vector<int>() ) const = 0;
+                 String dslabel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
+                 String dslabel, const int compresslevel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
+                 String dslabel, const int compresslevel, const vector<int>& dims_chunks ) const = 0;
     /** @brief Create and allocate storage for two dimensional single or multi channel dataset.
     @param rows declare amount of rows
     @param cols declare amount of cols
     @param type type to be used
     @param dslabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
-    @param compresslevel specify the compression level 0-9 to be used, by default H5_NONE means none at all.
+    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
     @param dims_chunks each array member specify chunking sizes to be used for block i/o,
            by default NULL means none at all.
 
@@ -181,17 +182,24 @@ public:
     Multiple datasets inside single hdf5 file is allowed.
      */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel = HDF5::H5_NONE, const int* dims_chunks = NULL ) const = 0;
+                 String dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
 
     /* @overload */
-    CV_WRAP virtual void dscreate( const vector<int>& sizes, const int type, String dslabel,
-                 const int compresslevel = HDF5::H5_NONE, const vector<int>& dims_chunks = vector<int>() ) const = 0;
+    CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
+                 String dslabel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
+                 String dslabel, const int compresslevel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dscreate( const vector<int>& sizes, const int type,
+                 String dslabel, const int compresslevel = HDF5::H5_NONE,
+                 const vector<int>& dims_chunks = vector<int>() ) const = 0;
     /** @brief Create and allocate storage for n-dimensional dataset, single or mutichannel type.
     @param n_dims declare number of dimensions
     @param sizes array containing sizes for each dimensions
     @param type type to be used
     @param dslabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
-    @param compresslevel specify the compression level 0-9 to be used, by default H5_NONE means none at all.
+    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
     @param dims_chunks each array member specify chunking sizes to be used for block i/o,
            by default NULL means none at all.
     @note If the dataset already exists an exception will be thrown. Existence of the dataset can be checked
@@ -254,7 +262,7 @@ public:
     @endcode
      */
     CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel, const int compresslevel = HDF5::H5_NONE, const int* dims_chunks = NULL ) const = 0;
+                 String dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
 
     /** @brief Fetch dataset sizes
     @param dslabel specify the hdf5 dataset label to be measured.
@@ -266,7 +274,9 @@ public:
     actual dataset dimensions. Using H5_GETMAXDIM flag will get maximum allowed dimension which normally match
     actual dataset dimension but can hold H5_UNLIMITED value if dataset was prepared in **unlimited** mode on
     some of its dimension. It can be useful to check existing dataset dimensions before overwrite it as whole or subset.
-    Trying to write with oversized source data into dataset target will thrown exception.
+    Trying to write with oversized source data into dataset target will thrown exception. The H5_GETCHUNKDIMS will
+    return the dimension of chunk if dataset was created with chunking options otherwise returned vector size
+    will be zero.
      */
     CV_WRAP virtual vector<int> dsgetsize( String dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
@@ -282,8 +292,13 @@ public:
     CV_WRAP virtual int dsgettype( String dslabel ) const = 0;
 
     /* @overload */
+    CV_WRAP virtual void dswrite( InputArray Array, String dslabel ) const = 0;
+    /* @overload */
     CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
-                 const vector<int>& dims_offset = vector<int>(),
+                 const int* dims_offset ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
+                 const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
     /** @brief Write or overwrite a Mat object into specified dataset of hdf5 file.
     @param Array specify Mat data array to be written.
@@ -348,11 +363,16 @@ public:
     @endcode
      */
     CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
-                 const int* dims_offset = NULL, const int* dims_counts = NULL ) const = 0;
+                 const int* dims_offset, const int* dims_counts ) const = 0;
 
     /* @overload */
-    CV_WRAP virtual void dsinsert( InputArray Array, String dslabel,
-                 const vector<int>& dims_offset = vector<int>(),
+    CV_WRAP virtual void dsinsert( InputArray Array, String dslabel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dsinsert( InputArray Array,
+                 String dslabel, const int* dims_offset ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dsinsert( InputArray Array,
+                 String dslabel, const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
     /** @brief Insert or overwrite a Mat object into specified dataset and autoexpand dataset size if **unlimited** property allows.
     @param Array specify Mat data array to be written.
@@ -402,12 +422,17 @@ public:
     @endcode
      */
     CV_WRAP virtual void dsinsert( InputArray Array, String dslabel,
-                 const int* dims_offset = NULL, const int* dims_counts = NULL ) const = 0;
+                 const int* dims_offset, const int* dims_counts ) const = 0;
 
 
     /* @overload */
+    CV_WRAP virtual void dsread( OutputArray Array, String dslabel ) const = 0;
+    /* @overload */
+    CV_WRAP virtual void dsread( OutputArray Array,
+                 String dslabel, const int* dims_offset ) const = 0;
+    /* @overload */
     CV_WRAP virtual void dsread( OutputArray Array, String dslabel,
-                 const vector<int>& dims_offset = vector<int>(),
+                 const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
     /** @brief Read specific dataset from hdf5 file into Mat object.
     @param Array Mat container where data reads will be returned.
@@ -449,7 +474,7 @@ public:
     @endcode
      */
     CV_WRAP virtual void dsread( OutputArray Array, String dslabel,
-                 const int* dims_offset = NULL, const int* dims_counts = NULL ) const = 0;
+                 const int* dims_offset, const int* dims_counts ) const = 0;
 
     /** @brief Fetch keypoint dataset size
     @param kplabel specify the hdf5 dataset label to be measured.
@@ -461,16 +486,17 @@ public:
     Using H5_GETMAXDIM flag will get maximum allowed dimension which normally match actual dataset dimension but can hold
     H5_UNLIMITED value if dataset was prepared in **unlimited** mode. It can be useful to check existing dataset dimension
     before overwrite it as whole or subset. Trying to write with oversized source data into dataset target will thrown
-    exception.
+    exception. The H5_GETCHUNKDIMS will return the dimension of chunk if dataset was created with chunking options otherwise
+    returned vector size will be zero.
      */
     CV_WRAP virtual int kpgetsize( String kplabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
     /** @brief Create and allocate special storage for cv::KeyPoint dataset.
     @param size declare fixed number of KeyPoints
     @param kplabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
-    @param compresslevel specify the compression level 0-9 to be used, by default H5_NONE means none at all.
+    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
     @param chunks each array member specify chunking sizes to be used for block i/o,
-           by default H5_NONE means none at all.
+           H5_NONE is default and means no compression.
     @note If the dataset already exists an exception will be thrown. Existence of the dataset can be checked
     using hlexists().
 

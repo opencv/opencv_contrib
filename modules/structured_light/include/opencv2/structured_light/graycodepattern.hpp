@@ -43,6 +43,7 @@
 #define __OPENCV_GRAY_CODE_PATTERN_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/structured_light/structured_light.hpp"
 
 namespace cv {
 namespace structured_light {
@@ -72,21 +73,21 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    *  @param width Projector's width. Default value is 1024.
    *  @param height Projector's height. Default value is 768.
    */
-  struct CV_EXPORTS_W_SIMPLE Params
+  struct CV_EXPORTS Params
   {
-    CV_WRAP
     Params();
-    CV_PROP_RW
     int width;
-    CV_PROP_RW
     int height;
   };
 
   /** @brief Constructor
    @param parameters GrayCodePattern parameters GrayCodePattern::Params: the width and the height of the projector.
    */
-  CV_WRAP
   static Ptr<GrayCodePattern> create( const GrayCodePattern::Params &parameters = GrayCodePattern::Params() );
+
+  // alias for scripting
+  CV_WRAP
+  static Ptr<GrayCodePattern> create( int width, int height );
 
   /** @brief Get the number of pattern images needed for the graycode pattern.
    *

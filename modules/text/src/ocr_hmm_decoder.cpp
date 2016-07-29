@@ -982,7 +982,7 @@ OCRHMMClassifierCNN::OCRHMMClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = (int)sqrt(kernels.cols);
+    patch_size  = (int)sqrt((float)kernels.cols);
     // algorithm internal parameters
     window_size = 32;
     num_quads   = 25;
@@ -1206,7 +1206,7 @@ the output transition_probabilities_table with them.
 The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
 @note
    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
  */
 void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, OutputArray _transitions)
 {

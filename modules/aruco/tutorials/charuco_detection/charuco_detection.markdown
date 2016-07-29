@@ -78,6 +78,11 @@ The output image will be something like this:
 
 A full working example is included in the ```create_board_charuco.cpp``` inside the module samples folder.
 
+Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+``` c++
+    "_ output path_/chboard.png" -w=5 -h=7 -sl=200 -ml=120 -d=10
+```
+
 
 ChArUco Board Detection
 ------
@@ -234,9 +239,16 @@ Finally, this is a full example of ChArUco detection (without using calibration 
 
 Sample video:
 
-[![ChArUco board detection video](http://img.youtube.com/vi/Nj44m_N_9FY/0.jpg)](https://youtu.be/Nj44m_N_9FY)
+@htmlonly
+<iframe width="420" height="315" src="https://www.youtube.com/embed/Nj44m_N_9FY" frameborder="0" allowfullscreen></iframe>
+@endhtmlonly
 
 A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
+
+Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+``` c++
+    -c="_path_/calib.txt" -dp="_path_/detector_params.yml" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
+```
 
 ChArUco Pose Estimation
 ------
@@ -310,3 +322,8 @@ A full example of ChArUco detection with pose estimation:
 ```
 
 A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
+
+Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+``` c++
+    "_path_/calib.txt" -dp="_path_/detector_params.yml" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
+```

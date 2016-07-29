@@ -42,45 +42,73 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 #include "opencv2/face/predict_collector.hpp"
-#include "opencv2/core/cvstd.hpp"
-namespace cv {
-namespace face {
 
-void PredictCollector::init(const int size, const int state) {
-    //reserve for some-how usage in descendants
-    _size = size;
-    _state = state;
+namespace cv {namespace face {
+
+static std::pair<int, double> toPair(const StandardCollector::PredictResult & val) {
+    return std::make_pair(val.label, val.distance);
 }
 
-bool PredictCollector::emit(const int, const double, const int state) {
-    if (_state == state) {
-        return false; // if it's own session - terminate it while default PredictCollector does nothing
+static bool pairLess(const std::pair<int, double> & lhs, const std::pair<int, double> & rhs) {
+    return lhs.second < rhs.second;
+}
+
+//===================================
+
+StandardCollector::StandardCollector(double threshold_) : threshold(threshold_) {
+    init(0);
+}
+
+void StandardCollector::init(size_t size) {
+    minRes = PredictResult();
+    data.clear();
+    data.reserve(size);
+}
+
+bool StandardCollector::collect(int label, double dist) {
+    if (dist < threshold)
+    {
+        PredictResult res(label, dist);
+        if (res.distance < minRes.distance)
+            minRes = res;
+        data.push_back(res);
     }
     return true;
 }
 
-bool MinDistancePredictCollector::emit(const int label, const double dist, const int state) {
-    if (_state != state) {
-        return true; // it works only in one (same) session doesn't accept values for other states
+int StandardCollector::getMinLabel() const {
+    return minRes.label;
+}
+
+double StandardCollector::getMinDist() const {
+    return minRes.distance;
+}
+
+std::vector< std::pair<int, double> > StandardCollector::getResults(bool sorted) const {
+    std::vector< std::pair<int, double> > res(data.size());
+    std::transform(data.begin(), data.end(), res.begin(), &toPair);
+    if (sorted)
+    {
+        std::sort(res.begin(), res.end(), &pairLess);
     }
-    if (dist < _threshhold && dist < _dist) {
-        _label = label;
-        _dist = dist;
+    return res;
+}
+
+std::map<int, double> StandardCollector::getResultsMap() const {
+    std::map<int, double> res;
+    for (std::vector<PredictResult>::const_iterator i = data.begin(); i != data.end(); ++i) {
+        std::map<int, double>::iterator j = res.find(i->label);
+        if (j == res.end()) {
+            res.insert(toPair(*i));
+        } else if (i->distance < j->second) {
+            j->second = i->distance;
+        }
     }
-    return true;
+    return res;
 }
 
-int MinDistancePredictCollector::getLabel() const {
-    return _label;
+Ptr<StandardCollector> StandardCollector::create(double threshold) {
+    return makePtr<StandardCollector>(threshold);
 }
 
-double MinDistancePredictCollector::getDist() const {
-    return _dist;
-}
-
-Ptr<MinDistancePredictCollector> MinDistancePredictCollector::create(double threshold) {
-    return Ptr<MinDistancePredictCollector>(new MinDistancePredictCollector(threshold));
-}
-
-}
-}
+}} // cv::face::
