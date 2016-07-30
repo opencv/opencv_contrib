@@ -9,10 +9,10 @@ const int nTrees = 5;
 
 static double normL2( const Point2f &v ) { return sqrt( v.x * v.x + v.y * v.y ); }
 
-static Scalar getFlowColor( const Point2f &f, const bool logScale = true, const double scaleDown = 5 )
+static Vec3d getFlowColor( const Point2f &f, const bool logScale = true, const double scaleDown = 5 )
 {
   if ( f.x == 0 && f.y == 0 )
-    return Scalar( 0, 0, 1 );
+    return Vec3d( 0, 0, 1 );
 
   double radius = normL2( f );
   if ( logScale )
@@ -21,7 +21,21 @@ static Scalar getFlowColor( const Point2f &f, const bool logScale = true, const 
   radius = std::min( 1.0, radius );
 
   double angle = ( atan2( -f.y, -f.x ) + CV_PI ) * 180 / CV_PI;
-  return Scalar( angle, radius, 1 );
+  return Vec3d( angle, radius, 1 );
+}
+
+static void displayFlow( InputArray _flow, OutputArray _img )
+{
+  const Size sz = _flow.size();
+  Mat flow = _flow.getMat();
+  _img.create( sz, CV_32FC3 );
+  Mat img = _img.getMat();
+
+  for ( int i = 0; i < sz.height; ++i )
+    for ( int j = 0; j < sz.width; ++j )
+      img.at< Vec3f >( i, j ) = getFlowColor( flow.at<Point2f>( i, j ) );
+
+  cvtColor( img, img, COLOR_HSV2BGR );
 }
 
 int main( int argc, const char **argv )
@@ -65,10 +79,15 @@ int main( int argc, const char **argv )
   cvtColor( disp, disp, COLOR_HSV2BGR );
   cvtColor( dispErr, dispErr, COLOR_HSV2BGR );
 
+  Mat dispGroundTruth;
+  displayFlow( gt, dispGroundTruth );
+
   namedWindow( "Correspondences", WINDOW_AUTOSIZE );
   imshow( "Correspondences", disp );
   namedWindow( "Error", WINDOW_AUTOSIZE );
   imshow( "Error", dispErr );
+  namedWindow( "Ground truth", WINDOW_AUTOSIZE );
+  imshow( "Ground truth", dispGroundTruth );
   waitKey( 0 );
 
   return 0;
