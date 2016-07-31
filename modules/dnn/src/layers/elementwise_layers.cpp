@@ -42,48 +42,5 @@ Ptr<PowerLayer> PowerLayer::create(double power /*= 1*/, double scale /*= 1*/, d
     return Ptr<PowerLayer>(new ElementWiseLayer<PowerFunctor>(f));
 }
 
-
-Ptr<Layer> createReLULayerFromCaffe(LayerParams &params)
-{
-    float negative_slope;
-
-    if (params.has("negative_slope"))
-        negative_slope = params.get<float>("negative_slope");
-    else
-        negative_slope = 0.f;
-
-    return Ptr<Layer>(ReLULayer::create(negative_slope));
-}
-
-
-Ptr<Layer> createSigmoidLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(SigmoidLayer::create());
-}
-
-Ptr<Layer> createTanHLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(TanHLayer::create());
-}
-
-Ptr<Layer> createAbsLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(AbsLayer::create());
-}
-
-Ptr<Layer> createBNLLLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(BNLLLayer::create());
-}
-
-Ptr<Layer> createPowerLayerFromCaffe(LayerParams &params)
-{
-    float power = params.get<float>("power", 1.0f);
-    float scale = params.get<float>("scale", 1.0f);
-    float shift = params.get<float>("shift", 0.0f);
-
-    return Ptr<Layer>(PowerLayer::create(power, scale, shift));
-}
-
 }
 }

@@ -48,29 +48,27 @@ namespace cv
 {
 namespace dnn
 {
-    class LRNLayerImpl : public LRNLayer
-    {
-        bool useOpenCL;
-        Blob buf;
 
-        void channelNoramlization(Blob &src, Blob &dst);
-        template<typename XMat>
-        void channelNoramlization_(Blob &src, Blob &dst);
-        bool channelNoramlization_ocl(const UMat &src, UMat &dst);
+class LRNLayerImpl : public LRNLayer
+{
+    bool useOpenCL;
+    Blob buf;
 
-        void spatialNormalization(Blob &src, Blob &dst);
-        template<typename XMat>
-        void spatialNormalization_(Blob &src, Blob &dst);
+    void channelNoramlization(Blob &src, Blob &dst);
+    template<typename XMat>
+    void channelNoramlization_(Blob &src, Blob &dst);
+    bool channelNoramlization_ocl(const UMat &src, UMat &dst);
 
-    public:
+    void spatialNormalization(Blob &src, Blob &dst);
+    template<typename XMat>
+    void spatialNormalization_(Blob &src, Blob &dst);
 
-        LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+public:
 
-
-Ptr<Layer> createLRNLayerFromCaffe(LayerParams &params);
+    LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
 
 }
 }

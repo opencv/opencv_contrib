@@ -123,27 +123,5 @@ Ptr<InnerProductLayer> InnerProductLayer::create(int axis)
     return Ptr<InnerProductLayer>(new FullyConnectedLayerImpl(axis));
 }
 
-Ptr<Layer> createInnerProductLayerFromCaffe(LayerParams &params)
-{
-    const std::vector<Blob> &blobs = params.blobs;
-    CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
-
-    int numOutputs = params.get<int>("num_output");
-    int innerSize = (int)blobs[0].total() / numOutputs;
-    bool bias = params.get<bool>("bias_term", true);
-    int axis = params.get<int>("axis", 1);
-
-    CV_Assert(blobs[0].dims() >= 2 && (size_t)(innerSize * numOutputs) == blobs[0].total());
-    CV_Assert(!bias || (blobs.size() == 2 && (size_t)numOutputs == blobs[1].total()));
-
-    Ptr<InnerProductLayer> l = InnerProductLayer::create(axis);
-    l->setParamsFrom(params);
-    l->blobs[0].reshape(Shape(numOutputs, innerSize));
-    if (bias)
-        l->blobs[1].reshape(Shape(1, numOutputs));
-
-    return Ptr<Layer>(l);
-}
-
 }
 }

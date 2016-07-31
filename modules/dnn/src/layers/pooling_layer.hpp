@@ -48,33 +48,32 @@ namespace cv
 {
 namespace dnn
 {
-    class PoolingLayerImpl : public PoolingLayer
-    {
-        bool useOpenCL;
-        Size inp, out;
 
-        void computeOutputShape(Size inpSz);
+class PoolingLayerImpl : public PoolingLayer
+{
+    bool useOpenCL;
+    Size inp, out;
 
-        bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
+    void computeOutputShape(Size inpSz);
 
-        void maxPooling(Blob &src, Blob &dst);
-        void maxPooling_cpu(Blob &src, Blob &dst);
-        bool maxPooling_ocl(Blob &src, Blob &dst);
+    bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
 
-        void avePooling(Blob &src, Blob &dst);
-        void avePooling_cpu(Blob &src, Blob &dst);
-        bool avePooling_ocl(Blob &src, Blob &dst);
+    void maxPooling(Blob &src, Blob &dst);
+    void maxPooling_cpu(Blob &src, Blob &dst);
+    bool maxPooling_ocl(Blob &src, Blob &dst);
 
-    public:
+    void avePooling(Blob &src, Blob &dst);
+    void avePooling_cpu(Blob &src, Blob &dst);
+    bool avePooling_ocl(Blob &src, Blob &dst);
 
-        PoolingLayerImpl();
-        PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
+public:
 
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+    PoolingLayerImpl();
+    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
 
-Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
 
 }
 }

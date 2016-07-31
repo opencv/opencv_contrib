@@ -164,10 +164,12 @@ public:
     }
 };
 
+#ifdef HAVE_OPENCL
 static String oclGetTMacro(const UMat &m)
 {
     return String("-DT=") + ocl::typeToStr(m.type()) + String(" ");
 }
+#endif
 
 struct ReLUFunctor
 {
@@ -311,23 +313,6 @@ struct PowerFunctor
     #endif
 };
 
-template <typename ActivationLayer>
-Ptr<Layer> createLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(ActivationLayer::create());
-}
-
-Ptr<Layer> createReLULayerFromCaffe(LayerParams &params);
-
-Ptr<Layer> createSigmoidLayerFromCaffe(LayerParams&);
-
-Ptr<Layer> createTanHLayerFromCaffe(LayerParams&);
-
-Ptr<Layer> createAbsLayerFromCaffe(LayerParams&);
-
-Ptr<Layer> createBNLLLayerFromCaffe(LayerParams&);
-
-Ptr<Layer> createPowerLayerFromCaffe(LayerParams &params);
 }
 }
 #endif

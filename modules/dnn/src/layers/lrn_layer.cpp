@@ -245,26 +245,5 @@ Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta)
     return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta));
 }
 
-Ptr<Layer> createLRNLayerFromCaffe(LayerParams &params)
-{
-    int type;
-    String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
-    if (nrmType == "ACROSS_CHANNELS")
-        type = LRNLayer::CHANNEL_NRM;
-    else if (nrmType == "WITHIN_CHANNEL")
-        type = LRNLayer::SPATIAL_NRM;
-    else
-        CV_Error(Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
-
-    int size = params.get<int>("local_size", 5);
-    if (size % 2 != 1 || size <= 0)
-        CV_Error(Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
-
-    double alpha = params.get<double>("alpha", 1);
-    double beta = params.get<double>("beta", 0.75);
-
-    return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta));
-}
-
 }
 }

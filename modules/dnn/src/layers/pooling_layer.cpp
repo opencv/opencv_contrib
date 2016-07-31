@@ -266,32 +266,5 @@ Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size 
     return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad));
 }
 
-Ptr<Layer> createPoolingLayerFromCaffe(LayerParams &params)
-{
-    int type;
-    Size kernel, stride, pad;
-
-    if (params.has("pool"))
-    {
-        String pool = params.get<String>("pool").toLowerCase();
-        if (pool == "max")
-            type = PoolingLayer::MAX;
-        else if (pool == "ave")
-            type = PoolingLayer::AVE;
-        else if (pool == "stochastic")
-            type = PoolingLayer::STOCHASTIC;
-        else
-            CV_Error(Error::StsBadArg, "Unknown pooling type \"" + pool + "\"");
-    }
-    else
-    {
-        type = PoolingLayer::MAX;
-    }
-
-    getCaffeConvParams(params, kernel, pad, stride);
-
-    return Ptr<Layer>(new PoolingLayerImpl(type, kernel, stride, pad));
-}
-
 }
 }

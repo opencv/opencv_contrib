@@ -220,11 +220,5 @@ Ptr<SoftmaxLayer> SoftmaxLayer::create(int axis)
     return Ptr<SoftmaxLayer>(new SoftMaxLayerImpl(axis));
 }
 
-Ptr<Layer> createSoftmaxLayerFromCaffe(LayerParams &params)
-{
-    int axis = params.get<int>("axis", 1);
-    return Ptr<Layer>(SoftmaxLayer::create(axis));
-}
-
 }
 }

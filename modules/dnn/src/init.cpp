@@ -54,6 +54,8 @@
 #include "layers/softmax_layer.hpp"
 #include "layers/split_layer.hpp"
 
+#include "caffe/layer_loaders.hpp"
+
 namespace cv
 {
 namespace dnn
@@ -77,21 +79,21 @@ void initModule()
         return;
 
     REG_RUNTIME_LAYER_CLASS(Slice, SliceLayer)
-    REG_STATIC_LAYER_FUNC(Softmax, createSoftmaxLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
     REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
-    REG_STATIC_LAYER_FUNC(Flatten, createFlattenLayer)
-    REG_RUNTIME_LAYER_FUNC(Pooling, createPoolingLayerFromCaffe)
     REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
-    REG_RUNTIME_LAYER_FUNC(LRN, createLRNLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(InnerProduct, createInnerProductLayerFromCaffe)
+    REG_RUNTIME_LAYER_FUNC(Flatten, createFlattenLayer);
+    REG_RUNTIME_LAYER_FUNC(Pooling,         createLayerFromCaffe<PoolingLayer>);
+    REG_RUNTIME_LAYER_FUNC(LRN,             createLayerFromCaffe<LRNLayer>);
+    REG_RUNTIME_LAYER_FUNC(InnerProduct,    createLayerFromCaffe<InnerProductLayer>);
+    REG_STATIC_LAYER_FUNC(Softmax,          createLayerFromCaffe<SoftmaxLayer>);
 
-    REG_RUNTIME_LAYER_FUNC(ReLU, createReLULayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(Sigmoid, createSigmoidLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(TanH, createTanHLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(BNLL, createBNLLLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(AbsVal, createAbsLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(Power, createPowerLayerFromCaffe)
+    REG_RUNTIME_LAYER_FUNC(ReLU,            createLayerFromCaffe<ReLULayer>);
+    REG_RUNTIME_LAYER_FUNC(Sigmoid,         createLayerFromCaffe<SigmoidLayer>);
+    REG_RUNTIME_LAYER_FUNC(TanH,            createLayerFromCaffe<TanHLayer>);
+    REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
+    REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
+    REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
     REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
 
     REG_RUNTIME_LAYER_FUNC(Convolution, createConvolutionLayerFromCaffe)
