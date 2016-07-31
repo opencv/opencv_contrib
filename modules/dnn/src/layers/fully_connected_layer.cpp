@@ -99,7 +99,7 @@ template<typename XMat>
 void FullyConnectedLayerImpl::forward_(std::vector<Blob *> &input, std::vector<Blob> &output)
 {
     const XMat &weight = blobs[0].getRefConst<XMat>();
-    const XMat *biasMat, *biasOnesMat;
+    const XMat *biasMat = NULL, *biasOnesMat = NULL;
     if (bias)
     {
         biasOnesMat = &biasOnesBlob.getRefConst<XMat>();

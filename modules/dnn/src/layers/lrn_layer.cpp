@@ -190,6 +190,8 @@ bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
 
     return true;
 #else
+    (void)src;
+    (void)dst;
     return false;
 #endif
 }

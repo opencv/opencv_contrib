@@ -275,6 +275,48 @@ namespace dnn
         static Ptr<InnerProductLayer> create(int axis = 1);
     };
 
+    /* Activations */
+
+    class ReLULayer : public Layer
+    {
+    public:
+        double negativeSlope;
+
+        static Ptr<ReLULayer> create(double negativeSlope = 0);
+    };
+
+    class TanHLayer : public Layer
+    {
+    public:
+        static Ptr<TanHLayer> create();
+    };
+
+    class SigmoidLayer : public Layer
+    {
+    public:
+        static Ptr<SigmoidLayer> create();
+    };
+
+    class BNLLLayer : public Layer
+    {
+    public:
+        static Ptr<BNLLLayer> create();
+    };
+
+    class AbsLayer : public Layer
+    {
+    public:
+        static Ptr<AbsLayer> create();
+    };
+
+    class PowerLayer : public Layer
+    {
+    public:
+        double power, scale, shift;
+
+        static Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
+    };
+
 //! @}
 //! @}
 
