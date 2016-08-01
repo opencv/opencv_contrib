@@ -12,7 +12,7 @@ using namespace std;
 const size_t width = 300;
 const size_t height = 300;
 
-Mat getMean(const size_t& height, const size_t& width)
+Mat getMean(const size_t& imageHeight, const size_t& imageWidth)
 {
     Mat mean;
 
@@ -20,7 +20,7 @@ Mat getMean(const size_t& height, const size_t& width)
     vector<Mat> meanChannels;
     for(size_t i = 0; i < 3; i++)
     {
-        Mat channel(height, width, CV_32F, Scalar(meanValues[i]));
+        Mat channel(imageHeight, imageWidth, CV_32F, Scalar(meanValues[i]));
         meanChannels.push_back(channel);
     }
     cv::merge(meanChannels, mean);
