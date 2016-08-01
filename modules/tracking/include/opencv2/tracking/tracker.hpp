@@ -1257,6 +1257,24 @@ public:
 	BOILERPLATE_CODE("KCF", TrackerKCF);
 };
 
+/** @brief GOTURN tracker is one of the CNN-based trackers. Accepts two image patches (target and search) as inputs and outputs a predicted bounding box coordinates in format X1,Y1,X2,Y2.
+*/
+class CV_EXPORTS TrackerGOTURN : public Tracker
+{
+public:
+	struct CV_EXPORTS Params
+	{
+		Params();
+		void read(const FileNode& /*fn*/);
+		void write(FileStorage& /*fs*/) const;
+	};
+
+	/** @brief Constructor
+	@param parameters GOTURN parameters TrackerGOTURN::Params
+	*/
+	BOILERPLATE_CODE("GOTURN", TrackerGOTURN);
+};
+
 /************************************ MultiTracker Class ---By Laksono Kurnianggoro---) ************************************/
 /** @brief This class is used to track multiple objects using the specified tracker algorithm.
 * The MultiTracker is naive implementation of multiple object tracking.
