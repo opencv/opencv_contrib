@@ -262,6 +262,7 @@ namespace dnn
 
         /** @brief Returns slice of first two dimensions.
          *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
+         *  @todo Method will be removed. Use slice() from shape_utils.hpp.
          */
         Mat getPlane(int n, int cn);
 
@@ -282,6 +283,7 @@ namespace dnn
 
         int type() const;       //!< Returns type of the blob.
         int elemSize() const;   //!< Returns size of single element in bytes.
+        int getState() const;   //!< Returns current state of the blob, @see DataState.
 
     private:
         const int *sizes() const;

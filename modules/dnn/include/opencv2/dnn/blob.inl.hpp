@@ -507,6 +507,15 @@ inline int Blob::elemSize() const
     return CV_ELEM_SIZE(type());
 }
 
+inline int Blob::getState() const
+{
+#ifdef CV_DNN_UMAT
+    return this->state;
+#else
+    return m.empty() ? UNINITIALIZED : HEAD_AT_MAT;
+#endif
+}
+
 }
 }
 

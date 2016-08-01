@@ -58,6 +58,31 @@ static String _tf(TString filename)
     return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
 }
 
+
+enum RunLayerMode
+{
+    ALLOC_ONLY = 1,
+    FORWARD_ONLY = 2,
+    ALLOC_AND_FORWARD = ALLOC_ONLY | FORWARD_ONLY
+};
+
+typedef Ptr<std::vector<Blob*> > PtrToVecPtrBlob;
+
+PtrToVecPtrBlob
+runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode = ALLOC_AND_FORWARD)
+{
+    PtrToVecPtrBlob inpPtrs(new std::vector<Blob*>());
+    inpPtrs->reserve(inpBlobs.size());
+    for (size_t i = 0; i < inpBlobs.size(); i++)
+        inpPtrs->push_back(&inpBlobs[i]);
+
+    if (mode & ALLOC_ONLY) layer->allocate(*inpPtrs, outBlobs);
+    if (mode & FORWARD_ONLY) layer->forward(*inpPtrs, outBlobs);
+
+    return inpPtrs;
+}
+
+
 void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool useCommonInputBlob = true)
 {
     String prototxt = _tf(basename + ".prototxt");
@@ -137,7 +162,12 @@ OCL_TEST(Layer_Test_DeConvolution, Accuracy)
 
 TEST(Layer_Test_InnerProduct, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_inner_product", true);
+     OCL_OFF(testLayerUsingCaffeModels("layer_inner_product", true));
+}
+OCL_TEST(Layer_Test_InnerProduct, Accuracy)
+{
+    OCL_ON(testLayerUsingCaffeModels("layer_inner_product", true));
+    OCL_OFF();
 }
 
 TEST(Layer_Test_Pooling_max, Accuracy)
@@ -164,7 +194,7 @@ OCL_TEST(Layer_Test_Pooling_ave, Accuracy)
 
 TEST(Layer_Test_MVN, Accuracy)
 {
-     testLayerUsingCaffeModels("layer_mvn");
+     OCL_OFF(testLayerUsingCaffeModels("layer_mvn"));
 }
 
 TEST(Layer_Test_Reshape, squeeze)
@@ -184,7 +214,28 @@ TEST(Layer_Test_Reshape, squeeze)
     EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
 }
 
-TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
+template<typename XMat>
+static void test_Layer_Concat()
+{
+    Matx21f a(1.f, 1.f), b(2.f, 2.f), c(3.f, 3.f);
+    std::vector<Blob> res(1), src = { Blob(XMat(a)), Blob(XMat(b)), Blob(XMat(c)) };
+    Blob ref(XMat(Matx23f(1.f, 2.f, 3.f, 1.f, 2.f, 3.f)));
+
+    runLayer(ConcatLayer::create(1), src, res);
+    normAssert(ref, res[0]);
+}
+TEST(Layer_Concat, Accuracy)
+{
+    OCL_OFF(test_Layer_Concat<Mat>());
+}
+OCL_TEST(Layer_Concat, Accuracy)
+{
+    OCL_ON(test_Layer_Concat<Mat>());
+    OCL_OFF();
+}
+
+template<typename XMat>
+void test_Reshape_Split_Slice_layers()
 {
     Net net;
     {
@@ -193,9 +244,9 @@ TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
         importer->populateNet(net);
     }
 
-    Blob input(BlobShape(Vec2i(6, 12)));
+    Blob input(BlobShape(6, 12));
     RNG rng(0);
-    rng.fill(input.matRef(), RNG::UNIFORM, -1, 1);
+    rng.fill(input.getRef<XMat>(), RNG::UNIFORM, -1, 1);
 
     net.setBlob(".input", input);
     net.forward();
@@ -203,28 +254,14 @@ TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 
     normAssert(input, output);
 }
-
-enum RunLayerMode
+TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 {
-    ALLOC_ONLY          = 1,
-    FORWARD_ONLY        = 2,
-    ALLOC_AND_FORWARD   = ALLOC_ONLY | FORWARD_ONLY
-};
-
-typedef Ptr<std::vector<Blob*> > PtrToVecPtrBlob;
-
-PtrToVecPtrBlob
-runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode=ALLOC_AND_FORWARD)
+    OCL_OFF(test_Reshape_Split_Slice_layers<Mat>());
+}
+OCL_TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 {
-    PtrToVecPtrBlob inpPtrs( new std::vector<Blob*>() );
-    inpPtrs->reserve(inpBlobs.size());
-    for (size_t i = 0; i < inpBlobs.size(); i++)
-        inpPtrs->push_back(&inpBlobs[i]);
-
-    if (mode & ALLOC_ONLY) layer->allocate(*inpPtrs, outBlobs);
-    if (mode & FORWARD_ONLY) layer->forward(*inpPtrs, outBlobs);
-
-    return inpPtrs;
+    OCL_ON(test_Reshape_Split_Slice_layers<UMat>());
+    OCL_OFF();
 }
 
 class Layer_LSTM_Test : public ::testing::Test

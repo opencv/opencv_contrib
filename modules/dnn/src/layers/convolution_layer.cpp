@@ -82,6 +82,8 @@ void ConvolutionLayerImpl::init()
 
 void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
+    init();
+
     CV_Assert(inputs.size() > 0);
     const Blob &input = *inputs[0];
     CV_Assert(input.dims() == 4 && (input.type() == CV_32F || input.type() == CV_64F));
@@ -329,38 +331,6 @@ Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size stride, S
     l->pad = pad;
     l->stride = stride;
     return Ptr<BaseConvolutionLayer>(l);
-}
-
-//Importers
-
-template<typename CLayer>
-static void initConvDeconvLayerFromCaffe(CLayer *l, LayerParams &params)
-{
-    l->setParamsFrom(params);
-    getCaffeConvParams(params, l->kernel, l->pad, l->stride);
-
-    bool bias = params.get<bool>("bias_term", true);
-    int numOutput = params.get<int>("num_output");
-    int group = params.get<int>("group", 1);
-
-    CV_Assert(numOutput % group == 0);
-    CV_Assert((bias && l->blobs.size() == 2) || (!bias && l->blobs.size() == 1));
-}
-
-Ptr<Layer> createConvolutionLayerFromCaffe(LayerParams &params)
-{
-    ConvolutionLayerImpl *l = new ConvolutionLayerImpl();
-    initConvDeconvLayerFromCaffe(l, params);
-    l->init();
-    return Ptr<Layer>(l);
-}
-
-Ptr<Layer> createDeconvolutionLayerFromCaffe(LayerParams &params)
-{
-    ConvolutionLayerImpl *l = new DeConvolutionLayerImpl();
-    initConvDeconvLayerFromCaffe(l, params);
-    l->init();
-    return Ptr<Layer>(l);
 }
 
 }

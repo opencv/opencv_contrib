@@ -46,45 +46,5 @@ namespace cv
 namespace dnn
 {
 
-void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride)
-{
-    if (params.has("kernel_h") && params.has("kernel_w"))
-    {
-        kernel.height = params.get<int>("kernel_h");
-        kernel.width = params.get<int>("kernel_w");
-    }
-    else if (params.has("kernel_size"))
-    {
-        kernel.height = kernel.width = params.get<int>("kernel_size");
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
-    }
-    CV_Assert(kernel.height > 0 && kernel.width > 0);
-
-    if (params.has("pad_h") && params.has("pad_w"))
-    {
-        pad.height = params.get<int>("pad_h");
-        pad.width = params.get<int>("pad_w");
-    }
-    else
-    {
-        pad.height = pad.width = params.get<int>("pad", 0);
-    }
-    CV_Assert(pad.height >= 0 && pad.width >= 0);
-
-    if (params.has("stride_h") && params.has("stride_w"))
-    {
-        stride.height = params.get<int>("stride_h");
-        stride.width = params.get<int>("stride_w");
-    }
-    else
-    {
-        stride.height = stride.width = params.get<int>("stride", 1);
-    }
-    CV_Assert(stride.height > 0 && stride.width > 0);
-}
-
 }
 }

@@ -40,21 +40,12 @@
 //M*/
 
 #include "precomp.hpp"
+#include "caffe/layer_loaders.hpp"
 
 #include "layers/concat_layer.hpp"
-#include "layers/convolution_layer.hpp"
 #include "layers/blank_layer.hpp"
-#include "layers/elementwise_layers.hpp"
-#include "layers/fully_connected_layer.hpp"
-#include "layers/lrn_layer.hpp"
 #include "layers/mvn_layer.hpp"
-#include "layers/pooling_layer.hpp"
 #include "layers/reshape_layer.hpp"
-#include "layers/slice_layer.hpp"
-#include "layers/softmax_layer.hpp"
-#include "layers/split_layer.hpp"
-
-#include "caffe/layer_loaders.hpp"
 
 namespace cv
 {
@@ -78,15 +69,20 @@ void initModule()
     if (init.status)
         return;
 
-    REG_RUNTIME_LAYER_CLASS(Slice, SliceLayer)
-    REG_RUNTIME_LAYER_CLASS(Split, SplitLayer)
+    REG_RUNTIME_LAYER_FUNC(Slice,           createLayerFromCaffe<SliceLayer>);
+    REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
+    REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
     REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
-    REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
     REG_RUNTIME_LAYER_FUNC(Flatten, createFlattenLayer);
+    REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
+    REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
+
+    REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
+    REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
     REG_RUNTIME_LAYER_FUNC(Pooling,         createLayerFromCaffe<PoolingLayer>);
     REG_RUNTIME_LAYER_FUNC(LRN,             createLayerFromCaffe<LRNLayer>);
     REG_RUNTIME_LAYER_FUNC(InnerProduct,    createLayerFromCaffe<InnerProductLayer>);
-    REG_STATIC_LAYER_FUNC(Softmax,          createLayerFromCaffe<SoftmaxLayer>);
+    REG_RUNTIME_LAYER_FUNC(Softmax,         createLayerFromCaffe<SoftmaxLayer>);
 
     REG_RUNTIME_LAYER_FUNC(ReLU,            createLayerFromCaffe<ReLULayer>);
     REG_RUNTIME_LAYER_FUNC(Sigmoid,         createLayerFromCaffe<SigmoidLayer>);
@@ -94,11 +90,6 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
-
-    REG_RUNTIME_LAYER_FUNC(Convolution, createConvolutionLayerFromCaffe)
-    REG_RUNTIME_LAYER_FUNC(Deconvolution, createDeconvolutionLayerFromCaffe)
-    REG_RUNTIME_LAYER_CLASS(Concat, ConcatLayer)
 
     init.status = true;
 }

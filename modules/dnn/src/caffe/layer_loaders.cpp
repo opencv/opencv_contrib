@@ -1,12 +1,86 @@
 #include "../precomp.hpp"
 #include "layer_loaders.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
-#include "../layers/layers_common.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+
+//Utils
+
+//Extracts params used into Conv, Deconv and Pooling layers
+static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride)
+{
+    if (params.has("kernel_h") && params.has("kernel_w"))
+    {
+        kernel.height = params.get<int>("kernel_h");
+        kernel.width = params.get<int>("kernel_w");
+    }
+    else if (params.has("kernel_size"))
+    {
+        kernel.height = kernel.width = params.get<int>("kernel_size");
+    }
+    else
+    {
+        CV_Error(Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
+    }
+    CV_Assert(kernel.height > 0 && kernel.width > 0);
+
+    if (params.has("pad_h") && params.has("pad_w"))
+    {
+        pad.height = params.get<int>("pad_h");
+        pad.width = params.get<int>("pad_w");
+    }
+    else
+    {
+        pad.height = pad.width = params.get<int>("pad", 0);
+    }
+    CV_Assert(pad.height >= 0 && pad.width >= 0);
+
+    if (params.has("stride_h") && params.has("stride_w"))
+    {
+        stride.height = params.get<int>("stride_h");
+        stride.width = params.get<int>("stride_w");
+    }
+    else
+    {
+        stride.height = stride.width = params.get<int>("stride", 1);
+    }
+    CV_Assert(stride.height > 0 && stride.width > 0);
+}
+
+//Layers
+
+//Convolution and Deconvolution
+static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParams &params)
+{
+    l->setParamsFrom(params);
+    getCaffeConvParams(params, l->kernel, l->pad, l->stride);
+
+    bool bias = params.get<bool>("bias_term", true);
+    int numOutput = params.get<int>("num_output");
+    int group = params.get<int>("group", 1);
+
+    CV_Assert(numOutput % group == 0);
+    CV_Assert((bias && l->blobs.size() == 2) || (!bias && l->blobs.size() == 1));
+}
+
+template<>
+Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams &params)
+{
+    Ptr<BaseConvolutionLayer> l = ConvolutionLayer::create();
+    initConvDeconvLayerFromCaffe(l, params);
+    return Ptr<Layer>(l);
+}
+
+template<>
+Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams &params)
+{
+    Ptr<BaseConvolutionLayer> l = DeconvolutionLayer::create();
+    initConvDeconvLayerFromCaffe(l, params);
+    return Ptr<Layer>(l);
+}
 
 template<>
 Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
@@ -88,7 +162,54 @@ Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams& params)
     return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta));
 }
 
-//Activation layers
+/* Reshape layers */
+
+template<>
+Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams& params)
+{
+    return Ptr<Layer>(ConcatLayer::create(params.get<int>("axis", 1)));
+}
+
+template<>
+Ptr<Layer> createLayerFromCaffe<SplitLayer>(LayerParams &params)
+{
+    int outputsCount;
+
+    //TODO: maybe "top_count" param is useless because it can be determined by output connections number
+    if (params.has("top_count"))
+    {
+        outputsCount = params.get<int>("top_count");
+        CV_Assert(outputsCount >= 0);
+    }
+    else
+    {
+        outputsCount = -1;
+    }
+
+    return Ptr<Layer>(SplitLayer::create(outputsCount));
+}
+
+template<>
+Ptr<Layer> createLayerFromCaffe<SliceLayer>(LayerParams& params)
+{
+    int axis = params.get<int>("axis", 1);
+
+    if (!params.has("slice_point"))
+    {
+        return Ptr<Layer>(SliceLayer::create(axis));
+    }
+    else
+    {
+        const DictValue &indicesValue = params.get("slice_point");
+        std::vector<int> sliceIndices(indicesValue.size());
+        for (int i = 0; i < indicesValue.size(); i++)
+            sliceIndices[i] = indicesValue.get<int>(i);
+
+        return Ptr<Layer>(SliceLayer::create(axis, sliceIndices));
+    }
+}
+
+/* Activation layers */
 
 template <typename ActivationLayer> //Intended for parameters-free activations
 Ptr<Layer> createLayerFromCaffe(LayerParams&)
@@ -113,6 +234,8 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
 }
 
 //Explicit instantiation
+template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<SoftmaxLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<InnerProductLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams&);

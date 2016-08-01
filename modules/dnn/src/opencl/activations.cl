@@ -5,7 +5,7 @@ __kernel void ReLUForward(const int count, __global const T* in, __global T* out
 ) {
   int index = get_global_id(0);
   if(index < count)
-#ifndef RELU_NO_SLOPE  
+#ifndef RELU_NO_SLOPE
   out[index] = in[index] > 0 ? in[index] : in[index] * negative_slope;
 #else
   out[index] = in[index] > 0 ? in[index] : 0;
@@ -34,7 +34,7 @@ __kernel void BNLLForward(const int n, __global const T* in, __global T* out) {
 __kernel void AbsValForward(const int n, __global const T* in, __global T* out) {
   int index = get_global_id(0);
   if (index < n)
-    out[index] = abs(in[index]);
+    out[index] = fabs(in[index]);
 }
 
 __kernel void PowForward(const int n, __global const T* in, __global T* out, const T power, const T scale, const T shift) {

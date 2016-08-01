@@ -275,9 +275,37 @@ namespace dnn
         static Ptr<InnerProductLayer> create(int axis = 1);
     };
 
+    /* Reshaping */
+
+    class CV_EXPORTS_W ConcatLayer : public Layer
+    {
+    public:
+        int axis;
+
+        static Ptr<ConcatLayer> create(int axis = 1);
+    };
+
+    class CV_EXPORTS_W SplitLayer : public Layer
+    {
+    public:
+        int outputsCount; //!< Number of copies that will be produced (is ignored when negative).
+
+        static Ptr<SplitLayer> create(int outputsCount = -1);
+    };
+
+    class CV_EXPORTS_W SliceLayer : public Layer
+    {
+    public:
+        int axis;
+        std::vector<int> sliceIndices;
+
+        static Ptr<SliceLayer> create(int axis);
+        static Ptr<SliceLayer> create(int axis, const std::vector<int> &sliceIndices);
+    };
+
     /* Activations */
 
-    class ReLULayer : public Layer
+    class CV_EXPORTS_W ReLULayer : public Layer
     {
     public:
         double negativeSlope;
@@ -285,31 +313,31 @@ namespace dnn
         static Ptr<ReLULayer> create(double negativeSlope = 0);
     };
 
-    class TanHLayer : public Layer
+    class CV_EXPORTS_W TanHLayer : public Layer
     {
     public:
         static Ptr<TanHLayer> create();
     };
 
-    class SigmoidLayer : public Layer
+    class CV_EXPORTS_W SigmoidLayer : public Layer
     {
     public:
         static Ptr<SigmoidLayer> create();
     };
 
-    class BNLLLayer : public Layer
+    class CV_EXPORTS_W BNLLLayer : public Layer
     {
     public:
         static Ptr<BNLLLayer> create();
     };
 
-    class AbsLayer : public Layer
+    class CV_EXPORTS_W AbsLayer : public Layer
     {
     public:
         static Ptr<AbsLayer> create();
     };
 
-    class PowerLayer : public Layer
+    class CV_EXPORTS_W PowerLayer : public Layer
     {
     public:
         double power, scale, shift;
