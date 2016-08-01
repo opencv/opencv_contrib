@@ -24,8 +24,8 @@ namespace cv
 		const double padSearch = 2.0;
 
 		//Scale parameters for Lablace distribution for Translation/Scale
-		const double bX = 1.0/5;
-		const double bY = 1.0 / 5;
+		const double bX = 1.0/10;
+		const double bY = 1.0/10;
 		const double bS = 1.0/15;
 
 		//Limits of scale changes

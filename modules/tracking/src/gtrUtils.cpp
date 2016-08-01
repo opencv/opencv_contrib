@@ -77,19 +77,24 @@ namespace cv
 			Point2f currCenter, prevCenter;
 			Rect2f targetPatchRect, searchPatchRect;
 			Mat targetPatch, searchPatch;
+			Mat prevFramePadded, currFramePadded;
 
 			//Crop Target Patch
+
+			//Padding
 
 			//Previous frame GTBBs center
 			prevCenter.x = prevBB.x + prevBB.width / 2;
 			prevCenter.y = prevBB.y + prevBB.height / 2;
 
-			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTarget / 2.0);
-			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTarget / 2.0);
 			targetPatchRect.width = (float)(prevBB.width*padTarget);
 			targetPatchRect.height = (float)(prevBB.height*padTarget);
+			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTarget / 2.0 + targetPatchRect.width);
+			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTarget / 2.0 + targetPatchRect.height);
 
-			targetPatch = prevFrame(targetPatchRect);
+			copyMakeBorder(prevFrame, prevFramePadded, targetPatchRect.height, targetPatchRect.height, targetPatchRect.width, targetPatchRect.width, BORDER_REPLICATE);
+
+			targetPatch = prevFramePadded(targetPatchRect);
 
 
 			for (int i = 0; i < samplesInFrame; i++)
@@ -106,25 +111,27 @@ namespace cv
 				dy = generateRandomLaplacian(bY, 0)*prevBB.height;
 				ds = generateRandomLaplacian(bS, 1);
 
-				//Limit scale coefficient
+				//Limit coefficients
+				dx = min(dx, (double)prevBB.width);
+				dx = max(dx, (double)-prevBB.width);
+				dy = min(dy, (double)prevBB.height);
+				dy = max(dy, (double)-prevBB.height);
 				ds = min(ds, Ymax);
 				ds = max(ds, Ymin);
 
-				//cout << dx << " " << dy << " " << ds << endl;
-
 				searchPatchRect.width = (float)(prevBB.width*padSearch*ds);
-				searchPatchRect.height = (float)(prevBB.height*padSearch*ds);
-				searchPatchRect.x = (float)(currCenter.x + dx - searchPatchRect.width / 2.0);
-				searchPatchRect.y = (float)(currCenter.y + dy - searchPatchRect.height / 2.0);
-
-				searchPatch = currFrame(searchPatchRect);
+				searchPatchRect.height =(float)(prevBB.height*padSearch*ds);
+				searchPatchRect.x = (float)(currCenter.x + dx - searchPatchRect.width / 2.0 + searchPatchRect.width);
+				searchPatchRect.y = (float)(currCenter.y + dy - searchPatchRect.height / 2.0 + searchPatchRect.height);
+				copyMakeBorder(currFrame, currFramePadded, searchPatchRect.height, searchPatchRect.height, searchPatchRect.width, searchPatchRect.width, BORDER_REPLICATE);
+				searchPatch = currFramePadded(searchPatchRect);
 
 				//Calculate Relative GTBB in search patch
 				Rect2f relGTBB;
 				relGTBB.width = currBB.width;
 				relGTBB.height = currBB.height;
-				relGTBB.x = currBB.x - searchPatchRect.x;
-				relGTBB.y = currBB.y - searchPatchRect.y;
+				relGTBB.x = currBB.x - searchPatchRect.x + searchPatchRect.width;
+				relGTBB.y = currBB.y - searchPatchRect.y + searchPatchRect.height;
 
 				//Link to the sample struct
 				sample.targetPatch = targetPatch.clone();
