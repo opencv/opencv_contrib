@@ -96,7 +96,7 @@ T NormalizeBBoxLayer::getParameter(const LayerParams &params,
 
 NormalizeBBoxLayer::NormalizeBBoxLayer(LayerParams &params) : Layer(params)
 {
-    _eps = getParameter<float>(params, "eps", 0, false, 1e-10);
+    _eps = getParameter<float>(params, "eps", 0, false, 1e-10f);
     _across_spatial = getParameter<bool>(params, "across_spatial");
     _channel_shared = getParameter<bool>(params, "channel_shared");
 }
