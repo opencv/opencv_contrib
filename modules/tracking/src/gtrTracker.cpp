@@ -97,7 +97,7 @@ namespace cv
 
 			//Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
 			String modelTxt = "goturn.prototxt";
-			String modelBin = "goturn_iter_30000.caffemodel";
+			String modelBin = "goturn.caffemodel";
 			Ptr<dnn::Importer> importer;
 			try                                     //Try to import GOTURN model
 			{
