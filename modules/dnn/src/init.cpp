@@ -71,10 +71,8 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(Slice,           createLayerFromCaffe<SliceLayer>);
     REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
     REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
-    REG_RUNTIME_LAYER_CLASS(Reshape, ReshapeLayer)
-    REG_RUNTIME_LAYER_FUNC(Flatten, createFlattenLayer);
-    REG_RUNTIME_LAYER_CLASS(Dropout, BlankLayer)
-    REG_RUNTIME_LAYER_CLASS(MVN, MVNLayer)
+    REG_RUNTIME_LAYER_FUNC(Reshape,         createLayerFromCaffe<ReshapeLayer>);
+    REG_RUNTIME_LAYER_FUNC(Flatten,         createFlattenLayerFromCaffe);
 
     REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
     REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
@@ -82,6 +80,7 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(LRN,             createLayerFromCaffe<LRNLayer>);
     REG_RUNTIME_LAYER_FUNC(InnerProduct,    createLayerFromCaffe<InnerProductLayer>);
     REG_RUNTIME_LAYER_FUNC(Softmax,         createLayerFromCaffe<SoftmaxLayer>);
+    REG_RUNTIME_LAYER_FUNC(MVN,             createLayerFromCaffe<MVNLayer>);
 
     REG_RUNTIME_LAYER_FUNC(ReLU,            createLayerFromCaffe<ReLULayer>);
     REG_RUNTIME_LAYER_FUNC(Sigmoid,         createLayerFromCaffe<SigmoidLayer>);
@@ -89,6 +88,7 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
+    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer)
 
     init.status = true;
 }

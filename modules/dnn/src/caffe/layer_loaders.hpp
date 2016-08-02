@@ -53,6 +53,8 @@ namespace dnn
 template <typename PublicLayer>
 Ptr<Layer> createLayerFromCaffe(LayerParams&);
 
+Ptr<Layer> createFlattenLayerFromCaffe(LayerParams&);
+
 }
 }
 #endif

@@ -115,6 +115,8 @@ namespace dnn
 
         /** @brief Returns pointer to the first element of continuous size array. */
         const int *ptr() const;
+        /** @overload */
+        int *ptr();
 
         bool equal(const BlobShape &other) const;       //!< Checks equality of two shapes.
         bool operator== (const BlobShape &r) const;     //!< @sa equal()

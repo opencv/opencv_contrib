@@ -57,6 +57,7 @@ inline std::ostream &operator<< (std::ostream &s, cv::Range &r)
 }
 
 //Reshaping
+//TODO: add -1 specifier for automatic size inferring
 
 template<typename Mat>
 void reshape(Mat &m, const BlobShape &shape)
@@ -129,31 +130,7 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, co
     return m(&ranges[0]);
 }
 
-//Traits for switching in ploymorphic implementations
-template<typename XMat>
-struct MatTraits
-{
-};
-
-template<>
-struct MatTraits<cv::Mat>
-{
-    enum
-    {
-        IS_MAT  = 1,
-        IS_UMAT = 0,
-    };
-};
-
-template<>
-struct MatTraits<cv::UMat>
-{
-    enum
-    {
-        IS_MAT  = 0,
-        IS_UMAT = 1,
-    };
-};
+BlobShape computeShapeByReshapeMask(const BlobShape &srcShape, const BlobShape &maskShape, Range srcRange = Range::all());
 
 }
 }

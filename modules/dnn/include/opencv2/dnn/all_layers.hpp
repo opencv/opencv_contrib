@@ -275,7 +275,25 @@ namespace dnn
         static Ptr<InnerProductLayer> create(int axis = 1);
     };
 
+    class CV_EXPORTS_W MVNLayer : public Layer
+    {
+    public:
+        double eps;
+        bool normVariance, acrossChannels;
+
+        static Ptr<MVNLayer> create(bool normVariance = true, bool acrossChannels = false, double eps = 1e-9);
+    };
+
     /* Reshaping */
+
+    class CV_EXPORTS_W ReshapeLayer : public Layer
+    {
+    public:
+        BlobShape newShapeDesc;
+        Range newShapeRange;
+
+        static Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all());
+    };
 
     class CV_EXPORTS_W ConcatLayer : public Layer
     {

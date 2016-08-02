@@ -208,6 +208,11 @@ inline const int *BlobShape::ptr() const
     return sz;
 }
 
+inline int *BlobShape::ptr()
+{
+    return sz;
+}
+
 inline bool BlobShape::equal(const BlobShape &other) const
 {
     if (this->dims() != other.dims())

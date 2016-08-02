@@ -42,11 +42,12 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "lrn_layer.hpp"
-#include "opencl_kernels_dnn.hpp"
+#include "modules/dnn/opencl_kernels_dnn.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
 #include <algorithm>
+#include <type_traits>
 
 namespace cv
 {
@@ -220,7 +221,7 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
             XMat src = getPlane(srcMat, n, cn);
             XMat dst = getPlane(dstMat, n, cn);
 
-            if (MatTraits<XMat>::IS_UMAT)
+            if (std::is_same<XMat, UMat>::value)
             {
                 cv::sqrBoxFilter(src, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT | BORDER_ISOLATED);
             }

@@ -162,7 +162,44 @@ Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams& params)
     return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta));
 }
 
+template<>
+Ptr<Layer> createLayerFromCaffe<MVNLayer>(LayerParams &params)
+{
+    return Ptr<Layer>(MVNLayer::create(
+        params.get<bool>("normalize_variance", true),
+        params.get<bool>("across_channels", false),
+        params.get<double>("eps", 1e-9)
+    ));
+}
+
 /* Reshape layers */
+
+template<>
+Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
+{
+    int axis = params.get<int>("axis", 0);
+    int numAxes = params.get<int>("num_axes", -1);
+    CV_Assert(numAxes >= -1);
+    Range applyingRange = (numAxes == -1) ? Range::all() : Range(axis, axis + numAxes);
+
+    Shape newShape;
+    if (params.has("dim"))
+    {
+        const DictValue &paramShape = params.get("dim");
+        newShape = Shape(paramShape.size(), nullptr);
+        for (int i = 0; i < paramShape.size(); i++)
+            newShape[i] = paramShape.get<int>(i);
+    }
+    else
+        newShape = Shape::all(0);
+
+    return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange));
+}
+
+Ptr<Layer> createFlattenLayerFromCaffe(LayerParams&)
+{
+    return Ptr<Layer>(ReshapeLayer::create(Shape(0, -1)));
+}
 
 template<>
 Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams& params)
@@ -239,6 +276,11 @@ template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<SoftmaxLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<InnerProductLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<MVNLayer>(LayerParams&);
+
+template Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<SliceLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<SplitLayer>(LayerParams&);
 
 template Ptr<Layer> createLayerFromCaffe<ReLULayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<SigmoidLayer>(LayerParams&);
