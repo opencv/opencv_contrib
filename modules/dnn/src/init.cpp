@@ -41,10 +41,7 @@
 
 #include "precomp.hpp"
 #include "caffe/layer_loaders.hpp"
-
 #include "layers/blank_layer.hpp"
-#include "layers/mvn_layer.hpp"
-#include "layers/reshape_layer.hpp"
 
 namespace cv
 {
