@@ -471,5 +471,15 @@ Ptr<GrayCodePattern> GrayCodePattern::create( const GrayCodePattern::Params& par
   return makePtr<GrayCodePattern_Impl>( params );
 }
 
+// Creates the GrayCodePattern instance
+// alias for scripting
+Ptr<GrayCodePattern> GrayCodePattern::create( int width, int height )
+{
+  Params params;
+  params.width = width;
+  params.height = height;
+  return makePtr<GrayCodePattern_Impl>( params );
+}
+
 }
 }

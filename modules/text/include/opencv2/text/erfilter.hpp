@@ -345,7 +345,7 @@ single vector\<Point\>, the function separates them in two different vectors (th
 ERStats where extracted from two different channels).
 
 An example of MSERsToERStats in use can be found in the text detection webcam_demo:
-<https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+<https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
 CV_EXPORTS void MSERsToERStats(InputArray image, std::vector<std::vector<Point> > &contours,
                                std::vector<std::vector<ERStat> > &regions);

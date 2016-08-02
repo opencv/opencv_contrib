@@ -302,6 +302,25 @@ public:
     /** @copybrief getGradientDescentIterations @see getGradientDescentIterations */
     CV_WRAP virtual void setVariationalRefinementIterations(int val) = 0;
 
+    /** @brief Weight of the smoothness term
+    @see setVariationalRefinementAlpha */
+    CV_WRAP virtual float getVariationalRefinementAlpha() const = 0;
+    /** @copybrief getVariationalRefinementAlpha @see getVariationalRefinementAlpha */
+    CV_WRAP virtual void setVariationalRefinementAlpha(float val) = 0;
+
+    /** @brief Weight of the color constancy term
+    @see setVariationalRefinementDelta */
+    CV_WRAP virtual float getVariationalRefinementDelta() const = 0;
+    /** @copybrief getVariationalRefinementDelta @see getVariationalRefinementDelta */
+    CV_WRAP virtual void setVariationalRefinementDelta(float val) = 0;
+
+    /** @brief Weight of the gradient constancy term
+    @see setVariationalRefinementGamma */
+    CV_WRAP virtual float getVariationalRefinementGamma() const = 0;
+    /** @copybrief getVariationalRefinementGamma @see getVariationalRefinementGamma */
+    CV_WRAP virtual void setVariationalRefinementGamma(float val) = 0;
+
+
     /** @brief Whether to use mean-normalization of patches when computing patch distance. It is turned on
         by default as it typically provides a noticeable quality boost because of increased robustness to
         illumanition variations. Turn it off if you are certain that your sequence does't contain any changes
