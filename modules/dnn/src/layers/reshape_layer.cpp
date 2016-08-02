@@ -84,6 +84,7 @@ ReshapeLayer::ReshapeLayer(LayerParams &params) : Layer(params)
 void ReshapeLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     outputs.resize(inputs.size());
+    outShapes.resize(inputs.size());
 
     for (size_t i = 0; i < inputs.size(); i++)
     {
@@ -100,9 +101,19 @@ void ReshapeLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
         BlobShape outShape = BlobShape::all(newDims);
 
         computeOutputShape(startAxis, endAxis, inpShape, outShape);
+        outShapes[i] = outShape;
 
         outBlob.shareFrom(inpBlob);
         outBlob.reshape(outShape);
+    }
+}
+
+void ReshapeLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    for (size_t i = 0; i < outputs.size(); i++)
+    {
+        outputs[i].shareFrom(*inputs[i]);
+        outputs[i].reshape(outShapes[i]);
     }
 }
 

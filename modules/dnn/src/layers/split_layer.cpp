@@ -58,7 +58,7 @@ void SplitLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob
 {
     CV_Assert(inputs.size() == 1);
     useOpenCL = ocl::useOpenCL() && inputs[0]->getState() == Blob::HEAD_AT_UMAT;
-    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_UMAT;
+    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
     if (outputsCount >= 0)
         outputs.resize(outputsCount);

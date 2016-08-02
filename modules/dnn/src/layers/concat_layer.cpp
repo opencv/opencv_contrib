@@ -80,7 +80,7 @@ void ConcatLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Bl
 
     refShape[axisIdx] = axisSum;
     useOpenCL &= ocl::useOpenCL();
-    int allocFlags = (useOpenCL) ? Blob::ALLOC_UMAT : Blob::ALLOC_UMAT;
+    int allocFlags = (useOpenCL) ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
     outputs.resize(1);
     outputs[0].create(refShape, inputs[0]->type(), allocFlags);

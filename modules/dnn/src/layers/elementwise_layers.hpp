@@ -99,10 +99,10 @@ public:
             outputs[i].shareFrom(*inputs[i]); //no data copy
 
             //hotfix: shareFrom doesn't provide properly Mat/UMat switching
-            if (!useOpenCL)
-                outputs[i].matRef() = inputs[i]->matRefConst();
-            else
+            if (useOpenCL)
                 outputs[i].umatRef() = inputs[i]->umatRefConst();
+            else
+                outputs[i].matRef() = inputs[i]->matRefConst();
         }
     }
 

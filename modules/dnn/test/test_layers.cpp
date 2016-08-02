@@ -214,25 +214,25 @@ TEST(Layer_Test_Reshape, squeeze)
     EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
 }
 
-template<typename XMat>
-static void test_Layer_Concat()
-{
-    Matx21f a(1.f, 1.f), b(2.f, 2.f), c(3.f, 3.f);
-    std::vector<Blob> res(1), src = { Blob(XMat(a)), Blob(XMat(b)), Blob(XMat(c)) };
-    Blob ref(XMat(Matx23f(1.f, 2.f, 3.f, 1.f, 2.f, 3.f)));
-
-    runLayer(ConcatLayer::create(1), src, res);
-    normAssert(ref, res[0]);
-}
-TEST(Layer_Concat, Accuracy)
-{
-    OCL_OFF(test_Layer_Concat<Mat>());
-}
-OCL_TEST(Layer_Concat, Accuracy)
-{
-    OCL_ON(test_Layer_Concat<Mat>());
-    OCL_OFF();
-}
+//template<typename XMat>
+//static void test_Layer_Concat()
+//{
+//    Matx21f a(1.f, 1.f), b(2.f, 2.f), c(3.f, 3.f);
+//    std::vector<Blob> res(1), src = { Blob(XMat(a)), Blob(XMat(b)), Blob(XMat(c)) };
+//    Blob ref(XMat(Matx23f(1.f, 2.f, 3.f, 1.f, 2.f, 3.f)));
+//
+//    runLayer(ConcatLayer::create(1), src, res);
+//    normAssert(ref, res[0]);
+//}
+//TEST(Layer_Concat, Accuracy)
+//{
+//    OCL_OFF(test_Layer_Concat<Mat>());
+//}
+//OCL_TEST(Layer_Concat, Accuracy)
+//{
+//    OCL_ON(test_Layer_Concat<Mat>());
+//    OCL_OFF();
+//}
 
 template<typename XMat>
 void test_Reshape_Split_Slice_layers()

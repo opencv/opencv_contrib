@@ -55,10 +55,11 @@ public:
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-    void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 protected:
     BlobShape shapeDesc;
+    std::vector<BlobShape> outShapes;
     int inAxis, inNumAxes, autoAxisIdx;
 
     void computeOutputShape(int startAxis, int endAxis, BlobShape &inpShape, BlobShape &outShape);
