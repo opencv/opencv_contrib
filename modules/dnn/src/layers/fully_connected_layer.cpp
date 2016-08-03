@@ -89,10 +89,12 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
 
 void FullyConnectedLayerImpl::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
 {
-    if (!useOpenCL)
-        forward_<Mat>(input, output);
-    else
+    #ifdef HAVE_OPENCL
+    if (useOpenCL)
         forward_<UMat>(input, output);
+    else
+    #endif
+        forward_<Mat>(input, output);
 }
 
 template<typename XMat>

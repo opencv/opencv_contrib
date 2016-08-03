@@ -47,7 +47,6 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
 #include <algorithm>
-#include <type_traits>
 
 namespace cv
 {
@@ -205,6 +204,21 @@ void LRNLayerImpl::spatialNormalization(Blob &src, Blob &dst)
         spatialNormalization_<UMat>(src, dst);
 }
 
+//TODO: fix cv::boxFilter with BORDER_ISOLATED flag in CPU mode
+template<>
+void LRNLayerImpl::sqrBoxFilter_<Mat>(const Mat &src, Mat &dst)
+{
+    Mat bufMat = buf.getRef<Mat>();
+    src.copyTo(bufMat);
+    cv::sqrBoxFilter(bufMat, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
+}
+
+template<>
+void LRNLayerImpl::sqrBoxFilter_<UMat>(const UMat &src, UMat &dst)
+{
+    cv::sqrBoxFilter(src, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT | BORDER_ISOLATED);
+}
+
 template<typename XMat>
 void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
 {
@@ -221,17 +235,7 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
             XMat src = getPlane(srcMat, n, cn);
             XMat dst = getPlane(dstMat, n, cn);
 
-            if (std::is_same<XMat, UMat>::value)
-            {
-                cv::sqrBoxFilter(src, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT | BORDER_ISOLATED);
-            }
-            else
-            {
-                //TODO: fix cv::boxFilter with BORDER_ISOLATED flag in CPU mode
-                Mat bufMat = buf.getRef<Mat>();
-                src.copyTo(bufMat);
-                cv::sqrBoxFilter(bufMat, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
-            }
+            sqrBoxFilter_(src, dst);
 
             dst.convertTo(dst, dst.type(), alpha/(size*size), 1);
             cv::pow(dst, beta, dst);

@@ -364,9 +364,15 @@ BlobShape computeShapeByReshapeMask(const BlobShape &srcShape, const BlobShape &
 {
     if (srcRange == Range::all())
         srcRange = Range(0, srcShape.dims());
+    else
+    {
+        int sz = srcRange.size();
+        srcRange.start = srcShape.canonicalAxis(srcRange.start);
+        srcRange.end =  (srcRange.end == INT_MAX) ? srcShape.dims() : srcRange.start + sz;
+    }
 
     CV_Assert(0 <= srcRange.start && srcRange.start <= srcRange.end && srcRange.end <= srcShape.dims());
-    Shape dstShape(srcShape.dims() - srcRange.size() + maskShape.dims(), nullptr);
+    BlobShape dstShape(srcShape.dims() - srcRange.size() + maskShape.dims(), (const int*)NULL);
 
     std::copy(srcShape.ptr(), srcShape.ptr() + srcRange.start, dstShape.ptr());
     std::copy(srcShape.ptr() + srcRange.end, srcShape.ptr() + srcShape.dims(), dstShape.ptr() + srcRange.start + maskShape.dims());

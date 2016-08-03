@@ -1,6 +1,7 @@
 #include "../precomp.hpp"
 #include "layer_loaders.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
+#include <climits>
 
 namespace cv
 {
@@ -180,13 +181,13 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     int axis = params.get<int>("axis", 0);
     int numAxes = params.get<int>("num_axes", -1);
     CV_Assert(numAxes >= -1);
-    Range applyingRange = (numAxes == -1) ? Range::all() : Range(axis, axis + numAxes);
+    Range applyingRange = (numAxes == -1) ? Range(axis, INT_MAX) : Range(axis, axis + numAxes);
 
     Shape newShape;
     if (params.has("dim"))
     {
         const DictValue &paramShape = params.get("dim");
-        newShape = Shape(paramShape.size(), nullptr);
+        newShape = Shape::all(paramShape.size());
         for (int i = 0; i < paramShape.size(); i++)
             newShape[i] = paramShape.get<int>(i);
     }

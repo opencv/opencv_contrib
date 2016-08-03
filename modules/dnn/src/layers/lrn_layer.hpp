@@ -62,6 +62,8 @@ class LRNLayerImpl : public LRNLayer
     void spatialNormalization(Blob &src, Blob &dst);
     template<typename XMat>
     void spatialNormalization_(Blob &src, Blob &dst);
+    template<typename XMat>
+    void sqrBoxFilter_(const XMat &src, XMat &dst);
 
 public:
 
