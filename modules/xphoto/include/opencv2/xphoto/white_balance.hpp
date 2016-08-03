@@ -105,7 +105,7 @@ namespace xphoto
     threshold of 0 means no pixels are used. Lower thresholds are useful in
     white-balancing saturated images.
 
-    Currently only works on images of type @ref CV_8UC3.
+    Currently only works on images of type @ref CV_8UC3 and @ref CV_16UC3.
 
     @param src Input array.
     @param dst Output array of the same size and type as src.
@@ -117,7 +117,69 @@ namespace xphoto
     CV_EXPORTS_W void autowbGrayworld(InputArray src, OutputArray dst,
         float thresh = 0.5f);
 
-//! @}
+    /** @brief Implements a more sophisticated learning-based automatic color balance algorithm.
+
+    As autowbGrayworld, this function works by applying different gains to the input
+    image channels, but their computation is a bit more involved compared to the
+    simple grayworld assumption. More details about the algorithm can be found in
+    @cite Cheng2015 .
+
+    To mask out saturated pixels this function uses only pixels that satisfy the
+    following condition:
+
+    \f[ \frac{\textrm{max}(R,G,B)}{\texttt{range_max_val}} < \texttt{saturation_thresh} \f]
+
+    Currently supports images of type @ref CV_8UC3 and @ref CV_16UC3.
+
+    @param src Input three-channel image in the BGR color space.
+    @param dst Output image of the same size and type as src.
+    @param range_max_val Maximum possible value of the input image (e.g. 255 for 8 bit images, 4095 for 12 bit images)
+    @param saturation_thresh Threshold that is used to determine saturated pixels
+    @param hist_bin_num Defines the size of one dimension of a three-dimensional RGB histogram that is used internally by
+    the algorithm. It often makes sense to increase the number of bins for images with higher bit depth (e.g. 256 bins
+    for a 12 bit image)
+
+    @sa autowbGrayworld
+    */
+    CV_EXPORTS_W void autowbLearningBased(InputArray src, OutputArray dst, int range_max_val = 255,
+                                          float saturation_thresh = 0.98f, int hist_bin_num = 64);
+
+    /** @brief Implements the feature extraction part of the learning-based color balance algorithm.
+
+    In accordance with @cite Cheng2015 , computes the following features for the input image:
+    1. Chromaticity of an average (R,G,B) tuple
+    2. Chromaticity of the brightest (R,G,B) tuple (while ignoring saturated pixels)
+    3. Chromaticity of the dominant (R,G,B) tuple (the one that has the highest value in the RGB histogram)
+    4. Mode of the chromaticity pallete, that is constructed by taking 300 most common colors according to
+       the RGB histogram and projecting them on the chromaticity plane. Mode is the most high-density point
+       of the pallete, which is computed by a straightforward fixed-bandwidth kernel density estimator with
+       a Epanechnikov kernel function.
+
+    @param src Input three-channel image in the BGR color space.
+    @param dst An array of four (r,g) chromaticity tuples corresponding to the features listed above.
+    @param range_max_val Maximum possible value of the input image (e.g. 255 for 8 bit images, 4095 for 12 bit images)
+    @param saturation_thresh Threshold that is used to determine saturated pixels
+    @param hist_bin_num Defines the size of one dimension of a three-dimensional RGB histogram that is used internally by
+    the algorithm. It often makes sense to increase the number of bins for images with higher bit depth (e.g. 256 bins
+    for a 12 bit image)
+
+    @sa autowbLearningBased
+    */
+    CV_EXPORTS_W void extractSimpleFeatures(InputArray src, OutputArray dst, int range_max_val = 255,
+                                            float saturation_thresh = 0.98f, int hist_bin_num = 64);
+
+    /** @brief Implements an efficient fixed-point approximation for applying channel gains.
+
+    @param src Input three-channel image in the BGR color space (either CV_8UC3 or CV_16UC3)
+    @param dst Output image of the same size and type as src.
+    @param gainB gain for the B channel
+    @param gainG gain for the G channel
+    @param gainR gain for the R channel
+
+    @sa autowbGrayworld, autowbLearningBased
+    */
+    CV_EXPORTS_W void applyChannelGains(InputArray src, OutputArray dst, float gainB, float gainG, float gainR);
+    //! @}
 
 }
 }
