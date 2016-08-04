@@ -42,123 +42,213 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "lrn_layer.hpp"
+#include "modules/dnn/opencl_kernels_dnn.hpp"
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/ocl.hpp>
+#include <opencv2/dnn/shape_utils.hpp>
 #include <algorithm>
 
 namespace cv
 {
 namespace dnn
 {
-    LRNLayer::LRNLayer(LayerParams &params) : Layer(params)
+
+LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_)
+{
+    type = type_;
+    size = size_;
+    alpha = alpha_;
+    beta = beta_;
+}
+
+void LRNLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    CV_Assert(inputs.size() == 1 && inputs[0]->dims() == 4);
+    CV_Assert(type == CHANNEL_NRM || type == SPATIAL_NRM);
+    useOpenCL = cv::ocl::useOpenCL();
+
+    if (type == SPATIAL_NRM && !useOpenCL)
+        buf.create(inputs[0]->shape().slice(2), inputs[0]->type(), Blob::ALLOC_MAT);
+    if (type == CHANNEL_NRM && useOpenCL)
+        buf.create(inputs[0]->shape().slice(2), inputs[0]->type(), Blob::ALLOC_UMAT);
+
+    outputs.resize(1);
+    outputs[0].create(inputs[0]->shape(), inputs[0]->type());
+}
+
+void LRNLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    Blob &src = *inputs[0];
+    Blob &dst = outputs[0];
+
+    switch (type)
     {
-        String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
-        if (nrmType == "ACROSS_CHANNELS")
-            type = CHANNEL_NRM;
-        else if (nrmType == "WITHIN_CHANNEL")
-            type = SPATIAL_NRM;
-        else
-            CV_Error(Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
-
-        size = params.get<int>("local_size", 5);
-        if (size % 2 != 1 || size <= 0)
-            CV_Error(Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
-
-        alpha = params.get<double>("alpha", 1);
-        beta = params.get<double>("beta", 0.75);
+    case CHANNEL_NRM:
+        channelNoramlization(src, dst);
+        break;
+    case SPATIAL_NRM:
+        spatialNormalization(src, dst);
+        break;
+    default:
+        CV_Error(Error::StsNotImplemented, "Unimplemented mode of LRN layer");
+        break;
     }
+}
 
-    void LRNLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+template<typename XMat>
+static XMat getPlane(XMat &m, int n, int cn)
+{
+    return reshaped(slice(m, n, cn), BlobShape::like(m).slice(2));
+}
+
+void LRNLayerImpl::channelNoramlization(Blob &src, Blob &dst)
+{
+    if (!useOpenCL)
+        channelNoramlization_<Mat>(src, dst);
+    else
     {
-        CV_Assert(inputs.size() == 1);
-        outputs.resize(1);
-
-        Vec4i shape = inputs[0]->shape4();
-        outputs[0].create(shape);
-
-        shape[0] = 1; //maybe make shape[0] = 1 too
-        bufBlob.create(shape);
+        //channelNoramlization_ocl(src.getRefConst<UMat>(), dst.getRef<UMat>()); //consumes a lot of memory
+        channelNoramlization_<UMat>(src, dst);
     }
+}
 
-    void LRNLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+template<typename XMat>
+void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
+{
+    int num = srcBlob.num();
+    int channels = srcBlob.channels();
+    int ksize = (size - 1) / 2;
+
+    XMat srcMat = srcBlob.getRefConst<XMat>();
+    XMat dstMat = dstBlob.getRef<XMat>();
+
+    for (int n = 0; n < num; n++)
     {
-        Blob &src = *inputs[0];
-        Blob &dst = outputs[0];
+        XMat accum = getPlane(dstMat, n, channels-1); //trick for memory saving
+        accum.setTo(0);
 
-        switch (type)
+        for (int cn = 0; cn < std::min(ksize, channels); cn++)
+            cv::accumulateSquare(getPlane(srcMat, n, cn), accum);
+
+        for (int cn = 0; cn < channels; cn++)
         {
-        case CHANNEL_NRM:
-            channelNoramlization(src, dst);
-            break;
-        case SPATIAL_NRM:
-            spatialNormalization(src, dst);
-            break;
-        default:
-            CV_Error(cv::Error::StsNotImplemented, "Unimplemented mode of LRN layer");
-            break;
-        }
-    }
-
-    void LRNLayer::channelNoramlization(Blob &srcBlob, Blob &dstBlob)
-    {
-        CV_DbgAssert(srcBlob.ptr() != dstBlob.ptr());
-
-        int num = srcBlob.num();
-        int channels = srcBlob.channels();
-        int ksize = (size - 1) / 2;
-
-        for (int n = 0; n < num; n++)
-        {
-            Mat accum = dstBlob.getPlane(n, channels-1); //trick for memory saving
-            accum.setTo(0);
-
-            for (int cn = 0; cn < std::min(ksize, channels); cn++)
-                cv::accumulateSquare(srcBlob.getPlane(n, cn), accum);
-
-            for (int cn = 0; cn < channels; cn++)
+            if (cn + ksize < channels)
             {
-                if (cn + ksize < channels)
-                {
-                    cv::accumulateSquare(srcBlob.getPlane(n, cn + ksize), accum);
-                }
-
-                if (cn - ksize - 1 >= 0)
-                {
-                    Mat left = srcBlob.getPlane(n, cn - ksize - 1);
-                    cv::subtract(accum, left.mul(left), accum); //subtractSquare
-                }
-
-                Mat dst = dstBlob.getPlane(n, cn);
-                accum.convertTo(dst, dst.type(), alpha/size, 1);
-                cv::pow(dst, beta, dst);
-                cv::divide(srcBlob.getPlane(n, cn), dst, dst);
+                cv::accumulateSquare(getPlane(srcMat, n, cn + ksize), accum);
             }
-        }
-    }
 
-    void LRNLayer::spatialNormalization(Blob &srcBlob, Blob &dstBlob)
-    {
-        int num = srcBlob.num();
-        int channels = srcBlob.channels();
-
-        for (int n = 0; n < num; n++)
-        {
-            for (int cn = 0; cn < channels; cn++)
+            if (cn - ksize - 1 >= 0)
             {
-                Mat src = srcBlob.getPlane(n, cn);
-                Mat dst = dstBlob.getPlane(n, cn);
-                uchar *dataDst0 = dst.data;
-
-                cv::pow(srcBlob.getPlane(n, cn), 2, dst);
-                //TODO: check border type
-                cv::boxFilter(dst, dst, dst.depth(), cv::Size(size, size), cv::Point(-1, -1), false, cv::BORDER_CONSTANT);
-                dst.convertTo(dst, dst.type(), alpha/(size*size), 1);
-                cv::pow(dst, beta, dst);
-                cv::divide(src, dst, dst);
-
-                CV_Assert(dataDst0 == dst.data); //debug
+                //subtractSquare
+                XMat left = getPlane(srcMat, n, cn - ksize - 1);
+                cv::pow(left, 2, left);
+                cv::subtract(accum, left, accum);
             }
+
+            XMat dst = getPlane(dstMat, n, cn);
+            accum.convertTo(dst, dst.type(), alpha/size, 1);
+            cv::pow(dst, beta, dst);
+            cv::divide(getPlane(srcMat, n, cn), dst, dst);
         }
     }
+}
+
+bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
+{
+#ifdef HAVE_OPENCL
+    if (src.offset != 0 || dst.offset != 0) //TODO: add offset
+        return false;
+
+    String buildOpts = String("-DT=") + ocl::typeToStr(src.type());
+
+    ocl::Kernel kerScale("LRNFillScale", ocl::dnn::lrn_oclsrc, buildOpts);
+    if (kerScale.empty())
+        return false;
+
+    ocl::Kernel kerOutput("LRNComputeOutput", ocl::dnn::lrn_oclsrc, buildOpts);
+    if (kerOutput.empty())
+        return false;
+
+    Shape shape = Shape::like(src);
+    int ksize = (size - 1) / 2;
+    size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
+    UMat &scaleBuf = buf.umatRef();
+
+    size_t nthreads = (size_t)(shape.total() / shape[1]);
+    kerScale.args((int)nthreads,
+                  ocl::KernelArg::PtrReadOnly(src), shape[0], shape[1], shape[2], shape[3],
+                  size, (float)(alpha/size), (float)ksize, ocl::KernelArg::PtrWriteOnly(scaleBuf));
+    if (!kerScale.run(1, &nthreads, &wgSize, true))
+        return false;
+
+    nthreads = (size_t)shape.total();
+    kerOutput.args((int)nthreads,
+                   ocl::KernelArg::PtrReadOnly(src), ocl::KernelArg::PtrReadOnly(scaleBuf),
+                   -beta, ocl::KernelArg::PtrWriteOnly(dst) );
+    if (!kerOutput.run(1, &nthreads, &wgSize, true))
+        return false;
+
+    return true;
+#else
+    (void)src;
+    (void)dst;
+    return false;
+#endif
+}
+
+void LRNLayerImpl::spatialNormalization(Blob &src, Blob &dst)
+{
+    if (!useOpenCL)
+        spatialNormalization_<Mat>(src, dst);
+    else
+        spatialNormalization_<UMat>(src, dst);
+}
+
+//TODO: fix cv::boxFilter with BORDER_ISOLATED flag in CPU mode
+template<>
+void LRNLayerImpl::sqrBoxFilter_<Mat>(const Mat &src, Mat &dst)
+{
+    Mat bufMat = buf.getRef<Mat>();
+    src.copyTo(bufMat);
+    cv::sqrBoxFilter(bufMat, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
+}
+
+template<>
+void LRNLayerImpl::sqrBoxFilter_<UMat>(const UMat &src, UMat &dst)
+{
+    cv::sqrBoxFilter(src, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT | BORDER_ISOLATED);
+}
+
+template<typename XMat>
+void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
+{
+    int num = srcBlob.num();
+    int channels = srcBlob.channels();
+
+    XMat srcMat = srcBlob.getRefConst<XMat>();
+    XMat dstMat = dstBlob.getRef<XMat>();
+
+    for (int n = 0; n < num; n++)
+    {
+        for (int cn = 0; cn < channels; cn++)
+        {
+            XMat src = getPlane(srcMat, n, cn);
+            XMat dst = getPlane(dstMat, n, cn);
+
+            sqrBoxFilter_(src, dst);
+
+            dst.convertTo(dst, dst.type(), alpha/(size*size), 1);
+            cv::pow(dst, beta, dst);
+            cv::divide(src, dst, dst);
+        }
+    }
+}
+
+
+Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta)
+{
+    return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta));
+}
 
 }
 }

@@ -42,55 +42,57 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "slice_layer.hpp"
+#include <opencv2/core/ocl.hpp>
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-SliceLayer::SliceLayer(LayerParams &params) : Layer(params)
+SliceLayerImpl::SliceLayerImpl(int axis_ /*= 1*/)
 {
-    inAxis = params.get<int>("axis", 1);
-
-    if (!params.has("slice_point"))
-        return;
-
-    const DictValue &_slicePoints = params.get("slice_point");
-    slicePoints.resize(_slicePoints.size());
-    for (int i = 0; i < _slicePoints.size(); i++)
-    {
-        slicePoints[i] = _slicePoints.get<int>(i);
-        CV_Assert(slicePoints[i] > 0 && (i == 0 || slicePoints[i-1] < slicePoints[i]));
-    }
+    axis = axis_;
 }
 
-void SliceLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+SliceLayerImpl::SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_)
+{
+    axis = axis_;
+    sliceIndices = sliceIndices_;
+}
+
+void SliceLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 1);
 
-    const Blob inpBlob = *inputs[0];
-    int axis = inpBlob.canonicalAxis(inAxis);
-    int axisSize = inpBlob.size(axis);
-    BlobShape inpShape = inpBlob.shape();
+    const Blob &inpBlob = *inputs[0];
+    useOpenCL = ocl::useOpenCL() && inpBlob.getState() == Blob::HEAD_AT_UMAT;
 
-    if (slicePoints.size()) //divide blob with respect to passed parameters
+    axisIdx = inpBlob.canonicalAxis(axis);
+    int axisSize = inpBlob.size(axisIdx);
+    BlobShape inpShape = inpBlob.shape();
+    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
+
+    if (sliceIndices.size()) //divide blob with respect to passed parameters
     {
         std::vector<int> outAxisSize;
         int prevSlice = 0;
 
-        for (size_t i = 0; i < slicePoints.size(); i++)
+        for (size_t i = 0; i < sliceIndices.size(); i++)
         {
-            CV_Assert(prevSlice < slicePoints[i] && slicePoints[i] < axisSize);
-            outAxisSize.push_back(slicePoints[i] - prevSlice);
-            prevSlice = slicePoints[i];
+            if (!(prevSlice < sliceIndices[i] && sliceIndices[i] < axisSize))
+                CV_Error(Error::StsBadArg, "Slice indices should be positive, increased and don't exceed size of sliced dimension");
+
+            outAxisSize.push_back(sliceIndices[i] - prevSlice);
+            prevSlice = sliceIndices[i];
         }
         outAxisSize.push_back(axisSize - prevSlice);
 
         outputs.resize(outAxisSize.size());
         for (size_t i = 0; i < outAxisSize.size(); i++)
         {
-            inpShape[axis] = outAxisSize[i];
-            outputs[i].create(inpShape, inpBlob.type());
+            inpShape[axisIdx] = outAxisSize[i];
+            outputs[i].create(inpShape, inpBlob.type(), allocFlags);
         }
     }
     else //divide blob with respect to count of output blobs
@@ -100,30 +102,45 @@ void SliceLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &o
 
         for (size_t i = 0; i < outputs.size(); i++)
         {
-            inpShape[axis] = outAxisSize;
-            outputs[i].create(inpShape, inpBlob.type());
+            inpShape[axisIdx] = outAxisSize;
+            outputs[i].create(inpShape, inpBlob.type(), allocFlags);
         }
     }
 }
 
-void SliceLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SliceLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    Blob &inpBlob = *inputs[0];
-    const int axis = inpBlob.canonicalAxis(inAxis);
-    const Mat& inpMat = inpBlob.matRef();
+    #ifdef HAVE_OPENCL
+    if (useOpenCL)
+        forward_<UMat>(inputs, outputs);
+    else
+    #endif
+        forward_<Mat>(inputs, outputs);
+}
 
-    std::vector<Range> ranges(inpBlob.dims(), Range::all());
-    int sizeStart = 0;
+template<typename XMat>
+void SliceLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    const XMat& inpMat = inputs[0]->getRefConst<XMat>();
+    std::vector<Range> ranges(inputs[0]->dims(), Range::all());
+
+    ranges[axisIdx].start = 0;
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        int sizeEnd = sizeStart + outputs[i].size(axis);
-        ranges[axis] = Range(sizeStart, sizeEnd);
-
-        Mat inpSubMat = inpMat(&ranges[0]);
-        inpSubMat.copyTo(outputs[i].matRef());
-
-        sizeStart = sizeEnd;
+        ranges[axisIdx].end = ranges[axisIdx].start + outputs[i].size(axisIdx);
+        inpMat(&ranges[0]).copyTo(outputs[i].getRef<XMat>());
+        ranges[axisIdx].start = ranges[axisIdx].end;
     }
+}
+
+Ptr<SliceLayer> SliceLayer::create(int axis)
+{
+    return Ptr<SliceLayer>(new SliceLayerImpl(axis));
+}
+
+Ptr<SliceLayer> SliceLayer::create(int axis, const std::vector<int> &sliceIndices)
+{
+    return Ptr<SliceLayer>(new SliceLayerImpl(axis, sliceIndices));
 }
 
 }

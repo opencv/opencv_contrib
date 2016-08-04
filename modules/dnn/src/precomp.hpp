@@ -40,4 +40,5 @@
 //M*/
 
 #include <opencv2/core.hpp>
+#include "cvconfig.h"
 #include <opencv2/dnn.hpp>

@@ -44,6 +44,7 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <ostream>
+#include <iostream>
 
 namespace cv
 {
@@ -55,12 +56,20 @@ namespace dnn
     /** @brief Lightweight class for storing and processing a shape of blob (or anything else). */
     struct BlobShape
     {
-        explicit BlobShape(int ndims = 4, int fill = 1);    //!< Creates n-dim shape and fill its by @p fill
+        BlobShape();                                        //!< Creates [1, 1, 1, 1] shape @todo Make more clearer behavior.
+        explicit BlobShape(int s0);                         //!< Creates 1-dim shape [@p s0]
+        BlobShape(int s0, int s1);                          //!< @overload
+        BlobShape(int s0, int s1, int s2);                  //!< @overload
         BlobShape(int num, int cn, int rows, int cols);     //!< Creates 4-dim shape [@p num, @p cn, @p rows, @p cols]
-        BlobShape(int ndims, const int *sizes);             //!< Creates n-dim shape from the @p sizes array
+
+        //! Creates n-dim shape from the @p sizes array; if @p sizes is NULL then shape will contain unspecified data
+        BlobShape(int ndims, const int *sizes);
         BlobShape(const std::vector<int> &sizes);           //!< Creates n-dim shape from the @p sizes vector
         template<int n>
         BlobShape(const Vec<int, n> &shape);                //!< Creates n-dim shape from @ref cv::Vec
+
+        //! Creates n-dim shape and fill its by @p fill
+        static BlobShape all(int ndims, int fill = 1);
 
         /** @brief Returns number of dimensions. */
         int dims() const;
@@ -88,16 +97,41 @@ namespace dnn
          */
         int xsize(int axis) const;
 
+        /** @brief Converts @p axis index to canonical format (where 0 <= @p axis < dims()). */
+        int canonicalAxis(int axis) const;
+
         /** @brief Returns the product of all sizes of axes. */
-        ptrdiff_t total();
+        ptrdiff_t total() const;
+
+        /** @brief Computes the product of sizes of axes among the specified axes range [@p startAxis; @p endAxis).
+         * @details Negative axis indexing can be used. @sa Blob::total(int,int)
+         */
+        ptrdiff_t total(int startAxis, int endAxis = INT_MAX) const;
+
+        /** @brief Constructs new shape from axes in range [@p startAxis; @p endAxis).
+         * @details Negative axis indexing can be used. @sa Blob::total(int,int)
+         */
+        BlobShape slice(int startAxis, int endAxis = INT_MAX) const;
 
         /** @brief Returns pointer to the first element of continuous size array. */
         const int *ptr() const;
+        /** @overload */
+        int *ptr();
 
-        /** @brief Checks equality of two shapes. */
-        bool equal(const BlobShape &other) const;
+        bool equal(const BlobShape &other) const;       //!< Checks equality of two shapes.
+        bool operator== (const BlobShape &r) const;     //!< @sa equal()
 
-        bool operator== (const BlobShape &r) const;
+        BlobShape operator+ (const BlobShape &r) const; //!< Contacenates two shapes.
+
+        static BlobShape like(const Mat &m);    //!< Returns shape of passed Mat.
+        static BlobShape like(const UMat &m);   //!< Returns shape of passed UMat.
+
+        static BlobShape empty();               //!< Returns empty shape [].
+        bool isEmpty() const;                   //!< Returns true if shape is empty (i.e []).
+
+#ifdef CV_CXX_MOVE_SEMANTICS
+        //TBD
+#endif
 
     private:
         cv::AutoBuffer<int,4> sz;
@@ -109,34 +143,57 @@ namespace dnn
      * The class is realized as a wrapper over @ref cv::Mat and @ref cv::UMat.
      * It will support methods for switching and logical synchronization between CPU and GPU.
     */
-    class CV_EXPORTS Blob
+    class CV_EXPORTS_W Blob
     {
     public:
-        explicit Blob();
+        Blob();
 
         /** @brief Constructs blob with specified @p shape and @p type. */
-        explicit Blob(const BlobShape &shape, int type = CV_32F);
+        explicit Blob(const BlobShape &shape, int type = CV_32F, int allocFlags = ALLOC_MAT);
+
+        /** @brief Constructs Blob from existing Mat or UMat. */
+        Blob(InputArray data);
 
         /** @brief Constucts 4-dimensional blob (so-called batch) from image or array of images.
-         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of images)
-         * @param dstCn specify size of second axis of ouptut blob
-        */
-        explicit Blob(InputArray image, int dstCn = -1);
+         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of such images)
+         * @param dstCn specifies size of second axis of ouptut blob
+         */
+        static Blob fromImages(InputArray image, int dstCn = -1);
+
+        /** @brief Works like Blob::fromImages() but in-place. */
+        void batchFromImages(InputArray image, int dstCn = -1);
 
         /** @brief Creates blob with specified @p shape and @p type. */
-        void create(const BlobShape &shape, int type = CV_32F);
+        void create(const BlobShape &shape, int type = CV_32F, int allocFlags = ALLOC_MAT);
 
-        /** @brief Creates blob from cv::Mat or cv::UMat without copying the data */
+        /** @brief Creates blob from Mat or UMat without copying the data.
+          * @details If in is Mat then Mat data is populated, otherwise - UMat.
+          */
         void fill(InputArray in);
+
         /** @brief Creates blob from user data.
          *  @details If @p deepCopy is false then CPU data will not be allocated.
          */
         void fill(const BlobShape &shape, int type, void *data, bool deepCopy = true);
 
-        Mat& matRef();                      //!< Returns reference to cv::Mat, containing blob data.
-        const Mat& matRefConst() const;     //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.
-        UMat &umatRef();                    //!< Returns reference to cv::UMat, containing blob data (not implemented yet).
-        const UMat &umatRefConst() const;   //!< Returns reference to cv::UMat, containing blob data, for read-only purposes (not implemented yet).
+        /** @brief Sets @p value to the last used data (if @p allocFlags = -1).
+         * @details If @p allocFlags != -1 then destination data (Mat or UMat) is determined by flags from AllocFlag enum like in create().
+         */
+        void setTo(InputArray value, int allocFlags = -1);
+
+        Mat& matRef(bool writeOnly = true);     //!< Returns reference to cv::Mat, containing blob data.
+        const Mat& matRefConst() const;         //!< Returns reference to cv::Mat, containing blob data, for read-only purposes.
+        UMat &umatRef(bool writeOnly = true);   //!< Returns reference to cv::UMat, containing blob data.
+        const UMat &umatRefConst() const;       //!< Returns reference to cv::UMat, containing blob data, for read-only purposes.
+
+        template<typename XMat>
+        XMat &getRef(bool writeOnly = true);
+        template<typename XMat>
+        const XMat &getRefConst() const;
+
+        void updateMat(bool syncData = true) const;     //!< Actualizes data stored inside Mat of Blob; if @p syncData is false then only shape will be actualized.
+        void updateUMat(bool syncData = true) const;    //!< Actualizes data stored inside Mat of Blob; if @p syncData is false then only shape will be actualized.
+        void sync() const;                              //!< Updates Mat and UMat of Blob.
 
         /** @brief Returns number of blob dimensions. */
         int dims() const;
@@ -163,7 +220,7 @@ namespace dnn
          */
         size_t total(int startAxis = 0, int endAxis = INT_MAX) const;
 
-        /** @brief Converts @p axis index to canonical format (where 0 <= axis < dims()). */
+        /** @brief Converts @p axis index to canonical format (where 0 <= @p axis < dims()). */
         int canonicalAxis(int axis) const;
 
         /** @brief Returns shape of the blob. */
@@ -171,11 +228,6 @@ namespace dnn
 
         /** @brief Checks equality of two blobs shapes. */
         bool equalShape(const Blob &other) const;
-
-        /** @brief Returns slice of first two dimensions.
-         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
-         */
-        Mat getPlane(int n, int cn);
 
         /* Shape getters of 4-dimensional blobs. */
         int cols() const;       //!< Returns size of the fourth axis blob.
@@ -204,11 +256,17 @@ namespace dnn
          */
         uchar *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         /** @overload */
-        template<typename TFloat>
-        TFloat *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
+        template<typename Type>
+        Type *ptr(int n = 0, int cn = 0, int row = 0, int col = 0);
         /** @overload ptr<float>() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
+
+        /** @brief Returns slice of first two dimensions.
+         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
+         *  @todo Method will be removed. Use slice() from shape_utils.hpp.
+         */
+        Mat getPlane(int n, int cn);
 
         /** @brief Shares data from other @p blob.
          * @returns *this
@@ -220,13 +278,52 @@ namespace dnn
          */
         Blob &reshape(const BlobShape &shape);
 
-        /** @brief Returns type of the blob. */
-        int type() const;
+        /** @brief Changes shape of the blob without copying the data.
+         * @returns shallow copy of original blob with new shape.
+         */
+        Blob reshaped(const BlobShape &newShape) const;
+
+        int type() const;       //!< Returns type of the blob.
+        int elemSize() const;   //!< Returns size of single element in bytes.
+        int getState() const;   //!< Returns current state of the blob, @see DataState.
 
     private:
         const int *sizes() const;
 
+#   define CV_DNN_UMAT //DBG
+#ifdef HAVE_OPENCL
+#   define CV_DNN_UMAT
+#endif
+
+#ifdef CV_DNN_UMAT
+#   define CV_DNN_UMAT_ONLY(expr) (expr)
+#else
+#   define CV_DNN_UMAT_ONLY(expr)
+#endif
+
+#ifndef CV_DNN_UMAT
         Mat m;
+#else
+        mutable Mat m;
+        mutable UMat um;
+        mutable uchar state;
+#endif
+
+public:
+        enum DataState
+        {
+            UNINITIALIZED,
+            HEAD_AT_MAT,
+            HEAD_AT_UMAT,
+            SYNCED
+        };
+
+        enum AllocFlag
+        {
+            ALLOC_MAT  = 1,
+            ALLOC_UMAT = 2,
+            ALLOC_BOTH = 3
+        };
     };
 
 //! @}

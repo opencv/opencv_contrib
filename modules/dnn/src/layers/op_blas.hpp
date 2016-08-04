@@ -39,33 +39,21 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_FULLY_CONNECTED_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_FULLY_CONNECTED_LAYER_HPP__
+#ifndef __OPENCV_DNN_LAYERS_OP_BLAS_HPP__
+#define __OPENCV_DNN_LAYERS_OP_BLAS_HPP__
 #include "../precomp.hpp"
-#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+    int getBlasThreads();
 
-class FullyConnectedLayerImpl : public InnerProductLayer
-{
-    int axisCan, dtype;
-    int numOutput, innerSize, outerSize;
-    bool bias, useOpenCL;
-    Blob biasOnesBlob;
+    void setBlasThreads(int numThreads);
 
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &input, std::vector<Blob> &output);
+    void gemm(InputArray A, InputArray B, double alpha, InputOutputArray C, double beta, int flags = 0);
 
-public:
-
-    FullyConnectedLayerImpl(int axisCan = 1);
-    void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-};
-
+    void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int flags = 0);
 }
 }
 #endif

@@ -52,6 +52,12 @@ namespace dnn {
 #if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THDiskFile.h"
 
+#ifdef NDEBUG
+static bool dbgPrint = false;
+#else
+static bool dbgPrint = true;
+#endif
+
 enum LuaType
 {
     TYPE_NIL      = 0,
@@ -290,7 +296,8 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
 
             String key = readString();
-            std::cout << i << "th key: " << key << "\n";
+            if (dbgPrint)
+                std::cout << i << "th key: " << key << "\n";
 
             fpos = THFile_position(file);
             int vtype = readInt();
@@ -334,13 +341,16 @@ struct TorchImporter : public ::cv::dnn::Importer
         }
 
         //Debug output
-        std::cout << "scalarParams:\n";
-        std::cout << scalarParams;
+        if (dbgPrint)
+        {
+            std::cout << "scalarParams:\n";
+            std::cout << scalarParams;
 
-        std::cout << "#" << tensorParams.size() << " tensorParams:\n";
-        std::map<String,Blob>::const_iterator it;
-        for (it = tensorParams.begin(); it != tensorParams.end(); it++)
-            std::cout << it->first << ": Tensor " << it->second.shape() << "\n";
+            std::cout << "#" << tensorParams.size() << " tensorParams:\n";
+            std::map<String,Blob>::const_iterator it;
+            for (it = tensorParams.begin(); it != tensorParams.end(); it++)
+                std::cout << it->first << ": Tensor " << it->second.shape() << "\n";
+        }
     }
 
     void readTorchTensor(int indexTensor, int typeTensor)
@@ -435,7 +445,9 @@ struct TorchImporter : public ::cv::dnn::Importer
 
         String className = readTorchClassName();
         String nnName;
-        std::cout << "Class: " << className << std::endl;
+
+        if (dbgPrint)
+            std::cout << "Class: " << className << std::endl;
 
         int type;
         if ( (type = parseTensorType(className)) >= 0 ) //is Tensor

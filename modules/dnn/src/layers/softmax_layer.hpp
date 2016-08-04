@@ -42,21 +42,31 @@
 #ifndef __OPENCV_DNN_LAYERS_SOFTMAX_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_SOFTMAX_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class SoftMaxLayer : public Layer
-    {
-        int axis_, axis;
-        Blob maxAggregator;
 
-    public:
-        SoftMaxLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+class SoftMaxLayerImpl : public SoftmaxLayer
+{
+    int axis, axisRaw;
+    Blob buf;
+    bool useOpenCL;
+    size_t outerSize, channels, innerSize;
+
+
+    bool forward_ocl(Blob &src, Blob &dst);
+    void forward_cpu(Blob &src, Blob &dst);
+
+public:
+
+    SoftMaxLayerImpl(int axis = 1);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
+
 }
 }
 #endif
