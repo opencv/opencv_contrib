@@ -173,7 +173,7 @@ struct CV_EXPORTS_W DetectorParameters {
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
 
@@ -277,7 +277,7 @@ class CV_EXPORTS_W GridBoard : public Board {
      * the marker size and marker separation.
      */
     CV_WRAP static Ptr<GridBoard> create(int markersX, int markersY, float markerLength,
-                                         float markerSeparation, Ptr<Dictionary> &dictionary, int firstMarker = 0);
+                                         float markerSeparation, const Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
     /**
       *
@@ -334,7 +334,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * The function returns the number of markers from the input employed for the board pose estimation.
  * Note that returning a 0 means the pose has not been estimated.
  */
-CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Ptr<Board> &board,
+CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                    OutputArray tvec);
 
@@ -373,7 +373,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
  * homography, and all the marker corners in the board must have the same Z coordinate.
  */
 CV_EXPORTS_W void refineDetectedMarkers(
-    InputArray image, Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
+    InputArray image,const  Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
     InputOutputArray detectedIds, InputOutputArrayOfArrays rejectedCorners,
     InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
     float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
@@ -437,7 +437,7 @@ CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, Inpu
  *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
+CV_EXPORTS_W void drawMarker(const Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
                              int borderBits = 1);
 
 
@@ -457,7 +457,7 @@ CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS_W void drawPlanarBoard(Ptr<Board> &board, Size outSize, OutputArray img,
+CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputArray img,
                                   int marginSize = 0, int borderBits = 1);
 
 
@@ -499,7 +499,7 @@ void _drawPlanarBoardImpl(Board *board, Size outSize, OutputArray img,
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
 CV_EXPORTS_W double calibrateCameraAruco(
-    InputArrayOfArrays corners, InputArray ids, InputArray counter, Ptr<Board> &board,
+    InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
     OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
