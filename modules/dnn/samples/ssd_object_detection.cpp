@@ -4,9 +4,9 @@
 using namespace cv;
 using namespace cv::dnn;
 
-#include <fstream>
 #include <iostream>
-#include <cstdlib>
+#include <iomanip>
+
 using namespace std;
 
 const size_t width = 300;
@@ -39,6 +39,69 @@ Mat preprocess(const Mat& frame)
     return preprocessed;
 }
 
+cv::Rect getObjectRectangle(const cv::Mat& detectionMat, const size_t& row,
+                            const size_t& frameRows, const size_t& frameCols)
+{
+    float xLeftBottom = detectionMat.at<float>(row, 3) * frameCols;
+    float yLeftBottom = detectionMat.at<float>(row, 4) * frameRows;
+    float xRightTop = detectionMat.at<float>(row, 5) * frameCols;
+    float yRightTop = detectionMat.at<float>(row, 6) * frameRows;
+
+    return Rect(xLeftBottom, yLeftBottom, xRightTop - xLeftBottom, yRightTop - yLeftBottom);
+}
+
+std::string getPascalClassName(const size_t& classId)
+{
+    switch(classId)
+    {
+        case 0: return "background";
+        case 1: return "aeroplane";
+        case 2: return "bicycle";
+        case 3: return "bird";
+        case 4: return "boat";
+        case 5: return "bottle";
+        case 6: return "bus";
+        case 7: return "car";
+        case 8: return "cat";
+        case 9: return "chair";
+        case 10: return "cow";
+        case 11: return "diningtable";
+        case 12: return "dog";
+        case 13: return "horse";
+        case 14: return "motorbike";
+        case 15: return "person";
+        case 16: return "pottedplant";
+        case 17: return "sheep";
+        case 18: return "sofa";
+        case 19: return "train";
+        case 20: return "tvmonitor";
+        default: return "wrong label";
+    }
+}
+
+namespace
+{
+int bitget(const int& byteval, const int& idx)
+{
+    return ((byteval & (1 << idx)) != 0);
+}
+}
+
+Scalar getPascalClassColor(const size_t& classId)
+{
+    int c = classId;
+    int r = 0, g = 0, b = 0;
+    for(size_t j = 0; j < 8; j++)
+    {
+        r = r | (bitget(c, 0) << 7-j);
+        g = g | (bitget(c, 1) << 7-j);
+        b = b | (bitget(c, 2) << 7-j);
+        c = c >> 3;
+    }
+
+    return Scalar(r, g, b);
+}
+
 const char* about = "This sample uses Single-Shot Detector "
                     "(https://arxiv.org/abs/1512.02325)"
                     "to detect objects on image\n"; // TODO: link
@@ -54,7 +117,7 @@ int main(int argc, char** argv)
 {
     cv::CommandLineParser parser(argc, argv, params);
 
-    if (parser.get<bool>("help"))
+    if (parser.get<bool>("help") || argc < 4)
     {
         std::cout << about << std::endl;
         parser.printMessage();
@@ -122,25 +185,16 @@ int main(int argc, char** argv)
         if(confidence > confidenceThreshold)
         {
             size_t objectClass = detectionMat.at<float>(i, 1);
+            Rect object = getObjectRectangle(detectionMat, i, frame.rows, frame.cols);
 
-            float xLeftBottom = detectionMat.at<float>(i, 3) * frame.cols;
-            float yLeftBottom = detectionMat.at<float>(i, 4) * frame.rows;
-            float xRightTop = detectionMat.at<float>(i, 5) * frame.cols;
-            float yRightTop = detectionMat.at<float>(i, 6) * frame.rows;
+            rectangle(frame, object, getPascalClassColor(objectClass), 2);
 
-            std::cout << "Class: " << objectClass << std::endl;
-            std::cout << "Confidence: " << confidence << std::endl;
+            std::ostringstream text;
+            text << getPascalClassName(objectClass) << " " << std::setprecision(3) << confidence;
 
-            std::cout << " " << xLeftBottom
-                      << " " << yLeftBottom
-                      << " " << xRightTop
-                      << " " << yRightTop << std::endl;
-
-            Rect object(xLeftBottom, yLeftBottom,
-                        xRightTop - xLeftBottom,
-                        yRightTop - yLeftBottom);
-
-            rectangle(frame, object, Scalar(0, 255, 0));
+            Point descriptionPoint(object.x + 5, object.y + 15);
+            putText(frame, text.str(), descriptionPoint, cv::FONT_HERSHEY_PLAIN,
+                    1, getPascalClassColor(objectClass), 2);
         }
     }
 
