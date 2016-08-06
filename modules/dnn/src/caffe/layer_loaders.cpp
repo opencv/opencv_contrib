@@ -271,6 +271,66 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
     return Ptr<Layer>(PowerLayer::create(power, scale, shift));
 }
 
+template<> //CropLayer specialization
+Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
+{
+    int start_axis = params.get<int>("axis");
+    if (4 <= start_axis)
+        CV_Error(Error::StsBadArg, "crop axis bigger than input dim");
+
+    DictValue paramOffset = params.get("offset");
+
+    std::vector<int> offset(4, 0);
+    if (1 < paramOffset.size())
+    {
+        if (4 - start_axis != paramOffset.size())
+            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+        for (size_t i = start_axis; i < offset.size(); i++)
+        {
+            offset[i] = paramOffset.get<int>(i);
+        }
+    }
+    else
+    {
+        const int offset_val = paramOffset.get<int>(0);
+        for (size_t i = start_axis; i < offset.size(); i++)
+        {
+            offset[i] = offset_val;
+        }
+    }
+    return Ptr<Layer>(CropLayer::create(start_axis, offset));
+}
+
+template<> //Power specialization
+Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
+{
+    EltwiseLayer::EltwiseOp op = EltwiseLayer::SUM;
+    if (params.has("operation"))
+    {
+        String operation = params.get<String>("operation").toLowerCase();
+        if (operation == "prod")
+            op = EltwiseLayer::PROD;
+        else if (operation == "sum")
+            op = EltwiseLayer::SUM;
+        else if (operation == "max")
+            op = EltwiseLayer::MAX;
+        else
+            CV_Error(cv::Error::StsBadArg, "Unknown operaticon type \"" + operation + "\"");
+    }
+
+    std::vector<int> coeffs;
+    if (params.has("coeff"))
+    {
+        DictValue paramCoeff = params.get("coeff");
+        coeffs.resize(paramCoeff.size(), 1);
+        for (int i = 0; i < paramCoeff.size(); i++)
+        {
+            coeffs[i] = paramCoeff.get<int>(i);
+        }
+    }
+    return Ptr<Layer>(EltwiseLayer::create(op, coeffs));
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
@@ -289,6 +349,9 @@ template Ptr<Layer> createLayerFromCaffe<TanHLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<AbsLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<BNLLLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams&);
+
+template Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams&);
 
 }
 }

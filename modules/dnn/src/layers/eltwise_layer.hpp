@@ -39,59 +39,24 @@
 //
 //M*/
 
-#include "precomp.hpp"
-#include "caffe/layer_loaders.hpp"
-#include "layers/blank_layer.hpp"
+#ifndef __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-
-struct AutoInitializer
-{
-    bool status;
-
-    AutoInitializer() : status(false)
+    class EltwiseLayerImpl : public EltwiseLayer
     {
-        cv::dnn::initModule();
-    }
-};
-
-static AutoInitializer init;
-
-void initModule()
-{
-    if (init.status)
-        return;
-
-    REG_RUNTIME_LAYER_FUNC(Slice,           createLayerFromCaffe<SliceLayer>);
-    REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
-    REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
-    REG_RUNTIME_LAYER_FUNC(Reshape,         createLayerFromCaffe<ReshapeLayer>);
-    REG_RUNTIME_LAYER_FUNC(Flatten,         createFlattenLayerFromCaffe);
-
-    REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
-    REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
-    REG_RUNTIME_LAYER_FUNC(Pooling,         createLayerFromCaffe<PoolingLayer>);
-    REG_RUNTIME_LAYER_FUNC(LRN,             createLayerFromCaffe<LRNLayer>);
-    REG_RUNTIME_LAYER_FUNC(InnerProduct,    createLayerFromCaffe<InnerProductLayer>);
-    REG_RUNTIME_LAYER_FUNC(Softmax,         createLayerFromCaffe<SoftmaxLayer>);
-    REG_RUNTIME_LAYER_FUNC(MVN,             createLayerFromCaffe<MVNLayer>);
-
-    REG_RUNTIME_LAYER_FUNC(ReLU,            createLayerFromCaffe<ReLULayer>);
-    REG_RUNTIME_LAYER_FUNC(Sigmoid,         createLayerFromCaffe<SigmoidLayer>);
-    REG_RUNTIME_LAYER_FUNC(TanH,            createLayerFromCaffe<TanHLayer>);
-    REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
-    REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
-    REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
-
-    REG_RUNTIME_LAYER_FUNC(Crop,            createLayerFromCaffe<CropLayer>);
-    REG_RUNTIME_LAYER_FUNC(Eltwise,         createLayerFromCaffe<EltwiseLayer>);
-
-    init.status = true;
-}
-
+        EltwiseOp op;
+        std::vector<int> coeffs;
+    public:
+        EltwiseLayerImpl(EltwiseOp op, const std::vector<int> &coeffs);
+        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    };
 }
 }
+#endif

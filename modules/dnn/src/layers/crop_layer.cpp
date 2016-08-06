@@ -39,59 +39,65 @@
 //
 //M*/
 
-#include "precomp.hpp"
-#include "caffe/layer_loaders.hpp"
-#include "layers/blank_layer.hpp"
+#include "../precomp.hpp"
+#include "layers_common.hpp"
+#include "crop_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-struct AutoInitializer
-{
-    bool status;
-
-    AutoInitializer() : status(false)
+    CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
     {
-        cv::dnn::initModule();
+        start_axis = start_axis_;
+        offset = offset_;
     }
-};
 
-static AutoInitializer init;
+    void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    {
+        CV_Assert(2 == inputs.size());
 
-void initModule()
-{
-    if (init.status)
-        return;
+        const Blob &inpBlob = *inputs[0];
+        CV_Assert(inpBlob.dims() == 4 && inpBlob.type() == CV_32F);
 
-    REG_RUNTIME_LAYER_FUNC(Slice,           createLayerFromCaffe<SliceLayer>);
-    REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
-    REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
-    REG_RUNTIME_LAYER_FUNC(Reshape,         createLayerFromCaffe<ReshapeLayer>);
-    REG_RUNTIME_LAYER_FUNC(Flatten,         createFlattenLayerFromCaffe);
+        const Blob &inpSzBlob = *inputs[1];
 
-    REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
-    REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
-    REG_RUNTIME_LAYER_FUNC(Pooling,         createLayerFromCaffe<PoolingLayer>);
-    REG_RUNTIME_LAYER_FUNC(LRN,             createLayerFromCaffe<LRNLayer>);
-    REG_RUNTIME_LAYER_FUNC(InnerProduct,    createLayerFromCaffe<InnerProductLayer>);
-    REG_RUNTIME_LAYER_FUNC(Softmax,         createLayerFromCaffe<SoftmaxLayer>);
-    REG_RUNTIME_LAYER_FUNC(MVN,             createLayerFromCaffe<MVNLayer>);
+        outSizes.resize(4, 0);
+        for (int i = 0; i < 4; i++)
+        {
+            if (i < start_axis)
+                outSizes[i] = inpBlob.size(i);
+            else
+                outSizes[i] = inpSzBlob.size(i);
+            if (offset[i] + outSizes[i] > inpBlob.size(i))
+                CV_Error(Error::StsBadArg, "invalid crop parameters");
+        }
 
-    REG_RUNTIME_LAYER_FUNC(ReLU,            createLayerFromCaffe<ReLULayer>);
-    REG_RUNTIME_LAYER_FUNC(Sigmoid,         createLayerFromCaffe<SigmoidLayer>);
-    REG_RUNTIME_LAYER_FUNC(TanH,            createLayerFromCaffe<TanHLayer>);
-    REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
-    REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
-    REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
+        outputs.resize(1);
+        outputs[0].create(BlobShape(outSizes));
+    }
 
-    REG_RUNTIME_LAYER_FUNC(Crop,            createLayerFromCaffe<CropLayer>);
-    REG_RUNTIME_LAYER_FUNC(Eltwise,         createLayerFromCaffe<EltwiseLayer>);
+    void CropLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    {
+        Blob input = *inputs[0];
+        Blob output = outputs[0];
+        for (int num = 0; num < outSizes[0]; ++num)
+        {
+            for (int ch = 0; ch < outSizes[1]; ++ch)
+            {
+                for (int row = 0; row < outSizes[2]; ++row)
+                {
+                    float *srcData = input.ptrf(num + offset[0], ch + offset[1], row + offset[2]);
+                    float *dstData = output.ptrf(num, ch, row);
+                    memcpy(dstData, srcData + offset[3], sizeof(float) * outSizes[3]);
+                }
+            }
+        }
+    }
 
-    init.status = true;
-}
-
+    Ptr<CropLayer> CropLayer::create(int start_axis, const std::vector<int> &offset)
+    {
+        return Ptr<CropLayer>(new CropLayerImpl(start_axis, offset));
+    }
 }
 }
