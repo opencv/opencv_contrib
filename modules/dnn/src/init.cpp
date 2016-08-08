@@ -104,11 +104,11 @@ void initModule()
 
     REG_RUNTIME_LAYER_CLASS(Crop,           CropLayer);
 
-    REG_RUNTIME_LAYER_CLASS(Permute,        createLayerFromCaffe<PermuteLayer>);
-    REG_RUNTIME_LAYER_CLASS(Flatten,        createLayerFromCaffe<FlattenLayer>);
-    REG_RUNTIME_LAYER_CLASS(PriorBox,       createLayerFromCaffe<PriorBoxLayer>);
-    REG_RUNTIME_LAYER_CLASS(DetectionOutput, createLayerFromCaffe<DetectionOutputLayer>);
-    REG_RUNTIME_LAYER_CLASS(NormalizeBBox,   createLayerFromCaffe<NormalizeBBoxLayer>);
+    REG_RUNTIME_LAYER_FUNC(Permute,         createLayerFromCaffe<PermuteLayer>);
+    REG_RUNTIME_LAYER_FUNC(Flatten,         createLayerFromCaffe<FlattenLayer>);
+    REG_RUNTIME_LAYER_FUNC(PriorBox,        createLayerFromCaffe<PriorBoxLayer>);
+    REG_RUNTIME_LAYER_FUNC(DetectionOutput, createLayerFromCaffe<DetectionOutputLayer>);
+    REG_RUNTIME_LAYER_FUNC(NormalizeBBox,   createLayerFromCaffe<NormalizeBBoxLayer>);
 
     init.status = true;
 }

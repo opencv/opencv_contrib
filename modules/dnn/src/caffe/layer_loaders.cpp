@@ -420,7 +420,6 @@ static void getVariance(const LayerParams &params, std::vector<float> &variance)
     }
 }
 
-
 template<> //PriorBox specialization
 Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams& params)
 {
