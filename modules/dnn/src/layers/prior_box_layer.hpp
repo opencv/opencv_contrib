@@ -47,7 +47,7 @@ namespace cv
 {
 namespace dnn
 {
-class PriorBoxLayer : public Layer
+class PriorBoxLayerImpl : public PriorBoxLayer
 {
     size_t _layerWidth;
     size_t _layerHeight;
@@ -60,38 +60,18 @@ class PriorBoxLayer : public Layer
     float _stepX;
     float _stepY;
 
-    float _minSize;
-    float _maxSize;
-
     float _boxWidth;
     float _boxHeight;
 
-    std::vector<float> _aspectRatios;
-    std::vector<float> _variance;
-
-    bool _flip;
-    bool _clip;
-
-    size_t _numPriors;
-
-    static const size_t _numAxes = 4;
-    static const std::string _layerName;
-
 public:
-    PriorBoxLayer(LayerParams &params);
+    PriorBoxLayerImpl(const float minSize = 0.0f, const float maxSize = 0.0f,
+                      const std::vector<float>& aspectRatios = std::vector<float>(),
+                      const std::vector<float>& variance = std::vector<float>(),
+                      const bool flip = false, const bool clip = false,
+                      const size_t numPriors = 0);
+
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-    template<typename T>
-    T getParameter(const LayerParams &params,
-                   const std::string &parameterName,
-                   const size_t &idx = 0,
-                   const bool required = true,
-                   const T& defaultValue = T());
-
-    bool getParameterDict(const LayerParams &params,
-                          const std::string &parameterName,
-                          DictValue& result);
 
     void getAspectRatios(const LayerParams &params);
     void getVariance(const LayerParams &params);

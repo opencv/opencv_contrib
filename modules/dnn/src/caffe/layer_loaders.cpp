@@ -329,7 +329,7 @@ static void checkCurrentOrder(const std::vector<size_t>& order, int currentOrder
     }
 }
 
-template<> //Flatten specialization
+template<> //Permute specialization
 Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams& params)
 {
     std::vector<size_t> order;
@@ -359,6 +359,102 @@ Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams& params)
     return Ptr<Layer>(PermuteLayer::create(order, needsPermute));
 }
 
+static void getAspectRatios(const LayerParams &params, const bool flip, std::vector<float> aspectRatios)
+{
+    DictValue aspectRatioParameter = params.get("aspect_ratio");
+
+    for (int i = 0; i < aspectRatioParameter.size(); ++i)
+    {
+        float aspectRatio = aspectRatioParameter.get<float>(i);
+        bool alreadyExists = false;
+
+        for (size_t j = 0; j < aspectRatios.size(); ++j)
+        {
+            if (fabs(aspectRatio - aspectRatios[j]) < 1e-6)
+            {
+                alreadyExists = true;
+                break;
+            }
+        }
+        if (!alreadyExists)
+        {
+            aspectRatios.push_back(aspectRatio);
+            if (flip)
+            {
+                aspectRatios.push_back(1./aspectRatio);
+            }
+        }
+    }
+}
+
+static void getVariance(const LayerParams &params, std::vector<float> &variance)
+{
+    DictValue varianceParameter = params.get("variance");
+
+    int varianceSize = varianceParameter.size();
+    if (varianceSize > 1)
+    {
+        // Must and only provide 4 variance.
+        CV_Assert(varianceSize == 4);
+
+        for (int i = 0; i < varianceSize; ++i)
+        {
+            float var = varianceParameter.get<float>(i);
+            CV_Assert(var > 0);
+            variance.push_back(var);
+        }
+    }
+    else
+    {
+        if (varianceSize == 1)
+        {
+            float var = varianceParameter.get<float>(0);
+            CV_Assert(var > 0);
+            variance.push_back(var);
+        }
+        else
+        {
+            // Set default to 0.1.
+            variance.push_back(0.1f);
+        }
+    }
+}
+
+
+template<> //PriorBox specialization
+Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams& params)
+{
+    float minSize = params.get("min_size", 0.0f);
+    CV_Assert(minSize > 0);
+
+    bool flip = params.get("flip", false);
+    bool clip = params.get("clip", false);
+
+    std::vector<float> variance;
+    std::vector<float> aspectRatios;
+
+    aspectRatios.clear();
+    aspectRatios.push_back(1.);
+
+    getAspectRatios(params, flip, aspectRatios);
+    getVariance(params, variance);
+
+    size_t numPriors = aspectRatios.size();
+
+    float maxSize = -1;
+    if (params.has("max_size"))
+    {
+        maxSize = params.get("max_size", 0.0f);
+        CV_Assert(maxSize > minSize);
+
+        numPriors += 1;
+    }
+
+    return Ptr<Layer>(PriorBoxLayer::create(minSize, maxSize,
+                                            aspectRatios, variance,
+                                            flip, clip, numPriors));
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
@@ -380,8 +476,8 @@ template Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams&);
 
 template Ptr<Layer> createLayerFromCaffe<FlattenLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<NormalizeBBoxLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DetectionOutputLayer>(LayerParams&);
-template Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams&);
 }
 }

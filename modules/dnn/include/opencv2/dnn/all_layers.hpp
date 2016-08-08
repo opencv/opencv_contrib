@@ -383,6 +383,27 @@ public:
                                     const bool needsPermute = false);
 };
 
+class CV_EXPORTS_W PriorBoxLayer : public Layer
+{
+public:
+    float _minSize;
+    float _maxSize;
+
+    std::vector<float> _aspectRatios;
+    std::vector<float> _variance;
+
+    bool _flip;
+    bool _clip;
+
+    size_t _numPriors;
+
+    static Ptr<PriorBoxLayer> create(const float minSize = 0.0f, const float maxSize = 0.0f,
+                                     const std::vector<float>& aspectRatios = std::vector<float>(),
+                                     const std::vector<float>& variance = std::vector<float>(),
+                                     const bool flip = false, const bool clip = false,
+                                     const size_t numPriors = 0);
+};
+
 //! @}
 //! @}
 
