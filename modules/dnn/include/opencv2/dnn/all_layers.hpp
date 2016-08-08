@@ -404,6 +404,19 @@ public:
                                      const size_t numPriors = 0);
 };
 
+
+class CV_EXPORTS_W NormalizeBBoxLayer : public Layer
+{
+public:
+    float _eps;
+    bool _acrossSpatial;
+    bool _channelShared;
+
+    static Ptr<NormalizeBBoxLayer> create(const float& eps,
+                                          const bool acrossSpatial,
+                                          const bool channelShared);
+};
+
 //! @}
 //! @}
 

@@ -47,7 +47,7 @@ namespace cv
 {
 namespace dnn
 {
-class NormalizeBBoxLayer : public Layer
+class NormalizeBBoxLayerImpl : public Layer
 {
     Mat _buffer;
 
@@ -55,10 +55,6 @@ class NormalizeBBoxLayer : public Layer
     Mat _sumSpatialMultiplier;
 
     Blob _scale;
-
-    float _eps;
-    bool _across_spatial;
-    bool _channel_shared;
 
     size_t _num;
     size_t _channels;
@@ -69,10 +65,11 @@ class NormalizeBBoxLayer : public Layer
     size_t _imageSize;
 
     static const size_t _numAxes = 4;
-    static const std::string _layerName;
 
 public:
-    NormalizeBBoxLayer(LayerParams &params);
+    NormalizeBBoxLayerImpl(const float& eps,
+                           const bool acrossSpatial,
+                           const bool channelShared);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 

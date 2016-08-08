@@ -52,56 +52,13 @@ namespace cv
 namespace dnn
 {
 
-const std::string NormalizeBBoxLayer::_layerName = std::string("NormalizeBBox");
+NormalizeBBoxLayerImpl::NormalizeBBoxLayerImpl(const float& eps,
+                                               const bool acrossSpatial,
+                                               const bool channelShared) :
+    _eps(eps), _acrossSpatial(acrossSpatial), _channelShared(channelShared)
+{}
 
-bool NormalizeBBoxLayer::getParameterDict(const LayerParams &params,
-                                          const std::string &parameterName,
-                                          DictValue& result)
-{
-    if (!params.has(parameterName))
-    {
-        return false;
-    }
-
-    result = params.get(parameterName);
-    return true;
-}
-
-template<typename T>
-T NormalizeBBoxLayer::getParameter(const LayerParams &params,
-                                   const std::string &parameterName,
-                                   const size_t &idx,
-                                   const bool required,
-                                   const T& defaultValue)
-{
-    DictValue dictValue;
-    bool success = getParameterDict(params, parameterName, dictValue);
-    if(!success)
-    {
-        if(required)
-        {
-            std::string message = _layerName;
-            message += " layer parameter does not contain ";
-            message += parameterName;
-            message += " parameter.";
-            CV_Error(Error::StsBadArg, message);
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
-    return dictValue.get<T>(idx);
-}
-
-NormalizeBBoxLayer::NormalizeBBoxLayer(LayerParams &params) : Layer(params)
-{
-    _eps = getParameter<float>(params, "eps", 0, false, 1e-10f);
-    _across_spatial = getParameter<bool>(params, "across_spatial");
-    _channel_shared = getParameter<bool>(params, "channel_shared");
-}
-
-void NormalizeBBoxLayer::checkInputs(const std::vector<Blob*> &inputs)
+void NormalizeBBoxLayerImpl::checkInputs(const std::vector<Blob*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
     for (size_t i = 1; i < inputs.size(); i++)
@@ -114,7 +71,7 @@ void NormalizeBBoxLayer::checkInputs(const std::vector<Blob*> &inputs)
     CV_Assert(inputs[0]->dims() > 2);
 }
 
-void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void NormalizeBBoxLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     checkInputs(inputs);
 
@@ -139,7 +96,7 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
     }
 }
 
-void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void NormalizeBBoxLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     Mat zeroBuffer(_channels, _channelSize, CV_32F, Scalar(0));
     Mat absDiff;
@@ -196,6 +153,14 @@ void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
            }
         }
     }
+}
+
+Ptr<NormalizeBBoxLayer> NormalizeBBoxLayer::create(const float& eps,
+                                                   const bool acrossSpatial,
+                                                   const bool channelShared)
+{
+    return Ptr<NormalizeBBoxLayer>(new NormalizeBBoxLayerImpl(eps, acrossSpatial, 
+                                                              channelShared));
 }
 }
 }

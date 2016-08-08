@@ -455,6 +455,15 @@ Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams& params)
                                             flip, clip, numPriors));
 }
 
+template<> //NormalizeBBox specialization
+Ptr<Layer> createLayerFromCaffe<NormalizeBBoxLayer>(LayerParams& params)
+{
+    float eps = params.get("eps", 1e-10f);
+    bool acrossSpatial = params.get("across_spatial", false);
+    bool channelShared = params.get("channel_shared", false);
+    return Ptr<Layer>(NormalizeBBoxLayer::create(eps, acrossSpatial, channelShared));
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
