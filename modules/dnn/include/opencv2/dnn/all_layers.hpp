@@ -42,6 +42,7 @@
 #ifndef __OPENCV_DNN_DNN_ALL_LAYERS_HPP__
 #define __OPENCV_DNN_DNN_ALL_LAYERS_HPP__
 #include <opencv2/dnn.hpp>
+#include "caffe.pb.h"
 
 namespace cv
 {
@@ -404,7 +405,6 @@ public:
                                      const size_t numPriors = 0);
 };
 
-
 class CV_EXPORTS_W NormalizeBBoxLayer : public Layer
 {
 public:
@@ -412,9 +412,44 @@ public:
     bool _acrossSpatial;
     bool _channelShared;
 
-    static Ptr<NormalizeBBoxLayer> create(const float& eps,
-                                          const bool acrossSpatial,
-                                          const bool channelShared);
+    static Ptr<NormalizeBBoxLayer> create(const float& eps = 1e-10f,
+                                          const bool acrossSpatial = false,
+                                          const bool channelShared = false);
+};
+
+class CV_EXPORTS_W DetectionOutputLayer : public Layer
+{
+public:
+    unsigned _numClasses;
+    bool _shareLocation;
+    int _numLocClasses;
+
+    int _backgroundLabelId;
+
+    typedef caffe::PriorBoxParameter_CodeType CodeType;
+    CodeType _codeType;
+
+    bool _varianceEncodedInTarget;
+    int _keepTopK;
+    float _confidenceThreshold;
+
+    int _num;
+    int _numPriors;
+
+    float _nmsThreshold;
+    int _topK;
+
+    static Ptr<DetectionOutputLayer> create(
+        const unsigned numClasses = 0,
+        const bool shareLocation = false,
+        const int numLocClasses = 0,
+        const int backgroundLabelId = 0,
+        const CodeType codeType = caffe::PriorBoxParameter_CodeType_CORNER,
+        const bool varianceEncodedInTarget = false,
+        const int keepTopK = 1,
+        const float confidenceThreshold = 0.5,
+        const float nmsThreshold = 0.01,
+        const int topK = 1);
 };
 
 //! @}

@@ -76,78 +76,29 @@ bool SortScorePairDescend(const std::pair<float, T>& pair1,
 }
 }
 
-const std::string DetectionOutputLayer::_layerName = std::string("DetectionOutput");
+DetectionOutputLayerImpl::DetectionOutputLayerImpl(
+        const unsigned numClasses,
+        const bool shareLocation,
+        const int numLocClasses,
+        const int backgroundLabelId,
+        const CodeType codeType,
+        const bool varianceEncodedInTarget,
+        const int keepTopK,
+        const float confidenceThreshold,
+        const float nmsThreshold,
+        const int topK) :
+    _numClasses(numClasses),
+    _shareLocation(shareLocation),
+    _numLocClasses(numLocClasses),
+    _backgroundLabelId(backgroundLabelId),
+    _codeType(codeType),
+    _varianceEncodedInTarget(varianceEncodedInTarget),
+    _keepTopK(keepTopK),
+    _confidenceThreshold(confidenceThreshold),
+    _nmsThreshold(nmsThreshold),
+    _topK(topK) {}
 
-bool DetectionOutputLayer::getParameterDict(const LayerParams &params,
-                                    const std::string &parameterName,
-                                    DictValue& result)
-{
-    if (!params.has(parameterName))
-    {
-        return false;
-    }
-
-    result = params.get(parameterName);
-    return true;
-}
-
-template<typename T>
-T DetectionOutputLayer::getParameter(const LayerParams &params,
-                             const std::string &parameterName,
-                             const size_t &idx,
-                             const bool required,
-                             const T& defaultValue)
-{
-    DictValue dictValue;
-    bool success = getParameterDict(params, parameterName, dictValue);
-    if(!success)
-    {
-        if(required)
-        {
-            std::string message = _layerName;
-            message += " layer parameter does not contain ";
-            message += parameterName;
-            message += " parameter.";
-            CV_Error(Error::StsBadArg, message);
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
-    return dictValue.get<T>(idx);
-}
-
-void DetectionOutputLayer::getCodeType(LayerParams &params)
-{
-    String codeTypeString = params.get<String>("code_type").toLowerCase();
-    if (codeTypeString == "corner")
-        _codeType = caffe::PriorBoxParameter_CodeType_CORNER;
-    else if (codeTypeString == "center_size")
-        _codeType = caffe::PriorBoxParameter_CodeType_CENTER_SIZE;
-    else
-        _codeType = caffe::PriorBoxParameter_CodeType_CORNER;
-}
-
-DetectionOutputLayer::DetectionOutputLayer(LayerParams &params) : Layer(params)
-{
-    _numClasses = getParameter<unsigned>(params, "num_classes");
-    _shareLocation = getParameter<bool>(params, "share_location");
-    _numLocClasses = _shareLocation ? 1 : _numClasses;
-    _backgroundLabelId = getParameter<int>(params, "background_label_id");
-    _varianceEncodedInTarget = getParameter<bool>(params, "variance_encoded_in_target", 0, false, false);
-    _keepTopK = getParameter<int>(params, "keep_top_k");
-    _confidenceThreshold = getParameter<float>(params, "confidence_threshold", 0, false, -FLT_MAX);
-    _topK = getParameter<int>(params, "top_k", 0, false, -1);
-
-    getCodeType(params);
-
-    // Parameters used in nms.
-    _nmsThreshold = getParameter<float>(params, "nms_threshold");
-    CV_Assert(_nmsThreshold > 0.);
-}
-
-void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
+void DetectionOutputLayerImpl::checkInputs(const std::vector<Blob*> &inputs)
 {
     for (size_t i = 1; i < inputs.size(); i++)
     {
@@ -158,7 +109,7 @@ void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
     }
 }
 
-void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
+void DetectionOutputLayerImpl::allocate(const std::vector<Blob*> &inputs,
                                     std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() > 0);
@@ -178,7 +129,7 @@ void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
     outputs[0].create(BlobShape(outputShape));
 }
 
-void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
+void DetectionOutputLayerImpl::forward(std::vector<Blob*> &inputs,
                                    std::vector<Blob> &outputs)
 {
     const float* locationData = inputs[0]->ptrf();
@@ -346,7 +297,7 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
     }
 }
 
-float DetectionOutputLayer::BBoxSize(const caffe::NormalizedBBox& bbox,
+float DetectionOutputLayerImpl::BBoxSize(const caffe::NormalizedBBox& bbox,
                                      const bool normalized)
 {
     if (bbox.xmax() < bbox.xmin() || bbox.ymax() < bbox.ymin())
@@ -377,7 +328,7 @@ float DetectionOutputLayer::BBoxSize(const caffe::NormalizedBBox& bbox,
     }
 }
 
-void DetectionOutputLayer::ClipBBox(const caffe::NormalizedBBox& bbox,
+void DetectionOutputLayerImpl::ClipBBox(const caffe::NormalizedBBox& bbox,
                                     caffe::NormalizedBBox* clipBBox)
 {
     clipBBox->set_xmin(std::max(std::min(bbox.xmin(), 1.f), 0.f));
@@ -389,7 +340,7 @@ void DetectionOutputLayer::ClipBBox(const caffe::NormalizedBBox& bbox,
     clipBBox->set_difficult(bbox.difficult());
 }
 
-void DetectionOutputLayer::DecodeBBox(
+void DetectionOutputLayerImpl::DecodeBBox(
     const caffe::NormalizedBBox& priorBBox, const std::vector<float>& priorVariance,
     const CodeType codeType, const bool varianceEncodedInTarget,
     const caffe::NormalizedBBox& bbox, caffe::NormalizedBBox* decodeBBox)
@@ -467,7 +418,7 @@ void DetectionOutputLayer::DecodeBBox(
     decodeBBox->set_size(bboxSize);
 }
 
-void DetectionOutputLayer::DecodeBBoxes(
+void DetectionOutputLayerImpl::DecodeBBoxes(
     const std::vector<caffe::NormalizedBBox>& priorBBoxes,
     const std::vector<std::vector<float> >& priorVariances,
     const CodeType codeType, const bool varianceEncodedInTarget,
@@ -491,7 +442,7 @@ void DetectionOutputLayer::DecodeBBoxes(
     }
 }
 
-void DetectionOutputLayer::DecodeBBoxesAll(
+void DetectionOutputLayerImpl::DecodeBBoxesAll(
     const std::vector<LabelBBox>& allLocPreds,
     const std::vector<caffe::NormalizedBBox>& priorBBoxes,
     const std::vector<std::vector<float> >& priorVariances,
@@ -529,7 +480,7 @@ void DetectionOutputLayer::DecodeBBoxesAll(
     }
 }
 
-void DetectionOutputLayer::GetPriorBBoxes(const float* priorData, const int& numPriors,
+void DetectionOutputLayerImpl::GetPriorBBoxes(const float* priorData, const int& numPriors,
                                           std::vector<caffe::NormalizedBBox>* priorBBoxes,
                                           std::vector<std::vector<float> >* priorVariances)
 {
@@ -560,7 +511,7 @@ void DetectionOutputLayer::GetPriorBBoxes(const float* priorData, const int& num
     }
 }
 
-void DetectionOutputLayer::ScaleBBox(const caffe::NormalizedBBox& bbox,
+void DetectionOutputLayerImpl::ScaleBBox(const caffe::NormalizedBBox& bbox,
                                      const int height, const int width,
                                      caffe::NormalizedBBox* scaleBBox)
 {
@@ -575,7 +526,7 @@ void DetectionOutputLayer::ScaleBBox(const caffe::NormalizedBBox& bbox,
 }
 
 
-void DetectionOutputLayer::GetLocPredictions(
+void DetectionOutputLayerImpl::GetLocPredictions(
     const float* locData, const int num,
     const int numPredsPerClass, const int numLocClasses,
     const bool shareLocation, std::vector<LabelBBox>* locPreds)
@@ -609,7 +560,7 @@ void DetectionOutputLayer::GetLocPredictions(
     }
 }
 
-void DetectionOutputLayer::GetConfidenceScores(
+void DetectionOutputLayerImpl::GetConfidenceScores(
     const float* confData, const int num,
     const int numPredsPerClass, const int numClasses,
     std::vector<std::map<int, std::vector<float> > >* confPreds)
@@ -631,7 +582,7 @@ void DetectionOutputLayer::GetConfidenceScores(
     }
 }
 
-void DetectionOutputLayer::ApplyNMSFast(const std::vector<caffe::NormalizedBBox>& bboxes,
+void DetectionOutputLayerImpl::ApplyNMSFast(const std::vector<caffe::NormalizedBBox>& bboxes,
                                         const std::vector<float>& scores,
                                         const float score_threshold,
                                         const float nms_threshold, const int top_k,
@@ -672,7 +623,7 @@ void DetectionOutputLayer::ApplyNMSFast(const std::vector<caffe::NormalizedBBox>
 }
 
 
-void DetectionOutputLayer::GetMaxScoreIndex(
+void DetectionOutputLayerImpl::GetMaxScoreIndex(
     const std::vector<float>& scores, const float threshold,const int top_k,
     std::vector<std::pair<float, int> >* score_index_vec)
 {
@@ -696,7 +647,7 @@ void DetectionOutputLayer::GetMaxScoreIndex(
     }
 }
 
-void DetectionOutputLayer::IntersectBBox(const caffe::NormalizedBBox& bbox1,
+void DetectionOutputLayerImpl::IntersectBBox(const caffe::NormalizedBBox& bbox1,
                                          const caffe::NormalizedBBox& bbox2,
                                          caffe::NormalizedBBox* intersect_bbox) {
     if (bbox2.xmin() > bbox1.xmax() || bbox2.xmax() < bbox1.xmin() ||
@@ -717,7 +668,7 @@ void DetectionOutputLayer::IntersectBBox(const caffe::NormalizedBBox& bbox1,
     }
 }
 
-float DetectionOutputLayer::JaccardOverlap(const caffe::NormalizedBBox& bbox1,
+float DetectionOutputLayerImpl::JaccardOverlap(const caffe::NormalizedBBox& bbox1,
                                            const caffe::NormalizedBBox& bbox2,
                                            const bool normalized) {
     caffe::NormalizedBBox intersect_bbox;
@@ -744,6 +695,30 @@ float DetectionOutputLayer::JaccardOverlap(const caffe::NormalizedBBox& bbox1,
     {
         return 0.;
     }
+}
+
+Ptr<DetectionOutputLayer> DetectionOutputLayer::create(
+        const unsigned numClasses,
+        const bool shareLocation,
+        const int numLocClasses,
+        const int backgroundLabelId,
+        const CodeType codeType,
+        const bool varianceEncodedInTarget,
+        const int keepTopK,
+        const float confidenceThreshold,
+        const float nmsThreshold,
+        const int topK)
+{
+    return Ptr<DetectionOutputLayer>(new DetectionOutputLayerImpl(numClasses,
+                                                   shareLocation,
+                                                   numLocClasses,
+                                                   backgroundLabelId,
+                                                   codeType,
+                                                   varianceEncodedInTarget,
+                                                   keepTopK,
+                                                   confidenceThreshold,
+                                                   nmsThreshold,
+                                                   topK));
 }
 
 }

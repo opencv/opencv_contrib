@@ -349,7 +349,7 @@ Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams& params)
                 "Too many (> 4) orders of dimensions in Permute layer");
         }
 
-        for (size_t i = 0; i < paramOrder.size(); i++)
+        for (int i = 0; i < paramOrder.size(); i++)
         {
             int currentOrder = paramOrder.get<int>(i);
             checkCurrentOrder(order, currentOrder);
@@ -462,6 +462,46 @@ Ptr<Layer> createLayerFromCaffe<NormalizeBBoxLayer>(LayerParams& params)
     bool acrossSpatial = params.get("across_spatial", false);
     bool channelShared = params.get("channel_shared", false);
     return Ptr<Layer>(NormalizeBBoxLayer::create(eps, acrossSpatial, channelShared));
+}
+
+static DetectionOutputLayer::CodeType getCodeType(LayerParams &params)
+{
+    String codeTypeString = params.get<String>("code_type").toLowerCase();
+    if (codeTypeString == "corner")
+        return caffe::PriorBoxParameter_CodeType_CORNER;
+    else if (codeTypeString == "center_size")
+        return caffe::PriorBoxParameter_CodeType_CENTER_SIZE;
+    else
+        return caffe::PriorBoxParameter_CodeType_CORNER;
+}
+
+template<> //DetectionOutput specialization
+Ptr<Layer> createLayerFromCaffe<DetectionOutputLayer>(LayerParams& params)
+{
+    unsigned numClasses = params.get("num_classes", 5);
+    bool shareLocation = params.get("share_location", false);
+    int numLocClasses = shareLocation ? 1 : numClasses;
+    int backgroundLabelId = params.get("background_label_id", 0);
+    bool varianceEncodedInTarget = params.get("variance_encoded_in_target", false);
+    int keepTopK = params.get("keep_top_k", 1);
+    float confidenceThreshold = params.get("confidence_threshold", -FLT_MAX);
+    int topK = params.get("top_k", -1);
+
+    DetectionOutputLayer::CodeType codeType = getCodeType(params);
+
+    float nmsThreshold = params.get("nms_threshold", 0.01);
+    CV_Assert(nmsThreshold > 0.);
+
+    return Ptr<Layer>(DetectionOutputLayer::create(numClasses,
+                                                   shareLocation,
+                                                   numLocClasses,
+                                                   backgroundLabelId,
+                                                   codeType,
+                                                   varianceEncodedInTarget,
+                                                   keepTopK,
+                                                   confidenceThreshold,
+                                                   nmsThreshold,
+                                                   topK));
 }
 
 //Explicit instantiation

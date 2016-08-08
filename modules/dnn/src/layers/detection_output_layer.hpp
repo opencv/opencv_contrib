@@ -49,48 +49,27 @@ namespace cv
 {
 namespace dnn
 {
-class DetectionOutputLayer : public Layer
+class DetectionOutputLayerImpl : public DetectionOutputLayer
 {
-    unsigned _numClasses;
-    bool _shareLocation;
-    int _numLocClasses;
-
-    int _backgroundLabelId;
-
-    typedef caffe::PriorBoxParameter_CodeType CodeType;
-    CodeType _codeType;
-
-    bool _varianceEncodedInTarget;
-    int _keepTopK;
-    float _confidenceThreshold;
-
-    int _num;
-    int _numPriors;
-
-    float _nmsThreshold;
-    int _topK;
-
     static const size_t _numAxes = 4;
-    static const std::string _layerName;
 
 public:
-    DetectionOutputLayer(LayerParams &params);
+    DetectionOutputLayerImpl(const unsigned numClasses = 0,
+        const bool shareLocation = false,
+        const int numLocClasses = 0,
+        const int backgroundLabelId = 0,
+        const CodeType codeType = caffe::PriorBoxParameter_CodeType_CORNER,
+        const bool varianceEncodedInTarget = false,
+        const int keepTopK = 1,
+        const float confidenceThreshold = 0.5,
+        const float nmsThreshold = 0.01,
+        const int topK = 1);
+
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void checkInputs(const std::vector<Blob*> &inputs);
     void getCodeType(LayerParams &params);
-
-    template<typename T>
-    T getParameter(const LayerParams &params,
-                   const std::string &parameterName,
-                   const size_t &idx = 0,
-                   const bool required = true,
-                   const T& defaultValue = T());
-
-    bool getParameterDict(const LayerParams &params,
-                          const std::string &parameterName,
-                          DictValue& result);
 
     typedef std::map<int, std::vector<caffe::NormalizedBBox> > LabelBBox;
 
