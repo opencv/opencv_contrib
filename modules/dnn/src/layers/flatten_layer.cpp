@@ -41,97 +41,80 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "concat_layer.hpp"
-#include <opencv2/core/ocl.hpp>
+#include "flatten_layer.hpp"
+#include <float.h>
+#include <algorithm>
 
 namespace cv
 {
 namespace dnn
 {
 
-ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
+FlattenLayerImpl::FlattenLayerImpl(const int startAxis, const int endAxis)
 {
-    axis = axis_;
+    _startAxis = startAxis;
+    _endAxis = endAxis;
 }
 
-void ConcatLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void FlattenLayerImpl::checkInputs(const std::vector<Blob*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
+    for (size_t i = 1; i < inputs.size(); i++)
+    {
+        for (size_t j = 0; j < _numAxes; j++)
+        {
+            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
+        }
+    }
+}
 
-    BlobShape refShape = inputs[0]->shape();
-    axisIdx = inputs[0]->canonicalAxis(axis);
+void FlattenLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    checkInputs(inputs);
 
-    int axisSum = 0;
-    useOpenCL = false;
+    _numAxes = inputs[0]->shape().dims();
+    if(_endAxis <= 0)
+    {
+        _endAxis += _numAxes;
+    }
+    CV_Assert(_startAxis >= 0);
+    CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
+
+    size_t flattenedDimensionSize = 1;
+    for (int i = _startAxis; i <= _endAxis; i++)
+    {
+        flattenedDimensionSize *= inputs[0]->shape()[i];
+    }
+
+    std::vector<int> outputShape;
+    for (int i = 0; i < _startAxis; i++)
+    {
+        outputShape.push_back(inputs[0]->shape()[i]);
+    }
+    outputShape.push_back(flattenedDimensionSize);
+    for (size_t i = _endAxis + 1; i < _numAxes; i++)
+    {
+        outputShape.push_back(inputs[0]->shape()[i]);
+    }
+    CV_Assert(outputShape.size() <= 4);
+
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        BlobShape curShape = inputs[i]->shape();
-
-        CV_Assert(curShape.dims() == refShape.dims() && inputs[i]->type() == inputs[0]->type());
-        for (int curAxis = 0; curAxis < refShape.dims(); curAxis++)
-        {
-            if (curAxis != axisIdx && refShape[curAxis] != curShape[curAxis])
-                CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
-        }
-
-        axisSum += curShape[axisIdx];
-        useOpenCL |= inputs[i]->getState() == Blob::HEAD_AT_MAT;
+        outputs[i].create(BlobShape(outputShape));
     }
-
-    refShape[axisIdx] = axisSum;
-    useOpenCL &= ocl::useOpenCL();
-    int allocFlags = (useOpenCL) ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
-
-    outputs.resize(1);
-    outputs[0].create(refShape, inputs[0]->type(), allocFlags);
 }
 
-void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void FlattenLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    #ifdef HAVE_OPENCL
-    if (useOpenCL)
-        forward_<UMat>(inputs, outputs);
-    else
-    #endif
-        forward_<Mat>(inputs, outputs);
-}
-
-template<typename XMat>
-void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    if (inputs.size() == 1)
+    for (size_t j = 0; j < inputs.size(); j++)
     {
-        return;
-    }
-    float* outputData = outputs[0].ptrf();
-
-    size_t numConcats = inputs[0]->total(0, axis);
-    size_t outputStride = outputs[0].total(axis);
-
-    size_t offset = 0;
-    for (size_t i = 0; i < inputs.size(); ++i)
-    {
-        size_t inputSliceSize = inputs[i]->total(axis);
-        const float* inputData = inputs[i]->ptrf();
-
-        for (size_t n = 0; n < numConcats; ++n)
-        {
-            const float* src = inputData + n * inputSliceSize;
-            float* dst = outputData + n * outputStride + offset;
-            for(size_t k = 0; k < inputSliceSize; k++)
-            {
-                dst[k] = src[k];
-            }
-        }
-        offset += inputSliceSize;
+        outputs[j].matRef() = inputs[j]->matRef();
     }
 }
 
-Ptr<ConcatLayer> ConcatLayer::create(int axis)
+Ptr<FlattenLayer> FlattenLayer::create(const int startAxis, const int endAxis)
 {
-    return Ptr<ConcatLayer>(new ConcatLayerImpl(axis));
-}
-
+    return Ptr<FlattenLayer>(new FlattenLayerImpl(startAxis, endAxis));
 }
 }
-
+}

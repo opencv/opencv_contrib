@@ -39,66 +39,34 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
+#ifndef __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
 #include "../precomp.hpp"
-#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-//TODO: simultaneously convolution and bias addition for cache optimization
-class ConvolutionLayerImpl : public ConvolutionLayer
+class PermuteLayerImpl : public PermuteLayer
 {
+    size_t _count;
+
+    BlobShape _oldDimensionSize;
+    BlobShape _newDimensionSize;
+
+    std::vector<size_t> _oldStride;
+    std::vector<size_t> _newStride;
+
+    size_t _numAxes;
+
+    void checkNeedForPermutation();
+    void computeStrides();
+
 public:
-    ConvolutionLayerImpl();
-    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void init();
-
-protected:
-    int numOutput, group;
-    int inpH, inpW, inpCn;
-    int outH, outW, outCn;
-    int topH, topW, topCn; //switched between inp/out on deconv/conv
-    int inpGroupCn, outGroupCn;
-    int ksize;
-
-    bool bias;
-    bool tryUseOpenCL, useOpenCL;
-
-    Blob colBlob, biasOnesBlob;
-
-    bool is1x1() const;
-    virtual void computeInpOutShape(const Blob &inpBlob);
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void im2col(const  Mat &srcImg,  Mat &dstCol);
-    void im2col(const UMat &srcImg, UMat &dstCol);
+    PermuteLayerImpl(const std::vector<size_t>& order, const bool needsPermute);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
-
-class DeConvolutionLayerImpl : public ConvolutionLayerImpl
-{
-public:
-    DeConvolutionLayerImpl();
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-protected:
-
-    virtual void computeInpOutShape(const Blob &inpBlob);
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void col2im(const  Mat &colMat, Mat  &dstImg);
-    void col2im(const UMat &colMat, UMat &dstImg);
-};
-
-//Importers
-Ptr<Layer> createConvolutionLayerFromCaffe(LayerParams &params);
-Ptr<Layer> createDeconvolutionLayerFromCaffe(LayerParams &params);
-
 }
 }
 #endif

@@ -287,7 +287,7 @@ inline std::ostream &operator<<(std::ostream &stream, const DictValue &dictv)
 
 /////////////////////////////////////////////////////////////////
 
-inline bool Dict::has(const String &key)
+inline bool Dict::has(const String &key) const
 {
     return dict.count(key) != 0;
 }

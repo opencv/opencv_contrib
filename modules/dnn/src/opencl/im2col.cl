@@ -42,6 +42,7 @@
 __kernel void im2col(__global const T *im_src, int im_src_offset,
                      int channels, int height_inp, int width_inp,
                      int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w,
+                     int dilation_h, int dilation_w,
                      int height_out, int width_out,
                      __global T *im_col, int im_col_offset
                     )
@@ -54,8 +55,8 @@ __kernel void im2col(__global const T *im_src, int im_src_offset,
     int c_inp = (index / width_out) / height_out;
 
     int c_out = c_inp * kernel_h * kernel_w;
-    int i_inp = i_out * stride_h - pad_h;
-    int j_inp = j_out * stride_w - pad_w;
+    int i_inp = i_out * (stride_h + dilation_h) - pad_h;
+    int j_inp = j_out * (stride_w + dilation_w) - pad_w;
 
     im_src += (c_inp * height_inp + i_inp) * width_inp + j_inp + im_src_offset;
     im_col += (c_out * height_out + i_out) * width_out + j_out + im_col_offset;

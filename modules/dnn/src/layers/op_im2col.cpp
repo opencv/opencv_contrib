@@ -52,14 +52,16 @@ namespace dnn
 #ifdef HAVE_OPENCL
 
 bool im2col_ocl(const UMat &img,
-                 int channels, int height, int width,
-                 int kernel_h, int kernel_w,
-                 int pad_h, int pad_w,
-                 int stride_h, int stride_w,
-                 UMat &col)
+                int channels, int height, int width,
+                int kernel_h, int kernel_w,
+                int pad_h, int pad_w,
+                int stride_h, int stride_w,
+                int dilation_h, int dilation_w,
+                UMat &col)
 {
-    int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-    int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+    int height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
+    int width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+
     int channels_col = channels * kernel_h * kernel_w;
     int esz = img.elemSize();
 
@@ -71,12 +73,12 @@ bool im2col_ocl(const UMat &img,
     if (ker.empty())
         return false;
 
-    ker.args(ocl::KernelArg::PtrReadOnly(img), (int)img.offset/esz,
+    ker.args(ocl::KernelArg::PtrReadOnly(img), (int)img.offset / esz,
              channels, height, width,
-             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
+             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
              height_col, width_col,
-             ocl::KernelArg::PtrWriteOnly(col), (int)col.offset/esz
-             );
+             ocl::KernelArg::PtrWriteOnly(col), (int)col.offset / esz
+            );
 
     size_t localSize = ocl::Device::getDefault().maxWorkGroupSize();
     size_t globalSize = (size_t)channels * height_col * width_col;
@@ -104,13 +106,13 @@ bool col2im_ocl(const UMat &col,
         return false;
 
     ker.args((int)img.total(),
-             ocl::KernelArg::PtrReadOnly(col), (int)col.offset/esz,
+             ocl::KernelArg::PtrReadOnly(col), (int)col.offset / esz,
              height, width, channels,
              kernel_h, kernel_w,
              pad_h, pad_w,
              stride_h, stride_w,
              height_col, width_col,
-             ocl::KernelArg::PtrWriteOnly(img), (int)img.offset/esz);
+             ocl::KernelArg::PtrWriteOnly(img), (int)img.offset / esz);
 
     size_t localSize = ocl::Device::getDefault().maxWorkGroupSize();
     size_t globalSize = img.total();

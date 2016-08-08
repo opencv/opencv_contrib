@@ -39,66 +39,43 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
+#ifndef __OPENCV_DNN_LAYERS_PRIOR_BOX_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PRIOR_BOX_LAYER_HPP__
 #include "../precomp.hpp"
-#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-//TODO: simultaneously convolution and bias addition for cache optimization
-class ConvolutionLayerImpl : public ConvolutionLayer
+class PriorBoxLayerImpl : public PriorBoxLayer
 {
+    size_t _layerWidth;
+    size_t _layerHeight;
+
+    size_t _imageWidth;
+    size_t _imageHeight;
+
+    size_t _outChannelSize;
+
+    float _stepX;
+    float _stepY;
+
+    float _boxWidth;
+    float _boxHeight;
+
 public:
-    ConvolutionLayerImpl();
-    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void init();
+    PriorBoxLayerImpl(const float minSize = 0.0f, const float maxSize = 0.0f,
+                      const std::vector<float>& aspectRatios = std::vector<float>(),
+                      const std::vector<float>& variance = std::vector<float>(),
+                      const bool flip = false, const bool clip = false,
+                      const size_t numPriors = 0);
 
-protected:
-    int numOutput, group;
-    int inpH, inpW, inpCn;
-    int outH, outW, outCn;
-    int topH, topW, topCn; //switched between inp/out on deconv/conv
-    int inpGroupCn, outGroupCn;
-    int ksize;
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-    bool bias;
-    bool tryUseOpenCL, useOpenCL;
-
-    Blob colBlob, biasOnesBlob;
-
-    bool is1x1() const;
-    virtual void computeInpOutShape(const Blob &inpBlob);
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void im2col(const  Mat &srcImg,  Mat &dstCol);
-    void im2col(const UMat &srcImg, UMat &dstCol);
+    void getAspectRatios(const LayerParams &params);
+    void getVariance(const LayerParams &params);
 };
-
-class DeConvolutionLayerImpl : public ConvolutionLayerImpl
-{
-public:
-    DeConvolutionLayerImpl();
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-protected:
-
-    virtual void computeInpOutShape(const Blob &inpBlob);
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void col2im(const  Mat &colMat, Mat  &dstImg);
-    void col2im(const UMat &colMat, UMat &dstImg);
-};
-
-//Importers
-Ptr<Layer> createConvolutionLayerFromCaffe(LayerParams &params);
-Ptr<Layer> createDeconvolutionLayerFromCaffe(LayerParams &params);
-
 }
 }
 #endif

@@ -42,6 +42,22 @@
 #include "precomp.hpp"
 #include "caffe/layer_loaders.hpp"
 #include "layers/blank_layer.hpp"
+#include "layers/elementwise_layers.hpp"
+#include "layers/fully_connected_layer.hpp"
+#include "layers/lrn_layer.hpp"
+#include "layers/mvn_layer.hpp"
+#include "layers/pooling_layer.hpp"
+#include "layers/reshape_layer.hpp"
+#include "layers/slice_layer.hpp"
+#include "layers/softmax_layer.hpp"
+#include "layers/split_layer.hpp"
+#include "layers/crop_layer.hpp"
+#include "layers/eltwise_layer.hpp"
+#include "layers/flatten_layer.hpp"
+#include "layers/permute_layer.hpp"
+#include "layers/prior_box_layer.hpp"
+#include "layers/detection_output_layer.hpp"
+#include "layers/normalize_bbox_layer.hpp"
 
 namespace cv
 {
@@ -69,7 +85,6 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
     REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
     REG_RUNTIME_LAYER_FUNC(Reshape,         createLayerFromCaffe<ReshapeLayer>);
-    REG_RUNTIME_LAYER_FUNC(Flatten,         createFlattenLayerFromCaffe);
 
     REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
     REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
@@ -85,7 +100,15 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer)
+    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
+
+    REG_RUNTIME_LAYER_CLASS(Crop,           CropLayer);
+
+    REG_RUNTIME_LAYER_FUNC(Permute,         createLayerFromCaffe<PermuteLayer>);
+    REG_RUNTIME_LAYER_FUNC(Flatten,         createLayerFromCaffe<FlattenLayer>);
+    REG_RUNTIME_LAYER_FUNC(PriorBox,        createLayerFromCaffe<PriorBoxLayer>);
+    REG_RUNTIME_LAYER_FUNC(DetectionOutput, createLayerFromCaffe<DetectionOutputLayer>);
+    REG_RUNTIME_LAYER_FUNC(NormalizeBBox,   createLayerFromCaffe<NormalizeBBoxLayer>);
 
     init.status = true;
 }

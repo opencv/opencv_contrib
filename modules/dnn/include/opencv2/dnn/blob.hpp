@@ -229,6 +229,18 @@ namespace dnn
         /** @brief Checks equality of two blobs shapes. */
         bool equalShape(const Blob &other) const;
 
+        /** @brief Returns slice of first two dimensions.
+         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
+         */
+        Mat getPlane(int n, int cn);
+
+        /** @brief Returns slice of first dimension.
+         *  @details The behaviour is similar to getPlane(), but returns all
+         * channels * rows * cols values, corresponding to the n-th value
+         * of the first dimension.
+         */
+        Mat getPlanes(int n);
+
         /* Shape getters of 4-dimensional blobs. */
         int cols() const;       //!< Returns size of the fourth axis blob.
         int rows() const;       //!< Returns size of the thrid  axis blob.
@@ -261,12 +273,6 @@ namespace dnn
         /** @overload ptr<float>() */
         float *ptrf(int n = 0, int cn = 0, int row = 0, int col = 0);
         //TODO: add const ptr methods
-
-        /** @brief Returns slice of first two dimensions.
-         *  @details The behaviour is similar to the following numpy code: blob[n, cn, ...]
-         *  @todo Method will be removed. Use slice() from shape_utils.hpp.
-         */
-        Mat getPlane(int n, int cn);
 
         /** @brief Shares data from other @p blob.
          * @returns *this
