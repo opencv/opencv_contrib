@@ -50,55 +50,13 @@ namespace cv
 namespace dnn
 {
 
-const std::string FlattenLayer::_layerName = std::string("Flatten");
-
-bool FlattenLayer::getParameterDict(const LayerParams &params,
-                                    const std::string &parameterName,
-                                    DictValue& result)
+FlattenLayerImpl::FlattenLayerImpl(const int startAxis, const int endAxis)
 {
-    if (!params.has(parameterName))
-    {
-        return false;
-    }
-
-    result = params.get(parameterName);
-    return true;
+    _startAxis = startAxis;
+    _endAxis = endAxis;
 }
 
-template<typename T>
-T FlattenLayer::getParameter(const LayerParams &params,
-                             const std::string &parameterName,
-                             const size_t &idx,
-                             const bool required,
-                             const T& defaultValue)
-{
-    DictValue dictValue;
-    bool success = getParameterDict(params, parameterName, dictValue);
-    if(!success)
-    {
-        if(required)
-        {
-            std::string message = _layerName;
-            message += " layer parameter does not contain ";
-            message += parameterName;
-            message += " parameter.";
-            CV_Error(Error::StsBadArg, message);
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
-    return dictValue.get<T>(idx);
-}
-
-FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
-{
-    _startAxis = getParameter<int>(params, "axis");
-    _endAxis = getParameter<int>(params, "end_axis", 0, false, -1);
-}
-
-void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
+void FlattenLayerImpl::checkInputs(const std::vector<Blob*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
     for (size_t i = 1; i < inputs.size(); i++)
@@ -110,7 +68,7 @@ void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
     }
 }
 
-void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void FlattenLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     checkInputs(inputs);
 
@@ -146,12 +104,17 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     }
 }
 
-void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void FlattenLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     for (size_t j = 0; j < inputs.size(); j++)
     {
         outputs[j].matRef() = inputs[j]->matRef();
     }
+}
+
+Ptr<FlattenLayer> FlattenLayer::create(const int startAxis, const int endAxis)
+{
+    return Ptr<FlattenLayer>(new FlattenLayerImpl(startAxis, endAxis));
 }
 }
 }

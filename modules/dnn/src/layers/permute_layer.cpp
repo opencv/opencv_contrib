@@ -49,24 +49,7 @@ namespace cv
 {
 namespace dnn
 {
-void PermuteLayer::checkCurrentOrder(int currentOrder)
-{
-    if(currentOrder < 0 || currentOrder > 3)
-    {
-        CV_Error(
-            Error::StsBadArg,
-            "Orders of dimensions in Permute layer parameter"
-            "must be in [0...3] interval");
-    }
-
-    if(std::find(_order.begin(), _order.end(), currentOrder) != _order.end())
-    {
-        CV_Error(Error::StsBadArg,
-                 "Permute layer parameter contains duplicated orders.");
-    }
-}
-
-void PermuteLayer::checkNeedForPermutation()
+void PermuteLayerImpl::checkNeedForPermutation()
 {
     _needsPermute = false;
     for (size_t i = 0; i < _numAxes; ++i)
@@ -79,35 +62,16 @@ void PermuteLayer::checkNeedForPermutation()
     }
 }
 
-PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
+PermuteLayerImpl::PermuteLayerImpl(const std::vector<size_t>& order, const bool needsPermute)
 {
-    if (!params.has("order"))
-    {
-        _needsPermute = false;
-        return;
-    }
-
-    DictValue paramOrder = params.get("order");
-    if(paramOrder.size() > 4)
-    {
-        CV_Error(
-            Error::StsBadArg,
-            "Too many (> 4) orders of dimensions in Permute layer");
-    }
-
-    _numAxes = paramOrder.size();
-
-    for (size_t i = 0; i < _numAxes; i++)
-    {
-        int currentOrder = paramOrder.get<int>(i);
-        checkCurrentOrder(currentOrder);
-        _order.push_back(currentOrder);
-    }
+    _order = order;
+    _needsPermute = needsPermute;
+    _numAxes = _order.size();
 
     checkNeedForPermutation();
 }
 
-void PermuteLayer::computeStrides()
+void PermuteLayerImpl::computeStrides()
 {
     _oldStride.resize(_numAxes);
     _newStride.resize(_numAxes);
@@ -124,7 +88,7 @@ void PermuteLayer::computeStrides()
     _count = _oldStride[0] * _oldDimensionSize[0];
 }
 
-void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PermuteLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     if(!_needsPermute)
     {
@@ -151,7 +115,7 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     computeStrides();
 }
 
-void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PermuteLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     if(!_needsPermute)
     {
@@ -180,6 +144,11 @@ void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
             dstData[i] = srcData[oldPosition];
         }
     }
+}
+
+Ptr<PermuteLayer> PermuteLayer::create(const std::vector<size_t>& order, const bool needsPermute)
+{
+    return Ptr<PermuteLayer>(new PermuteLayerImpl(order, needsPermute));
 }
 }
 }

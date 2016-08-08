@@ -84,9 +84,12 @@ static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParam
 template<>
 Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams &params)
 {
-    Ptr<BaseConvolutionLayer> l = ConvolutionLayer::create();
+    Size kernel, stride, pad, dilation;
+    getCaffeConvParams(params, kernel, pad, stride);
+    getCaffeConvDilation(params, dilation);
+
+    Ptr<BaseConvolutionLayer> l = ConvolutionLayer::create(kernel, stride, pad, dilation);
     initConvDeconvLayerFromCaffe(l, params);
-    getCaffeConvDilation(params, l->dilation);
     return Ptr<Layer>(l);
 }
 
@@ -301,6 +304,61 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
     return Ptr<Layer>(PowerLayer::create(power, scale, shift));
 }
 
+template<> //Flatten specialization
+Ptr<Layer> createLayerFromCaffe<FlattenLayer>(LayerParams& params)
+{
+    float startAxis = params.get<float>("axis", 0);
+    float endAxis = params.get<float>("end_axis", -1);
+    return Ptr<Layer>(FlattenLayer::create(startAxis, endAxis));
+}
+
+static void checkCurrentOrder(const std::vector<size_t>& order, int currentOrder)
+{
+    if(currentOrder < 0 || currentOrder > 3)
+    {
+        CV_Error(
+            Error::StsBadArg,
+            "Orders of dimensions in Permute layer parameter"
+            "must be in [0...3] interval");
+    }
+
+    if(std::find(order.begin(), order.end(), currentOrder) != order.end())
+    {
+        CV_Error(Error::StsBadArg,
+                 "Permute layer parameter contains duplicated orders.");
+    }
+}
+
+template<> //Flatten specialization
+Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams& params)
+{
+    std::vector<size_t> order;
+    bool needsPermute = true;
+
+    if (!params.has("order"))
+    {
+        needsPermute = false;
+    }
+    else
+    {
+        DictValue paramOrder = params.get("order");
+        if(paramOrder.size() > 4)
+        {
+            CV_Error(
+                Error::StsBadArg,
+                "Too many (> 4) orders of dimensions in Permute layer");
+        }
+
+        for (size_t i = 0; i < paramOrder.size(); i++)
+        {
+            int currentOrder = paramOrder.get<int>(i);
+            checkCurrentOrder(order, currentOrder);
+            order.push_back(currentOrder);
+        }
+    }
+    return Ptr<Layer>(PermuteLayer::create(order, needsPermute));
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
@@ -320,5 +378,10 @@ template Ptr<Layer> createLayerFromCaffe<AbsLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<BNLLLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams&);
 
+template Ptr<Layer> createLayerFromCaffe<FlattenLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<PermuteLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<NormalizeBBoxLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<DetectionOutputLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<PriorBoxLayer>(LayerParams&);
 }
 }

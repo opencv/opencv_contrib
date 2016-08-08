@@ -364,6 +364,25 @@ public:
     static Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
 };
 
+class CV_EXPORTS_W FlattenLayer : public Layer
+{
+public:
+    int _startAxis;
+    int _endAxis;
+
+    static Ptr<FlattenLayer> create(const int startAxis = 0, const int endAxis = 1);
+};
+
+class CV_EXPORTS_W PermuteLayer : public Layer
+{
+public:
+    std::vector<size_t> _order;
+    bool _needsPermute;
+
+    static Ptr<PermuteLayer> create(const std::vector<size_t>& order = std::vector<size_t>(),
+                                    const bool needsPermute = false);
+};
+
 //! @}
 //! @}
 

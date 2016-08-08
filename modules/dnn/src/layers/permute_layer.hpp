@@ -47,26 +47,23 @@ namespace cv
 {
 namespace dnn
 {
-class PermuteLayer : public Layer
+class PermuteLayerImpl : public PermuteLayer
 {
     size_t _count;
-    std::vector<size_t> _order;
 
     BlobShape _oldDimensionSize;
     BlobShape _newDimensionSize;
 
     std::vector<size_t> _oldStride;
     std::vector<size_t> _newStride;
-    bool _needsPermute;
 
     size_t _numAxes;
 
-    void checkCurrentOrder(int currentOrder);
     void checkNeedForPermutation();
     void computeStrides();
 
 public:
-    PermuteLayer(LayerParams &params);
+    PermuteLayerImpl(const std::vector<size_t>& order, const bool needsPermute);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
