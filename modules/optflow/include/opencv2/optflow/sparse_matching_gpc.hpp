@@ -68,7 +68,7 @@ struct CV_EXPORTS_W GPCPatchDescriptor
 
   GPCPatchDescriptor( const Mat *imgCh, int i, int j );
 
-  static void getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr );
+  static void getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, bool allowOpenCL = false );
 
   static void getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y );
 };
@@ -110,6 +110,20 @@ struct GPCTrainingParams
   {
     CV_Assert( _maxTreeDepth > 0 );
     CV_Assert( _minNumberOfSamples >= 2 );
+  }
+};
+
+/** @brief Class encapsulating matching parameters.
+ */
+struct GPCMatchingParams
+{
+  const bool useOpenCL;      // Whether to use OpenCL to speed up the matching.
+  const int hashTableFactor; // Hash table size multiplier. Change with care! Reducing this will lead to a less number of matches and less
+                             // memory usage.
+
+  GPCMatchingParams( bool _useOpenCL = false, int _hashTableFactor = 73 ) : useOpenCL( _useOpenCL ), hashTableFactor( _hashTableFactor )
+  {
+    CV_Assert( _hashTableFactor > 1 );
   }
 };
 
@@ -217,7 +231,8 @@ public:
    * @param[in] imgTo Second image in a sequence.
    * @param[out] corr Output vector with pairs of corresponding points.
    */
-  void findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr ) const;
+  void findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr,
+                            const GPCMatchingParams params = GPCMatchingParams() ) const;
 
   static Ptr< GPCForest > create() { return makePtr< GPCForest >(); }
 };
@@ -229,7 +244,8 @@ public:
 };
 
 template < int T >
-void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr ) const
+void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr,
+                                          const GPCMatchingParams params ) const
 {
   CV_Assert( imgFrom.channels() == 3 );
   CV_Assert( imgTo.channels() == 3 );
@@ -245,8 +261,9 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
   split( to, toCh );
 
   std::vector< GPCPatchDescriptor > descr;
-  GPCPatchDescriptor::getAllDescriptorsForImage( fromCh, descr );
-  std::vector< std::vector< Trail > > hashTable1( from.size().area() * 73 ), hashTable2( from.size().area() * 73 );
+  GPCPatchDescriptor::getAllDescriptorsForImage( fromCh, descr, params.useOpenCL );
+  std::vector< std::vector< Trail > > hashTable1( from.size().area() * params.hashTableFactor ),
+    hashTable2( from.size().area() * params.hashTableFactor );
 
   for ( size_t i = 0; i < descr.size(); ++i )
   {
@@ -258,7 +275,7 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
   }
 
   descr.clear();
-  GPCPatchDescriptor::getAllDescriptorsForImage( toCh, descr );
+  GPCPatchDescriptor::getAllDescriptorsForImage( toCh, descr, params.useOpenCL );
 
   for ( size_t i = 0; i < descr.size(); ++i )
   {

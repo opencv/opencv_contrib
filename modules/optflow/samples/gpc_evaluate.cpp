@@ -1,11 +1,13 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/optflow.hpp"
+#include "opencv2/core/ocl.hpp"
 #include <iostream>
 
 using namespace cv;
 
 const int nTrees = 5;
+const bool useOpenCL = true;
 
 static double normL2( const Point2f &v ) { return sqrt( v.x * v.x + v.y * v.y ); }
 
@@ -46,6 +48,8 @@ int main( int argc, const char **argv )
     return 1;
   }
 
+  ocl::setUseOpenCL( useOpenCL );
+
   Ptr< optflow::GPCForest< nTrees > > forest = Algorithm::load< optflow::GPCForest< nTrees > >( "forest.dump" );
 
   Mat from = imread( argv[1] );
@@ -53,7 +57,7 @@ int main( int argc, const char **argv )
   Mat gt = optflow::readOpticalFlow( argv[3] );
   std::vector< std::pair< Point2i, Point2i > > corr;
 
-  forest->findCorrespondences( from, to, corr );
+  forest->findCorrespondences( from, to, corr, optflow::GPCMatchingParams( useOpenCL ) );
 
   std::cout << "Found " << corr.size() << " matches." << std::endl;
   double error = 0;

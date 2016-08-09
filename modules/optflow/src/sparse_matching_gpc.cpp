@@ -188,9 +188,73 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
 }
 
-void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr )
+ocl::ProgramSource _ocl_getPatchDescriptorSource(
+  "__kernel void getPatchDescriptor("
+  "__global const uchar* imgCh0, int ic0step, int ic0off,"
+  "__global const uchar* imgCh1, int ic1step, int ic1off,"
+  "__global const uchar* imgCh2, int ic2step, int ic2off,"
+  "__global uchar* out, int outstep, int outoff,"
+  "const int gh, const int gw, int patchRadius"
+  ") {"
+  "const int i = get_global_id(0);"
+  "const int j = get_global_id(1);"
+  "if (i >= gh || j >= gw) return;"
+  "__global double* desc = (__global double*)(out + (outstep * (i * gw + j) + outoff));"
+  "const double pi = 3.14159265358979323846;"
+  "patchRadius *= 2;"
+  "for (int n0 = 0; n0 < 4; ++n0) {"
+  "  for (int n1 = 0; n1 < 4; ++n1) {"
+  "    double sum = 0;"
+  "    for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "      __global const float* ch0Row = (__global const float*)(imgCh0 + (ic0step * (i + i0) + ic0off + j * sizeof(float)));"
+  "      for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "        sum += ch0Row[j0] * cos(pi * (i0 + 0.5) * n0 / patchRadius) * cos(pi * (j0 + 0.5) * n1 / patchRadius);"
+  "    }"
+  "    desc[n0 * 4 + n1] = sum * 2 / patchRadius;"
+  "  }"
+  "}"
+  "for (int k = 0; k < 4; ++k) {"
+  "  desc[k] *= 0.7071067811865475;"
+  "  desc[k * 4] *= 0.7071067811865475;"
+  "}"
+  "double sum = 0;"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch1Row = (__global const float*)(imgCh1 + (ic1step * (i + i0) + ic1off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    sum += ch1Row[j0];"
+  "}"
+  "desc[16] = sum / patchRadius;"
+  "sum = 0;"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch2Row = (__global const float*)(imgCh2 + (ic2step * (i + i0) + ic2off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    sum += ch2Row[j0];"
+  "}"
+  "desc[17] = sum / patchRadius;"
+  "}" );
+
+void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, bool allowOpenCL )
 {
   const Size sz = imgCh[0].size();
+  descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
+
+  if ( allowOpenCL && ocl::useOpenCL() )
+  {
+    ocl::Kernel kernel( "getPatchDescriptor", _ocl_getPatchDescriptorSource );
+    size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
+    UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
+    kernel
+      .args( cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[0].getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[1].getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[2].getUMat( ACCESS_READ ) ), cv::ocl::KernelArg::WriteOnlyNoSize( out ),
+             (int)globSize[0], (int)globSize[1], (int)patchRadius )
+      .run( 2, globSize, 0, true );
+    Mat cpuOut = out.getMat( 0 );
+    for ( int i = 0; i + 2 * patchRadius < sz.height; ++i )
+      for ( int j = 0; j + 2 * patchRadius < sz.width; ++j )
+        descr.push_back( *cpuOut.ptr< GPCPatchDescriptor >( i * globSize[1] + j ) );
+    return;
+  }
 
   for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
@@ -241,8 +305,8 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, 
         values.push_back( coef.dot( iter->second.feature ) );
       }
 
-      std::nth_element( values.begin(), values.begin() + (nSamples + (nSamples & 1)), values.end() );
-      const double median = values[nSamples + (nSamples & 1)];
+      std::nth_element( values.begin(), values.begin() + ( nSamples + ( nSamples & 1 ) ), values.end() );
+      const double median = values[nSamples + ( nSamples & 1 )];
       unsigned correct = 0;
 
       // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
