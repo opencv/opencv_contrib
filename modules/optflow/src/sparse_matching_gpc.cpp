@@ -51,7 +51,10 @@ namespace optflow
 namespace
 {
 
-const int patchRadius = 10;
+#define PATCH_RADIUS 10
+#define PATCH_RADIUS_DOUBLED 20
+
+const int patchRadius = PATCH_RADIUS;
 const int globalIters = 3;
 const int localIters = 500;
 const double thresholdOutliers = 0.98;
@@ -188,29 +191,38 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
 }
 
+#define STR_EXPAND_(arg) #arg
+#define STR_EXPAND(arg) STR_EXPAND_(arg)
+
 ocl::ProgramSource _ocl_getPatchDescriptorSource(
   "__kernel void getPatchDescriptor("
   "__global const uchar* imgCh0, int ic0step, int ic0off,"
   "__global const uchar* imgCh1, int ic1step, int ic1off,"
   "__global const uchar* imgCh2, int ic2step, int ic2off,"
   "__global uchar* out, int outstep, int outoff,"
-  "const int gh, const int gw, int patchRadius"
+  "const int gh, const int gw, const int PR"
   ") {"
   "const int i = get_global_id(0);"
   "const int j = get_global_id(1);"
   "if (i >= gh || j >= gw) return;"
   "__global double* desc = (__global double*)(out + (outstep * (i * gw + j) + outoff));"
-  "const double pi = 3.14159265358979323846;"
-  "patchRadius *= 2;"
-  "for (int n0 = 0; n0 < 4; ++n0) {"
+  "const int patchRadius = PR * 2;"
+  "float patch[" STR_EXPAND(PATCH_RADIUS_DOUBLED) "][" STR_EXPAND(PATCH_RADIUS_DOUBLED) "];"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch0Row = (__global const float*)(imgCh0 + (ic0step * (i + i0) + ic0off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    patch[i0][j0] = ch0Row[j0];"
+  "}"
+  "const double pi = " STR_EXPAND(CV_PI) ";\n"
+  "#pragma unroll\n"
+  "for (int n0 = 0; n0 < 4; ++n0) {\n"
+  "#pragma unroll\n"
   "  for (int n1 = 0; n1 < 4; ++n1) {"
   "    double sum = 0;"
-  "    for (int i0 = 0; i0 < patchRadius; ++i0) {"
-  "      __global const float* ch0Row = (__global const float*)(imgCh0 + (ic0step * (i + i0) + ic0off + j * sizeof(float)));"
+  "    for (int i0 = 0; i0 < patchRadius; ++i0)"
   "      for (int j0 = 0; j0 < patchRadius; ++j0)"
-  "        sum += ch0Row[j0] * cos(pi * (i0 + 0.5) * n0 / patchRadius) * cos(pi * (j0 + 0.5) * n1 / patchRadius);"
-  "    }"
-  "    desc[n0 * 4 + n1] = sum * 2 / patchRadius;"
+  "        sum += patch[i0][j0] * cos(pi * (i0 + 0.5) * n0 / patchRadius) * cos(pi * (j0 + 0.5) * n1 / patchRadius);"
+  "    desc[n0 * 4 + n1] = sum / PR;"
   "  }"
   "}"
   "for (int k = 0; k < 4; ++k) {"
@@ -232,6 +244,9 @@ ocl::ProgramSource _ocl_getPatchDescriptorSource(
   "}"
   "desc[17] = sum / patchRadius;"
   "}" );
+
+#undef STR_EXPAND_
+#undef STR_EXPAND
 
 void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, bool allowOpenCL )
 {
@@ -376,7 +391,7 @@ void GPCTree::write( FileStorage &fs ) const
 
 void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
 
-unsigned GPCTree::findLeafForPatch( GPCPatchDescriptor &descr ) const
+unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
 {
   unsigned id = 0, prevId;
   do

@@ -154,7 +154,7 @@ public:
 
   void read( const FileNode &fn );
 
-  unsigned findLeafForPatch( GPCPatchDescriptor &descr ) const;
+  unsigned findLeafForPatch( const GPCPatchDescriptor &descr ) const;
 
   static Ptr< GPCTree > create() { return makePtr< GPCTree >(); }
 

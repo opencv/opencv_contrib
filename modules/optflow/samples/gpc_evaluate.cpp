@@ -80,9 +80,15 @@ int main( int argc, const char **argv )
   Mat gt = optflow::readOpticalFlow( argv[3] );
   std::vector< std::pair< Point2i, Point2i > > corr;
 
+  TickMeter meter;
+  meter.start();
+
   forest->findCorrespondences( from, to, corr, optflow::GPCMatchingParams( useOpenCL ) );
 
+  meter.stop();
+
   std::cout << "Found " << corr.size() << " matches." << std::endl;
+  std::cout << "Time:  " << meter.getTimeSec() << " sec." << std::endl;
   double error = 0;
   Mat dispErr = Mat::zeros( from.size(), CV_32FC3 );
   dispErr = Scalar( 0, 0, 1 );
