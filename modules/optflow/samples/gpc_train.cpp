@@ -1,6 +1,9 @@
 #include "opencv2/optflow.hpp"
 #include <iostream>
 
+/* This tool trains the forest for the Global Patch Collider and stores output to the "forest.dump".
+ */
+
 using namespace cv;
 
 const int nTrees = 5;

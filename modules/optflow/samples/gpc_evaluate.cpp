@@ -1,8 +1,19 @@
+#include "opencv2/core/ocl.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/optflow.hpp"
-#include "opencv2/core/ocl.hpp"
+#include <fstream>
 #include <iostream>
+
+/* This tool finds correspondences between two images using Global Patch Collider
+ * and calculates error using provided ground truth flow.
+ *
+ * It will look for the file named "forest.dump" with a learned forest.
+ * You can obtain the "forest.dump" either by manually training it using another tool with *_train suffix
+ * or by downloading one of the files trained on some publicly available dataset from here:
+ *
+ * https://drive.google.com/open?id=0B7Hb8cfuzrIIZDFscXVYd0NBNFU
+ */
 
 using namespace cv;
 
@@ -35,16 +46,28 @@ static void displayFlow( InputArray _flow, OutputArray _img )
 
   for ( int i = 0; i < sz.height; ++i )
     for ( int j = 0; j < sz.width; ++j )
-      img.at< Vec3f >( i, j ) = getFlowColor( flow.at<Point2f>( i, j ) );
+      img.at< Vec3f >( i, j ) = getFlowColor( flow.at< Point2f >( i, j ) );
 
   cvtColor( img, img, COLOR_HSV2BGR );
 }
+
+static bool fileProbe( const char *name ) { return std::ifstream( name ).good(); }
 
 int main( int argc, const char **argv )
 {
   if ( argc != 4 )
   {
     std::cerr << "Usage: " << argv[0] << " ImageFrom ImageTo GroundTruth" << std::endl;
+    return 1;
+  }
+
+  if ( !fileProbe( "forest.dump" ) )
+  {
+    std::cerr
+      << "Can't open the file with a trained model: `forest.dump`.\nYou can obtain this file either by manually training the model "
+         "using another tool with *_train suffix or by downloading one of the files trained on some publicly available dataset from "
+         "here:\nhttps://drive.google.com/open?id=0B7Hb8cfuzrIIZDFscXVYd0NBNFU"
+      << std::endl;
     return 1;
   }
 
