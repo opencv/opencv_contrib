@@ -353,3 +353,12 @@ Ptr<Importer> cv::dnn::createCaffeImporter(const String&, const String&)
 }
 
 #endif //HAVE_PROTOBUF
+
+Net cv::dnn::readNetFromCaffe(const String &prototxt, const String &caffeModel /*= String()*/)
+{
+    Ptr<Importer> caffeImporter = createCaffeImporter(prototxt, caffeModel);
+    Net net;
+    if (caffeImporter)
+        caffeImporter->populateNet(net);
+    return net;
+}

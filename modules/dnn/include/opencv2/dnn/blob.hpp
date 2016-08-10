@@ -54,7 +54,7 @@ namespace dnn
 //! @{
 
     /** @brief Lightweight class for storing and processing a shape of blob (or anything else). */
-    struct BlobShape
+    struct CV_EXPORTS_W BlobShape
     {
         BlobShape();                                        //!< Creates [1, 1, 1, 1] shape @todo Make more clearer behavior.
         explicit BlobShape(int s0);                         //!< Creates 1-dim shape [@p s0]
@@ -154,7 +154,7 @@ namespace dnn
         /** @brief Constructs Blob from existing Mat or UMat. */
         Blob(InputArray data);
 
-        /** @brief Constucts 4-dimensional blob (so-called batch) from image or array of images.
+        /** @brief Constructs 4-dimensional blob (so-called batch) from image or array of images.
          * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of such images)
          * @param dstCn specifies size of second axis of ouptut blob
          */
@@ -312,17 +312,17 @@ namespace dnn
 public:
         enum DataState
         {
-            UNINITIALIZED,
-            HEAD_AT_MAT,
-            HEAD_AT_UMAT,
-            SYNCED
+            UNINITIALIZED   = 0,
+            HEAD_AT_MAT     = 1 << 0,
+            HEAD_AT_UMAT    = 1 << 1,
+            SYNCED          = HEAD_AT_MAT | HEAD_AT_UMAT
         };
 
         enum AllocFlag
         {
-            ALLOC_MAT  = 1,
-            ALLOC_UMAT = 2,
-            ALLOC_BOTH = 3
+            ALLOC_MAT  = HEAD_AT_MAT,
+            ALLOC_UMAT = HEAD_AT_UMAT,
+            ALLOC_BOTH = SYNCED
         };
     };
 
