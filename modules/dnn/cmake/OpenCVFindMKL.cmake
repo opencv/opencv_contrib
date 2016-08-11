@@ -13,11 +13,18 @@
 # MKL_LIBRARIES     - IPP libraries that are used by OpenCV
 #
 
+macro (mkl_find_lib VAR NAME DIRS)
+    find_path(${VAR} ${NAME} ${DIRS} NO_DEFAULT_PATH)
+    set(${VAR} ${${VAR}}/${NAME})
+    unset(${VAR} CACHE)
+endmacro()
+
 macro(mkl_fail)
     set(HAVE_MKL OFF CACHE BOOL "True if MKL found")
     set(MKL_ROOT_DIR ${MKL_ROOT_DIR} CACHE PATH "Path to MKL directory")
     unset(MKL_INCLUDE_DIRS CACHE)
     unset(MKL_LIBRARIES CACHE)
+    return()
 endmacro()
 
 macro(get_mkl_version VERSION_FILE)
@@ -42,28 +49,27 @@ endif()
 
 #check current MKL_ROOT_DIR
 if(NOT MKL_ROOT_DIR OR NOT EXISTS ${MKL_ROOT_DIR}/include/mkl.h)
-    set(MKLROOT_PATHS ${MKL_ROOT_DIR})
+    set(mkl_root_paths ${MKL_ROOT_DIR})
     if(DEFINED $ENV{MKLROOT})
-        list(APPEND MKLROOT_PATHS $ENV{MKLROOT})
+        list(APPEND mkl_root_paths $ENV{MKLROOT})
     endif()
     if(WIN32)
         set(ProgramFilesx86 "ProgramFiles(x86)")
-        list(APPEND MKLROOT_PATHS $ENV{${ProgramFilesx86}}/IntelSWTools/compilers_and_libraries/windows/mkl)
+        list(APPEND mkl_root_paths $ENV{${ProgramFilesx86}}/IntelSWTools/compilers_and_libraries/windows/mkl)
     endif()
     if(UNIX)
-        list(APPEND MKLROOT_PATHS "/opt/intel/mkl")
+        list(APPEND mkl_root_paths "/opt/intel/mkl")
     endif()
 
-    find_path(MKL_ROOT_DIR include/mkl.h PATHS ${MKLROOT_PATHS})
+    find_path(MKL_ROOT_DIR include/mkl.h PATHS ${mkl_root_paths})
 endif()
 
 if(NOT MKL_ROOT_DIR)
     mkl_fail()
-    return()
 endif()
 
 set(MKL_INCLUDE_DIRS ${MKL_ROOT_DIR}/include)
-set(MKL_INCLUDE_HEADERS ${MKL_INCLUDE_DIRS}/mkl.h ${MKL_INCLUDE_DIRS}/mkl_version.h)
+get_mkl_version(${MKL_INCLUDE_DIRS}/mkl_version.h)
 
 #determine arch
 if(CMAKE_CXX_SIZEOF_DATA_PTR EQUAL 8)
@@ -81,43 +87,50 @@ else()
     set(MKL_ARCH "ia32")
 endif()
 
-if(MSVC)
-    set(MKL_EXT ".lib")
-    set(MKL_PRE "")
-else()
-    set(MKL_EXT ".a")
-    set(MKL_PRE "lib")
-endif()
+if(${MKL_VERSION_STR} VERSION_GREATER "11.3.0" OR ${MKL_VERSION_STR} VERSION_EQUAL "11.3.0")
+    set(mkl_lib_find_paths
+        ${MKL_ROOT_DIR}/lib
+        ${MKL_ROOT_DIR}/lib/${MKL_ARCH} ${MKL_ROOT_DIR}/../tbb/lib/${MKL_ARCH})
 
-set(MKL_LIB_DIR ${MKL_ROOT_DIR}/lib/${MKL_ARCH})
-set(MKL_LIBRARIES ${MKL_LIB_DIR}/${MKL_PRE}mkl_core${MKL_EXT} ${MKL_LIB_DIR}/${MKL_PRE}mkl_intel_${MKL_LP64}${MKL_EXT})
+    set(mkl_lib_list
+        mkl_core
+        mkl_intel_${MKL_LP64})
 
-if(MKL_WITH_TBB)
-    list(APPEND MKL_LIBRARIES ${MKL_LIB_DIR}/${MKL_PRE}mkl_tbb_thread${MKL_EXT})
-    list(APPEND MKL_LIBRARIES ${MKL_ROOT_DIR}/../tbb/lib/${MKL_ARCH}/tbb${MKL_EXT})
-elseif(MKL_WITH_OPENMP)
-    message(FATAL_ERROR "Multithreaded MKL is not supported yet")
-else()
-    list(APPEND MKL_LIBRARIES ${MKL_LIB_DIR}/${MKL_PRE}mkl_sequential${MKL_EXT})
-endif()
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(MKL MKL_INCLUDE_HEADERS MKL_LIBRARIES)
-
-if(MKL_FOUND)
-    get_mkl_version(${MKL_INCLUDE_DIRS}/mkl_version.h)
-    message(STATUS "Found MKL ${MKL_VERSION_STR} at: ${MKL_ROOT_DIR}")
-
-    set(HAVE_MKL ON CACHE BOOL "True if MKL found")
-    set(MKL_ROOT_DIR ${MKL_ROOT_DIR} CACHE PATH "Path to MKL directory")
-    set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIRS} CACHE PATH "Path to MKL include directory")
-    if(NOT UNIX)
-        set(MKL_LIBRARIES ${MKL_LIBRARIES} CACHE FILEPATH "MKL libarries")
+    if(MKL_WITH_TBB)
+        list(APPEND mkl_lib_list mkl_tbb_thread tbb)
+    elseif(MKL_WITH_OPENMP)
+        if(MSVC)
+            list(APPEND mkl_lib_list mkl_intel_thread libiomp5md)
+        else()
+            list(APPEND mkl_lib_list libmkl_gnu_thread)
+        endif()
     else()
-        #it's ugly but helps to avoid cyclic lib problem
-        set(MKL_LIBRARIES ${MKL_LIBRARIES} ${MKL_LIBRARIES} ${MKL_LIBRARIES} "-lpthread" "-lm" "-ldl")
-        set(MKL_LIBRARIES ${MKL_LIBRARIES} CACHE STRING "MKL libarries")
+        list(APPEND mkl_lib_list mkl_sequential)
     endif()
 else()
+    message(STATUS "MKL version ${MKL_VERSION_STR} is not supported")
+    mkl_fail()
+endif()
 
+
+set(MKL_LIBRARIES "")
+foreach(lib ${mkl_lib_list})
+    find_library(${lib} ${lib} ${mkl_lib_find_paths})
+    mark_as_advanced(${lib})
+    if(NOT ${lib})
+        mkl_fail()
+    endif()
+    list(APPEND MKL_LIBRARIES ${${lib}})
+endforeach()
+
+message(STATUS "Found MKL ${MKL_VERSION_STR} at: ${MKL_ROOT_DIR}")
+set(HAVE_MKL ON CACHE BOOL "True if MKL found")
+set(MKL_ROOT_DIR ${MKL_ROOT_DIR} CACHE PATH "Path to MKL directory")
+set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIRS} CACHE PATH "Path to MKL include directory")
+if(NOT UNIX)
+    set(MKL_LIBRARIES ${MKL_LIBRARIES} CACHE FILEPATH "MKL libarries")
+else()
+    #it's ugly but helps to avoid cyclic lib problem
+    set(MKL_LIBRARIES ${MKL_LIBRARIES} ${MKL_LIBRARIES} ${MKL_LIBRARIES} "-lpthread" "-lm" "-ldl")
+    set(MKL_LIBRARIES ${MKL_LIBRARIES} CACHE STRING "MKL libarries")
 endif()
