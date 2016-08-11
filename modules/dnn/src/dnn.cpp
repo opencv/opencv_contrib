@@ -60,7 +60,7 @@ namespace dnn
 {
 
 template<typename T>
-String toString(const T &v)
+static String toString(const T &v)
 {
     std::ostringstream ss;
     ss << v;
