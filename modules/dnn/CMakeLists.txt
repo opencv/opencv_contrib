@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-if(APPLE_FRAMEWORK OR WINRT)
+if(APPLE_FRAMEWORK OR WINRT
+    OR AARCH64 # protobuf doesn't know this platform
+)
   ocv_module_disable(dnn)
 endif()
 
@@ -15,14 +17,37 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4701)
 # Resolve libprotobuf dependency
 # ----------------------------------------------------------------------------
 include(cmake/OpenCVFindLibProtobuf.cmake)
-ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_source_group("Src\\protobuf" FILES ${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
+# ----------------------------------------------------------------------------
+# Try to find BLAS libraries
+# ----------------------------------------------------------------------------
+OCV_OPTION(${the_module}_WITH_BLAS "Use external BLAS library to speedup processing" OFF)
+include(cmake/OpenCVFindCBLAS.cmake)
+
+ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PROXY_PATH})
 ocv_create_module(${PROTOBUF_LIBRARIES})
 ocv_add_samples()
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
+
+# ----------------------------------------------------------------------------
+# Link BLAS
+# ----------------------------------------------------------------------------
+if(${the_module}_WITH_BLAS AND HAVE_BLAS)
+    add_definitions(-DHAVE_CBLAS=1)
+    ocv_module_include_directories(${${the_module}_BLAS_INCLUDE_DIR})
+    ocv_add_dependencies(${the_module} ${${the_module}_BLAS_LIBRARIES})
+    target_link_libraries(${the_module} ${${the_module}_BLAS_LIBRARIES})
+
+    if(${the_module}_BLAS_BINARIES)
+        ocv_install_target(${the_module} EXPORT ${the_module}_BLAS_BINARIES
+                           RUNTIME DESTINATION ${OPENCV_BIN_INSTALL_PATH} COMPONENT libs)
+    endif()
+else()
+    add_definitions(-DHAVE_CBLAS=0)
+endif()
 
 # ----------------------------------------------------------------------------
 # Download pre-trained models for complex testing on GoogLeNet and AlexNet

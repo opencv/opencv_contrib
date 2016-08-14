@@ -37,7 +37,7 @@ public:
     void train(InputArrayOfArrays src, InputArray labels);
 
     // Send all predict results to caller side for custom result handling
-    void predict(InputArray src, Ptr<PredictCollector> collector, const int state) const;
+    void predict(InputArray src, Ptr<PredictCollector> collector) const;
 };
 
 // Removes duplicate elements in a given vector.
@@ -120,7 +120,7 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     }
 }
 
-void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector, const int state) const {
+void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     Mat src = _src.getMat();
     // check data alignment just for clearer exception messages
     if(_projections.empty()) {
@@ -134,11 +134,11 @@ void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector, cons
     // project into LDA subspace
     Mat q = LDA::subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
     // find 1-nearest neighbor
-    collector->init((int)_projections.size(), state);
+    collector->init((int)_projections.size());
     for (size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
         int label = _labels.at<int>((int)sampleIdx);
-        if (!collector->collect(label, dist, state))return;
+        if (!collector->collect(label, dist))return;
     }
 }
 

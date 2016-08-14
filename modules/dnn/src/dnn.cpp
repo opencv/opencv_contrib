@@ -543,6 +543,13 @@ Layer::Layer(const LayerParams &params)
 
 }
 
+void Layer::setParamsFrom(const LayerParams &params)
+{
+    blobs = params.blobs;
+    name = params.name;
+    type = params.type;
+}
+
 int Layer::inputNameToIndex(String)
 {
     return -1;

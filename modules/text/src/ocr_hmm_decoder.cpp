@@ -1206,7 +1206,7 @@ the output transition_probabilities_table with them.
 The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
 @note
    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
+        <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
  */
 void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, OutputArray _transitions)
 {

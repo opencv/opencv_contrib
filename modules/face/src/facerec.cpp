@@ -80,10 +80,10 @@ int FaceRecognizer::predict(InputArray src) const {
 }
 
 void FaceRecognizer::predict(InputArray src, CV_OUT int &label, CV_OUT double &confidence) const {
-    Ptr<MinDistancePredictCollector> collector = MinDistancePredictCollector::create(getThreshold());
-    predict(src, collector, 0);
-    label = collector->getLabel();
-    confidence = collector->getDist();
+    Ptr<StandardCollector> collector = StandardCollector::create(getThreshold());
+    predict(src, collector);
+    label = collector->getMinLabel();
+    confidence = collector->getMinDist();
 }
 
 }

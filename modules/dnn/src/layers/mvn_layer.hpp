@@ -42,20 +42,18 @@
 #ifndef __OPENCV_DNN_LAYERS_MVN_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_MVN_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class MVNLayer : public Layer
+class MVNLayerImpl : public MVNLayer
 {
-    double eps;
-    bool acrossChannels, normalizeVariance;
-
 public:
 
-    MVNLayer(LayerParams &params);
+    MVNLayerImpl(bool normVariance_ = true, bool acrossChannels_ = false, double eps_ = 1e-9);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };

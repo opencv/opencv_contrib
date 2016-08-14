@@ -92,7 +92,7 @@ grouping horizontally aligned text, and the method proposed by Lluis Gomez and D
 in [Gomez13][Gomez14] for grouping arbitrary oriented text (see erGrouping).
 
 To see the text detector at work, have a look at the textdetection demo:
-<https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/textdetection.cpp>
+<https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/textdetection.cpp>
 
     @defgroup text_recognize Scene Text Recognition
   @}

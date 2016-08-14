@@ -42,73 +42,88 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "fully_connected_layer.hpp"
+#include "op_blas.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
+#include <opencv2/core/ocl.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    FullyConnectedLayer::FullyConnectedLayer(LayerParams &params) : Layer(params)
-    {
-        numOutputs = params.get<int>("num_output");
-        bias = params.get<bool>("bias_term", true);
-        axis_ = params.get<int>("axis", 1);
 
-        CV_Assert(blobs.size() == (bias ? 2U : 1U));
-        CV_Assert(blobs[0].dims() >= 2 && blobs[0].total() >= (size_t)numOutputs);
-        CV_Assert(!bias || blobs[1].total() == (size_t)numOutputs);
+FullyConnectedLayerImpl::FullyConnectedLayerImpl(int axis_)
+{
+    axis = axis_;
+}
+
+void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
+{
+    CV_Assert(input.size() > 0);
+    CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
+    CV_Assert(blobs[0].dims() == 2);
+
+    bias = (blobs.size() >= 1);
+    axisCan = input[0]->canonicalAxis(axis);
+    dtype = input[0]->type();
+    numOutput = blobs[0].size(0);
+    innerSize = blobs[0].size(1);
+    outerSize = input[0]->total(0, axisCan);
+
+    CV_Assert((size_t)innerSize == input[0]->total(axisCan));
+    CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
+
+    useOpenCL = ocl::useOpenCL();
+    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_UMAT;
+
+    biasOnesBlob.create(Shape(outerSize, 1), dtype, allocFlags);
+    biasOnesBlob.setTo(1);
+
+    output.resize(input.size());
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        CV_Assert(i == 0 || (input[i]->equalShape(*input[0]) && input[i]->type() == dtype));
+        Shape outShape = input[i]->shape().slice(0, axis) + Shape(numOutput);
+        output[i].create(outShape, dtype, allocFlags);
+    }
+}
+
+void FullyConnectedLayerImpl::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
+{
+    #ifdef HAVE_OPENCL
+    if (useOpenCL)
+        forward_<UMat>(input, output);
+    else
+    #endif
+        forward_<Mat>(input, output);
+}
+
+template<typename XMat>
+void FullyConnectedLayerImpl::forward_(std::vector<Blob *> &input, std::vector<Blob> &output)
+{
+    const XMat &weight = blobs[0].getRefConst<XMat>();
+    const XMat *biasMat = NULL, *biasOnesMat = NULL;
+    if (bias)
+    {
+        biasOnesMat = &biasOnesBlob.getRefConst<XMat>();
+        biasMat = &blobs[1].getRefConst<XMat>();
     }
 
-    void FullyConnectedLayer::allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
+    for (size_t i = 0; i < input.size(); i++)
     {
-        CV_Assert(input.size() > 0);
+        const XMat srcMat = reshaped(input[i]->getRefConst<XMat>(), Shape(outerSize, innerSize));
+        XMat dstMat = reshaped(output[i].getRef<XMat>(), Shape(outerSize, numOutput));
+        dnn::gemm(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
 
-        axis = input[0]->canonicalAxis(axis_);
-        innerSize = (int)input[0]->total(axis);
-
-        CV_Assert((size_t)innerSize * (size_t)numOutputs == blobs[0].total());
-        CV_Assert(blobs[0].size(-2) == numOutputs && blobs[0].size(-1) == innerSize);
-
-        output.resize(input.size());
-        for (size_t i = 0; i < input.size(); i++)
-        {
-            if (i != 0)
-                CV_Assert(input[i]->equalShape(*input[0]));
-
-            this->reshape(*input[i], output[i]);
-        }
+        if (bias)
+            dnn::gemm(*biasOnesMat, *biasMat, 1, dstMat, 1);
     }
+}
 
-    void FullyConnectedLayer::reshape(const Blob &inp, Blob &out)
-    {
-        BlobShape inpShape = inp.shape();
-        BlobShape outShape(axis+1, inpShape.ptr());
-        outShape[axis] = numOutputs;
 
-        out.create(outShape, inp.type());
-    }
+Ptr<InnerProductLayer> InnerProductLayer::create(int axis)
+{
+    return Ptr<InnerProductLayer>(new FullyConnectedLayerImpl(axis));
+}
 
-    void FullyConnectedLayer::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
-    {
-        for (size_t i = 0; i < input.size(); i++)
-        {
-            int M = (int)input[i]->total(0, axis);
-            int N = numOutputs;
-            int K = innerSize;
-
-            Mat srcMat(M, K, input[i]->type(), input[i]->ptrf());
-            Mat weight(N, K, blobs[0].type(), blobs[0].ptrf());
-            Mat dstMat(M, N, output[i].type(), output[i].ptrf());
-
-            //important: Caffe stores weights as transposed array
-            cv::gemm(srcMat, weight, 1, noArray(), 0, dstMat, GEMM_2_T);
-
-            if (bias)
-            {
-                Mat biasOnesMat = Mat::ones(M, 1, CV_32F);
-                Mat biasMat(1, N, CV_32F, blobs[1].ptrf());
-                cv::gemm(biasOnesMat, biasMat, 1, dstMat, 1, dstMat);
-            }
-        }
-    }
 }
 }

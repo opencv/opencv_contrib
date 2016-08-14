@@ -42,41 +42,46 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "split_layer.hpp"
+#include <opencv2/core/ocl.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-//TODO: maybe "top_count" param is useless because it can be determined by output connections number?
-SplitLayer::SplitLayer(LayerParams &params) : Layer(params)
+SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
 {
-    if (params.has("top_count"))
-    {
-        outputsNum = params.get<int>("top_count");
-        CV_Assert(outputsNum >= 0);
-    }
-    else
-    {
-        outputsNum = -1;
-    }
+    outputsCount = outputsCount_;
 }
 
-void SplitLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SplitLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 1);
+    useOpenCL = ocl::useOpenCL() && inputs[0]->getState() == Blob::HEAD_AT_UMAT;
+    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
-    if (outputsNum >= 0)
-        outputs.resize(outputsNum);
+    if (outputsCount >= 0)
+        outputs.resize(outputsCount);
 
     for (size_t i = 0; i < outputs.size(); i++)
-        outputs[i].create(inputs[0]->shape(), inputs[0]->type());
+        outputs[i].create(inputs[0]->shape(), inputs[0]->type(), allocFlags);
 }
 
-void SplitLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SplitLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     for (size_t i = 0; i < outputs.size(); i++)
-        inputs[0]->matRefConst().copyTo(outputs[i].matRef());
+    {
+        if (useOpenCL)
+            inputs[0]->umatRefConst().copyTo(outputs[i].umatRef());
+        else
+            inputs[0]->matRefConst().copyTo(outputs[i].matRef());
+    }
+}
+
+
+Ptr<SplitLayer> SplitLayer::create(int outputsCount)
+{
+    return Ptr<SplitLayer>(new SplitLayerImpl(outputsCount));
 }
 
 }
