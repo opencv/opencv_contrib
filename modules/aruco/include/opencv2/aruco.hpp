@@ -322,8 +322,9 @@ class CV_EXPORTS_W GridBoard : public Board {
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
- * (@sa Rodrigues).
+ * (@sa Rodrigues). Used as initial guess if not empty.
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * Used as initial guess if not empty.
  *
  * This function receives the detected markers and returns the pose of a marker board composed
  * by those markers.

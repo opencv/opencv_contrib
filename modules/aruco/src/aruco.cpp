@@ -1311,9 +1311,14 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, Ptr<Board> &
     if(objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
-    _rvec.create(3, 1, CV_64FC1);
-    _tvec.create(3, 1, CV_64FC1);
-    solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec);
+    bool useExtrinsicGuess = true;
+    if (_rvec.empty() || _tvec.empty())
+    {
+        _rvec.create(3, 1, CV_64FC1);
+        _tvec.create(3, 1, CV_64FC1);
+        useExtrinsicGuess = false;
+    }
+    solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     // divide by four since all the four corners are concatenated in the array for each marker
     return (int)objPoints.total() / 4;

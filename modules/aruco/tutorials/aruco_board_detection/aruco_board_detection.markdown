@@ -74,7 +74,7 @@ The parameters of estimatePoseBoard are:
 - ```markerCorners``` and ```markerIds```: structures of detected markers from ```detectMarkers()``` function.
 - ```board```: the ```Board``` object that defines the board layout and its ids
 - ```cameraMatrix``` and ```distCoeffs```: camera calibration parameters necessary for pose estimation.
-- ```rvec``` and ```tvec```: estimated pose of the Board.
+- ```rvec``` and ```tvec```: estimated pose of the Board. If not empty then treated as initial guess.
 - The function returns the total number of markers employed for estimating the board pose. Note that not all the
  markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
 listed in the ```Board::ids``` structure are considered.
