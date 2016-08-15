@@ -92,7 +92,7 @@ namespace cv
 			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTarget / 2.0 + targetPatchRect.width);
 			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTarget / 2.0 + targetPatchRect.height);
 
-			copyMakeBorder(prevFrame, prevFramePadded, targetPatchRect.height, targetPatchRect.height, targetPatchRect.width, targetPatchRect.width, BORDER_REPLICATE);
+			copyMakeBorder(prevFrame, prevFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
 
 			targetPatch = prevFramePadded(targetPatchRect);
 
@@ -123,7 +123,7 @@ namespace cv
 				searchPatchRect.height =(float)(prevBB.height*padSearch*ds);
 				searchPatchRect.x = (float)(currCenter.x + dx - searchPatchRect.width / 2.0 + searchPatchRect.width);
 				searchPatchRect.y = (float)(currCenter.y + dy - searchPatchRect.height / 2.0 + searchPatchRect.height);
-				copyMakeBorder(currFrame, currFramePadded, searchPatchRect.height, searchPatchRect.height, searchPatchRect.width, searchPatchRect.width, BORDER_REPLICATE);
+				copyMakeBorder(currFrame, currFramePadded, (int)searchPatchRect.height, (int)searchPatchRect.height, (int)searchPatchRect.width, (int)searchPatchRect.width, BORDER_REPLICATE);
 				searchPatch = currFramePadded(searchPatchRect);
 
 				//Calculate Relative GTBB in search patch

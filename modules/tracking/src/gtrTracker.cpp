@@ -132,25 +132,24 @@ namespace cv
 			Rect2d prevBB = ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
 			Rect2d curBB;
 
-			float padTarget = 2.0;
-			float padSearch = 2.0;
+			float padTargetPatch = 2.0;
 			Rect2f searchPatchRect, targetPatchRect;
 			Point2f currCenter, prevCenter;
 			Mat prevFramePadded, curFramePadded;
 			Mat searchPatch, targetPatch;
 
-			prevCenter.x = prevBB.x + prevBB.width / 2;
-			prevCenter.y = prevBB.y + prevBB.height / 2;
+			prevCenter.x = (float)(prevBB.x + prevBB.width / 2);
+			prevCenter.y = (float)(prevBB.y + prevBB.height / 2);
 
-			targetPatchRect.width = (float)(prevBB.width*padTarget);
-			targetPatchRect.height = (float)(prevBB.height*padTarget);
-			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTarget / 2.0 + targetPatchRect.width);
-			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTarget / 2.0 + targetPatchRect.height);
+			targetPatchRect.width = (float)(prevBB.width*padTargetPatch);
+			targetPatchRect.height = (float)(prevBB.height*padTargetPatch);
+			targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTargetPatch / 2.0 + targetPatchRect.width);
+			targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTargetPatch / 2.0 + targetPatchRect.height);
 
-			copyMakeBorder(prevFrame, prevFramePadded, targetPatchRect.height, targetPatchRect.height, targetPatchRect.width, targetPatchRect.width, BORDER_REPLICATE);
+			copyMakeBorder(prevFrame, prevFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
 			targetPatch = prevFramePadded(targetPatchRect).clone();
 
-			copyMakeBorder(curFrame, curFramePadded, targetPatchRect.height, targetPatchRect.height, targetPatchRect.width, targetPatchRect.width, BORDER_REPLICATE);
+			copyMakeBorder(curFrame, curFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
 			searchPatch = curFramePadded(targetPatchRect).clone();
 
 			resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE));
