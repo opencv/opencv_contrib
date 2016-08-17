@@ -51,12 +51,14 @@ namespace optflow
 namespace
 {
 
-const int patchRadius = 10;
-const double thresholdMagnitudeFrac = 0.6666666666;
+#define PATCH_RADIUS 10
+#define PATCH_RADIUS_DOUBLED 20
+
+const int patchRadius = PATCH_RADIUS;
 const int globalIters = 3;
 const int localIters = 500;
-const int minNumberOfSamples = 2;
-//const bool debugOutput = true;
+const double thresholdOutliers = 0.98;
+const double thresholdMagnitudeFrac = 0.8;
 
 struct Magnitude
 {
@@ -81,7 +83,7 @@ struct PartitionPredicate1
   {
     const bool direction1 = ( coef.dot( sample.first.feature ) < rhs );
     const bool direction2 = ( coef.dot( sample.second.feature ) < rhs );
-    return direction1 == false && direction1 == direction2;
+    return direction1 == false && direction2 == false;
   }
 };
 
@@ -102,6 +104,8 @@ struct PartitionPredicate2
 
 float normL2Sqr( const Vec2f &v ) { return v[0] * v[0] + v[1] * v[1]; }
 
+int normL2Sqr( const Point2i &v ) { return v.x * v.x + v.y * v.y; }
+
 bool checkBounds( int i, int j, Size sz )
 {
   return i >= patchRadius && j >= patchRadius && i + patchRadius < sz.height && j + patchRadius < sz.width;
@@ -116,8 +120,8 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
       mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
 
-  size_t n = size_t(mag.size() * thresholdMagnitudeFrac); // As suggested in the paper, we discard part of the training samples
-                                                          // with a small displacement and train to better distinguish hard pairs.
+  size_t n = size_t( mag.size() * thresholdMagnitudeFrac ); // As suggested in the paper, we discard part of the training samples
+                                                            // with a small displacement and train to better distinguish hard pairs.
   std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
   mag.resize( n );
   std::random_shuffle( mag.begin(), mag.end() );
@@ -187,9 +191,104 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
 }
 
-bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
+#define STR_EXPAND_(arg) #arg
+#define STR_EXPAND(arg) STR_EXPAND_(arg)
+
+ocl::ProgramSource _ocl_getPatchDescriptorSource(
+  "__kernel void getPatchDescriptor("
+  "__global const uchar* imgCh0, int ic0step, int ic0off,"
+  "__global const uchar* imgCh1, int ic1step, int ic1off,"
+  "__global const uchar* imgCh2, int ic2step, int ic2off,"
+  "__global uchar* out, int outstep, int outoff,"
+  "const int gh, const int gw, const int PR"
+  ") {"
+  "const int i = get_global_id(0);"
+  "const int j = get_global_id(1);"
+  "if (i >= gh || j >= gw) return;"
+  "__global double* desc = (__global double*)(out + (outstep * (i * gw + j) + outoff));"
+  "const int patchRadius = PR * 2;"
+  "float patch[" STR_EXPAND(PATCH_RADIUS_DOUBLED) "][" STR_EXPAND(PATCH_RADIUS_DOUBLED) "];"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch0Row = (__global const float*)(imgCh0 + (ic0step * (i + i0) + ic0off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    patch[i0][j0] = ch0Row[j0];"
+  "}"
+  "const double pi = " STR_EXPAND(CV_PI) ";\n"
+  "#pragma unroll\n"
+  "for (int n0 = 0; n0 < 4; ++n0) {\n"
+  "#pragma unroll\n"
+  "  for (int n1 = 0; n1 < 4; ++n1) {"
+  "    double sum = 0;"
+  "    for (int i0 = 0; i0 < patchRadius; ++i0)"
+  "      for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "        sum += patch[i0][j0] * cos(pi * (i0 + 0.5) * n0 / patchRadius) * cos(pi * (j0 + 0.5) * n1 / patchRadius);"
+  "    desc[n0 * 4 + n1] = sum / PR;"
+  "  }"
+  "}"
+  "for (int k = 0; k < 4; ++k) {"
+  "  desc[k] *= 0.7071067811865475;"
+  "  desc[k * 4] *= 0.7071067811865475;"
+  "}"
+  "double sum = 0;"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch1Row = (__global const float*)(imgCh1 + (ic1step * (i + i0) + ic1off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    sum += ch1Row[j0];"
+  "}"
+  "desc[16] = sum / patchRadius;"
+  "sum = 0;"
+  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
+  "  __global const float* ch2Row = (__global const float*)(imgCh2 + (ic2step * (i + i0) + ic2off + j * sizeof(float)));"
+  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
+  "    sum += ch2Row[j0];"
+  "}"
+  "desc[17] = sum / patchRadius;"
+  "}" );
+
+#undef STR_EXPAND_
+#undef STR_EXPAND
+
+void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, bool allowOpenCL )
 {
-  if ( std::distance( begin, end ) < minNumberOfSamples )
+  const Size sz = imgCh[0].size();
+  descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
+
+  if ( allowOpenCL && ocl::useOpenCL() )
+  {
+    ocl::Kernel kernel( "getPatchDescriptor", _ocl_getPatchDescriptorSource );
+    size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
+    UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
+    kernel
+      .args( cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[0].getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[1].getUMat( ACCESS_READ ) ),
+             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[2].getUMat( ACCESS_READ ) ), cv::ocl::KernelArg::WriteOnlyNoSize( out ),
+             (int)globSize[0], (int)globSize[1], (int)patchRadius )
+      .run( 2, globSize, 0, true );
+    Mat cpuOut = out.getMat( 0 );
+    for ( int i = 0; i + 2 * patchRadius < sz.height; ++i )
+      for ( int j = 0; j + 2 * patchRadius < sz.width; ++j )
+        descr.push_back( *cpuOut.ptr< GPCPatchDescriptor >( i * globSize[1] + j ) );
+    return;
+  }
+
+  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
+    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
+      descr.push_back( GPCPatchDescriptor( imgCh, i, j ) );
+}
+
+void GPCPatchDescriptor::getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y )
+{
+  const size_t stride = sz.width - patchRadius * 2;
+  y = int( index / stride );
+  x = int( index - y * stride + patchRadius );
+  y += patchRadius;
+}
+
+bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, const GPCTrainingParams &params )
+{
+  const int nSamples = (int)std::distance( begin, end );
+
+  if ( nSamples < params.minNumberOfSamples || depth >= params.maxTreeDepth )
     return false;
 
   if ( nodeId >= nodes.size() )
@@ -200,6 +299,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   // Select the best hyperplane
   unsigned globalBestScore = 0;
   std::vector< double > values;
+  values.reserve( nSamples * 2 );
 
   for ( int j = 0; j < globalIters; ++j )
   { // Global search step
@@ -220,9 +320,15 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         values.push_back( coef.dot( iter->second.feature ) );
       }
 
-      std::nth_element( values.begin(), values.begin() + values.size() / 2, values.end() );
-      const double median = values[values.size() / 2];
+      std::nth_element( values.begin(), values.begin() + ( nSamples + ( nSamples & 1 ) ), values.end() );
+      const double median = values[nSamples + ( nSamples & 1 )];
       unsigned correct = 0;
+
+      // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
+      // Most likely this won't happen with samples collected from a good dataset.
+      // Happens in case dataset contains plain (or close to plain) images.
+      if ( std::count( values.begin(), values.end(), median ) > std::max( 1, nSamples / 8 ) )
+        continue;
 
       for ( SIter iter = begin; iter != end; ++iter )
       {
@@ -241,18 +347,21 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         globalBestScore = correct;
         node.coef = coef;
         node.rhs = median;
-
-        /*if ( debugOutput )
-        {
-          printf( "[%u] Updating weights: correct %.2f (%u/%ld)\n", depth, double( correct ) / std::distance( begin, end ), correct,
-                  std::distance( begin, end ) );
-          for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
-            printf( "%.3f ", coef[k] );
-          printf( "\n" );
-        }*/
       }
     }
   }
+
+  if ( globalBestScore == 0 )
+    return false;
+
+  if ( params.printProgress )
+  {
+    printf( "[%u] Correct %.2f (%u/%d)\nWeights:", depth, double( globalBestScore ) / nSamples, globalBestScore, nSamples );
+    for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
+      printf( " %.3f", node.coef[k] );
+    printf( "\n" );
+  }
+
   // Partition vector with samples according to the hyperplane in QuickSort-like manner.
   // Unlike QuickSort, we need to partition it into 3 parts (left subtree samples; undefined samples; right subtree
   // samples), so we call it two times.
@@ -260,16 +369,17 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   SIter rightBegin =
     std::partition( leftEnd, end, PartitionPredicate2( node.coef, node.rhs ) ); // Separate undefined samples from right subtree samples.
 
-  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1 ) ) ? unsigned(nodeId * 2 + 1) : 0;
-  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1 ) ) ? unsigned(nodeId * 2 + 2) : 0;
+  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1, params ) ) ? unsigned( nodeId * 2 + 1 ) : 0;
+  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1, params ) ) ? unsigned( nodeId * 2 + 2 ) : 0;
 
   return true;
 }
 
-void GPCTree::train( GPCSamplesVector &samples )
+void GPCTree::train( GPCSamplesVector &samples, const GPCTrainingParams params )
 {
+  nodes.clear();
   nodes.reserve( samples.size() * 2 - 1 ); // set upper bound for the possible number of nodes so all subsequent resize() will be no-op
-  trainNode( 0, samples.begin(), samples.end(), 0 );
+  trainNode( 0, samples.begin(), samples.end(), 0, params );
 }
 
 void GPCTree::write( FileStorage &fs ) const
@@ -280,6 +390,20 @@ void GPCTree::write( FileStorage &fs ) const
 }
 
 void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
+
+unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
+{
+  unsigned id = 0, prevId;
+  do
+  {
+    prevId = id;
+    if ( nodes[id].coef.dot( descr.feature ) < nodes[id].rhs )
+      id = nodes[id].right;
+    else
+      id = nodes[id].left;
+  } while ( id );
+  return prevId;
+}
 
 Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
                                                       const std::vector< String > &gt )
@@ -308,6 +432,31 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
   }
 
   return ts;
+}
+
+void GPCDetails::dropOutliers( std::vector< std::pair< Point2i, Point2i > > &corr )
+{
+  std::vector< float > mag( corr.size() );
+
+  for ( size_t i = 0; i < corr.size(); ++i )
+    mag[i] = normL2Sqr( corr[i].first - corr[i].second );
+
+  const size_t threshold = size_t( mag.size() * thresholdOutliers );
+  std::nth_element( mag.begin(), mag.begin() + threshold, mag.end() );
+  const float percentile = mag[threshold];
+  size_t i = 0, j = 0;
+
+  while ( i < corr.size() )
+  {
+    if ( normL2Sqr( corr[i].first - corr[i].second ) <= percentile )
+    {
+      corr[j] = corr[i];
+      ++j;
+    }
+    ++i;
+  }
+
+  corr.resize( j );
 }
 
 } // namespace optflow

@@ -1,6 +1,11 @@
 #include "opencv2/optflow.hpp"
 #include <iostream>
 
+/* This tool trains the forest for the Global Patch Collider and stores output to the "forest.dump".
+ */
+
+using namespace cv;
+
 const int nTrees = 5;
 
 int main( int argc, const char **argv )
@@ -14,7 +19,7 @@ int main( int argc, const char **argv )
   }
 
   nSequences /= 3;
-  std::vector< cv::String > img1, img2, gt;
+  std::vector< String > img1, img2, gt;
 
   for ( int i = 0; i < nSequences; ++i )
   {
@@ -23,7 +28,7 @@ int main( int argc, const char **argv )
     gt.push_back( argv[1 + i * 3 + 2] );
   }
 
-  cv::Ptr< cv::optflow::GPCForest< nTrees > > forest = cv::optflow::GPCForest< nTrees >::create();
+  Ptr< optflow::GPCForest< nTrees > > forest = optflow::GPCForest< nTrees >::create();
   forest->train( img1, img2, gt );
   forest->save( "forest.dump" );
 
