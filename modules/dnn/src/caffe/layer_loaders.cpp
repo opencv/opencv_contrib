@@ -2,6 +2,7 @@
 #include "layer_loaders.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 #include <climits>
+#include "layers/layers_common.hpp"
 
 namespace cv
 {
@@ -57,7 +58,8 @@ static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Siz
 static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParams &params)
 {
     l->setParamsFrom(params);
-    getCaffeConvParams(params, l->kernel, l->pad, l->stride);
+    //getCaffeConvParams(params, l->kernel, l->pad, l->stride);
+    getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height, l->pad.width, l->stride.height, l->stride.width, l->dilation.height, l->dilation.width);
 
     bool bias = params.get<bool>("bias_term", true);
     int numOutput = params.get<int>("num_output");
@@ -88,6 +90,7 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
 {
     int type;
     Size kernel, stride, pad;
+    bool globalPooling;
 
     if (params.has("pool"))
     {
@@ -106,9 +109,13 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
         type = PoolingLayer::MAX;
     }
 
-    getCaffeConvParams(params, kernel, pad, stride);
+    getPoolingKernelParams(params, kernel.height, kernel.width, globalPooling, pad.height, pad.width, stride.height, stride.width);
+    //getCaffeConvParams(params, kernel, pad, stride);
 
-    return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
+    if (!globalPooling)
+        return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
+    else
+        return Ptr<Layer>(PoolingLayer::createGlobal(type));
 }
 
 template<>

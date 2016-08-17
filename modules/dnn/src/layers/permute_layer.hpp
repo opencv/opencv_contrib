@@ -39,22 +39,37 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
+#ifndef __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+class PermuteLayer : public Layer
+{
+    size_t _count;
+    std::vector<size_t> _order;
 
-void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW);
+    BlobShape _oldDimensionSize;
+    BlobShape _newDimensionSize;
 
-void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling, int &padH, int &padW, int &strideH, int &strideW);
+    std::vector<size_t> _oldStride;
+    std::vector<size_t> _newStride;
+    bool _needsPermute;
 
+    size_t _numAxes;
+
+    void checkCurrentOrder(int currentOrder);
+    void checkNeedForPermutation();
+    void computeStrides();
+
+public:
+    PermuteLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
 }
 }
-
 #endif

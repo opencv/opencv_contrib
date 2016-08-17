@@ -43,6 +43,14 @@
 #include "caffe/layer_loaders.hpp"
 #include "layers/blank_layer.hpp"
 
+#include "layers/crop_layer.hpp"
+#include "layers/eltwise_layer.hpp"
+#include "layers/flatten_layer.hpp"
+#include "layers/permute_layer.hpp"
+#include "layers/prior_box_layer.hpp"
+#include "layers/detection_output_layer.hpp"
+#include "layers/normalize_bbox_layer.hpp"
+
 namespace cv
 {
 namespace dnn
@@ -86,6 +94,15 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
     REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer)
+
+    REG_RUNTIME_LAYER_CLASS(Crop, CropLayer)
+    REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
+
+    REG_RUNTIME_LAYER_CLASS(Permute, PermuteLayer)
+    //REG_RUNTIME_LAYER_CLASS(Flatten, FlattenLayer)
+    REG_RUNTIME_LAYER_CLASS(PriorBox, PriorBoxLayer)
+    REG_RUNTIME_LAYER_CLASS(DetectionOutput, DetectionOutputLayer)
+    REG_RUNTIME_LAYER_CLASS(NormalizeBBox, NormalizeBBoxLayer)
 
     init.status = true;
 }

@@ -39,22 +39,63 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
+#ifndef __OPENCV_DNN_LAYERS_PRIOR_BOX_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PRIOR_BOX_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+class PriorBoxLayer : public Layer
+{
+    size_t _layerWidth;
+    size_t _layerHeight;
 
-void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW);
+    size_t _imageWidth;
+    size_t _imageHeight;
 
-void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling, int &padH, int &padW, int &strideH, int &strideW);
+    size_t _outChannelSize;
 
+    float _stepX;
+    float _stepY;
+
+    float _minSize;
+    float _maxSize;
+
+    float _boxWidth;
+    float _boxHeight;
+
+    std::vector<float> _aspectRatios;
+    std::vector<float> _variance;
+
+    bool _flip;
+    bool _clip;
+
+    size_t _numPriors;
+
+    static const size_t _numAxes = 4;
+    static const std::string _layerName;
+
+public:
+    PriorBoxLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    template<typename T>
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
+
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName,
+                          DictValue& result);
+
+    void getAspectRatios(const LayerParams &params);
+    void getVariance(const LayerParams &params);
+};
 }
 }
-
 #endif

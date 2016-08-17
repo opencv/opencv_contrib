@@ -39,22 +39,56 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
+#ifndef __OPENCV_DNN_LAYERS_NORMALIZEBBOX_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_NORMALIZEBBOX_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+class NormalizeBBoxLayer : public Layer
+{
+    Mat _buffer;
 
-void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW);
+    Mat _sumChannelMultiplier;
+    Mat _sumSpatialMultiplier;
 
-void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling, int &padH, int &padW, int &strideH, int &strideW);
+    Blob _scale;
 
+    float _eps;
+    bool _across_spatial;
+    bool _channel_shared;
+
+    size_t _num;
+    size_t _channels;
+    size_t _rows;
+    size_t _cols;
+
+    size_t _channelSize;
+    size_t _imageSize;
+
+    static const size_t _numAxes = 4;
+    static const std::string _layerName;
+
+public:
+    NormalizeBBoxLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    void checkInputs(const std::vector<Blob*> &inputs);
+
+    template<typename T>
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
+
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName,
+                          DictValue& result);
+};
 }
 }
-
 #endif

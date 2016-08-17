@@ -39,22 +39,30 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
-#include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
+#ifndef __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+    class EltwiseLayer : public Layer
+    {
+        enum EltwiseOp
+        {
+            PROD = 0,
+            SUM = 1,
+            MAX = 2,
+        };
 
-void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW, int &strideH, int &strideW, int &dilationH, int &dilationW);
-
-void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling, int &padH, int &padW, int &strideH, int &strideW);
-
+        EltwiseOp op;
+        std::vector<int> coeffs;
+    public:
+        EltwiseLayer(LayerParams& params);
+        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    };
 }
 }
-
 #endif

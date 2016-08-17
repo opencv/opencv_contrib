@@ -209,21 +209,21 @@ namespace dnn
     {
     public:
 
-        CV_PROP_RW Size kernel, stride, pad;
+        CV_PROP_RW Size kernel, stride, pad, dilation;
     };
 
     class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
     {
     public:
 
-        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
     };
 
     class CV_EXPORTS_W DeconvolutionLayer : public BaseConvolutionLayer
     {
     public:
 
-        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
     };
 
     class CV_EXPORTS_W LRNLayer : public Layer
@@ -256,8 +256,10 @@ namespace dnn
 
         CV_PROP_RW int type;
         CV_PROP_RW Size kernel, stride, pad;
+        CV_PROP_RW bool globalPooling;
 
         static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<PoolingLayer> createGlobal(int type = PoolingLayer::MAX);
     };
 
     class CV_EXPORTS_W SoftmaxLayer : public Layer

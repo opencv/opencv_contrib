@@ -56,8 +56,12 @@ bool im2col_ocl(const UMat &img,
                  int kernel_h, int kernel_w,
                  int pad_h, int pad_w,
                  int stride_h, int stride_w,
+                 int dilation_h, int dilation_w,
                  UMat &col)
 {
+    //TODO
+    CV_Assert(dilation_h == 1 && dilation_w == 1);
+
     int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
     int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
     int channels_col = channels * kernel_h * kernel_w;
