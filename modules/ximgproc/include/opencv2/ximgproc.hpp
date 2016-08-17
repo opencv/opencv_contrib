@@ -104,6 +104,16 @@ CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     double maxValue, int type,
                                     int blockSize, double delta );
 
+/** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
+
+The function transforms a binary blob image into a skeletized form using the technique of Zhang-Suen.
+
+@param src Source 8-bit single-channel image, containing binary blobs, with blobs having 255 pixel values.
+@param dst Destination image of the same size and the same type as src. The function can work in-place.
+ */
+CV_EXPORTS_W void thinning( InputArray src, OutputArray dst);
+
+
 //! @}
 
 }
