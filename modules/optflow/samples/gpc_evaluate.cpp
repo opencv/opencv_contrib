@@ -4,6 +4,7 @@
 #include "opencv2/optflow.hpp"
 #include <fstream>
 #include <iostream>
+#include <stdio.h>
 
 /* This tool finds correspondences between two images using Global Patch Collider
  * and calculates error using provided ground truth flow.
@@ -16,6 +17,13 @@
  */
 
 using namespace cv;
+
+const String keys = "{help h ?     |           | print this message}"
+                    "{@image1      |<none>     | image1}"
+                    "{@image2      |<none>     | image2}"
+                    "{@groundtruth |<none>     | path to the .flo file}"
+                    "{@output      |           | output to a file instead of displaying, output image path}"
+                    "{f forest     |forest.dump| path to the forest.dump}";
 
 const int nTrees = 5;
 const bool useOpenCL = true;
@@ -55,25 +63,40 @@ static bool fileProbe( const char *name ) { return std::ifstream( name ).good();
 
 int main( int argc, const char **argv )
 {
-  if ( argc != 4 )
+  CommandLineParser parser( argc, argv, keys );
+  parser.about( "Global Patch Collider evaluation tool" );
+
+  if ( parser.has( "help" ) )
   {
-    std::cerr << "Usage: " << argv[0] << " ImageFrom ImageTo GroundTruth" << std::endl;
+    parser.printMessage();
+    return 0;
+  }
+
+  String fromPath = parser.get< String >( 0 );
+  String toPath = parser.get< String >( 1 );
+  String gtPath = parser.get< String >( 2 );
+  String outPath = parser.get< String >( 3 );
+  String forestDumpPath = parser.get< String >( "forest" );
+
+  if ( !parser.check() )
+  {
+    parser.printErrors();
     return 1;
   }
 
-  if ( !fileProbe( "forest.dump" ) )
+  if ( !fileProbe( forestDumpPath.c_str() ) )
   {
-    std::cerr
-      << "Can't open the file with a trained model: `forest.dump`.\nYou can obtain this file either by manually training the model "
-         "using another tool with *_train suffix or by downloading one of the files trained on some publicly available dataset from "
-         "here:\nhttps://drive.google.com/open?id=0B7Hb8cfuzrIIZDFscXVYd0NBNFU"
-      << std::endl;
+    std::cerr << "Can't open the file with a trained model: `" << forestDumpPath
+              << "`.\nYou can obtain this file either by manually training the model using another tool with *_train suffix or by "
+                 "downloading one of the files trained on some publicly available dataset from "
+                 "here:\nhttps://drive.google.com/open?id=0B7Hb8cfuzrIIZDFscXVYd0NBNFU"
+              << std::endl;
     return 1;
   }
 
   ocl::setUseOpenCL( useOpenCL );
 
-  Ptr< optflow::GPCForest< nTrees > > forest = Algorithm::load< optflow::GPCForest< nTrees > >( "forest.dump" );
+  Ptr< optflow::GPCForest< nTrees > > forest = Algorithm::load< optflow::GPCForest< nTrees > >( forestDumpPath );
 
   Mat from = imread( argv[1] );
   Mat to = imread( argv[2] );
@@ -114,6 +137,19 @@ int main( int argc, const char **argv )
 
   Mat dispGroundTruth;
   displayFlow( gt, dispGroundTruth );
+
+  if ( outPath.length() )
+  {
+    putText( disp, "Sparse matching: Global Patch Collider", Point2i( 24, 40 ), FONT_HERSHEY_DUPLEX, 1, Vec3b( 1, 0, 0 ), 2, LINE_AA );
+    char buf[256];
+    sprintf( buf, "Average EPE: %.2f", error );
+    putText( disp, buf, Point2i( 24, 80 ), FONT_HERSHEY_DUPLEX, 1, Vec3b( 1, 0, 0 ), 2, LINE_AA );
+    sprintf( buf, "Number of matches: %u", (unsigned)corr.size() );
+    putText( disp, buf, Point2i( 24, 120 ), FONT_HERSHEY_DUPLEX, 1, Vec3b( 1, 0, 0 ), 2, LINE_AA );
+    disp *= 255;
+    imwrite( outPath, disp );
+    return 0;
+  }
 
   namedWindow( "Correspondences", WINDOW_AUTOSIZE );
   imshow( "Correspondences", disp );

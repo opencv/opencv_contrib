@@ -220,7 +220,7 @@ public:
 
   void read( const FileNode &fn )
   {
-    CV_Assert( T == (int)fn["ntrees"] );
+    CV_Assert( T <= (int)fn["ntrees"] );
     FileNodeIterator it = fn["trees"].begin();
     for ( int i = 0; i < T; ++i, ++it )
       tree[i].read( *it );
@@ -292,11 +292,11 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
 
   GPCDetails::dropOutliers( corr );
 }
-}
+} // namespace optflow
 
 CV_EXPORTS void write( FileStorage &fs, const String &name, const optflow::GPCTree::Node &node );
 
 CV_EXPORTS void read( const FileNode &fn, optflow::GPCTree::Node &node, optflow::GPCTree::Node );
-}
+} // namespace cv
 
 #endif
