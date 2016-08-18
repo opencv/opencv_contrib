@@ -232,30 +232,16 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
 template<> //CropLayer specialization
 Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
 {
-    int start_axis = params.get<int>("axis");
-    if (4 <= start_axis)
-        CV_Error(Error::StsBadArg, "crop axis bigger than input dim");
+    int start_axis = params.get<int>("axis", 2);
+    DictValue *paramOffset = params.ptr("offset");
 
-    DictValue paramOffset = params.get("offset");
+    std::vector<int> offset;
+    if (paramOffset)
+    {
+        for (int i = 0; i < paramOffset->size(); i++)
+            offset.push_back(paramOffset->get<int>(i));
+    }
 
-    std::vector<int> offset(4, 0);
-    if (1 < paramOffset.size())
-    {
-        if (4 - start_axis != paramOffset.size())
-            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
-        for (size_t i = start_axis; i < offset.size(); i++)
-        {
-            offset[i] = paramOffset.get<int>(i);
-        }
-    }
-    else
-    {
-        const int offset_val = paramOffset.get<int>(0);
-        for (size_t i = start_axis; i < offset.size(); i++)
-        {
-            offset[i] = offset_val;
-        }
-    }
     return Ptr<Layer>(CropLayer::create(start_axis, offset));
 }
 

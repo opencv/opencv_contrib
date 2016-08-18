@@ -10,7 +10,7 @@ def prepare_image(img):
     blob = np.moveaxis(img, 2, 0)
     blob = np.reshape(blob.astype(np.float32), (-1, 3, 224, 224))
     return blob
-    
+
 def timeit_forward(net):
     print("OpenCL:", cv2.ocl.useOpenCL())
     print("Runtime:", timeit.timeit(lambda: net.forward(), number=10))
@@ -26,7 +26,7 @@ cv2.ocl.setUseOpenCL(True)  #Disable OCL if you want
 net = dnn.readNetFromCaffe('bvlc_googlenet.prototxt', 'bvlc_googlenet.caffemodel')
 net.setBlob(".data", blob)
 net.forward()
-timeit_forward(net)        #Uncomment to check performance
+#timeit_forward(net)        #Uncomment to check performance
 
 prob = net.getBlob("prob")
 print("Output:", prob.shape, prob.dtype)

@@ -20,7 +20,7 @@ if(NOT EXISTS ${${model}_dst})
     else()
         file(DOWNLOAD ${${model}_url} ${${model}_dst} SHOW_PROGRESS STATUS status_vec)
     endif()
-    
+
     list(GET status_vec 0 status)
     list(GET status_vec 1 status_msg)
     if(status EQUAL 0)

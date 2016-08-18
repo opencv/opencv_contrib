@@ -370,6 +370,9 @@ namespace dnn
     class CV_EXPORTS_W CropLayer : public Layer
     {
     public:
+        CV_PROP int startAxis;
+        CV_PROP std::vector<int> offset;
+
         static Ptr<CropLayer> create(int start_axis, const std::vector<int> &offset);
     };
 
