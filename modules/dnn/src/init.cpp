@@ -93,11 +93,10 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(BNLL,            createLayerFromCaffe<BNLLLayer>);
     REG_RUNTIME_LAYER_FUNC(AbsVal,          createLayerFromCaffe<AbsLayer>);
     REG_RUNTIME_LAYER_FUNC(Power,           createLayerFromCaffe<PowerLayer>);
-    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer)
+    REG_RUNTIME_LAYER_CLASS(Dropout,        BlankLayer);
 
-    REG_RUNTIME_LAYER_CLASS(Crop, CropLayer)
-    REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
-
+    REG_RUNTIME_LAYER_FUNC(Crop,            createLayerFromCaffe<CropLayer>);
+    REG_RUNTIME_LAYER_FUNC(Eltwise,         createLayerFromCaffe<EltwiseLayer>);
     REG_RUNTIME_LAYER_CLASS(Permute, PermuteLayer)
     REG_RUNTIME_LAYER_CLASS(PriorBox, PriorBoxLayer)
     REG_RUNTIME_LAYER_CLASS(DetectionOutput, DetectionOutputLayer)

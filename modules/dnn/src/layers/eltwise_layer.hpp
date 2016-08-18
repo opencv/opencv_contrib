@@ -42,24 +42,18 @@
 #ifndef __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_ELTWISE_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class EltwiseLayer : public Layer
+    class EltwiseLayerImpl : public EltwiseLayer
     {
-        enum EltwiseOp
-        {
-            PROD = 0,
-            SUM = 1,
-            MAX = 2,
-        };
-
         EltwiseOp op;
         std::vector<int> coeffs;
     public:
-        EltwiseLayer(LayerParams& params);
+        EltwiseLayerImpl(EltwiseOp op, const std::vector<int> &coeffs);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };

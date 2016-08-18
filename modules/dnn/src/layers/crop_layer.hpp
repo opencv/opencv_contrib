@@ -42,19 +42,20 @@
 #ifndef __OPENCV_DNN_LAYERS_CROP_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_CROP_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class CropLayer : public Layer
+    class CropLayerImpl : public CropLayer
     {
         int start_axis;
         std::vector<int> offset;
         std::vector<int> outSizes;
 
     public:
-        CropLayer(LayerParams& params);
+        CropLayerImpl(int start_axis, const std::vector<int> &offset);
         void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
         void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     };

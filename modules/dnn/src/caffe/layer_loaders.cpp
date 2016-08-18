@@ -9,56 +9,12 @@ namespace cv
 namespace dnn
 {
 
-//Utils
-
-//Extracts params used into Conv, Deconv and Pooling layers
-static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride)
-{
-    if (params.has("kernel_h") && params.has("kernel_w"))
-    {
-        kernel.height = params.get<int>("kernel_h");
-        kernel.width = params.get<int>("kernel_w");
-    }
-    else if (params.has("kernel_size"))
-    {
-        kernel.height = kernel.width = params.get<int>("kernel_size");
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
-    }
-    CV_Assert(kernel.height > 0 && kernel.width > 0);
-
-    if (params.has("pad_h") && params.has("pad_w"))
-    {
-        pad.height = params.get<int>("pad_h");
-        pad.width = params.get<int>("pad_w");
-    }
-    else
-    {
-        pad.height = pad.width = params.get<int>("pad", 0);
-    }
-    CV_Assert(pad.height >= 0 && pad.width >= 0);
-
-    if (params.has("stride_h") && params.has("stride_w"))
-    {
-        stride.height = params.get<int>("stride_h");
-        stride.width = params.get<int>("stride_w");
-    }
-    else
-    {
-        stride.height = stride.width = params.get<int>("stride", 1);
-    }
-    CV_Assert(stride.height > 0 && stride.width > 0);
-}
-
 //Layers
 
 //Convolution and Deconvolution
 static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParams &params)
 {
     l->setParamsFrom(params);
-    //getCaffeConvParams(params, l->kernel, l->pad, l->stride);
     getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height, l->pad.width, l->stride.height, l->stride.width, l->dilation.height, l->dilation.width);
 
     bool bias = params.get<bool>("bias_term", true);
@@ -273,6 +229,66 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
     return Ptr<Layer>(PowerLayer::create(power, scale, shift));
 }
 
+template<> //CropLayer specialization
+Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
+{
+    int start_axis = params.get<int>("axis");
+    if (4 <= start_axis)
+        CV_Error(Error::StsBadArg, "crop axis bigger than input dim");
+
+    DictValue paramOffset = params.get("offset");
+
+    std::vector<int> offset(4, 0);
+    if (1 < paramOffset.size())
+    {
+        if (4 - start_axis != paramOffset.size())
+            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+        for (size_t i = start_axis; i < offset.size(); i++)
+        {
+            offset[i] = paramOffset.get<int>(i);
+        }
+    }
+    else
+    {
+        const int offset_val = paramOffset.get<int>(0);
+        for (size_t i = start_axis; i < offset.size(); i++)
+        {
+            offset[i] = offset_val;
+        }
+    }
+    return Ptr<Layer>(CropLayer::create(start_axis, offset));
+}
+
+template<> //Power specialization
+Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
+{
+    EltwiseLayer::EltwiseOp op = EltwiseLayer::SUM;
+    if (params.has("operation"))
+    {
+        String operation = params.get<String>("operation").toLowerCase();
+        if (operation == "prod")
+            op = EltwiseLayer::PROD;
+        else if (operation == "sum")
+            op = EltwiseLayer::SUM;
+        else if (operation == "max")
+            op = EltwiseLayer::MAX;
+        else
+            CV_Error(cv::Error::StsBadArg, "Unknown operaticon type \"" + operation + "\"");
+    }
+
+    std::vector<int> coeffs;
+    if (params.has("coeff"))
+    {
+        DictValue paramCoeff = params.get("coeff");
+        coeffs.resize(paramCoeff.size(), 1);
+        for (int i = 0; i < paramCoeff.size(); i++)
+        {
+            coeffs[i] = paramCoeff.get<int>(i);
+        }
+    }
+    return Ptr<Layer>(EltwiseLayer::create(op, coeffs));
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
@@ -291,6 +307,9 @@ template Ptr<Layer> createLayerFromCaffe<TanHLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<AbsLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<BNLLLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams&);
+
+template Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams&);
 
 }
 }

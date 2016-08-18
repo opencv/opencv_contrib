@@ -365,6 +365,27 @@ namespace dnn
         static CV_WRAP Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
     };
 
+    /* Layers using in semantic segmentation */
+
+    class CV_EXPORTS_W CropLayer : public Layer
+    {
+    public:
+        static Ptr<CropLayer> create(int start_axis, const std::vector<int> &offset);
+    };
+
+    class CV_EXPORTS_W EltwiseLayer : public Layer
+    {
+    public:
+        enum EltwiseOp
+        {
+            PROD = 0,
+            SUM = 1,
+            MAX = 2,
+        };
+
+        static Ptr<EltwiseLayer> create(EltwiseOp op, const std::vector<int> &coeffs);
+    };
+
 //! @}
 //! @}
 

@@ -47,37 +47,13 @@ namespace cv
 {
 namespace dnn
 {
-    EltwiseLayer::EltwiseLayer(LayerParams &params) : Layer(params)
+    EltwiseLayerImpl::EltwiseLayerImpl(EltwiseOp op_, const std::vector<int> &coeffs_)
     {
-        if (params.has("operation"))
-        {
-            String operation = params.get<String>("operation").toLowerCase();
-            if (operation == "prod")
-                op = PROD;
-            else if (operation == "sum")
-                op = SUM;
-            else if (operation == "max")
-                op = MAX;
-            else
-                CV_Error(cv::Error::StsBadArg, "Unknown operaticon type \"" + operation + "\"");
-        }
-        else
-        {
-            op = SUM;
-        }
-
-        if (params.has("coeff"))
-        {
-            DictValue paramCoeff = params.get("coeff");
-            coeffs.resize(paramCoeff.size(), 1);
-            for (int i = 0; i < paramCoeff.size(); i++)
-            {
-                coeffs[i] = paramCoeff.get<int>(i);
-            }
-        }
+        op = op_;
+        coeffs = coeffs_;
     }
 
-    void EltwiseLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    void EltwiseLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
     {
         CV_Assert(2 <= inputs.size());
         CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
@@ -92,7 +68,7 @@ namespace dnn
         outputs[0].create(shape0);
     }
 
-    void EltwiseLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    void EltwiseLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
     {
         switch (op)
         {
@@ -141,6 +117,11 @@ namespace dnn
             CV_Assert(0);
             break;
         };
+    }
+
+    Ptr<EltwiseLayer> EltwiseLayer::create(EltwiseOp op, const std::vector<int> &coeffs)
+    {
+        return Ptr<EltwiseLayer>(new EltwiseLayerImpl(op, coeffs));
     }
 }
 }

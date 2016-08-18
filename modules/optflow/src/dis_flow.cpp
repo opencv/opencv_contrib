@@ -110,6 +110,9 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     vector<Mat_<float> > Ux; //!< x component of the flow vectors
     vector<Mat_<float> > Uy; //!< y component of the flow vectors
 
+    vector<Mat_<float> > initial_Ux; //!< x component of the initial flow field, if one was passed as an input
+    vector<Mat_<float> > initial_Uy; //!< y component of the initial flow field, if one was passed as an input
+
     Mat_<Vec2f> U; //!< a buffer for the merged flow
 
     Mat_<float> Sx; //!< intermediate sparse flow representation (x component)
@@ -121,8 +124,8 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     Mat_<float> I0xy_buf; //!< sum of x and y gradient products
 
     /* Extra buffers that are useful if patch mean-normalization is used: */
-    Mat_<float> I0x_buf; //!< sum of of x gradient values
-    Mat_<float> I0y_buf; //!< sum of of y gradient values
+    Mat_<float> I0x_buf; //!< sum of x gradient values
+    Mat_<float> I0y_buf; //!< sum of y gradient values
 
     /* Auxiliary buffers used in structure tensor computation: */
     Mat_<float> I0xx_buf_aux;
@@ -134,7 +137,7 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     vector<Ptr<VariationalRefinement> > variational_refinement_processors;
 
   private: //!< private methods and parallel sections
-    void prepareBuffers(Mat &I0, Mat &I1);
+    void prepareBuffers(Mat &I0, Mat &I1, Mat &flow, bool use_flow);
     void precomputeStructureTensor(Mat &dst_I0xx, Mat &dst_I0yy, Mat &dst_I0xy, Mat &dst_I0x, Mat &dst_I0y, Mat &I0x,
                                    Mat &I0y);
 
@@ -144,10 +147,11 @@ class DISOpticalFlowImpl : public DISOpticalFlow
         int nstripes, stripe_sz;
         int hs;
         Mat *Sx, *Sy, *Ux, *Uy, *I0, *I1, *I0x, *I0y;
-        int num_iter;
+        int num_iter, pyr_level;
 
         PatchInverseSearch_ParBody(DISOpticalFlowImpl &_dis, int _nstripes, int _hs, Mat &dst_Sx, Mat &dst_Sy,
-                                   Mat &src_Ux, Mat &src_Uy, Mat &_I0, Mat &_I1, Mat &_I0x, Mat &_I0y, int _num_iter);
+                                   Mat &src_Ux, Mat &src_Uy, Mat &_I0, Mat &_I1, Mat &_I0x, Mat &_I0y, int _num_iter,
+                                   int _pyr_level);
         void operator()(const Range &range) const;
     };
 
@@ -185,7 +189,7 @@ DISOpticalFlowImpl::DISOpticalFlowImpl()
         variational_refinement_processors.push_back(createVariationalFlowRefinement());
 }
 
-void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1)
+void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1, Mat &flow, bool use_flow)
 {
     I0s.resize(coarsest_scale + 1);
     I1s.resize(coarsest_scale + 1);
@@ -194,6 +198,14 @@ void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1)
     I0ys.resize(coarsest_scale + 1);
     Ux.resize(coarsest_scale + 1);
     Uy.resize(coarsest_scale + 1);
+
+    Mat flow_uv[2];
+    if (use_flow)
+    {
+        split(flow, flow_uv);
+        initial_Ux.resize(coarsest_scale + 1);
+        initial_Uy.resize(coarsest_scale + 1);
+    }
 
     int fraction = 1;
     int cur_rows = 0, cur_cols = 0;
@@ -237,8 +249,6 @@ void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1)
             resize(I1s[i - 1], I1s[i], I1s[i].size(), 0.0, 0.0, INTER_AREA);
         }
 
-        fraction *= 2;
-
         if (i >= finest_scale)
         {
             I1s_ext[i].create(cur_rows + 2 * border_size, cur_cols + 2 * border_size);
@@ -253,7 +263,17 @@ void DISOpticalFlowImpl::prepareBuffers(Mat &I0, Mat &I1)
             variational_refinement_processors[i]->setGamma(variational_refinement_gamma);
             variational_refinement_processors[i]->setSorIterations(5);
             variational_refinement_processors[i]->setFixedPointIterations(variational_refinement_iter);
+
+            if (use_flow)
+            {
+                resize(flow_uv[0], initial_Ux[i], Size(cur_cols, cur_rows));
+                initial_Ux[i] /= fraction;
+                resize(flow_uv[1], initial_Uy[i], Size(cur_cols, cur_rows));
+                initial_Uy[i] /= fraction;
+            }
         }
+
+        fraction *= 2;
     }
 }
 
@@ -377,9 +397,10 @@ void DISOpticalFlowImpl::precomputeStructureTensor(Mat &dst_I0xx, Mat &dst_I0yy,
 DISOpticalFlowImpl::PatchInverseSearch_ParBody::PatchInverseSearch_ParBody(DISOpticalFlowImpl &_dis, int _nstripes,
                                                                            int _hs, Mat &dst_Sx, Mat &dst_Sy,
                                                                            Mat &src_Ux, Mat &src_Uy, Mat &_I0, Mat &_I1,
-                                                                           Mat &_I0x, Mat &_I0y, int _num_iter)
+                                                                           Mat &_I0x, Mat &_I0y, int _num_iter,
+                                                                           int _pyr_level)
     : dis(&_dis), nstripes(_nstripes), hs(_hs), Sx(&dst_Sx), Sy(&dst_Sy), Ux(&src_Ux), Uy(&src_Uy), I0(&_I0), I1(&_I1),
-      I0x(&_I0x), I0y(&_I0y), num_iter(_num_iter)
+      I0x(&_I0x), I0y(&_I0y), num_iter(_num_iter), pyr_level(_pyr_level)
 {
     stripe_sz = (int)ceil(hs / (double)nstripes);
 }
@@ -676,10 +697,10 @@ inline float computeSSDMeanNorm(uchar *I0_ptr, uchar *I1_ptr, int I0_stride, int
 void DISOpticalFlowImpl::PatchInverseSearch_ParBody::operator()(const Range &range) const
 {
     // force separate processing of stripes if we are using spatial propagation:
-    if(dis->use_spatial_propagation && range.end>range.start+1)
+    if (dis->use_spatial_propagation && range.end > range.start + 1)
     {
-        for(int n=range.start;n<range.end;n++)
-            (*this)(Range(n,n+1));
+        for (int n = range.start; n < range.end; n++)
+            (*this)(Range(n, n + 1));
         return;
     }
     int psz = dis->patch_size;
@@ -707,6 +728,15 @@ void DISOpticalFlowImpl::PatchInverseSearch_ParBody::operator()(const Range &ran
     /* And extra buffers for mean-normalization: */
     float *x_ptr = dis->I0x_buf.ptr<float>();
     float *y_ptr = dis->I0y_buf.ptr<float>();
+
+    bool use_temporal_candidates = false;
+    float *initial_Ux_ptr = NULL, *initial_Uy_ptr = NULL;
+    if (!dis->initial_Ux.empty())
+    {
+        initial_Ux_ptr = dis->initial_Ux[pyr_level].ptr<float>();
+        initial_Uy_ptr = dis->initial_Uy[pyr_level].ptr<float>();
+        use_temporal_candidates = true;
+    }
 
     int i, j, dir;
     int start_is, end_is, start_js, end_js;
@@ -772,11 +802,28 @@ void DISOpticalFlowImpl::PatchInverseSearch_ParBody::operator()(const Range &ran
                     Sy_ptr[is * dis->ws + js] = Uy_ptr[(i + psz2) * dis->w + j + psz2];
                 }
 
+                float min_SSD = INF, cur_SSD;
+                if (use_temporal_candidates || dis->use_spatial_propagation)
+                {
+                    COMPUTE_SSD(min_SSD, Sx_ptr[is * dis->ws + js], Sy_ptr[is * dis->ws + js]);
+                }
+
+                if (use_temporal_candidates)
+                {
+                    /* Try temporal candidates (vectors from the initial flow field that was passed to the function) */
+                    COMPUTE_SSD(cur_SSD, initial_Ux_ptr[(i + psz2) * dis->w + j + psz2],
+                                initial_Uy_ptr[(i + psz2) * dis->w + j + psz2]);
+                    if (cur_SSD < min_SSD)
+                    {
+                        min_SSD = cur_SSD;
+                        Sx_ptr[is * dis->ws + js] = initial_Ux_ptr[(i + psz2) * dis->w + j + psz2];
+                        Sy_ptr[is * dis->ws + js] = initial_Uy_ptr[(i + psz2) * dis->w + j + psz2];
+                    }
+                }
+
                 if (dis->use_spatial_propagation)
                 {
-                    /* Updating the current Sx_ptr, Sy_ptr to the best candidate: */
-                    float min_SSD, cur_SSD;
-                    COMPUTE_SSD(min_SSD, Sx_ptr[is * dis->ws + js], Sy_ptr[is * dis->ws + js]);
+                    /* Try spatial candidates: */
                     if (dir * js > dir * start_js)
                     {
                         COMPUTE_SSD(cur_SSD, Sx_ptr[is * dis->ws + js - dir], Sy_ptr[is * dis->ws + js - dir]);
@@ -967,12 +1014,16 @@ void DISOpticalFlowImpl::calc(InputArray I0, InputArray I1, InputOutputArray flo
 
     Mat I0Mat = I0.getMat();
     Mat I1Mat = I1.getMat();
-    flow.create(I1Mat.size(), CV_32FC2);
+    bool use_input_flow = false;
+    if (flow.sameSize(I0) && flow.depth() == CV_32F && flow.channels() == 2)
+        use_input_flow = true;
+    else
+        flow.create(I1Mat.size(), CV_32FC2);
     Mat &flowMat = flow.getMatRef();
     coarsest_scale = (int)(log((2 * I0Mat.cols) / (4.0 * patch_size)) / log(2.0) + 0.5) - 1;
     int num_stripes = getNumThreads();
 
-    prepareBuffers(I0Mat, I1Mat);
+    prepareBuffers(I0Mat, I1Mat, flowMat, use_input_flow);
     Ux[coarsest_scale].setTo(0.0f);
     Uy[coarsest_scale].setTo(0.0f);
 
@@ -990,13 +1041,13 @@ void DISOpticalFlowImpl::calc(InputArray I0, InputArray I1, InputOutputArray flo
              * with spatial propagation reproducible
              */
             parallel_for_(Range(0, 8), PatchInverseSearch_ParBody(*this, 8, hs, Sx, Sy, Ux[i], Uy[i], I0s[i],
-                                                                  I1s_ext[i], I0xs[i], I0ys[i], 2));
+                                                                  I1s_ext[i], I0xs[i], I0ys[i], 2, i));
         }
         else
         {
             parallel_for_(Range(0, num_stripes),
                           PatchInverseSearch_ParBody(*this, num_stripes, hs, Sx, Sy, Ux[i], Uy[i], I0s[i], I1s_ext[i],
-                                                     I0xs[i], I0ys[i], 1));
+                                                     I0xs[i], I0ys[i], 1, i));
         }
 
         parallel_for_(Range(0, num_stripes),

@@ -61,6 +61,8 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    cv::dnn::initModule();          //Required if OpenCV is built as static libs
+
     String modelConfiguration = parser.get<string>("proto");
     String modelBinary = parser.get<string>("model");
 

@@ -86,7 +86,8 @@ static void colorizeSegmentation(dnn::Blob &score, const vector<cv::Vec3b> &colo
 
 int main(int argc, char **argv)
 {
-    cv::ocl::setUseOpenCL(false);
+    cv::dnn::initModule();          //Required if OpenCV is built as static libs
+    cv::ocl::setUseOpenCL(false);   //OpenCL switcher
 
     String modelTxt = fcnType + "-heavy-pascal.prototxt";
     String modelBin = fcnType + "-heavy-pascal.caffemodel";
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
     }
 
     resize(img, img, Size(500, 500));       //FCN accepts 500x500 RGB-images
-    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob image batch
+    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob batch of images
     //! [Prepare blob]
 
     //! [Set input blob]

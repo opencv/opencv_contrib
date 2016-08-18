@@ -191,9 +191,9 @@ void col2im_cpu(const Dtype* data_col,
                 int dilation_h, int dilation_w,
                 Dtype* data_im)
 {
-    int height_col = (height + 2 * pad_h - (dilation_h * (patch_h - 1) + 1)) / stride_h + 1;
-    int width_col = (width + 2 * pad_w - (dilation_w * (patch_w - 1) + 1)) / stride_w + 1;
-    int channels_col = channels * patch_h * patch_w;
+    int height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
+    int width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+    int channels_col = channels * kernel_h * kernel_w;
 
     std::memset(data_im, 0, height * width * channels * sizeof(Dtype));
 
