@@ -101,9 +101,9 @@ public:
  */
 struct GPCTrainingParams
 {
-  const unsigned maxTreeDepth;  // Maximum tree depth to stop partitioning.
-  const int minNumberOfSamples; // Minimum number of samples in the node to stop partitioning.
-  const bool printProgress;
+  unsigned maxTreeDepth;  // Maximum tree depth to stop partitioning.
+  int minNumberOfSamples; // Minimum number of samples in the node to stop partitioning.
+  bool printProgress;
 
   GPCTrainingParams( unsigned _maxTreeDepth = 24, int _minNumberOfSamples = 3, bool _printProgress = true )
       : maxTreeDepth( _maxTreeDepth ), minNumberOfSamples( _minNumberOfSamples ), printProgress( _printProgress )
@@ -120,9 +120,8 @@ struct GPCTrainingParams
  */
 struct GPCMatchingParams
 {
-  const bool useOpenCL;      // Whether to use OpenCL to speed up the matching.
-  const int hashTableFactor; // Hash table size multiplier. Change with care! Reducing this will lead to a less number of matches and less
-                             // memory usage.
+  bool useOpenCL;      // Whether to use OpenCL to speed up the matching.
+  int hashTableFactor; // Hash table size multiplier. Change with care! Reducing this will lead to a less number of matches and less memory usage.
 
   GPCMatchingParams( bool _useOpenCL = false, int _hashTableFactor = 73 ) : useOpenCL( _useOpenCL ), hashTableFactor( _hashTableFactor )
   {
