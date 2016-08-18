@@ -122,7 +122,7 @@ int main( int argc, const char **argv )
   {
     const Point2f a = corr[i].first;
     const Point2f b = corr[i].second;
-    const Point2f c = a + gt.at< Point2f >( a.y, a.x );
+    const Point2f c = a + gt.at< Point2f >( corr[i].first.y, corr[i].first.x );
     error += normL2( b - c );
     circle( disp, a, 3, getFlowColor( b - a ), -1 );
     circle( dispErr, a, 3, getFlowColor( b - c, false, 32 ), -1 );
