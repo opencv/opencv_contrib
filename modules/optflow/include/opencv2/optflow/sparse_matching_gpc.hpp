@@ -111,6 +111,9 @@ struct GPCTrainingParams
     CV_Assert( _maxTreeDepth > 0 );
     CV_Assert( _minNumberOfSamples >= 2 );
   }
+
+  GPCTrainingParams( const GPCTrainingParams &params )
+      : maxTreeDepth( params.maxTreeDepth ), minNumberOfSamples( params.minNumberOfSamples ), printProgress( params.printProgress ) {}
 };
 
 /** @brief Class encapsulating matching parameters.
@@ -125,6 +128,8 @@ struct GPCMatchingParams
   {
     CV_Assert( _hashTableFactor > 1 );
   }
+
+  GPCMatchingParams( const GPCMatchingParams &params ) : useOpenCL( params.useOpenCL ), hashTableFactor( params.hashTableFactor ) {}
 };
 
 class CV_EXPORTS_W GPCTree : public Algorithm
@@ -169,7 +174,7 @@ private:
     unsigned leaf[T]; // Inside which leaf of the tree 0..T the patch fell?
     Point2i coord;    // Patch coordinates.
 
-    unsigned getHash( size_t mod ) const
+    uint64 getHash( uint64 mod ) const
     {
       uint64 hash = 0;
       for ( int i = 0; i < T; ++i )
@@ -230,6 +235,7 @@ public:
    * @param[in] imgFrom First image in a sequence.
    * @param[in] imgTo Second image in a sequence.
    * @param[out] corr Output vector with pairs of corresponding points.
+   * @param[in] params Additional matching parameters for fine-tuning.
    */
   void findCorrespondences( InputArray imgFrom, InputArray imgTo, std::vector< std::pair< Point2i, Point2i > > &corr,
                             const GPCMatchingParams params = GPCMatchingParams() ) const;
