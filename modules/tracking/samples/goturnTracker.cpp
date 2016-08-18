@@ -40,6 +40,11 @@
 //M*/
 
 //Demo of GOTURN tracker
+//In order to use GOTURN tracker, GOTURN architecture goturn.prototxt and goturn.caffemodel are required to exist in root folder.
+//There are 2 ways to get caffemodel:
+//1 - Train you own GOTURN model using <https://github.com/Auron-X/GOTURN_Training_Toolkit>
+//2 - Download pretrained caffemodel from <https://github.com/opencv/opencv_extra> 
+
 #include "opencv2/datasets/track_alov.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
