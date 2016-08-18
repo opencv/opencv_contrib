@@ -98,9 +98,9 @@ int main( int argc, const char **argv )
 
   Ptr< optflow::GPCForest< nTrees > > forest = Algorithm::load< optflow::GPCForest< nTrees > >( forestDumpPath );
 
-  Mat from = imread( argv[1] );
-  Mat to = imread( argv[2] );
-  Mat gt = optflow::readOpticalFlow( argv[3] );
+  Mat from = imread( fromPath );
+  Mat to = imread( toPath );
+  Mat gt = optflow::readOpticalFlow( gtPath );
   std::vector< std::pair< Point2i, Point2i > > corr;
 
   TickMeter meter;
