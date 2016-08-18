@@ -77,7 +77,7 @@ void initModule()
     REG_RUNTIME_LAYER_FUNC(Split,           createLayerFromCaffe<SplitLayer>);
     REG_RUNTIME_LAYER_FUNC(Concat,          createLayerFromCaffe<ConcatLayer>);
     REG_RUNTIME_LAYER_FUNC(Reshape,         createLayerFromCaffe<ReshapeLayer>);
-    REG_RUNTIME_LAYER_FUNC(Flatten,         createFlattenLayerFromCaffe);
+    REG_RUNTIME_LAYER_CLASS(Flatten,        FlattenLayer);
 
     REG_RUNTIME_LAYER_FUNC(Convolution,     createLayerFromCaffe<ConvolutionLayer>);
     REG_RUNTIME_LAYER_FUNC(Deconvolution,   createLayerFromCaffe<DeconvolutionLayer>);
@@ -99,7 +99,6 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(Eltwise, EltwiseLayer)
 
     REG_RUNTIME_LAYER_CLASS(Permute, PermuteLayer)
-    //REG_RUNTIME_LAYER_CLASS(Flatten, FlattenLayer)
     REG_RUNTIME_LAYER_CLASS(PriorBox, PriorBoxLayer)
     REG_RUNTIME_LAYER_CLASS(DetectionOutput, DetectionOutputLayer)
     REG_RUNTIME_LAYER_CLASS(NormalizeBBox, NormalizeBBoxLayer)

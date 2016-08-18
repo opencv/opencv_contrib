@@ -50,52 +50,10 @@ namespace cv
 namespace dnn
 {
 
-const std::string FlattenLayer::_layerName = std::string("Flatten");
-
-bool FlattenLayer::getParameterDict(const LayerParams &params,
-                                    const std::string &parameterName,
-                                    DictValue& result)
-{
-    if (!params.has(parameterName))
-    {
-        return false;
-    }
-
-    result = params.get(parameterName);
-    return true;
-}
-
-template<typename T>
-T FlattenLayer::getParameter(const LayerParams &params,
-                             const std::string &parameterName,
-                             const size_t &idx,
-                             const bool required,
-                             const T& defaultValue)
-{
-    DictValue dictValue;
-    bool success = getParameterDict(params, parameterName, dictValue);
-    if(!success)
-    {
-        if(required)
-        {
-            std::string message = _layerName;
-            message += " layer parameter does not contain ";
-            message += parameterName;
-            message += " parameter.";
-            CV_Error(Error::StsBadArg, message);
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
-    return dictValue.get<T>(idx);
-}
-
 FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
 {
-    _startAxis = getParameter<int>(params, "axis");
-    _endAxis = getParameter<int>(params, "end_axis", 0, false, -1);
+    _startAxis = params.get<int>("axis", 1);
+    _endAxis = params.get<int>("end_axis", -1);
 }
 
 void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
@@ -114,35 +72,36 @@ void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
 {
     checkInputs(inputs);
 
-    _numAxes = inputs[0]->shape().dims();
-    if(_endAxis <= 0)
-    {
-        _endAxis += _numAxes;
-    }
+    _numAxes = inputs[0]->dims();
+    _endAxis = inputs[0]->canonicalAxis(_endAxis);
     CV_Assert(_startAxis >= 0);
     CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
 
     size_t flattenedDimensionSize = 1;
     for (int i = _startAxis; i <= _endAxis; i++)
     {
-        flattenedDimensionSize *= inputs[0]->shape()[i];
+        flattenedDimensionSize *= inputs[0]->size(i);
     }
 
-    std::vector<int> outputShape;
+    std::vector<int> outputShapeVec;
     for (int i = 0; i < _startAxis; i++)
     {
-        outputShape.push_back(inputs[0]->shape()[i]);
+        outputShapeVec.push_back(inputs[0]->size(i));
     }
-    outputShape.push_back(flattenedDimensionSize);
+    outputShapeVec.push_back(flattenedDimensionSize);
     for (size_t i = _endAxis + 1; i < _numAxes; i++)
     {
-        outputShape.push_back(inputs[0]->shape()[i]);
+        outputShapeVec.push_back(inputs[0]->size(i));
     }
-    CV_Assert(outputShape.size() <= 4);
+    CV_Assert(outputShapeVec.size() <= 4);
+
+    resultShape = BlobShape(outputShapeVec);
 
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[i].create(BlobShape(outputShape));
+        //in-place
+        outputs[i].shareFrom(*inputs[i]);
+        outputs[i].reshape(resultShape);
     }
 }
 
@@ -150,7 +109,8 @@ void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
 {
     for (size_t j = 0; j < inputs.size(); j++)
     {
-        outputs[j].matRef() = inputs[j]->matRef();
+        outputs[j].shareFrom(*inputs[j]);
+        outputs[j].reshape(resultShape);
     }
 }
 }

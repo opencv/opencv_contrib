@@ -136,7 +136,7 @@ template<typename XMat>
 void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
-    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
+    XMat biasesMat  = (bias) ? reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1)) : XMat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {

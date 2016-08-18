@@ -204,11 +204,6 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange));
 }
 
-Ptr<Layer> createFlattenLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(ReshapeLayer::create(Shape(0, -1)));
-}
-
 template<>
 Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams& params)
 {

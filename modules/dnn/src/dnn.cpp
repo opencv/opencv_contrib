@@ -367,9 +367,9 @@ struct Net::Impl
 
         //allocate layer
         ld.outputBlobs.resize(std::max((size_t)1, ld.requiredOutputs.size())); //layer produce at least one output blob
-        Ptr<Layer> layerPtr = ld.getLayerInstance();
         try
         {
+            Ptr<Layer> layerPtr = ld.getLayerInstance();
             layerPtr->allocate(ld.inputBlobs, ld.outputBlobs);
         }
         catch (const cv::Exception &err)
