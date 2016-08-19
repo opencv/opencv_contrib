@@ -43,6 +43,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/core.hpp"
 #include "opencv2/video.hpp"
 
+#include "opencv2/optflow/pcaflow.hpp"
+#include "opencv2/optflow/sparse_matching_gpc.hpp"
+
 /**
 @defgroup optflow Optical Flow Algorithms
 
@@ -167,7 +170,7 @@ procedure can be found in @cite Brox2004
 class CV_EXPORTS_W VariationalRefinement : public DenseOpticalFlow
 {
 public:
-    /** @brief calc function overload to handle separate horizontal (u) and vertical (v) flow components
+    /** @brief @ref calc function overload to handle separate horizontal (u) and vertical (v) flow components
     (to avoid extra splits/merges) */
     CV_WRAP virtual void calcUV(InputArray I0, InputArray I1, InputOutputArray flow_u, InputOutputArray flow_v) = 0;
 
@@ -255,6 +258,11 @@ This class implements the Dense Inverse Search (DIS) optical flow algorithm. Mor
 details about the algorithm can be found at @cite Kroeger2016 . Includes three presets with preselected
 parameters to provide reasonable trade-off between speed and quality. However, even the slowest preset is
 still relatively fast, use DeepFlow if you need better quality and don't care about speed.
+
+This implementation includes several additional features compared to the algorithm described in the paper,
+including spatial propagation of flow vectors (@ref getUseSpatialPropagation), as well as an option to
+utilize an initial flow approximation passed to @ref calc (which is, essentially, temporal propagation,
+if the previous frame's flow field is passed).
 */
 class CV_EXPORTS_W DISOpticalFlow : public DenseOpticalFlow
 {
@@ -323,7 +331,7 @@ public:
 
     /** @brief Whether to use mean-normalization of patches when computing patch distance. It is turned on
         by default as it typically provides a noticeable quality boost because of increased robustness to
-        illumanition variations. Turn it off if you are certain that your sequence does't contain any changes
+        illumination variations. Turn it off if you are certain that your sequence doesn't contain any changes
         in illumination.
     @see setUseMeanNormalization */
     CV_WRAP virtual bool getUseMeanNormalization() const = 0;

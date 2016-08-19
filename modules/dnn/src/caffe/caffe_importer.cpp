@@ -191,7 +191,7 @@ namespace
             else if (pbBlob.has_shape())
             {
                 const caffe::BlobShape &_shape = pbBlob.shape();
-                BlobShape shape(_shape.dim_size());
+                BlobShape shape = BlobShape::all(_shape.dim_size());
 
                 for (int i = 0; i < _shape.dim_size(); i++)
                     shape[i] = (int)_shape.dim(i);
@@ -201,7 +201,7 @@ namespace
             else
             {
                 CV_Error(Error::StsError, "Unknown shape of input blob");
-                return BlobShape(-1);
+                return BlobShape();
             }
         }
 

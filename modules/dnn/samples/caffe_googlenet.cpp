@@ -124,8 +124,8 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    resize(img, img, Size(224, 224));       //GoogLeNet accepts only 224x224 RGB-images
-    dnn::Blob inputBlob = dnn::Blob(img);   //Convert Mat to dnn::Blob image batch
+    resize(img, img, Size(224, 224));                   //GoogLeNet accepts only 224x224 RGB-images
+    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob batch of images
     //! [Prepare blob]
 
     //! [Set input blob]

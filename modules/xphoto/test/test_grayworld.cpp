@@ -81,7 +81,13 @@ namespace cvtest {
 
             Mat currentResult;
             xphoto::autowbGrayworld(src, currentResult, wb_thresh);
+            ASSERT_LE(cv::norm(currentResult, referenceResult, NORM_INF), acc_thresh);
 
+            // test the 16-bit depth:
+            Mat currentResult_16U, src_16U;
+            src.convertTo(src_16U, CV_16UC3, 256.0);
+            xphoto::autowbGrayworld(src_16U, currentResult_16U, wb_thresh);
+            currentResult_16U.convertTo(currentResult, CV_8UC3, 1/256.0);
             ASSERT_LE(cv::norm(currentResult, referenceResult, NORM_INF), acc_thresh);
         }
     }
