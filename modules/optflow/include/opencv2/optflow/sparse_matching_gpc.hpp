@@ -105,7 +105,7 @@ struct GPCTrainingParams
   int minNumberOfSamples; // Minimum number of samples in the node to stop partitioning.
   bool printProgress;
 
-  GPCTrainingParams( unsigned _maxTreeDepth = 24, int _minNumberOfSamples = 3, bool _printProgress = true )
+  GPCTrainingParams( unsigned _maxTreeDepth = 20, int _minNumberOfSamples = 3, bool _printProgress = true )
       : maxTreeDepth( _maxTreeDepth ), minNumberOfSamples( _minNumberOfSamples ), printProgress( _printProgress )
   {
     CV_Assert( _maxTreeDepth > 0 );
