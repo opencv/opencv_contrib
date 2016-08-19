@@ -46,52 +46,59 @@
 #include <sstream>
 #include <opencv2/core.hpp>
 
-#define CHECK(cond)     cv::GLogWrapper(__FILE__, CV_Func, __LINE__, "CHECK", #cond, cond)
-#define CHECK_EQ(a, b)  cv::GLogWrapper(__FILE__, CV_Func, __LINE__, "CHECK", #a"="#b, ((a) == (b)))
-#define LOG(TYPE)       cv::GLogWrapper(__FILE__, CV_Func, __LINE__, #TYPE)
+#define CHECK(cond)     for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #cond, cond); _logger.exit(); _logger.check()) _logger.stream()
+#define CHECK_EQ(a, b)  for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #a"="#b, ((a) == (b))); _logger.exit(); _logger.check()) _logger.stream()
+#define LOG(TYPE)       for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, #TYPE); _logger.exit(); _logger.check()) _logger.stream()
 
 namespace cv
+{
+namespace dnn
 {
 
 class GLogWrapper
 {
-    std::stringstream stream;
     const char *file, *func, *type, *cond_str;
     int line;
-    bool cond_staus;
+    bool cond_staus, exit_loop;
+    std::stringstream sstream;
 
 public:
 
     GLogWrapper(const char *_file, const char *_func, int _line,
-                const char *_type,
-                const char *_cond_str = NULL, bool _cond_status = true
-               ) :
-               file(_file), func(_func), type(_type), cond_str(_cond_str),
-               line(_line), cond_staus(_cond_status) {}
+          const char *_type,
+          const char *_cond_str = NULL, bool _cond_status = true
+    ) :
+        file(_file), func(_func), type(_type), cond_str(_cond_str),
+        line(_line), cond_staus(_cond_status), exit_loop(true) {}
 
-    template<typename T>
-    GLogWrapper &operator<<(const T &v)
+    std::iostream &stream()
     {
-        if (!cond_str || cond_str && !cond_staus)
-            stream << v;
-        return *this;
+        return sstream;
     }
 
-    ~GLogWrapper()
+    bool exit()
     {
+        return exit_loop;
+    }
+
+    void check()
+    {
+        exit_loop = false;
+
         if (cond_str && !cond_staus)
         {
-            cv::error(cv::Error::StsError, "FAILED: " + String(cond_str) + "." + stream.str(), func, file, line);
+            cv::error(cv::Error::StsError, "FAILED: " + String(cond_str) + ". " + sstream.str(), func, file, line);
         }
         else if (!cond_str && strcmp(type, "CHECK"))
         {
             if (!std::strcmp(type, "INFO"))
-                std::cout << stream.str() << std::endl;
+                std::cout << sstream.str() << std::endl;
             else
-                std::cerr << stream.str() << std::endl;
+                std::cerr << sstream.str() << std::endl;
         }
     }
 };
 
+}
 }
 #endif
