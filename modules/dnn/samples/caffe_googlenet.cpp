@@ -84,6 +84,8 @@ std::vector<String> readClassNames(const char *filename = "synset_words.txt")
 
 int main(int argc, char **argv)
 {
+    cv::dnn::initModule();  //Required if OpenCV is built as static libs
+
     String modelTxt = "bvlc_googlenet.prototxt";
     String modelBin = "bvlc_googlenet.caffemodel";
     String imageFile = (argc > 1) ? argv[1] : "space_shuttle.jpg";
@@ -92,7 +94,7 @@ int main(int argc, char **argv)
     Net net = dnn::readNetFromCaffe(modelTxt, modelBin);
     //! [Read and initialize network]
 
-    //! [Check that net was read successfully]
+    //! [Check that network was read successfully]
     if (net.empty())
     {
         std::cerr << "Can't load network by using the following files: " << std::endl;
@@ -102,7 +104,7 @@ int main(int argc, char **argv)
         std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
         exit(-1);
     }
-    //! [Check that net was read successfully]
+    //! [Check that network was read successfully]
 
     //! [Prepare blob]
     Mat img = imread(imageFile);

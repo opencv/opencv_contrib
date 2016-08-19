@@ -221,7 +221,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         CV_WRAP void allocate();
 
         /** @brief Runs forward pass to compute output of layer @p toLayer.
-          * @detail By default runs forward pass for the whole network.
+          * @details By default runs forward pass for the whole network.
           */
         CV_WRAP void forward(LayerId toLayer = String());
         /** @brief Runs forward pass to compute output of layer @p toLayer, but computations start from @p startLayer */
@@ -295,7 +295,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     CV_EXPORTS_W Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
 
     /** @brief Reads a network model stored in Caffe model files.
-      * @detail This is shortcut consisting from createCaffeImporter and Net::populateNet calls.
+      * @details This is shortcut consisting from createCaffeImporter and Net::populateNet calls.
       */
     CV_EXPORTS_W Net readNetFromCaffe(const String &prototxt, const String &caffeModel = String());
 
