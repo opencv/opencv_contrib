@@ -23,10 +23,10 @@ const String keys = "{help h ?     |             | print this message}"
                     "{@image2      |<none>       | image2}"
                     "{@groundtruth |<none>       | path to the .flo file}"
                     "{@output      |             | output to a file instead of displaying, output image path}"
+                    "{g gpu        |             | use OpenCL}"
                     "{f forest     |forest.yml.gz| path to the forest.yml.gz}";
 
 const int nTrees = 5;
-const bool useOpenCL = true;
 
 static double normL2( const Point2f &v ) { return sqrt( v.x * v.x + v.y * v.y ); }
 
@@ -76,6 +76,7 @@ int main( int argc, const char **argv )
   String toPath = parser.get< String >( 1 );
   String gtPath = parser.get< String >( 2 );
   String outPath = parser.get< String >( 3 );
+  const bool useOpenCL = parser.has( "gpu" );
   String forestDumpPath = parser.get< String >( "forest" );
 
   if ( !parser.check() )
