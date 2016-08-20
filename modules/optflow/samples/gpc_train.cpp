@@ -44,7 +44,7 @@ int main( int argc, const char **argv )
   if ( parser.has( "min-samples" ) )
     params.minNumberOfSamples = parser.get< unsigned >( "min-samples" );
   if ( parser.has( "print-progress" ) )
-    params.printProgress = bool( parser.get< unsigned >( "print-progress" ) );
+    params.printProgress = parser.get< unsigned >( "print-progress" ) != 0;
 
   fillInputImagesFromCommandLine( img1, img2, gt, argc, argv );
 
