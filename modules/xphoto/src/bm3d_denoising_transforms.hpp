@@ -7,12 +7,11 @@
 //  copy or use the software.
 //
 //
-//                           License Agreement
+//                        Intel License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
-// Third party copyrights are property of their respective owners.
+// Copyright (C) 2000, Intel Corporation, all rights reserved.
+// Third party copyrights are property of their respective icvers.
 //
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
@@ -24,7 +23,7 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of the copyright holders may not be used to endorse or promote products
+//   * The name of Intel Corporation may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
@@ -40,14 +39,35 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#ifndef __OPENCV_BM3D_DENOISING_TRANSFORMS_HPP__
+#define __OPENCV_BM3D_DENOISING_TRANSFORMS_HPP__
 
-/** @defgroup xphoto Additional photo processing algorithms
-*/
+#include "bm3d_denoising_transforms_haar.hpp"
 
-#include "xphoto/inpainting.hpp"
-#include "xphoto/white_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#include "xphoto/bm3d_image_denoising.hpp"
+namespace cv
+{
+namespace xphoto
+{
+
+// Following class contains interface of the tranform domain functions.
+template <typename T, typename TT>
+class Transform
+{
+  public:
+    // 2D transforms
+    typedef void(*Forward2D)(const T *ptr, TT *dst, const int &step, const int blockSize);
+    typedef void(*Inverse2D)(TT *src, const int blockSize);
+
+    // 1D transforms
+    typedef void(*Forward1D)(BlockMatch<TT, int, TT> *z, const int &n, const unsigned &N);
+    typedef void(*Inverse1D)(BlockMatch<TT, int, TT> *z, const int &n, const unsigned &N);
+
+    // Specialized 1D transforms
+    typedef void(*Forward1Ds)(BlockMatch<TT, int, TT> *z, const int &n);
+    typedef void(*Inverse1Ds)(BlockMatch<TT, int, TT> *z, const int &n);
+};
+
+}  // namespace xphoto
+}  // namespace cv
+
 #endif
