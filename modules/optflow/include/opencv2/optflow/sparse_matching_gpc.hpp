@@ -37,18 +37,16 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-/*
-Implementation of the Global Patch Collider algorithm from the following paper:
-http://research.microsoft.com/en-us/um/people/pkohli/papers/wfrik_cvpr2016.pdf
-
-@InProceedings{Wang_2016_CVPR,
- author = {Wang, Shenlong and Ryan Fanello, Sean and Rhemann, Christoph and Izadi, Shahram and Kohli, Pushmeet},
- title = {The Global Patch Collider},
- booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
- month = {June},
- year = {2016}
-}
-*/
+/**
+ * @file   sparse_matching_gpc.hpp
+ * @author Vladislav Samsonov <vvladxx@gmail.com>
+ * @brief  Implementation of the Global Patch Collider.
+ *
+ * Implementation of the Global Patch Collider algorithm from the following paper:
+ * http://research.microsoft.com/en-us/um/people/pkohli/papers/wfrik_cvpr2016.pdf
+ *
+ * @cite Wang_2016_CVPR
+ */
 
 #ifndef __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
 #define __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
@@ -61,9 +59,12 @@ namespace cv
 namespace optflow
 {
 
+//! @addtogroup optflow
+//! @{
+
 struct CV_EXPORTS_W GPCPatchDescriptor
 {
-  static const unsigned nFeatures = 18; // number of features in a patch descriptor
+  static const unsigned nFeatures = 18; //!< number of features in a patch descriptor
   Vec< double, nFeatures > feature;
 
   GPCPatchDescriptor( const Mat *imgCh, int i, int j );
@@ -101,8 +102,8 @@ public:
  */
 struct GPCTrainingParams
 {
-  unsigned maxTreeDepth;  // Maximum tree depth to stop partitioning.
-  int minNumberOfSamples; // Minimum number of samples in the node to stop partitioning.
+  unsigned maxTreeDepth;  //!< Maximum tree depth to stop partitioning.
+  int minNumberOfSamples; //!< Minimum number of samples in the node to stop partitioning.
   bool printProgress;
 
   GPCTrainingParams( unsigned _maxTreeDepth = 20, int _minNumberOfSamples = 3, bool _printProgress = true )
@@ -120,8 +121,9 @@ struct GPCTrainingParams
  */
 struct GPCMatchingParams
 {
-  bool useOpenCL;      // Whether to use OpenCL to speed up the matching.
-  int hashTableFactor; // Hash table size multiplier. Change with care! Reducing this will lead to a less number of matches and less memory usage.
+  bool useOpenCL;      //!< Whether to use OpenCL to speed up the matching.
+  int hashTableFactor; //!< Hash table size multiplier. Change with care! It controls number of matches vs memory tradeoff.
+                       //!< Reducing this will lead to a less number of matches and less memory usage.
 
   GPCMatchingParams( bool _useOpenCL = false, int _hashTableFactor = 73 ) : useOpenCL( _useOpenCL ), hashTableFactor( _hashTableFactor )
   {
@@ -131,13 +133,15 @@ struct GPCMatchingParams
   GPCMatchingParams( const GPCMatchingParams &params ) : useOpenCL( params.useOpenCL ), hashTableFactor( params.hashTableFactor ) {}
 };
 
+/** @brief Class for individual tree.
+ */
 class CV_EXPORTS_W GPCTree : public Algorithm
 {
 public:
   struct Node
   {
-    Vec< double, GPCPatchDescriptor::nFeatures > coef; // hyperplane coefficients
-    double rhs;
+    Vec< double, GPCPatchDescriptor::nFeatures > coef; //!< Hyperplane coefficients
+    double rhs;                                        //!< Bias term of the hyperplane
     unsigned left;
     unsigned right;
 
@@ -170,8 +174,8 @@ template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
 private:
   struct Trail
   {
-    unsigned leaf[T]; // Inside which leaf of the tree 0..T the patch fell?
-    Point2i coord;    // Patch coordinates.
+    unsigned leaf[T]; //!< Inside which leaf of the tree 0..T the patch fell?
+    Point2i coord;    //!< Patch coordinates.
 
     uint64 getHash( uint64 mod ) const
     {
@@ -297,6 +301,9 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
 
   GPCDetails::dropOutliers( corr );
 }
+
+//! @}
+
 } // namespace optflow
 
 CV_EXPORTS void write( FileStorage &fs, const String &name, const optflow::GPCTree::Node &node );
