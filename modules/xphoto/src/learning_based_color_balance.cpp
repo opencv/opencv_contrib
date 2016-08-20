@@ -461,7 +461,8 @@ void extractSimpleFeatures(InputArray _src, OutputArray _dst, int range_max_val,
 inline float regressionTreePredict(Vec2f src, uchar *tree_feature_idx, float *tree_thresh_vals, float *tree_leaf_vals)
 {
     int node_idx = 0;
-    int depth = (int)round(log(num_tree_nodes) / log(2));
+	//result always positive, so we can replace round as static_cast + .5
+    int depth = static_cast<int>( (log(static_cast<float>(num_tree_nodes)) / log(static_cast<float>(2))) + .5);
     for (int i = 0; i < depth; i++)
     {
         if (src[tree_feature_idx[node_idx]] <= tree_thresh_vals[node_idx])
