@@ -1,16 +1,16 @@
 #include "opencv2/optflow.hpp"
 #include <iostream>
 
-/* This tool trains the forest for the Global Patch Collider and stores output to the "forest.dump".
+/* This tool trains the forest for the Global Patch Collider and stores output to the "forest.yml.gz".
  */
 
 using namespace cv;
 
-const String keys = "{help h ?       |           | print this message}"
-                    "{max-tree-depth |           | Maximum tree depth to stop partitioning}"
-                    "{min-samples    |           | Minimum number of samples in the node to stop partitioning}"
-                    "{print-progress |           | Set to 0 to enable quiet mode, set to 1 to print progress}"
-                    "{f forest       |forest.dump| Path where to store resulting forest}";
+const String keys = "{help h ?       |             | print this message}"
+                    "{max-tree-depth |             | Maximum tree depth to stop partitioning}"
+                    "{min-samples    |             | Minimum number of samples in the node to stop partitioning}"
+                    "{print-progress |             | Set to 0 to enable quiet mode, set to 1 to print progress}"
+                    "{f forest       |forest.yml.gz| Path where to store resulting forest. It is recommended to use .yml.gz extension.}";
 
 const int nTrees = 5;
 

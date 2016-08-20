@@ -9,8 +9,8 @@
 /* This tool finds correspondences between two images using Global Patch Collider
  * and calculates error using provided ground truth flow.
  *
- * It will look for the file named "forest.dump" with a learned forest.
- * You can obtain the "forest.dump" either by manually training it using another tool with *_train suffix
+ * It will look for the file named "forest.yml.gz" with a learned forest.
+ * You can obtain the "forest.yml.gz" either by manually training it using another tool with *_train suffix
  * or by downloading one of the files trained on some publicly available dataset from here:
  *
  * https://drive.google.com/open?id=0B7Hb8cfuzrIIZDFscXVYd0NBNFU
@@ -18,12 +18,12 @@
 
 using namespace cv;
 
-const String keys = "{help h ?     |           | print this message}"
-                    "{@image1      |<none>     | image1}"
-                    "{@image2      |<none>     | image2}"
-                    "{@groundtruth |<none>     | path to the .flo file}"
-                    "{@output      |           | output to a file instead of displaying, output image path}"
-                    "{f forest     |forest.dump| path to the forest.dump}";
+const String keys = "{help h ?     |             | print this message}"
+                    "{@image1      |<none>       | image1}"
+                    "{@image2      |<none>       | image2}"
+                    "{@groundtruth |<none>       | path to the .flo file}"
+                    "{@output      |             | output to a file instead of displaying, output image path}"
+                    "{f forest     |forest.yml.gz| path to the forest.yml.gz}";
 
 const int nTrees = 5;
 const bool useOpenCL = true;
