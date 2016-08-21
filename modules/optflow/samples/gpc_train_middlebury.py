@@ -32,6 +32,10 @@ def main():
     parser.add_argument('--gt_path',
                         help='Path to the directory with ground truth flow',
                         required=True)
+    parser.add_argument('--descriptor_type',
+                        help='Descriptor type',
+                        type=int,
+                        default=0)
     args = parser.parse_args()
     seq = glob.glob(os.path.join(args.dataset_path, '*'))
     seq.sort()
@@ -47,7 +51,7 @@ def main():
             gt_flow = os.path.join(args.gt_path, seq_name, 'flow10.flo')
             if os.path.isfile(gt_flow):
                 input_files += [frames[0], frames[1], gt_flow]
-    execute([args.bin_path] + input_files)
+    execute([args.bin_path, '--descriptor-type=%d' % args.descriptor_type] + input_files)
 
 
 if __name__ == '__main__':

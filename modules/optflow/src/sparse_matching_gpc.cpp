@@ -64,6 +64,7 @@ namespace
 
 #define PATCH_RADIUS 10
 #define PATCH_RADIUS_DOUBLED 20
+#define SQRT2_INV 0.7071067811865475
 
 const int patchRadius = PATCH_RADIUS;
 const int globalIters = 3;
@@ -122,62 +123,13 @@ bool checkBounds( int i, int j, Size sz )
   return i >= patchRadius && j >= patchRadius && i + patchRadius < sz.height && j + patchRadius < sz.width;
 }
 
-void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSamplesVector &samples )
-{
-  const Size sz = gt.size();
-  std::vector< Magnitude > mag;
-
-  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
-    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
-      mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
-
-  size_t n = size_t( mag.size() * thresholdMagnitudeFrac ); // As suggested in the paper, we discard part of the training samples
-                                                            // with a small displacement and train to better distinguish hard pairs.
-  std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
-  mag.resize( n );
-  std::random_shuffle( mag.begin(), mag.end() );
-  n /= patchRadius;
-  mag.resize( n );
-
-  Mat fromCh[3], toCh[3];
-  split( from, fromCh );
-  split( to, toCh );
-
-  for ( size_t k = 0; k < n; ++k )
-  {
-    int i0 = mag[k].i;
-    int j0 = mag[k].j;
-    int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
-    int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
-    if ( checkBounds( i1, j1, sz ) )
-      samples.push_back( std::make_pair( GPCPatchDescriptor( fromCh, i0, j0 ), GPCPatchDescriptor( toCh, i1, j1 ) ) );
-  }
-}
-
-/* Sample random number from Cauchy distribution. */
-double getRandomCauchyScalar()
-{
-  static RNG rng;
-  return tan( rng.uniform( -1.54, 1.54 ) ); // I intentionally used the value slightly less than PI/2 to enforce strictly
-                                            // zero probability for large numbers. Resulting PDF for Cauchy has
-                                            // truncated "tails".
-}
-
-/* Sample random vector from Cauchy distribution (pointwise, i.e. vector whose components are independent random
- * variables from Cauchy distribution) */
-void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
-{
-  for ( unsigned i = 0; i < GPCPatchDescriptor::nFeatures; ++i )
-    v[i] = getRandomCauchyScalar();
-}
-}
-
-GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
+void getDCTPatchDescriptor( GPCPatchDescriptor &patchDescr, const Mat *imgCh, int i, int j )
 {
   Rect roi( j - patchRadius, i - patchRadius, 2 * patchRadius, 2 * patchRadius );
   Mat freqDomain;
   dct( imgCh[0]( roi ), freqDomain );
 
+  double *feature = patchDescr.feature.val;
   feature[0] = freqDomain.at< float >( 0, 0 );
   feature[1] = freqDomain.at< float >( 0, 1 );
   feature[2] = freqDomain.at< float >( 0, 2 );
@@ -202,10 +154,64 @@ GPCPatchDescriptor::GPCPatchDescriptor( const Mat *imgCh, int i, int j )
   feature[17] = cv::sum( imgCh[2]( roi ) )[0] / ( 2 * patchRadius );
 }
 
-#define STR_EXPAND_(arg) #arg
-#define STR_EXPAND(arg) STR_EXPAND_(arg)
+double sumInt( const Mat &integ, int i, int j, int h, int w )
+{
+  return integ.at< double >( i + h, j + w ) - integ.at< double >( i + h, j ) - integ.at< double >( i, j + w ) + integ.at< double >( i, j );
+}
 
-ocl::ProgramSource _ocl_getPatchDescriptorSource(
+void getWHTPatchDescriptor( GPCPatchDescriptor &patchDescr, const Mat *imgCh, int i, int j )
+{
+  i -= patchRadius;
+  j -= patchRadius;
+  const int k = 2 * patchRadius;
+  const double s = sumInt( imgCh[0], i, j, k, k );
+  double *feature = patchDescr.feature.val;
+
+  feature[0] = s;
+  feature[1] = s - 2 * sumInt( imgCh[0], i, j + k / 2, k, k / 2 );
+  feature[2] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k, k / 2 );
+  feature[3] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k, k / 4 ) - 2 * sumInt( imgCh[0], i, j + 3 * k / 4, k, k / 4 );
+
+  feature[4] = s - 2 * sumInt( imgCh[0], i + k / 2, j, k / 2, k );
+  feature[5] = s - 2 * sumInt( imgCh[0], i, j + k / 2, k / 2, k / 2 ) - 2 * sumInt( imgCh[0], i + k / 2, j, k / 2, k / 2 );
+  feature[6] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k / 2, k / 2 ) - 2 * sumInt( imgCh[0], i + k / 2, j, k / 2, k / 4 ) -
+               2 * sumInt( imgCh[0], i + k / 2, j + 3 * k / 4, k / 2, k / 4 );
+  feature[7] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k / 2, k / 4 ) - 2 * sumInt( imgCh[0], i, j + 3 * k / 4, k / 2, k / 4 ) -
+               2 * sumInt( imgCh[0], i + k / 2, j, k / 2, k / 4 ) - 2 * sumInt( imgCh[0], i + k / 2, j + k / 2, k / 2, k / 4 );
+
+  feature[8] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 2, k );
+  feature[9] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 2, k / 2 ) - 2 * sumInt( imgCh[0], i, j + k / 2, k / 4, k / 2 ) -
+               2 * sumInt( imgCh[0], i + 3 * k / 4, j + k / 2, k / 4, k / 2 );
+  feature[10] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 2, k / 4 ) - 2 * sumInt( imgCh[0], i + k / 4, j + 3 * k / 4, k / 2, k / 4 ) -
+                2 * sumInt( imgCh[0], i, j + k / 4, k / 4, k / 2 ) - 2 * sumInt( imgCh[0], i + 3 * k / 4, j + k / 4, k / 4, k / 2 );
+  feature[11] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k / 4, k / 4 ) - 2 * sumInt( imgCh[0], i, j + 3 * k / 4, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + k / 4, j, k / 2, k / 4 ) - 2 * sumInt( imgCh[0], i + k / 4, j + k / 2, k / 2, k / 4 ) -
+                2 * sumInt( imgCh[0], i + 3 * k / 4, j + k / 4, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + 3 * k / 4, j + 3 * k / 4, k / 4, k / 4 );
+
+  feature[12] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 4, k ) - 2 * sumInt( imgCh[0], i + 3 * k / 4, j, k / 4, k );
+  feature[13] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 4, k / 2 ) - 2 * sumInt( imgCh[0], i + 3 * k / 4, j, k / 4, k / 2 ) -
+                2 * sumInt( imgCh[0], i, j + k / 2, k / 4, k / 2 ) - 2 * sumInt( imgCh[0], i + k / 2, j + k / 2, k / 4, k / 2 );
+  feature[14] = s - 2 * sumInt( imgCh[0], i + k / 4, j, k / 4, k / 4 ) - 2 * sumInt( imgCh[0], i + 3 * k / 4, j, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i, j + k / 4, k / 4, k / 2 ) - 2 * sumInt( imgCh[0], i + k / 2, j + k / 4, k / 4, k / 2 ) -
+                2 * sumInt( imgCh[0], i + k / 4, j + 3 * k / 4, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + 3 * k / 4, j + 3 * k / 4, k / 4, k / 4 );
+  feature[15] = s - 2 * sumInt( imgCh[0], i, j + k / 4, k / 4, k / 4 ) - 2 * sumInt( imgCh[0], i, j + 3 * k / 4, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + k / 4, j, k / 4, k / 4 ) - 2 * sumInt( imgCh[0], i + k / 4, j + k / 2, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + k / 2, j + k / 4, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + k / 2, j + 3 * k / 4, k / 4, k / 4 ) - 2 * sumInt( imgCh[0], i + 3 * k / 4, j, k / 4, k / 4 ) -
+                2 * sumInt( imgCh[0], i + 3 * k / 4, j + k / 2, k / 4, k / 4 );
+
+  feature[16] = sumInt( imgCh[1], i, j, k, k );
+  feature[17] = sumInt( imgCh[2], i, j, k, k );
+
+  patchDescr.feature /= patchRadius;
+}
+
+#define STR_EXPAND_( arg ) #arg
+#define STR_EXPAND( arg ) STR_EXPAND_( arg )
+
+ocl::ProgramSource _ocl_getDCTPatchDescriptorSource(
   "__kernel void getPatchDescriptor("
   "__global const uchar* imgCh0, int ic0step, int ic0off,"
   "__global const uchar* imgCh1, int ic1step, int ic1off,"
@@ -237,8 +243,8 @@ ocl::ProgramSource _ocl_getPatchDescriptorSource(
   "  }"
   "}"
   "for (int k = 0; k < 4; ++k) {"
-  "  desc[k] *= 0.7071067811865475;"
-  "  desc[k * 4] *= 0.7071067811865475;"
+  "  desc[k] *= " STR_EXPAND(SQRT2_INV) ";"
+  "  desc[k * 4] *= " STR_EXPAND(SQRT2_INV) ";"
   "}"
   "double sum = 0;"
   "for (int i0 = 0; i0 < patchRadius; ++i0) {"
@@ -259,14 +265,14 @@ ocl::ProgramSource _ocl_getPatchDescriptorSource(
 #undef STR_EXPAND_
 #undef STR_EXPAND
 
-void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, bool allowOpenCL )
+void getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp )
 {
   const Size sz = imgCh[0].size();
   descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
 
-  if ( allowOpenCL && ocl::useOpenCL() )
+  if ( mp.useOpenCL && ocl::useOpenCL() )
   {
-    ocl::Kernel kernel( "getPatchDescriptor", _ocl_getPatchDescriptorSource );
+    ocl::Kernel kernel( "getPatchDescriptor", _ocl_getDCTPatchDescriptorSource );
     size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
     UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
     kernel
@@ -284,10 +290,131 @@ void GPCPatchDescriptor::getAllDescriptorsForImage( const Mat *imgCh, std::vecto
 
   for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
     for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
-      descr.push_back( GPCPatchDescriptor( imgCh, i, j ) );
+    {
+      GPCPatchDescriptor pd;
+      getDCTPatchDescriptor( pd, imgCh, i, j );
+      descr.push_back( pd );
+    }
 }
 
-void GPCPatchDescriptor::getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y )
+void getAllWHTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams & )
+{
+  const Size sz = imgCh[0].size();
+  descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
+
+  Mat imgChInt[3];
+  integral( imgCh[0], imgChInt[0], CV_64F );
+  integral( imgCh[1], imgChInt[1], CV_64F );
+  integral( imgCh[2], imgChInt[2], CV_64F );
+
+  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
+    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
+    {
+      GPCPatchDescriptor pd;
+      getWHTPatchDescriptor( pd, imgChInt, i, j );
+      descr.push_back( pd );
+    }
+}
+
+void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSamplesVector &samples, const int type )
+{
+  const Size sz = gt.size();
+  std::vector< Magnitude > mag;
+
+  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
+    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
+      mag.push_back( Magnitude( normL2Sqr( gt.at< Vec2f >( i, j ) ), i, j ) );
+
+  size_t n = size_t( mag.size() * thresholdMagnitudeFrac ); // As suggested in the paper, we discard part of the training samples
+                                                            // with a small displacement and train to better distinguish hard pairs.
+  std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
+  mag.resize( n );
+  std::random_shuffle( mag.begin(), mag.end() );
+  n /= patchRadius;
+  mag.resize( n );
+
+  if ( type == GPC_DESCRIPTOR_DCT )
+  {
+    Mat fromCh[3], toCh[3];
+    split( from, fromCh );
+    split( to, toCh );
+
+    for ( size_t k = 0; k < n; ++k )
+    {
+      int i0 = mag[k].i;
+      int j0 = mag[k].j;
+      int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
+      int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
+      if ( checkBounds( i1, j1, sz ) )
+      {
+        GPCPatchSample ps;
+        getDCTPatchDescriptor( ps.first, fromCh, i0, j0 );
+        getDCTPatchDescriptor( ps.second, toCh, i1, j1 );
+        samples.push_back( ps );
+      }
+    }
+  }
+  else if ( type == GPC_DESCRIPTOR_WHT )
+  {
+    Mat fromCh[3], toCh[3], fromChInt[3], toChInt[3];
+    split( from, fromCh );
+    split( to, toCh );
+    integral( fromCh[0], fromChInt[0], CV_64F );
+    integral( fromCh[1], fromChInt[1], CV_64F );
+    integral( fromCh[2], fromChInt[2], CV_64F );
+    integral( toCh[0], toChInt[0], CV_64F );
+    integral( toCh[1], toChInt[1], CV_64F );
+    integral( toCh[2], toChInt[2], CV_64F );
+
+    for ( size_t k = 0; k < n; ++k )
+    {
+      int i0 = mag[k].i;
+      int j0 = mag[k].j;
+      int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
+      int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
+      if ( checkBounds( i1, j1, sz ) )
+      {
+        GPCPatchSample ps;
+        getWHTPatchDescriptor( ps.first, fromChInt, i0, j0 );
+        getWHTPatchDescriptor( ps.second, toChInt, i1, j1 );
+        samples.push_back( ps );
+      }
+    }
+  }
+  else
+    CV_Error( CV_StsBadArg, "Unknown descriptor type" );
+}
+
+/* Sample random number from Cauchy distribution. */
+double getRandomCauchyScalar()
+{
+  static RNG rng;
+  return tan( rng.uniform( -1.54, 1.54 ) ); // I intentionally used the value slightly less than PI/2 to enforce strictly
+                                            // zero probability for large numbers. Resulting PDF for Cauchy has
+                                            // truncated "tails".
+}
+
+/* Sample random vector from Cauchy distribution (pointwise, i.e. vector whose components are independent random
+ * variables from Cauchy distribution) */
+void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
+{
+  for ( unsigned i = 0; i < GPCPatchDescriptor::nFeatures; ++i )
+    v[i] = getRandomCauchyScalar();
+}
+}
+
+void GPCDetails::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp,
+                                            int type )
+{
+  if ( type == GPC_DESCRIPTOR_DCT )
+    getAllDCTDescriptorsForImage( imgCh, descr, mp );
+  else if ( type == GPC_DESCRIPTOR_WHT )
+    getAllWHTDescriptorsForImage( imgCh, descr, mp );
+  else
+    CV_Error( CV_StsBadArg, "Unknown descriptor type" );
+}
+
+void GPCDetails::getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y )
 {
   const size_t stride = sz.width - patchRadius * 2;
   y = int( index / stride );
@@ -295,7 +422,7 @@ void GPCPatchDescriptor::getCoordinatesFromIndex( size_t index, Size sz, int &x,
   y += patchRadius;
 }
 
-bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, const GPCTrainingParams &params )
+bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 {
   const int nSamples = (int)std::distance( begin, end );
 
@@ -380,17 +507,21 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth, 
   SIter rightBegin =
     std::partition( leftEnd, end, PartitionPredicate2( node.coef, node.rhs ) ); // Separate undefined samples from right subtree samples.
 
-  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1, params ) ) ? unsigned( nodeId * 2 + 1 ) : 0;
-  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1, params ) ) ? unsigned( nodeId * 2 + 2 ) : 0;
+  node.left = ( trainNode( nodeId * 2 + 1, begin, leftEnd, depth + 1 ) ) ? unsigned( nodeId * 2 + 1 ) : 0;
+  node.right = ( trainNode( nodeId * 2 + 2, rightBegin, end, depth + 1 ) ) ? unsigned( nodeId * 2 + 2 ) : 0;
 
   return true;
 }
 
-void GPCTree::train( GPCSamplesVector &samples, const GPCTrainingParams params )
+void GPCTree::train( GPCTrainingSamples &samples, const GPCTrainingParams _params )
 {
+  if ( _params.descriptorType != samples.type() )
+    CV_Error( CV_StsBadArg, "Descriptor type mismatch! Check that samples are collected with the same descriptor type." );
   nodes.clear();
   nodes.reserve( samples.size() * 2 - 1 ); // set upper bound for the possible number of nodes so all subsequent resize() will be no-op
-  trainNode( 0, samples.begin(), samples.end(), 0, params );
+  params = _params;
+  GPCSamplesVector &sv = samples;
+  trainNode( 0, sv.begin(), sv.end(), 0 );
 }
 
 void GPCTree::write( FileStorage &fs ) const
@@ -398,9 +529,14 @@ void GPCTree::write( FileStorage &fs ) const
   if ( nodes.empty() )
     CV_Error( CV_StsBadArg, "Tree have not been trained" );
   fs << "nodes" << nodes;
+  fs << "dtype" << (int)params.descriptorType;
 }
 
-void GPCTree::read( const FileNode &fn ) { fn["nodes"] >> nodes; }
+void GPCTree::read( const FileNode &fn )
+{
+  fn["nodes"] >> nodes;
+  fn["dtype"] >> (int &)params.descriptorType;
+}
 
 unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
 {
@@ -417,12 +553,15 @@ unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
 }
 
 Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
-                                                      const std::vector< String > &gt )
+                                                      const std::vector< String > &gt, int _descriptorType )
 {
   CV_Assert( imagesFrom.size() == imagesTo.size() );
   CV_Assert( imagesFrom.size() == gt.size() );
 
   Ptr< GPCTrainingSamples > ts = makePtr< GPCTrainingSamples >();
+
+  ts->descriptorType = _descriptorType;
+
   for ( size_t i = 0; i < imagesFrom.size(); ++i )
   {
     Mat from = imread( imagesFrom[i] );
@@ -439,7 +578,7 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
     cvtColor( from, from, COLOR_BGR2YCrCb );
     cvtColor( to, to, COLOR_BGR2YCrCb );
 
-    getTrainingSamples( from, to, gtFlow, ts->samples );
+    getTrainingSamples( from, to, gtFlow, ts->samples, ts->descriptorType );
   }
 
   return ts;
