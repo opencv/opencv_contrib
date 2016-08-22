@@ -41,6 +41,8 @@
 
 #include "tldModel.hpp"
 
+#include <opencv2/core/utility.hpp>
+
 namespace cv
 {
 	namespace tld
@@ -182,14 +184,41 @@ namespace cv
 
 		}
 
+		class CalcSrParallelLoopBody: public cv::ParallelLoopBody
+		{
+		public:
+			explicit CalcSrParallelLoopBody (TrackerTLDModel * model, const std::vector<Mat_<uchar> >& eForModel):
+				modelF (model),
+				eForModelF (eForModel)
+			{
+			}
+
+			virtual void operator () (const cv::Range & r) const
+			{
+				for (int ind = r.start; ind < r.end; ++ind)
+				{
+					modelF->srValues[ind] = modelF->detector->Sr (eForModelF[ind]);
+				}
+			}
+
+			TrackerTLDModel * modelF;
+			const std::vector<Mat_<uchar> >& eForModelF;
+		private:
+			CalcSrParallelLoopBody (const CalcSrParallelLoopBody&);
+			CalcSrParallelLoopBody& operator= (const CalcSrParallelLoopBody&);
+		};
+
 		void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
 		{
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
 			if ((int)eForModel.size() == 0) return;
 
+			srValues.resize (eForModel.size ());
+			cv::parallel_for_ (cv::Range (0, (int)eForModel.size ()), CalcSrParallelLoopBody (this, eForModel));
+
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
-				double sr = detector->Sr(eForModel[k]);
+				const double sr = srValues[k];
 				if ((sr > THETA_NN) != isPositive)
 				{
 					if (isPositive)
