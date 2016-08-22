@@ -242,116 +242,116 @@ namespace ximgproc
   }
 
   void joint_bilateral_filter(const Mat& img, const Mat& G, Mat& r_img, int fr2, double sigma_avg)
-	{
-		Mat p_G;
-		copyMakeBorder(G, p_G, fr2, fr2, fr2, fr2, BORDER_REFLECT);
+  {
+    Mat p_G;
+    copyMakeBorder(G, p_G, fr2, fr2, fr2, fr2, BORDER_REFLECT);
 
-		Mat p_img;
-		copyMakeBorder(img, p_img, fr2, fr2, fr2, fr2, BORDER_REFLECT);
+    Mat p_img;
+    copyMakeBorder(img, p_img, fr2, fr2, fr2, fr2, BORDER_REFLECT);
 
-		Mat SW;
-		if (SW.empty()) {
-			SW = Mat(2*fr2+1, 2*fr2+1, CV_32FC1);
-			int r, c;
-			float y, x;
-			for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
-				for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
-					SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
-				}
-			}
-		}
+    Mat SW;
+    if (SW.empty()) {
+      SW = Mat(2*fr2+1, 2*fr2+1, CV_32FC1);
+      int r, c;
+      float y, x;
+      for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
+        for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
+          SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
+        }
+      }
+    }
 
-		r_img = Mat::zeros(img.size(), CV_32FC1);
-		{
-			Mat sum_d_W = Mat::zeros(img.size(), CV_32FC1);
-			Mat d_W = Mat::zeros(G.size(), CV_32FC1);
+    r_img = Mat::zeros(img.size(), CV_32FC1);
+    {
+      Mat sum_d_W = Mat::zeros(img.size(), CV_32FC1);
+      Mat d_W = Mat::zeros(G.size(), CV_32FC1);
 
-			for (int x = -fr2; x <= fr2; x++) {
-				for (int y = -fr2; y <= fr2; y++) {
-					d_W = p_G(Rect(fr2+x, fr2+y, img.cols, img.rows)) - G;
-					multiply(d_W, d_W, d_W);
-					exp(-0.5 * d_W / (sigma_avg*sigma_avg), d_W);
+      for (int x = -fr2; x <= fr2; x++) {
+        for (int y = -fr2; y <= fr2; y++) {
+          d_W = p_G(Rect(fr2+x, fr2+y, img.cols, img.rows)) - G;
+          multiply(d_W, d_W, d_W);
+          exp(-0.5 * d_W / (sigma_avg*sigma_avg), d_W);
 
-					d_W = d_W * SW.at<float>(fr2+y, fr2+x); //Gaussian weight
+          d_W = d_W * SW.at<float>(fr2+y, fr2+x); //Gaussian weight
 
-					sum_d_W = sum_d_W + d_W;
-					multiply(d_W, p_img(Rect(fr2+x, fr2+y, img.cols, img.rows)), d_W);
-					r_img = r_img + d_W;
-				}
-			}
-			max(1e-5f, sum_d_W, sum_d_W);
-			divide(r_img, sum_d_W, r_img);
-		}
-	}
+          sum_d_W = sum_d_W + d_W;
+          multiply(d_W, p_img(Rect(fr2+x, fr2+y, img.cols, img.rows)), d_W);
+          r_img = r_img + d_W;
+        }
+      }
+      max(1e-5f, sum_d_W, sum_d_W);
+      divide(r_img, sum_d_W, r_img);
+    }
+  }
 
   void joint_bilateral_filter3(const Mat& img, const Mat& G, Mat& r_img, int fr2, double sigma_avg)
-	{
-		Mat p_G;
-		copyMakeBorder(G, p_G, fr2, fr2, fr2, fr2, BORDER_REFLECT);
+  {
+    Mat p_G;
+    copyMakeBorder(G, p_G, fr2, fr2, fr2, fr2, BORDER_REFLECT);
 
-		Mat p_img;
-		copyMakeBorder(img, p_img, fr2, fr2, fr2, fr2, BORDER_REFLECT);
+    Mat p_img;
+    copyMakeBorder(img, p_img, fr2, fr2, fr2, fr2, BORDER_REFLECT);
 
-		Mat SW;
-		if (SW.empty()) {
-			SW = Mat(2*fr2+1, 2*fr2+1, CV_32FC1);
-			int r, c;
-			float y, x;
-			for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
-				for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
-					SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
-				}
-			}
-		}
+    Mat SW;
+    if (SW.empty()) {
+      SW = Mat(2*fr2+1, 2*fr2+1, CV_32FC1);
+      int r, c;
+      float y, x;
+      for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
+        for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
+          SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
+        }
+      }
+    }
 
-		std::vector<Mat> G_channels(3);
-		split(G, G_channels);
-		std::vector<Mat> p_G_channels(3);
-		split(p_G, p_G_channels);
-		std::vector<Mat> p_img_channels(3);
-		split(p_img, p_img_channels);
+    std::vector<Mat> G_channels(3);
+    split(G, G_channels);
+    std::vector<Mat> p_G_channels(3);
+    split(p_G, p_G_channels);
+    std::vector<Mat> p_img_channels(3);
+    split(p_img, p_img_channels);
 
-		Mat sum_d_W = Mat::zeros(img.size(), CV_32FC1);
-		std::vector<Mat> d_W_channels(3);
-		for (int ch = 0; ch < 3; ch++) {
-			d_W_channels[ch] = Mat::zeros(G.size(), CV_32FC1);
-		}
-		Mat d_W = Mat::zeros(G.size(), CV_32FC1);
+    Mat sum_d_W = Mat::zeros(img.size(), CV_32FC1);
+    std::vector<Mat> d_W_channels(3);
+    for (int ch = 0; ch < 3; ch++) {
+      d_W_channels[ch] = Mat::zeros(G.size(), CV_32FC1);
+    }
+    Mat d_W = Mat::zeros(G.size(), CV_32FC1);
 
-		std::vector<Mat> r_img_channels(3);
-		for (int ch = 0; ch < 3; ch++) {
-			r_img_channels[ch] = Mat::zeros(G.size(), CV_32FC1);
-		}
+    std::vector<Mat> r_img_channels(3);
+    for (int ch = 0; ch < 3; ch++) {
+      r_img_channels[ch] = Mat::zeros(G.size(), CV_32FC1);
+    }
 
-		for (int x = -fr2; x <= fr2; x++) {
-			for (int y = -fr2; y <= fr2; y++) {
-				d_W.setTo(0);
-				for (int ch = 0; ch < 3; ch++) {
-					subtract(p_G_channels[ch](Rect(fr2+x, fr2+y, img.cols, img.rows)), G_channels[ch], d_W_channels[ch]);
-					multiply(d_W_channels[ch], d_W_channels[ch], d_W_channels[ch]);
-				}
-				for (int ch = 0; ch < 3; ch++) {
-					add(d_W, d_W_channels[ch], d_W);
-				}
-				exp(-0.5 * d_W / (sigma_avg*sigma_avg), d_W);
+    for (int x = -fr2; x <= fr2; x++) {
+      for (int y = -fr2; y <= fr2; y++) {
+        d_W.setTo(0);
+        for (int ch = 0; ch < 3; ch++) {
+          subtract(p_G_channels[ch](Rect(fr2+x, fr2+y, img.cols, img.rows)), G_channels[ch], d_W_channels[ch]);
+          multiply(d_W_channels[ch], d_W_channels[ch], d_W_channels[ch]);
+        }
+        for (int ch = 0; ch < 3; ch++) {
+          add(d_W, d_W_channels[ch], d_W);
+        }
+        exp(-0.5 * d_W / (sigma_avg*sigma_avg), d_W);
 
-				d_W = d_W * SW.at<float>(fr2+y, fr2+x); //Gaussian weight
+        d_W = d_W * SW.at<float>(fr2+y, fr2+x); //Gaussian weight
 
-				add(sum_d_W, d_W, sum_d_W);
+        add(sum_d_W, d_W, sum_d_W);
 
-				for (int ch = 0; ch < 3; ch++) {
-					Mat n_p_img = p_img_channels[ch](Rect(fr2+x, fr2+y, img.cols, img.rows));
-					accumulateProduct(d_W, n_p_img, r_img_channels[ch]);
-				}
-			}
-		}
+        for (int ch = 0; ch < 3; ch++) {
+          Mat n_p_img = p_img_channels[ch](Rect(fr2+x, fr2+y, img.cols, img.rows));
+          accumulateProduct(d_W, n_p_img, r_img_channels[ch]);
+        }
+      }
+    }
 
-		max(1e-5f, sum_d_W, sum_d_W);
-		for (int ch = 0; ch < 3; ch++) {
-			divide(r_img_channels[ch], sum_d_W, r_img_channels[ch]);
-		}
-		merge(r_img_channels, r_img);
-	}
+    max(1e-5f, sum_d_W, sum_d_W);
+    for (int ch = 0; ch < 3; ch++) {
+      divide(r_img_channels[ch], sum_d_W, r_img_channels[ch]);
+    }
+    merge(r_img_channels, r_img);
+  }
 
 }
 }
