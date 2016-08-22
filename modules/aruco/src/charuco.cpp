@@ -713,8 +713,11 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
 double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
                               Ptr<CharucoBoard> &_board, Size imageSize,
                               InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
-                              OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
-                              TermCriteria criteria) {
+                              OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs,
+                              OutputArray _stdDeviationsIntrinsics,
+                              OutputArray _stdDeviationsExtrinsics,
+                              OutputArray _perViewErrors,
+                              int flags, TermCriteria criteria) {
 
     CV_Assert(_charucoIds.total() > 0 && (_charucoIds.total() == _charucoCorners.total()));
 
@@ -734,9 +737,22 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
     }
 
     return calibrateCamera(allObjPoints, _charucoCorners, imageSize, _cameraMatrix, _distCoeffs,
-                           _rvecs, _tvecs, flags, criteria);
+                           _rvecs, _tvecs, _stdDeviationsIntrinsics, _stdDeviationsExtrinsics,
+                           _perViewErrors, flags, criteria);
 }
 
+
+
+/**
+ */
+double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
+  Ptr<CharucoBoard> &_board, Size imageSize,
+  InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
+  OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
+  TermCriteria criteria) {
+    return calibrateCameraCharuco(_charucoCorners, _charucoIds, _board, imageSize, _cameraMatrix, _distCoeffs, _rvecs,
+      _tvecs, noArray(), noArray(), noArray(), flags, criteria);
+}
 
 
 /**
