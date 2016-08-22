@@ -43,7 +43,7 @@
 //In order to use GOTURN tracker, GOTURN architecture goturn.prototxt and goturn.caffemodel are required to exist in root folder.
 //There are 2 ways to get caffemodel:
 //1 - Train you own GOTURN model using <https://github.com/Auron-X/GOTURN_Training_Toolkit>
-//2 - Download pretrained caffemodel from <https://github.com/opencv/opencv_extra> 
+//2 - Download pretrained caffemodel from <https://github.com/opencv/opencv_extra>
 
 #include "opencv2/datasets/track_alov.hpp"
 #include <opencv2/core/utility.hpp>
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 {
 	CommandLineParser parser(argc, argv, keys);
 	string datasetRootPath = parser.get<string>(0);
-	int datasetID = parser.get<int>(1);	
+	int datasetID = parser.get<int>(1);
 
 	if (datasetRootPath.empty())
 	{
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 	//Create GOTURN tracker
 	Ptr<Tracker> tracker = Tracker::create("GOTURN");
 
-	//Load and init full ALOV300++ dataset with a given ID, as alternative you can use loadAnnotatedOnly(..) 
+	//Load and init full ALOV300++ dataset with a given ID, as alternative you can use loadAnnotatedOnly(..)
 	//to load only frames with labled ground truth ~ every 5-th frame
 	Ptr<cv::datasets::TRACK_alov> dataset = TRACK_alov::create();
 	dataset->load(datasetRootPath);
