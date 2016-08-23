@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         return(0);
     }
 
-    string vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the clasifier output classes
+    string vocabulary = "##0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the clasifier output classes
     vector<string> lexicon;  // a list of words expected to be found on the input image
     lexicon.push_back(string("abb"));
     lexicon.push_back(string("riser"));
@@ -62,11 +62,16 @@ int main(int argc, char* argv[])
 
     Mat emission_p = Mat::eye(62,62,CV_64FC1);
 
+    Ptr<OCRBeamSearchDecoder> ocr = OCRBeamSearchDecoder::create(
+                   loadOCRBeamSearchClassifierCNN("OCRBeamSearch_CNN_model_data.xml.gz"),
+                   vocabulary, transition_p, emission_p, OCR_DECODER_VITERBI, 50);
+
+
     // Notice we set here a beam size of 50. This is much faster than using the default value (500).
     // 50 works well with our tiny lexicon example, but may not with larger dictionaries.
-    Ptr<OCRBeamSearchDecoder> ocr = OCRBeamSearchDecoder::create(
+/*    Ptr<OCRBeamSearchDecoder> ocr = OCRBeamSearchDecoder::create(
                 loadOCRBeamSearchClassifierCNN("OCRBeamSearch_CNN_model_data.xml.gz"),
-                vocabulary, transition_p, emission_p, OCR_DECODER_VITERBI, 50);
+                vocabulary, transition_p, emission_p, OCR_DECODER_VITERBI, 50);*/
 
     double t_r = (double)getTickCount();
     string output;

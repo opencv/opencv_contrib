@@ -46,6 +46,10 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <sstream>
+
+
 
 namespace cv
 {
@@ -66,12 +70,27 @@ class CV_EXPORTS_W BaseOCR
 {
 public:
     virtual ~BaseOCR() {};
+
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0) = 0;
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0) = 0;
+
+    /** @brief Main functionality of the OCR Hierarchy. Subclasses provide default parameters for
+     * all parameters other than the input image.
+     */
+    virtual String run(InputArray image){
+        std::string res;
+        std::vector<Rect> component_rects;
+        std::vector<float> component_confidences;
+        std::vector<std::string> component_texts;
+        Mat inputImage=image.getMat();
+        this->run(inputImage,res,&component_rects,&component_texts,&component_confidences,OCR_LEVEL_WORD);
+        return res;
+    }
+
 };
 
 /** @brief OCRTesseract class provides an interface with the tesseract-ocr API (v3.02.02) in C++.
@@ -337,6 +356,11 @@ CV_EXPORTS_W Mat createOCRHMMTransitionsTable(const String& vocabulary, std::vec
         be found at the demo sample:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/word_recognition.cpp>
  */
+
+
+/* Forward declaration of class that can be used to generate an OCRBeamSearchDecoder::ClassifierCallbac */
+class TextImageClassifier;
+
 class CV_EXPORTS_W OCRBeamSearchDecoder : public BaseOCR
 {
 public:
@@ -364,8 +388,8 @@ public:
          */
         virtual void eval( InputArray image, std::vector< std::vector<double> >& recognition_probabilities, std::vector<int>& oversegmentation );
 
-        int getWindowSize() {return 0;}
-        int getStepSize() {return 0;}
+        virtual int getWindowSize() {return 0;}
+        virtual int getStepSize() {return 0;}
     };
 
 public:
@@ -421,6 +445,7 @@ public:
 
     @param beam_size Size of the beam in Beam Search algorithm.
      */
+
     static Ptr<OCRBeamSearchDecoder> create(const Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
                                      const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
                                                                                        //     size() must be equal to the number of classes
@@ -440,6 +465,42 @@ public:
                                                                                        //     cols == rows == vocabulari.size()
                                      int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
+
+    /** @brief
+
+    @param classifier The character classifier with built in feature extractor
+
+    @param alphabet The language alphabet one char per symbol. alphabet.size() must be equal to the number of classes
+    of the classifier
+
+    @param transition_probabilities_table Table with transition probabilities between character
+    pairs. cols == rows == alphabet.size().
+
+    @param emission_probabilities_table Table with observation emission probabilities. cols ==
+    rows == alphabet.size().
+
+    @param windowWidth The width of the windows to which the sliding window will be iterated. The height will
+    be the height of the image. The windows might be resized to fit the classifiers input by the classifiers preprocessor
+
+    @param windowStep The step for the sliding window
+
+    @param mode HMM Decoding algorithm (only Viterbi for the moment)
+
+    @param beam_size Size of the beam in Beam Search algorithm
+     */
+    CV_WRAP static Ptr<OCRBeamSearchDecoder> create(const Ptr<TextImageClassifier> classifier, // The character classifier with built in feature extractor
+                                     String alphabet,                                          // The language alphabet one char per symbol
+                                                                                               // size() must be equal to the number of classes
+                                     InputArray transition_probabilities_table,                // Table with transition probabilities between character pairs
+                                                                                               //     cols == rows == alphabet.size()
+                                     InputArray emission_probabilities_table,                  // Table with observation emission probabilities
+                                                                                               //     cols == rows == alphabet.size()
+                                     int windowWidth,                                          // The width of the windows to which the sliding window will be iterated.
+                                                                                               // The height will be the height of the image. The windows might be resized to
+                                                                                               // fit the classifiers input by the classifiers preprocessor
+                                     int windowStep = 1 ,                                      // The step for the sliding window
+                                     int mode = OCR_DECODER_VITERBI,                           // HMM Decoding algorithm (only Viterbi for the moment)
+                                     int beam_size = 500);                                     // Size of the beam in Beam Search algorithm
 
 protected:
 
@@ -465,6 +526,314 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClas
 
 //! @}
 
+
+//Classifiers should provide diferent backends
+//For the moment only caffe is implemeted
+enum{
+    OCR_HOLISTIC_BACKEND_NONE,
+    OCR_HOLISTIC_BACKEND_CAFFE
+};
+
+class TextImageClassifier;
+
+/**
+ * @brief The ImagePreprocessor class
+ */
+class CV_EXPORTS_W ImagePreprocessor{
+protected:
+    virtual void preprocess_(const Mat& input,Mat& output,Size outputSize,int outputChannels)=0;
+
+public:
+    virtual ~ImagePreprocessor(){}
+
+    /** @brief this method in provides public acces to the preprocessing with respect to a specific
+     * classifier
+     *
+     * This method's main use would be to use the preprocessor without a classifier.
+     *
+     * @param input
+     *
+     * @param output
+     *
+     * @param sz
+     *
+     * @param outputChannels
+     */
+    CV_WRAP void preprocess(InputArray input,OutputArray output,Size sz,int outputChannels);
+
+    /** @brief
+     *
+     * @return shared pointer to generated preprocessor
+     */
+    CV_WRAP static Ptr<ImagePreprocessor> createResizer();
+
+    /** @brief
+     *
+     * @return shared pointer to generated preprocessor
+     */
+    CV_WRAP static Ptr<ImagePreprocessor> createImageStandarizer(double sigma);
+
+    /** @brief
+     *
+     * @return shared pointer to generated preprocessor
+     */
+    CV_WRAP static Ptr<ImagePreprocessor> createImageMeanSubtractor(InputArray meanImg);
+
+    friend class TextImageClassifier;
+};
+
+/** @brief Abstract class that implements the classifcation of text images.
+ *
+ * The interface is generic enough to describe any image classifier. And allows
+ * to take advantage of compouting in batches. While word classifiers are the default
+ * networks, any image classifers should work.
+ *
+ */
+class CV_EXPORTS_W TextImageClassifier
+{
+protected:
+    Size inputGeometry_;
+    int channelCount_;
+    Ptr<ImagePreprocessor> preprocessor_;
+    /** @brief all image preprocessing is handled here including whitening etc.
+     *
+         *  @param input the image to be preprocessed for the classifier. If the depth
+     * is CV_U8 values should be in [0,255] otherwise values are assumed to be in [0,1]
+     *
+     * @param output reference to the image to be fed to the classifier, the preprocessor will
+     * resize the image to the apropriate size and convert it to the apropriate depth\
+     *
+     * The method preprocess should never be used externally, it is up to classify and classifyBatch
+     * methods to employ it.
+     */
+    virtual void preprocess(const Mat& input,Mat& output);
+public:
+    virtual ~TextImageClassifier() {}
+
+    /** @brief
+     */
+    CV_WRAP virtual void setPreprocessor(Ptr<ImagePreprocessor> ptr);
+
+    /** @brief
+     */
+    CV_WRAP Ptr<ImagePreprocessor> getPreprocessor();
+
+    /** @brief produces a class confidence row-vector given an image
+     */
+    CV_WRAP virtual void classify(InputArray image, OutputArray classProbabilities) = 0;
+
+    /** @brief produces a matrix containing class confidence row-vectors given an collection of images
+     */
+    CV_WRAP virtual void classifyBatch(InputArrayOfArrays image, OutputArray classProbabilities) = 0;
+
+    /** @brief simple getter method returning the number of channels each input sample has
+     */
+    CV_WRAP virtual int getInputChannelCount(){return this->channelCount_;}
+
+    /** @brief simple getter method returning the size of the input sample
+     */
+    CV_WRAP virtual Size getInputSize(){return this->inputGeometry_;}
+
+    /** @brief simple getter method returning the size of the oputput row-vector
+     */
+    CV_WRAP virtual int getOutputSize()=0;
+
+    /** @brief simple getter method returning the size of the minibatches for this classifier.
+     * If not applicabe this method should return 1
+     */
+    CV_WRAP virtual int getMinibatchSize()=0;
+
+    friend class ImagePreprocessor;
+};
+
+
+
+class CV_EXPORTS_W DeepCNN:public TextImageClassifier
+{
+    /** @brief Class that uses a pretrained caffe model for word classification.
+     *
+     * This network is described in detail in:
+     * Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015
+     * http://arxiv.org/abs/1412.1842
+     */
+public:
+    virtual ~DeepCNN() {};
+
+    /** @brief Constructs a DeepCNN object from a caffe pretrained model
+     *
+     * @param archFilename is the path to the prototxt file containing the deployment model architecture description.
+     *
+     * @param weightsFilename is the path to the pretrained weights of the model in binary fdorm. This file can be
+     * very large, up to 2GB.
+     *
+     * @param minibatchSz the maximum number of samples that can processed in parallel. In practice this parameter
+     * has an effect only when computing in the GPU and should be set with respect to the memory available in the GPU.
+     *
+     * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
+     * the only option
+     */
+    CV_WRAP static Ptr<DeepCNN> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+
+    CV_WRAP static Ptr<DeepCNN> createDictNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+
+};
+
+
+/** @brief Prompts Caffe on the computation device beeing used
+ *
+ * Caffe can only be controlled globally on whether the GPU or the CPU is used has a
+ * global behavior. This function queries the current state of caffe.
+ * If the module is built without caffe, this method throws an exception.
+ *
+ * @return true if caffe is computing on the GPU, false if caffe is computing on the CPU
+ */
+CV_EXPORTS_W bool getCaffeGpuMode();
+
+/** @brief Sets the computation device beeing used by Caffe
+ *
+ * Caffe can only be controlled globally on whether the GPU or the CPU is used has a
+ * global behavior. This function queries the current state of caffe.
+ * If the module is built without caffe, this method throws an exception.
+ *
+ * @param useGpu  set to true for caffe to be computing on the GPU, false if caffe is
+ * computing on the CPU
+ */
+CV_EXPORTS_W void setCaffeGpuMode(bool useGpu);
+
+/** @brief Provides runtime information on whether Caffe support was compiled in.
+ *
+ * The text module API is the same regardless of whether CAffe was available or not
+ * During compilation. When methods that require Caffe are invocked while Caffe support
+ * is not compiled in, exceptions are thrown. This method allows to test whether the
+ * text module was built with caffe during runtime.
+ *
+ * @return true if Caffe support for the the text module was provided during compilation,
+ * false if Caffe was unavailable.
+ */
+CV_EXPORTS_W bool getCaffeAvailable();
+
+
+/** @brief OCRHolisticWordRecognizer class provides the functionallity of segmented wordspotting.
+ * Given a predefined vocabulary , a TextImageClassifier is employed to select the most probable
+ * word given an input image.
+ *
+ * This class implements the logic of providing transcriptions given a vocabulary and and an image
+ * classifer.
+ */
+class CV_EXPORTS_W OCRHolisticWordRecognizer : public BaseOCR
+{
+public:
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=OCR_LEVEL_WORD)=0;
+
+    /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
+
+    Takes image on input and returns recognized text in the output_text parameter. Optionally
+    provides also the Rects for individual text elements found (e.g. words), and the list of those
+    text elements with their confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3
+
+    @param mask is totally ignored and is only available for compatibillity reasons
+
+    @param output_text Output text of the the word spoting, always one that exists in the dictionary.
+
+    @param component_rects Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_texts Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_confidences Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_level must be OCR_LEVEL_WORD.
+     */
+
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=OCR_LEVEL_WORD)=0;
+
+
+    /**
+    @brief Method that provides a quick and simple interface to a single word image classifcation
+
+    @param inputImage an image expected to be a CV_U8C1 or CV_U8C3 of any size assumed to contain a single word
+
+    @param transcription an opencv string that will store the detected word transcription
+
+    @param confidence a double that will be updated with the confidence the classifier has for the selected word
+    */
+    CV_WRAP virtual void recogniseImage(InputArray inputImage,CV_OUT String& transcription,CV_OUT double& confidence)=0;
+
+    /**
+    @brief Method that provides a quick and simple interface to a multiple word image classifcation taking advantage
+    the classifiers parallel capabilities.
+
+    @param inputImageList an list of images expected to be a CV_U8C1 or CV_U8C3 each image can be of any size and is assumed
+    to contain a single word.
+
+    @param transcriptions a vector of opencv strings that will store the detected word transcriptions, one for each
+    input image
+
+    @param confidences a vector of double that will be updated with the confidence the classifier has for each of the
+    selected words.
+    */
+    CV_WRAP virtual void recogniseImageBatch(InputArrayOfArrays inputImageList,CV_OUT std::vector<String>& transcriptions,CV_OUT std::vector<double>& confidences)=0;
+
+
+    /**
+    @brief simple getted for the vocabulary employed
+    */
+    CV_WRAP virtual const std::vector<String>& getVocabulary()=0;
+
+    /** @brief
+     */
+    CV_WRAP virtual Ptr<TextImageClassifier> getClassifier()=0;
+
+    /** @brief Creates an instance of the OCRHolisticWordRecognizer class.
+
+    @param classifierPtr an instance of TextImageClassifier, normaly a DeepCNN instance
+    @param vocabularyFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
+    in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
+    of the classifier.
+     */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(Ptr<TextImageClassifier> classifierPtr,String vocabularyFilename);
+
+
+    /** @brief Creates an instance of the OCRHolisticWordRecognizer class and implicitly also a DeepCNN classifier.
+
+    @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
+    @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.
+    @param vocabularyFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
+    in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
+    of the classifier.
+    */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(String modelArchFilename, String modelWeightsFilename, String vocabularyFilename);
+
+    /** @brief
+     *
+     * @param classifierPtr
+     *
+     * @param vocabulary
+     */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(Ptr<TextImageClassifier> classifierPtr,const std::vector<String>& vocabulary);
+
+    /** @brief
+     *
+     * @param modelArchFilename
+     *
+     * @param modelWeightsFilename
+     *
+     * @param vocabulary
+     */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(String modelArchFilename, String modelWeightsFilename, const std::vector<String>& vocabulary);
+};
+
+
 }
 }
+
+
 #endif // _OPENCV_TEXT_OCR_HPP_
