@@ -69,6 +69,8 @@ namespace cvtest {
         const int nTests = 14;
         const float wb_thresh = 0.5f;
         const float acc_thresh = 2.f;
+        Ptr<xphoto::GrayworldWB> wb = xphoto::createGrayworldWB();
+        wb->setSaturationThreshold(wb_thresh);
 
         for ( int i = 0; i < nTests; ++i )
         {
@@ -80,13 +82,13 @@ namespace cvtest {
             ref_autowbGrayworld(src, referenceResult, wb_thresh);
 
             Mat currentResult;
-            xphoto::autowbGrayworld(src, currentResult, wb_thresh);
+            wb->balanceWhite(src, currentResult);
             ASSERT_LE(cv::norm(currentResult, referenceResult, NORM_INF), acc_thresh);
 
             // test the 16-bit depth:
             Mat currentResult_16U, src_16U;
             src.convertTo(src_16U, CV_16UC3, 256.0);
-            xphoto::autowbGrayworld(src_16U, currentResult_16U, wb_thresh);
+            wb->balanceWhite(src_16U, currentResult_16U);
             currentResult_16U.convertTo(currentResult, CV_8UC3, 1/256.0);
             ASSERT_LE(cv::norm(currentResult, referenceResult, NORM_INF), acc_thresh);
         }

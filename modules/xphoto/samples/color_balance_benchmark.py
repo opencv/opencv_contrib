@@ -5,6 +5,7 @@ import numpy as np
 import scipy.io
 import cv2
 import timeit
+from learn_color_balance import load_ground_truth
 
 
 def load_json(path):
@@ -39,15 +40,24 @@ def stretch_to_8bit(arr, clip_percentile = 2.5):
     return arr.astype(np.uint8)
 
 
-def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder):
+def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, model_folder):
     new_im = None
     start_time = timeit.default_timer()
     if algo=="grayworld":
-        new_im = cv2.xphoto.autowbGrayworld(im, 0.95)
+        inst = cv2.xphoto.createGrayworldWB()
+        inst.setSaturationThreshold(0.95)
+        new_im = inst.balanceWhite(im)
     elif algo=="nothing":
         new_im = im
-    elif algo=="learning_based":
-        new_im = cv2.xphoto.autowbLearningBased(im, None, range_thresh, 0.98, bin_num)
+    elif algo.split(":")[0]=="learning_based":
+        model_path = ""
+        if len(algo.split(":"))>1:
+            model_path = os.path.join(model_folder, algo.split(":")[1])
+        inst = cv2.xphoto.createLearningBasedWB(model_path)
+        inst.setRangeMaxVal(range_thresh)
+        inst.setSaturationThreshold(0.98)
+        inst.setHistBinNum(bin_num)
+        new_im = inst.balanceWhite(im)
     elif algo=="GT":
         gains = gt_illuminant / min(gt_illuminant)
         g1 = float(1.0 / gains[2])
@@ -59,7 +69,7 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder):
     if len(dst_folder)>0:
         if not os.path.exists(dst_folder):
             os.makedirs(dst_folder)
-        im_name = ("%04d_" % i) + algo + ".jpg"
+        im_name = ("%04d_" % i) + algo.replace(":","_") + ".jpg"
         cv2.imwrite(os.path.join(dst_folder, im_name), stretch_to_8bit(new_im))
 
     #recover the illuminant from the color balancing result, assuming the standard model:
@@ -140,7 +150,9 @@ if __name__ == '__main__':
         metavar="ALGORITHMS",
         default="",
         help=("Comma-separated list of color balance algorithms to evaluate. "
-              "Currently available: GT,learning_based,grayworld,nothing."))
+              "Currently available: GT,learning_based,grayworld,nothing. "
+              "Use a colon to set a specific model for the learning-based "
+              "algorithm, e.g. learning_based:model1.yml,learning_based:model2.yml"))
     parser.add_argument(
         "-i",
         "--input_folder",
@@ -196,6 +208,12 @@ if __name__ == '__main__':
         default="0,0",
         help=("Comma-separated range of images from the dataset to evaluate on (for instance: 0,568). "
               "All available images are used by default."))
+    parser.add_argument(
+        "-m",
+        "--model_folder",
+        metavar="MODEL_FOLDER",
+        default="",
+        help=("Path to the folder containing models for the learning-based color balance algorithm (optional)"))
     args, other_args = parser.parse_known_args()
 
     if not os.path.exists(args.input_folder):
@@ -218,22 +236,8 @@ if __name__ == '__main__':
         print("Error: Please specify the -r parameter in form <first_image_index>,<last_image_index>")
         sys.exit(1)
 
-    gt = scipy.io.loadmat(args.ground_truth)
     img_files = sorted(os.listdir(args.input_folder))
-
-    gt_illuminants = []
-    black_levels = []
-    if "groundtruth_illuminants" in gt.keys() and "darkness_level" in gt.keys():
-        #NUS 8-camera dataset format
-        gt_illuminants = gt["groundtruth_illuminants"]
-        black_levels = len(gt_illuminants) * [gt["darkness_level"][0][0]]
-    elif "real_rgb" in gt.keys():
-        #Gehler-Shi dataset format
-        gt_illuminants = gt["real_rgb"]
-        black_levels = 87 * [0] + (len(gt_illuminants) - 87) * [129]
-    else:
-        print("Error: unknown ground-truth format, only formats of Gehler-Shi and NUS 8-camera datasets are supported")
-        sys.exit(1)
+    (gt_illuminants,black_levels) = load_ground_truth(args.ground_truth)
 
     for algorithm in algorithm_list:
         i = 0
@@ -254,7 +258,7 @@ if __name__ == '__main__':
                     im = stretch_to_8bit(im)
 
                 (time,angular_err) = evaluate(im, algorithm, gt_illuminants[i], i, range_thresh,
-                                              256 if range_thresh > 255 else 64, args.dst_folder)
+                                              256 if range_thresh > 255 else 64, args.dst_folder, args.model_folder)
                 state[algorithm][file] = {"angular_error": angular_err, "time": time}
                 sys.stdout.write("Algorithm: %-20s Done: [%3d/%3d]\r" % (algorithm, i, sz)),
                 sys.stdout.flush()

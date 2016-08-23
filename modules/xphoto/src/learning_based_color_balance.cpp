@@ -64,56 +64,115 @@ struct hist_elem
     hist_elem(float _hist_val, Vec2f chromaticity) : hist_val(_hist_val), r(chromaticity[0]), g(chromaticity[1]) {}
 };
 bool operator<(const hist_elem &a, const hist_elem &b);
-void getColorPalleteMode(Vec2f &dst, hist_elem *pallete, int pallete_sz, float bandwidth);
-void preprocessing(Mat &dst_mask, int &dst_max_val, Mat &src, int range_max_val, float saturation_thresh);
-void getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity, Vec2f &brightest_chromaticity, Mat &src,
-                                             Mat &mask);
-void getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity_pallete_mode, Mat &src, Mat &mask,
-                               int hist_bin_num, int max_val);
-
 bool operator<(const hist_elem &a, const hist_elem &b) { return a.hist_val > b.hist_val; }
 
-/* Returns the most high-density point (i.e. mode) of the color pallete.
- * Uses a simplistic kernel density estimator with a Epanechnikov kernel and
- * fixed bandwidth.
- */
-void getColorPalleteMode(Vec2f &dst, hist_elem *pallete, int pallete_sz, float bandwidth)
+class LearningBasedWBImpl : public LearningBasedWB
 {
-    float max_density = -1.0f;
-    float denom = bandwidth * bandwidth;
-    for (int i = 0; i < pallete_sz; i++)
+  private:
+    int range_max_val, hist_bin_num, palette_size;
+    float saturation_thresh, palette_bandwidth, prediction_thresh;
+    int num_trees, num_tree_nodes, tree_depth;
+    uchar *feature_idx;
+    float *thresh_vals, *leaf_vals;
+    Mat feature_idx_Mat, thresh_vals_Mat, leaf_vals_Mat;
+    Mat mask;
+    int src_max_val;
+
+    void preprocessing(Mat &src);
+    void getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity, Vec2f &brightest_chromaticity, Mat &src);
+    void getColorPaletteMode(Vec2f &dst, hist_elem *palette);
+    void getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity_palette_mode, Mat &src);
+
+    float regressionTreePredict(Vec2f src, uchar *tree_feature_idx, float *tree_thresh_vals, float *tree_leaf_vals);
+    Vec2f predictIlluminant(vector<Vec2f> features);
+
+  public:
+    LearningBasedWBImpl(String path_to_model)
     {
-        float cur_density = 0.0f;
-        float cur_dist_sq;
-
-        for (int j = 0; j < pallete_sz; j++)
+        range_max_val = 255;
+        saturation_thresh = 0.98f;
+        hist_bin_num = 64;
+        palette_size = 300;
+        palette_bandwidth = 0.1f;
+        prediction_thresh = 0.025f;
+        if (path_to_model.empty())
         {
-            cur_dist_sq = (pallete[i].r - pallete[j].r) * (pallete[i].r - pallete[j].r) +
-                          (pallete[i].g - pallete[j].g) * (pallete[i].g - pallete[j].g);
-            cur_density += max((1.0f - (cur_dist_sq / denom)), 0.0f);
+            /* use the default model */
+            num_trees = _num_trees;
+            num_tree_nodes = _num_tree_nodes;
+            feature_idx = _feature_idx;
+            thresh_vals = _thresh_vals;
+            leaf_vals = _leaf_vals;
         }
-
-        if (cur_density > max_density)
+        else
         {
-            max_density = cur_density;
-            dst[0] = pallete[i].r;
-            dst[1] = pallete[i].g;
+            /* load model from file */
+            FileStorage fs(path_to_model, 0);
+            num_trees = fs["num_trees"];
+            num_tree_nodes = fs["num_tree_nodes"];
+            fs["feature_idx"] >> feature_idx_Mat;
+            fs["thresh_vals"] >> thresh_vals_Mat;
+            fs["leaf_vals"] >> leaf_vals_Mat;
+            feature_idx = feature_idx_Mat.ptr<uchar>();
+            thresh_vals = thresh_vals_Mat.ptr<float>();
+            leaf_vals = leaf_vals_Mat.ptr<float>();
         }
     }
-}
+
+    int getRangeMaxVal() const { return range_max_val; }
+    void setRangeMaxVal(int val) { range_max_val = val; }
+
+    float getSaturationThreshold() const { return saturation_thresh; }
+    void setSaturationThreshold(float val) { saturation_thresh = val; }
+
+    int getHistBinNum() const { return hist_bin_num; }
+    void setHistBinNum(int val) { hist_bin_num = val; }
+
+    void extractSimpleFeatures(InputArray _src, OutputArray _dst)
+    {
+        CV_Assert(!_src.empty());
+        CV_Assert(_src.isContinuous());
+        CV_Assert(_src.type() == CV_8UC3 || _src.type() == CV_16UC3);
+        Mat src = _src.getMat();
+        vector<Vec2f> dst(num_features);
+
+        preprocessing(src);
+        getAverageAndBrightestColorChromaticity(dst[0], dst[1], src);
+        getHistogramBasedFeatures(dst[2], dst[3], src);
+        Mat(dst).convertTo(_dst, CV_32F);
+    }
+
+    void balanceWhite(InputArray _src, OutputArray _dst)
+    {
+        CV_Assert(!_src.empty());
+        CV_Assert(_src.isContinuous());
+        CV_Assert(_src.type() == CV_8UC3 || _src.type() == CV_16UC3);
+        Mat src = _src.getMat();
+
+        vector<Vec2f> features;
+        extractSimpleFeatures(src, features);
+        Vec2f illuminant = predictIlluminant(features);
+
+        float denom = 1 - illuminant[0] - illuminant[1];
+        float gainB = 1.0f;
+        float gainG = denom / illuminant[1];
+        float gainR = denom / illuminant[0];
+        applyChannelGains(src, _dst, gainB, gainG, gainR);
+    }
+};
 
 /* Computes a mask for non-saturated pixels and maximum pixel value
  * which are then used for feature computation
  */
-void preprocessing(Mat &dst_mask, int &dst_max_val, Mat &src, int range_max_val, float saturation_thresh)
+void LearningBasedWBImpl::preprocessing(Mat &src)
 {
-    dst_mask = Mat(src.size(), CV_8U);
-    uchar *mask_ptr = dst_mask.ptr<uchar>();
+    mask.create(src.size(), CV_8U);
+    uchar *mask_ptr = mask.ptr<uchar>();
     int src_len = src.rows * src.cols;
     int thresh = (int)(saturation_thresh * range_max_val);
     int i = 0;
     int local_max;
-    dst_max_val = -1;
+    src_max_val = -1;
 
     if (src.type() == CV_8UC3)
     {
@@ -133,15 +192,15 @@ void preprocessing(Mat &dst_mask, int &dst_max_val, Mat &src, int range_max_val,
         v_store(global_max, v_global_max);
         for (int j = 0; j < 16; j++)
         {
-            if (global_max[j] > dst_max_val)
-                dst_max_val = global_max[j];
+            if (global_max[j] > src_max_val)
+                src_max_val = global_max[j];
         }
 #endif
         for (; i < src_len; i++)
         {
             local_max = max(src_ptr[3 * i], max(src_ptr[3 * i + 1], src_ptr[3 * i + 2]));
-            if (local_max > dst_max_val)
-                dst_max_val = local_max;
+            if (local_max > src_max_val)
+                src_max_val = local_max;
             if (local_max < thresh)
                 mask_ptr[i] = 255;
             else
@@ -166,15 +225,15 @@ void preprocessing(Mat &dst_mask, int &dst_max_val, Mat &src, int range_max_val,
         v_store(global_max, v_global_max);
         for (int j = 0; j < 8; j++)
         {
-            if (global_max[j] > dst_max_val)
-                dst_max_val = global_max[j];
+            if (global_max[j] > src_max_val)
+                src_max_val = global_max[j];
         }
 #endif
         for (; i < src_len; i++)
         {
             local_max = max(src_ptr[3 * i], max(src_ptr[3 * i + 1], src_ptr[3 * i + 2]));
-            if (local_max > dst_max_val)
-                dst_max_val = local_max;
+            if (local_max > src_max_val)
+                src_max_val = local_max;
             if (local_max < thresh)
                 mask_ptr[i] = 255;
             else
@@ -183,8 +242,8 @@ void preprocessing(Mat &dst_mask, int &dst_max_val, Mat &src, int range_max_val,
     }
 }
 
-void getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity, Vec2f &brightest_chromaticity, Mat &src,
-                                             Mat &mask)
+void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity,
+                                                                  Vec2f &brightest_chromaticity, Mat &src)
 {
     int i = 0;
     int src_len = src.rows * src.cols;
@@ -376,15 +435,42 @@ void getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity, Vec2f 
     }
 }
 
-void getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity_pallete_mode, Mat &src, Mat &mask,
-                               int hist_bin_num, int max_val)
+/* Returns the most high-density point (i.e. mode) of the color palette.
+ * Uses a simplistic kernel density estimator with a Epanechnikov kernel and
+ * fixed bandwidth.
+ */
+void LearningBasedWBImpl::getColorPaletteMode(Vec2f &dst, hist_elem *palette)
 {
-    const int pallete_size = 300;
-    const float pallete_bandwidth = 0.1f;
+    float max_density = -1.0f;
+    float denom = palette_bandwidth * palette_bandwidth;
+    for (int i = 0; i < palette_size; i++)
+    {
+        float cur_density = 0.0f;
+        float cur_dist_sq;
+
+        for (int j = 0; j < palette_size; j++)
+        {
+            cur_dist_sq = (palette[i].r - palette[j].r) * (palette[i].r - palette[j].r) +
+                          (palette[i].g - palette[j].g) * (palette[i].g - palette[j].g);
+            cur_density += max((1.0f - (cur_dist_sq / denom)), 0.0f);
+        }
+
+        if (cur_density > max_density)
+        {
+            max_density = cur_density;
+            dst[0] = palette[i].r;
+            dst[1] = palette[i].g;
+        }
+    }
+}
+
+void LearningBasedWBImpl::getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity_palette_mode,
+                                                    Mat &src)
+{
     MatND hist;
     int channels[] = {0, 1, 2};
     int histSize[] = {hist_bin_num, hist_bin_num, hist_bin_num};
-    float range[] = {0, (float)max(hist_bin_num, max_val)};
+    float range[] = {0, (float)max(hist_bin_num, src_max_val)};
     const float *ranges[] = {range, range, range};
     calcHist(&src, 1, channels, mask, hist, 3, histSize, ranges);
 
@@ -406,10 +492,10 @@ void getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity
             }
     getChromaticity(dominant_chromaticity, (float)dominant_R, (float)dominant_G, (float)dominant_B);
 
-    vector<hist_elem> pallete;
-    pallete.reserve(pallete_size);
+    vector<hist_elem> palette;
+    palette.reserve(palette_size);
     hist_ptr = hist.ptr<float>();
-    // extract top pallete_size most common colors and add them to the pallete:
+    // extract top palette_size most common colors and add them to the palette:
     for (int i = 0; i < hist_bin_num; i++)
         for (int j = 0; j < hist_bin_num; j++)
             for (int k = 0; k < hist_bin_num; k++)
@@ -424,45 +510,28 @@ void getHistogramBasedFeatures(Vec2f &dominant_chromaticity, Vec2f &chromaticity
                 getChromaticity(chromaticity, (float)k, (float)j, (float)i);
                 hist_elem el(bin_count, chromaticity);
 
-                if (pallete.size() < pallete_size)
+                if (palette.size() < (uint)palette_size)
                 {
-                    pallete.push_back(el);
-                    if (pallete.size() == pallete_size)
-                        make_heap(pallete.begin(), pallete.end());
+                    palette.push_back(el);
+                    if (palette.size() == (uint)palette_size)
+                        make_heap(palette.begin(), palette.end());
                 }
-                else if (bin_count > pallete.front().hist_val)
+                else if (bin_count > palette.front().hist_val)
                 {
-                    pop_heap(pallete.begin(), pallete.end());
-                    pallete.back() = el;
-                    push_heap(pallete.begin(), pallete.end());
+                    pop_heap(palette.begin(), palette.end());
+                    palette.back() = el;
+                    push_heap(palette.begin(), palette.end());
                 }
                 hist_ptr++;
             }
-    getColorPalleteMode(chromaticity_pallete_mode, (hist_elem *)(&pallete[0]), (int)pallete.size(), pallete_bandwidth);
+    getColorPaletteMode(chromaticity_palette_mode, (hist_elem *)(&palette[0]));
 }
 
-void extractSimpleFeatures(InputArray _src, OutputArray _dst, int range_max_val, float saturation_thresh,
-                           int hist_bin_num)
-{
-    Mat src = _src.getMat();
-    CV_Assert(!src.empty());
-    CV_Assert(src.isContinuous());
-    CV_Assert(src.type() == CV_8UC3 || src.type() == CV_16UC3);
-    vector<Vec2f> dst(num_features);
-
-    Mat mask;
-    int max_val = 0;
-    preprocessing(mask, max_val, src, range_max_val, saturation_thresh);
-    getAverageAndBrightestColorChromaticity(dst[0], dst[1], src, mask);
-    getHistogramBasedFeatures(dst[2], dst[3], src, mask, hist_bin_num, max_val);
-    Mat(dst).convertTo(_dst, CV_32F);
-}
-
-inline float regressionTreePredict(Vec2f src, uchar *tree_feature_idx, float *tree_thresh_vals, float *tree_leaf_vals)
+float LearningBasedWBImpl::regressionTreePredict(Vec2f src, uchar *tree_feature_idx, float *tree_thresh_vals,
+                                                 float *tree_leaf_vals)
 {
     int node_idx = 0;
-    int depth = (int)round(log(num_tree_nodes) / log(2));
-    for (int i = 0; i < depth; i++)
+    for (int i = 0; i < tree_depth; i++)
     {
         if (src[tree_feature_idx[node_idx]] <= tree_thresh_vals[node_idx])
             node_idx = 2 * node_idx + 1;
@@ -472,22 +541,14 @@ inline float regressionTreePredict(Vec2f src, uchar *tree_feature_idx, float *tr
     return tree_leaf_vals[node_idx - num_tree_nodes + 1];
 }
 
-void autowbLearningBased(InputArray _src, OutputArray _dst, int range_max_val, float saturation_thresh,
-                         int hist_bin_num)
+Vec2f LearningBasedWBImpl::predictIlluminant(vector<Vec2f> features)
 {
-    const float prediction_thresh = 0.025f;
-    Mat src = _src.getMat();
-    CV_Assert(!src.empty());
-    CV_Assert(src.isContinuous());
-    CV_Assert(src.type() == CV_8UC3 || src.type() == CV_16UC3);
-
-    vector<Vec2f> features;
-    extractSimpleFeatures(src, features, range_max_val, saturation_thresh, hist_bin_num);
-
     int feature_model_size = 2 * (num_tree_nodes - 1);
     int local_model_size = num_features * feature_model_size;
     int feature_model_size_leaf = 2 * num_tree_nodes;
     int local_model_size_leaf = num_features * feature_model_size_leaf;
+    tree_depth = (int)round(log(num_tree_nodes) / log(2));
+
     vector<float> consensus_r, consensus_g;
     vector<float> all_r, all_g;
     for (int i = 0; i < num_trees; i++)
@@ -538,12 +599,13 @@ void autowbLearningBased(InputArray _src, OutputArray _dst, int range_max_val, f
         nth_element(consensus_g.begin(), consensus_g.begin() + consensus_g.size() / 2, consensus_g.end());
         illuminant_g = consensus_g[consensus_g.size() / 2];
     }
+    return Vec2f(illuminant_r, illuminant_g);
+}
 
-    float denom = 1 - illuminant_r - illuminant_g;
-    float gainB = 1.0f;
-    float gainG = denom / illuminant_g;
-    float gainR = denom / illuminant_r;
-    applyChannelGains(src, _dst, gainB, gainG, gainR);
+Ptr<LearningBasedWB> createLearningBasedWB(const String& path_to_model)
+{
+    Ptr<LearningBasedWB> inst = makePtr<LearningBasedWBImpl>(path_to_model);
+    return inst;
 }
 }
 }

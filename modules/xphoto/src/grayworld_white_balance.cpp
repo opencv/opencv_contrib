@@ -49,6 +49,54 @@ namespace xphoto
 void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, int src_len, float thresh);
 void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_data, int src_len, float thresh);
 
+class GrayworldWBImpl : public GrayworldWB
+{
+  private:
+    float thresh;
+
+  public:
+    GrayworldWBImpl() { thresh = 0.9f; }
+    float getSaturationThreshold() const { return thresh; }
+    void setSaturationThreshold(float val) { thresh = val; }
+    void balanceWhite(InputArray _src, OutputArray _dst)
+    {
+        CV_Assert(!_src.empty());
+        CV_Assert(_src.isContinuous());
+        CV_Assert(_src.type() == CV_8UC3 || _src.type() == CV_16UC3);
+        Mat src = _src.getMat();
+
+        int N = src.cols * src.rows, N3 = N * 3;
+
+        double dsumB = 0.0, dsumG = 0.0, dsumR = 0.0;
+        if (src.type() == CV_8UC3)
+        {
+            uint sumB = 0, sumG = 0, sumR = 0;
+            calculateChannelSums(sumB, sumG, sumR, src.ptr<uchar>(), N3, thresh);
+            dsumB = (double)sumB;
+            dsumG = (double)sumG;
+            dsumR = (double)sumR;
+        }
+        else if (src.type() == CV_16UC3)
+        {
+            uint64 sumB = 0, sumG = 0, sumR = 0;
+            calculateChannelSums(sumB, sumG, sumR, src.ptr<ushort>(), N3, thresh);
+            dsumB = (double)sumB;
+            dsumG = (double)sumG;
+            dsumR = (double)sumR;
+        }
+
+        // Find inverse of averages
+        double max_sum = max(dsumB, max(dsumR, dsumG));
+        const double eps = 0.1;
+        float dinvB = dsumB < eps ? 0.f : (float)(max_sum / dsumB),
+              dinvG = dsumG < eps ? 0.f : (float)(max_sum / dsumG),
+              dinvR = dsumR < eps ? 0.f : (float)(max_sum / dsumR);
+
+        // Use the inverse of averages as channel gains:
+        applyChannelGains(src, _dst, dinvB, dinvG, dinvR);
+    }
+};
+
 /* Computes sums for each channel, while ignoring saturated pixels which are determined by thresh
  * (version for CV_8UC3)
  */
@@ -297,41 +345,6 @@ void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gai
     }
 }
 
-void autowbGrayworld(InputArray _src, OutputArray _dst, float thresh)
-{
-    Mat src = _src.getMat();
-    CV_Assert(!src.empty());
-    CV_Assert(src.isContinuous());
-    CV_Assert(src.type() == CV_8UC3 || src.type() == CV_16UC3);
-
-    int N = src.cols * src.rows, N3 = N * 3;
-
-    double dsumB = 0.0, dsumG = 0.0, dsumR = 0.0;
-    if (src.type() == CV_8UC3)
-    {
-        uint sumB = 0, sumG = 0, sumR = 0;
-        calculateChannelSums(sumB, sumG, sumR, src.ptr<uchar>(), N3, thresh);
-        dsumB = (double)sumB;
-        dsumG = (double)sumG;
-        dsumR = (double)sumR;
-    }
-    else if (src.type() == CV_16UC3)
-    {
-        uint64 sumB = 0, sumG = 0, sumR = 0;
-        calculateChannelSums(sumB, sumG, sumR, src.ptr<ushort>(), N3, thresh);
-        dsumB = (double)sumB;
-        dsumG = (double)sumG;
-        dsumR = (double)sumR;
-    }
-
-    // Find inverse of averages
-    double max_sum = max(dsumB, max(dsumR, dsumG));
-    const double eps = 0.1;
-    float dinvB = dsumB < eps ? 0.f : (float)(max_sum / dsumB), dinvG = dsumG < eps ? 0.f : (float)(max_sum / dsumG),
-          dinvR = dsumR < eps ? 0.f : (float)(max_sum / dsumR);
-
-    // Use the inverse of averages as channel gains:
-    applyChannelGains(src, _dst, dinvB, dinvG, dinvR);
-}
+Ptr<GrayworldWB> createGrayworldWB() { return makePtr<GrayworldWBImpl>(); }
 }
 }

@@ -18,7 +18,11 @@ TEST(xphoto_simplefeatures, regression)
     Vec2f ref2(200.0f / (240 + 220 + 200), 220.0f / (240 + 220 + 200));
 
     vector<Vec2f> dst_features;
-    xphoto::extractSimpleFeatures(test_im, dst_features, 255, 0.98f, 64);
+    Ptr<xphoto::LearningBasedWB> wb = xphoto::createLearningBasedWB();
+    wb->setRangeMaxVal(255);
+    wb->setSaturationThreshold(0.98f);
+    wb->setHistBinNum(64);
+    wb->extractSimpleFeatures(test_im, dst_features);
     ASSERT_LE(cv::norm(dst_features[0], ref1, NORM_INF), acc_thresh);
     ASSERT_LE(cv::norm(dst_features[1], ref2, NORM_INF), acc_thresh);
     ASSERT_LE(cv::norm(dst_features[2], ref1, NORM_INF), acc_thresh);
@@ -26,7 +30,10 @@ TEST(xphoto_simplefeatures, regression)
 
     // check 16 bit depth:
     test_im.convertTo(test_im, CV_16U, 256.0);
-    xphoto::extractSimpleFeatures(test_im, dst_features, 65535, 0.98f, 64);
+    wb->setRangeMaxVal(65535);
+    wb->setSaturationThreshold(0.98f);
+    wb->setHistBinNum(128);
+    wb->extractSimpleFeatures(test_im, dst_features);
     ASSERT_LE(cv::norm(dst_features[0], ref1, NORM_INF), acc_thresh);
     ASSERT_LE(cv::norm(dst_features[1], ref2, NORM_INF), acc_thresh);
     ASSERT_LE(cv::norm(dst_features[2], ref1, NORM_INF), acc_thresh);
