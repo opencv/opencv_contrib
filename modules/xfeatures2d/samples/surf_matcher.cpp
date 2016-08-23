@@ -137,11 +137,11 @@ static Mat drawGoodMatches(
 int main(int argc, char* argv[])
 {
     const char* keys =
-        "{ h help     | false            | print help message  }"
+        "{ h help     |                  | print help message  }"
         "{ l left     | box.png          | specify left image  }"
         "{ r right    | box_in_scene.png | specify right image }"
         "{ o output   | SURF_output.jpg  | specify output save path }"
-        "{ m cpu_mode | false            | run without OpenCL }";
+        "{ m cpu_mode |                  | run without OpenCL }";
 
     CommandLineParser cmd(argc, argv, keys);
     if (cmd.has("help"))
