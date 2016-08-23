@@ -463,19 +463,19 @@ bool getCaffeAvailable()
 
 #else
 
-bool DeepCNN::getCaffeGpuMode()
+bool getCaffeGpuMode()
 {
     CV_Error(Error::StsError,"Caffe not available during compilation!");
     return 0;
 }
 
-void DeepCNN::setCaffeGpuMode(bool useGpu)
+void setCaffeGpuMode(bool useGpu)
 {
     CV_Error(Error::StsError,"Caffe not available during compilation!");
     CV_Assert(useGpu==1);//Compilation directives force
 }
 
-bool DeepCNN::getCaffeAvailable(){
+bool getCaffeAvailable(){
     return 0;
 }
 

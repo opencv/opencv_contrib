@@ -71,7 +71,7 @@ template <typename P,typename BL_A,typename BL> void blendRGBA(Mat& out,const Ma
 }
 
 }//unnamed namespace
-
+void blendWeighted(Mat& out,Mat& top,Mat& bottom,float topMask,float bottomMask);
 void blendWeighted(Mat& out,Mat& top,Mat& bottom,float topMask,float bottomMask){
     if(out.channels( )==3 && top.channels( )==3 && bottom.channels( )==3 ){
         for(int y=0;y<out.rows;y++){
@@ -110,6 +110,7 @@ void blendWeighted(Mat& out,Mat& top,Mat& bottom,float topMask,float bottomMask)
     CV_Error(Error::StsError,"Images must all be either CV_32FC1 CV_32FC32");
 }
 
+void blendWeighted(Mat& out,Mat& top,Mat& bottom,Mat& topMask_,Mat& bottomMask_);
 void blendWeighted(Mat& out,Mat& top,Mat& bottom,Mat& topMask_,Mat& bottomMask_){
     for(int y=0;y<out.rows;y++){
         float* outR=out.ptr<float>(y);
@@ -120,9 +121,9 @@ void blendWeighted(Mat& out,Mat& top,Mat& bottom,Mat& topMask_,Mat& bottomMask_)
         float* topG=top.ptr<float>(y)+1;
         float* topB=top.ptr<float>(y)+2;
 
-        float* bottomR=top.ptr<float>(y);
-        float* bottomG=top.ptr<float>(y)+1;
-        float* bottomB=top.ptr<float>(y)+2;
+        float* bottomR=bottom.ptr<float>(y);
+        float* bottomG=bottom.ptr<float>(y)+1;
+        float* bottomB=bottom.ptr<float>(y)+2;
 
         float* topMask=topMask_.ptr<float>(y);
         float* bottomMask=bottomMask_.ptr<float>(y);
@@ -136,7 +137,7 @@ void blendWeighted(Mat& out,Mat& top,Mat& bottom,Mat& topMask_,Mat& bottomMask_)
     }
 }
 
-
+void blendOverlay(Mat& out,Mat& top,Mat& bottom,Mat& topMask);
 void blendOverlay(Mat& out,Mat& top,Mat& bottom,Mat& topMask){
     for(int y=0;y<out.rows;y++){
         float* outR=out.ptr<float>(y);
@@ -162,6 +163,7 @@ void blendOverlay(Mat& out,Mat& top,Mat& bottom,Mat& topMask){
     }
 }
 
+void blendOverlay(Mat& out,Scalar topCol,Scalar bottomCol,Mat& topMask);
 void blendOverlay(Mat& out,Scalar topCol,Scalar bottomCol,Mat& topMask){
     float topR=topCol[0];
     float topG=topCol[1];
@@ -189,7 +191,7 @@ void blendOverlay(Mat& out,Scalar topCol,Scalar bottomCol,Mat& topMask){
 
 
 TextSynthesizer::TextSynthesizer(int maxSampleWidth,int sampleHeight):
-    maxResWidth_(maxSampleWidth),resHeight_(sampleHeight)
+    resHeight_(sampleHeight),maxResWidth_(maxSampleWidth)
 {
     underlineProbabillity_=0.05;
     italicProbabillity_=.1;
@@ -216,7 +218,7 @@ TextSynthesizer::TextSynthesizer(int maxSampleWidth,int sampleHeight):
 class TextSynthesizerQtImpl: public TextSynthesizer{
 protected:
     void updateFontNameList(){
-        QFontDatabase::WritingSystem qtScriptCode;
+        QFontDatabase::WritingSystem qtScriptCode=QFontDatabase::Any;
         switch(this->script_){
             case CV_TEXT_SYNTHESIZER_SCRIPT_ANY:
                 qtScriptCode=QFontDatabase::Any;
@@ -546,7 +548,7 @@ public:
     }
 
     void addFontFiles(const std::vector<cv::String>& fntList){
-        for(int n=0;n<fntList.size();n++){
+        for(size_t n=0;n<fntList.size();n++){
             try{
                 QFontDatabase::addApplicationFont(fntList[n].c_str());
             }catch(int e){
