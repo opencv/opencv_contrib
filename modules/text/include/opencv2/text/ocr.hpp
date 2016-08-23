@@ -549,19 +549,20 @@ public:
     /** @brief this method in provides public acces to the preprocessing with respect to a specific
      * classifier
      *
-     * This method's main use would be to use the preprocessor without a classifier.
+     * This method's main use would be to use the preprocessor without feeding it to a classifier.
+     * Debugging is a great part
      *
-     * @param input
+     * @param input an image without any contrains
      *
-     * @param output
+     * @param output in most cases an image of fixed depth size and whitened
      *
-     * @param sz
+     * @param sz the size to which the image would be resize if the preprocessor resizes inputs
      *
-     * @param outputChannels
+     * @param outputChannels the number of channels for the output image
      */
     CV_WRAP void preprocess(InputArray input,OutputArray output,Size sz,int outputChannels);
 
-    /** @brief
+    /** @brief Creates a functor that only resizes the input without
      *
      * @return shared pointer to generated preprocessor
      */
@@ -580,6 +581,7 @@ public:
     CV_WRAP static Ptr<ImagePreprocessor> createImageMeanSubtractor(InputArray meanImg);
 
     friend class TextImageClassifier;
+
 };
 
 /** @brief Abstract class that implements the classifcation of text images.

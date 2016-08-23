@@ -49,8 +49,6 @@
 #include <fstream>
 #include <set>
 
-#define DBG(msg) (std::cerr<<"DBG L:"<<__LINE__<<"\t"<<msg)
-
 namespace cv
 {
 namespace text
@@ -65,7 +63,6 @@ void OCRBeamSearchDecoder::run(Mat& image, string& output_text, vector<Rect>* co
                                vector<string>* component_texts, vector<float>* component_confidences,
                                int component_level)
 {
-    DBG("RUN START\n");
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
@@ -80,7 +77,6 @@ void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vecto
                                vector<string>* component_texts, vector<float>* component_confidences,
                                int component_level)
 {
-    DBG("RUN START\n");
     CV_Assert(mask.type() == CV_8UC1);
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
@@ -95,13 +91,11 @@ void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vecto
 
 CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, int min_confidence, int component_level)
 {
-    DBG("RUN START\n");
     std::string output1;
     std::string output2;
     vector<string> component_texts;
     vector<float> component_confidences;
     Mat image_m = image.getMat();
-    DBG("RUN 1\n");
     run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
@@ -116,7 +110,6 @@ CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, int min_confidence, i
 
 CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
 {
-    DBG("RUN START\n");
     std::string output1;
     std::string output2;
     vector<string> component_texts;
@@ -138,7 +131,6 @@ CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, InputArray mask, int 
 
 void OCRBeamSearchDecoder::ClassifierCallback::eval( InputArray image, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation)
 {
-    DBG("eval callback START\n");
     CV_Assert(( image.getMat().type() == CV_8UC3 ) || ( image.getMat().type() == CV_8UC1 ));
     if (!recognition_probabilities.empty())
     {
@@ -206,7 +198,6 @@ public:
               vector<float>* component_confidences,
               int component_level)
     {
-        DBG("RUN START\n");
         CV_Assert(mask.type() == CV_8UC1);
         //nothing to do with a mask here
         run( src, out_sequence, component_rects, component_texts, component_confidences,
@@ -220,7 +211,6 @@ public:
               vector<float>* component_confidences,
               int component_level)
     {
-        DBG("RUN START\n");
         CV_Assert( (src.type() == CV_8UC1) || (src.type() == CV_8UC3) );
         CV_Assert( (src.cols > 0) && (src.rows > 0) );
         CV_Assert( component_level == OCR_LEVEL_WORD );
@@ -237,28 +227,17 @@ public:
             cvtColor(src,src,COLOR_RGB2GRAY);
         }
 
-        DBG("RUN 1\n");
         // TODO if input is a text line (not a word) we may need to split into words here!
 
         // do sliding window classification along a croped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
-        DBG("RUN 1.5\n");std::map<int,char> m;m[0]='#';m[1]='@';m[2]='0';m[3]='1';m[4]='2';m[5]='3';m[6]='4';m[7]='5';m[8]='6';m[9]='7';m[10]='8';m[11]='9';m[12]='A';m[13]='a';m[14]='B';m[15]='b';m[16]='C';m[17]='c';m[18]='D';m[19]='d';m[20]='E';m[21]='e';m[22]='F';m[23]='f';m[24]='G';m[25]='g';m[26]='H';m[27]='h';m[28]='I';m[29]='i';m[30]='J';m[31]='j';m[32]='K';m[33]='k';m[34]='L';m[35]='l';m[36]='M';m[37]='m';m[38]='N';m[39]='n';m[40]='O';m[41]='o';m[42]='P';m[43]='p';m[44]='Q';m[45]='q';m[46]='R';m[47]='r';m[48]='S';m[49]='s';m[50]='T';m[51]='t';m[52]='U';m[53]='u';m[54]='V';m[55]='v';m[56]='W';m[57]='w';m[58]='X';m[59]='x';m[60]='Y';m[61]='y';m[62]='Z';m[63]='z';
-        for(int wNum=0;wNum<recognition_probabilities.size();wNum++){
-            std::cerr<<"W "<<wNum<<"\noversegmentation: "<<oversegmentation[wNum]<<" :"<<m[std::distance(recognition_probabilities[wNum].begin(), std::max_element(recognition_probabilities[wNum].begin(), recognition_probabilities[wNum].end()))]<<"\n";
-//            for(int clNum=0;clNum<recognition_probabilities[wNum].size();clNum++){
-//                std::cerr<<recognition_probabilities[wNum][clNum]<<", ";
-//            }
-            std::cerr<<"\n";
-        }
-        std::cerr<<"\n\n";
-        DBG("RUN 2\n");
+
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
         if (oversegmentation.size() < 2){
             out_sequence="###";//TODO find the output class transcription for the single window
             return;
         }
 
-        DBG("RUN 3\n");
         //NMS of recognitions
         double last_best_p = 0;
         int last_best_idx  = -1;
@@ -274,7 +253,7 @@ public:
               best_idx = (int)j;
             }
           }
-        DBG("RUN 4\n");
+
           if ((i>0) && (best_idx == last_best_idx)
               && (oversegmentation[i]*step_size < oversegmentation[i-1]*step_size + win_size) )
           {
@@ -293,7 +272,7 @@ public:
               continue;
             }
           }
-        DBG("RUN 5\n");
+
           last_best_idx = best_idx;
           last_best_p   = best_p;
           i++;
@@ -312,7 +291,7 @@ public:
                     recognition_probabilities[i][j] = log(recognition_probabilities[i][j]);
             }
         }
-        DBG("RUN 6\n");
+
         // initialize the beam with all possible character's pairs
         int generated_chids = 0;
         for (size_t i=0; i<recognition_probabilities.size()-1; i++)
@@ -336,7 +315,7 @@ public:
 
           }
         }
-        DBG("RUN 7\n");
+
         while (generated_chids != 0)
         {
             generated_chids = 0;
@@ -354,23 +333,23 @@ public:
                 generated_chids += (int)childs.size();
             }
         }
-        DBG("RUN 8\n");
+
         // Done! Get the best prediction found into out_sequence
         double lp = score_segmentation( beam[0].segmentation, out_sequence );
-        DBG("RUN 8.3 component rects:")<<component_rects<<"\n";
+
         // fill other (dummy) output parameters
         if(component_rects!=NULL){
             component_rects->push_back(Rect(0,0,src.cols,src.rows));
         }
-        DBG("RUN 8.5\n")<<out_sequence<<"\n";
+
         if(component_texts!=NULL){
             component_texts->push_back(out_sequence);
         }
-        DBG("RUN 8.7 lp")<<(float)exp(lp)<<"\n";
+
         if(component_confidences!=NULL){
             component_confidences->push_back((float)exp(lp));
         }
-        DBG("RUN 9\n");
+
         return;
     }
 
@@ -832,7 +811,7 @@ public:
     virtual ~TextImageClassifierBeamSearchCallback() { }
 
     TextImageClassifierBeamSearchCallback(Ptr<TextImageClassifier> classifier,int stepSize,int windowWidth)
-        :classifier_(classifier),stepSize_(stepSize),windowWidth_(windowWidth)
+        :stepSize_(stepSize),windowWidth_(windowWidth),classifier_(classifier)
     {
         if(windowWidth_<=0)
         {
@@ -845,7 +824,7 @@ public:
 
     virtual void eval( InputArray _img, std::vector< std::vector<double> >& recognitionProbabilities, std::vector<int>& oversegmentation )
     {
-        DBG("EVAL 1\n");
+
         if (!recognitionProbabilities.empty())
         {
             for (size_t i=0; i<recognitionProbabilities.size(); i++)
@@ -853,19 +832,18 @@ public:
         }
         recognitionProbabilities.clear();
         oversegmentation.clear();
-        DBG("EVAL 2\n");
+
         Mat img=_img.getMat();
         std::vector<Mat> windowList;
         int counter=0;
-        DBG("EVAL 3\n");
+
         for(int x=0;x+windowWidth_<img.cols;x+=stepSize_)
         {
-            DBG("EVAL 3.5 x:(")<<x<<" , "<<x+windowWidth_<<") W:"<<img.cols<<"count "<<counter<<" stepSize:"<<stepSize_<<"\n";
             windowList.push_back(img.colRange(x,x+windowWidth_));
             oversegmentation.push_back(counter);//This seems redundant maybe the callback API should deprecate it;
             counter++;
         }
-        DBG("EVAL 4\n");
+
         Mat windowProbabilities;
         this->classifier_->classifyBatch(windowList,windowProbabilities);
         recognitionProbabilities.resize(windowProbabilities.rows);
@@ -877,21 +855,17 @@ public:
                   for(int clNum=2;clNum<windowProbabilities.cols;clNum++){
                       recognitionProbabilities[windowNum][clNum]=sqrt(windowProbabilities.at<double>(windowNum,clNum));//+.02;
                   }
-                  //recognitionProbabilities[windowNum][0]=0;
-                  //recognitionProbabilities[windowNum][1]=0;
                   break;
                 case CV_32F:
                   for(int clNum=2;clNum<windowProbabilities.cols;clNum++){
                       recognitionProbabilities[windowNum][clNum]=sqrt(windowProbabilities.at<float>(windowNum,clNum));//+.02;
                   }
-                  //recognitionProbabilities[windowNum][0]=0;
-                  //recognitionProbabilities[windowNum][1]=0;
                   break;
                 default:
                   CV_Error(Error::StsError,"The network outputs should be either float or double!");
             }
         }
-        DBG("EVAL 5\n");
+
     }
 
     virtual int getWindowSize(){return stepSize_;}
