@@ -167,13 +167,13 @@ void blendOverlay(Mat& out,Mat& top,Mat& bottom,Mat& topMask){
 
 void blendOverlay(Mat& out,Scalar topCol,Scalar bottomCol,Mat& topMask);
 void blendOverlay(Mat& out,Scalar topCol,Scalar bottomCol,Mat& topMask){
-    float topR=topCol[0];
-    float topG=topCol[1];
-    float topB=topCol[2];
+    float topR=float(topCol[0]);
+    float topG=float(topCol[1]);
+    float topB=float(topCol[2]);
 
-    float bottomR=bottomCol[0];
-    float bottomG=bottomCol[1];
-    float bottomB=bottomCol[2];
+    float bottomR=float(bottomCol[0]);
+    float bottomG=float(bottomCol[1]);
+    float bottomB=float(bottomCol[2]);
 
     for(int y=0;y<out.rows;y++){
         float* outR=out.ptr<float>(y);
@@ -311,9 +311,9 @@ protected:
         //Obtaining color triplet
         int colorTriplet=this->rng_.next()%this->colorClusters_.rows;
         uchar* cVal=this->colorClusters_.ptr<uchar>(colorTriplet);
-        Scalar_<float> fgText(cVal[0]/255.0,cVal[1]/255.0,cVal[2]/255.0);
-        Scalar_<float> fgBorder(cVal[3]/255.0,cVal[4]/255.0,cVal[5]/255.0);
-        Scalar_<float> fgShadow(cVal[6]/255.0,cVal[7]/255.0,cVal[8]/255.0);
+        Scalar_<float> fgText(float(cVal[0]/255.0),float(cVal[1]/255.0),float(cVal[2]/255.0));
+        Scalar_<float> fgBorder(float(cVal[3]/255.0),float(cVal[4]/255.0),float(cVal[5]/255.0));
+        Scalar_<float> fgShadow(float(cVal[6]/255.0),float(cVal[7]/255.0),float(cVal[8]/255.0));
 
         Mat floatTxt;Mat floatBorder;Mat floatShadow;
         textGrayImg.convertTo(floatTxt, CV_32FC1, 1.0/255.0);
@@ -323,7 +323,7 @@ protected:
         int shadowSize=(this->rng_.next()%this->maxShadowSize_)*((this->rng_.next()%10000)/10000.0>this->shadowProbabillity_);
         int voffset=(this->rng_.next()%(shadowSize*2+1))-shadowSize;
         int hoffset=(this->rng_.next()%(shadowSize*2+1))-shadowSize;
-        float shadowOpacity=(((this->rng_.next()%10000)*maxShadowOpacity_)/10000.0);
+        float shadowOpacity=float(((this->rng_.next()%10000)*maxShadowOpacity_)/10000.0);
 
         //generating shadows
         generateDilation(floatBorder,floatTxt,borderSize,0,0);
@@ -376,13 +376,13 @@ protected:
     }
 
     void randomlyDistortPerspective(const Mat& inputImg,Mat& outputImg){
-        int N=this->maxPerspectiveDistortion_;
+        int N=int(this->maxPerspectiveDistortion_);
         std::vector<Point> src(4);std::vector<Point> dst(4);
         src[0]=Point2f(0,0);src[1]=Point2f(100,0);src[2]=Point2f(0,100);src[3]=Point2f(100,100);
-        dst[0]=Point2f(this->rng_.next()%N,this->rng_.next()%N);
-        dst[1]=Point2f(100-this->rng_.next()%N,this->rng_.next()%N);
-        dst[2]=Point2f(this->rng_.next()%N,100-this->rng_.next()%N);
-        dst[3]=Point2f(100-this->rng_.next()%N,100-this->rng_.next()%N);
+        dst[0]=Point2f(float(this->rng_.next()%N),float(this->rng_.next()%N));
+        dst[1]=Point2f(float(100-this->rng_.next()%N),float(this->rng_.next()%N));
+        dst[2]=Point2f(float(this->rng_.next()%N),float(100-this->rng_.next()%N));
+        dst[3]=Point2f(float(100-this->rng_.next()%N),float(100-this->rng_.next()%N));
         Mat h=findHomography(src,dst);
         warpPerspective(inputImg,outputImg,h,inputImg.size());
     }
@@ -391,15 +391,16 @@ protected:
         if ((this->rng_.next()%1000)>1000*this->curvingProbabillity_){
             Mat X=Mat(inputImg.rows,inputImg.cols,CV_32FC1);
             Mat Y=Mat(inputImg.rows,inputImg.cols,CV_32FC1);
-            int xAdd=-this->rng_.next()%inputImg.cols;
+            int xAdd=-int(this->rng_.next()%inputImg.cols);
             float xMult=(this->rng_.next()%10000)*float(maxCurveArch_)/10000;
             int sign=(this->rng_.next()%2)?-1:1;
             for(int y=0;y<inputImg.rows;y++){
                 float* xRow=X.ptr<float>(y);
                 float* yRow=Y.ptr<float>(y);
                 for(int x=0;x<inputImg.cols;x++){
-                    xRow[x]=x;
+                    xRow[x]=float(x);
                     yRow[x]=y+sign*cos((x+xAdd)*xMult)*maxHeightDistortionPercentage_-sign*maxHeightDistortionPercentage_;
+                    //TODO resolve the type of the expression, warning from windows64 says it is int
 
                 }
             }
@@ -542,7 +543,7 @@ public:
         sample=Mat(txtDistorted.rows,txtDistorted.cols,CV_32FC3);
 
         blendOverlay(sample,txtSample,bgResized,txtMask);
-        double blendAlpha=this->finalBlendAlpha_*(this->rng_.next()%1000)/1000.0;
+        float blendAlpha=float(this->finalBlendAlpha_*(this->rng_.next()%1000)/1000.0);
         if((this->rng_.next()%1000)>1000*this->finalBlendProb_){
             blendWeighted(sample,sample,bgResized,1-blendAlpha,blendAlpha);
         }

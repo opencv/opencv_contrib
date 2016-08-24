@@ -466,12 +466,13 @@ public:
                                      int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
-    /** @brief
+    /** @brief This method allows to plug a classifier that is derivative of TextImageClassifier in to
+     * OCRBeamSearchDecoder as a ClassifierCallback.
 
-    @param classifier The character classifier with built in feature extractor
+    @param classifier A pointer to a TextImageClassifier decendent
 
     @param alphabet The language alphabet one char per symbol. alphabet.size() must be equal to the number of classes
-    of the classifier
+    of the classifier. In future editinons it should be replaced with a vector of strings.
 
     @param transition_probabilities_table Table with transition probabilities between character
     pairs. cols == rows == alphabet.size().
@@ -480,7 +481,8 @@ public:
     rows == alphabet.size().
 
     @param windowWidth The width of the windows to which the sliding window will be iterated. The height will
-    be the height of the image. The windows might be resized to fit the classifiers input by the classifiers preprocessor
+    be the height of the image. The windows might be resized to fit the classifiers input by the classifiers
+    preprocessor.
 
     @param windowStep The step for the sliding window
 
@@ -550,9 +552,9 @@ public:
      * classifier
      *
      * This method's main use would be to use the preprocessor without feeding it to a classifier.
-     * Debugging is a great part
+     * Determining the exact behavior of a preprocessor is the main motivation for this.
      *
-     * @param input an image without any contrains
+     * @param input an image without any constraints
      *
      * @param output in most cases an image of fixed depth size and whitened
      *
@@ -562,13 +564,16 @@ public:
      */
     CV_WRAP void preprocess(InputArray input,OutputArray output,Size sz,int outputChannels);
 
-    /** @brief Creates a functor that only resizes the input without
+    /** @brief Creates a functor that only resizes and changes the channels of the input
+     *  without further processing.
      *
-     * @return shared pointer to generated preprocessor
+     * @return shared pointer to the generated preprocessor
      */
     CV_WRAP static Ptr<ImagePreprocessor> createResizer();
 
     /** @brief
+     *
+     * @param sigma
      *
      * @return shared pointer to generated preprocessor
      */

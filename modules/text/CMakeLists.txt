@@ -97,6 +97,3 @@ if(Qt5Gui_FOUND)
 else()
     message(STATUS "text module found Qt5Gui:   NO")
 endif()
-
-
-

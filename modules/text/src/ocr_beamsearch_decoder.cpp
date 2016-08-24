@@ -816,9 +816,6 @@ public:
         if(windowWidth_<=0)
         {
             windowWidth_=classifier_->getInputSize().width;
-        }else
-        {
-            windowWidth_=windowWidth_;
         }
     }
 
