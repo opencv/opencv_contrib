@@ -52,6 +52,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 #include "opencv2/imgproc.hpp"
 
 namespace cv
@@ -66,6 +67,30 @@ struct CV_EXPORTS_W GPCPatchDescriptor
 {
   static const unsigned nFeatures = 18; //!< number of features in a patch descriptor
   Vec< double, nFeatures > feature;
+
+  double dot( const Vec< double, nFeatures > &coef ) const
+  {
+#ifdef CV_SIMD128_64F
+    v_float64x2 sum = v_setzero_f64();
+    for ( unsigned i = 0; i < nFeatures; i += 2 )
+    {
+      v_float64x2 x = v_load_aligned( &feature.val[i] );
+      v_float64x2 y = v_load_aligned( &coef.val[i] );
+      sum = v_muladd( x, y, sum );
+    }
+#if CV_SSE2
+    __m128d sumrev = _mm_shuffle_pd( sum.val, sum.val, _MM_SHUFFLE2( 0, 1 ) );
+    return _mm_cvtsd_f64( _mm_add_pd( sum.val, sumrev ) );
+#else
+    double CV_DECL_ALIGNED( 16 ) buf[2];
+    v_store_aligned( buf, sum );
+    return OPENCV_HAL_ADD( buf[0], buf[1] );
+#endif
+
+#else
+    return feature.dot( coef );
+#endif
+  }
 };
 
 typedef std::pair< GPCPatchDescriptor, GPCPatchDescriptor > GPCPatchSample;
@@ -76,7 +101,7 @@ typedef std::vector< GPCPatchSample > GPCSamplesVector;
 enum GPCDescType
 {
   GPC_DESCRIPTOR_DCT = 0, //!< Better quality but slow
-  GPC_DESCRIPTOR_WHT      //!< Worse quality but fast
+  GPC_DESCRIPTOR_WHT      //!< Worse quality but much faster
 };
 
 /** @brief Class encapsulating training samples.

@@ -71,6 +71,7 @@ const int globalIters = 3;
 const int localIters = 500;
 const double thresholdOutliers = 0.98;
 const double thresholdMagnitudeFrac = 0.8;
+const double epsTolerance = 1e-12;
 
 struct Magnitude
 {
@@ -93,8 +94,8 @@ struct PartitionPredicate1
 
   bool operator()( const GPCPatchSample &sample ) const
   {
-    const bool direction1 = ( coef.dot( sample.first.feature ) < rhs );
-    const bool direction2 = ( coef.dot( sample.second.feature ) < rhs );
+    const bool direction1 = ( sample.first.dot( coef ) < rhs );
+    const bool direction2 = ( sample.second.dot( coef ) < rhs );
     return direction1 == false && direction2 == false;
   }
 };
@@ -108,8 +109,8 @@ struct PartitionPredicate2
 
   bool operator()( const GPCPatchSample &sample ) const
   {
-    const bool direction1 = ( coef.dot( sample.first.feature ) < rhs );
-    const bool direction2 = ( coef.dot( sample.second.feature ) < rhs );
+    const bool direction1 = ( sample.first.dot( coef ) < rhs );
+    const bool direction2 = ( sample.second.dot( coef ) < rhs );
     return direction1 != direction2;
   }
 };
@@ -401,6 +402,11 @@ void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
   for ( unsigned i = 0; i < GPCPatchDescriptor::nFeatures; ++i )
     v[i] = getRandomCauchyScalar();
 }
+
+double getRobustMedian( double m )
+{
+  return m < 0 ? m * ( 1.0 + epsTolerance ) : m * ( 1.0 - epsTolerance );
+}
 }
 
 void GPCDetails::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp,
@@ -454,12 +460,12 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
       for ( SIter iter = begin; iter != end; ++iter )
       {
-        values.push_back( coef.dot( iter->first.feature ) );
-        values.push_back( coef.dot( iter->second.feature ) );
+        values.push_back( iter->first.dot( coef ) );
+        values.push_back( iter->second.dot( coef ) );
       }
 
       std::nth_element( values.begin(), values.begin() + ( nSamples + ( nSamples & 1 ) ), values.end() );
-      const double median = values[nSamples + ( nSamples & 1 )];
+      const double median = getRobustMedian( values[nSamples + ( nSamples & 1 )] );
       unsigned correct = 0;
 
       // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
@@ -470,8 +476,8 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
       for ( SIter iter = begin; iter != end; ++iter )
       {
-        const bool direction = ( coef.dot( iter->first.feature ) < median );
-        if ( direction == ( coef.dot( iter->second.feature ) < median ) )
+        const bool direction = ( iter->first.dot( coef ) < median );
+        if ( direction == ( iter->second.dot( coef ) < median ) )
           ++correct;
       }
 
@@ -544,7 +550,7 @@ unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
   do
   {
     prevId = id;
-    if ( nodes[id].coef.dot( descr.feature ) < nodes[id].rhs )
+    if ( descr.dot( nodes[id].coef ) < nodes[id].rhs )
       id = nodes[id].right;
     else
       id = nodes[id].left;
