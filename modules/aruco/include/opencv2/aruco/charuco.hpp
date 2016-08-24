@@ -223,19 +223,36 @@ CV_EXPORTS_W void drawDetectedCornersCharuco(InputOutputArray image, InputArray 
  * from the model coordinate space (in which object points are specified) to the world coordinate
  * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
  * @param tvecs Output vector of translation vectors estimated for each pattern view.
- * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
+ * @param stdDeviationsIntrinsics Output vector of standard deviations estimated for intrinsic parameters.
+ * Order of deviations values:
+ * \f$(f_x, f_y, c_x, c_y, k_1, k_2, p_1, p_2, k_3, k_4, k_5, k_6 , s_1, s_2, s_3,
+ * s_4, \tau_x, \tau_y)\f$ If one of parameters is not estimated, it's deviation is equals to zero.
+ * @param stdDeviationsExtrinsics Output vector of standard deviations estimated for extrinsic parameters.
+ * Order of deviations values: \f$(R_1, T_1, \dotsc , R_M, T_M)\f$ where M is number of pattern views,
+ * \f$R_i, T_i\f$ are concatenated 1x3 vectors.
+ * @param perViewErrors Output vector of average re-projection errors estimated for each pattern view.
+ * @param flags flags Different flags  for the calibration process (see #calibrateCamera for details).
  * @param criteria Termination criteria for the iterative optimization algorithm.
  *
  * This function calibrates a camera using a set of corners of a  Charuco Board. The function
  * receives a list of detected corners and its identifiers from several views of the Board.
  * The function returns the final re-projection error.
  */
-CV_EXPORTS_W double calibrateCameraCharuco(
+CV_EXPORTS_AS(calibrateCameraCharucoExtended) double calibrateCameraCharuco(
     InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(),
+    OutputArray stdDeviationsIntrinsics = noArray(), OutputArray stdDeviationsExtrinsics = noArray(),
+    OutputArray perViewErrors = noArray(), int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
+/** @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
+*/
+CV_EXPORTS_W double calibrateCameraCharuco(
+  InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
+  Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+  OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+  TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 

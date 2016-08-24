@@ -1560,11 +1560,15 @@ void drawPlanarBoard(Ptr<Board> &_board, Size outSize, OutputArray _img, int mar
 
 
 /**
-  */
+ */
 double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter,
                             Ptr<Board> &board, Size imageSize, InputOutputArray _cameraMatrix,
                             InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
-                            OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
+                            OutputArrayOfArrays _tvecs,
+                            OutputArray _stdDeviationsIntrinsics,
+                            OutputArray _stdDeviationsExtrinsics,
+                            OutputArray _perViewErrors,
+                            int flags, TermCriteria criteria) {
 
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
@@ -1595,7 +1599,20 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
     }
 
     return calibrateCamera(processedObjectPoints, processedImagePoints, imageSize, _cameraMatrix,
-                           _distCoeffs, _rvecs, _tvecs, flags, criteria);
+                           _distCoeffs, _rvecs, _tvecs, _stdDeviationsIntrinsics, _stdDeviationsExtrinsics,
+                           _perViewErrors, flags, criteria);
+}
+
+
+
+/**
+ */
+double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter,
+  Ptr<Board> &board, Size imageSize, InputOutputArray _cameraMatrix,
+  InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
+  OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
+    return calibrateCameraAruco(_corners, _ids, _counter, board, imageSize, _cameraMatrix, _distCoeffs, _rvecs, _tvecs,
+      noArray(), noArray(), noArray(), flags, criteria);
 }
 
 
