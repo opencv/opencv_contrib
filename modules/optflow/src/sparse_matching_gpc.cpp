@@ -115,6 +115,19 @@ struct PartitionPredicate2
   }
 };
 
+struct CompareWithTolerance
+{
+  double val;
+
+  CompareWithTolerance( double _val ) : val( _val ) {};
+
+  bool operator()( const double &elem ) const
+  {
+    const double diff = ( val + elem == 0 ) ? std::abs( val - elem ) : std::abs( ( val - elem ) / ( val + elem ) );
+    return diff <= epsTolerance;
+  }
+};
+
 float normL2Sqr( const Vec2f &v ) { return v[0] * v[0] + v[1] * v[1]; }
 
 int normL2Sqr( const Point2i &v ) { return v.x * v.x + v.y * v.y; }
@@ -465,14 +478,16 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
       }
 
       std::nth_element( values.begin(), values.begin() + ( nSamples + ( nSamples & 1 ) ), values.end() );
-      const double median = getRobustMedian( values[nSamples + ( nSamples & 1 )] );
+      double median = values[nSamples + ( nSamples & 1 )];
       unsigned correct = 0;
 
       // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
       // Most likely this won't happen with samples collected from a good dataset.
       // Happens in case dataset contains plain (or close to plain) images.
-      if ( std::count( values.begin(), values.end(), median ) > std::max( 1, nSamples / 8 ) )
+      if ( std::count_if( values.begin(), values.end(), CompareWithTolerance( median ) ) > std::max( 1, nSamples / 8 ) )
         continue;
+
+      median = getRobustMedian( median );
 
       for ( SIter iter = begin; iter != end; ++iter )
       {

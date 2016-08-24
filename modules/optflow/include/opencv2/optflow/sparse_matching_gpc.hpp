@@ -70,7 +70,7 @@ struct CV_EXPORTS_W GPCPatchDescriptor
 
   double dot( const Vec< double, nFeatures > &coef ) const
   {
-#ifdef CV_SIMD128_64F
+#if CV_SIMD128_64F
     v_float64x2 sum = v_setzero_f64();
     for ( unsigned i = 0; i < nFeatures; i += 2 )
     {
