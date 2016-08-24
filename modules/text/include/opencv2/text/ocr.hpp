@@ -673,6 +673,8 @@ public:
      * @param weightsFilename is the path to the pretrained weights of the model in binary fdorm. This file can be
      * very large, up to 2GB.
      *
+     * @param preprocessor is a pointer to the instance of a ImagePreprocessor implementing the preprocess_ protecteed method;
+     *
      * @param minibatchSz the maximum number of samples that can processed in parallel. In practice this parameter
      * has an effect only when computing in the GPU and should be set with respect to the memory available in the GPU.
      *
@@ -681,6 +683,31 @@ public:
      */
     CV_WRAP static Ptr<DeepCNN> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
 
+    /** @brief Constructs a DeepCNN intended to be used for word spotting.
+     *
+     * This method loads a pretrained classifier and couples him with a preprocessor that standarises pixels with a
+     * deviation of 113. The architecture file can be downloaded from:
+     * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_deploy.prototxt>
+     * While the weights can be downloaded from:
+     * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg.caffemodel>
+     * The words assigned to the network outputs are available at:
+     * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_labels.txt>
+     *
+     * @param archFilename is the path to the prototxt file containing the deployment model architecture description.
+     * When employing OCR_HOLISTIC_BACKEND_CAFFE this is the path to the deploy ".prototxt".
+     *
+     * @param weightsFilename is the path to the pretrained weights of the model. When employing
+     * OCR_HOLISTIC_BACKEND_CAFFE this is the path to the ".caffemodel" file. This file can be very large, the
+     * pretrained DictNet uses 2GB.
+     *
+     * @param preprocessor is a pointer to the instance of a ImagePreprocessor implementing the preprocess_ protecteed method;
+     *
+     * @param minibatchSz the maximum number of samples that can processed in parallel. In practice this parameter
+     * has an effect only when computing in the GPU and should be set with respect to the memory available in the GPU.
+     *
+     * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
+     * the only option
+     */
     CV_WRAP static Ptr<DeepCNN> createDictNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
 
 };
@@ -725,7 +752,12 @@ CV_EXPORTS_W bool getCaffeAvailable();
  * word given an input image.
  *
  * This class implements the logic of providing transcriptions given a vocabulary and and an image
- * classifer.
+ * classifer. The classifier has to be any TextImageClassifier but the classifier for which this
+ * class was built is the DictNet. In order to load it the following files should be downloaded:
+
+ * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_deploy.prototxt>
+ * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg.caffemodel>
+ * <http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_labels.txt>
  */
 class CV_EXPORTS_W OCRHolisticWordRecognizer : public BaseOCR
 {
@@ -791,17 +823,18 @@ public:
 
 
     /**
-    @brief simple getted for the vocabulary employed
+    @brief simple getter for the vocabulary employed
     */
     CV_WRAP virtual const std::vector<String>& getVocabulary()=0;
 
-    /** @brief
+    /** @brief simple getter for the preprocessing functor
      */
     CV_WRAP virtual Ptr<TextImageClassifier> getClassifier()=0;
 
     /** @brief Creates an instance of the OCRHolisticWordRecognizer class.
 
     @param classifierPtr an instance of TextImageClassifier, normaly a DeepCNN instance
+
     @param vocabularyFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
     in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
     of the classifier.
@@ -812,7 +845,9 @@ public:
     /** @brief Creates an instance of the OCRHolisticWordRecognizer class and implicitly also a DeepCNN classifier.
 
     @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
+
     @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.
+
     @param vocabularyFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
     in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
     of the classifier.

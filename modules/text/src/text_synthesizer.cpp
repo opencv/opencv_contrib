@@ -399,9 +399,7 @@ protected:
                 float* yRow=Y.ptr<float>(y);
                 for(int x=0;x<inputImg.cols;x++){
                     xRow[x]=float(x);
-                    yRow[x]=y+sign*cos((x+xAdd)*xMult)*maxHeightDistortionPercentage_-sign*maxHeightDistortionPercentage_;
-                    //TODO resolve the type of the expression, warning from windows64 says it is int
-
+                    yRow[x]=float(y+sign*cos((x+xAdd)*xMult)*maxHeightDistortionPercentage_-sign*maxHeightDistortionPercentage_);
                 }
             }
             remap(inputImg,outputImg,X,Y,INTER_LINEAR);
