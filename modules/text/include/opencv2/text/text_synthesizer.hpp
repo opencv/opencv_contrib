@@ -1,3 +1,46 @@
+/*M//////////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                          License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #ifndef TEXT_SYNTHESIZER_HPP
 #define TEXT_SYNTHESIZER_HPP
 
@@ -96,30 +139,106 @@ public:
     CV_WRAP double getBlendProb(){return finalBlendProb_;}
     CV_WRAP double getCompressionNoiseProb(){return compressionNoiseProb_;}
 
+    /**
+     * @param v the probabillity the text will be generated with an underlined font
+     */
+    CV_WRAP void setUnderlineProbabillity(double v){CV_Assert(v>=0 && v<=1);underlineProbabillity_=v;}
 
-    CV_WRAP void setUnderlineProbabillity(double v){underlineProbabillity_=v;}
-    CV_WRAP void setItalicProballity(double v){italicProbabillity_=v;}
-    CV_WRAP void setBoldProbabillity(double v){boldProbabillity_=v;}
-    CV_WRAP void setMaxPerspectiveDistortion(double v){maxPerspectiveDistortion_=v;}
+    /**
+     * @param v the probabillity the text will be generated with italic font instead of regular
+     */
+    CV_WRAP void setItalicProballity(double v){CV_Assert(v>=0 && v<=1);italicProbabillity_=v;}
 
-    CV_WRAP void setShadowProbabillity(double v){shadowProbabillity_=v;}
-    CV_WRAP void setMaxShadowOpacity(double v){maxShadowOpacity_=v;}
+    /**
+     * @param v the probabillity the text will be generated with italic font instead of regular
+     */
+    CV_WRAP void setBoldProbabillity(double v){CV_Assert(v>=0 && v<=1);boldProbabillity_=v;}
+
+    /** Perspective deformation is performed by calculating a homgraphy on a square whose edges
+     * have moved randomly inside it.
+
+     * @param v the percentage of the side of a ractangle each point is allowed moving
+     */
+    CV_WRAP void setMaxPerspectiveDistortion(double v){CV_Assert(v>=0 && v<50);maxPerspectiveDistortion_=v;}
+
+    /**
+     * @param v the probabillity a shadow will apear under the text.
+     */
+    CV_WRAP void setShadowProbabillity(double v){CV_Assert(v>=0 && v<=1);shadowProbabillity_=v;}
+
+    /**
+     * @param v the alpha value of the text shadow will be sampled uniformly between 0 and v
+     */
+    CV_WRAP void setMaxShadowOpacity(double v){CV_Assert(v>=0 && v<=1);maxShadowOpacity_=v;}
+
+    /**
+     * @param v the maximum size of the shadow in pixels.
+     */
     CV_WRAP void setMaxShadowSize(int v){maxShadowSize_=v;}
+
+    /**
+     * @param v the maximum number of pixels the shadow can be horizontaly off-center.
+     */
     CV_WRAP void setMaxShadowHoffset(int v){maxShadowHoffset_=v;}
+
+    /**
+     * @param v the maximum number of pixels the shadow can be vertically off-center.
+     */
     CV_WRAP void setMaxShadowVoffset(int v){maxShadowVoffset_=v;}
 
-    CV_WRAP void setBorderProbabillity(double v){borderProbabillity_=v;}
+    /**
+     * @param v the probabillity of a border apearing around the text as oposed to shadows,
+     * borders are always opaque and centered.
+     */
+    CV_WRAP void setBorderProbabillity(double v){CV_Assert(v>=0 && v<=1);borderProbabillity_=v;}
+
+    /**
+     * @param v the size in pixels used for border before geometric distortions.
+     */
     CV_WRAP void setMaxBorderSize(int v){maxBorderSize_=v;}
 
-    CV_WRAP void setCurvingProbabillity(double v){curvingProbabillity_=v;}
-    CV_WRAP void setMaxHeightDistortionPercentage(double v){maxHeightDistortionPercentage_=v;}
-    CV_WRAP void setMaxCurveArch(double v){maxCurveArch_=v;}
-    CV_WRAP void setBlendAlpha(double v){finalBlendAlpha_=v;}
-    CV_WRAP void setBlendProb(double v){finalBlendProb_=v;}
-    CV_WRAP void getCompressionNoiseProb(double v){compressionNoiseProb_=v;}
+    /**
+     * @param v the probabillity the text will be curved.
+     */
+    CV_WRAP void setCurvingProbabillity(double v){CV_Assert(v>=0 && v<=1);curvingProbabillity_=v;}
 
+    /**
+     * @param v the maximum effect curving will have as a percentage of the samples height
+     */
+    CV_WRAP void setMaxHeightDistortionPercentage(double v){CV_Assert(v>=0 && v<=100);maxHeightDistortionPercentage_=v;}
+
+    /**
+     * @param v the arch in radians whose cosine will curve the text
+     */
+    CV_WRAP void setMaxCurveArch(double v){maxCurveArch_=v;}
+
+    /**
+     * @param v the maximum alpha used when blending text to the background with opacity
+     */
+    CV_WRAP void setBlendAlpha(double v){CV_Assert(v>=0 && v<=1);finalBlendAlpha_=v;}
+
+    /**
+     * @param v the probability the text will be blended with the background with alpha blending.
+     */
+    CV_WRAP void setBlendProb(double v){CV_Assert(v>=0 && v<=1);finalBlendProb_=v;}
+
+    /**
+     * @param v the probability the sample will be distorted by compression artifacts
+     */
+    CV_WRAP void getCompressionNoiseProb(double v){CV_Assert(v>=0 && v<=1);compressionNoiseProb_=v;}
+
+
+    /** @brief adds ttf fonts to the Font Database system
+     *
+     * Note for the moment adding non system fonts in X11 systems is not an option.
+     * <http://doc.qt.io/qt-5/qfontdatabase.html#addApplicationFont>
+     *
+     * @param v a list of TTF files to be incorporated in to the system.
+     */
     CV_WRAP virtual void addFontFiles(const std::vector<String>& fntList)=0;
+
     CV_WRAP virtual std::vector<String> listAvailableFonts()=0;
+    CV_WRAP virtual void modifyAvailableFonts(std::vector<String>& fntList)=0;
 
     CV_WRAP virtual void addBgSampleImage(const Mat& image)=0;
 

@@ -5,6 +5,7 @@
 #include "opencv2/calib3d.hpp"
 
 #include "opencv2/text/text_synthesizer.hpp"
+#include "opencv2/text_config.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +22,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+
 
 #ifdef HAVE_QT5GUI
 #include <QImage>
@@ -220,7 +223,11 @@ TextSynthesizer::TextSynthesizer(int maxSampleWidth,int sampleHeight):
 
 class TextSynthesizerQtImpl: public TextSynthesizer{
 protected:
-    void updateFontNameList(){
+    bool rndProbUnder(double v){
+        return this->rng_.next()%10000>10000*v;
+    }
+
+    void updateFontNameList(std::vector<String>& fntList){
 #ifdef HAVE_QT5GUI
         QFontDatabase::WritingSystem qtScriptCode=QFontDatabase::Any;
         switch(this->script_){
@@ -246,15 +253,25 @@ protected:
                     CV_Error(Error::StsError,"Unsupported script_code");
                     break;
         }
-        this->availableFonts_.clear();
+        fntList.clear();
         QStringList lst=this->fntDb_->families(qtScriptCode);
         for(int k=0;k<lst.size();k++){
-            this->availableFonts_.push_back(lst[k].toUtf8().constData());
+            fntList.push_back(lst[k].toUtf8().constData());
         }
 #else
-        //CV_Error(Error::StsError,"QT5 not available, TextSynthesiser is not fully functional.");
-        //Maybe just warn
+        fntList.clear();
 #endif
+    }
+
+    void modifyAvailableFonts(std::vector<String>& fntList){
+        std::vector<String> dbList;
+        this->updateFontNameList(dbList);
+        for(size_t k =0;k<fntList.size();k++){
+            if(std::find(dbList.begin(), dbList.end(), fntList[k]) == dbList.end()){
+                CV_Error(Error::StsError,"The font name list must only contain fonts in your system");
+            }
+        }
+        this->availableFonts_=fntList;
     }
 
 #ifdef HAVE_QT5GUI
@@ -262,17 +279,17 @@ protected:
         CV_Assert(this->availableFonts_.size());
         QFont fnt(this->availableFonts_[rng_.next() % this->availableFonts_.size()].c_str());
         fnt.setPixelSize(this->resHeight_-2*this->txtPad_);
-        if((this->rng_.next()%1000)/1000.0<this->underlineProbabillity_){
+        if(this->rndProbUnder(this->underlineProbabillity_)){
             fnt.setUnderline(true);
         }else{
             fnt.setUnderline(false);
         }
-        if((this->rng_.next()%1000)/1000.0<this->boldProbabillity_){
+        if(this->rndProbUnder(this->boldProbabillity_)){
             fnt.setBold(true);
         }else{
             fnt.setBold(false);
         }
-        if((this->rng_.next()%1000)/1000.0<this->italicProbabillity_){
+        if(this->rndProbUnder(this->italicProbabillity_)){
             fnt.setItalic(true);
         }else{
             fnt.setItalic(false);
@@ -319,8 +336,8 @@ protected:
         textGrayImg.convertTo(floatTxt, CV_32FC1, 1.0/255.0);
 
         //Sampling uniform distributionfor sizes
-        int borderSize=(this->rng_.next()%this->maxBorderSize_)*((this->rng_.next()%10000)/10000.0>this->borderProbabillity_);
-        int shadowSize=(this->rng_.next()%this->maxShadowSize_)*((this->rng_.next()%10000)/10000.0>this->shadowProbabillity_);
+        int borderSize=(this->rng_.next()%this->maxBorderSize_)*this->rndProbUnder(this->borderProbabillity_);
+        int shadowSize=(this->rng_.next()%this->maxShadowSize_)*this->rndProbUnder(this->shadowProbabillity_);
         int voffset=(this->rng_.next()%(shadowSize*2+1))-shadowSize;
         int hoffset=(this->rng_.next()%(shadowSize*2+1))-shadowSize;
         float shadowOpacity=float(((this->rng_.next()%10000)*maxShadowOpacity_)/10000.0);
@@ -388,7 +405,7 @@ protected:
     }
 
     void addCurveDeformation(const Mat& inputImg,Mat& outputImg){
-        if ((this->rng_.next()%1000)>1000*this->curvingProbabillity_){
+        if (this->rndProbUnder(this->curvingProbabillity_)){
             Mat X=Mat(inputImg.rows,inputImg.cols,CV_32FC1);
             Mat Y=Mat(inputImg.rows,inputImg.cols,CV_32FC1);
             int xAdd=-int(this->rng_.next()%inputImg.cols);
@@ -409,7 +426,7 @@ protected:
     }
 
     void addCompressionArtifacts(Mat& img){
-        if(this->rng_.next()%10000<compressionNoiseProb_*10000){
+        if(this->rndProbUnder(this->compressionNoiseProb_)){
             std::vector<uchar> buffer;
             std::vector<int> parameters;
             parameters.push_back(CV_IMWRITE_JPEG_QUALITY);
@@ -471,7 +488,7 @@ public:
 #ifdef HAVE_QT5GUI
         this->fntDb_=Ptr<QFontDatabase>(new QFontDatabase());
 #endif
-        this->updateFontNameList();
+        this->updateFontNameList(this->availableFonts_);
         this->initColorClusters();
     }
 
@@ -542,7 +559,7 @@ public:
 
         blendOverlay(sample,txtSample,bgResized,txtMask);
         float blendAlpha=float(this->finalBlendAlpha_*(this->rng_.next()%1000)/1000.0);
-        if((this->rng_.next()%1000)>1000*this->finalBlendProb_){
+        if(this->rndProbUnder(this->finalBlendProb_)){
             blendWeighted(sample,sample,bgResized,1-blendAlpha,blendAlpha);
         }
         addCompressionArtifacts(sample);
@@ -578,13 +595,12 @@ public:
     void addFontFiles(const std::vector<cv::String>& fntList){
 #ifdef HAVE_QT5GUI
         for(size_t n=0;n<fntList.size();n++){
-            try{
-                QFontDatabase::addApplicationFont(fntList[n].c_str());
-            }catch(int e){
-                CV_Error(Error::StsError,"Failed to load extra ttf font");
+            int addFontSucces=this->fntDb_->addApplicationFont(fntList[n].c_str());
+            if(addFontSucces==-1){
+                CV_Error(Error::StsError,"Failed to load ttf font. QT5 currently doesn't support this under X11");
             }
         }
-        this->updateFontNameList();
+        this->updateFontNameList(this->availableFonts_);
 #else
         CV_Assert(fntList.size()>0);//to supress compilation warning
         CV_Error(Error::StsError,"QT5 not available, TextSynthesiser is not fully functional.");

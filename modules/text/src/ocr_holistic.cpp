@@ -15,13 +15,9 @@
 #include <utility>
 #include <vector>
 
-
-
 #ifdef HAVE_CAFFE
 #include "caffe/caffe.hpp"
 #endif
-
-#define DBG(msg) (std::cerr<<"DBG L:"<<__LINE__<<"\t"<<msg)
 
 namespace cv { namespace text {
 
@@ -633,7 +629,7 @@ Ptr<OCRHolisticWordRecognizer> OCRHolisticWordRecognizer::create(String modelArc
 }
 
 
-//********************************************************************************************************************
+
 
 
 }  } //namespace text namespace cv
