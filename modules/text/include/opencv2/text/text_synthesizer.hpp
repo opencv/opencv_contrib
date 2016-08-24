@@ -68,6 +68,8 @@ protected:
 
     double finalBlendAlpha_;
     double finalBlendProb_;
+
+    double compressionNoiseProb_;
     TextSynthesizer(int maxSampleWidth,int sampleHeight);
 public:
     CV_WRAP int  getMaxSampleWidth(){return maxResWidth_;}
@@ -92,6 +94,8 @@ public:
     CV_WRAP double getMaxCurveArch(){return maxCurveArch_;}
     CV_WRAP double getBlendAlpha(){return finalBlendAlpha_;}
     CV_WRAP double getBlendProb(){return finalBlendProb_;}
+    CV_WRAP double getCompressionNoiseProb(){return compressionNoiseProb_;}
+
 
     CV_WRAP void setUnderlineProbabillity(double v){underlineProbabillity_=v;}
     CV_WRAP void setItalicProballity(double v){italicProbabillity_=v;}
@@ -112,6 +116,7 @@ public:
     CV_WRAP void setMaxCurveArch(double v){maxCurveArch_=v;}
     CV_WRAP void setBlendAlpha(double v){finalBlendAlpha_=v;}
     CV_WRAP void setBlendProb(double v){finalBlendProb_=v;}
+    CV_WRAP void getCompressionNoiseProb(double v){compressionNoiseProb_=v;}
 
     CV_WRAP virtual void addFontFiles(const std::vector<String>& fntList)=0;
     CV_WRAP virtual std::vector<String> listAvailableFonts()=0;

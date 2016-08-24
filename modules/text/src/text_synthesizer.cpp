@@ -21,17 +21,19 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#ifdef HAVE_QT5GUI
 #include <QImage>
 #include <QFont>
 #include <QPainter>
 #include <QFontDatabase>
 #include <QFontMetrics>
-
+#endif
 
 
 //TODO FIND apropriate
 #define CV_IMWRITE_JPEG_QUALITY 1
-
+#define CV_LOAD_IMAGE_COLOR 1
 namespace cv{
 namespace text{
 
@@ -213,11 +215,13 @@ TextSynthesizer::TextSynthesizer(int maxSampleWidth,int sampleHeight):
 
     finalBlendAlpha_=.6;
     finalBlendProb_=.3;
+    compressionNoiseProb_=.3;
 }
 
 class TextSynthesizerQtImpl: public TextSynthesizer{
 protected:
     void updateFontNameList(){
+#ifdef HAVE_QT5GUI
         QFontDatabase::WritingSystem qtScriptCode=QFontDatabase::Any;
         switch(this->script_){
             case CV_TEXT_SYNTHESIZER_SCRIPT_ANY:
@@ -247,8 +251,13 @@ protected:
         for(int k=0;k<lst.size();k++){
             this->availableFonts_.push_back(lst[k].toUtf8().constData());
         }
+#else
+        //CV_Error(Error::StsError,"QT5 not available, TextSynthesiser is not fully functional.");
+        //Maybe just warn
+#endif
     }
 
+#ifdef HAVE_QT5GUI
     QFont generateFont(){
         CV_Assert(this->availableFonts_.size());
         QFont fnt(this->availableFonts_[rng_.next() % this->availableFonts_.size()].c_str());
@@ -270,11 +279,12 @@ protected:
         }
         return fnt;
     }
-
+#endif
     void generateTxtPatch(Mat& output,Mat& outputMask,String caption){
         const int maxTxtWidth=this->maxResWidth_;
         Mat textImg;
         textImg =cv::Mat(this->resHeight_,maxTxtWidth,CV_8UC3,Scalar_<uchar>(0,0,0));
+#ifdef HAVE_QT5GUI
         QImage qimg((unsigned char*)(textImg.data), textImg.cols, textImg.rows, textImg.step, QImage::Format_RGB888);
         QPainter qp(&qimg);
         qp.setPen(QColor(255,255,255));
@@ -285,9 +295,19 @@ protected:
         qp.drawText(QPoint(txtPad_,txtPad_+ bbox.height()), caption.c_str());
         qp.end();
         textImg=textImg.colRange(0,min( bbox.width()+2*txtPad_,maxTxtWidth-1));
+#else
+        int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
+        double fontScale = 1;
+        int thickness = 2;
+        int baseline = 0;
+        Size textSize = getTextSize(caption, fontFace, fontScale, thickness, &baseline);
+        putText(textImg, caption, Point(this->txtPad_,this->resHeight_-this->txtPad_),
+                FONT_HERSHEY_SCRIPT_SIMPLEX, fontScale, Scalar_<uchar>(255,255,255), thickness, 8);
+        textImg=textImg.colRange(0,min( textSize.width+2*txtPad_,maxTxtWidth-1));
+        //TODO Warn without throuwing an exception
+#endif
         Mat textGrayImg;
-        cvtColor(textImg,textGrayImg,COLOR_RGBA2GRAY);
-
+        cvtColor(textImg,textGrayImg,COLOR_RGB2GRAY);
         //Obtaining color triplet
         int colorTriplet=this->rng_.next()%this->colorClusters_.rows;
         uchar* cVal=this->colorClusters_.ptr<uchar>(colorTriplet);
@@ -389,14 +409,20 @@ protected:
         }
     }
 
-    void addCompressionArtifacts(const Mat& img,Mat& res,unsigned int qualityPercentage){
-        std::vector<uchar> buffer;
-        std::vector<int> parameters;
-        parameters.push_back(CV_IMWRITE_JPEG_QUALITY);
-        parameters.push_back(qualityPercentage % 100);
-        imencode(".jpg",img,buffer,parameters);
-        res=imdecode(buffer,0);
+    void addCompressionArtifacts(Mat& img){
+        if(this->rng_.next()%10000<compressionNoiseProb_*10000){
+            std::vector<uchar> buffer;
+            std::vector<int> parameters;
+            parameters.push_back(CV_IMWRITE_JPEG_QUALITY);
+            parameters.push_back(this->rng_.next() % 100);
+            Mat ucharImg;
+            img.convertTo(ucharImg,CV_8UC3,255);
+            imencode(".jpg",ucharImg,buffer,parameters);
+            ucharImg=imdecode(buffer,CV_LOAD_IMAGE_COLOR);
+            ucharImg.convertTo(img,CV_32FC3,1.0/255);
+        }
     }
+
     void initColorClusters(){
         this->colorClusters_=Mat(4,3,CV_8UC3,Scalar(32,32,32));
 
@@ -419,7 +445,9 @@ protected:
 
     RNG rng_;//Randon number generator used for all distributions
     int txtPad_;
+#ifdef HAVE_QT5GUI
     Ptr<QFontDatabase> fntDb_;
+#endif
     std::vector<String> availableFonts_;
     std::vector<String> availableBgSampleFiles_;
     std::vector<Mat> availableBgSampleImages_;
@@ -441,7 +469,9 @@ public:
         namedWindow("__w");
         waitKey(1);
         destroyWindow("__w");
+#ifdef HAVE_QT5GUI
         this->fntDb_=Ptr<QFontDatabase>(new QFontDatabase());
+#endif
         this->updateFontNameList();
         this->initColorClusters();
     }
@@ -496,12 +526,10 @@ public:
         std::vector<Mat> txtChannels;
         generateTxtPatch(txtSample,txtMask,caption);
 
-
         split(txtSample,txtChannels);
         txtChannels.push_back(txtMask);
         merge(txtChannels,txtMerged);
         addCurveDeformation(txtMerged,txtCurved);
-
         randomlyDistortPerspective(txtCurved,txtDistorted);
         split(txtDistorted,txtChannels);
         txtMask=txtChannels[3];
@@ -518,6 +546,7 @@ public:
         if((this->rng_.next()%1000)>1000*this->finalBlendProb_){
             blendWeighted(sample,sample,bgResized,1-blendAlpha,blendAlpha);
         }
+        addCompressionArtifacts(sample);
     }
 
     void getColorClusters(CV_OUT Mat& clusters){
@@ -548,6 +577,7 @@ public:
     }
 
     void addFontFiles(const std::vector<cv::String>& fntList){
+#ifdef HAVE_QT5GUI
         for(size_t n=0;n<fntList.size();n++){
             try{
                 QFontDatabase::addApplicationFont(fntList[n].c_str());
@@ -556,6 +586,10 @@ public:
             }
         }
         this->updateFontNameList();
+#else
+        CV_Assert(fntList.size()>0);//to supress compilation warning
+        CV_Error(Error::StsError,"QT5 not available, TextSynthesiser is not fully functional.");
+#endif
     }
 
     std::vector<String> listBgSampleFiles(){

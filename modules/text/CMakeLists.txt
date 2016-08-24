@@ -51,7 +51,7 @@ else()
 endif()
 
 if(HAVE_CAFFE)
-message(STATUS "HAVE CAFFE!!!")
+message(STATUS "HAVE CAFFE!")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
                ${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/text_config.hpp @ONLY)
 
