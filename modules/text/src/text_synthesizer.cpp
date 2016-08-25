@@ -23,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-
-
 #ifdef HAVE_QT5GUI
 #include <QImage>
 #include <QFont>
@@ -216,15 +214,15 @@ TextSynthesizer::TextSynthesizer(int maxSampleWidth,int sampleHeight):
     maxHeightDistortionPercentage_=5;
     maxCurveArch_=.1;
 
-    finalBlendAlpha_=.6;
-    finalBlendProb_=.3;
+    finalBlendAlpha_=.3;
+    finalBlendProb_=.1;
     compressionNoiseProb_=.3;
 }
 
 class TextSynthesizerQtImpl: public TextSynthesizer{
 protected:
     bool rndProbUnder(double v){
-        return this->rng_.next()%10000>10000*v;
+        return (this->rng_.next()%10000)<(10000*v);
     }
 
     void updateFontNameList(std::vector<String>& fntList){
@@ -394,14 +392,18 @@ protected:
 
     void randomlyDistortPerspective(const Mat& inputImg,Mat& outputImg){
         int N=int(this->maxPerspectiveDistortion_);
-        std::vector<Point> src(4);std::vector<Point> dst(4);
-        src[0]=Point2f(0,0);src[1]=Point2f(100,0);src[2]=Point2f(0,100);src[3]=Point2f(100,100);
-        dst[0]=Point2f(float(this->rng_.next()%N),float(this->rng_.next()%N));
-        dst[1]=Point2f(float(100-this->rng_.next()%N),float(this->rng_.next()%N));
-        dst[2]=Point2f(float(this->rng_.next()%N),float(100-this->rng_.next()%N));
-        dst[3]=Point2f(float(100-this->rng_.next()%N),float(100-this->rng_.next()%N));
-        Mat h=findHomography(src,dst);
-        warpPerspective(inputImg,outputImg,h,inputImg.size());
+        if(N>0){
+            std::vector<Point> src(4);std::vector<Point> dst(4);
+            src[0]=Point2f(0,0);src[1]=Point2f(100,0);src[2]=Point2f(0,100);src[3]=Point2f(100,100);
+            dst[0]=Point2f(float(this->rng_.next()%N),float(this->rng_.next()%N));
+            dst[1]=Point2f(float(100-this->rng_.next()%N),float(this->rng_.next()%N));
+            dst[2]=Point2f(float(this->rng_.next()%N),float(100-this->rng_.next()%N));
+            dst[3]=Point2f(float(100-this->rng_.next()%N),float(100-this->rng_.next()%N));
+            Mat h=findHomography(src,dst);
+            warpPerspective(inputImg,outputImg,h,inputImg.size());
+        }else{
+            outputImg=inputImg;
+        }
     }
 
     void addCurveDeformation(const Mat& inputImg,Mat& outputImg){
@@ -614,8 +616,8 @@ public:
     }
 };
 
-Ptr<TextSynthesizer> TextSynthesizer::create(int script){
-    Ptr<TextSynthesizer> res(new TextSynthesizerQtImpl(script));
+Ptr<TextSynthesizer> TextSynthesizer::create(int sampleHeight, int maxWidth, int script){
+    Ptr<TextSynthesizer> res(new TextSynthesizerQtImpl(script, maxWidth,sampleHeight));
     return res;
 }
 

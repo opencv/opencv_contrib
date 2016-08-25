@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+
 #ifdef HAVE_CAFFE
 #include "caffe/caffe.hpp"
 #endif
