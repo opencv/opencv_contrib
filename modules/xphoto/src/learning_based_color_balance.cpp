@@ -547,7 +547,7 @@ Vec2f LearningBasedWBImpl::predictIlluminant(vector<Vec2f> features)
     int local_model_size = num_features * feature_model_size;
     int feature_model_size_leaf = 2 * num_tree_nodes;
     int local_model_size_leaf = num_features * feature_model_size_leaf;
-    tree_depth = (int)round(log(num_tree_nodes) / log(2));
+    tree_depth = cvRound( (log(static_cast<float>(num_tree_nodes)) / log(2.0f)) );
 
     vector<float> consensus_r, consensus_g;
     vector<float> all_r, all_g;

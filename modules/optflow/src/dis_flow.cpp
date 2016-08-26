@@ -1066,7 +1066,7 @@ void DISOpticalFlowImpl::calc(InputArray I0, InputArray I1, InputOutputArray flo
     Mat uxy[] = {Ux[finest_scale], Uy[finest_scale]};
     merge(uxy, 2, U);
     resize(U, flowMat, flowMat.size());
-    flowMat *= pow(2, finest_scale);
+    flowMat *= 1 << finest_scale;
 }
 
 void DISOpticalFlowImpl::collectGarbage()
