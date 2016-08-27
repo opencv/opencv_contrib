@@ -59,6 +59,8 @@ Ptr<Saliency> Saliency::create( const String& saliencyType )
         return makePtr<ObjectnessBING>();
     else if (saliencyType == "BinWangApr2014")
         return makePtr<MotionSaliencyBinWangApr2014>();
+    else if (saliencyType == "EdgeBoxes")
+        return makePtr<ObjectnessEdgeBoxes>();
     return Ptr<Saliency>();
 }
 
