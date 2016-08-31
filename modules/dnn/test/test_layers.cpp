@@ -306,7 +306,7 @@ TEST_F(Layer_LSTM_Test, get_set_test)
     inputs.push_back(Blob(inpResShape));
     runLayer(layer, inputs, outputs);
 
-    EXPECT_EQ(2, outputs.size());
+    EXPECT_EQ(2u, outputs.size());
     EXPECT_EQ(outResShape, outputs[0].shape());
     EXPECT_EQ(outResShape, outputs[1].shape());
 
@@ -388,7 +388,7 @@ TEST_F(Layer_RNN_Test, get_set_test)
     inputs.push_back(Blob(BlobShape(nT, nS, 1, nX)));
     runLayer(layer, inputs, outputs);
 
-    EXPECT_EQ(outputs.size(), 2);
+    EXPECT_EQ(outputs.size(), 2u);
     EXPECT_EQ(outputs[0].shape(), BlobShape(nT, nS, nO));
     EXPECT_EQ(outputs[1].shape(), BlobShape(nT, nS, nH));
 }
