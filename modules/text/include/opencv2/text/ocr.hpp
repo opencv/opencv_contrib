@@ -700,9 +700,6 @@ public:
      * OCR_HOLISTIC_BACKEND_CAFFE this is the path to the ".caffemodel" file. This file can be very large, the
      * pretrained DictNet uses 2GB.
      *
-     * @param minibatchSz the maximum number of samples that can processed in parallel. In practice this parameter
-     * has an effect only when computing in the GPU and should be set with respect to the memory available in the GPU.
-     *
      * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
      * the only option
      */

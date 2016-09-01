@@ -85,8 +85,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
 find_package(Qt5Gui)
 if(Qt5Gui_FOUND)
     message(STATUS "text module found Qt5Gui:   YES")
-    set(HAVE_QT5GUI ON)
-
+    set(HAVE_QT5GUI 1)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/text_config.hpp @ONLY)
   #foreach(dt5_dep Core Gui Widgets Test Concurrent)
   foreach(dt5_dep Gui)
     add_definitions(${Qt5${dt5_dep}_DEFINITIONS})
@@ -98,6 +99,3 @@ if(Qt5Gui_FOUND)
 else()
     message(STATUS "text module found Qt5Gui:   NO")
 endif()
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
-               ${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/text_config.hpp @ONLY)

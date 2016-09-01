@@ -52,12 +52,38 @@ namespace text
 {
 
 enum{
-    CV_TEXT_SYNTHESIZER_SCRIPT_ANY=1,
-    CV_TEXT_SYNTHESIZER_SCRIPT_LATIN=2,
-    CV_TEXT_SYNTHESIZER_SCRIPT_GREEK=3,
-    CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC=4,
-    CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC=5,
-    CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW=6
+    //based on QFontDatabase::WritingSystem
+    //Qt is the default backend
+    CV_TEXT_SYNTHESIZER_SCRIPT_ANY,
+    CV_TEXT_SYNTHESIZER_SCRIPT_LATIN,
+    CV_TEXT_SYNTHESIZER_SCRIPT_GREEK,
+    CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC,
+    CV_TEXT_SYNTHESIZER_SCRIPT_ARMENIAN,
+    CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC,
+    CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW,
+    CV_TEXT_SYNTHESIZER_SCRIPT_SYRIAC,
+    CV_TEXT_SYNTHESIZER_SCRIPT_THAANA,
+    CV_TEXT_SYNTHESIZER_SCRIPT_DEVANAGARI,
+    CV_TEXT_SYNTHESIZER_SCRIPT_BENGALI,
+    CV_TEXT_SYNTHESIZER_SCRIPT_GURMUKHI,
+    CV_TEXT_SYNTHESIZER_SCRIPT_GUJARATI,
+    CV_TEXT_SYNTHESIZER_SCRIPT_ORIYA,
+    CV_TEXT_SYNTHESIZER_SCRIPT_TAMIL,
+    CV_TEXT_SYNTHESIZER_SCRIPT_TELUGU,
+    CV_TEXT_SYNTHESIZER_SCRIPT_KANNADA,
+    CV_TEXT_SYNTHESIZER_SCRIPT_MALAYALAM,
+    CV_TEXT_SYNTHESIZER_SCRIPT_SINHALA,
+    CV_TEXT_SYNTHESIZER_SCRIPT_THAI,
+    CV_TEXT_SYNTHESIZER_SCRIPT_LAO,
+    CV_TEXT_SYNTHESIZER_SCRIPT_TIBETAN,
+    CV_TEXT_SYNTHESIZER_SCRIPT_MYANMAR,
+    CV_TEXT_SYNTHESIZER_SCRIPT_GEORGIAN,
+    CV_TEXT_SYNTHESIZER_SCRIPT_KHMER,
+    CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_SIMPLIFIED,
+    CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_TRADITIONAL,
+    CV_TEXT_SYNTHESIZER_SCRIPT_JAPANESE,
+    CV_TEXT_SYNTHESIZER_SCRIPT_KOREAM,
+    CV_TEXT_SYNTHESIZER_SCRIPT_VIETNAMESE
 };
 
 /** @brief class that renders synthetic text images for training a CNN on
@@ -305,6 +331,24 @@ public:
      * @param sample the resulting text sample.
      */
     CV_WRAP virtual void generateSample(String caption,CV_OUT Mat& sample)=0;
+
+    /** @brief returns the name of the script beeing used
+     *
+     * @return a string with the name of the script
+     */
+    CV_WRAP virtual String getScriptName()=0;
+
+    /** @brief returns the random seed used by the synthesizer
+     *
+     * @return an unsigned long integer with the random seed.
+     */
+    CV_WRAP virtual uint64 getRandomSeed()=0;
+
+    /** @brief stets the random seed used by the synthesizer
+     *
+     * @param an unsigned long integer with the random seed to be set.
+     */
+    CV_WRAP virtual void setRandomSeed(uint64 s)=0;
 
     /** @brief public constructor for a syntheciser
      *

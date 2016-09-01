@@ -1,4 +1,4 @@
-#include "precomp.hpp"
+#include "precomp.hpp11"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -23,6 +23,12 @@
 #include <utility>
 #include <vector>
 
+//If cmake doesnt detect HAVE_QT5GUI directly
+//and you have highgui built with Qt5 uncomment
+//the following line
+//#define HAVE_QT5GUI
+
+
 #ifdef HAVE_QT5GUI
 #include <QImage>
 #include <QFont>
@@ -40,6 +46,13 @@ namespace text{
 
 namespace {
 //Unnamed namespace with auxiliary classes and functions used for quick computation
+template <typename T> T min_(T v1,T v2){
+    return (v1<v2)*v1+(v1>=v2)*v2;
+}
+
+template <typename T> T max_(T v1,T v2){
+    return (v1>v2)*v1+(v1<=v2)*v2;
+}
 
 template <typename P,typename BL_A,typename BL> void blendRGBA(Mat& out,const Mat &in1,const Mat& in2){
     CV_Assert(out.cols==in1.cols && out.cols==in2.cols);
@@ -72,6 +85,106 @@ template <typename P,typename BL_A,typename BL> void blendRGBA(Mat& out,const Ma
         }
     }
 }
+
+#ifdef HAVE_QT5GUI
+std::map<int,int> initQt2CvScriptCodeMap();
+std::map<int,int> initQt2CvScriptCodeMap(){
+    std::map<int,int> res;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ANY]=QFontDatabase::Any;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LATIN]=QFontDatabase::Latin;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GREEK]=QFontDatabase::Greek;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC]=QFontDatabase::Cyrillic;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARMENIAN]=QFontDatabase::Armenian;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC]=QFontDatabase::Arabic;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW]=QFontDatabase::Hebrew;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SYRIAC]=QFontDatabase::Syriac;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAANA]=QFontDatabase::Thaana;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_DEVANAGARI]=QFontDatabase::Devanagari;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_BENGALI]=QFontDatabase::Bengali;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GURMUKHI]=QFontDatabase::Gurmukhi;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GUJARATI]=QFontDatabase::Gujarati;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ORIYA]=QFontDatabase::Oriya;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TAMIL]=QFontDatabase::Tamil;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TELUGU]=QFontDatabase::Telugu;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KANNADA]=QFontDatabase::Kannada;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MALAYALAM]=QFontDatabase::Malayalam;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SINHALA]=QFontDatabase::Sinhala;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAI]=QFontDatabase::Thai;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LAO]=QFontDatabase::Lao;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TIBETAN]=QFontDatabase::Tibetan;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MYANMAR]=QFontDatabase::Myanmar;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GEORGIAN]=QFontDatabase::Georgian;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KHMER]=QFontDatabase::Khmer;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_SIMPLIFIED]=QFontDatabase::SimplifiedChinese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_TRADITIONAL]=QFontDatabase::TraditionalChinese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_JAPANESE]=QFontDatabase::Japanese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KOREAM]=QFontDatabase::Korean;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_VIETNAMESE]=QFontDatabase::Vietnamese;
+    return res;
+}
+
+
+int getQt2CvScriptCode(int cvScriptCode);
+int getQt2CvScriptCode(int cvScriptCode){
+    static std::map<int,int> m(initQt2CvScriptCodeMap());
+    if(m.find(cvScriptCode)!=m.end()){
+        return m[cvScriptCode];
+    }else{
+        CV_Error(Error::StsError,"Unknown script_code");
+        return 0;
+    }
+}
+#endif //HAVE_QT5GUI
+
+
+std::map<int,String> initScriptCode2StringMap();
+std::map<int,String> initScriptCode2StringMap(){
+    std::map<int,String> res;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ANY]="Any";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LATIN]="Latin";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GREEK]="Greek";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC]="Cyrillic";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARMENIAN]="Armenian";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC]="Arabic";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW]="Hebrew";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SYRIAC]="Syriac";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAANA]="Thaana";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_DEVANAGARI]="Devanagari";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_BENGALI]="Bengali";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GURMUKHI]="Gurmukhi";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GUJARATI]="Gujarati";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ORIYA]="Oriya";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TAMIL]="Tamil";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TELUGU]="Telugu";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KANNADA]="Kannada";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MALAYALAM]="Malayalam";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SINHALA]="Sinhala";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAI]="Thai";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LAO]="Lao";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TIBETAN]="Tibetan";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MYANMAR]="Myanmar";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GEORGIAN]="Georgian";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KHMER]="Khmer";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_SIMPLIFIED]="SimplifiedChinese";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_TRADITIONAL]="TraditionalChinese";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_JAPANESE]="Japanese";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KOREAM]="Korean";
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_VIETNAMESE]="Vietnamese";
+    return res;
+}
+
+
+String getCvScriptCode2String(int cvScriptCode);
+String getCvScriptCode2String(int cvScriptCode){
+    static std::map<int,String> m(initScriptCode2StringMap());
+    if(m.find(cvScriptCode)!=m.end()){
+        return m[cvScriptCode];
+    }else{
+        CV_Error(Error::StsError,"Unknown script_code");
+        return "Error";
+    }
+}
+
 
 }//unnamed namespace
 void blendWeighted(Mat& out,Mat& top,Mat& bottom,float topMask,float bottomMask);
@@ -227,32 +340,8 @@ protected:
 
     void updateFontNameList(std::vector<String>& fntList){
 #ifdef HAVE_QT5GUI
-        QFontDatabase::WritingSystem qtScriptCode=QFontDatabase::Any;
-        switch(this->script_){
-            case CV_TEXT_SYNTHESIZER_SCRIPT_ANY:
-                qtScriptCode=QFontDatabase::Any;
-                break;
-            case CV_TEXT_SYNTHESIZER_SCRIPT_LATIN:
-                qtScriptCode=QFontDatabase::Latin;
-                break;
-            case CV_TEXT_SYNTHESIZER_SCRIPT_GREEK:
-                qtScriptCode=QFontDatabase::Greek;
-                break;
-            case CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC:
-                qtScriptCode=QFontDatabase::Cyrillic;
-                break;
-            case CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC:
-                qtScriptCode=QFontDatabase::Arabic;
-                break;
-            case CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW:
-                qtScriptCode=QFontDatabase::Hebrew;
-                break;
-            default:
-                    CV_Error(Error::StsError,"Unsupported script_code");
-                    break;
-        }
         fntList.clear();
-        QStringList lst=this->fntDb_->families(qtScriptCode);
+        QStringList lst=this->fntDb_->families(QFontDatabase::WritingSystem(getQt2CvScriptCode(this->script_)));
         for(int k=0;k<lst.size();k++){
             fntList.push_back(lst[k].toUtf8().constData());
         }
@@ -356,6 +445,9 @@ protected:
         floatMixed.copyTo(output);floatMask.copyTo(outputMask);
     }
 
+    String getScriptName(){
+        return getCvScriptCode2String(this->script_);
+    }
 
     void generateDilation(Mat&outputImg,const Mat& inputImg,int dilationSize, int horizOffset,int vertOffset){
         //erosion is defined as a negative dilation size
@@ -393,13 +485,45 @@ protected:
     void randomlyDistortPerspective(const Mat& inputImg,Mat& outputImg){
         int N=int(this->maxPerspectiveDistortion_);
         if(N>0){
+            float xa=this->rng_.next()%N;
+            float xb=this->rng_.next()%N;
+            float xc=this->rng_.next()%N;
+            float xd=this->rng_.next()%N;
+
+            float ya=this->rng_.next()%N;
+            float yb=this->rng_.next()%N;
+            float yc=this->rng_.next()%N;
+            float yd=this->rng_.next()%N;
+
+            float left=min_<float>(xa,xd);
+            float top=min_<float>(ya,yb);
+            float right=100-min_<float>(xb,xc);
+            float bottom=100-min_<float>(yc,yd);
+
+            float horizCoef;
+            float vertCoef;
+
+            if(right-left<bottom-top){
+                vertCoef=(1+bottom-top)/(1+right-left);
+                horizCoef=0;
+            }else{
+                vertCoef=0;
+                horizCoef=(1+right-left)/(1+bottom-top);
+            }
+
+            xa=0+xa*horizCoef;xd=0+xd*horizCoef;
+            xb=100-xb*horizCoef;xc=100-xc*horizCoef;
+            ya=ya*vertCoef;yb=yb*vertCoef;
+            yc=100-yc*vertCoef;yd=100-yd*vertCoef;
+
             std::vector<Point> src(4);std::vector<Point> dst(4);
-            src[0]=Point2f(0,0);src[1]=Point2f(100,0);src[2]=Point2f(0,100);src[3]=Point2f(100,100);
-            dst[0]=Point2f(float(this->rng_.next()%N),float(this->rng_.next()%N));
-            dst[1]=Point2f(float(100-this->rng_.next()%N),float(this->rng_.next()%N));
-            dst[2]=Point2f(float(this->rng_.next()%N),float(100-this->rng_.next()%N));
-            dst[3]=Point2f(float(100-this->rng_.next()%N),float(100-this->rng_.next()%N));
+            src[0]=Point2f(0,0);src[1]=Point2f(100,0);src[2]=Point2f(100,100);src[3]=Point2f(0,100);
+            dst[0]=Point2f(xa,ya);
+            dst[1]=Point2f(xb,yb);
+            dst[2]=Point2f(xc,yc);
+            dst[3]=Point2f(xd,yd);
             Mat h=findHomography(src,dst);
+            std::cerr<<"\nA: "<<src[0]<<"->"<<dst[0]<<"\nB: "<<src[1]<<"->"<<dst[1]<<"\nC: "<<src[2]<<"->"<<dst[2]<<"\nD: "<<src[3]<<"->"<<dst[3]<<"\n\n";
             warpPerspective(inputImg,outputImg,h,inputImg.size());
         }else{
             outputImg=inputImg;
@@ -476,12 +600,7 @@ public:
             TextSynthesizer(maxSampleWidth,sampleHeight),
             rng_(rndState!=0?rndState:std::time(NULL)),
             txtPad_(10){
-        CV_Assert(script==CV_TEXT_SYNTHESIZER_SCRIPT_ANY ||
-                  script==CV_TEXT_SYNTHESIZER_SCRIPT_LATIN ||
-                  script==CV_TEXT_SYNTHESIZER_SCRIPT_GREEK ||
-                  script==CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC ||
-                  script==CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC ||
-                  script==CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW);
+        CV_Assert(initQt2CvScriptCodeMap().count(script));//making sure script is a valid script code
         this->script_=script;
         //QT needs to be initialised. Highgui does this
         namedWindow("__w");
@@ -494,6 +613,13 @@ public:
         this->initColorClusters();
     }
 
+    uint64 getRandomSeed(){
+        return this->rng_.state;
+    }
+
+    void setRandomSeed(uint64 s){
+        this->rng_.state=s;
+    }
 
     void generateBgSample(CV_OUT Mat& sample){
         if(this->availableBgSampleImages_.size()!=0){

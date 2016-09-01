@@ -121,6 +121,11 @@ def guiLoop():
 # Main Programm
 
 if __name__=='__main__':
+    colorImg=cv2.imread('1000_color_clusters.png',cv2.IMREAD_COLOR)
+    #1000_color_clusters.png has the 3 most dominant color clusters 
+    #from the first 1000 samples of MSCOCO-text trainset
+    if colorImg!=None:
+        colorClusters=colorImg
     print helpStr
     initialiseSynthesizers()
     initWindows()
