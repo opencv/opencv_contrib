@@ -523,7 +523,6 @@ protected:
             dst[2]=Point2f(xc,yc);
             dst[3]=Point2f(xd,yd);
             Mat h=findHomography(src,dst);
-            std::cerr<<"\nA: "<<src[0]<<"->"<<dst[0]<<"\nB: "<<src[1]<<"->"<<dst[1]<<"\nC: "<<src[2]<<"->"<<dst[2]<<"\nD: "<<src[3]<<"->"<<dst[3]<<"\n\n";
             warpPerspective(inputImg,outputImg,h,inputImg.size());
         }else{
             outputImg=inputImg;
