@@ -5,7 +5,7 @@
 #include "opencv2/calib3d.hpp"
 
 #include "opencv2/text/text_synthesizer.hpp"
-#include "opencv2/text_config.hpp"
+
 
 #include <stdio.h>
 #include <stdlib.h>
