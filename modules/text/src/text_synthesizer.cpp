@@ -1,4 +1,4 @@
-#include "precomp.hpp11"
+#include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include <errno.h>
+#include <map>
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -599,7 +600,9 @@ public:
             TextSynthesizer(maxSampleWidth,sampleHeight),
             rng_(rndState!=0?rndState:std::time(NULL)),
             txtPad_(10){
+#ifdef HAVE_QT5GUI
         CV_Assert(initQt2CvScriptCodeMap().count(script));//making sure script is a valid script code
+#endif
         this->script_=script;
         //QT needs to be initialised. Highgui does this
         namedWindow("__w");
