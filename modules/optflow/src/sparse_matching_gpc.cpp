@@ -72,6 +72,11 @@ const int localIters = 500;
 const double thresholdOutliers = 0.98;
 const double thresholdMagnitudeFrac = 0.8;
 const double epsTolerance = 1e-12;
+const unsigned scoreGainPos = 5;
+const unsigned scoreGainNeg = 1;
+const int negSearchStepRadius = patchRadius / 2;
+const int negSearchRingSegments = 10;
+const int negSearchRings = 6;
 
 struct Magnitude
 {
@@ -94,9 +99,9 @@ struct PartitionPredicate1
 
   bool operator()( const GPCPatchSample &sample ) const
   {
-    const bool direction1 = ( sample.first.dot( coef ) < rhs );
-    const bool direction2 = ( sample.second.dot( coef ) < rhs );
-    return direction1 == false && direction2 == false;
+    bool refdir, posdir, negdir;
+    sample.getDirections( refdir, posdir, negdir, coef, rhs );
+    return refdir == false && ( posdir == false || negdir == true );
   }
 };
 
@@ -109,9 +114,9 @@ struct PartitionPredicate2
 
   bool operator()( const GPCPatchSample &sample ) const
   {
-    const bool direction1 = ( sample.first.dot( coef ) < rhs );
-    const bool direction2 = ( sample.second.dot( coef ) < rhs );
-    return direction1 != direction2;
+    bool refdir, posdir, negdir;
+    sample.getDirections( refdir, posdir, negdir, coef, rhs );
+    return refdir != posdir && refdir == negdir;
   }
 };
 
@@ -330,6 +335,43 @@ void getAllWHTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescri
     }
 }
 
+void getTriplet( const Magnitude &mag, const Mat &gt, const Mat *fromCh, const Mat *toCh, GPCSamplesVector &samples,
+                 void ( *getDescFn )( GPCPatchDescriptor &, const Mat *, int, int ) )
+{
+  const Size sz = gt.size();
+  const int i0 = mag.i;
+  const int j0 = mag.j;
+  const int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
+  const int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
+  if ( checkBounds( i1, j1, sz ) )
+  {
+    GPCPatchSample ps;
+    getDescFn( ps.ref, fromCh, i0, j0 );
+    getDescFn( ps.pos, toCh, i1, j1 );
+    ps.neg.markAsSeparated();
+    double minDiff = 1e9;
+    for ( int r = 1; r < negSearchRings; ++r )
+      for ( int k = 0; k < negSearchRingSegments; ++k )
+      {
+        const int curRad = negSearchStepRadius * r;
+        const int i2 = i1 + curRad * sin( CV_2PI * k / negSearchRingSegments );
+        const int j2 = j1 + curRad * cos( CV_2PI * k / negSearchRingSegments );
+        if ( checkBounds( i2, j2, sz ) )
+        {
+          GPCPatchDescriptor desc;
+          getDescFn( desc, toCh, i2, j2 );
+          const double diff = cv::norm( desc.feature - ps.ref.feature );
+          if ( diff < minDiff )
+          {
+            minDiff = diff;
+            ps.neg = desc;
+          }
+        }
+      }
+    samples.push_back( ps );
+  }
+}
+
 void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSamplesVector &samples, const int type )
 {
   const Size sz = gt.size();
@@ -354,19 +396,7 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     split( to, toCh );
 
     for ( size_t k = 0; k < n; ++k )
-    {
-      int i0 = mag[k].i;
-      int j0 = mag[k].j;
-      int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
-      int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
-      if ( checkBounds( i1, j1, sz ) )
-      {
-        GPCPatchSample ps;
-        getDCTPatchDescriptor( ps.first, fromCh, i0, j0 );
-        getDCTPatchDescriptor( ps.second, toCh, i1, j1 );
-        samples.push_back( ps );
-      }
-    }
+      getTriplet( mag[k], gt, fromCh, toCh, samples, getDCTPatchDescriptor );
   }
   else if ( type == GPC_DESCRIPTOR_WHT )
   {
@@ -381,19 +411,7 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     integral( toCh[2], toChInt[2], CV_64F );
 
     for ( size_t k = 0; k < n; ++k )
-    {
-      int i0 = mag[k].i;
-      int j0 = mag[k].j;
-      int i1 = i0 + cvRound( gt.at< Vec2f >( i0, j0 )[1] );
-      int j1 = j0 + cvRound( gt.at< Vec2f >( i0, j0 )[0] );
-      if ( checkBounds( i1, j1, sz ) )
-      {
-        GPCPatchSample ps;
-        getWHTPatchDescriptor( ps.first, fromChInt, i0, j0 );
-        getWHTPatchDescriptor( ps.second, toChInt, i1, j1 );
-        samples.push_back( ps );
-      }
-    }
+      getTriplet( mag[k], gt, fromChInt, toChInt, samples, getWHTPatchDescriptor );
   }
   else
     CV_Error( CV_StsBadArg, "Unknown descriptor type" );
@@ -416,10 +434,7 @@ void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
     v[i] = getRandomCauchyScalar();
 }
 
-double getRobustMedian( double m )
-{
-  return m < 0 ? m * ( 1.0 + epsTolerance ) : m * ( 1.0 - epsTolerance );
-}
+double getRobustMedian( double m ) { return m < 0 ? m * ( 1.0 + epsTolerance ) : m * ( 1.0 - epsTolerance ); }
 }
 
 void GPCDetails::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp,
@@ -472,38 +487,38 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
       values.clear();
 
       for ( SIter iter = begin; iter != end; ++iter )
-      {
-        values.push_back( iter->first.dot( coef ) );
-        values.push_back( iter->second.dot( coef ) );
-      }
+        values.push_back( iter->ref.dot( coef ) );
 
-      std::nth_element( values.begin(), values.begin() + ( nSamples + ( nSamples & 1 ) ), values.end() );
-      double median = values[nSamples + ( nSamples & 1 )];
-      unsigned correct = 0;
+      std::nth_element( values.begin(), values.begin() + nSamples / 2, values.end() );
+      double median = values[nSamples / 2];
 
       // Skip obviously malformed division. This may happen in case there are a large number of equal samples.
       // Most likely this won't happen with samples collected from a good dataset.
       // Happens in case dataset contains plain (or close to plain) images.
-      if ( std::count_if( values.begin(), values.end(), CompareWithTolerance( median ) ) > std::max( 1, nSamples / 8 ) )
+      if ( std::count_if( values.begin(), values.end(), CompareWithTolerance( median ) ) > std::max( 1, nSamples / 4 ) )
         continue;
 
       median = getRobustMedian( median );
 
+      unsigned score = 0;
       for ( SIter iter = begin; iter != end; ++iter )
       {
-        const bool direction = ( iter->first.dot( coef ) < median );
-        if ( direction == ( iter->second.dot( coef ) < median ) )
-          ++correct;
+        bool refdir, posdir, negdir;
+        iter->getDirections( refdir, posdir, negdir, coef, median );
+        if ( refdir == posdir )
+          score += scoreGainPos;
+        if ( refdir != negdir )
+          score += scoreGainNeg;
       }
 
-      if ( correct > localBestScore )
-        localBestScore = correct;
+      if ( score > localBestScore )
+        localBestScore = score;
       else
         coef[pos] = randomModification;
 
-      if ( correct > globalBestScore )
+      if ( score > globalBestScore )
       {
-        globalBestScore = correct;
+        globalBestScore = score;
         node.coef = coef;
         node.rhs = median;
       }
@@ -515,10 +530,22 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
   if ( params.printProgress )
   {
-    printf( "[%u] Correct %.2f (%u/%d)\nWeights:", depth, double( globalBestScore ) / nSamples, globalBestScore, nSamples );
+    const int maxScore = nSamples * ( scoreGainPos + scoreGainNeg );
+    const double correctRatio = double( globalBestScore ) / maxScore;
+    printf( "[%u] Correct %.2f (%u/%d)\nWeights:", depth, correctRatio, globalBestScore, maxScore );
     for ( unsigned k = 0; k < GPCPatchDescriptor::nFeatures; ++k )
       printf( " %.3f", node.coef[k] );
     printf( "\n" );
+  }
+
+  for ( SIter iter = begin; iter != end; ++iter )
+  {
+    bool refdir, posdir, negdir;
+    iter->getDirections( refdir, posdir, negdir, node.coef, node.rhs );
+    if ( refdir != posdir )
+      iter->pos.markAsSeparated();
+    if ( refdir != negdir )
+      iter->neg.markAsSeparated();
   }
 
   // Partition vector with samples according to the hyperplane in QuickSort-like manner.

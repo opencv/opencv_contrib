@@ -91,9 +91,26 @@ struct CV_EXPORTS_W GPCPatchDescriptor
     return feature.dot( coef );
 #endif
   }
+
+  void markAsSeparated() { feature[0] = std::numeric_limits< double >::quiet_NaN(); }
+
+  bool isSeparated() const { return cvIsNaN( feature[0] ); }
 };
 
-typedef std::pair< GPCPatchDescriptor, GPCPatchDescriptor > GPCPatchSample;
+struct CV_EXPORTS_W GPCPatchSample
+{
+  GPCPatchDescriptor ref;
+  GPCPatchDescriptor pos;
+  GPCPatchDescriptor neg;
+
+  void getDirections( bool &refdir, bool &posdir, bool &negdir, const Vec< double, GPCPatchDescriptor::nFeatures > &coef, double rhs ) const
+  {
+    refdir = ( ref.dot( coef ) < rhs );
+    posdir = pos.isSeparated() ? ( !refdir ) : ( pos.dot( coef ) < rhs );
+    negdir = neg.isSeparated() ? ( !refdir ) : ( neg.dot( coef ) < rhs );
+  }
+};
+
 typedef std::vector< GPCPatchSample > GPCSamplesVector;
 
 /** @brief Descriptor types for the Global Patch Collider.
