@@ -542,10 +542,14 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
   {
     bool refdir, posdir, negdir;
     iter->getDirections( refdir, posdir, negdir, node.coef, node.rhs );
+    // We shouldn't account for positive sample in the scoring in case it was separated before. So mark it as separated.
+    // After all, we can't bring back samples which were separated from reference on early levels.
     if ( refdir != posdir )
       iter->pos.markAsSeparated();
+    // The same for negative sample.
     if ( refdir != negdir )
       iter->neg.markAsSeparated();
+    // If both positive and negative were separated before then such triplet doesn't make sense on deeper levels. We discard it.
   }
 
   // Partition vector with samples according to the hyperplane in QuickSort-like manner.
