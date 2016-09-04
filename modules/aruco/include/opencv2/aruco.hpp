@@ -226,6 +226,16 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
 class CV_EXPORTS_W Board {
 
     public:
+    /**
+    * @brief Provide way to create Board by passing nessesary data. Specially needed in Python.
+    *
+    * @param objPoints array of object points of all the marker corners in the board
+    * @param dictionary the dictionary of markers employed for this board
+    * @param ids vector of the identifiers of the markers in the board
+    *
+    * Provide way to create Board by passing nessesary data. Specially needed in Python.
+    */
+	CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, Ptr<Dictionary> &dictionary, InputArray ids);
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
