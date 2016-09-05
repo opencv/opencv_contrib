@@ -41,6 +41,7 @@
  //M*/
 
 #include "opencv2/core/core_c.h"
+#include "opencv2/flann/miniflann.hpp"
 #include "opencv2/highgui.hpp"
 #include "precomp.hpp"
 
@@ -74,9 +75,7 @@ const double thresholdMagnitudeFrac = 0.8;
 const double epsTolerance = 1e-12;
 const unsigned scoreGainPos = 5;
 const unsigned scoreGainNeg = 1;
-const int negSearchStepRadius = patchRadius / 2;
-const int negSearchRingSegments = 10;
-const int negSearchRings = 6;
+const unsigned negSearchKNN = 5;
 
 struct Magnitude
 {
@@ -335,7 +334,23 @@ void getAllWHTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescri
     }
 }
 
-void getTriplet( const Magnitude &mag, const Mat &gt, const Mat *fromCh, const Mat *toCh, GPCSamplesVector &samples,
+void buildIndex( OutputArray featuresOut, flann::Index &index, const Mat *imgCh,
+                 void ( *getAllDescrFn )( const Mat *, std::vector< GPCPatchDescriptor > &, const GPCMatchingParams & ) )
+{
+  std::vector< GPCPatchDescriptor > descriptors;
+  getAllDescrFn( imgCh, descriptors, GPCMatchingParams() );
+
+  featuresOut.create( descriptors.size(), GPCPatchDescriptor::nFeatures, CV_32F );
+  Mat features = featuresOut.getMat();
+
+  for ( size_t i = 0; i < descriptors.size(); ++i )
+    *features.ptr< Vec< float, GPCPatchDescriptor::nFeatures > >( i ) = descriptors[i].feature;
+
+  cv::flann::KDTreeIndexParams indexParams;
+  index.build( features, indexParams, cvflann::FLANN_DIST_L2 );
+}
+
+void getTriplet( const Magnitude &mag, const Mat &gt, const Mat *fromCh, const Mat *toCh, GPCSamplesVector &samples, flann::Index &index,
                  void ( *getDescFn )( GPCPatchDescriptor &, const Mat *, int, int ) )
 {
   const Size sz = gt.size();
@@ -349,25 +364,28 @@ void getTriplet( const Magnitude &mag, const Mat &gt, const Mat *fromCh, const M
     getDescFn( ps.ref, fromCh, i0, j0 );
     getDescFn( ps.pos, toCh, i1, j1 );
     ps.neg.markAsSeparated();
-    double minDiff = 1e9;
-    for ( int r = 1; r < negSearchRings; ++r )
-      for ( int k = 0; k < negSearchRingSegments; ++k )
+
+    Matx< float, 1, GPCPatchDescriptor::nFeatures > ref32;
+    Matx< int, 1, negSearchKNN > indices;
+    int maxDist = 0;
+
+    for ( unsigned i = 0; i < GPCPatchDescriptor::nFeatures; ++i )
+      ref32( 0, i ) = ps.ref.feature[i];
+
+    index.knnSearch( ref32, indices, noArray(), negSearchKNN );
+
+    for ( unsigned i = 0; i < negSearchKNN; ++i )
+    {
+      int i2, j2;
+      GPCDetails::getCoordinatesFromIndex( indices( 0, i ), sz, j2, i2 );
+      const int dist = ( i2 - i1 ) * ( i2 - i1 ) + ( j2 - j1 ) * ( j2 - j1 );
+      if ( maxDist < dist )
       {
-        const int curRad = negSearchStepRadius * r;
-        const int i2 = i1 + curRad * sin( CV_2PI * k / negSearchRingSegments );
-        const int j2 = j1 + curRad * cos( CV_2PI * k / negSearchRingSegments );
-        if ( checkBounds( i2, j2, sz ) )
-        {
-          GPCPatchDescriptor desc;
-          getDescFn( desc, toCh, i2, j2 );
-          const double diff = cv::norm( desc.feature - ps.ref.feature );
-          if ( diff < minDiff )
-          {
-            minDiff = diff;
-            ps.neg = desc;
-          }
-        }
+        maxDist = dist;
+        getDescFn( ps.neg, toCh, i2, j2 );
       }
+    }
+
     samples.push_back( ps );
   }
 }
@@ -395,8 +413,12 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     split( from, fromCh );
     split( to, toCh );
 
+    Mat allDescriptors;
+    flann::Index index;
+    buildIndex( allDescriptors, index, toCh, getAllDCTDescriptorsForImage );
+
     for ( size_t k = 0; k < n; ++k )
-      getTriplet( mag[k], gt, fromCh, toCh, samples, getDCTPatchDescriptor );
+      getTriplet( mag[k], gt, fromCh, toCh, samples, index, getDCTPatchDescriptor );
   }
   else if ( type == GPC_DESCRIPTOR_WHT )
   {
@@ -410,8 +432,12 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
     integral( toCh[1], toChInt[1], CV_64F );
     integral( toCh[2], toChInt[2], CV_64F );
 
+    Mat allDescriptors;
+    flann::Index index;
+    buildIndex( allDescriptors, index, toCh, getAllWHTDescriptorsForImage );
+
     for ( size_t k = 0; k < n; ++k )
-      getTriplet( mag[k], gt, fromChInt, toChInt, samples, getWHTPatchDescriptor );
+      getTriplet( mag[k], gt, fromChInt, toChInt, samples, index, getWHTPatchDescriptor );
   }
   else
     CV_Error( CV_StsBadArg, "Unknown descriptor type" );
