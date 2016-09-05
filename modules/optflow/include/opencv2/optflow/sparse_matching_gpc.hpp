@@ -94,7 +94,7 @@ struct CV_EXPORTS_W GPCPatchDescriptor
 
   void markAsSeparated() { feature[0] = std::numeric_limits< double >::quiet_NaN(); }
 
-  bool isSeparated() const { return cvIsNaN( feature[0] ); }
+  bool isSeparated() const { return cvIsNaN( feature[0] ) != 0; }
 };
 
 struct CV_EXPORTS_W GPCPatchSample
