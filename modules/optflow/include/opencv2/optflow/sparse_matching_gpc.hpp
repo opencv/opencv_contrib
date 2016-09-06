@@ -239,6 +239,27 @@ private:
     }
   };
 
+  class ParallelTrailsFilling : public ParallelLoopBody
+  {
+  private:
+    const GPCForest *forest;
+    const std::vector< GPCPatchDescriptor > *descr;
+    std::vector< Trail > *trails;
+
+    ParallelTrailsFilling &operator=( const ParallelTrailsFilling & );
+
+  public:
+    ParallelTrailsFilling( const GPCForest *_forest, const std::vector< GPCPatchDescriptor > *_descr, std::vector< Trail > *_trails )
+        : forest( _forest ), descr( _descr ), trails( _trails ){};
+
+    void operator()( const Range &range ) const
+    {
+      for ( int t = range.start; t < range.end; ++t )
+        for ( size_t i = 0; i < descr->size(); ++i )
+          trails->at( i ).leaf[t] = forest->tree[t].findLeafForPatch( descr->at( i ) );
+    }
+  };
+
   GPCTree tree[T];
 
 public:
@@ -331,25 +352,15 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
   std::vector< Trail > trailsFrom( descr.size() ), trailsTo( descr.size() );
 
   for ( size_t i = 0; i < descr.size(); ++i )
-  {
-    Trail trail;
-    for ( int t = 0; t < T; ++t )
-      trail.leaf[t] = tree[t].findLeafForPatch( descr[i] );
-    GPCDetails::getCoordinatesFromIndex( i, from.size(), trail.coord.x, trail.coord.y );
-    trailsFrom[i] = trail;
-  }
+    GPCDetails::getCoordinatesFromIndex( i, from.size(), trailsFrom[i].coord.x, trailsFrom[i].coord.y );
+  parallel_for_( Range( 0, T ), ParallelTrailsFilling( this, &descr, &trailsFrom ) );
 
   descr.clear();
   GPCDetails::getAllDescriptorsForImage( toCh, descr, params, tree[0].getDescriptorType() );
 
   for ( size_t i = 0; i < descr.size(); ++i )
-  {
-    Trail trail;
-    for ( int t = 0; t < T; ++t )
-      trail.leaf[t] = tree[t].findLeafForPatch( descr[i] );
-    GPCDetails::getCoordinatesFromIndex( i, to.size(), trail.coord.x, trail.coord.y );
-    trailsTo[i] = trail;
-  }
+    GPCDetails::getCoordinatesFromIndex( i, to.size(), trailsTo[i].coord.x, trailsTo[i].coord.y );
+  parallel_for_( Range( 0, T ), ParallelTrailsFilling( this, &descr, &trailsTo ) );
 
   std::sort( trailsFrom.begin(), trailsFrom.end() );
   std::sort( trailsTo.begin(), trailsTo.end() );

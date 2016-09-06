@@ -283,6 +283,30 @@ ocl::ProgramSource _ocl_getDCTPatchDescriptorSource(
 #undef STR_EXPAND_
 #undef STR_EXPAND
 
+class ParallelDCTFiller : public ParallelLoopBody
+{
+private:
+  const Size sz;
+  const Mat *imgCh;
+  std::vector< GPCPatchDescriptor > *descr;
+
+  ParallelDCTFiller &operator=( const ParallelDCTFiller & );
+
+public:
+  ParallelDCTFiller( const Size &_sz, const Mat *_imgCh, std::vector< GPCPatchDescriptor > *_descr )
+      : sz( _sz ), imgCh( _imgCh ), descr( _descr ){};
+
+  void operator()( const Range &range ) const
+  {
+    for ( int i = range.start; i < range.end; ++i )
+    {
+      int x, y;
+      GPCDetails::getCoordinatesFromIndex( i, sz, x, y );
+      getDCTPatchDescriptor( descr->at( i ), imgCh, y, x );
+    }
+  }
+};
+
 void getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp )
 {
   const Size sz = imgCh[0].size();
@@ -306,32 +330,45 @@ void getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescri
     return;
   }
 
-  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
-    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
-    {
-      GPCPatchDescriptor pd;
-      getDCTPatchDescriptor( pd, imgCh, i, j );
-      descr.push_back( pd );
-    }
+  descr.resize( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
+  parallel_for_( Range( 0, descr.size() ), ParallelDCTFiller( sz, imgCh, &descr ) );
 }
+
+class ParallelWHTFiller : public ParallelLoopBody
+{
+private:
+  const Size sz;
+  const Mat *imgChInt;
+  std::vector< GPCPatchDescriptor > *descr;
+
+  ParallelWHTFiller &operator=( const ParallelWHTFiller & );
+
+public:
+  ParallelWHTFiller( const Size &_sz, const Mat *_imgChInt, std::vector< GPCPatchDescriptor > *_descr )
+      : sz( _sz ), imgChInt( _imgChInt ), descr( _descr ){};
+
+  void operator()( const Range &range ) const
+  {
+    for ( int i = range.start; i < range.end; ++i )
+    {
+      int x, y;
+      GPCDetails::getCoordinatesFromIndex( i, sz, x, y );
+      getWHTPatchDescriptor( descr->at( i ), imgChInt, y, x );
+    }
+  }
+};
 
 void getAllWHTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams & )
 {
   const Size sz = imgCh[0].size();
-  descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
+  descr.resize( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
 
   Mat imgChInt[3];
   integral( imgCh[0], imgChInt[0], CV_64F );
   integral( imgCh[1], imgChInt[1], CV_64F );
   integral( imgCh[2], imgChInt[2], CV_64F );
 
-  for ( int i = patchRadius; i + patchRadius < sz.height; ++i )
-    for ( int j = patchRadius; j + patchRadius < sz.width; ++j )
-    {
-      GPCPatchDescriptor pd;
-      getWHTPatchDescriptor( pd, imgChInt, i, j );
-      descr.push_back( pd );
-    }
+  parallel_for_( Range( 0, descr.size() ), ParallelWHTFiller( sz, imgChInt, &descr ) );
 }
 
 void buildIndex( OutputArray featuresOut, flann::Index &index, const Mat *imgCh,
