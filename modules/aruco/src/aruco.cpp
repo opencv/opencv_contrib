@@ -41,7 +41,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-
 namespace cv {
 namespace aruco {
 
@@ -1333,6 +1332,30 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
     _drawPlanarBoardImpl(this, outSize, _img, marginSize, borderBits);
 }
 
+
+/**
+*/
+Ptr<Board> Board::create(InputArrayOfArrays objPoints, Ptr<Dictionary> &dictionary, InputArray ids) {
+
+    CV_Assert(objPoints.total() == ids.total());
+    CV_Assert(objPoints.type() == CV_32FC3);
+
+    std::vector< std::vector< Point3f > > obj_points_vector;
+    for (unsigned int i = 0; i < objPoints.total(); i++) {
+        std::vector<Point3f> corners;
+        Mat corners_mat = objPoints.getMat(i);
+        for (int j = 0; j < 4; j++) {
+            corners.push_back(corners_mat.at<Point3f>(j));
+        }
+        obj_points_vector.push_back(corners);
+    }
+
+    Ptr<Board> res = makePtr<Board>();
+    ids.copyTo(res->ids);
+    res->objPoints = obj_points_vector;
+    res->dictionary = dictionary;
+    return res;
+}
 
 /**
  */
