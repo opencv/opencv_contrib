@@ -43,6 +43,7 @@
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/ml.hpp"
+#include "opencv2/highgui.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -189,7 +190,6 @@ public:
     ~OCRBeamSearchDecoderImpl()
     {
     }
-
     void run( Mat& src,
               Mat& mask,
               string& out_sequence,
@@ -211,7 +211,6 @@ public:
               vector<float>* component_confidences,
               int component_level)
     {
-
         CV_Assert( (src.type() == CV_8UC1) || (src.type() == CV_8UC3) );
         CV_Assert( (src.cols > 0) && (src.rows > 0) );
         CV_Assert( component_level == OCR_LEVEL_WORD );
@@ -228,15 +227,16 @@ public:
             cvtColor(src,src,COLOR_RGB2GRAY);
         }
 
-
         // TODO if input is a text line (not a word) we may need to split into words here!
 
         // do sliding window classification along a croped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
-        if (oversegmentation.size() < 2) return;
-
+        if (oversegmentation.size() < 2){
+            out_sequence="###";//TODO find the output class transcription for the single window
+            return;
+        }
 
         //NMS of recognitions
         double last_best_p = 0;
@@ -338,9 +338,17 @@ public:
         double lp = score_segmentation( beam[0].segmentation, out_sequence );
 
         // fill other (dummy) output parameters
-        component_rects->push_back(Rect(0,0,src.cols,src.rows));
-        component_texts->push_back(out_sequence);
-        component_confidences->push_back((float)exp(lp));
+        if(component_rects!=NULL){
+            component_rects->push_back(Rect(0,0,src.cols,src.rows));
+        }
+
+        if(component_texts!=NULL){
+            component_texts->push_back(out_sequence);
+        }
+
+        if(component_confidences!=NULL){
+            component_confidences->push_back((float)exp(lp));
+        }
 
         return;
     }
@@ -777,10 +785,116 @@ double OCRBeamSearchClassifierCNN::eval_feature(Mat& feature, double* prob_estim
 }
 
 Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const String& filename)
-
 {
     return makePtr<OCRBeamSearchClassifierCNN>(std::string(filename));
 }
+
+
+/* This class is used to bridge the gap between TextImageClassifier and
+ * OCRBeamSearchDecoder::ClassifierCallback. In practice it implements the logic
+ * of invocking a TextImageClassifier in a sliding window. Eventually this functionality
+ * should be moved inside OCRBeamSearchDecoder. The class has no footprint in public API.
+ * The method could also provide compatibillitywith the OCRHMMDecoder::ClassifierCallback
+ * but a letter segmenter will be needed.
+ */
+class TextImageClassifierBeamSearchCallback: public OCRBeamSearchDecoder::ClassifierCallback
+        //, public OCRHMMDecoder::ClassifierCallback// A letter segmenter will be needed
+{
+    //TODO: once opencv supports "enable_shared_from_this" this class shoulb be removed from
+    //the public API (ocr.hpp) and add a single method in TextImageClassifier returning a
+    //Ptr<OCRBeamSearchDecoder::ClassifierCallback>
+protected:
+    int stepSize_;
+    int windowWidth_;
+    Ptr<TextImageClassifier> classifier_;
+public:
+    virtual ~TextImageClassifierBeamSearchCallback() { }
+
+    TextImageClassifierBeamSearchCallback(Ptr<TextImageClassifier> classifier,int stepSize,int windowWidth)
+        :stepSize_(stepSize),windowWidth_(windowWidth),classifier_(classifier)
+    {
+        if(windowWidth_<=0)
+        {
+            windowWidth_=classifier_->getInputSize().width;
+        }
+    }
+
+    virtual void eval( InputArray _img, std::vector< std::vector<double> >& recognitionProbabilities, std::vector<int>& oversegmentation )
+    {
+
+        if (!recognitionProbabilities.empty())
+        {
+            for (size_t i=0; i<recognitionProbabilities.size(); i++)
+                recognitionProbabilities[i].clear();
+        }
+        recognitionProbabilities.clear();
+        oversegmentation.clear();
+
+        Mat img=_img.getMat();
+        std::vector<Mat> windowList;
+        int counter=0;
+
+        for(int x=0;x+windowWidth_<img.cols;x+=stepSize_)
+        {
+            windowList.push_back(img.colRange(x,x+windowWidth_));
+            oversegmentation.push_back(counter);//This seems redundant maybe the callback API should deprecate it;
+            counter++;
+        }
+
+        Mat windowProbabilities;
+        this->classifier_->classifyBatch(windowList,windowProbabilities);
+        recognitionProbabilities.resize(windowProbabilities.rows);
+        for(int windowNum=0;windowNum<windowProbabilities.rows;windowNum++)
+        {
+            recognitionProbabilities[windowNum].resize(windowProbabilities.cols);
+            switch(windowProbabilities.depth()){
+                case CV_64F:
+                  for(int clNum=2;clNum<windowProbabilities.cols;clNum++){
+                      recognitionProbabilities[windowNum][clNum]=sqrt(windowProbabilities.at<double>(windowNum,clNum));//+.02;
+                  }
+                  break;
+                case CV_32F:
+                  for(int clNum=2;clNum<windowProbabilities.cols;clNum++){
+                      recognitionProbabilities[windowNum][clNum]=sqrt(windowProbabilities.at<float>(windowNum,clNum));//+.02;
+                  }
+                  break;
+                default:
+                  CV_Error(Error::StsError,"The network outputs should be either float or double!");
+            }
+        }
+
+    }
+
+    virtual int getWindowSize(){return stepSize_;}
+
+    virtual int getStepSize(){return windowWidth_;}
+
+    static Ptr<OCRBeamSearchDecoder::ClassifierCallback> create(Ptr<TextImageClassifier> classifier,int stepSize=8,int windowWidth=-1);
+};
+
+
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const Ptr<TextImageClassifier> classifier,
+                                                       String alphabet,
+                                                       InputArray transitionProbabilitiesTable,
+                                                       InputArray emissionProbabilitiesTable,
+                                                       int windowWidth,
+                                                       int windowStep,
+                                                       int mode,
+                                                       int beamSize){
+    Ptr<OCRBeamSearchDecoder::ClassifierCallback> callback=
+            Ptr<OCRBeamSearchDecoder::ClassifierCallback>(new
+            TextImageClassifierBeamSearchCallback(classifier,windowStep,windowWidth));
+
+    return Ptr<OCRBeamSearchDecoder>(new OCRBeamSearchDecoderImpl(callback,
+                                                              alphabet,
+                                                              transitionProbabilitiesTable,
+                                                              emissionProbabilitiesTable,
+                                                              decoder_mode(mode),
+                                                              beamSize)
+                                     );
+}
+
+
 
 }
 }
