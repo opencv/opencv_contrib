@@ -45,10 +45,10 @@
 #include "precomp.hpp"
 
 #define CNN_USE_CAFFE_CONVERTER
-#include <tiny_cnn/tiny_cnn.h>
+#include <tiny_dnn/tiny_dnn.h>
 
-using namespace tiny_cnn;
-using namespace tiny_cnn::activation;
+using namespace tiny_dnn;
+using namespace tiny_dnn::activation;
 using namespace std;
 
 namespace cv {
@@ -170,7 +170,7 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
 
     preprocess(img, mean_, 3, cv::Size(width, height), &input_channels);
 
-    vector<tiny_cnn::float_t> vec(inputvec.begin(), inputvec.end());
+    vector<tiny_dnn::float_t> vec(inputvec.begin(), inputvec.end());
 
     auto result = net_->predict(vec);
 
