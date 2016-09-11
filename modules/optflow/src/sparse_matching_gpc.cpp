@@ -76,6 +76,10 @@ const double epsTolerance = 1e-12;
 const unsigned scoreGainPos = 5;
 const unsigned scoreGainNeg = 1;
 const unsigned negSearchKNN = 5;
+const double simulatedAnnealingTemperatureCoef = 200.0;
+const double sigmaGrowthRate = 0.2;
+
+RNG rng;
 
 struct Magnitude
 {
@@ -483,7 +487,6 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
 /* Sample random number from Cauchy distribution. */
 double getRandomCauchyScalar()
 {
-  static RNG rng;
   return tan( rng.uniform( -1.54, 1.54 ) ); // I intentionally used the value slightly less than PI/2 to enforce strictly
                                             // zero probability for large numbers. Resulting PDF for Cauchy has
                                             // truncated "tails".
@@ -544,7 +547,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 
     for ( int i = 0; i < localIters; ++i )
     { // Local search step
-      double randomModification = getRandomCauchyScalar();
+      double randomModification = getRandomCauchyScalar() * ( 1.0 + sigmaGrowthRate * int( i / GPCPatchDescriptor::nFeatures ) );
       const int pos = i % GPCPatchDescriptor::nFeatures;
       std::swap( coef[pos], randomModification );
       values.clear();
@@ -577,7 +580,11 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
       if ( score > localBestScore )
         localBestScore = score;
       else
-        coef[pos] = randomModification;
+      {
+        const double beta = simulatedAnnealingTemperatureCoef * std::sqrt( i ) / ( nSamples * ( scoreGainPos + scoreGainNeg ) );
+        if ( rng.uniform( 0.0, 1.0 ) > std::exp( -beta * ( localBestScore - score) ) )
+          coef[pos] = randomModification;
+      }
 
       if ( score > globalBestScore )
       {
