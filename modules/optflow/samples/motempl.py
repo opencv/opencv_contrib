@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-
 import numpy as np
 import cv2
-import video
-from common import nothing, clock, draw_str
 
 MHI_DURATION = 0.5
 DEFAULT_THRESHOLD = 32
 MAX_TIME_DELTA = 0.25
 MIN_TIME_DELTA = 0.05
+
+# (empty) trackbar callback
+def nothing(dummy):
+    pass
 
 def draw_motion_comp(vis, (x, y, w, h), angle, color):
     cv2.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0))
@@ -30,8 +31,13 @@ if __name__ == '__main__':
     cv2.createTrackbar('visual', 'motempl', 2, len(visuals)-1, nothing)
     cv2.createTrackbar('threshold', 'motempl', DEFAULT_THRESHOLD, 255, nothing)
 
-    cam = video.create_capture(video_src, fallback='synth:class=chess:bg=../cpp/lena.jpg:noise=0.01')
+    cam = cv2.VideoCapture(video_src)
+    if not cam.isOpened():
+        print("could not open video_src " + str(video_src) + " !\n")
+        sys.exit(1)
     ret, frame = cam.read()
+    if ret == False:
+        break
     h, w = frame.shape[:2]
     prev_frame = frame.copy()
     motion_history = np.zeros((h, w), np.float32)
@@ -43,10 +49,10 @@ if __name__ == '__main__':
         gray_diff = cv2.cvtColor(frame_diff, cv2.COLOR_BGR2GRAY)
         thrs = cv2.getTrackbarPos('threshold', 'motempl')
         ret, motion_mask = cv2.threshold(gray_diff, thrs, 1, cv2.THRESH_BINARY)
-        timestamp = clock()
-        cv2.updateMotionHistory(motion_mask, motion_history, timestamp, MHI_DURATION)
-        mg_mask, mg_orient = cv2.calcMotionGradient( motion_history, MAX_TIME_DELTA, MIN_TIME_DELTA, apertureSize=5 )
-        seg_mask, seg_bounds = cv2.segmentMotion(motion_history, timestamp, MAX_TIME_DELTA)
+        timestamp = cv2.getTickCount() / cv2.getTickFrequency()
+        cv2.motempl.updateMotionHistory(motion_mask, motion_history, timestamp, MHI_DURATION)
+        mg_mask, mg_orient = cv2.motempl.calcMotionGradient( motion_history, MAX_TIME_DELTA, MIN_TIME_DELTA, apertureSize=5 )
+        seg_mask, seg_bounds = cv2.motempl.segmentMotion(motion_history, timestamp, MAX_TIME_DELTA)
 
         visual_name = visuals[cv2.getTrackbarPos('visual', 'motempl')]
         if visual_name == 'input':
@@ -72,11 +78,11 @@ if __name__ == '__main__':
             mhi_roi    = motion_history[y:y+rh,x:x+rw]
             if cv2.norm(silh_roi, cv2.NORM_L1) < area*0.05:
                 continue
-            angle = cv2.calcGlobalOrientation(orient_roi, mask_roi, mhi_roi, timestamp, MHI_DURATION)
+            angle = cv2.motempl.calcGlobalOrientation(orient_roi, mask_roi, mhi_roi, timestamp, MHI_DURATION)
             color = ((255, 0, 0), (0, 0, 255))[i == 0]
             draw_motion_comp(vis, rect, angle, color)
 
-        draw_str(vis, (20, 20), visual_name)
+        cv2.putText(vis, visual_name, (20, 20), cv2.FONT_HERSHEY_PLAIN, 1.0, (200,0,0))
         cv2.imshow('motempl', vis)
 
         prev_frame = frame.copy()
