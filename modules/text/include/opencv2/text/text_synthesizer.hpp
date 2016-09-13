@@ -53,7 +53,7 @@ namespace text
 
 enum{
     //based on QFontDatabase::WritingSystem
-    //Qt is the default backend
+    //Qt is the sole backend
     CV_TEXT_SYNTHESIZER_SCRIPT_ANY,
     CV_TEXT_SYNTHESIZER_SCRIPT_LATIN,
     CV_TEXT_SYNTHESIZER_SCRIPT_GREEK,
@@ -98,7 +98,7 @@ enum{
  * <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/text_synthesiser.py>
  */
 class CV_EXPORTS_W  TextSynthesizer{
-protected:
+ protected:
     int resHeight_;
     int maxResWidth_;
 
@@ -125,118 +125,118 @@ protected:
 
     double compressionNoiseProb_;
     TextSynthesizer(int maxSampleWidth,int sampleHeight);
-public:
-    CV_WRAP int  getMaxSampleWidth(){return maxResWidth_;}
-    CV_WRAP int  getSampleHeight(){return resHeight_;}
+ public:
+    CV_WRAP int  getMaxSampleWidth () const {return maxResWidth_;}
+    CV_WRAP int  getSampleHeight () const {return resHeight_;}
 
-    CV_WRAP double getUnderlineProbabillity(){return underlineProbabillity_;}
-    CV_WRAP double getItalicProballity(){return italicProbabillity_;}
-    CV_WRAP double getBoldProbabillity(){return boldProbabillity_;}
-    CV_WRAP double getMaxPerspectiveDistortion(){return maxPerspectiveDistortion_;}
+    CV_WRAP double getUnderlineProbabillity () const {return underlineProbabillity_;}
+    CV_WRAP double getItalicProballity () const {return italicProbabillity_;}
+    CV_WRAP double getBoldProbabillity () const {return boldProbabillity_;}
+    CV_WRAP double getMaxPerspectiveDistortion () const {return maxPerspectiveDistortion_;}
 
-    CV_WRAP double getShadowProbabillity(){return shadowProbabillity_;}
-    CV_WRAP double getMaxShadowOpacity(){return maxShadowOpacity_;}
-    CV_WRAP int getMaxShadowSize(){return maxShadowSize_;}
-    CV_WRAP int getMaxShadowHoffset(){return maxShadowHoffset_;}
-    CV_WRAP int getMaxShadowVoffset(){return maxShadowVoffset_;}
+    CV_WRAP double getShadowProbabillity () const {return shadowProbabillity_;}
+    CV_WRAP double getMaxShadowOpacity () const {return maxShadowOpacity_;}
+    CV_WRAP int getMaxShadowSize () const {return maxShadowSize_;}
+    CV_WRAP int getMaxShadowHoffset () const {return maxShadowHoffset_;}
+    CV_WRAP int getMaxShadowVoffset () const {return maxShadowVoffset_;}
 
-    CV_WRAP double getBorderProbabillity(){return borderProbabillity_;}
-    CV_WRAP int getMaxBorderSize(){return maxBorderSize_;}
+    CV_WRAP double getBorderProbabillity () const {return borderProbabillity_;}
+    CV_WRAP int getMaxBorderSize () const {return maxBorderSize_;}
 
-    CV_WRAP double getCurvingProbabillity(){return curvingProbabillity_;}
-    CV_WRAP double getMaxHeightDistortionPercentage(){return maxHeightDistortionPercentage_;}
-    CV_WRAP double getMaxCurveArch(){return maxCurveArch_;}
-    CV_WRAP double getBlendAlpha(){return finalBlendAlpha_;}
-    CV_WRAP double getBlendProb(){return finalBlendProb_;}
-    CV_WRAP double getCompressionNoiseProb(){return compressionNoiseProb_;}
+    CV_WRAP double getCurvingProbabillity () const {return curvingProbabillity_;}
+    CV_WRAP double getMaxHeightDistortionPercentage () const {return maxHeightDistortionPercentage_;}
+    CV_WRAP double getMaxCurveArch () const {return maxCurveArch_;}
+    CV_WRAP double getBlendAlpha () const {return finalBlendAlpha_;}
+    CV_WRAP double getBlendProb () const {return finalBlendProb_;}
+    CV_WRAP double getCompressionNoiseProb () const {return compressionNoiseProb_;}
 
     /**
      * @param v the probabillity the text will be generated with an underlined font
      */
-    CV_WRAP void setUnderlineProbabillity(double v){CV_Assert(v>=0 && v<=1);underlineProbabillity_=v;}
+    CV_WRAP void setUnderlineProbabillity (double v) {CV_Assert(v >= 0 && v <= 1); underlineProbabillity_ = v;}
 
     /**
      * @param v the probabillity the text will be generated with italic font instead of regular
      */
-    CV_WRAP void setItalicProballity(double v){CV_Assert(v>=0 && v<=1);italicProbabillity_=v;}
+    CV_WRAP void setItalicProballity (double v) {CV_Assert(v >= 0 && v <= 1); italicProbabillity_ = v;}
 
     /**
      * @param v the probabillity the text will be generated with italic font instead of regular
      */
-    CV_WRAP void setBoldProbabillity(double v){CV_Assert(v>=0 && v<=1);boldProbabillity_=v;}
+    CV_WRAP void setBoldProbabillity (double v) {CV_Assert(v >= 0 && v <= 1);boldProbabillity_ = v;}
 
     /** Perspective deformation is performed by calculating a homgraphy on a square whose edges
      * have moved randomly inside it.
 
      * @param v the percentage of the side of a ractangle each point is allowed moving
      */
-    CV_WRAP void setMaxPerspectiveDistortion(double v){CV_Assert(v>=0 && v<50);maxPerspectiveDistortion_=v;}
+    CV_WRAP void setMaxPerspectiveDistortion (double v) {CV_Assert(v >= 0 && v < 50); maxPerspectiveDistortion_ = v;}
 
     /**
      * @param v the probabillity a shadow will apear under the text.
      */
-    CV_WRAP void setShadowProbabillity(double v){CV_Assert(v>=0 && v<=1);shadowProbabillity_=v;}
+    CV_WRAP void setShadowProbabillity (double v) {CV_Assert(v >= 0 && v <= 1); shadowProbabillity_ = v;}
 
     /**
      * @param v the alpha value of the text shadow will be sampled uniformly between 0 and v
      */
-    CV_WRAP void setMaxShadowOpacity(double v){CV_Assert(v>=0 && v<=1);maxShadowOpacity_=v;}
+    CV_WRAP void setMaxShadowOpacity (double v) {CV_Assert(v >= 0 && v <= 1);maxShadowOpacity_ = v;}
 
     /**
      * @param v the maximum size of the shadow in pixels.
      */
-    CV_WRAP void setMaxShadowSize(int v){maxShadowSize_=v;}
+    CV_WRAP void setMaxShadowSize (int v) {maxShadowSize_ = v;}
 
     /**
      * @param v the maximum number of pixels the shadow can be horizontaly off-center.
      */
-    CV_WRAP void setMaxShadowHoffset(int v){maxShadowHoffset_=v;}
+    CV_WRAP void setMaxShadowHoffset (int v) {maxShadowHoffset_ = v;}
 
     /**
      * @param v the maximum number of pixels the shadow can be vertically off-center.
      */
-    CV_WRAP void setMaxShadowVoffset(int v){maxShadowVoffset_=v;}
+    CV_WRAP void setMaxShadowVoffset (int v) {maxShadowVoffset_ = v;}
 
     /**
      * @param v the probabillity of a border apearing around the text as oposed to shadows,
      * borders are always opaque and centered.
      */
-    CV_WRAP void setBorderProbabillity(double v){CV_Assert(v>=0 && v<=1);borderProbabillity_=v;}
+    CV_WRAP void setBorderProbabillity (double v) {CV_Assert(v >= 0 && v <= 1); borderProbabillity_ = v;}
 
     /**
      * @param v the size in pixels used for border before geometric distortions.
      */
-    CV_WRAP void setMaxBorderSize(int v){maxBorderSize_=v;}
+    CV_WRAP void setMaxBorderSize (int v) {maxBorderSize_ = v;}
 
     /**
      * @param v the probabillity the text will be curved.
      */
-    CV_WRAP void setCurvingProbabillity(double v){CV_Assert(v>=0 && v<=1);curvingProbabillity_=v;}
+    CV_WRAP void setCurvingProbabillity (double v) {CV_Assert(v >= 0 && v <= 1);curvingProbabillity_ = v;}
 
     /**
      * @param v the maximum effect curving will have as a percentage of the samples height
      */
-    CV_WRAP void setMaxHeightDistortionPercentage(double v){CV_Assert(v>=0 && v<=100);maxHeightDistortionPercentage_=v;}
+    CV_WRAP void setMaxHeightDistortionPercentage (double v) {CV_Assert(v >= 0 && v <= 100);maxHeightDistortionPercentage_ = v;}
 
     /**
      * @param v the arch in radians whose cosine will curve the text
      */
-    CV_WRAP void setMaxCurveArch(double v){maxCurveArch_=v;}
+    CV_WRAP void setMaxCurveArch (double v) {maxCurveArch_ = v;}
 
     /**
      * @param v the maximum alpha used when blending text to the background with opacity
      */
-    CV_WRAP void setBlendAlpha(double v){CV_Assert(v>=0 && v<=1);finalBlendAlpha_=v;}
+    CV_WRAP void setBlendAlpha (double v) {CV_Assert(v >= 0 && v <= 1); finalBlendAlpha_ = v;}
 
     /**
      * @param v the probability the text will be blended with the background with alpha blending.
      */
-    CV_WRAP void setBlendProb(double v){CV_Assert(v>=0 && v<=1);finalBlendProb_=v;}
+    CV_WRAP void setBlendProb (double v) {CV_Assert(v >= 0 && v <= 1); finalBlendProb_ = v;}
 
     /**
      * @param v the probability the sample will be distorted by compression artifacts
      */
-    CV_WRAP void setCompressionNoiseProb(double v){CV_Assert(v>=0 && v<=1);compressionNoiseProb_=v;}
+    CV_WRAP void setCompressionNoiseProb (double v) {CV_Assert(v >= 0 && v <= 1); compressionNoiseProb_ = v;}
 
 
     /** @brief adds ttf fonts to the Font Database system
@@ -247,14 +247,14 @@ public:
      *
      * @param fntList a list of TTF files to be incorporated in to the system.
      */
-    CV_WRAP virtual void addFontFiles(const std::vector<String>& fntList)=0;
+    CV_WRAP virtual void addFontFiles (const std::vector<String>& fntList) = 0;
 
     /** @brief retrieves the font family names that are beeing used by the text
      * synthesizer
      *
      * @return a list of strings with the names from which fonts are sampled.
      */
-    CV_WRAP virtual std::vector<String> listAvailableFonts()=0;
+    CV_WRAP virtual std::vector<String> listAvailableFonts () const = 0;
 
     /** @brief updates retrieves the font family names that are randomly sampled
      *
@@ -265,7 +265,7 @@ public:
      * @param fntList a list of strings with the family names from which fonts
      * are sampled. Only font families available in the system can be added.
      */
-    CV_WRAP virtual void modifyAvailableFonts(std::vector<String>& fntList)=0;
+    CV_WRAP virtual void modifyAvailableFonts (std::vector<String>& fntList) = 0;
 
     /** @brief appends an image in to the collection of images from which
      * backgrounds are sampled.
@@ -277,13 +277,13 @@ public:
      * @param image an image to be inserted. It should be an 8UC3 matrix which
      * must be least bigger than the generated samples.
      */
-    CV_WRAP virtual void addBgSampleImage(const Mat& image)=0;
+    CV_WRAP virtual void addBgSampleImage (const Mat& image) = 0;
 
     /** @brief provides the data from which text colors are sampled
      *
      * @param clusters a 8UC3 Matrix whith three columns and N rows
      */
-    CV_WRAP virtual void getColorClusters(CV_OUT Mat& clusters)=0;
+    CV_WRAP virtual void getColorClusters (CV_OUT Mat& clusters) const = 0;
 
     /** @brief defines the data from which text colors are sampled.
      *
@@ -298,14 +298,14 @@ public:
      * number of rows. Text color is the first matrix color, border color is the
      * second  column and shadow color is the third color.
      */
-    CV_WRAP virtual void setColorClusters(Mat clusters)=0;
+    CV_WRAP virtual void setColorClusters (Mat clusters) = 0;
 
     /** @brief provides a randomly selected patch exactly as they are provided to text
      * syntheciser
      *
      * @param sample a result variable containing a 8UC3 matrix.
      */
-    CV_WRAP virtual void generateBgSample(CV_OUT Mat& sample)=0;
+    CV_WRAP virtual void generateBgSample (CV_OUT Mat& sample) = 0;
 
     /** @brief provides the randomly rendered text with border and shadow.
      *
@@ -319,7 +319,7 @@ public:
      * @param sampleMask a result parameter which contains the alpha value which is usefull
      * for overlaying the text sample on other images.
      */
-    CV_WRAP virtual void generateTxtSample(String caption,CV_OUT Mat& sample,CV_OUT Mat& sampleMask)=0;
+    CV_WRAP virtual void generateTxtSample (String caption, CV_OUT Mat& sample, CV_OUT Mat& sampleMask) = 0;
 
 
     /** @brief generates a random text sample given a string
@@ -330,25 +330,25 @@ public:
      *
      * @param sample the resulting text sample.
      */
-    CV_WRAP virtual void generateSample(String caption,CV_OUT Mat& sample)=0;
+    CV_WRAP virtual void generateSample (String caption, CV_OUT Mat& sample) = 0;
 
     /** @brief returns the name of the script beeing used
      *
      * @return a string with the name of the script
      */
-    CV_WRAP virtual String getScriptName()=0;
+    CV_WRAP virtual String getScriptName () = 0;
 
     /** @brief returns the random seed used by the synthesizer
      *
      * @return an unsigned long integer with the random seed.
      */
-    CV_WRAP virtual uint64 getRandomSeed()=0;
+    CV_WRAP virtual uint64 getRandomSeed () const = 0;
 
     /** @brief stets the random seed used by the synthesizer
      *
-     * @param an unsigned long integer with the random seed to be set.
+     * @param s an unsigned long integer with the random seed to be set.
      */
-    CV_WRAP virtual void setRandomSeed(uint64 s)=0;
+    CV_WRAP virtual void setRandomSeed (uint64 s) = 0;
 
     /** @brief public constructor for a syntheciser
      *
@@ -362,12 +362,15 @@ public:
      * @param script an enumaration which is used to constrain the available fonts
      * to the ones beeing able to render strings in that script.
      */
-    CV_WRAP static Ptr<TextSynthesizer> create(int sampleHeight=50, int maxWidth=600, int script=CV_TEXT_SYNTHESIZER_SCRIPT_ANY);
-    virtual ~TextSynthesizer(){}
+    CV_WRAP static Ptr<TextSynthesizer> create (int sampleHeight = 50,
+                                                int maxWidth = 600,
+                                                int script = CV_TEXT_SYNTHESIZER_SCRIPT_ANY);
+
+    virtual ~TextSynthesizer () {}
 };
 
 
-
-}}//text //cv
+}//text
+}//cv
 
 #endif // TEXT_SYNTHESIZER_HPP

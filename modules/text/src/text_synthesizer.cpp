@@ -6,7 +6,6 @@
 
 #include "opencv2/text/text_synthesizer.hpp"
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
@@ -23,12 +22,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-//If cmake doesnt detect HAVE_QT5GUI directly
-//and you have highgui built with Qt5 uncomment
-//the following line
-//#define HAVE_QT5GUI
-
 
 #ifdef HAVE_QT5GUI
 #include <QImage>
@@ -47,80 +40,80 @@ namespace text{
 
 namespace {
 //Unnamed namespace with auxiliary classes and functions used for quick computation
-template <typename T> T min_(T v1,T v2){
-    return (v1<v2)*v1+(v1>=v2)*v2;
+template <typename T> T min_ (T v1, T v2) {
+    return (v1 < v2) * v1 + (v1 >= v2) * v2;
 }
 
-template <typename T> T max_(T v1,T v2){
-    return (v1>v2)*v1+(v1<=v2)*v2;
+template <typename T> T max_(T v1, T v2) {
+    return (v1 > v2)* v1 + (v1 <= v2) * v2;
 }
 
-template <typename P,typename BL_A,typename BL> void blendRGBA(Mat& out,const Mat &in1,const Mat& in2){
-    CV_Assert(out.cols==in1.cols && out.cols==in2.cols);
-    CV_Assert(out.rows==in1.rows && out.rows==in2.rows);
-    CV_Assert(out.channels()==4 && in1.channels()==4 && in2.channels()==4);
-    int lineWidth=out.cols*4;
+template <typename P,typename BL_A,typename BL> void blendRGBA(Mat& out, const Mat &in1, const Mat& in2){
+    CV_Assert (out.cols == in1.cols && out.cols == in2.cols);
+    CV_Assert (out.rows == in1.rows && out.rows == in2.rows);
+    CV_Assert (out.channels() == 4 && in1.channels() == 4 && in2.channels() == 4);
+    int lineWidth=out.cols * 4;
     BL blend;
     BL_A blendA;
-    for(int y=0;y<out.rows;y++){
-        const P* in1B=in1.ptr<P>(y);
-        const P* in1G=in1.ptr<P>(y)+1;
-        const P* in1R=in1.ptr<P>(y)+2;
-        const P* in1A=in1.ptr<P>(y)+3;
+    for(int y = 0; y < out.rows; y++){
+        const P* in1B = in1.ptr<P> (y) ;
+        const P* in1G = in1.ptr<P> (y) + 1;
+        const P* in1R = in1.ptr<P> (y) + 2;
+        const P* in1A = in1.ptr<P> (y) + 3;
 
-        const P* in2B=in2.ptr<P>(y);
-        const P* in2G=in2.ptr<P>(y)+1;
-        const P* in2R=in2.ptr<P>(y)+2;
-        const P* in2A=in2.ptr<P>(y)+3;
+        const P* in2B = in2.ptr<P> (y);
+        const P* in2G = in2.ptr<P> (y) + 1;
+        const P* in2R = in2.ptr<P> (y) + 2;
+        const P* in2A = in2.ptr<P> (y) + 3;
 
-        P* outB=out.ptr<P>(y);
-        P* outG=out.ptr<P>(y)+1;
-        P* outR=out.ptr<P>(y)+2;
-        P* outA=out.ptr<P>(y)+3;
+        P* outB = out.ptr<P> (y);
+        P* outG = out.ptr<P> (y) + 1;
+        P* outR = out.ptr<P> (y) + 2;
+        P* outA = out.ptr<P> (y) + 3;
 
-        for(int x=0;x<lineWidth;x+=4){
-            outB[x]=blend(in1B+x,in1A+x,in2B+x,in2A+x);
-            outG[x]=blend(in1G+x,in1A+x,in2G+x,in2A+x);
-            outR[x]=blend(in1R+x,in1A+x,in2R+x,in2A+x);
-            outA[x]=blendA(in1A[x],in2A[x]);
+        for(int x = 0; x < lineWidth; x += 4){
+            outB[x] = blend(in1B + x, in1A + x, in2B + x, in2A + x);
+            outG[x] = blend(in1G + x, in1A + x, in2G + x, in2A + x);
+            outR[x] = blend(in1R + x, in1A + x, in2R + x, in2A + x);
+            outA[x] = blendA(in1A[x], in2A[x]);
         }
     }
 }
 
 #ifdef HAVE_QT5GUI
-std::map<int,int> initQt2CvScriptCodeMap();
-std::map<int,int> initQt2CvScriptCodeMap(){
+std::map<int,int> initQt2CvScriptCodeMap () ;
+std::map<int,int> initQt2CvScriptCodeMap () {
     std::map<int,int> res;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_ANY]=QFontDatabase::Any;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_LATIN]=QFontDatabase::Latin;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_GREEK]=QFontDatabase::Greek;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC]=QFontDatabase::Cyrillic;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARMENIAN]=QFontDatabase::Armenian;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC]=QFontDatabase::Arabic;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW]=QFontDatabase::Hebrew;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_SYRIAC]=QFontDatabase::Syriac;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAANA]=QFontDatabase::Thaana;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_DEVANAGARI]=QFontDatabase::Devanagari;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_BENGALI]=QFontDatabase::Bengali;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_GURMUKHI]=QFontDatabase::Gurmukhi;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_GUJARATI]=QFontDatabase::Gujarati;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_ORIYA]=QFontDatabase::Oriya;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_TAMIL]=QFontDatabase::Tamil;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_TELUGU]=QFontDatabase::Telugu;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_KANNADA]=QFontDatabase::Kannada;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_MALAYALAM]=QFontDatabase::Malayalam;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_SINHALA]=QFontDatabase::Sinhala;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAI]=QFontDatabase::Thai;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_LAO]=QFontDatabase::Lao;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_TIBETAN]=QFontDatabase::Tibetan;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_MYANMAR]=QFontDatabase::Myanmar;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_GEORGIAN]=QFontDatabase::Georgian;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_KHMER]=QFontDatabase::Khmer;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_SIMPLIFIED]=QFontDatabase::SimplifiedChinese;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_TRADITIONAL]=QFontDatabase::TraditionalChinese;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_JAPANESE]=QFontDatabase::Japanese;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_KOREAM]=QFontDatabase::Korean;
-    res[CV_TEXT_SYNTHESIZER_SCRIPT_VIETNAMESE]=QFontDatabase::Vietnamese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ANY] = QFontDatabase::Any;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LATIN] = QFontDatabase::Latin;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GREEK] = QFontDatabase::Greek;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CYRILLIC] = QFontDatabase::Cyrillic;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARMENIAN] = QFontDatabase::Armenian;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ARABIC] = QFontDatabase::Arabic;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_HEBREW] = QFontDatabase::Hebrew;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SYRIAC] = QFontDatabase::Syriac;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAANA] = QFontDatabase::Thaana;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_DEVANAGARI] = QFontDatabase::Devanagari;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_BENGALI] = QFontDatabase::Bengali;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GURMUKHI] = QFontDatabase::Gurmukhi;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GUJARATI] = QFontDatabase::Gujarati;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_ORIYA] = QFontDatabase::Oriya;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TAMIL] = QFontDatabase::Tamil;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TELUGU] = QFontDatabase::Telugu;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KANNADA] = QFontDatabase::Kannada;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MALAYALAM] = QFontDatabase::Malayalam;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_SINHALA] = QFontDatabase::Sinhala;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_THAI] = QFontDatabase::Thai;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_LAO] = QFontDatabase::Lao;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_TIBETAN] = QFontDatabase::Tibetan;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_MYANMAR] = QFontDatabase::Myanmar;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_GEORGIAN] = QFontDatabase::Georgian;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KHMER] = QFontDatabase::Khmer;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_SIMPLIFIED] = QFontDatabase::SimplifiedChinese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_CHINESE_TRADITIONAL] = QFontDatabase::TraditionalChinese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_JAPANESE] = QFontDatabase::Japanese;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_KOREAM] = QFontDatabase::Korean;
+    res[CV_TEXT_SYNTHESIZER_SCRIPT_VIETNAMESE] = QFontDatabase::Vietnamese;
     return res;
 }
 
@@ -446,16 +439,17 @@ protected:
         floatMixed.copyTo(output);floatMask.copyTo(outputMask);
     }
 
-    String getScriptName(){
+    String getScriptName() {
         return getCvScriptCode2String(this->script_);
     }
 
-    void generateDilation(Mat&outputImg,const Mat& inputImg,int dilationSize, int horizOffset,int vertOffset){
+    void generateDilation(Mat& outputImg,
+                          const Mat& inputImg,int dilationSize, int horizOffset,int vertOffset){
         //erosion is defined as a negative dilation size
-        if (dilationSize==0){
+        if (dilationSize==0) {
             inputImg.copyTo(outputImg);
-        }else{
-            if(dilationSize>0){
+        } else {
+            if (dilationSize > 0) {
                 if(horizOffset==0 && vertOffset==0){
                     dilate(inputImg,outputImg,Mat(),Point(-1, -1),dilationSize);
                 }else{
@@ -542,7 +536,9 @@ protected:
                 float* yRow=Y.ptr<float>(y);
                 for(int x=0;x<inputImg.cols;x++){
                     xRow[x]=float(x);
-                    yRow[x]=float(y+sign*cos((x+xAdd)*xMult)*maxHeightDistortionPercentage_-sign*maxHeightDistortionPercentage_);
+                    yRow[x] = float(y + sign * cos((x + xAdd) * xMult)
+                                    * maxHeightDistortionPercentage_ - sign
+                                    * maxHeightDistortionPercentage_);
                 }
             }
             remap(inputImg,outputImg,X,Y,INTER_LINEAR);
@@ -595,11 +591,14 @@ protected:
     std::vector<Mat> availableBgSampleImages_;
     Mat colorClusters_;
     int script_;
-public:
-    TextSynthesizerQtImpl(int script,int maxSampleWidth=400,int sampleHeight=50,uint64 rndState=0):
-            TextSynthesizer(maxSampleWidth,sampleHeight),
-            rng_(rndState!=0?rndState:std::time(NULL)),
-            txtPad_(10){
+ public:
+    TextSynthesizerQtImpl(int script,
+                          int maxSampleWidth = 400,
+                          int sampleHeight = 50,
+                          uint64 rndState = 0)
+        : TextSynthesizer(maxSampleWidth, sampleHeight)
+        , rng_(rndState != 0 ? rndState:std::time(NULL))
+        , txtPad_(10) {
 #ifdef HAVE_QT5GUI
         CV_Assert(initQt2CvScriptCodeMap().count(script));//making sure script is a valid script code
 #endif
@@ -609,13 +608,13 @@ public:
         waitKey(1);
         destroyWindow("__w");
 #ifdef HAVE_QT5GUI
-        this->fntDb_=Ptr<QFontDatabase>(new QFontDatabase());
+        this->fntDb_ = Ptr<QFontDatabase>(new QFontDatabase());
 #endif
         this->updateFontNameList(this->availableFonts_);
         this->initColorClusters();
     }
 
-    uint64 getRandomSeed(){
+    uint64 getRandomSeed () const {
         return this->rng_.state;
     }
 
@@ -695,7 +694,7 @@ public:
         addCompressionArtifacts(sample);
     }
 
-    void getColorClusters(CV_OUT Mat& clusters){
+    void getColorClusters(CV_OUT Mat& clusters) const {
         this->colorClusters_.copyTo(clusters);
     }
 
@@ -705,19 +704,32 @@ public:
         clusters.copyTo(this->colorClusters_);
     }
 
-    std::vector<String> listAvailableFonts(){
-        return this->availableFonts_;
+    std::vector<String> listAvailableFonts() const {
+        std::vector<String> res;
+        res=this->availableFonts_;
+        return res;
     }
 
     virtual void addBgSampleImage(const Mat& inImg){
         CV_Assert(inImg.cols>maxResWidth_ && inImg.rows> resHeight_);
         Mat img;
         switch(inImg.type()){
-        case CV_8UC1:cvtColor(inImg, img, COLOR_GRAY2RGBA);break;
-        case CV_8UC3:cvtColor(inImg, img, COLOR_RGB2RGBA);break;
-        case CV_8UC4:inImg.copyTo(img);break;
-        default:
-            CV_Error(Error::StsError,"Only uchar images of 1, 3, or 4 channels are accepted");
+        case CV_8UC1: {
+            cvtColor(inImg, img, COLOR_GRAY2RGBA);
+            break;
+        }
+        case CV_8UC3: {
+            cvtColor(inImg, img, COLOR_RGB2RGBA);
+            break;
+        }
+        case CV_8UC4: {
+            inImg.copyTo(img);
+            break;
+        }
+        default:{
+            CV_Error(Error::StsError,
+                     "Only uchar images of 1, 3, or 4 channels are accepted");
+        }
         }
         this->availableBgSampleImages_.push_back(img);
     }
@@ -749,4 +761,5 @@ Ptr<TextSynthesizer> TextSynthesizer::create(int sampleHeight, int maxWidth, int
     return res;
 }
 
-}} //namespace text,namespace cv
+}  //namespace text
+}  //namespace cv

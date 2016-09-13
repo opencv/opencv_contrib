@@ -65,21 +65,27 @@ enum
     OCR_LEVEL_TEXTLINE
 };
 
-//base class BaseOCR declares a common API that would be used in a typical text recognition scenario
+//base class BaseOCR declares a common API that would be used in a typical text
+//recognition scenario
 class CV_EXPORTS_W BaseOCR
 {
-public:
+ public:
     virtual ~BaseOCR() {};
 
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0) = 0;
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, std::string& output_text,
+                     std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL,
+                     std::vector<float>* component_confidences=NULL,
                      int component_level=0) = 0;
 
-    /** @brief Main functionality of the OCR Hierarchy. Subclasses provide default parameters for
-     * all parameters other than the input image.
+    virtual void run(Mat& image, Mat& mask, std::string& output_text,
+                     std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL,
+                     std::vector<float>* component_confidences=NULL,
+                     int component_level=0) = 0;
+
+    /** @brief Main functionality of the OCR Hierarchy. Subclasses provide
+     * default parameters for all parameters other than the input image.
      */
     virtual String run(InputArray image){
         std::string res;
@@ -87,22 +93,24 @@ public:
         std::vector<float> component_confidences;
         std::vector<std::string> component_texts;
         Mat inputImage=image.getMat();
-        this->run(inputImage,res,&component_rects,&component_texts,&component_confidences,OCR_LEVEL_WORD);
+        this->run(inputImage,res,&component_rects,&component_texts,
+                  &component_confidences,OCR_LEVEL_WORD);
         return res;
     }
 
 };
 
-/** @brief OCRTesseract class provides an interface with the tesseract-ocr API (v3.02.02) in C++.
+/** @brief OCRTesseract class provides an interface with the tesseract-ocr API
+ * (v3.02.02) in C++.
 
 Notice that it is compiled only when tesseract-ocr is correctly installed.
 
 @note
-   -   (C++) An example of OCRTesseract recognition combined with scene text detection can be found
-        at the end_to_end_recognition demo:
+   -   (C++) An example of OCRTesseract recognition combined with scene text
+        detection can be found at the end_to_end_recognition demo:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/end_to_end_recognition.cpp>
-    -   (C++) Another example of OCRTesseract recognition combined with scene text detection can be
-        found at the webcam_demo:
+    -   (C++) Another example of OCRTesseract recognition combined with scene
+        text detection can be found at the webcam_demo:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
 class CV_EXPORTS_W OCRTesseract : public BaseOCR
@@ -110,52 +118,73 @@ class CV_EXPORTS_W OCRTesseract : public BaseOCR
 public:
     /** @brief Recognize text using the tesseract-ocr API.
 
-    Takes image on input and returns recognized text in the output_text parameter. Optionally
-    provides also the Rects for individual text elements found (e.g. words), and the list of those
-    text elements with their confidence values.
+    Takes image on input and returns recognized text in the output_text
+    parameter. Optionally provides also the Rects for individual text elements
+    found (e.g. words), and the list of those text elements with their
+    confidence values.
 
     @param image Input image CV_8UC1 or CV_8UC3
+
     @param output_text Output text of the tesseract-ocr.
-    @param component_rects If provided the method will output a list of Rects for the individual
-    text elements found (e.g. words or text lines).
-    @param component_texts If provided the method will output a list of text strings for the
-    recognition of individual text elements found (e.g. words or text lines).
-    @param component_confidences If provided the method will output a list of confidence values
-    for the recognition of individual text elements found (e.g. words or text lines).
+
+    @param component_rects If provided the method will output a list of Rects
+    for the individual text elements found (e.g. words or text lines).
+
+    @param component_texts If provided the method will output a list of text
+    strings for the recognition of individual text elements found (e.g. words or
+    text lines).
+
+    @param component_confidences If provided the method will output a list of
+    confidence values for the recognition of individual text elements found
+    (e.g. words or text lines).
+
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
      */
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run (Mat& image, std::string& output_text,
+                     std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL,
+                     std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+    virtual void run (Mat& image, Mat& mask, std::string& output_text,
+                      std::vector<Rect>* component_rects=NULL,
+                      std::vector<std::string>* component_texts=NULL,
+                      std::vector<float>* component_confidences=NULL,
+                      int component_level=0);
 
     // aliases for scripting
-    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+    CV_WRAP String run (InputArray image, int min_confidence,
+                        int component_level=0);
 
-    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
+    CV_WRAP String run(InputArray image, InputArray mask,
+                       int min_confidence, int component_level=0);
 
     CV_WRAP virtual void setWhiteList(const String& char_whitelist) = 0;
 
 
-    /** @brief Creates an instance of the OCRTesseract class. Initializes Tesseract.
+    /** @brief Creates an instance of the OCRTesseract class. Initializes
+     * Tesseract.
 
-    @param datapath the name of the parent directory of tessdata ended with "/", or NULL to use the
-    system's default directory.
-    @param language an ISO 639-3 code or NULL will default to "eng".
-    @param char_whitelist specifies the list of characters used for recognition. NULL defaults to
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".
-    @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by deffault
-    tesseract::OEM_DEFAULT is used. See the tesseract-ocr API documentation for other possible
-    values.
-    @param psmode tesseract-ocr offers different Page Segmentation Modes (PSM) tesseract::PSM_AUTO
-    (fully automatic layout analysis) is used. See the tesseract-ocr API documentation for other
-    possible values.
+     * @param datapath the name of the parent directory of tessdata ended with
+     * "/", or NULL to use the system's default directory.
+
+     * @param language an ISO 639-3 code or NULL will default to "eng".
+
+     * @param char_whitelist specifies the list of characters used for
+     * recognition. NULL defaults to "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".
+
+     * @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by
+     * default tesseract::OEM_DEFAULT is used. See the tesseract-ocr API
+     * documentation for other possible values.
+
+     * @param psmode tesseract-ocr offers different Page Segmentation Modes
+     * (PSM) tesseract::PSM_AUTO (fully automatic layout analysis) is used. See
+     * the tesseract-ocr API documentation for other possible values.
      */
-    CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
-                                    const char* char_whitelist=NULL, int oem=3, int psmode=3);
+    CV_WRAP static Ptr<OCRTesseract> create (const char* datapath=NULL,
+                                             const char* language=NULL,
+                                             const char* char_whitelist=NULL,
+                                             int oem=3, int psmode=3);
 };
 
 
@@ -166,134 +195,156 @@ enum decoder_mode
     OCR_DECODER_VITERBI = 0 // Other algorithms may be added
 };
 
-/** @brief OCRHMMDecoder class provides an interface for OCR using Hidden Markov Models.
+/** @brief OCRHMMDecoder class provides an interface for OCR using Hidden Markov
+ * Models.
 
-@note
-   -   (C++) An example on using OCRHMMDecoder recognition combined with scene text detection can
-        be found at the webcam_demo sample:
-        <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+ * @note
+ * -   (C++) An example on using OCRHMMDecoder recognition combined with scene
+ *     text detection can be found at the webcam_demo sample:
+ *      <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
-class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR
-{
-public:
+class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR {
+ public:
 
     /** @brief Callback with the character classifier is made a class.
 
-    This way it hides the feature extractor and the classifier itself, so developers can write
-    their own OCR code.
+    * This way it hides the feature extractor and the classifier itself, so
+    * developers can write their own OCR code.
 
-    The default character classifier and feature extractor can be loaded using the utility funtion
-    loadOCRHMMClassifierNM and KNN model provided in
-    <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
-     */
-    class CV_EXPORTS_W ClassifierCallback
-    {
-    public:
+    * The default character classifier and feature extractor can be loaded using
+    * the utility funtion loadOCRHMMClassifierNM and KNN model provided in
+    * <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
+    */
+    class CV_EXPORTS_W ClassifierCallback{
+     public:
         virtual ~ClassifierCallback() { }
-        /** @brief The character classifier must return a (ranked list of) class(es) id('s)
+        /** @brief The character classifier must return a (ranked list of)
+         * class(es) id('s)
 
-        @param image Input image CV_8UC1 or CV_8UC3 with a single letter.
-        @param out_class The classifier returns the character class categorical label, or list of
-        class labels, to which the input image corresponds.
-        @param out_confidence The classifier returns the probability of the input image
-        corresponding to each classes in out_class.
+         * @param image Input image CV_8UC1 or CV_8UC3 with a single letter.
+         * @param out_class The classifier returns the character class
+         * categorical label, or list of class labels, to which the input image
+         * corresponds.
+
+         * @param out_confidence The classifier returns the probability of the
+         * input image corresponding to each classes in out_class.
          */
-        virtual void eval( InputArray image, std::vector<int>& out_class, std::vector<double>& out_confidence);
+        virtual void eval (InputArray image, std::vector<int>& out_class,
+                           std::vector<double>& out_confidence);
     };
 
-public:
     /** @brief Recognize text using HMM.
 
-    Takes binary image on input and returns recognized text in the output_text parameter. Optionally
-    provides also the Rects for individual text elements found (e.g. words), and the list of those
-    text elements with their confidence values.
+    * Takes binary image on input and returns recognized text in the output_text
+    * parameter. Optionally provides also the Rects for individual text elements
+    * found (e.g. words), and the list of those text elements with their
+    * confidence values.
 
-    @param image Input binary image CV_8UC1 with a single text line (or word).
+    * @param image Input binary image CV_8UC1 with a single text line (or word).
 
-    @param output_text Output text. Most likely character sequence found by the HMM decoder.
+    * @param output_text Output text. Most likely character sequence found by
+    * the HMM decoder.
 
-    @param component_rects If provided the method will output a list of Rects for the individual
-    text elements found (e.g. words).
+    * @param component_rects If provided the method will output a list of Rects
+    * for the individual text elements found (e.g. words).
 
-    @param component_texts If provided the method will output a list of text strings for the
-    recognition of individual text elements found (e.g. words).
+    * @param component_texts If provided the method will output a list of text
+    * strings for the recognition of individual text elements found (e.g. words)
+    * .
 
-    @param component_confidences If provided the method will output a list of confidence values
-    for the recognition of individual text elements found (e.g. words).
+    * @param component_confidences If provided the method will output a list of
+    * confidence values for the recognition of individual text elements found
+    * (e.g. words).
 
-    @param component_level Only OCR_LEVEL_WORD is supported.
-     */
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+    * @param component_level Only OCR_LEVEL_WORD is supported.
+    */
+    virtual void run (Mat& image, std::string& output_text,
+                      std::vector<Rect>* component_rects=NULL,
+                      std::vector<std::string>* component_texts=NULL,
+                      std::vector<float>* component_confidences=NULL,
+                      int component_level=0);
 
     /** @brief Recognize text using HMM.
 
-    Takes an image and a mask (where each connected component corresponds to a segmented character)
-    on input and returns recognized text in the output_text parameter. Optionally
-    provides also the Rects for individual text elements found (e.g. words), and the list of those
-    text elements with their confidence values.
+    * Takes an image and a mask (where each connected component corresponds to a
+    * segmented character) on input and returns recognized text in the
+    * output_text parameter. Optionally provides also the Rects for individual
+    * text elements found (e.g. words), and the list of those text elements with
+    * their confidence values.
 
-    @param image Input image CV_8UC1 or CV_8UC3 with a single text line (or word).
-    @param mask Input binary image CV_8UC1 same size as input image. Each connected component in mask corresponds to a segmented character in the input image.
+    * @param image Input image CV_8UC1 or CV_8UC3 with a single text line
+    * (or word).
 
-    @param output_text Output text. Most likely character sequence found by the HMM decoder.
+    * @param mask Input binary image CV_8UC1 same size as input image. Each
+    * connected component in mask corresponds to a segmented character in the
+    * input image.
 
-    @param component_rects If provided the method will output a list of Rects for the individual
-    text elements found (e.g. words).
+    * @param output_text Output text. Most likely character sequence found by
+    * the HMM decoder.
 
-    @param component_texts If provided the method will output a list of text strings for the
-    recognition of individual text elements found (e.g. words).
+    * @param component_rects If provided the method will output a list of Rects
+    * for the individual text elements found (e.g. words).
 
-    @param component_confidences If provided the method will output a list of confidence values
-    for the recognition of individual text elements found (e.g. words).
+    * @param component_texts If provided the method will output a list of text
+    * strings for the recognition of individual text elements found (e.g. words)
+    * .
 
-    @param component_level Only OCR_LEVEL_WORD is supported.
-     */
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    * @param component_confidences If provided the method will output a list of
+    * confidence values for the recognition of individual text elements found
+    * (e.g. words).
+
+    * @param component_level Only OCR_LEVEL_WORD is supported.
+    */
+    virtual void run(Mat& image, Mat& mask, std::string& output_text,
+                     std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL,
+                     std::vector<float>* component_confidences=NULL,
                      int component_level=0);
 
     // aliases for scripting
-    CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
+    CV_WRAP String run(InputArray image,
+                       int min_confidence,
+                       int component_level=0);
 
-    CV_WRAP String run(InputArray image, InputArray mask, int min_confidence, int component_level=0);
+    CV_WRAP String run(InputArray image,
+                       InputArray mask,
+                       int min_confidence,
+                       int component_level=0);
 
-    /** @brief Creates an instance of the OCRHMMDecoder class. Initializes HMMDecoder.
+    /** @brief Creates an instance of the OCRHMMDecoder class. Initializes
+     * HMMDecoder.
 
-    @param classifier The character classifier with built in feature extractor.
+     * @param classifier The character classifier with built in feature
+     * extractor.
 
-    @param vocabulary The language vocabulary (chars when ascii english text). vocabulary.size()
-    must be equal to the number of classes of the classifier.
+     * @param vocabulary The language vocabulary (chars when ascii english text)
+     * . vocabulary.size() must be equal to the number of classes of the
+     * classifier.
 
-    @param transition_probabilities_table Table with transition probabilities between character
-    pairs. cols == rows == vocabulary.size().
+     * @param transition_probabilities_table Table with transition probabilities
+     * between character pairs. cols == rows == vocabulary.size().
 
-    @param emission_probabilities_table Table with observation emission probabilities. cols ==
-    rows == vocabulary.size().
+     * @param emission_probabilities_table Table with observation emission
+     * probabilities. cols == rows == vocabulary.size().
 
-    @param mode HMM Decoding algorithm. Only OCR_DECODER_VITERBI is available for the moment
-    (<http://en.wikipedia.org/wiki/Viterbi_algorithm>).
+     * @param mode HMM Decoding algorithm. Only OCR_DECODER_VITERBI is available
+     * for the moment (<http://en.wikipedia.org/wiki/Viterbi_algorithm>).
      */
-    static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
-                                                                                       //     size() must be equal to the number of classes
-                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
-                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
-                                     decoder_mode mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
+    static Ptr<OCRHMMDecoder> create(
+            const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,    // The character classifier with built in feature extractor
+            const std::string& vocabulary,                              // The language vocabulary (chars when ascii english text) size() must be equal to the number of classes
+            InputArray transition_probabilities_table,                  // Table with transition probabilities between character pairs cols == rows == vocabulari.size()
+            InputArray emission_probabilities_table,                    // Table with observation emission probabilities cols == rows == vocabulari.size()
+            decoder_mode mode = OCR_DECODER_VITERBI);                   // HMM Decoding algorithm (only Viterbi for the moment)
 
-    CV_WRAP static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
-                                                                                       //     size() must be equal to the number of classes
-                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
-                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
-                                     int mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
+    CV_WRAP static Ptr<OCRHMMDecoder> create(
+            const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,    // The character classifier with built in feature extractor
+            const String& vocabulary,                                   // The language vocabulary (chars when ascii english text) size() must be equal to the number of classes
+            InputArray transition_probabilities_table,                  // Table with transition probabilities between character pairs cols == rows == vocabulari.size()
+            InputArray emission_probabilities_table,                    // Table with observation emission probabilities cols == rows == vocabulari.size()
+            int mode = OCR_DECODER_VITERBI);                            // HMM Decoding algorithm (only Viterbi for the moment)
 
-protected:
+ protected:
 
     Ptr<OCRHMMDecoder::ClassifierCallback> classifier;
     std::string vocabulary;
@@ -302,58 +353,75 @@ protected:
     decoder_mode mode;
 };
 
-/** @brief Allow to implicitly load the default character classifier when creating an OCRHMMDecoder object.
+/** @brief Allow to implicitly load the default character classifier when
+ * creating an OCRHMMDecoder object.
 
-@param filename The XML or YAML file with the classifier model (e.g. OCRHMM_knn_model_data.xml)
+ * @param filename The XML or YAML file with the classifier model (e.g.
+ * OCRHMM_knn_model_data.xml)
 
-The KNN default classifier is based in the scene text recognition method proposed by Lukás Neumann &
-Jiri Matas in [Neumann11b]. Basically, the region (contour) in the input image is normalized to a
-fixed size, while retaining the centroid and aspect ratio, in order to extract a feature vector
-based on gradient orientations along the chain-code of its perimeter. Then, the region is classified
-using a KNN model trained with synthetic data of rendered characters with different standard font
-types.
+ * The KNN default classifier is based in the scene text recognition method
+ * proposed by Lukás Neumann & Jiri Matas in [Neumann11b]. Basically, the region
+ * (contour) in the input image is normalized to a fixed size, while retaining
+ * the centroid and aspect ratio, in order to extract a feature vector based on
+ * gradient orientations along the chain-code of its perimeter. Then, the region
+ * is classified using a KNN model trained with synthetic data of rendered
+ * characters with different standard font types.
  */
+CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM (
+        const String& filename);
 
-CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& filename);
+/** @brief Allow to implicitly load the default character classifier when
+ * creating an OCRHMMDecoder object.
 
-/** @brief Allow to implicitly load the default character classifier when creating an OCRHMMDecoder object.
+ * @param filename The XML or YAML file with the classifier model (e.g.
+ * OCRBeamSearch_CNN_model_data.xml.gz)
 
-@param filename The XML or YAML file with the classifier model (e.g. OCRBeamSearch_CNN_model_data.xml.gz)
-
-The CNN default classifier is based in the scene text recognition method proposed by Adam Coates &
-Andrew NG in [Coates11a]. The character classifier consists in a Single Layer Convolutional Neural Network and
-a linear classifier. It is applied to the input image in a sliding window fashion, providing a set of recognitions
-at each window location.
+ * The CNN default classifier is based in the scene text recognition method
+ * proposed by Adam Coates & Andrew NG in [Coates11a]. The character classifier
+ * consists in a Single Layer Convolutional Neural Network and a linear
+ * classifier. It is applied to the input image in a sliding window fashion,
+ * providing a set of recognitions at each window location.
  */
-CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(const String& filename);
+CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN (
+        const String& filename);
 
 //! @}
 
-/** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
- *
+/** @brief Utility function to create a tailored language model transitions
+ * table from a given list of words (lexicon).
+
  * @param vocabulary The language vocabulary (chars when ascii english text).
- *
+
  * @param lexicon The list of words that are expected to be found in a particular image.
- *
- * @param transition_probabilities_table Output table with transition probabilities between character pairs. cols == rows == vocabulary.size().
- *
- * The function calculate frequency statistics of character pairs from the given lexicon and fills the output transition_probabilities_table with them. The transition_probabilities_table can be used as input in the OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
+
+ * @param transition_probabilities_table Output table with transition
+ * probabilities between character pairs. cols == rows == vocabulary.size().
+
+ * The function calculate frequency statistics of character pairs from the given
+ * lexicon and fills the output transition_probabilities_table with them. The
+ * transition_probabilities_table can be used as input in the
+ * OCRHMMDecoder::create() and OCRBeamSearchDecoder::create() methods.
  * @note
- *    -   (C++) An alternative would be to load the default generic language transition table provided in the text module samples folder (created from ispell 42869 english words list) :
+ *    -   (C++) An alternative would be to load the default generic language
+ *        transition table provided in the text module samples folder (created
+ *        from ispell 42869 english words list) :
  *            <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRHMM_transitions_table.xml>
  **/
-CV_EXPORTS void createOCRHMMTransitionsTable(std::string& vocabulary, std::vector<std::string>& lexicon, OutputArray transition_probabilities_table);
+CV_EXPORTS void createOCRHMMTransitionsTable (
+        std::string& vocabulary, std::vector<std::string>& lexicon,
+        OutputArray transition_probabilities_table);
 
-CV_EXPORTS_W Mat createOCRHMMTransitionsTable(const String& vocabulary, std::vector<cv::String>& lexicon);
-
+CV_EXPORTS_W Mat createOCRHMMTransitionsTable (
+        const String& vocabulary, std::vector<cv::String>& lexicon);
 
 /* OCR BeamSearch Decoder */
 
-/** @brief OCRBeamSearchDecoder class provides an interface for OCR using Beam Search algorithm.
+/** @brief OCRBeamSearchDecoder class provides an interface for OCR using Beam
+ * Search algorithm.
 
 @note
-   -   (C++) An example on using OCRBeamSearchDecoder recognition combined with scene text detection can
-        be found at the demo sample:
+   -   (C++) An example on using OCRBeamSearchDecoder recognition combined with
+        scene text detection can be found at the demo sample:
         <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/word_recognition.cpp>
  */
 
@@ -361,22 +429,22 @@ CV_EXPORTS_W Mat createOCRHMMTransitionsTable(const String& vocabulary, std::vec
 /* Forward declaration of class that can be used to generate an OCRBeamSearchDecoder::ClassifierCallbac */
 class TextImageClassifier;
 
-class CV_EXPORTS_W OCRBeamSearchDecoder : public BaseOCR
-{
-public:
+class CV_EXPORTS_W OCRBeamSearchDecoder : public BaseOCR{
+
+ public:
 
     /** @brief Callback with the character classifier is made a class.
 
-    This way it hides the feature extractor and the classifier itself, so developers can write
-    their own OCR code.
+     * This way it hides the feature extractor and the classifier itself, so
+     * developers can write their own OCR code.
 
-    The default character classifier and feature extractor can be loaded using the utility funtion
-    loadOCRBeamSearchClassifierCNN with all its parameters provided in
-    <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRBeamSearch_CNN_model_data.xml.gz>.
+     * The default character classifier and feature extractor can be loaded
+     * using the utility funtion loadOCRBeamSearchClassifierCNN with all its
+     * parameters provided in
+     * <https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/OCRBeamSearch_CNN_model_data.xml.gz>.
      */
-    class CV_EXPORTS_W ClassifierCallback
-    {
-    public:
+    class CV_EXPORTS_W ClassifierCallback{
+     public:
         virtual ~ClassifierCallback() { }
         /** @brief The character classifier must return a (ranked list of) class(es) id('s)
 
@@ -865,12 +933,12 @@ public:
      *
      * @param vocabulary
      */
-    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(String modelArchFilename, String modelWeightsFilename, const std::vector<String>& vocabulary);
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create (String modelArchFilename, String modelWeightsFilename, const std::vector<String>& vocabulary);
 };
 
 
-}
-}
+}//namespace text
+}//namespace cv
 
 
 #endif // _OPENCV_TEXT_OCR_HPP_
