@@ -614,12 +614,16 @@ protected:
         this->initColorClusters();
     }
 
-    uint64 getRandomSeed () const {
-        return this->rng_.state;
+    void getRandomSeed (OutputArray res) const {
+        Mat tmpMat(1,8,CV_8UC1);
+        tmpMat.ptr<uint64>(0)[0] = this->rng_.state;
+        tmpMat.copyTo(res);
     }
 
-    void setRandomSeed(uint64 s){
-        this->rng_.state=s;
+    void setRandomSeed (Mat state) {
+        CV_Assert (state.rows == 1 && state.cols == 8);
+        CV_Assert (state.depth() == CV_8U && state.channels() == 1);
+        this->rng_.state=state.ptr<uint64>(0)[0];
     }
 
     void generateBgSample(CV_OUT Mat& sample){

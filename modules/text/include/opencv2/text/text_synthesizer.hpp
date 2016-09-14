@@ -340,15 +340,17 @@ class CV_EXPORTS_W  TextSynthesizer{
 
     /** @brief returns the random seed used by the synthesizer
      *
-     * @return an unsigned long integer with the random seed.
+     * @return a matrix containing a 1 x 8 uint8 matrix containing the state of
+     * the random seed.
      */
-    CV_WRAP virtual uint64 getRandomSeed () const = 0;
+    CV_WRAP virtual void getRandomSeed (OutputArray res) const = 0;
 
     /** @brief stets the random seed used by the synthesizer
      *
-     * @param s an unsigned long integer with the random seed to be set.
+     * @param state a 1 x 8 matrix of uint8 containing the random state as
+     * returned by getRandomSeed();
      */
-    CV_WRAP virtual void setRandomSeed (uint64 s) = 0;
+    CV_WRAP virtual void setRandomSeed (Mat state) = 0;
 
     /** @brief public constructor for a syntheciser
      *
