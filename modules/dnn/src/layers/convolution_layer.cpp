@@ -137,7 +137,6 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
     XMat biasesMat;
     if (bias)
         biasesMat = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
-    int imgType = inputs[0]->getRefConst<XMat>().type();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
