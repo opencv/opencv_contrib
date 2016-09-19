@@ -47,28 +47,47 @@ public:
         int nmax = range.end - range.start;
         int kmax = a->cols;
         int m, n, k;
+        AutoBuffer<float> buf(nmax);
+        float* ptr = buf;
+        if( mmax %2 != 0 )
+            memset(ptr, 0, nmax*sizeof(ptr[0]));
 
-        for( m = 0; m < mmax; m++ )
+        for( m = 0; m < mmax; m += 2 )
         {
-            float* dst = c->ptr<float>(m) + range.start;
+            float* dst0 = c->ptr<float>(m) + range.start;
+            float* dst1 = m+1 < mmax ? c->ptr<float>(m+1) + range.start : ptr;
+            const float* aptr0 = a->ptr<float>(m);
+            const float* aptr1 = m+1 < mmax ? a->ptr<float>(m+1) : aptr0;
+
             if( beta != 1 )
             {
                 if( beta == 0 )
                     for( n = 0; n < nmax; n++ )
-                        dst[n] = 0.f;
+                    {
+                        dst0[n] = 0.f;
+                        dst1[n] = 0.f;
+                    }
                 else
                     for( n = 0; n < nmax; n++ )
-                        dst[n] *= (float)beta;
+                    {
+                        dst0[n] *= (float)beta;
+                        dst1[n] *= (float)beta;
+                    }
             }
-            const float* aptr = a->ptr<float>(m);
 
             for( k = 0; k < kmax; k++ )
             {
-                float alpha1 = (float)(alpha*aptr[k]);
+                float alpha0 = (float)(alpha*aptr0[k]);
+                float alpha1 = (float)(alpha*aptr1[k]);
                 const float* bptr = b->ptr<float>(k) + range.start;
 
                 for( n = 0; n < nmax; n++ )
-                    dst[n] += alpha1*bptr[n];
+                {
+                    float d0 = dst0[n] + alpha0*bptr[n];
+                    float d1 = dst1[n] + alpha1*bptr[n];
+                    dst0[n] = d0;
+                    dst1[n] = d1;
+                }
             }
         }
     }
