@@ -86,7 +86,7 @@ Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams &params)
 template<>
 Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
 {
-    int type;
+    int type = PoolingLayer::MAX;
     Size kernel, stride, pad;
 
     if (params.has("pool"))
@@ -100,10 +100,6 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
             type = PoolingLayer::STOCHASTIC;
         else
             CV_Error(Error::StsBadArg, "Unknown pooling type \"" + pool + "\"");
-    }
-    else
-    {
-        type = PoolingLayer::MAX;
     }
 
     getCaffeConvParams(params, kernel, pad, stride);
@@ -144,7 +140,7 @@ Ptr<Layer> createLayerFromCaffe<InnerProductLayer>(LayerParams &params)
 template<> //LRNLayer specialization
 Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams& params)
 {
-    int type;
+    int type = -1;
     String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
     if (nrmType == "ACROSS_CHANNELS")
         type = LRNLayer::CHANNEL_NRM;

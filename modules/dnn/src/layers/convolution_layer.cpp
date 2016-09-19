@@ -55,7 +55,7 @@ namespace dnn
 
 ConvolutionLayerImpl::ConvolutionLayerImpl()
 {
-    tryUseOpenCL = true;
+    tryUseOpenCL = false;
     numOutput = -1;
     group = -1;
 
@@ -134,7 +134,9 @@ template<typename XMat>
 void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
-    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
+    XMat biasesMat;
+    if (bias)
+        biasesMat = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
@@ -155,11 +157,17 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
                 _Range outRange((g + n * group) * outGroupCn, outGroupCn);
                 XMat dstMat = outMat.rowRange(outRange);
 
+                {
+                XMat a = kerMat;
+                XMat b = colMat;
                 dnn::gemm(kerMat, colMat, 1, dstMat, 0);
+                }
 
                 if (bias)
                 {
-                    dnn::gemm(biasesMat.rowRange(kerRange), biasOnesBlob.getRefConst<XMat>(), 1, dstMat, 1);
+                    XMat a = biasesMat.rowRange(kerRange);
+                    XMat b = biasOnesBlob.getRefConst<XMat>();
+                    dnn::gemm(a, b, 1, dstMat, 1);
                 }
             }
         }
@@ -168,10 +176,10 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
 
 void ConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    if (!useOpenCL)
-        forward_<Mat>(inputs, outputs);
-    else
-        forward_<UMat>(inputs, outputs);
+    //if (!useOpenCL)
+    forward_<Mat>(inputs, outputs);
+    //else
+    //    forward_<UMat>(inputs, outputs);
 }
 
 void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
@@ -252,7 +260,9 @@ template<typename XMat>
 void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
-    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
+    XMat biasesMat;
+    if (bias)
+        biasesMat = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
