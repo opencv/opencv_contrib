@@ -57,11 +57,12 @@ namespace dnn
 
 PoolingLayerImpl::PoolingLayerImpl()
 {
-
+    globalPooling = false;
 }
 
 PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_)
 {
+    globalPooling = false;
     type = type_;
     kernel = kernel_;
     pad = pad_;
@@ -73,6 +74,12 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
     CV_Assert(inputs.size() > 0);
 
     inp = inputs[0]->size2();
+
+    if(globalPooling)
+    {
+        kernel = inp;
+    }
+
     computeOutputShape(inp);
 
     useOpenCL = ocl::useOpenCL();
@@ -264,6 +271,13 @@ void PoolingLayerImpl::computeOutputShape(Size inpSz)
 Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad)
 {
     return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad));
+}
+
+Ptr<PoolingLayer> PoolingLayer::createGlobal(int type)
+{
+    Ptr<PoolingLayer> l = PoolingLayer::create(type);
+    l->globalPooling = true;
+    return l;
 }
 
 }

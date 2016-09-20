@@ -50,9 +50,7 @@ namespace dnn
 {
     class CropLayerImpl : public CropLayer
     {
-        int start_axis;
-        std::vector<int> offset;
-        std::vector<int> outSizes;
+        std::vector<Range> crop_ranges;
 
     public:
         CropLayerImpl(int start_axis, const std::vector<int> &offset);

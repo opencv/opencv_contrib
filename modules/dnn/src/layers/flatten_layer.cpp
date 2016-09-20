@@ -39,66 +39,79 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <opencv2/core.hpp>
-
-#define CHECK(cond)     for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #cond, cond); _logger.exit(); _logger.check()) _logger.stream()
-#define CHECK_EQ(a, b)  for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #a"="#b, ((a) == (b))); _logger.exit(); _logger.check()) _logger.stream()
-#define LOG(TYPE)       for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, #TYPE); _logger.exit(); _logger.check()) _logger.stream()
+#include "../precomp.hpp"
+#include "layers_common.hpp"
+#include "flatten_layer.hpp"
+#include <float.h>
+#include <algorithm>
 
 namespace cv
 {
 namespace dnn
 {
 
-class GLogWrapper
+FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
 {
-    const char *file, *func, *type, *cond_str;
-    int line;
-    bool cond_staus, exit_loop;
-    std::stringstream sstream;
+    _startAxis = params.get<int>("axis", 1);
+    _endAxis = params.get<int>("end_axis", -1);
+}
 
-public:
-
-    GLogWrapper(const char *_file, const char *_func, int _line,
-          const char *_type,
-          const char *_cond_str = NULL, bool _cond_status = true
-    ) :
-        file(_file), func(_func), type(_type), cond_str(_cond_str),
-        line(_line), cond_staus(_cond_status), exit_loop(true) {}
-
-    std::iostream &stream()
+void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
+{
+    CV_Assert(inputs.size() > 0);
+    for (size_t i = 1; i < inputs.size(); i++)
     {
-        return sstream;
-    }
-
-    bool exit()
-    {
-        return exit_loop;
-    }
-
-    void check()
-    {
-        exit_loop = false;
-
-        if (cond_str && !cond_staus)
+        for (size_t j = 0; j < _numAxes; j++)
         {
-            cv::error(cv::Error::StsError, "FAILED: " + String(cond_str) + ". " + sstream.str(), func, file, line);
-        }
-        else if (!cond_str && strcmp(type, "CHECK"))
-        {
-            if (!std::strcmp(type, "INFO"))
-                std::cout << sstream.str() << std::endl;
-            else
-                std::cerr << sstream.str() << std::endl;
+            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
         }
     }
-};
+}
 
+void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    checkInputs(inputs);
+
+    _numAxes = inputs[0]->dims();
+    _endAxis = inputs[0]->canonicalAxis(_endAxis);
+    CV_Assert(_startAxis >= 0);
+    CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
+
+    size_t flattenedDimensionSize = 1;
+    for (int i = _startAxis; i <= _endAxis; i++)
+    {
+        flattenedDimensionSize *= inputs[0]->size(i);
+    }
+
+    std::vector<int> outputShapeVec;
+    for (int i = 0; i < _startAxis; i++)
+    {
+        outputShapeVec.push_back(inputs[0]->size(i));
+    }
+    outputShapeVec.push_back(flattenedDimensionSize);
+    for (size_t i = _endAxis + 1; i < _numAxes; i++)
+    {
+        outputShapeVec.push_back(inputs[0]->size(i));
+    }
+    CV_Assert(outputShapeVec.size() <= 4);
+
+    resultShape = BlobShape(outputShapeVec);
+
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        //in-place
+        outputs[i].shareFrom(*inputs[i]);
+        outputs[i].reshape(resultShape);
+    }
+}
+
+void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    for (size_t j = 0; j < inputs.size(); j++)
+    {
+        outputs[j].shareFrom(*inputs[j]);
+        outputs[j].reshape(resultShape);
+    }
 }
 }
-#endif
+}

@@ -208,9 +208,8 @@ void LRNLayerImpl::spatialNormalization(Blob &src, Blob &dst)
 template<>
 void LRNLayerImpl::sqrBoxFilter_<Mat>(const Mat &src, Mat &dst)
 {
-    Mat bufMat = buf.getRef<Mat>();
-    src.copyTo(bufMat);
-    cv::sqrBoxFilter(bufMat, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
+    Mat srcRawWrapper(src.rows, src.cols, src.type(), src.data, src.step[0]);
+    cv::sqrBoxFilter(srcRawWrapper, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
 }
 
 template<>

@@ -77,7 +77,7 @@ namespace dnn
     {
     public:
         /** Creates instance of LSTM layer */
-        static Ptr<LSTMLayer> create();
+        static CV_WRAP Ptr<LSTMLayer> create();
 
         /** Set trained weights for LSTM layer.
         LSTM behavior on each step is defined by current input, previous output, previous cell state and learned weights.
@@ -109,27 +109,27 @@ namespace dnn
         @param Wx is matrix defining how current input is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_x @f$)
         @param b  is bias vector (i.e. according to abovemtioned notation is @f$ b @f$)
         */
-        virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
+        CV_WRAP virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
 
         /** @brief Specifies shape of output blob which will be [[`T`], `N`] + @p outTailShape.
           * @details If this parameter is empty or unset then @p outTailShape = [`Wh`.size(0)] will be used,
           * where `Wh` is parameter from setWeights().
           */
-        virtual void setOutShape(const BlobShape &outTailShape = BlobShape::empty()) = 0;
+        CV_WRAP virtual void setOutShape(const BlobShape &outTailShape = BlobShape::empty()) = 0;
 
         /** @brief Set @f$ h_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ h_{t-1} @f$ is inited by zeros and updated after each forward() call.
           */
-        virtual void setH(const Blob &H) = 0;
+        CV_WRAP virtual void setH(const Blob &H) = 0;
         /** @brief Returns current @f$ h_{t-1} @f$ value (deep copy). */
-        virtual Blob getH() const = 0;
+        CV_WRAP virtual Blob getH() const = 0;
 
         /** @brief Set @f$ c_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ c_{t-1} @f$ is inited by zeros and updated after each forward() call.
           */
-        virtual void setC(const Blob &C) = 0;
+        CV_WRAP virtual void setC(const Blob &C) = 0;
         /** @brief Returns current @f$ c_{t-1} @f$ value (deep copy). */
-        virtual Blob getC() const = 0;
+        CV_WRAP virtual Blob getC() const = 0;
 
         /** @brief Specifies either interpet first dimension of input blob as timestamp dimenion either as sample.
           *
@@ -139,12 +139,12 @@ namespace dnn
           * If flag is set to false then shape of input blob will be interpeted as [`N`, `[data dims]`].
           * In this case each forward() call will make one iteration and produce one timestamp with shape [`N`, `[out dims]`].
           */
-        virtual void setUseTimstampsDim(bool use = true) = 0;
+        CV_WRAP virtual void setUseTimstampsDim(bool use = true) = 0;
 
         /** @brief If this flag is set to true then layer will produce @f$ c_t @f$ as second output.
          * @details Shape of the second output is the same as first output.
          */
-        virtual void setProduceCellOutput(bool produce = false) = 0;
+        CV_WRAP virtual void setProduceCellOutput(bool produce = false) = 0;
 
         /** In common case it use single input with @f$x_t@f$ values to compute output(s) @f$h_t@f$ (and @f$c_t@f$).
          * @param input should contain packed values @f$x_t@f$
@@ -168,7 +168,7 @@ namespace dnn
     {
     public:
         /** Creates instance of RNNLayer */
-        static Ptr<RNNLayer> create();
+        static CV_WRAP Ptr<RNNLayer> create();
 
         /** Setups learned weights.
 
@@ -184,12 +184,12 @@ namespace dnn
         @param Who is @f$ W_{xo} @f$ matrix
         @param bo  is @f$ b_{o}  @f$ vector
         */
-        virtual void setWeights(const Blob &Wxh, const Blob &bh, const Blob &Whh, const Blob &Who, const Blob &bo) = 0;
+        CV_WRAP virtual void setWeights(const Blob &Wxh, const Blob &bh, const Blob &Whh, const Blob &Who, const Blob &bo) = 0;
 
         /** @brief If this flag is set to true then layer will produce @f$ h_t @f$ as second output.
          * @details Shape of the second output is the same as first output.
          */
-        virtual void setProduceHiddenOutput(bool produce = false) = 0;
+        CV_WRAP virtual void setProduceHiddenOutput(bool produce = false) = 0;
 
         /** Accepts two inputs @f$x_t@f$ and @f$h_{t-1}@f$ and compute two outputs @f$o_t@f$ and @f$h_t@f$.
 
@@ -209,21 +209,21 @@ namespace dnn
     {
     public:
 
-        Size kernel, stride, pad;
+        CV_PROP_RW Size kernel, stride, pad, dilation;
     };
 
     class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
     {
     public:
 
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
     };
 
     class CV_EXPORTS_W DeconvolutionLayer : public BaseConvolutionLayer
     {
     public:
 
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
     };
 
     class CV_EXPORTS_W LRNLayer : public Layer
@@ -235,12 +235,12 @@ namespace dnn
             CHANNEL_NRM,
             SPATIAL_NRM
         };
-        int type;
+        CV_PROP_RW int type;
 
-        int size;
-        double alpha, beta;
+        CV_PROP_RW int size;
+        CV_PROP_RW double alpha, beta;
 
-        static Ptr<LRNLayer> create(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
+        static CV_WRAP Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
     };
 
     class CV_EXPORTS_W PoolingLayer : public Layer
@@ -254,34 +254,36 @@ namespace dnn
             STOCHASTIC
         };
 
-        int type;
-        Size kernel, stride, pad;
+        CV_PROP_RW int type;
+        CV_PROP_RW Size kernel, stride, pad;
+        CV_PROP_RW bool globalPooling;
 
-        static Ptr<PoolingLayer> create(int type = MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<PoolingLayer> createGlobal(int type = PoolingLayer::MAX);
     };
 
     class CV_EXPORTS_W SoftmaxLayer : public Layer
     {
     public:
 
-        static Ptr<SoftmaxLayer> create(int axis = 1);
+        static CV_WRAP Ptr<SoftmaxLayer> create(int axis = 1);
     };
 
     class CV_EXPORTS_W InnerProductLayer : public Layer
     {
     public:
-        int axis;
+        CV_PROP_RW int axis;
 
-        static Ptr<InnerProductLayer> create(int axis = 1);
+        static CV_WRAP Ptr<InnerProductLayer> create(int axis = 1);
     };
 
     class CV_EXPORTS_W MVNLayer : public Layer
     {
     public:
-        double eps;
-        bool normVariance, acrossChannels;
+        CV_PROP_RW double eps;
+        CV_PROP_RW bool normVariance, acrossChannels;
 
-        static Ptr<MVNLayer> create(bool normVariance = true, bool acrossChannels = false, double eps = 1e-9);
+        static CV_WRAP Ptr<MVNLayer> create(bool normVariance = true, bool acrossChannels = false, double eps = 1e-9);
     };
 
     /* Reshaping */
@@ -289,10 +291,10 @@ namespace dnn
     class CV_EXPORTS_W ReshapeLayer : public Layer
     {
     public:
-        BlobShape newShapeDesc;
-        Range newShapeRange;
+        CV_PROP_RW BlobShape newShapeDesc;
+        CV_PROP_RW Range newShapeRange;
 
-        static Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all());
+        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all());
     };
 
     class CV_EXPORTS_W ConcatLayer : public Layer
@@ -300,7 +302,7 @@ namespace dnn
     public:
         int axis;
 
-        static Ptr<ConcatLayer> create(int axis = 1);
+        static CV_WRAP Ptr<ConcatLayer> create(int axis = 1);
     };
 
     class CV_EXPORTS_W SplitLayer : public Layer
@@ -308,17 +310,17 @@ namespace dnn
     public:
         int outputsCount; //!< Number of copies that will be produced (is ignored when negative).
 
-        static Ptr<SplitLayer> create(int outputsCount = -1);
+        static CV_WRAP Ptr<SplitLayer> create(int outputsCount = -1);
     };
 
     class CV_EXPORTS_W SliceLayer : public Layer
     {
     public:
-        int axis;
-        std::vector<int> sliceIndices;
+        CV_PROP_RW int axis;
+        CV_PROP std::vector<int> sliceIndices;
 
-        static Ptr<SliceLayer> create(int axis);
-        static Ptr<SliceLayer> create(int axis, const std::vector<int> &sliceIndices);
+        static CV_WRAP Ptr<SliceLayer> create(int axis);
+        static CV_WRAP Ptr<SliceLayer> create(int axis, const std::vector<int> &sliceIndices);
     };
 
     /* Activations */
@@ -326,41 +328,41 @@ namespace dnn
     class CV_EXPORTS_W ReLULayer : public Layer
     {
     public:
-        double negativeSlope;
+        CV_PROP_RW double negativeSlope;
 
-        static Ptr<ReLULayer> create(double negativeSlope = 0);
+        static CV_WRAP Ptr<ReLULayer> create(double negativeSlope = 0);
     };
 
     class CV_EXPORTS_W TanHLayer : public Layer
     {
     public:
-        static Ptr<TanHLayer> create();
+        static CV_WRAP Ptr<TanHLayer> create();
     };
 
     class CV_EXPORTS_W SigmoidLayer : public Layer
     {
     public:
-        static Ptr<SigmoidLayer> create();
+        static CV_WRAP Ptr<SigmoidLayer> create();
     };
 
     class CV_EXPORTS_W BNLLLayer : public Layer
     {
     public:
-        static Ptr<BNLLLayer> create();
+        static CV_WRAP Ptr<BNLLLayer> create();
     };
 
     class CV_EXPORTS_W AbsLayer : public Layer
     {
     public:
-        static Ptr<AbsLayer> create();
+        static CV_WRAP Ptr<AbsLayer> create();
     };
 
     class CV_EXPORTS_W PowerLayer : public Layer
     {
     public:
-        double power, scale, shift;
+        CV_PROP_RW double power, scale, shift;
 
-        static Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
+        static CV_WRAP Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
     };
 
     /* Layers using in semantic segmentation */
@@ -368,6 +370,9 @@ namespace dnn
     class CV_EXPORTS_W CropLayer : public Layer
     {
     public:
+        CV_PROP int startAxis;
+        CV_PROP std::vector<int> offset;
+
         static Ptr<CropLayer> create(int start_axis, const std::vector<int> &offset);
     };
 

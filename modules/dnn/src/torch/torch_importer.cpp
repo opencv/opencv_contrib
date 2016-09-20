@@ -692,13 +692,13 @@ struct TorchImporter : public ::cv::dnn::Importer
     }
 };
 
-CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBinary)
+Ptr<Importer> createTorchImporter(const String &filename, bool isBinary)
 {
     return Ptr<Importer>(new TorchImporter(filename, isBinary));
 }
 
 
-CV_EXPORTS Blob readTorchBlob(const String &filename, bool isBinary)
+Blob readTorchBlob(const String &filename, bool isBinary)
 {
     Ptr<TorchImporter> importer(new TorchImporter(filename, isBinary));
     importer->readObject();
@@ -709,13 +709,13 @@ CV_EXPORTS Blob readTorchBlob(const String &filename, bool isBinary)
 
 #else //ENABLE_TORCH_IMPORTER
 
-CV_EXPORTS Ptr<Importer> createTorchImporter(const String&, bool)
+Ptr<Importer> createTorchImporter(const String&, bool)
 {
     CV_Error(Error::StsNotImplemented, "Module was build without Torch importer");
     return Ptr<Importer>();
 }
 
-CV_EXPORTS Blob readTorchMat(const String&, bool)
+Blob readTorchBlob(const String&, bool)
 {
     CV_Error(Error::StsNotImplemented, "Module was build without Torch importer");
     return Blob();

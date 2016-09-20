@@ -39,66 +39,37 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <opencv2/core.hpp>
-
-#define CHECK(cond)     for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #cond, cond); _logger.exit(); _logger.check()) _logger.stream()
-#define CHECK_EQ(a, b)  for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #a"="#b, ((a) == (b))); _logger.exit(); _logger.check()) _logger.stream()
-#define LOG(TYPE)       for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, #TYPE); _logger.exit(); _logger.check()) _logger.stream()
+#ifndef __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PERMUTE_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-class GLogWrapper
+class PermuteLayer : public Layer
 {
-    const char *file, *func, *type, *cond_str;
-    int line;
-    bool cond_staus, exit_loop;
-    std::stringstream sstream;
+    size_t _count;
+    std::vector<size_t> _order;
+
+    BlobShape _oldDimensionSize;
+    BlobShape _newDimensionSize;
+
+    std::vector<size_t> _oldStride;
+    std::vector<size_t> _newStride;
+    bool _needsPermute;
+
+    size_t _numAxes;
+
+    void checkCurrentOrder(int currentOrder);
+    void checkNeedForPermutation();
+    void computeStrides();
 
 public:
-
-    GLogWrapper(const char *_file, const char *_func, int _line,
-          const char *_type,
-          const char *_cond_str = NULL, bool _cond_status = true
-    ) :
-        file(_file), func(_func), type(_type), cond_str(_cond_str),
-        line(_line), cond_staus(_cond_status), exit_loop(true) {}
-
-    std::iostream &stream()
-    {
-        return sstream;
-    }
-
-    bool exit()
-    {
-        return exit_loop;
-    }
-
-    void check()
-    {
-        exit_loop = false;
-
-        if (cond_str && !cond_staus)
-        {
-            cv::error(cv::Error::StsError, "FAILED: " + String(cond_str) + ". " + sstream.str(), func, file, line);
-        }
-        else if (!cond_str && strcmp(type, "CHECK"))
-        {
-            if (!std::strcmp(type, "INFO"))
-                std::cout << sstream.str() << std::endl;
-            else
-                std::cerr << sstream.str() << std::endl;
-        }
-    }
+    PermuteLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
-
 }
 }
 #endif

@@ -2,54 +2,12 @@
 #include "layer_loaders.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 #include <climits>
+#include "layers/layers_common.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-//Utils
-
-//Extracts params used into Conv, Deconv and Pooling layers
-static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Size &stride)
-{
-    if (params.has("kernel_h") && params.has("kernel_w"))
-    {
-        kernel.height = params.get<int>("kernel_h");
-        kernel.width = params.get<int>("kernel_w");
-    }
-    else if (params.has("kernel_size"))
-    {
-        kernel.height = kernel.width = params.get<int>("kernel_size");
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, "kernel_size (or kernel_h and kernel_w) not specified");
-    }
-    CV_Assert(kernel.height > 0 && kernel.width > 0);
-
-    if (params.has("pad_h") && params.has("pad_w"))
-    {
-        pad.height = params.get<int>("pad_h");
-        pad.width = params.get<int>("pad_w");
-    }
-    else
-    {
-        pad.height = pad.width = params.get<int>("pad", 0);
-    }
-    CV_Assert(pad.height >= 0 && pad.width >= 0);
-
-    if (params.has("stride_h") && params.has("stride_w"))
-    {
-        stride.height = params.get<int>("stride_h");
-        stride.width = params.get<int>("stride_w");
-    }
-    else
-    {
-        stride.height = stride.width = params.get<int>("stride", 1);
-    }
-    CV_Assert(stride.height > 0 && stride.width > 0);
-}
 
 //Layers
 
@@ -57,7 +15,7 @@ static void getCaffeConvParams(LayerParams &params, Size &kernel, Size &pad, Siz
 static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParams &params)
 {
     l->setParamsFrom(params);
-    getCaffeConvParams(params, l->kernel, l->pad, l->stride);
+    getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height, l->pad.width, l->stride.height, l->stride.width, l->dilation.height, l->dilation.width);
 
     bool bias = params.get<bool>("bias_term", true);
     int numOutput = params.get<int>("num_output");
@@ -88,6 +46,7 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
 {
     int type;
     Size kernel, stride, pad;
+    bool globalPooling;
 
     if (params.has("pool"))
     {
@@ -106,9 +65,13 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
         type = PoolingLayer::MAX;
     }
 
-    getCaffeConvParams(params, kernel, pad, stride);
+    getPoolingKernelParams(params, kernel.height, kernel.width, globalPooling, pad.height, pad.width, stride.height, stride.width);
+    //getCaffeConvParams(params, kernel, pad, stride);
 
-    return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
+    if (!globalPooling)
+        return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad));
+    else
+        return Ptr<Layer>(PoolingLayer::createGlobal(type));
 }
 
 template<>
@@ -197,11 +160,6 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange));
 }
 
-Ptr<Layer> createFlattenLayerFromCaffe(LayerParams&)
-{
-    return Ptr<Layer>(ReshapeLayer::create(Shape(0, -1)));
-}
-
 template<>
 Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams& params)
 {
@@ -274,30 +232,16 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
 template<> //CropLayer specialization
 Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
 {
-    int start_axis = params.get<int>("axis");
-    if (4 <= start_axis)
-        CV_Error(Error::StsBadArg, "crop axis bigger than input dim");
+    int start_axis = params.get<int>("axis", 2);
+    DictValue *paramOffset = params.ptr("offset");
 
-    DictValue paramOffset = params.get("offset");
+    std::vector<int> offset;
+    if (paramOffset)
+    {
+        for (int i = 0; i < paramOffset->size(); i++)
+            offset.push_back(paramOffset->get<int>(i));
+    }
 
-    std::vector<int> offset(4, 0);
-    if (1 < paramOffset.size())
-    {
-        if (4 - start_axis != paramOffset.size())
-            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
-        for (size_t i = start_axis; i < offset.size(); i++)
-        {
-            offset[i] = paramOffset.get<int>(i);
-        }
-    }
-    else
-    {
-        const int offset_val = paramOffset.get<int>(0);
-        for (size_t i = start_axis; i < offset.size(); i++)
-        {
-            offset[i] = offset_val;
-        }
-    }
     return Ptr<Layer>(CropLayer::create(start_axis, offset));
 }
 

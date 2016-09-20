@@ -39,66 +39,56 @@
 //
 //M*/
 
-#ifndef __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#define __OPENCV_DNN_CAFFE_GLOG_EMULATOR_HPP__
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <opencv2/core.hpp>
-
-#define CHECK(cond)     for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #cond, cond); _logger.exit(); _logger.check()) _logger.stream()
-#define CHECK_EQ(a, b)  for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, "CHECK", #a"="#b, ((a) == (b))); _logger.exit(); _logger.check()) _logger.stream()
-#define LOG(TYPE)       for(cv::dnn::GLogWrapper _logger(__FILE__, CV_Func, __LINE__, #TYPE); _logger.exit(); _logger.check()) _logger.stream()
+#ifndef __OPENCV_DNN_LAYERS_NORMALIZEBBOX_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_NORMALIZEBBOX_LAYER_HPP__
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
-
-class GLogWrapper
+class NormalizeBBoxLayer : public Layer
 {
-    const char *file, *func, *type, *cond_str;
-    int line;
-    bool cond_staus, exit_loop;
-    std::stringstream sstream;
+    Mat _buffer;
+
+    Mat _sumChannelMultiplier;
+    Mat _sumSpatialMultiplier;
+
+    Blob _scale;
+
+    float _eps;
+    bool _across_spatial;
+    bool _channel_shared;
+
+    size_t _num;
+    size_t _channels;
+    size_t _rows;
+    size_t _cols;
+
+    size_t _channelSize;
+    size_t _imageSize;
+
+    static const size_t _numAxes = 4;
+    static const std::string _layerName;
 
 public:
+    NormalizeBBoxLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-    GLogWrapper(const char *_file, const char *_func, int _line,
-          const char *_type,
-          const char *_cond_str = NULL, bool _cond_status = true
-    ) :
-        file(_file), func(_func), type(_type), cond_str(_cond_str),
-        line(_line), cond_staus(_cond_status), exit_loop(true) {}
+    void checkInputs(const std::vector<Blob*> &inputs);
 
-    std::iostream &stream()
-    {
-        return sstream;
-    }
+    template<typename T>
+    T getParameter(const LayerParams &params,
+                   const std::string &parameterName,
+                   const size_t &idx = 0,
+                   const bool required = true,
+                   const T& defaultValue = T());
 
-    bool exit()
-    {
-        return exit_loop;
-    }
-
-    void check()
-    {
-        exit_loop = false;
-
-        if (cond_str && !cond_staus)
-        {
-            cv::error(cv::Error::StsError, "FAILED: " + String(cond_str) + ". " + sstream.str(), func, file, line);
-        }
-        else if (!cond_str && strcmp(type, "CHECK"))
-        {
-            if (!std::strcmp(type, "INFO"))
-                std::cout << sstream.str() << std::endl;
-            else
-                std::cerr << sstream.str() << std::endl;
-        }
-    }
+    bool getParameterDict(const LayerParams &params,
+                          const std::string &parameterName,
+                          DictValue& result);
 };
-
 }
 }
 #endif
