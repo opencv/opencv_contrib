@@ -140,7 +140,10 @@ int main(int argc, char **argv)
     //! [Set input blob]
 
     //! [Make forward pass]
+    double t = (double)cv::getTickCount();
     net.forward();                          //compute output
+    t = (double)cv::getTickCount() - t;
+    printf("processing time: %.1fms\n", t*1000./getTickFrequency());
     //! [Make forward pass]
 
     //! [Gather output]

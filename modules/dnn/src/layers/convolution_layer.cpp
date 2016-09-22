@@ -55,7 +55,7 @@ namespace dnn
 
 ConvolutionLayerImpl::ConvolutionLayerImpl()
 {
-    tryUseOpenCL = true;
+    tryUseOpenCL = false; //true;
     numOutput = -1;
     group = -1;
 
