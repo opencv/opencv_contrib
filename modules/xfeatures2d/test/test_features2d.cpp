@@ -298,8 +298,8 @@ public:
     typedef typename Distance::ResultType DistanceType;
 
     CV_DescriptorExtractorTest( const string _name, DistanceType _maxDist, const Ptr<DescriptorExtractor>& _dextractor,
-                                Distance d = Distance() ):
-            name(_name), maxDist(_maxDist), dextractor(_dextractor), distance(d) {}
+                                int imgMode = IMREAD_COLOR, Distance d = Distance()):
+            name(_name), maxDist(_maxDist), dextractor(_dextractor), imgLoadMode(imgMode), distance(d) {}
 protected:
     virtual void createDescriptorExtractor() {}
 
@@ -356,7 +356,10 @@ protected:
             ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
         }
 
-        image.create( 50, 50, CV_8UC3 );
+        if(imgLoadMode == IMREAD_GRAYSCALE)
+            image.create( 50, 50, CV_8UC1 );
+        else
+            image.create( 50, 50, CV_8UC3 );
         try
         {
             dextractor->compute( image, keypoints, descriptors );
@@ -389,7 +392,7 @@ protected:
         // Read the test image.
         string imgFilename =  string(ts->get_data_path()) + FEATURES2D_DIR + "/" + IMAGE_FILENAME;
 
-        Mat img = imread( imgFilename );
+        Mat img = imread( imgFilename, imgLoadMode );
         if( img.empty() )
         {
             ts->printf( cvtest::TS::LOG, "Image %s can not be read.\n", imgFilename.c_str() );
@@ -493,6 +496,7 @@ protected:
     string name;
     const DistanceType maxDist;
     Ptr<DescriptorExtractor> dextractor;
+    int imgLoadMode;
     Distance distance;
 
 private:
@@ -1021,7 +1025,7 @@ TEST( Features2d_DescriptorExtractor_FREAK, regression )
 {
     // TODO adjust the parameters below
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-freak",  (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
-                                             FREAK::create() );
+                                             FREAK::create(), IMREAD_GRAYSCALE );
     test.safe_run();
 }
 

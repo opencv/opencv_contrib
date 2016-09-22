@@ -334,8 +334,7 @@ void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
 
     // Convert to gray if not already
     Mat grayImage = image;
-//    if( image.channels() > 1 )
-//        cvtColor( image, grayImage, COLOR_BGR2GRAY );
+    CV_Assert(grayImage.channels() == 1);
 
     // Use 32-bit integers if we won't overflow in the integral image
     if ((image.depth() == CV_8U || image.depth() == CV_8S) &&
@@ -682,10 +681,7 @@ imgType FREAK_Impl::meanIntensity( InputArray _image, InputArray _integral,
     ret_val += integral.at<iiType>(y_top,x_left);
     ret_val -= integral.at<iiType>(y_top,x_right);
     const int area = (x_right - x_left) * (y_bottom - y_top);
-    if(ret_val > 0)
-        ret_val = (ret_val + area/2) / area;
-    else
-        ret_val = (ret_val - area/2) / area;
+    ret_val = (ret_val + area/2) / area;
     //~ std::cout<<integral.step[1]<<std::endl;
     return static_cast<imgType>(ret_val);
 }

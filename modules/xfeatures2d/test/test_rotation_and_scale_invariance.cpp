@@ -318,11 +318,12 @@ public:
     DescriptorRotationInvarianceTest(const Ptr<FeatureDetector>& _featureDetector,
                                      const Ptr<DescriptorExtractor>& _descriptorExtractor,
                                      int _normType,
-                                     float _minDescInliersRatio) :
+                                     float _minDescInliersRatio, int imgLoad = IMREAD_COLOR) :
         featureDetector(_featureDetector),
         descriptorExtractor(_descriptorExtractor),
         normType(_normType),
-        minDescInliersRatio(_minDescInliersRatio)
+        minDescInliersRatio(_minDescInliersRatio),
+        imgLoadMode(imgLoad)
     {
         CV_Assert(featureDetector);
         CV_Assert(descriptorExtractor);
@@ -335,7 +336,7 @@ protected:
         const string imageFilename = string(ts->get_data_path()) + IMAGE_TSUKUBA;
 
         // Read test data
-        Mat image0 = imread(imageFilename), image1, mask1;
+        Mat image0 = imread(imageFilename, imgLoadMode), image1, mask1;
         if(image0.empty())
         {
             ts->printf(cvtest::TS::LOG, "Image %s can not be read.\n", imageFilename.c_str());
@@ -398,6 +399,7 @@ protected:
     Ptr<DescriptorExtractor> descriptorExtractor;
     int normType;
     float minDescInliersRatio;
+    int imgLoadMode;
 };
 
 
@@ -693,6 +695,16 @@ TEST(Features2d_RotationInvariance_Descriptor_BRIEF_16, regression)
                                           BriefDescriptorExtractor::create(16,true),
                                           NORM_L1,
                                           0.85f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_FREAK, regression)
+{
+    Ptr<Feature2D> f2d = FREAK::create();
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          f2d,
+                                          f2d->defaultNorm(),
+                                          0.9f, IMREAD_GRAYSCALE);
     test.safe_run();
 }
 
