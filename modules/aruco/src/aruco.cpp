@@ -529,9 +529,9 @@ static bool _identifyOneCandidate(Ptr<Dictionary> &dictionary, InputArray _image
   */
 class IdentifyCandidatesParallel : public ParallelLoopBody {
     public:
-    IdentifyCandidatesParallel(const Mat *_grey, InputArrayOfArrays _candidates,
+    IdentifyCandidatesParallel(const Mat& _grey, InputArrayOfArrays _candidates,
                                InputArrayOfArrays _contours, Ptr<Dictionary> &_dictionary,
-                               vector< int > *_idsTmp, vector< char > *_validCandidates,
+                               vector< int >& _idsTmp, vector< char >& _validCandidates,
                                const Ptr<DetectorParameters> &_params)
         : grey(_grey), candidates(_candidates), contours(_contours), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
@@ -543,9 +543,9 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
         for(int i = begin; i < end; i++) {
             int currId;
             Mat currentCandidate = candidates.getMat(i);
-            if(_identifyOneCandidate(dictionary, *grey, currentCandidate, currId, params)) {
-                (*validCandidates)[i] = 1;
-                (*idsTmp)[i] = currId;
+            if(_identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
+                validCandidates[i] = 1;
+                idsTmp[i] = currId;
             }
         }
     }
@@ -553,11 +553,11 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     private:
     IdentifyCandidatesParallel &operator=(const IdentifyCandidatesParallel &); // to quiet MSVC
 
-    const Mat *grey;
+    const Mat &grey;
     InputArrayOfArrays candidates, contours;
     Ptr<Dictionary> &dictionary;
-    vector< int > *idsTmp;
-    vector< char > *validCandidates;
+    vector< int > &idsTmp;
+    vector< char > &validCandidates;
     const Ptr<DetectorParameters> &params;
 };
 
@@ -632,8 +632,8 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, ncandidates),
-                  IdentifyCandidatesParallel(&grey, _candidates, _contours, _dictionary, &idsTmp,
-                                             &validCandidates, params));
+                  IdentifyCandidatesParallel(grey, _candidates, _contours, _dictionary, idsTmp,
+                                             validCandidates, params));
 
     for(int i = 0; i < ncandidates; i++) {
         if(validCandidates[i] == 1) {
