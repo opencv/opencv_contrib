@@ -68,17 +68,30 @@ namespace cv
             CV_WRAP virtual void setMaxX(double _plotMaxX) = 0;
             CV_WRAP virtual void setMaxY(double _plotMaxY) = 0;
             CV_WRAP virtual void setPlotLineWidth(int _plotLineWidth) = 0;
+            CV_WRAP virtual void setNeedPlotLine(bool _needPlotLine) = 0;
             CV_WRAP virtual void setPlotLineColor(Scalar _plotLineColor) = 0;
             CV_WRAP virtual void setPlotBackgroundColor(Scalar _plotBackgroundColor) = 0;
             CV_WRAP virtual void setPlotAxisColor(Scalar _plotAxisColor) = 0;
             CV_WRAP virtual void setPlotGridColor(Scalar _plotGridColor) = 0;
             CV_WRAP virtual void setPlotTextColor(Scalar _plotTextColor) = 0;
             CV_WRAP virtual void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) = 0;
-            CV_WRAP virtual void render(Mat &_plotResult) = 0;
+            CV_WRAP virtual void render(OutputArray _plotResult) = 0;
         };
 
-        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(Mat data);
-        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(Mat dataX, Mat dataY);
+        /**
+         * @brief Creates Plot2d object
+         *
+         * @param data \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot. \f$X\f$ values
+         * will be equal to indexes of correspondind elements in data matrix.
+         */
+        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(InputArray data);
+        /**
+         * @brief Creates Plot2d object
+         *
+         * @param dataX \f$1xN\f$ or \f$Nx1\f$ matrix \f$X\f$ values of points to plot.
+         * @param dataY \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot.
+         */
+        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(InputArray dataX, InputArray dataY);
     }
 }
 
