@@ -47,6 +47,7 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include "saliencyBaseClasses.hpp"
 #include "opencv2/core.hpp"
 
 namespace cv
@@ -66,37 +67,37 @@ pre-attentive visual search. The algorithm analyze the log spectrum of each imag
 spectral residual. Then transform the spectral residual to spatial domain to obtain the saliency
 map, which suggests the positions of proto-objects.
  */
-class CV_EXPORTS StaticSaliencySpectralResidual : public StaticSaliency
+class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 {
 public:
 
-  StaticSaliencySpectralResidual();
+  CV_WRAP StaticSaliencySpectralResidual();
   virtual ~StaticSaliencySpectralResidual();
 
-  void read( const FileNode& fn );
+  CV_WRAP void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
 
-  int getImageWidth() const
+  CV_WRAP int getImageWidth() const
   {
     return resImWidth;
   }
-  inline void setImageWidth(int val)
+  CV_WRAP inline void setImageWidth(int val)
   {
     resImWidth = val;
   }
-  int getImageHeight() const
+  CV_WRAP int getImageHeight() const
   {
     return resImHeight;
   }
-  void setImageHeight(int val)
+  CV_WRAP void setImageHeight(int val)
   {
     resImHeight = val;
   }
 
 protected:
   bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
-  int resImWidth;
-  int resImHeight;
+  CV_PROP_RW int resImWidth;
+  CV_PROP_RW int resImHeight;
 
 };
 
@@ -111,10 +112,10 @@ protected:
  */
 /** @brief the Fast Self-tuning Background Subtraction Algorithm from @cite BinWangApr2014
  */
-class CV_EXPORTS MotionSaliencyBinWangApr2014 : public MotionSaliency
+class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
 public:
-  MotionSaliencyBinWangApr2014();
+  CV_WRAP MotionSaliencyBinWangApr2014();
   virtual ~MotionSaliencyBinWangApr2014();
 
   /** @brief This is a utility function that allows to set the correct size (taken from the input image) in the
@@ -122,25 +123,25 @@ public:
     @param W width of input image
     @param H height of input image
   */
-  void setImagesize( int W, int H );
+  CV_WRAP void setImagesize( int W, int H );
   /** @brief This function allows the correct initialization of all data structures that will be used by the
     algorithm.
   */
-  bool init();
+  CV_WRAP bool init();
 
-  int getImageWidth() const
+  CV_WRAP int getImageWidth() const
   {
     return imageWidth;
   }
-  inline void setImageWidth(int val)
+  CV_WRAP inline void setImageWidth(int val)
   {
     imageWidth = val;
   }
-  int getImageHeight() const
+  CV_WRAP int getImageHeight() const
   {
     return imageHeight;
   }
-  void setImageHeight(int val)
+  CV_WRAP void setImageHeight(int val)
   {
     imageHeight = val;
   }
@@ -177,8 +178,8 @@ private:
   //fixed parameter
   bool neighborhoodCheck;
   int N_DS;// Number of template to be downsampled and used in lowResolutionDetection function
-  int imageWidth;// Width of input image
-  int imageHeight;//Height of input image
+  CV_PROP_RW int imageWidth;// Width of input image
+  CV_PROP_RW int imageHeight;//Height of input image
   int K;// Number of background model template
   int N;// NxN is the size of the block for downsampling in the lowlowResolutionDetection
   float alpha;// Learning rate
@@ -200,11 +201,11 @@ private:
 
 /** @brief the Binarized normed gradients algorithm from @cite BING
  */
-class CV_EXPORTS ObjectnessBING : public Objectness
+class CV_EXPORTS_W ObjectnessBING : public Objectness
 {
 public:
 
-  ObjectnessBING();
+  CV_WRAP ObjectnessBING();
   virtual ~ObjectnessBING();
 
   void read();
