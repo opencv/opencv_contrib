@@ -356,8 +356,8 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
 /**
  * @brief Detect square candidates in the input image
  */
-static void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates,
-                              OutputArrayOfArrays _contours, const Ptr<DetectorParameters> &_params) {
+static void _detectCandidates(InputArray _image, vector< vector< Point2f > >& candidatesOut,
+                              vector< vector< Point > >& contoursOut, const Ptr<DetectorParameters> &_params) {
 
     Mat image = _image.getMat();
     CV_Assert(image.total() != 0);
@@ -375,25 +375,8 @@ static void _detectCandidates(InputArray _image, OutputArrayOfArrays _candidates
     _reorderCandidatesCorners(candidates);
 
     /// 4. FILTER OUT NEAR CANDIDATE PAIRS
-    vector< vector< Point2f > > candidatesOut;
-    vector< vector< Point > > contoursOut;
     _filterTooCloseCandidates(candidates, candidatesOut, contours, contoursOut,
                               _params->minMarkerDistanceRate);
-
-    // parse output
-    _candidates.create((int)candidatesOut.size(), 1, CV_32FC2);
-    _contours.create((int)contoursOut.size(), 1, CV_32SC2);
-    for(int i = 0; i < (int)candidatesOut.size(); i++) {
-        _candidates.create(4, 1, CV_32FC2, i, true);
-        Mat m = _candidates.getMat(i);
-        for(int j = 0; j < 4; j++)
-            m.ptr< Vec2f >(0)[j] = candidatesOut[i][j];
-
-        _contours.create((int)contoursOut[i].size(), 1, CV_32SC2, i, true);
-        Mat c = _contours.getMat(i);
-        for(unsigned int j = 0; j < contoursOut[i].size(); j++)
-            c.ptr< Point2i >()[j] = contoursOut[i][j];
-    }
 }
 
 
@@ -546,9 +529,9 @@ static bool _identifyOneCandidate(Ptr<Dictionary> &dictionary, InputArray _image
   */
 class IdentifyCandidatesParallel : public ParallelLoopBody {
     public:
-    IdentifyCandidatesParallel(const Mat *_grey, InputArrayOfArrays _candidates,
+    IdentifyCandidatesParallel(const Mat& _grey, InputArrayOfArrays _candidates,
                                InputArrayOfArrays _contours, Ptr<Dictionary> &_dictionary,
-                               vector< int > *_idsTmp, vector< char > *_validCandidates,
+                               vector< int >& _idsTmp, vector< char >& _validCandidates,
                                const Ptr<DetectorParameters> &_params)
         : grey(_grey), candidates(_candidates), contours(_contours), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
@@ -560,9 +543,9 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
         for(int i = begin; i < end; i++) {
             int currId;
             Mat currentCandidate = candidates.getMat(i);
-            if(_identifyOneCandidate(dictionary, *grey, currentCandidate, currId, params)) {
-                (*validCandidates)[i] = 1;
-                (*idsTmp)[i] = currId;
+            if(_identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
+                validCandidates[i] = 1;
+                idsTmp[i] = currId;
             }
         }
     }
@@ -570,50 +553,41 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     private:
     IdentifyCandidatesParallel &operator=(const IdentifyCandidatesParallel &); // to quiet MSVC
 
-    const Mat *grey;
+    const Mat &grey;
     InputArrayOfArrays candidates, contours;
     Ptr<Dictionary> &dictionary;
-    vector< int > *idsTmp;
-    vector< char > *validCandidates;
+    vector< int > &idsTmp;
+    vector< char > &validCandidates;
     const Ptr<DetectorParameters> &params;
 };
 
 
 
 /**
- * @brief Copy the contents of a Mat vector to an OutputArray, settings its size.
+ * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
  */
-void _copyVector2Output(vector< Mat > &vec, OutputArrayOfArrays out);
-
-
-
-/**
- *
- */
-void _copyVector2Output(vector< Mat > &vec, OutputArrayOfArrays out) {
-
-    out.release();
+static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out) {
     out.create((int)vec.size(), 1, CV_32FC2);
 
     if(out.isMatVector()) {
         for (unsigned int i = 0; i < vec.size(); i++) {
-            out.create(4, 1, CV_32FC2, i, true);
+            out.create(4, 1, CV_32FC2, i);
             Mat &m = out.getMatRef(i);
-            vec[i].copyTo(m);
+            Mat(Mat(vec[i]).t()).copyTo(m);
         }
     }
     else if(out.isUMatVector()) {
         for (unsigned int i = 0; i < vec.size(); i++) {
-            out.create(4, 1, CV_32FC2, i, true);
+            out.create(4, 1, CV_32FC2, i);
             UMat &m = out.getUMatRef(i);
-            vec[i].copyTo(m);
+            Mat(Mat(vec[i]).t()).copyTo(m);
         }
     }
     else if(out.kind() == _OutputArray::STD_VECTOR_VECTOR){
         for (unsigned int i = 0; i < vec.size(); i++) {
-            out.create(4, 1, CV_32FC2, i, true);
+            out.create(4, 1, CV_32FC2, i);
             Mat m = out.getMat(i);
-            vec[i].copyTo(m);
+            Mat(Mat(vec[i]).t()).copyTo(m);
         }
     }
     else {
@@ -627,17 +601,16 @@ void _copyVector2Output(vector< Mat > &vec, OutputArrayOfArrays out) {
 /**
  * @brief Identify square candidates according to a marker dictionary
  */
-static void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidates,
+static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& _candidates,
                                 InputArrayOfArrays _contours, Ptr<Dictionary> &_dictionary,
-                                OutputArrayOfArrays _accepted, OutputArray _ids,
+                                vector< vector< Point2f > >& _accepted, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
                                 OutputArrayOfArrays _rejected = noArray()) {
 
-    int ncandidates = (int)_candidates.total();
+    int ncandidates = (int)_candidates.size();
 
-    vector< Mat > accepted;
-    vector< Mat > rejected;
-    vector< int > ids;
+    vector< vector< Point2f > > accepted;
+    vector< vector< Point2f > > rejected;
 
     CV_Assert(_image.getMat().total() != 0);
 
@@ -659,24 +632,20 @@ static void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidate
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, ncandidates),
-                  IdentifyCandidatesParallel(&grey, _candidates, _contours, _dictionary, &idsTmp,
-                                             &validCandidates, params));
+                  IdentifyCandidatesParallel(grey, _candidates, _contours, _dictionary, idsTmp,
+                                             validCandidates, params));
 
     for(int i = 0; i < ncandidates; i++) {
         if(validCandidates[i] == 1) {
-            accepted.push_back(_candidates.getMat(i));
+            accepted.push_back(_candidates[i]);
             ids.push_back(idsTmp[i]);
         } else {
-            rejected.push_back(_candidates.getMat(i));
+            rejected.push_back(_candidates[i]);
         }
     }
 
     // parse output
-    _copyVector2Output(accepted, _accepted);
-
-    _ids.create((int)ids.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < ids.size(); i++)
-        _ids.getMat().ptr< int >(0)[i] = ids[i];
+    _accepted = accepted;
 
     if(_rejected.needed()) {
         _copyVector2Output(rejected, _rejected);
@@ -687,26 +656,25 @@ static void _identifyCandidates(InputArray _image, InputArrayOfArrays _candidate
 /**
   * @brief Final filter of markers after its identification
   */
-static void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _inIds,
-                                   OutputArrayOfArrays _outCorners, OutputArray _outIds) {
+static void _filterDetectedMarkers(vector< vector< Point2f > >& _corners, vector< int >& _ids) {
 
-    CV_Assert(_inCorners.total() == _inIds.total());
-    if(_inCorners.total() == 0) return;
+    CV_Assert(_corners.size() == _ids.size());
+    if(_corners.empty()) return;
 
     // mark markers that will be removed
-    vector< bool > toRemove(_inCorners.total(), false);
+    vector< bool > toRemove(_corners.size(), false);
     bool atLeastOneRemove = false;
 
     // remove repeated markers with same id, if one contains the other (doble border bug)
-    for(unsigned int i = 0; i < _inCorners.total() - 1; i++) {
-        for(unsigned int j = i + 1; j < _inCorners.total(); j++) {
-            if(_inIds.getMat().ptr< int >(0)[i] != _inIds.getMat().ptr< int >(0)[j]) continue;
+    for(unsigned int i = 0; i < _corners.size() - 1; i++) {
+        for(unsigned int j = i + 1; j < _corners.size(); j++) {
+            if(_ids[i] != _ids[j]) continue;
 
             // check if first marker is inside second
             bool inside = true;
             for(unsigned int p = 0; p < 4; p++) {
-                Point2f point = _inCorners.getMat(j).ptr< Point2f >(0)[p];
-                if(pointPolygonTest(_inCorners.getMat(i), point, false) < 0) {
+                Point2f point = _corners[j][p];
+                if(pointPolygonTest(_corners[i], point, false) < 0) {
                     inside = false;
                     break;
                 }
@@ -720,8 +688,8 @@ static void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _in
             // check the second marker
             inside = true;
             for(unsigned int p = 0; p < 4; p++) {
-                Point2f point = _inCorners.getMat(i).ptr< Point2f >(0)[p];
-                if(pointPolygonTest(_inCorners.getMat(j), point, false) < 0) {
+                Point2f point = _corners[i][p];
+                if(pointPolygonTest(_corners[j], point, false) < 0) {
                     inside = false;
                     break;
                 }
@@ -736,25 +704,18 @@ static void _filterDetectedMarkers(InputArrayOfArrays _inCorners, InputArray _in
 
     // parse output
     if(atLeastOneRemove) {
-        vector< Mat > filteredCorners;
-        vector< int > filteredIds;
+        vector< vector< Point2f > >::iterator filteredCorners = _corners.begin();
+        vector< int >::iterator filteredIds = _ids.begin();
 
         for(unsigned int i = 0; i < toRemove.size(); i++) {
             if(!toRemove[i]) {
-                filteredCorners.push_back(_inCorners.getMat(i).clone());
-                filteredIds.push_back(_inIds.getMat().ptr< int >(0)[i]);
+                *filteredCorners++ = _corners[i];
+                *filteredIds++ = _ids[i];
             }
         }
 
-        _outIds.create((int)filteredIds.size(), 1, CV_32SC1);
-        for(unsigned int i = 0; i < filteredIds.size(); i++)
-            _outIds.getMat().ptr< int >(0)[i] = filteredIds[i];
-
-        _outCorners.create((int)filteredCorners.size(), 1, CV_32FC2);
-        for(unsigned int i = 0; i < filteredCorners.size(); i++) {
-            _outCorners.create(4, 1, CV_32FC2, i, true);
-            filteredCorners[i].copyTo(_outCorners.getMat(i));
-        }
+        _ids.erase(filteredIds, _ids.end());
+        _corners.erase(filteredCorners, _corners.end());
     }
 }
 
@@ -818,7 +779,7 @@ void detectMarkers(InputArray _image, Ptr<Dictionary> &_dictionary, OutputArrayO
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
                    OutputArrayOfArrays _rejectedImgPoints) {
 
-    CV_Assert(_image.getMat().total() != 0);
+    CV_Assert(!_image.empty());
 
     Mat grey;
     _convertToGrey(_image.getMat(), grey);
@@ -826,14 +787,19 @@ void detectMarkers(InputArray _image, Ptr<Dictionary> &_dictionary, OutputArrayO
     /// STEP 1: Detect marker candidates
     vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
+    vector< int > ids;
     _detectCandidates(grey, candidates, contours, _params);
 
     /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidates, contours, _dictionary, _corners, _ids, _params,
+    _identifyCandidates(grey, candidates, contours, _dictionary, candidates, ids, _params,
                         _rejectedImgPoints);
 
     /// STEP 3: Filter detected markers;
-    _filterDetectedMarkers(_corners, _ids, _corners, _ids);
+    _filterDetectedMarkers(candidates, ids);
+
+    // copy to output arrays
+    _copyVector2Output(candidates, _corners);
+    Mat(ids).copyTo(_ids);
 
     /// STEP 4: Corner refinement
     if(_params->doCornerRefinement) {
@@ -841,7 +807,7 @@ void detectMarkers(InputArray _image, Ptr<Dictionary> &_dictionary, OutputArrayO
                   _params->cornerRefinementMinAccuracy > 0);
 
         //// do corner refinement for each of the detected markers
-        // for (unsigned int i = 0; i < _corners.total(); i++) {
+        // for (unsigned int i = 0; i < _corners.cols(); i++) {
         //    cornerSubPix(grey, _corners.getMat(i),
         //                 Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
         //                 Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
@@ -850,7 +816,7 @@ void detectMarkers(InputArray _image, Ptr<Dictionary> &_dictionary, OutputArrayO
         //}
 
         // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, (int)_corners.total()),
+        parallel_for_(Range(0, _corners.cols()),
                       MarkerSubpixelParallel(&grey, _corners, _params));
     }
 }
