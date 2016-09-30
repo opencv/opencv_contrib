@@ -234,7 +234,7 @@ class CV_EXPORTS_W Board {
     * @param ids vector of the identifiers of the markers in the board
     *
     */
-    CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, Ptr<Dictionary> &dictionary, InputArray ids);
+    CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
     // array of object points of all the marker corners in the board
     // each marker include its 4 corners, i.e. for M markers, the size is Mx4
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
@@ -517,11 +517,11 @@ void _drawPlanarBoardImpl(Board *board, Size outSize, OutputArray img,
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
 CV_EXPORTS_AS(calibrateCameraArucoExtended) double calibrateCameraAruco(
-    InputArrayOfArrays corners, InputArray ids, InputArray counter, Ptr<Board> &board,
+    InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
     OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
-    OutputArray stdDeviationsIntrinsics = noArray(), OutputArray stdDeviationsExtrinsics = noArray(),
-    OutputArray perViewErrors = noArray(), int flags = 0,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 

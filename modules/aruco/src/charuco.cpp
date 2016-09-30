@@ -746,7 +746,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 /**
  */
 double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
-  Ptr<CharucoBoard> &_board, Size imageSize,
+  const Ptr<CharucoBoard> &_board, Size imageSize,
   InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
   OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
   TermCriteria criteria) {

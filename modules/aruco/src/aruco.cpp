@@ -1301,7 +1301,7 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 
 /**
 */
-Ptr<Board> Board::create(InputArrayOfArrays objPoints, Ptr<Dictionary> &dictionary, InputArray ids) {
+Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
 
     CV_Assert(objPoints.total() == ids.total());
     CV_Assert(objPoints.type() == CV_32FC3);
@@ -1319,7 +1319,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, Ptr<Dictionary> &dictiona
     Ptr<Board> res = makePtr<Board>();
     ids.copyTo(res->ids);
     res->objPoints = obj_points_vector;
-    res->dictionary = dictionary;
+    res->dictionary = cv::makePtr<Dictionary>(dictionary);
     return res;
 }
 
@@ -1602,7 +1602,7 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
 /**
  */
 double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter,
-  Ptr<Board> &board, Size imageSize, InputOutputArray _cameraMatrix,
+  const Ptr<Board> &board, Size imageSize, InputOutputArray _cameraMatrix,
   InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,
   OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
     return calibrateCameraAruco(_corners, _ids, _counter, board, imageSize, _cameraMatrix, _distCoeffs, _rvecs, _tvecs,

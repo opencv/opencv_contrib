@@ -239,11 +239,11 @@ CV_EXPORTS_W void drawDetectedCornersCharuco(InputOutputArray image, InputArray 
  * The function returns the final re-projection error.
  */
 CV_EXPORTS_AS(calibrateCameraCharucoExtended) double calibrateCameraCharuco(
-    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
+    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const Ptr<CharucoBoard> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(),
-    OutputArray stdDeviationsIntrinsics = noArray(), OutputArray stdDeviationsExtrinsics = noArray(),
-    OutputArray perViewErrors = noArray(), int flags = 0,
+    OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 /** @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
