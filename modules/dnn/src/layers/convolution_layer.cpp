@@ -55,7 +55,7 @@ namespace dnn
 
 ConvolutionLayerImpl::ConvolutionLayerImpl()
 {
-    tryUseOpenCL = true;
+    tryUseOpenCL = false; //true;
     numOutput = -1;
     group = -1;
 
@@ -77,7 +77,8 @@ void ConvolutionLayerImpl::init()
     CV_Assert(blobs[0].dims() == 4 && blobs[0].cols() == kernel.width && blobs[0].rows() == kernel.height);
     CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
 
-    useOpenCL = ocl::useOpenCL() && tryUseOpenCL;
+    //TODO: dilation in OCL mode
+    useOpenCL = ocl::useOpenCL() && tryUseOpenCL && dilation == Size(1, 1);
 }
 
 void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -127,14 +128,15 @@ void ConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vecto
 bool ConvolutionLayerImpl::is1x1() const
 {
     return (kernel.height == 1 && kernel.width == 1) &&
-           (stride.height == 1 && stride.width == 1);
+           (stride.height == 1 && stride.width == 1) &&
+           (dilation.height == 1 && dilation.width == 1);
 }
 
 template<typename XMat>
 void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
-    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
+    XMat biasesMat  = (bias) ? reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1)) : XMat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
@@ -182,7 +184,7 @@ void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
         return;
     }
 #ifdef HAVE_OPENCL
-    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, this->colBlob.umatRef()));
+    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, this->colBlob.umatRef()));
     dstCol = this->colBlob.umatRefConst();
 #else
     CV_Error(Error::StsInternal, "");
@@ -200,9 +202,9 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
 
     Mat &colMat = colBlob.matRef();
     if (srcImg.type() == CV_32F)
-        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, colMat.ptr<float>());
+        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<float>());
     if (srcImg.type() == CV_64F)
-        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, colMat.ptr<double>());
+        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<double>());
 
     dstCol = colMat;
 }
@@ -213,8 +215,8 @@ void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
     inpW = input.cols();
     inpCn = input.channels();
 
-    outH = (inpH + 2 * pad.height - kernel.height) / stride.height + 1;
-    outW = (inpW + 2 * pad.width - kernel.width) / stride.width + 1;
+    outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+    outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
     outCn = numOutput;
 
     topH = outH; topW = outW; topCn = outCn;
@@ -252,7 +254,7 @@ template<typename XMat>
 void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
-    XMat biasesMat  = reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1));
+    XMat biasesMat  = (bias) ? reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1)) : XMat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
@@ -315,21 +317,23 @@ void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
 
 //Initializers
 
-Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad)
+Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad, Size dilation)
 {
     ConvolutionLayerImpl *l = new ConvolutionLayerImpl();
     l->kernel = kernel;
     l->pad = pad;
     l->stride = stride;
+    l->dilation = dilation;
     return Ptr<BaseConvolutionLayer>(l);
 }
 
-Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size stride, Size pad)
+Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size stride, Size pad, Size dilation)
 {
     DeConvolutionLayerImpl *l = new DeConvolutionLayerImpl();
     l->kernel = kernel;
     l->pad = pad;
     l->stride = stride;
+    l->dilation = dilation;
     return Ptr<BaseConvolutionLayer>(l);
 }
 

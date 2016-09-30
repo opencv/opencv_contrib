@@ -57,8 +57,9 @@ namespace cv
         {
             public:
 
-            Plot2dImpl(Mat _plotData)
+            Plot2dImpl(InputArray plotData)
             {
+                Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
                 {
@@ -91,8 +92,10 @@ namespace cv
 
             }
 
-            Plot2dImpl(Mat _plotDataX, Mat _plotDataY)
+            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_)
             {
+                Mat _plotDataX = plotDataX_.getMat();
+                Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
                 if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
                 {
@@ -143,7 +146,11 @@ namespace cv
             }
             void setPlotLineWidth(int _plotLineWidth)
             {
-                plotLineWidth=_plotLineWidth;
+                plotLineWidth = _plotLineWidth;
+            }
+            void setNeedPlotLine(bool _needPlotLine)
+            {
+                needPlotLine = _needPlotLine;
             }
             void setPlotLineColor(Scalar _plotLineColor)
             {
@@ -179,10 +186,12 @@ namespace cv
             }
 
             //render the plotResult to a Mat
-            void render(Mat &_plotResult)
+            void render(OutputArray _plotResult)
             {
                 //create the plot result
-                plotResult = Mat(plotSizeHeight, plotSizeWidth, CV_8UC3, plotBackgroundColor);
+                _plotResult.create(plotSizeHeight, plotSizeWidth, CV_8UC3);
+                plotResult = _plotResult.getMat();
+                plotResult.setTo(plotBackgroundColor);
 
                 int NumVecElements = plotDataX.rows;
 
@@ -199,26 +208,37 @@ namespace cv
                 double CurrentX = plotDataX.at<double>(NumVecElements-1,0);
                 double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
 
-                //Draw the plot by connecting lines between the points
-                Point p1;
-                p1.x = (int)InterpXdata.at<double>(0,0);
-                p1.y = (int)InterpYdata.at<double>(0,0);
-
                 drawAxis(ImageXzero,ImageYzero, CurrentX, CurrentY, plotAxisColor, plotGridColor);
 
-                for (int r=1; r<InterpXdata.rows; r++){
+                if(needPlotLine)
+                {
+                    //Draw the plot by connecting lines between the points
+                    Point p1;
+                    p1.x = (int)InterpXdata.at<double>(0,0);
+                    p1.y = (int)InterpYdata.at<double>(0,0);
 
-                    Point p2;
-                    p2.x = (int)InterpXdata.at<double>(r,0);
-                    p2.y = (int)InterpYdata.at<double>(r,0);
+                    for (int r=1; r<InterpXdata.rows; r++)
+                    {
+                        Point p2;
+                        p2.x = (int)InterpXdata.at<double>(r,0);
+                        p2.y = (int)InterpYdata.at<double>(r,0);
 
-                    line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
+                        line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
 
-                    p1 = p2;
-
+                        p1 = p2;
+                    }
                 }
+                else
+                {
+                    for (int r=0; r<InterpXdata.rows; r++)
+                    {
+                        Point p;
+                        p.x = (int)InterpXdata.at<double>(r,0);
+                        p.y = (int)InterpYdata.at<double>(r,0);
 
-                _plotResult = plotResult.clone();
+                        circle(plotResult, p, 1, plotLineColor, plotLineWidth, 8, 0);
+                    }
+                }
             }
 
             protected:
@@ -252,6 +272,9 @@ namespace cv
             //the final plot result
             Mat plotResult;
 
+            //flag which enables/disables connection of plotted points by lines
+            bool needPlotLine;
+
             void plotHelper(Mat _plotDataX, Mat _plotDataY)
             {
                 plotDataX=_plotDataX;
@@ -275,6 +298,8 @@ namespace cv
                 double MaxX_plusZero;
                 double MinY_plusZero;
                 double MaxY_plusZero;
+
+                needPlotLine = true;
 
                 //Obtain the minimum and maximum values of Xdata
                 minMaxLoc(plotDataX,&MinX,&MaxX);
@@ -411,13 +436,13 @@ namespace cv
 
         };
 
-        Ptr<Plot2d> createPlot2d(Mat _plotData)
+        Ptr<Plot2d> createPlot2d(InputArray _plotData)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
 
         }
 
-        Ptr<Plot2d> createPlot2d(Mat _plotDataX, Mat _plotDataY)
+        Ptr<Plot2d> createPlot2d(InputArray _plotDataX, InputArray _plotDataY)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
         }

@@ -336,11 +336,13 @@ namespace cv{
       minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
       roi.x+=(maxLoc.x-roi.width/2+1);
       roi.y+=(maxLoc.y-roi.height/2+1);
-
-      // update the bounding box
-      boundingBox.x=(resizeImage?roi.x*2:roi.x)+boundingBox.width/2;
-      boundingBox.y=(resizeImage?roi.y*2:roi.y)+boundingBox.height/2;
     }
+
+    // update the bounding box
+    boundingBox.x=(resizeImage?roi.x*2:roi.x)+(resizeImage?roi.width*2:roi.width)/4;
+    boundingBox.y=(resizeImage?roi.y*2:roi.y)+(resizeImage?roi.height*2:roi.height)/4;
+    boundingBox.width = (resizeImage?roi.width*2:roi.width)/2;
+    boundingBox.height = (resizeImage?roi.height*2:roi.height)/2;
 
     // extract the patch for learning purpose
     // get non compressed descriptors

@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
     }
 
     int markersX = parser.get<int>("w");
-    int markersY = parser.get<int>("w");
+    int markersY = parser.get<int>("h");
     float markerLength = parser.get<float>("l");
     float markerSeparation = parser.get<float>("s");
     int dictionaryId = parser.get<int>("d");

@@ -63,16 +63,15 @@ Blob::Blob(InputArray data)
 #ifndef CV_DNN_UMAT
     m = data.getMat();
 #else
-    CV_Assert(data.isMat() || data.isUMat());
-    if (data.isMat())
-    {
-        m = data.getMat();
-        state = HEAD_AT_MAT;
-    }
-    else
+    if (data.isUMat())
     {
         um = data.getUMat();
         state = HEAD_AT_UMAT;
+    }
+    else
+    {
+        m = data.getMat();
+        state = HEAD_AT_MAT;
     }
 #endif
 }

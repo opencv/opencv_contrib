@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <iterator>
 
 using namespace cv;
 using namespace cv::dnn;
@@ -59,7 +60,7 @@ namespace dnn
 {
 
 template<typename T>
-String toString(const T &v)
+static String toString(const T &v)
 {
     std::ostringstream ss;
     ss << v;
@@ -127,7 +128,7 @@ struct LayerData
 };
 
 //fake layer containing network input blobs
-struct NetInputLayer : public Layer
+struct DataLayer : public Layer
 {
     void allocate(const std::vector<Blob*>&, std::vector<Blob>&) {}
     void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
@@ -152,7 +153,7 @@ struct Net::Impl
     Impl()
     {
         //allocate fake net input layer
-        netInputLayer = Ptr<NetInputLayer>(new NetInputLayer());
+        netInputLayer = Ptr<DataLayer>(new DataLayer());
         LayerData &inpl = layers.insert( make_pair(0, LayerData()) ).first->second;
         inpl.id = 0;
         inpl.name = "_input";
@@ -163,7 +164,7 @@ struct Net::Impl
         netWasAllocated = false;
     }
 
-    Ptr<NetInputLayer> netInputLayer;
+    Ptr<DataLayer> netInputLayer;
     std::vector<int> netOutputs;
 
     typedef std::map<int, LayerData> MapIdToLayerData;
@@ -328,10 +329,15 @@ struct Net::Impl
                 netOutputs.push_back(lid);
         }
 
+        #ifndef NDEBUG
         std::cout << "\nNet Outputs(" << netOutputs.size() << "):\n";
         for (size_t i = 0; i < netOutputs.size(); i++)
-            std::cout << layers[netOutputs[i]].name << std::endl;
+            std::cout << layers[netOutputs[i]].name << "\n";
+        #endif
     }
+
+    #define CV_RETHROW_ERROR(err, newmsg)\
+        cv::error(err.code, newmsg, err.func.c_str(), err.file.c_str(), err.line)
 
     void allocateLayer(int lid)
     {
@@ -361,7 +367,15 @@ struct Net::Impl
 
         //allocate layer
         ld.outputBlobs.resize(std::max((size_t)1, ld.requiredOutputs.size())); //layer produce at least one output blob
-        ld.getLayerInstance()->allocate(ld.inputBlobs, ld.outputBlobs);
+        try
+        {
+            Ptr<Layer> layerPtr = ld.getLayerInstance();
+            layerPtr->allocate(ld.inputBlobs, ld.outputBlobs);
+        }
+        catch (const cv::Exception &err)
+        {
+            CV_RETHROW_ERROR(err, format("The following error occured while making allocate() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
+        }
 
         ld.flag = 1;
     }
@@ -399,7 +413,14 @@ struct Net::Impl
         }
 
         //forward itself
-        ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
+        try
+        {
+            ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
+        }
+        catch (const cv::Exception &err)
+        {
+            CV_RETHROW_ERROR(err, format("The following error occured while making forward() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
+        }
 
         ld.flag = 1;
     }
@@ -417,12 +438,10 @@ struct Net::Impl
 
 Net::Net() : impl(new Net::Impl)
 {
-
 }
 
 Net::~Net()
 {
-
 }
 
 int Net::addLayer(const String &name, const String &type, LayerParams &params)
@@ -469,16 +488,19 @@ void Net::connect(String _outPin, String _inPin)
     impl->connect(outPin.lid, outPin.oid, inpPin.lid, inpPin.oid);
 }
 
-void Net::forward()
+void Net::allocate()
 {
     impl->setUpNet();
-    impl->forwardAll();
 }
 
 void Net::forward(LayerId toLayer)
 {
     impl->setUpNet();
-    impl->forwardLayer(impl->getLayerData(toLayer));
+
+    if (toLayer.isString() && toLayer.get<String>().empty())
+        impl->forwardAll();
+    else
+        impl->forwardLayer(impl->getLayerData(toLayer));
 }
 
 void Net::setNetInputs(const std::vector<String> &inputBlobNames)
@@ -521,6 +543,16 @@ Blob Net::getParam(LayerId layer, int numParam)
     return layerBlobs[numParam];
 }
 
+void Net::setParam(LayerId layer, int numParam, const Blob &blob)
+{
+    LayerData &ld = impl->getLayerData(layer);
+
+    std::vector<Blob> &layerBlobs = ld.layerInstance->blobs;
+    CV_Assert(numParam < (int)layerBlobs.size());
+    //we don't make strong checks, use this function carefully
+    layerBlobs[numParam] = blob;
+}
+
 int Net::getLayerId(const String &layer)
 {
     return impl->getLayerId(layer);
@@ -529,6 +561,34 @@ int Net::getLayerId(const String &layer)
 void Net::deleteLayer(LayerId)
 {
     CV_Error(Error::StsNotImplemented, "");
+}
+
+Ptr<Layer> Net::getLayer(LayerId layerId)
+{
+    LayerData &ld = impl->getLayerData(layerId);
+    if (!ld.layerInstance)
+        CV_Error(Error::StsNullPtr, format("Requseted layer \"%s\" was not initialized", ld.name.c_str()));
+    return ld.layerInstance;
+}
+
+std::vector<String> Net::getLayerNames() const
+{
+    std::vector<String> res;
+    res.reserve(impl->layers.size());
+
+    Impl::MapIdToLayerData::iterator it;
+    for (it = impl->layers.begin(); it != impl->layers.end(); it++)
+    {
+        if (it->second.id) //skip Data layer
+            res.push_back(it->second.name);
+    }
+
+    return res;
+}
+
+bool Net::empty() const
+{
+    return impl->layers.size() <= 1; //first layer is default Data layer
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -558,6 +618,43 @@ int Layer::inputNameToIndex(String)
 int Layer::outputNameToIndex(String)
 {
     return -1;
+}
+
+template <typename T>
+static void vecToPVec(const std::vector<T> &v, std::vector<T*> &pv)
+{
+    pv.resize(v.size());
+    for (size_t i = 0; i < v.size(); i++)
+        pv[i] = const_cast<T*>(&v[i]);
+}
+
+void Layer::allocate(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+{
+    std::vector<Blob*> inputsp;
+    vecToPVec(inputs, inputsp);
+    this->allocate(inputsp, outputs);
+}
+
+std::vector<Blob> Layer::allocate(const std::vector<Blob> &inputs)
+{
+    std::vector<Blob> outputs;
+    this->allocate(inputs, outputs);
+    return outputs;
+}
+
+void Layer::forward(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+{
+    std::vector<Blob*> inputsp;
+    vecToPVec(inputs, inputsp);
+    this->forward(inputsp, outputs);
+}
+
+void Layer::run(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+{
+    std::vector<Blob*> inputsp;
+    vecToPVec(inputs, inputsp);
+    this->allocate(inputsp, outputs);
+    this->forward(inputsp, outputs);
 }
 
 Layer::~Layer() {}

@@ -212,14 +212,6 @@ namespace
         D.copyTo(dst);
     }
 
-    void addComplex(InputArray aSrc, int bSrc, OutputArray dst)
-    {
-        Mat panels[2];
-        split(aSrc.getMat(), panels);
-        panels[0] = panels[0] + bSrc;
-        merge(panels, 2, dst);
-    }
-
     void divComplexByRealMultiChannel(vector<Mat> &numer,
         vector<Mat> &denom, vector<Mat> &dst)
     {

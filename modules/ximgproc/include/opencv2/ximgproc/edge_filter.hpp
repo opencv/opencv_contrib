@@ -316,6 +316,28 @@ proportional to sigmaSpace .
 CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
+/** @brief Applies the bilateral texture filter to an image. It performs structure-preserving texture filter.
+For more details about this filter see @cite Cho2014.
+
+@param src Source image whose depth is 8-bit UINT or 32-bit FLOAT
+
+@param dst Destination image of the same size and type as src.
+
+@param fr Radius of kernel to be used for filtering. It should be positive integer
+
+@param numIter Number of iterations of algorithm, It should be positive integer
+
+@param sigmaAlpha Controls the sharpness of the weight transition from edges to smooth/texture regions, where
+a bigger value means sharper transition. When the value is negative, it is automatically calculated.
+
+@param sigmaAvg Range blur parameter for texture blurring. Larger value makes result to be more blurred. When the
+value is negative, it is automatically calculated as described in the paper.
+
+@sa rollingGuidanceFilter, bilateralFilter
+*/
+CV_EXPORTS_W
+void bilateralTextureFilter(InputArray src, OutputArray dst, int fr = 3, int numIter = 1, double sigmaAlpha = -1., double sigmaAvg = -1.);
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 

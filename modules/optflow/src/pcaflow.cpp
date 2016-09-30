@@ -226,7 +226,7 @@ void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSiz
   Mat flowX( size, CV_32F, 0.0f );
   Mat flowY( size, CV_32F, 0.0f );
 
-  const float mult = sqrt( size.area() ) * 0.5;
+  const float mult = sqrt( static_cast<float>(size.area()) ) * 0.5;
 
   for ( int i = 0; i < basisSize.width; ++i )
     for ( int j = 0; j < basisSize.height; ++j )
@@ -296,7 +296,7 @@ void OpticalFlowPCAFlow::removeOcclusions( UMat &from, UMat &to, std::vector<Poi
   calcOpticalFlowPyrLK( to, from, predictedFeatures, backwardFeatures, predictedStatus, predictedError );
 
   size_t j = 0;
-  const float threshold = occlusionsThreshold * sqrt( from.size().area() );
+  const float threshold = occlusionsThreshold * sqrt( static_cast<float>(from.size().area()) );
   for ( size_t i = 0; i < predictedFeatures.size(); ++i )
   {
     if ( predictedStatus[i] )

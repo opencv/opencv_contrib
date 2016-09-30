@@ -21,8 +21,10 @@ PERF_TEST_P( Size_WBThresh, autowbGrayworld,
     Mat dst(size, CV_8UC3);
 
     declare.in(src, WARMUP_RNG).out(dst);
+    Ptr<xphoto::GrayworldWB> wb = xphoto::createGrayworldWB();
+    wb->setSaturationThreshold(wb_thresh);
 
-    TEST_CYCLE() xphoto::autowbGrayworld(src, dst, wb_thresh);
+    TEST_CYCLE() wb->balanceWhite(src, dst);
 
     SANITY_CHECK(dst);
 }

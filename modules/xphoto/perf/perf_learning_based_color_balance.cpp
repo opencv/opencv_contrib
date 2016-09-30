@@ -65,8 +65,12 @@ PERF_TEST_P(learningBasedWBPerfTest, perf, Combine(SZ_ALL_HD, Values(CV_8UC3, CV
     RNG rng(1234);
     rng.fill(src_dscl, RNG::UNIFORM, 0, range_max_val);
     resize(src_dscl, src, src.size());
+    Ptr<xphoto::LearningBasedWB> wb = xphoto::createLearningBasedWB();
+    wb->setRangeMaxVal(range_max_val);
+    wb->setSaturationThreshold(0.98f);
+    wb->setHistBinNum(hist_bin_num);
 
-    TEST_CYCLE() xphoto::autowbLearningBased(src, dst, range_max_val, 0.98f, hist_bin_num);
+    TEST_CYCLE() wb->balanceWhite(src, dst);
 
     SANITY_CHECK_NOTHING();
 }
