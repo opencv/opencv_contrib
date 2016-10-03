@@ -251,8 +251,8 @@ TEST(DenseOpticalFlow_GlobalPatchColliderDCT, ReferenceAccuracy)
     forest->train(img1, img2, gt, GPCTrainingParams(10, 3, GPC_DESCRIPTOR_DCT, false));
     forest->findCorrespondences(frame1, frame2, corr);
 
-    ASSERT_LE(16000U, corr.size());
-    ASSERT_LE(calcAvgEPE(corr, GT), 2.5f);
+    ASSERT_LE(14000U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 2.7f);
 }
 
 TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
@@ -270,6 +270,6 @@ TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
     forest->train(img1, img2, gt, GPCTrainingParams(10, 3, GPC_DESCRIPTOR_WHT, false));
     forest->findCorrespondences(frame1, frame2, corr);
 
-    ASSERT_LE(13000U, corr.size());
-    ASSERT_LE(calcAvgEPE(corr, GT), 3.5f);
+    ASSERT_LE(12000U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 3.9f);
 }
