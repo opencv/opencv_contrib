@@ -1,0 +1,42 @@
+ECLIPSE ANDROID PROJECT IMPORT SUMMARY
+======================================
+
+Ignored Files:
+--------------
+The following files were *not* copied into the new Gradle project; you
+should evaluate whether these are still needed in your project and if
+so manually move them:
+
+* .DS_Store
+* CMakeLists.txt
+
+Moved Files:
+------------
+Android Gradle projects use a different directory structure than ADT
+Eclipse projects. Here's how the projects were restructured:
+
+* AndroidManifest.xml => openCVSamplefacedetection/src/main/AndroidManifest.xml
+* jni/ => openCVSamplefacedetection/src/main/jni/
+* res/ => openCVSamplefacedetection/src/main/res/
+* src/ => openCVSamplefacedetection/src/main/java/
+* src/.DS_Store => openCVSamplefacedetection/src/main/resources/.DS_Store
+* src/org/.DS_Store => openCVSamplefacedetection/src/main/resources/org/.DS_Store
+* src/org/opencv/.DS_Store => openCVSamplefacedetection/src/main/resources/org/opencv/.DS_Store
+* src/org/opencv/samples/.DS_Store => openCVSamplefacedetection/src/main/resources/org/opencv/samples/.DS_Store
+* src/org/opencv/samples/facedetect/.DS_Store => openCVSamplefacedetection/src/main/resources/org/opencv/samples/facedetect/.DS_Store
+* src/org/opencv/samples/facedetect/export ANDROID_SDK_ROOT=:User:Sarthak:Library:Andr => openCVSamplefacedetection/src/main/resources/org/opencv/samples/facedetect/export ANDROID_SDK_ROOT=:User:Sarthak:Library:Andr
+
+Next Steps:
+-----------
+You can now build the project. The Gradle project needs network
+connectivity to download dependencies.
+
+Bugs:
+-----
+If for some reason your project does not build, and you determine that
+it is due to a bug or limitation of the Eclipse to Gradle importer,
+please file a bug at http://b.android.com with category
+Component-Tools.
+
+(This import summary is for your information only, and can be deleted
+after import once you are satisfied with the results.)
