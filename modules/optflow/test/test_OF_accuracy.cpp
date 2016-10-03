@@ -252,7 +252,7 @@ TEST(DenseOpticalFlow_GlobalPatchColliderDCT, ReferenceAccuracy)
     forest->findCorrespondences(frame1, frame2, corr);
 
     ASSERT_LE(14000U, corr.size());
-    ASSERT_LE(calcAvgEPE(corr, GT), 2.7f);
+    ASSERT_LE(calcAvgEPE(corr, GT), 3.2f);
 }
 
 TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
