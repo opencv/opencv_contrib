@@ -459,6 +459,37 @@ void getRandomCauchyVector( Vec< double, GPCPatchDescriptor::nFeatures > &v )
 double getRobustMedian( double m ) { return m < 0 ? m * ( 1.0 + epsTolerance ) : m * ( 1.0 - epsTolerance ); }
 }
 
+double GPCPatchDescriptor::dot( const Vec< double, nFeatures > &coef ) const
+{
+#if CV_SIMD128_64F
+  v_float64x2 sum = v_setzero_f64();
+  for ( unsigned i = 0; i < nFeatures; i += 2 )
+  {
+    v_float64x2 x = v_load_aligned( &feature.val[i] );
+    v_float64x2 y = v_load_aligned( &coef.val[i] );
+    sum = v_muladd( x, y, sum );
+  }
+#if CV_SSE2
+  __m128d sumrev = _mm_shuffle_pd( sum.val, sum.val, _MM_SHUFFLE2( 0, 1 ) );
+  return _mm_cvtsd_f64( _mm_add_pd( sum.val, sumrev ) );
+#else
+  double CV_DECL_ALIGNED( 16 ) buf[2];
+  v_store_aligned( buf, sum );
+  return OPENCV_HAL_ADD( buf[0], buf[1] );
+#endif
+
+#else
+  return feature.dot( coef );
+#endif
+}
+
+void GPCPatchSample::getDirections( bool &refdir, bool &posdir, bool &negdir, const Vec< double, GPCPatchDescriptor::nFeatures > &coef, double rhs ) const
+{
+  refdir = ( ref.dot( coef ) < rhs );
+  posdir = pos.isSeparated() ? ( !refdir ) : ( pos.dot( coef ) < rhs );
+  negdir = neg.isSeparated() ? ( !refdir ) : ( neg.dot( coef ) < rhs );
+}
+
 void GPCDetails::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp,
                                             int type )
 {
