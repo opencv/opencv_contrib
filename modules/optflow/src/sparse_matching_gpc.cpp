@@ -41,9 +41,11 @@
  //M*/
 
 #include "opencv2/core/core_c.h"
+#include "opencv2/core/private.hpp"
 #include "opencv2/flann/miniflann.hpp"
 #include "opencv2/highgui.hpp"
 #include "precomp.hpp"
+#include "opencl_kernels_optflow.hpp"
 
 /* Disable "from double to float" and "from size_t to int" warnings.
  * Fixing these would make the code look ugly by introducing explicit cast all around.
@@ -230,63 +232,6 @@ void getWHTPatchDescriptor( GPCPatchDescriptor &patchDescr, const Mat *imgCh, in
   patchDescr.feature /= patchRadius;
 }
 
-#define STR_EXPAND_( arg ) #arg
-#define STR_EXPAND( arg ) STR_EXPAND_( arg )
-
-ocl::ProgramSource _ocl_getDCTPatchDescriptorSource(
-  "__kernel void getPatchDescriptor("
-  "__global const uchar* imgCh0, int ic0step, int ic0off,"
-  "__global const uchar* imgCh1, int ic1step, int ic1off,"
-  "__global const uchar* imgCh2, int ic2step, int ic2off,"
-  "__global uchar* out, int outstep, int outoff,"
-  "const int gh, const int gw, const int PR"
-  ") {"
-  "const int i = get_global_id(0);"
-  "const int j = get_global_id(1);"
-  "if (i >= gh || j >= gw) return;"
-  "__global double* desc = (__global double*)(out + (outstep * (i * gw + j) + outoff));"
-  "const int patchRadius = PR * 2;"
-  "float patch[" STR_EXPAND(PATCH_RADIUS_DOUBLED) "][" STR_EXPAND(PATCH_RADIUS_DOUBLED) "];"
-  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
-  "  __global const float* ch0Row = (__global const float*)(imgCh0 + (ic0step * (i + i0) + ic0off + j * sizeof(float)));"
-  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
-  "    patch[i0][j0] = ch0Row[j0];"
-  "}"
-  "const double pi = " STR_EXPAND(CV_PI) ";\n"
-  "#pragma unroll\n"
-  "for (int n0 = 0; n0 < 4; ++n0) {\n"
-  "#pragma unroll\n"
-  "  for (int n1 = 0; n1 < 4; ++n1) {"
-  "    double sum = 0;"
-  "    for (int i0 = 0; i0 < patchRadius; ++i0)"
-  "      for (int j0 = 0; j0 < patchRadius; ++j0)"
-  "        sum += patch[i0][j0] * cos(pi * (i0 + 0.5) * n0 / patchRadius) * cos(pi * (j0 + 0.5) * n1 / patchRadius);"
-  "    desc[n0 * 4 + n1] = sum / PR;"
-  "  }"
-  "}"
-  "for (int k = 0; k < 4; ++k) {"
-  "  desc[k] *= " STR_EXPAND(SQRT2_INV) ";"
-  "  desc[k * 4] *= " STR_EXPAND(SQRT2_INV) ";"
-  "}"
-  "double sum = 0;"
-  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
-  "  __global const float* ch1Row = (__global const float*)(imgCh1 + (ic1step * (i + i0) + ic1off + j * sizeof(float)));"
-  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
-  "    sum += ch1Row[j0];"
-  "}"
-  "desc[16] = sum / patchRadius;"
-  "sum = 0;"
-  "for (int i0 = 0; i0 < patchRadius; ++i0) {"
-  "  __global const float* ch2Row = (__global const float*)(imgCh2 + (ic2step * (i + i0) + ic2off + j * sizeof(float)));"
-  "  for (int j0 = 0; j0 < patchRadius; ++j0)"
-  "    sum += ch2Row[j0];"
-  "}"
-  "desc[17] = sum / patchRadius;"
-  "}" );
-
-#undef STR_EXPAND_
-#undef STR_EXPAND
-
 class ParallelDCTFiller : public ParallelLoopBody
 {
 private:
@@ -311,28 +256,39 @@ public:
   }
 };
 
+#ifdef HAVE_OPENCL
+
+bool ocl_getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr )
+{
+  const Size sz = imgCh[0].size();
+  ocl::Kernel kernel( "getPatchDescriptor", ocl::optflow::sparse_matching_gpc_oclsrc,
+                      format( "-DPATCH_RADIUS_DOUBLED=%d -DCV_PI=%f -DSQRT2_INV=%f", PATCH_RADIUS_DOUBLED, CV_PI, SQRT2_INV ) );
+  size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
+  UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
+  if (
+    kernel
+    .args( cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[0].getUMat( ACCESS_READ ) ),
+           cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[1].getUMat( ACCESS_READ ) ),
+           cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[2].getUMat( ACCESS_READ ) ),
+           cv::ocl::KernelArg::WriteOnlyNoSize( out ),
+           (int)globSize[0], (int)globSize[1], (int)patchRadius )
+    .run( 2, globSize, 0, true ) == false )
+    return false;
+  Mat cpuOut = out.getMat( 0 );
+  for ( int i = 0; i + 2 * patchRadius < sz.height; ++i )
+    for ( int j = 0; j + 2 * patchRadius < sz.width; ++j )
+      descr.push_back( *cpuOut.ptr< GPCPatchDescriptor >( i * globSize[1] + j ) );
+  return true;
+}
+
+#endif
+
 void getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescriptor > &descr, const GPCMatchingParams &mp )
 {
   const Size sz = imgCh[0].size();
   descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
 
-  if ( mp.useOpenCL && ocl::useOpenCL() )
-  {
-    ocl::Kernel kernel( "getPatchDescriptor", _ocl_getDCTPatchDescriptorSource );
-    size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
-    UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
-    kernel
-      .args( cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[0].getUMat( ACCESS_READ ) ),
-             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[1].getUMat( ACCESS_READ ) ),
-             cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[2].getUMat( ACCESS_READ ) ), cv::ocl::KernelArg::WriteOnlyNoSize( out ),
-             (int)globSize[0], (int)globSize[1], (int)patchRadius )
-      .run( 2, globSize, 0, true );
-    Mat cpuOut = out.getMat( 0 );
-    for ( int i = 0; i + 2 * patchRadius < sz.height; ++i )
-      for ( int j = 0; j + 2 * patchRadius < sz.width; ++j )
-        descr.push_back( *cpuOut.ptr< GPCPatchDescriptor >( i * globSize[1] + j ) );
-    return;
-  }
+  CV_OCL_RUN( mp.useOpenCL, ocl_getAllDCTDescriptorsForImage( imgCh, descr ) )
 
   descr.resize( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
   parallel_for_( Range( 0, descr.size() ), ParallelDCTFiller( sz, imgCh, &descr ) );
