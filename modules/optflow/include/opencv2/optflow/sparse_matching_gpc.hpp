@@ -109,6 +109,9 @@ public:
   static Ptr< GPCTrainingSamples > create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
                                            const std::vector< String > &gt, int descriptorType );
 
+  static Ptr< GPCTrainingSamples > create( InputArrayOfArrays imagesFrom, InputArrayOfArrays imagesTo, InputArrayOfArrays gt,
+                                           int descriptorType );
+
   size_t size() const { return samples.size(); }
 
   int type() const { return descriptorType; }
@@ -249,6 +252,17 @@ public:
    * It is generally better to use this instead of the first method.
    */
   void train( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo, const std::vector< String > &gt,
+              const GPCTrainingParams params = GPCTrainingParams() )
+  {
+    for ( int i = 0; i < T; ++i )
+    {
+      Ptr< GPCTrainingSamples > samples =
+        GPCTrainingSamples::create( imagesFrom, imagesTo, gt, params.descriptorType ); // Create training set for the tree
+      tree[i].train( *samples, params );
+    }
+  }
+
+  void train( InputArrayOfArrays imagesFrom, InputArrayOfArrays imagesTo, InputArrayOfArrays gt,
               const GPCTrainingParams params = GPCTrainingParams() )
   {
     for ( int i = 0; i < T; ++i )

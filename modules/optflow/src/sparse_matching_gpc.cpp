@@ -694,6 +694,38 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
   return ts;
 }
 
+Ptr< GPCTrainingSamples > GPCTrainingSamples::create( InputArrayOfArrays imagesFrom, InputArrayOfArrays imagesTo,
+                                                      InputArrayOfArrays gt, int _descriptorType )
+{
+  CV_Assert( imagesFrom.total() == imagesTo.total() );
+  CV_Assert( imagesFrom.total() == gt.total() );
+
+  Ptr< GPCTrainingSamples > ts = makePtr< GPCTrainingSamples >();
+
+  ts->descriptorType = _descriptorType;
+
+  for ( size_t i = 0; i < imagesFrom.total(); ++i )
+  {
+    Mat from = imagesFrom.getMat( static_cast<int>( i ) );
+    Mat to = imagesTo.getMat( static_cast<int>( i ) );
+    Mat gtFlow = gt.getMat( static_cast<int>( i ) );
+
+    CV_Assert( from.size == to.size );
+    CV_Assert( from.size == gtFlow.size );
+    CV_Assert( from.channels() == 3 );
+    CV_Assert( to.channels() == 3 );
+
+    from.convertTo( from, CV_32FC3 );
+    to.convertTo( to, CV_32FC3 );
+    cvtColor( from, from, COLOR_BGR2YCrCb );
+    cvtColor( to, to, COLOR_BGR2YCrCb );
+
+    getTrainingSamples( from, to, gtFlow, ts->samples, ts->descriptorType );
+  }
+
+  return ts;
+}
+
 void GPCDetails::dropOutliers( std::vector< std::pair< Point2i, Point2i > > &corr )
 {
   std::vector< float > mag( corr.size() );

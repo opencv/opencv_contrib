@@ -241,18 +241,23 @@ TEST(DenseOpticalFlow_GlobalPatchColliderDCT, ReferenceAccuracy)
     Mat frame1, frame2, GT;
     ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
 
-    vector<String> img1, img2, gt;
-    vector< pair<Point2i, Point2i> > corr;
-    img1.push_back(getRubberWhaleFrame1());
-    img2.push_back(getRubberWhaleFrame2());
-    gt.push_back(getRubberWhaleGroundTruth());
+    const Size sz = frame1.size() / 2;
+    frame1 = frame1(Rect(0, 0, sz.width, sz.height));
+    frame2 = frame2(Rect(0, 0, sz.width, sz.height));
+    GT = GT(Rect(0, 0, sz.width, sz.height));
 
-    Ptr< GPCForest<3> > forest = GPCForest<3>::create();
-    forest->train(img1, img2, gt, GPCTrainingParams(10, 3, GPC_DESCRIPTOR_DCT, false));
+    vector<Mat> img1, img2, gt;
+    vector< pair<Point2i, Point2i> > corr;
+    img1.push_back(frame1);
+    img2.push_back(frame2);
+    gt.push_back(GT);
+
+    Ptr< GPCForest<5> > forest = GPCForest<5>::create();
+    forest->train(img1, img2, gt, GPCTrainingParams(8, 3, GPC_DESCRIPTOR_DCT, false));
     forest->findCorrespondences(frame1, frame2, corr);
 
-    ASSERT_LE(14000U, corr.size());
-    ASSERT_LE(calcAvgEPE(corr, GT), 3.2f);
+    ASSERT_LE(7500U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
 }
 
 TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
@@ -260,16 +265,21 @@ TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
     Mat frame1, frame2, GT;
     ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
 
-    vector<String> img1, img2, gt;
-    vector< pair<Point2i, Point2i> > corr;
-    img1.push_back(getRubberWhaleFrame1());
-    img2.push_back(getRubberWhaleFrame2());
-    gt.push_back(getRubberWhaleGroundTruth());
+    const Size sz = frame1.size() / 2;
+    frame1 = frame1(Rect(0, 0, sz.width, sz.height));
+    frame2 = frame2(Rect(0, 0, sz.width, sz.height));
+    GT = GT(Rect(0, 0, sz.width, sz.height));
 
-    Ptr< GPCForest<3> > forest = GPCForest<3>::create();
-    forest->train(img1, img2, gt, GPCTrainingParams(10, 3, GPC_DESCRIPTOR_WHT, false));
+    vector<Mat> img1, img2, gt;
+    vector< pair<Point2i, Point2i> > corr;
+    img1.push_back(frame1);
+    img2.push_back(frame2);
+    gt.push_back(GT);
+
+    Ptr< GPCForest<5> > forest = GPCForest<5>::create();
+    forest->train(img1, img2, gt, GPCTrainingParams(8, 3, GPC_DESCRIPTOR_WHT, false));
     forest->findCorrespondences(frame1, frame2, corr);
 
-    ASSERT_LE(12000U, corr.size());
-    ASSERT_LE(calcAvgEPE(corr, GT), 3.9f);
+    ASSERT_LE(7000U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
 }
