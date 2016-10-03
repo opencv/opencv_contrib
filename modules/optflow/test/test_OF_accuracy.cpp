@@ -57,6 +57,8 @@ static string getRubberWhaleGroundTruth() { return getDataDir() + "optflow/Rubbe
 
 static bool isFlowCorrect(float u) { return !cvIsNaN(u) && (fabs(u) < 1e9); }
 
+static bool isFlowCorrect(double u) { return !cvIsNaN(u) && (fabs(u) < 1e9); }
+
 static float calcRMSE(Mat flow1, Mat flow2)
 {
     float sum = 0;
