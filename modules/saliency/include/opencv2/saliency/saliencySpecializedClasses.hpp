@@ -42,7 +42,6 @@
 #ifndef __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 #define __OPENCV_SALIENCY_SPECIALIZED_CLASSES_HPP__
 
-//#include "opencv2/saliency/kyheader.hpp"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -71,8 +70,21 @@ class CV_EXPORTS_W StaticSaliencySpectralResidual : public StaticSaliency
 {
 public:
 
-  CV_WRAP StaticSaliencySpectralResidual();
+  StaticSaliencySpectralResidual();
   virtual ~StaticSaliencySpectralResidual();
+
+  CV_WRAP static Ptr<StaticSaliencySpectralResidual> create()
+  {
+    return makePtr<StaticSaliencySpectralResidual>();
+  }
+
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+  {
+    if( image.empty() )
+      return false;
+
+    return computeSaliencyImpl( image, saliencyMap );
+  }
 
   CV_WRAP void read( const FileNode& fn );
   void write( FileStorage& fs ) const;
@@ -115,8 +127,21 @@ protected:
 class CV_EXPORTS_W MotionSaliencyBinWangApr2014 : public MotionSaliency
 {
 public:
-  CV_WRAP MotionSaliencyBinWangApr2014();
+  MotionSaliencyBinWangApr2014();
   virtual ~MotionSaliencyBinWangApr2014();
+
+  CV_WRAP static Ptr<MotionSaliencyBinWangApr2014> create()
+  {
+    return makePtr<MotionSaliencyBinWangApr2014>();
+  }
+
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+  {
+    if( image.empty() )
+      return false;
+
+    return computeSaliencyImpl( image, saliencyMap );
+  }
 
   /** @brief This is a utility function that allows to set the correct size (taken from the input image) in the
     corresponding variables that will be used to size the data structures of the algorithm.
@@ -205,11 +230,24 @@ class CV_EXPORTS_W ObjectnessBING : public Objectness
 {
 public:
 
-  CV_WRAP ObjectnessBING();
+  ObjectnessBING();
   virtual ~ObjectnessBING();
 
-  void read();
-  void write() const;
+  CV_WRAP static Ptr<ObjectnessBING> create()
+  {
+    return makePtr<ObjectnessBING>();
+  }
+
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+  {
+    if( image.empty() )
+      return false;
+
+    return computeSaliencyImpl( image, saliencyMap );
+  }
+
+  CV_WRAP void read();
+  CV_WRAP void write() const;
 
   /** @brief Return the list of the rectangles' objectness value,
 
@@ -223,7 +261,7 @@ public:
     the trained model.
     @param trainingPath trained model path
      */
-  void setTrainingPath( std::string trainingPath );
+  CV_WRAP void setTrainingPath( const String& trainingPath );
 
   /** @brief This is a utility function that allows to set an arbitrary path in which the algorithm will save the
     optional results
@@ -232,29 +270,29 @@ public:
     each row).
     @param resultsDir results' folder path
      */
-  void setBBResDir( std::string resultsDir );
+  CV_WRAP void setBBResDir( const String& resultsDir );
 
-  double getBase() const
+  CV_WRAP double getBase() const
   {
     return _base;
   }
-  inline void setBase(double val)
+  CV_WRAP inline void setBase(double val)
   {
     _base = val;
   }
-  int getNSS() const
+  CV_WRAP int getNSS() const
   {
     return _NSS;
   }
-  void setNSS(int val)
+  CV_WRAP void setNSS(int val)
   {
     _NSS = val;
   }
-  int getW() const
+  CV_WRAP int getW() const
   {
     return _W;
   }
-  void setW(int val)
+  CV_WRAP void setW(int val)
   {
     _W = val;
   }

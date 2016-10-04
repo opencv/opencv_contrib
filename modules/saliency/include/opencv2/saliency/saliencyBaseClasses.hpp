@@ -84,7 +84,7 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
    * \brief Get the name of the specific saliency type
    * \return The name of the tracker initializer
    */
-  String getClassName() const;
+  CV_WRAP String getClassName() const;
 
  protected:
 
@@ -109,10 +109,10 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
     algorithm calculates the optimal threshold separating those two classes, so that their
     intra-class variance is minimal.
 
-    @param saliencyMap the saliency map obtained through one of the specialized algorithms
-    @param binaryMap the binary map
+    @param _saliencyMap the saliency map obtained through one of the specialized algorithms
+    @param _binaryMap the binary map
      */
-  CV_WRAP bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
+  CV_WRAP bool computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap );
  protected:
   virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
