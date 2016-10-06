@@ -98,7 +98,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
      * and the size of the markers and chessboard squares.
      */
     CV_WRAP static Ptr<CharucoBoard> create(int squaresX, int squaresY, float squareLength,
-                                            float markerLength, Ptr<Dictionary> &dictionary);
+                                            float markerLength, const Ptr<Dictionary> &dictionary);
 
     /**
       *
@@ -155,7 +155,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
  * The function returns the number of interpolated corners.
  */
 CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, InputArray markerIds,
-                                           InputArray image, Ptr<CharucoBoard> &board,
+                                           InputArray image, const Ptr<CharucoBoard> &board,
                                            OutputArray charucoCorners, OutputArray charucoIds,
                                            InputArray cameraMatrix = noArray(),
                                            InputArray distCoeffs = noArray());
@@ -181,7 +181,7 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * If pose estimation is valid, returns true, else returns false.
  */
 CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
-                                           Ptr<CharucoBoard> &board, InputArray cameraMatrix,
+                                           const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
                                            InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
 
 
@@ -239,17 +239,17 @@ CV_EXPORTS_W void drawDetectedCornersCharuco(InputOutputArray image, InputArray 
  * The function returns the final re-projection error.
  */
 CV_EXPORTS_AS(calibrateCameraCharucoExtended) double calibrateCameraCharuco(
-    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
+    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const Ptr<CharucoBoard> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(),
-    OutputArray stdDeviationsIntrinsics = noArray(), OutputArray stdDeviationsExtrinsics = noArray(),
-    OutputArray perViewErrors = noArray(), int flags = 0,
+    OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 /** @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
 */
 CV_EXPORTS_W double calibrateCameraCharuco(
-  InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
+  InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const Ptr<CharucoBoard> &board,
   Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
   OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
   TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
@@ -326,7 +326,7 @@ CV_EXPORTS_W void drawDetectedDiamonds(InputOutputArray image, InputArrayOfArray
  * This function return the image of a ChArUco marker, ready to be printed.
  */
 // TODO cannot be exported yet; conversion from/to Vec4i is not wrapped in core
-CV_EXPORTS void drawCharucoDiamond(Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
+CV_EXPORTS void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
                                    int markerLength, OutputArray img, int marginSize = 0,
                                    int borderBits = 1);
 

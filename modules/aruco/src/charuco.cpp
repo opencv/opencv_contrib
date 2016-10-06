@@ -121,7 +121,7 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
 /**
  */
 Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareLength,
-                                  float markerLength, Ptr<Dictionary> &dictionary) {
+                                  float markerLength, const Ptr<Dictionary> &dictionary) {
 
     CV_Assert(squaresX > 1 && squaresY > 1 && markerLength > 0 && squareLength > markerLength);
     Ptr<CharucoBoard> res = makePtr<CharucoBoard>();
@@ -230,7 +230,7 @@ void CharucoBoard::_getNearestMarkerCorners() {
 /**
   * Remove charuco corners if any of their minMarkers closest markers has not been detected
   */
-static unsigned int _filterCornersWithoutMinMarkers(Ptr<CharucoBoard> &_board,
+static unsigned int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
                                                     InputArray _allCharucoCorners,
                                                     InputArray _allCharucoIds,
                                                     InputArray _allArucoIds, int minMarkers,
@@ -399,7 +399,7 @@ static unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, In
   * distance to their closest markers
   */
 static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, InputArray markerIds,
-                                         InputArray charucoCorners, Ptr<CharucoBoard> &board,
+                                         InputArray charucoCorners, const Ptr<CharucoBoard> &board,
                                          vector< Size > &sizes) {
 
     unsigned int nCharucoCorners = (unsigned int)charucoCorners.getMat().total();
@@ -453,7 +453,7 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
   */
 static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorners,
                                                  InputArray _markerIds, InputArray _image,
-                                                 Ptr<CharucoBoard> &_board,
+                                                 const Ptr<CharucoBoard> &_board,
                                                  InputArray _cameraMatrix, InputArray _distCoeffs,
                                                  OutputArray _charucoCorners,
                                                  OutputArray _charucoIds) {
@@ -504,7 +504,7 @@ static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorne
   */
 static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                                               InputArray _markerIds, InputArray _image,
-                                              Ptr<CharucoBoard> &_board,
+                                              const Ptr<CharucoBoard> &_board,
                                               OutputArray _charucoCorners,
                                               OutputArray _charucoIds) {
 
@@ -592,7 +592,7 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
 /**
   */
 int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _markerIds,
-                              InputArray _image, Ptr<CharucoBoard> &_board,
+                              InputArray _image, const Ptr<CharucoBoard> &_board,
                               OutputArray _charucoCorners, OutputArray _charucoIds,
                               InputArray _cameraMatrix, InputArray _distCoeffs) {
 
@@ -681,7 +681,7 @@ static bool _arePointsEnoughForPoseEstimation(const vector< Point3f > &points) {
 /**
   */
 bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds,
-                              Ptr<CharucoBoard> &_board, InputArray _cameraMatrix, InputArray _distCoeffs,
+                              const Ptr<CharucoBoard> &_board, InputArray _cameraMatrix, InputArray _distCoeffs,
                               OutputArray _rvec, OutputArray _tvec) {
 
     CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()));
@@ -711,7 +711,7 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
 /**
   */
 double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
-                              Ptr<CharucoBoard> &_board, Size imageSize,
+                              const Ptr<CharucoBoard> &_board, Size imageSize,
                               InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
                               OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs,
                               OutputArray _stdDeviationsIntrinsics,
@@ -746,7 +746,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 /**
  */
 double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
-  Ptr<CharucoBoard> &_board, Size imageSize,
+  const Ptr<CharucoBoard> &_board, Size imageSize,
   InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
   OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags,
   TermCriteria criteria) {
@@ -894,7 +894,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
 /**
   */
-void drawCharucoDiamond(Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength, int markerLength,
+void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength, int markerLength,
                         OutputArray _img, int marginSize, int borderBits) {
 
     CV_Assert(squareLength > 0 && markerLength > 0 && squareLength > markerLength);
