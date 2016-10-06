@@ -59,6 +59,9 @@ namespace cv
 {
     namespace plot
     {
+    //! @addtogroup plot
+    //! @{
+
         class CV_EXPORTS_W Plot2d : public Algorithm
         {
             public:
@@ -68,6 +71,12 @@ namespace cv
             CV_WRAP virtual void setMaxX(double _plotMaxX) = 0;
             CV_WRAP virtual void setMaxY(double _plotMaxY) = 0;
             CV_WRAP virtual void setPlotLineWidth(int _plotLineWidth) = 0;
+            /**
+             * @brief Switches data visualization mode
+             *
+             * @param _needPlotLine if true then neighbour plot points will be connected by lines.
+             * In other case data will be plotted as a set of standalone points.
+             */
             CV_WRAP virtual void setNeedPlotLine(bool _needPlotLine) = 0;
             CV_WRAP virtual void setPlotLineColor(Scalar _plotLineColor) = 0;
             CV_WRAP virtual void setPlotBackgroundColor(Scalar _plotBackgroundColor) = 0;
@@ -92,6 +101,7 @@ namespace cv
          * @param dataY \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot.
          */
         CV_EXPORTS_W Ptr<Plot2d> createPlot2d(InputArray dataX, InputArray dataY);
+    //! @}
     }
 }
 
