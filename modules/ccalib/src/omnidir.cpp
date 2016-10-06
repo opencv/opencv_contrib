@@ -1058,7 +1058,7 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     dT3dom1 = Mat::zeros(3, 3, CV_64FC1);
 }
 
-double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, Size size,
+double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArrays imagePoints, Size size,
     InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays omAll, OutputArrayOfArrays tAll,
     int flags, TermCriteria criteria, OutputArray idx)
 {
