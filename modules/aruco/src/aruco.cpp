@@ -1508,22 +1508,22 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
             // remove negativity
             p1.x = p0.x - minX;
             p1.y = p0.y - minY;
-            pf.x = p1.x * float(markerZone.cols - 1) / sizeX;
-            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows - 1) / sizeY;
+            pf.x = p1.x * float(markerZone.cols) / sizeX;
+            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows) / sizeY;
             outCorners[j] = pf;
         }
 
         // get tiny marker
-        int tinyMarkerSize = 10 * dictionary.markerSize + 2;
+        int tinyMarkerSize = 10 * (dictionary.markerSize + 2 * borderBits);
         Mat tinyMarker;
         dictionary.drawMarker(_board->ids[m], tinyMarkerSize, tinyMarker, borderBits);
 
         // interpolate tiny marker to marker position in markerZone
         Mat inCorners(4, 1, CV_32FC2);
         inCorners.ptr< Point2f >(0)[0] = Point2f(0, 0);
-        inCorners.ptr< Point2f >(0)[1] = Point2f((float)tinyMarker.cols, 0);
-        inCorners.ptr< Point2f >(0)[2] = Point2f((float)tinyMarker.cols, (float)tinyMarker.rows);
-        inCorners.ptr< Point2f >(0)[3] = Point2f(0, (float)tinyMarker.rows);
+        inCorners.ptr< Point2f >(0)[1] = Point2f((float)tinyMarker.cols-1, 0);
+        inCorners.ptr< Point2f >(0)[2] = Point2f((float)tinyMarker.cols-1, (float)tinyMarker.rows-1);
+        inCorners.ptr< Point2f >(0)[3] = Point2f(0, (float)tinyMarker.rows-1);
 
         // remove perspective
         Mat transformation = getPerspectiveTransform(inCorners, outCorners);
