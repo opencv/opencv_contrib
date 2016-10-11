@@ -12,7 +12,7 @@ endif()
 if((gflags_FOUND OR GFLAGS_FOUND) AND (glog_FOUND OR GLOG_FOUND))
   set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
   file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
-  try_compile(SFM_DEPS_OK "${CMAKE_CURRENT_BINARY_DIR}" "${_fname}"
+  try_compile(SFM_DEPS_OK "${CMAKE_BINARY_DIR}" "${_fname}"
       CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${GLOG_INCLUDE_DIRS};${GFLAGS_INCLUDE_DIRS}"
       LINK_LIBRARIES ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES}
       OUTPUT_VARIABLE OUTPUT
