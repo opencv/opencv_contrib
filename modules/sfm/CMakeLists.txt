@@ -3,18 +3,13 @@ set(the_description "SFM algorithms")
 
 ### LIBMV LIGHT EXTERNAL DEPENDENCIES ###
 
+include(cmake/FindGflags.cmake)
 find_package(Ceres QUIET)
-
-if(NOT DEFINED GFLAGS_LIBRARIES)
-  set(GFLAGS_LIBRARIES "gflags")
+if(NOT Ceres_FOUND)  # Looks like Ceres find glog on the own, so separate search isn't necessary
+  include(cmake/FindGlog.cmake)
 endif()
 
-if(NOT DEFINED GLOG_LIBRARIES)
-  set(GLOG_LIBRARIES "glog")
-endif()
-
-if(NOT DEFINED SFM_DEPS_OK)
-
+if((gflags_FOUND OR GFLAGS_FOUND) AND (glog_FOUND OR GLOG_FOUND))
   set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
   file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
   try_compile(SFM_DEPS_OK "${CMAKE_CURRENT_BINARY_DIR}" "${_fname}"
@@ -24,6 +19,8 @@ if(NOT DEFINED SFM_DEPS_OK)
   )
   file(REMOVE "${_fname}")
   message(STATUS "Checking SFM deps... ${SFM_DEPS_OK}")
+else()
+  set(SFM_DEPS_OK FALSE)
 endif()
 
 if(NOT HAVE_EIGEN OR NOT SFM_DEPS_OK)
@@ -59,6 +56,7 @@ set(LIBMV_LIGHT_LIBS
 if(Ceres_FOUND)
   add_definitions("-DCERES_FOUND=1")
   list(APPEND LIBMV_LIGHT_LIBS simple_pipeline)
+  list(APPEND LIBMV_LIGHT_INCLUDES "${CERES_INCLUDE_DIR}")
 else()
   add_definitions("-DCERES_FOUND=0")
   message(STATUS "CERES support is disabled. Ceres Solver for reconstruction API is required.")
