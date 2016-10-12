@@ -1457,8 +1457,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
     _img.create(outSize, CV_8UC1);
     Mat out = _img.getMat();
     out.setTo(Scalar::all(255));
-    Mat outNoMargins =
-        out.colRange(marginSize, out.cols - marginSize).rowRange(marginSize, out.rows - marginSize);
+    out.adjustROI(-marginSize, -marginSize, -marginSize, -marginSize);
 
     // calculate max and min values in XY plane
     CV_Assert(_board->objPoints.size() > 0);
@@ -1475,70 +1474,59 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
         }
     }
 
-    float sizeX, sizeY;
-    sizeX = maxX - minX;
-    sizeY = maxY - minY;
+    float sizeX = maxX - minX;
+    float sizeY = maxY - minY;
 
     // proportion transformations
-    float xReduction = sizeX / float(outNoMargins.cols);
-    float yReduction = sizeY / float(outNoMargins.rows);
+    float xReduction = sizeX / float(out.cols);
+    float yReduction = sizeY / float(out.rows);
 
     // determine the zone where the markers are placed
-    Mat markerZone;
     if(xReduction > yReduction) {
         int nRows = int(sizeY / xReduction);
-        int rowsMargins = (outNoMargins.rows - nRows) / 2;
-        markerZone = outNoMargins.rowRange(rowsMargins, outNoMargins.rows - rowsMargins);
+        int rowsMargins = (out.rows - nRows) / 2;
+        out.adjustROI(-rowsMargins, -rowsMargins, 0, 0);
     } else {
         int nCols = int(sizeX / yReduction);
-        int colsMargins = (outNoMargins.cols - nCols) / 2;
-        markerZone = outNoMargins.colRange(colsMargins, outNoMargins.cols - colsMargins);
+        int colsMargins = (out.cols - nCols) / 2;
+        out.adjustROI(0, 0, -colsMargins, -colsMargins);
     }
 
     // now paint each marker
     Dictionary &dictionary = *(_board->dictionary);
+    Mat marker;
+    Point2f outCorners[3];
+    Point2f inCorners[3];
     for(unsigned int m = 0; m < _board->objPoints.size(); m++) {
-
         // transform corners to markerZone coordinates
-        vector< Point2f > outCorners;
-        outCorners.resize(4);
-        for(int j = 0; j < 4; j++) {
-            Point2f p0, p1, pf;
-            p0 = Point2f(_board->objPoints[m][j].x, _board->objPoints[m][j].y);
-            // remove negativity
-            p1.x = p0.x - minX;
-            p1.y = p0.y - minY;
-            pf.x = p1.x * float(markerZone.cols - 1) / sizeX;
-            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows - 1) / sizeY;
-            outCorners[j] = pf;
+        for(int j = 0; j < 3; j++) {
+            Point2f pf = Point2f(_board->objPoints[m][j].x, _board->objPoints[m][j].y);
+            // move top left to 0, 0
+            pf -= Point2f(minX, minY);
+            pf.x = pf.x / sizeX * float(out.cols);
+            pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
+            outCorners[j] = Point(pf);
         }
 
-        // get tiny marker
-        int tinyMarkerSize = 10 * dictionary.markerSize + 2;
-        Mat tinyMarker;
-        dictionary.drawMarker(_board->ids[m], tinyMarkerSize, tinyMarker, borderBits);
+        // get marker
+        Size dst_sz(outCorners[2] - outCorners[0]); // assuming CCW order
+        dictionary.drawMarker(_board->ids[m], dst_sz.width, marker, borderBits);
+
+        if((outCorners[0].y == outCorners[1].y) && (outCorners[1].x == outCorners[2].x)) {
+            // marker is aligned to image axes
+            marker.copyTo(out(Rect(outCorners[0], dst_sz)));
+            continue;
+        }
 
         // interpolate tiny marker to marker position in markerZone
-        Mat inCorners(4, 1, CV_32FC2);
-        inCorners.ptr< Point2f >(0)[0] = Point2f(0, 0);
-        inCorners.ptr< Point2f >(0)[1] = Point2f((float)tinyMarker.cols, 0);
-        inCorners.ptr< Point2f >(0)[2] = Point2f((float)tinyMarker.cols, (float)tinyMarker.rows);
-        inCorners.ptr< Point2f >(0)[3] = Point2f(0, (float)tinyMarker.rows);
+        inCorners[0] = Point2f(-0.5f, -0.5f);
+        inCorners[1] = Point2f(marker.cols - 0.5f, -0.5f);
+        inCorners[2] = Point2f(marker.cols - 0.5f, marker.rows - 0.5f);
 
         // remove perspective
-        Mat transformation = getPerspectiveTransform(inCorners, outCorners);
-        Mat aux;
-        const char borderValue = 127;
-        warpPerspective(tinyMarker, aux, transformation, markerZone.size(), INTER_NEAREST,
-                        BORDER_CONSTANT, Scalar::all(borderValue));
-
-        // copy only not-border pixels
-        for(int y = 0; y < aux.rows; y++) {
-            for(int x = 0; x < aux.cols; x++) {
-                if(aux.at< unsigned char >(y, x) == borderValue) continue;
-                markerZone.at< unsigned char >(y, x) = aux.at< unsigned char >(y, x);
-            }
-        }
+        Mat transformation = getAffineTransform(inCorners, outCorners);
+        warpAffine(marker, out, transformation, out.size(), INTER_LINEAR,
+                        BORDER_TRANSPARENT);
     }
 }
 

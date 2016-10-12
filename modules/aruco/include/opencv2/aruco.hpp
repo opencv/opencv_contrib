@@ -235,15 +235,15 @@ class CV_EXPORTS_W Board {
     *
     */
     CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
-    // array of object points of all the marker corners in the board
-    // each marker include its 4 corners, i.e. for M markers, the size is Mx4
+    /// array of object points of all the marker corners in the board
+    /// each marker include its 4 corners in CCW order. For M markers, the size is Mx4.
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
-    // the dictionary of markers employed for this board
+    /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
-    // vector of the identifiers of the markers in the board (same size than objPoints)
-    // The identifiers refers to the board dictionary
+    /// vector of the identifiers of the markers in the board (same size than objPoints)
+    /// The identifiers refers to the board dictionary
     CV_PROP std::vector< int > ids;
 };
 
