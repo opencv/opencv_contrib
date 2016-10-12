@@ -1306,8 +1306,8 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     }
     if (om.empty())
     {
-        om.create(1, 3, CV_64F);
-        T.create(1, 3, CV_64F);
+        om.create(3, 1, CV_64F);
+        T.create(3, 1, CV_64F);
     }
     if (omL.empty())
     {
