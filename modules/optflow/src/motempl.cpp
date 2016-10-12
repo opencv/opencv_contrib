@@ -42,6 +42,7 @@
 #include "precomp.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/hal/hal.hpp"
+#include "opencv2/core/private.hpp"
 #include "opencl_kernels_optflow.hpp"
 
 namespace  cv {
@@ -54,7 +55,7 @@ using std::vector;
 static bool ocl_updateMotionHistory( InputArray _silhouette, InputOutputArray _mhi,
                                      float timestamp, float delbound )
 {
-    ocl::Kernel k("updateMotionHistory", ocl::video::updatemotionhistory_oclsrc);
+    ocl::Kernel k("updateMotionHistory", ocl::optflow::updatemotionhistory_oclsrc);
     if (k.empty())
         return false;
 
