@@ -168,7 +168,7 @@ Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures
 class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
-	CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+    CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
@@ -278,6 +278,44 @@ public:
     static Ptr<MSDDetector> create(int m_patch_radius = 3, int m_search_area_radius = 5,
             int m_nms_radius = 5, int m_nms_scale_radius = 0, float m_th_saliency = 250.0f, int m_kNN = 4,
             float m_scale_factor = 1.25f, int m_n_scales = -1, bool m_compute_orientation = false);
+};
+
+/** @brief Class implementing VGG (Oxford Visual Geometry Group) descriptor trained end to end
+using "Descriptor Learning Using Convex Optimisation" (DLCO) aparatus described in @cite Simonyan14.
+
+@param desc type of descriptor to use, VGG::VGG_120 is default (120 dimensions float)
+Available types are VGG::VGG_120, VGG::VGG_80, VGG::VGG_64, VGG::VGG_48
+@param isigma gaussian kernel value for image blur (default is 1.4f)
+@param img_normalize use image sample intensity normalization (enabled by default)
+@param use_orientation sample patterns using keypoints orientation, enabled by default
+@param scale_factor adjust the sampling window of detected keypoints to 64.0f (VGG sampling window)
+6.25f is default and fits for KAZE, SURF detected keypoints window ratio
+6.75f should be the scale for SIFT detected keypoints window ratio
+5.00f should be the scale for AKAZE, MSD, AGAST, FAST, BRISK keypoints window ratio
+0.75f should be the scale for ORB keypoints ratio
+
+@param dsc_normalize clamp descriptors to 255 and convert to uchar CV_8UC1 (disabled by default)
+
+ */
+class CV_EXPORTS_W VGG : public Feature2D
+{
+public:
+
+    CV_WRAP enum
+    {
+        VGG_120 = 100, VGG_80 = 101, VGG_64 = 102, VGG_48 = 103,
+    };
+
+    CV_WRAP static Ptr<VGG> create( int desc = VGG::VGG_120, float isigma = 1.4f,
+                                    bool img_normalize = true, bool use_scale_orientation = true,
+                                    float scale_factor = 6.25f, bool dsc_normalize = false );
+    /**
+     * @param image image to extract descriptors
+     * @param keypoints of interest within image
+     * @param descriptors resulted descriptors array
+     */
+    CV_WRAP virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
+
 };
 
 //! @}

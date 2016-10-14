@@ -671,6 +671,42 @@ TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_VGG120, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG80, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_80, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG64, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_64, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG48, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
 TEST(Features2d_RotationInvariance_Descriptor_BRIEF_64, regression)
 {
     DescriptorRotationInvarianceTest test(SURF::create(),
@@ -772,5 +808,41 @@ TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
                                        DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
                                        NORM_L1,
                                        0.075f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG120, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.99f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG80, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_80, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG64, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_64, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.97f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG48, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.93f);
     test.safe_run();
 }
