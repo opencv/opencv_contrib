@@ -168,7 +168,7 @@ namespace omnidir
     @param idx Indices of images that pass initialization, which are really used in calibration. So the size of rvecs is the
     same as idx.total().
     */
-    CV_EXPORTS_W double calibrate(InputArray objectPoints, InputArray imagePoints, Size size,
+    CV_EXPORTS_W double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, Size size,
         InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
         int flags, TermCriteria criteria, OutputArray idx=noArray());
 

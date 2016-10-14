@@ -3,7 +3,7 @@ Build opencv_contrib with dnn module {#tutorial_dnn_build}
 
 Introduction
 ------------
-opencv_dnn module is placed in the secondary [opencv_contrib](https://github.com/Itseez/opencv_contrib) repository,
+opencv_dnn module is placed in the secondary [opencv_contrib](https://github.com/opencv/opencv_contrib) repository,
 which isn't distributed in binary form, therefore you need to build it manually.
 
 To do this you need to have installed: [CMake](http://www.cmake.org/download), git, and build system (*gcc* with *make* for Linux or *MS Visual Studio* for Windows)
@@ -12,12 +12,12 @@ Steps
 -----
 -# Make any directory, for example **opencv_root**
 
--# Clone [opencv](https://github.com/Itseez/opencv) and [opencv_contrib](https://github.com/Itseez/opencv_contrib) repos to the **opencv_root**.
+-# Clone [opencv](https://github.com/opencv/opencv) and [opencv_contrib](https://github.com/opencv/opencv_contrib) repos to the **opencv_root**.
    You can do it in terminal like here:
 @code
 cd opencv_root
-git clone https://github.com/Itseez/opencv
-git clone https://github.com/Itseez/opencv_contrib
+git clone https://github.com/opencv/opencv
+git clone https://github.com/opencv/opencv_contrib
 @endcode
 
 -# Run [CMake-gui] and set source and build directories:

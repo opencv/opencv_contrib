@@ -44,6 +44,11 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include <cmath>
+#include <opencv2/dnn/all_layers.hpp>
+#include <opencv2/core/ocl.hpp>
+#ifdef HAVE_OPENCL
+#include "modules/dnn/opencl_kernels_dnn.hpp"
+#endif
 
 namespace cv
 {
@@ -55,130 +60,259 @@ using std::exp;
 using std::tanh;
 using std::pow;
 
-    template<typename Func>
-    class ElementWiseLayer : public Layer
+template<typename Func>
+class ElementWiseLayer : public Func::Layer
+{
+    bool useOpenCL;
+    Func func;
+
+    template<typename Dtype>
+    class PBody : public cv::ParallelLoopBody
     {
-        Func func;
+        Func &func;
+        Dtype *data;
     public:
 
-        ElementWiseLayer(LayerParams &_params) : func(_params) {}
+        PBody(Mat &mat, Func &func_) :
+            func(func_), data(mat.ptr<Dtype>())
+        {}
 
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+        void operator()(const Range &r) const
         {
-            outputs.resize(inputs.size());
-            for (size_t i = 0; i < inputs.size(); i++)
-                outputs[i].shareFrom(*inputs[i]); //no data copy
+            for (int i = r.start; i < r.end; i++)
+                data[i] = func(data[i]);
         }
+    };
 
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+public:
+
+    ElementWiseLayer() {}
+    ElementWiseLayer(const Func &f) : func(f) {}
+
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        useOpenCL = ocl::useOpenCL();
+
+        outputs.resize(inputs.size());
+        for (size_t i = 0; i < inputs.size(); i++)
         {
-            for (size_t i = 0; i < inputs.size(); i++)
+            outputs[i].shareFrom(*inputs[i]); //no data copy
+
+            //hotfix: shareFrom doesn't provide properly Mat/UMat switching
+            if (useOpenCL)
+                outputs[i].umatRef() = inputs[i]->umatRefConst();
+            else
+                outputs[i].matRef() = inputs[i]->matRefConst();
+        }
+    }
+
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        #ifdef HAVE_OPENCL
+        if (useOpenCL)
+            forwardOCL(inputs, outputs);
+        else
+        #endif
+            forwardCPU(inputs, outputs);
+    }
+
+    #ifdef HAVE_OPENCL
+    void forwardOCL(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
+
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            const UMat &src = inputs[i]->umatRefConst();
+            UMat &dst = outputs[i].umatRef();
+            CV_Assert(src.isContinuous() && dst.isContinuous() && !src.offset && !dst.offset);
+
+            ocl::Kernel ker;
+            CV_Assert(func.initKernel(ker, src));
+            ker.set(0, (int)src.total());
+            ker.set(1, ocl::KernelArg::PtrReadOnly(src));
+            ker.set(2, ocl::KernelArg::PtrWriteOnly(dst));
+
+            size_t gSize = src.total();
+            CV_Assert(ker.run(1, &gSize, &wgSize, true));
+        }
+    }
+    #endif
+
+    void forwardCPU(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    {
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            const Mat &src = inputs[i]->matRefConst();
+            Mat &dst = outputs[i].matRef();
+            CV_Assert(src.ptr() == dst.ptr() && src.isContinuous());
+
+            Range sizeRange = Range(0, dst.total());
+            if (dst.type() == CV_32F)
             {
-                CV_Assert(inputs[i]->ptr() == outputs[i].ptr() && inputs[i]->type() == outputs[i].type());
-
-                size_t size = outputs[i].total();
-
-                if (outputs[i].type() == CV_32F)
-                {
-                    float *data = outputs[i].ptrf();
-                    for (size_t j = 0; j < size; j++)
-                        data[j] = func(data[j]);
-                }
-                else if (outputs[i].type() == CV_64F)
-                {
-                    double *data = outputs[i].ptr<double>();
-                    for (size_t j = 0; j < size; j++)
-                        data[j] = func(data[j]);
-                }
-                else
-                {
-                    CV_Error(Error::StsNotImplemented, "Only CV_32F and CV_64F blobs are supported");
-                }
+                cv::parallel_for_(sizeRange, PBody<float>(dst, func));
+            }
+            else if (dst.type() == CV_64F)
+            {
+                cv::parallel_for_(sizeRange, PBody<double>(dst, func));
+            }
+            else
+            {
+                CV_Error(Error::StsNotImplemented, "Only CV_32F and CV_64F blobs are supported");
             }
         }
-    };
+    }
+};
 
+#ifdef HAVE_OPENCL
+static String oclGetTMacro(const UMat &m)
+{
+    return String("-DT=") + ocl::typeToStr(m.type()) + String(" ");
+}
+#endif
 
-    struct ReLUFunctor
+struct ReLUFunctor
+{
+    typedef ReLULayer Layer;
+
+    double slope;
+
+    ReLUFunctor(double slope_)
+        : slope(slope_) {}
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        float negative_slope;
+        return (x >= (TFloat)0) ? x : (TFloat)slope * x;
+    }
 
-        ReLUFunctor(LayerParams &params)
-        {
-            if (params.has("negative_slope"))
-                negative_slope = params.get<float>("negative_slope");
-            else
-                negative_slope = 0.f;
-        }
-
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return (x >= (TFloat)0) ? x : negative_slope * x;
-        }
-    };
-
-    struct TanHFunctor
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
     {
-        TanHFunctor(LayerParams&) {}
+        const char *buildoptSlope = (slope == 0) ? "-DRELU_NO_SLOPE" : "";
+        String buildopt = oclGetTMacro(src) + buildoptSlope;
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return tanh(x);
-        }
-    };
+        if (!ker.create("ReLUForward", ocl::dnn::activations_oclsrc, buildopt))
+            return false;
 
-    struct SigmoidFunctor
+        if (slope != 0)
+            ker.set(3, (float)slope);
+
+        return true;
+    }
+    #endif
+};
+
+struct TanHFunctor
+{
+    typedef TanHLayer Layer;
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        SigmoidFunctor(LayerParams&) {}
+        return tanh(x);
+    }
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return (TFloat)1 / ((TFloat)1 + exp(-x));
-        }
-    };
-
-    struct AbsValFunctor
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
     {
-        AbsValFunctor(LayerParams&) {}
+        if (!ker.create("TanHForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
+            return false;
+        return true;
+    }
+    #endif
+};
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return abs(x);
-        }
-    };
+struct SigmoidFunctor
+{
+    typedef SigmoidLayer Layer;
 
-    struct PowerFunctor
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
     {
-        float power, scale, shift;
+        return (TFloat)1 / ((TFloat)1 + exp(-x));
+    }
 
-        PowerFunctor(LayerParams &params)
-        {
-            power = params.get<float>("power", 1.0f);
-            scale = params.get<float>("scale", 1.0f);
-            shift = params.get<float>("shift", 0.0f);
-        }
-
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
-        }
-    };
-
-    struct BNLLFunctor
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
     {
-        BNLLFunctor(LayerParams&) {}
+        if (!ker.create("SigmoidForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
+            return false;
+        return true;
+    }
+    #endif
+};
 
-        template<typename TFloat>
-        inline TFloat operator()(TFloat x)
-        {
-            return log((TFloat)1 + exp(-abs(x)));
-        }
-    };
+struct AbsValFunctor
+{
+    typedef AbsLayer Layer;
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return abs(x);
+    }
+
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
+    {
+        if (!ker.create("AbsValForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
+            return false;
+        return true;
+    }
+    #endif
+};
+
+struct BNLLFunctor
+{
+    typedef BNLLLayer Layer;
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return log((TFloat)1 + exp(-abs(x)));
+    }
+
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
+    {
+        if (!ker.create("BNLLForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
+            return false;
+        return true;
+    }
+    #endif
+};
+
+struct PowerFunctor
+{
+    typedef PowerLayer Layer;
+
+    double power, scale, shift;
+
+    PowerFunctor(double power_, double scale_ = 1, double shift_ = 0)
+        : power(power_), scale(scale_), shift(shift_) {}
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
+    }
+
+    #ifdef HAVE_OPENCL
+    bool initKernel(ocl::Kernel &ker, const UMat &src) const
+    {
+        if (!ker.create("PowForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
+            return false;
+
+        ker.set(3, (float)power);
+        ker.set(4, (float)scale);
+        ker.set(5, (float)shift);
+
+        return true;
+    }
+    #endif
+};
+
 }
 }
 #endif

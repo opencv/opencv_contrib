@@ -42,23 +42,23 @@
 #ifndef __OPENCV_DNN_LAYERS_SPLIT_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_SPLIT_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class SplitLayer : public Layer
+class SplitLayerImpl : public SplitLayer
 {
+    bool useOpenCL;
+
 public:
-    SplitLayer(LayerParams &params);
+    SplitLayerImpl(int outputsCount_ = -1);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-private:
-    int outputsNum;
 };
 
 }

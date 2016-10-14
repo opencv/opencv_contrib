@@ -58,8 +58,6 @@
 #include "opencv2/core/types.hpp"
 #include "opencv2/core/types_c.h"
 
-#include "opencv2/highgui.hpp"
-
 #include "photomontage.hpp"
 #include "annf.hpp"
 #include "advanced_types.hpp"

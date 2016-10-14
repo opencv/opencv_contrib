@@ -59,7 +59,7 @@ namespace saliency
 
 /************************************ Saliency Base Class ************************************/
 
-class CV_EXPORTS Saliency : public virtual Algorithm
+class CV_EXPORTS_W Saliency : public virtual Algorithm
 {
  public:
   /**
@@ -78,13 +78,13 @@ class CV_EXPORTS Saliency : public virtual Algorithm
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
-  bool computeSaliency( InputArray image, OutputArray saliencyMap );
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap );
 
   /**
    * \brief Get the name of the specific saliency type
    * \return The name of the tracker initializer
    */
-  String getClassName() const;
+  CV_WRAP String getClassName() const;
 
  protected:
 
@@ -93,7 +93,7 @@ class CV_EXPORTS Saliency : public virtual Algorithm
 };
 
 /************************************ Static Saliency Base Class ************************************/
-class CV_EXPORTS StaticSaliency : public virtual Saliency
+class CV_EXPORTS_W StaticSaliency : public virtual Saliency
 {
  public:
 
@@ -109,17 +109,17 @@ class CV_EXPORTS StaticSaliency : public virtual Saliency
     algorithm calculates the optimal threshold separating those two classes, so that their
     intra-class variance is minimal.
 
-    @param saliencyMap the saliency map obtained through one of the specialized algorithms
-    @param binaryMap the binary map
+    @param _saliencyMap the saliency map obtained through one of the specialized algorithms
+    @param _binaryMap the binary map
      */
-  bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
+  CV_WRAP bool computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap );
  protected:
   virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
 };
 
 /************************************ Motion Saliency Base Class ************************************/
-class CV_EXPORTS MotionSaliency : public virtual Saliency
+class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
 
  protected:
@@ -128,7 +128,7 @@ class CV_EXPORTS MotionSaliency : public virtual Saliency
 };
 
 /************************************ Objectness Base Class ************************************/
-class CV_EXPORTS Objectness : public virtual Saliency
+class CV_EXPORTS_W Objectness : public virtual Saliency
 {
 
  protected:

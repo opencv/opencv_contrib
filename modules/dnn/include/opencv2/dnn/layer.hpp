@@ -50,7 +50,7 @@ namespace dnn
 //! @addtogroup dnn
 //! @{
 //!
-//! @defgroup LayerFactoryModule Utilities for new layers registration
+//! @defgroup dnnLayerFactory Utilities for New Layers Registration
 //! @{
 
 /** @brief %Layer factory allows to create instances of registered layers. */
@@ -86,7 +86,7 @@ private:
 *   @details This macros must be placed inside the function code.
 */
 #define REG_RUNTIME_LAYER_FUNC(type, constuctorFunc) \
-    LayerFactory::registerLayer(#type, constuctorFunc);
+    cv::dnn::LayerFactory::registerLayer(#type, constuctorFunc);
 
 /** @brief Registers layer class in runtime.
  *  @param type string, containing type name of the layer.
@@ -94,7 +94,7 @@ private:
  *  @details This macros must be placed inside the function code.
  */
 #define REG_RUNTIME_LAYER_CLASS(type, class) \
-    LayerFactory::registerLayer(#type, _layerDynamicRegisterer<class>);
+    cv::dnn::LayerFactory::registerLayer(#type, _layerDynamicRegisterer<class>);
 
 /** @brief Registers layer constructor on module load time.
 *   @param type string, containing type name of the layer.
@@ -102,7 +102,7 @@ private:
 *   @details This macros must be placed outside the function code.
 */
 #define REG_STATIC_LAYER_FUNC(type, constuctorFunc) \
-static _LayerStaticRegisterer __LayerStaticRegisterer_##type(#type, constuctorFunc);
+static cv::dnn::_LayerStaticRegisterer __LayerStaticRegisterer_##type(#type, constuctorFunc);
 
 /** @brief Registers layer class on module load time.
  *  @param type string, containing type name of the layer.
@@ -126,14 +126,15 @@ Ptr<Layer> _layerDynamicRegisterer(LayerParams &params)
 }
 
 //allows automatically register created layer on module load time
-struct _LayerStaticRegisterer
+class _LayerStaticRegisterer
 {
     String type;
+public:
 
-    _LayerStaticRegisterer(const String &type, LayerFactory::Constuctor constuctor)
+    _LayerStaticRegisterer(const String &layerType, LayerFactory::Constuctor layerConstuctor)
     {
-        this->type = type;
-        LayerFactory::registerLayer(type, constuctor);
+        this->type = layerType;
+        LayerFactory::registerLayer(layerType, layerConstuctor);
     }
 
     ~_LayerStaticRegisterer()

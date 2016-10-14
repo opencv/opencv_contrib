@@ -95,7 +95,7 @@ namespace cnpy {
 
     template<typename T> std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
         //write in little endian
-        for(char byte = 0; byte < sizeof(T); byte++) {
+        for(char byte = 0; (size_t)byte < sizeof(T); byte++) {
             char val = *((char*)&rhs+byte);
             lhs.push_back(val);
         }

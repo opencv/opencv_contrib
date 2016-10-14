@@ -1,7 +1,7 @@
 /**************************************************************************************
 The structered edge demo requires you to provide a model.
 This model can be found at the opencv_extra repository on Github on the following link:
-https://github.com/Itseez/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz
+https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz
 ***************************************************************************************/
 
 #include <opencv2/ximgproc.hpp>

@@ -13,7 +13,8 @@ provides production quality support for this module.
 
 ### How to build OpenCV with extra modules
 
-You can build OpenCV, so it will include the modules from this repository.
+You can build OpenCV, so it will include the modules from this repository. Contrib modules are under constant development and it is recommended to use them alongside the master branch or latest releases of OpenCV.
+
 Here is the CMake command for you:
 
 ```
@@ -45,6 +46,8 @@ If you prefer using the gui version of cmake (cmake-gui), then, you can add `ope
 6. press the `configure` button followed by the `generate` button (the first time, you will be asked which makefile style to use)
 
 7. build the `opencv` core with the method you chose (make and make install if you chose Unix makfile at step 6) 
+
+8. to run, linker flags to contrib modules will need to be added to use them in your code/IDE. For example to use the aruco module, "-lopencv_aruco" flag will be added.
 
 ### Update the repository documentation
 

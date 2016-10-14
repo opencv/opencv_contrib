@@ -42,20 +42,21 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "mvn_layer.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-MVNLayer::MVNLayer(LayerParams &params) : Layer(params)
+MVNLayerImpl::MVNLayerImpl(bool normVariance_, bool acrossChannels_, double eps_)
 {
-    eps = params.get<double>("eps", 1e-9);
-    acrossChannels = params.get<bool>("across_channels", false);
-    normalizeVariance = params.get<bool>("normalize_variance", true);
+    normVariance = normVariance_;
+    acrossChannels = acrossChannels_;
+    eps = eps_;
 }
 
-void MVNLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void MVNLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
@@ -65,20 +66,17 @@ void MVNLayer::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &ou
     }
 }
 
-void MVNLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void MVNLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     for (size_t inpIdx = 0; inpIdx < inputs.size(); inpIdx++)
     {
         Blob &inpBlob = *inputs[inpIdx];
         Blob &outBlob = outputs[inpIdx];
 
-        int workSize[2];
         int splitDim = (acrossChannels) ? 1 : 2;
-        workSize[0] = (int)inpBlob.total(0, splitDim);
-        workSize[1] = (int)inpBlob.total(splitDim);
-
-        Mat inpMat = inpBlob.matRef().reshape(1, 2, workSize);
-        Mat outMat = outBlob.matRef().reshape(1, 2, workSize);
+        Shape workSize((int)inpBlob.total(0, splitDim), (int)inpBlob.total(splitDim));
+        Mat inpMat = reshaped(inpBlob.matRefConst(), workSize);
+        Mat outMat = reshaped(outBlob.matRef(), workSize);
 
         Scalar mean, dev;
         for (int i = 0; i < workSize[0]; i++)
@@ -86,11 +84,17 @@ void MVNLayer::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
             Mat inpRow = inpMat.row(i);
             Mat outRow = outMat.row(i);
 
-            cv::meanStdDev(inpRow, mean, (normalizeVariance) ? dev : noArray());
-            double alpha = (normalizeVariance) ? 1/(eps + dev[0]) : 1;
+            cv::meanStdDev(inpRow, mean, (normVariance) ? dev : noArray());
+            double alpha = (normVariance) ? 1/(eps + dev[0]) : 1;
             inpRow.convertTo(outRow, outRow.type(), alpha, -mean[0] * alpha);
         }
     }
+}
+
+
+Ptr<MVNLayer> MVNLayer::create(bool normVariance, bool acrossChannels, double eps)
+{
+    return Ptr<MVNLayer>(new MVNLayerImpl(normVariance, acrossChannels, eps));
 }
 
 }

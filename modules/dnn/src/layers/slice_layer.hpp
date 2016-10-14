@@ -42,24 +42,28 @@
 #ifndef __OPENCV_DNN_LAYERS_SLICE_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_SLICE_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class SliceLayer : public Layer
+class SliceLayerImpl : public SliceLayer
 {
+    bool useOpenCL;
+    int axisIdx;
+
+    template<typename XMat>
+    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
 public:
-    SliceLayer(LayerParams &params);
+    SliceLayerImpl(int axis_ = 1);
+    SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-private:
-    int inAxis;
-    std::vector<int> slicePoints;
 };
 
 }
