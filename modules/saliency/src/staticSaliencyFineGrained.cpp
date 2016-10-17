@@ -62,7 +62,7 @@ StaticSaliencyFineGrained::~StaticSaliencyFineGrained()
 }
 
 
-bool StaticSaliencyFineGrained::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
+bool StaticSaliencyFineGrained::computeSaliencyImpl(InputArray image, OutputArray saliencyMap )
 {
     Mat dst(Size(image.getMat().cols, image.getMat().rows), CV_8UC1);
     calcIntensityChannel(image.getMat(), dst);

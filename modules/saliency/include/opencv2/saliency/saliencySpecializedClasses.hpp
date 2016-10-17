@@ -119,11 +119,24 @@ protected:
 This method calculates saliency based on center-surround differences.
 High resolution saliency maps are generated in real time by using integral images.
  */
-class CV_EXPORTS StaticSaliencyFineGrained : public StaticSaliency
+class CV_EXPORTS_W StaticSaliencyFineGrained : public StaticSaliency
 {
 public:
 
   StaticSaliencyFineGrained();
+
+  CV_WRAP static Ptr<StaticSaliencyFineGrained> create()
+  {
+    return makePtr<StaticSaliencyFineGrained>();
+  }
+
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+  {
+    if( image.empty() )
+      return false;
+
+    return computeSaliencyImpl( image, saliencyMap );
+  }
   virtual ~StaticSaliencyFineGrained();
 
 protected:
