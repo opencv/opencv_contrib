@@ -1505,7 +1505,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
             pf -= Point2f(minX, minY);
             pf.x = pf.x / sizeX * float(out.cols);
             pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
-            outCorners[j] = Point(pf);
+            outCorners[j] = pf;
         }
 
         // get marker
