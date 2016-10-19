@@ -486,15 +486,8 @@ static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorne
                                  subPixWinSizes);
 
     // filter corners outside the image and subpixel-refine charuco corners
-    unsigned int nRefinedCorners;
-    nRefinedCorners = _selectAndRefineChessboardCorners(
-        allChessboardImgPoints, _image, _charucoCorners, _charucoIds, subPixWinSizes);
-
-    // to return a charuco corner, its two closes aruco markers should have been detected
-    nRefinedCorners = _filterCornersWithoutMinMarkers(_board, _charucoCorners, _charucoIds,
-                                                      _markerIds, 2, _charucoCorners, _charucoIds);
-
-    return nRefinedCorners;
+    return _selectAndRefineChessboardCorners(allChessboardImgPoints, _image, _charucoCorners,
+                                             _charucoIds, subPixWinSizes);
 }
 
 
@@ -576,15 +569,8 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
 
 
     // filter corners outside the image and subpixel-refine charuco corners
-    unsigned int nRefinedCorners;
-    nRefinedCorners = _selectAndRefineChessboardCorners(
-        allChessboardImgPoints, _image, _charucoCorners, _charucoIds, subPixWinSizes);
-
-    // to return a charuco corner, its two closes aruco markers should have been detected
-    nRefinedCorners = _filterCornersWithoutMinMarkers(_board, _charucoCorners, _charucoIds,
-                                                      _markerIds, 2, _charucoCorners, _charucoIds);
-
-    return nRefinedCorners;
+    return _selectAndRefineChessboardCorners(allChessboardImgPoints, _image, _charucoCorners,
+                                             _charucoIds, subPixWinSizes);
 }
 
 
@@ -594,19 +580,23 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
 int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _markerIds,
                               InputArray _image, const Ptr<CharucoBoard> &_board,
                               OutputArray _charucoCorners, OutputArray _charucoIds,
-                              InputArray _cameraMatrix, InputArray _distCoeffs) {
+                              InputArray _cameraMatrix, InputArray _distCoeffs, int minMarkers) {
 
     // if camera parameters are avaible, use approximated calibration
     if(_cameraMatrix.total() != 0) {
-        return _interpolateCornersCharucoApproxCalib(_markerCorners, _markerIds, _image, _board,
+        _interpolateCornersCharucoApproxCalib(_markerCorners, _markerIds, _image, _board,
                                                      _cameraMatrix, _distCoeffs, _charucoCorners,
                                                      _charucoIds);
     }
     // else use local homography
     else {
-        return _interpolateCornersCharucoLocalHom(_markerCorners, _markerIds, _image, _board,
+        _interpolateCornersCharucoLocalHom(_markerCorners, _markerIds, _image, _board,
                                                   _charucoCorners, _charucoIds);
     }
+
+    // to return a charuco corner, its closest aruco markers should have been detected
+    return _filterCornersWithoutMinMarkers(_board, _charucoCorners, _charucoIds, _markerIds,
+                                           minMarkers, _charucoCorners, _charucoIds);
 }
 
 
