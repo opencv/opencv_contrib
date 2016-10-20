@@ -3,10 +3,10 @@ set(the_description "SFM algorithms")
 
 ### LIBMV LIGHT EXTERNAL DEPENDENCIES ###
 
-include(cmake/FindGflags.cmake)
+find_package(Gflags QUIET)
 find_package(Ceres QUIET)
 if(NOT Ceres_FOUND)  # Looks like Ceres find glog on the own, so separate search isn't necessary
-  include(cmake/FindGlog.cmake)
+  find_package(Glog QUIET)
 endif()
 
 if((gflags_FOUND OR GFLAGS_FOUND) AND (glog_FOUND OR GLOG_FOUND))
