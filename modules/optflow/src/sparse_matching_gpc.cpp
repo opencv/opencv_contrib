@@ -466,8 +466,8 @@ double GPCPatchDescriptor::dot( const Vec< double, nFeatures > &coef ) const
   v_float64x2 sum = v_setzero_f64();
   for ( unsigned i = 0; i < nFeatures; i += 2 )
   {
-    v_float64x2 x = v_load_aligned( &feature.val[i] );
-    v_float64x2 y = v_load_aligned( &coef.val[i] );
+    v_float64x2 x = v_load( &feature.val[i] );
+    v_float64x2 y = v_load( &coef.val[i] );
     sum = v_muladd( x, y, sum );
   }
 #if CV_SSE2
