@@ -84,23 +84,18 @@ std::vector<String> readClassNames(const char *filename = "synset_words.txt")
 
 int main(int argc, char **argv)
 {
+    cv::dnn::initModule();  //Required if OpenCV is built as static libs
+
     String modelTxt = "bvlc_googlenet.prototxt";
     String modelBin = "bvlc_googlenet.caffemodel";
     String imageFile = (argc > 1) ? argv[1] : "space_shuttle.jpg";
 
-    //! [Create the importer of Caffe model]
-    Ptr<dnn::Importer> importer;
-    try                                     //Try to import Caffe GoogleNet model
-    {
-        importer = dnn::createCaffeImporter(modelTxt, modelBin);
-    }
-    catch (const cv::Exception &err)        //Importer can throw errors, we will catch them
-    {
-        std::cerr << err.msg << std::endl;
-    }
-    //! [Create the importer of Caffe model]
+    //! [Read and initialize network]
+    Net net = dnn::readNetFromCaffe(modelTxt, modelBin);
+    //! [Read and initialize network]
 
-    if (!importer)
+    //! [Check that network was read successfully]
+    if (net.empty())
     {
         std::cerr << "Can't load network by using the following files: " << std::endl;
         std::cerr << "prototxt:   " << modelTxt << std::endl;
@@ -109,12 +104,7 @@ int main(int argc, char **argv)
         std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
         exit(-1);
     }
-
-    //! [Initialize network]
-    dnn::Net net;
-    importer->populateNet(net);
-    importer.release();                     //We don't need importer anymore
-    //! [Initialize network]
+    //! [Check that network was read successfully]
 
     //! [Prepare blob]
     Mat img = imread(imageFile);

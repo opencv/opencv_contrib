@@ -49,7 +49,7 @@ std::vector<cv::Mat> rvecs, tvecs;
 double rms = cv::omnidir::calibrate(objectPoints, imagePoints, imgSize, K, xi, D, rvecs, tvecs, flags, critia, idx);
 ```
 
-```K```, ```xi```, ```D``` are internal parameters and  ```rvecs```, ```tvecs``` are external parameters that store the pose of patterns. All of them have  depth of ```CV_64F```. The ```xi``` is a single value variable of Mei's model. ```idx``` is a ```CV_32S``` Mat that stores indices of images that are really used in calibration. This is due to some images are failed in the initialization step so they are not used in the final optimization. The returned value *rms* is the root mean square of reprojection errors.
+`K`, ```xi```, ```D``` are internal parameters and  ```rvecs```, ```tvecs``` are external parameters that store the pose of patterns. All of them have  depth of ```CV_64F```. The ```xi``` is a single value variable of Mei's model. ```idx``` is a ```CV_32S``` Mat that stores indices of images that are really used in calibration. This is due to some images are failed in the initialization step so they are not used in the final optimization. The returned value *rms* is the root mean square of reprojection errors.
 
 The calibration supports some features, *flags* is a enumeration for some features, including:
 
@@ -64,7 +64,7 @@ The calibration supports some features, *flags* is a enumeration for some featur
 
 Your can specify ```flags``` to fix parameters during calibration. Use 'plus' operator to set multiple features. For example, ```CALIB_FIX_SKEW+CALIB_FIX_K1``` means fixing skew and K1.
 
-```critia``` is the stopping critia during optimization, set it to be, for example, cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 200, 0.0001), which means using 200 iterations and stopping when relative change is smaller than 0.0001.
+`criteria` is the stopping criteria during optimization, set it to be, for example, cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 200, 0.0001), which means using 200 iterations and stopping when relative change is smaller than 0.0001.
 
 Stereo Calibration
 --------------------------
@@ -91,7 +91,7 @@ int flags = 0;
 cv::TermCriteria critia(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 200, 0.0001);
 std::vector<cv::Mat> rvecsL, tvecsL;
 cv::Mat rvec, tvec;
-double rms = cv::omnidir::calibrate(objectPoints, imagePoints1, imagePoints2, imgSize1, imgSize2, K1, xi1, D1, K2, xi2, D2, rvec, tvec, rvecsL, tvecsL, flags, critia, idx);
+double rms = cv::omnidir::stereoCalibrate(objectPoints, imagePoints1, imagePoints2, imgSize1, imgSize2, K1, xi1, D1, K2, xi2, D2, rvec, tvec, rvecsL, tvecsL, flags, critia, idx);
 ```
 Here ```rvec``` and ```tvec``` are the transform between the first and the second camera. ```rvecsL``` and ```tvecsL``` are the transforms between patterns and the first camera.
 

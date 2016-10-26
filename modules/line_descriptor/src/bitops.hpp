@@ -143,8 +143,8 @@ inline void print_code( UINT64 tmp, int b )
 {
   for ( long long int j = ( b - 1 ); j >= 0; j-- )
   {
-    printf( "%llu", (long long int) tmp / (UINT64) ( 1 << j ) );
-    tmp = tmp - ( tmp / (UINT64) ( 1 << j ) ) * (UINT64) ( 1 << j );
+    printf( "%llu", (long long int) tmp / (UINT64) ( (UINT64)1 << j ) );
+    tmp = tmp - ( tmp / (UINT64) ( (UINT64)1 << j ) ) * (UINT64) ( (UINT64)1 << j );
   }
 
   printf( "\n" );

@@ -49,7 +49,15 @@ using namespace optflow;
 
 static string getDataDir() { return TS::ptr()->get_data_path(); }
 
+static string getRubberWhaleFrame1() { return getDataDir() + "optflow/RubberWhale1.png"; }
+
+static string getRubberWhaleFrame2() { return getDataDir() + "optflow/RubberWhale2.png"; }
+
+static string getRubberWhaleGroundTruth() { return getDataDir() + "optflow/RubberWhale.flo"; }
+
 static bool isFlowCorrect(float u) { return !cvIsNaN(u) && (fabs(u) < 1e9); }
+
+static bool isFlowCorrect(double u) { return !cvIsNaN(u) && (fabs(u) < 1e9); }
 
 static float calcRMSE(Mat flow1, Mat flow2)
 {
@@ -80,11 +88,36 @@ static float calcRMSE(Mat flow1, Mat flow2)
     return (float)sqrt(sum / (1e-9 + counter));
 }
 
+static float calcAvgEPE(vector< pair<Point2i, Point2i> > corr, Mat flow)
+{
+    double sum = 0;
+    int counter = 0;
+
+    for (size_t i = 0; i < corr.size(); ++i)
+    {
+        Vec2f flow1_at_point = Point2f(corr[i].second - corr[i].first);
+        Vec2f flow2_at_point = flow.at<Vec2f>(corr[i].first.y, corr[i].first.x);
+
+        double u1 = (double)flow1_at_point[0];
+        double v1 = (double)flow1_at_point[1];
+        double u2 = (double)flow2_at_point[0];
+        double v2 = (double)flow2_at_point[1];
+
+        if (isFlowCorrect(u1) && isFlowCorrect(u2) && isFlowCorrect(v1) && isFlowCorrect(v2))
+        {
+            sum += sqrt((u1 - u2) * (u1 - u2) + (v1 - v2) * (v1 - v2));
+            counter++;
+        }
+    }
+
+    return (float)(sum / counter);
+}
+
 bool readRubberWhale(Mat &dst_frame_1, Mat &dst_frame_2, Mat &dst_GT)
 {
-    const string frame1_path = getDataDir() + "optflow/RubberWhale1.png";
-    const string frame2_path = getDataDir() + "optflow/RubberWhale2.png";
-    const string gt_flow_path = getDataDir() + "optflow/RubberWhale.flo";
+    const string frame1_path = getRubberWhaleFrame1();
+    const string frame2_path = getRubberWhaleFrame2();
+    const string gt_flow_path = getRubberWhaleGroundTruth();
 
     dst_frame_1 = imread(frame1_path);
     dst_frame_2 = imread(frame2_path);
@@ -187,4 +220,66 @@ TEST(DenseOpticalFlow_VariationalRefinement, ReferenceAccuracy)
     ASSERT_EQ(GT.rows, flow.rows);
     ASSERT_EQ(GT.cols, flow.cols);
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
+}
+
+TEST(DenseOpticalFlow_PCAFlow, ReferenceAccuracy)
+{
+    Mat frame1, frame2, GT;
+    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
+    const float target_RMSE = 0.55f;
+
+    Mat flow;
+    Ptr<DenseOpticalFlow> algo = createOptFlow_PCAFlow();
+    algo->calc(frame1, frame2, flow);
+    ASSERT_EQ(GT.rows, flow.rows);
+    ASSERT_EQ(GT.cols, flow.cols);
+    EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
+}
+
+TEST(DenseOpticalFlow_GlobalPatchColliderDCT, ReferenceAccuracy)
+{
+    Mat frame1, frame2, GT;
+    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
+
+    const Size sz = frame1.size() / 2;
+    frame1 = frame1(Rect(0, 0, sz.width, sz.height));
+    frame2 = frame2(Rect(0, 0, sz.width, sz.height));
+    GT = GT(Rect(0, 0, sz.width, sz.height));
+
+    vector<Mat> img1, img2, gt;
+    vector< pair<Point2i, Point2i> > corr;
+    img1.push_back(frame1);
+    img2.push_back(frame2);
+    gt.push_back(GT);
+
+    Ptr< GPCForest<5> > forest = GPCForest<5>::create();
+    forest->train(img1, img2, gt, GPCTrainingParams(8, 3, GPC_DESCRIPTOR_DCT, false));
+    forest->findCorrespondences(frame1, frame2, corr);
+
+    ASSERT_LE(7500U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
+}
+
+TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
+{
+    Mat frame1, frame2, GT;
+    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
+
+    const Size sz = frame1.size() / 2;
+    frame1 = frame1(Rect(0, 0, sz.width, sz.height));
+    frame2 = frame2(Rect(0, 0, sz.width, sz.height));
+    GT = GT(Rect(0, 0, sz.width, sz.height));
+
+    vector<Mat> img1, img2, gt;
+    vector< pair<Point2i, Point2i> > corr;
+    img1.push_back(frame1);
+    img2.push_back(frame2);
+    gt.push_back(GT);
+
+    Ptr< GPCForest<5> > forest = GPCForest<5>::create();
+    forest->train(img1, img2, gt, GPCTrainingParams(8, 3, GPC_DESCRIPTOR_WHT, false));
+    forest->findCorrespondences(frame1, frame2, corr);
+
+    ASSERT_LE(7000U, corr.size());
+    ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
 }

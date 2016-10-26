@@ -47,57 +47,82 @@ namespace cv
 {
 namespace dnn
 {
-    CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
+
+CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
+{
+    startAxis = start_axis_;
+    offset = offset_;
+}
+
+void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    CV_Assert(2 == inputs.size());
+
+    const Blob &inpBlob = *inputs[0];
+    const Blob &inpSzBlob = *inputs[1];
+
+    int start_axis = inpBlob.canonicalAxis(startAxis);
+    int dims = inpBlob.dims();
+
+    std::vector<int> offset_final(dims, 0);
+    if (offset.size() == 1)
     {
-        start_axis = start_axis_;
-        offset = offset_;
+        for (int i = start_axis; i < dims; i++)
+            offset_final[i] = offset[0];
+    }
+    else if (offset.size() > 1)
+    {
+        if ((int)offset.size() != dims - start_axis)
+            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+
+        for (int i = start_axis; i < dims; i++)
+            offset_final[i] = offset[i - start_axis];
     }
 
-    void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    BlobShape dstShape = inpBlob.shape();
+    crop_ranges.resize(dims, Range::all());
+    for (int i = start_axis; i < dims; i++)
     {
-        CV_Assert(2 == inputs.size());
+        dstShape[i] = inpSzBlob.size(i);
 
-        const Blob &inpBlob = *inputs[0];
-        CV_Assert(inpBlob.dims() == 4 && inpBlob.type() == CV_32F);
-
-        const Blob &inpSzBlob = *inputs[1];
-
-        outSizes.resize(4, 0);
-        for (int i = 0; i < 4; i++)
+        if (!offset.empty()) //normal case
         {
-            if (i < start_axis)
-                outSizes[i] = inpBlob.size(i);
-            else
-                outSizes[i] = inpSzBlob.size(i);
-            if (offset[i] + outSizes[i] > inpBlob.size(i))
+            if (offset_final[i] < 0 || offset_final[i] + inpSzBlob.size(i) > inpBlob.size(i))
                 CV_Error(Error::StsBadArg, "invalid crop parameters");
+
+            crop_ranges[i] = Range(offset_final[i], offset_final[i] + inpSzBlob.size(i));
         }
-
-        outputs.resize(1);
-        outputs[0].create(BlobShape(outSizes));
-    }
-
-    void CropLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
-    {
-        Blob input = *inputs[0];
-        Blob output = outputs[0];
-        for (int num = 0; num < outSizes[0]; ++num)
+        else //detect offset automatically so that cropped image is center of original one
         {
-            for (int ch = 0; ch < outSizes[1]; ++ch)
-            {
-                for (int row = 0; row < outSizes[2]; ++row)
-                {
-                    float *srcData = input.ptrf(num + offset[0], ch + offset[1], row + offset[2]);
-                    float *dstData = output.ptrf(num, ch, row);
-                    memcpy(dstData, srcData + offset[3], sizeof(float) * outSizes[3]);
-                }
-            }
+            if (inpSzBlob.size(i) > inpBlob.size(i))
+                CV_Error(Error::StsBadArg, "invalid output blob size");
+
+            int cur_crop = (inpBlob.size(i) - inpSzBlob.size(i)) / 2;
+            crop_ranges[i] = Range(cur_crop, cur_crop + inpSzBlob.size(i));
         }
     }
 
-    Ptr<CropLayer> CropLayer::create(int start_axis, const std::vector<int> &offset)
-    {
-        return Ptr<CropLayer>(new CropLayerImpl(start_axis, offset));
-    }
+    outputs.resize(1);
+    outputs[0].create(dstShape);
+}
+
+void CropLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    Blob &input = *inputs[0];
+    Blob &output = outputs[0];
+
+    #ifdef HAVE_OPENCL
+    if (input.getState() == Blob::HEAD_AT_UMAT)
+        input.umatRefConst()(&crop_ranges[0]).copyTo(output.umatRef());
+    else
+    #endif
+        input.matRefConst()(&crop_ranges[0]).copyTo(output.matRef());
+}
+
+Ptr<CropLayer> CropLayer::create(int start_axis, const std::vector<int> &offset)
+{
+    return Ptr<CropLayer>(new CropLayerImpl(start_axis, offset));
+}
+
 }
 }

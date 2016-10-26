@@ -50,9 +50,9 @@ namespace saliency
  * StaticSaliency
  */
 
-bool StaticSaliency::computeBinaryMap( const Mat& saliencyMap, Mat& BinaryMap )
+bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap )
 {
-
+  Mat saliencyMap = _saliencyMap.getMat();
   Mat labels = Mat::zeros( saliencyMap.rows * saliencyMap.cols, 1, 1 );
   Mat samples = Mat_<float>( saliencyMap.rows * saliencyMap.cols, 1 );
   Mat centers;
@@ -90,6 +90,8 @@ bool StaticSaliency::computeBinaryMap( const Mat& saliencyMap, Mat& BinaryMap )
   outputMat.convertTo( outputMat, CV_8U );
 
   // adaptative thresholding using Otsu's method, to make saliency map binary
+  _binaryMap.createSameSize(outputMat, outputMat.type());
+  Mat BinaryMap = _binaryMap.getMat();
   threshold( outputMat, BinaryMap, 0, 255, THRESH_BINARY | THRESH_OTSU );
 
   return true;

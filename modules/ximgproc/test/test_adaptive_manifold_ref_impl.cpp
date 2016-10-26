@@ -253,7 +253,7 @@ namespace
         const double Lr = 1.0 - sigma_r;
         return max(2, static_cast<int>(ceil(Hs * Lr)));
     }
-
+/*
     void ensureSizeIsEnough(int rows, int cols, int type, Mat& m)
     {
         if (m.empty() || m.type() != type || m.data != m.datastart)
@@ -283,7 +283,7 @@ namespace
     {
         ensureSizeIsEnough(size.height, size.width, type, m);
     }
-
+*/
     template <typename T>
     inline void ensureSizeIsEnough(int rows, int cols, Mat_<T>& m)
     {

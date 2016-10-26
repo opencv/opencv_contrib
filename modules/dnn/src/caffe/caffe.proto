@@ -91,6 +91,75 @@ message CropParameter {
   repeated uint32 offset = 2;
 }
 
+message PermuteParameter {
+  // The new orders of the axes of data. Notice it should be with
+  // in the same range as the input data, and it starts from 0.
+  // Do not provide repeated order.
+  repeated uint32 order = 1;
+}
+
+// Message that stores parameters used by NormalizeBBoxLayer
+message NormalizeBBoxParameter {
+  optional bool across_spatial = 1 [default = true];
+  // Initial value of scale. Default is 1.0 for all
+  optional FillerParameter scale_filler = 2;
+  // Whether or not scale parameters are shared across channels.
+  optional bool channel_shared = 3 [default = true];
+  // Epsilon for not dividing by zero while normalizing variance
+  optional float eps = 4 [default = 1e-10];
+}
+
+// Message that store parameters used by PriorBoxLayer
+message PriorBoxParameter {
+  // Encode/decode type.
+  enum CodeType {
+    CORNER = 1;
+    CENTER_SIZE = 2;
+  }
+  // Minimum box size (in pixels). Required!
+  optional float min_size = 1;
+  // Maximum box size (in pixels). Required!
+  optional float max_size = 2;
+  // Various of aspect ratios. Duplicate ratios will be ignored.
+  // If none is provided, we use default ratio 1.
+  repeated float aspect_ratio = 3;
+  // If true, will flip each aspect ratio.
+  // For example, if there is aspect ratio "r",
+  // we will generate aspect ratio "1.0/r" as well.
+  optional bool flip = 4 [default = true];
+  // If true, will clip the prior so that it is within [0, 1]
+  optional bool clip = 5 [default = true];
+  // Variance for adjusting the prior bboxes.
+  repeated float variance = 6;
+}
+
+// Message that store parameters used by DetectionOutputLayer
+message DetectionOutputParameter {
+  // Number of classes to be predicted. Required!
+  optional uint32 num_classes = 1;
+  // If true, bounding box are shared among different classes.
+  optional bool share_location = 2 [default = true];
+  // Background label id. If there is no background class,
+  // set it as -1.
+  optional int32 background_label_id = 3 [default = 0];
+  // Type of coding method for bbox.
+  optional PriorBoxParameter.CodeType code_type = 6 [default = CORNER];
+  // If true, variance is encoded in target; otherwise we need to adjust the
+  // predicted offset accordingly.
+  optional bool variance_encoded_in_target = 8 [default = false];
+  // Number of total bboxes to be kept per image after nms step.
+  // -1 means keeping all bboxes after nms step.
+  optional int32 keep_top_k = 7 [default = -1];
+  // Only consider detections whose confidences are larger than a threshold.
+  // If not provided, consider all boxes.
+  optional float confidence_threshold = 9;
+  // Parameters used for non maximum suppression.
+  // Threshold to be used in nms.
+  optional float nms_threshold = 10 [default = 0.3];
+  // Maximum number of results to be kept.
+  optional int32 top_k = 11;
+}
+
 message Datum {
   optional int32 channels = 1;
   optional int32 height = 2;
@@ -335,7 +404,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 138 (last added: crop_param)
+// LayerParameter next available layer-specific ID: 142 (last added: detection_output_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -389,6 +458,7 @@ message LayerParameter {
   optional ConvolutionParameter convolution_param = 106;
   optional CropParameter crop_param = 137;
   optional DataParameter data_param = 107;
+  optional DetectionOutputParameter detection_output_param = 141;
   optional DropoutParameter dropout_param = 108;
   optional DummyDataParameter dummy_data_param = 109;
   optional EltwiseParameter eltwise_param = 110;
@@ -404,17 +474,20 @@ message LayerParameter {
   optional LRNParameter lrn_param = 118;
   optional MemoryDataParameter memory_data_param = 119;
   optional MVNParameter mvn_param = 120;
+  optional NormalizeBBoxParameter normalize_bbox_param = 139;
+  optional PermuteParameter permute_param = 138;
   optional PoolingParameter pooling_param = 121;
   optional PowerParameter power_param = 122;
   optional PReLUParameter prelu_param = 131;
+  optional PriorBoxParameter prior_box_param = 140;
   optional PythonParameter python_param = 130;
   optional ReductionParameter reduction_param = 136;
   optional ReLUParameter relu_param = 123;
   optional ReshapeParameter reshape_param = 133;
   optional SigmoidParameter sigmoid_param = 124;
+  optional SliceParameter slice_param = 126;
   optional SoftmaxParameter softmax_param = 125;
   optional SPPParameter spp_param = 132;
-  optional SliceParameter slice_param = 126;
   optional TanHParameter tanh_param = 127;
   optional ThresholdParameter threshold_param = 128;
   optional WindowDataParameter window_data_param = 129;
@@ -524,6 +597,12 @@ message ConvolutionParameter {
     CUDNN = 2;
   }
   optional Engine engine = 15 [default = DEFAULT];
+  // Factor used to dilate the kernel, (implicitly) zero-filling the resulting
+  // holes. (Kernel dilation is sometimes referred to by its use in the
+  // algorithme a trous from Holschneider et al. 1987.)
+  optional uint32 dilation_h = 18; // The dilation height
+  optional uint32 dilation_w = 19; // The dilation width
+  optional uint32 dilation = 20; // The dilation; defaults to 1
 }
 
 message DataParameter {
@@ -1173,4 +1252,16 @@ message PReLUParameter {
   optional FillerParameter filler = 1;
   // Whether or not slope paramters are shared across channels.
   optional bool channel_shared = 2 [default = false];
+}
+
+// The normalized bounding box [0, 1] w.r.t. the input image size.
+message NormalizedBBox {
+  optional float xmin = 1;
+  optional float ymin = 2;
+  optional float xmax = 3;
+  optional float ymax = 4;
+  optional int32 label = 5;
+  optional bool difficult = 6;
+  optional float score = 7;
+  optional float size = 8;
 }

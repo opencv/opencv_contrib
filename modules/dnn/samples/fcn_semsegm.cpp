@@ -1,6 +1,7 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/core/ocl.hpp>
 using namespace cv;
 using namespace cv::dnn;
 
@@ -85,6 +86,9 @@ static void colorizeSegmentation(dnn::Blob &score, const vector<cv::Vec3b> &colo
 
 int main(int argc, char **argv)
 {
+    cv::dnn::initModule();          //Required if OpenCV is built as static libs
+    cv::ocl::setUseOpenCL(false);   //OpenCL switcher
+
     String modelTxt = fcnType + "-heavy-pascal.prototxt";
     String modelBin = fcnType + "-heavy-pascal.caffemodel";
     String imageFile = (argc > 1) ? argv[1] : "rgb.jpg";
@@ -136,7 +140,10 @@ int main(int argc, char **argv)
     //! [Set input blob]
 
     //! [Make forward pass]
+    double t = (double)cv::getTickCount();
     net.forward();                          //compute output
+    t = (double)cv::getTickCount() - t;
+    printf("processing time: %.1fms\n", t*1000./getTickFrequency());
     //! [Make forward pass]
 
     //! [Gather output]

@@ -357,8 +357,10 @@ public:
     info.
      */
     CV_WRAP virtual std::vector<int> getLabelsByString(const String& str) const;
-    /** @brief threshhold parameter accessor - required for default BestMinDist collector */
+    /** @brief threshold parameter accessor - required for default BestMinDist collector */
     virtual double getThreshold() const = 0;
+    /** @brief Sets threshold of model */
+    virtual void setThreshold(double val) = 0;
 protected:
     // Stored pairs "label id - string info"
     std::map<int, String> _labelsInfo;

@@ -935,7 +935,7 @@ public:
 
 protected:
     void normalizeAndZCA(Mat& patches);
-    double eval_feature(Mat& feature, double* prob_estimates);
+    double eval_feature(Mat& feature, vector<double>& prob_estimates);
 
 private:
     int nr_class;		 // number of classes
@@ -1089,7 +1089,7 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
                 (feature_max.at<double>(0,k)-feature_min.at<double>(0,k));
     }
 
-    double *p = new double[nr_class];
+    vector<double> p(nr_class, 0);
     double predict_label = eval_feature(feature,p);
     //cout << " Prediction: " << vocabulary[predict_label] << " with probability " << p[0] << endl;
     if (predict_label < 0)
@@ -1106,7 +1106,6 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
         out_confidence.push_back(p[i]);
       }
     }
-
 
 }
 
@@ -1157,11 +1156,8 @@ void OCRHMMClassifierCNN::normalizeAndZCA(Mat& patches)
 
 }
 
-double OCRHMMClassifierCNN::eval_feature(Mat& feature, double* prob_estimates)
+double OCRHMMClassifierCNN::eval_feature(Mat& feature, vector<double>& prob_estimates)
 {
-    for(int i=0;i<nr_class;i++)
-        prob_estimates[i] = 0;
-
     for(int idx=0; idx<nr_feature; idx++)
         for(int i=0;i<nr_class;i++)
             prob_estimates[i] += weights.at<float>(idx,i)*feature.at<double>(0,idx); //TODO use vectorized dot product

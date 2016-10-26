@@ -86,7 +86,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     public:
 
         //! List of learned parameters must be stored here to allow read them by using Net::getParam().
-        std::vector<Blob> blobs;
+        CV_PROP_RW std::vector<Blob> blobs;
 
         /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
          *  @param[in]  input  vector of already allocated input blobs
@@ -104,6 +104,18 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         virtual void forward(std::vector<Blob*> &input, std::vector<Blob> &output) = 0;
 
+        /** @brief @overload */
+        CV_WRAP void allocate(const std::vector<Blob> &inputs, CV_OUT std::vector<Blob> &outputs);
+
+        /** @brief @overload */
+        CV_WRAP std::vector<Blob> allocate(const std::vector<Blob> &inputs);
+
+        /** @brief @overload */
+        CV_WRAP void forward(const std::vector<Blob> &inputs, CV_IN_OUT std::vector<Blob> &outputs);
+
+        /** @brief Allocates layer and computes output. */
+        CV_WRAP void run(const std::vector<Blob> &inputs, CV_OUT std::vector<Blob> &outputs);
+
         /** @brief Returns index of input blob into the input array.
          *  @param inputName label of input blob
          *
@@ -116,8 +128,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         virtual int outputNameToIndex(String outputName);
 
-        String name; //!< Name of the layer instance, can be used for logging or other internal purposes.
-        String type; //!< Type name which was used for creating layer by layer factory.
+        CV_PROP String name; //!< Name of the layer instance, can be used for logging or other internal purposes.
+        CV_PROP String type; //!< Type name which was used for creating layer by layer factory.
 
         Layer();
         explicit Layer(const LayerParams &params);      //!< Initializes only #name, #type and #blobs fields.
@@ -135,12 +147,15 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *
      * This class supports reference counting of its instances, i. e. copies point to the same instance.
      */
-    class CV_EXPORTS_W Net
+    class CV_EXPORTS_W_SIMPLE Net
     {
     public:
 
-        Net();  //!< Default constructor.
-        ~Net(); //!< Destructor frees the net only if there aren't references to the net anymore.
+        CV_WRAP Net();  //!< Default constructor.
+        CV_WRAP ~Net(); //!< Destructor frees the net only if there aren't references to the net anymore.
+
+        /** Returns true if there are no layers in the network. */
+        CV_WRAP bool empty() const;
 
         /** @brief Adds new layer to the net.
          *  @param name   unique name of the adding layer.
@@ -157,13 +172,18 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         /** @brief Converts string name of the layer to the integer identifier.
          *  @returns id of the layer, or -1 if the layer wasn't found.
          */
-        int getLayerId(const String &layer);
+        CV_WRAP int getLayerId(const String &layer);
+
+        CV_WRAP std::vector<String> getLayerNames() const;
 
         /** @brief Container for strings and integers. */
         typedef DictValue LayerId;
 
+        /** @brief Returns pointer to layer with specified name which the network use. */
+        CV_WRAP Ptr<Layer> getLayer(LayerId layerId);
+
         /** @brief Delete layer for the network (not implemented yet) */
-        void deleteLayer(LayerId layer);
+        CV_WRAP void deleteLayer(LayerId layer);
 
         /** @brief Connects output of the first layer to input of the second layer.
          *  @param outPin descriptor of the first layer output.
@@ -178,7 +198,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *
          *  @see setNetInputs(), Layer::inputNameToIndex(), Layer::outputNameToIndex()
          */
-        void connect(String outPin, String inpPin);
+        CV_WRAP void connect(String outPin, String inpPin);
 
         /** @brief Connects #@p outNum output of the first layer to #@p inNum input of the second layer.
          *  @param outLayerId identifier of the first layer
@@ -188,19 +208,22 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         void connect(int outLayerId, int outNum, int inpLayerId, int inpNum);
 
-        /** @brief Sets ouputs names of the network input pseudo layer.
+        /** @brief Sets outputs names of the network input pseudo layer.
          *
          * Each net always has special own the network input pseudo layer with id=0.
          * This layer stores the user blobs only and don't make any computations.
          * In fact, this layer provides the only way to pass user data into the network.
          * As any other layer, this layer can label its outputs and this function provides an easy way to do this.
          */
-        void setNetInputs(const std::vector<String> &inputBlobNames);
+        CV_WRAP void setNetInputs(const std::vector<String> &inputBlobNames);
 
-        /** @brief Runs forward pass for the whole network */
-        void forward();
-        /** @brief Runs forward pass to compute output of layer @p toLayer */
-        void forward(LayerId toLayer);
+        /** @brief Initializes and allocates all layers. */
+        CV_WRAP void allocate();
+
+        /** @brief Runs forward pass to compute output of layer @p toLayer.
+          * @details By default runs forward pass for the whole network.
+          */
+        CV_WRAP void forward(LayerId toLayer = String());
         /** @brief Runs forward pass to compute output of layer @p toLayer, but computations start from @p startLayer */
         void forward(LayerId startLayer, LayerId toLayer);
         /** @overload */
@@ -222,12 +245,13 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @note If updating blob is not empty then @p blob must have the same shape,
          *  because network reshaping is not implemented yet.
          */
-        void setBlob(String outputName, const Blob &blob);
+        CV_WRAP void setBlob(String outputName, const Blob &blob);
+
         /** @brief Returns the layer output blob.
          *  @param outputName the descriptor of the returning layer output blob.
          *  @see connect(String, String)
          */
-        Blob getBlob(String outputName);
+        CV_WRAP Blob getBlob(String outputName);
 
         /** @brief Sets the new value for the learned param of the layer.
          *  @param layer name or id of the layer.
@@ -237,13 +261,14 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @note If shape of the new blob differs from the previous shape,
          *  then the following forward pass may fail.
         */
-        void setParam(LayerId layer, int numParam, const Blob &blob);
+        CV_WRAP void setParam(LayerId layer, int numParam, const Blob &blob);
+
         /** @brief Returns parameter blob of the layer.
          *  @param layer name or id of the layer.
          *  @param numParam index of the layer parameter in the Layer::blobs array.
          *  @see Layer::blobs
          */
-        Blob getParam(LayerId layer, int numParam = 0);
+        CV_WRAP Blob getParam(LayerId layer, int numParam = 0);
 
     private:
 
@@ -252,12 +277,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     };
 
     /** @brief Small interface class for loading trained serialized models of different dnn-frameworks. */
-    class Importer
+    class CV_EXPORTS_W Importer
     {
     public:
 
-        /** @brief Adds loaded layers into the @p net and sets connetions between them. */
-        virtual void populateNet(Net net) = 0;
+        /** @brief Adds loaded layers into the @p net and sets connections between them. */
+        CV_WRAP virtual void populateNet(Net net) = 0;
 
         virtual ~Importer();
     };
@@ -267,7 +292,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *  @param caffeModel path to the .caffemodel file with learned network.
      *  @returns Pointer to the created importer, NULL in failure cases.
      */
-    CV_EXPORTS Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
+    CV_EXPORTS_W Ptr<Importer> createCaffeImporter(const String &prototxt, const String &caffeModel = String());
+
+    /** @brief Reads a network model stored in Caffe model files.
+      * @details This is shortcut consisting from createCaffeImporter and Net::populateNet calls.
+      */
+    CV_EXPORTS_W Net readNetFromCaffe(const String &prototxt, const String &caffeModel = String());
 
     /** @brief Creates the importer of <a href="http://torch.ch">Torch7</a> framework network.
      *  @param filename path to the file, dumped from Torch by using torch.save() function.
@@ -294,12 +324,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *
      * Also some equivalents of these classes from cunn, cudnn, and fbcunn may be successfully imported.
      */
-    CV_EXPORTS Ptr<Importer> createTorchImporter(const String &filename, bool isBinary = true);
+    CV_EXPORTS_W Ptr<Importer> createTorchImporter(const String &filename, bool isBinary = true);
 
     /** @brief Loads blob which was serialized as torch.Tensor object of Torch7 framework.
      *  @warning This function has the same limitations as createTorchImporter().
      */
-    CV_EXPORTS Blob readTorchBlob(const String &filename, bool isBinary = true);
+    CV_EXPORTS_W Blob readTorchBlob(const String &filename, bool isBinary = true);
 
 //! @}
 }

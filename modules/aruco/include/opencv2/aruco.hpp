@@ -173,7 +173,7 @@ struct CV_EXPORTS_W DetectorParameters {
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
 
@@ -226,15 +226,24 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
 class CV_EXPORTS_W Board {
 
     public:
-    // array of object points of all the marker corners in the board
-    // each marker include its 4 corners, i.e. for M markers, the size is Mx4
+    /**
+    * @brief Provide way to create Board by passing nessesary data. Specially needed in Python.
+    *
+    * @param objPoints array of object points of all the marker corners in the board
+    * @param dictionary the dictionary of markers employed for this board
+    * @param ids vector of the identifiers of the markers in the board
+    *
+    */
+    CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
+    /// array of object points of all the marker corners in the board
+    /// each marker include its 4 corners in CCW order. For M markers, the size is Mx4.
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
-    // the dictionary of markers employed for this board
+    /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
-    // vector of the identifiers of the markers in the board (same size than objPoints)
-    // The identifiers refers to the board dictionary
+    /// vector of the identifiers of the markers in the board (same size than objPoints)
+    /// The identifiers refers to the board dictionary
     CV_PROP std::vector< int > ids;
 };
 
@@ -277,7 +286,7 @@ class CV_EXPORTS_W GridBoard : public Board {
      * the marker size and marker separation.
      */
     CV_WRAP static Ptr<GridBoard> create(int markersX, int markersY, float markerLength,
-                                         float markerSeparation, Ptr<Dictionary> &dictionary, int firstMarker = 0);
+                                         float markerSeparation, const Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
     /**
       *
@@ -335,7 +344,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * The function returns the number of markers from the input employed for the board pose estimation.
  * Note that returning a 0 means the pose has not been estimated.
  */
-CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Ptr<Board> &board,
+CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                    OutputArray tvec);
 
@@ -374,7 +383,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
  * homography, and all the marker corners in the board must have the same Z coordinate.
  */
 CV_EXPORTS_W void refineDetectedMarkers(
-    InputArray image, Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
+    InputArray image,const  Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
     InputOutputArray detectedIds, InputOutputArrayOfArrays rejectedCorners,
     InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
     float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
@@ -438,7 +447,7 @@ CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, Inpu
  *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
+CV_EXPORTS_W void drawMarker(const Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
                              int borderBits = 1);
 
 
@@ -458,7 +467,7 @@ CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS_W void drawPlanarBoard(Ptr<Board> &board, Size outSize, OutputArray img,
+CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputArray img,
                                   int marginSize = 0, int borderBits = 1);
 
 
@@ -508,18 +517,18 @@ void _drawPlanarBoardImpl(Board *board, Size outSize, OutputArray img,
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
 CV_EXPORTS_AS(calibrateCameraArucoExtended) double calibrateCameraAruco(
-    InputArrayOfArrays corners, InputArray ids, InputArray counter, Ptr<Board> &board,
+    InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
     OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
-    OutputArray stdDeviationsIntrinsics = noArray(), OutputArray stdDeviationsExtrinsics = noArray(),
-    OutputArray perViewErrors = noArray(), int flags = 0,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 /** @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
  */
 CV_EXPORTS_W double calibrateCameraAruco(
-  InputArrayOfArrays corners, InputArray ids, InputArray counter, Ptr<Board> &board,
+  InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
   Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
   OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
   TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));

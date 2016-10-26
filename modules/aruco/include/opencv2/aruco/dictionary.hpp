@@ -91,7 +91,7 @@ class CV_EXPORTS_W Dictionary {
      * @see generateCustomDictionary
      */
     CV_WRAP_AS(create_from) static Ptr<Dictionary> create(int nMarkers, int markerSize,
-            Ptr<Dictionary> &baseDictionary);
+            const Ptr<Dictionary> &baseDictionary);
 
     /**
      * @see getPredefinedDictionary
@@ -194,7 +194,7 @@ CV_EXPORTS_AS(custom_dictionary) Ptr<Dictionary> generateCustomDictionary(
 CV_EXPORTS_AS(custom_dictionary_from) Ptr<Dictionary> generateCustomDictionary(
         int nMarkers,
         int markerSize,
-        Ptr<Dictionary> &baseDictionary);
+        const Ptr<Dictionary> &baseDictionary);
 
 
 
