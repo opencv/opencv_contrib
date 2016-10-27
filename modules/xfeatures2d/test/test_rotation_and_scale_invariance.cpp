@@ -744,6 +744,69 @@ TEST(Features2d_RotationInvariance_Descriptor_FREAK, regression)
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.999f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM_HARD, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM_HARD,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM_BILINEAR, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM_BILINEAR,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_LBGM, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::LBGM,true,6.25f),
+                                          NORM_L1,
+                                          0.999f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_64, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_64,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_128, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_128,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_256,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.999f);
+    test.safe_run();
+}
+
 /*
  * Detector's scale invariance check
  */
@@ -844,5 +907,68 @@ TEST(Features2d_ScaleInvariance_Descriptor_VGG48, regression)
                                        VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
                                        NORM_L1,
                                        0.93f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM_HARD, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM_HARD, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.75f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM_BILINEAR, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM_BILINEAR, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.95f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_LBGM, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::LBGM, true, 6.25f),
+                                       NORM_L1,
+                                       0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_64, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_64, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.75f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_128, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_128, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.95f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_256, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.98f);
     test.safe_run();
 }

@@ -315,9 +315,9 @@ static void get_desc( const Mat Patch, Mat& PatchTrans, int anglebins, bool img_
 // -------------------------------------------------
 /* VGG interface implementation */
 
-struct ComputeDescInvoker : ParallelLoopBody
+struct ComputeVGGInvoker : ParallelLoopBody
 {
-    ComputeDescInvoker( const Mat& _image, Mat* _descriptors,
+    ComputeVGGInvoker( const Mat& _image, Mat* _descriptors,
                         const vector<KeyPoint>& _keypoints,
                         const Mat& _PRFilters, const Mat& _Proj,
                         const int _anglebins, const bool _img_normalize,
@@ -403,7 +403,7 @@ void VGG_Impl::compute( InputArray _image, vector<KeyPoint>& keypoints, OutputAr
     descriptors.setTo( Scalar(0) );
 
     parallel_for_( Range( 0, (int) keypoints.size() ),
-        ComputeDescInvoker( m_image, &descriptors, keypoints, m_PRFilters, m_Proj,
+        ComputeVGGInvoker( m_image, &descriptors, keypoints, m_PRFilters, m_Proj,
                             m_anglebins, m_img_normalize, m_use_scale_orientation,
                             m_scale_factor )
     );

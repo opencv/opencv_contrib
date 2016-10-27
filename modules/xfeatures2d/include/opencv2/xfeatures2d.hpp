@@ -318,6 +318,47 @@ public:
 
 };
 
+/** @brief Class implementing BoostDesc (Learning Image Descriptors with Boosting), described in
+@cite Trzcinski13a and @cite Trzcinski13b.
+
+@param desc type of descriptor to use, BoostDesc::BINBOOST_256 is default (256 bit long dimension)
+Available types are: BoostDesc::BGM, BoostDesc::BGM_HARD, BoostDesc::BGM_BILINEAR, BoostDesc::LBGM,
+BoostDesc::BINBOOST_64, BoostDesc::BINBOOST_128, BoostDesc::BINBOOST_256
+@param use_orientation sample patterns using keypoints orientation, enabled by default
+@param scale_factor adjust the sampling window of detected keypoints
+6.25f is default and fits for KAZE, SURF detected keypoints window ratio
+6.75f should be the scale for SIFT detected keypoints window ratio
+5.00f should be the scale for AKAZE, MSD, AGAST, FAST, BRISK keypoints window ratio
+0.75f should be the scale for ORB keypoints ratio
+1.50f was the default in original implementation
+
+@note BGM is the base descriptor where each binary dimension is computed as the output of a single weak learner.
+BGM_HARD and BGM_BILINEAR refers to same BGM but use different type of gradient binning. In the BGM_HARD that
+use ASSIGN_HARD binning type the gradient is assigned to the nearest orientation bin. In the BGM_BILINEAR that use
+ASSIGN_BILINEAR binning type the gradient is assigned to the two neighbouring bins. In the BGM and all other modes that use
+ASSIGN_SOFT binning type the gradient is assigned to 8 nearest bins according to the cosine value between the gradient
+angle and the bin center. LBGM (alias FP-Boost) is the floating point extension where each dimension is computed
+as a linear combination of the weak learner responses. BINBOOST and subvariants are the binary extensions of LBGM
+where each bit is computed as a thresholded linear combination of a set of weak learners.
+BoostDesc header files (boostdesc_*.i) was exported from original binaries with export-boostdesc.py script from
+samples subfolder.
+
+*/
+
+class CV_EXPORTS_W BoostDesc : public Feature2D
+{
+public:
+
+    CV_WRAP enum
+    {
+       BGM = 100, BGM_HARD = 101, BGM_BILINEAR = 102, LBGM = 200,
+       BINBOOST_64 = 300, BINBOOST_128 = 301, BINBOOST_256 = 302
+    };
+
+    CV_WRAP static Ptr<BoostDesc> create( int desc = BoostDesc::BINBOOST_256,
+                    bool use_scale_orientation = true, float scale_factor = 6.25f );
+};
+
 //! @}
 
 }
