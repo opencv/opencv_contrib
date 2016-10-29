@@ -6,7 +6,7 @@ set(FILE_HASH_VGG_80 "7cd47228edec52b6d82f46511af325c5")
 set(FILE_HASH_VGG_120 "151805e03568c9f490a5e3a872777b75")
 
 
-set(VGG_DOWNLOAD_URL ${OPENCV_CONTRIB_VGG_URL};$ENV{OPENCV_CONTRIB_VGG_URL};https://raw.githubusercontent.com/Itseez/opencv_3rdparty/${OPENCV_3RDPARTY_COMMIT}/)
+set(VGG_DOWNLOAD_URL ${OPENCV_CONTRIB_VGG_URL};$ENV{OPENCV_CONTRIB_VGG_URL};https://raw.githubusercontent.com/opencv/opencv_3rdparty/${OPENCV_3RDPARTY_COMMIT}/)
 
 function(vgg_download file id)
   message(STATUS "Check contents of ${file} ...")
