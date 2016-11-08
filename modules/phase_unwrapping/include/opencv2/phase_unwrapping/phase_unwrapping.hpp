@@ -39,30 +39,36 @@
  //
  //M*/
 
-/*#ifdef __OPENCV_BUILD
- #error this is a compatibility header which should not be used inside the OpenCV library
- #endif*/
+#ifndef __OPENCV_PHASE_UNWRAPPING_HPP__
+#define __OPENCV_PHASE_UNWRAPPING_HPP__
 
-#include "opencv2/structured_light/structured_light.hpp"
-#include "opencv2/structured_light/graycodepattern.hpp"
-#include "opencv2/structured_light/sinusoidalpattern.hpp"
+#include "opencv2/core.hpp"
 
-/** @defgroup structured_light Structured Light API
+namespace cv {
+namespace phase_unwrapping {
+//! @addtogroup phase_unwrapping
+//! @{
 
- Structured light is considered one of the most effective techniques to acquire 3D models.
- This technique is based on projecting a light pattern and capturing the illuminated scene
- from one or more points of view. Since the pattern is coded, correspondences between image
- points and points of the projected pattern can be quickly found and 3D information easily
- retrieved.
+    /**
+     @brief Abstract base class for phase unwrapping.
+    */
+class CV_EXPORTS_W PhaseUnwrapping : public virtual Algorithm
+{
+public:
+    /**
+     * @brief Unwraps a 2D phase map.
 
- One of the most commonly exploited coding strategies is based on trmatime-multiplexing. In this
- case, a set of patterns  are successively projected onto the measuring surface.
- The codeword for a given pixel is usually formed by  the sequence of illuminance values for that
- pixel across the projected patterns. Thus, the codification is called  temporal because the bits
- of the codewords are multiplexed in time @cite pattern .
+     * @param wrappedPhaseMap The wrapped phase map that needs to be unwrapped.
+     * @param unwrappedPhaseMap The unwrapped phase map.
+     * @param shadowMask Optional parameter used when some pixels do not hold any phase information in the wrapped phase map.
+     */
+    CV_WRAP
+    virtual void unwrapPhaseMap( InputArray wrappedPhaseMap, OutputArray unwrappedPhaseMap,
+                                 InputArray shadowMask = noArray() ) = 0;
 
- In this module a time-multiplexing coding strategy based on Gray encoding is implemented following the
- (stereo) approach described in 3DUNDERWORLD algorithm @cite UNDERWORLD .
- For more details, see @ref tutorial_structured_light.
+};
 
- */
+//! @}
+}
+}
+#endif
