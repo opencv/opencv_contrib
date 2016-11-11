@@ -811,7 +811,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
     vector<vector<Point> > contours;
     vector<Point> contour_poly;
     vector<Vec4i> hierarchy;
-    findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
+    findContours( region(Rect(1, 1, region.cols - 2, region.rows - 2)), contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(1, 1) );
     //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
     //     if the region is very small because otherwise we'll loose all the convexities
     approxPolyDP( Mat(contours[0]), contour_poly, (float)min(rect.width,rect.height)/17, true );
