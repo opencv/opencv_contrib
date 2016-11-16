@@ -2196,6 +2196,11 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
         "numofedgePixel1 = " << offsetPFirst << ",  numofedgePixel2 = " << offsetPSecond << ", MaxNumOfEdgePixel=" << edgePixelArraySize << std::endl;
     return -1;
   }
+  if( !(offsetPFirst && offsetPSecond) )
+  {
+      std::cout << "Edge drawing Error: lines not found" << std::endl;
+      return -1;
+  }
 
   /*now all the edge information are stored in pFirstPartEdgeX_, pFirstPartEdgeY_,
    *pFirstPartEdgeS_,  pSecondPartEdgeX_, pSecondPartEdgeY_, pSecondPartEdgeS_;
