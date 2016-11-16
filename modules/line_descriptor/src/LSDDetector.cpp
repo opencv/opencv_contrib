@@ -104,7 +104,7 @@ inline void checkLineExtremes( cv::Vec4f& extremes, cv::Size imageSize )
 void LSDDetector::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, int scale, int numOctaves, const Mat& mask )
 {
   if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
-    throw std::runtime_error( "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
+    CV_Error( Error::StsBadArg, "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
   else
     detectImpl( image, keylines, numOctaves, scale, mask );
@@ -118,7 +118,7 @@ void LSDDetector::detect( const std::vector<Mat>& images, std::vector<std::vecto
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
     if( masks[counter].data != NULL && ( masks[counter].size() != images[counter].size() || masks[counter].type() != CV_8UC1 ) )
-      throw std::runtime_error( "Masks error while detecting lines: please check their dimensions and that data types are CV_8UC1" );
+      CV_Error( Error::StsBadArg, "Masks error while detecting lines: please check their dimensions and that data types are CV_8UC1" );
 
     else
       detectImpl( images[counter], keylines[counter], numOctaves, scale, masks[counter] );
@@ -136,7 +136,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
 
   /*check whether image depth is different from 0 */
   if( image.depth() != 0 )
-    throw std::runtime_error( "Error, depth image!= 0" );
+    CV_Error( Error::BadDepth, "Error, depth image!= 0" );
 
   /* create a pointer to self */
   LSDDetector *lsd = const_cast<LSDDetector*>( this );
