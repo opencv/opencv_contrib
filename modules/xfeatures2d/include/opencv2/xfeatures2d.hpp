@@ -834,6 +834,100 @@ public:
 
 };
 
+// TODO: make the following definitions fit the OpenCV coding style
+/**
+* @brief Elliptic region around interest point
+*/
+class CV_EXPORTS Elliptic_KeyPoint : public KeyPoint
+{
+public:
+    Point centre;
+    Size_<float> axes;
+    double phi;
+    float size;
+    float si;
+    Mat transf;
+    Elliptic_KeyPoint();
+    Elliptic_KeyPoint(Point centre, double phi, Size axes, float size, float si);
+    virtual ~Elliptic_KeyPoint();
+};
+
+class CV_EXPORTS HarrisLaplace
+{
+
+public:
+    HarrisLaplace();
+    HarrisLaplace(int numOctaves, float corn_thresh, float DOG_thresh,int maxCorners=1500, int num_layers=4);
+    void detect(const Mat& image, std::vector<KeyPoint>& keypoints) const;
+    virtual ~HarrisLaplace();
+
+    int numOctaves;
+    float corn_thresh;
+    float DOG_thresh;
+    int maxCorners;
+    int num_layers;
+
+};
+
+class CV_EXPORTS HarrisLaplaceFeatureDetector : public FeatureDetector
+{
+public:
+    class CV_EXPORTS Params
+    {
+    public:
+        Params( int numOctaves=6, float corn_thresh=0.01, float DOG_thresh=0.01, int maxCorners=5000, int num_layers=4 );
+
+        int numOctaves;
+        float corn_thresh;
+        float DOG_thresh;
+        int maxCorners;
+        int num_layers;
+    };
+    HarrisLaplaceFeatureDetector( const HarrisLaplaceFeatureDetector::Params& params=HarrisLaplaceFeatureDetector::Params() );
+    HarrisLaplaceFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers);
+    virtual void read( const FileNode& fn );
+    virtual void write( FileStorage& fs ) const;
+
+protected:
+    virtual void detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
+
+    HarrisLaplace harris;
+    Params params;
+};
+
+
+class CV_EXPORTS HarrisAffineFeatureDetector : public FeatureDetector
+{
+public:
+ class CV_EXPORTS Params
+    {
+    public:
+        Params( int numOctaves=6, float corn_thresh=0.01, float DOG_thresh=0.01, int maxCorners=5000, int num_layers=4 );
+
+        int numOctaves;
+        float corn_thresh;
+        float DOG_thresh;
+        int maxCorners;
+        int num_layers;
+    };
+    HarrisAffineFeatureDetector( const HarrisAffineFeatureDetector::Params& params=HarrisAffineFeatureDetector::Params() );
+    HarrisAffineFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers);
+    void detect( const Mat& image, std::vector<Elliptic_KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
+    virtual void read( const FileNode& fn );
+    virtual void write( FileStorage& fs ) const;
+
+protected:
+    virtual void detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
+
+    HarrisLaplace harris;
+    Params params;
+};
+
+CV_EXPORTS void evaluateFeatureDetector( const Mat& img1, const Mat& img2, const Mat& H1to2,
+                              std::vector<Elliptic_KeyPoint>* _keypoints1, std::vector<Elliptic_KeyPoint>* _keypoints2,
+                              float& repeatability, int& correspCount,
+                              const Ptr<HarrisAffineFeatureDetector>& _fdetector );
+
 //! @}
 
 }
