@@ -207,7 +207,7 @@ void BIFImpl::computeUnit(int unit_idx, const cv::Mat &img,
 
             double sd = sumsq.at<double>(y1,x1) - sumsq.at<double>(y1,x0)
                         - sumsq.at<double>(y0,x1) + sumsq.at<double>(y0,x0);
-            sd = sqrt(sd / area - mean * mean);
+            sd = sqrt(std::max(0.0, sd / area - mean * mean));
 
             dst.at<float>(pos) = static_cast<float>(sd);
         }
