@@ -84,6 +84,11 @@ HarrisLaplace::~HarrisLaplace()
  */
 void HarrisLaplace::detect(const Mat & image, std::vector<KeyPoint>& keypoints) const
 {
+    if( image.empty() )
+    {
+        keypoints.clear();
+        return;
+    }
     Mat_<float> dx2, dy2, dxy;
     Mat Lx, Ly;
     float si, sd;
