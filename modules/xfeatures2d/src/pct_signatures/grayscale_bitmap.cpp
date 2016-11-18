@@ -110,7 +110,7 @@ namespace cv
                     }
                 }
                 // Prepare the preallocated contrast matrix for contrast-entropy computations
-                mCoOccurrenceMatrix.resize(1 << (mBitsPerPixel * 2));   // mCoOccurrenceMatrix size = maxPixelValue^2
+                mCoOccurrenceMatrix.resize((int)(1 << (mBitsPerPixel * 2)));   // mCoOccurrenceMatrix size = maxPixelValue^2
             }
 
 
