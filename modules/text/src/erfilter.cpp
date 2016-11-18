@@ -97,7 +97,7 @@ ERStat::ERStat(int init_level, int init_pixel, int init_x, int init_y) : pixel(i
     central_moments[0] = 0.0;
     central_moments[1] = 0.0;
     central_moments[2] = 0.0;
-    crossings = new deque<int>();
+    crossings = makePtr<deque<int> >();
     crossings->push_back(0);
 }
 
@@ -526,9 +526,7 @@ void ERFilterNM::er_tree_extract( InputArray image )
                 ERStat *stat = er_stack.at(r);
                 if (stat->crossings)
                 {
-                    stat->crossings->clear();
-                    delete(stat->crossings);
-                    stat->crossings = NULL;
+                    stat->crossings.release();
                 }
                 deleteERStatTree(stat);
             }
@@ -665,9 +663,7 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     child->med_crossings = (float)m_crossings.at(1);
 
     // free unnecessary mem
-    child->crossings->clear();
-    delete(child->crossings);
-    child->crossings = NULL;
+    child->crossings.release();
 
     // recover the original grey-level
     child->level = child->level*thresholdDelta;
@@ -714,9 +710,7 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
         // free mem
         if(child->crossings)
         {
-            child->crossings->clear();
-            delete(child->crossings);
-            child->crossings = NULL;
+            child->crossings.release();
         }
         delete(child);
     }
