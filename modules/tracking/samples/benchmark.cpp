@@ -2,6 +2,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/tracking.hpp"
 #include "opencv2/videoio.hpp"
+#include "opencv2/plot.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -69,13 +70,14 @@ inline vector<Rect2d> readGT(const string &filename, const string &omitname)
 }
 
 inline bool isGoodBox(const Rect2d &box) { return box.width > 0. && box.height > 0.; }
+const int LTRC_COUNT = 100;
 
 struct AlgoWrap
 {
     AlgoWrap(const string &name_)
         : tracker(Tracker::create(name_)), lastState(NotFound), name(name_), color(getNextColor()),
           numTotal(0), numResponse(0), numPresent(0), numCorrect_0(0), numCorrect_0_5(0),
-          timeTotal(0)
+          timeTotal(0), auc(LTRC_COUNT + 1, 0)
     {
     }
 
@@ -97,12 +99,13 @@ struct AlgoWrap
     Scalar color;
 
     // results
-    int numTotal;
+    int numTotal;       // frames passed to tracker
     int numResponse;    // frames where tracker had response
     int numPresent;     // frames where ground truth result present
     int numCorrect_0;   // frames where overlap with GT > 0
     int numCorrect_0_5; // frames where overlap with GT > 0.5
     int64 timeTotal;    // ticks
+    vector<int> auc;   // number of frames for each overlap percent
 
     void eval(const Mat &frame, const Rect2d &gtBox, bool isVerbose)
     {
@@ -115,20 +118,21 @@ struct AlgoWrap
         // RESULTS
         double intersectArea = (gtBox & lastBox).area();
         double unionArea = (gtBox | lastBox).area();
-        double q = unionArea > 0. ? intersectArea / unionArea : 0.;
         numTotal++;
         numResponse += (lastRes && isGoodBox(lastBox)) ? 1 : 0;
         numPresent += isGoodBox(gtBox) ? 1 : 0;
-        numCorrect_0 += q > 0. ? 1 : 0;
-        numCorrect_0_5 += q > 0.5 ? 1 : 0;
+        double overlap = unionArea > 0. ? intersectArea / unionArea : 0.;
+        numCorrect_0 += overlap > 0. ? 1 : 0;
+        numCorrect_0_5 += overlap > 0.5 ? 1 : 0;
+        auc[std::min(std::max((size_t)(overlap * LTRC_COUNT), (size_t)0), (size_t)LTRC_COUNT)]++;
         timeTotal += frameTime;
 
         if (isVerbose)
-            cout << name << " - " << q << endl;
+            cout << name << " - " << overlap << endl;
 
         if (isGoodBox(gtBox) != isGoodBox(lastBox)) lastState = NotFound;
-        else if (q > 0.5) lastState = Overlap_0_5;
-        else if (q > 0.0001) lastState = Overlap_0;
+        else if (overlap > 0.5) lastState = Overlap_0_5;
+        else if (overlap > 0.0001) lastState = Overlap_0;
         else lastState = Overlap_None;
     }
 
@@ -139,12 +143,33 @@ struct AlgoWrap
         string suf;
         switch (lastState)
         {
-        case AlgoWrap::NotFound: suf = "-"; break;
-        case AlgoWrap::Overlap_None: suf = "*"; break;
-        case AlgoWrap::Overlap_0: suf = "+"; break;
-        case AlgoWrap::Overlap_0_5: suf = "++"; break;
+        case AlgoWrap::NotFound: suf = " X"; break;
+        case AlgoWrap::Overlap_None: suf = " ~"; break;
+        case AlgoWrap::Overlap_0: suf = " +"; break;
+        case AlgoWrap::Overlap_0_5: suf = " ++"; break;
         }
-        putText(image, name + " " + suf, textPoint, FONT_HERSHEY_PLAIN, 1, color, 1, LINE_AA);
+        putText(image, name + suf, textPoint, FONT_HERSHEY_PLAIN, 1, color, 1, LINE_AA);
+    }
+
+    // calculates "lost track ratio" curve - row of values growing from 0 to 1
+    // number of elements is LTRC_COUNT + 2
+    Mat getLTRC() const
+    {
+        Mat t, res;
+        Mat(auc).convertTo(t, CV_64F); // integral does not support CV_32S input
+        integral(t.t(), res, CV_64F); // t is a column of values
+        return res.row(1) / (double)numTotal;
+    }
+
+    void plotLTRC(Mat &img) const
+    {
+        Ptr<plot::Plot2d> p_ = plot::createPlot2d(getLTRC());
+        p_->render(img);
+    }
+
+    double calcAUC() const
+    {
+        return cv::sum(getLTRC())[0] / (double)LTRC_COUNT;
     }
 
     void stat(ostream &out) const
@@ -161,6 +186,7 @@ struct AlgoWrap
         out << setw(20) << "Precision" << setw(20) << p * 100 << "%" << endl;
         out << setw(20) << "Recall   " << setw(20) << r * 100 << "%" << endl;
         out << setw(20) << "f-measure" << setw(20) << f * 100 << "%" << endl;
+        out << setw(20) << "AUC" << setw(20) << calcAUC() << endl;
 
         double s = (timeTotal / getTickFrequency()) / numTotal;
         out << setw(20) << "Performance" << setw(20) << s * 1000 << " ms/frame" << setw(20) << 1 / s
@@ -176,8 +202,8 @@ inline vector<AlgoWrap> initAlgorithms(const string &algList)
     istringstream input(algList);
     for (;;)
     {
-        char one[100];
-        input.getline(one, 100, ',');
+        char one[30];
+        input.getline(one, 30, ',');
         if (!input)
             break;
         cout << "  " << one << " - ";
@@ -207,6 +233,7 @@ int main(int argc, char **argv)
         "{start|0|starting frame}"
         "{num|0|frame number (0 for all)}"
         "{omit||file with omit ranges (each line describes occluded frames: '<start> <end>')}"
+        "{plot|false|plot LTR curves at the end}"
         "{v|false|print each frame info}"
         "{@algos||comma-separated algorithm names}";
     CommandLineParser p(argc, argv, keys);
@@ -221,6 +248,7 @@ int main(int argc, char **argv)
     string gtFile = p.get<string>("gt");
     string omitFile = p.get<string>("omit");
     string algList = p.get<string>("@algos");
+    bool doPlot = p.get<bool>("plot");
     bool isVerbose = p.get<bool>("v");
     if (!p.check())
     {
@@ -311,6 +339,17 @@ int main(int argc, char **argv)
     // STAT
     for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
         cout << "==========" << endl << *i << endl;
+
+    if (doPlot)
+    {
+        Mat img(300, 300, CV_8UC3);
+        for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+        {
+            i->plotLTRC(img);
+            imshow("LTR curve for " + i->name, img);
+        }
+        waitKey(0);
+    }
 
     return 0;
 }
