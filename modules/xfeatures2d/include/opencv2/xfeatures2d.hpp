@@ -869,31 +869,17 @@ public:
 
 };
 
-class CV_EXPORTS HarrisLaplaceFeatureDetector : public FeatureDetector
+class CV_EXPORTS_W HarrisLaplaceFeatureDetector : public Feature2D
 {
 public:
-    class CV_EXPORTS Params
-    {
-    public:
-        Params( int numOctaves=6, float corn_thresh=0.01, float DOG_thresh=0.01, int maxCorners=5000, int num_layers=4 );
-
-        int numOctaves;
-        float corn_thresh;
-        float DOG_thresh;
-        int maxCorners;
-        int num_layers;
-    };
-    HarrisLaplaceFeatureDetector( const HarrisLaplaceFeatureDetector::Params& params=HarrisLaplaceFeatureDetector::Params() );
-    HarrisLaplaceFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers);
-    virtual void read( const FileNode& fn );
-    virtual void write( FileStorage& fs ) const;
-
-protected:
-    virtual void detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
-
-    HarrisLaplace harris;
-    Params params;
+    CV_WRAP static Ptr<HarrisLaplaceFeatureDetector> create(
+            int numOctaves=6,
+            float corn_thresh=0.01,
+            float DOG_thresh=0.01,
+            int maxCorners=5000,
+            int num_layers=4);
 };
+
 
 
 class CV_EXPORTS HarrisAffineFeatureDetector : public FeatureDetector

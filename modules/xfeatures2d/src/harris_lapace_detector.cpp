@@ -50,21 +50,58 @@ void calcAffineCovariantRegions(const Mat& image, const std::vector<KeyPoint>& k
 void calcAffineCovariantDescriptors( const Ptr<DescriptorExtractor>& dextractor, const Mat& img, std::vector<Elliptic_KeyPoint>& affRegions, Mat& descriptors );
 
 /*
- *  HarrisLaplaceFeatureDetector
+ *  HarrisLaplaceFeatureDetector_Impl
  */
-HarrisLaplaceFeatureDetector::Params::Params(int _numOctaves, float _corn_thresh, float _DOG_thresh, int _maxCorners, int _num_layers) :
+class HarrisLaplaceFeatureDetector_Impl : public HarrisLaplaceFeatureDetector
+{
+public:
+    class Params
+    {
+    public:
+        Params( int numOctaves=6, float corn_thresh=0.01, float DOG_thresh=0.01, int maxCorners=5000, int num_layers=4 );
+
+        int numOctaves;
+        float corn_thresh;
+        float DOG_thresh;
+        int maxCorners;
+        int num_layers;
+    };
+    HarrisLaplaceFeatureDetector_Impl( const HarrisLaplaceFeatureDetector_Impl::Params& params=HarrisLaplaceFeatureDetector_Impl::Params() );
+    HarrisLaplaceFeatureDetector_Impl( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers);
+    virtual void read( const FileNode& fn );
+    virtual void write( FileStorage& fs ) const;
+
+protected:
+    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() );
+    //virtual void detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
+
+    HarrisLaplace harris;
+    Params params;
+};
+
+Ptr<HarrisLaplaceFeatureDetector> HarrisLaplaceFeatureDetector::create(
+            int numOctaves,
+            float corn_thresh,
+            float DOG_thresh,
+            int maxCorners,
+            int num_layers)
+{
+    return makePtr<HarrisLaplaceFeatureDetector_Impl>(numOctaves, corn_thresh, DOG_thresh, maxCorners, num_layers);
+}
+
+HarrisLaplaceFeatureDetector_Impl::Params::Params(int _numOctaves, float _corn_thresh, float _DOG_thresh, int _maxCorners, int _num_layers) :
     numOctaves(_numOctaves), corn_thresh(_corn_thresh), DOG_thresh(_DOG_thresh), maxCorners(_maxCorners), num_layers(_num_layers)
 {}
-HarrisLaplaceFeatureDetector::HarrisLaplaceFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers)
+HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers)
   : harris( numOctaves, corn_thresh, DOG_thresh, maxCorners, num_layers)
 {}
 
-HarrisLaplaceFeatureDetector::HarrisLaplaceFeatureDetector(  const Params& params  )
+HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(  const Params& params  )
  : harris( params.numOctaves, params.corn_thresh, params.DOG_thresh, params.maxCorners, params.num_layers)
 
 {}
 
-void HarrisLaplaceFeatureDetector::read (const FileNode& fn)
+void HarrisLaplaceFeatureDetector_Impl::read (const FileNode& fn)
 {
     int numOctaves = fn["numOctaves"];
     float corn_thresh = fn["corn_thresh"];
@@ -75,7 +112,7 @@ void HarrisLaplaceFeatureDetector::read (const FileNode& fn)
     harris = HarrisLaplace( numOctaves, corn_thresh, DOG_thresh, maxCorners,num_layers );
 }
 
-void HarrisLaplaceFeatureDetector::write (FileStorage& fs) const
+void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const
 {
     fs << "numOctaves" << harris.numOctaves;
     fs << "corn_thresh" << harris.corn_thresh;
@@ -85,9 +122,9 @@ void HarrisLaplaceFeatureDetector::write (FileStorage& fs) const
 }
 
 
-void HarrisLaplaceFeatureDetector::detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask ) const
+void HarrisLaplaceFeatureDetector_Impl::detect(InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask )
 {
-    harris.detect(image, keypoints);
+    harris.detect(image.getMat(), keypoints);
 }
 
 /*
