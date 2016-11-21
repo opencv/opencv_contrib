@@ -10,8 +10,10 @@ set(the_description "Deep neural network module. It allows to load models from d
 set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 
 ocv_add_module(dnn opencv_core opencv_imgproc WRAP python matlab)
-ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninitialized -Wsign-promo -Wmissing-declarations -Wmissing-prototypes)
-ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4701)
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninitialized -Wsign-promo
+                                     -Wmissing-declarations -Wmissing-prototypes
+)
+ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4701 /wd4100)
 
 # ----------------------------------------------------------------------------
 # Resolve libprotobuf dependency
