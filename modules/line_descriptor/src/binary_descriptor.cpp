@@ -511,7 +511,15 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   {
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
     {
-      KeyLine kl = keylines[keyCounter];
+      KeyLine& kl = keylines[keyCounter];
+
+      //due to imprecise floating point scaling in the pyramid a little overflow can occur in line coordinates,
+      //especially on big images. It will be fixed here
+      kl.startPointX = (float)std::min((int)kl.startPointX, mask.cols - 1);
+      kl.startPointY = (float)std::min((int)kl.startPointY, mask.rows - 1);
+      kl.endPointX = (float)std::min((int)kl.endPointX, mask.cols - 1);
+      kl.endPointY = (float)std::min((int)kl.endPointY, mask.rows - 1);
+
       if( mask.at < uchar > ( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at < uchar > ( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
     }
