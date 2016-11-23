@@ -50,7 +50,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<String>& files, bool r)
+static void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
         obj_dist = 370;
         bg_dist = 400;
     }
-    if (label_class == 5 | label_class == 10 | label_class == 11 | label_class == 12)
+    if (label_class == 5 || label_class == 10 || label_class == 11 || label_class == 12)
         ite_depth = ite_depth + 1;
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
     std::vector<cv::Point3d> campos;
@@ -250,7 +250,6 @@ int main(int argc, char *argv[])
     cam_y_dir.y = cam_head_y;
     cam_y_dir.z = cam_head_z;
     char* temp = new char;
-    char* bgname = new char;
     std::vector<String> name_bkg;
     if (bakgrdir.size() != 0)
     {
@@ -262,7 +261,7 @@ int main(int argc, char *argv[])
         }
     }
     /* Images will be saved as .png files. */
-    int cnt_img;
+    size_t cnt_img;
     srand((int)time(0));
     do
     {

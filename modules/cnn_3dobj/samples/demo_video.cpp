@@ -1,9 +1,9 @@
 #include <opencv2/viz/vizcore.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/calib3d.hpp>
 #include <iostream>
 #include <fstream>
 #include <opencv2/cnn_3dobj.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/features2d.hpp>
 #include <iomanip>
 using namespace cv;
 using namespace std;
@@ -12,7 +12,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<String>& files, bool r)
+static void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -46,12 +46,12 @@ void listDir(const char *path, std::vector<String>& files, bool r)
  * @function cvcloud_load
  * @brief load bunny.ply
  */
-Mat cvcloud_load(Mat feature_reference)
+static Mat cvcloud_load(Mat feature_reference)
 {
     Mat cloud(1, feature_reference.rows, CV_32FC3);
     Point3f* data = cloud.ptr<cv::Point3f>();
-    float dummy1, dummy2;
-    for(size_t i = 0; i < feature_reference.rows; ++i)
+
+    for(int i = 0; i < feature_reference.rows; ++i)
     {
         data[i].x = feature_reference.at<float>(i,0);
         data[i].y = feature_reference.at<float>(i,1);
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     String feature_blob = parser.get<String>("feature_blob");
     int num_candidate = parser.get<int>("num_candidate");
     String device = parser.get<String>("device");
-    int dev_id = parser.get<int>("dev_id");
+
     ifstream namelist_model(caffemodellist.c_str(), ios::in);
     vector<String> caffemodel;
     char *buf = new char[512];
@@ -198,7 +198,6 @@ int main(int argc, char **argv)
     }
     vector<Mat> img_merge;
     /* Part2: Start to have a show */
-    bool camera_pov = true;
     viz::Viz3d myWindow0("Instruction");
     viz::Viz3d myWindow1("Point Cloud");
     viz::Viz3d myWindow2("Prediction sample");
@@ -246,7 +245,7 @@ int main(int argc, char **argv)
     myWindowS.setWindowSize(Size(1300,700));
     myWindowS.setWindowPosition(Point(0,0));
     myWindowS.setBackgroundColor(viz::Color::white());
-    for (int i = 0; i < slide.size(); ++i)
+    for (size_t i = 0; i < slide.size(); ++i)
     {
         /// Create a triangle widget
         viz::WImageOverlay slide1(slide[i],Rect(0, 0, 1300, 700));

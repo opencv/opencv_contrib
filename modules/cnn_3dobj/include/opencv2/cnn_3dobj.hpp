@@ -65,7 +65,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <caffe/net.hpp>
 #include <caffe/proto/caffe.pb.h>
 #include <caffe/util/io.hpp>
-#include <caffe/vision_layers.hpp>
 #endif
 
 #include "opencv2/viz/vizcore.hpp"
