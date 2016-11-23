@@ -1,4 +1,4 @@
-Training data generation using Icosphere {#tutorial_model_analysis}
+Training Model Analysis {#tutorial_model_analysis}
 =============
 
 Goal
@@ -12,7 +12,6 @@ In this tutorial you will learn how to
 Code
 ----
 
-You can download the code from [here ](https://github.com/Wangyida/opencv_contrib/blob/cnn_3dobj/samples/demo_model_analysis.cpp).
 @include cnn_3dobj/samples/demo_model_analysis.cpp
 
 Explanation
