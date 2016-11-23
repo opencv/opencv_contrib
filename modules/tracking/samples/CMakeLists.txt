@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb ")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+find_package(OpenCV REQUIRED)
+set(SOURCES_kcf kcf.cpp)
+include_directories(${OpenCV_INCLUDE_DIRS})
+add_executable(kcf_test ${SOURCES_kcf})
+target_link_libraries(kcf_test opencv_core opencv_imgproc opencv_highgui opencv_videoio opencv_tracking)
