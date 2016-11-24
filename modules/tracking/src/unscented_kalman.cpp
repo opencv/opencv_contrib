@@ -47,49 +47,6 @@ namespace cv
 namespace tracking
 {
 
-/* Cholesky decomposition
- The function performs Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>.
- A - the Hermitian, positive-definite matrix,
- astep - size of row in A,
- asize - number of cols and rows in A,
- L - the lower triangular matrix, A = L*Lt.
-*/
-template<typename _Tp> bool
-inline choleskyDecomposition( const _Tp* A, size_t astep, const int asize, _Tp* L )
-{
-    int i, j, k;
-    double s;
-    astep /= sizeof(A[0]);
-    for( i = 0; i < asize; i++ )
-
-    {
-        for( j = 0; j < i; j++ )
-        {
-            s = A[i*astep + j];
-            for( k = 0; k < j; k++ )
-                s -= L[i*astep + k]*L[j*astep + k];
-            L[i*astep + j] = (_Tp)(s/L[j*astep + j]);
-        }
-        s = A[i*astep + i];
-        for( k = 0; k < i; k++ )
-        {
-            double t = L[i*astep + k];
-            s -= t*t;
-        }
-        if( s < std::numeric_limits<_Tp>::epsilon() )
-            return false;
-        L[i*astep + i] = (_Tp)(std::sqrt(s));
-    }
-
-   for( i = 0; i < asize; i++ )
-       for( j = i+1; j < asize; j++ )
-       {
-           L[i*astep + j] = 0.0;
-       }
-
-    return true;
-}
-
 void UnscentedKalmanFilterParams::
     init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
                                 Ptr<UkfSystemModel> dynamicalSystem, int type )
@@ -166,11 +123,6 @@ class UnscentedKalmanFilterImpl: public UnscentedKalmanFilter
     Mat r;                                      // zero vector of process noise for getting transitionSPFuncVals,
     Mat q;                                      // zero vector of measurement noise for getting measurementSPFuncVals
 
-
-//get sigma points
-    template <typename T>
-    Mat getSigmaPoints( const Mat& mean, const Mat& covMatrix, double coef );
-
     Mat getSigmaPoints( const Mat& mean, const Mat& covMatrix, double coef );
 
 public:
@@ -180,11 +132,11 @@ public:
 
 // perform prediction step
 // control - the optional control vector, CP x 1
-    Mat predict( const Mat& control = Mat() );
+    Mat predict( InputArray control = noArray() );
 
 // perform correction step
 // measurement - current measurement vector, MP x 1
-    Mat correct( const Mat& measurement );
+    Mat correct( InputArray measurement );
 
 //  Get system parameters
     Mat getProcessNoiseCov() const;
@@ -282,7 +234,6 @@ UnscentedKalmanFilterImpl::~UnscentedKalmanFilterImpl()
     q.release();
 }
 
-template <typename T>
 Mat UnscentedKalmanFilterImpl::getSigmaPoints(const Mat &mean, const Mat &covMatrix, double coef)
 {
 // x_0 = mean
@@ -293,10 +244,17 @@ Mat UnscentedKalmanFilterImpl::getSigmaPoints(const Mat &mean, const Mat &covMat
     Mat points = repeat(mean, 1, 2*n+1);
 
     Mat covMatrixL = covMatrix.clone();
-    covMatrixL.setTo(0);
 
 // covMatrixL = cholesky( covMatrix )
-    choleskyDecomposition<T>( covMatrix.ptr<T>(), covMatrix.step, covMatrix.rows, covMatrixL.ptr<T>() );
+    if ( dataType == CV_64F )
+        choleskyDecomposition<double>(
+                    covMatrix.ptr<double>(), covMatrix.step, covMatrix.rows,
+                    covMatrixL.ptr<double>(), covMatrixL.step );
+    else if ( dataType == CV_32F )
+        choleskyDecomposition<float>(
+                    covMatrix.ptr<float>(), covMatrix.step, covMatrix.rows,
+                    covMatrixL.ptr<float>(), covMatrixL.step );
+
     covMatrixL = coef * covMatrixL;
 
     Mat p_plus = points( Rect( 1, 0, n, n ) );
@@ -308,16 +266,9 @@ Mat UnscentedKalmanFilterImpl::getSigmaPoints(const Mat &mean, const Mat &covMat
     return points;
 }
 
-Mat UnscentedKalmanFilterImpl::getSigmaPoints(const Mat &mean, const Mat &covMatrix, double coef)
+Mat UnscentedKalmanFilterImpl::predict(InputArray _control)
 {
-    if ( dataType == CV_64F ) return getSigmaPoints<double>(mean, covMatrix, coef);
-    if ( dataType == CV_32F ) return getSigmaPoints<float>(mean, covMatrix, coef);
-
-    return Mat();
-}
-
-Mat UnscentedKalmanFilterImpl::predict(const Mat& control)
-{
+    Mat control = _control.getMat();
 // get sigma points from x* and P
     sigmaPoints = getSigmaPoints( state, errorCov, sqrt( tmpLambda ) );
 
@@ -345,8 +296,9 @@ Mat UnscentedKalmanFilterImpl::predict(const Mat& control)
     return state.clone();
 }
 
-Mat UnscentedKalmanFilterImpl::correct(const Mat& measurement)
+Mat UnscentedKalmanFilterImpl::correct(InputArray _measurement)
 {
+    Mat measurement = _measurement.getMat();
 // get sigma points from x* and P
     sigmaPoints = getSigmaPoints( state, errorCov, sqrt( tmpLambda ) );
 
