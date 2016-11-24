@@ -1,4 +1,4 @@
-Classify {#tutorial_classify}
+Classify {#tutorial_feature_classification}
 ===============
 
 Goal
@@ -13,7 +13,6 @@ In this tutorial you will learn how to
 Code
 ----
 
-You can download the code from [here ](https://github.com/Wangyida/opencv_contrib/blob/cnn_3dobj/samples/demo_classify.cpp).
 @include cnn_3dobj/samples/demo_classify.cpp
 
 Explanation

@@ -43,9 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/core.hpp"
 #include "opencv2/video.hpp"
 
-#include "opencv2/optflow/pcaflow.hpp"
-#include "opencv2/optflow/sparse_matching_gpc.hpp"
-
 /**
 @defgroup optflow Optical Flow Algorithms
 
@@ -68,6 +65,9 @@ Functions reading and writing .flo files in "Middlebury" format, see: <http://vi
 - cv::optflow::writeOpticalFlow
 
  */
+
+#include "opencv2/optflow/pcaflow.hpp"
+#include "opencv2/optflow/sparse_matching_gpc.hpp"
 
 namespace cv
 {

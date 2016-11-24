@@ -113,6 +113,48 @@ protected:
 
 };
 
+
+/** @brief the Fine Grained Saliency approach from @cite FGS
+
+This method calculates saliency based on center-surround differences.
+High resolution saliency maps are generated in real time by using integral images.
+ */
+class CV_EXPORTS_W StaticSaliencyFineGrained : public StaticSaliency
+{
+public:
+
+  StaticSaliencyFineGrained();
+
+  CV_WRAP static Ptr<StaticSaliencyFineGrained> create()
+  {
+    return makePtr<StaticSaliencyFineGrained>();
+  }
+
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+  {
+    if( image.empty() )
+      return false;
+
+    return computeSaliencyImpl( image, saliencyMap );
+  }
+  virtual ~StaticSaliencyFineGrained();
+
+protected:
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+
+private:
+  void calcIntensityChannel(Mat src, Mat dst);
+  void copyImage(Mat src, Mat dst);
+  void getIntensityScaled(Mat integralImage, Mat gray, Mat saliencyOn, Mat saliencyOff, int neighborhood);
+  float getMean(Mat srcArg, Point2i PixArg, int neighbourhood, int centerVal);
+  void mixScales(Mat *saliencyOn, Mat intensityOn, Mat *saliencyOff, Mat intensityOff, const int numScales);
+  void mixOnOff(Mat intensityOn, Mat intensityOff, Mat intensity);
+  void getIntensity(Mat srcArg, Mat dstArg,  Mat dstOnArg,  Mat dstOffArg, bool generateOnOff);
+};
+
+
+
+
 /************************************ Specific Motion Saliency Specialized Classes ************************************/
 
 /*!

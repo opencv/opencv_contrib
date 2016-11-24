@@ -49,11 +49,15 @@ double ConvolutionEngine::convolve(const Mat &feat, const Mat &filter,
         int dimHOG, int x, int y)
 {
     double val = 0;
-    for (int xp = 0; xp < filter.cols; xp++)
+    for (int yp = 0; yp < filter.rows; yp++)
     {
-        for (int yp = 0; yp < filter.rows; yp++)
-            val += filter.at<double>(yp, xp)
-                * feat.at<double>(y + yp, x * dimHOG + xp);
+        const double *pfeat = (double*)feat.ptr(y + yp) + x * dimHOG;
+        const double *pfilter = (double*)filter.ptr(yp);
+
+        for (int xp = 0; xp < filter.cols; xp++)
+        {
+            val += pfeat[xp] * pfilter[xp];
+        }
     }
 
     return val;
@@ -62,20 +66,26 @@ double ConvolutionEngine::convolve(const Mat &feat, const Mat &filter,
 void ConvolutionEngine::convolve(const Mat &feat, const Mat &filter,
         int dimHOG, Mat &result)
 {
-    for (int x = 0; x < result.cols; x++)
+    for (int y = 0; y < result.rows; y++)
     {
-        for (int y = 0; y < result.rows; y++)
+        double *presult = (double*)result.ptr(y);
+        for (int x = 0; x < result.cols; x++)
         {
             double val = 0;
-            for (int xp = 0; xp < filter.cols; xp++)
+            for (int yp = 0; yp < filter.rows; yp++)
             {
-                for (int yp = 0; yp < filter.rows; yp++)
-                    val += feat.at<double>(y + yp, x*dimHOG + xp)
-                        * filter.at<double>(yp, xp);
-            } // xp
-            result.at<double>(y, x) = val;
-        } // y
-    } // x
+                const double *pfeat = (double*)feat.ptr(y + yp) + x * dimHOG;
+                const double *pfilter = (double*)filter.ptr(yp);
+
+                for (int xp = 0; xp < filter.cols; xp++)
+                {
+                    val += pfeat[xp] * pfilter[xp];
+                }
+            } // yp
+
+            presult[x] = val;
+        } // x
+    } // y
 }
 } // namespace cv
 } // namespace dpm
