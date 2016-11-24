@@ -16,9 +16,10 @@ if(MSVC)
                                        /wd4702 /wd4456 /wd4457 /wd4065 /wd4310 /wd4661 /wd4506
   )
 else()
-  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef
-                                       -Wtautological-undefined-compare
-                                       -Wignored-qualifiers -Wextra -Wunused-function -Wunused-const-variable
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow
+                                       -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo
+                                       -Wundef -Wtautological-undefined-compare -Wignored-qualifiers -Wextra
+                                       -Wunused-function -Wunused-const-variable
   )
 endif()
 

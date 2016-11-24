@@ -49,7 +49,8 @@ namespace cv
 namespace dnn
 {
 
-ReshapeLayerImpl::ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_)
+ReshapeLayerImpl::ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_, bool enableReordering_) :
+    enableReordering(enableReordering_)
 {
     newShapeDesc = newShape_;
     newShapeRange = applyingRange_;
@@ -72,14 +73,49 @@ void ReshapeLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
 {
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        outputs[i].shareFrom(*inputs[i]);
+        Blob& srcBlob = *inputs[i];
+        BlobShape inputShape = inputs[i]->shape();
+        bool channelsReduced = inputShape.dims() > outShapes[i].dims() ||
+                (inputShape.dims() == 4 && inputShape[1] > outShapes[i][1]);
+        bool performReordering = enableReordering && inputShape.dims() == 4 && channelsReduced;
+
+        if (performReordering)
+        {
+            Blob reordered_blob(inputShape, inputs[i]->type());
+
+            float *dstData = reordered_blob.matRef().ptr<float>();
+            const float *srcData = srcBlob.matRefConst().ptr<float>();
+
+            int num = inputShape[0], channels = inputShape[1], height = inputShape[2], width = inputShape[3];
+            int total = num*channels*height*width;
+            for(int i_n = 0; i_n < num; i_n++) {
+                for(int i_c = 0; i_c < channels; i_c++) {
+                    for(int i_h = 0; i_h < height; i_h++) {
+                        for(int i_w = 0; i_w < width; i_w++) {
+                           int src_i = channels*height*width*i_n + height*width*i_c + width*i_h + i_w;
+                           int dst_i = channels*height*width*i_n + i_c + channels*width*i_h + channels*i_w;
+
+                           CV_Assert(dst_i < total);
+                           CV_Assert(src_i < total);
+
+                           dstData[dst_i] = srcData[src_i];
+                        }
+                    }
+                }
+            }
+
+            srcBlob = reordered_blob;
+        }
+
+        outputs[i].shareFrom(srcBlob);
         outputs[i].reshape(outShapes[i]);
     }
 }
 
-Ptr<ReshapeLayer> ReshapeLayer::create(const BlobShape &newShape, Range applyingRange /*= Range::all()*/)
+Ptr<ReshapeLayer> ReshapeLayer::create(const BlobShape &newShape, Range applyingRange /*= Range::all()*/,
+                                       bool enableReordering /*= false*/)
 {
-    return Ptr<ReshapeLayer>(new ReshapeLayerImpl(newShape, applyingRange));
+    return Ptr<ReshapeLayer>(new ReshapeLayerImpl(newShape, applyingRange, enableReordering));
 }
 
 
