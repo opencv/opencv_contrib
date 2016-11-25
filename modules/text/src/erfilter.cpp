@@ -778,28 +778,27 @@ ERStat* ERFilterNM::er_save( ERStat *er, ERStat *parent, ERStat *prev )
 // recursively walk the tree and filter (remove) regions using the callback classifier
 ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *parent, ERStat *prev )
 {
-    Mat src = image.getMat();
     // assert correct image type
-    CV_Assert( src.type() == CV_8UC1 );
+    CV_Assert( image.type() == CV_8UC1 );
+
+    Mat src = image.getMat();
 
     //Fill the region and calculate 2nd stage features
-    Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x+2,stat->rect.br().y+2)));
+    Mat region = region_mask(Rect(stat->rect.tl(), stat->rect.br() + Point(2,2)));
     region = Scalar(0);
     int newMaskVal = 255;
     int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
     Rect rect;
 
-    floodFill( src(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
-               region, Point(stat->pixel%src.cols - stat->rect.x, stat->pixel/src.cols - stat->rect.y),
+    floodFill( src(stat->rect),
+               region, Point(stat->pixel%src.cols, stat->pixel/src.cols) - stat->rect.tl(),
                Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
-    rect.width += 2;
-    rect.height += 2;
-    region = region(rect);
+    region = region(Rect(1, 1, rect.width, rect.height));
 
     vector<vector<Point> > contours;
     vector<Point> contour_poly;
     vector<Vec4i> hierarchy;
-    findContours( region(Rect(1, 1, region.cols - 2, region.rows - 2)), contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(1, 1) );
+    findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
     //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
     //     if the region is very small because otherwise we'll loose all the convexities
     approxPolyDP( Mat(contours[0]), contour_poly, (float)min(rect.width,rect.height)/17, true );
@@ -2853,9 +2852,7 @@ bool guo_hall_thinning(const Mat1b & img, Mat& skeleton)
 }
 
 
-float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<ERFeatures> &features);
-
-float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<ERFeatures> &features)
+static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<ERFeatures> &features)
 {
     // assert correct image type
     CV_Assert(( channel.type() == CV_8UC1 ) && ( grey.type() == CV_8UC1 ));
@@ -2884,18 +2881,15 @@ float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<
         {
 
             //Fill the region and calculate features
-            Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),
-                                          Point(stat->rect.br().x+2,stat->rect.br().y+2)));
+            Mat region = region_mask(Rect(stat->rect.tl(),
+                                          stat->rect.br() + Point(2,2)));
             region = Scalar(0);
             int newMaskVal = 255;
             int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
-            Rect rect;
 
-            floodFill( channel(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
+            floodFill( channel(stat->rect),
                        region, Point(stat->pixel%channel.cols - stat->rect.x, stat->pixel/channel.cols - stat->rect.y),
-                       Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
-            rect.width += 2;
-            rect.height += 2;
+                       Scalar(255), NULL, Scalar(stat->level), Scalar(0), flags );
             Mat rect_mask = region_mask(Rect(stat->rect.x+1,stat->rect.y+1,stat->rect.width,stat->rect.height));
 
 
@@ -2905,7 +2899,7 @@ float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, vector<
             f.intensity_std  = (float)std[0];
 
             Mat tmp,bw;
-            region_mask(Rect(stat->rect.x+1,stat->rect.y+1,stat->rect.width,stat->rect.height)).copyTo(bw);
+            rect_mask.copyTo(bw);
             distanceTransform(bw, tmp, DIST_L1,3); //L1 gives distance in round integers while L2 floats
 
             // Add border because if region span all the image size skeleton will crash
@@ -3507,19 +3501,16 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
     i = &regions[idx1[0]][idx1[1]];
     j = &regions[idx2[0]][idx2[1]];
 
-    Mat region = mask(Rect(Point(i->rect.x,i->rect.y),
-                           Point(i->rect.br().x+2,i->rect.br().y+2)));
+    Mat region = mask(Rect(i->rect.tl(),
+                           i->rect.br()+ Point(2,2)));
     region = Scalar(0);
 
     int newMaskVal = 255;
     int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
-    Rect rect;
 
-    floodFill( channels[idx1[0]](Rect(Point(i->rect.x,i->rect.y),Point(i->rect.br().x,i->rect.br().y))),
-               region, Point(i->pixel%grey.cols - i->rect.x, i->pixel/grey.cols - i->rect.y),
-               Scalar(255), &rect, Scalar(i->level), Scalar(0), flags);
-    rect.width += 2;
-    rect.height += 2;
+    floodFill( channels[idx1[0]](i->rect),
+               region, Point(i->pixel%grey.cols, i->pixel/grey.cols) - i->rect.tl(),
+               Scalar(255), NULL, Scalar(i->level), Scalar(0), flags);
     Mat rect_mask = mask(Rect(i->rect.x+1,i->rect.y+1,i->rect.width,i->rect.height));
 
     Scalar mean,std;
@@ -3529,15 +3520,12 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
     float a_mean1 = (float)mean[1];
     float b_mean1 = (float)mean[2];
 
-    region = mask(Rect(Point(j->rect.x,j->rect.y),
-                           Point(j->rect.br().x+2,j->rect.br().y+2)));
+    region = mask(Rect(j->rect.tl(), j->rect.br()+ Point(2,2)));
     region = Scalar(0);
 
-    floodFill( channels[idx2[0]](Rect(Point(j->rect.x,j->rect.y),Point(j->rect.br().x,j->rect.br().y))),
-               region, Point(j->pixel%grey.cols - j->rect.x, j->pixel/grey.cols - j->rect.y),
-               Scalar(255), &rect, Scalar(j->level), Scalar(0), flags);
-    rect.width += 2;
-    rect.height += 2;
+    floodFill( channels[idx2[0]](j->rect),
+               region, Point(j->pixel%grey.cols, j->pixel/grey.cols) - j->rect.tl(),
+               Scalar(255), NULL, Scalar(j->level), Scalar(0), flags);
     rect_mask = mask(Rect(j->rect.x+1,j->rect.y+1,j->rect.width,j->rect.height));
 
     meanStdDev(grey(j->rect),mean,std,rect_mask);
