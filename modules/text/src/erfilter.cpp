@@ -4175,7 +4175,7 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
 void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT vector< vector<Point> >& regions)
 {
     // assert correct image type
-    CV_Assert( image.getMat().type() == CV_8UC1 );
+    CV_Assert( image.type() == CV_8UC1 );
     // at least one ERFilter must be passed
     CV_Assert( !er_filter1.empty() );
 
@@ -4189,36 +4189,33 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
     }
 
     //Convert each ER to vector<Point> and push it to output regions
-    Mat src = image.getMat();
-    Mat region_mask = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
+    const Mat src = image.getMat();
     for (size_t i=1; i < ers.size(); i++) //start from 1 to deprecate root region
     {
       ERStat* stat = &ers[i];
 
       //Fill the region and calculate 2nd stage features
-      Mat region = region_mask(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x+2,stat->rect.br().y+2)));
-      region = Scalar(0);
+      Mat region_mask(Size(stat->rect.width + 2, stat->rect.height + 2), CV_8UC1, Scalar(0));
+      Mat region = region_mask(Rect(1, 1, stat->rect.width, stat->rect.height));
+
       int newMaskVal = 255;
       int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
-      Rect rect;
 
-      floodFill( src(Rect(Point(stat->rect.x,stat->rect.y),Point(stat->rect.br().x,stat->rect.br().y))),
-                 region, Point(stat->pixel%src.cols - stat->rect.x, stat->pixel/src.cols - stat->rect.y),
-                 Scalar(255), &rect, Scalar(stat->level), Scalar(0), flags );
-      rect.width += 2;
-      rect.height += 2;
-      region = region(rect);
+      const Point seed_pt(stat->pixel%src.cols, stat->pixel/src.cols);
+      uchar seed_v = src.at<uchar>(seed_pt);
+      CV_Assert((int)seed_v <= stat->level);
+
+      floodFill( src(stat->rect),
+                 region_mask,
+                 seed_pt - stat->rect.tl(),
+                 Scalar(255), NULL, Scalar(/*stat->level*/255), Scalar(0), flags );
 
       vector<vector<Point> > contours;
       vector<Vec4i> hierarchy;
-      findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
-
-      for (size_t j=0; j < contours[0].size(); j++)
-        contours[0][j] += (stat->rect.tl()-Point(1,1));
+      findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, stat->rect.tl() );
 
       regions.push_back(contours[0]);
     }
-
 }
 
 }
