@@ -275,24 +275,18 @@ void ERFilterNM::er_tree_extract( InputArray image )
     // the component stack
     vector<ERStat*> er_stack;
 
-    //the quads for euler number calculation
-    unsigned char quads[3][4];
-    quads[0][0] = 1 << 3;
-    quads[0][1] = 1 << 2;
-    quads[0][2] = 1 << 1;
-    quads[0][3] = 1;
-    quads[1][0] = (1<<2)|(1<<1)|(1);
-    quads[1][1] = (1<<3)|(1<<1)|(1);
-    quads[1][2] = (1<<3)|(1<<2)|(1);
-    quads[1][3] = (1<<3)|(1<<2)|(1<<1);
-    quads[2][0] = (1<<2)|(1<<1);
-    quads[2][1] = (1<<3)|(1);
-    // quads[2][2] and quads[2][3] are never used so no need to initialize them.
+    // the quads for euler number calculation
+    // quads[2][2] and quads[2][3] are never used.
     // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns 
     // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper 
     // (see in page 4 at the end of first column). 
     // Q_1 and Q_2 have four patterns, while Q_3 has only two.
-
+    const int quads[3][4] =
+    {
+        { 1<<3                 ,          1<<2          ,                 1<<1   ,                       1<<0 },
+        {     (1<<2)|(1<<1)|(1),   (1<<3)|    (1<<1)|(1),   (1<<3)|(1<<2)|    (1),   (1<<3)|(1<<2)|(1<<1)     },
+        {     (1<<2)|(1<<1)    ,   (1<<3)|           (1),            /*unused*/-1,               /*unused*/-1 }
+    };
 
     // masks to know if a pixel is accessible and if it has been already added to some region
     vector<bool> accessible_pixel_mask(width * height);
@@ -392,8 +386,8 @@ void ERFilterNM::er_tree_extract( InputArray image )
         int non_boundary_neighbours = 0;
         int non_boundary_neighbours_horiz = 0;
 
-        unsigned char quad_before[4] = {0,0,0,0};
-        unsigned char quad_after[4] = {0,0,0,0};
+        int quad_before[4] = {0,0,0,0};
+        int quad_after[4] = {0,0,0,0};
         quad_after[0] = 1<<1;
         quad_after[1] = 1<<3;
         quad_after[2] = 1<<2;
@@ -542,9 +536,9 @@ void ERFilterNM::er_tree_extract( InputArray image )
         current_edge  = boundary_edges[threshold_level].back();
         boundary_edges[threshold_level].erase(boundary_edges[threshold_level].end()-1);
 
-        while (boundary_pixes[threshold_level].empty() && (threshold_level < (255/thresholdDelta)+1))
-            threshold_level++;
-
+        for (; threshold_level < (255/thresholdDelta)+1; threshold_level++)
+            if (!boundary_pixes[threshold_level].empty())
+                break;
 
         int new_level = image_data[current_pixel];
 
