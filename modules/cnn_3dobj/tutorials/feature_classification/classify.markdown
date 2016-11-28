@@ -13,7 +13,7 @@ In this tutorial you will learn how to
 Code
 ----
 
-@include cnn_3dobj/samples/demo_classify.cpp
+@include cnn_3dobj/samples/classify.cpp
 
 Explanation
 -----------

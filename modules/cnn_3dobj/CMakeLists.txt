@@ -38,7 +38,7 @@ if(TARGET opencv_test_cnn_3dobj)
   target_link_libraries(opencv_test_cnn_3dobj boost_system)
 endif()
 
-foreach(exe_TGT  demo_classify demo_video demo_sphereview_data demo_model_analysis)
+foreach(exe_TGT  classify video sphereview_data model_analysis)
     if(TARGET example_cnn_3dobj_${exe_TGT})
       target_link_libraries(example_cnn_3dobj_${exe_TGT} boost_system)
     endif()
