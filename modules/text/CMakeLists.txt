@@ -18,3 +18,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
                ${CMAKE_BINARY_DIR}/text_config.hpp @ONLY)
 
 ocv_include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+ocv_add_testdata(samples/ contrib/text
+    FILES_MATCHING PATTERN "*.xml" PATTERN "*.xml.gz" REGEX "scenetext[0-9]+.jpg"
+    COMPONENT "tests"
+)
