@@ -71,6 +71,11 @@ namespace cv
 namespace ximgproc
 {
 
+enum ThinningTypes{
+    THINNING_ZHANGSUEN    = 0, // Thinning technique of Zhang-Suen
+    THINNING_GUOHALL      = 1  // Thinning technique of Guo-Hall
+};
+
 //! @addtogroup ximgproc
 //! @{
 
@@ -110,8 +115,9 @@ The function transforms a binary blob image into a skeletized form using the tec
 
 @param src Source 8-bit single-channel image, containing binary blobs, with blobs having 255 pixel values.
 @param dst Destination image of the same size and the same type as src. The function can work in-place.
+@param thinningType Value that defines which thinning algorithm should be used. See cv::ThinningTypes
  */
-CV_EXPORTS_W void thinning( InputArray src, OutputArray dst);
+CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 
 
 //! @}
