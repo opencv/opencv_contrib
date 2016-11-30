@@ -48,6 +48,12 @@ namespace cv
 namespace xfeatures2d
 {
 
+/*
+* Functions to perform affine adaptation of circular keypoint
+*/
+void calcAffineCovariantRegions(const Mat& image, const std::vector<KeyPoint>& keypoints, std::vector<Elliptic_KeyPoint>& affRegions);
+void calcAffineCovariantDescriptors( const Ptr<DescriptorExtractor>& dextractor, const Mat& img, std::vector<Elliptic_KeyPoint>& affRegions, Mat& descriptors );
+
 void calcDerivatives(const Mat& image, Mat & dx2, Mat & dxy, Mat & dy2, float si, float sd);
 void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& M);
 bool calcAffineAdaptation(const Mat & image, Elliptic_KeyPoint& keypoint);
@@ -56,6 +62,99 @@ float selDifferentiationScale(const Mat & image, Mat & Lxm2smooth, Mat & Lxmysmo
 float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& Mk);
 float normMaxEval(Mat & U, Mat& uVal, Mat& uVect);
 
+class AffineFeature2D_Impl : public AffineFeature2D
+{
+public:
+    AffineFeature2D_Impl(
+        Ptr<FeatureDetector> keypoint_detector,
+        Ptr<DescriptorExtractor> descriptor_extractor
+    ) : m_keypoint_detector(keypoint_detector)
+      , m_descriptor_extractor(descriptor_extractor) {}
+protected:
+    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
+    int descriptorSize();
+    int descriptorType();
+    int defaultNorm();
+private:
+    Ptr<FeatureDetector> m_keypoint_detector;
+    Ptr<DescriptorExtractor> m_descriptor_extractor;
+};
+
+Ptr<AffineFeature2D> AffineFeature2D::create(
+    Ptr<FeatureDetector> keypoint_detector,
+    Ptr<DescriptorExtractor> descriptor_extractor)
+{
+    return makePtr<AffineFeature2D_Impl>(keypoint_detector, descriptor_extractor);
+}
+
+void AffineFeature2D_Impl::detect(
+    InputArray image,
+    std::vector<Elliptic_KeyPoint>& keypoints,
+    InputArray mask)
+{
+    std::vector<KeyPoint> non_elliptic_keypoints;
+    m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
+    Mat fimage;
+    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+    calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
+}
+
+void AffineFeature2D_Impl::detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        std::vector<Elliptic_KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints)
+{
+    if(!useProvidedKeypoints)
+    {
+        std::vector<KeyPoint> non_elliptic_keypoints;
+        m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
+        Mat fimage;
+        image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+        calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
+    }
+    Mat descriptor_mat;
+    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), keypoints, descriptor_mat);
+    descriptors.assign(descriptor_mat);
+}
+
+void AffineFeature2D_Impl::detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        std::vector<KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints)
+{
+    if(!useProvidedKeypoints)
+    {
+        m_keypoint_detector->detect(image, keypoints, mask);
+    }
+    Mat fimage;
+    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+    std::vector<Elliptic_KeyPoint> elliptic_keypoints;
+    calcAffineCovariantRegions(fimage, keypoints, elliptic_keypoints);
+    Mat descriptor_mat;
+    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), elliptic_keypoints, descriptor_mat);
+    descriptors.assign(descriptor_mat);
+}
+
+int AffineFeature2D_Impl::descriptorSize()
+{
+    return m_descriptor_extractor->descriptorSize();
+}
+
+int AffineFeature2D_Impl::descriptorType()
+{
+    return m_descriptor_extractor->descriptorType();
+}
+
+int AffineFeature2D_Impl::defaultNorm()
+{
+    return m_descriptor_extractor->defaultNorm();
+}
 
 /*
  * Calculates second moments matrix in point p

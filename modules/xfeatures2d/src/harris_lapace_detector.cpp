@@ -44,12 +44,6 @@ namespace xfeatures2d
 {
 
 /*
-* Functions to perform affine adaptation of circular keypoint
-*/
-void calcAffineCovariantRegions(const Mat& image, const std::vector<KeyPoint>& keypoints, std::vector<Elliptic_KeyPoint>& affRegions);
-void calcAffineCovariantDescriptors( const Ptr<DescriptorExtractor>& dextractor, const Mat& img, std::vector<Elliptic_KeyPoint>& affRegions, Mat& descriptors );
-
-/*
  *  HarrisLaplaceFeatureDetector_Impl
  */
 class HarrisLaplaceFeatureDetector_Impl : public HarrisLaplaceFeatureDetector
@@ -125,53 +119,6 @@ void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const
 void HarrisLaplaceFeatureDetector_Impl::detect(InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask )
 {
     harris.detect(image.getMat(), keypoints);
-}
-
-/*
- *  HarrisAffineFeatureDetector
- */
-HarrisAffineFeatureDetector::Params::Params(int _numOctaves, float _corn_thresh, float _DOG_thresh, int _maxCorners, int _num_layers) :
-    numOctaves(_numOctaves), corn_thresh(_corn_thresh), DOG_thresh(_DOG_thresh), maxCorners(_maxCorners), num_layers(_num_layers)
-{}
-HarrisAffineFeatureDetector::HarrisAffineFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers)
-  : harris( numOctaves, corn_thresh, DOG_thresh, maxCorners, num_layers)
-{}
-
-HarrisAffineFeatureDetector::HarrisAffineFeatureDetector(  const Params& params  )
- : harris( params.numOctaves, params.corn_thresh, params.DOG_thresh, params.maxCorners, params.num_layers)
-
-{}
-
-void HarrisAffineFeatureDetector::read (const FileNode& fn)
-{
-    int numOctaves = fn["numOctaves"];
-    float corn_thresh = fn["corn_thresh"];
-    float DOG_thresh = fn["DOG_thresh"];
-    int maxCorners = fn["maxCorners"];
-    int num_layers = fn["num_layers"];
-
-    harris = HarrisLaplace( numOctaves, corn_thresh, DOG_thresh, maxCorners,num_layers );
-}
-
-void HarrisAffineFeatureDetector::write (FileStorage& fs) const
-{
-    fs << "numOctaves" << harris.numOctaves;
-    fs << "corn_thresh" << harris.corn_thresh;
-    fs << "DOG_thresh" << harris.DOG_thresh;
-    fs << "maxCorners" << harris.maxCorners;
-    fs << "num_layers" << harris.num_layers;
-}
-void HarrisAffineFeatureDetector::detect( const Mat& image, std::vector<Elliptic_KeyPoint>& ekeypoints, const Mat& mask ) const
-{
-    std::vector<KeyPoint> keypoints;
-    harris.detect(image, keypoints);
-    Mat fimage;
-    image.convertTo(fimage, CV_32F, 1.f/255);
-    calcAffineCovariantRegions(fimage, keypoints, ekeypoints);
-}
-
-void HarrisAffineFeatureDetector::detectImpl( const Mat& image, std::vector<KeyPoint>& ekeypoints, const Mat& mask ) const
-{
 }
 
 }

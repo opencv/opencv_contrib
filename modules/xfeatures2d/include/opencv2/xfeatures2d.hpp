@@ -880,39 +880,31 @@ public:
             int num_layers=4);
 };
 
-
-
-class CV_EXPORTS HarrisAffineFeatureDetector : public FeatureDetector
+class CV_EXPORTS AffineFeature2D : public Feature2D
 {
 public:
- class CV_EXPORTS Params
+    static Ptr<AffineFeature2D> create(
+        Ptr<FeatureDetector> keypoint_detector,
+        Ptr<DescriptorExtractor> descriptor_extractor);
+
+    static Ptr<AffineFeature2D> create(
+        Ptr<FeatureDetector> keypoint_detector)
     {
-    public:
-        Params( int numOctaves=6, float corn_thresh=0.01, float DOG_thresh=0.01, int maxCorners=5000, int num_layers=4 );
+        return create(keypoint_detector, keypoint_detector);
+    }
 
-        int numOctaves;
-        float corn_thresh;
-        float DOG_thresh;
-        int maxCorners;
-        int num_layers;
-    };
-    HarrisAffineFeatureDetector( const HarrisAffineFeatureDetector::Params& params=HarrisAffineFeatureDetector::Params() );
-    HarrisAffineFeatureDetector( int numOctaves, float corn_thresh, float DOG_thresh, int maxCorners, int num_layers);
-    void detect( const Mat& image, std::vector<Elliptic_KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
-    virtual void read( const FileNode& fn );
-    virtual void write( FileStorage& fs ) const;
+    virtual void detect(
+        InputArray image,
+        CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
+        InputArray mask=noArray() ) = 0;
 
-protected:
-    virtual void detectImpl( const Mat& image, std::vector<KeyPoint>& keypoints, const Mat& mask=Mat() ) const;
-
-    HarrisLaplace harris;
-    Params params;
+    virtual void detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints=false ) = 0;
 };
-
-CV_EXPORTS void evaluateFeatureDetector( const Mat& img1, const Mat& img2, const Mat& H1to2,
-                              std::vector<Elliptic_KeyPoint>* _keypoints1, std::vector<Elliptic_KeyPoint>* _keypoints2,
-                              float& repeatability, int& correspCount,
-                              const Ptr<HarrisAffineFeatureDetector>& _fdetector );
 
 //! @}
 
