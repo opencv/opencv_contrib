@@ -830,7 +830,7 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
     return 1;
 
   size = UINT64_1 << ( b - 5 );  // size = 2 ^ b
-  table = std::vector<BucketGroup>(size, BucketGroup(false));
+  table = std::vector<BucketGroup>((size_t)size, BucketGroup(false));
 
   return 0;
 
@@ -844,13 +844,13 @@ BinaryDescriptorMatcher::SparseHashtable::~SparseHashtable()
 /* insert data */
 void BinaryDescriptorMatcher::SparseHashtable::insert( UINT64 index, UINT32 data )
 {
-  table[index >> 5].insert( (int) ( index % 32 ), data );
+  table[(size_t)(index >> 5)].insert( (int) ( index & 31 ), data );
 }
 
 /* query data */
 UINT32* BinaryDescriptorMatcher::SparseHashtable::query( UINT64 index, int *Size )
 {
-  return table[index >> 5].query( (int) ( index % 32 ), Size );
+  return table[(size_t)(index >> 5)].query( (int) ( index & 31 ), Size );
 }
 
 /* constructor */
