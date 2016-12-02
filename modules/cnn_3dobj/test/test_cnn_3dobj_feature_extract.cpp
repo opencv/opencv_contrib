@@ -26,11 +26,11 @@ CV_CNN_Feature_Test::CV_CNN_Feature_Test()
  */
 void CV_CNN_Feature_Test::run(int)
 {
-    String caffemodel = String(ts->get_data_path()) + "3d_triplet_iter_30000.caffemodel";
-    String network_forIMG = cvtest::TS::ptr()->get_data_path() + "3d_triplet_testIMG.prototxt";
+    String caffemodel = cvtest::findDataFile("contrib/cnn_3dobj/3d_triplet_iter_30000.caffemodel");
+    String network_forIMG = cvtest::findDataFile("contrib/cnn_3dobj/3d_triplet_testIMG.prototxt");
     String mean_file = "no";
     std::vector<String> ref_img;
-    String target_img = String(ts->get_data_path()) + "4_78.png";
+    String target_img = cvtest::findDataFile("contrib/cnn_3dobj/4_78.png");
     String feature_blob = "feat";
     String device = "CPU";
     int dev_id = 0;
