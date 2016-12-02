@@ -52,4 +52,11 @@
 #include <tesseract/resultiterator.h>
 #endif
 
+//TODO Make this work in cmake!!!!
+/* #define HAVE_CAFFE
+
+#ifdef HAVE_CAFFE
+#include "caffe/caffe.hpp"
+#endif */
+
 #endif
