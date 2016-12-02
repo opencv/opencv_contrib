@@ -46,6 +46,10 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <sstream>
+
+
 
 namespace cv
 {
@@ -465,6 +469,191 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClas
 
 //! @}
 
+
+
+//Classifiers should provide diferent backends
+//For the moment only caffe is implemeted
+enum{
+    OCR_HOLISTIC_BACKEND_NONE,
+    OCR_HOLISTIC_BACKEND_CAFFE
+};
+
+
+/** @brief Abstract class that implements the classifcation of text images.
+ *
+ * The interface is generic enough to describe any image classifier. And allows
+ * to take advantage of compouting in batches. While word classifiers are the default
+ * networks, any image classifers should work.
+ *
+ */
+class CV_EXPORTS_W TextImageClassifier
+{
+protected:
+    Size inputSz_;
+    int channelCount_;
+    /** @brief all image preprocessing is handled here including whitening etc.
+     *
+     *  @param input the image to be preprocessed for the classifier. If the depth
+     * is CV_U8 values should be in [0,255] otherwise values are assumed to be in [0,1]
+     *
+     * @param output reference to the image to be fed to the classifier, the preprocessor will
+     * resize the image to the apropriate size and convert it to the apropriate depth\
+     *
+     * The method preprocess should never be used externally, it is up to classify and classifyBatch
+     * methods to employ it.
+     */
+    virtual void preprocess(Mat& input,Mat& output)=0;
+public:
+    virtual ~TextImageClassifier() {}
+    /** @brief produces a class confidence row-vector given an image
+     */
+    CV_WRAP virtual void classify(InputArray image, OutputArray classProbabilities) = 0;
+    /** @brief produces a matrix containing class confidence row-vectors given an collection of images
+     */
+    CV_WRAP virtual void classifyBatch(InputArrayOfArrays image, OutputArray classProbabilities) = 0;
+    /** @brief simple getter method returning the size of the oputput row-vector
+     */
+    CV_WRAP virtual int getOutputSize()=0;
+    /** @brief simple getter method returning the size of the minibatches for this classifier.
+     * If not applicabe this method should return 1
+     */
+    CV_WRAP virtual int getMinibatchSize()=0;
+    /** @brief simple getter method returning a value describing the framework beeing employed to implement the classifier
+     */
+    CV_WRAP virtual int getBackend(){return OCR_HOLISTIC_BACKEND_NONE;}
+};
+
+class CV_EXPORTS_W DictNet:public TextImageClassifier
+{
+    /** @brief Class that uses a pretrained caffe model for word classification.
+     *
+     * This network is described in detail in:
+     * Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015
+     * http://arxiv.org/abs/1412.1842
+     */
+public:
+    virtual ~DictNet() {};
+
+    CV_WRAP virtual bool usingGpu()=0;
+    /** @brief Constructs a DictNet object from a caffe pretrained model
+     *
+     * @param archFilename is the path to the prototxt file containing the deployment model architecture description.
+     *
+     * @param weightsFilename is the path to the pretrained weights of the model in binary fdorm. This file can be
+     * very large, up to 2GB.
+     *
+     * @param minibatchSz the maximum number of samples that can processed in parallel. In practice this parameter
+     * has an effect only when computing in the GPU and should be set with respect to the memory available in the GPU.
+     *
+     * @param useGpu boolean flag setting GPU or CPU computation
+     *
+     * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
+     * the only option
+     */
+    CV_WRAP static Ptr<DictNet> create(String archFilename,String weightsFilename,int minibatchSz=100,bool useGpu=0,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+};
+
+
+
+/** @brief OCRHolisticWordRecognizer class provides the functionallity of segmented wordspotting.
+ * Given a predefined vocabulary , a TextImageClassifier is employed to select the most probable
+ * word given an input image.
+ *
+ * This class implements the logic of providing transcriptions given a vocabulary and and an image
+ * classifer.
+ */
+class CV_EXPORTS_W OCRHolisticWordRecognizer : public BaseOCR
+{
+public:
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=OCR_LEVEL_WORD)=0;
+
+    /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
+
+    Takes image on input and returns recognized text in the output_text parameter. Optionally
+    provides also the Rects for individual text elements found (e.g. words), and the list of those
+    text elements with their confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3
+
+    @param mask is totally ignored and is only available for compatibillity reasons
+
+    @param output_text Output text of the the word spoting, always one that exists in the dictionary.
+
+    @param component_rects Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_texts Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_confidences Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_level must be OCR_LEVEL_WORD.
+     */
+
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
+                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+                     int component_level=OCR_LEVEL_WORD)=0;
+
+
+    /**
+    @brief Method that provides a quick and simple interface to a single word image classifcation
+
+    @param inputImage an image expected to be a CV_U8C1 or CV_U8C3 of any size assumed to contain a single word
+
+    @param transcription an opencv string that will store the detected word transcription
+
+    @param confidence a double that will be updated with the confidence the classifier has for the selected word
+    */
+    CV_WRAP virtual void recogniseImage(InputArray inputImage,CV_OUT String& transcription,CV_OUT double& confidence)=0;
+
+    /**
+    @brief Method that provides a quick and simple interface to a multiple word image classifcation taking advantage
+    the classifiers parallel capabilities.
+
+    @param inputImageList an list of images expected to be a CV_U8C1 or CV_U8C3 each image can be of any size and is assumed
+    to contain a single word.
+
+    @param transcriptions a vector of opencv strings that will store the detected word transcriptions, one for each
+    input image
+
+    @param confidences a vector of double that will be updated with the confidence the classifier has for each of the
+    selected words.
+    */
+    CV_WRAP virtual void recogniseImageBatch(InputArrayOfArrays inputImageList,CV_OUT std::vector<String>& transcriptions,CV_OUT std::vector<double>& confidences)=0;
+
+
+    /**
+    @brief simple getted for the vocabulary employed
+    */
+    CV_WRAP virtual const std::vector<String>& getVocabulary()=0;
+
+
+    /** @brief Creates an instance of the OCRHolisticWordRecognizer class.
+
+    @param classifierPtr an instance of TextImageClassifier, normaly a DictNet instance
+    @param vocabullaryFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
+    in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
+    of the classifier.
+     */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(Ptr<TextImageClassifier> classifierPtr,String vocabullaryFilename);
+    /** @brief Creates an instance of the OCRHolisticWordRecognizer class and implicitly also a DictNet classifier.
+
+    @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
+    @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.
+    @param vocabullaryFilename the relative or absolute path to the file containing all words in the vocabulary. Each text line
+    in the file is assumed to be a single word. The number of words in the vocabulary must be exactly the same as the outputSize
+    of the classifier.
+    */
+    CV_WRAP static Ptr<OCRHolisticWordRecognizer> create(String modelArchFilename, String modelWeightsFilename, String vocabullaryFilename);
+
+};
+
+
 }
 }
+
+
 #endif // _OPENCV_TEXT_OCR_HPP_
