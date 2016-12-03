@@ -61,7 +61,7 @@ namespace ft
 
     The function creates kernel usable for latter fuzzy image processing.
     */
-    CV_EXPORTS void createKernel(cv::InputArray A, cv::InputArray B, cv::OutputArray kernel, const int chn = 1);
+    CV_EXPORTS_AS(createKernel1) void createKernel(InputArray A, InputArray B, OutputArray kernel, const int chn);
 
     /** @brief Creates kernel from general functions.
     @param function Function type could be one of the following:
@@ -72,7 +72,7 @@ namespace ft
 
     The function creates kernel from predefined functions.
     */
-    CV_EXPORTS void createKernel(int function, int radius, cv::OutputArray kernel, const int chn = 1);
+    CV_EXPORTS_W void createKernel(int function, int radius, OutputArray kernel, const int chn);
 
     /** @brief Image inpainting
     @param image Input image.
@@ -91,16 +91,16 @@ namespace ft
     @note
         The algorithms are described in paper @cite Perf:rec.
     */
-    CV_EXPORTS void inpaint(const cv::Mat &image, const cv::Mat &mask, cv::Mat &output, int radius = 2, int function = ft::LINEAR, int algorithm = ft::ONE_STEP);
+    CV_EXPORTS_W void inpaint(InputArray image, InputArray mask, OutputArray output, int radius, int function, int algorithm);
 
     /** @brief Image filtering
     @param image Input image.
-    @param kernel Final 32-b kernel.
+    @param kernel Final 32-bit kernel.
     @param output Output 32-bit image.
 
     Filtering of the input image by means of F-transform.
     */
-    CV_EXPORTS void filter(const cv::Mat &image, const cv::Mat &kernel, cv::Mat &output);
+    CV_EXPORTS_W void filter(InputArray image, InputArray kernel, OutputArray output);
 
     //! @}
 }
