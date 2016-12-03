@@ -852,23 +852,6 @@ public:
     virtual ~Elliptic_KeyPoint();
 };
 
-class CV_EXPORTS HarrisLaplace
-{
-
-public:
-    HarrisLaplace();
-    HarrisLaplace(int numOctaves, float corn_thresh, float DOG_thresh,int maxCorners=1500, int num_layers=4);
-    void detect(const Mat& image, std::vector<KeyPoint>& keypoints) const;
-    virtual ~HarrisLaplace();
-
-    int numOctaves;
-    float corn_thresh;
-    float DOG_thresh;
-    int maxCorners;
-    int num_layers;
-
-};
-
 class CV_EXPORTS_W HarrisLaplaceFeatureDetector : public Feature2D
 {
 public:
