@@ -43,10 +43,11 @@
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgproc/types_c.h"
-namespace cv
-{
-namespace xfeatures2d
-{
+
+namespace {
+
+using namespace cv;
+using namespace cv::xfeatures2d;
 
 /*
 * Functions to perform affine adaptation of circular keypoint
@@ -54,107 +55,12 @@ namespace xfeatures2d
 void calcAffineCovariantRegions(const Mat& image, const std::vector<KeyPoint>& keypoints, std::vector<Elliptic_KeyPoint>& affRegions);
 void calcAffineCovariantDescriptors( const Ptr<DescriptorExtractor>& dextractor, const Mat& img, std::vector<Elliptic_KeyPoint>& affRegions, Mat& descriptors );
 
-void calcDerivatives(const Mat& image, Mat & dx2, Mat & dxy, Mat & dy2, float si, float sd);
 void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& M);
 bool calcAffineAdaptation(const Mat & image, Elliptic_KeyPoint& keypoint);
 float selIntegrationScale(const Mat & image, float si, Point c);
 float selDifferentiationScale(const Mat & image, Mat & Lxm2smooth, Mat & Lxmysmooth, Mat & Lym2smooth, float si, Point c);
 float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& Mk);
 float normMaxEval(Mat & U, Mat& uVal, Mat& uVect);
-
-class AffineFeature2D_Impl : public AffineFeature2D
-{
-public:
-    AffineFeature2D_Impl(
-        Ptr<FeatureDetector> keypoint_detector,
-        Ptr<DescriptorExtractor> descriptor_extractor
-    ) : m_keypoint_detector(keypoint_detector)
-      , m_descriptor_extractor(descriptor_extractor) {}
-protected:
-    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    int descriptorSize();
-    int descriptorType();
-    int defaultNorm();
-private:
-    Ptr<FeatureDetector> m_keypoint_detector;
-    Ptr<DescriptorExtractor> m_descriptor_extractor;
-};
-
-Ptr<AffineFeature2D> AffineFeature2D::create(
-    Ptr<FeatureDetector> keypoint_detector,
-    Ptr<DescriptorExtractor> descriptor_extractor)
-{
-    return makePtr<AffineFeature2D_Impl>(keypoint_detector, descriptor_extractor);
-}
-
-void AffineFeature2D_Impl::detect(
-    InputArray image,
-    std::vector<Elliptic_KeyPoint>& keypoints,
-    InputArray mask)
-{
-    std::vector<KeyPoint> non_elliptic_keypoints;
-    m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
-    Mat fimage;
-    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
-    calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
-}
-
-void AffineFeature2D_Impl::detectAndCompute(
-        InputArray image,
-        InputArray mask,
-        std::vector<Elliptic_KeyPoint>& keypoints,
-        OutputArray descriptors,
-        bool useProvidedKeypoints)
-{
-    if(!useProvidedKeypoints)
-    {
-        std::vector<KeyPoint> non_elliptic_keypoints;
-        m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
-        Mat fimage;
-        image.getMat().convertTo(fimage, CV_32F, 1.f/255);
-        calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
-    }
-    Mat descriptor_mat;
-    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), keypoints, descriptor_mat);
-    descriptors.assign(descriptor_mat);
-}
-
-void AffineFeature2D_Impl::detectAndCompute(
-        InputArray image,
-        InputArray mask,
-        std::vector<KeyPoint>& keypoints,
-        OutputArray descriptors,
-        bool useProvidedKeypoints)
-{
-    if(!useProvidedKeypoints)
-    {
-        m_keypoint_detector->detect(image, keypoints, mask);
-    }
-    Mat fimage;
-    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
-    std::vector<Elliptic_KeyPoint> elliptic_keypoints;
-    calcAffineCovariantRegions(fimage, keypoints, elliptic_keypoints);
-    Mat descriptor_mat;
-    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), elliptic_keypoints, descriptor_mat);
-    descriptors.assign(descriptor_mat);
-}
-
-int AffineFeature2D_Impl::descriptorSize()
-{
-    return m_descriptor_extractor->descriptorSize();
-}
-
-int AffineFeature2D_Impl::descriptorType()
-{
-    return m_descriptor_extractor->descriptorType();
-}
-
-int AffineFeature2D_Impl::defaultNorm()
-{
-    return m_descriptor_extractor->defaultNorm();
-}
 
 /*
  * Calculates second moments matrix in point p
@@ -216,10 +122,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 
         //Transformation matrix
         transf.setTo(0);
-        Mat col0 = transf.col(0);
-        U.col(0).copyTo(col0);
-        Mat col1 = transf.col(1);
-        U.col(1).copyTo(col1);
+        U.col(0).copyTo(transf.col(0));
+        U.col(1).copyTo(transf.col(1));
         keypoint.transf = Mat(transf);
 
         Size_<float> boundingBox;
@@ -363,10 +267,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 
                     //Set transformation matrix
                     transf.setTo(0);
-                    Mat col0 = transf.col(0);
-                    U.col(0).copyTo(col0);
-                    Mat col1 = transf.col(1);
-                    U.col(1).copyTo(col1);
+                    U.col(0).copyTo(transf.col(0));
+                    U.col(1).copyTo(transf.col(1));
                     keypoint.transf = Mat(transf);
 
                     ax1 = 1. / std::abs(uVal.at<float> (0, 0)) * 3 * si;
@@ -622,9 +524,9 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
 {
 
     assert(!affRegions.empty());
-    int size = dextractor->descriptorSize();
-    int type = dextractor->descriptorType();
-    descriptors = Mat(Size(size, affRegions.size()), type);
+    int descriptorSize = dextractor->descriptorSize();
+    int descriptorType = dextractor->descriptorType();
+    descriptors = Mat(Size(descriptorSize, affRegions.size()), descriptorType);
     descriptors.setTo(0);
 
     int i = 0;
@@ -713,5 +615,104 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
     }
 
 }
+
+} // anonymous namespace
+
+namespace cv
+{
+namespace xfeatures2d
+{
+class AffineFeature2D_Impl : public AffineFeature2D
+{
+public:
+    AffineFeature2D_Impl(
+        Ptr<FeatureDetector> keypoint_detector,
+        Ptr<DescriptorExtractor> descriptor_extractor
+    ) : m_keypoint_detector(keypoint_detector)
+      , m_descriptor_extractor(descriptor_extractor) {}
+protected:
+    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
+    int descriptorSize();
+    int descriptorType();
+    int defaultNorm();
+private:
+    Ptr<FeatureDetector> m_keypoint_detector;
+    Ptr<DescriptorExtractor> m_descriptor_extractor;
+};
+
+Ptr<AffineFeature2D> AffineFeature2D::create(
+    Ptr<FeatureDetector> keypoint_detector,
+    Ptr<DescriptorExtractor> descriptor_extractor)
+{
+    return makePtr<AffineFeature2D_Impl>(keypoint_detector, descriptor_extractor);
+}
+
+void AffineFeature2D_Impl::detect(
+    InputArray image,
+    std::vector<Elliptic_KeyPoint>& keypoints,
+    InputArray mask)
+{
+    std::vector<KeyPoint> non_elliptic_keypoints;
+    m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
+    Mat fimage;
+    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+    calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
+}
+
+void AffineFeature2D_Impl::detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        std::vector<Elliptic_KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints)
+{
+    if(!useProvidedKeypoints)
+    {
+        std::vector<KeyPoint> non_elliptic_keypoints;
+        m_keypoint_detector->detect(image, non_elliptic_keypoints, mask);
+        Mat fimage;
+        image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+        calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
+    }
+    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), keypoints, descriptors.getMatRef());
+}
+
+void AffineFeature2D_Impl::detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        std::vector<KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints)
+{
+    if(!useProvidedKeypoints)
+    {
+        m_keypoint_detector->detect(image, keypoints, mask);
+    }
+    Mat fimage;
+    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+    std::vector<Elliptic_KeyPoint> elliptic_keypoints;
+    calcAffineCovariantRegions(fimage, keypoints, elliptic_keypoints);
+    Mat descriptor_mat;
+    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), elliptic_keypoints, descriptor_mat);
+    descriptors.assign(descriptor_mat);
+}
+
+int AffineFeature2D_Impl::descriptorSize()
+{
+    return m_descriptor_extractor->descriptorSize();
+}
+
+int AffineFeature2D_Impl::descriptorType()
+{
+    return m_descriptor_extractor->descriptorType();
+}
+
+int AffineFeature2D_Impl::defaultNorm()
+{
+    return m_descriptor_extractor->defaultNorm();
+}
+
 }
 }

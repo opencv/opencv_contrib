@@ -38,12 +38,14 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
-namespace xfeatures2d
-{
+namespace {
 
-bool sort_func(KeyPoint kp1, KeyPoint kp2);
+using namespace cv;
+
+bool sort_func(KeyPoint kp1, KeyPoint kp2)
+{
+    return (kp1.response > kp2.response);
+}
 
 class Pyramid
 {
@@ -398,6 +400,13 @@ Mat Pyramid::DOGOctave::getLayerAt(int i)
     return layers[i];
 }
 
+} // anonymous namespace
+
+namespace cv
+{
+namespace xfeatures2d
+{
+
 /*
  *  HarrisLaplaceFeatureDetector_Impl
  */
@@ -637,10 +646,6 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
         keypoints.resize(maxCorners);
 }
 
-bool sort_func(KeyPoint kp1, KeyPoint kp2)
-{
-    return (kp1.response > kp2.response);
-}
 
 }
 }
