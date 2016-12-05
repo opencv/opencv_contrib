@@ -484,13 +484,19 @@ void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const
  * Scale & affine invariant interest point detectors.
  * International Journal of Computer Vision, 2004"
  */
-void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPoint>& keypoints, InputArray mask )
+void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPoint>& keypoints, InputArray msk )
 {
     Mat image = img.getMat();
     if( image.empty() )
     {
         keypoints.clear();
         return;
+    }
+    Mat mask = msk.getMat();
+    if( !mask.empty() )
+    {
+        CV_Assert(mask.type() == CV_8UC1);
+        CV_Assert(mask.size == image.size);
     }
     Mat_<float> dx2, dy2, dxy;
     Mat Lx, Ly;
@@ -601,6 +607,12 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
                                 Point(x * pow(2, octave - 1) + pow(2, octave - 1) / 2,
                                         y * pow(2, octave - 1) + pow(2, octave - 1) / 2),
                                 3 * pow(2, octave - 1) * si * 2, 0, val, octave);
+
+                        if(!mask.empty() && mask.at<unsigned char>(kp.pt.y, kp.pt.x) == 0)
+                        {
+                            // ignore keypoints where mask is zero
+                            continue;
+                        }
 
                         /*Check whether keypoint size is inside the image*/
                         float start_kp_x = kp.pt.x - kp.size / 2;
