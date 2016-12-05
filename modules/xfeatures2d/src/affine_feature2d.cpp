@@ -89,7 +89,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
     Mat U = Mat::eye(2, 2, CV_32F) * 1; /*Normalization matrix*/
 
     Mat warpedImg, Mk, Lxm2smooth, Lym2smooth, Lxmysmooth, img_roi;
-    float Qinv = 1, q, si = keypoint.si, sd = 0.75 * si;
+    float Qinv = 1, q, si = keypoint.si;
     bool divergence = false, convergence = false;
     int i = 0;
 
@@ -203,7 +203,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             //Integration Scale selection
             si = selIntegrationScale(warpedImg, si, Point(cx, cy));
             //Differentation scale selection
-            sd = selDifferentiationScale(warpedImg, Lxm2smooth, Lxmysmooth, Lym2smooth, si,
+            selDifferentiationScale(warpedImg, Lxm2smooth, Lxmysmooth, Lym2smooth, si,
                     Point(cx, cy));
 
             //Spatial Localization
