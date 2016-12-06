@@ -109,7 +109,7 @@ namespace cv
 			}
 			if (!importer)
 			{
-				cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
+				//cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
 			}
 
 			importer->populateNet(net);
@@ -164,9 +164,6 @@ namespace cv
 			dnn::Blob targetBlob = dnn::Blob(targetPatch);
 			dnn::Blob searchBlob = dnn::Blob(searchPatch);
 			
-			cout << targetBlob.size(0) << " " << targetBlob.size(1) << " " << targetBlob.size(2) << " " << targetBlob.size(3) << " " << endl;
-			cout << searchBlob.dims() << endl;
-
 			net.setBlob(".data1", targetBlob);
 			net.setBlob(".data2", searchBlob);
 
