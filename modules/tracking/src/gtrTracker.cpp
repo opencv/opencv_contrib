@@ -109,12 +109,7 @@ namespace cv
 			}
 			if (!importer)
 			{
-				std::cerr << "Can't load network by using the following files: " << std::endl;
-				std::cerr << "prototxt:   " << modelTxt << std::endl;
-				std::cerr << "caffemodel: " << modelBin << std::endl;
-				std::cerr << "bvlc_googlenet.caffemodel can be downloaded here:" << std::endl;
-				std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
-				exit(-1);
+				cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
 			}
 
 			importer->populateNet(net);
@@ -152,8 +147,6 @@ namespace cv
 			copyMakeBorder(curFrame, curFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
 			searchPatch = curFramePadded(targetPatchRect).clone();
 
-			resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE));
-			resize(searchPatch, searchPatch, Size(INPUT_SIZE, INPUT_SIZE));
 
 			//Preprocess
 			//Resize
@@ -165,11 +158,14 @@ namespace cv
 			searchPatch = searchPatch - 128;
 
 			//Convert to Float type
-			targetPatch.convertTo(targetPatch, CV_32FC1);
-			searchPatch.convertTo(searchPatch, CV_32FC1);
+			targetPatch.convertTo(targetPatch, CV_32F);
+			searchPatch.convertTo(searchPatch, CV_32F);
 
 			dnn::Blob targetBlob = dnn::Blob(targetPatch);
 			dnn::Blob searchBlob = dnn::Blob(searchPatch);
+			
+			cout << targetBlob.size(0) << " " << targetBlob.size(1) << " " << targetBlob.size(2) << " " << targetBlob.size(3) << " " << endl;
+			cout << searchBlob.dims() << endl;
 
 			net.setBlob(".data1", targetBlob);
 			net.setBlob(".data2", searchBlob);
@@ -184,11 +180,7 @@ namespace cv
 			curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;
 			curBB.width = (resMat.at<float>(2) - resMat.at<float>(0)) * targetPatchRect.width / INPUT_SIZE;
 			curBB.height = (resMat.at<float>(3) - resMat.at<float>(1)) * targetPatchRect.height / INPUT_SIZE;
-
-			cout << resMat.at<float>(0) << " " << resMat.at<float>(1) << " " << resMat.at<float>(2) << " " << resMat.at<float>(3) << endl;
-			cout << curBB.x << " " << curBB.y << " " << curBB.width << " " << curBB.height << endl;
-			cout << endl;
-
+			
 			//Predicted BB
 			boundingBox = curBB;
 

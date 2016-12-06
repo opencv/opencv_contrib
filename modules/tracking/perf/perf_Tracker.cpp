@@ -344,7 +344,7 @@ PERF_TEST_P(tracking, tld, testing::Combine(TESTSET_NAMES, SEGMENTS))
 
 }
 
-PERF_TEST_P(tracking, goturn, testing::Combine(TESTSET_NAMES, SEGMENTS))
+PERF_TEST_P(tracking, GOTURN, testing::Combine(TESTSET_NAMES, SEGMENTS))
 {
 	string video = get<0>(GetParam());
 	int segmentId = get<1>(GetParam());
