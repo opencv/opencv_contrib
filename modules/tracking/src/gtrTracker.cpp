@@ -109,7 +109,7 @@ namespace cv
 			}
 			if (!importer)
 			{
-				//cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
+				cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
 			}
 
 			importer->populateNet(net);
