@@ -132,6 +132,8 @@ public:
 
 An image descriptor that can be computed very fast, while being
 about as robust as, for example, SURF or BRIEF.
+
+@note It requires a color image as input.
  */
 class CV_EXPORTS_W LUCID : public Feature2D
 {
@@ -140,7 +142,7 @@ public:
      * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      */
-    CV_WRAP static Ptr<LUCID> create(const int lucid_kernel, const int blur_kernel);
+    CV_WRAP static Ptr<LUCID> create(const int lucid_kernel = 1, const int blur_kernel = 2);
 };
 
 
