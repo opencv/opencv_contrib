@@ -147,7 +147,6 @@ namespace cv
 			copyMakeBorder(curFrame, curFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
 			searchPatch = curFramePadded(targetPatchRect).clone();
 
-
 			//Preprocess
 			//Resize
 			resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE));
@@ -171,7 +170,6 @@ namespace cv
 			dnn::Blob res = net.getBlob("scale");
 
 			Mat resMat = res.matRefConst().reshape(1, 1);
-
 
 			curBB.x = targetPatchRect.x + (resMat.at<float>(0) * targetPatchRect.width / INPUT_SIZE) - targetPatchRect.width;
 			curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;
