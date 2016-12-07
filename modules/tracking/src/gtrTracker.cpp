@@ -163,7 +163,7 @@ namespace cv
 
 			dnn::Blob targetBlob = dnn::Blob(targetPatch);
 			dnn::Blob searchBlob = dnn::Blob(searchPatch);
-			
+
 			net.setBlob(".data1", targetBlob);
 			net.setBlob(".data2", searchBlob);
 
@@ -177,7 +177,7 @@ namespace cv
 			curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;
 			curBB.width = (resMat.at<float>(2) - resMat.at<float>(0)) * targetPatchRect.width / INPUT_SIZE;
 			curBB.height = (resMat.at<float>(3) - resMat.at<float>(1)) * targetPatchRect.height / INPUT_SIZE;
-			
+
 			//Predicted BB
 			boundingBox = curBB;
 
