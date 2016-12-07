@@ -424,6 +424,13 @@ void GuidedFilterImpl::ComputeCovGuideInv_ParBody::operator()(const Range& range
                     add_mul(det, a, ac, gf.w);
             }
 
+            if (gf.eps < 1e-2)
+            {
+                for (int j = 0; j < gf.w; j++)
+                    if (abs(det[j]) < 1e-6f)
+                        det[j] = 1.f;
+            }
+
             for (int k = 0; k < gf.covarsInv.total(); k += 1)
             {
                 div_1x(gf.covarsInv(k).ptr<float>(i), det, gf.w);

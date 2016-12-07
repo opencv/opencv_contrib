@@ -433,8 +433,8 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
                  String dslabel, const int compresslevel,
                  const vector<int>& dims_chunks ) const
 {
-    CV_Assert( &dims_chunks[0] == NULL || dims_chunks.size() == 2 );
-    dscreate( rows, cols, type, dslabel, compresslevel, &dims_chunks[0] );
+    CV_Assert( dims_chunks.empty() || dims_chunks.size() == 2 );
+    dscreate( rows, cols, type, dslabel, compresslevel, dims_chunks.empty() ? NULL : &(dims_chunks[0]) );
 }
 
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
@@ -466,10 +466,10 @@ void HDF5Impl::dscreate( const vector<int>& sizes, const int type,
                  String dslabel, const int compresslevel,
                  const vector<int>& dims_chunks ) const
 {
-    CV_Assert( &dims_chunks[0] == NULL || dims_chunks.size() == sizes.size() );
+    CV_Assert( dims_chunks.empty() || dims_chunks.size() == sizes.size() );
 
     const int n_dims = (int) sizes.size();
-    dscreate( n_dims, &sizes[0], type, dslabel, compresslevel, &dims_chunks[0] );
+    dscreate( n_dims, &sizes[0], type, dslabel, compresslevel, dims_chunks.empty() ? NULL : &(dims_chunks[0]) );
 }
 
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
@@ -536,7 +536,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
     }
 
     // create data
-    H5Dcreate( m_h5_file_id, dslabel.c_str(), dstype,
+    hid_t dsdata = H5Dcreate( m_h5_file_id, dslabel.c_str(), dstype,
                dspace, H5P_DEFAULT, dsdcpl, H5P_DEFAULT );
 
     if ( channs > 1 )
@@ -548,6 +548,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
 
     H5Pclose( dsdcpl );
     H5Sclose( dspace );
+    H5Dclose( dsdata );
 }
 
 // overload
@@ -663,6 +664,7 @@ void HDF5Impl::dsread( OutputArray Array, String dslabel,
     delete [] mxdims;
     delete [] foffset;
 
+    H5Tclose (h5type );
     H5Tclose( dstype );
     H5Sclose( dspace );
     H5Sclose( fspace );

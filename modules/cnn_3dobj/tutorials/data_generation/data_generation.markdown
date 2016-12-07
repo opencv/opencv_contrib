@@ -12,7 +12,6 @@ In this tutorial you will learn how to
 Code
 ----
 
-You can download the code from [here ](https://github.com/Wangyida/opencv_contrib/blob/cnn_3dobj/samples/demo_sphereview_data.cpp).
 @include cnn_3dobj/samples/demo_sphereview_data.cpp
 
 Explanation

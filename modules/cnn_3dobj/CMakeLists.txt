@@ -24,7 +24,9 @@ else()
   message(STATUS "Glog:   NO")
 endif()
 
-if(HAVE_CAFFE)
+if(NOT HAVE_CAFFE)
+    ocv_module_disable(cnn_3dobj)
+else()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cnn_3dobj_config.hpp.in
                ${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/cnn_3dobj_config.hpp @ONLY)
 

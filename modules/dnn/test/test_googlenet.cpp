@@ -42,6 +42,8 @@
 #if defined(ENABLE_CAFFE_MODEL_TESTS)
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
+#include <opencv2/core/ocl.hpp>
+#include <opencv2/ts/ocl_test.hpp>
 
 namespace cvtest
 {
@@ -55,7 +57,7 @@ static std::string _tf(TString filename)
     return (getOpenCVExtraDir() + "/dnn/") + filename;
 }
 
-TEST(Reproducibility_GoogLeNet, Accuracy)
+static void launchGoogleNetTest()
 {
     Net net;
     {
@@ -69,12 +71,23 @@ TEST(Reproducibility_GoogLeNet, Accuracy)
     inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob(".data", Blob(inpMats));
+    net.setBlob(".data", Blob::fromImages(inpMats));
     net.forward();
 
     Blob out = net.getBlob("prob");
     Blob ref = blobFromNPY(_tf("googlenet_prob.npy"));
     normAssert(out, ref);
+}
+
+TEST(Reproducibility_GoogLeNet, Accuracy)
+{
+    OCL_OFF(launchGoogleNetTest());
+}
+
+OCL_TEST(Reproducibility_GoogLeNet, Accuracy)
+{
+    OCL_ON(launchGoogleNetTest());
+    OCL_OFF();
 }
 
 }

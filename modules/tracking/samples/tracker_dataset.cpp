@@ -39,6 +39,14 @@
 //
 //M*/
 
+
+//
+//  !!! this sample requires the opencv_datasets module !!!
+//
+
+#include "opencv2/opencv_modules.hpp"
+#ifdef HAVE_OPENCV_DATASETS
+
 #include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
@@ -222,3 +230,12 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+
+
+#else // ! HAVE_OPENCV_DATASETS
+int main() {
+	CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets !");
+	return -1;
+}
+#endif // HAVE_OPENCV_DATASETS

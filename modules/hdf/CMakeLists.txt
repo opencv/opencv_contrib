@@ -16,24 +16,21 @@ if(WIN32)
      set(HDF5_FOUND "NO")
   endif()
 else()
-  find_package(HDF5)
+  if(NOT CMAKE_CROSSCOMPILING) # iOS build should not reuse OSX package
+    find_package(HDF5)
+  endif()
 endif()
 
-if(HDF5_FOUND)
-    set(HAVE_HDF5 1)
-    message(STATUS "HDF5:   YES")
-else()
-    ocv_module_disable(hdf)
-    message(STATUS "HDF5:   NO")
+if(NOT HDF5_FOUND)
+    ocv_module_disable(hdf) # no return
 endif()
+
+set(HAVE_HDF5 1)
+
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Winvalid-offsetof)
 
 set(the_description "Hierarchical Data Format I/O")
 ocv_define_module(hdf opencv_core WRAP python)
 
-if(HDF5_FOUND)
-  include_directories(${HDF5_INCLUDE_DIRS})
-endif()
-
-if(HDF5_FOUND)
-  target_link_libraries(opencv_hdf ${HDF5_LIBRARIES})
-endif()
+include_directories(${HDF5_INCLUDE_DIRS})
+target_link_libraries(opencv_hdf ${HDF5_LIBRARIES})

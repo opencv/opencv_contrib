@@ -338,11 +338,11 @@ int BinaryDescriptor::descriptorSize() const
 static inline int get2Pow( int i )
 {
   if( i >= 0 && i <= 7 )
-    return (int) pow( 2, (double) i );
-
+    return 1 << i;
   else
   {
-    throw std::runtime_error( "Invalid power argument" );
+    CV_Error( Error::StsBadArg, "Invalid power argument" );
+    return -1;
   }
 }
 
@@ -421,7 +421,7 @@ void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& ke
   }
 
   if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
-  throw std::runtime_error( "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
+    CV_Error( Error::StsBadArg, "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
   else
   detectImpl( image, keylines, mask );
@@ -441,7 +441,7 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
     if( masks[counter].data != NULL && ( masks[counter].size() != images[counter].size() || masks[counter].type() != CV_8UC1 ) )
-      throw std::runtime_error( "Masks error while detecting lines: please check their dimensions and that data types are CV_8UC1" );
+      CV_Error( Error::StsBadArg, "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
     else
       detectImpl( images[counter], keylines[counter], masks[counter] );
@@ -461,7 +461,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 
   /*check whether image depth is different from 0 */
   if( image.depth() != 0 )
-    throw std::runtime_error( "Warning, depth image!= 0" );
+    CV_Error( Error::BadDepth, "Warning, depth image!= 0" );
 
   /* create a pointer to self */
   BinaryDescriptor *bn = const_cast<BinaryDescriptor*>( this );
@@ -511,7 +511,15 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   {
     for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
     {
-      KeyLine kl = keylines[keyCounter];
+      KeyLine& kl = keylines[keyCounter];
+
+      //due to imprecise floating point scaling in the pyramid a little overflow can occur in line coordinates,
+      //especially on big images. It will be fixed here
+      kl.startPointX = (float)std::min((int)kl.startPointX, mask.cols - 1);
+      kl.startPointY = (float)std::min((int)kl.startPointY, mask.rows - 1);
+      kl.endPointX = (float)std::min((int)kl.endPointX, mask.cols - 1);
+      kl.endPointY = (float)std::min((int)kl.endPointY, mask.rows - 1);
+
       if( mask.at < uchar > ( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at < uchar > ( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
     }
@@ -547,7 +555,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
   /*check whether image's depth is different from 0 */
   if( image.depth() != 0 )
-    throw std::runtime_error( "Error, depth of image != 0" );
+    CV_Error( Error::BadDepth, "Error, depth of image != 0" );
 
   /* keypoints list can't be empty */
   if( keylines.size() == 0 )
@@ -2195,6 +2203,11 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
     std::cout << "Edge drawing Error: The total number of edge pixels is larger than MaxNumOfEdgePixels, "
         "numofedgePixel1 = " << offsetPFirst << ",  numofedgePixel2 = " << offsetPSecond << ", MaxNumOfEdgePixel=" << edgePixelArraySize << std::endl;
     return -1;
+  }
+  if( !(offsetPFirst && offsetPSecond) )
+  {
+      std::cout << "Edge drawing Error: lines not found" << std::endl;
+      return -1;
   }
 
   /*now all the edge information are stored in pFirstPartEdgeX_, pFirstPartEdgeY_,

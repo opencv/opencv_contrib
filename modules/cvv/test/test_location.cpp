@@ -10,7 +10,7 @@
 TEST(LocationTest, FileLineFunction)
 {
 	auto locationMacroResult = CVVISUAL_LOCATION;
-	auto line = __LINE__ - 1;
+	size_t line = __LINE__ - 1;
 	auto file = __FILE__;
 	auto fun = CVVISUAL_FUNCTION_NAME_MACRO;
 	EXPECT_EQ(locationMacroResult.isKnown, true);
