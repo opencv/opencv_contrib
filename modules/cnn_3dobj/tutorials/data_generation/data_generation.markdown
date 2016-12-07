@@ -12,7 +12,7 @@ In this tutorial you will learn how to
 Code
 ----
 
-@include cnn_3dobj/samples/demo_sphereview_data.cpp
+@include cnn_3dobj/samples/sphereview_data.cpp
 
 Explanation
 -----------

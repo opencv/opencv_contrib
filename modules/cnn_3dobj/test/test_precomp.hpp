@@ -12,7 +12,6 @@
 #include <iostream>
 #include "opencv2/ts.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/cnn_3dobj_config.hpp"
 #include "opencv2/cnn_3dobj.hpp"
 
 #endif

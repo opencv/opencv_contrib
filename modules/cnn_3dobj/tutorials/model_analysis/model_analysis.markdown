@@ -12,7 +12,7 @@ In this tutorial you will learn how to
 Code
 ----
 
-@include cnn_3dobj/samples/demo_model_analysis.cpp
+@include cnn_3dobj/samples/model_analysis.cpp
 
 Explanation
 -----------
