@@ -387,6 +387,47 @@ TEST_P(GuidedFilterTest, accuracy)
     }
 }
 
+TEST_P(GuidedFilterTest, smallParamsIssue)
+{
+    GFParams params = GetParam();
+    string guideFileName = get<1>(params);
+    string srcFileName = get<2>(params);
+    int guideCnNum = 3;
+    int srcCnNum = get<0>(params);
+
+    Mat guide = imread(getOpenCVExtraDir() + guideFileName);
+    Mat src = imread(getOpenCVExtraDir() + srcFileName);
+    ASSERT_TRUE(!guide.empty() && !src.empty());
+
+    Size dstSize(guide.cols, guide.rows);
+    guide = convertTypeAndSize(guide, CV_MAKE_TYPE(guide.depth(), guideCnNum), dstSize);
+    src = convertTypeAndSize(src, CV_MAKE_TYPE(src.depth(), srcCnNum), dstSize);
+    Mat output;
+
+    ximgproc::guidedFilter(guide, src, output, 3, 1e-6);
+
+    size_t whitePixels = 0;
+    for(int i = 0; i < output.cols; i++)
+    {
+        for(int j = 0; j < output.rows; j++)
+        {
+            if(output.channels() == 1)
+            {
+                if(output.ptr<uchar>(i)[j] == 255)
+                    whitePixels++;
+            }
+            else if(output.channels() == 3)
+            {
+                Vec3b currentPixel = output.ptr<Vec3b>(i)[j];
+                if(currentPixel == Vec3b(255, 255, 255))
+                    whitePixels++;
+            }
+        }
+    }
+    double whiteRate = whitePixels / (double) output.total();
+    EXPECT_LE(whiteRate, 0.1);
+}
+
 INSTANTIATE_TEST_CASE_P(TypicalSet, GuidedFilterTest,
     Combine(
     Values(1, 3),

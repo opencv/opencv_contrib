@@ -82,7 +82,7 @@ public:
     Rect rect;
     double raw_moments[2];     //!< order 1 raw moments to derive the centroid
     double central_moments[3]; //!< order 2 central moments to construct the covariance matrix
-    std::deque<int> *crossings;//!< horizontal crossings
+    Ptr<std::deque<int> > crossings;//!< horizontal crossings
     float med_crossings;       //!< median of the crossings at three different height levels
 
     //! 2nd stage features
@@ -345,7 +345,7 @@ single vector\<Point\>, the function separates them in two different vectors (th
 ERStats where extracted from two different channels).
 
 An example of MSERsToERStats in use can be found in the text detection webcam_demo:
-<https://github.com/Itseez/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
+<https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/webcam_demo.cpp>
  */
 CV_EXPORTS void MSERsToERStats(InputArray image, std::vector<std::vector<Point> > &contours,
                                std::vector<std::vector<ERStat> > &regions);

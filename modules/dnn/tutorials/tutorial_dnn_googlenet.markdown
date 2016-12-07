@@ -29,11 +29,11 @@ Explanation
 
    Put these files into working dir of this program example.
 
--# Create the importer of Caffe models
-   @snippet dnn/samples/caffe_googlenet.cpp Create the importer of Caffe model
+-# Read and initialize network using path to .prototxt and .caffemodel files
+   @snippet dnn/samples/caffe_googlenet.cpp Read and initialize network
 
--# Create the network and initialize its by using the created importer
-   @snippet dnn/samples/caffe_googlenet.cpp Initialize network
+-# Check that network was read successfully
+   @snippet dnn/samples/caffe_googlenet.cpp Check that network was read successfully
 
 -# Read input image and convert to the blob, acceptable by GoogleNet
    @snippet dnn/samples/caffe_googlenet.cpp Prepare blob
@@ -41,7 +41,7 @@ Explanation
 
    Now image is actually a 3-dimensional array with 224x224x3 shape.
 
-   Next, we convert the image to 4-dimensional blob (so-called batch) with 1x2x224x224 shape by using special @ref cv::dnn::Blob constructor.
+   Next, we convert the image to 4-dimensional blob (so-called batch) with 1x3x224x224 shape by using special cv::dnn::Blob::fromImages constructor.
 
 -# Pass the blob to the network
    @snippet dnn/samples/caffe_googlenet.cpp Set input blob

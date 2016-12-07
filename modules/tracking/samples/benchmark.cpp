@@ -1,415 +1,355 @@
-#include <opencv2/core/utility.hpp>
-#include <opencv2/tracking.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/highgui.hpp>
+#include "opencv2/core/utility.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/tracking.hpp"
+#include "opencv2/videoio.hpp"
+#include "opencv2/plot.hpp"
+#include <fstream>
+#include <iomanip>
 #include <iostream>
-#include <time.h>
-#include <cstring>
-#include <climits>
-
-const int CMDLINEMAX = 30;
-      int ASSESS_TILL = INT_MAX;
-const int LINEMAX = 40;
 
 using namespace std;
 using namespace cv;
 
-/* TODO:  
-            do normalization ala Kalal's assessment protocol for TLD
- */
+// TODO: do normalization ala Kalal's assessment protocol for TLD
 
-static Mat image;
-static bool paused;
-static bool saveImageKey;
-static vector<Scalar> palette;
+static const Scalar gtColor = Scalar(0, 255, 0);
 
-void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName);
+static Scalar getNextColor()
+{
+    const int num = 6;
+    static Scalar colors[num] = {Scalar(160, 0, 0),   Scalar(0, 0, 160),   Scalar(0, 160, 160),
+                                 Scalar(160, 160, 0), Scalar(160, 0, 160), Scalar(20, 50, 160)};
+    static int id = 0;
+    return colors[id < num ? id++ : num - 1];
+}
 
-static int lineToRect(char* line,Rect2d& res){
-  char * ptr=line,*pos=ptr;
-  if(line==NULL || line[0]=='\0'){
-      return -1;
-  }
-  if(strcmp(line,"NaN,NaN,NaN,NaN\n")==0){
-      res.height=res.width=-1.0;
-      return 0;
-  }
-
-  double nums[4]={0};
-  for(int i=0; i<4 && (ptr=strpbrk(ptr,"0123456789-"))!= NULL;i++,ptr=pos){
-    nums[i]=strtod(ptr,&pos);
-    if(pos==ptr){
-      printf("lineToRect had problems with decoding line %s\n",line);
-      return -1;
+inline vector<Rect2d> readGT(const string &filename, const string &omitname)
+{
+    vector<Rect2d> res;
+    {
+        ifstream input(filename.c_str());
+        if (!input.is_open())
+            CV_Error(Error::StsError, "Failed to open file");
+        while (input)
+        {
+            Rect2d one;
+            input >> one.x;
+            input.ignore(numeric_limits<std::streamsize>::max(), ',');
+            input >> one.y;
+            input.ignore(numeric_limits<std::streamsize>::max(), ',');
+            input >> one.width;
+            input.ignore(numeric_limits<std::streamsize>::max(), ',');
+            input >> one.height;
+            input.ignore(numeric_limits<std::streamsize>::max(), '\n');
+            if (input.good())
+                res.push_back(one);
+        }
     }
-  }
-  res.x=cv::min(nums[0],nums[2]);
-  res.y=cv::min(nums[1],nums[3]);
-  res.width=cv::abs(nums[0]-nums[2]);
-  res.height=cv::abs(nums[1]-nums[3]);
-  return 0;
-}
-static inline double overlap(Rect2d r1,Rect2d r2){
-    if(r1.width<0 || r2.width<0 || r1.height<0 || r1.width<0)return -1.0;
-    double a1=r1.area(), a2=r2.area(), a0=(r1&r2).area();
-    return a0/(a1+a2-a0);
-}
-static void help(){
-  cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
-       "-- pause video [p] and draw a bounding box around the target to start the tracker\n"
-       "Example of <video_name> is in opencv_extra/testdata/cv/tracking/\n"
-       "Call:\n"
-       "./tracker [<keys and args>] <video_name> <ground_truth> <algorithm1> <init_box1> <algorithm2> <init_box2> ...\n"
-       << endl;
-
-  cout << "\n\nConsole keys: \n"
-       "\t-s - save images\n"
-       "\t-l=100 - assess only, say, first 100 frames\n";
-
-  cout << "\n\nHot keys: \n"
-       "\tq - quit the program\n"
-       "\tp - pause video\n";
-  exit(EXIT_SUCCESS);
-}
-static void parseCommandLineArgs(int argc, char** argv,char* videos[],char* gts[],
-        int* vc,char* algorithms[],char* initBoxes[][CMDLINEMAX],int* ac,char keys[CMDLINEMAX][LINEMAX]){
-
-    *ac=*vc=0;
-    for(int i=1;i<argc;i++){
-        if(argv[i][0]=='-'){
-            for(int j=0;j<CMDLINEMAX;j++){
-                char* ptr = strchr(argv[i], '=');
-                if( !strncmp(argv[i], keys[j], (ptr == NULL) ? strlen(argv[i]) : (ptr-argv[i]) ) )
+    if (!omitname.empty())
+    {
+        ifstream input(omitname.c_str());
+        if (!input.is_open())
+            CV_Error(Error::StsError, "Failed to open file");
+        while (input)
+        {
+            unsigned int a = 0, b = 0;
+            input >> a >> b;
+            input.ignore(numeric_limits<std::streamsize>::max(), '\n');
+            if (a > 0 && b > 0 && a < res.size() && b < res.size())
+            {
+                if (a > b)
+                    swap(a, b);
+                for (vector<Rect2d>::iterator i = res.begin() + a; i != res.begin() + b; ++i)
                 {
-                    if( ptr == NULL )
-                        keys[j][0]='\0';
-                    else
-                        strcpy(keys[j], ptr+1);
+                    *i = Rect2d();
                 }
             }
-            continue;
         }
-        bool isVideo=false;
-        for(int j=0,len=(int)strlen(argv[i]);j<len;j++){
-            if(!('A'<=argv[i][j] && argv[i][j]<='Z') && argv[i][j]!='.'){
-                isVideo=true;
+    }
+    return res;
+}
+
+inline bool isGoodBox(const Rect2d &box) { return box.width > 0. && box.height > 0.; }
+const int LTRC_COUNT = 100;
+
+struct AlgoWrap
+{
+    AlgoWrap(const string &name_)
+        : tracker(Tracker::create(name_)), lastState(NotFound), name(name_), color(getNextColor()),
+          numTotal(0), numResponse(0), numPresent(0), numCorrect_0(0), numCorrect_0_5(0),
+          timeTotal(0), auc(LTRC_COUNT + 1, 0)
+    {
+    }
+
+    enum State
+    {
+        NotFound,
+        Overlap_None,
+        Overlap_0,
+        Overlap_0_5,
+    };
+
+    Ptr<Tracker> tracker;
+    bool lastRes;
+    Rect2d lastBox;
+    State lastState;
+
+    // visual
+    string name;
+    Scalar color;
+
+    // results
+    int numTotal;       // frames passed to tracker
+    int numResponse;    // frames where tracker had response
+    int numPresent;     // frames where ground truth result present
+    int numCorrect_0;   // frames where overlap with GT > 0
+    int numCorrect_0_5; // frames where overlap with GT > 0.5
+    int64 timeTotal;    // ticks
+    vector<int> auc;   // number of frames for each overlap percent
+
+    void eval(const Mat &frame, const Rect2d &gtBox, bool isVerbose)
+    {
+        // RUN
+        lastBox = Rect2d();
+        int64 frameTime = getTickCount();
+        lastRes = tracker->update(frame, lastBox);
+        frameTime = getTickCount() - frameTime;
+
+        // RESULTS
+        double intersectArea = (gtBox & lastBox).area();
+        double unionArea = (gtBox | lastBox).area();
+        numTotal++;
+        numResponse += (lastRes && isGoodBox(lastBox)) ? 1 : 0;
+        numPresent += isGoodBox(gtBox) ? 1 : 0;
+        double overlap = unionArea > 0. ? intersectArea / unionArea : 0.;
+        numCorrect_0 += overlap > 0. ? 1 : 0;
+        numCorrect_0_5 += overlap > 0.5 ? 1 : 0;
+        auc[std::min(std::max((size_t)(overlap * LTRC_COUNT), (size_t)0), (size_t)LTRC_COUNT)]++;
+        timeTotal += frameTime;
+
+        if (isVerbose)
+            cout << name << " - " << overlap << endl;
+
+        if (isGoodBox(gtBox) != isGoodBox(lastBox)) lastState = NotFound;
+        else if (overlap > 0.5) lastState = Overlap_0_5;
+        else if (overlap > 0.0001) lastState = Overlap_0;
+        else lastState = Overlap_None;
+    }
+
+    void draw(Mat &image, const Point &textPoint) const
+    {
+        if (lastRes)
+            rectangle(image, lastBox, color, 2, LINE_8);
+        string suf;
+        switch (lastState)
+        {
+        case AlgoWrap::NotFound: suf = " X"; break;
+        case AlgoWrap::Overlap_None: suf = " ~"; break;
+        case AlgoWrap::Overlap_0: suf = " +"; break;
+        case AlgoWrap::Overlap_0_5: suf = " ++"; break;
+        }
+        putText(image, name + suf, textPoint, FONT_HERSHEY_PLAIN, 1, color, 1, LINE_AA);
+    }
+
+    // calculates "lost track ratio" curve - row of values growing from 0 to 1
+    // number of elements is LTRC_COUNT + 2
+    Mat getLTRC() const
+    {
+        Mat t, res;
+        Mat(auc).convertTo(t, CV_64F); // integral does not support CV_32S input
+        integral(t.t(), res, CV_64F); // t is a column of values
+        return res.row(1) / (double)numTotal;
+    }
+
+    void plotLTRC(Mat &img) const
+    {
+        Ptr<plot::Plot2d> p_ = plot::createPlot2d(getLTRC());
+        p_->render(img);
+    }
+
+    double calcAUC() const
+    {
+        return cv::sum(getLTRC())[0] / (double)LTRC_COUNT;
+    }
+
+    void stat(ostream &out) const
+    {
+        out << name << endl;
+        out << setw(20) << "Overlap > 0  " << setw(20) << (double)numCorrect_0 / numTotal * 100
+            << "%" << setw(20) << numCorrect_0 << endl;
+        out << setw(20) << "Overlap > 0.5" << setw(20) << (double)numCorrect_0_5 / numTotal * 100
+            << "%" << setw(20) << numCorrect_0_5 << endl;
+
+        double p = (double)numCorrect_0_5 / numResponse;
+        double r = (double)numCorrect_0_5 / numPresent;
+        double f = 2 * p * r / (p + r);
+        out << setw(20) << "Precision" << setw(20) << p * 100 << "%" << endl;
+        out << setw(20) << "Recall   " << setw(20) << r * 100 << "%" << endl;
+        out << setw(20) << "f-measure" << setw(20) << f * 100 << "%" << endl;
+        out << setw(20) << "AUC" << setw(20) << calcAUC() << endl;
+
+        double s = (timeTotal / getTickFrequency()) / numTotal;
+        out << setw(20) << "Performance" << setw(20) << s * 1000 << " ms/frame" << setw(20) << 1 / s
+            << " fps" << endl;
+    }
+};
+
+inline ostream &operator<<(ostream &out, const AlgoWrap &w) { w.stat(out); return out; }
+
+inline vector<AlgoWrap> initAlgorithms(const string &algList)
+{
+    vector<AlgoWrap> res;
+    istringstream input(algList);
+    for (;;)
+    {
+        char one[30];
+        input.getline(one, 30, ',');
+        if (!input)
+            break;
+        cout << "  " << one << " - ";
+        AlgoWrap a(one);
+        if (a.tracker)
+        {
+            res.push_back(a);
+            cout << "OK";
+        }
+        else
+        {
+            cout << "FAILED";
+        }
+        cout << endl;
+    }
+    return res;
+}
+
+static const string &window = "Tracking API";
+
+int main(int argc, char **argv)
+{
+    const string keys =
+        "{help h||show help}"
+        "{video||video file to process}"
+        "{gt||ground truth file (each line describes rectangle in format: '<x>,<y>,<w>,<h>')}"
+        "{start|0|starting frame}"
+        "{num|0|frame number (0 for all)}"
+        "{omit||file with omit ranges (each line describes occluded frames: '<start> <end>')}"
+        "{plot|false|plot LTR curves at the end}"
+        "{v|false|print each frame info}"
+        "{@algos||comma-separated algorithm names}";
+    CommandLineParser p(argc, argv, keys);
+    if (p.has("help"))
+    {
+        p.printMessage();
+        return 0;
+    }
+    int startFrame = p.get<int>("start");
+    int frameCount = p.get<int>("num");
+    string videoFile = p.get<string>("video");
+    string gtFile = p.get<string>("gt");
+    string omitFile = p.get<string>("omit");
+    string algList = p.get<string>("@algos");
+    bool doPlot = p.get<bool>("plot");
+    bool isVerbose = p.get<bool>("v");
+    if (!p.check())
+    {
+        p.printErrors();
+        return 0;
+    }
+
+    cout << "Reading GT from " << gtFile << " ... ";
+    vector<Rect2d> gt = readGT(gtFile, omitFile);
+    if (gt.empty())
+        CV_Error(Error::StsError, "Failed to read GT file");
+    cout << gt.size() << " boxes" << endl;
+
+    cout << "Opening video " << videoFile << " ... ";
+    VideoCapture cap;
+    cap.open(videoFile);
+    if (!cap.isOpened())
+        CV_Error(Error::StsError, "Failed to open video file");
+    cap.set(CAP_PROP_POS_FRAMES, startFrame);
+    cout << "at frame " << startFrame << endl;
+
+    // INIT
+    vector<AlgoWrap> algos = initAlgorithms(algList);
+    Mat frame, image;
+    cap >> frame;
+    for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+        i->tracker->init(frame, gt[0]);
+
+    // DRAW
+    {
+        namedWindow(window, WINDOW_AUTOSIZE);
+        frame.copyTo(image);
+        rectangle(image, gt[0], gtColor, 2, LINE_8);
+        imshow(window, image);
+    }
+
+    bool paused = false;
+    int frameId = 0;
+    cout << "Hot keys:" << endl << "  q - exit" << endl << "  p - pause" << endl;
+    for (;;)
+    {
+        if (!paused)
+        {
+            cap >> frame;
+            if (frame.empty())
+            {
+                cout << "Done - video end" << endl;
                 break;
             }
-        }
-
-        if(isVideo){
-            videos[*vc]=argv[i];
-            i++;
-            gts[*vc]=(i<argc)?argv[i]:NULL;
-            (*vc)++;
-        }else{
-            algorithms[*ac]=argv[i];
-            i++;
-            for(int j=0;j<*vc;j++,i++){
-                initBoxes[*ac][j]=(i<argc)?argv[i]:NULL;
+            frameId++;
+            if (isVerbose)
+                cout << endl << "Frame " << frameId << endl;
+            // EVAL
+            for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+                i->eval(frame, gt[frameId], isVerbose);
+            // DRAW
+            {
+                Point textPoint(1, 16);
+                frame.copyTo(image);
+                rectangle(image, gt[frameId], gtColor, 2, LINE_8);
+                putText(image, "GROUND TRUTH", textPoint, FONT_HERSHEY_PLAIN, 1, gtColor, 1, LINE_AA);
+                for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+                {
+                    textPoint.y += 14;
+                    i->draw(image, textPoint);
+                }
+                imshow(window, image);
             }
-            i--;(*ac)++;
+        }
+
+        char c = (char)waitKey(1);
+        if (c == 'q')
+        {
+            cout << "Done - manual exit" << endl;
+            break;
+        }
+        else if (c == 'p')
+        {
+            paused = !paused;
+        }
+        if (frameCount && frameId >= frameCount)
+        {
+            cout << "Done - max frame count" << endl;
+            break;
         }
     }
-}
-void print_table(char* videos[],int videoNum,char* algorithms[],int algNum,const vector<vector<char*> >& results,char* tableName){
-    printf("\n%s",tableName);
-    vector<int> grid(1+algNum,0);
-    char spaces[100];memset(spaces,' ',100);
-    for(int i=0;i<videoNum;i++){
-        grid[0]=std::max(grid[0],(int)strlen(videos[i]));
-    }
-    for(int i=0;i<algNum;i++){
-        grid[i+1]=(int)strlen(algorithms[i]);
-        for(int j=0;j<videoNum;j++)
-            grid[i+1]=std::max(grid[i+1],(int)strlen(results[j][i]));
-    }
-    printf("%.*s ",(int)grid[0],spaces);
-    for(int i=0;i<algNum;i++)
-        printf("%s%.*s",algorithms[i],(int)(grid[i+1]+1-strlen(algorithms[i])),spaces);
-    printf("\n");
-    for(int i=0;i<videoNum;i++){
-        printf("%s%.*s",videos[i],(int)(grid[0]+1-strlen(videos[i])),spaces);
-        for(int j=0;j<algNum;j++)
-            printf("%s%.*s",results[i][j],(int)(grid[j+1]+1-strlen(results[i][j])),spaces);
-        printf("\n");
-    }
-    printf("*************************************************************\n");
-}
 
-struct AssessmentRes{
-    class Assessment{
-    public:
-        virtual int printf(char* buf)=0;
-        virtual int printName(char* buf)=0;
-        virtual void assess(const Rect2d& ethalon,const Rect2d& res)=0;
-        virtual ~Assessment(){}
-    };
-    AssessmentRes(int algnum);
-    int len;
-    char* videoName;
-    vector<vector<Ptr<Assessment> > >results;
-};
-class CorrectFrames : public AssessmentRes::Assessment{
-public:
-    CorrectFrames(double tol):tol_(tol),len_(1),correctFrames_(1){}
-    int printf(char* buf){return sprintf(buf,"%d/%d",correctFrames_,len_);}
-    int printName(char* buf){return sprintf(buf,(char*)"Num of correct frames (overlap>%g)\n",tol_);}
-    void assess(const Rect2d& ethalon,const Rect2d& res){len_++;if(overlap(ethalon,res)>tol_)correctFrames_++;}
-private:
-    double tol_;
-    int len_;
-    int correctFrames_;
-};
-class AvgTime : public AssessmentRes::Assessment{
-public:
-    AvgTime(double res):res_(res){}
-    int printf(char* buf){return sprintf(buf,"%gms",res_);}
-    int printName(char* buf){return sprintf(buf,(char*)"Average frame tracking time\n");}
-    void assess(const Rect2d& /*ethalon*/,const Rect2d&/* res*/){};
-private:
-    double res_;
-};
-class PRF : public AssessmentRes::Assessment{
-public:
-    PRF():occurences_(0),responses_(0),true_responses_(0){};
-    int printName(char* buf){return sprintf(buf,(char*)"PRF\n");}
-    int printf(char* buf){return sprintf(buf,"%g/%g/%g",(1.0*true_responses_)/responses_,(1.0*true_responses_)/occurences_,
-            (2.0*true_responses_)/(responses_+occurences_));}
-    void assess(const Rect2d& ethalon,const Rect2d& res){
-        if(res.height>=0)responses_++;
-        if(ethalon.height>=0)occurences_++;
-        if(ethalon.height>=0 && res.height>=0)true_responses_++;
-    }
-private:
-    int occurences_,responses_,true_responses_;
-};
-AssessmentRes::AssessmentRes(int algnum):len(0),results(algnum){
-    for(int i=0;i<(int)results.size();i++){
-        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.0)));
-        results[i].push_back(Ptr<Assessment>(new CorrectFrames(0.5)));
-        results[i].push_back(Ptr<Assessment>(new PRF()));
-    }
-}
+    // STAT
+    for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+        cout << "==========" << endl << *i << endl;
 
-static AssessmentRes assessment(char* video,char* gt_str, char* algorithms[],char* initBoxes_str[],int algnum){
-  char buf[200];
-  int start_frame=0;
-  int linecount=0;
-  Rect2d boundingBox;
-  vector<double> averageMillisPerFrame(algnum,0.0);
-  static int videoNum=0;
-  videoNum++;
-
-  FILE* gt=fopen(gt_str,"r");
-  if(gt==NULL){
-      printf("cannot open the ground truth file %s\n",gt_str);
-      exit(EXIT_FAILURE);
-  }
-  for(linecount=0;fgets(buf,sizeof(buf),gt)!=NULL;linecount++);
-  if(linecount==0){
-      printf("ground truth file %s has no lines\n",gt_str);
-      exit(EXIT_FAILURE);
-  }
-  fseek(gt,0,SEEK_SET);
-  if(fgets(buf,sizeof(buf),gt)==NULL){
-      printf("ground truth file %s has no lines\n",gt_str);
-      exit(EXIT_FAILURE);
-  }
-
-  std::vector<Rect2d> initBoxes(algnum);
-  for(int i=0;i<algnum;i++){
-      printf("%s %s\n",algorithms[i],initBoxes_str[CMDLINEMAX*i]);
-      if(lineToRect(initBoxes_str[CMDLINEMAX*i],boundingBox)<0){
-          printf("please, specify bounding box for video %s, algorithm %s\n",video,algorithms[i]);
-          printf("FYI, initial bounding box in ground truth is %s\n",buf);
-          if(gt!=NULL){
-              fclose(gt);
-          }
-          exit(EXIT_FAILURE);
-      }else{
-          initBoxes[i].x=boundingBox.x;
-          initBoxes[i].y=boundingBox.y;
-          initBoxes[i].width=boundingBox.width;
-          initBoxes[i].height=boundingBox.height;
-      }
-  }
-
-  VideoCapture cap;
-  cap.open( String(video) );
-  cap.set( CAP_PROP_POS_FRAMES, start_frame );
-
-  if( !cap.isOpened() ){
-    printf("cannot open video %s\n",video);
-    help();
-  }
-
-  Mat frame;
-  namedWindow( "Tracking API", 1 );
-
-  std::vector<Ptr<Tracker> >trackers(algnum);
-  for(int i=0;i<algnum;i++){
-      trackers[i] = Tracker::create( algorithms[i] );
-      if( trackers[i] == NULL ){
-        printf("error in the instantiation of the tracker %s\n",algorithms[i]);
-        if(gt!=NULL){
-            fclose(gt);
+    if (doPlot)
+    {
+        Mat img(300, 300, CV_8UC3);
+        for (vector<AlgoWrap>::iterator i = algos.begin(); i != algos.end(); ++i)
+        {
+            i->plotLTRC(img);
+            imshow("LTR curve for " + i->name, img);
         }
-        exit(EXIT_FAILURE);
-      }
-  }
+        waitKey(0);
+    }
 
-  cap >> frame;
-  frame.copyTo( image );
-  if(lineToRect(buf,boundingBox)<0){
-      if(gt!=NULL){
-          fclose(gt);
-      }
-      exit(EXIT_FAILURE);
-  }
-  rectangle( image, boundingBox,palette[0], 2, 1 );
-  for(int i=0;i<(int)trackers.size();i++){
-      rectangle(image,initBoxes[i],palette[i+1], 2, 1 );
-      if( !trackers[i]->init( frame, initBoxes[i] ) ){
-        printf("could not initialize tracker %s with box %s at video %s\n",algorithms[i],initBoxes_str[i],video);
-        if(gt!=NULL){
-            fclose(gt);
-        }
-        exit(EXIT_FAILURE);
-      }
-  }
-  imshow( "Tracking API", image );
-
-  int frameCounter = 0;
-  AssessmentRes res((int)trackers.size());
-
-  for ( ;; ){
-    if( !paused ){
-      cap >> frame;
-      if(frame.empty()){
-        break;
-      }
-      frame.copyTo( image );
-
-      if(fgets(buf,sizeof(buf),gt)==NULL){
-          printf("ground truth is over\n");
-          break;
-      }
-      if(lineToRect(buf,boundingBox)<0){
-          if(gt!=NULL){
-              fclose(gt);
-          }
-          exit(EXIT_FAILURE);
-      }
-      rectangle( image, boundingBox,palette[0], 2, 1 );
-      putText(image, "GROUND TRUTH", Point(1,16 + 0*14), FONT_HERSHEY_SIMPLEX, 0.5, palette[0],2);
-      
-      frameCounter++;
-      for(int i=0;i<(int)trackers.size();i++){
-          bool trackerRes=true;
-          clock_t start;start=clock();
-          trackerRes=trackers[i]->update( frame, initBoxes[i] );
-          start=clock()-start;
-          averageMillisPerFrame[i]+=1000.0*start/CLOCKS_PER_SEC;
-          if( trackerRes == false )
-          {
-              initBoxes[i].height=initBoxes[i].width=-1.0;
-          }
-          else
-          {
-              rectangle( image, initBoxes[i], palette[i+1], 2, 1 );
-              putText(image, algorithms[i], Point(1,16 + (i+1)*14), FONT_HERSHEY_SIMPLEX, 0.5, palette[i+1],2);
-          }
-          for(int j=0;j<(int)res.results[i].size();j++)
-              res.results[i][j]->assess(boundingBox,initBoxes[i]);
-      }
-      imshow( "Tracking API", image );
-      if(saveImageKey){
-          char inbuf[LINEMAX];
-          sprintf(inbuf,"image%d_%d.jpg",videoNum,frameCounter);
-          imwrite(inbuf,image);
-      }
-
-      if((frameCounter+1)>=ASSESS_TILL){
-          break;
-      }
-
-      char c = (char) waitKey( 2 );
-      if( c == 'q' )
-        break;
-      if( c == 'p' )
-        paused = !paused;
-      }
-  }
-  if(gt!=NULL){
-      fclose(gt);
-  }
-  destroyWindow( "Tracking API");
-
-  res.len=linecount;
-  res.videoName=video;
-  for(int i=0;i<(int)res.results.size();i++)
-      res.results[i].push_back(Ptr<AssessmentRes::Assessment>(new AvgTime(averageMillisPerFrame[i]/res.len)));
-  return res;
-}
-
-int main( int argc, char** argv ){
-  palette.push_back(Scalar(255,0,0));//BGR, blue
-  palette.push_back(Scalar(0,0,255));//red
-  palette.push_back(Scalar(0,255,255));//yellow
-  palette.push_back(Scalar(255,255,0));//orange
-  int vcount=0,acount=0;
-  char* videos[CMDLINEMAX],*gts[CMDLINEMAX],*algorithms[CMDLINEMAX],*initBoxes[CMDLINEMAX][CMDLINEMAX];
-  char keys[CMDLINEMAX][LINEMAX];
-  strcpy(keys[0],"-s");
-  strcpy(keys[1],"-a");
-
-  parseCommandLineArgs(argc,argv,videos,gts,&vcount,algorithms,initBoxes,&acount,keys);
-
-  saveImageKey=(keys[0][0]=='\0');
-  if( strcmp(keys[1],"-a") != 0 )
-      ASSESS_TILL = atoi(keys[1]);
-  else
-      ASSESS_TILL = INT_MAX;
-
-  CV_Assert(acount<CMDLINEMAX && vcount<CMDLINEMAX);
-  printf("videos and gts\n");
-  for(int i=0;i<vcount;i++){
-      printf("%s %s\n",videos[i],gts[i]);
-  }
-  printf("algorithms and boxes (%d)\n",acount);
-  for(int i=0;i<acount;i++){
-      printf("%s ",algorithms[i]);
-      for(int j=0;j<vcount;j++){
-        printf("%s ",initBoxes[i][j]);
-      }
-      printf("\n");
-  }
-
-  std::vector<AssessmentRes> results;
-  for(int i=0;i<vcount;i++)
-      results.push_back(assessment(videos[i],gts[i],algorithms,((char**)initBoxes)+i,acount));
-  CV_Assert( (int)results[0].results[0].size() < CMDLINEMAX );
-  printf("\n\n");
-
-  char buf[CMDLINEMAX*CMDLINEMAX*LINEMAX], buf2[CMDLINEMAX*40];
-  vector<vector<char*> > resultStrings(vcount);
-  vector<char*> nameStrings;
-  for(int i=0;i<vcount;i++){
-      for(int j=0;j<acount;j++){
-          resultStrings[i].push_back(buf+i*CMDLINEMAX*LINEMAX + j*40);
-      }
-  }
-  for(int i=0;i<(int)results[0].results[0].size();i++)
-      nameStrings.push_back(buf2+LINEMAX*i);
-  for(int tableCount=0;tableCount<(int)results[0].results[0].size();tableCount++)
-  {
-      CV_Assert(results[0].results[0][tableCount]->printName(nameStrings[tableCount])<LINEMAX);
-      for(int videoCount=0;videoCount<(int)results.size();videoCount++)
-          for(int algoCount=0;algoCount<(int)results[0].results.size();algoCount++){
-              (results[videoCount].results[algoCount][tableCount])->printf(resultStrings[videoCount][algoCount]);
-          }
-      print_table(videos,vcount,algorithms,acount,resultStrings,nameStrings[tableCount]);
-  }
-  return 0;
+    return 0;
 }

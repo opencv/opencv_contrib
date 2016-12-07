@@ -82,7 +82,15 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
 {
     Mat image_gray;
     trackerProxy->init(image, boundingBox);
-    cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    if(image.channels() > 1)
+    {
+        cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    }
+    else
+    {
+        image_gray = image.clone();
+    }
+
     data = Ptr<Data>(new Data(boundingBox));
     double scale = data->getScale();
     Rect2d myBoundingBox = boundingBox;

@@ -27,7 +27,7 @@ Source Stereoscopic Image
 Source Code
 -----------
 
-We will be using snippets from the example application, that can be downloaded [here ](https://github.com/Itseez/opencv_contrib/blob/master/modules/ximgproc/samples/disparity_filtering.cpp).
+We will be using snippets from the example application, that can be downloaded [here ](https://github.com/opencv/opencv_contrib/blob/master/modules/ximgproc/samples/disparity_filtering.cpp).
 
 Explanation
 -----------

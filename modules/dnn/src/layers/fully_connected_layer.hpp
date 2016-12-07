@@ -42,26 +42,30 @@
 #ifndef __OPENCV_DNN_LAYERS_FULLY_CONNECTED_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_FULLY_CONNECTED_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    class FullyConnectedLayer : public Layer
-    {
-        bool bias;
-        int numOutputs;
-        int axis_, axis;
 
-        int innerSize;
+class FullyConnectedLayerImpl : public InnerProductLayer
+{
+    int axisCan, dtype;
+    int numOutput, innerSize, outerSize;
+    bool bias, useOpenCL;
+    Blob biasOnesBlob;
 
-        void reshape(const Blob &inp, Blob &out);
+    template<typename XMat>
+    void forward_(std::vector<Blob*> &input, std::vector<Blob> &output);
 
-    public:
-        FullyConnectedLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+public:
+
+    FullyConnectedLayerImpl(int axisCan = 1);
+    void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
+
 }
 }
 #endif

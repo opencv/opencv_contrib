@@ -293,6 +293,10 @@ public:
   int toInt() { return ptr_.scalar<int>(); }
   operator int() { return toInt(); }
 
+  // --------------------------- size_t -----------------------------------------
+  Bridge& operator=(const size_t&) { return *this; }
+  size_t toSizeT() { return ptr_.scalar<size_t>(); }
+  operator size_t() { return toSizeT(); }
 
 
 

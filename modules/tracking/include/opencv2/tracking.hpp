@@ -69,13 +69,8 @@ the TrackerModel is the statistical model.
 
 A recent benchmark between these algorithms can be found in @cite OOT
 
-UML design: see @ref tracking_diagrams
-
 To see how API works, try tracker demo:
 <https://github.com/lenlen/opencv/blob/tracking_api/samples/cpp/tracker.cpp>
-
-@note This Tracking API has been designed with PlantUML. If you modify this API please change UML
-in <em>modules/tracking/doc/tracking_diagrams.markdown</em>. The following reference was used in the API
 
 Creating Own Tracker
 --------------------

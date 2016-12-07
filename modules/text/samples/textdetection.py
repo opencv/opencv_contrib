@@ -5,7 +5,6 @@ import os
 
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 
 print('\ntextdetection.py')
 print('       A demo script of the Extremal Region Filter algorithm described in:')
@@ -50,11 +49,10 @@ for channel in channels:
   #Visualization
   for r in range(0,np.shape(rects)[0]):
     rect = rects[r]
-    cv2.rectangle(vis, (rect[0],rect[1]), (rect[0]+rect[2],rect[1]+rect[3]), (0, 255, 255), 2)
+    cv2.rectangle(vis, (rect[0],rect[1]), (rect[0]+rect[2],rect[1]+rect[3]), (0, 0, 0), 2)
+    cv2.rectangle(vis, (rect[0],rect[1]), (rect[0]+rect[2],rect[1]+rect[3]), (255, 255, 255), 1)
 
 
 #Visualization
-vis = vis[:,:,::-1] #flip the colors dimension from BGR to RGB
-plt.imshow(vis)
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.show()
+cv2.imshow("Text detection result", vis)
+cv2.waitKey(0)

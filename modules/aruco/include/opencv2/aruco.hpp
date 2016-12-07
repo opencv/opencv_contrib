@@ -173,7 +173,7 @@ struct CV_EXPORTS_W DetectorParameters {
  * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS_W void detectMarkers(InputArray image, Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
 
@@ -226,15 +226,24 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
 class CV_EXPORTS_W Board {
 
     public:
-    // array of object points of all the marker corners in the board
-    // each marker include its 4 corners, i.e. for M markers, the size is Mx4
+    /**
+    * @brief Provide way to create Board by passing nessesary data. Specially needed in Python.
+    *
+    * @param objPoints array of object points of all the marker corners in the board
+    * @param dictionary the dictionary of markers employed for this board
+    * @param ids vector of the identifiers of the markers in the board
+    *
+    */
+    CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
+    /// array of object points of all the marker corners in the board
+    /// each marker include its 4 corners in CCW order. For M markers, the size is Mx4.
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
-    // the dictionary of markers employed for this board
+    /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
-    // vector of the identifiers of the markers in the board (same size than objPoints)
-    // The identifiers refers to the board dictionary
+    /// vector of the identifiers of the markers in the board (same size than objPoints)
+    /// The identifiers refers to the board dictionary
     CV_PROP std::vector< int > ids;
 };
 
@@ -277,7 +286,7 @@ class CV_EXPORTS_W GridBoard : public Board {
      * the marker size and marker separation.
      */
     CV_WRAP static Ptr<GridBoard> create(int markersX, int markersY, float markerLength,
-                                         float markerSeparation, Ptr<Dictionary> &dictionary, int firstMarker = 0);
+                                         float markerSeparation, const Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
     /**
       *
@@ -322,8 +331,9 @@ class CV_EXPORTS_W GridBoard : public Board {
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
- * (@sa Rodrigues).
+ * (@sa Rodrigues). Used as initial guess if not empty.
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * Used as initial guess if not empty.
  *
  * This function receives the detected markers and returns the pose of a marker board composed
  * by those markers.
@@ -334,7 +344,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * The function returns the number of markers from the input employed for the board pose estimation.
  * Note that returning a 0 means the pose has not been estimated.
  */
-CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, Ptr<Board> &board,
+CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
                                    OutputArray tvec);
 
@@ -373,7 +383,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, P
  * homography, and all the marker corners in the board must have the same Z coordinate.
  */
 CV_EXPORTS_W void refineDetectedMarkers(
-    InputArray image, Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
+    InputArray image,const  Ptr<Board> &board, InputOutputArrayOfArrays detectedCorners,
     InputOutputArray detectedIds, InputOutputArrayOfArrays rejectedCorners,
     InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
     float minRepDistance = 10.f, float errorCorrectionRate = 3.f, bool checkAllOrders = true,
@@ -437,7 +447,7 @@ CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, Inpu
  *
  * This function returns a marker image in its canonical form (i.e. ready to be printed)
  */
-CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
+CV_EXPORTS_W void drawMarker(const Ptr<Dictionary> &dictionary, int id, int sidePixels, OutputArray img,
                              int borderBits = 1);
 
 
@@ -457,7 +467,7 @@ CV_EXPORTS_W void drawMarker(Ptr<Dictionary> &dictionary, int id, int sidePixels
  * This function return the image of a planar board, ready to be printed. It assumes
  * the Board layout specified is planar by ignoring the z coordinates of the object points.
  */
-CV_EXPORTS_W void drawPlanarBoard(Ptr<Board> &board, Size outSize, OutputArray img,
+CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputArray img,
                                   int marginSize = 0, int borderBits = 1);
 
 
@@ -474,7 +484,7 @@ void _drawPlanarBoardImpl(Board *board, Size outSize, OutputArray img,
  * @brief Calibrate a camera using aruco markers
  *
  * @param corners vector of detected marker corners in all frames.
- * The corners should have the same format returned by detectMarkers (@sa detectMarkers).
+ * The corners should have the same format returned by detectMarkers (see #detectMarkers).
  * @param ids list of identifiers for each marker in corners
  * @param counter number of markers in each frame so that corners and ids can be split
  * @param board Marker Board layout
@@ -491,19 +501,37 @@ void _drawPlanarBoardImpl(Board *board, Size outSize, OutputArray img,
  * from the model coordinate space (in which object points are specified) to the world coordinate
  * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
  * @param tvecs Output vector of translation vectors estimated for each pattern view.
- * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
+ * @param stdDeviationsIntrinsics Output vector of standard deviations estimated for intrinsic parameters.
+ * Order of deviations values:
+ * \f$(f_x, f_y, c_x, c_y, k_1, k_2, p_1, p_2, k_3, k_4, k_5, k_6 , s_1, s_2, s_3,
+ * s_4, \tau_x, \tau_y)\f$ If one of parameters is not estimated, it's deviation is equals to zero.
+ * @param stdDeviationsExtrinsics Output vector of standard deviations estimated for extrinsic parameters.
+ * Order of deviations values: \f$(R_1, T_1, \dotsc , R_M, T_M)\f$ where M is number of pattern views,
+ * \f$R_i, T_i\f$ are concatenated 1x3 vectors.
+ * @param perViewErrors Output vector of average re-projection errors estimated for each pattern view.
+ * @param flags flags Different flags  for the calibration process (see #calibrateCamera for details).
  * @param criteria Termination criteria for the iterative optimization algorithm.
  *
  * This function calibrates a camera using an Aruco Board. The function receives a list of
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
  */
-CV_EXPORTS_W double calibrateCameraAruco(
-    InputArrayOfArrays corners, InputArray ids, InputArray counter, Ptr<Board> &board,
+CV_EXPORTS_AS(calibrateCameraArucoExtended) double calibrateCameraAruco(
+    InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+    OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
+
+/** @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
+ */
+CV_EXPORTS_W double calibrateCameraAruco(
+  InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
+  Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+  OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+  TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 //! @}

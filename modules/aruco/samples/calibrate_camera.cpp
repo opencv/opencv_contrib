@@ -58,7 +58,7 @@ const char* about =
 const char* keys  =
         "{w        |       | Number of squares in X direction }"
         "{h        |       | Number of squares in Y direction }"
-        "{l        |       | Marker side lenght (in meters) }"
+        "{l        |       | Marker side length (in meters) }"
         "{s        |       | Separation between two consecutive markers in the grid (in meters) }"
         "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
     }
 
     int markersX = parser.get<int>("w");
-    int markersY = parser.get<int>("w");
+    int markersY = parser.get<int>("h");
     float markerLength = parser.get<float>("l");
     float markerSeparation = parser.get<float>("s");
     int dictionaryId = parser.get<int>("d");

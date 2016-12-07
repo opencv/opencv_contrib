@@ -85,12 +85,12 @@ void ObjectnessBING::setColorSpace( int clr )
   _bbResDir = _resultsDir + "/" + std::string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::setTrainingPath( std::string trainingPath )
+void ObjectnessBING::setTrainingPath( const String& trainingPath )
 {
   _trainingPath = trainingPath;
 }
 
-void ObjectnessBING::setBBResDir( std::string resultsDir )
+void ObjectnessBING::setBBResDir(const String &resultsDir )
 {
   _resultsDir = resultsDir;
 }
