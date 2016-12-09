@@ -1,0 +1,24 @@
+set(the_description "FreeType module. It enables to draw strings with outlines and mono-bitmaps/gray-bitmaps.")
+
+pkg_search_module(FREETYPE freetype2)
+pkg_search_module(HARFBUZZ harfbuzz)
+
+if(NOT FREETYPE_FOUND)
+  message(STATUS "freetype2:   NO")
+else()
+  message(STATUS "freetype2:   YES")
+endif()
+
+if(NOT HARFBUZZ_FOUND)
+  message(STATUS "harfbuzz:    NO")
+else()
+  message(STATUS "harfbuzz:    YES")
+endif()
+
+
+if( FREETYPE_FOUND AND HARFBUZZ_FOUND ) 
+  include_directories(${FREETYPE_INCLUDE_DIRS} ${HARFBUZZ_INCLUDE_DIRS} )
+
+  ocv_define_module(freetype opencv_core opencv_imgproc WRAP python)
+  target_link_libraries(opencv_freetype ${freetype2_LIBRARIES} ${harfbuzz_LIBRARIES} )
+endif()
