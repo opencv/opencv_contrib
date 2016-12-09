@@ -62,6 +62,7 @@ int main(int argc, char** argv)
     Mat line_image_fld(image);
     fld->drawSegments(line_image_fld, lines_fld);
     imshow("FLD result", line_image_fld);
+    imwrite("corridor_fld.jpg", line_image_fld);
 
     waitKey();
     return 0;
