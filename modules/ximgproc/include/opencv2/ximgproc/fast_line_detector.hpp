@@ -4,7 +4,6 @@
 
 #ifndef __OPENCV_FAST_LINE_DETECTOR_HPP__
 #define __OPENCV_FAST_LINE_DETECTOR_HPP__
-#ifdef __cplusplus
 
 #include <opencv2/core.hpp>
 
