@@ -68,12 +68,12 @@ class FastLineDetectorImpl : public FastLineDetector
     public:
 
         /**
-        * @param length_threshold    10         - Segment shorter than this will be discarded
-        * @param distance_threshold  1.41421356 - A point placed farther than this will be
-        * @param                                  regarded as an outlier
-        * @param do_merge            false      - If true, incremental merging of segments
-                                                  will be perfomred
-        */
+         * @param length_threshold    10         - Segment shorter than this will be discarded
+         * @param distance_threshold  1.41421356 - A point placed farther than this will be
+         * @param                                  regarded as an outlier
+         * @param do_merge            false      - If true, incremental merging of segments
+         will be perfomred
+         */
         FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f, bool _do_merge = false);
 
         /**
@@ -352,28 +352,28 @@ bool FastLineDetectorImpl::mergeSegments(const SEGMENT& seg1, const SEGMENT& seg
 }
 
 template<class T>
-void FastLineDetectorImpl::incidentPoint(const Mat& l, T& pt)
-{
-    double a[] = { (double)pt.x, (double)pt.y, 1.0 };
-    double b[] = { l.at<double>(0,0), l.at<double>(1,0), 0.0 };
-    double c[3];
+    void FastLineDetectorImpl::incidentPoint(const Mat& l, T& pt)
+    {
+        double a[] = { (double)pt.x, (double)pt.y, 1.0 };
+        double b[] = { l.at<double>(0,0), l.at<double>(1,0), 0.0 };
+        double c[3];
 
-    Mat xk = Mat(3, 1, CV_64FC1, a).clone();
-    Mat lh = Mat(3, 1, CV_64FC1, b).clone();
-    Mat lk = Mat(3, 1, CV_64FC1, c).clone();
+        Mat xk = Mat(3, 1, CV_64FC1, a).clone();
+        Mat lh = Mat(3, 1, CV_64FC1, b).clone();
+        Mat lk = Mat(3, 1, CV_64FC1, c).clone();
 
-    lk = xk.cross(lh);
-    xk = lk.cross(l);
+        lk = xk.cross(lh);
+        xk = lk.cross(l);
 
-    xk.convertTo(xk, -1, 1.0 / xk.at<double>(2,0));
+        xk.convertTo(xk, -1, 1.0 / xk.at<double>(2,0));
 
-    Point2f pt_tmp;
-    pt_tmp.x = (float)xk.at<double>(0,0) < 0.0f ? 0.0f : (float)xk.at<double>(0,0)
-        >= (imagewidth - 1.0f) ? (imagewidth - 1.0f) : (float)xk.at<double>(0,0);
-    pt_tmp.y = (float)xk.at<double>(1,0) < 0.0f ? 0.0f : (float)xk.at<double>(1,0)
-        >= (imageheight - 1.0f) ? (imageheight - 1.0f) : (float)xk.at<double>(1,0);
-    pt = T(pt_tmp);
-}
+        Point2f pt_tmp;
+        pt_tmp.x = (float)xk.at<double>(0,0) < 0.0f ? 0.0f : (float)xk.at<double>(0,0)
+            >= (imagewidth - 1.0f) ? (imagewidth - 1.0f) : (float)xk.at<double>(0,0);
+        pt_tmp.y = (float)xk.at<double>(1,0) < 0.0f ? 0.0f : (float)xk.at<double>(1,0)
+            >= (imageheight - 1.0f) ? (imageheight - 1.0f) : (float)xk.at<double>(1,0);
+        pt = T(pt_tmp);
+    }
 
 void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments )
 {
