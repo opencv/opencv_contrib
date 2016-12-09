@@ -724,9 +724,10 @@ void FastLineDetectorImpl::additionalOperationsOnSegments(const Mat& src, SEGMEN
     {
         std::swap(seg.x1, seg.x2);
         std::swap(seg.y1, seg.y2);
-        ang = ang + CV_PI;
-        if(ang >= 2.0*CV_PI)
-            ang = ang - 2.0 * CV_PI;
+        ang = fastAtan2(seg.y2 - seg.y1, seg.x2 - seg.x1) / 180.0f * CV_PI;
+        // ang = ang + CV_PI;
+        // if(ang >= 2.0*CV_PI)
+        //     ang = ang - 2.0 * CV_PI;
         seg.angle = (float)ang;
     }
 

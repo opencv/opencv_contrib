@@ -69,4 +69,3 @@ CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
 }
 }
 #endif
-#endif
