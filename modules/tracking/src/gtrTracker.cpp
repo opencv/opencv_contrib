@@ -99,7 +99,7 @@ namespace cv
 			String modelTxt = "goturn.prototxt";
 			String modelBin = "goturn.caffemodel";
 			Ptr<dnn::Importer> importer;
-			try                                     //Try to import GOTURN model
+			try                                     //Import GOTURN model
 			{
 				importer = dnn::createCaffeImporter(modelTxt, modelBin);
 			}
