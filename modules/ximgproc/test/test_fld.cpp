@@ -12,21 +12,21 @@ const int EPOCHS = 20;
 
 class FLDBase : public testing::Test
 {
-public:
-    FLDBase() { }
+    public:
+        FLDBase() { }
 
-protected:
-    Mat test_image;
-    vector<Vec4f> lines;
-    RNG rng;
-    int passedtests;
+    protected:
+        Mat test_image;
+        vector<Vec4f> lines;
+        RNG rng;
+        int passedtests;
 
-    void GenerateWhiteNoise(Mat& image);
-    void GenerateConstColor(Mat& image);
-    void GenerateLines(Mat& image, const unsigned int numLines);
-    void GenerateBrokenLines(Mat& image, const unsigned int numLines);
-    void GenerateRotatedRect(Mat& image);
-    virtual void SetUp();
+        void GenerateWhiteNoise(Mat& image);
+        void GenerateConstColor(Mat& image);
+        void GenerateLines(Mat& image, const unsigned int numLines);
+        void GenerateBrokenLines(Mat& image, const unsigned int numLines);
+        void GenerateRotatedRect(Mat& image);
+        virtual void SetUp();
 };
 
 class Imgproc_FLD: public FLDBase
