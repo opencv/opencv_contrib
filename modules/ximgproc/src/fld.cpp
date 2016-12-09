@@ -41,15 +41,15 @@
 
 #include "precomp.hpp"
 #include <vector>
+#include <iostream>
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// Default LSD parameters
-// SIGMA_SCALE 0.6    - Sigma for Gaussian filter is computed as sigma = sigma_scale/scale.
-// QUANT       2.0    - Bound to the quantization error on the gradient norm.
-// ANG_TH      22.5   - Gradient angle tolerance in degrees.
-// LOG_EPS     0.0    - Detection threshold: -log10(NFA) > log_eps
-// DENSITY_TH  0.7    - Minimal density of region points in rectangle.
-// N_BINS      1024   - Number of bins in pseudo-ordering of gradient modulus.
+// Default FLD parameters
+// length_threshold    10         - Segment shorter than this will be discarded
+// distance_threshold  1.41421356 - A point placed farther than this will be
+//                                  regarded as an outlier
+// do_merge            false      - If true, incremental merging of segments
+//                                  will be perfomred
 
 struct SEGMENT
 {
@@ -58,31 +58,23 @@ struct SEGMENT
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
 
 namespace cv{
+namespace ximgproc{
 
 class FastLineDetectorImpl : public FastLineDetector
 {
     public:
 
         /**
-         * Create a LineSegmentDetectorImpl object. Specifying scale, number of subdivisions for the image, should the lines be refined and other constants as follows:
-         *
-         * @param _refine       How should the lines found be refined?
-         *                      LSD_REFINE_NONE - No refinement applied.
-         *                      LSD_REFINE_STD  - Standard refinement is applied. E.g. breaking arches into smaller line approximations.
-         *                      LSD_REFINE_ADV  - Advanced refinement. Number of false alarms is calculated,
-         *                                    lines are refined through increase of precision, decrement in size, etc.
-         * @param _scale        The scale of the image that will be used to find the lines. Range (0..1].
-         * @param _sigma_scale  Sigma for Gaussian filter is computed as sigma = _sigma_scale/_scale.
-         * @param _quant        Bound to the quantization error on the gradient norm.
-         * @param _ang_th       Gradient angle tolerance in degrees.
-         * @param _log_eps      Detection threshold: -log10(NFA) > _log_eps
-         * @param _density_th   Minimal density of aligned region points in rectangle.
-         * @param _n_bins       Number of bins in pseudo-ordering of gradient modulus.
-         */
-        FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.6f);
+        * @param length_threshold    10         - Segment shorter than this will be discarded
+        * @param distance_threshold  1.41421356 - A point placed farther than this will be
+        * @param                                  regarded as an outlier
+        * @param do_merge            false      - If true, incremental merging of segments
+                                                  will be perfomred
+        */
+        FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f, bool _do_merge = false);
 
         /**
          * Detect lines in the input image.
@@ -91,34 +83,26 @@ class FastLineDetectorImpl : public FastLineDetector
          *                  If only a roi needs to be selected, use
          *                  lsd_ptr->detect(image(roi), ..., lines);
          *                  lines += Scalar(roi.x, roi.y, roi.x, roi.y);
-         * @param _lines    Return: A vector of Vec4i or Vec4f elements specifying the beginning and ending point of a line.
-         *                          Where Vec4i/Vec4f is (x1, y1, x2, y2), point 1 is the start, point 2 - end.
-         *                          Returned lines are strictly oriented depending on the gradient.
-         * @param width     Return: Vector of widths of the regions, where the lines are found. E.g. Width of line.
-         * @param prec      Return: Vector of precisions with which the lines are found.
-         * @param nfa       Return: Vector containing number of false alarms in the line region, with precision of 10%.
-         *                          The bigger the value, logarithmically better the detection.
-         *                              * -1 corresponds to 10 mean false alarms
-         *                              * 0 corresponds to 1 mean false alarm
-         *                              * 1 corresponds to 0.1 mean false alarms
-         *                          This vector will be calculated _only_ when the objects type is REFINE_ADV
+         * @param _lines    Return: A vector of Vec4f elements specifying the beginning and ending point of a line.
+         *                          Where Vec4f is (x1, y1, x2, y2), point 1 is the start, point 2 is the end.
+         *                          Returned lines are directed so that the brighter side is placed on left.
          */
         void detect(InputArray _image, OutputArray _lines);
-        // OutputArray width = noArray(), OutputArray prec = noArray(),
-        // OutputArray nfa = noArray());
 
         /**
          * Draw lines on the given canvas.
          *
-         * @param image     The image, where lines will be drawn.
-         *                  Should have the size of the image, where the lines were found
-         * @param lines     The lines that need to be drawn
+         * @param image          The image, where lines will be drawn
+         *                       Should have the size of the image, where the lines were found
+         * @param lines          The lines that need to be drawn
+         * @param draw_arrow     If true, arrow heads will be drawn
          */
-        void drawSegments(InputOutputArray _image, InputArray lines);
+        void drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow = false);
 
     private:
         int imagewidth, imageheight, threshold_length;
         float threshold_dist;
+        bool do_merge;
 
         FastLineDetectorImpl& operator= (const FastLineDetectorImpl&); // to quiet MSVC
         template<class T>
@@ -128,15 +112,13 @@ class FastLineDetectorImpl : public FastLineDetector
 
         bool mergeSegments(const SEGMENT& seg1, const SEGMENT& seg2, SEGMENT& seg_merged);
 
-        int getNumBranch( const Mat& img, const Point pt);
-
-        bool getPointChain( const Mat& img, Point pt, Point& chained_pt, int& direction, int step );
+        bool getPointChain( const Mat& img, Point pt, Point& chained_pt, float& direction, int step );
 
         double distPointLine( const Mat& p, Mat& l );
 
         void extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments );
 
-        void lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all, bool merge = false );
+        void lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all);
 
         void pointInboardTest(const Mat& src, Point2i& pt);
 
@@ -151,25 +133,25 @@ class FastLineDetectorImpl : public FastLineDetector
 /////////////////////////////////////////////////////////////////////////////////////////
 
 CV_EXPORTS Ptr<FastLineDetector> createFastLineDetector(
-        int _length_threshold, float _distance_threshold)
+        int _length_threshold, float _distance_threshold, bool _do_merge)
 {
     return makePtr<FastLineDetectorImpl>(
-            _length_threshold, _distance_threshold);
+            _length_threshold, _distance_threshold, _do_merge);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-FastLineDetectorImpl::FastLineDetectorImpl(int _length_threshold, float _distance_threshold)
-    :threshold_length(_length_threshold), threshold_dist(_distance_threshold)
+FastLineDetectorImpl::FastLineDetectorImpl(int _length_threshold, float _distance_threshold, bool _do_merge)
+    :threshold_length(_length_threshold), threshold_dist(_distance_threshold), do_merge(_do_merge)
 {
     CV_Assert(_length_threshold > 0 && _distance_threshold > 0);
 }
 
 void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines)
 {
-    CV_INSTRUMENT_REGION()
+    CV_INSTRUMENT_REGION();
 
-        Mat image = _image.getMat();
+    Mat image = _image.getMat();
     CV_Assert(!image.empty() && image.type() == CV_8UC1);
 
     std::vector<Vec4f> lines;
@@ -184,11 +166,11 @@ void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines)
     Mat(lines).copyTo(_lines);
 }
 
-void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray lines)
+void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow)
 {
-    CV_INSTRUMENT_REGION()
+    CV_INSTRUMENT_REGION();
 
-        CV_Assert(!_image.empty() && (_image.channels() == 1 || _image.channels() == 3));
+    CV_Assert(!_image.empty() && (_image.channels() == 1 || _image.channels() == 3));
 
     Mat gray;
     if (_image.channels() == 1)
@@ -197,7 +179,7 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
     }
     else if (_image.channels() == 3)
     {
-        cvtColor(_image, gray, CV_BGR2GRAY);
+        cvtColor(_image, gray, COLOR_BGR2GRAY);
     }
 
     // Create a 3 channel image in order to draw colored lines
@@ -208,10 +190,12 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
 
     merge(planes, _image);
 
+    double gap = 10.0;
+    double arrow_angle = 30.0;
+
     Mat _lines;
     _lines = lines.getMat();
     int N = _lines.checkVector(4);
-
     // Draw segments
     for(int i = 0; i < N; ++i)
     {
@@ -219,6 +203,21 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
         Point2f b(v[0], v[1]);
         Point2f e(v[2], v[3]);
         line(_image.getMatRef(), b, e, Scalar(0, 0, 255), 1);
+        if(draw_arrow)
+        {
+            SEGMENT seg;
+            seg.x1 = b.x;
+            seg.y1 = b.y;
+            seg.x2 = e.x;
+            seg.y2 = e.y;
+            getAngle(seg);
+            double ang = (double)seg.angle;
+            Point2i p1;
+            p1.x = (int)round(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
+            p1.y = (int)round(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
+            pointInboardTest(_image.getMatRef(), p1);
+            line(_image.getMatRef(), Point((int)round(seg.x2), (int)round(seg.y2)), p1, Scalar(0,0,255), 1);
+        }
     }
 }
 
@@ -333,23 +332,21 @@ bool FastLineDetectorImpl::mergeSegments(const SEGMENT& seg1, const SEGMENT& seg
     seg2mid.x = (seg2.x1 + seg2.x2) /2.0f;
     seg2mid.y = (seg2.y1 + seg2.y2) /2.0f;
 
-    double seg1len, seg2len;
-    seg1len = sqrt((seg1.x1 - seg1.x2)*(seg1.x1 - seg1.x2)+(seg1.y1 - seg1.y2)*(seg1.y1 - seg1.y2));
-    seg2len = sqrt((seg2.x1 - seg2.x2)*(seg2.x1 - seg2.x2)+(seg2.y1 - seg2.y2)*(seg2.y1 - seg2.y2));
+    float seg1len = sqrt((seg1.x1 - seg1.x2)*(seg1.x1 - seg1.x2)+(seg1.y1 - seg1.y2)*(seg1.y1 - seg1.y2));
+    float seg2len = sqrt((seg2.x1 - seg2.x2)*(seg2.x1 - seg2.x2)+(seg2.y1 - seg2.y2)*(seg2.y1 - seg2.y2));
+    float middist = sqrt((seg1mid.x - seg2mid.x)*(seg1mid.x - seg2mid.x) + (seg1mid.y - seg2mid.y)*(seg1mid.y - seg2mid.y));
+    float angdiff = fabs(seg1.angle - seg2.angle);
 
-    double middist = sqrt((seg1mid.x - seg2mid.x)*(seg1mid.x - seg2mid.x) + (seg1mid.y - seg2mid.y)*(seg1mid.y - seg2mid.y));
+    float dist = (float)distPointLine(ori, l1);
 
-    float angdiff = seg1.angle - seg2.angle;
-    angdiff = fabs(angdiff);
-
-    double dist = distPointLine(ori, l1);
-
-    if ( fabs( dist ) <= threshold_dist * 2.0
-            && middist <= seg1len / 2.0 + seg2len / 2.0 + 20.0
-            && angdiff <= CV_PI / 180.0f * 5.0f) {
+    if ( fabs( dist ) <= threshold_dist * 2.0f && middist <= seg1len / 2.0f + seg2len / 2.0f + 20.0f
+            && angdiff <= CV_PI / 180.0f * 5.0f)
+    {
         mergeLines(seg1, seg2, seg_merged);
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
@@ -370,10 +367,12 @@ void FastLineDetectorImpl::incidentPoint(const Mat& l, T& pt)
 
     xk.convertTo(xk, -1, 1.0 / xk.at<double>(2,0));
 
-    pt.x = (float)xk.at<double>(0,0) < 0.0f ? 0.0f : (float)xk.at<double>(0,0)
+    Point2f pt_tmp;
+    pt_tmp.x = (float)xk.at<double>(0,0) < 0.0f ? 0.0f : (float)xk.at<double>(0,0)
         >= (imagewidth - 1.0f) ? (imagewidth - 1.0f) : (float)xk.at<double>(0,0);
-    pt.y = (float)xk.at<double>(1,0) < 0.0f ? 0.0f : (float)xk.at<double>(1,0)
+    pt_tmp.y = (float)xk.at<double>(1,0) < 0.0f ? 0.0f : (float)xk.at<double>(1,0)
         >= (imageheight - 1.0f) ? (imageheight - 1.0f) : (float)xk.at<double>(1,0);
+    pt = T(pt_tmp);
 }
 
 void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments )
@@ -388,7 +387,8 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
 
     int total = (int)points.size();
 
-    for ( i = 0; i + threshold_length < total; i++ ) {
+    for ( i = 0; i + threshold_length < total; i++ )
+    {
         ps = points[i];
         pe = points[i + threshold_length];
 
@@ -407,7 +407,8 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
         l_points.clear();
         l_points.push_back(ps);
 
-        for ( j = 1; j < threshold_length; j++ ) {
+        for ( j = 1; j < threshold_length; j++ )
+        {
             pt.x = points[i+j].x;
             pt.y = points[i+j].y;
 
@@ -417,7 +418,8 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
 
             double dist = distPointLine(p, l);
 
-            if ( fabs( dist ) > threshold_dist ) {
+            if ( fabs( dist ) > threshold_dist )
+            {
                 is_line = false;
                 break;
             }
@@ -431,7 +433,7 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
         l_points.push_back(pe);
 
         Vec4f line;
-        fitLine( Mat(l_points), line, CV_DIST_L2, 0, 0.01, 0.01);
+        fitLine( Mat(l_points), line, DIST_L2, 0, 0.01, 0.01);
         a[0] = line[2];
         a[1] = line[3];
         b[0] = line[2] + line[0];
@@ -445,7 +447,8 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
         incidentPoint(l, ps);
 
         // Extending line
-        for ( j = threshold_length + 1; i + j < total; j++ ) {
+        for ( j = threshold_length + 1; i + j < total; j++ )
+        {
             pt.x = points[i+j].x;
             pt.y = points[i+j].y;
 
@@ -454,15 +457,28 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
             p.at<double>(2,0) = 1.0;
 
             double dist = distPointLine(p, l);
+            if ( fabs( dist ) > threshold_dist )
+            {
+                fitLine( Mat(l_points), line, DIST_L2, 0, 0.01, 0.01);
+                a[0] = line[2];
+                a[1] = line[3];
+                b[0] = line[2] + line[0];
+                b[1] = line[3] + line[1];
 
-            if ( fabs( dist ) > threshold_dist ) {
-                j--;
-                break;
+                p1 = Mat(3, 1, CV_64FC1, a).clone();
+                p2 = Mat(3, 1, CV_64FC1, b).clone();
+
+                l = p1.cross(p2);
+                dist = distPointLine(p, l);
+                if ( fabs( dist ) > threshold_dist ) {
+                    j--;
+                    break;
+                }
             }
             pe = pt;
             l_points.push_back(pt);
         }
-        fitLine( Mat(l_points), line, CV_DIST_L2, 0, 0.01, 0.01);
+        fitLine( Mat(l_points), line, DIST_L2, 0, 0.01, 0.01);
         a[0] = line[2];
         a[1] = line[3];
         b[0] = line[2] + line[0];
@@ -497,35 +513,16 @@ void FastLineDetectorImpl::pointInboardTest(const Mat& src, Point2i& pt)
     pt.y = pt.y <= 5 ? 5 : pt.y >= src.rows - 5 ? src.rows - 5 : pt.y;
 }
 
-int FastLineDetectorImpl::getNumBranch( const Mat & img, const Point pt)
+bool FastLineDetectorImpl::getPointChain( const Mat& img, Point pt, Point& chained_pt, float& direction, int step )
 {
     int ri, ci;
     int indices[8][2]={ {1,1}, {1,0}, {1,-1}, {0,-1}, {-1,-1},{-1,0}, {-1,1}, {0,1} };
 
-    int num_branch = 0;
-    for ( int i = 0; i < 8; i++ ) {
-        ci = pt.x + indices[i][1];
-        ri = pt.y + indices[i][0];
-
-        if ( ri < 0 || ri == img.rows || ci < 0 || ci == img.cols )
-            continue;
-
-        if ( img.at<unsigned char>(ri, ci) == 0 )
-            continue;
-        num_branch++;
-    }
-    return num_branch;
-}
-
-bool FastLineDetectorImpl::getPointChain( const Mat& img, Point pt, Point& chained_pt, int& direction, int step )
-{
-    int ri, ci;
-    int indices[8][2]={ {1,1}, {1,0}, {1,-1}, {0,-1}, {-1,-1},{-1,0}, {-1,1}, {0,1} };
-
-    int min_dir_diff = 7;
+    float min_dir_diff = 7.0f;
     Point consistent_pt;
     int consistent_direction = 0;
-    for ( int i = 0; i < 8; i++ ) {
+    for ( int i = 0; i < 8; i++ )
+    {
         ci = pt.x + indices[i][1];
         ri = pt.y + indices[i][0];
 
@@ -535,52 +532,58 @@ bool FastLineDetectorImpl::getPointChain( const Mat& img, Point pt, Point& chain
         if ( img.at<unsigned char>(ri, ci) == 0 )
             continue;
 
-        if(step == 0) {
+        if(step == 0)
+        {
             chained_pt.x = ci;
             chained_pt.y = ri;
-            direction = i;
+            // direction = (float)i;
+            direction = i > 4 ? (float)(i - 8) : (float)i;
             return true;
         }
-        else {
-            int dir_diff = abs(i - direction);
-            dir_diff = dir_diff > 4 ? 8 - dir_diff : dir_diff;
+        else
+        {
+            float curr_dir = i > 4 ? (float)(i - 8) : (float)i;
+            float dir_diff = abs(curr_dir - direction);
+            dir_diff = dir_diff > 4.0f ? 8.0f - dir_diff : dir_diff;
             if(dir_diff <= min_dir_diff)
             {
                 min_dir_diff = dir_diff;
                 consistent_pt.x = ci;
                 consistent_pt.y = ri;
-                consistent_direction = i;
+                consistent_direction = i > 4 ? i - 8 : i;
             }
         }
     }
-    if(min_dir_diff <= 2) {
+    if(min_dir_diff < 2.0f)
+    {
         chained_pt.x = consistent_pt.x;
         chained_pt.y = consistent_pt.y;
-        direction = consistent_direction;
+        direction = (direction * (float)step + (float)consistent_direction)
+            / (float)(step + 1);
         return true;
     }
     return false;
 }
 
-void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all, bool merge )
+void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all)
 {
     int r, c;
     imageheight=src.rows; imagewidth=src.cols;
 
     std::vector<Point2i> points;
     std::vector<SEGMENT> segments, segments_tmp;
-    Mat canny = src.clone();
+    Mat canny;
     Canny(src, canny, 50, 50, 3);
-    // imshow("Canny", canny);
-    // moveWindow("Canny", 100, 100);
 
     canny.colRange(0,6).rowRange(0,6) = 0;
     canny.colRange(src.cols-5,src.cols).rowRange(src.rows-5,src.rows) = 0;
 
     SEGMENT seg, seg1, seg2;
 
-    for ( r = 0; r < imageheight; r++ ) {
-        for ( c = 0; c < imagewidth; c++ ) {
+    for ( r = 0; r < imageheight; r++ )
+    {
+        for ( c = 0; c < imagewidth; c++ )
+        {
             // Find seeds - skip for non-seeds
             if ( canny.at<unsigned char>(r,c) == 0 )
                 continue;
@@ -591,28 +594,33 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
             points.push_back(pt);
             canny.at<unsigned char>(pt.y, pt.x) = 0;
 
-            int direction = 0;
+            float direction = 0.0f;
             int step = 0;
-            while(getPointChain(canny, pt, pt, direction, step)) {
+            while(getPointChain(canny, pt, pt, direction, step))
+            {
                 points.push_back(pt);
                 step++;
                 canny.at<unsigned char>(pt.y, pt.x) = 0;
             }
 
-            if ( points.size() < (unsigned int)threshold_length + 1 ) {
+            if ( points.size() < (unsigned int)threshold_length + 1 )
+            {
                 points.clear();
                 continue;
             }
 
             extractSegments(points, segments);
 
-            if ( segments.size() == 0 ) {
+            if ( segments.size() == 0 )
+            {
                 points.clear();
                 continue;
             }
-            for ( int i = 0; i < (int)segments.size(); i++ ) {
+            for ( int i = 0; i < (int)segments.size(); i++ )
+            {
                 seg = segments[i];
-                float length = sqrt((seg.x1 - seg.x2)*(seg.x1 - seg.x2) + (seg.y1 - seg.y2)*(seg.y1 - seg.y2));
+                float length = sqrt((seg.x1 - seg.x2)*(seg.x1 - seg.x2) +
+                        (seg.y1 - seg.y2)*(seg.y1 - seg.y2));
                 if(length < threshold_length)
                     continue;
                 if( (seg.x1 <= 5.0f && seg.x2 <= 5.0f)
@@ -622,7 +630,8 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
                     continue;
 
                 additionalOperationsOnSegments(src, seg);
-                if(!merge) {
+                if(!do_merge)
+                {
                     segments_all.push_back(seg);
                 }
                 segments_tmp.push_back(seg);
@@ -631,14 +640,13 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
             segments.clear();
         }
     }
-    if(!merge)
+    if(!do_merge)
         return;
 
     bool is_merged = false;
     int ith = (int)segments_tmp.size() - 1;
     int jth = ith - 1;
-    // for(;;)
-    while(ith > 1 && jth > 0)
+    while(ith > 1 || jth > 0)
     {
         seg1 = segments_tmp[ith];
         seg2 = segments_tmp[jth];
@@ -662,8 +670,6 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
             ith--;
             jth = ith - 1;
         }
-        if(ith == 1 && jth == 0)
-            break;
     }
     segments_all = segments_tmp;
 }
@@ -674,13 +680,15 @@ void FastLineDetectorImpl::getAngle(SEGMENT& seg)
     float dy = (float)(seg.y2 - seg.y1);
     double ang = 0.0;
 
-    if(dx == 0.0f) {
+    if(dx == 0.0f)
+    {
         if(dy > 0)
             ang = CV_PI / 2.0;
         else
             ang = -1.0 * CV_PI / 2.0;
     }
-    else if(dy == 0.0f) {
+    else if(dy == 0.0f)
+    {
         if(dx > 0)
             ang = 0.0;
         else
@@ -720,7 +728,8 @@ void FastLineDetectorImpl::additionalOperationsOnSegments(const Mat& src, SEGMEN
 
     points[0] = start;
     points[num_points - 1] = end;
-    for (int i = 0; i < num_points; i++) {
+    for (int i = 0; i < num_points; i++)
+    {
         if (i == 0 || i == num_points - 1)
             continue;
         points[i].x = points[0].x + ((float)dx / float(num_points - 1) * (float) i);
@@ -731,7 +740,8 @@ void FastLineDetectorImpl::additionalOperationsOnSegments(const Mat& src, SEGMEN
     Point2i *points_left = new Point2i[num_points];
     double gap = 1.0;
 
-    for(int i = 0; i < num_points; i++) {
+    for(int i = 0; i < num_points; i++)
+    {
         points_right[i].x = cvRound(points[i].x + gap*cos(90.0 * CV_PI / 180.0 + ang));
         points_right[i].y = cvRound(points[i].y + gap*sin(90.0 * CV_PI / 180.0 + ang));
         points_left[i].x = cvRound(points[i].x - gap*cos(90.0 * CV_PI / 180.0 + ang));
@@ -741,7 +751,8 @@ void FastLineDetectorImpl::additionalOperationsOnSegments(const Mat& src, SEGMEN
     }
 
     int iR = 0, iL = 0;
-    for(int i = 0; i < num_points; i++) {
+    for(int i = 0; i < num_points; i++)
+    {
         iR += src.at<unsigned char>(points_right[i].y, points_right[i].x);
         iL += src.at<unsigned char>(points_left[i].y, points_left[i].x);
     }
@@ -780,3 +791,4 @@ void FastLineDetectorImpl::drawSegment(Mat& mat, const SEGMENT& seg, Scalar bgr,
         line(mat, Point((int)round(seg.x2), (int)round(seg.y2)), p1, bgr, thickness, 1);
 }
 } // namespace cv
+} // namespace ximgproc
