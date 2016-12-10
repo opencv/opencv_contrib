@@ -23,4 +23,6 @@ if( FREETYPE_FOUND AND HARFBUZZ_FOUND )
 
   ocv_define_module(freetype opencv_core opencv_imgproc WRAP python)
   target_link_libraries(opencv_freetype ${freetype2_LIBRARIES} ${harfbuzz_LIBRARIES} )
+else()
+  ocv_module_disable(freetype)
 endif()
