@@ -1,6 +1,6 @@
 set(the_description "FreeType module. It enables to draw strings with outlines and mono-bitmaps/gray-bitmaps.")
 
-if(COMMAND pkg_search_modules)
+if(PKG_CONFIG_FOUND)
   pkg_search_module(FREETYPE freetype2)
   pkg_search_module(HARFBUZZ harfbuzz)
 endif()
