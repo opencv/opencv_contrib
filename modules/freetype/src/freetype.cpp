@@ -115,12 +115,9 @@ void FreeType2::putText(
     mThickness = _thickness;
     mLine_type = _line_type;
     mColor     = _color;
-    mImg       = _img.getMat();
     mHeight    = _fontHeight;
     mText      = _text;
     mOrg       = _org;
-
-    mPts.clear();
 
     if( !bottomLeftOrigin ) {
         mOrg.y += mHeight;
@@ -129,16 +126,16 @@ void FreeType2::putText(
     if( mThickness < 0 ) // CV_FILLED
     {
         if ( mLine_type == CV_AA ) { 
-            putTextBitmapBlend();
+            putTextBitmapBlend(_img);
         }else{
-            putTextBitmapMono ();
+            putTextBitmapMono (_img);
         }
     }else{
-        putTextOutline();
+        putTextOutline(_img);
     }
 }
 
-void FreeType2::putTextOutline()
+void FreeType2::putTextOutline(InputOutputArray _img)
 {
     hb_buffer_t *hb_buffer;
     hb_buffer = hb_buffer_create ();
@@ -151,6 +148,11 @@ void FreeType2::putTextOutline()
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     mOrg.y -= mHeight;
+    PathUserData *userData = new PathUserData( _img );
+    userData->mColor     = mColor;
+    userData->mCtoL      = mCtoL;
+    userData->mThickness = mThickness;
+    userData->mLine_type = mLine_type;
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         FT_Load_Glyph(mFace, info[i].codepoint, 0 ); 
@@ -163,24 +165,26 @@ void FreeType2::putTextOutline()
         FT_Outline_Transform(&outline, &mtx);
 
         // Move
-       FT_Outline_Translate(&outline,
+        FT_Outline_Translate(&outline,
                              (FT_Pos)(mOrg.x << 6),
                              (FT_Pos)((mOrg.y + mHeight)  << 6) );
 
         // Draw
-        FT_Outline_Decompose(&outline, &mFn, (void*)this);
+        FT_Outline_Decompose(&outline, &mFn, (void*)userData);
 
         // Draw (Last Path)
-        mvFn( NULL, (void*)this );
+        mvFn( NULL, (void*)userData );
 
         mOrg.x += ( mFace->glyph->advance.x ) >> 6;
         mOrg.y += ( mFace->glyph->advance.y ) >> 6;
    }
+   delete userData;
    hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2::putTextBitmapMono()
+void FreeType2::putTextBitmapMono(InputOutputArray _img)
 {
+    Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer;
     hb_buffer = hb_buffer_create ();
 
@@ -201,11 +205,11 @@ void FreeType2::putTextBitmapMono()
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
         for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row > (unsigned int)mImg.rows ) { 
+            if( gPos.y + row > (unsigned int)dst.rows ) { 
                 break;
             }
 
-            cv::Vec3b* ptr = mImg.ptr<cv::Vec3b>( gPos.y + row );
+            cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row );
             for (int col = 0; col < bmp->pitch; col ++) {
                 int cl = bmp->buffer[ row * bmp->pitch + col ];
                 if ( cl == 0 ) {
@@ -216,7 +220,7 @@ void FreeType2::putTextBitmapMono()
                     {
                         continue;
                     }
-                    if( gPos.x + col * 8 + (7 - bit) > mImg.cols ) 
+                    if( gPos.x + col * 8 + (7 - bit) > dst.cols ) 
                     {
                         break;
                     }
@@ -237,8 +241,9 @@ void FreeType2::putTextBitmapMono()
     hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2::putTextBitmapBlend()
+void FreeType2::putTextBitmapBlend(InputOutputArray _img)
 {
+    Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer;
     hb_buffer = hb_buffer_create ();
 
@@ -259,11 +264,11 @@ void FreeType2::putTextBitmapBlend()
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
         for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row > (unsigned int)mImg.rows ) { 
+            if( gPos.y + row > (unsigned int)dst.rows ) { 
                 break;
             }
 
-            cv::Vec3b* ptr = mImg.ptr<cv::Vec3b>( gPos.y + row );
+            cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row );
             for (int col = 0; col < bmp->pitch; col ++) {
                 int cl = bmp->buffer[ row * bmp->pitch + col ];
                 if ( cl == 0 ) {
@@ -273,7 +278,7 @@ void FreeType2::putTextBitmapBlend()
                 {
                     continue;
                 }
-                if( gPos.x + col > mImg.cols ) 
+                if( gPos.x + col > dst.cols ) 
                 {
                     break;
                 }
@@ -295,13 +300,14 @@ void FreeType2::putTextBitmapBlend()
 int FreeType2::mvFn( const FT_Vector *to, void * user)
 {
     if(user == NULL ) { return 1; }
-    FreeType2 *p = (FreeType2 *)user;
+    PathUserData *p = (PathUserData*)user;
 
     if( p->mPts.size() > 0 ){
+        Mat dst = p->mImg.getMat();
         const Point *ptsList[] = { &(p->mPts[0]) };
         int npt[1]; npt[0] = p->mPts.size();
         polylines(
-            p->mImg,
+            dst,
             ptsList,
             npt,
             1,
@@ -327,7 +333,7 @@ int FreeType2::lnFn( const FT_Vector *to, void * user)
     if(to   == NULL ) { return 1; }
     if(user == NULL ) { return 1; }
 
-    FreeType2 *p = (FreeType2 *)user;
+    PathUserData *p = (PathUserData *)user;
     p->mPts.push_back( Point ( ftd(to->x), ftd(to->y) ) );
     p->mOldP = *to;
     return 0;
@@ -341,7 +347,7 @@ int FreeType2::coFn( const FT_Vector *cnt,
     if(to   == NULL ) { return 1; }
     if(user == NULL ) { return 1; }
 
-    FreeType2 *p = (FreeType2 *)user;
+    PathUserData *p = (PathUserData *)user;
 
     // Bezier to Line
     for(int i = 0;i <= p->mCtoL; i++){
@@ -369,7 +375,7 @@ int FreeType2::cuFn( const FT_Vector *cnt1,
     if(to   == NULL ) { return 1; }
     if(user == NULL ) { return 1; }
 
-    FreeType2 *p = (FreeType2 *)user;
+    PathUserData *p = (PathUserData *)user;
 
     // Bezier to Line
     for(int i = 0; i <= p->mCtoL ;i++){

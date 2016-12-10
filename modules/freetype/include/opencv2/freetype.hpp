@@ -76,23 +76,19 @@ private:
     FT_Face          mFace;
     FT_Outline_Funcs mFn;
 
-    std::vector < Point > mPts;
-
     Point            mOrg;
     int              mLine_type;
     int              mThickness;
     int              mHeight;
     Scalar           mColor;
-    Mat              mImg;
-    FT_Vector        mOldP;
     bool             mIsFaceAvailable;
     std::string      mText;
     int              mCtoL;
     hb_font_t        *mHb_font;
 
-    void putTextBitmapMono();
-    void putTextBitmapBlend();
-    void putTextOutline();
+    void putTextBitmapMono ( InputOutputArray _img);
+    void putTextBitmapBlend( InputOutputArray _img);
+    void putTextOutline    ( InputOutputArray _img);
 
     static int mvFn( const FT_Vector *to, void * user);
     static int lnFn( const FT_Vector *to, void * user);
@@ -108,6 +104,18 @@ private:
     static unsigned int ftd(unsigned int a){ 
         return (unsigned int)(a + (1 << 5)  ) >> 6;
     }
+    class PathUserData{
+    private:
+    public:
+        PathUserData( InputOutputArray _img) : mImg(_img) {};
+        InputOutputArray mImg;
+        Scalar mColor;
+        int    mThickness;
+        int    mLine_type;
+        FT_Vector        mOldP;
+        int              mCtoL;
+        std::vector < Point > mPts;
+    };
 
 public:
     CV_WRAP FreeType2();
