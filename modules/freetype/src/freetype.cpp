@@ -266,7 +266,7 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
         for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row > (unsigned int)dst.rows ) { 
+            if( gPos.y + row >= (unsigned int)dst.rows ) { 
                 break;
             }
 
@@ -281,7 +281,7 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
                     {
                         continue;
                     }
-                    if( gPos.x + col * 8 + (7 - bit) > dst.cols ) 
+                    if( gPos.x + col * 8 + (7 - bit) >= dst.cols ) 
                     {
                         break;
                     }
@@ -325,7 +325,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
         for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row > (unsigned int)dst.rows ) { 
+            if( gPos.y + row >= (unsigned int)dst.rows ) { 
                 break;
             }
 
@@ -339,7 +339,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
                 {
                     continue;
                 }
-                if( gPos.x + col > dst.cols ) 
+                if( gPos.x + col >= dst.cols ) 
                 {
                     break;
                 }
