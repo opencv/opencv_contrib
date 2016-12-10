@@ -54,7 +54,19 @@
 #include <string>
 
 /**
-@defgroup draw UTF-8 strings with freetype/harfbuzz
+@defgroup freetype Drawing UTF-8 strings with freetype/harfbuzz
+
+This modules is to draw UTF-8 strings with freetype/harfbuzz.
+
+1. Install freetype2 and harfbuzz in your system.
+2. Create FreeType2 instance with createFreeType2() function.
+3. Load font file with loadFontData() function.
+4. Draw text with putText() function.
+
+- If thickness parameter is negative, drawing glyph is filled.
+- If thickness parameter is positive, drawing glyph is outlined with thickness.
+- If line_type parameter is 16(or CV_AA), drawing glyph is smooth.
+
 */
 
 namespace cv {
@@ -91,13 +103,12 @@ The function putText renders the specified text string in the image. Symbols tha
 
 @param img Image.
 @param text Text string to be drawn.
-@param org Bottom-left corner of the text string in the image.
-@param fontHeight Scale Font scale factor by pixel unit.
+@param org Bottom-left/Top-left corner of the text string in the image.
+@param fontHeight Drawing font size by pixel unit.
 @param color Text color.
 @param thickness Thickness of the lines used to draw a text when negative, the glyph is filled. Otherwise, the glyph is drawn with this thickness.
-@param lineType Line type. See the line for details.
-@param bottomLeftOrigin When true, the image data origin is at the bottom-left corner. Otherwise,
-it is at the top-left corner.
+@param line_type Line type. See the line for details.
+@param bottomLeftOrigin When true, the image data origin is at the bottom-left corner. Otherwise, it is at the top-left corner.
 */
 
     CV_WRAP virtual void putText(
@@ -107,8 +118,14 @@ it is at the top-left corner.
     ) = 0;
 
 };
+/** @brief Create FreeType2 Instance
+
+The function createFreeType2 create instance to draw UTF-8 strings.
+
+*/
     CV_EXPORTS_W Ptr<FreeType2> createFreeType2();
 
+//! @]
 } } // namespace freetype
 
 #endif
