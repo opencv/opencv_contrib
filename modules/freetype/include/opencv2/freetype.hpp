@@ -50,77 +50,20 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-
 #include <vector>
 #include <string>
 
-#include <ft2build.h>
-#include <freetype/freetype.h>
-#include <freetype/ftoutln.h>
-
-#include <hb.h>
-#include <hb-ft.h>
-
 /**
-@defgroup plot Plot function for Mat data
+@defgroup draw UTF-8 strings with freetype/harfbuzz
 */
 
 namespace cv {
 namespace freetype {
 //! @addtogroup freetype
 //! @{
-class CV_EXPORTS_W FreeType2
+class CV_EXPORTS_W FreeType2 : public Algorithm
 {
-private:
-    FT_Library       mLibrary;
-    FT_Face          mFace;
-    FT_Outline_Funcs mFn;
-
-    Point            mOrg;
-    int              mLine_type;
-    int              mThickness;
-    int              mHeight;
-    Scalar           mColor;
-    bool             mIsFaceAvailable;
-    std::string      mText;
-    int              mCtoL;
-    hb_font_t        *mHb_font;
-
-    void putTextBitmapMono ( InputOutputArray _img);
-    void putTextBitmapBlend( InputOutputArray _img);
-    void putTextOutline    ( InputOutputArray _img);
-
-    static int mvFn( const FT_Vector *to, void * user);
-    static int lnFn( const FT_Vector *to, void * user);
-    static int coFn( const FT_Vector *cnt, 
-                     const FT_Vector *to,
-                     void * user);
-    static int cuFn( const FT_Vector *cnt1, 
-                     const FT_Vector *cnt2,
-                     const FT_Vector *to,
-                     void * user);
-    static void readNextCode(FT_Long &c, int &i, const String &text );
-
-    static unsigned int ftd(unsigned int a){ 
-        return (unsigned int)(a + (1 << 5)  ) >> 6;
-    }
-    class PathUserData{
-    private:
-    public:
-        PathUserData( InputOutputArray _img) : mImg(_img) {};
-        InputOutputArray mImg;
-        Scalar mColor;
-        int    mThickness;
-        int    mLine_type;
-        FT_Vector        mOldP;
-        int              mCtoL;
-        std::vector < Point > mPts;
-    };
-
 public:
-    CV_WRAP FreeType2();
-    CV_WRAP ~FreeType2();
-
 /** @brief Load font data.
 
 The function loadFontData loads font data. 
@@ -129,7 +72,7 @@ The function loadFontData loads font data.
 @param id face_index to select a font faces in a single file.
 */
 
-    CV_WRAP void loadFontData(std::string fontFileName, int id);
+    CV_WRAP virtual void loadFontData(std::string fontFileName, int id) = 0;
 
 /** @brief Set Split Number from Bezier-curve to line
 
@@ -140,7 +83,7 @@ If you want to draw small glyph, small is better.
 @param num number of split points from bezier-curve to line
 */
 
-    CV_WRAP void setSplitNumber( unsigned int num );
+    CV_WRAP virtual void setSplitNumber( unsigned int num ) = 0;
 
 /** @brief Draws a text string.
 
@@ -157,12 +100,14 @@ The function putText renders the specified text string in the image. Symbols tha
 it is at the top-left corner.
 */
 
-    CV_WRAP void putText(
+    CV_WRAP virtual void putText(
         InputOutputArray img, const String& text, Point org,
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
-    );
+    ) = 0;
+
 };
+    CV_EXPORTS_W Ptr<FreeType2> createFreeType2();
 
 } } // namespace freetype
 

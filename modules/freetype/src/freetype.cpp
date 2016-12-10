@@ -52,22 +52,83 @@ namespace freetype {
         
 using namespace std;
 
-FreeType2::FreeType2()
+class CV_EXPORTS_W FreeType2Impl : public FreeType2
+{
+public:
+    FreeType2Impl();
+    ~FreeType2Impl();
+    void loadFontData(std::string fontFileName, int id) ;
+    void setSplitNumber( unsigned int num );
+    void putText(
+        InputOutputArray img, const String& text, Point org,
+        int fontHeight, Scalar color,
+        int thickness, int line_type, bool bottomLeftOrigin
+    );
+
+private:
+    FT_Library       mLibrary;
+    FT_Face          mFace;
+    FT_Outline_Funcs mFn;
+
+    Point            mOrg;
+    int              mLine_type;
+    int              mThickness;
+    int              mHeight;
+    Scalar           mColor;
+    bool             mIsFaceAvailable;
+    std::string      mText;
+    int              mCtoL;
+    hb_font_t        *mHb_font;
+
+    void putTextBitmapMono ( InputOutputArray _img);
+    void putTextBitmapBlend( InputOutputArray _img);
+    void putTextOutline    ( InputOutputArray _img);
+
+    static int mvFn( const FT_Vector *to, void * user);
+    static int lnFn( const FT_Vector *to, void * user);
+    static int coFn( const FT_Vector *cnt,
+                     const FT_Vector *to,
+                     void * user);
+    static int cuFn( const FT_Vector *cnt1,
+                     const FT_Vector *cnt2,
+                     const FT_Vector *to,
+                     void * user);
+    static void readNextCode(FT_Long &c, int &i, const String &text );
+
+    static unsigned int ftd(unsigned int a){
+        return (unsigned int)(a + (1 << 5)  ) >> 6;
+    }
+    class PathUserData{
+    private:
+    public:
+        PathUserData( InputOutputArray _img) : mImg(_img) {};
+
+        InputOutputArray mImg;
+        Scalar mColor;
+        int    mThickness;
+        int    mLine_type;
+        FT_Vector        mOldP;
+        int              mCtoL;
+        std::vector < Point > mPts;
+    };
+};
+
+FreeType2Impl::FreeType2Impl()
 {
     FT_Init_FreeType(&(this->mLibrary) );
 
     mCtoL        = 16;
     mFn.shift    = 0;
     mFn.delta    = 0;
-    mFn.move_to  = FreeType2::mvFn;
-    mFn.line_to  = FreeType2::lnFn;
-    mFn.cubic_to = FreeType2::cuFn;
-    mFn.conic_to = FreeType2::coFn;
+    mFn.move_to  = FreeType2Impl::mvFn;
+    mFn.line_to  = FreeType2Impl::lnFn;
+    mFn.cubic_to = FreeType2Impl::cuFn;
+    mFn.conic_to = FreeType2Impl::coFn;
 
     mIsFaceAvailable = false;
 }
 
-FreeType2::~FreeType2()
+FreeType2Impl::~FreeType2Impl()
 {
     if( mIsFaceAvailable  == true ){
         hb_font_destroy (mHb_font);
@@ -77,7 +138,7 @@ FreeType2::~FreeType2()
     FT_Done_FreeType(mLibrary);
 }
 
-void FreeType2::loadFontData(std::string fontFileName, int idx)
+void FreeType2Impl::loadFontData(std::string fontFileName, int idx)
 {
     if( mIsFaceAvailable  == true ){
         hb_font_destroy (mHb_font);
@@ -88,11 +149,11 @@ void FreeType2::loadFontData(std::string fontFileName, int idx)
     mIsFaceAvailable = true;
 }
 
-void FreeType2::setSplitNumber(unsigned int num ){
+void FreeType2Impl::setSplitNumber(unsigned int num ){
     mCtoL        = num;
 }
 
-void FreeType2::putText(
+void FreeType2Impl::putText(
     InputOutputArray _img, const String& _text, Point _org,
     int _fontHeight, Scalar _color,
     int _thickness, int _line_type, bool bottomLeftOrigin
@@ -135,7 +196,7 @@ void FreeType2::putText(
     }
 }
 
-void FreeType2::putTextOutline(InputOutputArray _img)
+void FreeType2Impl::putTextOutline(InputOutputArray _img)
 {
     hb_buffer_t *hb_buffer;
     hb_buffer = hb_buffer_create ();
@@ -182,7 +243,7 @@ void FreeType2::putTextOutline(InputOutputArray _img)
    hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2::putTextBitmapMono(InputOutputArray _img)
+void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
 {
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer;
@@ -241,7 +302,7 @@ void FreeType2::putTextBitmapMono(InputOutputArray _img)
     hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2::putTextBitmapBlend(InputOutputArray _img)
+void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
 {
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer;
@@ -297,7 +358,7 @@ void FreeType2::putTextBitmapBlend(InputOutputArray _img)
     hb_buffer_destroy (hb_buffer);
 }
 
-int FreeType2::mvFn( const FT_Vector *to, void * user)
+int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
 {
     if(user == NULL ) { return 1; }
     PathUserData *p = (PathUserData*)user;
@@ -328,7 +389,7 @@ int FreeType2::mvFn( const FT_Vector *to, void * user)
     return 0;
 }
 
-int FreeType2::lnFn( const FT_Vector *to, void * user)
+int FreeType2Impl::lnFn( const FT_Vector *to, void * user)
 {
     if(to   == NULL ) { return 1; }
     if(user == NULL ) { return 1; }
@@ -339,7 +400,7 @@ int FreeType2::lnFn( const FT_Vector *to, void * user)
     return 0;
 }
 
-int FreeType2::coFn( const FT_Vector *cnt,
+int FreeType2Impl::coFn( const FT_Vector *cnt,
                      const FT_Vector *to,
                      void * user)
 {
@@ -365,7 +426,7 @@ int FreeType2::coFn( const FT_Vector *cnt,
     return 0;
 }
 
-int FreeType2::cuFn( const FT_Vector *cnt1,
+int FreeType2Impl::cuFn( const FT_Vector *cnt1,
                      const FT_Vector *cnt2, 
                      const FT_Vector *to, 
                      void * user)
@@ -396,5 +457,11 @@ int FreeType2::cuFn( const FT_Vector *cnt1,
     p->mOldP = *to;
     return 0;
 }
+
+CV_EXPORTS_W Ptr<FreeType2> createFreeType2()
+{
+    return Ptr<FreeType2Impl> (new FreeType2Impl () );
+}
+
 
 }} // namespace freetype2
