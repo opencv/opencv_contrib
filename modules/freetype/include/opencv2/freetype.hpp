@@ -65,56 +65,53 @@
 @defgroup plot Plot function for Mat data
 */
 
-namespace cv
+namespace cv {
+namespace freetype {
+//! @addtogroup freetype
+//! @{
+class CV_EXPORTS_W FreeType2
 {
-    namespace freetype
-    {
-    //! @addtogroup freetype
-    //! @{
+private:
+    FT_Library       mLibrary;
+    FT_Face          mFace;
+    FT_Outline_Funcs mFn;
 
-        class CV_EXPORTS_W FreeType2
-        {
-            private:
-            FT_Library       mLibrary;
-            FT_Face          mFace;
-            FT_Outline_Funcs mFn;
+    std::vector < Point > mPts;
 
-            std::vector < Point > mPts;
+    Point            mOrg;
+    int              mLine_type;
+    int              mThickness;
+    int              mHeight;
+    Scalar           mColor;
+    Mat              mImg;
+    FT_Vector        mOldP;
+    bool             mIsFaceAvailable;
+    std::string      mText;
+    int              mCtoL;
+    hb_font_t        *mHb_font;
 
-            Point            mOrg;
-            int              mLine_type;
-            int              mThickness;
-            int              mHeight;
-            Scalar           mColor;
-            Mat              mImg;
-            FT_Vector        mOldP;
-            bool             mIsFaceAvailable;
-            std::string      mText;
-            int              mCtoL;
-            hb_font_t        *mHb_font;
+    void putTextBitmapMono();
+    void putTextBitmapBlend();
+    void putTextOutline();
 
-            void putTextBitmapMono();
-            void putTextBitmapBlend();
-            void putTextOutline();
+    static int mvFn( const FT_Vector *to, void * user);
+    static int lnFn( const FT_Vector *to, void * user);
+    static int coFn( const FT_Vector *cnt, 
+                     const FT_Vector *to,
+                     void * user);
+    static int cuFn( const FT_Vector *cnt1, 
+                     const FT_Vector *cnt2,
+                     const FT_Vector *to,
+                     void * user);
+    static void readNextCode(FT_Long &c, int &i, const String &text );
 
-            static int mvFn( const FT_Vector *to, void * user);
-            static int lnFn( const FT_Vector *to, void * user);
-            static int coFn( const FT_Vector *cnt,
-                             const FT_Vector *to,
-                             void * user);
-            static int cuFn( const FT_Vector *cnt1,
-                             const FT_Vector *cnt2,
-                             const FT_Vector *to,
-                             void * user);
-            static void readNextCode(FT_Long &c, int &i, const String &text );
+    static unsigned int ftd(unsigned int a){ 
+        return (unsigned int)(a + (1 << 5)  ) >> 6;
+    }
 
-            static unsigned int ftd(unsigned int a){ 
-                return (unsigned int)(a + (1 << 5)  ) >> 6;
-            }
-
-            public:
-            CV_WRAP FreeType2();
-            CV_WRAP ~FreeType2();
+public:
+    CV_WRAP FreeType2();
+    CV_WRAP ~FreeType2();
 
 /** @brief Load font data.
 
@@ -124,7 +121,7 @@ The function loadFontData loads font data.
 @param id face_index to select a font faces in a single file.
 */
 
-            CV_WRAP void loadFontData(std::string fontFileName, int id);
+    CV_WRAP void loadFontData(std::string fontFileName, int id);
 
 /** @brief Set Split Number from Bezier-curve to line
 
@@ -135,7 +132,7 @@ If you want to draw small glyph, small is better.
 @param num number of split points from bezier-curve to line
 */
 
-            CV_WRAP void setSplitNumber( unsigned int num );
+    CV_WRAP void setSplitNumber( unsigned int num );
 
 /** @brief Draws a text string.
 
@@ -152,15 +149,14 @@ The function putText renders the specified text string in the image. Symbols tha
 it is at the top-left corner.
 */
 
-            CV_WRAP void putText(
-                InputOutputArray img, const String& text, Point org,
-                int fontHeight, Scalar color,
-                int thickness, int line_type, bool bottomLeftOrigin
-            );
-        };
+    CV_WRAP void putText(
+        InputOutputArray img, const String& text, Point org,
+        int fontHeight, Scalar color,
+        int thickness, int line_type, bool bottomLeftOrigin
+    );
+};
 
-    }
-}
+} } // namespace freetype
 
 #endif
 #endif
