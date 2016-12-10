@@ -265,12 +265,14 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
         gPos.y -= ( mFace->glyph->metrics.horiBearingY >> 6) ;
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
-        for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row >= (unsigned int)dst.rows ) { 
+        for (int row = 0; row < (int)bmp->rows; row ++) {
+            if( gPos.y + row < 0 ) {
+                continue;
+            }
+            if( gPos.y + row >= dst.rows ) { 
                 break;
             }
 
-            cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row );
             for (int col = 0; col < bmp->pitch; col ++) {
                 int cl = bmp->buffer[ row * bmp->pitch + col ];
                 if ( cl == 0 ) {
@@ -287,10 +289,10 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
                     }
 
                     if ( ( (cl >> bit) & 0x01 ) == 1 ) {
-                        int pos = gPos.x + col * 8 + (7 - bit);
-                        ptr[ pos ][0] = mColor[0];
-                        ptr[ pos ][1] = mColor[1];
-                        ptr[ pos ][2] = mColor[2];
+                        cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row,  gPos.x + col * 8 + (7 - bit) );
+                        (*ptr)[0] = mColor[0];
+                        (*ptr)[1] = mColor[1];
+                        (*ptr)[2] = mColor[2];
                     }
                 }
             }
@@ -324,12 +326,14 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
         gPos.y -= ( mFace->glyph->metrics.horiBearingY >> 6) ;
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
-        for (unsigned int row = 0; row < bmp->rows; row ++) {
-            if( gPos.y + row >= (unsigned int)dst.rows ) { 
+        for (int row = 0; row < (int)bmp->rows; row ++) {
+            if( gPos.y + row < 0 ) { 
+                continue;
+            }
+            if( gPos.y + row > dst.rows ) { 
                 break;
             }
 
-            cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row );
             for (int col = 0; col < bmp->pitch; col ++) {
                 int cl = bmp->buffer[ row * bmp->pitch + col ];
                 if ( cl == 0 ) {
@@ -344,12 +348,12 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
                     break;
                 }
 
-                int pos = gPos.x + col;
+                cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row , gPos.x + col);
                 double blendAlpha = (double ) cl / 255.0; 
 
-                ptr[ pos ][0] = (double) mColor[0] * blendAlpha + ptr[ pos ][0] * (1.0 - blendAlpha );
-                ptr[ pos ][1] = (double) mColor[1] * blendAlpha + ptr[ pos ][1] * (1.0 - blendAlpha );
-                ptr[ pos ][2] = (double) mColor[2] * blendAlpha + ptr[ pos ][2] * (1.0 - blendAlpha ); 
+                (*ptr)[0] = (double) mColor[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
+                (*ptr)[1] = (double) mColor[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
+                (*ptr)[2] = (double) mColor[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha ); 
             }
         }
         mOrg.x += ( mFace->glyph->advance.x ) >> 6;
