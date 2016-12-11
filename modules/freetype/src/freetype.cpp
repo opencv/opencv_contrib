@@ -331,7 +331,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
             if( gPos.y + row < 0 ) {
                 continue;
             }
-            if( gPos.y + row > dst.rows ) {
+            if( gPos.y + row >= dst.rows ) {
                 break;
             }
 
