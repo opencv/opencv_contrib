@@ -49,7 +49,7 @@
 
 namespace cv {
 namespace freetype {
-        
+
 using namespace std;
 
 class CV_EXPORTS_W FreeType2Impl : public FreeType2
@@ -186,7 +186,7 @@ void FreeType2Impl::putText(
 
     if( mThickness < 0 ) // CV_FILLED
     {
-        if ( mLine_type == CV_AA ) { 
+        if ( mLine_type == CV_AA ) {
             putTextBitmapBlend(_img);
         }else{
             putTextBitmapMono (_img);
@@ -204,7 +204,7 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
-    hb_glyph_info_t *info = 
+    hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
@@ -216,7 +216,7 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
     userData->mLine_type = mLine_type;
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 ); 
+        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
 
         FT_GlyphSlot slot  = mFace->glyph;
         FT_Outline outline = slot->outline;
@@ -252,12 +252,12 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
-    hb_glyph_info_t *info = 
+    hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 ); 
+        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
         FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_MONO );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
@@ -269,7 +269,7 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
             if( gPos.y + row < 0 ) {
                 continue;
             }
-            if( gPos.y + row >= dst.rows ) { 
+            if( gPos.y + row >= dst.rows ) {
                 break;
             }
 
@@ -283,7 +283,7 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
                     {
                         continue;
                     }
-                    if( gPos.x + col * 8 + (7 - bit) >= dst.cols ) 
+                    if( gPos.x + col * 8 + (7 - bit) >= dst.cols )
                     {
                         break;
                     }
@@ -313,12 +313,12 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
-    hb_glyph_info_t *info = 
+    hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 ); 
+        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
         FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_NORMAL );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
@@ -327,10 +327,10 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
         for (int row = 0; row < (int)bmp->rows; row ++) {
-            if( gPos.y + row < 0 ) { 
+            if( gPos.y + row < 0 ) {
                 continue;
             }
-            if( gPos.y + row > dst.rows ) { 
+            if( gPos.y + row > dst.rows ) {
                 break;
             }
 
@@ -343,7 +343,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
                 {
                     continue;
                 }
-                if( gPos.x + col >= dst.cols ) 
+                if( gPos.x + col >= dst.cols )
                 {
                     break;
                 }
@@ -353,7 +353,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
 
                 (*ptr)[0] = (double) mColor[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
                 (*ptr)[1] = (double) mColor[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
-                (*ptr)[2] = (double) mColor[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha ); 
+                (*ptr)[2] = (double) mColor[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha );
             }
         }
         mOrg.x += ( mFace->glyph->advance.x ) >> 6;
@@ -379,7 +379,7 @@ int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
             false,
             p->mColor,
             p->mThickness,
-            p->mLine_type, 
+            p->mLine_type,
             0
         );
     }
@@ -431,8 +431,8 @@ int FreeType2Impl::coFn( const FT_Vector *cnt,
 }
 
 int FreeType2Impl::cuFn( const FT_Vector *cnt1,
-                     const FT_Vector *cnt2, 
-                     const FT_Vector *to, 
+                     const FT_Vector *cnt2,
+                     const FT_Vector *to,
                      void * user)
 {
     if(cnt1 == NULL ) { return 1; }

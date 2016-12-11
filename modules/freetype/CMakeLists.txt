@@ -18,7 +18,7 @@ else()
 endif()
 
 
-if( FREETYPE_FOUND AND HARFBUZZ_FOUND ) 
+if( FREETYPE_FOUND AND HARFBUZZ_FOUND )
   include_directories(${FREETYPE_INCLUDE_DIRS} ${HARFBUZZ_INCLUDE_DIRS} )
   ocv_define_module(freetype opencv_core opencv_imgproc PRIVATE ${freetype2_LIBRARIES} ${harfbuzz_LIBRARIES} WRAP python)
   ocv_module_include_directories(${FREETYPE_INCLUDE_DIRS} ${HARFBUZZ_INCLUDE_DIRS} )

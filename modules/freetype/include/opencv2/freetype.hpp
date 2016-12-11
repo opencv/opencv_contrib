@@ -78,9 +78,9 @@ class CV_EXPORTS_W FreeType2 : public Algorithm
 public:
 /** @brief Load font data.
 
-The function loadFontData loads font data. 
+The function loadFontData loads font data.
 
-@param fontFileName FontFile Name 
+@param fontFileName FontFile Name
 @param id face_index to select a font faces in a single file.
 */
 
