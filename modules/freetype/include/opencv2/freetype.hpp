@@ -97,7 +97,7 @@ If you want to draw small glyph, small is better.
 
 /** @brief Draws a text string.
 
-The function putText renders the specified text string in the image. Symbols that cannot be rendered using the specified font are replaced by "Tofu" or non-drawn. 
+The function putText renders the specified text string in the image. Symbols that cannot be rendered using the specified font are replaced by "Tofu" or non-drawn.
 
 @param img Image.
 @param text Text string to be drawn.

@@ -349,7 +349,7 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
                 }
 
                 cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row , gPos.x + col);
-                double blendAlpha = (double ) cl / 255.0; 
+                double blendAlpha = (double ) cl / 255.0;
 
                 (*ptr)[0] = (double) mColor[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
                 (*ptr)[1] = (double) mColor[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
