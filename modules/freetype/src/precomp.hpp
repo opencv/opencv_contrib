@@ -55,9 +55,8 @@
 #include "opencv2/opencv_modules.hpp"
 
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <vector>
-#include <string>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

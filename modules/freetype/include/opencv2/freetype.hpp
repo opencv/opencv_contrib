@@ -50,8 +50,6 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <vector>
-#include <string>
 
 /**
 @defgroup freetype Drawing UTF-8 strings with freetype/harfbuzz
@@ -84,7 +82,7 @@ The function loadFontData loads font data.
 @param id face_index to select a font faces in a single file.
 */
 
-    CV_WRAP virtual void loadFontData(std::string fontFileName, int id) = 0;
+    CV_WRAP virtual void loadFontData(String fontFileName, int id) = 0;
 
 /** @brief Set Split Number from Bezier-curve to line
 

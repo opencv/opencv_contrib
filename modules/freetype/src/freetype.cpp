@@ -57,7 +57,7 @@ class CV_EXPORTS_W FreeType2Impl : public FreeType2
 public:
     FreeType2Impl();
     ~FreeType2Impl();
-    void loadFontData(std::string fontFileName, int id) ;
+    void loadFontData(String fontFileName, int id) ;
     void setSplitNumber( unsigned int num );
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -76,7 +76,7 @@ private:
     int              mHeight;
     Scalar           mColor;
     bool             mIsFaceAvailable;
-    std::string      mText;
+    String           mText;
     int              mCtoL;
     hb_font_t        *mHb_font;
 
@@ -138,7 +138,7 @@ FreeType2Impl::~FreeType2Impl()
     FT_Done_FreeType(mLibrary);
 }
 
-void FreeType2Impl::loadFontData(std::string fontFileName, int idx)
+void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
     if( mIsFaceAvailable  == true ){
         hb_font_destroy (mHb_font);
