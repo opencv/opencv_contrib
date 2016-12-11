@@ -58,7 +58,7 @@ public:
     FreeType2Impl();
     ~FreeType2Impl();
     void loadFontData(String fontFileName, int id) ;
-    void setSplitNumber( unsigned int num );
+    void setSplitNumber( int num );
     void putText(
         InputOutputArray img, const String& text, Point org,
         int fontHeight, Scalar color,
@@ -149,7 +149,8 @@ void FreeType2Impl::loadFontData(String fontFileName, int idx)
     mIsFaceAvailable = true;
 }
 
-void FreeType2Impl::setSplitNumber(unsigned int num ){
+void FreeType2Impl::setSplitNumber(int num ){
+    CV_Assert( num > 0 );
     mCtoL        = num;
 }
 

@@ -93,7 +93,7 @@ If you want to draw small glyph, small is better.
 @param num number of split points from bezier-curve to line
 */
 
-    CV_WRAP virtual void setSplitNumber( unsigned int num ) = 0;
+    CV_WRAP virtual void setSplitNumber( int num ) = 0;
 
 /** @brief Draws a text string.
 
