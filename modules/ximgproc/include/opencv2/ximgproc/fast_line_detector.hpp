@@ -12,7 +12,7 @@ namespace cv
 namespace ximgproc
 {
 
-//! @addtogroup ximgproc_feature
+//! @addtogroup ximgproc_fast_line_detector
 //! @{
 
 /** @brief Class implementing the FLD (Fast Line Detector) algorithm described
@@ -75,7 +75,7 @@ CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
         double _canny_th1 = 50.0, double _canny_th2 = 50.0, int _canny_aperture_size = 3,
         bool _do_merge = false);
 
-//! @} ximgproc_feature
+//! @} ximgproc_fast_line_detector
 }
 }
 #endif

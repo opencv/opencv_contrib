@@ -64,6 +64,8 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_superpixel Superpixels
 
     @defgroup ximgproc_segmentation Image segmentation
+
+    @defgroup ximgproc_fast_line_detector Fast line detector
   @}
 */
 
