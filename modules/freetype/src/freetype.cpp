@@ -95,9 +95,17 @@ private:
                      void * user);
     static void readNextCode(FT_Long &c, int &i, const String &text );
 
-    static unsigned int ftd(unsigned int a){
-        return (unsigned int)(a + (1 << 5)  ) >> 6;
+    // Offset value to handle the position less than 0.
+    static const unsigned int cOutlineOffset = 0x80000000;
+
+    /**
+     * Convert from 26.6 real to signed integer
+     */
+    static int ftd(unsigned int fixedInt){
+        unsigned int ret = ( ( fixedInt + (1 << 5)  ) >> 6 );
+        return (int)ret - ( cOutlineOffset >> 6 );
     }
+
     class PathUserData{
     private:
     public:
@@ -226,6 +234,10 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
         FT_Matrix mtx = { 1 << 16 , 0 , 0 , -(1 << 16) };
         FT_Outline_Transform(&outline, &mtx);
 
+        // Move
+        FT_Outline_Translate(&outline,
+                             cOutlineOffset,
+                             cOutlineOffset );
         // Move
         FT_Outline_Translate(&outline,
                              (FT_Pos)(mOrg.x << 6),
