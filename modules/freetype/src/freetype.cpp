@@ -139,20 +139,21 @@ FreeType2Impl::~FreeType2Impl()
 {
     if( mIsFaceAvailable  == true ){
         hb_font_destroy (mHb_font);
-        FT_Done_Face(mFace);
+        CV_Assert(!FT_Done_Face(mFace));
         mIsFaceAvailable = false;
     }
-    FT_Done_FreeType(mLibrary);
+    CV_Assert(!FT_Done_FreeType(mLibrary));
 }
 
 void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
     if( mIsFaceAvailable  == true ){
         hb_font_destroy (mHb_font);
-        FT_Done_Face(mFace);
+        CV_Assert(!FT_Done_Face(mFace));
     }
-    FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) );
+    CV_Assert(!FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
     mHb_font = hb_ft_font_create (mFace, NULL);
+    CV_Assert( mHb_font != NULL );
     mIsFaceAvailable = true;
 }
 
@@ -167,15 +168,14 @@ void FreeType2Impl::putText(
     int _thickness, int _line_type, bool bottomLeftOrigin
 )
 {
-    if ( mIsFaceAvailable == false ){
-        return; // NEED TO SHOW ERROR
-    }
+    CV_Assert( mIsFaceAvailable == true );
+
     if ( _text.empty() )
     {
          return;
     }
 
-    FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight );
+    CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
 
     if( _line_type == CV_AA && _img.depth() != CV_8U ){
         _line_type = 8;
@@ -206,14 +206,15 @@ void FreeType2Impl::putText(
 
 void FreeType2Impl::putTextOutline(InputOutputArray _img)
 {
-    hb_buffer_t *hb_buffer;
-    hb_buffer = hb_buffer_create ();
+    hb_buffer_t *hb_buffer = hb_buffer_create ();
+    CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
+    CV_Assert( info != NULL );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     mOrg.y -= mHeight;
@@ -224,7 +225,7 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
     userData->mLine_type = mLine_type;
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
+        CV_Assert(!FT_Load_Glyph(mFace, info[i].codepoint, 0 ));
 
         FT_GlyphSlot slot  = mFace->glyph;
         FT_Outline outline = slot->outline;
@@ -243,7 +244,7 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
                              (FT_Pos)((mOrg.y + mHeight)  << 6) );
 
         // Draw
-        FT_Outline_Decompose(&outline, &mFn, (void*)userData);
+        CV_Assert( !FT_Outline_Decompose(&outline, &mFn, (void*)userData) );
 
         // Draw (Last Path)
         mvFn( NULL, (void*)userData );
@@ -258,19 +259,20 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
 void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
 {
     Mat dst = _img.getMat();
-    hb_buffer_t *hb_buffer;
-    hb_buffer = hb_buffer_create ();
+    hb_buffer_t *hb_buffer = hb_buffer_create ();
+    CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
+    CV_Assert( info != NULL );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
-        FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_MONO );
+        CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
+        CV_Assert( !FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_MONO ) );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
         Point gPos = mOrg;
@@ -319,19 +321,21 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
 void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
 {
     Mat dst = _img.getMat();
-    hb_buffer_t *hb_buffer;
-    hb_buffer = hb_buffer_create ();
+    hb_buffer_t *hb_buffer = hb_buffer_create ();
+    CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
+    CV_Assert( info != NULL );
+
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
-        FT_Load_Glyph(mFace, info[i].codepoint, 0 );
-        FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_NORMAL );
+        CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
+        CV_Assert( !FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_NORMAL ) );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
         Point gPos = mOrg;
