@@ -526,7 +526,7 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
     assert(!affRegions.empty());
     int descriptorSize = dextractor->descriptorSize();
     int descriptorType = dextractor->descriptorType();
-    descriptors = Mat(Size(descriptorSize, affRegions.size()), descriptorType);
+    descriptors.create(Size(descriptorSize, affRegions.size()), descriptorType);
     descriptors.setTo(0);
 
     int i = 0;
@@ -605,10 +605,7 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
         transfImg.convertTo(transfImg, CV_8U);
         dextractor->compute(transfImg, k, tmpDesc);
 
-        for (int j = 0; j < tmpDesc.cols; j++)
-        {
-            descriptors.at<float> (i, j) = tmpDesc.at<float> (0, j);
-        }
+        tmpDesc.row(0).copyTo(descriptors.row(i));
 
         i++;
 
