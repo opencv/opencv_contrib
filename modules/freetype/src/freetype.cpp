@@ -93,7 +93,6 @@ private:
                      const FT_Vector *cnt2,
                      const FT_Vector *to,
                      void * user);
-    static void readNextCode(FT_Long &c, int &i, const String &text );
 
     // Offset value to handle the position less than 0.
     static const unsigned int cOutlineOffset = 0x80000000;
