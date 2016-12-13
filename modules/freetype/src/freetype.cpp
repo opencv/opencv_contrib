@@ -169,17 +169,25 @@ void FreeType2Impl::putText(
 )
 {
     CV_Assert( mIsFaceAvailable == true );
+    CV_Assert( ( _img.empty()    == false ) &&
+               ( _img.isMat()    == true  ) &&
+               ( _img.depth()    == CV_8U ) &&
+               ( _img.dims()     == 2     ) &&
+               ( _img.channels() == 3     ) );
+    CV_Assert( ( _line_type == CV_AA) ||
+               ( _line_type == 4 ) ||
+               ( _line_type == 8 ) );
 
     if ( _text.empty() )
     {
          return;
     }
 
-    CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
-
     if( _line_type == CV_AA && _img.depth() != CV_8U ){
         _line_type = 8;
     }
+
+    CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
 
     mThickness = _thickness;
     mLine_type = _line_type;
