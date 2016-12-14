@@ -230,7 +230,7 @@ void CharucoBoard::_getNearestMarkerCorners() {
 /**
   * Remove charuco corners if any of their minMarkers closest markers has not been detected
   */
-static unsigned int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
+static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
                                                     InputArray _allCharucoCorners,
                                                     InputArray _allCharucoIds,
                                                     InputArray _allArucoIds, int minMarkers,
@@ -265,17 +265,9 @@ static unsigned int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_bo
     }
 
     // parse output
-    _filteredCharucoCorners.create((int)filteredCharucoCorners.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < filteredCharucoCorners.size(); i++) {
-        _filteredCharucoCorners.getMat().at< Point2f >(i) = filteredCharucoCorners[i];
-    }
-
-    _filteredCharucoIds.create((int)filteredCharucoIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < filteredCharucoIds.size(); i++) {
-        _filteredCharucoIds.getMat().at< int >(i) = filteredCharucoIds[i];
-    }
-
-    return (unsigned int)filteredCharucoCorners.size();
+    Mat(filteredCharucoCorners).copyTo(_filteredCharucoCorners);
+    Mat(filteredCharucoIds).copyTo(_filteredCharucoIds);
+    return (int)_filteredCharucoIds.total();
 }
 
 
@@ -326,7 +318,7 @@ class CharucoSubpixelParallel : public ParallelLoopBody {
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
   * refinement. Returns number of valid corners.
   */
-static unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
+static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
                                                       OutputArray _selectedCorners,
                                                       OutputArray _selectedIds,
                                                       const vector< Size > &winSizes) {
@@ -380,17 +372,9 @@ static unsigned int _selectAndRefineChessboardCorners(InputArray _allCorners, In
         CharucoSubpixelParallel(&grey, &filteredChessboardImgPoints, &filteredWinSizes, params));
 
     // parse output
-    _selectedCorners.create((int)filteredChessboardImgPoints.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < filteredChessboardImgPoints.size(); i++) {
-        _selectedCorners.getMat().at< Point2f >(i) = filteredChessboardImgPoints[i];
-    }
-
-    _selectedIds.create((int)filteredIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < filteredIds.size(); i++) {
-        _selectedIds.getMat().at< int >(i) = filteredIds[i];
-    }
-
-    return (unsigned int)filteredChessboardImgPoints.size();
+    Mat(filteredChessboardImgPoints).copyTo(_selectedCorners);
+    Mat(filteredIds).copyTo(_selectedIds);
+    return (int)filteredChessboardImgPoints.size();
 }
 
 
@@ -863,11 +847,8 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
 
     if(diamondIds.size() > 0) {
-
         // parse output
-        _diamondIds.create((int)diamondIds.size(), 1, CV_32SC4);
-        for(unsigned int i = 0; i < diamondIds.size(); i++)
-            _diamondIds.getMat().at< Vec4i >(i) = diamondIds[i];
+        Mat(diamondIds).copyTo(_diamondIds);
 
         _diamondCorners.create((int)diamondCorners.size(), 1, CV_32FC2);
         for(unsigned int i = 0; i < diamondCorners.size(); i++) {
