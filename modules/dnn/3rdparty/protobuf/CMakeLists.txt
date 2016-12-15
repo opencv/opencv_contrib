@@ -22,6 +22,11 @@ else()
                                        -Wunused-function -Wunused-const-variable
   )
 endif()
+if(CV_ICC)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS
+      -wd265 -wd858 -wd873 -wd2196
+  )
+endif()
 
 # Easier to support different versions of protobufs
 function(append_if_exist OUTPUT_LIST)
