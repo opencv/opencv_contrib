@@ -49,7 +49,6 @@
 #include "onlineBoosting.hpp"
 #include <iostream>
 
-
 #define BOILERPLATE_CODE(name,classname) \
     static Ptr<classname> createTracker(const classname::Params &parameters=classname::Params());\
     virtual ~classname(){};
@@ -1194,6 +1193,54 @@ class CV_EXPORTS TrackerTLD : public Tracker
     @param parameters TLD parameters TrackerTLD::Params
      */
   BOILERPLATE_CODE("TLD",TrackerTLD);
+};
+
+
+/** @brief the SRDCF is an extension to the correlation filter trackers (KCF,DSST etc) that employs a spatial regularization.
+ * This reduces the bounduary effects otherwise present due to the circulant matrix approximation, while allowing a much larger
+ * window to be tracked than would otherwise be possible. This implementation is based on @cite SRDCF_ICCV, with some extensions to
+ * allow for more feature selections. For more information please refer to:
+ * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/regvistrack/index.html>.
+ */ 
+class CV_EXPORTS TrackerSRDCF : public Tracker
+{
+public:
+  struct CV_EXPORTS Params{
+    Params() : model_sz(cv::Size(50,50)),target_padding(2.0),
+      reg_power(2),reg_min(0.1),sparsity_treshold(0.05), 
+      update_rate(0.025), sigma_factor(1.0/16.0), scale_step(1.05), 
+      num_scales(1) {}
+  
+  /**
+  * \brief Read parameters from file, currently unused
+  */
+  void read(const FileNode& /*fn*/) { };
+
+  /**
+  * \brief Read parameters from file, currently unused
+  */
+  void write(FileStorage& /*fs*/) const {};
+
+  //filter settings
+  cv::Size model_sz;
+  float target_padding;
+
+  //regularization parameters
+  float reg_power;
+  float reg_min;
+  float sparsity_treshold;
+
+  //learning parameters
+  float update_rate; 
+  float sigma_factor;
+
+  //scale settings
+  float scale_step;
+  int num_scales;
+
+  };
+
+  BOILERPLATE_CODE("SRDCF",TrackerSRDCF)
 };
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.

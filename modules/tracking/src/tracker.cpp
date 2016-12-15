@@ -66,12 +66,14 @@ bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
     return false;
   }
 
-  if( image.empty() )
+  if( image.empty() ){
     return false;
+  }
 
   sampler = Ptr<TrackerSampler>( new TrackerSampler() );
   featureSet = Ptr<TrackerFeatureSet>( new TrackerFeatureSet() );
   model = Ptr<TrackerModel>();
+
 
   bool initTracker = initImpl( image, boundingBox );
 
@@ -111,7 +113,8 @@ Ptr<Tracker> Tracker::create( const String& trackerType )
   BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
   BOILERPLATE_CODE("TLD",TrackerTLD);
   BOILERPLATE_CODE("KCF",TrackerKCF);
+  BOILERPLATE_CODE("SRDCF",TrackerSRDCF);
   return Ptr<Tracker>();
 }
 
-} /* namespace cv */
+}/* namespace cv */
