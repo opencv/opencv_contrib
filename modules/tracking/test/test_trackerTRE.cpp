@@ -389,7 +389,7 @@ void TrackerTRETest::checkDataTest()
   gt2.close();
 
   if( segmentIdx == ( sizeof ( SEGMENTS)/sizeof(int) ) )
-	endFrame = (int)bbs.size();
+  endFrame = (int)bbs.size();
 }
 
 void TrackerTRETest::run()
@@ -497,6 +497,20 @@ TEST_P(TRE_Overlap, TLD)
   TrackerTRETest test( Tracker::create( "TLD" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
+}
+
+TEST_P(TRE_Distance, GOTURN)
+{
+  TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::DISTANCE, dataset, threshold, segment);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+
+TEST_P(TRE_Overlap, GOTURN)
+{
+  TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::OVERLAP, dataset, threshold, segment);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
 }
 
 INSTANTIATE_TEST_CASE_P( Tracking, TRE_Distance, testing::Combine( TESTSET_NAMES, SEGMENTS, LOCATION_ERROR_THRESHOLD ) );

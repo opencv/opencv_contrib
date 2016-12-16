@@ -422,6 +422,20 @@ TEST_P(OPE_Overlap, TLD)
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
+TEST_P(OPE_Distance, GOTURN)
+{
+  TrackerOPETest test(Tracker::create("GOTURN"), TrackerOPETest::DISTANCE, dataset, threshold);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+
+TEST_P(OPE_Overlap, GOTURN)
+{
+  TrackerOPETest test(Tracker::create("GOTURN"), TrackerOPETest::OVERLAP, dataset, threshold);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+
 INSTANTIATE_TEST_CASE_P( Tracking, OPE_Distance, testing::Combine( TESTSET_NAMES, LOCATION_ERROR_THRESHOLD ) );
 
 INSTANTIATE_TEST_CASE_P( Tracking, OPE_Overlap, testing::Combine( TESTSET_NAMES, OVERLAP_THRESHOLD ) );

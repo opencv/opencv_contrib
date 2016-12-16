@@ -529,6 +529,20 @@ TEST_P(SRE_Overlap, TLD)
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
+TEST_P(SRE_Distance, GOTURN)
+{
+  TrackerSRETest test(Tracker::create("GOTURN"), TrackerSRETest::DISTANCE, dataset, shift, threshold);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+
+TEST_P(SRE_Overlap, GOTURN)
+{
+  TrackerSRETest test(Tracker::create("GOTURN"), TrackerSRETest::OVERLAP, dataset, shift, threshold);
+  test.run();
+  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+
 INSTANTIATE_TEST_CASE_P( Tracking, SRE_Distance, testing::Combine( TESTSET_NAMES, SPATIAL_SHIFTS, LOCATION_ERROR_THRESHOLD ) );
 
 INSTANTIATE_TEST_CASE_P( Tracking, SRE_Overlap, testing::Combine( TESTSET_NAMES, SPATIAL_SHIFTS, OVERLAP_THRESHOLD ) );
