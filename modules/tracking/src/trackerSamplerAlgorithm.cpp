@@ -411,4 +411,99 @@ bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::ve
     return true;
 }
 
+/**
+* TrackerSamplerCircular
+*/
+cv::TrackerSamplerCircular::Params::Params() {
+	radius = 30;
+	rotations = 5;
+	translations = 16;
+	half = false;
+}
+
+cv::TrackerSamplerCircular::TrackerSamplerCircular(const TrackerSamplerCircular::Params & parameters) :
+	params( parameters )
+{
+	className = "Circular";
+	mode = MODE_PIXELS;
+}
+
+cv::TrackerSamplerCircular::~TrackerSamplerCircular()
+{
+}
+
+void TrackerSamplerCircular::setMode(int samplingMode)
+{
+	mode = samplingMode;
+}
+
+bool cv::TrackerSamplerCircular::samplingImpl(const Mat& image, Rect boundingBox, std::vector<Mat>& sample)
+{
+	center = boundingBox;
+
+	if (mode == MODE_RADIAL) {
+		return radialSamples(image, sample);
+	}
+	else if (mode == MODE_PIXELS) {
+		return pixelSamples(image, sample);
+	}
+
+	return false;
+}
+
+bool TrackerSamplerCircular::radialSamples(const Mat & image, std::vector<Mat>& sample)
+{
+	int rd = 2 * params.radius;
+
+	float rstep = (float)rd / params.rotations;
+	float tstep = 2 * (float)3.14159265358979323846 / params.translations;
+	sample.push_back(image( center ));
+
+	for (int ir = 1; ir <= params.rotations; ++ir)
+	{
+		float phase = (ir % 2)*tstep / 2;
+		for (int it = 0; it < params.translations; ++it)
+		{
+			float dx = ir*rstep*cosf(it*tstep + phase);
+			float dy = ir*rstep*sinf(it*tstep + phase);
+
+			Rect r(center.x + dx, center.y + dy, center.width, center.height);
+
+			// test if is inside of image
+			if ((r.x >= 0) && (r.y >= 0) && ((r.x + r.width) <= image.cols) && ((r.y + r.height) <= image.rows))
+				sample.push_back(image(r));
+		}
+	}
+
+	return true;
+}
+
+bool TrackerSamplerCircular::pixelSamples(const Mat & image, std::vector<Mat>& sample)
+{
+	sample.push_back(image(center));
+
+	int r2 = params.radius*params.radius;
+	for (int iy = -params.radius; iy <= params.radius; ++iy)
+	{
+		for (int ix = -params.radius; ix <= params.radius; ++ix)
+		{
+			if (ix*ix + iy*iy > r2) continue;
+			if (iy == 0 && ix == 0) continue; // already put this one at the start
+
+			int x = (int)center.x + ix;
+			int y = (int)center.y + iy;
+			if (params.half && (ix % 2 != 0 || iy % 2 != 0)) continue;
+			
+			Rect r(x, y, center.width, center.height);
+
+			// test if is inside of image
+			if ((r.x >= 0) && (r.y >= 0) && ((r.x + r.width) <= image.cols) && ((r.y + r.height) <= image.rows))
+				sample.push_back(image(r));
+		}
+	}
+
+
+	return false;
+}
+
 } /* namespace cv */

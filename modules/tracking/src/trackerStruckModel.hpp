@@ -39,80 +39,37 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#ifndef __OPENCV_TRACKER_STRUCK_MODEL_HPP__
+#define __OPENCV_TRACKER_STRUCK_MODEL_HPP__
 
-#undef BOILERPLATE_CODE
-#define BOILERPLATE_CODE(name,classname)\
-  if(trackerType==name){\
-      return classname::createTracker();\
-  }
+#include "opencv2/core.hpp"
 
-namespace cv
-{
+/*---------------------------
+|  TrackerStruckModel
+|---------------------------*/
+namespace cv {
+	/**
+   * \brief Implementation of TrackerModel for Struck algorithm
+   */
+	class TrackerStruckModel : public TrackerModel {
+	public:
+		TrackerStruckModel(const Rect& boundingBox);
+		~TrackerStruckModel() {}
 
-/*
- *  Tracker
- */
+		void setCurrentBoundingBox(const Rect& value);
+		void setCurrentSamples(const std::vector<Mat> &samples);
+		void setSearchRadius(int radius);
+		ConfidenceMap getCurrentConfidenceMap();
+		void responseToConfidenceMap(const std::vector<Mat>& resps, ConfidenceMap& map);
 
-Tracker::~Tracker()
-{
-}
+	protected:
+		Rect bb;
+		std::vector<Mat> currentSamples;
+		int searchRadius;
 
-bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
-{
-
-  if( isInit )
-  {
-    return false;
-  }
-
-  if( image.empty() )
-    return false;
-
-  sampler = Ptr<TrackerSampler>( new TrackerSampler() );
-  featureSet = Ptr<TrackerFeatureSet>( new TrackerFeatureSet() );
-  model = Ptr<TrackerModel>();
-
-  bool initTracker = initImpl( image, boundingBox );
-
-  //check if the model component is initialized
-  if( model == 0 )
-  {
-    CV_Error( -1, "The model is not initialized" );
-    return false;
-  }
-
-  if( initTracker )
-  {
-    isInit = true;
-  }
-
-  return initTracker;
-}
-
-bool Tracker::update( const Mat& image, Rect2d& boundingBox )
-{
-
-  if( !isInit )
-  {
-    return false;
-  }
-
-  if( image.empty() )
-    return false;
-
-  return updateImpl( image, boundingBox );
-}
-
-Ptr<Tracker> Tracker::create( const String& trackerType )
-{
-  BOILERPLATE_CODE("MIL",TrackerMIL);
-  BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
-  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
-  BOILERPLATE_CODE("TLD",TrackerTLD);
-  BOILERPLATE_CODE("KCF",TrackerKCF);
-  BOILERPLATE_CODE("STRUCK",TrackerStruck);
-  return Ptr<Tracker>();
-}
-
+		void modelEstimationImpl(const std::vector<Mat>& responses);
+		void modelUpdateImpl();
+	};
 } /* namespace cv */
+
+#endif
