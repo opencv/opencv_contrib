@@ -30,7 +30,7 @@ else()
   include(${CMAKE_CURRENT_LIST_DIR}/download_protobuf.cmake)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf)
   set(PROTOBUF_LIBRARIES libprotobuf)
-  set(PROTOBUF_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf/sources/protobuf-3.1.0/src)
+  set(PROTOBUF_INCLUDE_DIR ${PROTOBUF_CPP_PATH}/protobuf-3.1.0/src)
 endif()
 
 if(NOT UPDATE_PROTO_FILES)
