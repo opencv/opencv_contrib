@@ -7,7 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # MODULE REQUIREMENTS
 # ----------------------------------------------------------------------------
 
-find_package(TinyDNN)
+find_package(TinyDNN QUIET)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
