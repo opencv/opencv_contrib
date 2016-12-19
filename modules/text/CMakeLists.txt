@@ -21,5 +21,4 @@ ocv_include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ocv_add_testdata(samples/ contrib/text
     FILES_MATCHING PATTERN "*.xml" PATTERN "*.xml.gz" REGEX "scenetext[0-9]+.jpg"
-    COMPONENT "tests"
 )
