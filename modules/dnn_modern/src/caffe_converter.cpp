@@ -178,7 +178,7 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
     results->clear();
     results->reserve(result.size());
 
-    for (cnn_size_t i = 0; i < result.size(); i++) {
+    for (size_t i = 0; i < result.size(); i++) {
         results->push_back(result[i]);
     }
 }
