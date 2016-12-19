@@ -1,5 +1,7 @@
 set(the_description "Modern Deep Learning module")
 
+cmake_policy(SET CMP0028 OLD)
+
 # Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
