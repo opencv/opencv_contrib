@@ -167,7 +167,7 @@ namespace rgbd
   {
   public:
     RgbdNormalsImpl(int rows, int cols, int window_size, int depth, const Mat &K,
-                    RgbdNormals::RGBD_NORMALS_METHOD method)
+                    int method)
         :
           rows_(rows),
           cols_(cols),
@@ -200,7 +200,7 @@ namespace rgbd
     int rows_, cols_, depth_;
     Mat K_, K_ori_;
     int window_size_;
-    RgbdNormals::RGBD_NORMALS_METHOD method_;
+    int method_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ namespace rgbd
     typedef Vec<T, 9> Vec9T;
     typedef Vec<T, 3> Vec3T;
 
-    FALS(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
+    FALS(int rows, int cols, int window_size, int depth, const Mat &K, int method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
     {
@@ -351,7 +351,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     typedef Matx<T, 3, 3> Mat33T;
 
     LINEMOD(int rows, int cols, int window_size, int depth, const Mat &K,
-            RgbdNormals::RGBD_NORMALS_METHOD method)
+        int method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
     {
@@ -505,7 +505,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     typedef Vec<T, 9> Vec9T;
     typedef Vec<T, 3> Vec3T;
 
-    SRI(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
+    SRI(int rows, int cols, int window_size, int depth, const Mat &K, int method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method),
           phi_step_(0),
@@ -782,6 +782,16 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       delete_normals_impl(rgbd_normals_impl_, method_, depth_);
       initialize_normals_impl(rows_, cols_, depth_, K_, window_size_, method_);
     }
+  }
+
+  /** Given a set of 3d points in a depth image, compute the normals at each point
+   * @param points3d_in depth a float depth image. Or it can be rows x cols x 3 is they are 3d points
+   * @param normals a rows x cols x 3 matrix
+   */
+  void
+  RgbdNormals::compute(InputArray points3d_in, OutputArray normals_out) const
+  {
+      this->operator()(points3d_in, normals_out);
   }
 
   /** Given a set of 3d points in a depth image, compute the normals at each point

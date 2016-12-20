@@ -77,17 +77,17 @@ namespace ppf_match_3d
 * 5. Linearization of Point-to-Plane metric by Kok Lim Low:
 * https://www.comp.nus.edu.sg/~lowkl/publications/lowk_point-to-plane_icp_techrep.pdf
 */
-class CV_EXPORTS ICP
+class CV_EXPORTS_W ICP
 {
 public:
 
-  enum ICP_SAMPLING_TYPE
+  CV_WRAP enum
   {
     ICP_SAMPLING_TYPE_UNIFORM,
     ICP_SAMPLING_TYPE_GELFAND
   };
 
-  ICP()
+  CV_WRAP ICP()
   {
     m_tolerance = 0.005f;
     m_rejectionScale = 2.5f;
@@ -97,7 +97,7 @@ public:
     m_numNeighborsCorr = 1;
   }
 
-  virtual ~ICP() { }
+  CV_WRAP virtual ~ICP() { }
 
   /**
      *  \brief ICP constructor with default arguments.
@@ -114,7 +114,7 @@ public:
             applied. Leave it as 0.
      *  @param [in] numMaxCorr Currently this parameter is ignored and only PickyICP is applied. Leave it as 1.
      */
-  ICP(const int iterations, const float tolerence=0.05, const float rejectionScale=2.5, const int numLevels=6, const ICP_SAMPLING_TYPE sampleType = ICP_SAMPLING_TYPE_UNIFORM, const int numMaxCorr=1)
+  CV_WRAP ICP(const int iterations, const float tolerence=0.05, const float rejectionScale=2.5, const int numLevels=6, const int sampleType = ICP::ICP_SAMPLING_TYPE_UNIFORM, const int numMaxCorr=1)
   {
     m_tolerance = tolerence;
     m_numNeighborsCorr = numMaxCorr;
@@ -136,7 +136,7 @@ public:
      *
      *  \details It is assumed that the model is registered on the scene. Scene remains static, while the model transforms. The output poses transform the models onto the scene. Because of the point to plane minimization, the scene is expected to have the normals available. Expected to have the normals (Nx6).
      */
-  int registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, double pose[16]);
+  CV_WRAP int registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, double pose[16]);
 
   /**
      *  \brief Perform registration with multiple initial poses
@@ -149,7 +149,7 @@ public:
      *
      *  \details It is assumed that the model is registered on the scene. Scene remains static, while the model transforms. The output poses transform the models onto the scene. Because of the point to plane minimization, the scene is expected to have the normals available. Expected to have the normals (Nx6).
      */
-  int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses);
+  CV_WRAP int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses);
 
 private:
   float m_tolerance;

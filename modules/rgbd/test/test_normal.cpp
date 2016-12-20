@@ -42,7 +42,7 @@ namespace cv
 namespace rgbd
 {
 
-class CV_EXPORTS TickMeter
+class CV_EXPORTS_W TickMeter
 {
 public:
     TickMeter();
