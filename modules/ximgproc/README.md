@@ -11,4 +11,4 @@ Extended Image Processing
 - Selective search from segmentation
 - Paillou Filter
 - Fast Line Detector
-- Diriche Filter
+- Deriche Filter
