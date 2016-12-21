@@ -954,8 +954,8 @@ warpFrameImpl(const InputArray _image, const InputArray _depth, const InputArray
     projectPoints(transformedCloud.reshape(3, 1), Mat::eye(3, 3, CV_64FC1), Mat::zeros(3, 1, CV_64FC1), cameraMatrix,
                 distCoeff, points2d);
 
-	_warpedImage.create(_image.getMat().size(), _image.getMat().type(), 0);
-	Mat warpedImage = _warpedImage.getMat();
+    _warpedImage.create(_image.getMat().size(), _image.getMat().type(), 0);
+    Mat warpedImage = _warpedImage.getMat();
 
     Mat zBuffer(_image.getMat().size(), CV_32FC1, std::numeric_limits<float>::max());
     const Rect rect = Rect(0, 0, _image.getMat().cols, _image.getMat().rows);
@@ -979,15 +979,15 @@ warpFrameImpl(const InputArray _image, const InputArray _depth, const InputArray
         }
     }
 
-	if (_warpedMask.needed())
-	{
-		Mat(zBuffer != std::numeric_limits<float>::max()).copyTo(_warpedMask);
-	}
+    if (_warpedMask.needed())
+    {
+        Mat(zBuffer != std::numeric_limits<float>::max()).copyTo(_warpedMask);
+    }
 
     if(_warpedDepth.needed())
     {
         zBuffer.setTo(std::numeric_limits<float>::quiet_NaN(), zBuffer == std::numeric_limits<float>::max());
-		zBuffer.copyTo(_warpedDepth);
+        zBuffer.copyTo(_warpedDepth);
     }
 }
 

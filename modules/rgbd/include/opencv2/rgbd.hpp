@@ -109,7 +109,7 @@ namespace rgbd
   public:
     CV_WRAP enum
     {
-      RGBD_NORMALS_METHOD_FALS = 1, RGBD_NORMALS_METHOD_LINEMOD = 2, RGBD_NORMALS_METHOD_SRI = 3,
+      RGBD_NORMALS_METHOD_FALS = 0, RGBD_NORMALS_METHOD_LINEMOD = 1, RGBD_NORMALS_METHOD_SRI = 2,
     };
 
     CV_WRAP RgbdNormals()
@@ -119,7 +119,7 @@ namespace rgbd
           depth_(0),
           K_(Mat()),
           window_size_(0),
-          method_(RgbdNormals::RGBD_NORMALS_METHOD_FALS),
+          method_(RGBD_NORMALS_METHOD_FALS),
           rgbd_normals_impl_(0)
     {
     }
@@ -228,7 +228,7 @@ namespace rgbd
      */
     CV_WRAP enum
     {
-      DEPTH_CLEANER_NIL
+      DEPTH_CLEANER_NIL = 0,
     };
 
     CV_WRAP DepthCleaner()
@@ -371,7 +371,7 @@ namespace rgbd
   public:
     CV_WRAP enum
     {
-      RGBD_PLANE_METHOD_DEFAULT
+      RGBD_PLANE_METHOD_DEFAULT = 0,
     };
 
     CV_WRAP RgbdPlane(int method = RgbdPlane::RGBD_PLANE_METHOD_DEFAULT)
