@@ -939,7 +939,7 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
 
 template<class ImageElemType>
 static void
-warpFrameImpl(const InputArray _image, const InputArray _depth, const InputArray _mask,
+warpFrameImpl(InputArray _image, InputArray _depth, InputArray _mask,
               const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
               OutputArray _warpedImage, OutputArray _warpedDepth, OutputArray _warpedMask)
 {
@@ -1407,7 +1407,7 @@ bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<
 //
 
 void
-warpFrame(const InputArray image, const InputArray depth, const InputArray mask,
+warpFrame(InputArray image, InputArray depth, InputArray mask,
           const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
           OutputArray warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {

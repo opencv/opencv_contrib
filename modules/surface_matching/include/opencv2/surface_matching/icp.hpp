@@ -114,7 +114,7 @@ public:
             applied. Leave it as 0.
      *  @param [in] numMaxCorr Currently this parameter is ignored and only PickyICP is applied. Leave it as 1.
      */
-  CV_WRAP ICP(const int iterations, const float tolerence=0.05, const float rejectionScale=2.5, const int numLevels=6, const int sampleType = ICP::ICP_SAMPLING_TYPE_UNIFORM, const int numMaxCorr=1)
+  CV_WRAP ICP(const int iterations, const float tolerence=0.05f, const float rejectionScale=2.5f, const int numLevels=6, const int sampleType = ICP::ICP_SAMPLING_TYPE_UNIFORM, const int numMaxCorr=1)
   {
     m_tolerance = tolerence;
     m_numNeighborsCorr = numMaxCorr;
