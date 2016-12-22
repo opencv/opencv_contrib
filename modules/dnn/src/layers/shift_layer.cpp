@@ -133,7 +133,7 @@ ShiftLayer::ShiftLayer(LayerParams &params) : Layer(params)
 {
     CV_Assert(blobs.size() == 1);
 
-    #if HAVE_CBLAS
+    #ifdef HAVE_LAPACK
     {
         if (getBlasThreads() != cv::getThreadNum())
         {
