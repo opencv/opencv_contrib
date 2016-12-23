@@ -86,18 +86,18 @@ public:
      * Main constructor with most commun use setup : create an instance of color ready retina model
      * @param inputSize : the input frame size
      */
-    RetinaImpl(Size inputSize);
+    RetinaImpl(const Size inputSize);
 
     /**
      * Complete Retina filter constructor which allows all basic structural parameters definition
-         * @param inputSize : the input frame size
+     * @param inputSize : the input frame size
      * @param colorMode : the chosen processing mode : with or without color processing
      * @param colorSamplingMethod: specifies which kind of color sampling will be used
      * @param useRetinaLogSampling: activate retina log sampling, if true, the 2 following parameters can be used
      * @param reductionFactor: only usefull if param useRetinaLogSampling=true, specifies the reduction factor of the output frame (as the center (fovea) is high resolution and corners can be underscaled, then a reduction of the output is allowed without precision leak
      * @param samplingStrenght: only usefull if param useRetinaLogSampling=true, specifies the strenght of the log scale that is applied
      */
-    RetinaImpl(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
+    RetinaImpl(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
     virtual ~RetinaImpl();
     /**
@@ -115,7 +115,7 @@ public:
      * => if the xml file does not exist, then default setup is applied
      * => warning, Exceptions are thrown if read XML file is not valid
      * @param retinaParameterFile : the parameters filename
-         * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
+     * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
     void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true);
 
@@ -125,7 +125,7 @@ public:
      * => if the xml file does not exist, then default setup is applied
      * => warning, Exceptions are thrown if read XML file is not valid
      * @param fs : the open Filestorage which contains retina parameters
-         * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
+     * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
     void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true);
 
@@ -134,7 +134,7 @@ public:
      * => if the xml file does not exist, then default setup is applied
      * => warning, Exceptions are thrown if read XML file is not valid
      * @param newParameters : a parameters structures updated with the new target configuration
-         * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
+     * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
     void setup(RetinaParameters newParameters);
 
@@ -411,9 +411,6 @@ void RetinaImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailur
         printf("Retina::setup: wrong/unappropriate xml parameter file : error report :`n=>%s\n", e.what());
         printf("=> keeping current parameters\n");
     }
-
-    // report current configuration
-    printf("%s\n", printSetup().c_str());
 }
 
 void RetinaImpl::setup(RetinaParameters newConfiguration)
@@ -615,7 +612,7 @@ const Mat RetinaImpl::getParvoRAW() const {
     return Mat((int)_retinaFilter->getContours().size(), 1, CV_32F, (void*)get_data(_retinaFilter->getContours()));
 }
 
-// private method called by constructirs
+// private method called by constructors
 void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
     // basic error check
@@ -637,9 +634,6 @@ void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSa
 
     // init retina
     _retinaFilter->clearAllBuffers();
-
-    // report current configuration
-    printf("%s\n", printSetup().c_str());
 }
 
 void RetinaImpl::_convertValarrayBuffer2cvMat(const std::valarray<float> &grayMatrixToConvert, const unsigned int nbRows, const unsigned int nbColumns, const bool colorMode, OutputArray outBuffer)
