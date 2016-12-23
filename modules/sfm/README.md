@@ -7,7 +7,7 @@ This module contains algorithms to perform 3d reconstruction from 2d images. The
 Dependencies
 ------------
 
-Before compiling, take a look at the following details in order to give a proper use of the Struncture from Motion module. **Advice:** The module is only available for Linux/GNU systems.
+Before compiling, take a look at the following details in order to give a proper use of the Structure from Motion module. **Advice:** The module is only available for Linux/GNU systems.
 
 In addition, it depends on some open source libraries:
 
