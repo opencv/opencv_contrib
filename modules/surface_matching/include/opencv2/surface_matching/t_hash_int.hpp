@@ -56,7 +56,6 @@ namespace ppf_match_3d
 //! @{
 
 #if (defined x86_64 || defined _M_X64)
-#include 
 typedef uint64_t KeyType;
 #else
 typedef unsigned int KeyType;
