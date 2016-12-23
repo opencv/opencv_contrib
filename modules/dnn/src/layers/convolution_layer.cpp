@@ -58,8 +58,7 @@ BaseConvolutionLayerImpl::BaseConvolutionLayerImpl():
     inpH(0), inpW(0), inpCn(0),
     outH(0), outW(0), outCn(0),
     inpGroupCn(0), outGroupCn(0),
-    ksize(0), colBlobCols(0),
-    bias(false), tryUseOpenCL(false)
+    ksize(0), bias(false), tryUseOpenCL(false)
 {
     #if HAVE_CBLAS
         if (getBlasThreads() != cv::getThreadNum())
@@ -111,7 +110,7 @@ void BaseConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::v
 
     if (!is1x1())
     {
-        colBlob.create(Shape(ksize, colBlobCols), input.type(), allocFlags);
+        colRowBlob.create(colRowBlobShape, input.type(), allocFlags);
     }
 }
 
@@ -152,7 +151,7 @@ void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
     inpGroupCn = inpCn / group;
     ksize = inpGroupCn * kernel.height * kernel.width;
 
-    colBlobCols = outH * outW;
+    colRowBlobShape = BlobShape(outH * outW, ksize);
 }
 
 template<typename XMat>
@@ -174,7 +173,8 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
             for (int g = 0; g < group; g++)
             {
                 XMat colMat, curInp = slice(inpMat, n, _Range(g * inpGroupCn, inpGroupCn));
-                im2col(curInp, colMat);
+
+                im2row(curInp, colMat);
 
                 _Range kerRange(g * outGroupCn, outGroupCn);
                 XMat kerMat = weightsMat.rowRange(kerRange);
@@ -182,7 +182,7 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
                 _Range outRange((g + n * group) * outGroupCn, outGroupCn);
                 XMat dstMat = outMat.rowRange(outRange);
 
-                dnn::gemm(kerMat, colMat, 1, dstMat, 0);
+                dnn::gemm(kerMat, colMat, 1, dstMat, 0, GEMM_2_T);
 
                 if (bias)
                 {
@@ -209,8 +209,8 @@ void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
         return;
     }
 #ifdef HAVE_OPENCL
-    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, this->colBlob.umatRef()));
-    dstCol = this->colBlob.umatRefConst();
+    CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, this->colRowBlob.umatRef()));
+    dstCol = this->colRowBlob.umatRefConst();
 #else
     CV_Error(Error::StsInternal, "");
     dstCol = srcImg; //supress warning
@@ -225,7 +225,7 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
         return;
     }
 
-    Mat &colMat = colBlob.matRef();
+    Mat &colMat = colRowBlob.matRef();
     if (srcImg.type() == CV_32F)
         im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
@@ -236,6 +236,32 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
                                      dilation.height, dilation.width, outH, outW, colMat.ptr<double>());
 
     dstCol = colMat;
+}
+
+void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
+{
+    if (is1x1())
+    {
+        dstRow = reshaped(srcImg, Shape(ksize, outH*outW)).t();
+        return;
+    }
+
+    Mat &colMat = colRowBlob.matRef();
+    if (srcImg.type() == CV_32F)
+        im2row_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
+                                    kernel.width, pad.height, pad.width, stride.height, stride.width,
+                                    dilation.height, dilation.width, outW, outH, colMat.ptr<float>());
+    if (srcImg.type() == CV_64F)
+        im2row_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height,
+                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
+                                     dilation.height, dilation.width, outW, outH, colMat.ptr<double>());
+
+    dstRow = colMat;
+}
+
+void ConvolutionLayerImpl::im2row(const UMat &srcImg, UMat &dstCol)
+{
+    CV_Error(cv::Error::StsNotImplemented, "");
 }
 
 //Deconvolution
@@ -264,7 +290,7 @@ void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
     CV_Assert(blobs[0].channels() == outCn && blobs[0].num() == inpCn / group);
 
-    colBlobCols = inpH * inpW;
+    colRowBlobShape = BlobShape(ksize, inpH * inpW);
 }
 
 void DeConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -292,7 +318,7 @@ void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<B
             for (int g = 0; g < group; g++)
             {
                 XMat dstMat = decnBlob.rowRange(_Range((g + n * group) * outGroupCn, outGroupCn));
-                XMat &colMat = (is1x1()) ? dstMat : colBlob.getRef<XMat>();
+                XMat &colMat = (is1x1()) ? dstMat : colRowBlob.getRef<XMat>();
 
                 XMat convMat = convBlob.rowRange(_Range((g + n * group) * inpGroupCn, inpGroupCn));
                 XMat wghtMat = weightsMat.rowRange(_Range(g * inpGroupCn, inpGroupCn));

@@ -65,12 +65,12 @@ protected:
     int outH, outW, outCn;
     int inpGroupCn, outGroupCn;
     int ksize;
-    int colBlobCols;
+    BlobShape colRowBlobShape;
 
     bool bias;
     bool tryUseOpenCL, useOpenCL;
 
-    Blob colBlob, biasOnesBlob;
+    Blob colRowBlob, biasOnesBlob;
 
 };
 
@@ -86,7 +86,9 @@ protected:
     template<typename XMat>
     void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void im2col(const  Mat &srcImg,  Mat &dstCol);
+    void im2row(const  Mat &srcImg,  Mat &dstRow);
     void im2col(const UMat &srcImg, UMat &dstCol);
+    void im2row(const UMat &srcImg, UMat &dstCol);
 };
 
 class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
