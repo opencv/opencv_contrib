@@ -72,7 +72,7 @@ PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size p
 
 void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    CV_Assert(inputs.size() > 0);
+    CV_Assert(inputs.size() == 1);
 
     inp = inputs[0]->size2();
 
@@ -85,11 +85,19 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
 
     useOpenCL = ocl::useOpenCL();
 
-    outputs.resize(inputs.size());
+    outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
         CV_Assert(inputs[i]->rows() == inp.height && inputs[i]->cols() == inp.width);
-        outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        if (type == MAX)
+        {
+            outputs[2 * i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+            outputs[2 * i + 1].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        }
+        else
+        {
+           outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        }
     }
 }
 
@@ -100,7 +108,7 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
         switch (type)
         {
         case MAX:
-            maxPooling(*inputs[ii], outputs[ii]);
+            maxPooling(*inputs[ii], outputs[2 * ii], outputs[2 * ii + 1]);
             break;
         case AVE:
             avePooling(*inputs[ii], outputs[ii]);
@@ -112,17 +120,17 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
     }
 }
 
-void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst)
+void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
 {
     if (!useOpenCL)
-        maxPooling_cpu(src, dst);
+        maxPooling_cpu(src, dst, mask);
     else
     {
-        CV_Assert(maxPooling_ocl(src, dst));
+        CV_Assert(maxPooling_ocl(src, dst, mask));
     }
 }
 
-bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst)
+bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst, Blob &mask)
 {
     return pooling_ocl("MaxPoolForward", src, dst);
 }
@@ -142,7 +150,7 @@ bool PoolingLayerImpl::avePooling_ocl(Blob &src, Blob &dst)
     return pooling_ocl("AvePoolForward", src, dst);
 }
 
-void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
+void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
 {
     CV_DbgAssert(dst.rows() == out.height && dst.cols() == out.width);
 
@@ -152,6 +160,7 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
         {
             const float *srcData = src.ptrf(n, c);
             float *dstData = dst.ptrf(n, c);
+            float *dstMaskData = mask.ptrf(n, c);
 
             for (int ph = 0; ph < out.height; ++ph)
             {
@@ -165,16 +174,21 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
                     wstart = max(wstart, 0);
                     const int poolIndex = ph * out.width + pw;
                     float max_val = -FLT_MAX;
+                    int max_index = -1;
 
                     for (int h = hstart; h < hend; ++h)
                         for (int w = wstart; w < wend; ++w)
                         {
                             const int index = h * inp.width + w;
                             if (srcData[index] > max_val)
+                            {
                                 max_val = srcData[index];
+                                max_index = index;
+                            }
                         }
 
                     dstData[poolIndex] = max_val;
+                    dstMaskData[poolIndex] = max_index;
                 }
             }
         }
@@ -187,7 +201,9 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
 {
     const UMat &srcMat = src.umatRefConst();
     UMat &dstMat = dst.umatRef();
-    CV_Assert(mask == NULL && srcMat.offset == 0 && dstMat.offset == 0);
+    UMat* indexesMat = mask == NULL ? NULL : &dst.umatRef();
+
+    CV_Assert(srcMat.offset == 0 && dstMat.offset == 0);
 
     ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc, String("-DT=") + ocl::typeToStr(src.type()));
     if (ker.empty())
@@ -199,7 +215,8 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
              ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
              out.height, out.width, kernel.height, kernel.width,
              stride.height, stride.width, pad.height, pad.width,
-             ocl::KernelArg::PtrWriteOnly(dstMat));
+             ocl::KernelArg::PtrWriteOnly(dstMat),
+             ocl::KernelArg(ocl::KernelArg::PTR_ONLY + ocl::KernelArg::WRITE_ONLY, indexesMat));
 
     size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
     if (!ker.run(1, &nthreads, &wgSize, true))

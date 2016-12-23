@@ -313,6 +313,16 @@ struct PowerFunctor
     #endif
 };
 
+class ChannelsPReLULayerImpl : public ChannelsPReLULayer
+{
+public:
+    ChannelsPReLULayerImpl() {}
+
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+};
+
 }
 }
 #endif

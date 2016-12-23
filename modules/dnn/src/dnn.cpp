@@ -592,6 +592,24 @@ bool Net::empty() const
     return impl->layers.size() <= 1; //first layer is default Data layer
 }
 
+std::vector<int> Net::getUnconnectedOutLayers() const
+{
+    std::vector<int> layersIds;
+
+    Impl::MapIdToLayerData::iterator it;
+    for (it = impl->layers.begin(); it != impl->layers.end(); it++)
+    {
+        int lid = it->first;
+        LayerData &ld = it->second;
+
+        if (ld.requiredOutputs.size() == 0)
+            layersIds.push_back(lid);
+    }
+
+    return layersIds;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 
 Importer::~Importer() {}

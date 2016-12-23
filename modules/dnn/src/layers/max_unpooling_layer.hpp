@@ -6,33 +6,32 @@
 // Third party copyrights are property of their respective owners.
 
 /*
-Declaration of shift layer, which adds up const values to blob.
+Declaration of MaxUnpooling layer.
 */
 
-#ifndef __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
+#ifndef __OPENCV_DNN_LAYERS_MAX_UNPOOLING_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_MAX_UNPOOLING_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class ShiftLayerImpl;
-
-class ShiftLayer : public Layer
+class MaxUnpoolLayerImpl : public MaxUnpoolLayer
 {
 public:
-    ShiftLayer() {}
-    ShiftLayer(LayerParams &params);
+    MaxUnpoolLayerImpl(Size outSize_);
+
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 private:
-    cv::Ptr<ShiftLayerImpl> impl;
-
+    Size outSize;
 };
 
 }
 }
-#endif
+#endif // __OPENCV_DNN_LAYERS_MAX_UNPOOLING_LAYER_HPP__

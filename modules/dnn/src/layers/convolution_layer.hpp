@@ -49,30 +49,38 @@ namespace cv
 namespace dnn
 {
 
-//TODO: simultaneously convolution and bias addition for cache optimization
-class ConvolutionLayerImpl : public ConvolutionLayer
+class BaseConvolutionLayerImpl : public ConvolutionLayer
 {
 public:
-
-    ConvolutionLayerImpl();
+    BaseConvolutionLayerImpl();
     virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    virtual void init();
 
 protected:
+    void init();
+    virtual void computeInpOutShape(const Blob &inpBlob) = 0;
+    bool is1x1() const;
+
     int numOutput, group;
     int inpH, inpW, inpCn;
     int outH, outW, outCn;
-    int topH, topW, topCn; //switched between inp/out on deconv/conv
     int inpGroupCn, outGroupCn;
     int ksize;
+    int colBlobCols;
 
     bool bias;
     bool tryUseOpenCL, useOpenCL;
 
     Blob colBlob, biasOnesBlob;
 
-    bool is1x1() const;
+};
+
+//TODO: simultaneously convolution and bias addition for cache optimization
+class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
+{
+public:
+    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+protected:
     virtual void computeInpOutShape(const Blob &inpBlob);
 
     template<typename XMat>
@@ -81,10 +89,9 @@ protected:
     void im2col(const UMat &srcImg, UMat &dstCol);
 };
 
-class DeConvolutionLayerImpl : public ConvolutionLayerImpl
+class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
 {
 public:
-    DeConvolutionLayerImpl();
     virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 protected:

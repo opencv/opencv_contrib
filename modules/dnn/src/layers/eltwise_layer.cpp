@@ -62,7 +62,8 @@ namespace dnn
         const BlobShape &shape0 = inputs[0]->shape();
         for (size_t i = 1; i < inputs.size(); ++i)
         {
-            CV_Assert(shape0 == inputs[i]->shape());
+            BlobShape iShape = inputs[i]->shape();
+            CV_Assert(shape0 == iShape);
         }
         outputs.resize(1);
         outputs[0].create(shape0);

@@ -38,13 +38,12 @@ TEST(Test_TensorFlow, read_inception)
     resize(sample, input, Size(224, 224));
     input -= 128; // mean sub
 
-    std::vector<Mat> inpMats;
-    inpMats.push_back(input);
+    dnn::Blob inputBlob = dnn::Blob::fromImages(input);
 
-    net.setBlob("_input.input", Blob(inpMats));
+    net.setBlob("_input.input", inputBlob);
     net.forward();
 
-    Blob out = net.getBlob("output");
+    Blob out = net.getBlob("softmax2");
     std::cout << out.dims() << std::endl;
 }
 
