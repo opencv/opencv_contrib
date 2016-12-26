@@ -982,7 +982,7 @@ OCRHMMClassifierCNN::OCRHMMClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = (int)sqrt((float)kernels.cols);
+    patch_size  = (int)round(sqrt((float)kernels.cols));
     // algorithm internal parameters
     window_size = 32;
     num_quads   = 25;
@@ -1017,21 +1017,23 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
 
 
     int quad_id = 1;
-    for (int q_x=0; q_x<=window_size-quad_size; q_x=q_x+(int)(quad_size/2-1))
+    int sz_window_quad = window_size - quad_size;
+    int sz_half_quad = (int)(quad_size/2-1);
+    int sz_quad_patch = quad_size - patch_size;
+    for (int q_x=0; q_x <= sz_window_quad; q_x += sz_half_quad)
     {
-        for (int q_y=0; q_y<=window_size-quad_size; q_y=q_y+(int)(quad_size/2-1))
+        for (int q_y=0; q_y <= sz_window_quad; q_y += sz_half_quad)
         {
             Rect quad_rect = Rect(q_x,q_y,quad_size,quad_size);
             quad = img(quad_rect);
 
             //start sliding window (8x8) in each tile and store the patch as row in data_pool
-            for (int w_x=0; w_x<=quad_size-patch_size; w_x++)
+            for (int w_x = 0; w_x <= sz_quad_patch; w_x++)
             {
-                for (int w_y=0; w_y<=quad_size-patch_size; w_y++)
+                for (int w_y = 0; w_y <= sz_quad_patch; w_y++)
                 {
-                    quad(Rect(w_x,w_y,patch_size,patch_size)).copyTo(tmp);
+                    quad(Rect(w_x,w_y,patch_size,patch_size)).convertTo(tmp, CV_64F);
                     tmp = tmp.reshape(0,1);
-                    tmp.convertTo(tmp, CV_64F);
                     normalizeAndZCA(tmp);
                     vector<double> patch;
                     tmp.copyTo(patch);
