@@ -732,17 +732,6 @@ struct SeedsCenters
       clustersize.assign(numlabels, 0);
     }
 
-    void ClearArrays( )
-    {
-      // refill with zero all arrays
-      for( int b = 0; b < nr_channels; b++ )
-        fill(sigma[b].begin(), sigma[b].end(), 0.0f);
-
-      fill(sigmax.begin(), sigmax.end(), 0.0f);
-      fill(sigmay.begin(), sigmay.end(), 0.0f);
-      fill(clustersize.begin(), clustersize.end(), 0);
-    }
-
     SeedsCenters( const SeedsCenters& counter, Split )
     {
       *this = counter;
@@ -1006,10 +995,7 @@ inline void SuperpixelSLICImpl::PerformSLICO( const int&  itrnum )
     // this is the variable value of M, just start with 10
     vector<float> maxxy( m_numlabels, FLT_MIN );
     // note: this is different from how usual SLIC/LKM works
-    float xywt = float(m_region_size*m_region_size);
-
-    // parallel reduce structure
-    SeedsCenters sc( m_chvec, m_klabels, m_numlabels, m_nr_channels );
+    const float xywt = float(m_region_size*m_region_size);
 
     for( int itr = 0; itr < itrnum; itr++ )
     {
@@ -1051,6 +1037,9 @@ inline void SuperpixelSLICImpl::PerformSLICO( const int&  itrnum )
         // Recalculate the centroid and store in the seed values
         //-----------------------------------------------------------------
 
+        // parallel reduce structure
+        SeedsCenters sc( m_chvec, m_klabels, m_numlabels, m_nr_channels );
+
         // accumulate center distances
         parallel_reduce( BlockedRange(0, m_width), sc );
 
@@ -1058,8 +1047,6 @@ inline void SuperpixelSLICImpl::PerformSLICO( const int&  itrnum )
         parallel_for_( Range(0, m_numlabels), SeedNormInvoker( &m_kseeds, &sc.sigma,
                        &sc.clustersize, &sc.sigmax, &sc.sigmay, &m_kseedsx, &m_kseedsy, m_nr_channels  ) );
 
-        // refill arrays
-        sc.ClearArrays();
     }
 }
 
@@ -1190,20 +1177,9 @@ struct SLICGrowInvoker : ParallelLoopBody
  */
 inline void SuperpixelSLICImpl::PerformSLIC( const int&  itrnum )
 {
-    vector< vector<float> > sigma(m_nr_channels);
-    for( int b = 0; b < m_nr_channels; b++ )
-      sigma[b].resize(m_numlabels, 0);
-
-    vector<float> sigmax(m_numlabels, 0);
-    vector<float> sigmay(m_numlabels, 0);
-    vector<int> clustersize(m_numlabels, 0);
-
     Mat distvec( m_height, m_width, CV_32F );
 
-    float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
-
-    // parallel reduce structure
-    SeedsCenters sc( m_chvec, m_klabels, m_numlabels, m_nr_channels );
+    const float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
 
     for( int itr = 0; itr < itrnum; itr++ )
     {
@@ -1225,15 +1201,16 @@ inline void SuperpixelSLICImpl::PerformSLIC( const int&  itrnum )
         //-----------------------------------------------------------------
         // instead of reassigning memory on each iteration, just reset.
 
+        // parallel reduce structure
+        SeedsCenters sc( m_chvec, m_klabels, m_numlabels, m_nr_channels );
+
         // accumulate center distances
         parallel_reduce( BlockedRange(0, m_width), sc );
 
         // normalize centers
-        parallel_for_( Range(0, m_numlabels), SeedNormInvoker( &m_kseeds, &sigma,
-                       &clustersize, &sigmax, &sigmay, &m_kseedsx, &m_kseedsy, m_nr_channels  ) );
+        parallel_for_( Range(0, m_numlabels), SeedNormInvoker( &m_kseeds, &sc.sigma,
+                       &sc.clustersize, &sc.sigmax, &sc.sigmay, &m_kseedsx, &m_kseedsy, m_nr_channels  ) );
 
-        // refill arrays
-        sc.ClearArrays();
     }
 }
 
