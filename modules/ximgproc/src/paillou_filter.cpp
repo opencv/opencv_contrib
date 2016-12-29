@@ -1,17 +1,133 @@
+/*
+*  By downloading, copying, installing or using the software you agree to this license.
+*  If you do not agree to this license, do not download, install,
+*  copy or use the software.
+*
+*
+*  License Agreement
+*  For Open Source Computer Vision Library
+*  (3 - clause BSD License)
+*
+*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met :
+*
+*  * Redistributions of source code must retain the above copyright notice,
+*  this list of conditions and the following disclaimer.
+*
+*  * Redistributions in binary form must reproduce the above copyright notice,
+*  this list of conditions and the following disclaimer in the documentation
+*  and / or other materials provided with the distribution.
+*
+*  * Neither the names of the copyright holders nor the names of the contributors
+*  may be used to endorse or promote products derived from this software
+*  without specific prior written permission.
+*
+*  This software is provided by the copyright holders and contributors "as is" and
+*  any express or implied warranties, including, but not limited to, the implied
+*  warranties of merchantability and fitness for a particular purpose are disclaimed.
+*  In no event shall copyright holders or contributors be liable for any direct,
+*  indirect, incidental, special, exemplary, or consequential damages
+*  (including, but not limited to, procurement of substitute goods or services;
+*  loss of use, data, or profits; or business interruption) however caused
+*  and on any theory of liability, whether in contract, strict liability,
+*  or tort(including negligence or otherwise) arising in any way out of
+*  the use of this software, even if advised of the possibility of such damage.
+*/
 #include "precomp.hpp"
 #include "opencv2/highgui.hpp"
 #include <math.h>
 #include <vector>
 #include <iostream>
 
-namespace cv {
-namespace ximgproc {
-
 /*
 If you use this code please cite this @cite paillou1997detecting
 Detecting step edges in noisy SAR images: a new linear operator  IEEE Transactions on Geoscience and Remote Sensing  (Volume:35 ,  Issue: 1 )  1997
+Equation xx pyyy mean equation xx at page yyy in previous paper
 */
 
+namespace cv {
+namespace ximgproc {
+
+template<typename T> static void
+VerticalIIRFilter(Mat &img, Mat &dst, const Range &range, double a,double w)
+{
+    float *f2;
+    int tailleSequence = (img.rows>img.cols) ? img.rows : img.cols;
+    Mat matYp(1, tailleSequence, CV_64FC1), matYm(1, tailleSequence, CV_64FC1);
+    double *yp = matYp.ptr<double>(0), *ym = matYm.ptr<double>(0);
+    int rows = img.rows, cols = img.cols;
+
+    // Equation 12 p193
+    double                b1 = -2 * exp(-a)*cosh(w);
+    double                a1 = 2 * exp(-a)*cosh(w) - exp(-2 * a) - 1;
+    double                b2 = exp(-2 * a);
+    for (int j = range.start; j < range.end; j++)
+    {
+        // Equation 26 p194
+        T *c1 = (T *)img.ptr(0) + j;
+        f2 = dst.ptr<float>(0) + j;
+        double border = *c1;
+        yp[0] = *c1;
+        c1 += cols;
+        yp[1] = *c1 - b1*yp[0] - b2*border;
+        c1 += cols;
+        for (int i = 2; i < rows; i++, c1 += cols)
+            yp[i] = *c1 - b1*yp[i - 1] - b2*yp[i - 2];
+        // Equation 27 p194
+        c1 = (T *)img.ptr(rows - 1) + j;
+        border = *c1;
+        ym[rows - 1] = *c1;
+        c1 -= cols;
+        ym[rows - 2] = *c1 - b1*ym[rows - 1];
+        c1 -= cols;
+        for (int i = rows - 3; i >= 0; i--, c1 -= cols)
+            ym[i] = *c1 - b1*ym[i + 1] - b2*ym[i + 2];
+        // Equation 25 p193
+        for (int i = 0; i < rows; i++, f2 += cols)
+            *f2 = (float)(a1*(ym[i] - yp[i]));
+    }
+}
+
+template<typename T> static void
+HorizontalIIRFilter(Mat &img, Mat &dst, const Range &range, double a, double w)
+{
+    int tailleSequence = (img.rows>img.cols) ? img.rows : img.cols;
+    Mat matYp(1, tailleSequence, CV_64FC1), matYm(1, tailleSequence, CV_64FC1);
+    double *yp = matYp.ptr<double>(0), *ym = matYm.ptr<double>(0);
+    int cols = img.cols;
+    float *f2;
+
+    // Equation 12 p193
+    double                b1 = -2 * exp(-a)*cosh(w);
+    double                a1 = 2 * exp(-a)*cosh(w) - exp(-2 * a) - 1;
+    double                b2 = exp(-2 * a);
+
+    for (int i = range.start; i<range.end; i++)
+    {
+        // Equation 26 p194
+        T *c1 = img.ptr<T>(i);
+        double border = *c1;
+        yp[0] = *c1;
+        c1++;
+        yp[1] = *c1 - b1*yp[0] - b2*border;
+        c1++;
+        for (int j = 2; j<cols; j++, c1++)
+            yp[j] = *c1 - b1*yp[j - 1] - b2*yp[j - 2];
+        // Equation 27 p194
+        c1 = img.ptr<T>(i) + cols - 1;
+        border = *c1;
+        ym[cols - 1] = *c1;
+        c1--;
+        ym[cols - 2] = *c1 - b1*ym[cols - 1];
+        c1--;
+        for (int j = cols - 3; j >= 0; j--, c1--)
+            ym[j] = *c1 - b1*ym[j + 1] - b2*ym[j + 2];
+        // Equation 25 p193
+        f2 = dst.ptr<float>(i);
+        for (int j = 0; j<cols; j++, f2++)
+            *f2 = (float)(a1*(ym[j] - yp[j]));
+    }
+}
 
 class ParallelGradientPaillouYCols: public ParallelLoopBody
 {
@@ -36,98 +152,19 @@ public:
         CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
-        float                *f2;
-        int tailleSequence=(img.rows>img.cols)?img.rows:img.cols;
-        Mat matYp(1,tailleSequence,CV_64FC1),  matYm(1,tailleSequence,CV_64FC1);
-        double *yp=matYp.ptr<double>(0), *ym=matYm.ptr<double>(0);
-        int rows=img.rows,cols=img.cols;
-
-        // Equation 12 p193
-        double                b1=-2*exp(-a)*cosh(w);
-        double                a1=2*exp(-a)*cosh(w)-exp(-2*a)-1;
-        double                b2=exp(-2*a);
 
         switch(img.depth()){
-        case CV_8U :
-            for (int j=range.start;j<range.end;j++)
-            {
-                // Equation 26 p194
-                uchar *c1 = img.ptr(0)+j;
-                f2 = dst.ptr<float>(0)+j;
-                double border=*c1;
-                yp[0] = *c1 ;
-                c1+=cols;
-                yp[1] = *c1 - b1*yp[0]-b2*border;
-                c1+=cols;
-                for (int i=2;i<rows;i++,c1+=cols)
-                    yp[i] = *c1-b1*yp[i-1]-b2*yp[i-2];
-                // Equation 27 p194
-                c1 = img.ptr(rows-1)+j;
-                border=*c1;
-                ym[rows - 1] = *c1;
-                c1 -= cols;
-                ym[rows-2] =*c1 - b1*ym[rows-1];
-                c1 -= cols;
-                for (int i=rows-3;i>=0;i--,c1-=cols)
-                    ym[i]=*c1-b1*ym[i+1]-b2*ym[i+2];
-                // Equation 25 p193
-                for (int i=0;i<rows;i++,f2+=cols)
-                    *f2 = (float)(a1*(ym[i]-yp[i]));
-            }
+        case CV_8U:
+            VerticalIIRFilter<uchar>(img, dst, range, a, w);
+            break;
+        case CV_8S:
+            VerticalIIRFilter<char>(img, dst, range, a, w);
             break;
         case CV_16S :
-            for (int j = range.start; j<range.end; j++)
-            {
-                // Equation 26 p194
-                short *c1 = img.ptr<short>(0) + j;
-                f2 = dst.ptr<float>(0) + j;
-                double border = *c1;
-                yp[0] = *c1;
-                c1 += cols;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1 += cols;
-                for (int i = 2; i<rows; i++, c1 += cols)
-                    yp[i] = *c1 - b1*yp[i - 1] - b2*yp[i - 2];
-                // Equation 27 p194
-                c1 = img.ptr<short>(rows - 1) + j;
-                border = *c1;
-                ym[rows - 1] = *c1;
-                c1 -= cols;
-                ym[rows - 2] = *c1 - b1*ym[rows - 1];
-                c1 -= cols;
-                for (int i = rows - 3; i >= 0; i--, c1 -= cols)
-                    ym[i] = *c1 - b1*ym[i + 1] - b2*ym[i + 2];
-                // Equation 25 p193
-                for (int i = 0; i<rows; i++, f2 += cols)
-                    *f2 = (float)(a1*(ym[i] - yp[i]));
-            }
-        break;
+            VerticalIIRFilter<short>(img, dst, range, a, w);
+            break;
         case CV_16U :
-            for (int j = range.start; j<range.end; j++)
-            {
-                // Equation 26 p194
-                ushort *c1 = img.ptr<ushort>(0) + j;
-                f2 = dst.ptr<float>(0) + j;
-                double border = *c1;
-                yp[0] = *c1;
-                c1 += cols;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1 += cols;
-                for (int i = 2; i<rows; i++, c1 += cols)
-                    yp[i] = *c1 - b1*yp[i - 1] - b2*yp[i - 2];
-                // Equation 27 p194
-                c1 = img.ptr<ushort>(rows - 1) + j;
-                border = *c1;
-                ym[rows - 1] = *c1;
-                c1 -= cols;
-                ym[rows - 2] = *c1 - b1*ym[rows - 1];
-                c1 -= cols;
-                for (int i = rows - 3; i >= 0; i--, c1 -= cols)
-                    ym[i] = *c1 - b1*ym[i + 1] - b2*ym[i + 2];
-                // Equation 25 p193
-                for (int i = 0; i<rows; i++, f2 += cols)
-                    *f2 = (float)(a1*(ym[i] - yp[i]));
-            }
+            VerticalIIRFilter<short>(img, dst, range, a, w);
             break;
         default :
             return ;
@@ -301,125 +338,20 @@ public:
     {
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
-        float                *f2;
-        int tailleSequence = (img.rows>img.cols) ? img.rows : img.cols;
-        Mat matYp(1,tailleSequence,CV_64FC1),  matYm(1,tailleSequence,CV_64FC1);
-        double *yp=matYp.ptr<double>(0), *ym=matYm.ptr<double>(0);
-        int cols = img.cols;
 
         // Equation 12 p193
-        double                b1 = -2 * exp(-a)*cosh(w);
-        double                a1 = 2 * exp(-a)*cosh(w) - exp(-2 * a) - 1;
-        double                b2 = exp(-2 * a);
-
         switch(img.depth()){
         case CV_8U :
-            for (int i = range.start; i<range.end; i++)
-            {
-                // Equation 26 p194
-                uchar *c1 = img.ptr(i);
-                double border = *c1;
-                yp[0] = *c1;
-                c1++;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1++;
-                for (int j = 2; j<cols; j++, c1++)
-                    yp[j] = *c1 - b1*yp[j - 1] - b2*yp[j - 2];
-                // Equation 27 p194
-                c1 = img.ptr(i)+cols-1;
-                border = *c1;
-                ym[cols - 1] = *c1;
-                c1--;
-                ym[cols - 2] = *c1 - b1*ym[cols - 1];
-                c1--;
-                for (int j = cols - 3; j >= 0; j--, c1--)
-                    ym[j] = *c1 - b1*ym[j + 1] - b2*ym[j + 2];
-                // Equation 25 p193
-                f2 = im1.ptr<float>(i);
-                for (int j = 0; j<cols; j++, f2 ++)
-                    *f2 = (float)(a1*(ym[j] - yp[j]));
-            }
+            HorizontalIIRFilter<uchar>(img,im1,range,a,w);
             break;
         case CV_8S :
-            for (int i = range.start; i<range.end; i++)
-            {
-                // Equation 26 p194
-                char *c1 = img.ptr<char>(i);
-                double border = *c1;
-                yp[0] = *c1;
-                c1++;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1++;
-                for (int j = 2; j<cols; j++, c1++)
-                    yp[j] = *c1 - b1*yp[j - 1] - b2*yp[j - 2];
-                // Equation 27 p194
-                c1 = img.ptr<char>(i)+cols-1;
-                border = *c1;
-                ym[cols - 1] = *c1;
-                c1--;
-                ym[cols - 2] = *c1 - b1*ym[cols - 1];
-                c1--;
-                for (int j = cols - 3; j >= 0; j--, c1--)
-                    ym[j] = *c1 - b1*ym[j + 1] - b2*ym[j + 2];
-                // Equation 25 p193
-                f2 = im1.ptr<float>(i);
-                for (int j = 0; j<cols; j++, f2 ++)
-                    *f2 = (float)(a1*(ym[j] - yp[j]));
-            }
+            HorizontalIIRFilter<char>(img, im1, range, a, w);
             break;
         case CV_16S :
-            for (int i = range.start; i<range.end; i++)
-            {
-                // Equation 26 p194
-                short *c1 = img.ptr<short>(i);
-                f2 = im1.ptr<float>(i);
-                double border = *c1;
-                yp[0] = *c1;
-                c1++;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1++;
-                for (int j = 2; j<cols; j++, c1++)
-                    yp[j] = *c1 - b1*yp[j - 1] - b2*yp[j - 2];
-                // Equation 27 p194
-                c1 = img.ptr<short>(i) + cols - 1;
-                border = *c1;
-                ym[cols - 1] = *c1;
-                c1--;
-                ym[cols - 2] = *c1 - b1*ym[cols - 1];
-                c1--;
-                for (int j = cols - 3; j >= 0; j--, c1--)
-                    ym[j] = *c1 - b1*ym[j + 1] - b2*ym[j + 2];
-                // Equation 25 p193
-                for (int j = 0; j<cols; j++, f2++)
-                    *f2 = (float)(a1*(ym[i] - yp[i]));
-            }
+            HorizontalIIRFilter<short>(img, im1, range, a, w);
             break;
         case CV_16U :
-            for (int i = range.start; i<range.end; i++)
-            {
-                // Equation 26 p194
-                ushort *c1 = img.ptr<ushort>(i);
-                f2 = im1.ptr<float>(i);
-                double border = *c1;
-                yp[0] = *c1;
-                c1++;
-                yp[1] = *c1 - b1*yp[0] - b2*border;
-                c1++;
-                for (int j = 2; j<cols; j++, c1++)
-                    yp[j] = *c1 - b1*yp[j - 1] - b2*yp[j - 2];
-                // Equation 27 p194
-                c1 = img.ptr<ushort>(i) + cols - 1;
-                border = *c1;
-                ym[cols - 1] = *c1;
-                c1--;
-                ym[cols - 2] = *c1 - b1*ym[cols - 1];
-                c1--;
-                for (int j = cols - 3; j >= 0; j--, c1--)
-                    ym[j] = *c1 - b1*ym[j + 1] - b2*ym[j + 2];
-                // Equation 25 p193
-                for (int j = 0; j<cols; j++, f2++)
-                    *f2 = (float)(a1*(ym[i] - yp[i]));
-            }
+            HorizontalIIRFilter<ushort>(img, im1, range, a, w);
             break;
         default :
             return ;
@@ -432,53 +364,38 @@ public:
 
 void GradientPaillouY(InputArray _op, OutputArray _dst, double alpha, double omega)
 {
-    Mat tmp(_op.size(),CV_32FC(_op.channels()));
-    _dst.create( _op.size(),CV_32FC(tmp.channels()) );
-    cv::Mat opSrc = _op.getMat();
     std::vector<Mat> planSrc;
-    split(opSrc,planSrc);
+    split(_op,planSrc);
     std::vector<Mat> planTmp;
-    split(tmp,planTmp);
     std::vector<Mat> planDst;
-    split(_dst,planDst);
-    for (int i = 0; i < static_cast<int>(planSrc.size()); i++)
+    for (int i = 0; i <static_cast<int>(planSrc.size()); i++)
     {
-        if (planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous())
-        {
-            ParallelGradientPaillouYCols x(planSrc[i],planTmp[i],alpha,omega);
-            parallel_for_(Range(0,opSrc.cols), x,getNumThreads());
-            ParallelGradientPaillouYRows xr(planTmp[i],planDst[i],alpha,omega);
-            parallel_for_(Range(0,opSrc.rows), xr,getNumThreads());
-
-        }
-        else
-            std::cout << "PB";
+		planTmp.push_back(Mat(_op.size(), CV_32FC1));
+		planDst.push_back(Mat(_op.size(), CV_32FC1));
+        CV_Assert(planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous());
+        ParallelGradientPaillouYCols x(planSrc[i],planTmp[i],alpha,omega);
+        parallel_for_(Range(0, planSrc[i].cols), x,getNumThreads());
+        ParallelGradientPaillouYRows xr(planTmp[i],planDst[i],alpha,omega);
+        parallel_for_(Range(0, planTmp[i].rows), xr,getNumThreads());
     }
     merge(planDst,_dst);
 }
 
 void GradientPaillouX(InputArray _op, OutputArray _dst, double alpha, double omega)
 {
-    Mat tmp(_op.size(),CV_32FC(_op.channels()));
-    _dst.create( _op.size(),CV_32FC(tmp.channels()) );
-    Mat opSrc = _op.getMat();
     std::vector<Mat> planSrc;
-    split(opSrc,planSrc);
+    split(_op,planSrc);
     std::vector<Mat> planTmp;
-    split(tmp,planTmp);
     std::vector<Mat> planDst;
-    split(_dst,planDst);
-    for (int i = 0; i < static_cast<int>(planSrc.size()); i++)
+    for (int i = 0; i <static_cast<int>(planSrc.size()); i++)
     {
-        if (planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous())
-        {
-            ParallelGradientPaillouXRows x(planSrc[i],planTmp[i],alpha,omega);
-            parallel_for_(Range(0,opSrc.rows), x,getNumThreads());
-            ParallelGradientPaillouXCols xr(planTmp[i],planDst[i],alpha,omega);
-            parallel_for_(Range(0,opSrc.cols), xr,getNumThreads());
-        }
-        else
-            std::cout << "PB";
+		planTmp.push_back(Mat(_op.size(), CV_32FC1));
+		planDst.push_back(Mat(_op.size(), CV_32FC1));
+        CV_Assert(planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous());
+        ParallelGradientPaillouXRows x(planSrc[i],planTmp[i],alpha,omega);
+        parallel_for_(Range(0, planSrc[i].rows), x,getNumThreads());
+        ParallelGradientPaillouXCols xr(planTmp[i],planDst[i],alpha,omega);
+        parallel_for_(Range(0, planTmp[i].cols), xr,getNumThreads());
     }
     merge(planDst,_dst);
 }
