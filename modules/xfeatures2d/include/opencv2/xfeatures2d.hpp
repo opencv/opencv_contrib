@@ -905,6 +905,7 @@ public:
         return create(keypoint_detector, keypoint_detector);
     }
 
+    using Feature2D::detect; // overload, don't hide
     /**
      * @brief Detects keypoints in the image using the wrapped detector and
      * performs affine adaptation to augment them with their elliptic regions.
@@ -914,6 +915,7 @@ public:
         CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
         InputArray mask=noArray() ) = 0;
 
+    using Feature2D::detectAndCompute; // overload, don't hide
     /**
      * @brief Detects keypoints and computes descriptors for their surrounding
      * regions, after warping them into circles.

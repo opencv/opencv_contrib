@@ -628,12 +628,13 @@ public:
     ) : m_keypoint_detector(keypoint_detector)
       , m_descriptor_extractor(descriptor_extractor) {}
 protected:
+    using Feature2D::detect; // overload, don't hide
     void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
     void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
     void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    int descriptorSize();
-    int descriptorType();
-    int defaultNorm();
+    int descriptorSize() const;
+    int descriptorType() const;
+    int defaultNorm() const;
 private:
     Ptr<FeatureDetector> m_keypoint_detector;
     Ptr<DescriptorExtractor> m_descriptor_extractor;
@@ -696,17 +697,17 @@ void AffineFeature2D_Impl::detectAndCompute(
     descriptors.assign(descriptor_mat);
 }
 
-int AffineFeature2D_Impl::descriptorSize()
+int AffineFeature2D_Impl::descriptorSize() const
 {
     return m_descriptor_extractor->descriptorSize();
 }
 
-int AffineFeature2D_Impl::descriptorType()
+int AffineFeature2D_Impl::descriptorType() const
 {
     return m_descriptor_extractor->descriptorType();
 }
 
-int AffineFeature2D_Impl::defaultNorm()
+int AffineFeature2D_Impl::defaultNorm() const
 {
     return m_descriptor_extractor->defaultNorm();
 }
