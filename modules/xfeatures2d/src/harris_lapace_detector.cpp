@@ -138,7 +138,7 @@ void Pyramid::build(const Mat& img, bool DOG)
 
     Size imgSize = img.size();
     int minSize = MIN(imgSize.width, imgSize.height);
-    int octavesN = MIN(params.octavesN, floor(log2((double) minSize)));
+    int octavesN = MIN(params.octavesN, int(floor(log2((double) minSize))));
     float sigma0 = params.sigma0;
     float sigma = sigma0;
     int layersN = params.layersN + 3;
@@ -146,7 +146,7 @@ void Pyramid::build(const Mat& img, bool DOG)
     float k = params.step;
 
     /*layer to downsample*/
-    int down_lay = 1 / log(k);
+    int down_lay = int(1 / log(k));
 
     int octave, layer;
     double sigmaN = 0.5;
@@ -162,7 +162,7 @@ void Pyramid::build(const Mat& img, bool DOG)
         omin = -1;
         Mat tmp_img;
         Mat blurred_img;
-        gsize = ceil(sigmaN * 3) * 2 + 1;
+        gsize = int(ceil(sigmaN * 3)) * 2 + 1;
         GaussianBlur(img, blurred_img, Size(gsize,gsize), sigmaN);
         resize(blurred_img, tmp_img, ksize, 2, 2, INTER_AREA);
         layers.push_back(tmp_img);
@@ -173,7 +173,7 @@ void Pyramid::build(const Mat& img, bool DOG)
             sigma = sqrt(powf(sigma_curr, 2) - powf(sigma_prev, 2));
             Mat prev_lay = layers[layer - 1], curr_lay, DOG_lay;
             /* smoothing is applied on previous layer so sigma_curr^2 = sigma^2 + sigma_prev^2 */
-            gsize = ceil(sigma * 3) * 2 + 1;
+            gsize = int(ceil(sigma * 3)) * 2 + 1;
             GaussianBlur(prev_lay, curr_lay, Size(gsize,gsize), sigma);
             layers.push_back(curr_lay);
             if (DOG)
@@ -198,14 +198,14 @@ void Pyramid::build(const Mat& img, bool DOG)
     }
 
     /* Presmoothing on first layer */
-    double sb = sigmaN / powf(2.0f, omin);
+    float sb = float(sigmaN) / powf(2.0f, omin);
     sigma = sigma0;
     if (sigma0 > sb)
         sigma = sqrt(sigma0 * sigma0 - sb * sb);
 
     /*1° step on image*/
     Mat tmpImg;
-    gsize = ceil(sigma * 3) * 2 + 1;
+    gsize = int(ceil(sigma * 3)) * 2 + 1;
     GaussianBlur(img, tmpImg, Size(gsize,gsize), sigma);
     layers.push_back(tmpImg);
 
@@ -220,7 +220,7 @@ void Pyramid::build(const Mat& img, bool DOG)
             sigma = sqrt(powf(sigma_curr, 2) - powf(sigma_prev, 2));
 
             Mat prev_lay = layers[layer - 1], curr_lay, DOG_lay;
-            gsize = ceil(sigma * 3) * 2 + 1;
+            gsize = int(ceil(sigma * 3)) * 2 + 1;
             GaussianBlur(prev_lay, curr_lay, Size(gsize,gsize), sigma);
             layers.push_back(curr_lay);
 
@@ -274,7 +274,7 @@ Mat Pyramid::getDOGLayer(int octave, int layer)
 float Pyramid::getSigma(int octave, int layer)
 {
 
-    return pow(2.0f, octave) * powf(params.step, layer) * params.sigma0;
+    return powf(2.0f, float(octave)) * powf(params.step, float(layer)) * params.sigma0;
 }
 
 /**
@@ -285,7 +285,7 @@ float Pyramid::getSigma(int octave, int layer)
 float Pyramid::getSigma(int layer)
 {
 
-    return powf(params.step, layer) * params.sigma0;
+    return powf(params.step, float(layer)) * params.sigma0;
 }
 
 /**
@@ -518,8 +518,8 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
 
             Mat Lxm2smooth, Lxmysmooth, Lym2smooth;
 
-            si = pow(2, layer / (float) num_layers);
-            sd = si * 0.7;
+            si = powf(2.f, layer / (float) num_layers);
+            sd = si * 0.7f;
 
             Mat curr_layer;
             if (num_layers == 4)
@@ -551,7 +551,7 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
             Mat Lym2 = Ly.mul(Ly);
             Mat Lxmy = Lx.mul(Ly);
 
-            gsize = ceil(si * 3) * 2 + 1;
+            gsize = int(ceil(si * 3)) * 2 + 1;
 
             /*Convolution*/
             GaussianBlur(Lxm2, Lxm2smooth, Size(gsize, gsize), si, si, BORDER_REPLICATE);
@@ -604,11 +604,11 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
                         float succVal = succDOG.at<float> (y, x);
 
                         KeyPoint kp(
-                                Point(x * pow(2, octave - 1) + pow(2, octave - 1) / 2,
-                                        y * pow(2, octave - 1) + pow(2, octave - 1) / 2),
-                                3 * pow(2, octave - 1) * si * 2, 0, val, octave);
+                                Point2f(x * powf(2, octave - 1) + powf(2, octave - 1) / 2,
+                                        y * powf(2, octave - 1) + powf(2, octave - 1) / 2),
+                                3 * powf(2, octave - 1) * si * 2, 0, val, octave);
 
-                        if(!mask.empty() && mask.at<unsigned char>(kp.pt.y, kp.pt.x) == 0)
+                        if(!mask.empty() && mask.at<unsigned char>(int(kp.pt.y), int(kp.pt.x)) == 0)
                         {
                             // ignore keypoints where mask is zero
                             continue;
@@ -637,7 +637,7 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
     sort(keypoints.begin(), keypoints.end(), sort_func);
     for (size_t i = 1; i < keypoints.size(); i++)
     {
-        float max_diff = pow(2, keypoints[i].octave + 1.f / 2);
+        float max_diff = powf(2, keypoints[i].octave + 1.f / 2);
 
         if (keypoints[i].response == keypoints[i - 1].response && norm(
                 keypoints[i].pt - keypoints[i - 1].pt) <= max_diff)
@@ -646,7 +646,7 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
             float x = (keypoints[i].pt.x + keypoints[i - 1].pt.x) / 2;
             float y = (keypoints[i].pt.y + keypoints[i - 1].pt.y) / 2;
 
-            keypoints[i].pt = Point(x, y);
+            keypoints[i].pt = Point2f(x, y);
             --i;
             keypoints.erase(keypoints.begin() + i);
 

@@ -106,7 +106,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
     int cxPr = cx;
     int cyPr = cy;
 
-    float radius = keypoint.size / 2 * 1.4;
+    float radius = keypoint.size / 2 * 1.4f;
     float half_width, half_height;
 
     Rect roi;
@@ -128,24 +128,24 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 
         Size_<float> boundingBox;
 
-        double ac_b2 = determinant(U);
-        boundingBox.width = ceil(U.at<float> (1, 1)/ac_b2  * 3 * si*1.4 );
-        boundingBox.height = ceil(U.at<float> (0, 0)/ac_b2 * 3 * si*1.4 );
+        float ac_b2 = float(determinant(U));
+        boundingBox.width = ceil(U.at<float> (1, 1)/ac_b2  * 3 * si*1.4f );
+        boundingBox.height = ceil(U.at<float> (0, 0)/ac_b2 * 3 * si*1.4f );
 
         //Create window around interest point
         half_width = std::min((float) std::min(fimage.cols - px-1, px), boundingBox.width);
         half_height = std::min((float) std::min(fimage.rows - py-1, py), boundingBox.height);
         roix = max(px - (int) boundingBox.width, 0);
         roiy = max(py - (int) boundingBox.height, 0);
-        roi = Rect(roix, roiy, px - roix + half_width+1, py - roiy + half_height+1);
+        roi = Rect(roix, roiy, px - roix + int(half_width)+1, py - roiy + int(half_height)+1);
 
         //create ROI
         img_roi = fimage(roi);
 
 
         //Point within the ROI
-        p(0, 0) = px - roix;
-        p(1, 0) = py - roiy;
+        p(0, 0) = float(px - roix);
+        p(1, 0) = float(py - roiy);
 
         if (half_width <= 0 || half_height <= 0)
             return divergence;
@@ -177,21 +177,21 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             //Size of normalized window must be 2*radius
             //Transformation
             Mat warpedImgRoi;
-            warpAffine(img_roi, warpedImgRoi, transf, Size(maxx, maxy),INTER_AREA, BORDER_REPLICATE);
+            warpAffine(img_roi, warpedImgRoi, transf, Size(int(maxx), int(maxy)),INTER_AREA, BORDER_REPLICATE);
 
             //Point in U-Normalized coordinates
             c = U * p;
-            cx = c(0, 0) - minx;
-            cy = c(1, 0) - miny;
+            cx = int(c(0, 0) - minx);
+            cy = int(c(1, 0) - miny);
 
             if (warpedImgRoi.rows > 2 * radius+1 && warpedImgRoi.cols > 2 * radius+1)
             {
                 //Cut around normalized patch
-                roix = std::max(cx - ceil(radius), 0.0);
-                roiy = std::max(cy - ceil(radius), 0.0);
+                roix = std::max(cx - int(ceil(radius)), 0);
+                roiy = std::max(cy - int(ceil(radius)), 0);
                 roi = Rect(roix, roiy,
-                        cx - roix + std::min(ceil(radius), (double) warpedImgRoi.cols - cx-1)+1,
-                        cy - roiy + std::min(ceil(radius), (double) warpedImgRoi.rows - cy-1)+1);
+                        cx - roix + std::min(int(ceil(radius)), warpedImgRoi.cols - cx-1)+1,
+                        cy - roiy + std::min(int(ceil(radius)), warpedImgRoi.rows - cy-1)+1);
                 warpedImg = warpedImgRoi(roi);
 
                 //Coordinates in cutted ROI
@@ -220,7 +220,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                     float dxy = Lxmysmooth.at<float> (cyPr - 1 + j, cxPr - 1 + t);
                     float det = dx2 * dy2 - dxy * dxy;
                     float tr = dx2 + dy2;
-                    float cornerness = det - (0.04 * pow(tr, 2));
+                    float cornerness = det - (0.04f * tr*tr);
                     if (cornerness > cornMax)
                     {
                         cornMax = cornerness;
@@ -231,15 +231,15 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             }
 
             //Transform point in image coordinates
-            p(0, 0) = px;
-            p(1, 0) = py;
+            p(0, 0) = float(px);
+            p(1, 0) = float(py);
             //Displacement vector
-            c(0, 0) = cx - cxPr;
-            c(1, 0) = cy - cyPr;
+            c(0, 0) = float(cx - cxPr);
+            c(1, 0) = float(cy - cyPr);
             //New interest point location in image
             p = p + U.inv() * c;
-            px = p(0, 0);
-            py = p(1, 0);
+            px = int(p(0, 0));
+            py = int(p(1, 0));
 
             q = calcSecondMomentSqrt(Lxm2smooth, Lxmysmooth, Lym2smooth, Point(cx, cy), Mk);
 
@@ -261,7 +261,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                     divergence = true;
 
                 //Keypoint converges
-                else if (ratio <= 0.05)
+                else if (ratio <= 0.05f)
                 {
                     convergence = true;
 
@@ -271,8 +271,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                     U.col(1).copyTo(transf.col(1));
                     keypoint.transf = Mat(transf);
 
-                    ax1 = 1. / std::abs(uVal.at<float> (0, 0)) * 3 * si;
-                    ax2 = 1. / std::abs(uVal.at<float> (1, 0)) * 3 * si;
+                    ax1 = 1.f / std::abs(uVal.at<float> (0, 0)) * 3 * si;
+                    ax2 = 1.f / std::abs(uVal.at<float> (1, 0)) * 3 * si;
                     phi = atan(uV.at<float> (1, 0) / uV.at<float> (0, 0)) * (180) / CV_PI;
                     keypoint.axes = Size_<float> (ax1, ax2);
                     keypoint.phi = phi;
@@ -281,7 +281,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                     keypoint.size = 2 * 3 * si;
 
                 } else
-                    radius = 3 * si * 1.4;
+                    radius = 3 * si * 1.4f;
 
             } else divergence = true;
 
@@ -309,12 +309,12 @@ float selIntegrationScale(const Mat & image, float si, Point c)
     image.copyTo(L);
     /* Search best integration scale between previous and successive layer
      */
-    for (float u = 0.7; u <= 1.41; u += 0.1)
+    for (float u = 0.7f; u <= 1.41f; u += 0.1f)
     {
         float sik = u * si;
         sigma = sqrt(powf(sik, 2) - powf(sigma_prev, 2));
 
-        gsize = ceil(sigma * 3) * 2 + 1;
+        gsize = int(ceil(sigma * 3)) * 2 + 1;
 
         GaussianBlur(L, L, Size(gsize, gsize), sigma);
         sigma_prev = sik;
@@ -323,7 +323,7 @@ float selIntegrationScale(const Mat & image, float si, Point c)
 
         float lapVal = sik * sik * std::abs(Lap.at<float> (cy, cx));
 
-        if (u == 0.7)
+        if (u == 0.7f)
             maxLap = lapVal;
 
         if (lapVal >= maxLap)
@@ -379,8 +379,8 @@ float normMaxEval(Mat & U, Mat & uVal, Mat & uVec)
     Mat uVinv = uVec.inv();
 
     //Normalize min eigenvalue to 1 to expand patch in the direction of min eigenvalue of U.inv()
-    double uval1 = uVal.at<float> (0, 0);
-    double uval2 = uVal.at<float> (1, 0);
+    float uval1 = uVal.at<float> (0, 0);
+    float uval2 = uVal.at<float> (1, 0);
 
     if (std::abs(uval1) < std::abs(uval2))
     {
@@ -406,7 +406,7 @@ float normMaxEval(Mat & U, Mat & uVal, Mat & uVec)
 float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmooth,
         Mat & Lym2smooth, float si, Point c)
 {
-    float s = 0.5;
+    float s = 0.5f;
     float sdk = s * si;
     float sigma_prev = 0, sigma;
 
@@ -420,7 +420,7 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
 
     img.copyTo(L);
 
-    while (s <= 0.751)
+    while (s <= 0.751f)
     {
         Mat M;
         float sd = s * si;
@@ -428,7 +428,7 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
         //Smooth previous smoothed image L
         sigma = sqrt(powf(sd, 2) - powf(sigma_prev, 2));
 
-        gsize = ceil(sigma * 3) * 2 + 1;
+        gsize = int(ceil(sigma * 3)) * 2 + 1;
 
         GaussianBlur(L, L, Size(gsize, gsize), sigma);
 
@@ -442,7 +442,7 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
         Ly = Ly * sd;
 
         //Size of gaussian kernel
-        gsize = ceil(si * 3) * 2 + 1;
+        gsize = int(ceil(si * 3)) * 2 + 1;
         ksize = Size(gsize, gsize);
 
         Mat Lxm2 = Lx.mul(Lx);
@@ -472,7 +472,7 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
             dy2.copyTo(Lym2smooth);
 
         }
-        s += 0.05;
+        s += 0.05f;
     }
 
     return sdk;
@@ -510,7 +510,7 @@ void calcAffineCovariantRegions(const Mat & image, const std::vector<KeyPoint> &
                 axes2 = kp2.axes;
                 si1 = kp1.si;
                 si2 = kp2.si;
-                if(std::abs(phi1-phi2)<15 && std::max(si1,si2)/std::min(si1,si2)<1.4 && axes1.width-axes2.width<5 && axes1.height-axes2.height<5){
+                if(std::abs(phi1-phi2)<15 && std::max(si1,si2)/std::min(si1,si2)<1.4f && axes1.width-axes2.width<5 && axes1.height-axes2.height<5){
                     affRegions.erase(affRegions.begin()+j);
                     j--;
                 }
@@ -526,7 +526,7 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
     assert(!affRegions.empty());
     int descriptorSize = dextractor->descriptorSize();
     int descriptorType = dextractor->descriptorType();
-    descriptors.create(Size(descriptorSize, affRegions.size()), descriptorType);
+    descriptors.create(Size(descriptorSize, int(affRegions.size())), descriptorType);
     descriptors.setTo(0);
 
     int i = 0;
@@ -552,33 +552,33 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
 
         Size_<float> boundingBox;
 
-        double ac_b2 = determinant(U);
+        float ac_b2 = float(determinant(U));
         boundingBox.width = ceil(U.at<float> (1, 1)/ac_b2  * 3 * si );
         boundingBox.height = ceil(U.at<float> (0, 0)/ac_b2 * 3 * si );
 
         //Create window around interest point
         float half_width = std::min((float) std::min(img.cols - p.x-1, p.x), boundingBox.width);
         float half_height = std::min((float) std::min(img.rows - p.y-1, p.y), boundingBox.height);
-        float roix = max(p.x - (int) boundingBox.width, 0);
-        float roiy = max(p.y - (int) boundingBox.height, 0);
-        Rect roi = Rect(roix, roiy, p.x - roix + half_width+1, p.y - roiy + half_height+1);
+        int roix = max(p.x - (int) boundingBox.width, 0);
+        int roiy = max(p.y - (int) boundingBox.height, 0);
+        Rect roi = Rect(roix, roiy, p.x - roix + int(half_width)+1, p.y - roiy + int(half_height)+1);
 
         Mat img_roi = img(roi);
 
-        size(0, 0) = img_roi.cols;
-        size(1, 0) = img_roi.rows;
+        size(0, 0) = float(img_roi.cols);
+        size(1, 0) = float(img_roi.rows);
 
         size = U * size;
 
         Mat transfImgRoi, transfImg;
-        warpAffine(img_roi, transfImgRoi, transf, Size(ceil(size(0, 0)), ceil(size(1, 0))),
+        warpAffine(img_roi, transfImgRoi, transf, Size(int(ceil(size(0, 0))), int(ceil(size(1, 0)))),
                 INTER_AREA, BORDER_DEFAULT);
 
         Mat_<float> c(2, 1); //Transformed point
         Mat_<float> pt(2, 1); //Image point
         //Point within the Roi
-        pt(0, 0) = p.x - roix;
-        pt(1, 0) = p.y - roiy;
+        pt(0, 0) = float(p.x - roix);
+        pt(1, 0) = float(p.y - roiy);
 
         //Point in U-Normalized coordinates
         c = U * pt;
@@ -587,18 +587,18 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
 
         //Cut around point to have patch of 2*keypoint->size
 
-        roix = std::max(cx - radius, 0.f);
-        roiy = std::max(cy - radius, 0.f);
+        roix = std::max(int(ceil(cx - radius)), 0);
+        roiy = std::max(int(ceil(cy - radius)), 0);
 
-        roi = Rect(roix, roiy, std::min(cx - roix + radius, size(0, 0)),
-                std::min(cy - roiy + radius, size(1, 0)));
+        roi = Rect(roix, roiy, int(ceil(std::min(cx - roix + radius, size(0, 0)))),
+                int(ceil(std::min(cy - roiy + radius, size(1, 0)))));
         transfImg = transfImgRoi(roi);
 
         cx = c(0, 0) - roix;
         cy = c(1, 0) - roiy;
 
         Mat tmpDesc;
-        KeyPoint kp(Point(cx, cy), it->size);
+        KeyPoint kp(Point(int(cx), int(cy)), it->size);
 
         std::vector<KeyPoint> k(1, kp);
 
