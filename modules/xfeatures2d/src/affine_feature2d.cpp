@@ -118,8 +118,6 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
     //Affine adaptation
     while (i <= 10 && !divergence && !convergence)
     {
-        cvtColor(fimage, drawImg, CV_GRAY2RGB);
-
         //Transformation matrix
         transf.setTo(0);
         U.col(0).copyTo(transf.col(0));
@@ -674,7 +672,7 @@ void AffineFeature2D_Impl::detectAndCompute(
         image.getMat().convertTo(fimage, CV_32F, 1.f/255);
         calcAffineCovariantRegions(fimage, non_elliptic_keypoints, keypoints);
     }
-    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), keypoints, descriptors.getMatRef());
+    if(descriptors.needed())calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), keypoints, descriptors.getMatRef());
 }
 
 void AffineFeature2D_Impl::detectAndCompute(
@@ -688,13 +686,13 @@ void AffineFeature2D_Impl::detectAndCompute(
     {
         m_keypoint_detector->detect(image, keypoints, mask);
     }
-    Mat fimage;
-    image.getMat().convertTo(fimage, CV_32F, 1.f/255);
-    std::vector<Elliptic_KeyPoint> elliptic_keypoints;
-    calcAffineCovariantRegions(fimage, keypoints, elliptic_keypoints);
-    Mat descriptor_mat;
-    calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), elliptic_keypoints, descriptor_mat);
-    descriptors.assign(descriptor_mat);
+    if(descriptors.needed()) {
+        Mat fimage;
+        image.getMat().convertTo(fimage, CV_32F, 1.f/255);
+        std::vector<Elliptic_KeyPoint> elliptic_keypoints;
+        calcAffineCovariantRegions(fimage, keypoints, elliptic_keypoints);
+        calcAffineCovariantDescriptors(m_descriptor_extractor, image.getMat(), elliptic_keypoints, descriptors.getMatRef());
+    }
 }
 
 int AffineFeature2D_Impl::descriptorSize() const
