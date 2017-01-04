@@ -1102,10 +1102,10 @@ void SURF_computeDescriptors128(
     descriptors_step /= sizeof(*descriptors);
     keypoints_step   /= sizeof(*keypoints);
 
-    __global float * featureX   = keypoints + X_ROW * keypoints_step;
-    __global float * featureY   = keypoints + Y_ROW * keypoints_step;
-    __global float* featureSize = keypoints + SIZE_ROW * keypoints_step;
-    __global float* featureDir  = keypoints + ANGLE_ROW * keypoints_step;
+    __global const float * featureX   = keypoints + X_ROW * keypoints_step;
+    __global const float * featureY   = keypoints + Y_ROW * keypoints_step;
+    __global const float* featureSize = keypoints + SIZE_ROW * keypoints_step;
+    __global const float* featureDir  = keypoints + ANGLE_ROW * keypoints_step;
 
     // 2 floats (dx,dy) for each thread (5x5 sample points in each sub-region)
     volatile __local  float sdx[25];
