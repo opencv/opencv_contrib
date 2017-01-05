@@ -115,7 +115,67 @@ The function putText renders the specified text string in the image. Symbols tha
         int thickness, int line_type, bool bottomLeftOrigin
     ) = 0;
 
+/** @brief Calculates the width and height of a text string.
+
+The function getTextSize calculates and returns the approximate size of a box that contains the specified text.
+That is, the following code renders some text, the tight box surrounding it, and the baseline: :
+@code
+    String text = "Funny text inside the box";
+    int fontHeight = 60;
+    int thickness = -1;
+    int linestyle = 8;
+
+    Mat img(600, 800, CV_8UC3, Scalar::all(0));
+
+    int baseline=0;
+
+    cv::Ptr<cv::freetype::FreeType2> ft2;
+    ft2 = cv::freetype::createFreeType2();
+    ft2->loadFontData( "./mplus-1p-regular.ttf", 0 );
+
+    Size textSize = ft2->getTextSize(text,
+                                     fontHeight,
+                                     thickness,
+                                     &baseline);
+
+    if(thickness > 0){
+        baseline += thickness;
+    }
+
+    // center the text
+    Point textOrg((img.cols - textSize.width) / 2,
+                  (img.rows + textSize.height) / 2);
+
+    // draw the box
+    rectangle(img, textOrg + Point(0, baseline),
+              textOrg + Point(textSize.width, -textSize.height),
+              Scalar(0,255,0),1,8);
+
+    // ... and the baseline first
+    line(img, textOrg + Point(0, thickness),
+         textOrg + Point(textSize.width, thickness),
+         Scalar(0, 0, 255),1,8);
+
+    // then put the text itself
+    ft2->putText(img, text, textOrg, fontHeight,
+                 Scalar::all(255), thickness, linestyle, true );
+@endcode
+
+@param text Input text string.
+@param fontHeight Drawing font size by pixel unit.
+@param thickness Thickness of lines used to render the text. See putText for details.
+@param[out] baseLine y-coordinate of the baseline relative to the bottom-most text
+point.
+@return The size of a box that contains the specified text.
+
+@see cv::putText
+ */
+CV_WRAP virtual Size getTextSize(const String& text,
+                            int fontHeight, int thickness,
+                            CV_OUT int* baseLine) = 0;
+
 };
+
 /** @brief Create FreeType2 Instance
 
 The function createFreeType2 create instance to draw UTF-8 strings.
