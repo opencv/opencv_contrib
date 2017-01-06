@@ -1742,10 +1742,6 @@ inline void SuperpixelLSCImpl::PerformLSC( const int&  itrnum )
                    &centerC1, &centerC2, m_nr_channels, m_chvec_max,
                    m_dist_coeff, m_color_coeff, m_stepx, m_stepy ) );
 
-    // parallel reduce structure
-    FeatureCenterDists fcd( m_chvec, m_W, m_klabels, m_nr_channels, m_chvec_max,
-                            m_dist_coeff, m_color_coeff, m_stepx, m_stepy, m_numlabels );
-
     // K-Means
     for( int itr = 0; itr < itrnum; itr++ )
     {
@@ -1758,6 +1754,10 @@ inline void SuperpixelLSCImpl::PerformLSC( const int&  itrnum )
                      centerX1, centerX2, centerY1, centerY2, centerC1, centerC2,
                      m_nr_channels, m_chvec_max, m_dist_coeff, m_color_coeff,
                      m_stepx, m_stepy ) );
+
+      // parallel reduce structure
+      FeatureCenterDists fcd( m_chvec, m_W, m_klabels, m_nr_channels, m_chvec_max,
+                              m_dist_coeff, m_color_coeff, m_stepx, m_stepy, m_numlabels );
 
       // accumulate center distances
       parallel_reduce( BlockedRange(0, m_width), fcd );
