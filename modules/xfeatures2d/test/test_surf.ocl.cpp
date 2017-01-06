@@ -119,6 +119,7 @@ IMPLEMENT_PARAM_CLASS(Upright, bool)
 
 PARAM_TEST_CASE(SURF, HessianThreshold, Octaves, OctaveLayers, Extended, Upright)
 {
+    bool useOpenCL;
     double hessianThreshold;
     int nOctaves;
     int nOctaveLayers;
@@ -127,11 +128,17 @@ PARAM_TEST_CASE(SURF, HessianThreshold, Octaves, OctaveLayers, Extended, Upright
 
     virtual void SetUp()
     {
+        useOpenCL = cv::ocl::useOpenCL();
         hessianThreshold = get<0>(GetParam());
         nOctaves = get<1>(GetParam());
         nOctaveLayers = get<2>(GetParam());
         extended = get<3>(GetParam());
         upright = get<4>(GetParam());
+    }
+
+    virtual void TearDown()
+    {
+        cv::ocl::setUseOpenCL(useOpenCL);
     }
 };
 
