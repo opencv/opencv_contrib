@@ -492,7 +492,7 @@ Size FreeType2Impl::getTextSize(
 
         CV_Assert( !FT_Outline_Get_BBox( &outline, &bbox ) );
 
-        // If codepoint is space(0x20), it has no glyph. 
+        // If codepoint is space(0x20), it has no glyph.
         // A dummy boundary box is needed when last code is space.
         if(
             (bbox.xMin == 0 ) && (bbox.xMax == 0 ) &&
