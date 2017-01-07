@@ -868,8 +868,8 @@ public:
      */
     CV_WRAP static Ptr<HarrisLaplaceFeatureDetector> create(
             int numOctaves=6,
-            float corn_thresh=0.01,
-            float DOG_thresh=0.01,
+            float corn_thresh=0.01f,
+            float DOG_thresh=0.01f,
             int maxCorners=5000,
             int num_layers=4);
 };

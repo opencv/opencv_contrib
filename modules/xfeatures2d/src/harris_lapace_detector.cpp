@@ -198,7 +198,7 @@ void Pyramid::build(const Mat& img, bool DOG)
     }
 
     /* Presmoothing on first layer */
-    float sb = float(sigmaN) / powf(2.0f, omin);
+    float sb = float(sigmaN) / powf(2.0f, (float) omin);
     sigma = sigma0;
     if (sigma0 > sb)
         sigma = sqrt(sigma0 * sigma0 - sb * sb);
@@ -604,9 +604,9 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
                         float succVal = succDOG.at<float> (y, x);
 
                         KeyPoint kp(
-                                Point2f(x * powf(2, octave - 1) + powf(2, octave - 1) / 2,
-                                        y * powf(2, octave - 1) + powf(2, octave - 1) / 2),
-                                3 * powf(2, octave - 1) * si * 2, 0, val, octave);
+                                Point2f(x * powf(2.0f, (float) octave - 1) + powf(2.0f, (float) octave - 1) / 2,
+                                        y * powf(2.0f, (float) octave - 1) + powf(2.0f, (float) octave - 1) / 2),
+                                3 * powf(2.0f, (float) octave - 1) * si * 2, 0, val, octave);
 
                         if(!mask.empty() && mask.at<unsigned char>(int(kp.pt.y), int(kp.pt.x)) == 0)
                         {
