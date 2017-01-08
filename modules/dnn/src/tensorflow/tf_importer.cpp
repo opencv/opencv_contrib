@@ -747,3 +747,22 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String&)
 }
 
 #endif //HAVE_PROTOBUF
+
+Net cv::dnn::readNetFromTensorflow(const String &model)
+{
+    Ptr<Importer> tensorflowImporter;
+    try
+    {
+        tensorflowImporter = createTensorflowImporter(model);
+    }
+    catch (cv::Exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return Net();
+    }
+
+    Net net;
+    if (tensorflowImporter)
+        tensorflowImporter->populateNet(net);
+    return net;
+}
