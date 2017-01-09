@@ -202,7 +202,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             c(0, 0) = float(cx - cxPr);
             c(1, 0) = float(cy - cyPr);
             //New interest point location in image
-            p = p + U.inv() * c;
+            p = p + Matx22f(Matx22d(U).inv()) * c;
             px = int(p(0, 0));
             py = int(p(1, 0));
 
