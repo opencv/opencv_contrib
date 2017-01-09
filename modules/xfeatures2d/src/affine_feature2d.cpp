@@ -60,8 +60,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
     int i = 0;
 
     //Coordinates in image
-    int py = keypoint.centre.y;
-    int px = keypoint.centre.x;
+    int py = (int) keypoint.pt.y;
+    int px = (int) keypoint.pt.x;
 
     //Roi coordinates
     int roix, roiy;
@@ -77,7 +77,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 
     Rect roi;
     float ax1, ax2;
-    double phi = 0;
+    float phi = 0;
     ax1 = ax2 = keypoint.size / 2;
     Mat drawImg;
 
@@ -239,10 +239,10 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 
                     ax1 = 1.f / std::abs(uVal.at<float> (0, 0)) * 3 * si;
                     ax2 = 1.f / std::abs(uVal.at<float> (1, 0)) * 3 * si;
-                    phi = atan(uV.at<float> (1, 0) / uV.at<float> (0, 0)) * (180) / CV_PI;
+                    phi = float(atan(uV.at<float> (1, 0) / uV.at<float> (0, 0)) * (180) / CV_PI);
                     keypoint.axes = Size_<float> (ax1, ax2);
-                    keypoint.phi = phi;
-                    keypoint.centre = Point(px, py);
+                    keypoint.angle = phi;
+                    keypoint.pt = Point2f( (float) px, (float) py);
                     keypoint.si = si;
                     keypoint.size = 2 * 3 * si;
 
@@ -467,12 +467,12 @@ void calcAffineCovariantRegions(const Mat & image, const std::vector<KeyPoint> &
 
             Elliptic_KeyPoint kp2 = affRegions[j];
 
-            if(norm(kp1.centre-kp2.centre)<=maxDiff){
-                double phi1, phi2;
+            if(norm(kp1.pt-kp2.pt)<=maxDiff){
+                float phi1, phi2;
                 Size axes1, axes2;
-                double si1, si2;
-                phi1 = kp1.phi;
-                phi2 = kp2.phi;
+                float si1, si2;
+                phi1 = kp1.angle;
+                phi2 = kp2.angle;
                 axes1 = kp1.axes;
                 axes2 = kp2.axes;
                 si1 = kp1.si;
@@ -500,7 +500,7 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
 
     for (std::vector<Elliptic_KeyPoint>::iterator it = affRegions.begin(); it < affRegions.end(); ++it)
     {
-        Point p = it->centre;
+        Point p = it->pt;
 
         Matx21f size;
         size(0, 0) = size(1, 0) = it->size;

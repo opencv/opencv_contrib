@@ -7,8 +7,8 @@
 namespace cv {
 namespace xfeatures2d {
 
-Elliptic_KeyPoint::Elliptic_KeyPoint(Point _centre, double _phi, Size _axes, float _size, float _si) :
-    KeyPoint(_centre,_size), centre(_centre), axes(_axes), phi(_phi), size(_size), si(_si) {
+Elliptic_KeyPoint::Elliptic_KeyPoint(Point2f _pt, float _angle, Size _axes, float _size, float _si) :
+    KeyPoint(_pt,_size,_angle), axes(_axes), si(_si) {
 }
 
 Elliptic_KeyPoint::Elliptic_KeyPoint(){

@@ -840,14 +840,11 @@ public:
 class CV_EXPORTS Elliptic_KeyPoint : public KeyPoint
 {
 public:
-    Point centre;
     Size_<float> axes; //!< the lengths of the major and minor ellipse axes
-    double phi; //!< the rotation angle
-    float size;
     float si;  //!< the integration scale at which the parameters were estimated
     Matx23f transf; //!< the transformation between image space and local patch space
     Elliptic_KeyPoint();
-    Elliptic_KeyPoint(Point centre, double phi, Size axes, float size, float si);
+    Elliptic_KeyPoint(Point2f pt, float angle, Size axes, float size, float si);
     virtual ~Elliptic_KeyPoint();
 };
 
