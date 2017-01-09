@@ -21,25 +21,24 @@ using namespace cv::xfeatures2d;
 void calcAffineCovariantRegions(const Mat& image, const std::vector<KeyPoint>& keypoints, std::vector<Elliptic_KeyPoint>& affRegions);
 void calcAffineCovariantDescriptors( const Ptr<DescriptorExtractor>& dextractor, const Mat& img, std::vector<Elliptic_KeyPoint>& affRegions, Mat& descriptors );
 
-void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& M);
+void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Matx22f& M);
 bool calcAffineAdaptation(const Mat & image, Elliptic_KeyPoint& keypoint);
 float selIntegrationScale(const Mat & image, float si, Point c);
 float selDifferentiationScale(const Mat & image, Mat & Lxm2smooth, Mat & Lxmysmooth, Mat & Lym2smooth, float si, Point c);
-float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat& Mk);
-float normMaxEval(Mat & U, Mat& uVal, Mat& uVect);
+float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Matx22f& Mk);
+float normMaxEval(Matx22f & U, Mat& uVal, Mat& uVect);
 
 /*
  * Calculates second moments matrix in point p
  */
-void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat & M)
+void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Matx22f & M)
 {
     int x = p.x;
     int y = p.y;
 
-    M.create(2, 2, CV_32FC1);
-    M.at<float> (0, 0) = dx2.at<float> (y, x);
-    M.at<float> (0, 1) = M.at<float> (1, 0) = dxy.at<float> (y, x);
-    M.at<float> (1, 1) = dy2.at<float> (y, x);
+    M(0, 0) = dx2.at<float> (y, x);
+    M(0, 1) = M(1, 0) = dxy.at<float> (y, x);
+    M(1, 1) = dy2.at<float> (y, x);
 }
 
 /*
@@ -47,14 +46,15 @@ void calcSecondMomentMatrix(const Mat & dx2, const Mat & dxy, const Mat & dy2, P
  */
 bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
 {
-    Mat_<float> transf(2, 3)/*Trasformation matrix*/,
-                size(2, 1)/*Image size after transformation*/,
-                c(2, 1)/*Transformed point*/,
-                p(2, 1)/*Image point*/;
+    Matx23f transf; /*Transformation matrix*/
+    Matx21f   size; /*Image size after transformation*/
+    Matx21f      c; /*Transformed point*/
+    Matx21f      p; /*Image point*/
 
-    Mat U = Mat::eye(2, 2, CV_32F) * 1; /*Normalization matrix*/
+    Matx22f U(1.f, 0.f, 0.f, 1.f); /*Normalization matrix*/
 
-    Mat warpedImg, Mk, Lxm2smooth, Lym2smooth, Lxmysmooth, img_roi;
+    Mat warpedImg, Lxm2smooth, Lym2smooth, Lxmysmooth, img_roi;
+    Matx22f Mk;
     float Qinv = 1, q, si = keypoint.si;
     bool divergence = false, convergence = false;
     int i = 0;
@@ -85,16 +85,17 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
     while (i <= 10 && !divergence && !convergence)
     {
         //Transformation matrix
-        transf.setTo(0);
-        U.col(0).copyTo(transf.col(0));
-        U.col(1).copyTo(transf.col(1));
-        keypoint.transf = Mat(transf);
+        transf = Matx23f(
+            U(0,0), U(0,1), 0.f,
+            U(1,0), U(1,1), 0.f
+        );
+        keypoint.transf = transf;
 
         Size_<float> boundingBox;
 
         float ac_b2 = float(determinant(U));
-        boundingBox.width = ceil(U.at<float> (1, 1)/ac_b2  * 3 * si*1.4f );
-        boundingBox.height = ceil(U.at<float> (0, 0)/ac_b2 * 3 * si*1.4f );
+        boundingBox.width  = ceil(U(1, 1)/ac_b2 * 3 * si*1.4f );
+        boundingBox.height = ceil(U(0, 0)/ac_b2 * 3 * si*1.4f );
 
         //Create window around interest point
         half_width = std::min((float) std::min(fimage.cols - px-1, px), boundingBox.width);
@@ -115,10 +116,10 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             return divergence;
 
         //Find coordinates of square's angles to find size of warped ellipse's bounding box
-        float u00 = U.at<float> (0, 0);
-        float u01 = U.at<float> (0, 1);
-        float u10 = U.at<float> (1, 0);
-        float u11 = U.at<float> (1, 1);
+        float u00 = U(0, 0);
+        float u01 = U(0, 1);
+        float u10 = U(1, 0);
+        float u11 = U(1, 1);
 
         float minx = u01 * img_roi.rows < 0 ? u01 * img_roi.rows : 0;
         float miny = u10 * img_roi.cols < 0 ? u10 * img_roi.cols : 0;
@@ -128,8 +129,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                 * img_roi.rows : u10 * img_roi.cols + u11 * img_roi.rows) - miny;
 
         //Shift
-        transf.at<float> (0, 2) = -minx;
-        transf.at<float> (1, 2) = -miny;
+        transf(0, 2) = -minx;
+        transf(1, 2) = -miny;
 
         /*float min_width = minx >= 0 ? u00 * img_roi.cols - u01 * img_roi.rows : u00 * img_roi.cols
                 + u01 * img_roi.rows;
@@ -230,10 +231,11 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
                     convergence = true;
 
                     //Set transformation matrix
-                    transf.setTo(0);
-                    U.col(0).copyTo(transf.col(0));
-                    U.col(1).copyTo(transf.col(1));
-                    keypoint.transf = Mat(transf);
+                    transf = Matx23f(
+                        U(0,0), U(0,1), 0.f,
+                        U(1,0), U(1,1), 0.f
+                    );
+                    keypoint.transf = transf;
 
                     ax1 = 1.f / std::abs(uVal.at<float> (0, 0)) * 3 * si;
                     ax2 = 1.f / std::abs(uVal.at<float> (1, 0)) * 3 * si;
@@ -302,9 +304,10 @@ float selIntegrationScale(const Mat & image, float si, Point c)
 /*
  * Calculates second moments matrix square root
  */
-float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Mat & Mk)
+float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Point p, Matx22f & Mk)
 {
-    Mat M, V, eigVal, Vinv, D;
+    Mat V, eigVal, Vinv, D;
+    Matx22f M;
 
     calcSecondMomentMatrix(dx2, dxy, dy2, p, M);
 
@@ -325,12 +328,12 @@ float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Po
     D = Mat::diag(eigVal);
 
     //square root of M
-    Mk = V * D * Vinv;
+    Mk = Mat(V * D * Vinv);
     //return q isotropic measure
     return min(eval1, eval2) / max(eval1, eval2);
 }
 
-float normMaxEval(Mat & U, Mat & uVal, Mat & uVec)
+float normMaxEval(Matx22f & U, Mat & uVal, Mat & uVec)
 {
     /* *
      * Decomposition:
@@ -358,7 +361,7 @@ float normMaxEval(Mat & U, Mat & uVal, Mat & uVec)
 
     Mat D = Mat::diag(uVal);
     //U normalized
-    U = uVec * D * uVinv;
+    U = Mat(uVec * D * uVinv);
 
     return max(std::abs(uVal.at<float> (0, 0)), std::abs(uVal.at<float> (1, 0))) / min(
             std::abs(uVal.at<float> (0, 0)), std::abs(uVal.at<float> (1, 0))); //define the direction of warping
@@ -386,7 +389,7 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
 
     while (s <= 0.751f)
     {
-        Mat M;
+        Matx22f M;
         float sd = s * si;
 
         //Smooth previous smoothed image L
@@ -499,17 +502,15 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
     {
         Point p = it->centre;
 
-        Mat_<float> size(2, 1);
+        Matx21f size;
         size(0, 0) = size(1, 0) = it->size;
 
         //U matrix
-        Mat transf = it->transf;
-        Mat_<float> U(2, 2);
-        U.setTo(0);
-        Mat col0 = U.col(0);
-        transf.col(0).copyTo(col0);
-        Mat col1 = U.col(1);
-        transf.col(1).copyTo(col1);
+        Matx23f transf = it->transf;
+        Matx22f U(
+            transf(0,0), transf(0,1),
+            transf(1,0), transf(1,1)
+        );
 
         float radius = it->size / 2;
         float si = it->si;
@@ -517,8 +518,8 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
         Size_<float> boundingBox;
 
         float ac_b2 = float(determinant(U));
-        boundingBox.width = ceil(U.at<float> (1, 1)/ac_b2  * 3 * si );
-        boundingBox.height = ceil(U.at<float> (0, 0)/ac_b2 * 3 * si );
+        boundingBox.width  = ceil(U(1, 1)/ac_b2 * 3 * si );
+        boundingBox.height = ceil(U(0, 0)/ac_b2 * 3 * si );
 
         //Create window around interest point
         float half_width = std::min((float) std::min(img.cols - p.x-1, p.x), boundingBox.width);
@@ -538,8 +539,8 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
         warpAffine(img_roi, transfImgRoi, transf, Size(int(ceil(size(0, 0))), int(ceil(size(1, 0)))),
                 INTER_AREA, BORDER_DEFAULT);
 
-        Mat_<float> c(2, 1); //Transformed point
-        Mat_<float> pt(2, 1); //Image point
+        Matx21f c; //Transformed point
+        Matx21f pt; //Image point
         //Point within the Roi
         pt(0, 0) = float(p.x - roix);
         pt(1, 0) = float(p.y - roiy);

@@ -845,7 +845,7 @@ public:
     double phi; //!< the rotation angle
     float size;
     float si;  //!< the integration scale at which the parameters were estimated
-    Mat transf; //!< the transformation between image space and local patch space
+    Matx23f transf; //!< the transformation between image space and local patch space
     Elliptic_KeyPoint();
     Elliptic_KeyPoint(Point centre, double phi, Size axes, float size, float si);
     virtual ~Elliptic_KeyPoint();
