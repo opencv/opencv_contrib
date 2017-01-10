@@ -175,7 +175,7 @@ void Pose3D::updatePoseQuat(double Q[4], double NewT[3])
 }
 
 
-void Pose3D::appendPose(double IncrementalPose[16])
+void Pose3D::appendPose(const double IncrementalPose[16])
 {
   double R[9], PoseFull[16]={0};
 

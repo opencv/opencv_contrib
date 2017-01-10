@@ -530,12 +530,12 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
   return pcn;
 }
 
-Mat transformPCPose(Mat pc, double Pose[16])
+Mat transformPCPose(Mat pc, const std::vector<double>& Pose)
 {
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 
   double R[9], t[3];
-  poseToRT(Pose, R, t);
+  poseToRT(&(Pose[0]), R, t);
 
 #if defined _OPENMP
 #pragma omp parallel for
@@ -550,7 +550,7 @@ Mat transformPCPose(Mat pc, double Pose[16])
     double p[4] = {(double)pcData[0], (double)pcData[1], (double)pcData[2], 1};
     double p2[4];
 
-    matrixProduct441(Pose, p, p2);
+    matrixProduct441(&(Pose[0]), p, p2);
 
     // p2[3] should normally be 1
     if (fabs(p2[3])>EPS)
@@ -720,7 +720,7 @@ void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const 
 
 }
 
-CV_EXPORTS_W void computeNormalsPC3d(InputArray PC_, OutputArray PCNormals_, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double> viewpoint)
+CV_EXPORTS_W void computeNormalsPC3d(InputArray PC_, OutputArray PCNormals_, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double>& viewpoint)
 {
   int i;
   Mat PC = PC_.getMat();

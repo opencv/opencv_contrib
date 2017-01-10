@@ -60,7 +60,7 @@ static inline double TNorm3(const double v[])
   return (sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]));
 }
 
-static inline void TNormalize3(double v[])
+static inline void TNormalize3(CV_OUT double v[])
 {
   double normTemp=TNorm3(v);
   if (normTemp>0)
@@ -76,7 +76,7 @@ static inline double TDot3(const double a[3], const double b[3])
   return  ((a[0])*(b[0])+(a[1])*(b[1])+(a[2])*(b[2]));
 }
 
-static inline void TCross(const double a[], const double b[], double c[])
+static inline void TCross(const double a[], const double b[], CV_OUT double c[])
 {
   c[0] = (a[1])*(b[2])-(a[2])*(b[1]);
   c[1] = (a[2])*(b[0])-(a[0])*(b[2]);
@@ -90,7 +90,7 @@ static inline double TAngle3(const double a[3], const double b[3])
   return (atan2(TNorm3(c), TDot3(a, b)));
 }
 
-static inline void matrixProduct33(double *A, double *B, double *R)
+static inline void matrixProduct33(const double *A, const double *B, CV_OUT double *R)
 {
   R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
   R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
@@ -106,21 +106,21 @@ static inline void matrixProduct33(double *A, double *B, double *R)
 }
 
 // A is a vector
-static inline void matrixProduct133(double *A, double *B, double *R)
+static inline void matrixProduct133(const double *A, const double *B, CV_OUT double *R)
 {
   R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
   R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
   R[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
 }
 
-static inline void matrixProduct331(const double A[9], const double b[3], double r[3])
+static inline void matrixProduct331(const double A[9], const double b[3], CV_OUT double r[3])
 {
   r[0] = A[0] * b[0] + A[1] * b[1] + A[2] * b[2];
   r[1] = A[3] * b[0] + A[4] * b[1] + A[5] * b[2];
   r[2] = A[6] * b[0] + A[7] * b[1] + A[8] * b[2];
 }
 
-static inline void matrixTranspose33(double *A, double *At)
+static inline void matrixTranspose33(const double *A, CV_OUT double *At)
 {
   At[0] = A[0];
   At[4] = A[4];
@@ -133,7 +133,7 @@ static inline void matrixTranspose33(double *A, double *At)
   At[7] = A[5];
 }
 
-static inline void matrixProduct44(const double A[16], const double B[16], double R[16])
+static inline void matrixProduct44(const double A[16], const double B[16], CV_OUT double R[16])
 {
   R[0] = A[0] * B[0] + A[1] * B[4] + A[2] * B[8] + A[3] * B[12];
   R[1] = A[0] * B[1] + A[1] * B[5] + A[2] * B[9] + A[3] * B[13];
@@ -156,7 +156,7 @@ static inline void matrixProduct44(const double A[16], const double B[16], doubl
   R[15] = A[12] * B[3] + A[13] * B[7] + A[14] * B[11] + A[15] * B[15];
 }
 
-static inline void matrixProduct441(const double A[16], const double B[4], double R[4])
+static inline void matrixProduct441(const double A[16], const double B[4], CV_OUT double R[4])
 {
   R[0] = A[0] * B[0] + A[1] * B[1] + A[2] * B[2] + A[3] * B[3];
   R[1] = A[4] * B[0] + A[5] * B[1] + A[6] * B[2] + A[7] * B[3];
@@ -164,7 +164,7 @@ static inline void matrixProduct441(const double A[16], const double B[4], doubl
   R[3] = A[12] * B[0] + A[13] * B[1] + A[14] * B[2] + A[15] * B[3];
 }
 
-static inline void matrixPrint(double *A, int m, int n)
+static inline void matrixPrint(const double *A, int m, int n)
 {
   int i, j;
 
@@ -179,7 +179,7 @@ static inline void matrixPrint(double *A, int m, int n)
   }
 }
 
-static inline void matrixIdentity(int n, double *A)
+static inline void matrixIdentity(int n, CV_OUT double *A)
 {
   int i;
 
@@ -194,7 +194,7 @@ static inline void matrixIdentity(int n, double *A)
   }
 }
 
-static inline void rtToPose(const double R[9], const double t[3], double Pose[16])
+static inline void rtToPose(const double R[9], const double t[3], CV_OUT double Pose[16])
 {
   Pose[0]=R[0];
   Pose[1]=R[1];
@@ -230,7 +230,7 @@ static inline void poseToRT(const double Pose[16], double R[9], double t[3])
   t[2]=Pose[11];
 }
 
-static inline void poseToR(const double Pose[16], double R[9])
+static inline void poseToR(const double Pose[16], CV_OUT double R[9])
 {
   R[0] = Pose[0];
   R[1] = Pose[1];
@@ -246,7 +246,7 @@ static inline void poseToR(const double Pose[16], double R[9])
 /**
  *  \brief Axis angle to rotation but only compute y and z components
  */
-static inline void aaToRyz(double angle, const double r[3], double row2[3], double row3[3])
+static inline void aaToRyz(double angle, const double r[3], CV_OUT double row2[3], CV_OUT double row3[3])
 {
   const double sinA=sin(angle);
   const double cosA=cos(angle);
@@ -275,7 +275,7 @@ static inline void aaToRyz(double angle, const double r[3], double row2[3], doub
 /**
  *  \brief Axis angle to rotation
  */
-static inline void aaToR(double angle, const double r[3], double R[9])
+static inline void aaToR(const double angle, const double r[3], CV_OUT double R[9])
 {
   const double sinA=sin(angle);
   const double cosA=cos(angle);
@@ -315,7 +315,7 @@ static inline void aaToR(double angle, const double r[3], double R[9])
 /**
  *  \brief Compute a rotation in order to rotate around X direction
  */
-static inline void getUnitXRotation(double angle, double R[9])
+static inline void getUnitXRotation(const double angle, CV_OUT double R[9])
 {
   const double sinA=sin(angle);
   const double cosA=cos(angle);
@@ -336,7 +336,7 @@ static inline void getUnitXRotation(double angle, double R[9])
 /**
  *  \brief Compute a transformation in order to rotate around X direction
  */
-static inline void getUnitXRotation_44(double angle, double T[16])
+static inline void getUnitXRotation_44(const double angle, CV_OUT double T[16])
 {
   const double sinA=sin(angle);
   const double cosA=cos(angle);
@@ -366,7 +366,7 @@ static inline void getUnitXRotation_44(double angle, double T[16])
 /**
  *  \brief Compute the yz components of the transformation needed to rotate n1 onto x axis and p1 to origin
  */
-static inline void computeTransformRTyz(const double p1[4], const double n1[4], double row2[3], double row3[3], double t[3])
+static inline void computeTransformRTyz(const double p1[4], const double n1[4], CV_OUT double row2[3], CV_OUT double row3[3], CV_OUT double t[3])
 {
   // dot product with x axis
   double angle=acos( n1[0] );
@@ -401,7 +401,7 @@ static inline void computeTransformRTyz(const double p1[4], const double n1[4], 
 /**
  *  \brief Compute the transformation needed to rotate n1 onto x axis and p1 to origin
  */
-static inline void computeTransformRT(const double p1[4], const double n1[4], double R[9], double t[3])
+static inline void computeTransformRT(const double p1[4], const double n1[4], CV_OUT double R[9], CV_OUT double t[3])
 {
   // dot product with x axis
   double angle=acos( n1[0] );
@@ -572,7 +572,7 @@ static inline void aaToDCM(double *axis, double angle, double *R)
  *  \param [in] R Rotation Matrix
  *  \param [in] q Quaternion
  */
-static inline void dcmToQuat(double *R, double *q)
+static inline void dcmToQuat(const double *R, CV_OUT double *q)
 {
   double n4; // the norm of quaternion multiplied by 4
   double tr = R[0] + R[4] + R[8]; // trace of martix

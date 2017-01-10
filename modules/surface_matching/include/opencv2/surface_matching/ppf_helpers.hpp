@@ -125,7 +125,7 @@ CV_EXPORTS_W Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz,
  *  @param [in] Pose 4x4 pose matrix, but linearized in row-major form.
  *  @return Transformed point cloud
 */
-CV_EXPORTS_W Mat transformPCPose(Mat pc, double Pose[16]);
+CV_EXPORTS_W Mat transformPCPose(Mat pc, const std::vector<double>& Pose);
 
 /**
  *  Generate a random 4x4 pose matrix
@@ -153,7 +153,7 @@ CV_EXPORTS_W Mat addNoisePC(Mat pc, double scale);
  *  @param [in] FlipViewpoint Should normals be flipped to a viewing direction?
  *  @param [in] viewpoint
  */
-CV_EXPORTS_W void computeNormalsPC3d(InputArray PC, OutputArray PCNormals, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double> viewpoint);
+CV_EXPORTS_W void computeNormalsPC3d(InputArray PC, OutputArray PCNormals, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double>& viewpoint);
 
 //! @}
 

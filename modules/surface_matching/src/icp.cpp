@@ -293,7 +293,7 @@ static hashtable_int* getHashtable(int* data, size_t length, int numMaxElement)
 }
 
 // source point clouds are assumed to contain their normals
-int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, double pose[16])
+int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, std::vector<double>& pose)
 {
   int n = srcPC.rows;
 
@@ -320,7 +320,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   Mat dstPC0 = dstTemp;
 
   // initialize pose
-  matrixIdentity(4, pose);
+  matrixIdentity(4, &(pose[0]));
 
   void* flann = indexPCFlann(dstPC0);
   Mat M = Mat::eye(4,4,CV_64F);
@@ -377,8 +377,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     int* newI = new int[numElSrc];
     int* newJ = new int[numElSrc];
 
-    double PoseX[16]={0};
-    matrixIdentity(4, PoseX);
+    Pose3D PoseX;
+    matrixIdentity(4, &(PoseX.pose[0]));
 
     while ( (!(fval_perc<(1+TolP) && fval_perc>(1-TolP))) && i<MaxIterationsPyr)
     {
@@ -478,8 +478,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
         Mat X;
         minimizePointToPlaneMetric(Src_Match, Dst_Match, X);
 
-        getTransformMat(X, PoseX);
-        Src_Moved = transformPCPose(srcPCT, PoseX);
+        getTransformMat(X, &(PoseX.pose[0]));
+        Src_Moved = transformPCPose(srcPCT, PoseX.pose);
 
         double fval = cv::norm(Src_Match, Dst_Match)/(double)(Src_Moved.rows);
 
@@ -499,12 +499,12 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
     }
 
-    double TempPose[16];
-    matrixProduct44(PoseX, pose, TempPose);
+    Pose3D TempPose;
+    matrixProduct44(&(PoseX.pose[0]), &(pose[0]), &(TempPose.pose[0]));
 
     // no need to copy the last 4 rows
     for (int c=0; c<12; c++)
-      pose[c] = TempPose[c];
+      pose[c] = TempPose.pose[c];
 
     residual = tempResidual;
 
@@ -525,7 +525,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
   // In MATLAB this would be : Pose(1:3, 4) = Pose(1:3, 4)./scale + meanAvg' - Pose(1:3, 1:3)*meanAvg';
   double Rpose[9], Cpose[3];
-  poseToR(pose, Rpose);
+  poseToR(&(pose[0]), Rpose);
   matrixProduct331(Rpose, meanAvg, Cpose);
   pose[3] -= Cpose[0];
   pose[7] -= Cpose[1];
@@ -542,10 +542,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Po
 {
   for (size_t i=0; i<poses.size(); i++)
   {
-    double poseICP[16]={0};
-    Mat srcTemp = transformPCPose(srcPC, &(poses[i]->pose[0]));
-    registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
-    poses[i]->appendPose(poseICP);
+    Pose3D poseICP;
+    Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
+    registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP.pose);
+    poses[i]->appendPose(&(poseICP.pose[0]));
   }
   return 0;
 }

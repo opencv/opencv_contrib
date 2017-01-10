@@ -65,30 +65,30 @@ int main(int argc, char** argv)
              " input scene. The detected poses are further refined by ICP\n* and printed to the "
              " standard output." << endl;
     cout << "****************************************************" << endl;
-    
+
     if (argc < 3)
     {
         help("Not enough input arguments");
         exit(1);
     }
-    
+
 #if (defined __x86_64__ || defined _M_X64)
     cout << "Running on 64 bits" << endl;
 #else
     cout << "Running on 32 bits" << endl;
 #endif
-    
+
 #ifdef _OPENMP
     cout << "Running with OpenMP" << endl;
 #else
     cout << "Running without OpenMP and without TBB" << endl;
 #endif
-    
+
     string modelFileName = (string)argv[1];
     string sceneFileName = (string)argv[2];
-    
+
     Mat pc = loadPLYSimple(modelFileName.c_str(), 1);
-    
+
     // Now train the model
     cout << "Training..." << endl;
     int64 tick1 = cv::getTickCount();
@@ -98,10 +98,10 @@ int main(int argc, char** argv)
     cout << endl << "Training complete in "
          << (double)(tick2-tick1)/ cv::getTickFrequency()
          << " sec" << endl << "Loading model..." << endl;
-         
+
     // Read the scene
     Mat pcTest = loadPLYSimple(sceneFileName.c_str(), 1);
-    
+
     // Match the model to the scene and get the pose
     cout << endl << "Starting matching..." << endl;
     vector<Pose3DPtr> results;
@@ -127,19 +127,19 @@ int main(int argc, char** argv)
         N = results_size;
     }
     vector<Pose3DPtr> resultsSub(results.begin(),results.begin()+N);
-    
+
     // Create an instance of ICP
     ICP icp(100, 0.005f, 2.5f, 8);
     int64 t1 = cv::getTickCount();
-    
+
     // Register for all selected poses
     cout << endl << "Performing ICP on " << N << " poses..." << endl;
     icp.registerModelToScene(pc, pcTest, resultsSub);
     int64 t2 = cv::getTickCount();
-    
+
     cout << endl << "ICP Elapsed Time " <<
          (t2-t1)/cv::getTickFrequency() << " sec" << endl;
-         
+
     cout << "Poses: " << endl;
     // debug first five poses
     for (size_t i=0; i<resultsSub.size(); i++)
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
             writePLY(pct, "para6700PCTrans.ply");
         }
     }
-    
+
     return 0;
-    
+
 }
