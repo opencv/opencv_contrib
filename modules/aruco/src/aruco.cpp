@@ -1278,7 +1278,7 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
 
     CV_Assert(objPoints.total() == ids.total());
-    CV_Assert(objPoints.type() == CV_32FC3);
+    CV_Assert(objPoints.type() == CV_32F);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
     for (unsigned int i = 0; i < objPoints.total(); i++) {
