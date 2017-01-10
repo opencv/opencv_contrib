@@ -154,6 +154,7 @@ TEST(Layer_Test_DeConvolution, Accuracy)
 {
      OCL_OFF(testLayerUsingCaffeModels("layer_deconvolution", true, false));
 }
+
 OCL_TEST(Layer_Test_DeConvolution, Accuracy)
 {
      OCL_ON(testLayerUsingCaffeModels("layer_deconvolution", true, false););

@@ -6,33 +6,32 @@
 // Third party copyrights are property of their respective owners.
 
 /*
-Declaration of shift layer, which adds up const values to blob.
+Declaration of Batch Normalization layer.
 */
 
-#ifndef __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
-#include "../precomp.hpp"
+#ifndef __OPENCV_DNN_LAYERS_BATCH_NORM_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_BATCH_NORM_LAYER_HPP__
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class ShiftLayerImpl;
-
-class ShiftLayer : public Layer
+class BatchNormLayerImpl : public BatchNormLayer
 {
 public:
-    ShiftLayer() {}
-    ShiftLayer(LayerParams &params);
+    BatchNormLayerImpl(float eps_, bool hasWeights_, bool hasBias_);
+
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 private:
-    cv::Ptr<ShiftLayerImpl> impl;
-
+    float eps;
+    bool hasWeights, hasBias;
 };
 
 }
 }
-#endif
+#endif // BATCH_NORM_LAYER_HPP

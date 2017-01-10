@@ -209,7 +209,7 @@ namespace dnn
     {
     public:
 
-        CV_PROP_RW Size kernel, stride, pad, dilation;
+        CV_PROP_RW Size kernel, stride, pad, dilation, adjustPad;
         CV_PROP_RW String padMode;
     };
 
@@ -224,7 +224,7 @@ namespace dnn
     {
     public:
 
-        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1), Size adjustPad = Size());
     };
 
     class CV_EXPORTS_W LRNLayer : public Layer
@@ -341,6 +341,12 @@ namespace dnn
         static CV_WRAP Ptr<ReLULayer> create(double negativeSlope = 0);
     };
 
+    class CV_EXPORTS_W ChannelsPReLULayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<ChannelsPReLULayer> create();
+    };
+
     class CV_EXPORTS_W TanHLayer : public Layer
     {
     public:
@@ -395,6 +401,18 @@ namespace dnn
         };
 
         static Ptr<EltwiseLayer> create(EltwiseOp op, const std::vector<int> &coeffs);
+    };
+
+    class CV_EXPORTS_W BatchNormLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<BatchNormLayer> create(float eps, bool has_weights, bool has_bias);
+    };
+
+    class CV_EXPORTS_W MaxUnpoolLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<MaxUnpoolLayer> create(Size unpoolSize);
     };
 
 //! @}

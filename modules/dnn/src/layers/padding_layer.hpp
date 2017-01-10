@@ -6,11 +6,11 @@
 // Third party copyrights are property of their respective owners.
 
 /*
-Declaration of shift layer, which adds up const values to blob.
+Declaration of padding layer, which adds paddings to input blob.
 */
 
-#ifndef __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_SHIFT_LAYER_HPP__
+#ifndef __OPENCV_DNN_LAYERS_PADDING_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_PADDING_LAYER_HPP__
 #include "../precomp.hpp"
 
 namespace cv
@@ -18,19 +18,18 @@ namespace cv
 namespace dnn
 {
 
-class ShiftLayerImpl;
-
-class ShiftLayer : public Layer
+class PaddingLayer : public Layer
 {
 public:
-    ShiftLayer() {}
-    ShiftLayer(LayerParams &params);
+    PaddingLayer() {}
+    PaddingLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 private:
-    cv::Ptr<ShiftLayerImpl> impl;
-
+    int getPadDim(const BlobShape& shape) const;
+    int paddingDim, padding, inputDims, index;
+    float paddingValue;
 };
 
 }

@@ -23,6 +23,9 @@ static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, LayerParam
     int numOutput = params.get<int>("num_output");
     int group = params.get<int>("group", 1);
 
+    l->adjustPad.height = params.get<int>("adj_h", 0);
+    l->adjustPad.width = params.get<int>("adj_w", 0);
+
     CV_Assert(numOutput % group == 0);
     CV_Assert((bias && l->blobs.size() == 2) || (!bias && l->blobs.size() == 1));
 }
@@ -40,6 +43,7 @@ Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams &params)
 {
     Ptr<BaseConvolutionLayer> l = DeconvolutionLayer::create();
     initConvDeconvLayerFromCaffe(l, params);
+
     return Ptr<Layer>(l);
 }
 
@@ -248,7 +252,7 @@ Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
     return Ptr<Layer>(CropLayer::create(start_axis, offset));
 }
 
-template<> //Power specialization
+template<> //Eltwise specialization
 Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
 {
     EltwiseLayer::EltwiseOp op = EltwiseLayer::SUM;
@@ -278,6 +282,42 @@ Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
     return Ptr<Layer>(EltwiseLayer::create(op, coeffs));
 }
 
+template<> //BatchNormLayer specialization
+Ptr<Layer> createLayerFromCaffe<BatchNormLayer>(LayerParams& params)
+{
+    const std::vector<Blob> &blobs = params.blobs;
+    CV_Assert(blobs.size() == 4);
+
+    float eps = params.get<float>("eps");
+    bool hasWeights = params.get<bool>("has_weight", false);
+    bool hasBias = params.get<bool>("has_bias", false);
+
+    Ptr<BatchNormLayer> l = BatchNormLayer::create(eps, hasWeights, hasBias);
+    l->setParamsFrom(params);
+
+    return Ptr<Layer>(l);
+}
+
+template<> //ChannelsPReLULayer specialization
+Ptr<Layer> createLayerFromCaffe<ChannelsPReLULayer>(LayerParams& params)
+{
+   CV_Assert(params.blobs.size() == 1);
+   Ptr<ChannelsPReLULayer> l = ChannelsPReLULayer::create();
+   l->setParamsFrom(params);
+
+   return Ptr<Layer>(l);
+}
+
+template<> //MaxUnpoolLayer specialization
+Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams& params)
+{
+   Size outSize(params.get<int>("out_w"),
+                params.get<int>("out_h"));
+   Ptr<MaxUnpoolLayer> l = MaxUnpoolLayer::create(outSize);
+
+   return Ptr<Layer>(l);
+}
+
 //Explicit instantiation
 template Ptr<Layer> createLayerFromCaffe<ConvolutionLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<DeconvolutionLayer>(LayerParams&);
@@ -299,6 +339,9 @@ template Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams&);
 
 template Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<BatchNormLayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<ChannelsPReLULayer>(LayerParams&);
+template Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams&);
 
 }
 }

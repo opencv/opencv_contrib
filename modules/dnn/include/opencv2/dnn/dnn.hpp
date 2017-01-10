@@ -270,6 +270,9 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         CV_WRAP Blob getParam(LayerId layer, int numParam = 0);
 
+        /** @brief Returns indexes of layers with unconnected outputs.
+         */
+        CV_WRAP std::vector<int> getUnconnectedOutLayers() const;
     private:
 
         struct Impl;
