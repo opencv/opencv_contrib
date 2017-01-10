@@ -179,7 +179,7 @@ void Pose3D::appendPose(double IncrementalPose[16])
 {
   double R[9], PoseFull[16]={0};
 
-  matrixProduct44(IncrementalPose, this->pose, PoseFull);
+  matrixProduct44(IncrementalPose, &(this->pose[0]), PoseFull);
 
   R[0] = PoseFull[0];
   R[1] = PoseFull[1];
@@ -260,7 +260,7 @@ int Pose3D::writePose(FILE* f)
   fwrite(&angle, sizeof(double), 1, f);
   fwrite(&numVotes, sizeof(int), 1, f);
   fwrite(&modelIndex, sizeof(int), 1, f);
-  fwrite(pose, sizeof(double)*16, 1, f);
+  fwrite(&(pose[0]), sizeof(double)*16, 1, f);
   fwrite(t, sizeof(double)*3, 1, f);
   fwrite(q, sizeof(double)*4, 1, f);
   fwrite(&residual, sizeof(double), 1, f);
@@ -277,7 +277,7 @@ int Pose3D::readPose(FILE* f)
     status = fread(&angle, sizeof(double), 1, f);
     status = fread(&numVotes, sizeof(int), 1, f);
     status = fread(&modelIndex, sizeof(int), 1, f);
-    status = fread(pose, sizeof(double)*16, 1, f);
+    status = fread(&(pose[0]), sizeof(double)*16, 1, f);
     status = fread(t, sizeof(double)*3, 1, f);
     status = fread(q, sizeof(double)*4, 1, f);
     status = fread(&residual, sizeof(double), 1, f);

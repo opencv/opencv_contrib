@@ -148,13 +148,12 @@ CV_EXPORTS_W Mat addNoisePC(Mat pc, double scale);
  *  If PCNormals is provided to be an Nx6 matrix, then no new allocation
  *  is made, instead the existing memory is overwritten.
  *  @param [in] PC Input point cloud to compute the normals for.
- *  @param [in] PCNormals Output point cloud
+ *  @param [out] PCNormals point cloud
  *  @param [in] NumNeighbors Number of neighbors to take into account in a local region
  *  @param [in] FlipViewpoint Should normals be flipped to a viewing direction?
  *  @param [in] viewpoint
- *  @return Returns 0 on success
  */
-CV_EXPORTS_W int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3]);
+CV_EXPORTS_W void computeNormalsPC3d(InputArray PC, OutputArray PCNormals, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double> viewpoint);
 
 //! @}
 

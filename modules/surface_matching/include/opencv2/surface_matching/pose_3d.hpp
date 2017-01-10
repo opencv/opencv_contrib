@@ -77,8 +77,8 @@ public:
     numVotes=0;
     residual = 0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose.resize(16);
+    std::fill(pose.begin(), pose.end(), 0);
   }
 
   CV_WRAP Pose3D(double Alpha, uint ModelIndex=0, uint NumVotes=0)
@@ -88,8 +88,8 @@ public:
     numVotes = NumVotes;
     residual=0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose.resize(16);
+    std::fill(pose.begin(), pose.end(), 0);
   }
 
   /**
@@ -127,7 +127,7 @@ public:
   double alpha, residual;
   uint modelIndex;
   uint numVotes;
-  double pose[16];
+  CV_PROP std::vector<double> pose;
   double angle;
   double t[3];
   double q[4];

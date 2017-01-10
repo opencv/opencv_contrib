@@ -720,13 +720,13 @@ void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const 
 
 }
 
-CV_EXPORTS_W int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3])
+CV_EXPORTS_W void computeNormalsPC3d(InputArray PC_, OutputArray PCNormals_, const int NumNeighbors, const bool FlipViewpoint, const std::vector<double> viewpoint)
 {
   int i;
+  Mat PC = PC_.getMat();
 
   if (PC.cols!=3 && PC.cols!=6) // 3d data is expected
   {
-    //return -1;
     CV_Error(cv::Error::BadImageSize, "PC should have 3 or 6 elements in its columns");
   }
 
@@ -757,7 +757,7 @@ CV_EXPORTS_W int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int Num
   destroyFlann(flannIndex);
   flannIndex = 0;
 
-  PCNormals = Mat(PC.rows, 6, CV_32F);
+  Mat PCNormals(PC.rows, 6, CV_32F);
 
   for (i=0; i<PC.rows; i++)
   {
@@ -806,11 +806,12 @@ CV_EXPORTS_W int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int Num
     pcr[5] = (float)nr[2];
   }
 
+  PCNormals.copyTo(PCNormals_);
+
   delete[] indices;
   delete[] distances;
   delete[] dataset;
 
-  return 1;
 }
 
 } // namespace ppf_match_3d
