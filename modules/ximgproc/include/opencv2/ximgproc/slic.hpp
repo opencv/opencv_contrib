@@ -61,6 +61,8 @@ namespace ximgproc
 //! @addtogroup ximgproc_superpixel
 //! @{
 
+    enum SLIC { SLIC = 100, SLICO = 101, MSLIC = 102 };
+
 /** @brief Class implementing the SLIC (Simple Linear Iterative Clustering) superpixels
 algorithm described in @cite Achanta2012.
 
@@ -68,7 +70,9 @@ SLIC (Simple Linear Iterative Clustering) clusters pixels using pixel channels a
 to efficiently generate compact, nearly uniform superpixels. The simplicity of approach makes it
 extremely easy to use a lone parameter specifies the number of superpixels and the efficiency of
 the algorithm makes it very practical.
-
+Several optimizations are available for SLIC class:
+SLICO stands for "Zero parameter SLIC" and it is an optimization of baseline SLIC descibed in @cite Achanta2012.
+MSLIC stands for "Manifold SLIC" and it is an optimization of baseline SLIC described in @cite Liu_2016_CVPR.
  */
 
 class CV_EXPORTS_W SuperpixelSLIC : public Algorithm
@@ -134,25 +138,24 @@ public:
 
 };
 
-/** @brief Class implementing the SLIC (Simple Linear Iterative Clustering) superpixels
+/** @brief Initialize a SuperpixelSLIC object
 
 @param image Image to segment
 @param algorithm Chooses the algorithm variant to use:
-SLIC segments image using a desired region_size, and in addition
-SLICO will choose an adaptive compactness factor.
+SLIC segments image using a desired region_size, and in addition SLICO will optimize using adaptive compactness factor,
+while MSLIC will optimize using manifold methods resulting in more content-sensitive superpixels.
 @param region_size Chooses an average superpixel size measured in pixels
 @param ruler Chooses the enforcement of superpixel smoothness factor of superpixel
 
 The function initializes a SuperpixelSLIC object for the input image. It sets the parameters of choosed
 superpixel algorithm, which are: region_size and ruler. It preallocate some buffers for future
-computing iterations over the given image. An example of SLIC versus SLICO is ilustrated in the
-following picture.
+computing iterations over the given image. For enanched results it is recommended for color images to
+preprocess image with little gaussian blur using a small 3 x 3 kernel and additional conversion into
+CieLAB color space. An example of SLIC versus SLICO and MSLIC is ilustrated in the following picture.
 
 ![image](pics/superpixels_slic.png)
 
  */
-
-    enum SLIC { SLIC = 100, SLICO = 101 };
 
     CV_EXPORTS_W Ptr<SuperpixelSLIC> createSuperpixelSLIC( InputArray image, int algorithm = SLICO,
                                                            int region_size = 10, float ruler = 10.0f );
