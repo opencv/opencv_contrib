@@ -50,6 +50,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
+#include FT_IMAGE_H
+#include FT_BBOX_H
 
 #include <hb.h>
 #include <hb-ft.h>
@@ -71,25 +73,36 @@ public:
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
     );
+    Size getTextSize(
+        const String& text, int fontHeight, int thickness,
+        CV_OUT int* baseLine
+    );
 
 private:
     FT_Library       mLibrary;
     FT_Face          mFace;
     FT_Outline_Funcs mFn;
 
-    Point            mOrg;
-    int              mLine_type;
-    int              mThickness;
-    int              mHeight;
-    Scalar           mColor;
     bool             mIsFaceAvailable;
-    String           mText;
     int              mCtoL;
     hb_font_t        *mHb_font;
 
-    void putTextBitmapMono ( InputOutputArray _img);
-    void putTextBitmapBlend( InputOutputArray _img);
-    void putTextOutline    ( InputOutputArray _img);
+    void putTextBitmapMono(
+        InputOutputArray img, const String& text, Point org,
+        int fontHeight, Scalar color,
+        int thickness, int line_type, bool bottomLeftOrigin
+    );
+    void putTextBitmapBlend(
+        InputOutputArray img, const String& text, Point org,
+        int fontHeight, Scalar color,
+        int thickness, int line_type, bool bottomLeftOrigin
+    );
+    void putTextOutline(
+        InputOutputArray img, const String& text, Point org,
+        int fontHeight, Scalar color,
+        int thickness, int line_type, bool bottomLeftOrigin
+    );
+
 
     static int mvFn( const FT_Vector *to, void * user);
     static int lnFn( const FT_Vector *to, void * user);
@@ -172,7 +185,7 @@ void FreeType2Impl::setSplitNumber(int num ){
 void FreeType2Impl::putText(
     InputOutputArray _img, const String& _text, Point _org,
     int _fontHeight, Scalar _color,
-    int _thickness, int _line_type, bool bottomLeftOrigin
+    int _thickness, int _line_type, bool _bottomLeftOrigin
 )
 {
     CV_Assert( mIsFaceAvailable == true );
@@ -184,8 +197,13 @@ void FreeType2Impl::putText(
     CV_Assert( ( _line_type == CV_AA) ||
                ( _line_type == 4 ) ||
                ( _line_type == 8 ) );
+    CV_Assert( _fontHeight >= 0 );
 
     if ( _text.empty() )
+    {
+         return;
+    }
+    if ( _fontHeight == 0 )
     {
          return;
     }
@@ -196,48 +214,48 @@ void FreeType2Impl::putText(
 
     CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
 
-    mThickness = _thickness;
-    mLine_type = _line_type;
-    mColor     = _color;
-    mHeight    = _fontHeight;
-    mText      = _text;
-    mOrg       = _org;
-
-    if( !bottomLeftOrigin ) {
-        mOrg.y += mHeight;
-    }
-
-    if( mThickness < 0 ) // CV_FILLED
+    if( _thickness < 0 ) // CV_FILLED
     {
-        if ( mLine_type == CV_AA ) {
-            putTextBitmapBlend(_img);
+        if ( _line_type == CV_AA ) {
+            putTextBitmapBlend( _img, _text, _org, _fontHeight, _color,
+                _thickness, _line_type, _bottomLeftOrigin );
         }else{
-            putTextBitmapMono (_img);
+            putTextBitmapMono( _img, _text, _org, _fontHeight, _color,
+                _thickness, _line_type, _bottomLeftOrigin );
         }
     }else{
-        putTextOutline(_img);
+            putTextOutline( _img, _text, _org, _fontHeight, _color,
+                _thickness, _line_type, _bottomLeftOrigin );
     }
 }
 
-void FreeType2Impl::putTextOutline(InputOutputArray _img)
+void FreeType2Impl::putTextOutline(
+   InputOutputArray _img, const String& _text, Point _org,
+   int _fontHeight, Scalar _color,
+   int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
-    hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
+    hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
+
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
-    mOrg.y -= mHeight;
+    if( _bottomLeftOrigin == true ){
+        _org.y -= _fontHeight;
+    }
+
     PathUserData *userData = new PathUserData( _img );
-    userData->mColor     = mColor;
+    userData->mColor     = _color;
     userData->mCtoL      = mCtoL;
-    userData->mThickness = mThickness;
-    userData->mLine_type = mLine_type;
+    userData->mThickness = _thickness;
+    userData->mLine_type = _line_type;
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert(!FT_Load_Glyph(mFace, info[i].codepoint, 0 ));
@@ -255,8 +273,8 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
                              cOutlineOffset );
         // Move
         FT_Outline_Translate(&outline,
-                             (FT_Pos)(mOrg.x << 6),
-                             (FT_Pos)((mOrg.y + mHeight)  << 6) );
+                             (FT_Pos)(_org.x << 6),
+                             (FT_Pos)( (_org.y + _fontHeight) << 6) );
 
         // Draw
         CV_Assert( !FT_Outline_Decompose(&outline, &mFn, (void*)userData) );
@@ -264,33 +282,45 @@ void FreeType2Impl::putTextOutline(InputOutputArray _img)
         // Draw (Last Path)
         mvFn( NULL, (void*)userData );
 
-        mOrg.x += ( mFace->glyph->advance.x ) >> 6;
-        mOrg.y += ( mFace->glyph->advance.y ) >> 6;
+        _org.x += ( mFace->glyph->advance.x ) >> 6;
+        _org.y += ( mFace->glyph->advance.y ) >> 6;
    }
    delete userData;
    hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
+void FreeType2Impl::putTextBitmapMono(
+   InputOutputArray _img, const String& _text, Point _org,
+   int _fontHeight, Scalar _color,
+   int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
+    CV_Assert( _thickness < 0 );
+    CV_Assert( _line_type == 4 || _line_type == 8);
+
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
-    hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
+    hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
+
     hb_shape (mHb_font, hb_buffer, NULL, 0);
+
+    _org.y += _fontHeight;
+    if( _bottomLeftOrigin == true ){
+        _org.y -= _fontHeight;
+    }
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
         CV_Assert( !FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_MONO ) );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
-        Point gPos = mOrg;
+        Point gPos = _org;
         gPos.y -= ( mFace->glyph->metrics.horiBearingY >> 6) ;
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
@@ -319,41 +349,52 @@ void FreeType2Impl::putTextBitmapMono(InputOutputArray _img)
 
                     if ( ( (cl >> bit) & 0x01 ) == 1 ) {
                         cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row,  gPos.x + col * 8 + (7 - bit) );
-                        (*ptr)[0] = mColor[0];
-                        (*ptr)[1] = mColor[1];
-                        (*ptr)[2] = mColor[2];
+                        (*ptr)[0] = _color[0];
+                        (*ptr)[1] = _color[1];
+                        (*ptr)[2] = _color[2];
                     }
                 }
             }
         }
 
-        mOrg.x += ( mFace->glyph->advance.x ) >> 6;
-        mOrg.y += ( mFace->glyph->advance.y ) >> 6;
+        _org.x += ( mFace->glyph->advance.x ) >> 6;
+        _org.y += ( mFace->glyph->advance.y ) >> 6;
     }
     hb_buffer_destroy (hb_buffer);
 }
 
-void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
+void FreeType2Impl::putTextBitmapBlend(
+   InputOutputArray _img, const String& _text, Point _org,
+   int _fontHeight, Scalar _color,
+   int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
+    CV_Assert( _thickness < 0 );
+    CV_Assert( _line_type == 16 );
+
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
-    hb_buffer_add_utf8 (hb_buffer, mText.c_str(), -1, 0, -1);
+    hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
 
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
+    _org.y += _fontHeight;
+    if( _bottomLeftOrigin == true ){
+        _org.y -= _fontHeight;
+    }
+
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
         CV_Assert( !FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_NORMAL ) );
         FT_Bitmap    *bmp = &(mFace->glyph->bitmap);
 
-        Point gPos = mOrg;
+        Point gPos = _org;
         gPos.y -= ( mFace->glyph->metrics.horiBearingY >> 6) ;
         gPos.x += ( mFace->glyph->metrics.horiBearingX >> 6) ;
 
@@ -382,15 +423,119 @@ void FreeType2Impl::putTextBitmapBlend(InputOutputArray _img)
                 cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row , gPos.x + col);
                 double blendAlpha = (double ) cl / 255.0;
 
-                (*ptr)[0] = (double) mColor[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
-                (*ptr)[1] = (double) mColor[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
-                (*ptr)[2] = (double) mColor[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha );
+                (*ptr)[0] = (double) _color[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
+                (*ptr)[1] = (double) _color[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
+                (*ptr)[2] = (double) _color[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha );
             }
         }
-        mOrg.x += ( mFace->glyph->advance.x ) >> 6;
-        mOrg.y += ( mFace->glyph->advance.y ) >> 6;
+        _org.x += ( mFace->glyph->advance.x ) >> 6;
+        _org.y += ( mFace->glyph->advance.y ) >> 6;
     }
     hb_buffer_destroy (hb_buffer);
+}
+
+Size FreeType2Impl::getTextSize(
+    const String& _text,
+    int _fontHeight,
+    int _thickness,
+    CV_OUT int* _baseLine)
+{
+    if ( _text.empty() )
+    {
+         return Size(0,0);
+    }
+
+    CV_Assert( _fontHeight >= 0 ) ;
+    if ( _fontHeight == 0 )
+    {
+         return Size(0,0);
+    }
+
+    CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
+
+    hb_buffer_t *hb_buffer = hb_buffer_create ();
+    CV_Assert( hb_buffer != NULL );
+    Point _org(0,0);
+
+    unsigned int textLen;
+    hb_buffer_guess_segment_properties (hb_buffer);
+    hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+    hb_glyph_info_t *info =
+        hb_buffer_get_glyph_infos(hb_buffer,&textLen );
+    CV_Assert( info != NULL );
+    hb_shape (mHb_font, hb_buffer, NULL, 0);
+
+    _org.y -= _fontHeight;
+    int xMin = INT_MAX, xMax = INT_MIN;
+    int yMin = INT_MAX, yMax = INT_MIN;
+
+    for( unsigned int i = 0 ; i < textLen ; i ++ ){
+        CV_Assert(!FT_Load_Glyph(mFace, info[i].codepoint, 0 ));
+
+        FT_GlyphSlot slot  = mFace->glyph;
+        FT_Outline outline = slot->outline;
+        FT_BBox bbox ;
+
+        // Flip
+        FT_Matrix mtx = { 1 << 16 , 0 , 0 , -(1 << 16) };
+        FT_Outline_Transform(&outline, &mtx);
+
+        // Move
+        FT_Outline_Translate(&outline,
+                             cOutlineOffset,
+                             cOutlineOffset );
+
+        // Move
+        FT_Outline_Translate(&outline,
+                             (FT_Pos)(_org.x << 6 ),
+                             (FT_Pos)((_org.y + _fontHeight) << 6 ) );
+
+        CV_Assert( !FT_Outline_Get_BBox( &outline, &bbox ) );
+
+        // If codepoint is space(0x20), it has no glyph.
+        // A dummy boundary box is needed when last code is space.
+        if(
+            (bbox.xMin == 0 ) && (bbox.xMax == 0 ) &&
+            (bbox.yMin == 0 ) && (bbox.yMax == 0 )
+        ){
+            bbox.xMin = (_org.x << 6);
+            bbox.xMax = (_org.x << 6 ) + ( mFace->glyph->advance.x );
+            bbox.yMin = yMin;
+            bbox.yMax = yMax;
+
+            bbox.xMin += cOutlineOffset;
+            bbox.xMax += cOutlineOffset;
+            bbox.yMin += cOutlineOffset;
+            bbox.yMax += cOutlineOffset;
+        }
+
+        xMin = cv::min ( xMin, ftd(bbox.xMin) );
+        xMax = cv::max ( xMax, ftd(bbox.xMax) );
+        yMin = cv::min ( yMin, ftd(bbox.yMin) );
+        yMax = cv::max ( yMax, ftd(bbox.yMax) );
+
+        _org.x += ( mFace->glyph->advance.x ) >> 6;
+        _org.y += ( mFace->glyph->advance.y ) >> 6;
+    }
+
+    hb_buffer_destroy (hb_buffer);
+
+    int width  = xMax - xMin ;
+    int height = -yMin ;
+
+    if ( _thickness > 0 ) {
+        width  = cvRound(width  + _thickness * 2);
+        height = cvRound(height + _thickness * 1);
+    }else{
+        width  = cvRound(width  + 1);
+        height = cvRound(height + 1);
+    }
+
+    if ( _baseLine ) {
+        *_baseLine = yMax;
+    }
+
+    return Size( width, height );
 }
 
 int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
