@@ -48,69 +48,36 @@
 #include <iostream>
 #include <sstream>
 
-#ifdef HAVE_OPENCV_OCL
+#ifdef HAVE_OPENCL
 
-#include "opencl_kernels.hpp"
+#include "opencl_kernels_bioinspired.hpp"
 
 #define NOT_IMPLEMENTED CV_Error(cv::Error::StsNotImplemented, "Not implemented")
+
+namespace
+{
+    template <typename T, size_t N>
+    inline size_t sizeOfArray(const T(&)[N])
+    {
+        return N;
+    }
+
+    inline void ensureSizeIsEnough(int rows, int cols, int type, cv::UMat &m)
+    {
+        m.create(rows, cols, type, m.usageFlags);
+    }
+}
 
 namespace cv
 {
 static ocl::ProgramEntry retina_kernel = ocl::bioinspired::retina_kernel;
+static ocl::ProgramSource retina_kernel_source(retina_kernel.programStr);
 
 namespace bioinspired
 {
 namespace ocl
 {
 using namespace cv::ocl;
-
-class RetinaOCLImpl : public Retina
-{
-public:
-    RetinaOCLImpl(Size getInputSize);
-    RetinaOCLImpl(Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
-    virtual ~RetinaOCLImpl();
-
-    Size getInputSize();
-    Size getOutputSize();
-
-    void setup(String retinaParameterFile = "", const bool applyDefaultSetupOnFailure = true);
-    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure = true);
-    void setup(RetinaParameters newParameters);
-
-    RetinaOCLImpl::RetinaParameters getParameters();
-
-    const String printSetup();
-    virtual void write( String fs ) const;
-    virtual void write( FileStorage& fs ) const;
-
-    void setupOPLandIPLParvoChannel(const bool colorMode = true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity = 0.7, const float photoreceptorsTemporalConstant = 0.5, const float photoreceptorsSpatialConstant = 0.53, const float horizontalCellsGain = 0, const float HcellsTemporalConstant = 1, const float HcellsSpatialConstant = 7, const float ganglionCellsSensitivity = 0.7);
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta = 0, const float parasolCells_tau = 0, const float parasolCells_k = 7, const float amacrinCellsTemporalCutFrequency = 1.2, const float V0CompressionParameter = 0.95, const float localAdaptintegration_tau = 0, const float localAdaptintegration_k = 7);
-
-    void run(InputArray inputImage);
-    void getParvo(OutputArray retinaOutput_parvo);
-    void getMagno(OutputArray retinaOutput_magno);
-
-    void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0);
-    void clearBuffers();
-    void activateMovingContoursProcessing(const bool activate);
-    void activateContoursProcessing(const bool activate);
-
-    // unimplemented interfaces:
-    void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
-    void getParvoRAW(OutputArray /*retinaOutput_parvo*/) { NOT_IMPLEMENTED; }
-    void getMagnoRAW(OutputArray /*retinaOutput_magno*/) { NOT_IMPLEMENTED; }
-    const Mat getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-    const Mat getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-
-protected:
-    RetinaParameters _retinaParameters;
-    cv::ocl::oclMat _inputBuffer;
-    RetinaFilter* _retinaFilter;
-    bool convertToColorPlanes(const cv::ocl::oclMat& input, cv::ocl::oclMat &output);
-    void convertToInterleaved(const cv::ocl::oclMat& input, bool colorMode, cv::ocl::oclMat &output);
-    void _init(const Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
-};
 
 RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz)
 {
@@ -133,7 +100,7 @@ RetinaOCLImpl::~RetinaOCLImpl()
 }
 
 /**
-* retreive retina input buffer size
+* retrieve retina input buffer size
 */
 Size RetinaOCLImpl::getInputSize()
 {
@@ -141,7 +108,7 @@ Size RetinaOCLImpl::getInputSize()
 }
 
 /**
-* retreive retina output buffer size
+* retrieve retina output buffer size
 */
 Size RetinaOCLImpl::getOutputSize()
 {
@@ -154,7 +121,7 @@ void RetinaOCLImpl::setColorSaturation(const bool saturateColors, const float co
     _retinaFilter->setColorSaturation(saturateColors, colorSaturationValue);
 }
 
-struct RetinaOCLImpl::RetinaParameters RetinaOCLImpl::getParameters()
+struct RetinaParameters RetinaOCLImpl::getParameters()
 {
     return _retinaParameters;
 }
@@ -170,7 +137,7 @@ void RetinaOCLImpl::setup(String retinaParameterFile, const bool applyDefaultSet
     }
     catch(Exception &e)
     {
-        std::cout << "RetinaOCLImpl::setup: wrong/unappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
+        std::cout << "RetinaOCLImpl::setup: wrong/inappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
         if (applyDefaultSetupOnFailure)
         {
             std::cout << "RetinaOCLImpl::setup: resetting retina with default parameters" << std::endl;
@@ -191,7 +158,7 @@ void RetinaOCLImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFai
         // read parameters file if it exists or apply default setup if asked for
         if (!fs.isOpened())
         {
-            std::cout << "RetinaOCLImpl::setup: provided parameters file could not be open... skeeping configuration" << std::endl;
+            std::cout << "RetinaOCLImpl::setup: provided parameters file could not be open... skipping configuration" << std::endl;
             return;
             // implicit else case : retinaParameterFile could be open (it exists at least)
         }
@@ -230,15 +197,15 @@ void RetinaOCLImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFai
             setupOPLandIPLParvoChannel();
             setupIPLMagnoChannel();
         }
-        std::cout << "RetinaOCLImpl::setup: wrong/unappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
+        std::cout << "RetinaOCLImpl::setup: wrong/inappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
         std::cout << "=> keeping current parameters" << std::endl;
     }
 }
 
-void RetinaOCLImpl::setup(cv::bioinspired::Retina::RetinaParameters newConfiguration)
+void RetinaOCLImpl::setup(cv::bioinspired::RetinaParameters newConfiguration)
 {
     // simply copy structures
-    memcpy(&_retinaParameters, &newConfiguration, sizeof(cv::bioinspired::Retina::RetinaParameters));
+    memcpy(&_retinaParameters, &newConfiguration, sizeof(cv::bioinspired::RetinaParameters));
     // apply setup
     setupOPLandIPLParvoChannel(_retinaParameters.OPLandIplParvo.colorMode, _retinaParameters.OPLandIplParvo.normaliseOutput, _retinaParameters.OPLandIplParvo.photoreceptorsLocalAdaptationSensitivity, _retinaParameters.OPLandIplParvo.photoreceptorsTemporalConstant, _retinaParameters.OPLandIplParvo.photoreceptorsSpatialConstant, _retinaParameters.OPLandIplParvo.horizontalCellsGain, _retinaParameters.OPLandIplParvo.hcellsTemporalConstant, _retinaParameters.OPLandIplParvo.hcellsSpatialConstant, _retinaParameters.OPLandIplParvo.ganglionCellsSensitivity);
     setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency, _retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
@@ -321,7 +288,7 @@ void RetinaOCLImpl::setupOPLandIPLParvoChannel(const bool colorMode, const bool 
     _retinaFilter->setParvoGanglionCellsLocalAdaptationSensitivity(ganglionCellsSensitivity);
     _retinaFilter->activateNormalizeParvoOutput_0_maxOutputValue(normaliseOutput);
 
-    // update parameters struture
+    // update parameters structure
 
     _retinaParameters.OPLandIplParvo.colorMode = colorMode;
     _retinaParameters.OPLandIplParvo.normaliseOutput = normaliseOutput;
@@ -340,7 +307,7 @@ void RetinaOCLImpl::setupIPLMagnoChannel(const bool normaliseOutput, const float
     _retinaFilter->setMagnoCoefficientsTable(parasolCells_beta, parasolCells_tau, parasolCells_k, amacrinCellsTemporalCutFrequency, V0CompressionParameter, localAdaptintegration_tau, localAdaptintegration_k);
     _retinaFilter->activateNormalizeMagnoOutput_0_maxOutputValue(normaliseOutput);
 
-    // update parameters struture
+    // update parameters structure
     _retinaParameters.IplMagno.normaliseOutput = normaliseOutput;
     _retinaParameters.IplMagno.parasolCells_beta = parasolCells_beta;
     _retinaParameters.IplMagno.parasolCells_tau = parasolCells_tau;
@@ -353,7 +320,7 @@ void RetinaOCLImpl::setupIPLMagnoChannel(const bool normaliseOutput, const float
 
 void RetinaOCLImpl::run(InputArray input)
 {
-    oclMat &inputMatToConvert = getOclMatRef(input);
+    UMat inputMatToConvert = input.getUMat();
     bool colorMode = convertToColorPlanes(inputMatToConvert, _inputBuffer);
     // first convert input image to the compatible format : std::valarray<float>
     // process the retina
@@ -365,7 +332,7 @@ void RetinaOCLImpl::run(InputArray input)
 
 void RetinaOCLImpl::getParvo(OutputArray output)
 {
-    oclMat &retinaOutput_parvo = getOclMatRef(output);
+    UMat &retinaOutput_parvo = output.getUMatRef();
     if (_retinaFilter->getColorMode())
     {
         // reallocate output buffer (if necessary)
@@ -380,12 +347,12 @@ void RetinaOCLImpl::getParvo(OutputArray output)
 }
 void RetinaOCLImpl::getMagno(OutputArray output)
 {
-    oclMat &retinaOutput_magno = getOclMatRef(output);
+    UMat &retinaOutput_magno = output.getUMatRef();
     // reallocate output buffer (if necessary)
     convertToInterleaved(_retinaFilter->getMovingContours(), false, retinaOutput_magno);
     //retinaOutput_magno/=255.0;
 }
-// private method called by constructirs
+// private method called by constructors
 void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
 {
     // basic error check
@@ -408,22 +375,22 @@ void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colo
     _retinaFilter->clearAllBuffers();
 }
 
-bool RetinaOCLImpl::convertToColorPlanes(const oclMat& input, oclMat &output)
+bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
 {
-    oclMat convert_input;
+    UMat convert_input;
     input.convertTo(convert_input, CV_32F);
     if(convert_input.channels() == 3 || convert_input.channels() == 4)
     {
-        ocl::ensureSizeIsEnough(int(_retinaFilter->getInputNBrows() * 4),
-                                int(_retinaFilter->getInputNBcolumns()), CV_32FC1, output);
-        oclMat channel_splits[4] =
-        {
-            output(Rect(Point(0, _retinaFilter->getInputNBrows() * 2), getInputSize())),
-            output(Rect(Point(0, _retinaFilter->getInputNBrows()), getInputSize())),
-            output(Rect(Point(0, 0), getInputSize())),
-            output(Rect(Point(0, _retinaFilter->getInputNBrows() * 3), getInputSize()))
-        };
-        ocl::split(convert_input, channel_splits);
+        ensureSizeIsEnough(int(_retinaFilter->getInputNBrows() * 4),
+                           int(_retinaFilter->getInputNBcolumns()), CV_32FC1, output);
+        std::vector<UMat> channel_splits;
+        channel_splits.reserve(4);
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows() * 2), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows()), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, 0), getInputSize())));
+        channel_splits.push_back(output(Rect(Point(0, _retinaFilter->getInputNBrows() * 3), getInputSize())));
+
+        cv::split(convert_input, channel_splits);
         return true;
     }
     else if(convert_input.channels() == 1)
@@ -437,13 +404,13 @@ bool RetinaOCLImpl::convertToColorPlanes(const oclMat& input, oclMat &output)
         return false;
     }
 }
-void RetinaOCLImpl::convertToInterleaved(const oclMat& input, bool colorMode, oclMat &output)
+void RetinaOCLImpl::convertToInterleaved(const UMat& input, bool colorMode, UMat &output)
 {
     input.convertTo(output, CV_8U);
     if(colorMode)
     {
         int numOfSplits = input.rows / getInputSize().height;
-        std::vector<oclMat> channel_splits(numOfSplits);
+        std::vector<UMat> channel_splits(numOfSplits);
         for(int i = 0; i < static_cast<int>(channel_splits.size()); i ++)
         {
             channel_splits[i] =
@@ -471,6 +438,13 @@ void RetinaOCLImpl::activateContoursProcessing(const bool activate)
 {
     _retinaFilter->activateContoursProcessing(activate);
 }
+
+// unimplemented interfaces:
+void RetinaOCLImpl::applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
+void RetinaOCLImpl::getParvoRAW(OutputArray /*retinaOutput_parvo*/) { NOT_IMPLEMENTED; }
+void RetinaOCLImpl::getMagnoRAW(OutputArray /*retinaOutput_magno*/) { NOT_IMPLEMENTED; }
+const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
+const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
 
 ///////////////////////////////////////
 ///////// BasicRetinaFilter ///////////
@@ -534,72 +508,65 @@ void BasicRetinaFilter::setLPfilterParameters(const float beta, const float tau,
     _filteringCoeficientsTable[1 + tableOffset] = (1.0f - a) * (1.0f - a) * (1.0f - a) * (1.0f - a) / (1.0f + _beta);
     _filteringCoeficientsTable[2 + tableOffset] = tau;
 }
-const oclMat &BasicRetinaFilter::runFilter_LocalAdapdation(const oclMat &inputFrame, const oclMat &localLuminance)
+const UMat &BasicRetinaFilter::runFilter_LocalAdapdation(const UMat &inputFrame, const UMat &localLuminance)
 {
     _localLuminanceAdaptation(inputFrame, localLuminance, _filterOutput);
     return _filterOutput;
 }
 
 
-void BasicRetinaFilter::runFilter_LocalAdapdation(const oclMat &inputFrame, const oclMat &localLuminance, oclMat &outputFrame)
+void BasicRetinaFilter::runFilter_LocalAdapdation(const UMat &inputFrame, const UMat &localLuminance, UMat &outputFrame)
 {
     _localLuminanceAdaptation(inputFrame, localLuminance, outputFrame);
 }
 
-const oclMat &BasicRetinaFilter::runFilter_LocalAdapdation_autonomous(const oclMat &inputFrame)
+const UMat &BasicRetinaFilter::runFilter_LocalAdapdation_autonomous(const UMat &inputFrame)
 {
     _spatiotemporalLPfilter(inputFrame, _filterOutput);
     _localLuminanceAdaptation(inputFrame, _filterOutput, _filterOutput);
     return _filterOutput;
 }
-void BasicRetinaFilter::runFilter_LocalAdapdation_autonomous(const oclMat &inputFrame, oclMat &outputFrame)
+void BasicRetinaFilter::runFilter_LocalAdapdation_autonomous(const UMat &inputFrame, UMat &outputFrame)
 {
     _spatiotemporalLPfilter(inputFrame, _filterOutput);
     _localLuminanceAdaptation(inputFrame, _filterOutput, outputFrame);
 }
 
-void BasicRetinaFilter::_localLuminanceAdaptation(oclMat &inputOutputFrame, const oclMat &localLuminance)
+void BasicRetinaFilter::_localLuminanceAdaptation(UMat &inputOutputFrame, const UMat &localLuminance)
 {
     _localLuminanceAdaptation(inputOutputFrame, localLuminance, inputOutputFrame, false);
 }
 
-void BasicRetinaFilter::_localLuminanceAdaptation(const oclMat &inputFrame, const oclMat &localLuminance, oclMat &outputFrame, const bool updateLuminanceMean)
+void BasicRetinaFilter::_localLuminanceAdaptation(const UMat &inputFrame, const UMat &localLuminance, UMat &outputFrame, const bool updateLuminanceMean)
 {
     if (updateLuminanceMean)
     {
-        float meanLuminance = saturate_cast<float>(ocl::sum(inputFrame)[0]) / getNBpixels();
+        float meanLuminance = saturate_cast<float>(cv::sum(inputFrame)[0]) / getNBpixels();
         updateCompressionParameter(meanLuminance);
     }
     int elements_per_row = static_cast<int>(inputFrame.step / inputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, _NBrows, 1};
     size_t localSize[]  = {16, 16, 1};
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &localLuminance.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &_localLuminanceAddon));
-    args.push_back(std::make_pair(sizeof(cl_float), &_localLuminanceFactor));
-    args.push_back(std::make_pair(sizeof(cl_float), &_maxInputValue));
-    openCLExecuteKernel(ctx, &retina_kernel, "localLuminanceAdaptation", globalSize, localSize, args, -1, -1);
+    Kernel kernel("localLuminanceAdaptation", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(localLuminance), KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrWriteOnly(outputFrame),
+                _NBcols, _NBrows, elements_per_row, _localLuminanceAddon, _localLuminanceFactor, _maxInputValue);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-const oclMat &BasicRetinaFilter::runFilter_LPfilter(const oclMat &inputFrame, const unsigned int filterIndex)
+const UMat &BasicRetinaFilter::runFilter_LPfilter(const UMat &inputFrame, const unsigned int filterIndex)
 {
     _spatiotemporalLPfilter(inputFrame, _filterOutput, filterIndex);
     return _filterOutput;
 }
-void BasicRetinaFilter::runFilter_LPfilter(const oclMat &inputFrame, oclMat &outputFrame, const unsigned int filterIndex)
+void BasicRetinaFilter::runFilter_LPfilter(const UMat &inputFrame, UMat &outputFrame, const unsigned int filterIndex)
 {
     _spatiotemporalLPfilter(inputFrame, outputFrame, filterIndex);
 }
 
-void BasicRetinaFilter::_spatiotemporalLPfilter(const oclMat &inputFrame, oclMat &LPfilterOutput, const unsigned int filterIndex)
+void BasicRetinaFilter::_spatiotemporalLPfilter(const UMat &inputFrame, UMat &LPfilterOutput, const unsigned int filterIndex)
 {
     unsigned int coefTableOffset = filterIndex * 3;
 
@@ -613,132 +580,96 @@ void BasicRetinaFilter::_spatiotemporalLPfilter(const oclMat &inputFrame, oclMat
     _verticalAnticausalFilter_multGain(LPfilterOutput);
 }
 
-void BasicRetinaFilter::_horizontalCausalFilter_addInput(const oclMat &inputFrame, oclMat &outputFrame)
+void BasicRetinaFilter::_horizontalCausalFilter_addInput(const UMat &inputFrame, UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(inputFrame.step / inputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBrows, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_float), &_tau));
-    args.push_back(std::make_pair(sizeof(cl_float), &_a));
-    openCLExecuteKernel(ctx, &retina_kernel, "horizontalCausalFilter_addInput", globalSize, localSize, args, -1, -1);
+    Kernel kernel("horizontalCausalFilter_addInput", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrWriteOnly(outputFrame), _NBcols, _NBrows, elements_per_row, inputFrame.offset, inputFrame.offset, _tau, _a);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void BasicRetinaFilter::_horizontalAnticausalFilter(oclMat &outputFrame)
+void BasicRetinaFilter::_horizontalAnticausalFilter(UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBrows, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_float), &_a));
-    openCLExecuteKernel(ctx, &retina_kernel, "horizontalAnticausalFilter", globalSize, localSize, args, -1, -1);
+    Kernel kernel("horizontalAnticausalFilter", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void BasicRetinaFilter::_verticalCausalFilter(oclMat &outputFrame)
+void BasicRetinaFilter::_verticalCausalFilter(UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_float), &_a));
-    openCLExecuteKernel(ctx, &retina_kernel, "verticalCausalFilter", globalSize, localSize, args, -1, -1);
+    Kernel kernel("verticalCausalFilter", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void BasicRetinaFilter::_verticalAnticausalFilter_multGain(oclMat &outputFrame)
+void BasicRetinaFilter::_verticalAnticausalFilter_multGain(UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_float), &_a));
-    args.push_back(std::make_pair(sizeof(cl_float), &_gain));
-    openCLExecuteKernel(ctx, &retina_kernel, "verticalAnticausalFilter_multGain", globalSize, localSize, args, -1, -1);
+    Kernel kernel("verticalAnticausalFilter_multGain", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, outputFrame.offset, _a, _gain);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void BasicRetinaFilter::_horizontalAnticausalFilter_Irregular(oclMat &outputFrame, const oclMat &spatialConstantBuffer)
+void BasicRetinaFilter::_horizontalAnticausalFilter_Irregular(UMat &outputFrame, const UMat &spatialConstantBuffer)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {outputFrame.rows, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &spatialConstantBuffer.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &spatialConstantBuffer.offset));
-    openCLExecuteKernel(ctx, &retina_kernel, "horizontalAnticausalFilter_Irregular", globalSize, localSize, args, -1, -1);
+    Kernel kernel("horizontalAnticausalFilter_Irregular", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), KernelArg::PtrReadWrite(spatialConstantBuffer), outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 //  vertical anticausal filter
-void BasicRetinaFilter::_verticalCausalFilter_Irregular(oclMat &outputFrame, const oclMat &spatialConstantBuffer)
+void BasicRetinaFilter::_verticalCausalFilter_Irregular(UMat &outputFrame, const UMat &spatialConstantBuffer)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {outputFrame.cols, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &spatialConstantBuffer.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &spatialConstantBuffer.offset));
-    openCLExecuteKernel(ctx, &retina_kernel, "verticalCausalFilter_Irregular", globalSize, localSize, args, -1, -1);
+    Kernel kernel("verticalCausalFilter_Irregular", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(outputFrame), KernelArg::PtrReadWrite(spatialConstantBuffer), outputFrame.cols, outputFrame.rows, elements_per_row, outputFrame.offset, spatialConstantBuffer.offset);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void normalizeGrayOutput_0_maxOutputValue(oclMat &inputOutputBuffer, const float maxOutputValue)
+void normalizeGrayOutput_0_maxOutputValue(UMat &inputOutputBuffer, const float maxOutputValue)
 {
     double min_val, max_val;
-    ocl::minMax(inputOutputBuffer, &min_val, &max_val);
+    cv::minMaxLoc(inputOutputBuffer, &min_val, &max_val);
     float factor = maxOutputValue / static_cast<float>(max_val - min_val);
     float offset = - static_cast<float>(min_val) * factor;
-    ocl::multiply(factor, inputOutputBuffer, inputOutputBuffer);
-    ocl::add(inputOutputBuffer, offset, inputOutputBuffer);
+    cv::multiply(factor, inputOutputBuffer, inputOutputBuffer);
+    cv::add(inputOutputBuffer, offset, inputOutputBuffer);
 }
 
-void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensitivity, oclMat &in, oclMat &out, const float maxValue)
+void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensitivity, UMat &in, UMat &out, const float maxValue)
 {
     if (sensitivity == 1.0f)
     {
@@ -749,49 +680,38 @@ void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensi
 
     float X0 = maxValue / (sensitivity - 1.0f);
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {in.cols, out.rows, 1};
     size_t localSize[]  = {16, 16, 1};
 
     int elements_per_row = static_cast<int>(out.step / out.elemSize());
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &in.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &out.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &in.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &in.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &meanValue));
-    args.push_back(std::make_pair(sizeof(cl_float), &X0));
-    openCLExecuteKernel(ctx, &retina_kernel, "normalizeGrayOutputCentredSigmoide", globalSize, localSize, args, -1, -1);
+    Kernel kernel("normalizeGrayOutputCentredSigmoide", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(in), KernelArg::PtrWriteOnly(out), in.cols, in.rows, elements_per_row, meanValue, X0);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void normalizeGrayOutputNearZeroCentreredSigmoide(oclMat &inputPicture, oclMat &outputBuffer, const float sensitivity, const float maxOutputValue)
+void normalizeGrayOutputNearZeroCentreredSigmoide(UMat &inputPicture, UMat &outputBuffer, const float sensitivity, const float maxOutputValue)
 {
     float X0cube = sensitivity * sensitivity * sensitivity;
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {inputPicture.cols, inputPicture.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
     int elements_per_row = static_cast<int>(inputPicture.step / inputPicture.elemSize());
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputPicture.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputBuffer.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputPicture.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputPicture.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &maxOutputValue));
-    args.push_back(std::make_pair(sizeof(cl_float), &X0cube));
-    openCLExecuteKernel(ctx, &retina_kernel, "normalizeGrayOutputNearZeroCentreredSigmoide", globalSize, localSize, args, -1, -1);
+
+    Kernel kernel("normalizeGrayOutputNearZeroCentreredSigmoide", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(inputPicture), KernelArg::PtrWriteOnly(outputBuffer), inputPicture.cols, inputPicture.rows, elements_per_row, maxOutputValue, X0cube);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void centerReductImageLuminance(oclMat &inputoutput)
+void centerReductImageLuminance(UMat &inputoutput)
 {
     Scalar mean, stddev;
-    cv::meanStdDev((Mat)inputoutput, mean, stddev);
+    cv::meanStdDev(inputoutput.getMat(ACCESS_READ), mean, stddev);
 
-    Context * ctx = Context::getContext();
+    Context ctx = Context::getDefault();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {inputoutput.cols, inputoutput.rows, 1};
     size_t localSize[]  = {16, 16, 1};
@@ -799,13 +719,10 @@ void centerReductImageLuminance(oclMat &inputoutput)
     float f_mean = static_cast<float>(mean[0]);
     float f_stddev = static_cast<float>(stddev[0]);
     int elements_per_row = static_cast<int>(inputoutput.step / inputoutput.elemSize());
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputoutput.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputoutput.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputoutput.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &f_mean));
-    args.push_back(std::make_pair(sizeof(cl_float), &f_stddev));
-    openCLExecuteKernel(ctx, &retina_kernel, "centerReductImageLuminance", globalSize, localSize, args, -1, -1);
+
+    Kernel kernel("centerReductImageLuminance", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(inputoutput), inputoutput.cols, inputoutput.rows, elements_per_row, f_mean, f_stddev);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 ///////////////////////////////////////
@@ -873,7 +790,7 @@ void ParvoRetinaFilter::setOPLandParvoFiltersParameters(const float beta1, const
     setLPfilterParameters(0, tau1, k1, 2);
 
 }
-const oclMat &ParvoRetinaFilter::runFilter(const oclMat &inputFrame, const bool useParvoOutput)
+const UMat &ParvoRetinaFilter::runFilter(const UMat &inputFrame, const bool useParvoOutput)
 {
     _spatiotemporalLPfilter(inputFrame, _photoreceptorsOutput);
     _spatiotemporalLPfilter(_photoreceptorsOutput, _horizontalCellsOutput, 1);
@@ -886,7 +803,7 @@ const oclMat &ParvoRetinaFilter::runFilter(const oclMat &inputFrame, const bool 
         _localLuminanceAdaptation(_parvocellularOutputON, _localAdaptationON);
         _spatiotemporalLPfilter(_bipolarCellsOutputOFF, _localAdaptationOFF, 2);
         _localLuminanceAdaptation(_parvocellularOutputOFF, _localAdaptationOFF);
-        ocl::subtract(_parvocellularOutputON, _parvocellularOutputOFF, _parvocellularOutputONminusOFF);
+        cv::subtract(_parvocellularOutputON, _parvocellularOutputOFF, _parvocellularOutputONminusOFF);
     }
 
     return _parvocellularOutputONminusOFF;
@@ -895,21 +812,16 @@ void ParvoRetinaFilter::_OPL_OnOffWaysComputing()
 {
     int elements_per_row = static_cast<int>(_photoreceptorsOutput.step / _photoreceptorsOutput.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {(_photoreceptorsOutput.cols + 3) / 4, _photoreceptorsOutput.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_photoreceptorsOutput.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_horizontalCellsOutput.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_bipolarCellsOutputON.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_bipolarCellsOutputOFF.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_parvocellularOutputON.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_parvocellularOutputOFF.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_photoreceptorsOutput.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_photoreceptorsOutput.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "OPL_OnOffWaysComputing", globalSize, localSize, args, -1, -1);
+    Kernel kernel("OPL_OnOffWaysComputing", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(_photoreceptorsOutput), KernelArg::PtrReadOnly(_horizontalCellsOutput),
+                KernelArg::PtrWriteOnly(_bipolarCellsOutputON), KernelArg::PtrWriteOnly(_bipolarCellsOutputOFF),
+                KernelArg::PtrWriteOnly(_parvocellularOutputON), KernelArg::PtrWriteOnly(_parvocellularOutputOFF),
+                _photoreceptorsOutput.cols, _photoreceptorsOutput.rows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 ///////////////////////////////////////
@@ -978,31 +890,25 @@ void MagnoRetinaFilter::setCoefficientsTable(const float parasolCells_beta, cons
 }
 
 void MagnoRetinaFilter::_amacrineCellsComputing(
-    const oclMat &OPL_ON,
-    const oclMat &OPL_OFF
+    const UMat &OPL_ON,
+    const UMat &OPL_OFF
 )
 {
     int elements_per_row = static_cast<int>(OPL_ON.step / OPL_ON.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {OPL_ON.cols, OPL_ON.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &OPL_ON.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &OPL_OFF.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_previousInput_ON.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_previousInput_OFF.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_amacrinCellsTempOutput_ON.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &_amacrinCellsTempOutput_OFF.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &OPL_ON.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &OPL_ON.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &_temporalCoefficient));
-    openCLExecuteKernel(ctx, &retina_kernel, "amacrineCellsComputing", globalSize, localSize, args, -1, -1);
+    Kernel kernel("amacrineCellsComputing", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(OPL_ON), KernelArg::PtrReadOnly(OPL_OFF),
+                KernelArg::PtrReadWrite(_previousInput_ON), KernelArg::PtrReadWrite(_previousInput_OFF),
+                KernelArg::PtrReadWrite(_amacrinCellsTempOutput_ON), KernelArg::PtrReadWrite(_amacrinCellsTempOutput_OFF),
+                OPL_ON.cols, OPL_ON.rows, elements_per_row, _temporalCoefficient);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-const oclMat &MagnoRetinaFilter::runFilter(const oclMat &OPL_ON, const oclMat &OPL_OFF)
+const UMat &MagnoRetinaFilter::runFilter(const UMat &OPL_ON, const UMat &OPL_OFF)
 {
     // Compute the high pass temporal filter
     _amacrineCellsComputing(OPL_ON, OPL_OFF);
@@ -1018,7 +924,7 @@ const oclMat &MagnoRetinaFilter::runFilter(const oclMat &OPL_ON, const oclMat &O
     _spatiotemporalLPfilter(_magnoXOutputOFF, _localProcessBufferOFF, 1);
     _localLuminanceAdaptation(_magnoXOutputOFF, _localProcessBufferOFF);
 
-    _magnoYOutput = _magnoXOutputON + _magnoXOutputOFF;
+    add(_magnoXOutputON, _magnoXOutputOFF, _magnoYOutput);
 
     return _magnoYOutput;
 }
@@ -1029,7 +935,7 @@ const oclMat &MagnoRetinaFilter::runFilter(const oclMat &OPL_ON, const oclMat &O
 
 // define an array of ROI headers of input x
 #define MAKE_OCLMAT_SLICES(x, n) \
-    oclMat x##_slices[n];\
+    UMat x##_slices[n];\
     for(int _SLICE_INDEX_ = 0; _SLICE_INDEX_ < n; _SLICE_INDEX_ ++)\
     {\
         x##_slices[_SLICE_INDEX_] = x(getROI(_SLICE_INDEX_));\
@@ -1107,20 +1013,17 @@ void RetinaColor::resize(const unsigned int NBrows, const unsigned int NBcolumns
     clearAllBuffers();
 }
 
-static void inverseValue(oclMat &input)
+static void inverseValue(UMat &input)
 {
     int elements_per_row = static_cast<int>(input.step / input.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {input.cols, input.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &input.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &input.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &input.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "inverseValue", globalSize, localSize, args, -1, -1);
+    Kernel kernel("inverseValue", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(input), input.cols, input.rows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 void RetinaColor::_initColorSampling()
@@ -1137,7 +1040,7 @@ void RetinaColor::_initColorSampling()
     {
         tmp_mat_ptr[bayerSampleOffset(index)] = 1.0;
     }
-    _RGBmosaic.upload(tmp_mat);
+    _RGBmosaic = tmp_mat.getUMat(ACCESS_RW);
     // computing photoreceptors local density
     MAKE_OCLMAT_SLICES(_RGBmosaic, 3);
     MAKE_OCLMAT_SLICES(_colorLocalDensity, 3);
@@ -1146,59 +1049,48 @@ void RetinaColor::_initColorSampling()
     _spatiotemporalLPfilter(_RGBmosaic_slices[1], _colorLocalDensity_slices[1]);
     _spatiotemporalLPfilter(_RGBmosaic_slices[2], _colorLocalDensity_slices[2]);
 
-    //_colorLocalDensity = oclMat(_colorLocalDensity.size(), _colorLocalDensity.type(), 1.f) / _colorLocalDensity;
+    //_colorLocalDensity = UMat(_colorLocalDensity.size(), _colorLocalDensity.type(), 1.f) / _colorLocalDensity;
     inverseValue(_colorLocalDensity);
 
     _objectInit = true;
 }
 
-static void demultiplex(const oclMat &input, oclMat &ouput)
+static void demultiplex(const UMat &input, UMat &ouput)
 {
     int elements_per_row = static_cast<int>(input.step / input.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {input.cols, input.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &input.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &ouput.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &input.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &input.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "runColorDemultiplexingBayer", globalSize, localSize, args, -1, -1);
+    Kernel kernel("runColorDemultiplexingBayer", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(input), KernelArg::PtrWriteOnly(ouput), input.cols, input.rows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 static void normalizePhotoDensity(
-    const oclMat &chroma,
-    const oclMat &colorDensity,
-    const oclMat &multiplex,
-    oclMat &ocl_luma,
-    oclMat &demultiplex,
+    const UMat &chroma,
+    const UMat &colorDensity,
+    const UMat &multiplex,
+    UMat &ocl_luma,
+    UMat &demultiplex,
     const float pG
 )
 {
     int elements_per_row = static_cast<int>(ocl_luma.step / ocl_luma.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {ocl_luma.cols, ocl_luma.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &chroma.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &colorDensity.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &multiplex.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &ocl_luma.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &demultiplex.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &ocl_luma.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &ocl_luma.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &pG));
-    openCLExecuteKernel(ctx, &retina_kernel, "normalizePhotoDensity", globalSize, localSize, args, -1, -1);
+    Kernel kernel("normalizePhotoDensity", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(chroma), KernelArg::PtrReadOnly(colorDensity), KernelArg::PtrReadOnly(multiplex),
+                KernelArg::PtrWriteOnly(ocl_luma), KernelArg::PtrWriteOnly(demultiplex), ocl_luma.cols, ocl_luma.rows, elements_per_row, pG);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 static void substractResidual(
-    oclMat &colorDemultiplex,
+    UMat &colorDemultiplex,
     float pR,
     float pG,
     float pB
@@ -1206,43 +1098,33 @@ static void substractResidual(
 {
     int elements_per_row = static_cast<int>(colorDemultiplex.step / colorDemultiplex.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     int rows = colorDemultiplex.rows / 3, cols = colorDemultiplex.cols;
     size_t globalSize[] = {cols, rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &colorDemultiplex.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &pR));
-    args.push_back(std::make_pair(sizeof(cl_float), &pG));
-    args.push_back(std::make_pair(sizeof(cl_float), &pB));
-    openCLExecuteKernel(ctx, &retina_kernel, "substractResidual", globalSize, localSize, args, -1, -1);
+    Kernel kernel("substractResidual", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(colorDemultiplex), cols, rows, elements_per_row, pR, pG, pB);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-static void demultiplexAssign(const oclMat& input, const oclMat& output)
+static void demultiplexAssign(const UMat& input, const UMat& output)
 {
     // only supports bayer
     int elements_per_row = static_cast<int>(input.step / input.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     int rows = input.rows / 3, cols = input.cols;
     size_t globalSize[] = {cols, rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &input.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &output.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "demultiplexAssign", globalSize, localSize, args, -1, -1);
+    Kernel kernel("demultiplexAssign", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(input), KernelArg::PtrWriteOnly(output), cols, rows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 void RetinaColor::runColorDemultiplexing(
-    const oclMat &ocl_multiplexed_input,
+    const UMat &ocl_multiplexed_input,
     const bool adaptiveFiltering,
     const float maxInputValue
 )
@@ -1285,18 +1167,20 @@ void RetinaColor::runColorDemultiplexing(
         _adaptiveSpatialLPfilter(_demultiplexedTempBuffer_slices[1], _imageGradient, _demultiplexedColorFrame_slices[1]);
         _adaptiveSpatialLPfilter(_demultiplexedTempBuffer_slices[2], _imageGradient, _demultiplexedColorFrame_slices[2]);
 
-        _demultiplexedColorFrame /= _chrominance; // per element division
+        divide(_demultiplexedColorFrame, _chrominance, _demultiplexedColorFrame);
         substractResidual(_demultiplexedColorFrame, _pR, _pG, _pB);
         runColorMultiplexing(_demultiplexedColorFrame, _tempMultiplexedFrame);
 
         _demultiplexedTempBuffer.setTo(0);
-        _luminance = ocl_multiplexed_input - _tempMultiplexedFrame;
+        subtract(ocl_multiplexed_input, _tempMultiplexedFrame, _luminance);
         demultiplexAssign(_demultiplexedColorFrame, _demultiplexedTempBuffer);
 
         for(int i = 0; i < 3; i ++)
         {
             _spatiotemporalLPfilter(_demultiplexedTempBuffer_slices[i], _demultiplexedTempBuffer_slices[i]);
-            _demultiplexedColorFrame_slices[i] = _demultiplexedTempBuffer_slices[i] * _colorLocalDensity_slices[i] + _luminance;
+            //_demultiplexedColorFrame_slices[i] = _demultiplexedTempBuffer_slices[i] * _colorLocalDensity_slices[i] + _luminance;
+            multiply(_demultiplexedTempBuffer_slices[i], _colorLocalDensity_slices[i], _demultiplexedColorFrame_slices[i]);
+            add(_demultiplexedColorFrame_slices[i], _luminance, _demultiplexedColorFrame_slices[i]);
         }
     }
     // eliminate saturated colors by simple clipping values to the input range
@@ -1307,44 +1191,36 @@ void RetinaColor::runColorDemultiplexing(
         ocl::normalizeGrayOutputCentredSigmoide(128, maxInputValue, _demultiplexedColorFrame, _demultiplexedColorFrame);
     }
 }
-void RetinaColor::runColorMultiplexing(const oclMat &demultiplexedInputFrame, oclMat &multiplexedFrame)
+void RetinaColor::runColorMultiplexing(const UMat &demultiplexedInputFrame, UMat &multiplexedFrame)
 {
     int elements_per_row = static_cast<int>(multiplexedFrame.step / multiplexedFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {multiplexedFrame.cols, multiplexedFrame.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &demultiplexedInputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &multiplexedFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &multiplexedFrame.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &multiplexedFrame.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "runColorMultiplexingBayer", globalSize, localSize, args, -1, -1);
+    Kernel kernel("runColorMultiplexingBayer", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(demultiplexedInputFrame), KernelArg::PtrWriteOnly(multiplexedFrame), multiplexedFrame.cols, multiplexedFrame.rows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void RetinaColor::clipRGBOutput_0_maxInputValue(oclMat &inputOutputBuffer, const float maxInputValue)
+void RetinaColor::clipRGBOutput_0_maxInputValue(UMat &inputOutputBuffer, const float maxInputValue)
 {
     // the kernel is equivalent to:
     //ocl::threshold(inputOutputBuffer, inputOutputBuffer, maxInputValue, maxInputValue, THRESH_TRUNC);
     //ocl::threshold(inputOutputBuffer, inputOutputBuffer, 0, 0, THRESH_TOZERO);
     int elements_per_row = static_cast<int>(inputOutputBuffer.step / inputOutputBuffer.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, inputOutputBuffer.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputOutputBuffer.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputOutputBuffer.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &maxInputValue));
-    openCLExecuteKernel(ctx, &retina_kernel, "clipRGBOutput_0_maxInputValue", globalSize, localSize, args, -1, -1);
+    Kernel kernel("clipRGBOutput_0_maxInputValue", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadWrite(inputOutputBuffer), _NBcols, inputOutputBuffer.rows, elements_per_row, maxInputValue);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void RetinaColor::_adaptiveSpatialLPfilter(const oclMat &inputFrame, const oclMat &gradient, oclMat &outputFrame)
+void RetinaColor::_adaptiveSpatialLPfilter(const UMat &inputFrame, const UMat &gradient, UMat &outputFrame)
 {
     /**********/
     _gain = (1 - 0.57f) * (1 - 0.57f) * (1 - 0.06f) * (1 - 0.06f);
@@ -1358,63 +1234,45 @@ void RetinaColor::_adaptiveSpatialLPfilter(const oclMat &inputFrame, const oclMa
     _adaptiveVerticalAnticausalFilter_multGain(gradient, outputFrame);
 }
 
-void RetinaColor::_adaptiveHorizontalCausalFilter_addInput(const oclMat &inputFrame, const oclMat &gradient, oclMat &outputFrame)
+void RetinaColor::_adaptiveHorizontalCausalFilter_addInput(const UMat &inputFrame, const UMat &gradient, UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(inputFrame.step / inputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBrows, 1, 1};
-    size_t localSize[]  = {256, 1, 1};
+    size_t localSize[] = { 256, 1, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &inputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &gradient.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &inputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &gradient.offset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    openCLExecuteKernel(ctx, &retina_kernel, "adaptiveHorizontalCausalFilter_addInput", globalSize, localSize, args, -1, -1);
+    Kernel kernel("adaptiveHorizontalCausalFilter_addInput", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(inputFrame), KernelArg::PtrReadOnly(gradient), KernelArg::PtrWriteOnly(outputFrame),
+                _NBcols, _NBrows, elements_per_row, inputFrame.offset, gradient.offset, outputFrame.offset);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
-void RetinaColor::_adaptiveVerticalAnticausalFilter_multGain(const oclMat &gradient, oclMat &outputFrame)
+void RetinaColor::_adaptiveVerticalAnticausalFilter_multGain(const UMat &gradient, UMat &outputFrame)
 {
     int elements_per_row = static_cast<int>(outputFrame.step / outputFrame.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, 1, 1};
     size_t localSize[]  = {256, 1, 1};
 
     int gradOffset = gradient.offset + static_cast<int>(gradient.step * _NBrows);
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &gradient.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &outputFrame.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_int),   &gradOffset));
-    args.push_back(std::make_pair(sizeof(cl_int),   &outputFrame.offset));
-    args.push_back(std::make_pair(sizeof(cl_float), &_gain));
-    openCLExecuteKernel(ctx, &retina_kernel, "adaptiveVerticalAnticausalFilter_multGain", globalSize, localSize, args, -1, -1);
+    Kernel kernel("adaptiveVerticalAnticausalFilter_multGain", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(gradient), KernelArg::PtrReadWrite(outputFrame), _NBcols, _NBrows, elements_per_row, gradOffset, outputFrame.offset, _gain);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
-void RetinaColor::_computeGradient(const oclMat &luminance, oclMat &gradient)
+void RetinaColor::_computeGradient(const UMat &luminance, UMat &gradient)
 {
     int elements_per_row = static_cast<int>(luminance.step / luminance.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {_NBcols, _NBrows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &luminance.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &gradient.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBcols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &_NBrows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    openCLExecuteKernel(ctx, &retina_kernel, "computeGradient", globalSize, localSize, args, -1, -1);
+    Kernel kernel("computeGradient", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(luminance), KernelArg::PtrWriteOnly(gradient), _NBcols, _NBrows, elements_per_row);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 
 ///////////////////////////////////////
@@ -1500,7 +1358,7 @@ void RetinaFilter::setGlobalParameters(const float OPLspatialResponse1, const fl
     _setInitPeriodCount();
 }
 
-bool RetinaFilter::checkInput(const oclMat &input, const bool)
+bool RetinaFilter::checkInput(const UMat &input, const bool)
 {
     BasicRetinaFilter *inputTarget = &_photoreceptorsPrefilter;
 
@@ -1518,7 +1376,7 @@ bool RetinaFilter::checkInput(const oclMat &input, const bool)
 }
 
 // main function that runs the filter for a given input frame
-bool RetinaFilter::runFilter(const oclMat &imageInput, const bool useAdaptiveFiltering, const bool processRetinaParvoMagnoMapping, const bool useColorMode, const bool inputIsColorMultiplexed)
+bool RetinaFilter::runFilter(const UMat &imageInput, const bool useAdaptiveFiltering, const bool processRetinaParvoMagnoMapping, const bool useColorMode, const bool inputIsColorMultiplexed)
 {
     // preliminary check
     bool processSuccess = true;
@@ -1537,8 +1395,8 @@ bool RetinaFilter::runFilter(const oclMat &imageInput, const bool useAdaptiveFil
 
     _useColorMode = useColorMode;
 
-    oclMat selectedPhotoreceptorsLocalAdaptationInput = imageInput;
-    oclMat selectedPhotoreceptorsColorInput = imageInput;
+    UMat selectedPhotoreceptorsLocalAdaptationInput = imageInput;
+    UMat selectedPhotoreceptorsColorInput = imageInput;
 
     //********** Following is input data specific photoreceptors processing
     if (useColorMode && (!inputIsColorMultiplexed)) // not multiplexed color input case
@@ -1592,7 +1450,7 @@ bool RetinaFilter::runFilter(const oclMat &imageInput, const bool useAdaptiveFil
     return processSuccess;
 }
 
-const oclMat &RetinaFilter::getContours()
+const UMat &RetinaFilter::getContours()
 {
     if (_useColorMode)
     {
@@ -1605,8 +1463,8 @@ const oclMat &RetinaFilter::getContours()
 }
 void RetinaFilter::_processRetinaParvoMagnoMapping()
 {
-    oclMat parvo = _ParvoRetinaFilter.getOutput();
-    oclMat magno = _MagnoRetinaFilter.getOutput();
+    UMat parvo = _ParvoRetinaFilter.getOutput();
+    UMat magno = _MagnoRetinaFilter.getOutput();
 
     int halfRows = parvo.rows / 2;
     int halfCols = parvo.cols / 2;
@@ -1614,30 +1472,23 @@ void RetinaFilter::_processRetinaParvoMagnoMapping()
 
     int elements_per_row = static_cast<int>(parvo.step / parvo.elemSize());
 
-    Context * ctx = Context::getContext();
     std::vector<std::pair<size_t, const void *> > args;
     size_t globalSize[] = {parvo.cols, parvo.rows, 1};
-    size_t localSize[]  = {16, 16, 1};
+    size_t localSize[] = { 16, 16, 1 };
 
-    args.push_back(std::make_pair(sizeof(cl_mem),   &parvo.data));
-    args.push_back(std::make_pair(sizeof(cl_mem),   &magno.data));
-    args.push_back(std::make_pair(sizeof(cl_int),   &parvo.cols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &parvo.rows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &halfCols));
-    args.push_back(std::make_pair(sizeof(cl_int),   &halfRows));
-    args.push_back(std::make_pair(sizeof(cl_int),   &elements_per_row));
-    args.push_back(std::make_pair(sizeof(cl_float), &minDistance));
-    openCLExecuteKernel(ctx, &retina_kernel, "processRetinaParvoMagnoMapping", globalSize, localSize, args, -1, -1);
+    Kernel kernel("processRetinaParvoMagnoMapping", retina_kernel_source);
+    kernel.args(KernelArg::PtrReadOnly(parvo), KernelArg::PtrReadOnly(magno), parvo.cols, parvo.rows, halfCols, halfRows, elements_per_row, minDistance);
+    kernel.run(sizeOfArray(globalSize), globalSize, localSize, false);
 }
 }  /* namespace ocl */
 
 Ptr<Retina> createRetina_OCL(Size getInputSize){ return makePtr<ocl::RetinaOCLImpl>(getInputSize); }
-Ptr<Retina> createRetina_OCL(Size getInputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
 {
-    return makePtr<ocl::RetinaOCLImpl>(getInputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    return makePtr<ocl::RetinaOCLImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
 
 }  /* namespace bioinspired */
 }  /* namespace cv */
 
-#endif /* #ifdef HAVE_OPENCV_OCL */
+#endif /* #ifdef HAVE_OPENCL */

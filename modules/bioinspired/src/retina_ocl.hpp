@@ -47,8 +47,9 @@
 #define __OCL_RETINA_HPP__
 
 #include "precomp.hpp"
+#include "opencv2/bioinspired/retina.hpp"
 
-#ifdef HAVE_OPENCV_OCL
+#ifdef HAVE_OPENCL
 
 // please refer to c++ headers for API comments
 namespace cv
@@ -57,10 +58,10 @@ namespace bioinspired
 {
 namespace ocl
 {
-void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensitivity, cv::ocl::oclMat &in, cv::ocl::oclMat &out, const float maxValue = 255.f);
-void normalizeGrayOutput_0_maxOutputValue(cv::ocl::oclMat &inputOutputBuffer, const float maxOutputValue = 255.0);
-void normalizeGrayOutputNearZeroCentreredSigmoide(cv::ocl::oclMat &inputPicture, cv::ocl::oclMat &outputBuffer, const float sensitivity = 40, const float maxOutputValue = 255.0f);
-void centerReductImageLuminance(cv::ocl::oclMat &inputOutputBuffer);
+void normalizeGrayOutputCentredSigmoide(const float meanValue, const float sensitivity, UMat &in, UMat &out, const float maxValue = 255.f);
+void normalizeGrayOutput_0_maxOutputValue(UMat &inputOutputBuffer, const float maxOutputValue = 255.0);
+void normalizeGrayOutputNearZeroCentreredSigmoide(UMat &inputPicture, UMat &outputBuffer, const float sensitivity = 40, const float maxOutputValue = 255.0f);
+void centerReductImageLuminance(UMat &inputOutputBuffer);
 
 class BasicRetinaFilter
 {
@@ -81,13 +82,13 @@ public:
         clearSecondaryBuffer();
     }
     void  resize(const unsigned int NBrows, const unsigned int NBcolumns);
-    const cv::ocl::oclMat &runFilter_LPfilter(const cv::ocl::oclMat &inputFrame, const unsigned int filterIndex = 0);
-    void  runFilter_LPfilter(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame, const unsigned int filterIndex = 0);
-    void  runFilter_LPfilter_Autonomous(cv::ocl::oclMat &inputOutputFrame, const unsigned int filterIndex = 0);
-    const cv::ocl::oclMat &runFilter_LocalAdapdation(const cv::ocl::oclMat &inputOutputFrame, const cv::ocl::oclMat &localLuminance);
-    void  runFilter_LocalAdapdation(const cv::ocl::oclMat &inputFrame, const cv::ocl::oclMat &localLuminance, cv::ocl::oclMat &outputFrame);
-    const cv::ocl::oclMat &runFilter_LocalAdapdation_autonomous(const cv::ocl::oclMat &inputFrame);
-    void  runFilter_LocalAdapdation_autonomous(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame);
+    const UMat &runFilter_LPfilter(const UMat &inputFrame, const unsigned int filterIndex = 0);
+    void  runFilter_LPfilter(const UMat &inputFrame, UMat &outputFrame, const unsigned int filterIndex = 0);
+    void  runFilter_LPfilter_Autonomous(UMat &inputOutputFrame, const unsigned int filterIndex = 0);
+    const UMat &runFilter_LocalAdapdation(const UMat &inputOutputFrame, const UMat &localLuminance);
+    void  runFilter_LocalAdapdation(const UMat &inputFrame, const UMat &localLuminance, UMat &outputFrame);
+    const UMat &runFilter_LocalAdapdation_autonomous(const UMat &inputFrame);
+    void  runFilter_LocalAdapdation_autonomous(const UMat &inputFrame, UMat &outputFrame);
     void  setLPfilterParameters(const float beta, const float tau, const float k, const unsigned int filterIndex = 0);
     inline void setV0CompressionParameter(const float v0, const float maxInputValue, const float)
     {
@@ -122,7 +123,7 @@ public:
     {
         return _v0 / _maxInputValue;
     }
-    inline const cv::ocl::oclMat &getOutput() const
+    inline const UMat &getOutput() const
     {
         return _filterOutput;
     }
@@ -166,8 +167,8 @@ protected:
     unsigned int _halfNBrows;
     unsigned int _halfNBcolumns;
 
-    cv::ocl::oclMat _filterOutput;
-    cv::ocl::oclMat _localBuffer;
+    UMat _filterOutput;
+    UMat _localBuffer;
 
     std::valarray <float>_filteringCoeficientsTable;
     float _v0;
@@ -180,19 +181,19 @@ protected:
     float _tau;
     float _gain;
 
-    void _spatiotemporalLPfilter(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &LPfilterOutput, const unsigned int coefTableOffset = 0);
-    float _squaringSpatiotemporalLPfilter(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame, const unsigned int filterIndex = 0);
-    void _spatiotemporalLPfilter_Irregular(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame, const unsigned int filterIndex = 0);
-    void _localSquaringSpatioTemporalLPfilter(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &LPfilterOutput, const unsigned int *integrationAreas, const unsigned int filterIndex = 0);
-    void _localLuminanceAdaptation(const cv::ocl::oclMat &inputFrame, const cv::ocl::oclMat &localLuminance, cv::ocl::oclMat &outputFrame, const bool updateLuminanceMean = true);
-    void _localLuminanceAdaptation(cv::ocl::oclMat &inputOutputFrame, const cv::ocl::oclMat &localLuminance);
-    void _localLuminanceAdaptationPosNegValues(const cv::ocl::oclMat &inputFrame, const cv::ocl::oclMat &localLuminance, float *outputFrame);
-    void _horizontalCausalFilter_addInput(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame);
-    void _horizontalAnticausalFilter(cv::ocl::oclMat &outputFrame);
-    void _verticalCausalFilter(cv::ocl::oclMat &outputFrame);
-    void _horizontalAnticausalFilter_Irregular(cv::ocl::oclMat &outputFrame, const cv::ocl::oclMat &spatialConstantBuffer);
-    void _verticalCausalFilter_Irregular(cv::ocl::oclMat &outputFrame, const cv::ocl::oclMat &spatialConstantBuffer);
-    void _verticalAnticausalFilter_multGain(cv::ocl::oclMat &outputFrame);
+    void _spatiotemporalLPfilter(const UMat &inputFrame, UMat &LPfilterOutput, const unsigned int coefTableOffset = 0);
+    float _squaringSpatiotemporalLPfilter(const UMat &inputFrame, UMat &outputFrame, const unsigned int filterIndex = 0);
+    void _spatiotemporalLPfilter_Irregular(const UMat &inputFrame, UMat &outputFrame, const unsigned int filterIndex = 0);
+    void _localSquaringSpatioTemporalLPfilter(const UMat &inputFrame, UMat &LPfilterOutput, const unsigned int *integrationAreas, const unsigned int filterIndex = 0);
+    void _localLuminanceAdaptation(const UMat &inputFrame, const UMat &localLuminance, UMat &outputFrame, const bool updateLuminanceMean = true);
+    void _localLuminanceAdaptation(UMat &inputOutputFrame, const UMat &localLuminance);
+    void _localLuminanceAdaptationPosNegValues(const UMat &inputFrame, const UMat &localLuminance, float *outputFrame);
+    void _horizontalCausalFilter_addInput(const UMat &inputFrame, UMat &outputFrame);
+    void _horizontalAnticausalFilter(UMat &outputFrame);
+    void _verticalCausalFilter(UMat &outputFrame);
+    void _horizontalAnticausalFilter_Irregular(UMat &outputFrame, const UMat &spatialConstantBuffer);
+    void _verticalCausalFilter_Irregular(UMat &outputFrame, const UMat &spatialConstantBuffer);
+    void _verticalAnticausalFilter_multGain(UMat &outputFrame);
 };
 
 class MagnoRetinaFilter: public BasicRetinaFilter
@@ -204,17 +205,17 @@ public:
     void resize(const unsigned int NBrows, const unsigned int NBcolumns);
     void setCoefficientsTable(const float parasolCells_beta, const float parasolCells_tau, const float parasolCells_k, const float amacrinCellsTemporalCutFrequency, const float localAdaptIntegration_tau, const float localAdaptIntegration_k);
 
-    const cv::ocl::oclMat &runFilter(const cv::ocl::oclMat &OPL_ON, const cv::ocl::oclMat &OPL_OFF);
+    const UMat &runFilter(const UMat &OPL_ON, const UMat &OPL_OFF);
 
-    inline const cv::ocl::oclMat &getMagnoON() const
+    inline const UMat &getMagnoON() const
     {
         return _magnoXOutputON;
     }
-    inline const cv::ocl::oclMat &getMagnoOFF() const
+    inline const UMat &getMagnoOFF() const
     {
         return _magnoXOutputOFF;
     }
-    inline const cv::ocl::oclMat &getMagnoYsaturated() const
+    inline const UMat &getMagnoYsaturated() const
     {
         return _magnoYsaturated;
     }
@@ -227,19 +228,19 @@ public:
         return this->_filteringCoeficientsTable[2];
     }
 private:
-    cv::ocl::oclMat _previousInput_ON;
-    cv::ocl::oclMat _previousInput_OFF;
-    cv::ocl::oclMat _amacrinCellsTempOutput_ON;
-    cv::ocl::oclMat _amacrinCellsTempOutput_OFF;
-    cv::ocl::oclMat _magnoXOutputON;
-    cv::ocl::oclMat _magnoXOutputOFF;
-    cv::ocl::oclMat _localProcessBufferON;
-    cv::ocl::oclMat _localProcessBufferOFF;
-    cv::ocl::oclMat _magnoYOutput;
-    cv::ocl::oclMat _magnoYsaturated;
+    UMat _previousInput_ON;
+    UMat _previousInput_OFF;
+    UMat _amacrinCellsTempOutput_ON;
+    UMat _amacrinCellsTempOutput_OFF;
+    UMat _magnoXOutputON;
+    UMat _magnoXOutputOFF;
+    UMat _localProcessBufferON;
+    UMat _localProcessBufferOFF;
+    UMat _magnoYOutput;
+    UMat _magnoYsaturated;
 
     float _temporalCoefficient;
-    void _amacrineCellsComputing(const cv::ocl::oclMat &OPL_ON,  const cv::ocl::oclMat &OPL_OFF);
+    void _amacrineCellsComputing(const UMat &OPL_ON,  const UMat &OPL_OFF);
 };
 
 class ParvoRetinaFilter: public BasicRetinaFilter
@@ -255,34 +256,34 @@ public:
     {
         BasicRetinaFilter::setLPfilterParameters(0, tau, k, 2);
     }
-    const cv::ocl::oclMat &runFilter(const cv::ocl::oclMat &inputFrame, const bool useParvoOutput = true);
+    const UMat &runFilter(const UMat &inputFrame, const bool useParvoOutput = true);
 
-    inline const cv::ocl::oclMat &getPhotoreceptorsLPfilteringOutput() const
+    inline const UMat &getPhotoreceptorsLPfilteringOutput() const
     {
         return _photoreceptorsOutput;
     }
 
-    inline const cv::ocl::oclMat &getHorizontalCellsOutput() const
+    inline const UMat &getHorizontalCellsOutput() const
     {
         return _horizontalCellsOutput;
     }
 
-    inline const cv::ocl::oclMat &getParvoON() const
+    inline const UMat &getParvoON() const
     {
         return _parvocellularOutputON;
     }
 
-    inline const cv::ocl::oclMat &getParvoOFF() const
+    inline const UMat &getParvoOFF() const
     {
         return _parvocellularOutputOFF;
     }
 
-    inline const cv::ocl::oclMat &getBipolarCellsON() const
+    inline const UMat &getBipolarCellsON() const
     {
         return _bipolarCellsOutputON;
     }
 
-    inline const cv::ocl::oclMat &getBipolarCellsOFF() const
+    inline const UMat &getBipolarCellsOFF() const
     {
         return _bipolarCellsOutputOFF;
     }
@@ -297,15 +298,15 @@ public:
         return this->_filteringCoeficientsTable[5];
     }
 private:
-    cv::ocl::oclMat _photoreceptorsOutput;
-    cv::ocl::oclMat _horizontalCellsOutput;
-    cv::ocl::oclMat _parvocellularOutputON;
-    cv::ocl::oclMat _parvocellularOutputOFF;
-    cv::ocl::oclMat _bipolarCellsOutputON;
-    cv::ocl::oclMat _bipolarCellsOutputOFF;
-    cv::ocl::oclMat _localAdaptationOFF;
-    cv::ocl::oclMat _localAdaptationON;
-    cv::ocl::oclMat _parvocellularOutputONminusOFF;
+    UMat _photoreceptorsOutput;
+    UMat _horizontalCellsOutput;
+    UMat _parvocellularOutputON;
+    UMat _parvocellularOutputOFF;
+    UMat _bipolarCellsOutputON;
+    UMat _bipolarCellsOutputOFF;
+    UMat _localAdaptationOFF;
+    UMat _localAdaptationON;
+    UMat _parvocellularOutputONminusOFF;
     void _OPL_OnOffWaysComputing();
 };
 class RetinaColor: public BasicRetinaFilter
@@ -316,12 +317,12 @@ public:
 
     void clearAllBuffers();
     void resize(const unsigned int NBrows, const unsigned int NBcolumns);
-    inline void runColorMultiplexing(const cv::ocl::oclMat &inputRGBFrame)
+    inline void runColorMultiplexing(const UMat &inputRGBFrame)
     {
         runColorMultiplexing(inputRGBFrame, _multiplexedFrame);
     }
-    void runColorMultiplexing(const cv::ocl::oclMat &demultiplexedInputFrame, cv::ocl::oclMat &multiplexedFrame);
-    void runColorDemultiplexing(const cv::ocl::oclMat &multiplexedColorFrame, const bool adaptiveFiltering = false, const float maxInputValue = 255.0);
+    void runColorMultiplexing(const UMat &demultiplexedInputFrame, UMat &multiplexedFrame);
+    void runColorDemultiplexing(const UMat &multiplexedColorFrame, const bool adaptiveFiltering = false, const float maxInputValue = 255.0);
 
     void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0)
     {
@@ -334,29 +335,29 @@ public:
         setLPfilterParameters(beta, tau, k);
     }
 
-    bool applyKrauskopfLMS2Acr1cr2Transform(cv::ocl::oclMat &result);
-    bool applyLMS2LabTransform(cv::ocl::oclMat &result);
-    inline const cv::ocl::oclMat &getMultiplexedFrame() const
+    bool applyKrauskopfLMS2Acr1cr2Transform(UMat &result);
+    bool applyLMS2LabTransform(UMat &result);
+    inline const UMat &getMultiplexedFrame() const
     {
         return _multiplexedFrame;
     }
 
-    inline const cv::ocl::oclMat &getDemultiplexedColorFrame() const
+    inline const UMat &getDemultiplexedColorFrame() const
     {
         return _demultiplexedColorFrame;
     }
 
-    inline const cv::ocl::oclMat &getLuminance() const
+    inline const UMat &getLuminance() const
     {
         return _luminance;
     }
-    inline const cv::ocl::oclMat &getChrominance() const
+    inline const UMat &getChrominance() const
     {
         return _chrominance;
     }
-    void clipRGBOutput_0_maxInputValue(cv::ocl::oclMat &inputOutputBuffer, const float maxOutputValue = 255.0);
+    void clipRGBOutput_0_maxInputValue(UMat &inputOutputBuffer, const float maxOutputValue = 255.0);
     void normalizeRGBOutput_0_maxOutputValue(const float maxOutputValue = 255.0);
-    inline void setDemultiplexedColorFrame(const cv::ocl::oclMat &demultiplexedImage)
+    inline void setDemultiplexedColorFrame(const UMat &demultiplexedImage)
     {
         _demultiplexedColorFrame = demultiplexedImage;
     }
@@ -372,26 +373,26 @@ protected:
     int _samplingMethod;
     bool _saturateColors;
     float _colorSaturationValue;
-    cv::ocl::oclMat _luminance;
-    cv::ocl::oclMat _multiplexedFrame;
-    cv::ocl::oclMat _RGBmosaic;
-    cv::ocl::oclMat _tempMultiplexedFrame;
-    cv::ocl::oclMat _demultiplexedTempBuffer;
-    cv::ocl::oclMat _demultiplexedColorFrame;
-    cv::ocl::oclMat _chrominance;
-    cv::ocl::oclMat _colorLocalDensity;
-    cv::ocl::oclMat _imageGradient;
+    UMat _luminance;
+    UMat _multiplexedFrame;
+    UMat _RGBmosaic;
+    UMat _tempMultiplexedFrame;
+    UMat _demultiplexedTempBuffer;
+    UMat _demultiplexedColorFrame;
+    UMat _chrominance;
+    UMat _colorLocalDensity;
+    UMat _imageGradient;
 
     float _pR, _pG, _pB;
     bool _objectInit;
 
     void _initColorSampling();
-    void _adaptiveSpatialLPfilter(const cv::ocl::oclMat &inputFrame, const cv::ocl::oclMat &gradient, cv::ocl::oclMat &outputFrame);
-    void _adaptiveHorizontalCausalFilter_addInput(const cv::ocl::oclMat &inputFrame, const cv::ocl::oclMat &gradient, cv::ocl::oclMat &outputFrame);
-    void _adaptiveVerticalAnticausalFilter_multGain(const cv::ocl::oclMat &gradient, cv::ocl::oclMat &outputFrame);
-    void _computeGradient(const cv::ocl::oclMat &luminance, cv::ocl::oclMat &gradient);
+    void _adaptiveSpatialLPfilter(const UMat &inputFrame, const UMat &gradient, UMat &outputFrame);
+    void _adaptiveHorizontalCausalFilter_addInput(const UMat &inputFrame, const UMat &gradient, UMat &outputFrame);
+    void _adaptiveVerticalAnticausalFilter_multGain(const UMat &gradient, UMat &outputFrame);
+    void _computeGradient(const UMat &luminance, UMat &gradient);
     void _normalizeOutputs_0_maxOutputValue(void);
-    void _applyImageColorSpaceConversion(const cv::ocl::oclMat &inputFrame, cv::ocl::oclMat &outputFrame, const float *transformTable);
+    void _applyImageColorSpaceConversion(const UMat &inputFrame, UMat &outputFrame, const float *transformTable);
 };
 class RetinaFilter
 {
@@ -401,8 +402,8 @@ public:
 
     void clearAllBuffers();
     void resize(const unsigned int NBrows, const unsigned int NBcolumns);
-    bool checkInput(const cv::ocl::oclMat &input, const bool colorMode);
-    bool runFilter(const cv::ocl::oclMat &imageInput, const bool useAdaptiveFiltering = true, const bool processRetinaParvoMagnoMapping = false, const bool useColorMode = false, const bool inputIsColorMultiplexed = false);
+    bool checkInput(const UMat &input, const bool colorMode);
+    bool runFilter(const UMat &imageInput, const bool useAdaptiveFiltering = true, const bool processRetinaParvoMagnoMapping = false, const bool useColorMode = false, const bool inputIsColorMultiplexed = false);
 
     void setGlobalParameters(const float OPLspatialResponse1 = 0.7, const float OPLtemporalresponse1 = 1, const float OPLassymetryGain = 0, const float OPLspatialResponse2 = 5, const float OPLtemporalresponse2 = 1, const float LPfilterSpatialResponse = 5, const float LPfilterGain = 0, const float LPfilterTemporalresponse = 0, const float MovingContoursExtractorCoefficient = 5, const bool normalizeParvoOutput_0_maxOutputValue = false, const bool normalizeMagnoOutput_0_maxOutputValue = false, const float maxOutputValue = 255.0, const float maxInputValue = 255.0, const float meanValue = 128.0);
 
@@ -467,16 +468,16 @@ public:
     {
         _colorEngine.setColorSaturation(saturateColors, colorSaturationValue);
     }
-    inline const cv::ocl::oclMat &getLocalAdaptation() const
+    inline const UMat &getLocalAdaptation() const
     {
         return _photoreceptorsPrefilter.getOutput();
     }
-    inline const cv::ocl::oclMat &getPhotoreceptors() const
+    inline const UMat &getPhotoreceptors() const
     {
         return _ParvoRetinaFilter.getPhotoreceptorsLPfilteringOutput();
     }
 
-    inline const cv::ocl::oclMat &getHorizontalCells() const
+    inline const UMat &getHorizontalCells() const
     {
         return _ParvoRetinaFilter.getHorizontalCellsOutput();
     }
@@ -484,20 +485,20 @@ public:
     {
         return _useParvoOutput;
     }
-    bool getParvoFoveaResponse(cv::ocl::oclMat &parvoFovealResponse);
+    bool getParvoFoveaResponse(UMat &parvoFovealResponse);
     inline void activateContoursProcessing(const bool useParvoOutput)
     {
         _useParvoOutput = useParvoOutput;
     }
 
-    const cv::ocl::oclMat &getContours();
+    const UMat &getContours();
 
-    inline const cv::ocl::oclMat &getContoursON() const
+    inline const UMat &getContoursON() const
     {
         return _ParvoRetinaFilter.getParvoON();
     }
 
-    inline const cv::ocl::oclMat &getContoursOFF() const
+    inline const UMat &getContoursOFF() const
     {
         return _ParvoRetinaFilter.getParvoOFF();
     }
@@ -512,41 +513,41 @@ public:
         _useMagnoOutput = useMagnoOutput;
     }
 
-    inline const cv::ocl::oclMat &getMovingContours() const
+    inline const UMat &getMovingContours() const
     {
         return _MagnoRetinaFilter.getOutput();
     }
 
-    inline const cv::ocl::oclMat &getMovingContoursSaturated() const
+    inline const UMat &getMovingContoursSaturated() const
     {
         return _MagnoRetinaFilter.getMagnoYsaturated();
     }
 
-    inline const cv::ocl::oclMat &getMovingContoursON() const
+    inline const UMat &getMovingContoursON() const
     {
         return _MagnoRetinaFilter.getMagnoON();
     }
 
-    inline const cv::ocl::oclMat &getMovingContoursOFF() const
+    inline const UMat &getMovingContoursOFF() const
     {
         return _MagnoRetinaFilter.getMagnoOFF();
     }
 
-    inline const cv::ocl::oclMat &getRetinaParvoMagnoMappedOutput() const
+    inline const UMat &getRetinaParvoMagnoMappedOutput() const
     {
         return _retinaParvoMagnoMappedFrame;
     }
 
-    inline const cv::ocl::oclMat &getParvoContoursChannel() const
+    inline const UMat &getParvoContoursChannel() const
     {
         return _colorEngine.getLuminance();
     }
 
-    inline const cv::ocl::oclMat &getParvoChrominance() const
+    inline const UMat &getParvoChrominance() const
     {
         return _colorEngine.getChrominance();
     }
-    inline const cv::ocl::oclMat &getColorOutput() const
+    inline const UMat &getColorOutput() const
     {
         return _colorEngine.getDemultiplexedColorFrame();
     }
@@ -609,7 +610,7 @@ private:
     unsigned int _ellapsedFramesSinceLastReset;
     unsigned int _globalTemporalConstant;
 
-    cv::ocl::oclMat _retinaParvoMagnoMappedFrame;
+    UMat _retinaParvoMagnoMappedFrame;
     BasicRetinaFilter _photoreceptorsPrefilter;
     ParvoRetinaFilter _ParvoRetinaFilter;
     MagnoRetinaFilter _MagnoRetinaFilter;
@@ -623,12 +624,60 @@ private:
 
     void _setInitPeriodCount();
     void _processRetinaParvoMagnoMapping();
-    void _runGrayToneMapping(const cv::ocl::oclMat &grayImageInput, cv::ocl::oclMat &grayImageOutput , const float PhotoreceptorsCompression = 0.6, const float ganglionCellsCompression = 0.6);
+    void _runGrayToneMapping(const UMat &grayImageInput, UMat &grayImageOutput , const float PhotoreceptorsCompression = 0.6, const float ganglionCellsCompression = 0.6);
+};
+
+class RetinaOCLImpl : public Retina
+{
+public:
+    RetinaOCLImpl(Size getInputSize);
+    RetinaOCLImpl(Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
+    virtual ~RetinaOCLImpl();
+
+    Size getInputSize();
+    Size getOutputSize();
+
+    void setup(String retinaParameterFile = "", const bool applyDefaultSetupOnFailure = true);
+    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure = true);
+    void setup(RetinaParameters newParameters);
+
+    RetinaParameters getParameters();
+
+    const String printSetup();
+    virtual void write(String fs) const;
+    virtual void write(FileStorage& fs) const;
+
+    void setupOPLandIPLParvoChannel(const bool colorMode = true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity = 0.7, const float photoreceptorsTemporalConstant = 0.5, const float photoreceptorsSpatialConstant = 0.53, const float horizontalCellsGain = 0, const float HcellsTemporalConstant = 1, const float HcellsSpatialConstant = 7, const float ganglionCellsSensitivity = 0.7);
+    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta = 0, const float parasolCells_tau = 0, const float parasolCells_k = 7, const float amacrinCellsTemporalCutFrequency = 1.2, const float V0CompressionParameter = 0.95, const float localAdaptintegration_tau = 0, const float localAdaptintegration_k = 7);
+
+    void run(InputArray inputImage);
+    void getParvo(OutputArray retinaOutput_parvo);
+    void getMagno(OutputArray retinaOutput_magno);
+
+    void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0);
+    void clearBuffers();
+    void activateMovingContoursProcessing(const bool activate);
+    void activateContoursProcessing(const bool activate);
+
+    // unimplemented interfaces:
+    void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/);
+    void getParvoRAW(OutputArray /*retinaOutput_parvo*/);
+    void getMagnoRAW(OutputArray /*retinaOutput_magno*/);
+    const Mat getMagnoRAW() const;
+    const Mat getParvoRAW() const;
+
+protected:
+    RetinaParameters _retinaParameters;
+    UMat _inputBuffer;
+    RetinaFilter* _retinaFilter;
+    bool convertToColorPlanes(const UMat& input, UMat &output);
+    void convertToInterleaved(const UMat& input, bool colorMode, UMat &output);
+    void _init(const Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
 };
 
 }  /* namespace ocl */
 }  /* namespace bioinspired */
 }  /* namespace cv */
 
-#endif  /* HAVE_OPENCV_OCL */
+#endif  /* HAVE_OPENCL */
 #endif  /* __OCL_RETINA_HPP__ */

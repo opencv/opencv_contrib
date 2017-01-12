@@ -51,10 +51,6 @@
 
 #include <valarray>
 
-#ifdef HAVE_OPENCV_OCL
-    #include "opencv2/ocl/private/util.hpp"
-#endif
-
 namespace cv
 {
 

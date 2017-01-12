@@ -70,6 +70,7 @@
  */
 #include "precomp.hpp"
 #include "retinafilter.hpp"
+#include "retina_ocl.hpp"
 #include <cstdio>
 #include <sstream>
 #include <valarray>
@@ -295,8 +296,16 @@ private:
 };
 
 // smart pointers allocation :
-Ptr<Retina> createRetina(Size inputSize){ return makePtr<RetinaImpl>(inputSize); }
-Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght){
+Ptr<Retina> createRetina(Size inputSize)
+{
+    if (cv::ocl::useOpenCL())
+        return makePtr<cv::bioinspired::ocl::RetinaOCLImpl>(inputSize);
+    return makePtr<RetinaImpl>(inputSize);
+}
+Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
+{
+    if (cv::ocl::useOpenCL())
+        return makePtr<cv::bioinspired::ocl::RetinaOCLImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
     return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
 

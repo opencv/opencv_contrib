@@ -71,6 +71,7 @@
 @author Alexandre Benoit
 */
 
+#include "cvconfig.h"
 #include "opencv2/core.hpp" // for all OpenCV core functionalities access, including cv::Exception support
 
 
@@ -89,7 +90,7 @@ enum {
 
 /** @brief retina model parameters structure
 
-    For better clarity, check explenations on the comments of methods : setupOPLandIPLParvoChannel and setupIPLMagnoChannel
+    For better clarity, check explanations on the comments of methods : setupOPLandIPLParvoChannel and setupIPLMagnoChannel
 
     Here is the default configuration file of the retina module. It gives results such as the first
     retina output shown on the top of this page.
@@ -446,11 +447,6 @@ underscaled, then a reduction of the output is allowed without precision leak
 the log scale that is applied
  */
 CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
-
-#ifdef HAVE_OPENCV_OCL
-Ptr<Retina> createRetina_OCL(Size inputSize);
-Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
-#endif
 
 //! @}
 
