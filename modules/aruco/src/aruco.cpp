@@ -1278,12 +1278,20 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
 
     CV_Assert(objPoints.total() == ids.total());
-    CV_Assert(objPoints.type() == CV_32FC3);
+    CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
+        if(objPoints.type() == CV_32FC1)
+        {
+            CV_Assert(corners_mat.total() == 12);
+        }
+        else
+        {
+            CV_Assert(corners_mat.total() == 4);
+        }
         for (int j = 0; j < 4; j++) {
             corners.push_back(corners_mat.at<Point3f>(j));
         }
