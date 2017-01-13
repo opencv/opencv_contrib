@@ -1,5 +1,11 @@
 set(the_description "Modern Deep Learning module")
 
+if(${CMAKE_VERSION} VERSION_LESS 3.2)
+  message(STATUS "Module opencv_dnn_modern disabled because CMake version is less than 3.2")
+  ocv_module_disable(dnn_modern)
+  return()
+endif()
+
 cmake_policy(SET CMP0028 OLD)
 
 # Using cmake scripts and modules
