@@ -70,6 +70,8 @@ endif()
 # we need to disable seializer unless we import cereal
 add_definitions(-DCNN_NO_SERIALIZATION)
 
+# NOTE: In case that proto files already exist,
+#       this is not needed anymore.
 find_package(Protobuf)
 list(APPEND REQUIRED_LIBRARIES ${PROTOBUF_LIBRARIES})
 
@@ -118,3 +120,5 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EXTRA_EXE_LI
 
 ocv_define_module(dnn_modern opencv_core opencv_imgproc opencv_imgcodecs WRAP python)
 ocv_target_link_libraries(${the_module} ${REQUIRED_LIBRARIES})
+ocv_target_include_directories(${the_module} ${TINYDNN_INCLUDE_DIRS})
+target_compile_options(${the_module} PRIVATE "-Wno-error=non-virtual-dtor")
