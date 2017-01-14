@@ -191,7 +191,9 @@ int main(int argc, char * argv[])
   int num_modalities = (int)detector->getModalities().size();
 
   // Open Kinect sensor
-  cv::VideoCapture capture( cv::CAP_OPENNI );
+  cv::VideoCapture capture( cv::CAP_OPENNI2 );
+  if (!capture.isOpened())
+	  capture.open(cv::CAP_OPENNI);
   if (!capture.isOpened())
   {
     printf("Could not open OpenNI-capable sensor\n");
@@ -392,7 +394,7 @@ static void reprojectPoints(const std::vector<cv::Point3d>& proj, std::vector<cv
   }
 }
 
-static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, std::vector<CvPoint> & a_chain, double f)
+static void filterPlane(const IplImage * ap_depth, const std::vector<IplImage *> & a_masks, const std::vector<CvPoint> & a_chain, const double f)
 {
   const int l_num_cost_pts = 200;
 
