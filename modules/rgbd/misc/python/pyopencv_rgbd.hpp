@@ -143,10 +143,10 @@ bool pyopencv_to(PyObject *o, linemod::Template &_template, const char *name)
 		_template = linemod::Template();
 		return true;
 	}
-	PyObject *features;
-	if (PyArg_ParseTuple(o, "iiiO", &_template.width, &_template.height, &_template.pyramid_level, features) <= 0)
+	PyObject o_features;
+	if (PyArg_ParseTuple(o, "iiiO", &_template.width, &_template.height, &_template.pyramid_level, &o_features) <= 0)
 		return false;
-	return pyopencv_to(features, _template.features, name);
+	return pyopencv_to(&o_features, _template.features, name);
 }
 
 template<>
