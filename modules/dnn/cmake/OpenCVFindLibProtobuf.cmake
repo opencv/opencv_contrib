@@ -28,7 +28,7 @@ if(PROTOBUF_FOUND)
   # nothing
 else()
   include(${CMAKE_CURRENT_LIST_DIR}/download_protobuf.cmake)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf ${CMAKE_BINARY_DIR}/3rdparty/protobuf)
   set(PROTOBUF_LIBRARIES libprotobuf)
   set(PROTOBUF_INCLUDE_DIR ${PROTOBUF_CPP_PATH}/protobuf-3.1.0/src)
 endif()

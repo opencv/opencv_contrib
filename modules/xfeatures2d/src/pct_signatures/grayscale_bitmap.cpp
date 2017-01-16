@@ -57,7 +57,7 @@ References:
     ACM, 2010.
 */
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 
 #include "grayscale_bitmap.hpp"
 

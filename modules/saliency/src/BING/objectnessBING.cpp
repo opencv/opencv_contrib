@@ -39,7 +39,7 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 
 #include "BING/kyheader.hpp"
 #include "CmTimer.hpp"
