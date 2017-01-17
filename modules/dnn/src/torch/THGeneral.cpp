@@ -1,19 +1,20 @@
 #if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
-#include "THGeneral.h"
 #include <opencv2/core.hpp>
-
-extern "C"
-{
-
-#ifndef TH_HAVE_THREAD
-#define __thread
-#endif
 
 #if defined(TH_DISABLE_HEAP_TRACKING)
 #elif (defined(__unix) || defined(_WIN32))
 #include <malloc.h>
 #elif defined(__APPLE__)
 #include <malloc/malloc.h>
+#endif
+
+#include "THGeneral.h"
+
+extern "C"
+{
+
+#ifndef TH_HAVE_THREAD
+#define __thread
 #endif
 
 /* Torch Error Handling */
