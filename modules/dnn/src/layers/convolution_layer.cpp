@@ -60,12 +60,12 @@ BaseConvolutionLayerImpl::BaseConvolutionLayerImpl():
     inpGroupCn(0), outGroupCn(0),
     ksize(0), bias(false), tryUseOpenCL(false)
 {
-    #if HAVE_CBLAS
-        if (getBlasThreads() != cv::getThreadNum())
-        {
-            setBlasThreads(cv::getThreadNum());
-        }
-    #endif
+#ifdef HAVE_LAPACK
+    if (getBlasThreads() != cv::getThreadNum())
+    {
+        setBlasThreads(cv::getThreadNum());
+    }
+#endif
 }
 
 void BaseConvolutionLayerImpl::init()

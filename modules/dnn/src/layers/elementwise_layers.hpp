@@ -46,9 +46,7 @@
 #include <cmath>
 #include <opencv2/dnn/all_layers.hpp>
 #include <opencv2/core/ocl.hpp>
-#ifdef HAVE_OPENCL
-#include "modules/dnn/opencl_kernels_dnn.hpp"
-#endif
+#include "opencl_kernels_dnn.hpp"
 
 namespace cv
 {
