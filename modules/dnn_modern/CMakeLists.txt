@@ -34,12 +34,6 @@ elseif(APPLE_FRAMEWORK OR ANDROID)
     return()
 endif()
 
-# set c++ standard to c++11.
-# Note: not working on CMake 2.8. We assume that user has
-#       a compiler with C++11 support.
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # ----------------------------------------------------------------------------
 # OPTIMIZATION OPTIONS
 # ----------------------------------------------------------------------------
@@ -73,44 +67,72 @@ add_definitions(-DCNN_NO_SERIALIZATION)
 find_package(Protobuf)
 list(APPEND REQUIRED_LIBRARIES ${PROTOBUF_LIBRARIES})
 
-# ----------------------------------------------------------------------------
-# COMPILER OPTIONS
-# ----------------------------------------------------------------------------
+####
+# Setup the compiler options
 
-if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(TINYDNN_USE_SSE)
+# set c++ standard to c++11.
+# Note: not working on CMake 2.8. We assume that user has
+#       a compiler with C++11 support.
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+message(STATUS "C++11 support has been enabled by default.")
+
+# Unix
+if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
+   CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE_FLAG)
+    check_cxx_compiler_flag("-mavx"  COMPILER_HAS_AVX_FLAG)
+    check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
+    check_cxx_compiler_flag("-mfma" COMPILER_HAS_AVX2_FLAG)
+
+    # set Streaming SIMD Extension (SSE) instructions
+    if(USE_SSE AND COMPILER_HAS_SSE_FLAG)
         add_definitions(-DCNN_USE_SSE)
-        set(EXTRA_C_FLAGS  " ${EXTRA_C_FLAGS} -msse3 ")
-    endif()
-    if(TINYDNN_USE_AVX)
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
+    endif(USE_SSE AND COMPILER_HAS_SSE_FLAG)
+    # set Advanced Vector Extensions (AVX)
+    if(USE_AVX AND COMPILER_HAS_AVX_FLAG)
         add_definitions(-DCNN_USE_AVX)
-        set(EXTRA_C_FLAGS  "${EXTRA_C_FLAGS} -mavx ")
-    endif()
-    if((NOT TINYDNN_USE_TBB) AND (NOT TINYDNN_USE_OMP))
-        set(EXTRA_C_FLAGS " ${EXTRA_C_FLAGS} -pthread ")
-    endif()
-    set(EXTRA_C_FLAGS " ${EXTRA_C_FLAGS} -Wall -Wpedantic")
-    set(EXTRA_C_FLAGS_RELEASE " -O3 ")
-    set(EXTRA_C_FLAGS_DEBUG " -g3 ")
-else() # MSVC
-    if(TINYDNN_USE_SSE)
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx")
+    endif(USE_AVX AND COMPILER_HAS_AVX_FLAG)
+    # set Advanced Vector Extensions 2 (AVX2)
+    if(USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
+        add_definitions(-DCNN_USE_AVX2)
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx2 -mfma -march=core-avx2")
+    endif(USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
+
+    # include extra flags to the compiler
+    # TODO: add info about those flags.
+    set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -Wall -Wpedantic -Wno-narrowing")
+    set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3")
+    set(EXTRA_C_FLAGS_DEBUG   "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
+elseif(MSVC)
+    if(USE_SSE)
         add_definitions(-DCNN_USE_SSE)
-        set(EXTRA_C_FLAGS  " ${EXTRA_C_FLAGS} /arch:SSE2 ")
-    endif()
-    if(TINYDNN_USE_AVX)
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE2")
+    endif(USE_SSE)
+    if(USE_AVX)
         add_definitions(-DCNN_USE_AVX)
-        set(EXTRA_C_FLAGS  "${EXTRA_C_FLAGS}  /arch:AVX ")
-    endif()
-    set(EXTRA_C_FLAGS_RELEASE " /Ox /bigobj ")
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX")
+    endif(USE_AVX)
+    if(USE_AVX2)
+        add_definitions(-DCNN_USE_AVX2)
+        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX2")
+    endif(USE_AVX2)
+    # include specific flags for release and debug modes.
+    set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE}
+        /Ox /Oi /Ot /Oy /GL /fp:fast /GS-")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+    set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG}")
+    set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /W4 /bigobj")
+    # this is fine
     add_definitions(-D _CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D _SCL_SECURE_NO_WARNINGS)
+    # prolly powerless with header-only project
+    set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE}")
-set(CMAKE_CXX_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${EXTRA_EXE_LINKER_FLAGS_RELEASE}")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${EXTRA_EXE_LINKER_FLAGS_DEBUG}")
 
 # ----------------------------------------------------------------------------
 # DNN-MODERN MODULE
