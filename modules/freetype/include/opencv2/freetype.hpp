@@ -183,7 +183,7 @@ The function createFreeType2 create instance to draw UTF-8 strings.
 */
     CV_EXPORTS_W Ptr<FreeType2> createFreeType2();
 
-//! @]
+//! @}
 } } // namespace freetype
 
 #endif
