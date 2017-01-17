@@ -65,9 +65,8 @@ class CaffeConverter_Impl : public CaffeConverter {
         net_ = create_net_from_caffe_prototxt(model_file);
         reload_weight_from_caffe_protobinary(trained_file, net_.get());
 
-        // int channels = (*net_)[0]->in_data_shape()[0].depth_;
-        int width    = (*net_)[0]->in_data_shape()[0].width_;
-        int height   = (*net_)[0]->in_data_shape()[0].height_;
+        const size_t width  = (*net_)[0]->in_data_shape()[0].width_;
+        const size_t height = (*net_)[0]->in_data_shape()[0].height_;
 
         mean_ = compute_mean(mean_file, width, height);
     }
@@ -77,11 +76,15 @@ class CaffeConverter_Impl : public CaffeConverter {
     virtual void eval(const cv::InputArray image, std::vector<float>* results);
 
  private:
-    cv::Mat compute_mean(const string& mean_file, int width, int height);
-    cv::ColorConversionCodes get_cvt_codes(int src_channels, int dst_channels);
+    cv::Mat compute_mean(const string& mean_file, const size_t width,
+		         const size_t height);
 
-    void preprocess(const cv::Mat& img, const cv::Mat& mean, int num_channels,
-                    cv::Size geometry, vector<cv::Mat>* input_channels);
+    cv::ColorConversionCodes get_cvt_codes(const int src_channels,
+                                           const int dst_channels);
+
+    void preprocess(const cv::Mat& img, const cv::Mat& mean,
+		    const int num_channels, const cv::Size& geometry,
+		    vector<cv::Mat>* input_channels);
 
     cv::Mat mean_;
     std::shared_ptr<network<sequential>> net_;
@@ -89,15 +92,19 @@ class CaffeConverter_Impl : public CaffeConverter {
 
 cv::Mat
 CaffeConverter_Impl::compute_mean(const string& mean_file,
-                                  int width, int height) {
+                                  const size_t width,
+				  const size_t height) {
     caffe::BlobProto blob;
     ::detail::read_proto_from_binary(mean_file, &blob);
 
     vector<cv::Mat> channels;
     auto data = blob.mutable_data()->mutable_data();
 
-    for (int i = 0; i < blob.channels(); i++, data += blob.height() * blob.width())
+    const size_t offset = blob.height() * blob.width();
+
+    for (int i = 0; i < blob.channels(); i++, data += offset) {
         channels.emplace_back(blob.height(), blob.width(), CV_32FC1, data);
+    }
 
     cv::Mat mean;
     cv::merge(channels, mean);
@@ -106,7 +113,8 @@ CaffeConverter_Impl::compute_mean(const string& mean_file,
 }
 
 cv::ColorConversionCodes
-CaffeConverter_Impl::get_cvt_codes(int src_channels, int dst_channels) {
+CaffeConverter_Impl::get_cvt_codes(const int src_channels,
+                                   const int dst_channels) {
     assert(src_channels != dst_channels);
 
     if (dst_channels == 3) {
@@ -120,8 +128,8 @@ CaffeConverter_Impl::get_cvt_codes(int src_channels, int dst_channels) {
 
 void CaffeConverter_Impl::preprocess(const cv::Mat& img,
                                      const cv::Mat& mean,
-                                     int num_channels,
-                                     cv::Size geometry,
+                                     const int num_channels,
+                                     const cv::Size& geometry,
                                      vector<cv::Mat>* input_channels) {
     cv::Mat sample;
 
@@ -138,7 +146,8 @@ void CaffeConverter_Impl::preprocess(const cv::Mat& img,
     cv::resize(sample, sample_resized, geometry);
 
     cv::Mat sample_float;
-    sample_resized.convertTo(sample_float, num_channels == 3 ? CV_32FC3 : CV_32FC1);
+    sample_resized.convertTo(sample_float,
+                             num_channels == 3 ? CV_32FC3 : CV_32FC1);
 
     // subtract mean
     if (mean.size().width > 0) {
@@ -155,26 +164,27 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
                                std::vector<float>* results) {
     const cv::Mat img = image.getMat();
 
-    // TODO: refactor this
-    int channels = (*net_)[0]->in_data_shape()[0].depth_;
-    int width    = (*net_)[0]->in_data_shape()[0].width_;
-    int height   = (*net_)[0]->in_data_shape()[0].height_;
+    const size_t channels = (*net_)[0]->in_data_shape()[0].depth_;
+    const size_t width    = (*net_)[0]->in_data_shape()[0].width_;
+    const size_t height   = (*net_)[0]->in_data_shape()[0].height_;
 
-    vector<float> inputvec(width*height*channels);
     vector<cv::Mat> input_channels;
+    vector<float> inputvec(width*height*channels);
 
-    for (int i = 0; i < channels; i++) {
+    for (size_t i = 0; i < channels; i++) {
         input_channels.emplace_back(height, width, CV_32FC1,
                                     &inputvec[width*height*i]);
     }
 
+    // subtract mean from input
     preprocess(img, mean_, 3, cv::Size(width, height), &input_channels);
 
-    vector<tiny_dnn::float_t> vec(inputvec.begin(), inputvec.end());
+    const vector<tiny_dnn::float_t> vec(inputvec.begin(), inputvec.end());
 
-    auto result = net_->predict(vec);
+    // perform inderence
+    auto result = net_->predict();
 
-    // allocate outpute
+    // allocate output
     results->clear();
     results->reserve(result.size());
 
@@ -186,8 +196,7 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
 Ptr<CaffeConverter> CaffeConverter::create(const cv::String& model_file,
                                            const cv::String& trained_file,
                                            const cv::String& mean_file) {
-    return makePtr<CaffeConverter_Impl>(
-        model_file, trained_file, mean_file);
+    return makePtr<CaffeConverter_Impl>(model_file, trained_file, mean_file);
 }
 
 } // namespace dnn2
