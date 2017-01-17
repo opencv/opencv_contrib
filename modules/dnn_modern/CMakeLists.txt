@@ -34,7 +34,11 @@ elseif(APPLE_FRAMEWORK OR ANDROID)
     return()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# set c++ standard to c++11.
+# Note: not working on CMake 2.8. We assume that user has
+#       a compiler with C++11 support.
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ----------------------------------------------------------------------------
 # OPTIMIZATION OPTIONS
@@ -85,7 +89,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if((NOT TINYDNN_USE_TBB) AND (NOT TINYDNN_USE_OMP))
         set(EXTRA_C_FLAGS " ${EXTRA_C_FLAGS} -pthread ")
     endif()
-    set(EXTRA_C_FLAGS " ${EXTRA_C_FLAGS} -std=c++11 -Wall -Wpedantic")
+    set(EXTRA_C_FLAGS " ${EXTRA_C_FLAGS} -Wall -Wpedantic")
     set(EXTRA_C_FLAGS_RELEASE " -O3 ")
     set(EXTRA_C_FLAGS_DEBUG " -g3 ")
 else() # MSVC
