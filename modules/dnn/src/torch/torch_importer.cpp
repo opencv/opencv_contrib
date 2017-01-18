@@ -575,21 +575,19 @@ struct TorchImporter : public ::cv::dnn::Importer
                 layerParams.blobs.push_back(tensorParams["running_var"].second);
 
                 CV_Assert(scalarParams.has("eps"));
-                layerParams.set("eps", float(scalarParams.get<double>("eps")));
-
-                layerParams.blobs.push_back(Blob());
-                layerParams.blobs.push_back(Blob());
+                float eps = float(scalarParams.get<double>("eps"));
+                layerParams.set("eps", eps);
 
                 if (tensorParams.count("weight"))
                 {
                     layerParams.set("has_weight", true);
-                    layerParams.blobs[2] = tensorParams["weight"].second;
+                    layerParams.blobs.push_back(tensorParams["weight"].second);
                 }
 
                 if (tensorParams.count("bias"))
                 {
                     layerParams.set("has_bias", true);
-                    layerParams.blobs[3] = tensorParams["bias"].second;
+                    layerParams.blobs.push_back(tensorParams["bias"].second);
                 }
 
                 curModule->modules.push_back(newModule);

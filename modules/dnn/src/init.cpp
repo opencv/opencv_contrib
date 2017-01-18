@@ -52,6 +52,7 @@
 #include "layers/normalize_bbox_layer.hpp"
 #include "layers/shift_layer.hpp"
 #include "layers/padding_layer.hpp"
+#include "layers/scale_layer.hpp"
 
 namespace cv
 {
@@ -109,6 +110,7 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(NormalizeBBox,  NormalizeBBoxLayer);
     REG_RUNTIME_LAYER_CLASS(Shift,          ShiftLayer);
     REG_RUNTIME_LAYER_CLASS(Padding,        PaddingLayer);
+    REG_RUNTIME_LAYER_FUNC(Scale,           createLayerFromCaffe<ScaleLayer>);
 
     init.status = true;
 }

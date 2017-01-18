@@ -12,6 +12,9 @@ function fill_net(net)
 	if net.bias then
 		net.bias = torch.rand(net.bias:size())
 	end
+	if net.train then
+		net.train = 0
+	end
 end
 
 function save(net, input, label)
@@ -69,3 +72,7 @@ save(net_concat, torch.rand(2, 6, 4, 3) - 0.5, 'net_concat')
 local net_deconv = nn.Sequential()
 net_deconv:add(nn.SpatialFullConvolution(3, 9, 4, 5, 1, 2, 0, 1, 0, 1))
 save(net_deconv, torch.rand(2, 3, 4, 3) - 0.5, 'net_deconv')
+
+local net_batch_norm = nn.Sequential()
+net_batch_norm:add(nn.SpatialBatchNormalization(3))
+save(net_batch_norm, torch.rand(1, 3, 4, 3) - 0.5, 'net_batch_norm')
