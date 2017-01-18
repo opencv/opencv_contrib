@@ -69,8 +69,6 @@ using namespace cv;
  * FIXME:
  * when patch is cut from image to compute NCC, there can be problem with size
  * optimize (allocation<-->reallocation)
- * optimize (remove vector.erase() calls)
- *       bring "out" all the parameters to TrackerMedianFlow::Param
  */
 
 class TrackerMedianFlowImpl : public TrackerMedianFlow{
@@ -165,6 +163,21 @@ std::string TrackerMedianFlowImpl::type2str(int type) {
 
   return r;
 }
+
+struct NaNChecker
+{
+    bool operator()(const Point2f& p)
+    {
+        return isnan(p.x) || isnan(p.y);
+    }
+};
+
+void removeNanPointsFromVector(std::vector<Point2f>& vec) {
+    std::vector<Point2f>::iterator iter_remove;
+    iter_remove = std::remove_if(vec.begin(), vec.end(), NaNChecker());
+    vec.erase(iter_remove, vec.end());
+}
+
 bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox){
     std::vector<Point2f> pointsToTrackOld,pointsToTrackNew;
 
@@ -192,43 +205,71 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     std::vector<float> errors(pointsToTrackOld.size());
     calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,
                          params.winSize, params.maxLevel, params.termCriteria, 0);
+
+    CV_Assert(pointsToTrackNew.size() == pointsToTrackOld.size());
+    CV_Assert(status.size() == pointsToTrackOld.size());
     dprintf(("\t%d after LK forward\n",(int)pointsToTrackOld.size()));
 
-    std::vector<Point2f> di;
-    for(int i=0;i<(int)pointsToTrackOld.size();i++){
-        if(status[i]==1){
-            di.push_back(pointsToTrackNew[i]-pointsToTrackOld[i]);
+    float quiet_NaN = std::numeric_limits<float>::quiet_NaN();
+    cv::Point2f NaN_point(quiet_NaN, quiet_NaN);
+
+    int num_good_points_after_optical_flow = 0;
+    for(size_t i=0;i<pointsToTrackOld.size();i++){
+        if (status[i]==1) {
+            num_good_points_after_optical_flow++;
         } else {
-            pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
-            pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
-            status.erase(status.begin()+i);
-            i--;
+            pointsToTrackOld[i] = NaN_point;
+            pointsToTrackNew[i] = NaN_point;
         }
     }
+
+    dprintf(("\t num_good_points_after_optical_flow = %d\n",num_good_points_after_optical_flow));
+
+    if (num_good_points_after_optical_flow == 0) {
+        return false;
+    }
+
+    removeNanPointsFromVector(pointsToTrackOld);
+    removeNanPointsFromVector(pointsToTrackNew);
+
+    CV_Assert(pointsToTrackOld.size() == (size_t)num_good_points_after_optical_flow);
+    CV_Assert(pointsToTrackNew.size() == (size_t)num_good_points_after_optical_flow);
+
     dprintf(("\t%d after LK forward after removing points with bad status\n",(int)pointsToTrackOld.size()));
 
-    if(pointsToTrackOld.empty()){
-        return false;
-    }
-
     std::vector<bool> filter_status(pointsToTrackOld.size(), true);
-    check_FB(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
-    check_NCC(oldImage_gray,newImage_gray,pointsToTrackOld,pointsToTrackNew,filter_status);
+    check_FB(oldImage_gray, newImage_gray, pointsToTrackOld, pointsToTrackNew, filter_status);
+    check_NCC(oldImage_gray, newImage_gray, pointsToTrackOld, pointsToTrackNew, filter_status);
 
     // filter
+    int num_good_points_after_filtering = 0;
     for(int i=0;i<(int)pointsToTrackOld.size();i++){
-        if(!filter_status[i]){
-            pointsToTrackOld.erase(pointsToTrackOld.begin()+i);
-            pointsToTrackNew.erase(pointsToTrackNew.begin()+i);
-            filter_status.erase(filter_status.begin()+i);
-            i--;
+        if(filter_status[i]){
+            num_good_points_after_filtering++;
+        } else {
+            pointsToTrackOld[i] = NaN_point;
+            pointsToTrackNew[i] = NaN_point;
         }
     }
-    dprintf(("\t%d after LK backward\n",(int)pointsToTrackOld.size()));
+    dprintf(("\t num_good_points_after_filtering = %d\n",num_good_points_after_filtering));
 
-    if(pointsToTrackOld.empty()){
+    if(num_good_points_after_filtering == 0){
         return false;
     }
+
+    removeNanPointsFromVector(pointsToTrackOld);
+    removeNanPointsFromVector(pointsToTrackNew);
+
+    CV_Assert(pointsToTrackOld.size() == (size_t)num_good_points_after_filtering);
+    CV_Assert(pointsToTrackNew.size() == (size_t)num_good_points_after_filtering);
+
+    dprintf(("\t%d after LK backward\n",(int)pointsToTrackOld.size()));
+
+    std::vector<Point2f> di(pointsToTrackOld.size());
+    for(size_t i=0; i<pointsToTrackOld.size(); i++){
+        di[i] = pointsToTrackNew[i]-pointsToTrackOld[i];
+    }
+
     Point2f mDisplacement;
     oldBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox,mDisplacement);
 
@@ -326,7 +367,7 @@ double TrackerMedianFlowImpl::l2distance(Point2f p1,Point2f p2){
     return sqrt(dx*dx+dy*dy);
 }
 void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
-        const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
+                                     const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
 
     if(status.empty()) {
         status=std::vector<bool>(oldPoints.size(),true);
