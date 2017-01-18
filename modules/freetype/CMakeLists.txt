@@ -19,7 +19,8 @@ endif()
 
 
 if( FREETYPE_FOUND AND HARFBUZZ_FOUND )
-  ocv_define_module(freetype opencv_core opencv_imgproc PRIVATE_REQUIRED ${FREETYPE_LIBRARIES} ${HARFBUZZ_LIBRARIES} WRAP python)
+  ocv_define_module(freetype opencv_core opencv_imgproc WRAP python)
+  ocv_target_link_libraries(${the_module} ${FREETYPE_LIBRARIES} ${HARFBUZZ_LIBRARIES})
   ocv_include_directories( ${FREETYPE_INCLUDE_DIRS} ${HARFBUZZ_INCLUDE_DIRS} )
 else()
   ocv_module_disable(freetype)
