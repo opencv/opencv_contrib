@@ -427,30 +427,25 @@ TrackerMedianFlow::Params::Params() {
 }
 
 void TrackerMedianFlow::Params::read( const cv::FileNode& fn ){
-  pointsInGrid=fn["pointsInGrid"];
-  winSize.width = fn["winSize.width"];
-  winSize.height = fn["winSize.height"];
-  maxLevel = fn["maxLevel"];
+
+  fn["winSize"] >> winSize;
+  fn["winSizeNCC"] >> winSizeNCC;
+  fn["pointsInGrid"] >> pointsInGrid;
+  fn["maxLevel"] >> maxLevel;
+  fn["maxMedianLengthOfDisplacementDifference"] >> maxMedianLengthOfDisplacementDifference;
 
   termCriteria = TermCriteria(TermCriteria::COUNT|TermCriteria::EPS,20,0.3);
-  termCriteria.maxCount = fn["termCriteria.maxCount"];
-  termCriteria.epsilon = fn["termCriteria.epsilon"];
-
-  winSizeNCC.width = fn["winSizeNCC.width"];
-  winSizeNCC.height = fn["winSizeNCC.height"];
-
-  maxMedianLengthOfDisplacementDifference = fn["maxMedianLengthOfDisplacementDifference"];
+  fn["termCriteria_maxCount"] >> termCriteria.maxCount;
+  fn["termCriteria_epsilon"] >> termCriteria.epsilon;
 }
 
 void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
   fs << "pointsInGrid" << pointsInGrid;
-  fs << "winSize.width" << winSize.width;
-  fs << "winSize.height" << winSize.height;
+  fs << "winSize" << winSize;
   fs << "maxLevel" << maxLevel;
-  fs << "termCriteria.maxCount" << termCriteria.maxCount;
-  fs << "termCriteria.epsilon" << termCriteria.epsilon;
-  fs << "winSizeNCC.width" << winSizeNCC.width;
-  fs << "winSizeNCC.height" << winSizeNCC.height;
+  fs << "termCriteria_maxCount" << termCriteria.maxCount;
+  fs << "termCriteria_epsilon" << termCriteria.epsilon;
+  fs << "winSizeNCC" << winSizeNCC;
   fs << "maxMedianLengthOfDisplacementDifference" << maxMedianLengthOfDisplacementDifference;
 }
 
