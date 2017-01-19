@@ -25,6 +25,10 @@ else()
   )
 endif()
 
+if(APPLE_FRAMEWORK)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshorten-64-to-32)
+endif()
+
 if(ANDROID)
   add_definitions(-DDISABLE_POSIX_MEMALIGN -DTH_DISABLE_HEAP_TRACKING)
 endif()
