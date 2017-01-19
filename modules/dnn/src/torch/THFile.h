@@ -2,6 +2,7 @@
 #define TH_FILE_INC
 
 //#include "THStorage.h"
+#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THGeneral.h"
 
 typedef struct THFile__ THFile;
@@ -84,4 +85,5 @@ TH_API long THFile_position(THFile *self);
 TH_API void THFile_close(THFile *self);
 TH_API void THFile_free(THFile *self);
 
-#endif
+#endif //defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
+#endif //TH_FILE_INC
