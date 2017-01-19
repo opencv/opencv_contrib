@@ -92,7 +92,6 @@ class TrackerMedianFlowImpl : public TrackerMedianFlow{
              const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
      void check_NCC(const Mat& oldImage,const Mat& newImage,
              const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
-     inline double l2distance(Point2f p1,Point2f p2);
 
      TrackerMedianFlow::Params params;
 };
@@ -139,29 +138,6 @@ bool TrackerMedianFlowImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
     ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(oldBox);
     return true;
-}
-
-std::string TrackerMedianFlowImpl::type2str(int type) {
-  std::string r;
-
-  uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = (uchar)(1 + (type >> CV_CN_SHIFT));
-
-  switch ( depth ) {
-    case CV_8U:  r = "8U"; break;
-    case CV_8S:  r = "8S"; break;
-    case CV_16U: r = "16U"; break;
-    case CV_16S: r = "16S"; break;
-    case CV_32S: r = "32S"; break;
-    case CV_32F: r = "32F"; break;
-    case CV_64F: r = "64F"; break;
-    default:     r = "User"; break;
-  }
-
-  r += "C";
-  r += (chans+'0');
-
-  return r;
 }
 
 struct NaNChecker
@@ -317,8 +293,8 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
     std::vector<double> buf_for_scale(n*(n-1)/2, 0.0);
     for(int i=0,ctr=0;i<n;i++){
         for(int j=0;j<i;j++){
-            nd=l2distance(newPoints[i],newPoints[j]);
-            od=l2distance(oldPoints[i],oldPoints[j]);
+            nd=norm(newPoints[i] - newPoints[j]);
+            od=norm(oldPoints[i] - oldPoints[j]);
             buf_for_scale[ctr]=(od==0.0)?0.0:(nd/od);
             ctr++;
         }
@@ -339,12 +315,18 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
 template<typename T>
 T TrackerMedianFlowImpl::getMedian(const std::vector<T>& values){
     size_t size = values.size();
-    std::vector<T> copy(values.begin(),values.end());
-    std::sort(copy.begin(),copy.end());
-    if(size%2==0){
+    std::vector<T> copy(values);
+
+    if(size%2==0)
+    {
+        std::sort(copy.begin(), copy.end());
         return (copy[size/2-1]+copy[size/2])/((T)2.0);
-    }else{
-        return copy[(size-1)/2];
+    }
+    else
+    {
+        size_t medianIndex = (size - 1) / 2;
+        std::nth_element(copy.begin(), copy.begin() + medianIndex, copy.end());
+        return copy[medianIndex];
     }
 }
 
@@ -362,10 +344,7 @@ void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size)
         dprintf(("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]));
     }
 }
-double TrackerMedianFlowImpl::l2distance(Point2f p1,Point2f p2){
-    double dx=p1.x-p2.x, dy=p1.y-p2.y;
-    return sqrt(dx*dx+dy*dy);
-}
+
 void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
                                      const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
 
@@ -381,7 +360,7 @@ void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
                          params.winSize, params.maxLevel, params.termCriteria, 0);
 
     for(int i=0;i<(int)oldPoints.size();i++){
-        FBerror[i]=l2distance(oldPoints[i],pointsToTrackReprojection[i]);
+        FBerror[i]=norm(oldPoints[i]-pointsToTrackReprojection[i]);
     }
     double FBerrorMedian=getMedian(FBerror);
     dprintf(("point median=%f\n",FBerrorMedian));
