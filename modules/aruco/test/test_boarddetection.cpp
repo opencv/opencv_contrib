@@ -400,7 +400,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     pts2d.push_back(cv::Point2f(586.3f, 188.5f));
     corners.push_back(pts2d);
 
-    nUsed = cv::aruco::estimatePoseBoard(corners, board.ids, boardPtr, cameraMatrix, Mat(), rvec, tvec);
+    nUsed = cv::aruco::estimatePoseBoard(corners, board.ids, boardPtr, cameraMatrix, Mat(), rvec, tvec, true);
     ASSERT_EQ(nUsed, 2);
 
     cv::Rodrigues(rvec, rotm);
