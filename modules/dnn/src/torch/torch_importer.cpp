@@ -197,7 +197,7 @@ struct TorchImporter : public ::cv::dnn::Importer
 
            if (typeStr == "Double")
                return CV_64F;
-           else if (typeStr == "Float")
+           else if (typeStr == "Float" || typeStr == "Cuda")
                return CV_32F;
            else if (typeStr == "Byte")
                return CV_8U;
