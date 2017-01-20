@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
-
-if(APPLE_FRAMEWORK OR WINRT
-    OR AARCH64 # protobuf doesn't know this platform
-)
+if(WINRT)
   ocv_module_disable(dnn)
 endif()
 
@@ -27,6 +23,10 @@ else()
                                        -Wundef -Wtautological-undefined-compare -Wignored-qualifiers -Wextra
                                        -Wunused-function -Wunused-const-variable -Wdeprecated-declarations
   )
+endif()
+
+if(APPLE_FRAMEWORK)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshorten-64-to-32)
 endif()
 
 if(ANDROID)
