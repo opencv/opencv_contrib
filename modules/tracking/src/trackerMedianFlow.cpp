@@ -253,12 +253,12 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     Point2f mDisplacement;
     oldBox=vote(pointsToTrackOld,pointsToTrackNew,oldBox,mDisplacement);
 
-    std::vector<double> displacements;
+    std::vector<float> displacements;
     for(size_t i=0;i<di.size();i++){
         di[i]-=mDisplacement;
-        displacements.push_back(sqrt(di[i].ddot(di[i])));
+        displacements.push_back((float)sqrt(di[i].ddot(di[i])));
     }
-    double median_displacements = getMedianAndDoPartition(displacements);
+    float median_displacements = getMedianAndDoPartition(displacements);
     dprintf(("\tmedian of length of difference of displacements = %f\n", median_displacements));
     if(median_displacements > params.maxMedianLengthOfDisplacementDifference){
         dprintf(("\tmedian flow tracker returns false due to big median length of difference between displacements\n"));
@@ -283,8 +283,8 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
         return newRect;
     }
 
-    double xshift=0,yshift=0;
-    std::vector<double> buf_for_location(n, 0.);
+    float xshift=0,yshift=0;
+    std::vector<float> buf_for_location(n, 0.);
     for(size_t i=0;i<n;i++){  buf_for_location[i]=newPoints[i].x-oldPoints[i].x;  }
     xshift=getMedianAndDoPartition(buf_for_location);
     newCenter.x+=xshift;
@@ -293,12 +293,11 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
     newCenter.y+=yshift;
     mD=Point2f((float)xshift,(float)yshift);
 
-    double nd,od;
     std::vector<double> buf_for_scale(n*(n-1)/2, 0.0);
     for(size_t i=0,ctr=0;i<n;i++){
         for(size_t j=0;j<i;j++){
-            nd=norm(newPoints[i] - newPoints[j]);
-            od=norm(oldPoints[i] - oldPoints[j]);
+            double nd=norm(newPoints[i] - newPoints[j]);
+            double od=norm(oldPoints[i] - oldPoints[j]);
             buf_for_scale[ctr]=(od==0.0)?0.0:(nd/od);
             ctr++;
         }
@@ -340,15 +339,15 @@ void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
 
     std::vector<uchar> LKstatus(oldPoints.size());
     std::vector<float> errors(oldPoints.size());
-    std::vector<double> FBerror(oldPoints.size());
+    std::vector<float> FBerror(oldPoints.size());
     std::vector<Point2f> pointsToTrackReprojection;
     calcOpticalFlowPyrLK(newImage, oldImage,newPoints,pointsToTrackReprojection,LKstatus,errors,
                          params.winSize, params.maxLevel, params.termCriteria, 0);
 
     for(size_t i=0;i<oldPoints.size();i++){
-        FBerror[i]=norm(oldPoints[i]-pointsToTrackReprojection[i]);
+        FBerror[i]=(float)norm(oldPoints[i]-pointsToTrackReprojection[i]);
     }
-    double FBerrorMedian=getMedian(FBerror);
+    float FBerrorMedian=getMedian(FBerror);
     dprintf(("point median=%f\n",FBerrorMedian));
     dprintf(("FBerrorMedian=%f\n",FBerrorMedian));
     for(size_t i=0;i<oldPoints.size();i++){
@@ -362,22 +361,22 @@ void TrackerMedianFlowImpl::check_NCC(const Mat& oldImage,const Mat& newImage,
     Mat p1,p2;
 
     for (size_t i = 0; i < oldPoints.size(); i++) {
-		getRectSubPix( oldImage, params.winSizeNCC, oldPoints[i],p1);
-		getRectSubPix( newImage, params.winSizeNCC, newPoints[i],p2);
+        getRectSubPix( oldImage, params.winSizeNCC, oldPoints[i],p1);
+        getRectSubPix( newImage, params.winSizeNCC, newPoints[i],p2);
 
-        const int N=params.winSizeNCC.area();
+        const int patch_area=params.winSizeNCC.area();
         double s1=sum(p1)(0),s2=sum(p2)(0);
         double n1=norm(p1),n2=norm(p2);
         double prod=p1.dot(p2);
-        double sq1=sqrt(n1*n1-s1*s1/N),sq2=sqrt(n2*n2-s2*s2/N);
-        double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/N)/sq1/sq2;
+        double sq1=sqrt(n1*n1-s1*s1/patch_area),sq2=sqrt(n2*n2-s2*s2/patch_area);
+        double ares=(sq2==0)?sq1/abs(sq1):(prod-s1*s2/patch_area)/sq1/sq2;
 
-		NCC[i] = (float)ares;
-	}
-	float median = getMedian(NCC);
+        NCC[i] = (float)ares;
+    }
+    float median = getMedian(NCC);
     for(size_t i = 0; i < oldPoints.size(); i++) {
         status[i] = status[i] && (NCC[i] >= median);
-	}
+    }
 }
 
 template<typename T>
