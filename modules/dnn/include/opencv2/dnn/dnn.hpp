@@ -312,7 +312,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     CV_EXPORTS Ptr<Importer> createTensorflowImporter(const String &model);
 
     /** @brief Reads a network model stored in TensorFlow model files.
-      * @details This is shortcut consisting from createTensorflowImporter and Net::populateNet calls.
+      * @details This is shortcut consisting from createTensorflowImporter and Importer::populateNet calls.
       */
     CV_EXPORTS_W Net readNetFromTensorflow(const String &model);
 
