@@ -100,6 +100,28 @@ T getMedian( const std::vector<T>& values );
 template<typename T>
 T getMedianAndDoPartition( std::vector<T>& values );
 
+Mat getPatch(Mat image, Size patch_size, Point2f patch_center)
+{
+    Mat patch;
+    Point2i roi_strat_corner(cvRound(patch_center.x - patch_size.width / 2.),
+            cvRound(patch_center.y - patch_size.height / 2.));
+
+    Rect2i patch_rect(roi_strat_corner, patch_size);
+
+    if(patch_rect == (patch_rect & Rect2i(0, 0, image.cols, image.rows)))
+    {
+        patch = image(patch_rect);
+    }
+    else
+    {
+        getRectSubPix(image, patch_size,
+                      Point2f((float)(patch_rect.x + patch_size.width  / 2.),
+                              (float)(patch_rect.y + patch_size.height / 2.)), patch);
+    }
+
+    return patch;
+}
+
 class TrackerMedianFlowModel : public TrackerModel{
 public:
     TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/){}
@@ -361,8 +383,8 @@ void TrackerMedianFlowImpl::check_NCC(const Mat& oldImage,const Mat& newImage,
     Mat p1,p2;
 
     for (size_t i = 0; i < oldPoints.size(); i++) {
-        getRectSubPix( oldImage, params.winSizeNCC, oldPoints[i],p1);
-        getRectSubPix( newImage, params.winSizeNCC, newPoints[i],p2);
+        p1 = getPatch(oldImage, params.winSizeNCC, oldPoints[i]);
+        p2 = getPatch(newImage, params.winSizeNCC, newPoints[i]);
 
         const int patch_area=params.winSizeNCC.area();
         double s1=sum(p1)(0),s2=sum(p2)(0);
