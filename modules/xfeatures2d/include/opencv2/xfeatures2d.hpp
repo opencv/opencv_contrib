@@ -834,6 +834,97 @@ public:
 
 };
 
+/**
+* @brief Elliptic region around an interest point.
+*/
+class CV_EXPORTS Elliptic_KeyPoint : public KeyPoint
+{
+public:
+    Size_<float> axes; //!< the lengths of the major and minor ellipse axes
+    float si;  //!< the integration scale at which the parameters were estimated
+    Matx23f transf; //!< the transformation between image space and local patch space
+    Elliptic_KeyPoint();
+    Elliptic_KeyPoint(Point2f pt, float angle, Size axes, float size, float si);
+    virtual ~Elliptic_KeyPoint();
+};
+
+/**
+ * @brief Class implementing the Harris-Laplace feature detector as described in @cite Mikolajczyk2004.
+ */
+class CV_EXPORTS_W HarrisLaplaceFeatureDetector : public Feature2D
+{
+public:
+    /**
+     * @brief Creates a new implementation instance.
+     *
+     * @param numOctaves the number of octaves in the scale-space pyramid
+     * @param corn_thresh the threshold for the Harris cornerness measure
+     * @param DOG_thresh the threshold for the Difference-of-Gaussians scale selection
+     * @param maxCorners the maximum number of corners to consider
+     * @param num_layers the number of intermediate scales per octave
+     */
+    CV_WRAP static Ptr<HarrisLaplaceFeatureDetector> create(
+            int numOctaves=6,
+            float corn_thresh=0.01f,
+            float DOG_thresh=0.01f,
+            int maxCorners=5000,
+            int num_layers=4);
+};
+
+/**
+ * @brief Class implementing affine adaptation for key points.
+ *
+ * A @ref FeatureDetector and a @ref DescriptorExtractor are wrapped to augment the
+ * detected points with their affine invariant elliptic region and to compute
+ * the feature descriptors on the regions after warping them into circles.
+ *
+ * The interface is equivalent to @ref Feature2D, adding operations for
+ * @ref Elliptic_KeyPoint "Elliptic_KeyPoints" instead of @ref KeyPoint "KeyPoints".
+ */
+class CV_EXPORTS AffineFeature2D : public Feature2D
+{
+public:
+    /**
+     * @brief Creates an instance wrapping the given keypoint detector and
+     * descriptor extractor.
+     */
+    static Ptr<AffineFeature2D> create(
+        Ptr<FeatureDetector> keypoint_detector,
+        Ptr<DescriptorExtractor> descriptor_extractor);
+
+    /**
+     * @brief Creates an instance where keypoint detector and descriptor
+     * extractor are identical.
+     */
+    static Ptr<AffineFeature2D> create(
+        Ptr<FeatureDetector> keypoint_detector)
+    {
+        return create(keypoint_detector, keypoint_detector);
+    }
+
+    using Feature2D::detect; // overload, don't hide
+    /**
+     * @brief Detects keypoints in the image using the wrapped detector and
+     * performs affine adaptation to augment them with their elliptic regions.
+     */
+    virtual void detect(
+        InputArray image,
+        CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
+        InputArray mask=noArray() ) = 0;
+
+    using Feature2D::detectAndCompute; // overload, don't hide
+    /**
+     * @brief Detects keypoints and computes descriptors for their surrounding
+     * regions, after warping them into circles.
+     */
+    virtual void detectAndCompute(
+        InputArray image,
+        InputArray mask,
+        CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
+        OutputArray descriptors,
+        bool useProvidedKeypoints=false ) = 0;
+};
+
 //! @}
 
 }
