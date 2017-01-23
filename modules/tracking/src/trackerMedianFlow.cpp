@@ -72,26 +72,26 @@ using namespace cv;
  */
 
 class TrackerMedianFlowImpl : public TrackerMedianFlow{
- public:
-     TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn) {params=paramsIn;isInit=false;}
-     void read( const FileNode& fn );
-     void write( FileStorage& fs ) const;
- private:
-     bool initImpl( const Mat& image, const Rect2d& boundingBox );
-     bool updateImpl( const Mat& image, Rect2d& boundingBox );
-     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
-     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
-     //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median; besides
-          //it makes copy all the time
-     float dist(Point2f p1,Point2f p2);
-     std::string type2str(int type);
-     void computeStatistics(std::vector<float>& data,int size=-1);
-     void check_FB(const Mat& oldImage,const Mat& newImage,
-             const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
-     void check_NCC(const Mat& oldImage,const Mat& newImage,
-             const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
+public:
+    TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn) {params=paramsIn;isInit=false;}
+    void read( const FileNode& fn );
+    void write( FileStorage& fs ) const;
+private:
+    bool initImpl( const Mat& image, const Rect2d& boundingBox );
+    bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
+    Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
+    //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median; besides
+    //it makes copy all the time
+    float dist(Point2f p1,Point2f p2);
+    std::string type2str(int type);
+    void computeStatistics(std::vector<float>& data,int size=-1);
+    void check_FB(const Mat& oldImage,const Mat& newImage,
+                  const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
+    void check_NCC(const Mat& oldImage,const Mat& newImage,
+                   const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
 
-     TrackerMedianFlow::Params params;
+    TrackerMedianFlow::Params params;
 };
 
 template<typename T>
@@ -101,27 +101,27 @@ template<typename T>
 T getMedianAndDoPartition( std::vector<T>& values );
 
 class TrackerMedianFlowModel : public TrackerModel{
- public:
-  TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/){}
-  Rect2d getBoundingBox(){return boundingBox_;}
-  void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
-  Mat getImage(){return image_;}
-  void setImage(const Mat& image){image.copyTo(image_);}
- protected:
-  Rect2d boundingBox_;
-  Mat image_;
-  void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
-  void modelUpdateImpl(){}
+public:
+    TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/){}
+    Rect2d getBoundingBox(){return boundingBox_;}
+    void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
+    Mat getImage(){return image_;}
+    void setImage(const Mat& image){image.copyTo(image_);}
+protected:
+    Rect2d boundingBox_;
+    Mat image_;
+    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
+    void modelUpdateImpl(){}
 };
 
 void TrackerMedianFlowImpl::read( const cv::FileNode& fn )
 {
-  params.read( fn );
+    params.read( fn );
 }
 
 void TrackerMedianFlowImpl::write( cv::FileStorage& fs ) const
 {
-  params.write( fs );
+    params.write( fs );
 }
 
 bool TrackerMedianFlowImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
@@ -175,9 +175,9 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     //"open ended" grid
     for(int i=0;i<params.pointsInGrid;i++){
         for(int j=0;j<params.pointsInGrid;j++){
-                pointsToTrackOld.push_back(
+            pointsToTrackOld.push_back(
                         Point2f((float)(oldBox.x+((1.0*oldBox.width)/params.pointsInGrid)*j+.5*oldBox.width/params.pointsInGrid),
-                        (float)(oldBox.y+((1.0*oldBox.height)/params.pointsInGrid)*i+.5*oldBox.height/params.pointsInGrid)));
+                                (float)(oldBox.y+((1.0*oldBox.height)/params.pointsInGrid)*i+.5*oldBox.height/params.pointsInGrid)));
         }
     }
 
@@ -355,7 +355,7 @@ void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
     }
 }
 void TrackerMedianFlowImpl::check_NCC(const Mat& oldImage,const Mat& newImage,
-        const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
+                                      const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
 
     std::vector<float> NCC(oldPoints.size(),0.0);
     Mat p1,p2;
@@ -427,25 +427,25 @@ TrackerMedianFlow::Params::Params() {
 
 void TrackerMedianFlow::Params::read( const cv::FileNode& fn ){
 
-  fn["winSize"] >> winSize;
-  fn["winSizeNCC"] >> winSizeNCC;
-  fn["pointsInGrid"] >> pointsInGrid;
-  fn["maxLevel"] >> maxLevel;
-  fn["maxMedianLengthOfDisplacementDifference"] >> maxMedianLengthOfDisplacementDifference;
+    fn["winSize"] >> winSize;
+    fn["winSizeNCC"] >> winSizeNCC;
+    fn["pointsInGrid"] >> pointsInGrid;
+    fn["maxLevel"] >> maxLevel;
+    fn["maxMedianLengthOfDisplacementDifference"] >> maxMedianLengthOfDisplacementDifference;
 
-  termCriteria = TermCriteria(TermCriteria::COUNT|TermCriteria::EPS,20,0.3);
-  fn["termCriteria_maxCount"] >> termCriteria.maxCount;
-  fn["termCriteria_epsilon"] >> termCriteria.epsilon;
+    termCriteria = TermCriteria(TermCriteria::COUNT|TermCriteria::EPS,20,0.3);
+    fn["termCriteria_maxCount"] >> termCriteria.maxCount;
+    fn["termCriteria_epsilon"] >> termCriteria.epsilon;
 }
 
 void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
-  fs << "pointsInGrid" << pointsInGrid;
-  fs << "winSize" << winSize;
-  fs << "maxLevel" << maxLevel;
-  fs << "termCriteria_maxCount" << termCriteria.maxCount;
-  fs << "termCriteria_epsilon" << termCriteria.epsilon;
-  fs << "winSizeNCC" << winSizeNCC;
-  fs << "maxMedianLengthOfDisplacementDifference" << maxMedianLengthOfDisplacementDifference;
+    fs << "pointsInGrid" << pointsInGrid;
+    fs << "winSize" << winSize;
+    fs << "maxLevel" << maxLevel;
+    fs << "termCriteria_maxCount" << termCriteria.maxCount;
+    fs << "termCriteria_epsilon" << termCriteria.epsilon;
+    fs << "winSizeNCC" << winSizeNCC;
+    fs << "maxMedianLengthOfDisplacementDifference" << maxMedianLengthOfDisplacementDifference;
 }
 
 Ptr<TrackerMedianFlow> TrackerMedianFlow::createTracker(const TrackerMedianFlow::Params &parameters){
