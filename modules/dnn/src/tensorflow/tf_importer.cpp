@@ -748,7 +748,7 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String&)
 
 #endif //HAVE_PROTOBUF
 
-Net cv::dnn::readNetFromTensorflow(const String &model)
+Ptr<Net> cv::dnn::readNetFromTensorflow(const String &model)
 {
     Ptr<Importer> tensorflowImporter;
     try
@@ -764,5 +764,5 @@ Net cv::dnn::readNetFromTensorflow(const String &model)
     Net net;
     if (tensorflowImporter)
         tensorflowImporter->populateNet(net);
-    return net;
+    return makePtr<Net>(net);
 }
