@@ -751,15 +751,7 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String&)
 Ptr<Net> cv::dnn::readNetFromTensorflow(const String &model)
 {
     Ptr<Importer> tensorflowImporter;
-    try
-    {
-        tensorflowImporter = createTensorflowImporter(model);
-    }
-    catch (cv::Exception& e)
-    {
-        std::cerr << "Exception: " << e.what() << std::endl;
-        return Net();
-    }
+    tensorflowImporter = createTensorflowImporter(model);
 
     Net net;
     if (tensorflowImporter)
