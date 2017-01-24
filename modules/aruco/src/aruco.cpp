@@ -1250,13 +1250,6 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
     if(objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
-    if (_rvec.empty() || _tvec.empty())
-    {
-        _rvec.create(3, 1, CV_64FC1);
-        _tvec.create(3, 1, CV_64FC1);
-        useExtrinsicGuess = false;
-    }
-
     solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     // divide by four since all the four corners are concatenated in the array for each marker
