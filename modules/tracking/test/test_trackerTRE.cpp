@@ -457,56 +457,56 @@ PARAM_TEST_CASE(TRE_Overlap, string, int, float)
   }
 };
 
-TEST_P(TRE_Distance, MIL)
+TEST_P(TRE_Distance, DISABLED_MIL)
 {
   TrackerTRETest test( Tracker::create( "MIL" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, MIL)
+TEST_P(TRE_Overlap, DISABLED_MIL)
 {
   TrackerTRETest test( Tracker::create( "MIL" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Distance, Boosting)
+TEST_P(TRE_Distance, DISABLED_Boosting)
 {
   TrackerTRETest test( Tracker::create( "BOOSTING" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, Boosting)
+TEST_P(TRE_Overlap, DISABLED_Boosting)
 {
   TrackerTRETest test( Tracker::create( "BOOSTING" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Distance, TLD)
+TEST_P(TRE_Distance, DISABLED_TLD)
 {
   TrackerTRETest test( Tracker::create( "TLD" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, TLD)
+TEST_P(TRE_Overlap, DISABLED_TLD)
 {
   TrackerTRETest test( Tracker::create( "TLD" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Distance, GOTURN)
+TEST_P(TRE_Distance, DISABLED_GOTURN)
 {
   TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::DISTANCE, dataset, threshold, segment);
   test.run();
   RecordProperty("ratioSuccess", test.getRatioSucc());
 }
 
-TEST_P(TRE_Overlap, GOTURN)
+TEST_P(TRE_Overlap, DISABLED_GOTURN)
 {
   TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::OVERLAP, dataset, threshold, segment);
   test.run();
