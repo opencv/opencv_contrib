@@ -81,12 +81,10 @@ private:
     bool updateImpl( const Mat& image, Rect2d& boundingBox );
     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
-    //FIXME: this can be optimized: current method uses sort->select approach, there are O(n) selection algo for median; besides
-    //it makes copy all the time
     float dist(Point2f p1,Point2f p2);
     std::string type2str(int type);
     void computeStatistics(std::vector<float>& data,int size=-1);
-    void check_FB(const Mat& oldImage,const Mat& newImage,
+    void check_FB(const std::vector<Mat>& oldImagePyr,const std::vector<Mat>& newImagePyr,
                   const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
     void check_NCC(const Mat& oldImage,const Mat& newImage,
                    const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
@@ -205,7 +203,14 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
 
     std::vector<uchar> status(pointsToTrackOld.size());
     std::vector<float> errors(pointsToTrackOld.size());
-    calcOpticalFlowPyrLK(oldImage_gray, newImage_gray,pointsToTrackOld,pointsToTrackNew,status,errors,
+
+    std::vector<Mat> oldImagePyr;
+    buildOpticalFlowPyramid(oldImage_gray, oldImagePyr, params.winSize, params.maxLevel, false);
+
+    std::vector<Mat> newImagePyr;
+    buildOpticalFlowPyramid(newImage_gray, newImagePyr, params.winSize, params.maxLevel, false);
+
+    calcOpticalFlowPyrLK(oldImagePyr,newImagePyr,pointsToTrackOld,pointsToTrackNew,status,errors,
                          params.winSize, params.maxLevel, params.termCriteria, 0);
 
     CV_Assert(pointsToTrackNew.size() == pointsToTrackOld.size());
@@ -240,7 +245,7 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     dprintf(("\t%d after LK forward after removing points with bad status\n",(int)pointsToTrackOld.size()));
 
     std::vector<bool> filter_status(pointsToTrackOld.size(), true);
-    check_FB(oldImage_gray, newImage_gray, pointsToTrackOld, pointsToTrackNew, filter_status);
+    check_FB(oldImagePyr, newImagePyr, pointsToTrackOld, pointsToTrackNew, filter_status);
     check_NCC(oldImage_gray, newImage_gray, pointsToTrackOld, pointsToTrackNew, filter_status);
 
     // filter
@@ -352,8 +357,8 @@ void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size)
     }
 }
 
-void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
-                                     const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status){
+void TrackerMedianFlowImpl::check_FB(const std::vector<Mat>& oldImagePyr, const std::vector<Mat>& newImagePyr,
+                                     const std::vector<Point2f>& oldPoints, const std::vector<Point2f>& newPoints, std::vector<bool>& status){
 
     if(status.empty()) {
         status=std::vector<bool>(oldPoints.size(),true);
@@ -363,7 +368,7 @@ void TrackerMedianFlowImpl::check_FB(const Mat& oldImage,const Mat& newImage,
     std::vector<float> errors(oldPoints.size());
     std::vector<float> FBerror(oldPoints.size());
     std::vector<Point2f> pointsToTrackReprojection;
-    calcOpticalFlowPyrLK(newImage, oldImage,newPoints,pointsToTrackReprojection,LKstatus,errors,
+    calcOpticalFlowPyrLK(newImagePyr, oldImagePyr,newPoints,pointsToTrackReprojection,LKstatus,errors,
                          params.winSize, params.maxLevel, params.termCriteria, 0);
 
     for(size_t i=0;i<oldPoints.size();i++){
