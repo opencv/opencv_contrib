@@ -674,13 +674,6 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
     // points need to be in different lines, check if detected points are enough
     if(!_arePointsEnoughForPoseEstimation(objPoints)) return false;
 
-    if (_rvec.empty() || _tvec.empty())
-    {
-        _rvec.create(3, 1, CV_64FC1);
-        _tvec.create(3, 1, CV_64FC1);
-        useExtrinsicGuess = false;
-    }
-
     solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     return true;
