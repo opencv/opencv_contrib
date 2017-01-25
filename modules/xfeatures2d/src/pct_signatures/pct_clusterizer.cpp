@@ -57,7 +57,7 @@ References:
     ACM, 2010.
 */
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 
 #include "opencv2/core/core_c.h"    // <- because CV_REDUCE_SUM was undeclared without it
 #include "pct_clusterizer.hpp"

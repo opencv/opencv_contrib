@@ -211,7 +211,7 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             float ratio = 1 - q;
 
             //if ratio == 1 means q == 0 and one axes equals to 0
-            if (!isnan(ratio) && ratio != 1)
+            if (!cvIsNaN(ratio) && ratio != 1)
             {
                 //Update U matrix
                 U = U * Mk;

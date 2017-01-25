@@ -3,7 +3,6 @@ if(WINRT)
 endif()
 
 set(the_description "Deep neural network module. It allows to load models from different frameworks and to make forward pass")
-set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 
 ocv_add_module(dnn opencv_core opencv_imgproc PRIVATE_REQUIRED "${LAPACK_LIBRARIES}" WRAP python matlab)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninitialized -Wsign-promo
@@ -36,7 +35,7 @@ endif()
 # ----------------------------------------------------------------------------
 # Resolve libprotobuf dependency
 # ----------------------------------------------------------------------------
-include(cmake/OpenCVFindLibProtobuf.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenCVFindLibProtobuf.cmake)
 ocv_source_group("Src\\protobuf" FILES ${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
