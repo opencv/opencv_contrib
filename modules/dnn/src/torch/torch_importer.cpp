@@ -972,6 +972,12 @@ Ptr<Importer> createTorchImporter(const String &filename, bool isBinary)
     return Ptr<Importer>();
 }
 
+Blob readTorchBlob(const String &filename, bool isBinary)
+{
+    CV_Error(Error::StsNotImplemented, "Torch importer is disabled in current build");
+    return Blob();
+}
+
 #endif //defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 }
 }
