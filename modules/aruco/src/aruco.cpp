@@ -1277,14 +1277,11 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
-        if(objPoints.type() == CV_32FC1)
-        {
-            CV_Assert(corners_mat.total() == 12);
-        }
-        else
-        {
-            CV_Assert(corners_mat.total() == 4);
-        }
+
+        if(corners_mat.type() == CV_32FC1)
+            corners_mat = corners_mat.reshape(3);
+        CV_Assert(corners_mat.total() == 4);
+
         for (int j = 0; j < 4; j++) {
             corners.push_back(corners_mat.at<Point3f>(j));
         }
