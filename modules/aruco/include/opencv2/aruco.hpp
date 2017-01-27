@@ -175,7 +175,7 @@ struct CV_EXPORTS_W DetectorParameters {
  */
 CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
-                                OutputArrayOfArrays rejectedImgPoints = noArray());
+                                OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
 
 
 
@@ -209,7 +209,7 @@ CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &diction
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
-                                            OutputArray rvecs, OutputArray tvecs);
+                                            OutputArray rvecs, OutputArray tvecs, OutputArray _objPoints = noArray());
 
 
 

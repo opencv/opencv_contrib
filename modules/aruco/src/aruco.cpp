@@ -873,7 +873,7 @@ static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Poin
 	 * extra group - (temporary) if contours do not begin with a corner
 	 */
 	vector<Point2f> cntPts[5];
-	int cornerIndex[4];
+	int cornerIndex[4]={-1};
 	int group=4;
 
 	for ( unsigned int i =0; i < nContours.size(); i++ ) {
@@ -888,7 +888,7 @@ static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Poin
 
 	// saves into corresponding group
 	if( !cntPts[4].empty() ){
-		for( int i=0; i < cntPts[4].size() ; i++ )
+		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
 		cntPts[4].clear();
 	}
