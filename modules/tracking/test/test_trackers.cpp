@@ -42,7 +42,6 @@
 #include "test_precomp.hpp"
 #include "opencv2/tracking.hpp"
 #include <fstream>
-#include <algorithm>
 
 using namespace cv;
 using namespace testing;
@@ -51,10 +50,6 @@ using namespace std;
 #define PARAM_TEST_CASE(name, ...) struct name : testing::TestWithParam< std::tr1::tuple< __VA_ARGS__ > >
 #define GET_PARAM(k) std::tr1::get< k >(GetParam())
 #define TESTSET_NAMES testing::Values("david","dudek","faceocc2")
-#define LOCATION_ERROR_THRESHOLD testing::Values(0, 10, 20, 30, 40, 50)
-#define OVERLAP_THRESHOLD testing::Values(0, 0.2, 0.4, 0.6, 0.8, 1)
-//Fixed sampling on the images sequence
-#define SEGMENTS testing::Values(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
 const string TRACKING_DIR = "tracking";
 const string FOLDER_IMG = "data";
@@ -67,75 +62,79 @@ const string FOLDER_OMIT_INIT = "initOmit";
  *
  */
 
-//Robustness Evaluation, see [OTB] chapter 4. temporal robustness evaluation
-//each sequence is partitioned into 10 (fixed) segments, slight change respect to [OTB]
-class TrackerTRETest
+enum BBTransformations
+{
+    NoTransform = 0,
+    CenterShiftLeft = 1,
+    CenterShiftRight = 2,
+    CenterShiftUp = 3,
+    CenterShiftDown = 4,
+    CornerShiftTopLeft = 5,
+    CornerShiftTopRight = 6,
+    CornerShiftBottomLeft = 7,
+    CornerShiftBottomRight = 8,
+    Scale_0_8 = 9,
+    Scale_0_9 = 10,
+    Scale_1_1 = 11,
+    Scale_1_2 = 12
+};
+
+class TrackerTest
 {
  public:
-  enum
-  {
-    DISTANCE = 1,  // test trackers based on euclidean distance
-    OVERLAP = 2    // test trackers based on the overlapping ratio
-  };
 
-  TrackerTRETest( const Ptr<Tracker> _tracker, int _testType, string _video, float _threshold, int _segmentIdx );
-  virtual ~TrackerTRETest();
+  TrackerTest(Ptr<Tracker> _tracker, string _video, float _overlapThreshold,
+                 float _distanceThreshold, int _shift = NoTransform, int _segmentIdx = 1, int _numSegments = 10 );
+  virtual ~TrackerTest();
   virtual void run();
-  string getRatioSucc() const;
 
  protected:
   void checkDataTest();
 
-  void distanceTest();
-  void overlapTest();
+  void distanceAndOvrerlapTest();
 
   Ptr<Tracker> tracker;
-  int testType;
   string video;
   std::vector<Rect> bbs;
-  int gtStartFrame;
   int startFrame;
-  int endFrame;
   string suffix;
   string prefix;
-  float threshold;
+  float overlapThreshold;
+  float distanceThreshold;
   int segmentIdx;
+  int shift;
+  int numSegments;
+
+  int gtStartFrame;
+  int endFrame;
   vector<int> validSequence;
-  float ratioSucc;
 
  private:
   float calcDistance( Rect a, Rect b );
   float calcOverlap( Rect a, Rect b );
+  Rect applyShift(Rect bb);
   std::vector<std::string> splitString( std::string s, std::string delimiter );
 
 };
 
-TrackerTRETest::TrackerTRETest( const Ptr<Tracker> _tracker, int _testType, string _video, float _threshold, int _segmentIdx ) :
+TrackerTest::TrackerTest(Ptr<Tracker> _tracker, string _video, float _overlapThreshold,
+                                float _distanceThreshold, int _shift, int _segmentIdx, int _numSegments ) :
     tracker( _tracker ),
-    testType( _testType ),
     video( _video ),
-    threshold( _threshold ),
-    segmentIdx( _segmentIdx )
+    overlapThreshold( _distanceThreshold ),
+    distanceThreshold( _overlapThreshold ),
+    segmentIdx(_segmentIdx),
+    shift(_shift),
+    numSegments(_numSegments)
 {
-  startFrame = 1;
-  endFrame = 1;
-  gtStartFrame = 1;
-  ratioSucc = 0;
 }
 
-TrackerTRETest::~TrackerTRETest()
+TrackerTest::~TrackerTest()
 {
 
 }
 
-string TrackerTRETest::getRatioSucc() const
-{
-  stringstream ratio;
-  ratio << ratioSucc;
-  return ratio.str();
-}
-
-std::vector<std::string> TrackerTRETest::splitString( std::string s, std::string delimiter )
+std::vector<std::string> TrackerTest::splitString( std::string s, std::string delimiter )
 {
   std::vector<string> token;
   size_t pos = 0;
@@ -148,14 +147,14 @@ std::vector<std::string> TrackerTRETest::splitString( std::string s, std::string
   return token;
 }
 
-float TrackerTRETest::calcDistance( Rect a, Rect b )
+float TrackerTest::calcDistance( Rect a, Rect b )
 {
   Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
   Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
   return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
 }
 
-float TrackerTRETest::calcOverlap( Rect a, Rect b )
+float TrackerTest::calcOverlap( Rect a, Rect b )
 {
   float aArea = (float)(a.width * a.height);
   float bArea = (float)(b.width * b.height);
@@ -183,94 +182,123 @@ float TrackerTRETest::calcOverlap( Rect a, Rect b )
   return overlap;
 }
 
-void TrackerTRETest::distanceTest()
+Rect TrackerTest::applyShift(Rect bb)
+{
+  Point center( bb.x + ( bb.width / 2 ), bb.y + ( bb.height / 2 ) );
+
+  int xLimit = bb.x + bb.width - 1;
+  int yLimit = bb.y + bb.height - 1;
+
+  int h = 0;
+  int w = 0;
+  float ratio = 1.0;
+
+  switch ( shift )
+  {
+    case CenterShiftLeft:
+      bb.x = bb.x - (int)ceil( 0.1 * bb.width );
+      break;
+    case CenterShiftRight:
+      bb.x = bb.x + (int)ceil( 0.1 * bb.width );
+      break;
+    case CenterShiftUp:
+      bb.y = bb.y - (int)ceil( 0.1 * bb.height );
+      break;
+    case CenterShiftDown:
+      bb.y = bb.y + (int)ceil( 0.1 * bb.height );
+      break;
+    case CornerShiftTopLeft:
+      bb.x = (int)cvRound( bb.x -  0.1 * bb.width );
+      bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
+
+      bb.width = xLimit - bb.x + 1;
+      bb.height = yLimit - bb.y + 1;
+      break;
+    case CornerShiftTopRight:
+      xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
+
+      bb.y = (int)cvRound( bb.y - 0.1 * bb.height );
+      bb.width = xLimit - bb.x + 1;
+      bb.height = yLimit - bb.y + 1;
+      break;
+    case CornerShiftBottomLeft:
+      bb.x = (int)cvRound( bb.x - 0.1 * bb.width );
+      yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
+
+      bb.width = xLimit - bb.x + 1;
+      bb.height = yLimit - bb.y + 1;
+      break;
+    case CornerShiftBottomRight:
+      xLimit = (int)cvRound( xLimit + 0.1 * bb.width );
+      yLimit = (int)cvRound( yLimit + 0.1 * bb.height );
+
+      bb.width = xLimit - bb.x + 1;
+      bb.height = yLimit - bb.y + 1;
+      break;
+    case Scale_0_8:
+      ratio = 0.8f;
+      w = (int)(ratio * bb.width);
+      h = (int)(ratio * bb.height);
+
+      bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
+      break;
+    case Scale_0_9:
+      ratio = 0.9f;
+      w = (int)(ratio * bb.width);
+      h = (int)(ratio * bb.height);
+
+      bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
+      break;
+    case 11:
+      //scale 1.1
+      ratio = 1.1f;
+      w = (int)(ratio * bb.width);
+      h = (int)(ratio * bb.height);
+
+      bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
+      break;
+    case 12:
+      //scale 1.2
+      ratio = 1.2f;
+      w = (int)(ratio * bb.width);
+      h = (int)(ratio * bb.height);
+
+      bb = Rect( center.x - ( w / 2 ), center.y - ( h / 2 ), w, h );
+      break;
+    default:
+      break;
+  }
+
+  return bb;
+}
+
+void TrackerTest::distanceAndOvrerlapTest()
 {
   Mat frame;
   bool initialized = false;
 
   int fc = ( startFrame - gtStartFrame );
 
+  bbs.at( fc ) = applyShift(bbs.at( fc ));
   Rect currentBBi = bbs.at( fc );
   Rect2d currentBB(currentBBi);
   float sumDistance = 0;
-  string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
-
-  int frameTotal = 0;
-  int frameTotalSucc = 0;
-
-  VideoCapture c;
-  c.open( cvtest::TS::ptr()->get_data_path() + "/" + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG + "/" + video + ".webm" );
-  c.set( CAP_PROP_POS_FRAMES, startFrame );
-
-  for ( int frameCounter = startFrame; frameCounter < endFrame; frameCounter++ )
-  {
-    c >> frame;
-    if( frame.empty() )
-    {
-      break;
-    }
-    if( !initialized )
-    {
-      if( !tracker->init( frame, currentBB ) )
-      {
-        FAIL()<< "Could not initialize tracker" << endl;
-        return;
-      }
-      initialized = true;
-    }
-    else if( initialized )
-    {
-      if( frameCounter >= (int) bbs.size() )
-      break;
-      tracker->update( frame, currentBB );
-    }
-
-    float curDistance = calcDistance( currentBB, bbs.at( fc ) );
-    if( curDistance <= threshold )
-      frameTotalSucc++;
-    sumDistance += curDistance;
-
-    fc++;
-    frameTotal++;
-  }
-
-  float distance = sumDistance / ( fc - ( startFrame - gtStartFrame ) );
-  ratioSucc = (float) frameTotalSucc / (float) frameTotal;
-
-  if( distance > threshold )
-  {
-    FAIL()<< "Incorrect distance: curr = " << distance << ", min = " << threshold << endl;
-    return;
-  }
-
-}
-
-void TrackerTRETest::overlapTest()
-{
-  Mat frame;
-  bool initialized = false;
-
-  int fc = ( startFrame - gtStartFrame );
-  Rect currentBBi = bbs.at( fc );
-  Rect2d currentBB(currentBBi);
   float sumOverlap = 0;
-  string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 
-  int frameTotal = 0;
-  int frameTotalSucc = 0;
+  string folder = cvtest::TS::ptr()->get_data_path() + "/" + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
 
   VideoCapture c;
-  c.open( cvtest::TS::ptr()->get_data_path() + "/" + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG + "/" + video + ".webm" );
+  c.open( folder + "/" + video + ".webm" );
   c.set( CAP_PROP_POS_FRAMES, startFrame );
 
   for ( int frameCounter = startFrame; frameCounter < endFrame; frameCounter++ )
   {
     c >> frame;
+
     if( frame.empty() )
     {
       break;
     }
-
     if( !initialized )
     {
       if( !tracker->init( frame, currentBB ) )
@@ -286,26 +314,31 @@ void TrackerTRETest::overlapTest()
       break;
       tracker->update( frame, currentBB );
     }
+    float curDistance = calcDistance( currentBB, bbs.at( fc ) );
     float curOverlap = calcOverlap( currentBB, bbs.at( fc ) );
-    if( curOverlap >= threshold )
-      frameTotalSucc++;
 
+    sumDistance += curDistance;
     sumOverlap += curOverlap;
-    frameTotal++;
     fc++;
   }
 
-  float overlap = sumOverlap / ( fc - ( startFrame - gtStartFrame ) );
-  ratioSucc = (float) frameTotalSucc / (float) frameTotal;
+  float meanDistance = sumDistance / (endFrame - startFrame);
+  float meanOverlap = sumOverlap / (endFrame - startFrame);
 
-  if( overlap < threshold )
+  if( meanDistance > distanceThreshold )
   {
-    FAIL()<< "Incorrect overlap: curr = " << overlap << ", min = " << threshold << endl;
+    FAIL()<< "Incorrect distance: curr = " << meanDistance << ", max = " << distanceThreshold << endl;
+    return;
+  }
+
+  if( meanOverlap < overlapThreshold )
+  {
+    FAIL()<< "Incorrect overlap: curr = " << meanOverlap << ", min = " << overlapThreshold << endl;
     return;
   }
 }
 
-void TrackerTRETest::checkDataTest()
+void TrackerTest::checkDataTest()
 {
 
   FileStorage fs;
@@ -360,8 +393,7 @@ void TrackerTRETest::checkDataTest()
   omit.close();
   gtStartFrame = startFrame;
   //compute the start and the and for each segment
-  int segmentLength = sizeof ( SEGMENTS)/sizeof(int);
-  int numFrame = (int)(validSequence.size() / segmentLength);
+  int numFrame = (int)(validSequence.size() / numSegments);
   startFrame += ( segmentIdx - 1 ) * numFrame;
   endFrame = startFrame + numFrame;
 
@@ -388,13 +420,14 @@ void TrackerTRETest::checkDataTest()
   }
   gt2.close();
 
-  if( segmentIdx == ( sizeof ( SEGMENTS)/sizeof(int) ) )
-  endFrame = (int)bbs.size();
+  if( segmentIdx == numSegments )
+    endFrame = (int)bbs.size();
 }
 
-void TrackerTRETest::run()
+void TrackerTest::run()
 {
   srand( 1 );
+
   SCOPED_TRACE( "A" );
 
   if( !tracker )
@@ -409,112 +442,104 @@ void TrackerTRETest::run()
   if( ::testing::Test::HasFatalFailure() )
     return;
 
-  if( testType == DISTANCE )
-  {
-    distanceTest();
-  }
-  else if( testType == OVERLAP )
-  {
-    overlapTest();
-  }
-  else
-  {
-    FAIL()<< "Test type unknown" << endl;
-    return;
-  }
-
+  distanceAndOvrerlapTest();
 }
 
 /****************************************************************************************\
 *                                Tests registrations                                     *
  \****************************************************************************************/
 
-//[TESTDATA] [#SEGMENT] [LOCATION ERROR THRESHOLD]
-PARAM_TEST_CASE(TRE_Distance, string, int, float)
+//[TESTDATA]
+PARAM_TEST_CASE(DistanceAndOverlap, string)
 {
-  int segment;
   string dataset;
-  float threshold;
   virtual void SetUp()
   {
     dataset = GET_PARAM(0);
-    segment = GET_PARAM(1);
-    threshold = GET_PARAM(2);
   }
 };
 
-//[TESTDATA] [#SEGMENT] [OVERLAP THRESHOLD]
-PARAM_TEST_CASE(TRE_Overlap, string, int, float)
+TEST_P(DistanceAndOverlap, MedianFlow)
 {
-  int segment;
-  string dataset;
-  float threshold;
-  virtual void SetUp()
-  {
-    dataset = GET_PARAM(0);
-    segment = GET_PARAM(1);
-    threshold = GET_PARAM(2);
-  }
-};
-
-TEST_P(TRE_Distance, DISABLED_MIL)
-{
-  TrackerTRETest test( Tracker::create( "MIL" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, NoTransform, 1, 1);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, DISABLED_MIL)
+TEST_P(DistanceAndOverlap, MIL)
 {
-  TrackerTRETest test( Tracker::create( "MIL" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, NoTransform);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Distance, DISABLED_Boosting)
+TEST_P(DistanceAndOverlap, Boosting)
 {
-  TrackerTRETest test( Tracker::create( "BOOSTING" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 70, .65f, NoTransform);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, DISABLED_Boosting)
+TEST_P(DistanceAndOverlap, TLD)
 {
-  TrackerTRETest test( Tracker::create( "BOOSTING" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "TLD" ), dataset, 60, .4f, NoTransform);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
+}
+/***************************************************************************************/
+//Tests with shifted initial window
+TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
+{
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, CenterShiftLeft, 1, 1);
+  test.run();
 }
 
-TEST_P(TRE_Distance, DISABLED_TLD)
+TEST_P(DistanceAndOverlap, Shifted_Data_MIL)
 {
-  TrackerTRETest test( Tracker::create( "TLD" ), TrackerTRETest::DISTANCE, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, CenterShiftLeft);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Overlap, DISABLED_TLD)
+TEST_P(DistanceAndOverlap, Shifted_Data_Boosting)
 {
-  TrackerTRETest test( Tracker::create( "TLD" ), TrackerTRETest::OVERLAP, dataset, threshold, segment );
+  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .65f, CenterShiftLeft);
   test.run();
-  RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(TRE_Distance, DISABLED_GOTURN)
+TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 {
-  TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::DISTANCE, dataset, threshold, segment);
+  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .4f, CenterShiftLeft);
   test.run();
-  RecordProperty("ratioSuccess", test.getRatioSucc());
+}
+/***************************************************************************************/
+//Tests with scaled initial window
+TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
+{
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, Scale_1_1, 1, 1);
+  test.run();
 }
 
-TEST_P(TRE_Overlap, DISABLED_GOTURN)
+TEST_P(DistanceAndOverlap, Scaled_Data_MIL)
 {
-  TrackerTRETest test(Tracker::create("GOTURN"), TrackerTRETest::OVERLAP, dataset, threshold, segment);
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, Scale_1_1);
   test.run();
-  RecordProperty("ratioSuccess", test.getRatioSucc());
 }
 
-INSTANTIATE_TEST_CASE_P( Tracking, TRE_Distance, testing::Combine( TESTSET_NAMES, SEGMENTS, LOCATION_ERROR_THRESHOLD ) );
+TEST_P(DistanceAndOverlap, Scaled_Data_Boosting)
+{
+  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .65f, Scale_1_1);
+  test.run();
+}
 
-INSTANTIATE_TEST_CASE_P( Tracking, TRE_Overlap, testing::Combine( TESTSET_NAMES, SEGMENTS, OVERLAP_THRESHOLD ) );
+TEST_P(DistanceAndOverlap, Scaled_Data_TLD)
+{
+  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .4f, Scale_1_1);
+  test.run();
+}
+
+
+TEST_P(DistanceAndOverlap, DISABLED_GOTURN)
+{
+  TrackerTest test(Tracker::create("GOTURN"), dataset, 0, 100, NoTransform);
+  test.run();
+}
+
+INSTANTIATE_TEST_CASE_P( Tracking, DistanceAndOverlap, TESTSET_NAMES);
 
 /* End of file. */
