@@ -111,6 +111,7 @@ void BaseConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::v
     if (!is1x1())
     {
         colRowBlob.create(colRowBlobShape, input.type(), allocFlags);
+        colRowBlob.setTo(0);
     }
 }
 
@@ -250,11 +251,11 @@ void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
     if (srcImg.type() == CV_32F)
         im2row_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
-                                    dilation.height, dilation.width, outW, outH, colMat.ptr<float>());
+                                    dilation.height, dilation.width, outH, outW, colMat.ptr<float>());
     if (srcImg.type() == CV_64F)
         im2row_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height,
                                      kernel.width, pad.height, pad.width, stride.height, stride.width,
-                                     dilation.height, dilation.width, outW, outH, colMat.ptr<double>());
+                                     dilation.height, dilation.width, outH, outW, colMat.ptr<double>());
 
     dstRow = colMat;
 }
@@ -268,11 +269,9 @@ void ConvolutionLayerImpl::im2row(const UMat &srcImg, UMat &dstCol)
 
 void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
 {
-    BlobShape bs0 = blobs[0].shape();
-    BlobShape bs1 = blobs[1].shape();
-    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].channels());
+    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
 
-    numOutput = blobs[0].channels();
+    numOutput = blobs[0].num();
 
     inpH = inpBlob.rows();
     inpW = inpBlob.cols();
@@ -282,13 +281,13 @@ void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
     outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
     outCn = numOutput;
 
-    group = inpCn / blobs[0].num();
+    group = inpCn / blobs[0].channels();
     outGroupCn = outCn / group;
     inpGroupCn = inpCn / group;
     ksize = outGroupCn * kernel.height * kernel.width;
 
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
-    CV_Assert(blobs[0].channels() == outCn && blobs[0].num() == inpCn / group);
+    CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
 
     colRowBlobShape = BlobShape(ksize, inpH * inpW);
 }

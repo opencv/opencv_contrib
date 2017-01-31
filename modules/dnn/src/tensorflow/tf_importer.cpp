@@ -640,7 +640,7 @@ void TFImporter::populateNet(Net dstNet)
             if(hasLayerAttr(layer, "bias")) {
                 layerParams.set("bias", getLayerAttr(layer, "bias").f());
             }
-            layerParams.set("norm_sz", false);
+            layerParams.set("norm_by_size", false);
 
             int id = dstNet.addLayer(name, "LRN", layerParams);
             layer_id[name] = id;

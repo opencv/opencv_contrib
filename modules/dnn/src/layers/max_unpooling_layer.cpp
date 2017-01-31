@@ -44,6 +44,7 @@ void MaxUnpoolLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
     for(int i_n = 0; i_n < outputs.size(); i_n++)
     {
         Blob& outBlob = outputs[i_n];
+        outBlob.setTo(0);
         CV_Assert(input.channels() == outBlob.channels());
 
         for (int i_c = 0; i_c < input.channels(); i_c++)

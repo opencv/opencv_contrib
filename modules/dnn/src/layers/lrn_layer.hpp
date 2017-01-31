@@ -56,8 +56,8 @@ class LRNLayerImpl : public LRNLayer
 
     void channelNoramlization(Blob &src, Blob &dst);
     template<typename XMat>
-    void channelNoramlization_(Blob &src, Blob &dst);
-    bool channelNoramlization_ocl(const UMat &src, UMat &dst);
+    void channelNormalization_(Blob &src, Blob &dst);
+    bool channelNormalization_ocl(const UMat &src, UMat &dst);
 
     void spatialNormalization(Blob &src, Blob &dst);
     template<typename XMat>
@@ -67,8 +67,8 @@ class LRNLayerImpl : public LRNLayer
 
 public:
 
-    LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75, double bias = 1,
-                 bool normBySize = true);
+    LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1,
+                 double beta = 0.75, double bias = 1, bool normBySize = true);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };

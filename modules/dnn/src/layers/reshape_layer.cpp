@@ -73,7 +73,7 @@ void ReshapeLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
 {
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        Blob& srcBlob = *inputs[i];
+        Blob srcBlob = *inputs[i];
         BlobShape inputShape = inputs[i]->shape();
         bool channelsReduced = inputShape.dims() > outShapes[i].dims() ||
                 (inputShape.dims() == 4 && inputShape[1] > outShapes[i][1]);

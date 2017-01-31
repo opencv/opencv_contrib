@@ -9,7 +9,10 @@
 Test for Tensorflow models loading
 */
 
+#if defined(ENABLE_TF_INCEPTION_TESTS)
+
 #include "test_precomp.hpp"
+#include "npy_blob.hpp"
 
 namespace cvtest
 {
@@ -32,7 +35,7 @@ TEST(Test_TensorFlow, read_inception)
         importer->populateNet(net);
     }
 
-    Mat sample = imread(_tf("grace_hopper.jpg"));
+    Mat sample = imread(_tf("grace_hopper_227.png"));
     ASSERT_TRUE(!sample.empty());
     Mat input;
     resize(sample, input, Size(224, 224));
@@ -47,4 +50,31 @@ TEST(Test_TensorFlow, read_inception)
     std::cout << out.dims() << std::endl;
 }
 
+TEST(Test_TensorFlow, inception_accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createTensorflowImporter(_tf("tensorflow_inception_graph.pb"));
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("grace_hopper_227.png"));
+    ASSERT_TRUE(!sample.empty());
+    resize(sample, sample, Size(224, 224));
+    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
+    dnn::Blob inputBlob = dnn::Blob::fromImages(sample);
+
+    net.setBlob(".input", inputBlob);
+    net.forward();
+
+    Blob out = net.getBlob("softmax2");
+
+    Blob ref = blobFromNPY(_tf("tf_inception_prob.npy"));
+
+    normAssert(ref, out);
 }
+
+}
+
+#endif

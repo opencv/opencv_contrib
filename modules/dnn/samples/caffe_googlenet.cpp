@@ -115,6 +115,7 @@ int main(int argc, char **argv)
     }
 
     resize(img, img, Size(224, 224));                   //GoogLeNet accepts only 224x224 RGB-images
+    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
     dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob batch of images
     //! [Prepare blob]
 
