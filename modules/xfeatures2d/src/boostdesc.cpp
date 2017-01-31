@@ -232,7 +232,7 @@ static void computeGradientMaps( const Mat& im,
               break;
 
             case ASSIGN_HARD_MAGN:
-              gradMap[index].at<uchar>(i,j) = (uchar) round( gradMagnitude );
+              gradMap[index].at<uchar>(i,j) = (uchar) cvRound( gradMagnitude );
               break;
 
             case ASSIGN_BILINEAR:
@@ -240,8 +240,8 @@ static void computeGradientMaps( const Mat& im,
               index2 = ( index2 == orientQuant ) ? 0 : index2;
               binCenter  = ( index + 0.5f ) * binSize;
               weight = 1 - abs( theta - binCenter ) / binSize;
-              gradMap[index ].at<uchar>(i,j) = (uchar) round( 255 * weight );
-              gradMap[index2].at<uchar>(i,j) = (uchar) round( 255 * ( 1 - weight ) );
+              gradMap[index ].at<uchar>(i,j) = (uchar) cvRound( 255 * weight );
+              gradMap[index2].at<uchar>(i,j) = (uchar) cvRound( 255 * ( 1 - weight ) );
               break;
 
             case ASSIGN_SOFT:
@@ -251,7 +251,7 @@ static void computeGradientMaps( const Mat& im,
                 binCenter = ( index2 + 0.5f ) * binSize;
                 weight = cos( theta - binCenter );
                 weight = ( weight < 0 ) ? 0 : weight;
-                gradMap[index2].at<uchar>(i,j) = (uchar) round( 255 * weight );
+                gradMap[index2].at<uchar>(i,j) = (uchar) cvRound( 255 * weight );
               }
               break;
 
@@ -262,7 +262,7 @@ static void computeGradientMaps( const Mat& im,
                 binCenter = ( index2 + 0.5f ) * binSize;
                 weight = cos( theta - binCenter );
                 weight = ( weight < 0 ) ? 0 : weight;
-                gradMap[index2].at<uchar>(i,j) = (uchar) round( gradMagnitude * weight );
+                gradMap[index2].at<uchar>(i,j) = (uchar) cvRound( gradMagnitude * weight );
               }
               break;
           } // end switch

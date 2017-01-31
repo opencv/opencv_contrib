@@ -104,7 +104,7 @@ void Pyramid::build(const Mat& img, bool DOG)
 
     Size imgSize = img.size();
     int minSize = MIN(imgSize.width, imgSize.height);
-    int octavesN = MIN(params.octavesN, int(floor(log((double) minSize)/log(2))));
+    int octavesN = MIN(params.octavesN, int(floor(log((double) minSize)/log((float)2))));
     float sigma0 = params.sigma0;
     float sigma = sigma0;
     int layersN = params.layersN + 3;
