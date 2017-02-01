@@ -63,7 +63,7 @@ using namespace cv::reg;
 class RegTest : public testing::Test
 {
 public:
-    void loadImage();
+    void loadImage(int dstDataType = CV_32FC3);
 
     void testShift();
     void testEuclidean();
@@ -242,14 +242,13 @@ void RegTest::testProjective()
     EXPECT_GE(projNorm, sqrt(3.) - 0.01);
 }
 
-void RegTest::loadImage()
+void RegTest::loadImage(int dstDataType)
 {
     const string imageName = cvtest::TS::ptr()->get_data_path() + "reg/home.png";
 
     img1 = imread(imageName, -1);
-    ASSERT_TRUE(img1.data != 0);
-    // Convert to double, 3 channels
-    img1.convertTo(img1, CV_64FC3);
+    ASSERT_TRUE(!img1.empty());
+    img1.convertTo(img1, dstDataType);
 }
 
 
@@ -280,5 +279,17 @@ TEST_F(RegTest, affine)
 TEST_F(RegTest, projective)
 {
     loadImage();
+    testProjective();
+}
+
+TEST_F(RegTest, projective_dt64fc3)
+{
+    loadImage(CV_64FC3);
+    testProjective();
+}
+
+TEST_F(RegTest, projective_dt64fc1)
+{
+    loadImage(CV_64FC1);
     testProjective();
 }
