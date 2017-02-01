@@ -59,6 +59,8 @@ using namespace std;
 using namespace cv;
 using namespace cv::reg;
 
+#define REG_DEBUG_OUTPUT 0
+
 
 class RegTest : public testing::Test
 {
@@ -91,10 +93,11 @@ void RegTest::testShift()
 
     // Print result
     MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing shift mapper ---" << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapShift->getShift()) << endl;
-
+#endif
     // Check accuracy
     Ptr<Map> mapInv(mapShift->inverseMap());
     mapTest.compose(*mapInv.get());
@@ -123,12 +126,13 @@ void RegTest::testEuclidean()
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing Euclidean mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
-
+#endif
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
     mapTest.compose(*mapInv.get());
@@ -161,11 +165,13 @@ void RegTest::testSimilarity()
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing similarity mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
@@ -195,11 +201,13 @@ void RegTest::testAffine()
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing affine mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
@@ -230,9 +238,11 @@ void RegTest::testProjective()
     // Print result
     MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
     mapProj->normalize();
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing projective transformation mapper ---" << endl;
     cout << Mat(projTr) << endl;
     cout << Mat(mapProj->getProjTr()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapProj->inverseMap());

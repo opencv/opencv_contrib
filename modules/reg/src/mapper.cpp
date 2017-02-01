@@ -66,16 +66,16 @@ void fillGridMatrices(const Mat img, Mat grid_r, Mat grid_c)
     if(img.channels() == 1) {
         for(int r_i = 0; r_i < img.rows; ++r_i) {
             for(int c_i = 0; c_i < img.cols; ++c_i) {
-                grid_r.at<_Tp>(r_i, c_i) = r_i;
-                grid_c.at<_Tp>(r_i, c_i) = c_i;
+                grid_r.at<_Tp>(r_i, c_i) = (_Tp)r_i;
+                grid_c.at<_Tp>(r_i, c_i) = (_Tp)c_i;
             }
         }
     } else {
-        Vec<_Tp, 3> ones(1., 1., 1.);
+        Vec<_Tp, 3> ones((_Tp)1, (_Tp)1, (_Tp)1);
         for(int r_i = 0; r_i < img.rows; ++r_i) {
             for(int c_i = 0; c_i < img.cols; ++c_i) {
-                grid_r.at< Vec<_Tp, 3> >(r_i, c_i) = r_i*ones;
-                grid_c.at< Vec<_Tp, 3> >(r_i, c_i) = c_i*ones;
+                grid_r.at< Vec<_Tp, 3> >(r_i, c_i) = (_Tp)r_i*ones;
+                grid_c.at< Vec<_Tp, 3> >(r_i, c_i) = (_Tp)c_i*ones;
             }
         }
     }
