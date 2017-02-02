@@ -57,8 +57,9 @@ MapperGradEuclid::~MapperGradEuclid(void)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void MapperGradEuclid::calculate(
-    const cv::Mat& img1, const cv::Mat& image2, cv::Ptr<Map>& res) const
+    InputArray _img1, InputArray image2, cv::Ptr<Map>& res) const
 {
+    Mat img1 = _img1.getMat();
     Mat gradx, grady, imgDiff;
     Mat img2;
 
@@ -70,7 +71,7 @@ void MapperGradEuclid::calculate(
         // We have initial values for the registration: we move img2 to that initial reference
         res->inverseWarp(image2, img2);
     } else {
-        img2 = image2;
+        img2 = image2.getMat();
     }
 
     // Matrices with reference frame coordinates

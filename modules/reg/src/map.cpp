@@ -49,7 +49,7 @@ Map::~Map(void)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void Map::warp(const Mat& img1, Mat& img2) const
+void Map::warp(InputArray img1, OutputArray img2) const
 {
     Ptr<Map> invMap(inverseMap());
     invMap->inverseWarp(img1, img2);

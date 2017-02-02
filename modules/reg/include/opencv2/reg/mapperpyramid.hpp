@@ -59,7 +59,7 @@ public:
      */
     MapperPyramid(const Mapper& baseMapper);
 
-    void calculate(const cv::Mat& img1, const cv::Mat& img2, cv::Ptr<Map>& res) const;
+    void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
     cv::Ptr<Map> getMap(void) const;
 

@@ -69,7 +69,7 @@ public:
      */
     ~MapShift(void);
 
-    void inverseWarp(const cv::Mat& img1, cv::Mat& img2) const;
+    void inverseWarp(InputArray img1, OutputArray img2) const;
 
     cv::Ptr<Map> inverseMap(void) const;
 

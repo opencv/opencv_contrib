@@ -54,8 +54,9 @@ MapperPyramid::MapperPyramid(const Mapper& baseMapper)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapperPyramid::calculate(const Mat& img1, const Mat& image2, Ptr<Map>& res) const
+void MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map>& res) const
 {
+    Mat img1 = _img1.getMat();
     Mat img2;
 
     if(!res.empty()) {
@@ -63,7 +64,7 @@ void MapperPyramid::calculate(const Mat& img1, const Mat& image2, Ptr<Map>& res)
         res->inverseWarp(image2, img2);
     } else {
         res = baseMapper_.getMap();
-        img2 = image2;
+        img2 = image2.getMat();
     }
 
     cv::Ptr<Map> ident = baseMapper_.getMap();

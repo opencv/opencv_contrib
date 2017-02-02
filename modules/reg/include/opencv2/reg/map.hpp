@@ -136,7 +136,7 @@ public:
      * \param[in] img1 Original image
      * \param[out] img2 Warped image
      */
-    virtual void warp(const cv::Mat& img1, cv::Mat& img2) const;
+    virtual void warp(InputArray img1, OutputArray img2) const;
 
     /*!
      * Warps image to a new coordinate frame. The calculation is img2(x)=img1(T(x)), so in fact
@@ -145,7 +145,7 @@ public:
      * \param[in] img1 Original image
      * \param[out] img2 Warped image
      */
-    virtual void inverseWarp(const cv::Mat& img1, cv::Mat& img2) const = 0;
+    virtual void inverseWarp(InputArray img1, OutputArray img2) const = 0;
 
     /*!
      * Calculates the inverse map

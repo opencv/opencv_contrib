@@ -55,7 +55,7 @@ public:
     MapperGradEuclid(void);
     ~MapperGradEuclid(void);
 
-    virtual void calculate(const cv::Mat& img1, const cv::Mat& img2, cv::Ptr<Map>& res) const;
+    virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
     cv::Ptr<Map> getMap(void) const;
 };

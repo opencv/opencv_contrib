@@ -61,8 +61,9 @@ MapShift::~MapShift(void)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapShift::inverseWarp(const Mat& img1, Mat& img2) const
+void MapShift::inverseWarp(InputArray _img1, OutputArray img2) const
 {
+    Mat img1 = _img1.getMat();
     // Rows and columns in destination
     Mat dest_r, dest_c;
     dest_r.create(img1.size(), CV_32FC1);
