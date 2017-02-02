@@ -49,15 +49,15 @@ namespace reg {
 /*!
  * Calculates a similarity transformation between to images (scale, rotation, and shift)
  */
-class CV_EXPORTS MapperGradSimilar: public Mapper
+class CV_EXPORTS_W MapperGradSimilar: public Mapper
 {
 public:
-    MapperGradSimilar(void);
-    ~MapperGradSimilar(void);
+    CV_WRAP MapperGradSimilar();
+    ~MapperGradSimilar();
 
     virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 };
 
 //! @}

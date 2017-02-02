@@ -50,7 +50,7 @@ namespace reg {
 /*!
  * Calculates a map using a gaussian pyramid
  */
-class CV_EXPORTS MapperPyramid: public Mapper
+class CV_EXPORTS_W MapperPyramid: public Mapper
 {
 public:
     /*
@@ -61,10 +61,10 @@ public:
 
     void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 
-    unsigned numLev_;           /*!< Number of levels of the pyramid */
-    unsigned numIterPerScale_;  /*!< Number of iterations at a given scale of the pyramid */
+    CV_WRAP unsigned numLev_;           /*!< Number of levels of the pyramid */
+    CV_WRAP unsigned numIterPerScale_;  /*!< Number of iterations at a given scale of the pyramid */
 
 private:
     MapperPyramid& operator=(const MapperPyramid&);

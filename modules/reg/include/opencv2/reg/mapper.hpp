@@ -51,7 +51,7 @@ namespace reg {
 
 The class is only used to define the common interface for any possible mapping algorithm.
  */
-class CV_EXPORTS Mapper
+class CV_EXPORTS_W Mapper
 {
 public:
     virtual ~Mapper(void) {}
@@ -69,7 +69,7 @@ public:
      * Returns a map compatible with the Mapper class
      * \return Pointer to identity Map
      */
-    virtual cv::Ptr<Map> getMap(void) const = 0;
+    CV_WRAP virtual cv::Ptr<Map> getMap() const = 0;
 
 protected:
     /*

@@ -49,15 +49,15 @@ namespace reg {
 /*!
  * Mapper for euclidean motion: rotation plus shift
  */
-class CV_EXPORTS MapperGradEuclid: public Mapper
+class CV_EXPORTS_W MapperGradEuclid: public Mapper
 {
 public:
-    MapperGradEuclid(void);
-    ~MapperGradEuclid(void);
+    CV_WRAP MapperGradEuclid();
+    ~MapperGradEuclid();
 
     virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 };
 
 //! @}

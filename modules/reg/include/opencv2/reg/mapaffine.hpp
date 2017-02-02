@@ -49,13 +49,13 @@ namespace reg {
 /*!
  * Defines an affine transformation
  */
-class CV_EXPORTS MapAffine : public Map
+class CV_EXPORTS_W MapAffine : public Map
 {
 public:
     /*!
      * Default constructor builds an identity map
      */
-    MapAffine(void);
+    CV_WRAP MapAffine();
 
     /*!
      * Constructor providing explicit values
@@ -67,15 +67,15 @@ public:
     /*!
      * Destructor
      */
-    ~MapAffine(void);
+    ~MapAffine();
 
-    void inverseWarp(InputArray img1, OutputArray img2) const;
+    CV_WRAP void inverseWarp(InputArray img1, OutputArray img2) const;
 
-    cv::Ptr<Map> inverseMap(void) const;
+    CV_WRAP cv::Ptr<Map> inverseMap() const;
 
     void compose(const Map& map);
 
-    void scale(double factor);
+    CV_WRAP void scale(double factor);
 
     /*!
      * Return linear part of the affine transformation

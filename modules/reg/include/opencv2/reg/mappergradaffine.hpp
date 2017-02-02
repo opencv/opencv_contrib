@@ -49,15 +49,15 @@ namespace reg {
 /*!
  * Mapper for affine motion
  */
-class CV_EXPORTS MapperGradAffine: public Mapper
+class CV_EXPORTS_W MapperGradAffine: public Mapper
 {
 public:
-    MapperGradAffine(void);
+    CV_WRAP MapperGradAffine();
     ~MapperGradAffine(void);
 
     virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 };
 
 //! @}

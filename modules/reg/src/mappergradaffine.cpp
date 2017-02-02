@@ -44,13 +44,13 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradAffine::MapperGradAffine(void)
+MapperGradAffine::MapperGradAffine()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradAffine::~MapperGradAffine(void)
+MapperGradAffine::~MapperGradAffine()
 {
 }
 
@@ -154,7 +154,7 @@ void MapperGradAffine::calculate(InputArray _img1, InputArray image2, cv::Ptr<Ma
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-cv::Ptr<Map> MapperGradAffine::getMap(void) const
+cv::Ptr<Map> MapperGradAffine::getMap() const
 {
     return cv::Ptr<Map>(new MapAffine());
 }

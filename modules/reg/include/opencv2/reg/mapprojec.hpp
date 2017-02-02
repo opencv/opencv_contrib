@@ -50,13 +50,13 @@ namespace reg {
 /*!
  * Defines an transformation that consists on a projective transformation
  */
-class CV_EXPORTS MapProjec : public Map
+class CV_EXPORTS_W MapProjec : public Map
 {
 public:
     /*!
      * Default constructor builds an identity map
      */
-    MapProjec(void);
+    CV_WRAP MapProjec();
 
     /*!
      * Constructor providing explicit values
@@ -67,15 +67,15 @@ public:
     /*!
      * Destructor
      */
-    ~MapProjec(void);
+    ~MapProjec();
 
-    void inverseWarp(InputArray img1, OutputArray img2) const;
+    CV_WRAP void inverseWarp(InputArray img1, OutputArray img2) const;
 
-    cv::Ptr<Map> inverseMap(void) const;
+    CV_WRAP cv::Ptr<Map> inverseMap() const;
 
     void compose(const Map& map);
 
-    void scale(double factor);
+    CV_WRAP void scale(double factor);
 
     /*!
      * Returns projection matrix

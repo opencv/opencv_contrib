@@ -95,7 +95,7 @@ void MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map>& res
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-cv::Ptr<Map> MapperPyramid::getMap(void) const
+cv::Ptr<Map> MapperPyramid::getMap() const
 {
     return cv::Ptr<Map>();
 }

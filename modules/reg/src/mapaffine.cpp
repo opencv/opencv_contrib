@@ -45,7 +45,7 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapAffine::MapAffine(void)
+MapAffine::MapAffine()
     : linTr_(Matx<double, 2, 2>::eye()), shift_()
 {
 }
@@ -57,7 +57,7 @@ MapAffine::MapAffine(const Matx<double, 2, 2>& linTr, const Vec<double, 2>& shif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapAffine::~MapAffine(void)
+MapAffine::~MapAffine()
 {
 }
 

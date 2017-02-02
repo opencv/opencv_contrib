@@ -49,15 +49,15 @@ namespace reg {
 /*!
  * Gradient mapper for a translation
  */
-class CV_EXPORTS MapperGradShift: public Mapper
+class CV_EXPORTS_W MapperGradShift: public Mapper
 {
 public:
-    MapperGradShift(void);
-    virtual ~MapperGradShift(void);
+    CV_WRAP MapperGradShift();
+    virtual ~MapperGradShift();
 
     virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 };
 
 //! @}
