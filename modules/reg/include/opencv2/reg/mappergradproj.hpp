@@ -55,7 +55,7 @@ public:
     CV_WRAP MapperGradProj();
     ~MapperGradProj();
 
-    virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const;
+    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const;
 
     CV_WRAP cv::Ptr<Map> getMap() const;
 };

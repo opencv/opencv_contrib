@@ -48,22 +48,22 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperPyramid::MapperPyramid(const Mapper& baseMapper)
-    : numLev_(3), numIterPerScale_(3), baseMapper_(baseMapper)
+MapperPyramid::MapperPyramid(Ptr<Mapper> baseMapper)
+    : numLev_(3), numIterPerScale_(3), baseMapper_(*baseMapper)
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map>& res) const
+Ptr<Map> MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map> init) const
 {
     Mat img1 = _img1.getMat();
     Mat img2;
 
-    if(!res.empty()) {
+    if(!init.empty()) {
         // We have initial values for the registration: we move img2 to that initial reference
-        res->inverseWarp(image2, img2);
+        init->inverseWarp(image2, img2);
     } else {
-        res = baseMapper_.getMap();
+        init = baseMapper_.getMap();
         img2 = image2.getMat();
     }
 
@@ -87,11 +87,12 @@ void MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map>& res
             ident->scale(2.);
         }
         for(size_t it_i = 0; it_i < numIterPerScale_; ++it_i) {
-            baseMapper_.calculate(currRef, currImg, ident);
+            ident = baseMapper_.calculate(currRef, currImg, ident);
         }
     }
 
-    res->compose(ident);
+    init->compose(ident);
+    return init;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

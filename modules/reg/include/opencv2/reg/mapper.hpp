@@ -63,7 +63,7 @@ public:
      * \param[in,out] res Map from img1 to img2, stored in a smart pointer. If present as input,
      *       it is an initial rough estimation that the mapper will try to refine.
      */
-    virtual void calculate(InputArray img1, InputArray img2, cv::Ptr<Map>& res) const = 0;
+    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const = 0;
 
     /*
      * Returns a map compatible with the Mapper class

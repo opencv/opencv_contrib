@@ -85,6 +85,10 @@ public:
         return shift_;
     }
 
+    CV_WRAP void getShift(OutputArray shift) const {
+        Mat(shift_).copyTo(shift);
+    }
+
 private:
     cv::Vec<double, 2> shift_;      /*< Displacement */
 };

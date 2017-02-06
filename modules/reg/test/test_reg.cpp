@@ -86,10 +86,10 @@ void RegTest::testShift()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradShift mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradShift>();
     MapperPyramid mappPyr(mapper);
     Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
 
     // Print result
     MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
@@ -119,10 +119,10 @@ void RegTest::testEuclidean()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradEuclid mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradEuclid>();
     MapperPyramid mappPyr(mapper);
     Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -158,10 +158,10 @@ void RegTest::testSimilarity()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradSimilar mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradSimilar>();
     MapperPyramid mappPyr(mapper);
     Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -194,10 +194,10 @@ void RegTest::testAffine()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradAffine mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradAffine>();
     MapperPyramid mappPyr(mapper);
     Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -230,10 +230,10 @@ void RegTest::testProjective()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradProj mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradProj>();
     MapperPyramid mappPyr(mapper);
     Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
 
     // Print result
     MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());

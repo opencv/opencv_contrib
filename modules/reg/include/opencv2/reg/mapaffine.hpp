@@ -85,12 +85,20 @@ public:
         return linTr_;
     }
 
+    CV_WRAP void getLinTr(OutputArray linTr) const {
+        Mat(linTr_).copyTo(linTr);
+    }
+
     /*!
      * Return displacement part of the affine transformation
      * \return Displacement part of the affine transformation
      */
     const cv::Vec<double, 2>& getShift() const {
         return shift_;
+    }
+
+    CV_WRAP void getShift(OutputArray shift) const {
+        Mat(shift_).copyTo(shift);
     }
 
 private:

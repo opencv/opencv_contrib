@@ -85,10 +85,14 @@ public:
         return projTr_;
     }
 
+    CV_WRAP void getProjTr(OutputArray projTr) const {
+        Mat(projTr_).copyTo(projTr);
+    }
+
     /*!
      * Normalizes object's homography
      */
-    void normalize(void) {
+    CV_WRAP void normalize() {
         double z = 1./projTr_(2, 2);
         for(size_t v_i = 0; v_i < sizeof(projTr_.val)/sizeof(projTr_.val[0]); ++v_i)
             projTr_.val[v_i] *= z;
