@@ -91,7 +91,7 @@ void MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map>& res
         }
     }
 
-    res->compose(*ident.get());
+    res->compose(ident);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

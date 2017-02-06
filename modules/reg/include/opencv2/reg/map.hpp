@@ -158,7 +158,7 @@ public:
      * The order is first the current transformation, then the input argument.
      * \param[in] map Transformation to compose with.
      */
-    virtual void compose(const Map& map) = 0;
+    CV_WRAP virtual void compose(cv::Ptr<Map> map) = 0;
 
     /*!
      * Scales the map by a given factor as if the coordinates system is expanded/compressed

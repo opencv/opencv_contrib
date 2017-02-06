@@ -92,10 +92,10 @@ Ptr<Map> MapShift::inverseMap(void) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapShift::compose(const Map& map)
+void MapShift::compose(cv::Ptr<Map> map)
 {
     // Composition of transformations T and T' is (T o T') = b + b'
-    const MapShift& mapShift = static_cast<const MapShift&>(map);
+    const MapShift& mapShift = static_cast<const MapShift&>(*map);
     shift_ += mapShift.getShift();
 }
 

@@ -96,10 +96,10 @@ Ptr<Map> MapProjec::inverseMap(void) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapProjec::compose(const Map& map)
+void MapProjec::compose(Ptr<Map> map)
 {
     // Composition of homographies H and H' is (H o H') = H'*H
-    const MapProjec& mapProj = static_cast<const MapProjec&>(map);
+    const MapProjec& mapProj = static_cast<const MapProjec&>(*map);
     Matx<double, 3, 3> compProjTr = mapProj.getProjTr()*projTr_;
     projTr_ = compProjTr;
 }

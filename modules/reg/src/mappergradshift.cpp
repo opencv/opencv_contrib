@@ -96,7 +96,7 @@ void MapperGradShift::calculate(
     if(res.empty()) {
         res = Ptr<Map>(new MapShift(shift));
     } else {
-        MapShift newTr(shift);
+        Ptr<MapShift> newTr(new MapShift(shift));
         res->compose(newTr);
    }
 }

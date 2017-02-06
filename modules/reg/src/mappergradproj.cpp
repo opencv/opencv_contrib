@@ -199,7 +199,7 @@ void MapperGradProj::calculate(
     if(res.empty()) {
         res = Ptr<Map>(new MapProjec(H));
     } else {
-        MapProjec newTr(H);
+        Ptr<MapProjec> newTr(new MapProjec(H));
         res->compose(newTr);
    }
 }

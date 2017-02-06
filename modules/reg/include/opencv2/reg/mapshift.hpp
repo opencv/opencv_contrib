@@ -73,7 +73,7 @@ public:
 
     CV_WRAP cv::Ptr<Map> inverseMap() const;
 
-    void compose(const Map& map);
+    CV_WRAP void compose(cv::Ptr<Map> map);
 
     CV_WRAP void scale(double factor);
 

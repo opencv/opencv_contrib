@@ -94,10 +94,10 @@ Ptr<Map> MapAffine::inverseMap(void) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapAffine::compose(const Map& map)
+void MapAffine::compose(cv::Ptr<Map> map)
 {
     // Composition of affine transformations T and T' is (T o T') = A'Ax + A'b + b'
-    const MapAffine& mapAff = static_cast<const MapAffine&>(map);
+    const MapAffine& mapAff = static_cast<const MapAffine&>(*map);
     Matx<double, 2, 2> compMat = mapAff.getLinTr()*linTr_;
     Vec<double, 2> compShift = mapAff.getLinTr()*shift_ + mapAff.getShift();
     linTr_ = compMat;

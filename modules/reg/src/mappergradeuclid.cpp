@@ -115,7 +115,7 @@ void MapperGradEuclid::calculate(
     if(res.empty()) {
         res = Ptr<Map>(new MapAffine(linTr, shift));
     } else {
-        MapAffine newTr(linTr, shift);
+        Ptr<MapAffine> newTr(new MapAffine(linTr, shift));
         res->compose(newTr);
    }
 }
