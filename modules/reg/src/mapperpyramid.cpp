@@ -73,20 +73,20 @@ Ptr<Map> MapperPyramid::calculate(InputArray _img1, InputArray image2, Ptr<Map> 
     vector<Mat> pyrIm1(numLev_), pyrIm2(numLev_);
     pyrIm1[0] = img1;
     pyrIm2[0] = img2;
-    for(size_t im_i = 1; im_i < numLev_; ++im_i) {
+    for(int im_i = 1; im_i < numLev_; ++im_i) {
         pyrDown(pyrIm1[im_i - 1], pyrIm1[im_i]);
         pyrDown(pyrIm2[im_i - 1], pyrIm2[im_i]);
     }
 
     Mat currRef, currImg;
-    for(size_t lv_i = 0; lv_i < numLev_; ++lv_i) {
+    for(int lv_i = 0; lv_i < numLev_; ++lv_i) {
         currRef = pyrIm1[numLev_ - 1 - lv_i];
         currImg = pyrIm2[numLev_ - 1 - lv_i];
         // Scale the transformation as we are incresing the resolution in each iteration
         if(lv_i != 0) {
             ident->scale(2.);
         }
-        for(size_t it_i = 0; it_i < numIterPerScale_; ++it_i) {
+        for(int it_i = 0; it_i < numIterPerScale_; ++it_i) {
             ident = baseMapper_.calculate(currRef, currImg, ident);
         }
     }

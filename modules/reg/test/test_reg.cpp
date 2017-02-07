@@ -88,11 +88,10 @@ void RegTest::testShift()
     // Register
     Ptr<Mapper> mapper = makePtr<MapperGradShift>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
+    Ptr<MapShift> mapShift = MapTypeCaster::toShift(mapPtr);
 #if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing shift mapper ---" << endl;
     cout << Mat(shift) << endl;
@@ -121,11 +120,10 @@ void RegTest::testEuclidean()
     // Register
     Ptr<Mapper> mapper = makePtr<MapperGradEuclid>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
 #if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing Euclidean mapper ---" << endl;
     cout << Mat(linTr) << endl;
@@ -160,11 +158,10 @@ void RegTest::testSimilarity()
     // Register
     Ptr<Mapper> mapper = makePtr<MapperGradSimilar>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
 #if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing similarity mapper ---" << endl;
     cout << Mat(linTr) << endl;
@@ -196,11 +193,10 @@ void RegTest::testAffine()
     // Register
     Ptr<Mapper> mapper = makePtr<MapperGradAffine>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
 #if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing affine mapper ---" << endl;
     cout << Mat(linTr) << endl;
@@ -232,11 +228,10 @@ void RegTest::testProjective()
     // Register
     Ptr<Mapper> mapper = makePtr<MapperGradProj>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mapPtr = mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
+    Ptr<MapProjec> mapProj = MapTypeCaster::toProjec(mapPtr);
     mapProj->normalize();
 #if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing projective transformation mapper ---" << endl;

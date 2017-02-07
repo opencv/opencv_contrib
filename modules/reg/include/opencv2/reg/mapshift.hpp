@@ -62,7 +62,8 @@ public:
      * Constructor providing explicit values
      * \param[in] shift Displacement
      */
-    MapShift(const cv::Vec<double, 2>& shift);
+
+    CV_WRAP MapShift(InputArray shift);
 
     /*!
      * Destructor
