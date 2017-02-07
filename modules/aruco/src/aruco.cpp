@@ -896,7 +896,7 @@ static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Poin
 	//Evaluate contour direction :: using the position of the detected corners
 	int inc=1;
 
-    inc = ( (cornerIndex[0] > cornerIndex[1]) &&  (cornerIndex[3] > cornerIndex[0]) ) ? -1:inc;
+        inc = ( (cornerIndex[0] > cornerIndex[1]) &&  (cornerIndex[3] > cornerIndex[0]) ) ? -1:inc;
 	inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
 
 	// calculate the line :: who passes through the grouped points

@@ -88,7 +88,7 @@ static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameter
     fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
     fs["minDistanceToBorder"] >> params->minDistanceToBorder;
     fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
-    fs["doCornerRefinement"] >> params->doCornerRefinement;
+    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
     fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
     fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
     fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-    detectorParams->doCornerRefinement = true; // do corner refinement in markers
+    detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX; // do corner refinement in markers
 
     int camId = parser.get<int>("ci");
 
