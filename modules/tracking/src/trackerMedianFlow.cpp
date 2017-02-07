@@ -168,7 +168,7 @@ struct NaNChecker
 {
     bool operator()(const Point2f& p)
     {
-        return isnan(p.x) || isnan(p.y);
+        return cvIsNaN(p.x) || cvIsNaN(p.y);
     }
 };
 
