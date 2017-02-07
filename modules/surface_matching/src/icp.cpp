@@ -320,6 +320,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   Mat dstPC0 = dstTemp;
 
   // initialize pose
+  pose.resize(16);
   matrixIdentity(4, &(pose[0]));
 
   void* flann = indexPCFlann(dstPC0);
